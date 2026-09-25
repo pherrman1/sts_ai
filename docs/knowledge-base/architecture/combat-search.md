@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-25 against current main for the experimental native Silver backend and Silver-only dispatch (ADR-0020), and against PR #314 for its default-off §349 rollout scratch-pile boundary.
+Last verified: 2026-09-25 for the native Silver default (ADR-0021) and Silver-only dispatch (ADR-0020), and against PR #314 for its default-off §349 rollout scratch-pile boundary.
 
 ## Purpose
 
@@ -145,9 +145,9 @@ Runic Dome prevents future intent materialization. Looter and Mugger use
 `assignInformationState` and this deferred choice are project-fair adaptations
 of the vendored simulator.
 
-## Native Silver backend (experimental)
+## Native Silver backend (default)
 
-`STS_NATIVE_SILVER=1` replaces the vendored model with `SilverSearcher`
+The default combat backend (ADR-0021) is `SilverSearcher`
 (`src/sim/search/SilverSearcher.cpp`), a port of the Silver fork's
 `BattleSearcher` production path that runs directly on the main
 `BattleContext`, installed by `NativeSilverBackend`. At each decision the
@@ -174,8 +174,10 @@ unchanged. Remaining gaps against the vendored model: Gambling Chip and Purity
 selections are atomic subsets; the vendored reroot repairs are replaced by
 multiset equality plus action translation. On the standard 128-seed block it won 86/128 against the
 vendored 83/128 (no detectable difference;
-[§348](../../experiments/ledger-06.md)). The vendored backend remains the
-default.
+[§348](../../experiments/ledger-06.md)). `one_combat` selects the vendored
+backend below on `STS_NATIVE_SILVER=0` or when a vendored-only `STS_SILVER_*`
+option is set (captures, diagnostics, telemetry, leaf VNet, root prior); an
+explicit `STS_NATIVE_SILVER=1` with such an option is an error.
 
 ## Silver backend
 
@@ -285,12 +287,12 @@ schedule monster actions immediately after a card play and create spurious
 chance branches in the retained search graph.
 
 
-Before an ordinary live search, Silver enumerates the legal root actions. When
-exactly one action is legal, the live backend materializes and reroots the
-retained session, validates the complete singleton edge surface against the
-live semantic action, and selects that edge without adding simulations. This
-keeps the forced edge as `previousBest`, so the following live observation can
-exact-reroot through a retained continuation. The existing semantic-action
+Before an ordinary live search in the vendored backend, Silver enumerates the
+legal root actions. When exactly one action is legal, the backend materializes
+and reroots the retained session, validates the complete singleton edge
+surface against the live semantic action, and selects that edge without adding
+simulations. This keeps the forced edge as `previousBest`, so the following
+live observation can exact-reroot through a retained continuation. The existing semantic-action
 resolver still checks the action against the live `BattleContext`. This covers
 forced `END_TURN` and one-option selections. If a retained singleton surface
 cannot be validated, ordinary live play clears that predecessor, runs the
@@ -300,15 +302,15 @@ capture modes remain fail-closed on that mismatch. Full-budget per-root and
 checkpoint diagnostic modes retain their complete search observations.
 Aggregate `[silver-combat]` telemetry reports `singleton_root_search_skips`.
 
-The live Silver default otherwise uses the retained-root adaptive policy:
+The vendored live backend otherwise uses the retained-root adaptive policy:
 fresh roots with multiple legal actions search 10,000 simulations, while an
 eligible retained root with multiple legal actions first searches 500,
 measures the top-two visit-share gap, and stops at 500 when it is at least
 `0.2932885906040268`; otherwise the same root continues to 10,000 total.
-`STS_SILVER_ADAPTIVE=0` restores flat Silver for multi-action roots. For
-`run`, `bestbench` and `reprobench`, an explicit sims argument selects flat
-Silver at that budget unless adaptive stopping is configured through its
-environment variables
+For the vendored backend, `STS_SILVER_ADAPTIVE=0` restores flat Silver for
+multi-action roots. For `run`, `bestbench` and `reprobench`, an explicit sims
+argument selects flat Silver at that budget unless adaptive stopping is
+configured through its environment variables
 ([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The
 policy applies at ordinary roots and private sequential-selection
 subdecisions; the first search is not discarded when a search is run.

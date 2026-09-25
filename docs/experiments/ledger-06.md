@@ -11996,7 +11996,49 @@ Knowledge impact: the scratch-pile boundary and completed corrected DEV result
 are recorded in maintained combat-search and current-research pages. B remains
 default-off and is not gameplay-qualified.
 
-## §350 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
+## §350 — Native Silver rollout-only unsorted draw pile: rejected at profile gate (2026-09-25)
+
+**Hypothesis:** the §349 candidate B (rollout scratch piles left unsorted) has
+a useful analogue in native Silver (`SilverSearcher`, default backend since
+ADR-0021). In native Silver only the information-set draw pile (`CardPile`)
+is kept canonically sorted; discard and exhaust are plain vectors.
+
+**Preregistered stop rule:** if removable rollout-only canonical-sort work is
+clearly below ~3% of native search CPU, stop before implementing.
+
+- **Baseline:** `856b3f8fb463be838daa1c4caf221b22bd876353`.
+- **Method:** Release (`-O3 -flto`, plus `-g`) `unit-test` binary,
+  `valgrind --tool=callgrind` on `test silver_searcher` (24 whole battles,
+  native `SilverSearcher` with reroots, 200 simulations per decision). A
+  second run used `--toggle-collect='sts::search::SilverSearcher::rolloutToEnd*'`
+  to isolate rollout scratch execution. A deck-size sensitivity run temporarily
+  (uncommitted, since reverted) added 20 cards (Pommel Strike, Shrug It Off,
+  Inflame, Twin Strike, Anger ×4 each) to the starter deck.
+- **Results (instruction counts, Ir):**
+
+  | Workload | Total Ir | `rolloutToEnd` share | Rollout `std::sort<CardInstance>` | Share of total |
+  |---|---|---|---|---|
+  | Starter deck (10 cards) | 8.62e9 | 67.4% | 163.1M | **1.89%** |
+  | 30-card deck | 6.65e9 | 65.9% | 137.5M | **2.07%** |
+
+  Almost all removable work is the `absorbUnordered()` sort in
+  `CardManager::moveDiscardPileIntoToDrawPile`. `addUnknown()` insertion and
+  the `mutateAt()`/`mutateAll()` sortedness checks were about 0.02%. Non-rollout
+  sorts (about 0.9–1.6% of the total) must stay canonical and are not
+  removable. The vendored ~9% (§349) does not transfer, because the vendored
+  engine also sorted discard/exhaust.
+- **Decision:** rejected at Phase A. No implementation, fixed-work benchmark,
+  or gameplay seeds were run or reserved.
+- **Limitations:** callgrind Ir is a proxy for CPU; no production `one_combat`
+  adaptive-budget profile was taken (**Inference:** the rollout/tree ratio and
+  hence the share should be similar). The same profile attributes about 53% to
+  `BattleContext::executeActions`, 17% to rollout card choice, and ~15% to
+  `BattleContext` copy/swap; those are the larger native rollout-cost targets.
+
+Knowledge impact: this entry plus a one-line pointer in current-research. No
+code or default changed.
+
+## §351 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
 
 - **Question:** Does zero-search selection at singleton roots, while retaining
   the selected edge for later rerooting, change complete frozen-fight outcomes
@@ -12040,7 +12082,7 @@ default-off and is not gameplay-qualified.
 Knowledge impact: current research now records the post-correction replay
 result and its one shared technical failure. No default or quality gate changed.
 
-## §351 — Singleton reroot replay against updated current main (2026-09-25)
+## §352 — Singleton reroot replay against updated current main (2026-09-25)
 
 - **Question:** Does the retained-session singleton zero-search path reduce
   work without changing observed outcomes on the frozen hard-fight cohort
@@ -12090,7 +12132,14 @@ result and its one shared technical failure. No default or quality gate changed.
   changes do not alter the default combat replay search path. No new hard64
   screen was necessary for this merge; the N63 outcome/simulation rows remain
   historical observations of their original binaries, and the wall-time result
-  is not reverified on the newer harness.
+  is not reverified on the newer harness. Main later advanced via PR #322 to
+  `856b3f8fb463be838daa1c4caf221b22bd876353` and PR #323 to
+  `f8fa4a3fd9ebbbc01f2003946ee40c634bcd677d`. Release replay rebuilds from
+  current main and the merged treatment still have SHA-256
+  `f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773` and
+  `ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`.
+  PR #322 changes `one_combat` backend dispatch and PR #323 records a profile
+  result; neither changes the replay target. No new hard64 screen was needed.
 - **Technical exclusion:** case `12100109/21` failed in both arms after 28
   decisions / 280,000 simulations with the same
   `selected_deterministic_state_mismatch` and action-trace hash

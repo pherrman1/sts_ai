@@ -375,15 +375,19 @@ establish universal safety, or claim action equivalence. No expensive shadow
 [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
 
-### Singleton-root search bypass (2026-09-24)
+### Vendored singleton-root search bypass (2026-09-24)
 
-For a validated singleton edge surface, the live backend commits the sole legal
-root action without running Silver search. This applies to forced `END_TURN`
-and one-option selections. If a retained root's edge surface does not match
-the sole live semantic action, ordinary live play discards that predecessor
-and retries the full-budget search from the live observation; it accepts the
-retry only if it selects that same sole live action. Hard-combat and
-root-mechanism capture modes remain fail-closed on a surface mismatch.
+Since ADR-0021, plain `one_combat` uses native Silver by default. This bypass
+is in the vendored `SilverLiveBackend` and applies when that backend is
+selected, such as with `STS_NATIVE_SILVER=0` or a vendored-only
+`STS_SILVER_*` option. For a validated singleton edge surface, the vendored
+live backend commits the sole legal root action without running Silver search.
+This applies to forced `END_TURN` and one-option selections. If a retained
+root's edge surface does not match the sole live semantic action, ordinary
+live play discards that predecessor and retries the full-budget search from
+the live observation; it accepts the retry only if it selects that same sole
+live action. Hard-combat and root-mechanism capture modes remain fail-closed on
+a surface mismatch.
 Full-budget per-root and checkpoint diagnostic modes continue to search for
 complete observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
 records 510 one-action roots among 13,945 decisions; all 510 still ran 10,000
@@ -433,7 +437,13 @@ option default-off and disabled for the recorded replay, with the remaining
 changes limited to diagnostic timing defaults and an isolated simple-rollout
 probe. No new hard64 screen was run; the N63 outcomes and simulation counts
 remain historical results for their recorded binaries, and the 3.371% wall-time
-result is not reverified on the newer harness.
+result is not reverified on the newer harness. Main later advanced through PR
+#322 to `856b3f8f` and PR #323 to `f8fa4a3f`. Release replay rebuilds at `f8fa4a3f`
+and the merged treatment tree remained byte-identical to the `18232bf0` control
+and treatment hashes (`f0367213…` and `ba4ef57d…`). PR #322 changes `one_combat`
+backend dispatch and PR #323 adds documentation; neither changes the replay
+binary. No new hard64 screen was needed, and the N63 observations remain tied
+to their recorded binaries.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
@@ -1656,6 +1666,9 @@ experimental and is not qualified for promotion. See [ledger-06 §349](../../exp
 the [corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
 the [follow-up results and raw evidence](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/README.md),
 and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
+The native Silver analogue (draw pile only) was rejected at its profile
+gate: removable rollout-only sort work is about 2% of native search CPU
+([ledger-06 §350](../../experiments/ledger-06.md)).
 
 ### Whole-Act OOC evaluator
 
