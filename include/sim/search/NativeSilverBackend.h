@@ -2,6 +2,11 @@
 #define STS_LIGHTSPEED_NATIVESILVERBACKEND_H
 
 #include <cstdint>
+#include <string>
+
+namespace sts {
+    class BattleContext;
+}
 
 namespace sts::search {
 
@@ -19,6 +24,20 @@ namespace sts::search {
     void installNativeSilverBackend();
     bool nativeSilverBackendInstalled();
     bool nativeSilverAdaptiveEnabled();
+
+    struct CombatKnowledgeState;
+
+    // Public per-battle seed for the search's randomness: constant through the
+    // battle and never derived from live RNG state.
+    std::uint64_t nativeSilverBattleSeed(const BattleContext &bc);
+
+    // The search view of a live state: the draw pile becomes the player's
+    // information set (concrete under Frozen Eye), the RNG streams are
+    // reseeded from nativeSilverBattleSeed, and under Runic Dome the concrete
+    // rolled intents are replaced by the public pending rolls. Returns an
+    // empty string, or why the live view cannot be represented.
+    std::string nativeSilverSearchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge,
+                                       BattleContext &root);
 
     struct NativeSilverTotals {
         std::int64_t combats = 0;

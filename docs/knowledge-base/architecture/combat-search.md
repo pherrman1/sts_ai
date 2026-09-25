@@ -179,6 +179,21 @@ backend below on `STS_NATIVE_SILVER=0` or when a vendored-only `STS_SILVER_*`
 option is set (captures, diagnostics, telemetry, leaf VNet, root prior); an
 explicit `STS_NATIVE_SILVER=1` with such an option is an error.
 
+The live advisor (`one_combat_advisor`) runs the same searcher on states from
+the live wire protocol. `battleContextFromWire` (`SilverWireState.cpp`) builds
+the search root: the draw pile from the wire's information set, discard and
+exhaust from their multisets, RNG seeded from the wire's public search seed,
+and Runic Dome pending intents. The wire has no action queue; at a card
+selection interrupted mid-play (the playing card is in no pile) it restores
+the pending `OnAfterCardUsed`, but other queued continuations (Burning Pact's
+draw after the exhaust choice, damage queued behind a Headbutt) are not
+representable. `semanticFromSearchAction` maps search actions to the
+index-free `SemanticAction` the advisor lowers to live actions.
+`test silver_wire_state` checks that live -> wire -> root equals the native
+backend's own root (up to discard order and the live seed) through battles
+with Runic Dome and Frozen Eye, and that every root action keeps its semantic
+identity on the live state.
+
 ## Silver backend
 
 Silver is an isolated pinned chance-tree backend integrated by
