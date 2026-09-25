@@ -11691,6 +11691,38 @@ fallback 3,708 us. OpenSSL-disabled configure and non-CTM `main` build passed.
 No gameplay run was repeated. Results and commands are in the
 [PR #310 verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/main-7b4244-source/COMMANDS.md).
 
-Knowledge impact: current research status now records an experimental hybrid
-path and its bounded engineering evidence; qualified models and runtime defaults
-remain unchanged.
+- **Independent 512-pair confirmation (2026-09-25):** Frozen gameplay source
+  `c9ecfb2041f8061d89bd728b8dccded2e8e12adf` and binary SHA256
+  `c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244` were
+  used unchanged. After correcting the analyzer's c9 metadata expectation to
+  `models.policyNet="off"` and adding a regression test, analyzer and canary
+  self-tests passed; both preserved `989999` canaries passed mechanism and
+  provenance validation. Independent V4 policy-load and effective-config
+  checks remained enforced. The paired confirmation used exactly seeds
+  `990000..990511`, Ascension 0, 10,000 Silver simulations, 2,048 OOC MCTS
+  simulations, 24 threads, Act-3 horizon, and the frozen −5 pp gate. Execution
+  changed transport only: eight normal seed-guarded 128-seed invocations in
+  `C1,H1,C2,H2,C3,H3,C4,H4` order, with `OMP_NUM_THREADS=24` and CPU affinity
+  0–7 recorded as transport metadata. Both arms completed all 512 seeds and
+  passed strict receipt/seed merging before analysis. C won 277/512 and H
+  292/512; paired H−C was `+2.9297 pp` (paired bootstrap 95% CI
+  `[-1.7578,+7.6172] pp`). Its lower bound is above the −5 pp margin, meeting
+  the predeclared non-inferiority criterion and yielding
+  **`OOC_HYBRID_QUALITY_CONFIRMED`** for this cohort. This is not a superiority
+  claim or offline CTM qualification; the hybrid remains opt-in and no runtime
+  default changed. The ignored local evidence is under
+  `build/local_deepset_hybrid_confirmation_7069518/`; summary SHA256
+  `0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce`, merge
+  report SHA256
+  `fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282`.
+  Preserved canaries passed validation after the metadata fix. The local runner
+  then repeated the same canary seed in its fresh output root before C1; those
+  additional canary outputs also passed and remained excluded from analysis.
+  CPU affinity was transport-only; the pinned clean treatment environments
+  retained `OMP_NUM_THREADS=24`. The recorded `transportToolGitSha` is launch
+  base HEAD `7069518b5da3b38f4bac562a9b724de158814583`, not a commit containing
+  the then-working-tree helper files. The analyzer/merger/runner file hashes
+  are recorded in the confirmation evidence README.
+
+Knowledge impact: current research status and the independent confirmation
+evidence are recorded; qualified models and runtime defaults remain unchanged.

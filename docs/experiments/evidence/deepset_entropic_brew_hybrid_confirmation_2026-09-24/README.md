@@ -1,9 +1,9 @@
 # DeepSets CTM independent 512-pair confirmation
 
-Status: `PREPARATION_COMPLETE_RUN_BLOCKED`. The frozen manifests, exact local
-artifact hashes, analyzer, and local runtime-mechanism receipts are ready. No
-canary or confirmation game seed was run. The designated GCP instance
-`sts-test` does not exist in project `sts-ai-502709`, zone `europe-west3-c`.
+Status: `OOC_HYBRID_QUALITY_CONFIRMED`. The frozen 512-pair confirmation and
+both mechanism/provenance canaries completed on 2026-09-25 using the local
+seed-guarded four-by-128 transport. The designated GCP instance `sts-test` was
+unavailable during preparation; the local run changed transport only.
 
 ## Frozen protocol
 
@@ -43,96 +43,60 @@ build details are in [artifact-sha256.txt](artifact-sha256.txt) and
   `combat_transition_near_full_artifact` passed 3/3.
 - No C++ behavior was changed.
 
-These local checks do not substitute for the GCP canary or gameplay-quality
-cohort.
+The source and executable used for gameplay remain the frozen c9 source and
+binary. No gameplay source/binary, arm, model, seed, clean-environment
+treatment variable, or statistical setting changed. The local transport bound
+CPU affinity to cores 0–7; `OMP_NUM_THREADS=24` remained pinned for both arms.
 
-## GCP blocker and preserved-data boundary
+## Execution result
 
-At 2026-09-24 22:23 UTC, `python3 tools/agent/gcp_benchmark.py status` returned exit 1:
-GCP reported that
-`projects/sts-ai-502709/zones/europe-west3-c/instances/sts-test` was not found.
-The project instance list was also empty when checked. Since no VM exists,
-there was no remote filesystem on which to inspect preserved outputs or run
-`probe`; no remote files were modified and no replacement VM was created.
-See [remote-inventory.json](remote-inventory.json).
+The previously retained C/H canary outputs for seed `989999` passed the
+mechanism/provenance validator after the metadata correction. The local
+four-by-128 runner uses a fresh output root and also executed a new C/H pair at
+`989999` before chunk C1; those run-local outputs passed the same gates and
+are the canary files retained in the run directory. This repeated canary was
+outside the 512-pair cohort and none of its outcomes entered the analysis. The
+c9 metadata expectation was corrected so `models.policyNet="off"` is
+accepted; independent V4 policy-load and effective `leafPolicy="v4"` checks
+remain enforced.
 
-Do not run the 512-pair block locally. The repository guard caps local
-automated game execution at 128 seeds. Resume on the designated `sts-test`
-resource after it is restored, and inspect the remote root before copying or
-creating anything.
+The 512-pair run used seeds `990000..990511`, OMP 24, and the unchanged
+500,000-replicate paired bootstrap and −5 pp non-inferiority gate. It ran in
+eight normal guarded invocations, in order `C1,H1,C2,H2,C3,H3,C4,H4`; each
+invocation covered 128 seeds. `taskset -c 0-7` limited CPU affinity as local
+transport metadata while both arms retained `OMP_NUM_THREADS=24`. Every
+invocation used the frozen c9 `tools/seed_guard.sh`; no guard bypass or seed
+count increase was used.
 
-## Resume sequence when `sts-test` is available
+Results: C won 277/512 and H won 292/512. The paired H−C win difference was
+`+2.9297 pp`, with paired bootstrap 95% CI `[-1.7578,+7.6172] pp`. The lower
+bound is strictly above the frozen `−5.0 pp` margin, so the predeclared result
+is **`OOC_HYBRID_QUALITY_CONFIRMED`**. There were 208 both-win, 151 both-loss,
+84 H-only, and 69 C-only pairs; the exact two-sided discordant-binomial
+`p=0.2576`. This confirms the predeclared non-inferiority gate for this cohort;
+it does not claim superiority or change the default.
 
-1. Run `status` and `probe`; inventory the existing checkout and all paths in
-   both manifests. Preserve any existing files. If an experiment output path
-   exists, stop and resolve it without appending or overwriting.
-2. Ensure the dedicated remote checkout is clean at c9 and its Release CMake
-   cache points to that checkout. Transfer the frozen executable and fast
-   artifact with `copy-to --expect-sha256`; do not alter the standard, V4,
-   floor, or win models. Re-run both manifest checks and the confirmation
-   `exact-sha-preflight` before seeds. Preflight verifies that the seed guard
-   is tracked and present in the frozen checkout. Manifest launch invokes that
-   checkout's `tools/seed_guard.sh` by absolute path while keeping the process
-   working directory at `/home/philippherrmann/sts_sweep`, as required by its
-   designated-host safety check. Run the canary manifest through
-   `--foreground --guard-only` for both arms before launching either canary.
-3. Run both canary arms sequentially with
-   `run-manifest run-manifest-canary.json C --foreground`, then H. Validate
-   each result with `tools/agent/check_benchmark_canary.py` using Silver,
-   10,000 combat simulations, seed 989999, A0, 24 threads, fair play,
-   Searcher3 disabled, frozen Git SHA, binary SHA, and allocated Silver cap.
-   Also verify each one-row result, metadata, MCTS trace, support receipt,
-   action receipt, loaded CTM/V4/floor/win paths, and effective MCTS settings.
-   For H, require the pinned Brew fallback path, reconciled hybrid preparation
-   counters, positive preparation count, and no escaped
-   `entropic_brew_requires_standard_ctm` support reason. Any canary failure
-   blocks the full cohort.
-   After copying their six outputs into `raw/canary/standard` and
-   `raw/canary/hybrid` with the basenames documented below, run:
+The complete local evidence is preserved under the ignored workspace path
+`build/local_deepset_hybrid_confirmation_7069518/`, including all eight chunk
+outputs and transport receipts, the strict merged arms, canary validation,
+per-seed analysis, summary, and completion/provenance records. The analyzer
+summary SHA256 is
+`0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce`; the
+merge report SHA256 is
+`fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282`.
+`confirmation-plan.json` and both run manifests remain the frozen preparation
+snapshot; their recorded GCP blocker describes the preparation-time status.
 
-```bash
-python3 tools/agent/check_deepset_entropic_brew_hybrid_canary.py \
-  --manifest run-manifest-canary.json \
-  --standard raw/canary/standard \
-  --hybrid raw/canary/hybrid \
-  --binary <build/linux-gcc-release/one_combat> \
-  --standard-ctm <selfplay/models/combat_transition_near_full_except_smoke_v2.native> \
-  --fast-ctm </tmp/deepset-entropic-hybrid-specialist.native> \
-  --v4-policy <selfplay/models/ooc_strategic_tok_final.native> \
-  --floor-model <models/v_rich_trees.txt> \
-  --win-model <models/v_win_trees.txt>
-```
-
-4. Only after both canaries pass, run all C confirmation seeds and then all H
-   seeds with `run-manifest run-manifest-confirmation.json`; do not inspect
-   aggregate wins before both complete. Run the confirmation manifest through
-   `--foreground --guard-only` for both arms before the cohort. The manifest
-   launcher rejects stale result, metadata, log, trace, support, or action
-   output paths.
-5. Copy each arm’s six outputs into separate local folders named `standard`
-   and `hybrid`, using these basenames: `results.csv`,
-   `results.csv.meta.json`, `run.log`, `mcts.csv`,
-   `mcts.csv.support.jsonl`, and `mcts.csv.actions.jsonl`. Then run the strict
-   analyzer below. Keep canary outputs separate from these 512-seed folders.
-
-```bash
-python3 tools/analyze_deepset_entropic_brew_hybrid_confirmation.py \
-  --standard <raw/standard> \
-  --hybrid <raw/hybrid> \
-  --manifest run-manifest-confirmation.json \
-  --binary <build/linux-gcc-release/one_combat> \
-  --standard-ctm <selfplay/models/combat_transition_near_full_except_smoke_v2.native> \
-  --fast-ctm </tmp/deepset-entropic-hybrid-specialist.native> \
-  --v4-policy <selfplay/models/ooc_strategic_tok_final.native> \
-  --floor-model <models/v_rich_trees.txt> \
-  --win-model <models/v_win_trees.txt> \
-  --summary <summary.json> \
-  --per-seed <per-seed.csv>
-```
-
-The analyzer emits the predeclared classification and diagnostics only after
-all 512 pairs and receipts pass validation. A canary loss is never pooled into
-the primary analysis.
+The run's `transportToolGitSha` value `7069518b5da3b38f4bac562a9b724de158814583`
+is the repository base HEAD recorded at launch; it does not identify the
+uncommitted local transport helper contents. The analyzer, merger, and runner
+source SHA256 values for the exact files included in this PR are respectively
+`d2d8731b5dc146b9288c92959b232ce38245906640396c83d6ab9a7f755c9e27`,
+`7783a7505956be8d39a1b51dbd9d8629d9463be3189b1c90dc5f0e6844d64ecf`, and
+`b75fc06d8bd2d20b87098218066e4878143b8111ea706c6027c425311d5ce409`. The
+analyzer hash and working-tree diff hash are also in the local runtime
+provenance record; the helper hashes are recorded here because per-chunk
+receipts bind the launch base SHA, not helper-file contents.
 
 ## Preparation checks
 
@@ -146,9 +110,11 @@ the primary analysis.
   fresh output paths, dangling-symlink rejection, and schema-v1 compatibility
   (8 tests), including exact-checkout guard binding and preserved generic-run
   behavior.
-- No remote manifest preflight, canary, or decision-bearing cohort has run.
+- Analyzer self-test and canary-validator self-test both passed after the
+  metadata correction. Both preserved canaries passed validation, all eight
+  guarded chunks exited zero, the strict merger passed, and the frozen paired
+  analyzer completed.
 
-Knowledge impact: manifest runs now use the seed guard from their pinned
-checkout, with exact-SHA preflight binding that guard and preserving the
-designated remote-root working directory. This is documented in the maintained
-[`build-and-debugging.md`](../../../knowledge-base/operations/build-and-debugging.md).
+Knowledge impact: the independent confirmation result is recorded in the
+experiment ledger; the experimental hybrid remains opt-in and no runtime
+default changed.
