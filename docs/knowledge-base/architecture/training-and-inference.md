@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-24 for the Searcher2/3 removals; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
+Last verified: 2026-09-25 for the vendored-Silver removal (ADR-0022); 2026-09-24 for the Searcher2/3 removals; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -185,6 +185,9 @@ captures the first `g_onCombatDecision` callback and labels the row after
 `GameContext`, not the earlier RAW persistent-transfer hook. Its teacher
 JSON is checked against the checkout, executable, exact ordinary Silver 10k
 configuration, environment, and loaded-artifact hashes before CSV creation.
+Teachers declare `combat_backend: native_silver`; vendored `silver_uct`
+teachers are rejected (ADR-0022), so earlier corpora stay readable but cannot
+be regenerated with their original teacher.
 
 Representative model families:
 
@@ -253,147 +256,15 @@ Runtime interfaces and their default/experimental status are summarized in
 
 ## Important data flow
 
-### Silver leaf teacher comparison
+### Retired Silver research pipelines
 
-`silver_leaf_features` reads only manifest-selected rows from the preserved
-`silver_leaf_corpus_v1` JSONL and projects each stored leaf `BattleStateWire`
-through the live Silver adapter into the canonical rich CombatValueNet feature
-vector. `tools/train_silver_leaf_models.py` then joins those features to
-existing valid 10k-A and 25k-A relabel rows. Every sibling group with a 25k-B
-row is reserved as test-only before the remaining complete groups are split
-deterministically into train and validation. Both XGBoost arms share the exact
-feature columns, rows, split, uniform weighting, recipe, and evaluation; only
-the A-replicate target budget differs. The output is an offline model/teacher
-comparison and does not establish gameplay improvement.
-
-The selected M10 booster from that comparison is deployed experimentally as
-`models/silver_leaf_m10_10k.txt`. The export retains rounds 0 through 500
-(`best_iteration + 1`) from the exact preserved XGBoost artifact and uses the
-ordinary `CombatValueNet` compact-tree loader; it does not add XGBoost to the
-runtime. `tools/analyze_silver_leaf_deployment.py` compares M10 and the current
-combat VNet on the untouched 25k-B groups and writes strict native-parity rows.
-The model remains default-off behind `STS_SILVER_VNET_LEAF_MODEL` plus
-`STS_SILVER_VNET_LEAF_DIRECT`; its small gameplay gate does not authorize
-promotion.
-
-### Silver parent-action policy experiment
-
-`silver_parent_policy_features` restores each complete valid 25k-A parent from
-the preserved `BattleStateWire`, enumerates the pinned Silver root actions
-without running a simulation, lowers each semantic identity through the live
-bridge, and emits `combatPolicyFeatureNames` /
-`combatExtractPolicyFeatures` rows. Teacher, restored, and emitted fingerprint
-sets must match exactly; duplicate, missing, extra, incompatible, or partially
-labelled action sets fail closed.
-
-`tools/train_silver_parent_policy.py` reserves every parent with an independent
-25k-B row before splitting or matrix construction. It trains one deterministic
-XGBoost squared-error model on
-`Q_25kA(s,a) - mean_b Q_25kA(s,b)`, retaining raw corrected Q and visits only
-as diagnostics. The untouched 25k-B parents compare the model with the exact
-current Silver root-edge ordering and the 1k-A, 10k-A, and 25k-A teachers. This
-pipeline is offline-only and does not install scores into Silver selection.
-
-### Silver forced-action target audit
-
-`silver_forced_action_audit` is a diagnostic-only target-validity boundary. It
-consumes 32 exact root snapshots selected as two deterministic hash-ranked
-roots from each of 16 source gameplay seeds, enumerates every legal semantic
-action, and records one frozen 10k Teacher-A search plus two disjoint
-forced-action estimators. L uses eight independently rematerialized action
-executions with 5k continuation simulations; J uses eight different executions
-with 10k continuations. Every sibling shares the replicate RNG identity for
-common-random-number pairing, while each replicate rematerializes and executes
-the root action afresh. Consequently an immediate stochastic action outcome is
-resampled rather than frozen before its continuation.
-
-The `silver_forced_action_target_v2` rows retain each original-root-corrected
-raw value, semantic
-action, stochastic classification, immediate RNG-counter transition,
-continuation RNG identity and budget, root/snapshot hashes, utility definition,
-evaluator configuration, executable/Silver SHAs, and Teacher-A Q/visit data.
-Snapshot-producer and audit-evaluator Git SHAs are recorded separately and may
-differ; this permits a frozen root population to survive a diagnostic-only
-evaluator repair without silently recollecting different gameplay states.
-The immediate action and continuation deliberately share one Silver RNG stream;
-the row records the common identity plus the pre-action and continuation-start
-counters rather than claiming two independent streams. A separate historical-
-regression mode evaluates known harmful roots without adding them to primary
-population statistics.
-If a forced action terminates combat immediately, its exact terminal utility is
-recorded with `terminal_after_action=true` and zero continuation simulations.
-For both terminal and nonterminal actions, gold/max-HP changes caused before
-the fresh continuation root are translated back to the original root and
-applied only in proportion to victorious outcomes. Rows retain the raw
-victory count, full victory-baseline correction, and applied correction;
-nonterminal replicates must consume their complete 5k or 10k budget.
-`tools/analyze_silver_forced_action_audit.py` derives root-centered continuous
-advantages and pairwise margins and evaluates L only against untouched J. Its
-primary confidence interval and ranking interval resample source gameplay
-seeds, not roots. The classification is fail closed unless independent-J
-regret and pairwise ranking improve, no new high-regret tail appears, maximum
-regret does not worsen, and roots containing stochastic actions do not regress
-on average in either selector regret or stochastic-involving pairwise ranking.
-Deterministic-only pairwise results are reported separately. A population with
-no stochastic roots or no independently ordered stochastic-involving pairs is
-classified `FORCED_ACTION_TARGET_DETERMINISTIC_ONLY`; it cannot authorize a
-global ranker or prior. This experiment does not train a model, create a policy prior,
-modify live Silver selection, or authorize gameplay.
-
-### Phase-A policy/value cost diagnostic
-
-`apps/silver_policy_value_phase_a.cpp` is a bounded, diagnostic-only contract
-probe for a prospective `PLAYER_NORMAL` policy-plus-value input. It consumes
-an existing `silver_leaf_corpus_v1`, redacts interpreter/provenance fields (and
-latent intent details when intents are hidden), restores the visible wire
-through the live adapter, and emits separate parent-policy and actual
-`PLAYER_NORMAL` rollout-leaf value records. Parent-policy records enumerate
-exact pinned-Silver legal actions with semantic identities; leaf-value records
-label that same leaf and never substitute a parent or first-child utility. The
-canonical policy layout is 1,788 features total: 1,766 state features plus 22
-action features. The prospective shared model input appends the exact isolated
-Silver root reference scalars (effective gold and max HP), giving a 1,768-wide
-state input. The output enumerates known projection omissions explicitly; it is
-not a claim that the canonical vector is a lossless representation of every
-visible wire field.
-
-The optional teacher label is the existing Silver terminal utility from
-`BattleSearcher::evaluateEndState`, including its current root-relative
-reference context and weights. The original root snapshot remains available as
-teacher-only provenance, while the two derived root scalars are part of the
-model-visible input. The executable benchmarks actual supported
-`PLAYER_NORMAL` leaves with a fixed-weight native CPU model: `1768 -> 64 ->
-64`, `64 -> 1`, and `[64,22] -> 32 -> 1`, encoding state once and scoring all
-legal siblings. It also measures full-search rollout calls and wall time by
-input state in the same guarded source run, so the break-even estimate uses the
-actual supported leaf denominator rather than a corpus-only proxy.
-The clean baseline must have corpus/VNet observers unset, and the candidate
-timing must include the live-to-Silver conversion or explicitly target a
-future direct-Silver extractor. The corrected 2026-09-16 measurement included
-that conversion and found the candidate slower than clean Silver rollouts at
-both 100-simulation and 1k operating points; the earlier observer-contaminated
-feasibility estimate is withdrawn. Neither corpus conversion nor benchmarking
-changes training, gameplay, model loading, search selection, or utility
-semantics. Any cost classification is a hardware/configuration-specific
-feasibility diagnostic, not runtime qualification.
-
-The bounded stage follow-up on the same fixture measured 1.242 microseconds for
-live conversion, 40.944 microseconds for feature/vector preparation, 72.158
-microseconds for the shared encoder plus value head, and 4.212 microseconds for
-action scoring. Because the neural stage alone is about 24.2 times the clean
-rollout mean, a Silver-native compact representation is not a viable
-conversion-only remedy for this exact model boundary. See the linked Phase-A
-evidence packet for the raw receipt and provenance.
-
-A parity-preserving sparse first-layer screen then reduced the fixed model-plus-
-action computation from 78.019 to 6.377 microseconds per call by transposing
-the weights and skipping zero state inputs (mean 39 nonzero inputs). Maximum
-absolute parity errors were below `5e-10`, but 6.377 microseconds is still
-about 2.14 clean rollout-equivalents. The per-leaf throughput path is therefore
-closed at **`PV_SPARSE_NOT_FEASIBLE_PER_LEAF`**; do not add adapter/native-state
-optimization without a new hypothesis. Root-only learned guidance is a
-separate architectural direction. See the
-[sparse evaluator evidence](../../experiments/evidence/silver_sparse_evaluator_2026-09-17.md).
+The Silver leaf-teacher comparison (`silver_leaf_features`,
+`train_silver_leaf_models.py`), the parent-action policy experiment, the
+forced-action target audit and the Phase-A policy/value cost diagnostic all
+read the vendored Silver model's wire corpora and were removed with it
+([ADR-0022](../../../decisions/0022-remove-vendored-silver.md)). Their results
+remain in the experiment ledger; reproducing them needs a binary built before
+that ADR.
 
 ### Combat schema
 

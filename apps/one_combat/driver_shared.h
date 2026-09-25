@@ -35,7 +35,6 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatCpsiNet.h"
-#include "sim/search/SilverLiveBackend.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"

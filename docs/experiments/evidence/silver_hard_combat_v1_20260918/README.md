@@ -29,7 +29,7 @@ combined teacher table has 22 Tier A, 116 Tier B, 32 Tier C, 10 anomalous,
 and 258 easy cases. Easy and anomalous cases were excluded from v1.
 
 Selection is deterministic in
-[`tools/freeze_silver_hard_combat.py`](../../../../tools/freeze_silver_hard_combat.py)
+`tools/freeze_silver_hard_combat.py` (removed by ADR-0022; see Git history)
 (SHA-256 `c6532c66e4e02f72136b7dea0f493c402cd3439d7e78aaa5939b502f787a91fc`).
 It ranks A, then material B (terminal HP-fraction improvement at least 0.10),
 then C; caps a source seed at two cases; and performs a deterministic

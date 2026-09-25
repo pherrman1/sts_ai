@@ -46,6 +46,8 @@
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverWireState.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
@@ -381,6 +383,126 @@ int testSilverSearcher() {
     }
 
     std::cout << "silver_searcher " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+// The wire path used by the live advisor (live state -> wire -> search root)
+// gives the same search state as the native backend's own search root, and
+// actions chosen on it map back onto the live state.
+int testSilverWireState() {
+    int failures = 0;
+    auto check = [&](bool ok, const std::string &what) {
+        if (!ok) {
+            if (failures < 20) std::cerr << "silver_wire_state FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE };
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::LOOTER, MonsterEncounter::GREMLIN_NOB,
+        MonsterEncounter::THREE_SENTRIES, MonsterEncounter::THE_GUARDIAN, MonsterEncounter::SLIME_BOSS,
+    };
+    const CardId extraCards[] = {
+        CardId::ARMAMENTS, CardId::HEADBUTT, CardId::TRUE_GRIT, CardId::WARCRY,
+        CardId::BURNING_PACT, CardId::EXHUME, CardId::SECRET_WEAPON, CardId::POMMEL_STRIKE,
+    };
+    int decisions = 0;
+    int hiddenRoots = 0;
+    int edgesChecked = 0;
+    int unrepresentable = 0;
+    for (const auto variant : {Variant::PLAIN, Variant::RUNIC_DOME, Variant::FROZEN_EYE}) {
+        for (std::uint64_t seed = 11; seed <= 12; ++seed) {
+            for (const auto encounter : encounters) {
+                GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+                for (const auto id : extraCards) gc.deck.obtainRaw(Card(id));
+                gc.potions[0] = Potion::FIRE_POTION;
+                gc.potions[1] = Potion::BLOCK_POTION;
+                gc.potionCount = 2;
+                if (variant == Variant::RUNIC_DOME) gc.obtainRelic(RelicId::RUNIC_DOME);
+                if (variant == Variant::FROZEN_EYE) gc.obtainRelic(RelicId::FROZEN_EYE);
+
+                BattleContext bc;
+                search::CombatKnowledgeState knowledge;
+                knowledge.configureHiddenMonsterIntents(variant == Variant::RUNIC_DOME);
+                knowledge.initializeFromLiveBattle(bc);
+                knowledge.beginCombatInitialization();
+                search::g_combatKnowledgeObserver = &knowledge;
+                bc.init(gc, encounter);
+                knowledge.synchronizeAfterCombatInitialization(bc);
+
+                const auto runContext = search::makeSilverRunContext(gc);
+                int steps = 0;
+                while (bc.outcome == Outcome::UNDECIDED && ++steps < 400) {
+                    knowledge.reconcilePublicDrawPileCardinality(bc);
+                    BattleContext nativeRoot;
+                    const auto error = search::nativeSilverSearchRoot(bc, knowledge, nativeRoot);
+                    const auto conversion = search::makeSilverBattleStateConversion(
+                        bc, knowledge, runContext, search::nativeSilverBattleSeed(bc));
+                    if (!error.empty() || !conversion.wire.valid) {
+                        check(false, "root not representable: " + error + " / " + conversion.failureReason);
+                        break;
+                    }
+                    const BattleContext wireRoot = search::battleContextFromWire(conversion.wire);
+                    // The wire carries only the public search seed, not the live one.
+                    nativeRoot.seed = wireRoot.seed;
+                    // The wire carries discard and exhaust piles as sorted multisets
+                    // (their order is compared when the draw pile is concrete).
+                    std::sort(nativeRoot.cards.discardPile.begin(), nativeRoot.cards.discardPile.end());
+                    std::sort(nativeRoot.cards.exhaustPile.begin(), nativeRoot.cards.exhaustPile.end());
+                    const std::string where = " seed=" + std::to_string(seed) + " encounter="
+                        + std::to_string(static_cast<int>(encounter)) + " variant="
+                        + std::to_string(static_cast<int>(variant)) + " step=" + std::to_string(steps);
+                    // The wire has no action queue; the one queued action it can
+                    // restore is the interrupted card play's OnAfterCardUsed.
+                    const bool representable = nativeRoot.cardQueue.size == 0
+                        && (nativeRoot.actionQueue.size == 0
+                            || (nativeRoot.actionQueue.size == 1
+                                && nativeRoot.actionQueue.arr[nativeRoot.actionQueue.front].type
+                                    == CombatActionType::OnAfterCardUsed));
+                    unrepresentable += !representable;
+                    if (representable) {
+                        check(wireRoot.equalForSearch(nativeRoot), "wire root differs from native root" + where);
+                        check(search::hashBattleState(wireRoot) == search::hashBattleState(nativeRoot),
+                              "wire root hash differs" + where);
+                    }
+                    const auto context = search::searchContextFromWire(conversion.wire);
+                    check(search::battleContextFromWire(search::wireFromSearchState(wireRoot, context))
+                              .equalForSearch(wireRoot), "search-state wire round trip" + where);
+                    hiddenRoots += wireRoot.intentsHidden;
+
+                    search::g_combatKnowledgeObserver = nullptr;
+                    search::SilverSearcher searcher(wireRoot, context);
+                    searcher.search(40);
+                    search::g_combatKnowledgeObserver = &knowledge;
+                    for (const auto &edge : searcher.rootNode().edges) {
+                        const auto semantic = search::semanticFromSearchAction(searcher.rootSearchState(), edge.action);
+                        const auto translated = search::SilverSearcher::translateAction(
+                            edge.action, searcher.rootSearchState(), bc);
+                        check(search::semanticFingerprint(semantic)
+                                  == search::semanticFingerprint(search::semanticFromSearchAction(bc, translated)),
+                              "semantic identity changes under translation" + where);
+                        const auto resolved = search::resolveSilverSemanticAction(bc, semantic);
+                        check(resolved.ok && resolved.action.isValidAction(bc),
+                              "semantic action does not resolve on the live state: " + resolved.error + where);
+                        ++edgesChecked;
+                    }
+                    const auto action = search::SilverSearcher::translateAction(
+                        searcher.bestAction(), searcher.rootSearchState(), bc);
+                    if (!action.isValidAction(bc)) {
+                        check(false, "invalid translated action" + where);
+                        break;
+                    }
+                    action.execute(bc);
+                    ++decisions;
+                }
+                search::g_combatKnowledgeObserver = nullptr;
+                check(bc.outcome != Outcome::UNDECIDED, "battle finished");
+            }
+        }
+    }
+    std::cout << "silver_wire_state decisions=" << decisions << " hiddenRoots=" << hiddenRoots
+              << " edges=" << edgesChecked
+              << " unrepresentable=" << unrepresentable << ' ' << (failures == 0 ? "PASS" : "FAIL") << '\n';
     return failures == 0 ? 0 : 1;
 }
 
@@ -1802,7 +1924,7 @@ int testCombatKnowledgeBoundary() {
           == search::makeSilverCardPile(permuted, permutedKnowledge),
           "unobserved concrete draw permutations must construct the same Silver CardPile");
     auto sampledUnknown = search::makeSilverCardPile(first, firstKnowledge);
-    silver::Random silverRng(0x9001u);
+    Random silverRng(0x9001u);
     (void)sampledUnknown.drawTop(silverRng);
     check(silverRng.counter == 1,
           "Silver unknown draw must consume its isolated single-model RNG exactly once");
@@ -1831,7 +1953,7 @@ int testCombatKnowledgeBoundary() {
           && topView.knownTop[1].uniqueId == topB.uniqueId,
           "multiple known top placements must retain actual stack order");
     auto deterministicTop = search::makeSilverCardPile(topLive, topKnowledge);
-    silver::Random knownTopRng(0x9002u);
+    Random knownTopRng(0x9002u);
     const CardInstance poppedTop = deterministicTop.drawTop(knownTopRng);
     check(poppedTop.uniqueId == topB.uniqueId && knownTopRng.counter == 0,
           "Silver known-top draw must be deterministic and consume no model RNG");
@@ -1924,23 +2046,6 @@ int testCombatKnowledgeBoundary() {
     if (failures == 0) { std::cout << "combat_knowledge PASS\n"; return 0; }
     std::cout << "combat_knowledge FAIL (" << failures << " cases)\n";
     return 1;
-}
-
-int testSilverRandomBridge() {
-    const auto fromBridge = silver_bridge::probeReferenceRandom(0x51A9u);
-    Random reference(0x51A9u);
-    const auto first = reference.random(999);
-    const auto second = reference.random(-3, 7);
-    const auto third = reference.randomLong();
-    const bool equal = fromBridge.firstRange == first && fromBridge.secondRange == second
-        && fromBridge.randomLong == third && fromBridge.counter == reference.counter
-        && fromBridge.seed0 == reference.seed0 && fromBridge.seed1 == reference.seed1;
-    if (!equal) {
-        std::cout << "silver_random_bridge FAIL\n";
-        return 1;
-    }
-    std::cout << "silver_random_bridge PASS\n";
-    return 0;
 }
 
 int testSilverSemanticActionResolution() {
@@ -3362,12 +3467,12 @@ int main(int argc, const char* argv[]) {
         return testCardPileEngine();
     } else if (command == "silver_searcher") {
         return testSilverSearcher();
+    } else if (command == "silver_wire_state") {
+        return testSilverWireState();
     } else if (command == "card_pile") {
         return testCardPile();
     } else if (command == "battle_equality") {
         return testBattleEquality();
-    } else if (command == "silver_random_bridge") {
-        return testSilverRandomBridge();
     } else if (command == "silver_semantic_action") {
         return testSilverSemanticActionResolution();
     } else if (command == "ooc_semantic") {

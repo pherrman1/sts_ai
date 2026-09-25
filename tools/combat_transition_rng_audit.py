@@ -272,7 +272,7 @@ def compact_result(result):
     result['staticAuditSourceSha256'] = {p: sha256(root / p) for p in (
         'include/game/Random.h', 'src/combat/BattleContext.cpp', 'src/combat/MonsterGroup.cpp',
         'src/combat/Monster.cpp', 'src/combat/MonsterSpecific.cpp', 'src/game/Game.cpp',
-        'src/game/GameContext.cpp', 'third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp')}
+        'src/game/GameContext.cpp', 'src/sim/search/NativeSilverBackend.cpp')}
     return result
 
 

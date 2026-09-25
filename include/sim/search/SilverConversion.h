@@ -8,7 +8,7 @@
 #include "combat/CardInstance.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverBridge.h"
-#include "silver/CardPile.h"
+#include "combat/CardPile.h"
 
 namespace sts {
     class BattleContext;
@@ -49,10 +49,9 @@ SilverRunContext makeSilverRunContext(const GameContext &live);
 SilverDrawPileObservation makeSilverDrawPileObservation(
     const BattleContext &live, const CombatKnowledgeState &knowledge);
 
-// Constructs the isolated model's actual Silver CardPile from the sanitized
-// observation. This function is the only draw-pile path from live combat into
-// the Silver model.
-silver::CardPile makeSilverCardPile(const BattleContext &live,
+// The search draw pile for the sanitized observation: the information set, or
+// the concrete order under Frozen Eye.
+CardPile makeSilverCardPile(const BattleContext &live,
                                    const CombatKnowledgeState &knowledge);
 
 // Runic Dome hides intent from the player. Callers must use this gate before

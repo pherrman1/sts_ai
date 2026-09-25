@@ -24,6 +24,15 @@ audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
 
+**Vendored Silver removed (2026-09-25, [ADR-0022](../../../decisions/0022-remove-vendored-silver.md)).**
+Every Silver research line below that ran in the vendored model — forced-action
+targets, rollout variance, first-action and tactical-prefix selectors,
+learned prefixes, Phase-A policy/value, budget/reuse-cap, visit-lock/rho
+stopping, root mechanism, internal-node FPU, the learned root prior, and the
+§349 rollout scratch piles — is closed: its tools were removed and its results
+are history. Reopening one means porting it to native Silver first. OOC research
+contracts now bind native Silver teachers.
+
 ## OOC 20% gap-stop quality gate
 
 The merged opt-in rule `512 -> stop when the top-two root visit gap is at
@@ -374,6 +383,80 @@ establish universal safety, or claim action equivalence. No expensive shadow
 10k searches were collected. See [ledger §280](../../experiments/ledger-06.md),
 [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
+
+### Vendored singleton-root search bypass (2026-09-24)
+
+**Removed with the vendored model (ADR-0022, 2026-09-25).** Native Silver
+still searches single-action roots; porting the bypass to native needs its own
+paired evaluation. The record below is history.
+
+Since ADR-0021, plain `one_combat` uses native Silver by default. This bypass
+is in the vendored `SilverLiveBackend` and applies when that backend is
+selected, such as with `STS_NATIVE_SILVER=0` or a vendored-only
+`STS_SILVER_*` option. For a validated singleton edge surface, the vendored
+live backend commits the sole legal root action without running Silver search.
+This applies to forced `END_TURN` and one-option selections. If a retained
+root's edge surface does not match the sole live semantic action, ordinary
+live play discards that predecessor and retries the full-budget search from
+the live observation; it accepts the retry only if it selects that same sole
+live action. Hard-combat and root-mechanism capture modes remain fail-closed on
+a surface mismatch.
+Full-budget per-root and checkpoint diagnostic modes continue to search for
+complete observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
+records 510 one-action roots among 13,945 decisions; all 510 still ran 10,000
+simulations. The user-provided breakdown is 489 forced `END_TURN` and 21
+one-option selections, with 471 of 502 continuing forced roots followed by a
+next decision that started from scratch. The user reports this as 6.3% of
+Silver compute. The supplied 64-fight, exact-10k comparison reports 59/64 wins
+in each arm, no paired flips, treatment ending HP +0.3, 4.6% fewer simulations
+and 6.7% lower wall time. This report predates the retained-session correction
+that preserves `previousBest` across zero-search singleton roots; it is
+pre-correction descriptive evidence and does not confirm the corrected
+implementation. That 64-fight raw packet and candidate/baseline SHAs were not
+available in this checkout, so the breakdown and comparison results were not
+independently verified here. The tracked 32-run packet's measurements remain
+historical results from before the bypass.
+
+A first post-correction exact-10k replay compared main at `01f6f164` with the
+corrected implementation at `2da8eed6` on the frozen `hard64-holdout` cohort.
+All 64 cases were attempted, but case `12100109/21` failed with the same
+deterministic-state mismatch in both arms, leaving 63 valid pairs. Both arms
+won 57/63 with no outcome flips; treatment skipped 62 searches, used 3.19%
+fewer simulations, and had 2.99% lower summed per-case replay wall time. Mean
+ending HP changed by +0.16 and action traces matched on 60/63 valid pairs.
+This is a bounded replay result, not a complete valid N64 confirmation or a
+live-game quality claim. See the
+[post-correction hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25/README.md).
+
+A follow-up exact-10k replay after merging newer main compared current main
+`46684659` with the merged treatment at `be47b2a1` on the same frozen cohort.
+All 64 cases were attempted; the same deterministic-state mismatch failed in
+both arms, leaving 63 valid pairs. Both arms won 57/63 with no outcome flips;
+treatment skipped 62 searches, used 3.185% fewer simulations, and had 3.371%
+lower summed per-case replay wall time. Mean ending HP changed by +0.159 and
+action traces matched on 60/63 valid pairs. These are bounded descriptive
+results, not equivalence or default-promotion evidence. See the
+[current-main hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md).
+Main then advanced to `8ed346ea`; rebuilding the replay target from that head
+and from merged treatment commit `4b1b27f6` produced the same control and
+treatment binary hashes used for these rows. No more seeded replays were collected after
+the local 128 arm-case allowance was used. The packet preserves the original
+run SHAs and the later byte-identity check. After main advanced to `03ae0297`,
+Release rebuilds at that main head and merged treatment `b0393b03` again
+matched the recorded control and treatment hashes. Main later advanced to
+`18232bf0`; its rebuilt replay binary and the treatment at `b6242a65` differ
+from the binaries used in the N63 run. Source review found the unsorted-rollout
+option default-off and disabled for the recorded replay, with the remaining
+changes limited to diagnostic timing defaults and an isolated simple-rollout
+probe. No new hard64 screen was run; the N63 outcomes and simulation counts
+remain historical results for their recorded binaries, and the 3.371% wall-time
+result is not reverified on the newer harness. Main later advanced through PR
+#322 to `856b3f8f` and PR #323 to `f8fa4a3f`. Release replay rebuilds at `f8fa4a3f`
+and the merged treatment tree remained byte-identical to the `18232bf0` control
+and treatment hashes (`f0367213…` and `ba4ef57d…`). PR #322 changes `one_combat`
+backend dispatch and PR #323 adds documentation; neither changes the replay
+binary. No new hard64 screen was needed, and the N63 observations remain tied
+to their recorded binaries.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
@@ -1908,7 +1991,7 @@ multiple relic fields, contrary to the zero-split statement in historical
 ledger §§109–110. The current enum maps r116 to Neow's Lament and r131 to
 Thread and Needle. The historical run's exact model artifact is not
 provenance-bound, so its result is not rewritten. See [ledger
-§351](../../experiments/ledger-06.md) and the [complete evidence
+§353](../../experiments/ledger-06.md) and the [complete evidence
 packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.md).
 
 ## Routing / evidence

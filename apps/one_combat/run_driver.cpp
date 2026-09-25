@@ -9,7 +9,7 @@
 #include "combat/BattleContext.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ScumSearchAgent2.h"
-#include "sim/search/SilverLiveBackend.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "e2c_capture.h"
 #include "ooc_policy.h"
 #include "ooc_checkpoint_policy.h"
@@ -83,10 +83,9 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
                         bool e2cCapture) {
     if (one_combat::liveOocMctsEnabled()) {
-        if (sims != 10000 || !search::silverLiveBackendInstalled()
-            || !search::silverLiveExactRootBudgets() || search::silverLiveAdaptiveEnabled()
-            || search::silverLiveReuseCapMode() != "allocated"
-            || search::silverLiveReuseCap() != 32768)
+        if (sims != 10000 || !search::nativeSilverBackendInstalled()
+            || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
+            || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
     }

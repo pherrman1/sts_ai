@@ -243,7 +243,9 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertIn({"kind": "end_turn"}, actions)
         self.assertIn({"kind": "card", "cardUuid": "physical-strike", "targetIndex": 1}, actions)
         self.assertIn({"kind": "potion", "potionSlot": 2, "discard": False, "targetIndex": 1}, actions)
-        self.assertIn({"kind": "potion", "potionSlot": 3, "discard": True}, actions)
+        # Silver discards a potion only to make room for Entropic Brew, and
+        # never drinks Fairy in a Bottle (it procs on lethal).
+        self.assertFalse(any(action.get("potionSlot") == 3 for action in actions))
         selected = next(row for row in summaries
                         if row["fingerprint"] == silver["selectedAction"])
         self.assertEqual(selected["liveAction"], silver["selectedLiveAction"])

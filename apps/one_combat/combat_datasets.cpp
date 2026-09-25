@@ -134,7 +134,8 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (id.find_first_of(",\r\n") != std::string::npos) throw std::runtime_error("wholecombatgen: teacher_id is not CSV-safe");
     if (gitSha.size()!=40 || (!allowStaleProvenance && gitSha!=trainingExecutableGitSha())) throw std::runtime_error("wholecombatgen: teacher git_sha mismatch");
     if (exeSha.size()!=64 || (!allowStaleProvenance && exeSha!=fileSha256(g_mainBinaryPath))) throw std::runtime_error("wholecombatgen: executable SHA256 mismatch");
-    if (req("combat_backend")!="silver_uct" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
+    if (req("combat_backend")=="silver_uct") throw std::runtime_error("wholecombatgen: vendored silver_uct teachers were retired with the vendored Silver model (ADR-0022); freeze a native_silver teacher");
+    if (req("combat_backend")!="native_silver" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
     if (!t.contains("search_configuration") || !t["search_configuration"].is_object()) throw std::runtime_error("wholecombatgen: missing search_configuration");
     const auto &s=t["search_configuration"];
     if (s.value("simulation_budgets",std::vector<int>{})!=std::vector<int>{10000} || sims!=10000
@@ -145,7 +146,7 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
         || s.value("sequential_halving",true) || s.value("pruning",true) || s.value("learned_visit_puct",true)
         || s.value("direct_learned_leaf",true) || s.value("adaptive",true))
         throw std::runtime_error("wholecombatgen: not the frozen exact-10k ordinary Silver contract");
-    if (search::silverLiveReuseCap() != 32768)
+    if (search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
     for (const auto &[name, expected] : t["environment"].items()) {
@@ -154,7 +155,7 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
         if (!expected.is_string() || !actual || expected.get<std::string>()!=actual)
             throw std::runtime_error("wholecombatgen: environment mismatch for "+name);
     }
-    const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_SILVER_TELEMETRY","1"}};
+    const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"}};
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
     for (const auto &a:t["model_artifacts"]) { const std::string role=a.value("role",std::string{}), p=a.value("path",std::string{}), h=a.value("sha256",std::string{}); if(role.empty()||p.empty()||h.size()!=64||fileSha256(p)!=h) throw std::runtime_error("wholecombatgen: artifact hash mismatch for "+role); }
@@ -333,14 +334,13 @@ int teacherSchemaCompatibilitySelfTest() {
     for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
              {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
              {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
-             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
-             {"STS_SILVER_TELEMETRY", "1"}})
+             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"}})
         setenv(name, value, 1);
 
-    search::installSilverLiveBackend();
+    search::installNativeSilverBackend();
     const std::filesystem::path stem = std::filesystem::temp_directory_path()
         / ("sts_legacy_teacher_compat_" + trainingExecutableGitSha()
-           + "_" + std::to_string(search::silverLiveReuseCap()));
+           + "_" + std::to_string(search::nativeSilverReuseCap()));
     const std::filesystem::path teacherPath = stem.string() + ".json";
     const std::filesystem::path wholePath = stem.string() + ".whole.csv";
     const std::filesystem::path evalPath = stem.string() + ".eval.csv";
@@ -358,7 +358,7 @@ int teacherSchemaCompatibilitySelfTest() {
             {"teacher_id", "legacy-schema-compat"},
             {"git_sha", trainingExecutableGitSha()},
             {"executable_sha256", fileSha256(g_mainBinaryPath)},
-            {"combat_backend", "silver_uct"},
+            {"combat_backend", "native_silver"},
             {"rng_regime", "project_fair"},
             {"search_configuration", {
                 {"simulation_budgets", {10000}}, {"exploration_parameter", 25.0},
@@ -372,7 +372,6 @@ int teacherSchemaCompatibilitySelfTest() {
                 {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
                 {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
                 {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
-                {"STS_SILVER_TELEMETRY", "1"},
             }},
             {"model_artifacts", {{{"role", "combat_value_or_leaf"},
                                    {"path", leafPath}, {"sha256", fileSha256(leafPath)}}}},
@@ -381,22 +380,6 @@ int teacherSchemaCompatibilitySelfTest() {
         if (!out) throw std::runtime_error("teacher compatibility: cannot create fixture");
         out << teacher.dump(2) << '\n';
         out.close();
-        if (search::silverLiveReuseCap() != 32768) {
-            const auto expectCapMismatch = [&](const auto &run) {
-                bool rejected = false;
-                try { run(); }
-                catch (const std::runtime_error &error) {
-                    rejected = std::string(error.what()).find("production reuse cap mismatch") != std::string::npos;
-                }
-                if (!rejected || std::filesystem::exists(wholePath) || std::filesystem::exists(evalPath))
-                    throw std::runtime_error("frozen teacher cap mismatch must reject before output");
-            };
-            expectCapMismatch([&] { wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string()); });
-            expectCapMismatch([&] { combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), ""); });
-            cleanup();
-            std::cout << "frozen 32k teacher compatibility: both producers reject production cap mismatch before output\n";
-            return 0;
-        }
         wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string());
         combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), "");
     } catch (...) {
