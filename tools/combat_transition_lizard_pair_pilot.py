@@ -49,6 +49,30 @@ def _strip_lizard_input(value):
     return {**value, 'relics': [r for r in value['relics'] if int(r['relicId']) != LIZARD_TAIL_ID]}
 
 
+def _resolve_manifest_file(raw_path: str, manifest_dir: Path) -> Path:
+    """Resolve archived absolute paths against this packet when files moved.
+
+    The content hash is still checked by the caller. This supports an evidence
+    packet copied into a fresh worktree without accepting different content.
+    """
+    path = Path(raw_path)
+    root = manifest_dir.resolve()
+    if path.is_absolute():
+        if path.is_file():
+            return path
+        sibling = root / path.name
+    else:
+        resolved = (root / path).resolve()
+        if resolved != root and root not in resolved.parents:
+            raise ValueError(f'relative manifest artifact escapes packet: {raw_path}')
+        if resolved.is_file():
+            return resolved
+        sibling = root / path.name
+    if sibling.is_file():
+        return sibling
+    raise ValueError(f'manifest artifact missing: {raw_path}')
+
+
 def validate_pair_corpus(manifest_path: Path):
     manifest = json.loads(manifest_path.read_text())
     required = {
@@ -76,10 +100,23 @@ def validate_pair_corpus(manifest_path: Path):
     validate_teacher(teacher)
     if teacher.get('teacher_id') != 'silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77':
         raise ValueError('paired pilot is not bound to frozen exact-10k teacher')
+    targets = None
+    if targeted:
+        target_file = _resolve_manifest_file(manifest['targetSelection']['path'], manifest_path.parent)
+        if sha256(target_file) != manifest['targetSelection']['sha256']:
+            raise ValueError('target-selection file missing or hash mismatch')
+        targets = json.loads(target_file.read_text())
+        if targets.get('schema') != 'lizard_tail_risk_target_selection_v1' or len(targets.get('targets', [])) != int(manifest['seedSpec']['count']):
+            raise ValueError('invalid risk target selection file')
+    selected_state_policy = targets.get('stateSelection', 'preoutcome_ctm_death_risk_bands') if targeted else None
+    if targeted and selected_state_policy not in (
+            'preoutcome_ctm_death_risk_bands',
+            'predeclared_qr_hard96_broad32_hash_v1'):
+        raise ValueError('unsupported targeted state-selection policy')
     protocol = {
         'samePrecombatContext': True, 'sameSilverSearchRngSeed': True,
         'ordinaryBranchLizard': 'absent', 'interventionBranchLizard': 'active_data_1',
-        'stateSelection': ('preoutcome_ctm_death_risk_bands' if targeted
+        'stateSelection': (selected_state_policy if targeted
                            else 'uniform_reservoir_without_outcome_filter'),
         'markOfBloom': 'eligible_states_excluded', 'sourceTrajectory': 'untouched_normal_policy',
     }
@@ -97,18 +134,8 @@ def validate_pair_corpus(manifest_path: Path):
     if integrity != {'requestedSeeds': count, 'completedSeeds': count,
                      'quarantinedSeeds': 0, 'pairs': count}:
         raise ValueError('pilot has missing/quarantined pair seeds')
-    targets = None
-    if targeted:
-        target_file = Path(manifest['targetSelection']['path'])
-        if not target_file.is_file() or sha256(target_file) != manifest['targetSelection']['sha256']:
-            raise ValueError('target-selection file missing or hash mismatch')
-        targets = json.loads(target_file.read_text())
-        if targets.get('schema') != 'lizard_tail_risk_target_selection_v1' or len(targets.get('targets', [])) != count:
-            raise ValueError('invalid risk target selection file')
-    corpus_path = Path(manifest['jsonl']['path'])
-    if corpus_path.resolve() != (manifest_path.parent / corpus_path.name).resolve() and not corpus_path.is_absolute():
-        raise ValueError('relative paired JSONL path escapes manifest directory')
-    if not corpus_path.is_file() or sha256(corpus_path) != manifest['jsonl'].get('sha256'):
+    corpus_path = _resolve_manifest_file(manifest['jsonl']['path'], manifest_path.parent)
+    if sha256(corpus_path) != manifest['jsonl'].get('sha256'):
         raise ValueError('paired JSONL missing or hash mismatch')
 
     rows = [json.loads(line) for line in corpus_path.read_text().splitlines() if line]

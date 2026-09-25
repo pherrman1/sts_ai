@@ -1007,6 +1007,11 @@ void activeLizardPairTransitionGen(
         !selection.contains("targets") || !selection["targets"].is_array() ||
         selection["targets"].size() != static_cast<std::size_t>(nSeeds))
         throw std::runtime_error("targeted Lizard pilot selection schema/count mismatch");
+    const std::string stateSelection = selection.value(
+        "stateSelection", "preoutcome_ctm_death_risk_bands");
+    if (stateSelection != "preoutcome_ctm_death_risk_bands" &&
+        stateSelection != "predeclared_qr_hard96_broad32_hash_v1")
+        throw std::runtime_error("unsupported targeted Lizard state-selection policy");
     const long long seedOffset = selection["targets"].front().at("sourceSeed").get<long long>();
     std::vector<long long> targetSeeds;
     targetSeeds.reserve(nSeeds);
@@ -1073,7 +1078,7 @@ void activeLizardPairTransitionGen(
         {"protocol", {{"samePrecombatContext", true}, {"sameSilverSearchRngSeed", true},
                        {"ordinaryBranchLizard", "absent"},
                        {"interventionBranchLizard", "active_data_1"},
-                       {"stateSelection", "preoutcome_ctm_death_risk_bands"},
+                       {"stateSelection", stateSelection},
                        {"markOfBloom", "eligible_states_excluded"},
                        {"sourceTrajectory", "untouched_normal_policy"}}}
     };
