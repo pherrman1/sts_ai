@@ -1561,10 +1561,12 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         // Explicit per-root/checkpoint diagnostics preserve their full-budget
         // observations. Ordinary live decisions advance the retained Silver
         // session through the sole edge without adding simulations.
-        const bool singletonSearchSkipped = legalActions.size() == 1
+        bool singletonSearchSkipped = legalActions.size() == 1
             && !collectScalingDiagnostics && !collectStickyQuality
             && !collectRootDiagnostics && !collectBudgetDiagnostics
             && !collectSequentialDiagnostics;
+        const bool allowSingletonSurfaceFallback = g_silverLiveOptions.hardCombatCapture.empty()
+            && g_silverLiveOptions.rootMechanismCapture.empty();
         if (g_silverPriorModel) {
             if (wire.inputState != static_cast<int>(InputState::PLAYER_NORMAL)) {
                 ++g_silverLiveDiagnostics.priorSkippedNonPlayerNormal;
@@ -1718,12 +1720,36 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 }
             }
         } else {
-            const auto result = singletonSearchSkipped
+            auto result = singletonSearchSkipped
                 ? silver_bridge::runSilverSingletonDecisionWithoutSearch(
                     *silverSession, wire, config, legalActions.front())
                 : (collectBudgetDiagnostics
                     ? silver_bridge::runSilverDecisionWithCheckpoint(*silverSession, wire, config)
                     : silver_bridge::runSilverDecision(*silverSession, wire, config));
+            if (singletonSearchSkipped && allowSingletonSurfaceFallback && !result.accepted
+                    && (result.failureReason == "singleton_root_action_surface_mismatch"
+                        || result.failureReason == "singleton_root_expected_action_mismatch")) {
+                // The zero-search path has rejected an inconsistent retained root
+                // and cleared its predecessor. Rebuild from the live observation,
+                // spend the ordinary budget, and accept the recovery only if it
+                // selects the one semantic action the live surface exposes.
+                auto fallback = silver_bridge::runSilverDecision(*silverSession, wire, config);
+                if (!fallback.accepted) {
+                    ++g_silverLiveDiagnostics.conversionFailures;
+                    fail("singleton search fallback", "full-budget retry failed after "
+                        + result.failureReason + ": "
+                        + (fallback.failureReason.empty()
+                            ? std::string("unspecified") : fallback.failureReason));
+                }
+                if (silver_bridge::semanticActionFingerprint(fallback.action)
+                        != silver_bridge::semanticActionFingerprint(legalActions.front())) {
+                    ++g_silverLiveDiagnostics.conversionFailures;
+                    fail("singleton search fallback",
+                        "full-budget retry did not select the sole live semantic action");
+                }
+                result = std::move(fallback);
+                singletonSearchSkipped = false;
+            }
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
                 fail("search", "Silver returned no semantic decision: "

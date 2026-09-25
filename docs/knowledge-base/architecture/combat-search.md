@@ -292,7 +292,11 @@ live semantic action, and selects that edge without adding simulations. This
 keeps the forced edge as `previousBest`, so the following live observation can
 exact-reroot through a retained continuation. The existing semantic-action
 resolver still checks the action against the live `BattleContext`. This covers
-forced `END_TURN` and one-option selections. Full-budget per-root and
+forced `END_TURN` and one-option selections. If a retained singleton surface
+cannot be validated, ordinary live play clears that predecessor, runs the
+full-budget search again from the live observation, and accepts the result
+only when it is the sole live semantic action. Hard-combat and root-mechanism
+capture modes remain fail-closed on that mismatch. Full-budget per-root and
 checkpoint diagnostic modes retain their complete search observations.
 Aggregate `[silver-combat]` telemetry reports `singleton_root_search_skips`.
 

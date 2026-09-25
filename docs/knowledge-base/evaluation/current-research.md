@@ -377,10 +377,15 @@ and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026
 
 ### Singleton-root search bypass (2026-09-24)
 
-The live backend now commits the sole legal root action without running Silver
-search. This applies to forced `END_TURN` and one-option selections; full-budget
-per-root and checkpoint diagnostic modes continue to search for complete
-observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
+For a validated singleton edge surface, the live backend commits the sole legal
+root action without running Silver search. This applies to forced `END_TURN`
+and one-option selections. If a retained root's edge surface does not match
+the sole live semantic action, ordinary live play discards that predecessor
+and retries the full-budget search from the live observation; it accepts the
+retry only if it selects that same sole live action. Hard-combat and
+root-mechanism capture modes remain fail-closed on a surface mismatch.
+Full-budget per-root and checkpoint diagnostic modes continue to search for
+complete observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
 records 510 one-action roots among 13,945 decisions; all 510 still ran 10,000
 simulations. The user-provided breakdown is 489 forced `END_TURN` and 21
 one-option selections, with 471 of 502 continuing forced roots followed by a
