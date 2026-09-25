@@ -163,6 +163,13 @@ def _same_observation(left: dict, right: dict) -> bool:
     return normalize(left) == normalize(right)
 
 
+def _candidate_has_lizard(pre: dict, predictor: dict) -> bool:
+    """Pair targets must come from a no-Tail source state, spent or active."""
+    return (any(int(item['id']) == pilot.LIZARD_TAIL_ID for item in pre['relics'])
+            or any(int(item['relicId']) == pilot.LIZARD_TAIL_ID
+                   for item in predictor['relics']))
+
+
 def _load_cohorts(manifest_paths: list[Path]):
     pairs = []
     manifests = []
@@ -400,6 +407,9 @@ def select_candidates(candidate_manifest_path: Path, artifact_path: Path,
         if fairy in pre['potions']:
             excluded['fairy_potion_exact_boundary'] += 1
             continue
+        if _candidate_has_lizard(pre, predictor):
+            excluded['source_already_owns_lizard'] += 1
+            continue
         reasons = composed.full_support_reasons(pre, predictor, models)
         if reasons:
             excluded['unsupported:' + ','.join(reasons)] += 1
@@ -433,6 +443,9 @@ def select_candidates(candidate_manifest_path: Path, artifact_path: Path,
         'schema': SELECTION_SCHEMA,
         'selectionPolicy': 'HARD96=max frozen q*(1-r), fightIdx ascending tie-break; BROAD32=min SHA256(sourceSeed,fightIdx,fixedSalt)',
         'stateSelection': STATE_SELECTION,
+        'candidateEligibilityRule': (
+            'exclude Mark of the Bloom, Fairy Potion, and any source pre-state/predictor '
+            'already owning Lizard Tail (active or spent); require composed.full_support_reasons == []'),
         'cohortPartition': {'HARD96': [int(x) for x in hard_sources], 'BROAD32': [int(x) for x in broad_sources]},
         'broad32HashRule': {'algorithm': 'sha256', 'preimage': 'sourceSeed:fightIdx:fixedSalt', 'salt': salt,
                             'direction': 'lexicographically smallest hexadecimal digest'},

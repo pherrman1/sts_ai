@@ -107,6 +107,18 @@ class LizardQrArtifactTests(unittest.TestCase):
         self.assertEqual([(r['sourceSeed'], r['fightIdx']) for r in first],
                          [(r['sourceSeed'], r['fightIdx']) for r in second])
 
+    def test_source_candidate_excludes_active_or_spent_lizard(self):
+        predictor = {'relics': []}
+        self.assertFalse(qr._candidate_has_lizard({'relics': []}, predictor))
+        self.assertTrue(qr._candidate_has_lizard(
+            {'relics': [{'id': 35, 'data': 1}]}, predictor))
+        self.assertTrue(qr._candidate_has_lizard(
+            {'relics': [{'id': 35, 'data': 0}]}, predictor))
+        self.assertTrue(qr._candidate_has_lizard(
+            {'relics': []}, {'relics': [{'relicId': 35, 'data': 0}]}))
+        self.assertTrue(qr._candidate_has_lizard(
+            {'relics': []}, {'relics': [{'relicId': 35, 'data': 1}]}))
+
     def test_invalid_postcombat_candidate_aborts_instead_of_being_skipped(self):
         with self.assertRaisesRegex(ValueError, 'refusing outcome-dependent selection'):
             qr.require_valid_candidate_row({'runValid': False}, 7)
