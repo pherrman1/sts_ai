@@ -1,4 +1,5 @@
-// Observational combat information state for the isolated Silver backend.
+// Observational combat information state for the Silver search: what the
+// player knows about draw-pile positions and hidden monster intents.
 // This metadata never participates in live simulator state, equality, RNG,
 // or action execution.
 #ifndef STS_COMBAT_KNOWLEDGE_H

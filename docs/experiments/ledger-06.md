@@ -12339,7 +12339,27 @@ using per-potion or max-HP prices. Architecture documents the reward-chain
 capacity rule. The post-review descriptors do not change the frozen W1
 verdict, runtime defaults, or gameplay claims.
 
-## §354 — Mechanical-q Lizard Tail post-hoc screen and native transfer (2026-09-25)
+## §354 — Native Silver one-action-root bypass: paired 128-seed check (2026-09-25)
+
+Change: the native backend commits the sole action of a one-action root
+without search and keeps the retained graph for the next reroot
+(`STS_SILVER_SEARCH_SINGLETON_ROOTS=1` or exact root budgets restore
+searching). This carries the vendored bypass of §§351–352 (removed with the
+vendored model, ADR-0022) over to native Silver. The same change adds native
+simulations to `ScumSearchAgent2::simulationCountTotal`, which previously
+stayed at zero under native Silver.
+
+Setup: one Release binary, 4 threads, adaptive Silver, `bestbench 1000 128 0
+126700`, control with singleton roots searched, treatment with the new default.
+
+Result: control 82/128, treatment 86/128; paired +3.1 pp, 95% CI [−1.7, +8.0]
+pp; discordant 7/3 (McNemar z = +1.26). Mean floor 47.43 vs 47.42. Mean
+per-run time 38.58 s vs 36.09 s (−6.5%).
+
+Decision: adopt as the native default; no detectable gameplay difference, 6.5%
+faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton_bypass_2026-09-25/README.md).
+
+## §355 — Mechanical-q Lizard Tail post-hoc screen and native transfer (2026-09-25)
 
 - **Question:** Does replacing the learned ordinary-win probability `q` with
   `1 - pOrdinaryWin`, while preserving the frozen learned `r` artifact and T2

@@ -102,6 +102,9 @@ namespace sts::search {
         [[nodiscard]] const Node &rootNode() const { return *root; }
 
         void search(std::int64_t simulations);
+        // Expands the root's actions if the search has not yet (no simulation is
+        // run) and returns their count; 0 for a terminal root.
+        std::size_t prepareRootActions();
         // Best root action, expressed against the root node's state. Use
         // translateAction to apply it to the real (concrete) state.
         [[nodiscard]] Action bestAction() const;

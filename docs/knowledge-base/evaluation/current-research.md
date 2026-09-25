@@ -386,9 +386,11 @@ and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026
 
 ### Vendored singleton-root search bypass (2026-09-24)
 
-**Removed with the vendored model (ADR-0022, 2026-09-25).** Native Silver
-still searches single-action roots; porting the bypass to native needs its own
-paired evaluation. The record below is history.
+**Removed with the vendored model (ADR-0022, 2026-09-25) and carried over to
+native Silver** ([§354](../../experiments/ledger-06.md)): native one-action
+roots are committed without search by default; the paired 128-seed check
+showed no detectable gameplay difference (86/128 vs 82/128, +3.1 pp, 95% CI
+[−1.7, +8.0]) and 6.5% less time per run. The record below is history.
 
 Since ADR-0021, plain `one_combat` uses native Silver by default. This bypass
 is in the vendored `SilverLiveBackend` and applies when that backend is
@@ -953,7 +955,7 @@ states lack `burningEliteBuff`. It has not yet run. The distinct fresh
 320-source native qualification remains pending the corrected transfer
 diagnostic; the designated GCP worker was unavailable at the earlier
 preflight. Therefore no Lizard candidate is qualified and production remains
-`active_unqualified_lizard`. See [ledger §354](../../experiments/ledger-06.md)
+`active_unqualified_lizard`. See [ledger §355](../../experiments/ledger-06.md)
 and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
