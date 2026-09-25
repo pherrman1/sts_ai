@@ -2100,21 +2100,35 @@ void oocMctsAdapterSelfTest() {
                 singletonConfig.maxDepth=1;
                 const auto singletonBypass=searchWithSoleRootShortcut(singletonProvider,
                     singletonConfig,singletonAction,1);
-                const auto singletonActions=singletonProvider.legalActions(0);
                 std::ifstream singletonInput(singletonTracePath);
-                require(static_cast<bool>(std::getline(singletonInput,traceLine)),"singleton prior trace row exists");
+                require(static_cast<bool>(std::getline(singletonInput,traceLine)),
+                    "singleton shortcut writes its prior trace row");
                 std::string singletonExtraLine;
                 const auto singletonRow=nlohmann::json::parse(traceLine);
-                require(!std::getline(singletonInput,singletonExtraLine)
-                    && singletonAction && singletonBypass.selectedAction==singletonAction
+                require(singletonAction && singletonBypass.selectedAction==singletonAction
                     && singletonBypass.metrics.trivialRootBypasses==1
-                    && singletonActions.size()==1 && singletonActions.front().prior==1.0
                     && inferenceCalls==0 && singletonRow.at("singleton")==true
                     && singletonRow.at("candidateCount")==1
                     && singletonRow.at("runSeed")==44 && singletonRow.at("decisionIndex")==5
                     && singletonRow.at("searchSeed")==1234567
+                    && singletonRow.at("candidates").at(0).at("candidateId")==*singletonAction
+                    && singletonRow.at("candidates").at(0).at("searchPriorWeight")==1.0
                     && !singletonRow.contains("tokenState") && !singletonRow.contains("sourcePrimitives"),
                     "production singleton root shortcut emits exactly one compact unit-prior trace row");
+                require(!std::getline(singletonInput,singletonExtraLine),
+                    "singleton shortcut writes only one prior trace row");
+                singletonInput.close();
+                const auto singletonActions=singletonProvider.legalActions(0);
+                require(singletonActions.size()==1 && singletonActions.front().id==*singletonAction
+                    && singletonActions.front().prior==1.0,
+                    "legalActions reuses the singleton shortcut prior");
+                std::ifstream singletonPostInput(singletonTracePath);
+                std::string singletonPostLine;
+                singletonExtraLine.clear();
+                require(static_cast<bool>(std::getline(singletonPostInput,singletonPostLine))
+                    && nlohmann::json::parse(singletonPostLine)==singletonRow
+                    && !std::getline(singletonPostInput,singletonExtraLine),
+                    "singleton legalActions lookup does not duplicate its shortcut trace");
                 std::remove(singletonTracePath.c_str());
             }
         }
