@@ -972,8 +972,8 @@ void activeLizardPairTransitionGen(
     int nSeeds, int sims, int asc, const std::string &outfile,
     const std::string &targetPath, const std::string &teacherPath,
     const std::string &baselineSha, const std::string &collectorSha) {
-    if (nSeeds < 1 || nSeeds > 128)
-        throw std::runtime_error("targeted Lizard pilot requires 1..128 pairs");
+    if (nSeeds < 1 || nSeeds > 320)
+        throw std::runtime_error("targeted Lizard pilot requires 1..320 pairs");
     if (sims != 10000)
         throw std::runtime_error("paired Lizard pilot requires exact-10k Silver");
     auto validSha = [](const std::string &s) {
@@ -990,6 +990,10 @@ void activeLizardPairTransitionGen(
         !selection.contains("targets") || !selection["targets"].is_array() ||
         selection["targets"].size() != static_cast<std::size_t>(nSeeds))
         throw std::runtime_error("targeted Lizard pilot selection schema/count mismatch");
+    if (!selection.contains("stateSelection") || !selection["stateSelection"].is_string() ||
+        selection["stateSelection"].get<std::string>().empty())
+        throw std::runtime_error("targeted Lizard pilot requires a frozen state-selection label");
+    const std::string stateSelection = selection["stateSelection"].get<std::string>();
     const long long seedOffset = selection["targets"].front().at("sourceSeed").get<long long>();
     std::vector<long long> targetSeeds;
     targetSeeds.reserve(nSeeds);
@@ -1056,7 +1060,7 @@ void activeLizardPairTransitionGen(
         {"protocol", {{"samePrecombatContext", true}, {"sameSilverSearchRngSeed", true},
                        {"ordinaryBranchLizard", "absent"},
                        {"interventionBranchLizard", "active_data_1"},
-                       {"stateSelection", "preoutcome_ctm_death_risk_bands"},
+                       {"stateSelection", stateSelection},
                        {"markOfBloom", "eligible_states_excluded"},
                        {"sourceTrajectory", "untouched_normal_policy"}}}
     };

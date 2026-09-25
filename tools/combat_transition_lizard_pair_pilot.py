@@ -49,7 +49,46 @@ def _strip_lizard_input(value):
     return {**value, 'relics': [r for r in value['relics'] if int(r['relicId']) != LIZARD_TAIL_ID]}
 
 
-def validate_pair_corpus(manifest_path: Path):
+def _resolve_manifest_file(raw_path: str, manifest_dir: Path) -> Path:
+    """Resolve archived absolute paths against this packet when files moved.
+
+    The content hash is still checked by the caller. Relative paths are
+    confined to the packet so a copied manifest cannot escape its evidence
+    directory.
+    """
+    path = Path(raw_path)
+    root = manifest_dir.resolve()
+    if path.is_absolute():
+        if path.is_file():
+            return path
+        sibling = root / path.name
+    else:
+        resolved = (root / path).resolve()
+        if resolved != root and root not in resolved.parents:
+            raise ValueError(f'relative manifest artifact escapes packet: {raw_path}')
+        if resolved.is_file():
+            return resolved
+        sibling = root / path.name
+    if sibling.is_file():
+        return sibling
+    raise ValueError(f'manifest artifact missing: {raw_path}')
+
+
+def _validate_historical_teacher(manifest: dict, expected: dict) -> None:
+    """Pin a read-only historical cohort to its original retired teacher.
+
+    This path is for archived analysis only. It does not make retired teacher
+    manifests valid for new collection; fresh collection uses validate_teacher.
+    """
+    teacher = manifest.get('combatTeacher', {})
+    if (teacher.get('combat_backend') != 'silver_uct'
+            or teacher != expected.get('provenance')
+            or teacher.get('teacher_id') != expected.get('identity')
+            or manifest.get('combatTeacherManifestSha256') != expected.get('manifestSha256')):
+        raise ValueError('historical teacher differs from the explicitly pinned frozen provenance')
+
+
+def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None = None):
     manifest = json.loads(manifest_path.read_text())
     required = {
         'schema', 'rowSchemaVersion', 'predictorInputSchemaVersion',
@@ -73,13 +112,33 @@ def validate_pair_corpus(manifest_path: Path):
         if not isinstance(value, str) or len(value) != length or any(c not in '0123456789abcdef' for c in value):
             raise ValueError(f'invalid {key}')
     teacher = manifest['combatTeacher']
-    validate_teacher(teacher)
-    if teacher.get('teacher_id') != 'silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77':
-        raise ValueError('paired pilot is not bound to frozen exact-10k teacher')
+    if historical_teacher is None:
+        validate_teacher(teacher)
+    else:
+        _validate_historical_teacher(manifest, historical_teacher)
+    if not isinstance(teacher.get('teacher_id'), str) or not teacher['teacher_id']:
+        raise ValueError('paired pilot is missing its exact-10k combat teacher identity')
+    targets = None
+    if targeted:
+        target_file = _resolve_manifest_file(
+            manifest['targetSelection']['path'], manifest_path.parent)
+        if sha256(target_file) != manifest['targetSelection']['sha256']:
+            raise ValueError('target-selection file missing or hash mismatch')
+        targets = json.loads(target_file.read_text())
+        if (targets.get('schema') != 'lizard_tail_risk_target_selection_v1'
+                or len(targets.get('targets', [])) != int(manifest['seedSpec']['count'])):
+            raise ValueError('invalid risk target selection file')
+    selected_state_policy = (targets.get('stateSelection', 'preoutcome_ctm_death_risk_bands')
+                             if targeted else None)
+    if targeted and selected_state_policy not in (
+            'preoutcome_ctm_death_risk_bands',
+            'predeclared_qr_hard96_broad32_hash_v1',
+            'predeclared_mechanical_q_hard288_broad32_hash_v1'):
+        raise ValueError('unsupported targeted state-selection policy')
     protocol = {
         'samePrecombatContext': True, 'sameSilverSearchRngSeed': True,
         'ordinaryBranchLizard': 'absent', 'interventionBranchLizard': 'active_data_1',
-        'stateSelection': ('preoutcome_ctm_death_risk_bands' if targeted
+        'stateSelection': (selected_state_policy if targeted
                            else 'uniform_reservoir_without_outcome_filter'),
         'markOfBloom': 'eligible_states_excluded', 'sourceTrajectory': 'untouched_normal_policy',
     }
@@ -97,18 +156,8 @@ def validate_pair_corpus(manifest_path: Path):
     if integrity != {'requestedSeeds': count, 'completedSeeds': count,
                      'quarantinedSeeds': 0, 'pairs': count}:
         raise ValueError('pilot has missing/quarantined pair seeds')
-    targets = None
-    if targeted:
-        target_file = Path(manifest['targetSelection']['path'])
-        if not target_file.is_file() or sha256(target_file) != manifest['targetSelection']['sha256']:
-            raise ValueError('target-selection file missing or hash mismatch')
-        targets = json.loads(target_file.read_text())
-        if targets.get('schema') != 'lizard_tail_risk_target_selection_v1' or len(targets.get('targets', [])) != count:
-            raise ValueError('invalid risk target selection file')
-    corpus_path = Path(manifest['jsonl']['path'])
-    if corpus_path.resolve() != (manifest_path.parent / corpus_path.name).resolve() and not corpus_path.is_absolute():
-        raise ValueError('relative paired JSONL path escapes manifest directory')
-    if not corpus_path.is_file() or sha256(corpus_path) != manifest['jsonl'].get('sha256'):
+    corpus_path = _resolve_manifest_file(manifest['jsonl']['path'], manifest_path.parent)
+    if sha256(corpus_path) != manifest['jsonl'].get('sha256'):
         raise ValueError('paired JSONL missing or hash mismatch')
 
     rows = [json.loads(line) for line in corpus_path.read_text().splitlines() if line]

@@ -1,0 +1,105 @@
+{
+  "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+  "frozenCtmComponentHashes": {
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "productionSupportStatus": "active_unqualified_lizard",
+  "qDefinition": "q = 1 - pOrdinaryWin; exactly the B1 mechanical consumption probability",
+  "qMode": "mechanical_b1",
+  "rArtifact": {
+    "path": "frozen_qr_artifact.json",
+    "rModelSha256": "fbf29bf742e3c40b18a358386509a74ced54e97a2a7e760ff988de5c14a335a8",
+    "sha256": "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9",
+    "sourceHeadSha": "8e93cca5ba20befb2a471a4aed49bbc6d421e5dd",
+    "sourcePullRequest": 326,
+    "sourceSchema": "active_lizard_qr_frozen_artifact_v1"
+  },
+  "rFeatureOrder": [
+    "pReserveWin"
+  ],
+  "rMode": "frozen_learned_r",
+  "rPredictorAstSha256": "ffb5307c7e3e8d9b8c781c296bb3effe11e8d130ca32b6ea72bdbe825dfaace3",
+  "rPredictorSource": "tools/combat_transition_lizard_mechanical_q.py::_model_predict; byte-identical to the #326 frozen q/r predictor",
+  "schema": "active_lizard_mechanical_q_frozen_r_t2_candidate_v1",
+  "silverTeacher": {
+    "identity": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77",
+    "manifestSha256": "b42ae41c1c2792be62d1340e7d21aa3ec22af27696c670e459d9a32b38483c84",
+    "provenance": {
+      "combat_backend": "silver_uct",
+      "environment": {
+        "STS_EXECUTABLE_GIT_SHA": "f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf",
+        "STS_FAIR": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0"
+      },
+      "executable_sha256": "d0a1c66faa931498660811a7406fbc6be93d63c5e7ef4f6f24c910e4f57c2872",
+      "git_sha": "f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf",
+      "model_artifacts": [
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/models/policy_trees_c.txt",
+          "role": "policy",
+          "sha256": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/models/v_rich_trees.txt",
+          "role": "floor",
+          "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/models/v_win_trees.txt",
+          "role": "win",
+          "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+        }
+      ],
+      "rng_regime": "project_fair",
+      "search_configuration": {
+        "adaptive": false,
+        "belief": "not_applicable_silver_private_chance_search",
+        "chance_widening_alpha": 0.52389,
+        "chance_widening_c": 3.7028,
+        "direct_learned_leaf": false,
+        "end_turn_widening_alpha": 0.52389,
+        "end_turn_widening_c": 3.7028,
+        "exploration_parameter": 25.0,
+        "exploration_parameter_chance": 25.0,
+        "learned_visit_puct": false,
+        "particles": "not_applicable_silver_private_chance_search",
+        "pruning": false,
+        "reuse_cap": 32768,
+        "reuse_cap_mode": "allocated",
+        "sequential_halving": false,
+        "simulation_budgets": [
+          10000
+        ]
+      },
+      "source_policy": {
+        "ascension": 0,
+        "card_skip_threshold": -0.5,
+        "collect_keys": false,
+        "map_routing": "heuristic",
+        "native_ooc": true,
+        "opt_in_gates": false,
+        "policy_chain": "runFullRunOOC",
+        "restV": false,
+        "schema_version": "runFullRunOOC_policy_v1",
+        "shopV": true
+      },
+      "teacher_id": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+    },
+    "provenanceSha256": "bac1b979f0606f42f97bd1661734e755920b73dc0c1a03bd7a12ab18e95a2672"
+  },
+  "supportDomainDefinition": "active Lizard Tail is removed from pre-state and predictor input; composed.full_support_reasons(stripped_pre, stripped_predictor, frozen_models) == []; exclude Fairy Potion; Mark of the Bloom remains on its existing exact path",
+  "t2Rule": "T2_revive: curHp = floor(maxHP/2) for WIN_CONSUMED conditional CTM heads",
+  "treatment": "T2_revive"
+}
