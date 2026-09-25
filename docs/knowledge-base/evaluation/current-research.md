@@ -1804,13 +1804,15 @@ intervals above zero in all three acts. This does not establish gameplay
 quality or runtime suitability, and no lookup table or runtime change was
 made.
 
-Collection has two material caveats: the interrupted first process left 93
-row-bearing seeds without final aggregate health/quarantine counters, and the
-tracked policy prior was not loaded (`prior_model_loaded=0`). The remaining 35
-seeds have complete sidecar accounting. A separate 600-row Python/native
-parity gate passed exactly. Calibration was weakly powered and underpredicted
-the cohort's observed run win rate; zeroing the hidden-future fields passed
-the rank-correlation threshold but can be out-of-distribution.
+The first collection process left 93 row-bearing seeds without final
+aggregate health/quarantine counters; the remaining 35 seeds have complete
+sidecar accounting. Telemetry `prior_model_loaded=0` measures the optional
+Silver learned root prior, which was off by default, not the separate compact
+policy trees. Compact-policy load status is **Unverified** from retained
+logs. A separate 600-row Python/native parity gate passed exactly.
+Calibration was weakly powered and underpredicted the cohort's observed run
+win rate; zeroing the hidden-future fields passed the rank-correlation
+threshold but can be out-of-distribution.
 
 The pre-collection inventory found vrich and the named rest/path/card
 counterfactual files absent from the checked local checkout/worktrees. The
@@ -1820,6 +1822,27 @@ specified zero-hidden-future sensitivity, per-act HP slopes were
 0.000675/0.002274/0.002355 probability per HP and held-potion equivalents
 were 15.59/13.55/4.45 HP; those fair-regime values are OOD-prone. The packet
 contains the artifact inventory and interval table.
+
+W1-relevant interpretation: only a smoothed HP curve, and possibly gold,
+remain candidate `v_win` inputs. Potion-type and max-HP prices are not usable
+as terminal prices. The fair-regime rank-correlation gate does not validate
+price levels; act-level potion HP-equivalents change by factors 2.31, 2.01,
+and 0.66 from recorded to zeroed hidden fields. In Q4, the `curHp`
+coefficient interval excludes zero (`−3.36e−4` per HP), about 17% of the
+mean `s_HP=0.00195`, so RAW-to-POST HP pricing differs across states although
+the formal gate passed through low `R²`.
+
+For A4, the adjacent-floor, same-act drop proxy classified all 147 unmatched
+full-belt rows with known drops as potion drops, with no classified unmatched
+residual. RAW belt capacity was full in 15.3% of matched rows and 95.3% of
+unmatched rows. One matched full-belt drop is explained by Potion Belt (`r159`)
+increasing capacity before the potion choice; 216 unmatched rows remain
+unclassified. This supports the conditional behavior in the current full-run
+reward chain: when capacity remains full through the potion decision, the
+dropped potion is not claimed or swapped. E2c `captureE2cPost` returns while
+gold, relic, or potion rewards are pending, so an unclaimed potion also blocks
+POST capture. The 147 classified forfeitures are 4.79% of all RAW fights;
+unknown rows prevent a complete cohort rate.
 
 The current tracked 1,060-tree artifact contains counter-value splits on
 multiple relic fields, contrary to the zero-split statement in historical

@@ -153,7 +153,7 @@
     "post_only_rows": 0,
     "post_rows": 2706,
     "prior_model_loaded": 0,
-    "prior_note": "Silver telemetry reported no prior model loaded; this is a preregistration deviation.",
+    "prior_note": "prior_model_loaded reports the optional Silver learned root prior (STS_SILVER_ROOT_PRIOR_MODEL), which was off by default; it does not report the separate compact policy-tree load status. Compact-policy load status is Unverified from retained logs.",
     "raw_only_rows": 363,
     "raw_rows": 3069,
     "remainder_35_sidecar_counts": {

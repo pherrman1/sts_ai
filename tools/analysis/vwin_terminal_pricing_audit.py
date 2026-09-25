@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import csv
 import json
 import math
 from pathlib import Path
@@ -622,6 +623,560 @@ def _q5(raw, features, trees, logistic, base_margin, recorded_slope,
     }
 
 
+def _span_slope(X, hp, max_hp, feat_idx, trees, logistic, base_margin):
+    """Local HP slope with the actual distance between clamped probe points."""
+    hp = np.asarray(hp, dtype=np.int32)
+    max_hp = np.asarray(max_hp, dtype=np.int32)
+    lo_hp = np.maximum(1, hp - 5).astype(np.float32)
+    hi_hp = np.minimum(max_hp, hp + 5).astype(np.float32)
+    Xlo, Xhi = X.copy(), X.copy()
+    Xlo[:, feat_idx["curHp"]] = lo_hp
+    Xhi[:, feat_idx["curHp"]] = hi_hp
+    span = hi_hp.astype(np.float64) - lo_hp.astype(np.float64)
+    delta = (predict_rows(Xhi, trees, logistic, base_margin)
+             - predict_rows(Xlo, trees, logistic, base_margin))
+    slope = np.divide(delta, span, out=np.full(len(hp), np.nan), where=span > 0)
+    return slope, lo_hp, hi_hp
+
+
+def _max_hp_only_probe(X, feat_idx):
+    """Increase maxHp by one while preserving current HP exactly."""
+    probe = X.copy()
+    probe[:, feat_idx["maxHp"]] += 1.0
+    if not np.array_equal(probe[:, feat_idx["curHp"]], X[:, feat_idx["curHp"]]):
+        raise AssertionError("max-only probe changed curHp")
+    return probe
+
+
+def _weighted_roc_auc(scores, labels, weights=None):
+    """Mann-Whitney ROC AUC, including half credit for tied scores."""
+    scores = np.asarray(scores, dtype=np.float64)
+    labels = np.asarray(labels, dtype=np.int8)
+    weights = (np.ones(len(scores), dtype=np.float64) if weights is None
+               else np.asarray(weights, dtype=np.float64))
+    keep = np.isfinite(scores) & np.isfinite(weights) & (weights > 0)
+    scores, labels, weights = scores[keep], labels[keep], weights[keep]
+    if len(scores) == 0 or not np.any(labels == 1) or not np.any(labels == 0):
+        return None
+    order = np.argsort(scores, kind="stable")
+    sorted_scores, sorted_labels, sorted_weights = scores[order], labels[order], weights[order]
+    _, group = np.unique(sorted_scores, return_inverse=True)
+    n_groups = int(group[-1]) + 1
+    pos = np.bincount(group, weights=sorted_weights * (sorted_labels == 1),
+                      minlength=n_groups)
+    neg = np.bincount(group, weights=sorted_weights * (sorted_labels == 0),
+                      minlength=n_groups)
+    neg_below = np.cumsum(neg) - neg
+    positive_weight = float(pos.sum())
+    negative_weight = float(neg.sum())
+    return float(np.sum(pos * (neg_below + 0.5 * neg))
+                 / (positive_weight * negative_weight))
+
+
+def _auc_seed_interval(scores, labels, seeds, boot):
+    scores = np.asarray(scores, dtype=np.float64)
+    labels = np.asarray(labels, dtype=np.int8)
+    seeds = np.asarray(seeds)
+    observed = _weighted_roc_auc(scores, labels)
+    keep = np.isfinite(scores) & np.isin(labels, [0, 1])
+    scores, labels, seeds = scores[keep], labels[keep], seeds[keep]
+    uniq, inverse = np.unique(seeds, return_inverse=True)
+    if observed is None or len(uniq) == 0:
+        return {"auc": observed, "ci95": None, "n": int(len(scores)),
+                "seeds": int(len(uniq))}
+    draws = boot.rng.integers(0, len(uniq), size=(boot.reps, len(uniq)))
+    samples = np.full(boot.reps, np.nan, dtype=np.float64)
+    for i, draw in enumerate(draws):
+        multiplicity = np.bincount(draw, minlength=len(uniq))
+        value = _weighted_roc_auc(scores, labels, multiplicity[inverse])
+        if value is not None:
+            samples[i] = value
+    finite = samples[np.isfinite(samples)]
+    return {
+        "auc": float(observed),
+        "ci95": ([float(v) for v in np.quantile(finite, [0.025, 0.975])]
+                 if len(finite) else None),
+        "n": int(len(scores)), "seeds": int(len(uniq)),
+        "bootstrap_valid_replicates": int(len(finite)),
+    }
+
+
+def _robust_summary(values, seeds, boot):
+    values = np.asarray(values, dtype=np.float64)
+    seeds = np.asarray(seeds)
+    keep = np.isfinite(values)
+    values, seeds = values[keep], seeds[keep]
+    if len(values) == 0:
+        return {"mean": _metric(values, seeds, boot),
+                "median": boot.median_interval(values, seeds),
+                "iqr": None, "p95": None, "n": 0, "seeds": 0}
+    q25, q75 = np.quantile(values, [0.25, 0.75])
+    return {
+        "mean": _metric(values, seeds, boot),
+        "median": boot.median_interval(values, seeds),
+        "iqr": [float(q25), float(q75)],
+        "p95": float(np.quantile(values, 0.95)),
+        "n": int(len(values)), "seeds": int(np.unique(seeds).size),
+    }
+
+
+def _batched_sweep_drops(raw, X, feat_idx, trees, logistic, base_margin,
+                         span_slope, batch_rows=48):
+    """Return each RAW row's worst and near-current one-step HP drop."""
+    n = len(raw)
+    hp = raw.curHp.to_numpy(dtype=np.int32)
+    max_hp = raw.maxHp.to_numpy(dtype=np.int32)
+    largest = np.zeros(n, dtype=np.float64)
+    near_current = np.zeros(n, dtype=bool)
+    largest_hp_eq = np.full(n, np.nan, dtype=np.float64)
+    for start in range(0, n, batch_rows):
+        stop = min(n, start + batch_rows)
+        lengths = max_hp[start:stop].astype(np.int64)
+        repeated = np.repeat(np.arange(stop - start, dtype=np.int64), lengths)
+        hp_grid = np.concatenate([
+            np.arange(1, int(value) + 1, dtype=np.float32) for value in max_hp[start:stop]
+        ])
+        sweep_X = X[start:stop][repeated].copy()
+        sweep_X[:, feat_idx["curHp"]] = hp_grid
+        probs = predict_rows(sweep_X, trees, logistic, base_margin)
+        offsets = np.concatenate(([0], np.cumsum(lengths)))
+        for local, row_idx in enumerate(range(start, stop)):
+            curve = probs[offsets[local]:offsets[local + 1]].astype(np.float64)
+            drops = np.maximum(0.0, -np.diff(curve))
+            largest[row_idx] = float(drops.max()) if len(drops) else 0.0
+            lo = max(1, int(hp[row_idx]) - 20)
+            hi = min(int(max_hp[row_idx]) - 1, int(hp[row_idx]) + 20)
+            if hi >= lo:
+                near_current[row_idx] = bool(np.any(drops[lo - 1:hi] > 0.005))
+    positive_scale = np.isfinite(span_slope) & (np.abs(span_slope) > 0.0)
+    largest_hp_eq[positive_scale] = largest[positive_scale] / np.abs(span_slope[positive_scale])
+    return largest, largest_hp_eq, near_current
+
+
+def _post_review_data_checks(raw_all, input_csv):
+    """Data-only A4 and B7 checks over the retained combined E2c population."""
+    raw = raw_all[raw_all.boundary == "RAW"].copy()
+    raw = raw.sort_values(["seed", "fight_index"], kind="stable").reset_index(drop=True)
+    post_keys = set(map(tuple, raw_all.loc[raw_all.boundary == "POST",
+                                         ["seed", "fight_index"]].to_numpy()))
+    raw["matched_post"] = [tuple(key) in post_keys
+                           for key in raw[["seed", "fight_index"]].to_numpy()]
+    next_floor = raw.groupby("seed", sort=False).floor.shift(-1)
+    next_act = raw.groupby("seed", sort=False).act.shift(-1)
+    next_potion_chance = raw.groupby("seed", sort=False).potionChance.shift(-1)
+    adjacent_same_act = ((next_act == raw.act)
+                         & (next_floor == raw.floor + 1))
+    chance_delta = next_potion_chance - raw.potionChance
+    drop_status = np.full(len(raw), "unclassified", dtype=object)
+    classifiable = adjacent_same_act.to_numpy() & chance_delta.isin([-10, 10]).to_numpy()
+    delta = chance_delta.to_numpy()
+    drop_status[classifiable & (delta == -10)] = "drop"
+    drop_status[classifiable & (delta == 10)] = "no_drop"
+    raw["drop_status"] = drop_status
+    raw["full_belt"] = raw.potionCount.to_numpy() == raw.potionCapacity.to_numpy()
+
+    table = {}
+    for pair_status, matched in [("matched", True), ("unmatched", False)]:
+        status_mask = raw.matched_post.to_numpy(dtype=bool) == matched
+        rows = raw[status_mask]
+        cells = {}
+        for full_belt, full_name in [(True, "full_belt"), (False, "space_available")]:
+            cell_mask = rows.full_belt.to_numpy(dtype=bool) == full_belt
+            cells[full_name] = {
+                drop: int(np.sum(cell_mask & (rows.drop_status.to_numpy() == drop)))
+                for drop in ("drop", "no_drop", "unclassified")
+            }
+        table[pair_status] = cells
+    unmatched = ~raw.matched_post.to_numpy(dtype=bool)
+    full_drop = raw.full_belt.to_numpy(dtype=bool) & (drop_status == "drop")
+    matched_full_drop = int(np.sum(~unmatched & full_drop))
+    explained_unmatched = int(np.sum(unmatched & full_drop))
+    unmatched_classified = int(np.sum(unmatched & np.isin(drop_status, ["drop", "no_drop"])))
+    unmatched_residual_classified = int(np.sum(
+        unmatched & np.isin(drop_status, ["drop", "no_drop"]) & ~full_drop))
+    unmatched_unknown = int(np.sum(unmatched & (drop_status == "unclassified")))
+    total_raw = len(raw)
+    matched_full_drop_rows = raw.loc[~unmatched & full_drop]
+    post_index = raw_all[raw_all.boundary == "POST"].set_index(["seed", "fight_index"])
+    matched_exceptions = []
+    relic_columns = [name for name in raw_all.columns
+                     if __import__("re").fullmatch(r"r\d+", str(name))]
+    for _, row in matched_full_drop_rows.iterrows():
+        key = (row.seed, row.fight_index)
+        post = post_index.loc[key]
+        new_relic_features = [
+            name for name in relic_columns
+            if float(row[name]) <= 0.0 and float(post[name]) > 0.0
+        ]
+        matched_exceptions.append({
+            "seed": int(row.seed), "fight_index": int(row.fight_index),
+            "act": int(row.act), "floor": int(row.floor),
+            "raw_potion_count": int(row.potionCount),
+            "raw_potion_capacity": int(row.potionCapacity),
+            "post_potion_count": int(post.potionCount),
+            "post_potion_capacity": int(post.potionCapacity),
+            "new_relic_features": new_relic_features,
+        })
+
+    by_seed = raw_all[raw_all.boundary == "RAW"].copy()
+    index_results = []
+    for seed, group in by_seed.groupby("seed", sort=True):
+        indices = sorted(int(v) for v in group.fight_index.unique())
+        contiguous = bool(indices and indices[0] == 0
+                          and indices == list(range(indices[-1] + 1)))
+        last = group.sort_values("fight_index", kind="stable").iloc[-1]
+        final_floor = int(group.finalFloor.iloc[0])
+        last_floor = int(last.floor)
+        index_results.append({
+            "seed": int(seed), "contiguous_from_zero": contiguous,
+            "fight_index_count": int(len(indices)),
+            "fight_index_first": int(indices[0]) if indices else None,
+            "fight_index_last": int(indices[-1]) if indices else None,
+            "last_raw_floor": last_floor, "final_floor": final_floor,
+            "floor_delta_final_minus_last_raw": int(final_floor - last_floor),
+        })
+    noncontiguous = [row for row in index_results if not row["contiguous_from_zero"]]
+    floor_outliers = [row for row in index_results
+                      if row["floor_delta_final_minus_last_raw"] != 0]
+
+    segment1_path = Path(input_csv).with_name("e2c_silver_128.csv")
+    segment1_rows = pd.read_csv(segment1_path, usecols=["seed"])
+    last_file_seed = int(segment1_rows.seed.iloc[-1])
+    last_seed_record = next((row for row in index_results if row["seed"] == last_file_seed), None)
+    ends_newline = segment1_path.read_bytes().endswith(b"\n")
+    with segment1_path.open("rb") as f:
+        f.seek(max(0, segment1_path.stat().st_size - 1024 * 1024))
+        tail = f.read().decode("utf-8", errors="replace").splitlines()
+    last_line_columns = len(next(csv.reader([tail[-1]]))) if tail else 0
+    expected_columns = len(pd.read_csv(segment1_path, nrows=0).columns)
+    try:
+        provenance = json.loads(Path(
+            "docs/experiments/evidence/vwin_terminal_pricing_audit_20260924/collection_provenance.json"
+        ).read_text(encoding="utf-8"))
+        interruption = provenance["primary_population"]["segment_1_interruption"]
+    except (OSError, KeyError, json.JSONDecodeError):
+        interruption = "Retained provenance did not provide an interruption cause."
+
+    return {
+        "a4_no_post_potion_drop": {
+            "total_raw_rows": int(total_raw),
+            "matched_rows": int(np.sum(raw.matched_post)),
+            "unmatched_rows": int(np.sum(unmatched)),
+            "adjacent_same_act_floor_drop_classifiable_rows": int(np.sum(classifiable)),
+            "unclassified_rows": int(np.sum(~classifiable)),
+            "full_belt_x_drop_by_post_status": table,
+            "classified_full_belt_drop_rows": int(np.sum(full_drop)),
+            "full_belt_drop_matched_contradictions": matched_full_drop,
+            "matched_full_belt_drop_exception_rows": matched_exceptions,
+            "unmatched_full_belt_drop_explained": explained_unmatched,
+            "unmatched_classified_residual": unmatched_residual_classified,
+            "unmatched_unclassified_residual": unmatched_unknown,
+            "unmatched_classified_rows": unmatched_classified,
+            "unmatched_full_belt_drop_share_all_raw_fights": {
+                "count": explained_unmatched,
+                "denominator": int(total_raw),
+                "share": float(explained_unmatched / total_raw) if total_raw else None,
+                "unknown_full_belt_drop_rows": int(np.sum(
+                    raw.full_belt.to_numpy(dtype=bool) & (drop_status == "unclassified"))),
+            },
+            "classification_rule": "Use the next RAW row only when same-seed, same-act and exactly floor+1. Delta -10 means a drop and +10 means no drop. All other transitions are unclassified because event potion checks may intervene.",
+            "post_capture_code_also_returns_early_for": [
+                "pending gold", "pending relic", "pending potion",
+                "pending emerald/sapphire key when key collection is enabled",
+                "no card reward", "screen state other than REWARDS",
+            ],
+            "reward_chain_finding": (
+                "The full-run chain collects gold and relics before potions, then card-only policies. "
+                "The free reward helper takes a potion only when potionCount < potionCapacity; "
+                "POTION is invalid at capacity, SKIP is always valid, and no reward action frees "
+                "a slot. Acquiring Potion Belt in that same reward chain can first increase capacity."
+            ),
+        },
+        "b7_segment_completeness": {
+            "interruption_record": interruption,
+            "precise_interruption_cause_known": False,
+            "seed_count": int(len(index_results)),
+            "noncontiguous_fight_index_seed_count": int(len(noncontiguous)),
+            "noncontiguous_seed_examples": noncontiguous[:20],
+            "last_raw_floor_differs_from_final_floor_seed_count": int(len(floor_outliers)),
+            "floor_delta_counts": dict(sorted(Counter(
+                row["floor_delta_final_minus_last_raw"] for row in index_results
+            ).items())),
+            "floor_outlier_examples": floor_outliers[:20],
+            "last_file_order_segment1_seed": last_file_seed,
+            "last_file_order_segment1_seed_check": last_seed_record,
+            "segment1_path": str(segment1_path),
+            "segment1_ends_with_newline": bool(ends_newline),
+            "segment1_last_line_column_count": int(last_line_columns),
+            "segment1_header_column_count": int(expected_columns),
+            "segment1_data_row_count": int(len(segment1_rows)),
+        },
+    }
+
+
+def _post_review_descriptive(raw_all, raw, features, trees, logistic, base_margin,
+                             predictions, q1_row_table, boot, input_csv):
+    """Separate, non-gating A4/B1-B7 descriptive additions."""
+    feat_idx = {name: i for i, name in enumerate(features)}
+    X = _matrix(raw, features, feat_idx)
+    n = len(raw)
+    seeds = raw.seed.to_numpy()
+    acts = raw.act.to_numpy(dtype=int)
+    hp = raw.curHp.to_numpy(dtype=np.int32)
+    max_hp = raw.maxHp.to_numpy(dtype=np.int32)
+    base = predict_rows(X, trees, logistic, base_margin)
+    span_slope, lo_hp, hi_hp = _span_slope(
+        X, hp, max_hp, feat_idx, trees, logistic, base_margin)
+    denominator = hi_hp.astype(np.float64) - lo_hp.astype(np.float64)
+    if np.any(np.isfinite(span_slope) & (denominator <= 0)):
+        raise ValueError("span slope contains a value with a nonpositive span")
+
+    potion_values = {}
+    row_potion_sum = np.zeros(n, dtype=np.float64)
+    row_potion_count = np.zeros(n, dtype=np.int32)
+    potion_cols = sorted(
+        ((int(match.group(1)), col) for col in raw.columns
+         if (match := POTION_RE.match(str(col)))), key=lambda item: item[0])
+    for potion_id, col in potion_cols:
+        rows = np.flatnonzero(raw[col].to_numpy(dtype=np.int32) > 0)
+        effect = np.full(n, np.nan, dtype=np.float64)
+        hp_eq = np.full(n, np.nan, dtype=np.float64)
+        if len(rows):
+            minus = X[rows].copy()
+            minus[:, feat_idx["potionCount"]] = np.maximum(
+                0.0, minus[:, feat_idx["potionCount"]] - 1.0)
+            name = f"pot{potion_id}"
+            if name in feat_idx:
+                minus[:, feat_idx[name]] = np.maximum(
+                    0.0, minus[:, feat_idx[name]] - 1.0)
+            effect[rows] = base[rows] - predict_rows(minus, trees, logistic, base_margin)
+            valid = np.isfinite(span_slope[rows]) & (span_slope[rows] > 0)
+            selected = rows[valid]
+            hp_eq[selected] = effect[selected] / span_slope[selected]
+            valid_rows = np.flatnonzero(np.isfinite(hp_eq))
+            row_potion_sum[valid_rows] += hp_eq[valid_rows]
+            row_potion_count[valid_rows] += 1
+        potion_values[potion_id] = hp_eq
+    held_potion = np.divide(row_potion_sum, row_potion_count,
+                            out=np.full(n, np.nan), where=row_potion_count > 0)
+
+    # Same central gold probe and Feed-like intervention as Q1, plus a max-only probe.
+    gold = raw.gold.to_numpy(dtype=np.float32)
+    gold_lo, gold_hi = np.maximum(0.0, gold - 25.0), gold + 25.0
+    Xgold_lo, Xgold_hi = X.copy(), X.copy()
+    Xgold_lo[:, feat_idx["gold"]] = gold_lo
+    Xgold_hi[:, feat_idx["gold"]] = gold_hi
+    gold_delta_per_unit = ((predict_rows(Xgold_hi, trees, logistic, base_margin)
+                            - predict_rows(Xgold_lo, trees, logistic, base_margin))
+                           / (gold_hi - gold_lo))
+    gold_hp_eq = np.divide(gold_delta_per_unit, span_slope,
+                           out=np.full(n, np.nan), where=span_slope > 0)
+
+    Xmax_only = _max_hp_only_probe(X, feat_idx)
+    max_only_delta = predict_rows(Xmax_only, trees, logistic, base_margin) - base
+    max_only_hp_eq = np.divide(max_only_delta, span_slope,
+                               out=np.full(n, np.nan), where=span_slope > 0)
+    Xfeed = X.copy()
+    Xfeed[:, feat_idx["maxHp"]] += 1.0
+    Xfeed[:, feat_idx["curHp"]] += 1.0
+    feed_delta = predict_rows(Xfeed, trees, logistic, base_margin) - base
+    feed_hp_eq = np.divide(feed_delta, span_slope,
+                           out=np.full(n, np.nan), where=span_slope > 0)
+    clamped = (hp <= 5) | (hp > max_hp - 5)
+    old_values = {
+        "held_potion": q1_row_table.potion_hp_eq.to_numpy(dtype=np.float64),
+        "gold_per_gold": q1_row_table.gold_hp_eq.to_numpy(dtype=np.float64),
+        "feed_like_max_hp": q1_row_table.max_hp_hp_eq.to_numpy(dtype=np.float64),
+    }
+    new_values = {
+        "held_potion": held_potion, "gold_per_gold": gold_hp_eq,
+        "max_hp_only": max_only_hp_eq, "feed_like_max_hp": feed_hp_eq,
+    }
+    act_summaries = []
+    for act in sorted(np.unique(acts)):
+        mask = acts == act
+        act_summaries.append({
+            "act": int(act), "n_raw_rows": int(mask.sum()),
+            "clamped_hp_probe_share": _metric(clamped[mask].astype(np.float64),
+                                              seeds[mask], boot),
+            "span_hp_slope_probability_per_hp": _robust_summary(
+                span_slope[mask], seeds[mask], boot),
+            "hp_equivalents_span_denominator": {
+                name: _robust_summary(values[mask], seeds[mask], boot)
+                for name, values in new_values.items()
+            },
+            "hp_equivalents_preregistered_fixed_10_denominator": {
+                name: _robust_summary(values[mask], seeds[mask], boot)
+                for name, values in old_values.items()
+            },
+        })
+
+    potion_id_summaries = []
+    for potion_id, values in sorted(potion_values.items()):
+        by_act = []
+        for act in sorted(np.unique(acts)):
+            mask = (acts == act) & np.isfinite(values)
+            by_act.append({"act": int(act), "n": int(mask.sum()),
+                           "hp_equivalent": _robust_summary(values[mask], seeds[mask], boot)})
+        potion_id_summaries.append({
+            "potion_id": int(potion_id),
+            "hp_equivalent": _robust_summary(values, seeds, boot),
+            "by_act": by_act,
+        })
+
+    auc_rows = _auc_seed_interval(predictions, raw.won.to_numpy(dtype=np.int8),
+                                  seeds, boot)
+    indexed = raw.assign(_row_index=np.arange(n)).sort_values(
+        ["seed", "fight_index"], kind="stable")
+    first_rows = indexed.groupby("seed", sort=True).head(1)
+    first_idx = first_rows._row_index.to_numpy(dtype=np.int64)
+    auc_first = _auc_seed_interval(predictions[first_idx],
+                                   raw.won.to_numpy(dtype=np.int8)[first_idx],
+                                   seeds[first_idx], boot)
+
+    # Matched prices use identical interventions at RAW and POST.
+    all_raw = raw_all[raw_all.boundary == "RAW"].copy().reset_index(drop=True)
+    all_post = raw_all[raw_all.boundary == "POST"].copy().reset_index(drop=True)
+    keys = ["seed", "fight_index"]
+    pairs = all_raw.merge(all_post, on=keys, suffixes=("_raw", "_post"),
+                          how="inner", validate="one_to_one")
+    paired_prices = []
+    for room_type, room_label in (("MONSTER", "monster"), ("ELITE", "elite"),
+                                  ("BOSS", "boss")):
+        room_mask = pairs.room_type_raw.astype(str).to_numpy() == room_type
+        pair_subset = pairs.loc[room_mask]
+        pair_seed = pair_subset.seed.to_numpy()
+        pair_features = {}
+        for boundary in ("raw", "post"):
+            frame = pair_subset[[f"{name}_{boundary}" for name in features]].copy()
+            frame.columns = features
+            state = frame.to_numpy(dtype=np.float32)
+            state_hp = pair_subset[f"curHp_{boundary}"].to_numpy(dtype=np.int32)
+            state_max = pair_subset[f"maxHp_{boundary}"].to_numpy(dtype=np.int32)
+            state_slope, _, _ = _span_slope(
+                state, state_hp, state_max, feat_idx, trees, logistic, base_margin)
+            state_base = predict_rows(state, trees, logistic, base_margin)
+            potion_sum = np.zeros(len(pair_subset), dtype=np.float64)
+            potion_count = np.zeros(len(pair_subset), dtype=np.int32)
+            for potion_id, col in potion_cols:
+                counts = pair_subset[f"{col}_{boundary}"].to_numpy(dtype=np.int32)
+                rows = np.flatnonzero(counts > 0)
+                if not len(rows):
+                    continue
+                minus = state[rows].copy()
+                minus[:, feat_idx["potionCount"]] = np.maximum(
+                    0.0, minus[:, feat_idx["potionCount"]] - 1.0)
+                name = f"pot{potion_id}"
+                if name in feat_idx:
+                    minus[:, feat_idx[name]] = np.maximum(
+                        0.0, minus[:, feat_idx[name]] - 1.0)
+                effect = state_base[rows] - predict_rows(minus, trees, logistic, base_margin)
+                valid = state_slope[rows] > 0
+                selected = rows[valid]
+                potion_sum[selected] += effect[valid] / state_slope[selected]
+                potion_count[selected] += 1
+            potion_eq = np.divide(potion_sum, potion_count,
+                                  out=np.full(len(pair_subset), np.nan),
+                                  where=potion_count > 0)
+            pair_features[boundary] = {
+                "s_hp_span": state_slope, "held_potion_hp_equivalent": potion_eq,
+            }
+        measures = {}
+        for measure in ("s_hp_span", "held_potion_hp_equivalent"):
+            before = pair_features["raw"][measure]
+            after = pair_features["post"][measure]
+            finite_difference = np.isfinite(before) & np.isfinite(after)
+            positive_denominator = finite_difference & (before > 0)
+            ratios = after[positive_denominator] / before[positive_denominator]
+            differences = after[finite_difference] - before[finite_difference]
+            measures[measure] = {
+                "paired_post_over_raw_median_ratio": boot.median_interval(
+                    ratios, pair_seed[positive_denominator]),
+                "paired_post_minus_raw_median_difference": boot.median_interval(
+                    differences, pair_seed[finite_difference]),
+                "ratio_valid_n": int(positive_denominator.sum()),
+                "ratio_excluded_nonpositive_or_invalid_raw_denominator_n": int(
+                    len(before) - int(positive_denominator.sum())),
+                "difference_valid_n": int(finite_difference.sum()),
+            }
+        paired_prices.append({"room_type": room_label,
+                              "n_matched_pairs": int(len(pair_subset)),
+                              "prices": measures})
+
+    largest_drop, largest_drop_hp_eq, near_drop = _batched_sweep_drops(
+        raw, X, feat_idx, trees, logistic, base_margin, span_slope)
+    drop_by_act = []
+    for act in sorted(np.unique(acts)):
+        mask = acts == act
+        drop_by_act.append({
+            "act": int(act), "n": int(mask.sum()),
+            "share_any_drop_gt_0_005_within_plus_minus_20_hp": _metric(
+                near_drop[mask].astype(np.float64), seeds[mask], boot),
+            "share_any_positive_one_step_drop": _metric(
+                (largest_drop[mask] > 0).astype(np.float64), seeds[mask], boot),
+            "share_any_drop_gt_0_005_anywhere": _metric(
+                (largest_drop[mask] > 0.005).astype(np.float64), seeds[mask], boot),
+            "largest_one_step_drop_probability": _robust_summary(
+                largest_drop[mask], seeds[mask], boot),
+            "largest_one_step_drop_hp_equivalent": _robust_summary(
+                largest_drop_hp_eq[mask], seeds[mask], boot),
+        })
+
+    data_checks = _post_review_data_checks(raw_all, input_csv)
+    return {
+        "status": "descriptive only; not preregistered and not used by verdict gates",
+        "frozen_verdict_denominator_note": (
+            "The frozen /10 slope remains primary. The positive HP gate tests the "
+            "recorded slope sign (division by the fixed positive 10 preserves it), "
+            "and monotonicity/flat-run use the complete HP sweep; no verdict threshold "
+            "uses the B1 actual-span denominator or slope magnitude."
+        ),
+        "a4_no_post_potion_drop": data_checks["a4_no_post_potion_drop"],
+        "b1_hp_span_prices": {
+            "span_slope_definition": "(V(min(maxHp, curHp+5)) - V(max(1, curHp-5))) / (hi-lo)",
+            "clamp_rule": "clamped when curHp <= 5 or curHp > maxHp-5",
+            "clamped_share_by_act": [
+                {"act": row["act"], "share": row["clamped_hp_probe_share"]}
+                for row in act_summaries
+            ],
+            "by_act": act_summaries,
+            "per_potion_id": potion_id_summaries,
+            "silver_comparison_score_points": {
+                "held_potion": 11.0, "gold_per_gold": 0.25,
+                "max_only": 2.0, "feed_like_max_hp_and_cur_hp": 3.0,
+            },
+            "invalid_equivalent_rule": "HP-equivalents are null when the corresponding local HP slope is not positive.",
+        },
+        "b3_max_hp_only_probe": {
+            "probe": "+1 maxHp with curHp fixed",
+            "cur_hp_unchanged": True,
+            "by_act": [
+                {"act": row["act"],
+                 "max_only_hp_equivalent": row["hp_equivalents_span_denominator"]["max_hp_only"],
+                 "feed_like_hp_equivalent": row["hp_equivalents_span_denominator"]["feed_like_max_hp"]}
+                for row in act_summaries
+            ],
+            "silver_reference": {"max_only": 2.0, "feed_like": 3.0},
+        },
+        "b4_discrimination": {
+            "raw_row_level_auc": auc_rows,
+            "first_raw_row_per_seed_auc": auc_first,
+            "power_note": "128 source seeds provide weak power; RAW rows within each seed are correlated.",
+        },
+        "b5_paired_raw_post_prices": {
+            "interpretation": "Decision-relevant descriptive version of Q4; does not replace the frozen Q4 gate.",
+            "by_room": paired_prices,
+            "ratio_rule": "Ratios require a finite positive RAW denominator; excluded counts are reported. Differences use every pair with both finite values.",
+        },
+        "b6_monotonicity_drop_locations": {
+            "near_current_rule": "A one-step drop is near-current when its lower-HP endpoint lies in [max(1,curHp-20), min(maxHp-1,curHp+20)]; threshold is strictly greater than 0.005.",
+            "hp_equivalent_rule": "Largest probability drop divided by abs(s_HP_span); null only where s_HP_span is zero or invalid.",
+            "by_act": drop_by_act,
+        },
+        "b7_segment_completeness": data_checks["b7_segment_completeness"],
+    }
+
+
 def _verdict(q1, q4, q5):
     acts = q1["by_act"]
     signs_ok = bool(acts)
@@ -749,6 +1304,9 @@ def run_audit(csv_path, model_path, output_dir, latency_json=None):
     variable_groups = [dict(group, features=[name for name in group["candidates"] if name in features])
                        for group in variable_groups]
     variable_groups = [group for group in variable_groups if group["features"]]
+    post_review = _post_review_descriptive(
+        raw_all, raw, features, trees, logistic, base_margin,
+        predictions, row_table, boot, csv_path)
     results = {
         "schema_version": "vwin-terminal-pricing-audit-1",
         "input": {"csv": str(Path(csv_path)), "model": str(Path(model_path)),
@@ -794,6 +1352,7 @@ def run_audit(csv_path, model_path, output_dir, latency_json=None):
             "latency": latency,
             "latency_method": "Release -O3/-DNDEBUG direct CompactTreeNet::predict call on the same native class used by g_winNet; 20,000-call per-call timings.",
         },
+        "post_review_descriptive": post_review,
         "verdict": verdict,
     }
     results_path = output_dir / "results.json"
@@ -841,6 +1400,17 @@ def run_self_tests():
     batch = predict_rows(x, trees, logistic, base)
     scalar = np.asarray([predict_row(x[i], trees, logistic, base) for i in range(3)])
     assert np.array_equal(batch, scalar) and np.array_equal(batch, [0, 0, 1])
+    span, lo, hi = _span_slope(
+        np.asarray([[1]], dtype=np.float32), np.asarray([1]), np.asarray([10]),
+        {"curHp": 0}, trees, logistic, base)
+    assert lo.tolist() == [1.0] and hi.tolist() == [6.0]
+    assert np.allclose(span, [0.2]), span
+    assert _weighted_roc_auc([0.1, 0.4, 0.35, 0.8], [0, 1, 1, 0]) == 0.5
+    max_probe = _max_hp_only_probe(
+        np.asarray([[7.0, 50.0], [2.0, 34.0]], dtype=np.float32),
+        {"curHp": 0, "maxHp": 1})
+    assert np.array_equal(max_probe[:, 0], [7.0, 2.0])
+    assert np.array_equal(max_probe[:, 1], [51.0, 35.0])
     print("vwin_terminal_pricing_audit self-test: PASS")
 
 

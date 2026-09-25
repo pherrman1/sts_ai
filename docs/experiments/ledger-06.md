@@ -11930,7 +11930,9 @@ the experimental native backend; the vendored Silver backend stays the default.
   seeds and did not leave its final sidecar counters; the remaining 35 seeds
   have complete sidecar accounting (35/35, zero invalid/quarantined seeds or
   branches, zero health failures). Silver telemetry reported
-  `prior_model_loaded=0`, a preregistration deviation. The complete row/hash
+  `prior_model_loaded=0`; this measures the optional Silver learned root
+  prior, which was off by default, and is not a preregistration deviation.
+  Compact-policy-tree load status is Unverified from retained logs. The complete row/hash
   inventory and interrupted-segment boundary are in the
   [evidence packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
 - **Parity / data checks:** Before Q1–Q5, 600 RAW rows passed native/Python
@@ -11999,8 +12001,70 @@ the experimental native backend; the vendored Silver backend stays the default.
   condition; a `ready_for_review` event is needed to run authoritative CI. No
   gameplay seed was rerun for verification.
 
-Knowledge impact: current research now records that the tracked model fails
-the monotonicity gate for W1 use, includes the pre-collection artifact
-availability limits and fair-regime exchange rates, and corrects the
-tracked-artifact counter split/enum interpretation. No runtime default or
-gameplay claim changed.
+#### Review corrections and post-review descriptive additions (2026-09-25)
+
+- **A1–A3, A5–A7:** `prior_model_loaded=0` measures the optional Silver
+  learned root prior (off by default), not compact-policy load; that status is
+  Unverified. Silver terminal prices are score points with +1 healed HP = 1
+  point; Feed-like +1 max HP/+1 current HP is 3 points, max-only is 2. The
+  Q4 `curHp` coefficient is −3.36e−4/HP with interval excluding zero (about
+  17% of mean `s_HP=0.00195`), although the frozen gate passes by low R². The
+  Q5 Spearman gate tests ranks rather than price levels; zeroed/recorded
+  potion HP-equivalent ratios are 2.31, 2.01, and 0.66 by act. The 33
+  per-potion features have 124 splits (six with none), versus 271 for
+  `potionCount`; pot21 Fairy in a Bottle has three splits and mean 2.48
+  HP-equivalents (CI 1.07–4.27), zero in 32.7% of rows. **Inference:**
+  per-potion prices mostly encode state association, so they are not usable
+  identity prices.
+- **A4:** Using only same-seed, same-act next RAW rows exactly one floor later,
+  the matched full-belt drop/no-drop/unclassified counts are 1/153/259 and
+  space-available counts 423/464/1,406. Unmatched full-belt counts are
+  147/0/199 and space-available counts 0/0/17. Thus there are zero
+  classifiable unmatched residuals; 216 unmatched rows remain unclassified.
+  The belt was full in 413/2,706 matched rows (15.3%) and 346/363 unmatched
+  rows (95.3%).
+  One matched full-belt drop acquired Potion Belt (`r159`), which raised
+  capacity before the potion choice. The full-run reward chain takes a
+  potion only with slot capacity and cannot discard or swap a held potion;
+  E2c `captureE2cPost` returns while gold, relic, or potion rewards remain
+  pending, so an unclaimed potion blocks POST capture.
+  147 classifiable no-POST full-belt drops are 4.79% of all RAW fights.
+  Q4's 2,706 pairs exclude no-POST rows by inner-join construction.
+- **B1–B3:** Clamped-probe shares were 56.0%, 45.9%, and 54.1% by act.
+  Held-potion mean/median HP-equivalents under fixed-/10 → actual-span
+  denominators were 6.76/1.96 → 4.51/1.51, 6.74/1.99 → 4.28/1.66, and
+  6.70/0.85 → 4.78/0.61. Gold means were 0.357 → 0.231, 0.090 → 0.058,
+  and 0.058 → 0.040; Feed-like means were 1.548 → 1.263, 1.001 → 0.937,
+  and 0.300 → 0.140. Full mean CIs, median bootstrap CIs, and IQRs for all
+  held-potion and per-type probes are in `post_review_descriptive`. Max-only
+  mean/median values were 0.613/0.314, −0.061/0, and −0.477/0; Silver's
+  comparators are 2 (max-only) and 3 (Feed-like).
+- **B4–B7:** RAW-row and first-row-per-seed AUC were 0.708 [0.652, 0.769]
+  and 0.638 [0.528, 0.745]; 128 source seeds give weak power. Paired
+  POST/RAW median `s_HP_span` ratios were 1.0014, 0.9818, and 0.7833 for
+  monster/elite/boss, with corresponding held-potion ratios 0.9441, 0.9590,
+  and 0.6939. Near-current >0.005 drop shares were 14.5%, 21.6%, and 19.7%;
+  largest HP-equivalent drops had median/p95 3.684/29.374, 1.454/15.414,
+  and 1.806/24.842. The interruption cause is unknown; 48/128 seeds have
+  noncontiguous fight indices, all last RAW floors differ from `finalFloor`,
+  and the segment-1 last-written seed 3100091 is contiguous (0–26), ends at
+  floor 48 versus finalFloor 51, with a complete 1,387-column final CSV line.
+- **Post-review verification:** after merging `origin/main` at
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`, the Release
+  `one_combat` rebuild passed on branch source `82dc7f04`; existing warnings
+  were the `one_combat.cpp` narrowing conversion, duplicate `Path` ODR report,
+  and serial LTO note. Focused CTest passed 3/3, and the native/Python parity
+  fixture passed 600/600 with max/mean absolute difference 0.000000. Python
+  compilation, analyzer self-test, JSON validation, both CSV provenance hashes,
+  and `git diff --check` passed. Full CTest and new gameplay seeds were not
+  run. Linux GCC was skipped/not run because PR #317 remains draft.
+- New results are isolated under the top-level `post_review_descriptive`
+  key. The preregistered outputs, thresholds, and verdict remain unchanged;
+  two current-code analyses were byte-identical at SHA-256
+  `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
+
+Knowledge impact: current research now records the conditional full-belt
+potion behavior, unstable fair-regime price levels, and limits on using
+per-potion or max-HP prices. Architecture documents the reward-chain
+capacity rule. The post-review descriptors do not change the frozen W1
+verdict, runtime defaults, or gameplay claims.

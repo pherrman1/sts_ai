@@ -970,6 +970,17 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    screen.
 2. `runFullRunOOC` evaluates opt-in action networks/evaluators first, then map,
    rewards, shop, rest, boss-relic/Neow, and finally the base policy.
+   `collectFreeOocReward` in `apps/one_combat/ooc_checkpoint_policy.cpp`
+   takes a potion only when `potionCount < potionCapacity`; the subsequent
+   full-run REWARDS handlers in `apps/one_combat/run_driver.cpp` do not discard
+   or swap a carried potion to create space. A Potion Belt reward collected
+   earlier in that chain can add two slots before the potion decision. In the
+   3,069-fight `v_win` audit, 147 unmatched full-belt drops were classified
+   (4.79% of RAW fights); 199 more unmatched full-belt rows had unknown drop
+   status. Capacity was full in 95.3% of unmatched RAW rows versus 15.3% of
+   matched rows; one matched full-belt drop was explained by a new Potion Belt.
+   This is a qualified cohort observation, not a universal unmatched-row
+   explanation.
    When `STS_COLLECT_KEYS=1` (default off), every REWARDS handler takes the
    emerald (burning elite) / sapphire (chest) key via `RT::KEY` right after
    gold/relic/potion, and every act-3+ rest room takes the ruby key (RECALL,
