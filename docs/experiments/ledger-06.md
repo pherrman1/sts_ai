@@ -12160,7 +12160,186 @@ Knowledge impact: current research now records the updated-baseline replay
 and its shared technical failure. The prior comparison remains preserved as
 historical evidence; no default or quality gate changed.
 
-## §353 — Mechanical-q Lizard Tail post-hoc screen and native transfer (2026-09-25)
+## §353 — `v_win` terminal-pricing audit (2026-09-24)
+
+- **Question / decision:** Is the tracked compact `v_win` suitable for a
+  relative-price lookup over combat-terminal victories? The preregistered
+  result is **`VWIN_W1_NEEDS_SMOOTHING`**. This is W1 input-readiness only; it
+  makes no gameplay-quality or runtime-promotion claim. The monotonicity
+  threshold failed, while the low-HP flat-run threshold, per-act positive HP
+  and held-potion intervals, Q4, and Q5 passed. The handoff's thresholds were
+  unchanged. The Q4 capacity model was amended before outcome analysis because
+  metadata-only inspection found both capacity 3 and 5; see commit `ca6960ad`.
+- **Collection / artifact:** 128 project-fair E2c-v2 seeds
+  `3100000..3100127`, ascension 0, collected at executable/source SHA
+  `5334920f5dc184ba9507ce9a15ed2fd96fd69bec`, `e2cgen` simulations argument
+  1,000, adaptive Silver enabled, allocated reuse cap 32,768. Model SHA-256 is
+  `fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`
+  (448 features, 1,060 trees, logistic). The current 2-seed smoke passed
+  2/2, with 92 rows and zero invalid/quarantined seeds/branches or simulator
+  health failures. The first population process stopped after representing 93
+  seeds and did not leave its final sidecar counters. E2c writes rows only for
+  runs passing `trainingRunValid`, so all 93 represented seeds passed that
+  predicate, which rejects unresolved runs and simulator-health failures;
+  attempted/completed counts and any unrepresented quarantines remain unknown.
+  The stop cause is unknown. The remaining 35 seeds have
+  complete sidecar accounting (35/35, zero invalid/quarantined seeds or
+  branches, zero health failures). Silver telemetry reported
+  `prior_model_loaded=0`; this measures the optional Silver learned root
+  prior, which was off by default, and is not a preregistration deviation.
+  Compact-policy-tree load status is Unverified from retained logs. The complete row/hash
+  inventory and interrupted-segment boundary are in the
+  [evidence packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
+- **Parity / data checks:** Before Q1–Q5, 600 RAW rows passed native/Python
+  name-aligned parity at `1e-4` (600/600 compared; max and mean difference
+  0.000000). The combined files contain 3,069 RAW and 2,706 POST rows with
+  2,706 matched pairs; there are no duplicate keys or paired outcome, room,
+  encounter, or within-seed label mismatches. There are 363 unmatched RAW and
+  no unmatched POST rows. Two complete analyses were byte-identical; result
+  JSON SHA-256 is
+  `8803126fba6a73de07b99ab8a4b5a006f17fc79d5f18f7468bdf16c38194ba98`.
+- **Q1:** Monotone HP sweeps were 63.77% of rows (95% seed-bootstrap CI
+  60.18–67.35%), below the 95% gate; overall median longest flat run was 5 HP
+  (CI 5–5), passing the 10-HP limit. Per-act mean HP slopes were
+  `0.000933`, `0.002670`, and `0.002586` probability/HP; held-potion
+  equivalents were `6.76`, `6.74`, and `6.70` HP, each with intervals above
+  zero. Full act/room/potion summaries are retained in the packet.
+- **Q2:** **Inference:** No reviewed repository intervention isolates an HP
+  offset on captured states with matched continuations. The synthetic trainer
+  probe is model-space only; paired rest branches change HP and progression,
+  path branches change route and downstream rewards, and TERM_WIN changes
+  policy (its recorded win-rate screen was null at approximately 3.1x cost).
+  **Open question:** An 8-state × 3-offset × 4-continuation (96-trajectory)
+  matched continuation test is proposed only; its 60.8 CPU-minute estimate is
+  rough and replay cost is unmeasured. The current tracked model has
+  counter-value splits on r26/r30/r31/r44/r46/r52/r68, with r32 absent and
+  r35/r116/r131 presence-only. This corrects the current-artifact
+  interpretation in ledger §§109–110; the exact model used in that historical
+  run remains unbound.
+- **Q3–Q6:** The pre-collection inventory found the named vrich, rest/path
+  counterfactual, and datagen3 files absent from checked local trees. The
+  historical E2c GCP output path is not mounted on this host, so current
+  remote existence and historical dataset byte sizes remain unverified; see
+  the packet inventory. Predicted mean P(win) was 0.545 versus equal-seed
+  observed run win rate 0.719; Brier 0.232 versus 0.187 row-prevalence
+  baseline. Treat calibration as weakly powered at 128 seeds, with
+  underprediction in this cohort. Q4 had 2,706 pairs, rank 5/5,
+  `R²=0.04776` (narrowly below 0.05); coefficient endpoint bounds exceed
+  3 HP-equivalent across the observed ranges, so the formal gate passes only
+  through the frozen low-R² clause. Q5 recorded-vs-zeroed hidden-future
+  HP-slope and potion-value rank correlations were 0.934 and 0.873;
+  zeroing is out-of-distribution-prone. Fair/zeroed per-act HP slopes were
+  0.000675/0.002274/0.002355 and potion equivalents were
+  15.59/13.55/4.45 HP; the full interval table is in the packet.
+  Q6 measured native prediction median/p95 21.761/31.249 μs over 20,000
+  direct calls and identified HP, max HP, gold, potion, deck/Parasite, and
+  exit-mutated relic inputs.
+- **Scope / evidence:** No W1 table, causal continuation replay, live gameplay,
+  runtime change, or default change. The raw E2c CSVs remain ignored local
+  data; aggregate, parity, provenance, model-counter, latency, and smoke
+  evidence are committed in
+  [the audit packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
+  See the machine-readable [results](evidence/vwin_terminal_pricing_audit_20260924/results.json).
+- **Checks:** On audit source `812fb8afb9413a5e277d3aaebdda98e95ff7f4c0`,
+  which includes `origin/main` base `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`,
+  `cmake --preset linux-gcc-release` configured and `cmake --build
+  build/linux-gcc-release --target one_combat -j2` passed. Focused CTest
+  passed 3/3
+  (`winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`,
+  `export_win_model_selftest`); Python compilation and the analyzer self-test
+  passed earlier with unchanged audit tooling. Native/Python parity passed
+  again on 600 rows after the latest-main build, max and mean difference
+  0.000000. The build emitted a narrowing-conversion warning in
+  unrelated run-timing code and an ODR warning for `Path` across root and
+  bundled `SimpleAgent.cpp`. Full CTest was not run. Draft PR #317 triggered CI
+  run 1184, but the `Linux GCC` job was skipped by the workflow's draft-PR
+  condition. The current-head CI result is tracked in PR #317. No gameplay seed
+  was rerun for verification.
+
+#### Review corrections and post-review descriptive additions (2026-09-25)
+
+- **A1–A3, A5–A7:** `prior_model_loaded=0` measures the optional Silver
+  learned root prior (off by default), not compact-policy load; that status is
+  Unverified. Silver terminal prices are score points with +1 healed HP = 1
+  point; Feed-like +1 max HP/+1 current HP is 3 points, max-only is 2. The
+  Q4 `curHp` coefficient is −3.36e−4/HP with interval excluding zero (about
+  17% of mean `s_HP=0.00195`), although the frozen gate passes by low R². The
+  Q5 Spearman gate tests ranks rather than price levels; zeroed/recorded
+  potion HP-equivalent ratios are 2.31, 2.01, and 0.66 by act. The 33
+  per-potion features have 124 splits (six with none), versus 271 for
+  `potionCount`; pot21 Fairy in a Bottle has three splits and mean 2.48
+  HP-equivalents (CI 1.07–4.27), zero in 32.7% of rows. **Inference:**
+  per-potion prices mostly encode state association, so they are not usable
+  identity prices.
+- **A4:** Using only same-seed, same-act next RAW rows exactly one floor later,
+  the matched full-belt drop/no-drop/unclassified counts are 1/153/259 and
+  space-available counts 423/464/1,406. Unmatched full-belt counts are
+  147/0/199 and space-available counts 0/0/17. Thus there are zero
+  classifiable unmatched residuals; 216 unmatched rows remain unclassified.
+  The belt was full in 413/2,706 matched rows (15.3%) and 346/363 unmatched
+  rows (95.3%).
+  One matched full-belt drop acquired Potion Belt (`r159`), which raised
+  capacity before the potion choice. The full-run reward chain takes a
+  potion only with slot capacity and cannot discard or swap a held potion;
+  the belt was full in 759/3,069 RAW rows (24.7%), and 148/301 full-belt rows
+  with classifiable adjacent-floor status had a drop (49.2%). E2c
+  `captureE2cPost` returns while gold, relic, or potion rewards remain
+  pending, so an unclaimed potion blocks POST capture.
+  The 147 proxy-confirmed full-belt drops are 4.79% (4.8%) of all 3,069 RAW
+  fights. If all 199 unmatched full-belt rows with unknown proxy status also
+  represent unclaimed potion drops, the code-path upper count is 346/3,069
+  (11.27%, or 11.3%). This is a conditional upper bound, not an estimated
+  rate; 17 unmatched space-available rows show other causes of missing POST,
+  so the actual forfeiture rate can be lower. Q4's 2,706 pairs exclude all
+  no-POST rows by inner-join construction.
+- **B1–B3:** Clamped-probe shares were 56.0%, 45.9%, and 54.1% by act.
+  Held-potion mean/median HP-equivalents under fixed-/10 → actual-span
+  denominators were 6.76/1.96 → 4.51/1.51, 6.74/1.99 → 4.28/1.66, and
+  6.70/0.85 → 4.78/0.61. Gold means were 0.357 → 0.231, 0.090 → 0.058,
+  and 0.058 → 0.040; Feed-like means were 1.548 → 1.263, 1.001 → 0.937,
+  and 0.300 → 0.140. Full mean CIs, median bootstrap CIs, and IQRs for all
+  held-potion and per-type probes are in `post_review_descriptive`. Max-only
+  mean/median values were 0.613/0.314, −0.061/0, and −0.477/0; Silver's
+  comparators are 2 (max-only) and 3 (Feed-like).
+- **B4–B7:** RAW-row and first-row-per-seed AUC were 0.708 [0.652, 0.769]
+  and 0.638 [0.528, 0.745]; 128 source seeds give weak power. Paired
+  POST/RAW median `s_HP_span` ratios were 1.0014, 0.9818, and 0.7833 for
+  monster/elite/boss, with corresponding held-potion ratios 0.9441, 0.9590,
+  and 0.6939. Near-current >0.005 drop shares were 14.5%, 21.6%, and 19.7%;
+  largest HP-equivalent drops had median/p95 3.684/29.374, 1.454/15.414,
+  and 1.806/24.842. The interruption cause is unknown; 48/128 seeds have
+  noncontiguous fight indices, all last RAW floors differ from `finalFloor`,
+  and the segment-1 last-written seed 3100091 is contiguous (0–26), ends at
+  floor 48 versus finalFloor 51, with a complete 1,387-column final CSV line.
+  `fight_index` advances across battles while E2c captures only monster, elite,
+  and Act 1–2 boss rooms; event-initiated fights and Act 3 bosses therefore
+  explain the expected index gaps. The final line is newline-terminated and
+  complete; there is no evidence of CSV truncation. The stop cause remains
+  unknown; 35/35 seeds in flight reran cleanly, so a deterministic crashing
+  seed is not supported (**Inference:** an external stop such as a timeout).
+- **Earlier post-review verification (before the current-main refresh):** after
+  merging `origin/main` at
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`, the Release
+  `one_combat` rebuild passed on branch source `82dc7f04`; existing warnings
+  were the `one_combat.cpp` narrowing conversion, duplicate `Path` ODR report,
+  and serial LTO note. Focused CTest passed 3/3, and the native/Python parity
+  fixture passed 600/600 with max/mean absolute difference 0.000000. Python
+  compilation, analyzer self-test, JSON validation, both CSV provenance hashes,
+  and `git diff --check` passed. Full CTest and new gameplay seeds were not
+  run. On that reviewed head, PR #317 was draft and GitHub skipped Linux GCC.
+- New results are isolated under the top-level `post_review_descriptive`
+  key. The preregistered outputs, thresholds, and verdict remain unchanged;
+  two current-code analyses were byte-identical at SHA-256
+  `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
+
+Knowledge impact: current research now records the W1 candidate boundary
+(smoothed HP for non-act-boss wins, with gold only tentative), unstable
+fair-regime price levels, the full-belt forfeiture bounds, and the limits on
+using per-potion or max-HP prices. Architecture documents the reward-chain
+capacity rule. The post-review descriptors do not change the frozen W1
+verdict, runtime defaults, or gameplay claims.
+
+## §354 — Mechanical-q Lizard Tail post-hoc screen and native transfer (2026-09-25)
 
 - **Question:** Does replacing the learned ordinary-win probability `q` with
   `1 - pOrdinaryWin`, while preserving the frozen learned `r` artifact and T2
