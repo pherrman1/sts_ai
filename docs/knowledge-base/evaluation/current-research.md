@@ -24,6 +24,15 @@ audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
 
+**Vendored Silver removed (2026-09-25, [ADR-0022](../../../decisions/0022-remove-vendored-silver.md)).**
+Every Silver research line below that ran in the vendored model — forced-action
+targets, rollout variance, first-action and tactical-prefix selectors,
+learned prefixes, Phase-A policy/value, budget/reuse-cap, visit-lock/rho
+stopping, root mechanism, internal-node FPU, the learned root prior, and the
+§349 rollout scratch piles — is closed: its tools were removed and its results
+are history. Reopening one means porting it to native Silver first. OOC research
+contracts now bind native Silver teachers.
+
 ## OOC 20% gap-stop quality gate
 
 The merged opt-in rule `512 -> stop when the top-two root visit gap is at
@@ -376,6 +385,10 @@ establish universal safety, or claim action equivalence. No expensive shadow
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
 
 ### Vendored singleton-root search bypass (2026-09-24)
+
+**Removed with the vendored model (ADR-0022, 2026-09-25).** Native Silver
+still searches single-action roots; porting the bypass to native needs its own
+paired evaluation. The record below is history.
 
 Since ADR-0021, plain `one_combat` uses native Silver by default. This bypass
 is in the vendored `SilverLiveBackend` and applies when that backend is

@@ -1924,7 +1924,7 @@ int testCombatKnowledgeBoundary() {
           == search::makeSilverCardPile(permuted, permutedKnowledge),
           "unobserved concrete draw permutations must construct the same Silver CardPile");
     auto sampledUnknown = search::makeSilverCardPile(first, firstKnowledge);
-    silver::Random silverRng(0x9001u);
+    Random silverRng(0x9001u);
     (void)sampledUnknown.drawTop(silverRng);
     check(silverRng.counter == 1,
           "Silver unknown draw must consume its isolated single-model RNG exactly once");
@@ -1953,7 +1953,7 @@ int testCombatKnowledgeBoundary() {
           && topView.knownTop[1].uniqueId == topB.uniqueId,
           "multiple known top placements must retain actual stack order");
     auto deterministicTop = search::makeSilverCardPile(topLive, topKnowledge);
-    silver::Random knownTopRng(0x9002u);
+    Random knownTopRng(0x9002u);
     const CardInstance poppedTop = deterministicTop.drawTop(knownTopRng);
     check(poppedTop.uniqueId == topB.uniqueId && knownTopRng.counter == 0,
           "Silver known-top draw must be deterministic and consume no model RNG");
@@ -2046,23 +2046,6 @@ int testCombatKnowledgeBoundary() {
     if (failures == 0) { std::cout << "combat_knowledge PASS\n"; return 0; }
     std::cout << "combat_knowledge FAIL (" << failures << " cases)\n";
     return 1;
-}
-
-int testSilverRandomBridge() {
-    const auto fromBridge = silver_bridge::probeReferenceRandom(0x51A9u);
-    Random reference(0x51A9u);
-    const auto first = reference.random(999);
-    const auto second = reference.random(-3, 7);
-    const auto third = reference.randomLong();
-    const bool equal = fromBridge.firstRange == first && fromBridge.secondRange == second
-        && fromBridge.randomLong == third && fromBridge.counter == reference.counter
-        && fromBridge.seed0 == reference.seed0 && fromBridge.seed1 == reference.seed1;
-    if (!equal) {
-        std::cout << "silver_random_bridge FAIL\n";
-        return 1;
-    }
-    std::cout << "silver_random_bridge PASS\n";
-    return 0;
 }
 
 int testSilverSemanticActionResolution() {
@@ -3490,8 +3473,6 @@ int main(int argc, const char* argv[]) {
         return testCardPile();
     } else if (command == "battle_equality") {
         return testBattleEquality();
-    } else if (command == "silver_random_bridge") {
-        return testSilverRandomBridge();
     } else if (command == "silver_semantic_action") {
         return testSilverSemanticActionResolution();
     } else if (command == "ooc_semantic") {

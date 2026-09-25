@@ -286,9 +286,8 @@ void oocBudgetEvaluate(const std::string &manifestFile,
         {"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_NATIVE_OOC","1"}};
     for(const auto &[name,expected]:frozenEnv){const char*actual=std::getenv(name.c_str());
         if(!actual||actual!=expected)throw std::runtime_error("oockbudgeteval: frozen environment mismatch for "+name);}
-    if(!search::silverLiveBackendInstalled()||!search::silverLiveExactRootBudgets()
-        ||search::silverLiveReuseCapMode()!="allocated"||search::silverLiveReuseCap()!=32768
-        ||search::silverLiveAdaptiveEnabled())
+    if(!search::nativeSilverBackendInstalled()||!search::nativeSilverExactRootBudgets()
+        ||search::nativeSilverReuseCap()!=32768||search::nativeSilverAdaptiveEnabled())
         throw std::runtime_error("oockbudgeteval: frozen Silver configuration mismatch");
     std::ifstream specInput(specFile);if(!specInput)throw std::runtime_error("oockbudgeteval: cannot open frozen experiment spec");
     nlohmann::json spec;specInput>>spec;

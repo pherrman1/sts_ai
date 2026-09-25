@@ -150,6 +150,6 @@ rollout modification, model format change, or simulator ID change is included.
 
 **Knowledge impact:** stable dataset schemas, public feature boundaries,
 teacher integrity, and collection/resumption procedure are maintained in
-[the operations field map](../../../knowledge-base/operations/silver-prior-dataset.md).
+the operations field map (`docs/knowledge-base/operations/silver-prior-dataset.md`, removed by ADR-0022; see Git history).
 This evidence directory contains the frozen plan, historical blocker, and
 post-collection integrity reports. It does not establish policy quality.

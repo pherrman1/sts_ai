@@ -10,20 +10,31 @@ namespace sts {
 
 namespace sts::search {
 
-    // Combat backend that runs SilverSearcher directly on the main engine (no
-    // conversion into the vendored Silver model). Installed into
+    // Combat backend that runs SilverSearcher on the main engine. Installed into
     // g_externalCombatBackend; process-wide, call once before parallel runs.
     //
-    // Budgets follow the vendored Silver backend: flat `simulationCountBase`
+    // Budgets: flat `simulationCountBase`
     // per decision (x bossSimulationMultiplier in boss fights) unless the
     // retained-root adaptive policy is enabled, in which case fresh and
     // single-action roots search 10,000 and a retained root stops at 500 when
     // its top-two visit-share gap reaches the threshold. The adaptive settings
-    // read the same environment variables as the vendored backend
-    // (STS_SILVER_ADAPTIVE, STS_SILVER_ADAPTIVE_TOP_GAP).
+    // come from STS_SILVER_ADAPTIVE and STS_SILVER_ADAPTIVE_TOP_GAP.
     void installNativeSilverBackend();
     bool nativeSilverBackendInstalled();
     bool nativeSilverAdaptiveEnabled();
+    double nativeSilverAdaptiveTopGap();
+    // STS_SILVER_EXACT_ROOT_BUDGETS=1: the flat budget applies in boss fights
+    // too (no boss multiplier).
+    bool nativeSilverExactRootBudgets();
+    // Node count at which the retained graph is compacted on reroot.
+    std::int64_t nativeSilverReuseCap();
+
+    // Decisions and simulations of the current thread's latest combat.
+    struct NativeSilverCombatStats {
+        std::int64_t decisions = 0;
+        std::int64_t simulations = 0;
+    };
+    extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
     struct CombatKnowledgeState;
 

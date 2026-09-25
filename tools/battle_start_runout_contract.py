@@ -182,7 +182,6 @@ def _validate_teacher_binding(teacher: dict) -> None:
         "STS_FAIR": "1", "STS_SEARCHER3": "0", "STS_SILVER_SEARCH": "1",
         "STS_SILVER_EXACT_ROOT_BUDGETS": "1", "STS_SILVER_REUSE_CAP_MODE": "allocated",
         "STS_SILVER_ADAPTIVE": "0", "STS_SILVER_VNET_LEAF_DIRECT": "0",
-        "STS_SILVER_TELEMETRY": "1",
     }
     require(teacher.get("environment") == expected_environment,
             "teacher environment is not the frozen ordinary Silver contract")

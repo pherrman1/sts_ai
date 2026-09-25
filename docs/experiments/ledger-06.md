@@ -5615,7 +5615,7 @@ model training was changed.
 - **Decision:** The historical next step was faithful parent snapshots and a
   small root-only replay. Subsequent experiments recorded below completed that
   line. See [the diagnostic report](evidence/silver-learned-guidance-diagnostic-2026-08-29.md)
-  and [the read-only analyzer](../../tools/analyze_silver_guidance_alias.py).
+  and the read-only analyzer `tools/analyze_silver_guidance_alias.py` (removed by ADR-0022).
 
 ## §193 Silver root-only exploration control rejected offline (2026-08-29)
 
