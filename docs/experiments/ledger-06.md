@@ -12338,3 +12338,80 @@ fair-regime price levels, the full-belt forfeiture bounds, and the limits on
 using per-potion or max-HP prices. Architecture documents the reward-chain
 capacity rule. The post-review descriptors do not change the frozen W1
 verdict, runtime defaults, or gameplay claims.
+
+## §354 — Retrained contextual deck semantic-prior qualification (2026-09-25)
+
+- **Question / decision:** Does a newly trained 3,200-parameter contextual
+  O(n) deck block preserve the deployed42 teacher's actual OOC MCTS semantic
+  prior after grouping and multiplicity correction? The result is
+  **`CONTEXTUAL_SEMANTIC_PRIOR_PASS`**. This is a new frozen student, not a
+  byte-identical recovery of the missing historical `45a3ce…` checkpoint.
+- **Trace / provenance:** Reused PR #329's saved trace only; no new seeds or
+  capture were run. The gzip at
+  `/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/trace_mainline.jsonl.gz`
+  has SHA-256
+  `192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370`; its
+  decompressed SHA-256 is
+  `9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1`.
+  It contains 24,959 records from seeds 12450008–12450015; 11,474
+  prior-covered, non-singleton, nonuniform occurrences yield 6,317 unique
+  canonical prior inputs (1,402 SHOP occurrences / 1,002 unique SHOP inputs).
+  The recovered `strategic_tierb.csv` and seed-disjoint split match their
+  required SHA-256 values `c428f229bdf7cfe070ff06fd1664978e6e49bbde872d5929ef4fa50f56ba008b`
+  and `0efe5b56e1f87c0642827c14e55790db517b55820d54620edd32420012e8b67b`;
+  the cache uses `raw-to-grouped-v2`.
+- **Teacher / source audit:** Tracked native teacher SHA-256 is
+  `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`;
+  reconstructed Python teacher SHA-256 is
+  `5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8`.
+  Export parity re-created the tracked native file byte-for-byte, with max
+  logit/Q/value differences `1.06e-5 / 1.28e-5 / 8.19e-6`. On the captured
+  trace, Python-vs-native maximum source/candidate logit error was
+  `2.6703e-5` (<`1e-4`), source argmax matched 6,317/6,317 inputs, and the
+  rebuilt final prior maximum error was `1.9898e-6`. The captured teacher's
+  own raw-weight and normalized-prior formulas reproduced within
+  `1.2e-16` and `5.6e-16` respectively.
+- **Training:** Recreated the exact Tier-B train/validation split (3,720/930
+  seeds; 578,391/145,460 grouped states) and trained seed 0 for 30 epochs on
+  CUDA with AdamW, learning rate `1e-3`, weight decay `1e-4`, 4,096 groups per
+  batch, and representation MSE only. The checkpoint contains all 115 teacher
+  tensors exactly plus exactly six contextual-deck tensors (3,200 parameters);
+  no policy/Q loss or end-to-end fine-tuning was used. The final validation
+  representation cosine mean/median was `0.94753 / 0.95696`. The durable,
+  read-only checkpoint is outside `.codex/worktrees` at
+  `/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/retrained-contextual-student/contextual_student_frozen.pt`,
+  SHA-256 `bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761`.
+- **Historical source-policy gate:** 100,314 held-out groups / 567,642 source
+  rows passed: argmax agreement `97.945%`, median/p90 TV
+  `0.003128 / 0.034804`. Card Reward agreement was `99.187%`; SHOP was
+  `93.864%` (median/p90 TV `0.008026 / 0.027206`). These reproduce the
+  previously declared source-policy threshold and are not themselves the
+  semantic-prior result.
+- **Semantic-prior gate:** On the primary 6,317 unique prior inputs, top
+  semantic-action agreement was `98.892%`, median/p90 TV
+  `0.000109 / 0.018815`, ordered top-two agreement `96.881%`, and top-two
+  teacher/student margin correlation `0.999871`. The call-weighted 11,474-row
+  result was `98.771%` agreement with median/p90 TV
+  `0.003513 / 0.028456`. All broad-screen guards passed. SHOP was explicitly
+  checked: 1,002 unique inputs, `97.705%` agreement, median/p90 TV
+  `0.002183 / 0.016985`. The event screen had `94.581%` agreement but
+  median/p90 TV `0.011271 / 0.047501`, above the screen guard; rest (90 unique)
+  and treasure (72) remain smaller descriptive strata. Direct primitive and
+  grouped-semantic agreement were `98.926%` and `98.887%`; full strata and
+  representative decoded records are in the evidence packet.
+- **Current-main drift:** The trace source was branch head `03079d52`; at
+  evaluation `origin/main` was `0eed6993`. The intervening OOC adapter change
+  removes trace-only code and alters singleton bypass bookkeeping. Inspection
+  found the non-singleton candidate construction, `priorSourceGroups`, and
+  `policyLogits`/multiplicity prior calculation unchanged; singleton records
+  are excluded from the primary population. The saved trace therefore remains
+  authoritative for the evaluated non-singleton inputs.
+- **Scope / next step:** This is offline prior-fidelity qualification only.
+  No new seeds, native contextual inference, runtime benchmark, MCTS/gameplay
+  smoke, policy-strength gate, default change, or claim of tree/gameplay
+  equivalence. A separate native contextual inference plus parity/runtime task
+  is now justified. See the [evidence packet](evidence/ooc_contextual_semantic_prior_2026-09-25/README.md)
+  for exact commands, full screen/stratum tables, hashes, and raw result JSON.
+
+Knowledge impact: current research now records the offline pass and its exact
+boundary. No native runtime or default is promoted.

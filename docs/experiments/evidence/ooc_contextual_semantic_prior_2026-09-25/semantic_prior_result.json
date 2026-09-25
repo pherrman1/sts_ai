@@ -1,0 +1,4563 @@
+{
+  "artifacts": {
+    "native_teacher_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "semantic_evaluator_sha256": "56c253ca36ee7dc73038b3f0ac32dbacb5da0396470aeb86c348a03abef3761e",
+    "source_policy_result_sha256": "ae740de944b95a83ba3f8fc40a7cbe2de9134597733bbb06072a57ffe7cd8545",
+    "student_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761",
+    "teacher_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+    "trace_decompressed_sha256": "9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370"
+  },
+  "broad_screen_guards": {
+    "boss relic": {
+      "guard_pass": true,
+      "jensen_shannon_nats": {
+        "max": 0.012892467619397123,
+        "mean": 0.000368302718954986,
+        "median": 2.1222318930869217e-05,
+        "p90": 0.0008316181433165293,
+        "p99": 0.007176535891828428
+      },
+      "n_unique_priors": 326,
+      "ordered_top_two_candidate_agreement": 0.9785276073619632,
+      "teacher_student_top_two_candidate_logit_margin_correlation": 0.9974348307635689,
+      "teacher_top_prior_probability_absolute_error": {
+        "max": 0.15505462414033777,
+        "mean": 0.009438812365804005,
+        "median": 0.0017700564274957253,
+        "p90": 0.029879172760837847,
+        "p99": 0.08111019574093159
+      },
+      "top_prior_probability_peak_absolute_error": {
+        "max": 0.15505462414033777,
+        "mean": 0.009426855983578586,
+        "median": 0.0017700564274957253,
+        "p90": 0.029879172760837847,
+        "p99": 0.08111019574093159
+      },
+      "top_semantic_action_agreement": 0.9969325153374233,
+      "top_two_candidate_logit_margin_absolute_error": {
+        "max": 1.3590458631515503,
+        "mean": 0.14457730875790484,
+        "median": 0.08432590961456299,
+        "p90": 0.3229084014892578,
+        "p99": 0.8440519571304321
+      },
+      "total_variation": {
+        "max": 0.15505462414033783,
+        "mean": 0.009700089211224214,
+        "median": 0.0019616006851694723,
+        "p90": 0.030241045796138826,
+        "p99": 0.08117309909406252
+      },
+      "weighted_prior_occurrences": 326
+    },
+    "card reward": {
+      "guard_pass": true,
+      "jensen_shannon_nats": {
+        "max": 0.02697878849539565,
+        "mean": 0.00011415820295660016,
+        "median": 3.837044423580081e-14,
+        "p90": 0.00016819070035413826,
+        "p99": 0.002422455567544947
+      },
+      "n_unique_priors": 3671,
+      "ordered_top_two_candidate_agreement": 0.9850177063470444,
+      "teacher_student_top_two_candidate_logit_margin_correlation": 0.9997977078690364,
+      "teacher_top_prior_probability_absolute_error": {
+        "max": 0.17678540224018824,
+        "mean": 0.0032440884793823867,
+        "median": 3.885114452373273e-12,
+        "p90": 0.010315843611689524,
+        "p99": 0.05429028112409107
+      },
+      "top_prior_probability_peak_absolute_error": {
+        "max": 0.10133021036260181,
+        "mean": 0.0031512377139981678,
+        "median": 3.885114452373273e-12,
+        "p90": 0.00994769151179703,
+        "p99": 0.05199629987793797
+      },
+      "top_semantic_action_agreement": 0.9961863252519749,
+      "top_two_candidate_logit_margin_absolute_error": {
+        "max": 1.709733486175537,
+        "mean": 0.18446051594830423,
+        "median": 0.11783504486083984,
+        "p90": 0.44493567943573,
+        "p99": 0.93465256690979
+      },
+      "total_variation": {
+        "max": 0.21931222687847962,
+        "mean": 0.003729690770047254,
+        "median": 3.885769161301818e-12,
+        "p90": 0.012409656089015154,
+        "p99": 0.05548468906655421
+      },
+      "weighted_prior_occurrences": 3671
+    },
+    "event": {
+      "guard_pass": true,
+      "jensen_shannon_nats": {
+        "max": 0.03618651286510022,
+        "mean": 0.0006432730679627124,
+        "median": 8.044863703805197e-05,
+        "p90": 0.0013648654065343963,
+        "p99": 0.007648968062878828
+      },
+      "n_unique_priors": 406,
+      "ordered_top_two_candidate_agreement": 0.916256157635468,
+      "teacher_student_top_two_candidate_logit_margin_correlation": 0.996695911555547,
+      "teacher_top_prior_probability_absolute_error": {
+        "max": 0.2652592298979636,
+        "mean": 0.018110428195484363,
+        "median": 0.009091927579443104,
+        "p90": 0.04483997420116659,
+        "p99": 0.12272731736781206
+      },
+      "top_prior_probability_peak_absolute_error": {
+        "max": 0.16464420119333856,
+        "mean": 0.016710441174299137,
+        "median": 0.008384158736385483,
+        "p90": 0.04006276283655252,
+        "p99": 0.10216701912223192
+      },
+      "top_semantic_action_agreement": 0.9458128078817734,
+      "top_two_candidate_logit_margin_absolute_error": {
+        "max": 0.9890635013580322,
+        "mean": 0.07651226696205037,
+        "median": 0.039488792419433594,
+        "p90": 0.17930053174495697,
+        "p99": 0.5322341471910477
+      },
+      "total_variation": {
+        "max": 0.2652592298979636,
+        "mean": 0.01983907822143239,
+        "median": 0.011271011088369452,
+        "p90": 0.047501158224153184,
+        "p99": 0.12272731736781206
+      },
+      "weighted_prior_occurrences": 406
+    },
+    "map": {
+      "guard_pass": true,
+      "jensen_shannon_nats": {
+        "max": 0.0024739603188797376,
+        "mean": 8.496699223236958e-05,
+        "median": 1.9344868159821508e-05,
+        "p90": 0.0001689850600719179,
+        "p99": 0.0009994800881295467
+      },
+      "n_unique_priors": 745,
+      "ordered_top_two_candidate_agreement": 0.9852348993288591,
+      "teacher_student_top_two_candidate_logit_margin_correlation": 0.9974798474194589,
+      "teacher_top_prior_probability_absolute_error": {
+        "max": 0.06677960594840182,
+        "mean": 0.007000762856732576,
+        "median": 0.0045994692152614425,
+        "p90": 0.015382534804145087,
+        "p99": 0.042036583214739576
+      },
+      "top_prior_probability_peak_absolute_error": {
+        "max": 0.06677960594840182,
+        "mean": 0.006846268411131816,
+        "median": 0.004588707234060463,
+        "p90": 0.015084244398651803,
+        "p99": 0.042036583214739576
+      },
+      "top_semantic_action_agreement": 0.9892617449664429,
+      "top_two_candidate_logit_margin_absolute_error": {
+        "max": 0.4916503131389618,
+        "mean": 0.04275917384707863,
+        "median": 0.025900602340698242,
+        "p90": 0.10007882118225098,
+        "p99": 0.2776954174041748
+      },
+      "total_variation": {
+        "max": 0.06677960594840177,
+        "mean": 0.007332661281720195,
+        "median": 0.005029580317026414,
+        "p90": 0.01570184056223134,
+        "p99": 0.04203658321473952
+      },
+      "weighted_prior_occurrences": 745
+    },
+    "shop": {
+      "guard_pass": true,
+      "jensen_shannon_nats": {
+        "max": 0.0015314870654453898,
+        "mean": 8.08744624359698e-05,
+        "median": 2.5085504803243797e-05,
+        "p90": 0.0002176755951935885,
+        "p99": 0.0007973018532848168
+      },
+      "n_unique_priors": 1002,
+      "ordered_top_two_candidate_agreement": 0.9151696606786427,
+      "teacher_student_top_two_candidate_logit_margin_correlation": 0.999175880946435,
+      "teacher_top_prior_probability_absolute_error": {
+        "max": 0.04969431145085057,
+        "mean": 0.00320598058817669,
+        "median": 0.0013609279461011814,
+        "p90": 0.007596485514676621,
+        "p99": 0.029844314123863125
+      },
+      "top_prior_probability_peak_absolute_error": {
+        "max": 0.04969431145085057,
+        "mean": 0.003148200042166622,
+        "median": 0.00129071716039042,
+        "p90": 0.00778549818303409,
+        "p99": 0.026372248765819173
+      },
+      "top_semantic_action_agreement": 0.9770459081836327,
+      "top_two_candidate_logit_margin_absolute_error": {
+        "max": 1.2700108289718628,
+        "mean": 0.08903269561569015,
+        "median": 0.047394752502441406,
+        "p90": 0.22427451610565186,
+        "p99": 0.6353214308619499
+      },
+      "total_variation": {
+        "max": 0.04969485181206548,
+        "mean": 0.006003260786271172,
+        "median": 0.002182846151987725,
+        "p90": 0.016984581343479174,
+        "p99": 0.03342788755691145
+      },
+      "weighted_prior_occurrences": 1002
+    }
+  },
+  "by_screen": {
+    "boss relic": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.012892467619397123,
+          "mean": 0.00036737487203644664,
+          "median": 2.1884554933074457e-05,
+          "p90": 0.0008316181433165293,
+          "p99": 0.007176535891828428
+        },
+        "n_unique_priors": 326,
+        "ordered_top_two_candidate_agreement": 0.9785932721712538,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9974410863334078,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.15505462414033777,
+          "mean": 0.009419169285957594,
+          "median": 0.0018650271816512687,
+          "p90": 0.029879172760837847,
+          "p99": 0.08111019574093159
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.15505462414033777,
+          "mean": 0.009407249467592194,
+          "median": 0.0018650271816512687,
+          "p90": 0.029879172760837847,
+          "p99": 0.08111019574093159
+        },
+        "top_semantic_action_agreement": 0.9969418960244648,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.3590458631515503,
+          "mean": 0.1441633578287352,
+          "median": 0.08432590961456299,
+          "p90": 0.3229084014892578,
+          "p99": 0.8440519571304321
+        },
+        "total_variation": {
+          "max": 0.15505462414033783,
+          "mean": 0.009679647119618108,
+          "median": 0.001982503027817328,
+          "p90": 0.030241045796138826,
+          "p99": 0.08117309909406252
+        },
+        "weighted_prior_occurrences": 327
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.012892467619397123,
+          "mean": 0.000368302718954986,
+          "median": 2.1222318930869217e-05,
+          "p90": 0.0008316181433165293,
+          "p99": 0.007176535891828428
+        },
+        "n_unique_priors": 326,
+        "ordered_top_two_candidate_agreement": 0.9785276073619632,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9974348307635689,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.15505462414033777,
+          "mean": 0.009438812365804005,
+          "median": 0.0017700564274957253,
+          "p90": 0.029879172760837847,
+          "p99": 0.08111019574093159
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.15505462414033777,
+          "mean": 0.009426855983578586,
+          "median": 0.0017700564274957253,
+          "p90": 0.029879172760837847,
+          "p99": 0.08111019574093159
+        },
+        "top_semantic_action_agreement": 0.9969325153374233,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.3590458631515503,
+          "mean": 0.14457730875790484,
+          "median": 0.08432590961456299,
+          "p90": 0.3229084014892578,
+          "p99": 0.8440519571304321
+        },
+        "total_variation": {
+          "max": 0.15505462414033783,
+          "mean": 0.009700089211224214,
+          "median": 0.0019616006851694723,
+          "p90": 0.030241045796138826,
+          "p99": 0.08117309909406252
+        },
+        "weighted_prior_occurrences": 326
+      }
+    },
+    "card reward": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.02697878849539565,
+          "mean": 0.0001918879122514836,
+          "median": 4.258818230965556e-10,
+          "p90": 0.0004786863671670423,
+          "p99": 0.00277548472099025
+        },
+        "n_unique_priors": 3671,
+        "ordered_top_two_candidate_agreement": 0.9790352127009974,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9998464348195718,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.17678540224018824,
+          "mean": 0.005312653936009511,
+          "median": 2.512274466237585e-08,
+          "p90": 0.019545597091453093,
+          "p99": 0.05382865959087085
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.10133021036260181,
+          "mean": 0.005160041134024058,
+          "median": 2.512274466237585e-08,
+          "p90": 0.018742730759042314,
+          "p99": 0.05233723501504328
+        },
+        "top_semantic_action_agreement": 0.9947079177691838,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.709733486175537,
+          "mean": 0.1692106561048486,
+          "median": 0.10979759693145752,
+          "p90": 0.40365171432495117,
+          "p99": 0.8727169036865234
+        },
+        "total_variation": {
+          "max": 0.21931222687847962,
+          "mean": 0.006384361164299573,
+          "median": 2.5122744721649748e-08,
+          "p90": 0.023659065505789584,
+          "p99": 0.05852643759581708
+        },
+        "weighted_prior_occurrences": 4913
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.02697878849539565,
+          "mean": 0.00011415820295660016,
+          "median": 3.837044423580081e-14,
+          "p90": 0.00016819070035413826,
+          "p99": 0.002422455567544947
+        },
+        "n_unique_priors": 3671,
+        "ordered_top_two_candidate_agreement": 0.9850177063470444,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9997977078690364,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.17678540224018824,
+          "mean": 0.0032440884793823867,
+          "median": 3.885114452373273e-12,
+          "p90": 0.010315843611689524,
+          "p99": 0.05429028112409107
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.10133021036260181,
+          "mean": 0.0031512377139981678,
+          "median": 3.885114452373273e-12,
+          "p90": 0.00994769151179703,
+          "p99": 0.05199629987793797
+        },
+        "top_semantic_action_agreement": 0.9961863252519749,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.709733486175537,
+          "mean": 0.18446051594830423,
+          "median": 0.11783504486083984,
+          "p90": 0.44493567943573,
+          "p99": 0.93465256690979
+        },
+        "total_variation": {
+          "max": 0.21931222687847962,
+          "mean": 0.003729690770047254,
+          "median": 3.885769161301818e-12,
+          "p90": 0.012409656089015154,
+          "p99": 0.05548468906655421
+        },
+        "weighted_prior_occurrences": 3671
+      }
+    },
+    "card select": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.00027431429331494476,
+          "mean": 5.199100300329241e-06,
+          "median": 1.9324924871847603e-08,
+          "p90": 4.594729610488373e-08,
+          "p99": 0.00027431429331494476
+        },
+        "n_unique_priors": 5,
+        "ordered_top_two_candidate_agreement": 1.0,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9999572263202007,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.005528861276300534,
+          "mean": 0.00010860800031022415,
+          "median": 4.000504206236322e-06,
+          "p90": 6.23248566511414e-06,
+          "p99": 0.005528861276300534
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.005528861276300534,
+          "mean": 0.00010860800031022415,
+          "median": 4.000504206236322e-06,
+          "p90": 6.23248566511414e-06,
+          "p99": 0.005528861276300534
+        },
+        "top_semantic_action_agreement": 1.0,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.06000179052352905,
+          "mean": 0.041016395361918326,
+          "median": 0.037337303161621094,
+          "p90": 0.06000179052352905,
+          "p99": 0.06000179052352905
+        },
+        "total_variation": {
+          "max": 0.01629869638051211,
+          "mean": 0.0003118124362386899,
+          "median": 4.000504206109287e-06,
+          "p90": 6.232485665026913e-06,
+          "p99": 0.01629869638051211
+        },
+        "weighted_prior_occurrences": 53
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.00027431429331494476,
+          "mean": 5.488190516456595e-05,
+          "median": 1.9324924871847603e-08,
+          "p90": 0.00027431429331494476,
+          "p99": 0.00027431429331494476
+        },
+        "n_unique_priors": 5,
+        "ordered_top_two_candidate_agreement": 1.0,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9999959471744377,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.005528861276300534,
+          "mean": 0.0011092701435699737,
+          "median": 4.000504206236322e-06,
+          "p90": 0.005528861276300534,
+          "p99": 0.005528861276300534
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.005528861276300534,
+          "mean": 0.0011092701435699737,
+          "median": 4.000504206236322e-06,
+          "p90": 0.005528861276300534,
+          "p99": 0.005528861276300534
+        },
+        "top_semantic_action_agreement": 1.0,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.06000179052352905,
+          "mean": 0.034144604206085206,
+          "median": 0.037337303161621094,
+          "p90": 0.06000179052352905,
+          "p99": 0.06000179052352905
+        },
+        "total_variation": {
+          "max": 0.01629869638051211,
+          "mean": 0.0032632371644122442,
+          "median": 4.000504206109287e-06,
+          "p90": 0.01629869638051211,
+          "p99": 0.01629869638051211
+        },
+        "weighted_prior_occurrences": 5
+      }
+    },
+    "event": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.03618651286510022,
+          "mean": 0.0005731421304401819,
+          "median": 6.357571706270019e-05,
+          "p90": 0.0012036617621586365,
+          "p99": 0.006824438364114489
+        },
+        "n_unique_priors": 406,
+        "ordered_top_two_candidate_agreement": 0.9202898550724637,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9967995504250922,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.2652592298979636,
+          "mean": 0.017083552336709818,
+          "median": 0.00835057695666963,
+          "p90": 0.039247608928598354,
+          "p99": 0.10216701912223192
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.16464420119333856,
+          "mean": 0.015581375633896022,
+          "median": 0.007923792086817871,
+          "p90": 0.03805890895828434,
+          "p99": 0.09964117483013113
+        },
+        "top_semantic_action_agreement": 0.947463768115942,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.9890635013580322,
+          "mean": 0.07237472751117109,
+          "median": 0.036191701889038086,
+          "p90": 0.17007631063461304,
+          "p99": 0.5322341471910477
+        },
+        "total_variation": {
+          "max": 0.2652592298979636,
+          "mean": 0.018675637978410334,
+          "median": 0.010197301351792726,
+          "p90": 0.04505483097382733,
+          "p99": 0.10216701912223194
+        },
+        "weighted_prior_occurrences": 552
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.03618651286510022,
+          "mean": 0.0006432730679627124,
+          "median": 8.044863703805197e-05,
+          "p90": 0.0013648654065343963,
+          "p99": 0.007648968062878828
+        },
+        "n_unique_priors": 406,
+        "ordered_top_two_candidate_agreement": 0.916256157635468,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.996695911555547,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.2652592298979636,
+          "mean": 0.018110428195484363,
+          "median": 0.009091927579443104,
+          "p90": 0.04483997420116659,
+          "p99": 0.12272731736781206
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.16464420119333856,
+          "mean": 0.016710441174299137,
+          "median": 0.008384158736385483,
+          "p90": 0.04006276283655252,
+          "p99": 0.10216701912223192
+        },
+        "top_semantic_action_agreement": 0.9458128078817734,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.9890635013580322,
+          "mean": 0.07651226696205037,
+          "median": 0.039488792419433594,
+          "p90": 0.17930053174495697,
+          "p99": 0.5322341471910477
+        },
+        "total_variation": {
+          "max": 0.2652592298979636,
+          "mean": 0.01983907822143239,
+          "median": 0.011271011088369452,
+          "p90": 0.047501158224153184,
+          "p99": 0.12272731736781206
+        },
+        "weighted_prior_occurrences": 406
+      }
+    },
+    "map": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.0024739603188797376,
+          "mean": 0.00015291263602114797,
+          "median": 2.8699230701740457e-05,
+          "p90": 0.00038363580867836826,
+          "p99": 0.002288630841415784
+        },
+        "n_unique_priors": 745,
+        "ordered_top_two_candidate_agreement": 0.9884488448844885,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9951510759265081,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.009517316138260781,
+          "median": 0.0056305266500454865,
+          "p90": 0.023049130152175912,
+          "p99": 0.05415795300561488
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.009257087413175309,
+          "median": 0.0054246142440366185,
+          "p90": 0.02151324599866622,
+          "p99": 0.05415795300561488
+        },
+        "top_semantic_action_agreement": 0.9894389438943895,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.4916503131389618,
+          "mean": 0.05995370180591197,
+          "median": 0.03541654348373413,
+          "p90": 0.13331526517868042,
+          "p99": 0.3685707449913025
+        },
+        "total_variation": {
+          "max": 0.06677960594840177,
+          "mean": 0.009674318491539595,
+          "median": 0.005974553781223427,
+          "p90": 0.02319330236852342,
+          "p99": 0.05415795300561484
+        },
+        "weighted_prior_occurrences": 3030
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.0024739603188797376,
+          "mean": 8.496699223236958e-05,
+          "median": 1.9344868159821508e-05,
+          "p90": 0.0001689850600719179,
+          "p99": 0.0009994800881295467
+        },
+        "n_unique_priors": 745,
+        "ordered_top_two_candidate_agreement": 0.9852348993288591,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9974798474194589,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.007000762856732576,
+          "median": 0.0045994692152614425,
+          "p90": 0.015382534804145087,
+          "p99": 0.042036583214739576
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.006846268411131816,
+          "median": 0.004588707234060463,
+          "p90": 0.015084244398651803,
+          "p99": 0.042036583214739576
+        },
+        "top_semantic_action_agreement": 0.9892617449664429,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.4916503131389618,
+          "mean": 0.04275917384707863,
+          "median": 0.025900602340698242,
+          "p90": 0.10007882118225098,
+          "p99": 0.2776954174041748
+        },
+        "total_variation": {
+          "max": 0.06677960594840177,
+          "mean": 0.007332661281720195,
+          "median": 0.005029580317026414,
+          "p90": 0.01570184056223134,
+          "p99": 0.04203658321473952
+        },
+        "weighted_prior_occurrences": 745
+      }
+    },
+    "rest": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.011654176334576407,
+          "mean": 0.0015580114702632413,
+          "median": 0.00025430181528443454,
+          "p90": 0.004738704291744915,
+          "p99": 0.011654176334576407
+        },
+        "n_unique_priors": 90,
+        "ordered_top_two_candidate_agreement": 0.978110599078341,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.970771848908188,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.031277862682559346,
+          "median": 0.012485869575055111,
+          "p90": 0.08986975198066544,
+          "p99": 0.14014675368827567
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.03127103730597664,
+          "median": 0.012485869575055111,
+          "p90": 0.08986975198066544,
+          "p99": 0.14014675368827567
+        },
+        "top_semantic_action_agreement": 0.9953917050691244,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.6457200050354004,
+          "mean": 0.08289047869669128,
+          "median": 0.0,
+          "p90": 0.31972789764404297,
+          "p99": 0.6457200050354004
+        },
+        "total_variation": {
+          "max": 0.1401865327663926,
+          "mean": 0.03293457133612055,
+          "median": 0.01354983965514496,
+          "p90": 0.08986975198066549,
+          "p99": 0.1401865327663926
+        },
+        "weighted_prior_occurrences": 868
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.011654176334576407,
+          "mean": 0.001268475429694806,
+          "median": 0.00023802624239347868,
+          "p90": 0.0035576673481650042,
+          "p99": 0.011654176334576407
+        },
+        "n_unique_priors": 90,
+        "ordered_top_two_candidate_agreement": 0.9444444444444444,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9809475015845948,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.026773704350721905,
+          "median": 0.009737733803174553,
+          "p90": 0.07351132857918186,
+          "p99": 0.14014675368827567
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.02671868118555422,
+          "median": 0.009737733803174553,
+          "p90": 0.07351132857918186,
+          "p99": 0.14014675368827567
+        },
+        "top_semantic_action_agreement": 0.9777777777777777,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.6457200050354004,
+          "mean": 0.06111768086751302,
+          "median": 0.0,
+          "p90": 0.182814359664917,
+          "p99": 0.6457200050354004
+        },
+        "total_variation": {
+          "max": 0.1401865327663926,
+          "mean": 0.02842298069378601,
+          "median": 0.012610522229826077,
+          "p90": 0.07789555768428784,
+          "p99": 0.1401865327663926
+        },
+        "weighted_prior_occurrences": 90
+      }
+    },
+    "shop": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.0015314870654453898,
+          "mean": 9.008172107324547e-05,
+          "median": 4.39281770303655e-05,
+          "p90": 0.0002176755951935885,
+          "p99": 0.000779683483189849
+        },
+        "n_unique_priors": 1002,
+        "ordered_top_two_candidate_agreement": 0.8887303851640513,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9992022243546933,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.04969431145085057,
+          "mean": 0.0036926855536295916,
+          "median": 0.0017456127427450951,
+          "p90": 0.00847878220254994,
+          "p99": 0.029844314123863125
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.04969431145085057,
+          "mean": 0.0035062124598875216,
+          "median": 0.0017304978698066131,
+          "p90": 0.00847878220254994,
+          "p99": 0.022528780324412412
+        },
+        "top_semantic_action_agreement": 0.9650499286733238,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.2700108289718628,
+          "mean": 0.08441742315367608,
+          "median": 0.04736897349357605,
+          "p90": 0.22122955322265625,
+          "p99": 0.6167991906404495
+        },
+        "total_variation": {
+          "max": 0.04969485181206548,
+          "mean": 0.007154467453999351,
+          "median": 0.0044845521407569705,
+          "p90": 0.01697640807656217,
+          "p99": 0.0327670919136248
+        },
+        "weighted_prior_occurrences": 1402
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.0015314870654453898,
+          "mean": 8.08744624359698e-05,
+          "median": 2.5085504803243797e-05,
+          "p90": 0.0002176755951935885,
+          "p99": 0.0007973018532848168
+        },
+        "n_unique_priors": 1002,
+        "ordered_top_two_candidate_agreement": 0.9151696606786427,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.999175880946435,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.04969431145085057,
+          "mean": 0.00320598058817669,
+          "median": 0.0013609279461011814,
+          "p90": 0.007596485514676621,
+          "p99": 0.029844314123863125
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.04969431145085057,
+          "mean": 0.003148200042166622,
+          "median": 0.00129071716039042,
+          "p90": 0.00778549818303409,
+          "p99": 0.026372248765819173
+        },
+        "top_semantic_action_agreement": 0.9770459081836327,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.2700108289718628,
+          "mean": 0.08903269561569015,
+          "median": 0.047394752502441406,
+          "p90": 0.22427451610565186,
+          "p99": 0.6353214308619499
+        },
+        "total_variation": {
+          "max": 0.04969485181206548,
+          "mean": 0.006003260786271172,
+          "median": 0.002182846151987725,
+          "p90": 0.016984581343479174,
+          "p99": 0.03342788755691145
+        },
+        "weighted_prior_occurrences": 1002
+      }
+    },
+    "treasure": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.003183417850976134,
+          "mean": 0.0006924711015440909,
+          "median": 2.6432831366319924e-05,
+          "p90": 0.002676904911491828,
+          "p99": 0.003183417850976134
+        },
+        "n_unique_priors": 72,
+        "ordered_top_two_candidate_agreement": 1.0,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9498157773687105,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.0485459658759555,
+          "mean": 0.011921372494283395,
+          "median": 0.002968964124533957,
+          "p90": 0.03815363216656131,
+          "p99": 0.0485459658759555
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.0485459658759555,
+          "mean": 0.011921372494283395,
+          "median": 0.002968964124533957,
+          "p90": 0.03815363216656131,
+          "p99": 0.0485459658759555
+        },
+        "top_semantic_action_agreement": 1.0,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.6780728101730347,
+          "mean": 0.20922929356525735,
+          "median": 0.10299074649810791,
+          "p90": 0.6472405195236206,
+          "p99": 0.6780728101730347
+        },
+        "total_variation": {
+          "max": 0.04854596587595543,
+          "mean": 0.011921372494283412,
+          "median": 0.002968964124533957,
+          "p90": 0.038153632166561334,
+          "p99": 0.04854596587595543
+        },
+        "weighted_prior_occurrences": 329
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.003183417850976134,
+          "mean": 0.00034916831408501035,
+          "median": 1.7663121707445998e-05,
+          "p90": 0.0018028317681401552,
+          "p99": 0.003183417850976134
+        },
+        "n_unique_priors": 72,
+        "ordered_top_two_candidate_agreement": 1.0,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9704361308516434,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.0485459658759555,
+          "mean": 0.007742015999765071,
+          "median": 0.0020268438445029124,
+          "p90": 0.027885791710546837,
+          "p99": 0.0485459658759555
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.0485459658759555,
+          "mean": 0.007742015999765071,
+          "median": 0.0020268438445029124,
+          "p90": 0.027885791710546837,
+          "p99": 0.0485459658759555
+        },
+        "top_semantic_action_agreement": 1.0,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.6780728101730347,
+          "mean": 0.14392733573913574,
+          "median": 0.07429242134094238,
+          "p90": 0.38253939151763916,
+          "p99": 0.6780728101730347
+        },
+        "total_variation": {
+          "max": 0.04854596587595543,
+          "mean": 0.007742015999765077,
+          "median": 0.002026843844502962,
+          "p90": 0.027885791710546805,
+          "p99": 0.04854596587595543
+        },
+        "weighted_prior_occurrences": 72
+      }
+    }
+  },
+  "card_reward_examples": [
+    {
+      "candidate_count": 6,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1280,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1280
+          ],
+          "python_teacher_candidate_logit": -7.0837225914001465,
+          "python_teacher_prior": 9.136550505573983e-22,
+          "semantic_key": "ooc:v1:effect=12:source=7:reward=none:group=[124,0,0;181,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -7.08679723739624,
+          "student_prior": 8.752980460964916e-22,
+          "teacher_candidate_logit": -7.083719730377197,
+          "teacher_prior": 9.136506939210064e-22
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -12.183882713317871,
+          "python_teacher_prior": 5.569431432109071e-24,
+          "semantic_key": "ooc:v1:effect=14:source=7:none",
+          "student_candidate_logit": -12.193764686584473,
+          "student_prior": 5.2994180003859e-24,
+          "teacher_candidate_logit": -12.183877944946289,
+          "teacher_prior": 5.5694154978607246e-24
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -12.777054786682129,
+          "python_teacher_prior": 3.077510215678607e-24,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,124,0,0:group=[124,0,0;181,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -12.826889991760254,
+          "student_prior": 2.8136194024471604e-24,
+          "teacher_candidate_logit": -12.777054786682129,
+          "teacher_prior": 3.077486736228565e-24
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 256,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            256
+          ],
+          "python_teacher_candidate_logit": -9.386155128479004,
+          "python_teacher_prior": 9.137944446722306e-23,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[124,0,0;181,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -9.37723445892334,
+          "student_prior": 8.859959007803359e-23,
+          "teacher_candidate_logit": -9.386159896850586,
+          "teacher_prior": 9.137831157326567e-23
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 512,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            512
+          ],
+          "python_teacher_candidate_logit": -8.081280708312988,
+          "python_teacher_prior": 3.3693666564316046e-22,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,288,0,0:group=[124,0,0;181,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -8.082674980163574,
+          "student_prior": 3.233342796900034e-22,
+          "teacher_candidate_logit": -8.081284523010254,
+          "teacher_prior": 3.3693280973109284e-22
+        },
+        {
+          "candidate_id": 5,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 134217728,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            134217728
+          ],
+          "python_teacher_candidate_logit": 41.36086654663086,
+          "python_teacher_prior": 1.0,
+          "semantic_key": "ooc:v1:effect=9:source=7:reward=gold,19:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": 41.40068054199219,
+          "student_prior": 1.0,
+          "teacher_candidate_logit": 41.36087417602539,
+          "teacher_prior": 1.0
+        }
+      ],
+      "canonical_prior_sha256": "d663abad976bc770f94044a99dfd0f824bdafacfb8767f1c5c71460e79dc48de",
+      "decisionIndex": 2,
+      "floor": 1,
+      "js_nats": 2.909534969080435e-25,
+      "ordered_top2_candidate_agreement": true,
+      "room": "MONSTER",
+      "runSeed": 12450009,
+      "screen": "card reward",
+      "selection": "min_tv",
+      "student_top_two_candidate_logit_margin": 48.48747777938843,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -7.083719730377197,
+          "primitive_bits": 1280,
+          "python_teacher_logit": -7.0837225914001465,
+          "student_source_logit": -7.08679723739624
+        },
+        {
+          "captured_native_logit": -12.183877944946289,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -12.183882713317871,
+          "student_source_logit": -12.193764686584473
+        },
+        {
+          "captured_native_logit": -12.777054786682129,
+          "primitive_bits": 0,
+          "python_teacher_logit": -12.777054786682129,
+          "student_source_logit": -12.826889991760254
+        },
+        {
+          "captured_native_logit": -9.386159896850586,
+          "primitive_bits": 256,
+          "python_teacher_logit": -9.386155128479004,
+          "student_source_logit": -9.37723445892334
+        },
+        {
+          "captured_native_logit": -8.081284523010254,
+          "primitive_bits": 512,
+          "python_teacher_logit": -8.081280708312988,
+          "student_source_logit": -8.082674980163574
+        },
+        {
+          "captured_native_logit": 41.36087417602539,
+          "primitive_bits": 134217728,
+          "python_teacher_logit": 41.36086654663086,
+          "student_source_logit": 41.40068054199219
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 48.44459390640259,
+      "top_action_agreement": true,
+      "tv": 2.7631882096046285e-23
+    },
+    {
+      "candidate_count": 5,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653184,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653184
+          ],
+          "python_teacher_candidate_logit": 6.081987380981445,
+          "python_teacher_prior": 3.1137451684657526e-11,
+          "semantic_key": "ooc:v1:effect=10:source=7:reward=potion,27:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": 6.290271282196045,
+          "student_prior": 3.5023254204848536e-11,
+          "teacher_candidate_logit": 6.081991195678711,
+          "teacher_prior": 3.1137451684657526e-11
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1280,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1280
+          ],
+          "python_teacher_candidate_logit": -5.001033306121826,
+          "python_teacher_prior": 4.786172415390173e-16,
+          "semantic_key": "ooc:v1:effect=12:source=7:reward=none:group=[178,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -5.0543365478515625,
+          "student_prior": 4.1443451419991295e-16,
+          "teacher_candidate_logit": -5.00103235244751,
+          "teacher_prior": 4.786158722060642e-16
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -8.530434608459473,
+          "python_teacher_prior": 1.4034237746441304e-17,
+          "semantic_key": "ooc:v1:effect=14:source=7:none",
+          "student_candidate_logit": -8.404053688049316,
+          "student_prior": 1.4544280658365594e-17,
+          "teacher_candidate_logit": -8.53043270111084,
+          "teacher_prior": 1.403421097828265e-17
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -2.3248324394226074,
+          "python_teacher_prior": 6.954206911716278e-15,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -2.31758451461792,
+          "student_prior": 6.3975284039314e-15,
+          "teacher_candidate_logit": -2.324831485748291,
+          "teacher_prior": 6.9541870155991715e-15
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 134217728,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            134217728
+          ],
+          "python_teacher_candidate_logit": 30.27459716796875,
+          "python_teacher_prior": 0.9999999999688551,
+          "semantic_key": "ooc:v1:effect=9:source=7:reward=gold,18:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": 30.365280151367188,
+          "student_prior": 0.99999999996497,
+          "teacher_candidate_logit": 30.274600982666016,
+          "teacher_prior": 0.9999999999688551
+        }
+      ],
+      "canonical_prior_sha256": "a30d26d87ee5fbb33d5908e627fffe4d4b7ac0cb5b3b6042d1d4b01b30ebf9b7",
+      "decisionIndex": 95,
+      "floor": 31,
+      "js_nats": 5.715132053592653e-14,
+      "ordered_top2_candidate_agreement": true,
+      "room": "MONSTER",
+      "runSeed": 12450011,
+      "screen": "card reward",
+      "selection": "median_tv",
+      "student_top_two_candidate_logit_margin": 24.075008869171143,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": 6.081991195678711,
+          "primitive_bits": 402653184,
+          "python_teacher_logit": 6.081987380981445,
+          "student_source_logit": 6.290271282196045
+        },
+        {
+          "captured_native_logit": -5.00103235244751,
+          "primitive_bits": 1280,
+          "python_teacher_logit": -5.001033306121826,
+          "student_source_logit": -5.0543365478515625
+        },
+        {
+          "captured_native_logit": -8.53043270111084,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -8.530434608459473,
+          "student_source_logit": -8.404053688049316
+        },
+        {
+          "captured_native_logit": -2.324831485748291,
+          "primitive_bits": 0,
+          "python_teacher_logit": -2.3248324394226074,
+          "student_source_logit": -2.31758451461792
+        },
+        {
+          "captured_native_logit": 30.274600982666016,
+          "primitive_bits": 134217728,
+          "python_teacher_logit": 30.27459716796875,
+          "student_source_logit": 30.365280151367188
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 24.192609786987305,
+      "top_action_agreement": true,
+      "tv": 3.885769161301818e-12
+    },
+    {
+      "candidate_count": 5,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1280,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1280
+          ],
+          "python_teacher_candidate_logit": -5.979254245758057,
+          "python_teacher_prior": 0.20777040024271834,
+          "semantic_key": "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;279,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -5.807636737823486,
+          "student_prior": 0.25369314706647955,
+          "teacher_candidate_logit": -5.979252815246582,
+          "teacher_prior": 0.20777073652749
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -9.306883811950684,
+          "python_teacher_prior": 0.007454396994056894,
+          "semantic_key": "ooc:v1:effect=14:source=7:none",
+          "student_candidate_logit": -9.29480266571045,
+          "student_prior": 0.007759823013499656,
+          "teacher_candidate_logit": -9.306879997253418,
+          "teacher_prior": 0.0074544268320163925
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 512,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            512
+          ],
+          "python_teacher_candidate_logit": -5.3217291831970215,
+          "python_teacher_prior": 0.4009989013750956,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;279,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -5.93116569519043,
+          "student_prior": 0.22421300090052532,
+          "teacher_candidate_logit": -5.321730613708496,
+          "teacher_prior": 0.40099840314071356
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 256,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            256
+          ],
+          "python_teacher_candidate_logit": -5.762535572052002,
+          "python_teacher_prior": 0.2580497249550048,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[181,0,0;279,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -5.277342796325684,
+          "student_prior": 0.43113419363347205,
+          "teacher_candidate_logit": -5.762535572052002,
+          "teacher_prior": 0.25804977347546515
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -6.481578350067139,
+          "python_teacher_prior": 0.12572657643312438,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,288,0,0:group=[181,0,0;279,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -6.922516822814941,
+          "student_prior": 0.08319983538602357,
+          "teacher_candidate_logit": -6.4815778732299805,
+          "teacher_prior": 0.12572666002431485
+        }
+      ],
+      "canonical_prior_sha256": "886cdaee693ed352396f8f817f542f05788f43240c80971ca0a83919590ed311",
+      "decisionIndex": 39,
+      "floor": 12,
+      "js_nats": 0.02697878849539565,
+      "ordered_top2_candidate_agreement": false,
+      "room": "ELITE",
+      "runSeed": 12450014,
+      "screen": "card reward",
+      "selection": "max_tv",
+      "student_top_two_candidate_logit_margin": 0.5302939414978027,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -5.979252815246582,
+          "primitive_bits": 1280,
+          "python_teacher_logit": -5.979254245758057,
+          "student_source_logit": -5.807636737823486
+        },
+        {
+          "captured_native_logit": -9.306879997253418,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -9.306883811950684,
+          "student_source_logit": -9.29480266571045
+        },
+        {
+          "captured_native_logit": -5.321730613708496,
+          "primitive_bits": 512,
+          "python_teacher_logit": -5.3217291831970215,
+          "student_source_logit": -5.93116569519043
+        },
+        {
+          "captured_native_logit": -5.762535572052002,
+          "primitive_bits": 256,
+          "python_teacher_logit": -5.762535572052002,
+          "student_source_logit": -5.277342796325684
+        },
+        {
+          "captured_native_logit": -6.4815778732299805,
+          "primitive_bits": 0,
+          "python_teacher_logit": -6.481578350067139,
+          "student_source_logit": -6.922516822814941
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.44080495834350586,
+      "top_action_agreement": false,
+      "tv": 0.21931222687847962
+    }
+  ],
+  "classification": "CONTEXTUAL_SEMANTIC_PRIOR_PASS",
+  "gate": {
+    "median_tv_le_0_03": true,
+    "no_broad_screen_specific_collapse": true,
+    "p90_tv_le_0_10": true,
+    "pass": true,
+    "top_semantic_action_agreement_ge_0_95": true
+  },
+  "gate_policy": {
+    "broad_screens_n_ge_100": "top agreement >= 0.90; median TV <= 0.05; p90 TV <= 0.15",
+    "classification": "CONTEXTUAL_SEMANTIC_PRIOR_PASS when all original gates pass; BORDERLINE when overall top agreement >= 0.90, median TV <= 0.05, p90 TV <= 0.15, and no broad screen is severe (<0.80 top agreement, >0.10 median TV, or >0.20 p90 TV); otherwise REJECTED",
+    "margin": "difference between the highest and second-highest raw candidate logits before primitive multiplicity correction",
+    "multiplicity": "softmax semantic-candidate logits, divide each candidate weight by the count of candidates sharing its primitiveBits, then renormalize",
+    "overall": "unique canonical priors: top semantic action agreement >= 0.95; median TV <= 0.03; p90 TV <= 0.10",
+    "top_prior_probability_error": "absolute student-versus-teacher prior error at the teacher-selected top semantic candidate"
+  },
+  "grouped_semantic_examples": [
+    {
+      "candidate_count": 13,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=104:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=124:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1,
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=14:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=197:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=198:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 5,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=222:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 6,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=244:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 7,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1,
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=250:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 8,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=300:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 9,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1,
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=301:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 10,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=321:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 11,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1,
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=65:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        },
+        {
+          "candidate_id": 12,
+          "compound_selector": 3,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 13,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -5.123231410980225,
+          "python_teacher_prior": 0.07692307692307694,
+          "semantic_key": "ooc:v1:effect=0:source=0:card=69:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -5.035835266113281,
+          "student_prior": 0.07692307692307694,
+          "teacher_candidate_logit": -5.123231887817383,
+          "teacher_prior": 0.07692307692307694
+        }
+      ],
+      "canonical_prior_sha256": "6ac6955e1a930a64f61587c7521df7db6091c31f3e1d10f59d6bb41945e98f6e",
+      "decisionIndex": 97,
+      "floor": 32,
+      "js_nats": 0.0,
+      "ordered_top2_candidate_agreement": true,
+      "room": "REST",
+      "runSeed": 12450010,
+      "screen": "rest",
+      "selection": "min_tv",
+      "student_top_two_candidate_logit_margin": 0.0,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -5.123231887817383,
+          "primitive_bits": 1,
+          "python_teacher_logit": -5.123231410980225,
+          "student_source_logit": -5.035835266113281
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.0,
+      "top_action_agreement": true,
+      "tv": 0.0
+    },
+    {
+      "candidate_count": 6,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653184,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653184
+          ],
+          "python_teacher_candidate_logit": 11.285042762756348,
+          "python_teacher_prior": 0.9999939477491561,
+          "semantic_key": "ooc:v1:effect=10:source=7:reward=potion,23:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": 10.637081146240234,
+          "student_prior": 0.999989559437514,
+          "teacher_candidate_logit": 11.285041809082031,
+          "teacher_prior": 0.9999939477354037
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1280,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1280
+          ],
+          "python_teacher_candidate_logit": -6.908837795257568,
+          "python_teacher_prior": 1.2545715673083158e-08,
+          "semantic_key": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;191,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -6.6276021003723145,
+          "student_prior": 3.177157905384449e-08,
+          "teacher_candidate_logit": -6.908833026885986,
+          "teacher_prior": 1.2545787460276918e-08
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -11.500728607177734,
+          "python_teacher_prior": 1.2713426004044924e-10,
+          "semantic_key": "ooc:v1:effect=14:source=7:none",
+          "student_candidate_logit": -11.288155555725098,
+          "student_prior": 3.0059804491218025e-10,
+          "teacher_candidate_logit": -11.500723838806152,
+          "teacher_prior": 1.2713498750885336e-10
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 256,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            256
+          ],
+          "python_teacher_candidate_logit": -9.434269905090332,
+          "python_teacher_prior": 1.0039549169555012e-09,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;191,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -9.087385177612305,
+          "student_prior": 2.714992178343289e-09,
+          "teacher_candidate_logit": -9.434269905090332,
+          "teacher_prior": 1.0039558743881701e-09
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 512,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            512
+          ],
+          "python_teacher_candidate_logit": -0.7323886752128601,
+          "python_teacher_prior": 6.0380014276325e-06,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,191,0,0:group=[157,0,0;191,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -0.8361939191818237,
+          "student_prior": 1.0404361070206417e-05,
+          "teacher_candidate_logit": -0.732387363910675,
+          "teacher_prior": 6.038015103496299e-06
+        },
+        {
+          "candidate_id": 5,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -9.99576473236084,
+          "python_teacher_prior": 5.726115528243939e-10,
+          "semantic_key": "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[157,0,0;191,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "student_candidate_logit": -9.739577293395996,
+          "student_prior": 1.414246607857649e-09,
+          "teacher_candidate_logit": -9.995760917663574,
+          "teacher_prior": 5.726142832476848e-10
+        }
+      ],
+      "canonical_prior_sha256": "4c93fef8ebea0372626772a1f9c549abbc944511269846e8b5f112c00436e4ee",
+      "decisionIndex": 5,
+      "floor": 2,
+      "js_nats": 2.958554607436069e-07,
+      "ordered_top2_candidate_agreement": true,
+      "room": "MONSTER",
+      "runSeed": 12450011,
+      "screen": "card reward",
+      "selection": "median_tv",
+      "student_top_two_candidate_logit_margin": 11.473275065422058,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": 11.285041809082031,
+          "primitive_bits": 402653184,
+          "python_teacher_logit": 11.285042762756348,
+          "student_source_logit": 10.637081146240234
+        },
+        {
+          "captured_native_logit": -6.908833026885986,
+          "primitive_bits": 1280,
+          "python_teacher_logit": -6.908837795257568,
+          "student_source_logit": -6.6276021003723145
+        },
+        {
+          "captured_native_logit": -11.500723838806152,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -11.500728607177734,
+          "student_source_logit": -11.288155555725098
+        },
+        {
+          "captured_native_logit": -9.434269905090332,
+          "primitive_bits": 256,
+          "python_teacher_logit": -9.434269905090332,
+          "student_source_logit": -9.087385177612305
+        },
+        {
+          "captured_native_logit": -0.732387363910675,
+          "primitive_bits": 512,
+          "python_teacher_logit": -0.7323886752128601,
+          "student_source_logit": -0.8361939191818237
+        },
+        {
+          "captured_native_logit": -9.995760917663574,
+          "primitive_bits": 0,
+          "python_teacher_logit": -9.99576473236084,
+          "student_source_logit": -9.739577293395996
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 12.017429172992706,
+      "top_action_agreement": true,
+      "tv": 4.388297889862185e-06
+    },
+    {
+      "candidate_count": 2,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -0.8884011507034302,
+          "python_teacher_prior": 0.42877920497029426,
+          "semantic_key": "ooc:v1:effect=26:source=5:event=52:option=1",
+          "student_candidate_logit": 0.06683124601840973,
+          "student_prior": 0.6940384348682579,
+          "teacher_candidate_logit": -0.888400673866272,
+          "teacher_prior": 0.42877920497029426
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 2,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            2
+          ],
+          "python_teacher_candidate_logit": -0.6015674471855164,
+          "python_teacher_prior": 0.5712207950297058,
+          "semantic_key": "ooc:v1:effect=26:source=5:event=52:option=2",
+          "student_candidate_logit": -0.7522366046905518,
+          "student_prior": 0.3059615651317421,
+          "teacher_candidate_logit": -0.6015669703483582,
+          "teacher_prior": 0.5712207950297057
+        }
+      ],
+      "canonical_prior_sha256": "3cec79e43816c0dc1354a499599bdd934f1a5eabbfe63c3b511900f693e7943b",
+      "decisionIndex": 67,
+      "floor": 22,
+      "js_nats": 0.03618651286510022,
+      "ordered_top2_candidate_agreement": false,
+      "room": "EVENT",
+      "runSeed": 12450011,
+      "screen": "event",
+      "selection": "max_tv",
+      "student_top_two_candidate_logit_margin": 0.8190678507089615,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -0.888400673866272,
+          "primitive_bits": 1,
+          "python_teacher_logit": -0.8884011507034302,
+          "student_source_logit": 0.06683124601840973
+        },
+        {
+          "captured_native_logit": -0.6015669703483582,
+          "primitive_bits": 2,
+          "python_teacher_logit": -0.6015674471855164,
+          "student_source_logit": -0.7522366046905518
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.2868337035179138,
+      "top_action_agreement": false,
+      "tv": 0.2652592298979636
+    }
+  ],
+  "interpretation": "offline semantic-prior qualification on the captured PR #329 trace; no native contextual runtime or gameplay claim",
+  "map_direct_examples": [
+    {
+      "candidate_count": 2,
+      "candidate_representation": "direct",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": 15.268914222717285,
+          "python_teacher_prior": 0.9715376075371116,
+          "semantic_key": "map:0",
+          "student_candidate_logit": 15.169594764709473,
+          "student_prior": 0.9715327020699107,
+          "teacher_candidate_logit": 15.268918991088867,
+          "teacher_prior": 0.9715379239906881
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": 11.738617897033691,
+          "python_teacher_prior": 0.02846239246288855,
+          "semantic_key": "map:1",
+          "student_candidate_logit": 11.63947582244873,
+          "student_prior": 0.02846729793008934,
+          "teacher_candidate_logit": 11.738611221313477,
+          "teacher_prior": 0.02846207600931199
+        }
+      ],
+      "canonical_prior_sha256": "3d73909ab6e7d3683506555ae9f6fe0b5c9266c3f695fa0d5684a350a6687b7b",
+      "decisionIndex": 91,
+      "floor": 31,
+      "js_nats": 1.2325528851168303e-10,
+      "ordered_top2_candidate_agreement": true,
+      "room": "EVENT",
+      "runSeed": 12450013,
+      "screen": "map",
+      "selection": "min_tv",
+      "student_top_two_candidate_logit_margin": 3.530118942260742,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": 15.268918991088867,
+          "primitive_bits": 0,
+          "python_teacher_logit": 15.268914222717285,
+          "student_source_logit": 15.169594764709473
+        },
+        {
+          "captured_native_logit": 11.738611221313477,
+          "primitive_bits": 1,
+          "python_teacher_logit": 11.738617897033691,
+          "student_source_logit": 11.63947582244873
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 3.5303077697753906,
+      "top_action_agreement": true,
+      "tv": 5.221920777346428e-06
+    },
+    {
+      "candidate_count": 2,
+      "candidate_representation": "direct",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": 1.3436015844345093,
+          "python_teacher_prior": 0.9377461310146117,
+          "semantic_key": "map:0",
+          "student_candidate_logit": 1.2498267889022827,
+          "student_prior": 0.9327164184719203,
+          "teacher_candidate_logit": 1.3435992002487183,
+          "teacher_prior": 0.9377459987889467
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": -1.3686569929122925,
+          "python_teacher_prior": 0.06225386898538833,
+          "semantic_key": "map:1",
+          "student_candidate_logit": -1.379358172416687,
+          "student_prior": 0.06728358152807969,
+          "teacher_candidate_logit": -1.368657112121582,
+          "teacher_prior": 0.06225400121105324
+        }
+      ],
+      "canonical_prior_sha256": "a88e5120f25fa27ff4a9a9398007467ec8e47f0864adc137518276b1d246664f",
+      "decisionIndex": 25,
+      "floor": 7,
+      "js_nats": 5.221446841492433e-05,
+      "ordered_top2_candidate_agreement": true,
+      "room": "MONSTER",
+      "runSeed": 12450011,
+      "screen": "map",
+      "selection": "median_tv",
+      "student_top_two_candidate_logit_margin": 2.6291849613189697,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": 1.3435992002487183,
+          "primitive_bits": 0,
+          "python_teacher_logit": 1.3436015844345093,
+          "student_source_logit": 1.2498267889022827
+        },
+        {
+          "captured_native_logit": -1.368657112121582,
+          "primitive_bits": 1,
+          "python_teacher_logit": -1.3686569929122925,
+          "student_source_logit": -1.379358172416687
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 2.7122563123703003,
+      "top_action_agreement": true,
+      "tv": 0.005029580317026414
+    },
+    {
+      "candidate_count": 2,
+      "candidate_representation": "direct",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": -1.7886898517608643,
+          "python_teacher_prior": 0.38770546963446634,
+          "semantic_key": "map:0",
+          "student_candidate_logit": -1.6708039045333862,
+          "student_prior": 0.45448510388195434,
+          "teacher_candidate_logit": -1.7886888980865479,
+          "teacher_prior": 0.38770549793355263
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": -1.331722378730774,
+          "python_teacher_prior": 0.6122945303655336,
+          "semantic_key": "map:1",
+          "student_candidate_logit": -1.4882389307022095,
+          "student_prior": 0.5455148961180456,
+          "teacher_candidate_logit": -1.331721544265747,
+          "teacher_prior": 0.6122945020664474
+        }
+      ],
+      "canonical_prior_sha256": "a65baa2980f076dbafb978c2494a1f788ba1108a0f7f0373cf92fe2bdb9cc281",
+      "decisionIndex": 31,
+      "floor": 10,
+      "js_nats": 0.002288630841415784,
+      "ordered_top2_candidate_agreement": true,
+      "room": "EVENT",
+      "runSeed": 12450008,
+      "screen": "map",
+      "selection": "max_tv",
+      "student_top_two_candidate_logit_margin": 0.18256497383117676,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -1.7886888980865479,
+          "primitive_bits": 0,
+          "python_teacher_logit": -1.7886898517608643,
+          "student_source_logit": -1.6708039045333862
+        },
+        {
+          "captured_native_logit": -1.331721544265747,
+          "primitive_bits": 1,
+          "python_teacher_logit": -1.331722378730774,
+          "student_source_logit": -1.4882389307022095
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.4569673538208008,
+      "top_action_agreement": true,
+      "tv": 0.06677960594840177
+    },
+    {
+      "candidate_count": 3,
+      "candidate_representation": "direct",
+      "candidates": [
+        {
+          "candidate_id": 2,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 2,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": -2.1349241733551025,
+          "python_teacher_prior": 0.13138004995447242,
+          "semantic_key": "map:2",
+          "student_candidate_logit": -1.9281965494155884,
+          "student_prior": 0.14408063757428785,
+          "teacher_candidate_logit": -2.1349239349365234,
+          "teacher_prior": 0.13138003841294288
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 3,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": -0.8968537449836731,
+          "python_teacher_prior": 0.45312349130272417,
+          "semantic_key": "map:3",
+          "student_candidate_logit": -0.8717601895332336,
+          "student_prior": 0.4143907983235582,
+          "teacher_candidate_logit": -0.8968538045883179,
+          "teacher_prior": 0.45312331645525056
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 0,
+          "has_semantic": false,
+          "primitive_bits": 4,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [],
+          "python_teacher_candidate_logit": -0.9835443496704102,
+          "python_teacher_prior": 0.4154964587428035,
+          "semantic_key": "map:4",
+          "student_candidate_logit": -0.8083269596099854,
+          "student_prior": 0.4415285641021541,
+          "teacher_candidate_logit": -0.9835435748100281,
+          "teacher_prior": 0.41549664513180656
+        }
+      ],
+      "canonical_prior_sha256": "c6b27c0a4f72bfcbb8239a798e4a81d652a824c868896a92be1662418d6cf041",
+      "decisionIndex": 127,
+      "floor": 40,
+      "js_nats": 0.0007766296941933053,
+      "ordered_top2_candidate_agreement": false,
+      "room": "EVENT",
+      "runSeed": 12450014,
+      "screen": "map",
+      "selection": "largest_tv_top_action_disagreement",
+      "student_top_two_candidate_logit_margin": 0.06343322992324829,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -2.1349239349365234,
+          "primitive_bits": 2,
+          "python_teacher_logit": -2.1349241733551025,
+          "student_source_logit": -1.9281965494155884
+        },
+        {
+          "captured_native_logit": -0.8968538045883179,
+          "primitive_bits": 3,
+          "python_teacher_logit": -0.8968537449836731,
+          "student_source_logit": -0.8717601895332336
+        },
+        {
+          "captured_native_logit": -0.9835435748100281,
+          "primitive_bits": 4,
+          "python_teacher_logit": -0.9835443496704102,
+          "student_source_logit": -0.8083269596099854
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.0866897702217102,
+      "top_action_agreement": false,
+      "tv": 0.03873251813169243
+    }
+  ],
+  "population": {
+    "decompressed_trace_sha256": "9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1",
+    "eligible_trace_occurrences": 11474,
+    "max_captured_final_prior_formula_error": 5.551115123125783e-16,
+    "max_captured_raw_weight_formula_error": 1.1102230246251565e-16,
+    "shop_trace_occurrences": 1402,
+    "singleton_trace_records": 12308,
+    "source_prior_uncovered_records": 6905,
+    "trace_records": 24959,
+    "uniform_prior_records": 6905,
+    "unique_canonical_priors": 6317,
+    "unique_shop_priors": 1002
+  },
+  "python_native_teacher_preflight": {
+    "captured_teacher_source_rows": 37985,
+    "max_abs_python_vs_captured_candidate_logit": 2.6702880859375e-05,
+    "max_abs_python_vs_captured_native_source_logit": 2.6702880859375e-05,
+    "max_abs_python_vs_captured_raw_semantic_weight": 6.185886067266999e-06,
+    "max_abs_rebuilt_teacher_final_prior": 1.9898164111964434e-06,
+    "source_argmax_parity": 1.0,
+    "source_primitives_argmax_parity_count": 6317,
+    "unique_prior_count": 6317
+  },
+  "shop_examples": [
+    {
+      "candidate_count": 21,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640,
+            671088640,
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=104:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=189:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=222:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=244:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=250:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 5,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=25:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 6,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640,
+            671088640,
+            671088640,
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=321:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 7,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 8,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.3962275981903076,
+          "python_teacher_prior": 2.2374083445385265e-10,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=339:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.4485275745391846,
+          "student_prior": 2.1845733809399151e-10,
+          "teacher_candidate_logit": -2.396228790283203,
+          "teacher_prior": 2.2374056773416502e-10
+        },
+        {
+          "candidate_id": 8,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 5,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            5
+          ],
+          "python_teacher_candidate_logit": -1.3469916582107544,
+          "python_teacher_prior": 5.1110793022386335e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,113,0,0:price=86:occurrence=0",
+          "student_candidate_logit": -1.3377878665924072,
+          "student_prior": 5.306947000704698e-09,
+          "teacher_candidate_logit": -1.3469923734664917,
+          "teacher_prior": 5.111075646511433e-09
+        },
+        {
+          "candidate_id": 9,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 4,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            4
+          ],
+          "python_teacher_candidate_logit": -2.2131338119506836,
+          "python_teacher_prior": 2.149571332264403e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,140,0,0:price=71:occurrence=0",
+          "student_candidate_logit": -2.222646713256836,
+          "student_prior": 2.1905614272621677e-09,
+          "teacher_candidate_logit": -2.2131357192993164,
+          "teacher_prior": 2.149567232286492e-09
+        },
+        {
+          "candidate_id": 10,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 3,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            3
+          ],
+          "python_teacher_candidate_logit": -2.0914838314056396,
+          "python_teacher_prior": 2.427637160732604e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,208,0,0:price=151:occurrence=0",
+          "student_candidate_logit": -2.2106564044952393,
+          "student_prior": 2.216985032156371e-09,
+          "teacher_candidate_logit": -2.091484308242798,
+          "teacher_prior": 2.427636003145412e-09
+        },
+        {
+          "candidate_id": 11,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 6,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            6
+          ],
+          "python_teacher_candidate_logit": -1.8432316780090332,
+          "python_teacher_prior": 3.1117042792724996e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,218,0,0:price=173:occurrence=0",
+          "student_candidate_logit": -1.915980339050293,
+          "student_prior": 2.976726612695186e-09,
+          "teacher_candidate_logit": -1.8432326316833496,
+          "teacher_prior": 3.111701311721638e-09
+        },
+        {
+          "candidate_id": 12,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -1.674630045890808,
+          "python_teacher_prior": 3.683164156866756e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,244,0,0:price=45:occurrence=0",
+          "student_candidate_logit": -1.7326709032058716,
+          "student_prior": 3.575602453841365e-09,
+          "teacher_candidate_logit": -1.674630045890808,
+          "teacher_prior": 3.6831641568669627e-09
+        },
+        {
+          "candidate_id": 13,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -2.0862679481506348,
+          "python_teacher_prior": 2.440332512703506e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,288,0,0:price=38:occurrence=0",
+          "student_candidate_logit": -2.2008447647094727,
+          "student_prior": 2.2388443532315207e-09,
+          "teacher_candidate_logit": -2.086268663406372,
+          "teacher_prior": 2.4403307672424366e-09
+        },
+        {
+          "candidate_id": 14,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 2,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            2
+          ],
+          "python_teacher_candidate_logit": -2.3364837169647217,
+          "python_teacher_prior": 1.9001228403618027e-09,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,355,0,0:price=46:occurrence=0",
+          "student_candidate_logit": -2.4490966796875,
+          "student_prior": 1.7466643861483143e-09,
+          "teacher_candidate_logit": -2.336483955383301,
+          "teacher_prior": 1.9001223873373755e-09
+        },
+        {
+          "candidate_id": 15,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870914,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870914
+          ],
+          "python_teacher_candidate_logit": 0.6461095213890076,
+          "python_teacher_prior": 3.750640713285864e-08,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,136:price=147:occurrence=0",
+          "student_candidate_logit": 0.608631432056427,
+          "student_prior": 3.716754803018891e-08,
+          "teacher_candidate_logit": 0.6461085677146912,
+          "teacher_prior": 3.750637136398062e-08
+        },
+        {
+          "candidate_id": 16,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870912,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870912
+          ],
+          "python_teacher_candidate_logit": 17.744863510131836,
+          "python_teacher_prior": 0.9999999270546416,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,52:price=154:occurrence=0",
+          "student_candidate_logit": 17.716461181640625,
+          "student_prior": 0.9999999284054271,
+          "teacher_candidate_logit": 17.744863510131836,
+          "teacher_prior": 0.9999999270546978
+        },
+        {
+          "candidate_id": 17,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653184,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653184
+          ],
+          "python_teacher_candidate_logit": -1.723636269569397,
+          "python_teacher_prior": 3.5070175811322772e-09,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,31:price=73:occurrence=0",
+          "student_candidate_logit": -1.788747787475586,
+          "student_prior": 3.3806121286060714e-09,
+          "teacher_candidate_logit": -1.723636269569397,
+          "teacher_prior": 3.507017581132474e-09
+        },
+        {
+          "candidate_id": 18,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653185,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653185
+          ],
+          "python_teacher_candidate_logit": -2.154428482055664,
+          "python_teacher_prior": 2.2795402361337305e-09,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,43:price=51:occurrence=0",
+          "student_candidate_logit": -2.2144949436187744,
+          "student_prior": 2.2084913604488046e-09,
+          "teacher_candidate_logit": -2.154428720474243,
+          "teacher_prior": 2.279539692649179e-09
+        },
+        {
+          "candidate_id": 19,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653186,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653186
+          ],
+          "python_teacher_candidate_logit": -1.4522212743759155,
+          "python_teacher_prior": 4.600573545344873e-09,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,9:price=52:occurrence=0",
+          "student_candidate_logit": -1.5151838064193726,
+          "student_prior": 4.444292893757786e-09,
+          "teacher_candidate_logit": -1.4522219896316528,
+          "teacher_prior": 4.6005702547596846e-09
+        },
+        {
+          "candidate_id": 20,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -2.087108612060547,
+          "python_teacher_prior": 2.4382818753010877e-09,
+          "semantic_key": "ooc:v1:effect=25:source=3:none",
+          "student_candidate_logit": -2.1339900493621826,
+          "student_prior": 2.393638359066252e-09,
+          "teacher_candidate_logit": -2.087108850479126,
+          "teacher_prior": 2.438281293969594e-09
+        }
+      ],
+      "canonical_prior_sha256": "b9d8aa75c81182c630cc9c2d64e858bb4bce788f3cbdae227077d2b1f54cab43",
+      "decisionIndex": 27,
+      "floor": 8,
+      "js_nats": 1.0487921160860978e-11,
+      "ordered_top2_candidate_agreement": true,
+      "room": "SHOP",
+      "runSeed": 12450008,
+      "screen": "shop",
+      "selection": "min_tv",
+      "student_top_two_candidate_logit_margin": 17.107829749584198,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -2.396228790283203,
+          "primitive_bits": 671088640,
+          "python_teacher_logit": -2.3962275981903076,
+          "student_source_logit": -2.4485275745391846
+        },
+        {
+          "captured_native_logit": -1.3469923734664917,
+          "primitive_bits": 5,
+          "python_teacher_logit": -1.3469916582107544,
+          "student_source_logit": -1.3377878665924072
+        },
+        {
+          "captured_native_logit": -2.2131357192993164,
+          "primitive_bits": 4,
+          "python_teacher_logit": -2.2131338119506836,
+          "student_source_logit": -2.222646713256836
+        },
+        {
+          "captured_native_logit": -2.091484308242798,
+          "primitive_bits": 3,
+          "python_teacher_logit": -2.0914838314056396,
+          "student_source_logit": -2.2106564044952393
+        },
+        {
+          "captured_native_logit": -1.8432326316833496,
+          "primitive_bits": 6,
+          "python_teacher_logit": -1.8432316780090332,
+          "student_source_logit": -1.915980339050293
+        },
+        {
+          "captured_native_logit": -1.674630045890808,
+          "primitive_bits": 1,
+          "python_teacher_logit": -1.674630045890808,
+          "student_source_logit": -1.7326709032058716
+        },
+        {
+          "captured_native_logit": -2.086268663406372,
+          "primitive_bits": 0,
+          "python_teacher_logit": -2.0862679481506348,
+          "student_source_logit": -2.2008447647094727
+        },
+        {
+          "captured_native_logit": -2.336483955383301,
+          "primitive_bits": 2,
+          "python_teacher_logit": -2.3364837169647217,
+          "student_source_logit": -2.4490966796875
+        },
+        {
+          "captured_native_logit": 0.6461085677146912,
+          "primitive_bits": 536870914,
+          "python_teacher_logit": 0.6461095213890076,
+          "student_source_logit": 0.608631432056427
+        },
+        {
+          "captured_native_logit": 17.744863510131836,
+          "primitive_bits": 536870912,
+          "python_teacher_logit": 17.744863510131836,
+          "student_source_logit": 17.716461181640625
+        },
+        {
+          "captured_native_logit": -1.723636269569397,
+          "primitive_bits": 402653184,
+          "python_teacher_logit": -1.723636269569397,
+          "student_source_logit": -1.788747787475586
+        },
+        {
+          "captured_native_logit": -2.154428720474243,
+          "primitive_bits": 402653185,
+          "python_teacher_logit": -2.154428482055664,
+          "student_source_logit": -2.2144949436187744
+        },
+        {
+          "captured_native_logit": -1.4522219896316528,
+          "primitive_bits": 402653186,
+          "python_teacher_logit": -1.4522212743759155,
+          "student_source_logit": -1.5151838064193726
+        },
+        {
+          "captured_native_logit": -2.087108850479126,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -2.087108612060547,
+          "student_source_logit": -2.1339900493621826
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 17.098754942417145,
+      "top_action_agreement": true,
+      "tv": 1.587594947568599e-09
+    },
+    {
+      "candidate_count": 30,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640,
+            671088640,
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=104:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=112:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=11:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=120:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=187:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 5,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=189:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 6,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=222:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 7,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=244:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 8,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=250:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 9,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=25:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 10,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=269:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 11,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=289:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 12,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640,
+            671088640,
+            671088640,
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=321:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 13,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=339:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 14,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=349:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 15,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=39:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 16,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -2.0126898288726807,
+          "python_teacher_prior": 5.979108207682033e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=69:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -2.0425684452056885,
+          "student_prior": 7.42378688097081e-08,
+          "teacher_candidate_logit": -2.012690782546997,
+          "teacher_prior": 5.979098663789093e-08
+        },
+        {
+          "candidate_id": 17,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 2,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            2
+          ],
+          "python_teacher_candidate_logit": -1.876094102859497,
+          "python_teacher_prior": 1.1652204676980834e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,14,0,0:price=54:occurrence=0",
+          "student_candidate_logit": -1.943814754486084,
+          "student_prior": 1.3930368346054994e-06,
+          "teacher_candidate_logit": -1.8760948181152344,
+          "teacher_prior": 1.165218885575094e-06
+        },
+        {
+          "candidate_id": 18,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -1.7915998697280884,
+          "python_teacher_prior": 1.2679539583474277e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,181,0,0:price=53:occurrence=0",
+          "student_candidate_logit": -1.7388191223144531,
+          "student_prior": 1.7099801619790414e-06,
+          "teacher_candidate_logit": -1.7915997505187988,
+          "teacher_prior": 1.2679532947963215e-06
+        },
+        {
+          "candidate_id": 19,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 6,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            6
+          ],
+          "python_teacher_candidate_logit": -2.020526170730591,
+          "python_teacher_prior": 1.008514285997452e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,213,0,0:price=185:occurrence=0",
+          "student_candidate_logit": -2.1291277408599854,
+          "student_prior": 1.157396574751867e-06,
+          "teacher_candidate_logit": -2.020526647567749,
+          "teacher_prior": 1.0085131570965644e-06
+        },
+        {
+          "candidate_id": 20,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 4,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            4
+          ],
+          "python_teacher_candidate_logit": -1.7804632186889648,
+          "python_teacher_prior": 1.282153640810118e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,222,0,0:price=73:occurrence=0",
+          "student_candidate_logit": -1.7941079139709473,
+          "student_prior": 1.6180034932214911e-06,
+          "teacher_candidate_logit": -1.780463457107544,
+          "teacher_prior": 1.282152511294421e-06
+        },
+        {
+          "candidate_id": 21,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 5,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            5
+          ],
+          "python_teacher_candidate_logit": -2.1781487464904785,
+          "python_teacher_prior": 8.614447720012153e-07,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,259,0,0:price=94:occurrence=0",
+          "student_candidate_logit": -2.195888042449951,
+          "student_prior": 1.0826512014236157e-06,
+          "teacher_candidate_logit": -2.1781485080718994,
+          "teacher_prior": 8.614444238784125e-07
+        },
+        {
+          "candidate_id": 22,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 3,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            3
+          ],
+          "python_teacher_candidate_logit": -1.834183931350708,
+          "python_teacher_prior": 1.2150928374309108e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,38,0,0:price=81:occurrence=0",
+          "student_candidate_logit": -1.898483157157898,
+          "student_prior": 1.4576386078144434e-06,
+          "teacher_candidate_logit": -1.834183692932129,
+          "teacher_prior": 1.2150923463936001e-06
+        },
+        {
+          "candidate_id": 23,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -1.7878706455230713,
+          "python_teacher_prior": 1.2726912706994955e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,69,0,0:price=25:occurrence=0",
+          "student_candidate_logit": -1.829067349433899,
+          "student_prior": 1.5624163139873419e-06,
+          "teacher_candidate_logit": -1.7878704071044922,
+          "teacher_prior": 1.2726907563857905e-06
+        },
+        {
+          "candidate_id": 24,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870913,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870913
+          ],
+          "python_teacher_candidate_logit": 9.056940078735352,
+          "python_teacher_prior": 0.06524759676818165,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,174:price=148:occurrence=0",
+          "student_candidate_logit": 8.776495933532715,
+          "student_prior": 0.06305715555452812,
+          "teacher_candidate_logit": 9.056936264038086,
+          "teacher_prior": 0.0652473059452199
+        },
+        {
+          "candidate_id": 25,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870912,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870912
+          ],
+          "python_teacher_candidate_logit": 11.71901798248291,
+          "python_teacher_prior": 0.9347387870641296,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,76:price=157:occurrence=0",
+          "student_candidate_logit": 11.475058555603027,
+          "student_prior": 0.9369258730789991,
+          "teacher_candidate_logit": 11.719018936157227,
+          "teacher_prior": 0.9347390778993608
+        },
+        {
+          "candidate_id": 26,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653184,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653184
+          ],
+          "python_teacher_candidate_logit": -1.7971515655517578,
+          "python_teacher_prior": 1.2609341675538107e-06,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,21:price=100:occurrence=0",
+          "student_candidate_logit": -1.8156862258911133,
+          "student_prior": 1.5834637045250853e-06,
+          "teacher_candidate_logit": -1.7971527576446533,
+          "teacher_prior": 1.2609318542125515e-06
+        },
+        {
+          "candidate_id": 27,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653186,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653186
+          ],
+          "python_teacher_candidate_logit": -1.9505738019943237,
+          "python_teacher_prior": 1.0815883039993244e-06,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,4:price=48:occurrence=0",
+          "student_candidate_logit": -1.9614756107330322,
+          "student_prior": 1.3686505861845304e-06,
+          "teacher_candidate_logit": -1.9505746364593506,
+          "teacher_prior": 1.0815867064959374e-06
+        },
+        {
+          "candidate_id": 28,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653185,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653185
+          ],
+          "python_teacher_candidate_logit": -1.9249926805496216,
+          "python_teacher_prior": 1.1096134751354804e-06,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,9:price=49:occurrence=0",
+          "student_candidate_logit": -1.9280341863632202,
+          "student_prior": 1.4151941146953167e-06,
+          "teacher_candidate_logit": -1.924992322921753,
+          "teacher_prior": 1.1096131590001562e-06
+        },
+        {
+          "candidate_id": 29,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -1.9571377038955688,
+          "python_teacher_prior": 1.0745121135905184e-06,
+          "semantic_key": "ooc:v1:effect=25:source=3:none",
+          "student_candidate_logit": -1.9671611785888672,
+          "student_prior": 1.3608911098230585e-06,
+          "teacher_candidate_logit": -1.9571375846862793,
+          "teacher_prior": 1.0745115512722283e-06
+        }
+      ],
+      "canonical_prior_sha256": "3670e2b13ef68f4b126f444ff249b50bcca1efb9ca268e5a08d17eb70f01c952",
+      "decisionIndex": 82,
+      "floor": 29,
+      "js_nats": 1.0080645600456912e-05,
+      "ordered_top2_candidate_agreement": true,
+      "room": "SHOP",
+      "runSeed": 12450008,
+      "screen": "shop",
+      "selection": "median_tv",
+      "student_top_two_candidate_logit_margin": 2.6985626220703125,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -2.012690782546997,
+          "primitive_bits": 671088640,
+          "python_teacher_logit": -2.0126898288726807,
+          "student_source_logit": -2.0425684452056885
+        },
+        {
+          "captured_native_logit": -1.8760948181152344,
+          "primitive_bits": 2,
+          "python_teacher_logit": -1.876094102859497,
+          "student_source_logit": -1.943814754486084
+        },
+        {
+          "captured_native_logit": -1.7915997505187988,
+          "primitive_bits": 0,
+          "python_teacher_logit": -1.7915998697280884,
+          "student_source_logit": -1.7388191223144531
+        },
+        {
+          "captured_native_logit": -2.020526647567749,
+          "primitive_bits": 6,
+          "python_teacher_logit": -2.020526170730591,
+          "student_source_logit": -2.1291277408599854
+        },
+        {
+          "captured_native_logit": -1.780463457107544,
+          "primitive_bits": 4,
+          "python_teacher_logit": -1.7804632186889648,
+          "student_source_logit": -1.7941079139709473
+        },
+        {
+          "captured_native_logit": -2.1781485080718994,
+          "primitive_bits": 5,
+          "python_teacher_logit": -2.1781487464904785,
+          "student_source_logit": -2.195888042449951
+        },
+        {
+          "captured_native_logit": -1.834183692932129,
+          "primitive_bits": 3,
+          "python_teacher_logit": -1.834183931350708,
+          "student_source_logit": -1.898483157157898
+        },
+        {
+          "captured_native_logit": -1.7878704071044922,
+          "primitive_bits": 1,
+          "python_teacher_logit": -1.7878706455230713,
+          "student_source_logit": -1.829067349433899
+        },
+        {
+          "captured_native_logit": 9.056936264038086,
+          "primitive_bits": 536870913,
+          "python_teacher_logit": 9.056940078735352,
+          "student_source_logit": 8.776495933532715
+        },
+        {
+          "captured_native_logit": 11.719018936157227,
+          "primitive_bits": 536870912,
+          "python_teacher_logit": 11.71901798248291,
+          "student_source_logit": 11.475058555603027
+        },
+        {
+          "captured_native_logit": -1.7971527576446533,
+          "primitive_bits": 402653184,
+          "python_teacher_logit": -1.7971515655517578,
+          "student_source_logit": -1.8156862258911133
+        },
+        {
+          "captured_native_logit": -1.9505746364593506,
+          "primitive_bits": 402653186,
+          "python_teacher_logit": -1.9505738019943237,
+          "student_source_logit": -1.9614756107330322
+        },
+        {
+          "captured_native_logit": -1.924992322921753,
+          "primitive_bits": 402653185,
+          "python_teacher_logit": -1.9249926805496216,
+          "student_source_logit": -1.9280341863632202
+        },
+        {
+          "captured_native_logit": -1.9571375846862793,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -1.9571377038955688,
+          "student_source_logit": -1.9671611785888672
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 2.6620826721191406,
+      "top_action_agreement": true,
+      "tv": 0.002190150390691786
+    },
+    {
+      "candidate_count": 31,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640,
+            671088640,
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=104:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=112:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 2,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=11:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 3,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=120:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 4,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=187:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 5,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=189:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 6,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=222:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 7,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=244:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 8,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=250:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 9,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=25:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 10,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=269:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 11,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=289:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 12,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640,
+            671088640,
+            671088640,
+            671088640,
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=321:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 13,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=339:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 14,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=349:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 15,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=39:misc=0:upgraded=0:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 16,
+          "compound_selector": 4,
+          "has_semantic": true,
+          "primitive_bits": 671088640,
+          "primitive_multiplicity": 17,
+          "prior_source_group_bits": [
+            671088640
+          ],
+          "python_teacher_candidate_logit": -1.9143542051315308,
+          "python_teacher_prior": 8.61153705338148e-08,
+          "semantic_key": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=69:misc=0:upgraded=1:bottle=-1:occurrence=0",
+          "student_candidate_logit": -1.9306164979934692,
+          "student_prior": 8.861487700657424e-08,
+          "teacher_candidate_logit": -1.9143550395965576,
+          "teacher_prior": 8.611544469639205e-08
+        },
+        {
+          "candidate_id": 17,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 5,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            5
+          ],
+          "python_teacher_candidate_logit": -1.9664407968521118,
+          "python_teacher_prior": 1.3896603828589235e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,100,0,0:price=98:occurrence=0",
+          "student_candidate_logit": -1.9846864938735962,
+          "student_prior": 1.427161954072243e-06,
+          "teacher_candidate_logit": -1.9664406776428223,
+          "teacher_prior": 1.3896629049199592e-06
+        },
+        {
+          "candidate_id": 18,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 3,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            3
+          ],
+          "python_teacher_candidate_logit": -1.9297035932540894,
+          "python_teacher_prior": 1.4416619672637676e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,14,0,0:price=50:occurrence=0",
+          "student_candidate_logit": -1.9313416481018066,
+          "student_prior": 1.50536090060441e-06,
+          "teacher_candidate_logit": -1.9297033548355103,
+          "teacher_prior": 1.4416647555610433e-06
+        },
+        {
+          "candidate_id": 19,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -1.6164683103561401,
+          "python_teacher_prior": 1.9719676963932317e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,187,0,0:price=68:occurrence=0",
+          "student_candidate_logit": -1.6478193998336792,
+          "student_prior": 1.9988158271595566e-06,
+          "teacher_candidate_logit": -1.6164685487747192,
+          "teacher_prior": 1.9719705700379764e-06
+        },
+        {
+          "candidate_id": 20,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 6,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            6
+          ],
+          "python_teacher_candidate_logit": -2.5148191452026367,
+          "python_teacher_prior": 8.030655315657582e-07,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,216,0,0:price=175:occurrence=0",
+          "student_candidate_logit": -2.560326099395752,
+          "student_prior": 8.02557495730159e-07,
+          "teacher_candidate_logit": -2.514819622039795,
+          "teacher_prior": 8.030665103648952e-07
+        },
+        {
+          "candidate_id": 21,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 2,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            2
+          ],
+          "python_teacher_candidate_logit": -2.082456350326538,
+          "python_teacher_prior": 1.2374388931100975e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,261,0,0:price=80:occurrence=0",
+          "student_candidate_logit": -2.1030232906341553,
+          "student_prior": 1.2678861031759201e-06,
+          "teacher_candidate_logit": -2.082456588745117,
+          "teacher_prior": 1.2374406963646735e-06
+        },
+        {
+          "candidate_id": 22,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 1,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            1
+          ],
+          "python_teacher_candidate_logit": -2.0516769886016846,
+          "python_teacher_prior": 1.2761186884983275e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,65,0,0:price=45:occurrence=0",
+          "student_candidate_logit": -2.0498902797698975,
+          "student_prior": 1.3370745274348562e-06,
+          "teacher_candidate_logit": -2.0516772270202637,
+          "teacher_prior": 1.2761205481189335e-06
+        },
+        {
+          "candidate_id": 23,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 4,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            4
+          ],
+          "python_teacher_candidate_logit": -1.7118865251541138,
+          "python_teacher_prior": 1.792504242166574e-06,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,73,0,0:price=79:occurrence=0",
+          "student_candidate_logit": -1.6828066110610962,
+          "student_prior": 1.9300920721573554e-06,
+          "teacher_candidate_logit": -1.711887001991272,
+          "teacher_prior": 1.7925064269217853e-06
+        },
+        {
+          "candidate_id": 24,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870913,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870913
+          ],
+          "python_teacher_candidate_logit": 10.327192306518555,
+          "python_teacher_prior": 0.303365155262597,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,55:price=151:occurrence=0",
+          "student_candidate_logit": 10.104534149169922,
+          "student_prior": 0.25395401029871995,
+          "teacher_candidate_logit": 10.327193260192871,
+          "teacher_prior": 0.3033659589808614
+        },
+        {
+          "candidate_id": 25,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870914,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870914
+          ],
+          "python_teacher_candidate_logit": 5.24341344833374,
+          "python_teacher_prior": 0.0018797867783051736,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,66:price=151:occurrence=0",
+          "student_candidate_logit": 5.035461902618408,
+          "student_prior": 0.0015969266563042302,
+          "teacher_candidate_logit": 5.243414878845215,
+          "teacher_prior": 0.0018797926548593561
+        },
+        {
+          "candidate_id": 26,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 536870912,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            536870912
+          ],
+          "python_teacher_candidate_logit": 11.155790328979492,
+          "python_teacher_prior": 0.694738305120057,
+          "semantic_key": "ooc:v1:effect=23:source=3:shop=relic,96:price=253:occurrence=0",
+          "student_candidate_logit": 11.180002212524414,
+          "student_prior": 0.7444318069524963,
+          "teacher_candidate_logit": 11.155787467956543,
+          "teacher_prior": 0.6947374955016458
+        },
+        {
+          "candidate_id": 27,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653185,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653185
+          ],
+          "python_teacher_candidate_logit": -2.1256844997406006,
+          "python_teacher_prior": 1.1850864026082365e-06,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,19:price=78:occurrence=0",
+          "student_candidate_logit": -2.1240670680999756,
+          "student_prior": 1.2414837669411092e-06,
+          "teacher_candidate_logit": -2.125685214996338,
+          "teacher_prior": 1.185087564478362e-06
+        },
+        {
+          "candidate_id": 28,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653184,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653184
+          ],
+          "python_teacher_candidate_logit": -1.8962572813034058,
+          "python_teacher_prior": 1.4906956705147338e-06,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,30:price=72:occurrence=0",
+          "student_candidate_logit": -1.966003656387329,
+          "student_prior": 1.4540760216472218e-06,
+          "teacher_candidate_logit": -1.8962571620941162,
+          "teacher_prior": 1.490698375942271e-06
+        },
+        {
+          "candidate_id": 29,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 402653186,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            402653186
+          ],
+          "python_teacher_candidate_logit": -2.0042762756347656,
+          "python_teacher_prior": 1.3380641558580607e-06,
+          "semantic_key": "ooc:v1:effect=24:source=3:shop=potion,4:price=48:occurrence=0",
+          "student_candidate_logit": -2.005405902862549,
+          "student_prior": 1.3978962330329561e-06,
+          "teacher_candidate_logit": -2.004276752471924,
+          "teacher_prior": 1.3380657867287549e-06
+        },
+        {
+          "candidate_id": 30,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -1.9860951900482178,
+          "python_teacher_prior": 1.3626141109643972e-06,
+          "semantic_key": "ooc:v1:effect=25:source=3:none",
+          "student_candidate_logit": -2.013062000274658,
+          "student_prior": 1.3872346683676422e-06,
+          "teacher_candidate_logit": -1.9860955476760864,
+          "teacher_prior": 1.3626159341937434e-06
+        }
+      ],
+      "canonical_prior_sha256": "b6ce6c8a5e48ee8e83f4f525c8a095089220cfae5cd4a26137c5e0080b1f85fb",
+      "decisionIndex": 82,
+      "floor": 29,
+      "js_nats": 0.0015314870654453898,
+      "ordered_top2_candidate_agreement": true,
+      "room": "SHOP",
+      "runSeed": 12450008,
+      "screen": "shop",
+      "selection": "max_tv",
+      "student_top_two_candidate_logit_margin": 1.0754680633544922,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -1.9143550395965576,
+          "primitive_bits": 671088640,
+          "python_teacher_logit": -1.9143542051315308,
+          "student_source_logit": -1.9306164979934692
+        },
+        {
+          "captured_native_logit": -1.9664406776428223,
+          "primitive_bits": 5,
+          "python_teacher_logit": -1.9664407968521118,
+          "student_source_logit": -1.9846864938735962
+        },
+        {
+          "captured_native_logit": -1.9297033548355103,
+          "primitive_bits": 3,
+          "python_teacher_logit": -1.9297035932540894,
+          "student_source_logit": -1.9313416481018066
+        },
+        {
+          "captured_native_logit": -1.6164685487747192,
+          "primitive_bits": 0,
+          "python_teacher_logit": -1.6164683103561401,
+          "student_source_logit": -1.6478193998336792
+        },
+        {
+          "captured_native_logit": -2.514819622039795,
+          "primitive_bits": 6,
+          "python_teacher_logit": -2.5148191452026367,
+          "student_source_logit": -2.560326099395752
+        },
+        {
+          "captured_native_logit": -2.082456588745117,
+          "primitive_bits": 2,
+          "python_teacher_logit": -2.082456350326538,
+          "student_source_logit": -2.1030232906341553
+        },
+        {
+          "captured_native_logit": -2.0516772270202637,
+          "primitive_bits": 1,
+          "python_teacher_logit": -2.0516769886016846,
+          "student_source_logit": -2.0498902797698975
+        },
+        {
+          "captured_native_logit": -1.711887001991272,
+          "primitive_bits": 4,
+          "python_teacher_logit": -1.7118865251541138,
+          "student_source_logit": -1.6828066110610962
+        },
+        {
+          "captured_native_logit": 10.327193260192871,
+          "primitive_bits": 536870913,
+          "python_teacher_logit": 10.327192306518555,
+          "student_source_logit": 10.104534149169922
+        },
+        {
+          "captured_native_logit": 5.243414878845215,
+          "primitive_bits": 536870914,
+          "python_teacher_logit": 5.24341344833374,
+          "student_source_logit": 5.035461902618408
+        },
+        {
+          "captured_native_logit": 11.155787467956543,
+          "primitive_bits": 536870912,
+          "python_teacher_logit": 11.155790328979492,
+          "student_source_logit": 11.180002212524414
+        },
+        {
+          "captured_native_logit": -2.125685214996338,
+          "primitive_bits": 402653185,
+          "python_teacher_logit": -2.1256844997406006,
+          "student_source_logit": -2.1240670680999756
+        },
+        {
+          "captured_native_logit": -1.8962571620941162,
+          "primitive_bits": 402653184,
+          "python_teacher_logit": -1.8962572813034058,
+          "student_source_logit": -1.966003656387329
+        },
+        {
+          "captured_native_logit": -2.004276752471924,
+          "primitive_bits": 402653186,
+          "python_teacher_logit": -2.0042762756347656,
+          "student_source_logit": -2.005405902862549
+        },
+        {
+          "captured_native_logit": -1.9860955476760864,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -1.9860951900482178,
+          "student_source_logit": -2.013062000274658
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.8285942077636719,
+      "top_action_agreement": true,
+      "tv": 0.04969485181206548
+    },
+    {
+      "candidate_count": 2,
+      "candidate_representation": "grouped",
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 0,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            0
+          ],
+          "python_teacher_candidate_logit": -1.7663969993591309,
+          "python_teacher_prior": 0.5125718733356606,
+          "semantic_key": "ooc:v1:effect=22:source=3:shop=card,11,0,0:price=45:occurrence=0",
+          "student_candidate_logit": -1.7882204055786133,
+          "student_prior": 0.47914401556223024,
+          "teacher_candidate_logit": -1.7663968801498413,
+          "teacher_prior": 0.5125719031191417
+        },
+        {
+          "candidate_id": 1,
+          "compound_selector": 0,
+          "has_semantic": true,
+          "primitive_bits": 805306368,
+          "primitive_multiplicity": 1,
+          "prior_source_group_bits": [
+            805306368
+          ],
+          "python_teacher_candidate_logit": -1.8166950941085815,
+          "python_teacher_prior": 0.48742812666433943,
+          "semantic_key": "ooc:v1:effect=25:source=3:none",
+          "student_candidate_logit": -1.7047480344772339,
+          "student_prior": 0.5208559844377698,
+          "teacher_candidate_logit": -1.8166950941085815,
+          "teacher_prior": 0.48742809688085836
+        }
+      ],
+      "canonical_prior_sha256": "afaf29536512a33bcc635bcde44b50ce32bf11fa7ec86ec78a4a5d80c7c8ba00",
+      "decisionIndex": 67,
+      "floor": 22,
+      "js_nats": 0.0005588543204572312,
+      "ordered_top2_candidate_agreement": false,
+      "room": "SHOP",
+      "runSeed": 12450013,
+      "screen": "shop",
+      "selection": "largest_tv_top_action_disagreement",
+      "student_top_two_candidate_logit_margin": 0.0834723711013794,
+      "teacher_source_logits": [
+        {
+          "captured_native_logit": -1.7663968801498413,
+          "primitive_bits": 0,
+          "python_teacher_logit": -1.7663969993591309,
+          "student_source_logit": -1.7882204055786133
+        },
+        {
+          "captured_native_logit": -1.8166950941085815,
+          "primitive_bits": 805306368,
+          "python_teacher_logit": -1.8166950941085815,
+          "student_source_logit": -1.7047480344772339
+        }
+      ],
+      "teacher_top_two_candidate_logit_margin": 0.050298213958740234,
+      "top_action_agreement": false,
+      "tv": 0.03342788755691145
+    }
+  ],
+  "stratified_metrics": {
+    "candidate_count_2": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.03618651286510022,
+          "mean": 0.00025437848996742187,
+          "median": 3.583210644543121e-05,
+          "p90": 0.0006570507118989532,
+          "p99": 0.003183417850976134
+        },
+        "n_unique_priors": 765,
+        "ordered_top_two_candidate_agreement": 0.9928081072245832,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9933726543996905,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.2652592298979636,
+          "mean": 0.010965025499658772,
+          "median": 0.006393238453476946,
+          "p90": 0.02945760068216219,
+          "p99": 0.06196713507510332
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.1228176398385522,
+          "mean": 0.010842856660221839,
+          "median": 0.006393238453476946,
+          "p90": 0.028071531893086532,
+          "p99": 0.06196713507510332
+        },
+        "top_semantic_action_agreement": 0.9928081072245832,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.9890635013580322,
+          "mean": 0.08437693828604075,
+          "median": 0.052014708518981934,
+          "p90": 0.17841243743896484,
+          "p99": 0.6472405195236206
+        },
+        "total_variation": {
+          "max": 0.2652592298979636,
+          "mean": 0.010965025499658774,
+          "median": 0.006393238453476974,
+          "p90": 0.029457600682162174,
+          "p99": 0.0619671350751034
+        },
+        "weighted_prior_occurrences": 3059
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.03618651286510022,
+          "mean": 0.0002461039994559667,
+          "median": 2.6003611838499273e-05,
+          "p90": 0.00048477868767647647,
+          "p99": 0.003183417850976134
+        },
+        "n_unique_priors": 765,
+        "ordered_top_two_candidate_agreement": 0.9882352941176471,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9962566140818443,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.2652592298979636,
+          "mean": 0.010492502350703259,
+          "median": 0.00558313095687013,
+          "p90": 0.02572698147712149,
+          "p99": 0.07654916704196513
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.1228176398385522,
+          "mean": 0.010224558921963079,
+          "median": 0.005518186274927173,
+          "p90": 0.02565487843124592,
+          "p99": 0.06861808514763479
+        },
+        "top_semantic_action_agreement": 0.9882352941176471,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.9890635013580322,
+          "mean": 0.07193393809644785,
+          "median": 0.04083235561847687,
+          "p90": 0.15730774402618408,
+          "p99": 0.5322341471910477
+        },
+        "total_variation": {
+          "max": 0.2652592298979636,
+          "mean": 0.010492502350703262,
+          "median": 0.005583130956870158,
+          "p90": 0.025726981477121547,
+          "p99": 0.07654916704196513
+        },
+        "weighted_prior_occurrences": 765
+      }
+    },
+    "candidate_count_3-4": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.024561502661562425,
+          "mean": 0.0002484567148253295,
+          "median": 1.7655552502813892e-05,
+          "p90": 0.0004015399996589314,
+          "p99": 0.005761701990755538
+        },
+        "n_unique_priors": 1019,
+        "ordered_top_two_candidate_agreement": 0.916969696969697,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9997498805377351,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.20321008388678677,
+          "mean": 0.008808714602222099,
+          "median": 0.003228117751503612,
+          "p90": 0.025629578378366324,
+          "p99": 0.07765092086930248
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.16464420119333856,
+          "mean": 0.00791624372960687,
+          "median": 0.002926264171795201,
+          "p90": 0.021290728104561618,
+          "p99": 0.07105050860531403
+        },
+        "top_semantic_action_agreement": 0.9660606060606061,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.709733486175537,
+          "mean": 0.11252386117354035,
+          "median": 0.0405430793762207,
+          "p90": 0.28746676445007324,
+          "p99": 0.9395871162414551
+        },
+        "total_variation": {
+          "max": 0.2032100838867867,
+          "mean": 0.009813551026680273,
+          "median": 0.0040512492119392784,
+          "p90": 0.025695379185567312,
+          "p99": 0.08117309909406252
+        },
+        "weighted_prior_occurrences": 1650
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.024561502661562425,
+          "mean": 0.00031615772278199904,
+          "median": 1.6836960893742558e-05,
+          "p90": 0.0005647393891331687,
+          "p99": 0.006677000975703756
+        },
+        "n_unique_priors": 1019,
+        "ordered_top_two_candidate_agreement": 0.9411187438665358,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9997422189128929,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.20321008388678677,
+          "mean": 0.009250602938778052,
+          "median": 0.0027212299873218826,
+          "p90": 0.02536610051366306,
+          "p99": 0.09684259638213205
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.16464420119333856,
+          "mean": 0.008723592855214714,
+          "median": 0.0027077842580853773,
+          "p90": 0.023623022422875617,
+          "p99": 0.08111019574093159
+        },
+        "top_semantic_action_agreement": 0.9764474975466143,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.709733486175537,
+          "mean": 0.1505287480938145,
+          "median": 0.057292670011520386,
+          "p90": 0.4122500419616699,
+          "p99": 1.1623828411102295
+        },
+        "total_variation": {
+          "max": 0.2032100838867867,
+          "mean": 0.010165656074366248,
+          "median": 0.003658709341039186,
+          "p90": 0.02708026612276876,
+          "p99": 0.09684259638213209
+        },
+        "weighted_prior_occurrences": 1019
+      }
+    },
+    "candidate_count_5-8": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.02697878849539565,
+          "mean": 0.00020688122922519792,
+          "median": 1.9561042456193578e-09,
+          "p90": 0.000501020702900336,
+          "p99": 0.003869782530596567
+        },
+        "n_unique_priors": 3512,
+        "ordered_top_two_candidate_agreement": 0.9755222620806078,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.99987221426482,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.17678540224018824,
+          "mean": 0.0055241037550487655,
+          "median": 9.927123501007884e-08,
+          "p90": 0.019665942169638906,
+          "p99": 0.0548278381984435
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.0988483869455189,
+          "mean": 0.005368323478234402,
+          "median": 9.927123501007884e-08,
+          "p90": 0.019216183640880846,
+          "p99": 0.05429028112409107
+        },
+        "top_semantic_action_agreement": 0.9928254906098333,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.2232177257537842,
+          "mean": 0.154773340418901,
+          "median": 0.10249805450439453,
+          "p90": 0.37087249755859375,
+          "p99": 0.853789210319519
+        },
+        "total_variation": {
+          "max": 0.21931222687847962,
+          "mean": 0.006783564839565779,
+          "median": 1.0074077476103864e-07,
+          "p90": 0.023999866835269883,
+          "p99": 0.05852643759581708
+        },
+        "weighted_prior_occurrences": 4739
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.02697878849539565,
+          "mean": 0.00010779030777125482,
+          "median": 7.426276670144875e-14,
+          "p90": 0.0001651763632139593,
+          "p99": 0.00212684446663206
+        },
+        "n_unique_priors": 3512,
+        "ordered_top_two_candidate_agreement": 0.9823462414578588,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9998375154733409,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.17678540224018824,
+          "mean": 0.00306626302880945,
+          "median": 7.374767463375065e-12,
+          "p90": 0.009307514747146028,
+          "p99": 0.05027609021921198
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.0988483869455189,
+          "mean": 0.002973262292610326,
+          "median": 7.374767463375065e-12,
+          "p90": 0.008973517201303405,
+          "p99": 0.04904960254406576
+        },
+        "top_semantic_action_agreement": 0.9951594533029613,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.2232177257537842,
+          "mean": 0.1679633348372209,
+          "median": 0.10688638687133789,
+          "p90": 0.405717134475708,
+          "p99": 0.8549834638834
+        },
+        "total_variation": {
+          "max": 0.21931222687847962,
+          "mean": 0.00373870469031883,
+          "median": 7.485808725394639e-12,
+          "p90": 0.01268461908375898,
+          "p99": 0.05429028112409115
+        },
+        "weighted_prior_occurrences": 3512
+      }
+    },
+    "candidate_count_9+": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.011654176334576407,
+          "mean": 0.0006815479701289599,
+          "median": 8.136976890962876e-05,
+          "p90": 0.001363521359025558,
+          "p99": 0.011255112548568537
+        },
+        "n_unique_priors": 1021,
+        "ordered_top_two_candidate_agreement": 0.956071076011846,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9990173057006789,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.014534957487613015,
+          "median": 0.003102605963869687,
+          "p90": 0.046620189390514,
+          "p99": 0.14000460626350214
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.014508202992772744,
+          "median": 0.0030805443701084345,
+          "p90": 0.046620189390514,
+          "p99": 0.14000460626350214
+        },
+        "top_semantic_action_agreement": 0.9856860809476802,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.2700108289718628,
+          "mean": 0.09089443307996958,
+          "median": 0.03804349899291992,
+          "p90": 0.24507713317871094,
+          "p99": 0.6240408048033714
+        },
+        "total_variation": {
+          "max": 0.1401865327663926,
+          "mean": 0.017190765611838674,
+          "median": 0.0076476296981091785,
+          "p90": 0.047127950613178225,
+          "p99": 0.14000460626350222
+        },
+        "weighted_prior_occurrences": 2026
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.011654176334576407,
+          "mean": 0.00019121489953083303,
+          "median": 2.7032627896540444e-05,
+          "p90": 0.0002960560921375925,
+          "p99": 0.003332560109840019
+        },
+        "n_unique_priors": 1021,
+        "ordered_top_two_candidate_agreement": 0.9353574926542605,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.999337521682683,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.0054041692539026475,
+          "median": 0.0012429453708209248,
+          "p90": 0.011575707088115783,
+          "p99": 0.07351132857918186
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.14014675368827567,
+          "mean": 0.00538215589327258,
+          "median": 0.0011880443792681161,
+          "p90": 0.011488953997619261,
+          "p99": 0.07351132857918186
+        },
+        "top_semantic_action_agreement": 0.980411361410382,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.2700108289718628,
+          "mean": 0.09220928127670353,
+          "median": 0.04942166805267334,
+          "p90": 0.23108649253845215,
+          "p99": 0.6457200050354004
+        },
+        "total_variation": {
+          "max": 0.1401865327663926,
+          "mean": 0.007838002458480238,
+          "median": 0.0019125850337494636,
+          "p90": 0.019621802237065326,
+          "p99": 0.07789555768428784
+        },
+        "weighted_prior_occurrences": 1021
+      }
+    },
+    "direct_semantic_candidates": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.0024739603188797376,
+          "mean": 0.00015291263602114797,
+          "median": 2.8699230701740457e-05,
+          "p90": 0.00038363580867836826,
+          "p99": 0.002288630841415784
+        },
+        "n_unique_priors": 745,
+        "ordered_top_two_candidate_agreement": 0.9884488448844885,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9951510759265081,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.009517316138260781,
+          "median": 0.0056305266500454865,
+          "p90": 0.023049130152175912,
+          "p99": 0.05415795300561488
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.009257087413175309,
+          "median": 0.0054246142440366185,
+          "p90": 0.02151324599866622,
+          "p99": 0.05415795300561488
+        },
+        "top_semantic_action_agreement": 0.9894389438943895,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.4916503131389618,
+          "mean": 0.05995370180591197,
+          "median": 0.03541654348373413,
+          "p90": 0.13331526517868042,
+          "p99": 0.3685707449913025
+        },
+        "total_variation": {
+          "max": 0.06677960594840177,
+          "mean": 0.009674318491539595,
+          "median": 0.005974553781223427,
+          "p90": 0.02319330236852342,
+          "p99": 0.05415795300561484
+        },
+        "weighted_prior_occurrences": 3030
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.0024739603188797376,
+          "mean": 8.496699223236958e-05,
+          "median": 1.9344868159821508e-05,
+          "p90": 0.0001689850600719179,
+          "p99": 0.0009994800881295467
+        },
+        "n_unique_priors": 745,
+        "ordered_top_two_candidate_agreement": 0.9852348993288591,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9974798474194589,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.007000762856732576,
+          "median": 0.0045994692152614425,
+          "p90": 0.015382534804145087,
+          "p99": 0.042036583214739576
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.06677960594840182,
+          "mean": 0.006846268411131816,
+          "median": 0.004588707234060463,
+          "p90": 0.015084244398651803,
+          "p99": 0.042036583214739576
+        },
+        "top_semantic_action_agreement": 0.9892617449664429,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 0.4916503131389618,
+          "mean": 0.04275917384707863,
+          "median": 0.025900602340698242,
+          "p90": 0.10007882118225098,
+          "p99": 0.2776954174041748
+        },
+        "total_variation": {
+          "max": 0.06677960594840177,
+          "mean": 0.007332661281720195,
+          "median": 0.005029580317026414,
+          "p90": 0.01570184056223134,
+          "p99": 0.04203658321473952
+        },
+        "weighted_prior_occurrences": 745
+      }
+    },
+    "grouped_semantic_candidates": {
+      "occurrence_weighted": {
+        "jensen_shannon_nats": {
+          "max": 0.03618651286510022,
+          "mean": 0.00036546641708995085,
+          "median": 1.0068632163176474e-05,
+          "p90": 0.0007973018532848168,
+          "p99": 0.0061818533420341035
+        },
+        "n_unique_priors": 5572,
+        "ordered_top_two_candidate_agreement": 0.9610374230222644,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9998583658983032,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.2652592298979636,
+          "mean": 0.00886611508328666,
+          "median": 0.0008412137371607287,
+          "p90": 0.02721774300626556,
+          "p99": 0.09412860882047963
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.16464420119333856,
+          "mean": 0.008646995504767782,
+          "median": 0.0008136369397269139,
+          "p90": 0.025895957478078824,
+          "p99": 0.09412860882047963
+        },
+        "top_semantic_action_agreement": 0.9870914258645191,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.709733486175537,
+          "mean": 0.13971301401546865,
+          "median": 0.07472264766693115,
+          "p90": 0.35143017768859863,
+          "p99": 0.8233647346496582
+        },
+        "total_variation": {
+          "max": 0.2652592298979636,
+          "mean": 0.010350188544813009,
+          "median": 0.0013743233645957772,
+          "p90": 0.03248037732349693,
+          "p99": 0.09723224670442394
+        },
+        "weighted_prior_occurrences": 8444
+      },
+      "unique": {
+        "jensen_shannon_nats": {
+          "max": 0.03618651286510022,
+          "mean": 0.0001832239488871471,
+          "median": 4.9826730290477985e-08,
+          "p90": 0.0003005393109754863,
+          "p99": 0.003332560109840019
+        },
+        "n_unique_priors": 5572,
+        "ordered_top_two_candidate_agreement": 0.966618808327351,
+        "teacher_student_top_two_candidate_logit_margin_correlation": 0.9998571848664161,
+        "teacher_top_prior_probability_absolute_error": {
+          "max": 0.2652592298979636,
+          "mean": 0.005119155227934395,
+          "median": 3.7345414896083895e-06,
+          "p90": 0.015499559790179251,
+          "p99": 0.06707343273452065
+        },
+        "top_prior_probability_peak_absolute_error": {
+          "max": 0.16464420119333856,
+          "mean": 0.004943994448519583,
+          "median": 3.7345414896083895e-06,
+          "p90": 0.015024518410942211,
+          "p99": 0.06372914311274613
+        },
+        "top_semantic_action_agreement": 0.988872936109117,
+        "top_two_candidate_logit_margin_absolute_error": {
+          "max": 1.709733486175537,
+          "mean": 0.15445003240616298,
+          "median": 0.08668041229248047,
+          "p90": 0.3815474510192871,
+          "p99": 0.8657407760620117
+        },
+        "total_variation": {
+          "max": 0.2652592298979636,
+          "mean": 0.006111928672952928,
+          "median": 4.363156517751517e-06,
+          "p90": 0.019259606888488677,
+          "p99": 0.06899633879569202
+        },
+        "weighted_prior_occurrences": 5572
+      }
+    }
+  },
+  "trace_occurrence_weighted_metrics": {
+    "jensen_shannon_nats": {
+      "max": 0.03618651286510022,
+      "mean": 0.00030933621344357874,
+      "median": 1.760214075614071e-05,
+      "p90": 0.0006359128402162878,
+      "p99": 0.004738704291744915
+    },
+    "n_unique_priors": 6317,
+    "ordered_top_two_candidate_agreement": 0.968276102492592,
+    "teacher_student_top_two_candidate_logit_margin_correlation": 0.9998682978297517,
+    "teacher_top_prior_probability_absolute_error": {
+      "max": 0.2652592298979636,
+      "mean": 0.009038081197681952,
+      "median": 0.0021541631322787858,
+      "p90": 0.025895957478078824,
+      "p99": 0.08229651950148542
+    },
+    "top_prior_probability_peak_absolute_error": {
+      "max": 0.16464420119333856,
+      "mean": 0.008808105708922811,
+      "median": 0.00211928494859992,
+      "p90": 0.025077914508378374,
+      "p99": 0.08229651950148542
+    },
+    "top_semantic_action_agreement": 0.9877113473941084,
+    "top_two_candidate_logit_margin_absolute_error": {
+      "max": 1.709733486175537,
+      "mean": 0.11865054966171609,
+      "median": 0.06131887435913086,
+      "p90": 0.3064758777618408,
+      "p99": 0.7595151364803314
+    },
+    "total_variation": {
+      "max": 0.2652592298979636,
+      "mean": 0.01017170795727436,
+      "median": 0.003512841554633362,
+      "p90": 0.028455508561965936,
+      "p99": 0.08302302085087666
+    },
+    "weighted_prior_occurrences": 11474
+  },
+  "unique_prior_metrics": {
+    "jensen_shannon_nats": {
+      "max": 0.03618651286510022,
+      "mean": 0.00017163594307619107,
+      "median": 5.562012673868532e-07,
+      "p90": 0.00028656003724382797,
+      "p99": 0.0031013108322572
+    },
+    "n_unique_priors": 6317,
+    "ordered_top_two_candidate_agreement": 0.9688143105904702,
+    "teacher_student_top_two_candidate_logit_margin_correlation": 0.9998711094933975,
+    "teacher_top_prior_probability_absolute_error": {
+      "max": 0.2652592298979636,
+      "mean": 0.005341063995300969,
+      "median": 9.030814176036461e-05,
+      "p90": 0.015489556407382032,
+      "p99": 0.06372914311274613
+    },
+    "top_prior_probability_peak_absolute_error": {
+      "max": 0.16464420119333856,
+      "mean": 0.005168340515029969,
+      "median": 9.042963562211348e-05,
+      "p90": 0.015069863330344657,
+      "p99": 0.060265873655213964
+    },
+    "top_semantic_action_agreement": 0.9889187905651416,
+    "top_two_candidate_logit_margin_absolute_error": {
+      "max": 1.709733486175537,
+      "mean": 0.1412776895810058,
+      "median": 0.07340240478515625,
+      "p90": 0.36029720306396484,
+      "p99": 0.8524422198534012
+    },
+    "total_variation": {
+      "max": 0.2652592298979636,
+      "mean": 0.006255896663063996,
+      "median": 0.00010873873896389984,
+      "p90": 0.018815283323160265,
+      "p99": 0.06677960594840177
+    },
+    "weighted_prior_occurrences": 6317
+  },
+  "version": "ooc-contextual-semantic-prior-trace-v1"
+}
