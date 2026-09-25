@@ -12339,7 +12339,27 @@ using per-potion or max-HP prices. Architecture documents the reward-chain
 capacity rule. The post-review descriptors do not change the frozen W1
 verdict, runtime defaults, or gameplay claims.
 
-## §354 — Retrained contextual deck semantic-prior qualification (2026-09-25)
+## §354 — Native Silver one-action-root bypass: paired 128-seed check (2026-09-25)
+
+Change: the native backend commits the sole action of a one-action root
+without search and keeps the retained graph for the next reroot
+(`STS_SILVER_SEARCH_SINGLETON_ROOTS=1` or exact root budgets restore
+searching). This carries the vendored bypass of §§351–352 (removed with the
+vendored model, ADR-0022) over to native Silver. The same change adds native
+simulations to `ScumSearchAgent2::simulationCountTotal`, which previously
+stayed at zero under native Silver.
+
+Setup: one Release binary, 4 threads, adaptive Silver, `bestbench 1000 128 0
+126700`, control with singleton roots searched, treatment with the new default.
+
+Result: control 82/128, treatment 86/128; paired +3.1 pp, 95% CI [−1.7, +8.0]
+pp; discordant 7/3 (McNemar z = +1.26). Mean floor 47.43 vs 47.42. Mean
+per-run time 38.58 s vs 36.09 s (−6.5%).
+
+Decision: adopt as the native default; no detectable gameplay difference, 6.5%
+faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton_bypass_2026-09-25/README.md).
+
+## §355 — Retrained contextual deck semantic-prior qualification (2026-09-25)
 
 - **Question / decision:** Does a newly trained 3,200-parameter contextual
   O(n) deck block preserve the deployed42 teacher's actual OOC MCTS semantic
@@ -12394,18 +12414,21 @@ verdict, runtime defaults, or gameplay claims.
   result was `98.771%` agreement with median/p90 TV
   `0.003513 / 0.028456`. All broad-screen guards passed. SHOP was explicitly
   checked: 1,002 unique inputs, `97.705%` agreement, median/p90 TV
-  `0.002183 / 0.016985`. The event screen had `94.581%` agreement but
-  median/p90 TV `0.011271 / 0.047501`, above the screen guard; rest (90 unique)
+  `0.002183 / 0.016985`. The event screen had `94.581%` agreement, below the
+  95% overall headline threshold but above the 90% broad-screen guard, with
+  median/p90 TV `0.011271 / 0.047501`; rest (90 unique)
   and treasure (72) remain smaller descriptive strata. Direct primitive and
   grouped-semantic agreement were `98.926%` and `98.887%`; full strata and
   representative decoded records are in the evidence packet.
 - **Current-main drift:** The trace source was branch head `03079d52`; at
   evaluation `origin/main` was `0eed6993`. The intervening OOC adapter change
-  removes trace-only code and alters singleton bypass bookkeeping. Inspection
-  found the non-singleton candidate construction, `priorSourceGroups`, and
-  `policyLogits`/multiplicity prior calculation unchanged; singleton records
-  are excluded from the primary population. The saved trace therefore remains
-  authoritative for the evaluated non-singleton inputs.
+  adds the singleton-root fast path. The merged trace code preserves that
+  no-prior-cache behavior when tracing is unset and writes singleton rows only
+  when the opt-in trace path is set. Inspection found the non-singleton
+  candidate construction, `priorSourceGroups`, and `policyLogits`/multiplicity
+  prior calculation unchanged; singleton records are excluded from the
+  primary population. The saved trace therefore remains authoritative for the
+  evaluated non-singleton inputs.
 - **Scope / next step:** This is offline prior-fidelity qualification only.
   No new seeds, native contextual inference, runtime benchmark, MCTS/gameplay
   smoke, policy-strength gate, default change, or claim of tree/gameplay

@@ -188,14 +188,15 @@ additional per-screen, per-stratum, and representative-record detail.
 
 The task handoff expected `856b3f8f`; by this run `origin/main` was
 `0eed6993999386737d87f040e38fb241623b5cf3`. The trace was produced by the PR
-#329 branch head `03079d522f05a83be304d709fbe567cfe2fc4d59`. The later OOC
-adapter change on current `main` removes trace-only instrumentation and alters
-singleton-bypass bookkeeping. Diff inspection found no change to non-singleton
-semantic candidate construction, `priorSourceGroups`, source `policyLogits`,
-or multiplicity-corrected legal-action weights. Singletons are excluded from
-the primary population, so the checked-in trace remains suitable for this
-offline comparison. This audit does not claim current-main trace capture was
-rerun.
+#329 branch head `03079d522f05a83be304d709fbe567cfe2fc4d59`. Current `main`
+adds a singleton-root fast path. The merged trace code preserves that
+no-prior-cache behavior when tracing is unset, and emits singleton rows only
+when the trace path is explicitly enabled. Diff inspection found no change to
+non-singleton semantic candidate construction, `priorSourceGroups`, source
+`policyLogits`, or multiplicity-corrected legal-action weights. Singletons are
+excluded from the primary population, so the checked-in trace remains suitable
+for this offline comparison. This audit does not claim current-main trace
+capture was rerun.
 
 ## Exact commands
 
@@ -243,5 +244,9 @@ python3 tools/evaluate_ooc_contextual_semantic_trace.py \
 ```
 
 `python3 -m py_compile` for the three scripts and `git diff --check` passed.
-No C++ build, CTest, native contextual inference, new seed run, or gameplay
-evaluation was performed for this offline qualification.
+After synchronizing current `main`, `cmake --build
+build/linux-gcc-release --target one_combat -j2` passed and focused CTest
+`ooc_mcts_adapter` passed 1/1 (0.53 s). The build emitted the existing
+`one_combat.cpp` duration narrowing warning and serial-LTO note. Full CTest,
+CI, native contextual inference, new seed runs, and gameplay evaluation were
+not run.

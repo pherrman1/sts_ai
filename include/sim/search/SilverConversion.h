@@ -1,4 +1,5 @@
-// Explicit live-observation to isolated-Silver conversion helpers.
+// Live combat state -> Silver search view: the sanitized draw-pile observation
+// and the value-only wire protocol (SilverBridge.h) used by the live advisor.
 #ifndef STS_SILVER_CONVERSION_H
 #define STS_SILVER_CONVERSION_H
 
@@ -16,7 +17,7 @@ namespace sts {
 
 namespace search {
 
-// This is the draw-pile portion of the live->Silver boundary. It deliberately
+// This is the draw-pile portion of the live->search boundary. It deliberately
 // has no reference to an index in the live vector and contains no live RNG.
 // In the normal case unknown is canonicalized as a multiset. Only a legitimate
 // full-order observation (Frozen Eye) may preserve the live vector order.
@@ -55,7 +56,7 @@ CardPile makeSilverCardPile(const BattleContext &live,
                                    const CombatKnowledgeState &knowledge);
 
 // Runic Dome hides intent from the player. Callers must use this gate before
-// copying any monster move field into the isolated Silver model.
+// copying any monster move field into a Silver search state.
 bool liveMonsterIntentIsObservable(const BattleContext &live);
 
 bool sameSilverDrawPileObservation(const SilverDrawPileObservation &a,

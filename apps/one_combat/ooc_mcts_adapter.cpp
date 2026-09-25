@@ -463,9 +463,10 @@ bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
 }
 std::optional<sts::search::OocActionId> OocGameContextModel::soleLegalAction(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) return std::nullopt;
-    auto &cached = mutableMetadata(id);
-    const auto &actions = cached.candidates;
+    const auto &actions = metadata(id).candidates;
     if (actions.size()==1 && actions.front().primitive.isValidAction(state(id))) {
+        if (options.priorTracePath.empty()) return actions.front().id;
+        auto &cached = mutableMetadata(id);
         if (!cached.priors)
             cached.priors = std::vector<sts::search::OocPlannerAction>{{actions.front().id, 1.0}};
         tracePrior(id, cached, *cached.priors);

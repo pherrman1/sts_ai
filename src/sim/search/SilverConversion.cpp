@@ -1,4 +1,4 @@
-// Explicit live-observation to isolated-Silver conversion helpers.
+// Live combat state -> Silver search view (see SilverConversion.h).
 #include "sim/search/SilverConversion.h"
 
 #include <algorithm>
@@ -262,7 +262,7 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
             // Looter/Mugger sample their next move directly inside takeTurn,
             // rather than through rollMove. At a post-turn Runic root the
             // live concrete result is hidden, so carry only the public rule
-            // into the isolated model's deferred direct-choice state.
+            // into the search state's deferred direct-choice state.
             if (knowledge.hasUnrepresentableHiddenIntent[i]) {
                 const auto publicMove = knowledge.publicMonsterMoveHistory[i][0];
                 if (m.id == MonsterId::LOOTER
