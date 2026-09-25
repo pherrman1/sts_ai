@@ -11995,3 +11995,167 @@ the experimental native backend; the vendored Silver backend stays the default.
 Knowledge impact: the scratch-pile boundary and completed corrected DEV result
 are recorded in maintained combat-search and current-research pages. B remains
 default-off and is not gameplay-qualified.
+
+## §350 — Native Silver rollout-only unsorted draw pile: rejected at profile gate (2026-09-25)
+
+**Hypothesis:** the §349 candidate B (rollout scratch piles left unsorted) has
+a useful analogue in native Silver (`SilverSearcher`, default backend since
+ADR-0021). In native Silver only the information-set draw pile (`CardPile`)
+is kept canonically sorted; discard and exhaust are plain vectors.
+
+**Preregistered stop rule:** if removable rollout-only canonical-sort work is
+clearly below ~3% of native search CPU, stop before implementing.
+
+- **Baseline:** `856b3f8fb463be838daa1c4caf221b22bd876353`.
+- **Method:** Release (`-O3 -flto`, plus `-g`) `unit-test` binary,
+  `valgrind --tool=callgrind` on `test silver_searcher` (24 whole battles,
+  native `SilverSearcher` with reroots, 200 simulations per decision). A
+  second run used `--toggle-collect='sts::search::SilverSearcher::rolloutToEnd*'`
+  to isolate rollout scratch execution. A deck-size sensitivity run temporarily
+  (uncommitted, since reverted) added 20 cards (Pommel Strike, Shrug It Off,
+  Inflame, Twin Strike, Anger ×4 each) to the starter deck.
+- **Results (instruction counts, Ir):**
+
+  | Workload | Total Ir | `rolloutToEnd` share | Rollout `std::sort<CardInstance>` | Share of total |
+  |---|---|---|---|---|
+  | Starter deck (10 cards) | 8.62e9 | 67.4% | 163.1M | **1.89%** |
+  | 30-card deck | 6.65e9 | 65.9% | 137.5M | **2.07%** |
+
+  Almost all removable work is the `absorbUnordered()` sort in
+  `CardManager::moveDiscardPileIntoToDrawPile`. `addUnknown()` insertion and
+  the `mutateAt()`/`mutateAll()` sortedness checks were about 0.02%. Non-rollout
+  sorts (about 0.9–1.6% of the total) must stay canonical and are not
+  removable. The vendored ~9% (§349) does not transfer, because the vendored
+  engine also sorted discard/exhaust.
+- **Decision:** rejected at Phase A. No implementation, fixed-work benchmark,
+  or gameplay seeds were run or reserved.
+- **Limitations:** callgrind Ir is a proxy for CPU; no production `one_combat`
+  adaptive-budget profile was taken (**Inference:** the rollout/tree ratio and
+  hence the share should be similar). The same profile attributes about 53% to
+  `BattleContext::executeActions`, 17% to rollout card choice, and ~15% to
+  `BattleContext` copy/swap; those are the larger native rollout-cost targets.
+
+Knowledge impact: this entry plus a one-line pointer in current-research. No
+code or default changed.
+
+## §351 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
+
+- **Question:** Does zero-search selection at singleton roots, while retaining
+  the selected edge for later rerooting, change complete frozen-fight outcomes
+  or reduce search work?
+- **Frozen comparison:** main control at the time of this recorded run
+  `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`
+  versus corrected treatment `2da8eed6a9c7faecd82effdd1751265eac1b42fd`.
+  Treatment enables the benchmark-only singleton skip in the frozen replay
+  utility; the production live backend change remains independently covered by
+  the focused bridge and integration checks.
+- **Cohort/configuration:** the tracked `hard64-holdout` set from
+  `silver_hard_combat_v1_20260918`, 64 unique snapshots with stored per-fight
+  benchmark seeds (snapshot SHA256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`). Both
+  arms used 10,000 simulations per searched root, allocated reuse cap 32,768,
+  adaptive/exact-lock/rho off, and OMP 4. Every invocation used
+  `tools/seed_guard.sh`; arm order alternated by 8-case block.
+- **Results:** 64 cases were attempted; 63 were valid in both arms. Control and
+  treatment each won 57/63 with zero paired outcome flips. Treatment skipped 62
+  singleton searches, used 20.060M versus 20.720M simulations (**−3.185%**),
+  and had 183.797 versus 189.465 summed per-case replay wall seconds
+  (**−2.991%**). Mean ending HP changed by +0.159. Action trace hashes matched
+  on 60/63 valid pairs. These bounded descriptive metrics are not equivalence
+  evidence.
+- **Technical exclusion:** case `12100109/21` failed in both arms after 28
+  decisions / 280,000 simulations with the same
+  `selected_deterministic_state_mismatch` and action-trace hash. An isolated
+  rerun reproduced the same failure with current main, treatment with the
+  switch off, and treatment with it on. The row is preserved; no case was
+  substituted. The comparison is **N64 attempted / N63 valid**, so it is not a
+  complete valid N64 confirmation.
+- **Interpretation:** this is the first tracked post-reroot-correction hard64
+  replay packet. It does not validate the live wire conversion path or
+  establish gameplay safety; the live implementation remains supported only
+  by the continuity regression and focused integration smoke. The old supplied
+  59/64 report remains pre-correction and unverified.
+- **Evidence:** [frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25/README.md),
+  including raw 64-row arm outputs, pair rows, summary, shared-failure reruns,
+  and hashes.
+
+Knowledge impact: current research now records the post-correction replay
+result and its one shared technical failure. No default or quality gate changed.
+
+## §352 — Singleton reroot replay against updated current main (2026-09-25)
+
+- **Question:** Does the retained-session singleton zero-search path reduce
+  work without changing observed outcomes on the frozen hard-fight cohort
+  after merging the latest main updates?
+- **Frozen comparison:** main control
+  `46684659a0d56729d7af1f8ae2ce9eeab39a6934` versus merged treatment
+  `be47b2a1502013b04dcdd923b6d14c1c22c7dde1`. The treatment enabled only
+  `--skip-singleton-search` in the frozen replay utility. The production live
+  path is independently covered by the retained-edge bridge regression and
+  flat/adaptive integration checks.
+- **Cohort/configuration:** the same 64 stored-seed rows from the tracked
+  `hard64-holdout` set in `silver_hard_combat_v1_20260918` (snapshot SHA-256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`). Both
+  Release arms used exact 10,000 simulations per searched root, allocated
+  reuse cap 32,768, adaptive/exact-lock/rho off, and OMP 4. Alternating
+  eight-case blocks went through `tools/seed_guard.sh`; all 64 stored states
+  ran in both arms. No new states were collected.
+- **Results:** 64 cases were attempted and 63 were valid in both arms. Each
+  arm won 57/63 with zero paired outcome flips. Treatment skipped 62 singleton
+  searches, used 20.060M versus 20.720M simulations (**−3.185%**), and had
+  183.421 versus 189.820 summed per-case replay wall seconds (**−3.371%**).
+  Mean ending HP changed by +0.159; action traces matched on 60/63 valid
+  pairs. These bounded descriptive metrics are not equivalence evidence.
+- **Post-run source advance:** while the packet was being prepared, main moved
+  to `8ed346ea1e503a85640c44131c05b9e8b5f48f53` via PR #320. Rebuilding the
+  replay target from that main head produced the same control binary hash as
+  the run. After merging it into the treatment tree, the replay target also
+  retained the exact treatment binary hash used by the run. No more seeded
+  replays were launched after this byte-for-byte check because the local
+  128 arm-case allowance had been used; the raw command records retain the
+  original invocation SHAs. Main later advanced to
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a` via PRs #318 and #321. Release
+  rebuilds from that main head and final treatment merge
+  `b0393b034117cbdf5e16b994a0fe50528e89787b` again produced the recorded
+  control (`58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`)
+  and treatment (`03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`)
+  hashes. Main then advanced to `18232bf049a3facade2d5df440a67bb30135f400`
+  (PR #314); its control binary was
+  `f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773`, while
+  final treatment `b6242a65f98d90520440145600241ad5a39d3860` built to
+  `ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`.
+  Both differ from the replay binaries. Inspection found PR #314 adds a
+  default-off unsorted-rollout option (disabled in these invocations), changes
+  diagnostic timing collection defaults, and adjusts the isolated simple-
+  rollout terminal feature probe. All 64 snapshots omit `isolated_search_seed`,
+  so the new harness fallback remains the stored `benchmark_seed`. These
+  changes do not alter the default combat replay search path. No new hard64
+  screen was necessary for this merge; the N63 outcome/simulation rows remain
+  historical observations of their original binaries, and the wall-time result
+  is not reverified on the newer harness. Main later advanced via PR #322 to
+  `856b3f8fb463be838daa1c4caf221b22bd876353` and PR #323 to
+  `f8fa4a3fd9ebbbc01f2003946ee40c634bcd677d`. Release replay rebuilds from
+  current main and the merged treatment still have SHA-256
+  `f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773` and
+  `ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`.
+  PR #322 changes `one_combat` backend dispatch and PR #323 records a profile
+  result; neither changes the replay target. No new hard64 screen was needed.
+- **Technical exclusion:** case `12100109/21` failed in both arms after 28
+  decisions / 280,000 simulations with the same
+  `selected_deterministic_state_mismatch` and action-trace hash
+  `5626104837987834096`. Both raw rows remain in the packet. No case was
+  removed, replaced, or rerun, so the result remains **N64 attempted / N63
+  valid**, not complete valid N64 confirmation.
+- **Interpretation:** this updates the earlier post-correction replay whose
+  control was main at `01f6f164`. It confirms descriptive compute savings on
+  the same frozen cohort against main at `46684659`; byte-for-byte rebuilds
+  show the replay target stayed identical at main `8ed346ea` and treatment
+  commit `4b1b27f6`. It does not establish action equivalence or gameplay safety,
+  validate live wire conversion, or change a default.
+- **Evidence:** [current-main frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md),
+  including raw per-arm rows, paired records, run order, per-invocation
+  outputs, analysis scripts, and hashes.
+
+Knowledge impact: current research now records the updated-baseline replay
+and its shared technical failure. The prior comparison remains preserved as
+historical evidence; no default or quality gate changed.
