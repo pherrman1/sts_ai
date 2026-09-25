@@ -971,6 +971,14 @@ static nlohmann::json runActiveLizardPairSeed(
     return nlohmann::json::object();
 }
 
+static void installDirectSnapshotPostBattleAction(GameContext &gc) {
+    // Direct snapshots restore persistent precombat fields, not the transient
+    // callback installed by initFromSave. A won branch still needs the normal
+    // post-battle continuation when BattleContext::exitBattle calls
+    // regainControl() after RAW capture.
+    gc.regainControlAction = [](GameContext &context) { context.afterBattle(); };
+}
+
 static nlohmann::json runActiveLizardPairFromSnapshot(
     std::uint64_t seed, int sims, int asc, const WholeCombatTeacher &teacher,
     const nlohmann::json &target, nlohmann::json &pairMeta) {
@@ -1004,6 +1012,7 @@ static nlohmann::json runActiveLizardPairFromSnapshot(
     source.map->burningEliteBuff = -1;
     one_combat::applyCombatTransitionState(
         source, one_combat::combatTransitionStateFromJson(target.at("preState")));
+    installDirectSnapshotPostBattleAction(source);
     const double frozenPotionKeep = globals.at("potionKeepValue").get<double>();
     const auto reproducedInput = one_combat::combatPredictorInputJson(
         one_combat::captureCombatPredictorInput(source, encounter, frozenPotionKeep));
@@ -1343,6 +1352,18 @@ int activeLizardTransitionSelfTest() {
         source.hasRelic(RelicId::LIZARD_TAIL) ||
         one_combat::combatTransitionFingerprint(source) != sourceFingerprint)
         throw std::runtime_error("active Lizard selftest: acquire/shadow isolation failed");
+
+    GameContext restored(CharacterClass::IRONCLAD, 920260924u, 0);
+    restored.screenState = ScreenState::BATTLE;
+    restored.curRoom = Room::MONSTER;
+    restored.info.encounter = MonsterEncounter::CULTIST;
+    installDirectSnapshotPostBattleAction(restored);
+    BattleContext restoredVictory;
+    restoredVictory.init(restored, MonsterEncounter::CULTIST);
+    restoredVictory.outcome = Outcome::PLAYER_VICTORY;
+    restoredVictory.exitBattle(restored);
+    if (restored.screenState != ScreenState::REWARDS)
+        throw std::runtime_error("active Lizard selftest: direct snapshot victory continuation failed");
 
     GameContext fairy = detachedCounterfactualCopy(shadow);
     fairy.potions[0] = Potion::FAIRY_POTION;
