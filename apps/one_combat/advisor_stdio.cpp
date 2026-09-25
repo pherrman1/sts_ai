@@ -546,7 +546,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     evaluator["decisionInTurn"] = imported.decisionInTurn;
     evaluator["reroot"] = {
         {"exact", decision.exactReroot},
-        {"equivalentCopy", false},
+        {"equivalentCopy", decision.equivalentCopyReroot},
         {"fallback", decision.fallback},
         {"fallbackReason", decision.fallbackReason},
         {"inheritedVisits", decision.inheritedVisits},
