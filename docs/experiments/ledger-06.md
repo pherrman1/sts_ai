@@ -11908,3 +11908,63 @@ vendored model) with the vendored Silver backend on the §340 seed block.
 
 Knowledge impact: combat-search architecture and environment variables record
 the experimental native backend; the vendored Silver backend stays the default.
+
+### §351 — Frozen minimal active Lizard CTM qualification stopped at rare-event floor (2026-09-25)
+
+The predeclared fresh cohort completed 128/128 paired sources under the frozen
+exact-10k fair Silver teacher: HARD96 `4201000..4201095` and BROAD32
+`4201096..4201127`. Candidate selection used frozen q/r `q*(1-r)` for HARD96
+and the preregistered SHA-256 source/fight/salt rule for BROAD32. The source
+freshness audit found no overlap with the prior 160 Lizard source IDs; pair
+collection had zero quarantines. All 128 pairs were in the prospective CTM
+support domain after removing Tail from pre-state and predictor input, with no
+Fairy Potion or Mark of the Bloom rows.
+
+The frozen q/r artifact is SHA-256
+`9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9`. It was
+fit once on the existing 427-row/124-source prospective-support development
+cohort, with q/r rows 427/65, L2=1, q inputs `logit(pDeath)` and signed
+`pReserveWin-pOrdinaryWin`, and r input `pReserveWin`. T2 remained the fixed
+`curHp=floor(maxHP/2)` transform for consumed wins. The existing-data T2
+extension confirmation had 33 supported rows/31 sources: HP NLL delta
+`-1.60054` (95% CI `[-2.57783,-0.66053]`), CRPS `-4.06102`
+(`[-7.70190,-0.39899]`), expected-HP MAE `-3.66847`
+(`[-8.02682,0.67188]`), and zero domain/legality failures, so T2 remained a
+frozen candidate.
+
+Fresh classes were HARD96 52 `WIN_RETAINED`, 35 `WIN_CONSUMED`, 9
+`LOSS_CONSUMED`; BROAD32 31, 1, 0; pooled 83, 36, 9. The rare-event floor
+requires 20 losses from 10 distinct sources; the cohort reached only 9 from 9
+(45 consumed rows total). Therefore the preregistered classification is
+`LIZARD_QUALIFICATION_INCONCLUSIVE_RARE_EVENT`, and work stopped before Phase 6
+ancestral qualification or any runtime/parity/support/live work.
+
+Pooled q/r three-class NLL was `0.53763` versus B1 `5.95150` (delta
+`-5.41388`, source-bootstrap 95% CI `[-16.22244,0.01903]`); Brier was `0.31811`
+versus `0.34764` (delta `-0.02953`, CI `[-0.06996,0.00860]`). The NLL CI
+crosses zero, so the primary gate did not pass. Pooled q was worse than B1 on
+both NLL (delta `+0.02772`, CI `[-0.02440,0.08042]`) and Brier
+(`+0.00816`, `[-0.01335,0.02869]`), failing the q gate. Pooled r passed its
+score comparison on all 45 consumed rows (NLL delta `-0.91805`, CI
+`[-2.52707,-0.02577]`; Brier delta `-0.09034`, `[-0.16639,-0.01888]`), but
+cannot override the loss-source minimum. BROAD32 had no clear primary
+degradation, with only one consumed row.
+
+Fresh T2 scoring on 36 supported consumed wins passed its numeric gate: HP NLL
+delta `-1.34633` (95% CI `[-2.18779,-0.60768]`), CRPS `-3.72108`
+(`[-6.61319,-1.01197]`), expected-HP MAE `-3.46591`
+(`[-6.81904,-0.27249]`), zero unscored/domain rows, and no clear maxHP/potion/
+relic degradation. In the retained-win check, the supported cards relic
+constraint NLL delta was `+0.12641` (`[0.02769,0.24579]`) on six matched
+sources; this sparse subgroup shift remains descriptive.
+
+Production `active_unqualified_lizard` remains fail-closed. No native q/r
+sampler, ancestral draws, parity tests, support-predicate change, or live seed
+`13027029` smoke ran. Further frozen qualification evidence belongs on the
+designated GCP/large-research path; do not expand the local 128-source budget
+or tune this artifact from these outcomes. The full metrics, hashes, and exact
+limitations are in the [qualification evidence packet](evidence/lizard_tail_minimal_ctm_qualification_2026-09-25/README.md)
+and [analysis JSON](evidence/lizard_tail_minimal_ctm_qualification_2026-09-25/fresh_qualification_analysis.json).
+
+**Knowledge impact:** current research status and experiment evidence updated;
+runtime behavior, model interfaces, and support remain unchanged.

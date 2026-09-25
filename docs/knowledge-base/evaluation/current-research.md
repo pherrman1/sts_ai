@@ -1,7 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-25 for correction review of the merged DeepSets
-Brew-fallback quality-confirmation preparation; 2026-09-24 for the experimental
+Last verified: 2026-09-25 for active Lizard frozen q/r qualification and
+correction review of the merged DeepSets Brew-fallback quality-confirmation
+preparation; 2026-09-24 for the experimental
 mechanism/timing smoke;
 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
@@ -853,6 +854,29 @@ packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README
 [prospective-domain analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json),
 [broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
 and [ledger §347](../../experiments/ledger-06.md).
+
+## Active Lizard minimal CTM qualification (2026-09-25)
+
+The frozen 128-source qualification cohort completed, but classification is
+**`ACTIVE_LIZARD_QUALIFICATION_INCONCLUSIVE`** with subclass
+**`LIZARD_QUALIFICATION_INCONCLUSIVE_RARE_EVENT`**. It produced 9
+`LOSS_CONSUMED` outcomes from 9 sources, below the fixed requirement of 20
+from 10. The pooled q/r three-class NLL mean improved over B1, but its
+source-bootstrap 95% CI crosses zero; the q consumption model was worse than
+B1 on pooled NLL and Brier point estimates. The pooled r score gate passed,
+and frozen T2 also passed fresh numeric checks on 36 consumed wins, but neither
+rescues the overall gate. HARD96 and BROAD32 counts, all NLL/Brier intervals,
+the signed B1 numerical-epsilon audit, and source-level retained-win checks are
+in the [qualification evidence packet](../../experiments/evidence/lizard_tail_minimal_ctm_qualification_2026-09-25/README.md)
+and [analysis JSON](../../experiments/evidence/lizard_tail_minimal_ctm_qualification_2026-09-25/fresh_qualification_analysis.json).
+
+No Phase 6 ancestral qualification, native integration, Python/native parity,
+support promotion, or live seed `13027029` smoke was run. The production
+`active_unqualified_lizard` support reason remains in place for nondeterministic
+active Tail. Fairy Potion plus active Tail remains unqualified, and Mark of the
+Bloom retains its existing exact path. If qualification continues, use the
+designated GCP/large-research procedure with the frozen artifact and gates;
+this local 128-source budget is closed. See [ledger §351](../../experiments/ledger-06.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
