@@ -372,7 +372,8 @@ add_executable(one_combat_advisor
     apps/one_combat/advisor_stdio.cpp
     apps/one_combat/advisor_protocol.cpp
     apps/one_combat/live_silver_importer.cpp
-    apps/one_combat/live_silver_mapping.cpp)
+    apps/one_combat/live_silver_mapping.cpp
+    apps/one_combat/native_silver_advisor.cpp)
 target_include_directories(one_combat_advisor PUBLIC json/include)
 target_sources(one_combat_advisor PRIVATE
     apps/one_combat/live_ooc_state.cpp
@@ -389,7 +390,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp)
-target_link_libraries(one_combat_advisor PRIVATE sts_core_objects silver_live_backend)
+target_link_libraries(one_combat_advisor PRIVATE sts_core_objects)
 link_ctm_crypto(one_combat_advisor)
 target_link_options(one_combat_advisor PRIVATE -Wl,--gc-sections)
 target_compile_definitions(one_combat_advisor PRIVATE STS_LIVE_ADVISOR=1)
@@ -592,6 +593,7 @@ add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
 add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)
 add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
+add_test(NAME silver_wire_state COMMAND $<TARGET_FILE:unit-test> silver_wire_state)
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
@@ -832,7 +834,7 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_selection_failure battle_equality card_pile card_pile_engine silver_searcher
+    simhealth_selection_failure battle_equality card_pile card_pile_engine silver_searcher silver_wire_state
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
     e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action
