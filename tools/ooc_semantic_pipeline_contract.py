@@ -150,7 +150,7 @@ def validate_manifest(manifest, verify_csv=True):
     require(teacher['git_sha'] == manifest['producer_git_sha'] and
             teacher['executable_sha256'] == manifest['producer_executable_sha256'],
             'producer and frozen teacher identity mismatch')
-    require(teacher['combat_backend'] == 'silver_uct' and teacher['rng_regime'] == 'project_fair',
+    require(teacher['combat_backend'] == 'native_silver' and teacher['rng_regime'] == 'project_fair',
             'semantic pilot requires frozen project-fair Silver teacher')
     runtime = manifest.get('runtime')
     require(isinstance(runtime, dict), 'missing frozen runtime binding')

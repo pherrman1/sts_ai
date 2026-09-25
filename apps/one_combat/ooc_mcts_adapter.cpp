@@ -13,7 +13,7 @@
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
 #include "combat/BattleContext.h"
-#include "sim/search/SilverLiveBackend.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "../ooc_test_state.h"
 #include <algorithm>
 #include <array>
@@ -906,7 +906,7 @@ struct ImaginedScope {
     decltype(sts::search::g_onGameActionExecute) observer = std::move(sts::search::g_onGameActionExecute);
     decltype(sts::search::g_onCombatDecision) combatObserver=std::move(sts::search::g_onCombatDecision);
     decltype(sts::g_onBattleExitPersistent) exitObserver=std::move(sts::g_onBattleExitPersistent);
-    sts::search::SilverLiveDiagnostics silver = std::move(sts::search::g_silverLiveDiagnostics);
+    sts::search::NativeSilverCombatStats silver = sts::search::g_nativeSilverCombatStats;
     bool disallowed = sts::search::g_disallowImaginedCombat;
     ImaginedScope() {
         sts::search::g_disallowImaginedCombat=true;
@@ -921,7 +921,7 @@ struct ImaginedScope {
         sts::search::g_onGameActionExecute=std::move(observer);
         sts::search::g_onCombatDecision=std::move(combatObserver);
         sts::g_onBattleExitPersistent=std::move(exitObserver);
-        sts::search::g_silverLiveDiagnostics=std::move(silver);
+        sts::search::g_nativeSilverCombatStats=silver;
         sts::search::g_disallowImaginedCombat=disallowed;
     }
 };
@@ -1118,7 +1118,7 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_GRAPH_DECISION_INDEX must be a nonnegative integer");
         liveGraphDecisionIndex = std::stoull(value);
     }
-    if (sts::search::silverLiveReuseCap() != 32768)
+    if (sts::search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("live OOC MCTS requires frozen Silver reuse cap 32768");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
     const char *leafValue = std::getenv("STS_OOC_MCTS_LEAF_VALUE");

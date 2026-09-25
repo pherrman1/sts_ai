@@ -1249,32 +1249,23 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.pathMode = g_pathV ? "model-driven" : "heuristic";
         meta.shopBeam = g_oocShopBeam; meta.collectKeys = g_collectKeys;
         meta.fairPlay = true;
-        meta.silverSearchEnabled = search::silverLiveBackendInstalled();
+        // Native Silver is the only combat backend (ADR-0022); the vendored-era
+        // keys keep their schema with the native values.
+        meta.silverSearchEnabled = search::nativeSilverBackendInstalled();
         meta.stsSilverSearchEffective = meta.silverSearchEnabled;
-        meta.effectiveCombatBackend = search::nativeSilverBackendInstalled()
-            ? "native_silver" : (meta.silverSearchEnabled ? "silver" : "native_searcher");
-        meta.silverReuseCapMode = meta.silverSearchEnabled ? search::silverLiveReuseCapMode() : "";
-        meta.silverReuseCap = meta.silverSearchEnabled ? search::silverLiveReuseCap() : 0;
-        meta.silverUpstreamSha = meta.silverSearchEnabled
-            ? "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff" : "";
+        meta.effectiveCombatBackend = "native_silver";
+        meta.silverReuseCapMode = "allocated";
+        meta.silverReuseCap = search::nativeSilverReuseCap();
+        meta.silverUpstreamSha = "";
         meta.executableGitSha = trainingExecutableGitSha();
-        meta.silverScalingDiagnosticFile = meta.silverSearchEnabled
-            ? search::silverLiveScalingDiagnosticFile() : "";
-        meta.silverStickyQualityFile = meta.silverSearchEnabled
-            ? search::silverLiveStickyQualityFile() : "";
-        meta.silverAdaptiveEnabled = search::nativeSilverBackendInstalled()
-            ? search::nativeSilverAdaptiveEnabled()
-            : meta.silverSearchEnabled && search::silverLiveAdaptiveEnabled();
-        meta.silverAdaptiveRetainedOnly = meta.silverSearchEnabled
-            && search::silverLiveAdaptiveRetainedOnly();
-        meta.silverAdaptiveTopShare = meta.silverSearchEnabled
-            ? search::silverLiveAdaptiveTopTwoVisitGapThreshold() : 0.0;
-        meta.silverExactRootBudgets = meta.silverSearchEnabled
-            && search::silverLiveExactRootBudgets();
-        meta.silverExactVisitLock = meta.silverSearchEnabled
-            && search::silverLiveExactVisitLockEnabled();
-        meta.silverRhoRacing = meta.silverSearchEnabled
-            && search::silverLiveRhoRacingEnabled();
+        meta.silverScalingDiagnosticFile = "";
+        meta.silverStickyQualityFile = "";
+        meta.silverAdaptiveEnabled = search::nativeSilverAdaptiveEnabled();
+        meta.silverAdaptiveRetainedOnly = meta.silverAdaptiveEnabled;
+        meta.silverAdaptiveTopShare = meta.silverAdaptiveEnabled ? search::nativeSilverAdaptiveTopGap() : 0.0;
+        meta.silverExactRootBudgets = search::nativeSilverExactRootBudgets();
+        meta.silverExactVisitLock = false;
+        meta.silverRhoRacing = false;
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -1577,9 +1568,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                 }
                 continuationCost.silverSimulations += static_cast<std::uint64_t>(
                     std::max<std::int64_t>(0, agent.simulationCountTotal - simulationsBefore));
-                continuationCost.combatDecisions += search::g_silverLiveDiagnostics.decisions;
-                continuationCost.transactionSubdecisions += search::g_silverLiveDiagnostics.transactionSubdecisions;
-                continuationCost.transactionDecisions += search::g_silverLiveDiagnostics.transactionDecisions;
+                continuationCost.combatDecisions += static_cast<std::uint64_t>(
+                    search::g_nativeSilverCombatStats.decisions);
                 passed = bc.outcome == Outcome::PLAYER_VICTORY;
                 endHp = passed ? gc.curHp : 0;
                 endMaxHp = gc.maxHp;
@@ -2786,22 +2776,39 @@ static void exportCardCfMaps(const std::string &inputPath, const std::string &ou
 }
 
 // ---------------------------------------------------------------------------
-// Environment variables that only the vendored Silver backend implements. When
-// any is set, one_combat keeps the vendored backend so research producers and
-// their provenance checks are unchanged (ADR-0021).
-static std::string vendoredOnlySilverOption() {
-    static const char *const kNativeSupported[] = {
-        "STS_SILVER_SEARCH", "STS_SILVER_ADAPTIVE", "STS_SILVER_ADAPTIVE_TOP_GAP",
+// The STS_SILVER_* options the native Silver backend honors, with the values it
+// accepts (empty: any value). The vendored model's other options, and its
+// STS_COMBAT_* diagnostics, were removed with it (ADR-0022); frozen research
+// environments may still pin the neutral values listed here.
+static std::string unsupportedSilverOption() {
+    struct Supported { const char *name; const char *value; };
+    static const Supported kSupported[] = {
+        {"STS_SILVER_SEARCH", ""}, {"STS_SILVER_ADAPTIVE", ""},
+        {"STS_SILVER_ADAPTIVE_TOP_GAP", ""}, {"STS_SILVER_ADAPTIVE_RETAINED_ONLY", "1"},
+        {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+        {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
+        {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
     };
+    // Vendored-only diagnostics without the STS_SILVER_ prefix.
+    static const char *const kRemoved[] = {
+        "STS_COMBAT_BUDGET_DIAG_FILE", "STS_COMBAT_SEQUENTIAL_DIAG_FILE",
+        "STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS",
+    };
+    for (const char *name : kRemoved) {
+        if (const char *value = std::getenv(name); value && *value) return std::string(name) + "=" + value;
+    }
     for (char **env = environ; env && *env; ++env) {
         const std::string entry(*env);
         if (entry.rfind("STS_SILVER_", 0) != 0) continue;
-        const std::string name = entry.substr(0, entry.find('='));
-        const std::string value = entry.substr(entry.find('=') + 1);
-        if (name == "STS_SILVER_ADAPTIVE_RETAINED_ONLY" && value == "1") continue;
+        const auto eq = entry.find('=');
+        const std::string name = entry.substr(0, eq);
+        const std::string value = eq == std::string::npos ? "" : entry.substr(eq + 1);
+        if (value.empty()) continue;
         bool supported = false;
-        for (const char *n : kNativeSupported) supported = supported || name == n;
-        if (!supported) return name;
+        for (const auto &option : kSupported) {
+            supported = supported || (name == option.name && (!*option.value || value == option.value));
+        }
+        if (!supported) return name + "=" + value;
     }
     return {};
 }
@@ -3240,34 +3247,24 @@ int main(int argc, char **argv) {
         std::cerr << "error: STS_SEARCHER3 is no longer supported; Searcher3 was removed (ADR-0019)\n";
         return 2;
     }
-    // Silver owns local RNG/chance search for every combat (ADR-0020). The
-    // native port on the main engine is the default (ADR-0021); the vendored
-    // model runs when STS_NATIVE_SILVER=0 or when a vendored-only Silver option
-    // (captures, diagnostics, leaf VNet, root prior, telemetry) is set.
-    search::installSilverLiveBackend();
-    const std::string vendoredOption = vendoredOnlySilverOption();
-    const char *nativeSilverEnv = std::getenv("STS_NATIVE_SILVER");
-    const bool nativeRequested = nativeSilverEnv && std::atoi(nativeSilverEnv) != 0;
-    const bool vendoredRequested = nativeSilverEnv && std::atoi(nativeSilverEnv) == 0;
-    if (nativeRequested && !vendoredOption.empty()) {
-        std::cerr << "error: STS_NATIVE_SILVER=1 conflicts with vendored-only option "
-                  << vendoredOption << " (use STS_NATIVE_SILVER=0 or unset it)\n";
+    // Silver owns local RNG/chance search for every combat (ADR-0020), running
+    // natively on the main engine (ADR-0021); the vendored model was removed
+    // (ADR-0022).
+    if (const char *d = std::getenv("STS_NATIVE_SILVER"); d && *d && std::atoi(d) == 0) {
+        std::cerr << "error: STS_NATIVE_SILVER=0 is no longer supported; "
+                     "the vendored Silver model was removed (ADR-0022)\n";
         return 2;
     }
-    if (!vendoredRequested && vendoredOption.empty()) {
-        search::installNativeSilverBackend();
-        std::cout << "[Native Silver combat backend: Silver search on the main engine"
-                  << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
-                  << "]\n";
-    } else {
-        if (!vendoredOption.empty()) {
-            std::cout << "[vendored Silver selected by " << vendoredOption << "]\n";
-        }
-        std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
-                  << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
-                  << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
-                  << "]\n";
+    if (const auto option = unsupportedSilverOption(); !option.empty()) {
+        std::cerr << "error: " << option << " is not supported by the native Silver backend; "
+                     "the vendored Silver model and its options were removed (ADR-0022)\n";
+        return 2;
     }
+    search::installNativeSilverBackend();
+    std::cout << "[Native Silver combat backend: Silver search on the main engine"
+              << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+              << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
+              << "]\n";
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;

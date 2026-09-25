@@ -123,12 +123,14 @@ SilverDrawPileObservation makeSilverDrawPileObservation(
     return out;
 }
 
-silver::CardPile makeSilverCardPile(const BattleContext &live,
-                                   const CombatKnowledgeState &knowledge) {
+CardPile makeSilverCardPile(const BattleContext &live, const CombatKnowledgeState &knowledge) {
     const SilverDrawPileObservation view = makeSilverDrawPileObservation(live, knowledge);
-    silver::CardPile pile;
-    pile.assignInformationState(view.knownBottom, view.unknown, view.knownTop,
-                                view.fullOrderObserved);
+    CardPile pile;
+    if (view.fullOrderObserved) {
+        pile.assignConcrete(view.knownTop);
+    } else {
+        pile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
+    }
     return pile;
 }
 

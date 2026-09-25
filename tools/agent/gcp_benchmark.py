@@ -205,9 +205,9 @@ def load_run_manifest(path: Path) -> dict:
                  "clean environment manifests must explicitly set HOME and PATH")
     _require(isinstance(payload["expect_silver_telemetry"], bool),
              "manifest expect_silver_telemetry must be boolean")
-    if payload["expect_silver_telemetry"]:
-        _require("STS_SILVER_TELEMETRY" in required_env,
-                 "Silver telemetry expectation requires STS_SILVER_TELEMETRY in required_env")
+    _require(not payload["expect_silver_telemetry"],
+             "Silver telemetry was removed with the vendored Silver model (ADR-0022); "
+             "set expect_silver_telemetry to false")
 
     command = payload["command"]
     _require(isinstance(command, list) and all(isinstance(v, str) and v for v in command),
@@ -263,12 +263,6 @@ def load_run_manifest(path: Path) -> dict:
         merged = {**common_env, **env}
         missing = [name for name in required_env if not merged.get(name)]
         _require(not missing, f"manifest arm {arm['name']} is missing required env: {', '.join(missing)}")
-        if payload["expect_silver_telemetry"]:
-            try:
-                telemetry = int(merged["STS_SILVER_TELEMETRY"])
-            except ValueError as exc:
-                raise ValueError("STS_SILVER_TELEMETRY must be a nonzero integer") from exc
-            _require(telemetry != 0, "STS_SILVER_TELEMETRY must be nonzero for every arm")
         names.append(arm["name"])
     _require(len(names) == len(set(names)), "manifest arm names must be unique")
     sidecars = [".meta.json"] if mode == "bestbench" else [".provenance.json"]

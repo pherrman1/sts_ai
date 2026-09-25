@@ -38,14 +38,13 @@ class BattleStartRunoutContractTest(unittest.TestCase):
             "teacher_id": "silver-fixture",
             "git_sha": "a" * 40,
             "executable_sha256": "b" * 64,
-            "combat_backend": "silver_uct",
+            "combat_backend": "native_silver",
             "rng_regime": "project_fair",
             "search_configuration": dict(contract.FROZEN_TEACHER["search_configuration"]),
             "environment": {
                 "STS_FAIR": "1", "STS_SEARCHER3": "0", "STS_SILVER_SEARCH": "1",
                 "STS_SILVER_EXACT_ROOT_BUDGETS": "1", "STS_SILVER_REUSE_CAP_MODE": "allocated",
                 "STS_SILVER_ADAPTIVE": "0", "STS_SILVER_VNET_LEAF_DIRECT": "0",
-                "STS_SILVER_TELEMETRY": "1",
             },
             "model_artifacts": [{
                 "role": "combat_value_or_leaf", "path": str(self.model),

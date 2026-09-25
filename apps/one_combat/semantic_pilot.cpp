@@ -101,9 +101,8 @@ static std::string semanticPilotRichRow(const GameContext &gc,const PathHistory 
 static nlohmann::json semanticPilotRuntimeBinding() {
     if (!g_nativeOoc || !g_floorNet.ok || !g_winNet.ok)
         throw std::runtime_error("semantic pilot: loaded native floor/win models required");
-    if (!search::silverLiveBackendInstalled() || !search::silverLiveExactRootBudgets()
-        || search::silverLiveReuseCapMode()!="allocated" || search::silverLiveReuseCap()!=32768
-        || search::silverLiveAdaptiveEnabled())
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+        || search::nativeSilverReuseCap()!=32768 || search::nativeSilverAdaptiveEnabled())
         throw std::runtime_error("semantic pilot: frozen Silver runtime mismatch");
     nlohmann::json env=nlohmann::json::object();
     // Freeze the complete STS environment, including unset-vs-set identity;
@@ -198,10 +197,7 @@ static void semanticCombatCaptureSelfTest(GameContext source, const search::OocS
                 bc.monsters.arr[0].curHp=30; bc.monsters.arr[0].maxHp=50;
                 bc.outcome=win?Outcome::PLAYER_VICTORY:Outcome::PLAYER_LOSS;
                 agent.simulationCountTotal+=20000;
-                search::g_silverLiveDiagnostics={};
-                search::g_silverLiveDiagnostics.decisions=1;
-                search::g_silverLiveDiagnostics.transactionSubdecisions=2;
-                search::g_silverLiveDiagnostics.transactionDecisions=1;
+                search::g_nativeSilverCombatStats={2,20000};
             };
             SemanticPilotObserverScope detached;
             std::string finalOff,finalOn;
@@ -271,7 +267,7 @@ static void semanticCombatCaptureSelfTest(GameContext source, const search::OocS
 // lifetime, continuation dispatch and transaction-aware simulation accounting.
 void semanticPilotSelfTest() {
     auto previousBackend=search::g_externalCombatBackend;
-    auto previousDiagnostics=search::g_silverLiveDiagnostics;
+    auto previousDiagnostics=search::g_nativeSilverCombatStats;
     auto previousObserver=search::g_onGameActionExecute;
     int hooks=0,backendCalls=0;
     try {
@@ -304,17 +300,14 @@ void semanticPilotSelfTest() {
             if(search::g_onGameActionExecute)throw std::runtime_error("semantic selftest: observer leaked into backend");
             bc.init(state); bc.player.curHp=0; bc.outcome=Outcome::PLAYER_LOSS;
             agent.simulationCountTotal+=20000;
-            search::g_silverLiveDiagnostics={};
-            search::g_silverLiveDiagnostics.decisions=1;
-            search::g_silverLiveDiagnostics.transactionSubdecisions=2;
-            search::g_silverLiveDiagnostics.transactionDecisions=1;
+            search::g_nativeSilverCombatStats={2,20000};
         };
         {
             SemanticPilotObserverScope detached;
             const auto branch=semanticPilotBranch(detachedCounterfactualCopy(gc),*action,11,{});
             if(!branch.result.valid||branch.result.survivedH||branch.result.won!=0||branch.executed.executedPrimitiveBits.size()!=1
-                ||backendCalls!=1||hooks!=0||branch.cost.silverSimulations!=20000||branch.cost.combatDecisions!=1
-                ||branch.cost.transactionSubdecisions!=2||branch.cost.transactionDecisions!=1)
+                ||backendCalls!=1||hooks!=0||branch.cost.silverSimulations!=20000||branch.cost.combatDecisions!=2
+                ||branch.cost.transactionSubdecisions!=0||branch.cost.transactionDecisions!=0)
                 throw std::runtime_error("semantic selftest: branch dispatch/accounting mismatch");
         }
         if(!search::g_onGameActionExecute)throw std::runtime_error("semantic selftest: observer not restored");
@@ -334,8 +327,7 @@ void semanticPilotSelfTest() {
             bc.init(state); ++sourceBattles;
             bc.outcome=sourceBattles==1?Outcome::PLAYER_VICTORY:Outcome::PLAYER_LOSS;
             if(sourceBattles!=1)bc.player.curHp=0;
-            agent.simulationCountTotal+=10000; search::g_silverLiveDiagnostics={};
-            search::g_silverLiveDiagnostics.decisions=1;
+            agent.simulationCountTotal+=10000; search::g_nativeSilverCombatStats={1,10000};
         };
         const auto sampled=semanticPilotSource(0x51514Du);
         if(!sampled || sampled->actions.size()<2)throw std::runtime_error("semantic selftest: source capture empty");
@@ -349,10 +341,10 @@ void semanticPilotSelfTest() {
         if(!mismatch)throw std::runtime_error("semantic selftest: source accepted stale payload");
 
     } catch(...) {
-        search::g_externalCombatBackend=previousBackend;search::g_silverLiveDiagnostics=previousDiagnostics;
+        search::g_externalCombatBackend=previousBackend;search::g_nativeSilverCombatStats=previousDiagnostics;
         search::g_onGameActionExecute=previousObserver;throw;
     }
-    search::g_externalCombatBackend=previousBackend;search::g_silverLiveDiagnostics=previousDiagnostics;
+    search::g_externalCombatBackend=previousBackend;search::g_nativeSilverCombatStats=previousDiagnostics;
     search::g_onGameActionExecute=previousObserver;
     std::cout<<"semantic pilot integrated observer/backend/accounting checks passed\n";
 }

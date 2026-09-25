@@ -1,9 +1,9 @@
 # Current research status
 
-Last verified: 2026-09-25 for the corrected Silver rollout-cost protocol and
-default-off status, and for correction review of the merged DeepSets Brew-fallback
-quality-confirmation preparation; 2026-09-24 for the experimental DeepSets
-Brew-fallback mechanism/timing smoke;
+Last verified: 2026-09-25 for the `v_win` terminal-pricing post-review additions,
+the corrected Silver rollout-cost protocol and default-off status, and correction
+review of the merged DeepSets Brew-fallback quality-confirmation preparation;
+2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
@@ -23,6 +23,15 @@ and fresh64 fixed10000 live MCTS gate;
 audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
+
+**Vendored Silver removed (2026-09-25, [ADR-0022](../../../decisions/0022-remove-vendored-silver.md)).**
+Every Silver research line below that ran in the vendored model — forced-action
+targets, rollout variance, first-action and tactical-prefix selectors,
+learned prefixes, Phase-A policy/value, budget/reuse-cap, visit-lock/rho
+stopping, root mechanism, internal-node FPU, the learned root prior, and the
+§349 rollout scratch piles — is closed: its tools were removed and its results
+are history. Reopening one means porting it to native Silver first. OOC research
+contracts now bind native Silver teachers.
 
 ## OOC 20% gap-stop quality gate
 
@@ -374,6 +383,80 @@ establish universal safety, or claim action equivalence. No expensive shadow
 10k searches were collected. See [ledger §280](../../experiments/ledger-06.md),
 [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
+
+### Vendored singleton-root search bypass (2026-09-24)
+
+**Removed with the vendored model (ADR-0022, 2026-09-25).** Native Silver
+still searches single-action roots; porting the bypass to native needs its own
+paired evaluation. The record below is history.
+
+Since ADR-0021, plain `one_combat` uses native Silver by default. This bypass
+is in the vendored `SilverLiveBackend` and applies when that backend is
+selected, such as with `STS_NATIVE_SILVER=0` or a vendored-only
+`STS_SILVER_*` option. For a validated singleton edge surface, the vendored
+live backend commits the sole legal root action without running Silver search.
+This applies to forced `END_TURN` and one-option selections. If a retained
+root's edge surface does not match the sole live semantic action, ordinary
+live play discards that predecessor and retries the full-budget search from
+the live observation; it accepts the retry only if it selects that same sole
+live action. Hard-combat and root-mechanism capture modes remain fail-closed on
+a surface mismatch.
+Full-budget per-root and checkpoint diagnostic modes continue to search for
+complete observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
+records 510 one-action roots among 13,945 decisions; all 510 still ran 10,000
+simulations. The user-provided breakdown is 489 forced `END_TURN` and 21
+one-option selections, with 471 of 502 continuing forced roots followed by a
+next decision that started from scratch. The user reports this as 6.3% of
+Silver compute. The supplied 64-fight, exact-10k comparison reports 59/64 wins
+in each arm, no paired flips, treatment ending HP +0.3, 4.6% fewer simulations
+and 6.7% lower wall time. This report predates the retained-session correction
+that preserves `previousBest` across zero-search singleton roots; it is
+pre-correction descriptive evidence and does not confirm the corrected
+implementation. That 64-fight raw packet and candidate/baseline SHAs were not
+available in this checkout, so the breakdown and comparison results were not
+independently verified here. The tracked 32-run packet's measurements remain
+historical results from before the bypass.
+
+A first post-correction exact-10k replay compared main at `01f6f164` with the
+corrected implementation at `2da8eed6` on the frozen `hard64-holdout` cohort.
+All 64 cases were attempted, but case `12100109/21` failed with the same
+deterministic-state mismatch in both arms, leaving 63 valid pairs. Both arms
+won 57/63 with no outcome flips; treatment skipped 62 searches, used 3.19%
+fewer simulations, and had 2.99% lower summed per-case replay wall time. Mean
+ending HP changed by +0.16 and action traces matched on 60/63 valid pairs.
+This is a bounded replay result, not a complete valid N64 confirmation or a
+live-game quality claim. See the
+[post-correction hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25/README.md).
+
+A follow-up exact-10k replay after merging newer main compared current main
+`46684659` with the merged treatment at `be47b2a1` on the same frozen cohort.
+All 64 cases were attempted; the same deterministic-state mismatch failed in
+both arms, leaving 63 valid pairs. Both arms won 57/63 with no outcome flips;
+treatment skipped 62 searches, used 3.185% fewer simulations, and had 3.371%
+lower summed per-case replay wall time. Mean ending HP changed by +0.159 and
+action traces matched on 60/63 valid pairs. These are bounded descriptive
+results, not equivalence or default-promotion evidence. See the
+[current-main hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md).
+Main then advanced to `8ed346ea`; rebuilding the replay target from that head
+and from merged treatment commit `4b1b27f6` produced the same control and
+treatment binary hashes used for these rows. No more seeded replays were collected after
+the local 128 arm-case allowance was used. The packet preserves the original
+run SHAs and the later byte-identity check. After main advanced to `03ae0297`,
+Release rebuilds at that main head and merged treatment `b0393b03` again
+matched the recorded control and treatment hashes. Main later advanced to
+`18232bf0`; its rebuilt replay binary and the treatment at `b6242a65` differ
+from the binaries used in the N63 run. Source review found the unsorted-rollout
+option default-off and disabled for the recorded replay, with the remaining
+changes limited to diagnostic timing defaults and an isolated simple-rollout
+probe. No new hard64 screen was run; the N63 outcomes and simulation counts
+remain historical results for their recorded binaries, and the 3.371% wall-time
+result is not reverified on the newer harness. Main later advanced through PR
+#322 to `856b3f8f` and PR #323 to `f8fa4a3f`. Release replay rebuilds at `f8fa4a3f`
+and the merged treatment tree remained byte-identical to the `18232bf0` control
+and treatment hashes (`f0367213…` and `ba4ef57d…`). PR #322 changes `one_combat`
+backend dispatch and PR #323 adds documentation; neither changes the replay
+binary. No new hard64 screen was needed, and the N63 observations remain tied
+to their recorded binaries.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
@@ -1828,6 +1911,88 @@ data. No fresh holdout, hard64 replay, live gameplay, production override, or
 default promotion is authorized by this result. The current next target is
 continuation trajectory/policy quality. See [ledger-06 §330](../../experiments/ledger-06.md)
 and the [terminal/value audit packet](../../experiments/evidence/silver_terminal_value_audit_20260921/README.md).
+
+### `v_win` terminal-pricing audit
+
+The tracked compact win model is **`VWIN_W1_NEEDS_SMOOTHING`** under the
+pre-registered W1 input-readiness thresholds. In 128 project-fair Silver
+E2c-v2 seeds, 63.77% of RAW HP sweeps were monotone (95% seed-bootstrap CI
+60.18–67.35%), below the 95% requirement; median longest flat run was 5 HP,
+within the 10-HP limit. HP slope and held-potion value were positive with
+intervals above zero in all three acts. This does not establish gameplay
+quality or runtime suitability, and no lookup table or runtime change was
+made.
+
+The first collection process left 93 row-bearing seeds without final
+aggregate health/quarantine counters; the remaining 35 seeds have complete
+sidecar accounting. E2c emits rows only for runs passing `trainingRunValid`,
+which rejects unresolved runs and simulator-health failures; each of the 93
+represented seeds passed that predicate. The missing sidecar still prevents reconstruction of attempted/completed
+counts or any unrepresented quarantines, and the interruption cause is unknown. Telemetry
+`prior_model_loaded=0` measures the optional Silver learned root prior, which
+was off by default, not the separate compact policy trees. Compact-policy load
+status is **Unverified** from retained logs. A separate 600-row Python/native
+parity gate passed exactly. Calibration was weakly powered and underpredicted
+the cohort's observed run-win rate; zeroing the hidden-future fields passed the
+rank-correlation threshold but can be out-of-distribution.
+
+The pre-collection inventory found vrich and the named rest/path/card
+counterfactual files absent from the checked local checkout/worktrees. The
+ledger-referenced E2c GCP path is not mounted on this host; current remote
+existence and historical dataset byte sizes are unverified. Under the
+specified zero-hidden-future sensitivity, per-act HP slopes were
+0.000675/0.002274/0.002355 probability per HP and held-potion equivalents
+were 15.59/13.55/4.45 HP; those fair-regime values are OOD-prone. The packet
+contains the artifact inventory and interval table.
+
+W1-relevant interpretation: only a monotonically smoothed HP curve remains a
+candidate `v_win` input, and only for non-act-boss victories. Silver's native
+evaluator prices A0 act-boss wins after healing HP to max; the boss
+`s_HP_span` median POST/RAW ratio is 0.7833, so the win-tree slope shifts about
+22% across that boundary. Near realized HP, 14.5–21.6% of rows by room type
+have a drop above 0.005 within ±20 HP, and the 95th-percentile largest drops
+are 15–29 HP-equivalents. Gold is a possible secondary input, but its corrected
+mean/median is only 0.23/0.10, 0.06/0.03, and 0.04/0.00 HP-equivalents per gold
+across Acts 1–3. Held-potion mean/median values are 4.5/1.5, 4.3/1.7, and
+4.8/0.6; max-HP-only values are 0.61/0.31, −0.06/0, and −0.48/0. Potion-type
+and max-HP prices are not usable terminal prices. RAW-row AUC is 0.708 and
+first-row-per-seed AUC is 0.638; with 128 seeds discrimination is weak, and
+the model underpredicts cohort run-win rate.
+
+The fair-regime rank-correlation gate does not validate price levels; act-level
+potion HP-equivalents change by factors 2.31, 2.01, and 0.66 from recorded to
+zeroed hidden fields. In Q4, the `curHp` coefficient interval excludes zero
+(`−3.36e−4` per HP), about 17% of the mean `s_HP=0.00195`, so RAW-to-POST HP
+pricing differs across states although the formal gate passed through low
+`R²`.
+
+For A4, the adjacent-floor, same-act drop proxy classified all 147 unmatched
+full-belt rows with known drops as potion drops, with no classified unmatched
+residual. RAW belt capacity was full in 15.3% of matched rows and 95.3% of
+unmatched rows. One matched full-belt drop is explained by Potion Belt (`r159`)
+increasing capacity before the potion choice; 216 unmatched rows remain
+unclassified. The belt was full in 759/3,069 RAW rows (24.7%); among 301
+full-belt rows with classifiable adjacent-floor status, 148 (49.2%) had a
+potion drop. The run policy takes a potion only when a slot is available and
+has no discard/swap path. This supports the conditional behavior in the current
+full-run reward chain:
+when capacity remains full through the potion decision, the dropped potion is
+not claimed or swapped. E2c `captureE2cPost` returns while
+gold, relic, or potion rewards are pending, so an unclaimed potion also blocks
+POST capture. The proxy-confirmed minimum is 147/3,069 = 4.79% (4.8%) of RAW
+fights. If all 199 unmatched full-belt rows with unknown proxy status also
+represent forfeited drops, the code-path upper count is 346/3,069 = 11.27%
+(11.3%). This is conditional, not an estimated rate; 17 unmatched
+space-available rows show that other causes of missing POST exist, so the exact
+cohort forfeiture rate remains unknown.
+
+The current tracked 1,060-tree artifact contains counter-value splits on
+multiple relic fields, contrary to the zero-split statement in historical
+ledger §§109–110. The current enum maps r116 to Neow's Lament and r131 to
+Thread and Needle. The historical run's exact model artifact is not
+provenance-bound, so its result is not rewritten. See [ledger
+§353](../../experiments/ledger-06.md) and the [complete evidence
+packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.md).
 
 ## Routing / evidence
 

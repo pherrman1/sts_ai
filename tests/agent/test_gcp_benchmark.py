@@ -34,10 +34,10 @@ def valid_manifest():
         "common_env": {
             "OMP_NUM_THREADS": "1",
             "STS_EXECUTABLE_GIT_SHA": sha,
-            "STS_SILVER_TELEMETRY": "1",
+            "STS_SILVER_ADAPTIVE": "0",
         },
-        "required_env": ["OMP_NUM_THREADS", "STS_EXECUTABLE_GIT_SHA", "STS_SILVER_TELEMETRY"],
-        "expect_silver_telemetry": True,
+        "required_env": ["OMP_NUM_THREADS", "STS_EXECUTABLE_GIT_SHA", "STS_SILVER_ADAPTIVE"],
+        "expect_silver_telemetry": False,
         "command": [
             "checkouts/policy-2x2/build/linux-gcc-release/one_combat",
             "bestbench", "1000", "32", "1", "975000", "{results}",
@@ -78,16 +78,16 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertEqual(log, "logs/policy-B.log")
         self.assertEqual(fresh, ["results/policy-B.csv", "results/policy-B.csv.meta.json", "logs/policy-B.log"])
         self.assertEqual(command[0], "env")
-        self.assertIn("STS_SILVER_TELEMETRY=1", command)
+        self.assertIn("STS_SILVER_ADAPTIVE=0", command)
         self.assertIn("STS_POLICY_ARM=B", command)
         self.assertEqual(command[-2:], ["975000", "results/policy-B.csv"])
 
-    def test_manifest_fails_closed_on_missing_telemetry(self):
+    def test_manifest_rejects_retired_silver_telemetry(self):
         module = load_module()
         payload = valid_manifest()
-        payload["common_env"]["STS_SILVER_TELEMETRY"] = "0"
+        payload["expect_silver_telemetry"] = True
         with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaisesRegex(ValueError, "must be nonzero"):
+            with self.assertRaisesRegex(ValueError, "Silver telemetry was removed"):
                 module.load_run_manifest(write_manifest(directory, payload))
 
     def test_manifest_fails_closed_on_reused_output(self):
@@ -131,7 +131,7 @@ class GcpBenchmarkTests(unittest.TestCase):
             with mock.patch.object(module, "ssh_command", side_effect=lambda _args, remote: captured.setdefault("remote", remote) and 0):
                 self.assertEqual(module.manifest_run(args), 0)
         remote = captured["remote"]
-        self.assertIn("STS_SILVER_TELEMETRY=1", remote)
+        self.assertIn("STS_SILVER_ADAPTIVE=0", remote)
         self.assertIn("STS_POLICY_ARM=A", remote)
         self.assertIn("refusing existing output", remote)
         self.assertIn("policy-A.csv.meta.json", remote)
