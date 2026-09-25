@@ -1,0 +1,36 @@
+{
+  "all_teacher_bootstrap_95pct_root_cluster_interval": [
+    -0.022598870056497175,
+    0.06497175141242938
+  ],
+  "all_teacher_control_agreement": 0.4957627118644068,
+  "all_teacher_paired_delta_unsorted_minus_control": 0.0211864406779661,
+  "all_teacher_unsorted_agreement": 0.5169491525423728,
+  "bootstrap_replicates": 10000,
+  "bootstrap_seed": 20260925,
+  "consensus_control_agreement": 0.5432692307692307,
+  "consensus_unsorted_agreement": 0.5865384615384616,
+  "directionally_non_worse": true,
+  "no_consensus_case_ids": [
+    "12100012/24",
+    "12100017/21",
+    "12100027/20",
+    "12100041/25",
+    "12100046/25",
+    "12100048/26",
+    "12100053/20"
+  ],
+  "primary_bootstrap_95pct_root_cluster_interval": [
+    -0.014423076923076924,
+    0.10096153846153846
+  ],
+  "primary_paired_delta_unsorted_minus_control": 0.04326923076923077,
+  "primary_roots_negative_delta": 9,
+  "primary_roots_positive_delta": 16,
+  "primary_roots_tied": 27,
+  "roots": 59,
+  "search_repetitions_per_arm": 4,
+  "teacher_consensus_roots": 52,
+  "teacher_no_consensus_roots": 7,
+  "teachers": 3
+}

@@ -1,9 +1,10 @@
 # Current research status
 
-Last verified: 2026-09-25 for the `v_win` terminal-pricing post-review additions
-and correction review of the merged DeepSets Brew-fallback quality-confirmation
-preparation; 2026-09-24 for the experimental mechanism/timing smoke; 2026-09-23
-for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-25 for the `v_win` terminal-pricing post-review additions,
+the corrected Silver rollout-cost protocol and default-off status, and correction
+review of the merged DeepSets Brew-fallback quality-confirmation preparation;
+2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
+2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -1564,6 +1565,41 @@ The experiment-only runtime flag, fixture executable, and searcher hook were
 removed before merging the evidence; no B implementation or opt-in runtime
 path remains.
 
+The separate §349 rollout-cost candidate tested an early energy rejection (A)
+and rollout-only unsorted unknown piles (B). A preserved deterministic outputs
+but had no speed gain and was reverted. The original instrumented fixed-work
+screen measured about 11% lower B CPU, but its reported 35/59-versus-40/59
+action comparison was invalid: control's 1k search was a prefix of its same-seed
+10k teacher, while B mapped the same RNG values to different cards. Those
+counts are withdrawn as a quality result, not evidence of a B regression.
+
+The planned independent-teacher DEV follow-up is complete under the disclosed
+execution seed transform. An evidence audit found that its helper used
+`teacher/NN` and `arm/NN` hash path components, while the committed protocol
+specified `teacher-NN/NN` and `arm-NN/NN`; no durable pre-run amendment was
+retained. All identities remain deterministic and pairwise distinct per root,
+but exact preregistration fidelity is unresolved (details are in the follow-up
+packet). B remains explicitly default-off. On 52 roots with teacher-majority
+consensus, matched fixed-work first-action agreement was 54.3% control versus
+58.7% B, a paired
+mean of `+4.3 pp` with a root-cluster 95% interval of `[-1.4,+10.1] pp`. The
+non-negative mean triggered a conditional 1,000-control/1,100-B
+equal-time-equivalent screen, which measured 54.3% versus 61.5% (`+7.2 pp`,
+95% interval `[+1.0,+13.5] pp`). Four uninstrumented 1k CPU pairs measured
+mean user CPU of `0.740 s` control versus `0.675 s` B (`-8.8%`), with B lower
+in all four pairs. These are DEV first-action and local CPU signals; no
+complete-combat gameplay, holdout, or default qualification was run. A separate
+instrumented profile estimated `getIncomingDamage` at 2.6% inclusive, so no
+fragile cache was implemented. Chance duplicate counters were exposed by
+category, but exact support exhaustion was not established. B remains
+experimental and is not qualified for promotion. See [ledger-06 §349](../../experiments/ledger-06.md),
+the [corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
+the [follow-up results and raw evidence](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/README.md),
+and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
+The native Silver analogue (draw pile only) was rejected at its profile
+gate: removable rollout-only sort work is about 2% of native search CPU
+([ledger-06 §350](../../experiments/ledger-06.md)).
+
 ### Whole-Act OOC evaluator
 
 The corrected evaluator passed its serial/parallel and worker-coverage canary,
@@ -1806,13 +1842,16 @@ made.
 
 The first collection process left 93 row-bearing seeds without final
 aggregate health/quarantine counters; the remaining 35 seeds have complete
-sidecar accounting. Telemetry `prior_model_loaded=0` measures the optional
-Silver learned root prior, which was off by default, not the separate compact
-policy trees. Compact-policy load status is **Unverified** from retained
-logs. A separate 600-row Python/native parity gate passed exactly.
-Calibration was weakly powered and underpredicted the cohort's observed run
-win rate; zeroing the hidden-future fields passed the rank-correlation
-threshold but can be out-of-distribution.
+sidecar accounting. E2c emits rows only for runs passing `trainingRunValid`,
+which rejects unresolved runs and simulator-health failures; each of the 93
+represented seeds passed that predicate. The missing sidecar still prevents reconstruction of attempted/completed
+counts or any unrepresented quarantines, and the interruption cause is unknown. Telemetry
+`prior_model_loaded=0` measures the optional Silver learned root prior, which
+was off by default, not the separate compact policy trees. Compact-policy load
+status is **Unverified** from retained logs. A separate 600-row Python/native
+parity gate passed exactly. Calibration was weakly powered and underpredicted
+the cohort's observed run-win rate; zeroing the hidden-future fields passed the
+rank-correlation threshold but can be out-of-distribution.
 
 The pre-collection inventory found vrich and the named rest/path/card
 counterfactual files absent from the checked local checkout/worktrees. The
@@ -1823,33 +1862,53 @@ specified zero-hidden-future sensitivity, per-act HP slopes were
 were 15.59/13.55/4.45 HP; those fair-regime values are OOD-prone. The packet
 contains the artifact inventory and interval table.
 
-W1-relevant interpretation: only a smoothed HP curve, and possibly gold,
-remain candidate `v_win` inputs. Potion-type and max-HP prices are not usable
-as terminal prices. The fair-regime rank-correlation gate does not validate
-price levels; act-level potion HP-equivalents change by factors 2.31, 2.01,
-and 0.66 from recorded to zeroed hidden fields. In Q4, the `curHp`
-coefficient interval excludes zero (`−3.36e−4` per HP), about 17% of the
-mean `s_HP=0.00195`, so RAW-to-POST HP pricing differs across states although
-the formal gate passed through low `R²`.
+W1-relevant interpretation: only a monotonically smoothed HP curve remains a
+candidate `v_win` input, and only for non-act-boss victories. Silver's native
+evaluator prices A0 act-boss wins after healing HP to max; the boss
+`s_HP_span` median POST/RAW ratio is 0.7833, so the win-tree slope shifts about
+22% across that boundary. Near realized HP, 14.5–21.6% of rows by room type
+have a drop above 0.005 within ±20 HP, and the 95th-percentile largest drops
+are 15–29 HP-equivalents. Gold is a possible secondary input, but its corrected
+mean/median is only 0.23/0.10, 0.06/0.03, and 0.04/0.00 HP-equivalents per gold
+across Acts 1–3. Held-potion mean/median values are 4.5/1.5, 4.3/1.7, and
+4.8/0.6; max-HP-only values are 0.61/0.31, −0.06/0, and −0.48/0. Potion-type
+and max-HP prices are not usable terminal prices. RAW-row AUC is 0.708 and
+first-row-per-seed AUC is 0.638; with 128 seeds discrimination is weak, and
+the model underpredicts cohort run-win rate.
+
+The fair-regime rank-correlation gate does not validate price levels; act-level
+potion HP-equivalents change by factors 2.31, 2.01, and 0.66 from recorded to
+zeroed hidden fields. In Q4, the `curHp` coefficient interval excludes zero
+(`−3.36e−4` per HP), about 17% of the mean `s_HP=0.00195`, so RAW-to-POST HP
+pricing differs across states although the formal gate passed through low
+`R²`.
 
 For A4, the adjacent-floor, same-act drop proxy classified all 147 unmatched
 full-belt rows with known drops as potion drops, with no classified unmatched
 residual. RAW belt capacity was full in 15.3% of matched rows and 95.3% of
 unmatched rows. One matched full-belt drop is explained by Potion Belt (`r159`)
 increasing capacity before the potion choice; 216 unmatched rows remain
-unclassified. This supports the conditional behavior in the current full-run
-reward chain: when capacity remains full through the potion decision, the
-dropped potion is not claimed or swapped. E2c `captureE2cPost` returns while
+unclassified. The belt was full in 759/3,069 RAW rows (24.7%); among 301
+full-belt rows with classifiable adjacent-floor status, 148 (49.2%) had a
+potion drop. The run policy takes a potion only when a slot is available and
+has no discard/swap path. This supports the conditional behavior in the current
+full-run reward chain:
+when capacity remains full through the potion decision, the dropped potion is
+not claimed or swapped. E2c `captureE2cPost` returns while
 gold, relic, or potion rewards are pending, so an unclaimed potion also blocks
-POST capture. The 147 classified forfeitures are 4.79% of all RAW fights;
-unknown rows prevent a complete cohort rate.
+POST capture. The proxy-confirmed minimum is 147/3,069 = 4.79% (4.8%) of RAW
+fights. If all 199 unmatched full-belt rows with unknown proxy status also
+represent forfeited drops, the code-path upper count is 346/3,069 = 11.27%
+(11.3%). This is conditional, not an estimated rate; 17 unmatched
+space-available rows show that other causes of missing POST exist, so the exact
+cohort forfeiture rate remains unknown.
 
 The current tracked 1,060-tree artifact contains counter-value splits on
 multiple relic fields, contrary to the zero-split statement in historical
 ledger §§109–110. The current enum maps r116 to Neow's Lament and r131 to
 Thread and Needle. The historical run's exact model artifact is not
 provenance-bound, so its result is not rewritten. See [ledger
-§343](../../experiments/ledger-06.md) and the [complete evidence
+§351](../../experiments/ledger-06.md) and the [complete evidence
 packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.md).
 
 ## Routing / evidence

@@ -171,7 +171,7 @@
     "seed_first": 3100000,
     "seed_label_consistency_max_distinct_labels": 1,
     "seed_last": 3100127,
-    "segment_1_interruption": "The app/collection process stopped after the CSV represented 93 row-bearing seeds (3100000-3100092). The process did not leave the seed_guard provenance sidecar or final aggregate counters for this segment; do not infer its exact invalid/quarantined or simulator-health totals from the rows.",
+    "segment_1_interruption": "The app/collection process stopped after the CSV represented 93 row-bearing seeds (3100000-3100092). E2c rows are emitted only for runs passing trainingRunValid, which rejects unresolved runs and simulator-health failures, so all 93 represented seeds passed that predicate. The process left no seed_guard provenance sidecar or final aggregate counters; attempted/completed totals and any unrepresented quarantines remain unknown. The exact stop cause is unknown.",
     "segment_2_provenance_sidecar": "remainder_35_provenance.json",
     "segment_2_schema_sidecar": "remainder_35_schema.json",
     "segments": [

@@ -11909,7 +11909,136 @@ vendored model) with the vendored Silver backend on the §340 seed block.
 Knowledge impact: combat-search architecture and environment variables record
 the experimental native backend; the vendored Silver backend stays the default.
 
-### §349 — `v_win` terminal-pricing audit (2026-09-24)
+## §349 — Silver rollout-cost screen: B faster; original quality screen invalid (2026-09-24 onward)
+
+- **Question and baseline:** Can rollout hot-path work be reduced while
+  preserving useful fixed-time Silver decisions? The handoff baseline
+  `7b4244ef8af4508466e01a1a6b515c70015e6274` had advanced; the tested current
+  main was `1ed96f2aa564742156cc6593a1fc1915ea4e9033`.
+- **Cohort and setup:** frozen `hard64-dev` first-decision snapshots, SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`; GCC
+  13.3 Release (`-O3 -flto`), CPU 2, `OMP_NUM_THREADS=1`, and the existing
+  telemetry path. Each fixed-work run attempted 64 roots at 1,000 simulations;
+  59 roots / 59,000 simulations were valid and the same five roots returned
+  `transactional_selection_required` in every arm. All replay runs used
+  `tools/seed_guard.sh`; holdout was untouched.
+- **A — early energy rejection:** exact non-timing output parity held across
+  all valid roots. A averaged 1,401,721 µs summed search wall versus control's
+  1,286,513 µs; the two complete outer CPU samples were 1.035 s versus 1.015 s.
+  There was no speed gain, so A and its focused test were reverted.
+- **B — rollout-only unordered unknown piles:** only copied rollout scratch
+  draw/discard/exhaust piles opt out of unknown-region sorting; retained tree
+  piles remain canonical. Focused tests cover duplicate draw frequencies,
+  known top/bottom, shuffle-in, reshuffle, absorb, cost mutation, and tree
+  isolation. Across four matched repetitions, mean summed search wall fell
+  10.3% (1,274,480 to 1,143,222 µs), median summed search wall fell 5.7%, mean
+  summed rollout wall fell 13.0%, and process user CPU fell 10.9% (1.0275 to
+  0.9150 s). This is a useful throughput signal. RNG mapping changed, and B
+  executed about 0.24% more rollout actions at the same simulation count.
+- **Original fixed-work DEV quality screen — invalid:** it reported 40/59
+  current-main/control agreements and 35/59 B agreements against a 10k control
+  reference, with eight control-only versus three B-only. The 1k control and
+  10k reference shared the same `benchmark_seed`; because B changes
+  RNG-to-card mapping, control's 1k search was the exact prefix of its teacher
+  while B was not. Reclassify the former result as
+  `QUALITY_SCREEN_INVALID_SHARED_REFERENCE_RNG`. Preserve the raw rows, but do
+  not interpret them as no-harm failure or as a B quality regression.
+- **Corrective implementation and protocol:** B now requires the default-off
+  `rolloutUnsortedPilesEnabled` flag, and the replay harness defaults detailed
+  rollout diagnostics and search timing off. The harness accepts an optional
+  `isolated_search_seed` while retaining and reporting the validated
+  state-bound `benchmark_seed`; `seed_guard.sh` checks both uint64 values and
+  caps replay JSONL roots at 128. The implementation was independently reviewed
+  and frozen at `1e63068ff548abb18638e4b02d60e7e0d6dc936c`. The preregistered
+  current-main design specified three independent 10k teachers, four matched
+  1k identities per arm, and an uninstrumented CPU comparison. Its decision
+  rule, frozen eligible mask, and stop conditions are in the
+  [corrected protocol](evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md).
+- **Corrected DEV result:** On 52/59 roots with teacher-majority consensus,
+  matched fixed-work first-action agreement was 54.3% control versus 58.7% B,
+  a paired mean of `+4.3 pp` (10,000-replicate root-cluster bootstrap 95%
+  interval `[-1.4,+10.1]`;
+  16 roots favored B, 9 control, 27 tied). The preregistered non-negative mean
+  rule triggered the 1,000-control/1,100-B equal-time-equivalent screen; its
+  agreement was 54.3% versus 61.5%, `+7.2 pp` (95% interval `[+1.0,+13.5]`;
+  20/8/24 roots B-favored/control-favored/tied). Logged aggregate user CPU and
+  elapsed time were approximately 0.760/0.738 s and 0.775/0.758 s (control/B);
+  B was slower in two of four paired user-CPU samples. The uninstrumented 1k CPU
+  confirmation measured mean user CPU 0.740 s control versus 0.675 s B
+  (`-8.8%`), with B lower in all four pairs. This is first-action DEV evidence;
+  the fixed-work interval crosses zero, and no gameplay, holdout, or default
+  qualification is claimed. Evidence review found the input helper's seed
+  domain strings (`teacher/NN`, `arm/NN`) differ from the strings frozen in the
+  protocol (`teacher-NN/NN`, `arm-NN/NN`). The helper and manifest predate raw
+  outputs by mtime, but a durable pre-run amendment was not retained; exact
+  preregistration fidelity is unresolved. Seeds remain deterministic and
+  pairwise distinct per root, and each arm identity is matched. Raw data, input
+  derivation, analysis, binary hashes, and checks are in the
+  [follow-up packet](evidence/silver_rollout_cost_20260924/review_followup/README.md).
+- **C — incoming-damage reuse:** no cache was implemented. A separate
+  instrumented `-pg` diagnostic estimated `SimpleAgent::getIncomingDamage` at
+  2.6% inclusive time (1,543,022 calls) on the same fixed-work cohort. Given
+  this small share and the broad set of monster/player state dependencies, a
+  cache is not justified.
+- **D — chance saturation:** replay telemetry exposed fresh samples and
+  sibling reuses by `END_TURN`, card-play, and other categories. B recorded
+  15,709 sibling re-executions, mostly card-play actions. Exact support
+  exhaustion was not measured, so the certified avoidable count is zero and
+  15,709 is only an upper bound. No heuristic or chance behavior change was
+  introduced.
+- **Review and checks:** an independent read-only implementation review found
+  no blocking semantic defect and flagged stale sorting comments, which were
+  corrected. Release and Debug optimization-test CTests each passed 1/1; the
+  Debug run exercises the tree-isolation assertions. The complete report and
+  raw outputs are in the [evidence packet](evidence/silver_rollout_cost_20260924/README.md).
+
+Knowledge impact: the scratch-pile boundary and completed corrected DEV result
+are recorded in maintained combat-search and current-research pages. B remains
+default-off and is not gameplay-qualified.
+
+## §350 — Native Silver rollout-only unsorted draw pile: rejected at profile gate (2026-09-25)
+
+**Hypothesis:** the §349 candidate B (rollout scratch piles left unsorted) has
+a useful analogue in native Silver (`SilverSearcher`, default backend since
+ADR-0021). In native Silver only the information-set draw pile (`CardPile`)
+is kept canonically sorted; discard and exhaust are plain vectors.
+
+**Preregistered stop rule:** if removable rollout-only canonical-sort work is
+clearly below ~3% of native search CPU, stop before implementing.
+
+- **Baseline:** `856b3f8fb463be838daa1c4caf221b22bd876353`.
+- **Method:** Release (`-O3 -flto`, plus `-g`) `unit-test` binary,
+  `valgrind --tool=callgrind` on `test silver_searcher` (24 whole battles,
+  native `SilverSearcher` with reroots, 200 simulations per decision). A
+  second run used `--toggle-collect='sts::search::SilverSearcher::rolloutToEnd*'`
+  to isolate rollout scratch execution. A deck-size sensitivity run temporarily
+  (uncommitted, since reverted) added 20 cards (Pommel Strike, Shrug It Off,
+  Inflame, Twin Strike, Anger ×4 each) to the starter deck.
+- **Results (instruction counts, Ir):**
+
+  | Workload | Total Ir | `rolloutToEnd` share | Rollout `std::sort<CardInstance>` | Share of total |
+  |---|---|---|---|---|
+  | Starter deck (10 cards) | 8.62e9 | 67.4% | 163.1M | **1.89%** |
+  | 30-card deck | 6.65e9 | 65.9% | 137.5M | **2.07%** |
+
+  Almost all removable work is the `absorbUnordered()` sort in
+  `CardManager::moveDiscardPileIntoToDrawPile`. `addUnknown()` insertion and
+  the `mutateAt()`/`mutateAll()` sortedness checks were about 0.02%. Non-rollout
+  sorts (about 0.9–1.6% of the total) must stay canonical and are not
+  removable. The vendored ~9% (§349) does not transfer, because the vendored
+  engine also sorted discard/exhaust.
+- **Decision:** rejected at Phase A. No implementation, fixed-work benchmark,
+  or gameplay seeds were run or reserved.
+- **Limitations:** callgrind Ir is a proxy for CPU; no production `one_combat`
+  adaptive-budget profile was taken (**Inference:** the rollout/tree ratio and
+  hence the share should be similar). The same profile attributes about 53% to
+  `BattleContext::executeActions`, 17% to rollout card choice, and ~15% to
+  `BattleContext` copy/swap; those are the larger native rollout-cost targets.
+
+Knowledge impact: this entry plus a one-line pointer in current-research. No
+code or default changed.
+
+## §351 — `v_win` terminal-pricing audit (2026-09-24)
 
 - **Question / decision:** Is the tracked compact `v_win` suitable for a
   relative-price lookup over combat-terminal victories? The preregistered
@@ -11927,8 +12056,12 @@ the experimental native backend; the vendored Silver backend stays the default.
   (448 features, 1,060 trees, logistic). The current 2-seed smoke passed
   2/2, with 92 rows and zero invalid/quarantined seeds/branches or simulator
   health failures. The first population process stopped after representing 93
-  seeds and did not leave its final sidecar counters; the remaining 35 seeds
-  have complete sidecar accounting (35/35, zero invalid/quarantined seeds or
+  seeds and did not leave its final sidecar counters. E2c writes rows only for
+  runs passing `trainingRunValid`, so all 93 represented seeds passed that
+  predicate, which rejects unresolved runs and simulator-health failures;
+  attempted/completed counts and any unrepresented quarantines remain unknown.
+  The stop cause is unknown. The remaining 35 seeds have
+  complete sidecar accounting (35/35, zero invalid/quarantined seeds or
   branches, zero health failures). Silver telemetry reported
   `prior_model_loaded=0`; this measures the optional Silver learned root
   prior, which was off by default, and is not a preregistration deviation.
@@ -11998,8 +12131,8 @@ the experimental native backend; the vendored Silver backend stays the default.
   unrelated run-timing code and an ODR warning for `Path` across root and
   bundled `SimpleAgent.cpp`. Full CTest was not run. Draft PR #317 triggered CI
   run 1184, but the `Linux GCC` job was skipped by the workflow's draft-PR
-  condition; a `ready_for_review` event is needed to run authoritative CI. No
-  gameplay seed was rerun for verification.
+  condition. The current-head CI result is tracked in PR #317. No gameplay seed
+  was rerun for verification.
 
 #### Review corrections and post-review descriptive additions (2026-09-25)
 
@@ -12026,10 +12159,17 @@ the experimental native backend; the vendored Silver backend stays the default.
   One matched full-belt drop acquired Potion Belt (`r159`), which raised
   capacity before the potion choice. The full-run reward chain takes a
   potion only with slot capacity and cannot discard or swap a held potion;
-  E2c `captureE2cPost` returns while gold, relic, or potion rewards remain
+  the belt was full in 759/3,069 RAW rows (24.7%), and 148/301 full-belt rows
+  with classifiable adjacent-floor status had a drop (49.2%). E2c
+  `captureE2cPost` returns while gold, relic, or potion rewards remain
   pending, so an unclaimed potion blocks POST capture.
-  147 classifiable no-POST full-belt drops are 4.79% of all RAW fights.
-  Q4's 2,706 pairs exclude no-POST rows by inner-join construction.
+  The 147 proxy-confirmed full-belt drops are 4.79% (4.8%) of all 3,069 RAW
+  fights. If all 199 unmatched full-belt rows with unknown proxy status also
+  represent unclaimed potion drops, the code-path upper count is 346/3,069
+  (11.27%, or 11.3%). This is a conditional upper bound, not an estimated
+  rate; 17 unmatched space-available rows show other causes of missing POST,
+  so the actual forfeiture rate can be lower. Q4's 2,706 pairs exclude all
+  no-POST rows by inner-join construction.
 - **B1–B3:** Clamped-probe shares were 56.0%, 45.9%, and 54.1% by act.
   Held-potion mean/median HP-equivalents under fixed-/10 → actual-span
   denominators were 6.76/1.96 → 4.51/1.51, 6.74/1.99 → 4.28/1.66, and
@@ -12049,7 +12189,14 @@ the experimental native backend; the vendored Silver backend stays the default.
   noncontiguous fight indices, all last RAW floors differ from `finalFloor`,
   and the segment-1 last-written seed 3100091 is contiguous (0–26), ends at
   floor 48 versus finalFloor 51, with a complete 1,387-column final CSV line.
-- **Post-review verification:** after merging `origin/main` at
+  `fight_index` advances across battles while E2c captures only monster, elite,
+  and Act 1–2 boss rooms; event-initiated fights and Act 3 bosses therefore
+  explain the expected index gaps. The final line is newline-terminated and
+  complete; there is no evidence of CSV truncation. The stop cause remains
+  unknown; 35/35 seeds in flight reran cleanly, so a deterministic crashing
+  seed is not supported (**Inference:** an external stop such as a timeout).
+- **Earlier post-review verification (before the current-main refresh):** after
+  merging `origin/main` at
   `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`, the Release
   `one_combat` rebuild passed on branch source `82dc7f04`; existing warnings
   were the `one_combat.cpp` narrowing conversion, duplicate `Path` ODR report,
@@ -12057,14 +12204,15 @@ the experimental native backend; the vendored Silver backend stays the default.
   fixture passed 600/600 with max/mean absolute difference 0.000000. Python
   compilation, analyzer self-test, JSON validation, both CSV provenance hashes,
   and `git diff --check` passed. Full CTest and new gameplay seeds were not
-  run. Linux GCC was skipped/not run because PR #317 remains draft.
+  run. On that reviewed head, PR #317 was draft and GitHub skipped Linux GCC.
 - New results are isolated under the top-level `post_review_descriptive`
   key. The preregistered outputs, thresholds, and verdict remain unchanged;
   two current-code analyses were byte-identical at SHA-256
   `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
 
-Knowledge impact: current research now records the conditional full-belt
-potion behavior, unstable fair-regime price levels, and limits on using
-per-potion or max-HP prices. Architecture documents the reward-chain
+Knowledge impact: current research now records the W1 candidate boundary
+(smoothed HP for non-act-boss wins, with gold only tentative), unstable
+fair-regime price levels, the full-belt forfeiture bounds, and the limits on
+using per-potion or max-HP prices. Architecture documents the reward-chain
 capacity rule. The post-review descriptors do not change the frozen W1
 verdict, runtime defaults, or gameplay claims.

@@ -9,6 +9,27 @@ Only 63.8% of RAW rows satisfy the monotonicity rule, below the required 95%.
 This is an input-readiness result for a future W1 lookup table; it is not a
 gameplay-quality result or permission to promote a runtime change.
 
+## W1 review interpretation
+
+Only a monotonically smoothed HP curve remains a candidate `v_win` input, and
+then only for non-act-boss victories. In A0, Silver's native terminal evaluator
+sets post-battle HP to max after an act-boss win; the audit's boss `s_HP_span`
+median POST/RAW ratio is 0.7833, so the win tree also changes slope by about
+22% across the reward boundary. Near realized HP, 14.5–21.6% of rows by room
+type have a probability drop above 0.005 within ±20 HP; the 95th-percentile
+largest drops are 15–29 HP-equivalents. Smoothing must therefore enforce
+monotonicity.
+
+Gold is a possible secondary input, but its act-dependent signal is small and
+thinly supported. Span-denominator mean/median HP-equivalents are 0.231/0.097,
+0.058/0.025, and 0.040/0.000 per gold across Acts 1–3. Held-potion values are
+4.51/1.51, 4.28/1.66, and 4.78/0.61; max-HP-only values are 0.613/0.314,
+−0.061/0.000, and −0.477/0.000. Potion-type prices and max-HP prices are not
+usable terminal prices. RAW-row AUC is 0.708 and first-row-per-seed AUC is
+0.638; with 128 seeds discrimination is weak, and the model underpredicts the
+cohort run-win rate. None of these descriptions changes the frozen verdict or
+supports a gameplay-quality claim.
+
 The preregistered thresholds are unchanged. The only pre-analysis amendment
 was to Q4: the first 93 row-bearing seeds showed potion capacities 3 and 5, so
 the descriptive regression includes `potionCount` and slot slack together and
@@ -37,8 +58,12 @@ reports the actual design rank. The amendment was committed as
   represented 93 seeds (`3100000..3100092`). The resulting CSV is retained and
   its bytes/hash/rows are recorded below, but the interrupted process did not
   leave a seed-guard provenance sidecar or final aggregate invalid/quarantine
-  and simulator-health counters. Those counters are unknown for that segment.
-  The remaining 35 seeds were collected separately and have a complete
+  and simulator-health counters. `finishE2cRun` emits rows only when the run
+  passes `trainingRunValid`, which rejects unresolved runs and simulator
+  health failures; all 93 represented seeds therefore passed it. The absent sidecar still leaves attempted/completed totals and any
+  unrepresented quarantines unknown.
+  The exact process stop cause is also unknown. The remaining 35 seeds were
+  collected separately and have a complete
   sidecar: 35/35 completed, zero invalid/quarantined seeds or branches, zero
   simulator-health hard failures, and 1,548 rows.
 
@@ -211,8 +236,10 @@ slots before the potion is claimed. The remaining 216 unmatched rows have no
 classifiable drop status. Thus the data supports the potion-drop explanation
 for classified unmatched rows, with an explicit capacity-increase exception
 and an unclassified residual; it does not establish a universal rule for all
-363 rows. The 147 classified forfeitures are 4.79% of all 3,069 RAW fights;
-199 additional unmatched full-belt rows have unknown drop status.
+363 rows. The belt was full in 759/3,069 RAW rows (24.7%). Among the 301
+full-belt rows with classifiable adjacent-floor status, 148 (49.2%) had a
+potion drop. The run policy takes a potion only when a slot is available and
+has no discard/swap path.
 The belt was full in 413/2,706 matched rows (15.3%) and 346/363 unmatched
 rows (95.3%).
 
@@ -224,6 +251,14 @@ decision and create space. `captureE2cPost` in
 `apps/one_combat/e2c_capture.cpp` also returns while gold, relic, or potion
 rewards are pending, so an unclaimed potion blocks POST capture. Q4's
 matched-pair analysis excludes all no-POST fights by construction.
+
+The 147 proxy-confirmed full-belt drops are 4.79% (4.8%) of all 3,069 RAW
+fights. If every one of the 199 unmatched full-belt rows with unknown proxy
+status also represents an unclaimed potion drop, the code-path upper count is
+346/3,069 (11.27%, or 11.3%). This is a conditional upper bound, not an
+estimated rate. The 17 unmatched space-available rows show that missing POST
+capture also has other causes; the exact full-belt forfeiture rate is unknown
+and can be lower.
 
 ## Q4 — RAW-to-POST effects
 
@@ -383,13 +418,19 @@ equivalents (`drop / abs(s_HP_span)`). “Near current HP” means a drop above
 ### B7 — retained segment completeness
 
 The exact interruption cause is unknown; the process left no seed-guard
-sidecar or final aggregate counters. Across all 128 seeds, 48 have noncontiguous
-captured `fight_index` values, and the last captured RAW floor differs from
-`finalFloor` in every seed. The final-minus-last-RAW floor deltas are 1: 5,
-2: 22, 3: 71, 4: 15, 5: 10, and 6: 5. The last seed block in segment 1 by
-file order is seed `3100091`: its fight indices are contiguous 0–26, last RAW
-floor 48, and `finalFloor` 51. Segment 1 has 4,227 data rows, ends with a
-complete newline-terminated line, and its final row has all 1,387 columns.
+sidecar or final aggregate counters. The 35 seeds in flight at the interruption
+reran cleanly (35/35), so a seed that deterministically crashes is not
+supported; an external stop such as a command timeout remains an inference.
+Across all 128 seeds, 48 have noncontiguous captured `fight_index` values, and
+the last captured RAW floor differs from `finalFloor` in every seed. E2c
+increments the fight index across battles but captures only monster, elite, and
+Act 1–2 boss rooms; event-initiated battles and Act 3 bosses therefore leave
+expected gaps. The final-minus-last-RAW floor deltas are 1: 5, 2: 22, 3: 71,
+4: 15, 5: 10, and 6: 5. The last seed block in segment 1 by file order is seed
+`3100091`: its fight indices are contiguous 0–26, last RAW floor 48, and
+`finalFloor` 51. Segment 1 has 4,227 data rows, ends with a complete
+newline-terminated line, and its final row has all 1,387 columns; there is no
+evidence of a truncated CSV.
 
 The two current-code full runs were byte-identical. Their `results.json`
 SHA-256 is `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
@@ -401,14 +442,16 @@ SHA-256 is `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
 - `prior_model_loaded=0` reports the optional Silver learned root prior, which
   was off by default; it is not a preregistration deviation and does not
   report compact-policy-tree load status. Compact-policy load status is
-  Unverified from the retained logs. The first segment's final
-  health/quarantine counters were lost at interruption, limiting claims about
-  exact collection completeness.
+  Unverified from the retained logs. Rows from all 93 represented first-segment
+  seeds passed `trainingRunValid`; exact attempted/completed and any
+  unrepresented quarantine totals remain unavailable without the sidecar.
+  The interruption cause is unknown.
 - The local raw E2c CSVs are not committed. This packet preserves result JSON,
   aggregate tables, segment provenance/schema for the completed remainder,
   integrity accounting, parity outcome, smoke summaries, and native latency.
-- **Current merged-main validation:** branch source `82dc7f04` merges refreshed
-  `origin/main` at `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`. The Release
+- **Earlier merged-main validation (before the current-main refresh):** branch
+  source `82dc7f04` merged `origin/main` at
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`. The Release
   `one_combat` rebuild passed. CMake reconfigured for added source files; the
   build emitted the existing `one_combat.cpp` narrowing-conversion warning,
   duplicate `Path` ODR warning across the root and bundled `SimpleAgent.cpp`,
@@ -423,10 +466,21 @@ SHA-256 is `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
   `git -c core.whitespace=cr-at-eol diff --check` passed. Both full analyzer
   runs were byte-identical at the SHA-256 above. The local segment hashes
   matched provenance. No C++ file changed in the review corrections.
-- Full CTest has not been run. The draft PR's GitHub Actions run #1184 skipped
-  `Linux GCC` under the workflow's draft-PR condition; that CI job was not run
-  for this review round. The PR remains draft. No new gameplay seeds or GCP
-  jobs were run.
+- **Current-main revalidation:** merged refreshed `origin/main`
+  `f8fa4a3fd9ebbbc01f2003946ee40c634bcd677d` into the task branch; the ledger
+  audit is §351 after main's §§349–350. `cmake --build
+  build/linux-gcc-release --target one_combat -j2` passed. The build reported
+  return-path warnings in `Actions.cpp` and vendored `SimpleAgent.cpp`, a
+  `one_combat.cpp` narrowing warning, the existing duplicate-`Path` ODR
+  warning, and serial LTO. Focused CTest passed **3/3**:
+  `winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`, and
+  `export_win_model_selftest`. Python compilation and analyzer self-test passed;
+  both local E2c hashes matched provenance; JSON validation, worktree/submodule
+  validation, and staged/unstaged diff checks passed.
+- Full CTest has not been run locally. GitHub Actions run #1184 is a historical
+  prior-head run that skipped `Linux GCC` under the draft-PR condition. The
+  authoritative status for the current reviewed head is available in PR #317.
+  No new gameplay seeds or GCP jobs were run.
 
 ## Evidence files
 

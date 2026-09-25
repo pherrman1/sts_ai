@@ -1052,6 +1052,7 @@ public:
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
+        searcher->rolloutUnsortedPilesEnabled = config.rolloutUnsortedPilesEnabled;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
         searcher->leafObserver = config.leafObserver;
@@ -3535,9 +3536,13 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
             ? silverRootReferenceScalars(leafStateWire(state)).effectiveGold
             : completed.terminalEffectiveGold;
         result.leafRootUtility = leafUtility;
-        const auto terminalState = leafStateWire(*searcher.root->state);
+        auto rolloutTerminalState = searcher.rolloutScratch;
+        rolloutTerminalState.cards.drawPile.canonicalizeUnknownRegion();
+        rolloutTerminalState.cards.discardPile.canonicalizeUnknownRegion();
+        rolloutTerminalState.cards.exhaustPile.canonicalizeUnknownRegion();
+        const auto terminalState = leafStateWire(rolloutTerminalState);
         result.terminalFeatures = sts::search::terminalValueFeatures(
-            *searcher.rootState, *searcher.root->state);
+            *searcher.rootState, rolloutTerminalState);
         result.terminalFeaturesValid = true;
         result.reconstructedTerminalValue = sts::search::evaluateTerminalFeatures(
             result.terminalFeatures);
@@ -3545,7 +3550,7 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         initializeRunContext(originalRunContext, originalRoot);
         const auto originalRootState = materialize(originalRoot, &originalRunContext);
         result.originalRootTerminalFeatures = sts::search::terminalValueFeatures(
-            originalRootState, *searcher.root->state);
+            originalRootState, rolloutTerminalState);
         result.reconstructedOriginalRootValue = sts::search::evaluateTerminalFeatures(
             result.originalRootTerminalFeatures);
         result.victoryBaselineCorrection = silverVictoryBaselineCorrection(originalRoot, terminalState);

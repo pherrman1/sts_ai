@@ -662,6 +662,8 @@ int main(int argc, char **argv) {
           "retained-root split continuation must match uninterrupted action/root statistics");
 
     check(silver_bridge::SilverSearchConfig{}.reuseCap == 32768, "production reuse cap must remain 32k");
+    check(!silver_bridge::SilverSearchConfig{}.rolloutUnsortedPilesEnabled,
+          "unsorted rollout piles must be disabled in the bridge config by default");
     const auto capFixture = silver_bridge::probeSilverReuseCapFixture(firstWire);
     check(capFixture.defaultEqualsExplicitAllocated,
           "unset/default and explicit allocated reuse-cap modes must agree");

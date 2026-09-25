@@ -77,7 +77,8 @@ The `bestBench` banner and adjacent source comment are now emitted from the
 parsed configuration (skip threshold, rest/win layer, shop-V, path mode, native
 OOC, searcher, threads, model paths). The `.meta.json` JSON-lines sidecar is
 machine-readable provenance; use it plus observed load messages rather than the
-banner alone. The sidecar records `config.effectiveCombatBackend="silver"`,
+banner alone. The sidecar records `config.effectiveCombatBackend` (`"native_silver"` for
+the default backend, `"silver"` for the vendored model; ADR-0021),
 the effective Silver reuse-cap mode and fixed production cap, pinned Silver
 SHA, current executable Git SHA, and any scaling-diagnostic output path. The
 legacy native-searcher and combat-model keys carry fixed values for schema
