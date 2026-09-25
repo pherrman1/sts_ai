@@ -9,9 +9,10 @@
 #include <sstream>
 #include "combat_transition_runtime.h"
 #include "live_silver_importer.h"
+#include "native_silver_advisor.h"
 #include "sim/search/SilverBridge.h"
-#include "sim/search/SilverPriorNet.h"
 #include "sim/search/SilverWireJson.h"
+#include "sim/search/SilverWireState.h"
 
 #include <iostream>
 #include <algorithm>
@@ -41,36 +42,6 @@ std::uint64_t stableHash(const std::string &value) {
     std::uint64_t hash = 14695981039346656037ULL;
     for (const unsigned char byte : value) { hash ^= byte; hash *= 1099511628211ULL; }
     return hash;
-}
-
-struct SilverRootPriorCache {
-    std::string rootIdentity;
-    std::vector<std::string> actionFingerprints;
-    std::vector<double> logits;
-    std::vector<double> probabilities;
-
-    void clear() {
-        rootIdentity.clear(); actionFingerprints.clear(); logits.clear(); probabilities.clear();
-    }
-};
-
-std::vector<double> softmaxPrior(const std::vector<double> &logits) {
-    if (logits.empty()) throw std::runtime_error("Silver prior returned no legal-action logits");
-    const auto maximum = *std::max_element(logits.begin(), logits.end());
-    if (!std::isfinite(maximum)) throw std::runtime_error("Silver prior returned a nonfinite logit");
-    std::vector<double> probabilities;
-    probabilities.reserve(logits.size());
-    double sum = 0.0;
-    for (const auto logit : logits) {
-        if (!std::isfinite(logit)) throw std::runtime_error("Silver prior returned a nonfinite logit");
-        const auto probability = std::exp(logit - maximum);
-        probabilities.push_back(probability);
-        sum += probability;
-    }
-    if (!(sum > 0.0) || !std::isfinite(sum))
-        throw std::runtime_error("Silver prior softmax normalization failed");
-    for (auto &probability : probabilities) probability /= sum;
-    return probabilities;
 }
 
 struct PendingCompoundPlan {
@@ -467,13 +438,11 @@ json silverTreeSnapshotJson(const silver_bridge::SilverTreeSnapshot &snapshot) {
 }
 
 json silverEvaluator(const one_combat::advisor::Request &request,
-                     std::shared_ptr<silver_bridge::SilverSearchSession> &session,
+                     std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
                      one_combat::advisor::SilverImportContext &importContext,
                      std::string &silverRootIdentity,
-                     std::int64_t &silverSimulations,
-                     const sts::search::SilverPriorNetV1 *priorModel,
-                     SilverRootPriorCache &priorCache) {
+                     std::int64_t &silverSimulations) {
     const auto entryIdentity = request.observation.value(
         "combatEntryHash", request.observation.value("silverRoot", json::object())
             .value("combatInstance", std::string()));
@@ -482,227 +451,87 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     importContext.reset(request.session, entryIdentity);
     const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
     json evaluator = {{"id", "silver_player_decision_v2"},
-                      {"scope", "combat_player_decision"},
+                      {"scope", "combat_player_decision"}, {"engine", "native_silver"},
                       {"simulations", 1000}, {"adaptiveEnabled", false},
                       {"exactVisitLockEnabled", false}, {"rhoRacingEnabled", false}};
-    if (priorModel) evaluator["priorModel"] = {
-        {"loaded", true}, {"applied", false}, {"status", "LOADED_NOT_APPLIED"},
-        {"artifactSha256", priorModel->artifactSha256()}, {"scope", "root_only"}};
     const auto clearSession = [&] {
         session.reset();
         sessionIdentity.clear();
         combatEntryIdentity.clear();
         silverRootIdentity.clear();
         silverSimulations = 0;
-        priorCache.clear();
     };
-    if (!imported.ok) {
+    const auto unsupported = [&](const std::string &reason) {
         clearSession();
         evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = imported.reason;
+        evaluator["reason"] = reason;
         return evaluator;
-    }
+    };
+    if (!imported.ok) return unsupported(imported.reason);
     const auto entry = request.observation.value("combatEntryHash", std::string());
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
     if (!matchingSession && imported.playerTurn == 1 && imported.decisionInTurn == 0) {
-        session = silver_bridge::makeSilverSearchSession();
+        session = std::make_unique<one_combat::advisor::NativeSilverAdvisorSession>();
         sessionIdentity = request.session;
         combatEntryIdentity = entry;
         silverRootIdentity.clear();
         silverSimulations = 0;
     } else if (!matchingSession) {
-        clearSession();
-        evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = "silver_missing_predecessor";
-        return evaluator;
-    }
-    const auto digest = silver_bridge::inspectConvertedBattleState(imported.wire);
-    if (!digest.accepted) {
-        clearSession();
-        evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = "silver_state_parity_failure";
-        return evaluator;
-    }
-    const auto legal = silver_bridge::enumerateSilverLegalActions(imported.wire);
-    if (legal.empty()) {
-        clearSession();
-        evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = "silver_no_legal_actions";
-        return evaluator;
+        return unsupported("silver_missing_predecessor");
     }
     const auto requestedSimulations = std::max<std::int64_t>(1000,
         request.observation.value("silverSearchBudget", static_cast<std::int64_t>(1000)));
-    const bool transactionalSelection = imported.wire.inputState
-            == static_cast<int>(sts::InputState::CARD_SELECT)
-        && (imported.wire.cardSelect.task == static_cast<int>(sts::CardSelectTask::EXHAUST_MANY)
-            || imported.wire.cardSelect.task == static_cast<int>(sts::CardSelectTask::GAMBLE));
-    if (transactionalSelection) {
-        if (priorModel) evaluator["priorModel"]["reason"] = "sequential_selection_transaction";
-        const auto started = std::chrono::steady_clock::now();
-        silver_bridge::SilverSearchConfig config;
-        config.simulationsPerDecision = requestedSimulations;
-        config.collectRootActionSummaries = true;
-        config.collectDecisionDiagnostics = true;
-        config.adaptiveEnabled = false;
-        config.exactVisitLockEnabled = false;
-        config.rhoRacingEnabled = false;
-        const auto transaction = silver_bridge::runSequentialSelectionTransaction(
-            *session, imported.wire, config);
-        evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now() - started).count();
-        if (!transaction.accepted || !transaction.finalConfirmation) {
-            clearSession();
-            evaluator["status"] = "UNSUPPORTED";
-            evaluator["reason"] = transaction.failure.empty()
-                ? "silver_selection_transaction_failed" : transaction.failure;
-            return evaluator;
-        }
-        evaluator["status"] = "OK";
-        evaluator["selectionMode"] = "sequential_transaction";
-        evaluator["simulations"] = transaction.totalSimulations;
-        evaluator["requestedSimulations"] = requestedSimulations;
-        evaluator["additionalSimulations"] = transaction.totalSimulations;
-        evaluator["totalSimulations"] = transaction.totalSimulations;
-        evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(transaction.finalAction);
-        evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(
-            transaction.finalAction, imported.wire);
-        evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(
-            transaction.finalAction, importContext, request.observation);
-        if (evaluator["selectedLiveAction"].is_null()) {
-            clearSession();
-            evaluator["status"] = "UNSUPPORTED";
-            evaluator["reason"] = "silver_live_action_lowering";
-            evaluator.erase("selectedAction");
-            evaluator.erase("selectedLabel");
-            evaluator.erase("selectedLiveAction");
-            return evaluator;
-        }
-        evaluator["playerTurn"] = imported.playerTurn;
-        evaluator["decisionInTurn"] = imported.decisionInTurn;
-        evaluator["transaction"] = {
-            {"searchDecisions", transaction.searchDecisions},
-            {"rerootExact", transaction.rerootExact},
-            {"rerootFallback", transaction.rerootFallback},
-            {"privateStateOnly", transaction.privateStateOnly},
-        };
-        return evaluator;
-    }
     const auto rootIdentity = request.observation.value("silverRoot", json::object()).dump();
     if (silverRootIdentity != rootIdentity) {
         silverRootIdentity = rootIdentity;
         silverSimulations = 0;
-        priorCache.clear();
     }
-    if (silverSimulations > requestedSimulations) {
-        clearSession();
-        evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = "silver_budget_regression";
-        return evaluator;
-    }
+    if (silverSimulations > requestedSimulations) return unsupported("silver_budget_regression");
     const auto additionalSimulations = requestedSimulations - silverSimulations;
     const auto started = std::chrono::steady_clock::now();
-    silver_bridge::SilverSearchConfig config;
-    config.simulationsPerDecision = additionalSimulations;
-    config.collectRootActionSummaries = true;
-    config.collectDecisionDiagnostics = true;
-    config.adaptiveEnabled = false;
-    config.exactVisitLockEnabled = false;
-    config.rhoRacingEnabled = false;
-    bool priorApplied = false;
-    if (priorModel) {
-        if (imported.wire.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)) {
-            evaluator["priorModel"]["status"] = "SKIPPED_NON_PLAYER_NORMAL";
-            evaluator["priorModel"]["reason"] = "root is not PLAYER_NORMAL";
-        } else if (legal.size() < 2) {
-            evaluator["priorModel"]["status"] = "SKIPPED_FORCED";
-            evaluator["priorModel"]["reason"] = "fewer than two legal actions";
-        } else {
-            std::vector<std::string> fingerprints;
-            fingerprints.reserve(legal.size());
-            for (const auto &action : legal)
-                fingerprints.push_back(silver_bridge::semanticActionFingerprint(action));
-            if (priorCache.rootIdentity.empty()) {
-                priorCache.rootIdentity = rootIdentity;
-                priorCache.actionFingerprints = fingerprints;
-                priorCache.logits = priorModel->logits(imported.wire, legal);
-                if (priorCache.logits.size() != legal.size())
-                    throw std::runtime_error("Silver prior action/logit count mismatch");
-                priorCache.probabilities = softmaxPrior(priorCache.logits);
-            }
-            if (priorCache.rootIdentity != rootIdentity
-                    || priorCache.actionFingerprints != fingerprints
-                    || priorCache.logits.size() != legal.size()
-                    || priorCache.probabilities.size() != legal.size())
-                throw std::runtime_error("Silver prior root/action surface changed within a retained root");
-            config.rootPuctEnabled = true;
-            config.rootPuctC = sts::search::SilverPriorNetV1::kPuctC;
-            config.rootPriors = priorCache.probabilities;
-            config.rootPuctActionFingerprints = priorCache.actionFingerprints;
-            priorApplied = true;
-            evaluator["priorModel"] = {
-                {"loaded", true}, {"applied", true}, {"status", "APPLIED"},
-                {"artifactSha256", priorModel->artifactSha256()},
-                {"scope", "root_only"}, {"puctC", config.rootPuctC}};
-        }
-    }
     const auto decision = silverSimulations == 0
-        ? silver_bridge::runSilverDecision(*session, imported.wire, config)
-        : silver_bridge::continueSilverDecision(*session, additionalSimulations, config);
-    evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started).count();
-    if (!decision.accepted) {
-        clearSession();
-        evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = decision.failureReason;
-        return evaluator;
-    }
+        ? session->decide(imported.wire, additionalSimulations)
+        : session->extend(additionalSimulations);
+    evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - started).count();
+    if (!decision.accepted) return unsupported(decision.failureReason);
     silverSimulations += decision.simulations;
     evaluator["status"] = "OK";
     evaluator["simulations"] = silverSimulations;
     evaluator["requestedSimulations"] = requestedSimulations;
     evaluator["additionalSimulations"] = decision.simulations;
     evaluator["totalSimulations"] = silverSimulations;
-    evaluator["rootVisits"] = decision.rootUncertainty.rootVisits;
-    evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(decision.action);
+    evaluator["rootVisits"] = decision.rootVisits;
+    evaluator["selectedAction"] = sts::search::semanticFingerprint(decision.action);
     evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(decision.action, imported.wire);
     evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(
         decision.action, importContext, request.observation);
     if (evaluator["selectedLiveAction"].is_null()) {
-        clearSession();
-        evaluator["status"] = "UNSUPPORTED";
-        evaluator["reason"] = "silver_live_action_lowering";
         evaluator.erase("selectedAction");
         evaluator.erase("selectedLabel");
         evaluator.erase("selectedLiveAction");
-        return evaluator;
+        return unsupported("silver_live_action_lowering");
     }
     evaluator["legalActions"] = json::array();
-    for (const auto &action : legal) evaluator["legalActions"].push_back(silver_bridge::semanticActionFingerprint(action));
+    for (const auto &action : decision.legalActions)
+        evaluator["legalActions"].push_back(sts::search::semanticFingerprint(action));
     evaluator["rootActionSummaries"] = json::array();
-    std::string rankingText;
-    std::vector<const silver_bridge::SilverRootActionSummary *> ranked;
+    std::vector<const one_combat::advisor::NativeSilverRootSummary *> ranked;
     for (const auto &summary : decision.rootActionSummaries) ranked.push_back(&summary);
-    std::sort(ranked.begin(), ranked.end(), [](const auto *a, const auto *b) { return a->edgeVisits > b->edgeVisits; });
+    std::stable_sort(ranked.begin(), ranked.end(),
+                     [](const auto *a, const auto *b) { return a->edgeVisits > b->edgeVisits; });
     std::int64_t totalVisits = 0;
     for (const auto *summary : ranked) totalVisits += summary->edgeVisits;
+    std::string rankingText;
     for (const auto *summary : ranked) {
-        const auto fingerprint = silver_bridge::semanticActionFingerprint(summary->action);
         json item = {
-            {"fingerprint", fingerprint},
+            {"fingerprint", sts::search::semanticFingerprint(summary->action)},
             {"label", one_combat::advisor::silverActionLabel(summary->action, imported.wire)},
             {"liveAction", one_combat::advisor::selectedLiveAction(
                 summary->action, importContext, request.observation)},
             {"edgeVisits", summary->edgeVisits}, {"selectionQValid", summary->selectionQValid},
             {"visitShare", totalVisits == 0 ? 0.0 : static_cast<double>(summary->edgeVisits) / totalVisits}};
-        if (priorApplied) {
-            const auto priorAction = std::find(priorCache.actionFingerprints.begin(),
-                                               priorCache.actionFingerprints.end(), fingerprint);
-            if (priorAction == priorCache.actionFingerprints.end())
-                throw std::runtime_error("Silver root summary action is absent from the evaluated prior surface");
-            const auto index = static_cast<std::size_t>(priorAction - priorCache.actionFingerprints.begin());
-            item["priorLogit"] = priorCache.logits.at(index);
-            item["prior"] = priorCache.probabilities.at(index);
-        }
         if (summary->selectionQValid) item["selectionQ"] = summary->selectionQ;
         evaluator["rootActionSummaries"].push_back(std::move(item));
     }
@@ -716,22 +545,18 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     evaluator["playerTurn"] = imported.playerTurn;
     evaluator["decisionInTurn"] = imported.decisionInTurn;
     evaluator["reroot"] = {
-        {"exact", decision.diagnostic.exactReroot},
-        {"equivalentCopy", decision.diagnostic.equivalentCopyReroot},
-        {"fallback", decision.diagnostic.fallback},
-        {"fallbackReason", silver_bridge::silverRerootFallbackReasonName(
-            decision.diagnostic.fallbackReason)},
-        {"inheritedVisits", decision.diagnostic.inheritedVisits},
+        {"exact", decision.exactReroot},
+        {"equivalentCopy", decision.equivalentCopyReroot},
+        {"fallback", decision.fallback},
+        {"fallbackReason", decision.fallbackReason},
+        {"inheritedVisits", decision.inheritedVisits},
     };
     const bool debugTree = request.observation.value("silverDebugTree", false)
         || truthyEnvironment("STS_SILVER_DEBUG_TREE");
     if (debugTree) {
-        silver_bridge::SilverTreeSnapshotConfig treeConfig;
-        treeConfig.enabled = true;
-        treeConfig.maxNodes = silverTreeNodeCap();
-        auto tree = silverTreeSnapshotJson(
-            silver_bridge::snapshotSilverSearchTree(*session, treeConfig));
-        tree["nodeCap"] = treeConfig.maxNodes;
+        const auto nodeCap = silverTreeNodeCap();
+        auto tree = silverTreeSnapshotJson(session->snapshot(nodeCap));
+        tree["nodeCap"] = nodeCap;
         evaluator["tree"] = std::move(tree);
     }
     return evaluator;
@@ -785,20 +610,15 @@ int main() {
     std::string cachedEntryHash;
     PendingCompoundPlan pendingCompound;
     json cachedEvaluator;
-    std::unique_ptr<sts::search::SilverPriorNetV1> silverPriorModel;
-    if (const char *path = std::getenv("STS_SILVER_ROOT_PRIOR_MODEL"); path && *path) {
-        const std::filesystem::path modelPath(path);
-        if (!modelPath.is_absolute() || !std::filesystem::is_regular_file(modelPath))
-            throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL must be an absolute regular file");
-        silverPriorModel = std::make_unique<sts::search::SilverPriorNetV1>(path);
-    }
-    std::shared_ptr<silver_bridge::SilverSearchSession> silverSession;
+    if (const char *path = std::getenv("STS_SILVER_ROOT_PRIOR_MODEL"); path && *path)
+        throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL is no longer supported: "
+                                    "the advisor runs native Silver search without a root prior");
+    std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> silverSession;
     std::string silverSessionIdentity;
     std::string silverCombatEntryIdentity;
     one_combat::advisor::SilverImportContext silverImportContext;
     std::string silverRootIdentity;
     std::int64_t silverSimulations = 0;
-    SilverRootPriorCache silverPriorCache;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
             ctm = std::make_shared<one_combat::NativeCombatTransitionSampler>(path);
@@ -839,9 +659,7 @@ int main() {
                                                             silverCombatEntryIdentity,
                                                             silverImportContext,
                                                             silverRootIdentity,
-                                                            silverSimulations,
-                                                            silverPriorModel.get(),
-                                                            silverPriorCache);
+                                                            silverSimulations);
                         if (!ctm) {
                             if (!request.observation.contains("combatEntry")) {
                                 response = one_combat::advisor::unsupportedResponse(

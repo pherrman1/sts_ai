@@ -1,4 +1,5 @@
-// Real live-combat lifecycle tests for Runic Dome -> isolated Silver roots.
+// Real live-combat lifecycle tests for Runic Dome -> Silver search roots.
+#include <array>
 #include <cstdlib>
 #include <iostream>
 
@@ -8,6 +9,7 @@
 #include "sim/search/Action.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverWireState.h"
 
 namespace {
 
@@ -28,6 +30,57 @@ void check(bool value, const char *message) {
         std::cerr << "runic_dome_lifecycle FAIL: " << message << '\n';
         std::exit(1);
     }
+}
+
+// The search root the native Silver search builds from a wire state.
+struct RootDigest {
+    bool accepted = false;
+    int pendingIntentRolls = 0;
+    int pendingDirectMoveChoices = 0;
+    std::array<std::array<std::int16_t, 2>, 5> monsterMoveHistory {};
+    std::array<std::int32_t, 5> monsterMiscInfo {};
+};
+
+RootDigest digest(const BattleContext &root) {
+    RootDigest out;
+    out.accepted = true;
+    for (int i = 0; i < 5; ++i) {
+        const auto &m = root.monsters.arr[i];
+        out.pendingIntentRolls += m.pendingMoveRolls;
+        out.pendingDirectMoveChoices += m.pendingDirectMoveChoice != 0;
+        out.monsterMoveHistory[i] = {static_cast<std::int16_t>(m.moveHistory[0]),
+                                     static_cast<std::int16_t>(m.moveHistory[1])};
+        out.monsterMiscInfo[i] = m.miscInfo;
+    }
+    return out;
+}
+
+RootDigest inspectRoot(const silver_bridge::BattleStateWire &wire) {
+    try {
+        return digest(battleContextFromWire(wire));
+    } catch (const std::exception &) {
+        return {};
+    }
+}
+
+// Resolves the root's deferred intents with the search's own RNG. Like the
+// search, this runs detached from the live knowledge observer.
+RootDigest materializedRoot(const silver_bridge::BattleStateWire &wire) {
+    CombatKnowledgeObserver *const observer = g_combatKnowledgeObserver;
+    g_combatKnowledgeObserver = nullptr;
+    RootDigest result;
+    try {
+        auto root = battleContextFromWire(wire);
+        for (int i = 0; i < root.monsters.monsterCount; ++i) root.monsters.arr[i].materializePendingMove(root);
+        result = digest(root);
+    } catch (const std::exception &) {
+    }
+    g_combatKnowledgeObserver = observer;
+    return result;
+}
+
+bool sameRoot(const silver_bridge::BattleStateWire &a, const silver_bridge::BattleStateWire &b) {
+    return battleContextFromWire(a).equalForSearch(battleContextFromWire(b));
 }
 
 void installDeck(GameContext &gc) {
@@ -73,7 +126,7 @@ void testInitialAndTurnLifecycle() {
     check(fixture.knowledge.hiddenMonsterIntents, "GameContext must configure hidden intent before init");
     check(fixture.knowledge.pendingHiddenIntentRolls[0] == 1,
           "initial Runic Dome roll must create exactly one pending chain");
-    const auto initial = silver_bridge::inspectConvertedBattleState(fixture.wire());
+    const auto initial = inspectRoot(fixture.wire());
     check(initial.accepted && initial.pendingIntentRolls == 1,
           "initial real battle must materialize a pending Silver intent");
     check(initial.monsterMoveHistory[0] == fixture.knowledge.publicMonsterMoveHistory[0]
@@ -94,7 +147,7 @@ void testInitialAndTurnLifecycle() {
     check(fixture.knowledge.publicMonsterMoveHistory[0][0]
               == static_cast<std::int16_t>(fixture.bc.monsters.arr[0].moveHistory[1]),
           "two-turn public lastMove snapshot must survive");
-    const auto converted = silver_bridge::inspectConvertedBattleState(fixture.wire());
+    const auto converted = inspectRoot(fixture.wire());
     check(converted.accepted && converted.pendingIntentRolls == 1
               && converted.monsterMoveHistory[0] == fixture.knowledge.publicMonsterMoveHistory[0],
           "actual materialized Silver root must preserve current pending chain and public history");
@@ -108,7 +161,7 @@ void testHiddenMoveAndLiveRngRedaction() {
     const auto differentMoveWire = makeSilverBattleStateWire(
         differentHiddenMove, fixture.knowledge, makeSilverRunContext(fixture.gc), 0xD0E0u);
     check(root.valid && differentMoveWire.valid
-              && silver_bridge::convertedStatesEqualForSearch(root, differentMoveWire),
+              && sameRoot(root, differentMoveWire),
           "actual captured Runic root must redact a changed concrete hidden move");
 
     BattleContext differentRng = fixture.bc;
@@ -120,7 +173,7 @@ void testHiddenMoveAndLiveRngRedaction() {
     ++differentRng.shuffleRng.counter;
     const auto differentRngWire = makeSilverBattleStateWire(
         differentRng, fixture.knowledge, makeSilverRunContext(fixture.gc), 0xD0E0u);
-    check(differentRngWire.valid && silver_bridge::convertedStatesEqualForSearch(root, differentRngWire),
+    check(differentRngWire.valid && sameRoot(root, differentRngWire),
           "all six live RNG streams must be absent from the materialized Silver root");
 
     auto inconsistent = fixture.knowledge;
@@ -142,7 +195,7 @@ void testRestrictedHistoryAndPreRollMiscInfo() {
           "fixture must exercise a monster roll that mutates miscInfo");
     check(restricted.knowledge.pendingHiddenIntentRolls[0] > 1,
           "genuine chained hidden rerolls must increment pending chain count");
-    const auto converted = silver_bridge::inspectConvertedBattleState(restricted.wire());
+    const auto converted = inspectRoot(restricted.wire());
     check(converted.accepted && converted.monsterMoveHistory[0] == beforeHistory
               && converted.monsterMiscInfo[0] == beforeMisc,
           "Silver root must retain pre-roll public history/miscInfo, not post-roll live values");
@@ -151,20 +204,20 @@ void testRestrictedHistoryAndPreRollMiscInfo() {
 void testReactiveChainAndIntentQuery() {
     LiveFixture chained(MonsterEncounter::WRITHING_MASS, 0xD003u);
     chained.bc.monsters.arr[0].setStatus<MS::REACTIVE>(2);
-    Actions::ReactiveRollMove().actFunc(chained.bc);
+    Actions::ReactiveRollMove()(chained.bc);
     check(chained.knowledge.pendingHiddenIntentRolls[0] == 3,
           "two real reactive rerolls must extend the deferred chain from one to three");
 
     LiveFixture queried(MonsterEncounter::CULTIST, 0xD004u);
     check(queried.knowledge.pendingHiddenIntentRolls[0] == 1,
           "query fixture must begin with pending intent");
-    Actions::SpotWeaknessAction(0, 3).actFunc(queried.bc);
+    Actions::SpotWeaknessAction(0, 3)(queried.bc);
     check(queried.knowledge.pendingHiddenIntentRolls[0] == 0,
           "Spot Weakness must materialize and consume the pending intent");
     check(queried.knowledge.publicMonsterMoveHistory[0][0]
               == static_cast<std::int16_t>(queried.bc.monsters.arr[0].moveHistory[0]),
           "intent query must publish the materialized move before reading it");
-    const auto converted = silver_bridge::inspectConvertedBattleState(queried.wire());
+    const auto converted = inspectRoot(queried.wire());
     check(converted.accepted && converted.pendingIntentRolls == 0
               && converted.monsterMoveHistory[0] == queried.knowledge.publicMonsterMoveHistory[0],
           "post-query Silver root must contain public intent, not a fabricated pending roll");
@@ -181,7 +234,7 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
               && deterministic.knowledge.publicMonsterMoveHistory[0][0]
                     == static_cast<std::int16_t>(MonsterMoveId::ACID_SLIME_S_TACKLE),
           "Acid Slime S deterministic LICK -> TACKLE must become known after its real turn");
-    const auto deterministicRoot = silver_bridge::inspectConvertedBattleState(deterministic.wire());
+    const auto deterministicRoot = inspectRoot(deterministic.wire());
     check(deterministicRoot.accepted && deterministicRoot.pendingIntentRolls == 0
               && deterministicRoot.monsterMoveHistory[0][0]
                     == static_cast<std::int16_t>(MonsterMoveId::ACID_SLIME_S_TACKLE),
@@ -195,13 +248,13 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
     random.bc.monsters.arr[0].takeTurn(random.bc);
     check(random.knowledge.hasUnrepresentableHiddenIntent[0],
           "Looter direct post-turn RNG must be marked hidden, never published from live setMove");
-    const auto randomRoot = silver_bridge::inspectConvertedBattleState(random.wire());
+    const auto randomRoot = inspectRoot(random.wire());
     check(randomRoot.accepted && randomRoot.pendingIntentRolls == 0
               && randomRoot.pendingDirectMoveChoices == 1
               && randomRoot.monsterMoveHistory[0][0]
                     == static_cast<std::int16_t>(MonsterMoveId::LOOTER_MUG),
           "Looter direct post-turn RNG must materialize as a private deferred 50/50 choice, never its live result");
-    const auto materializedChoice = silver_bridge::materializeDeferredMonsterIntentsForTest(random.wire());
+    const auto materializedChoice = materializedRoot(random.wire());
     const auto selected = materializedChoice.monsterMoveHistory[0][0];
     check(materializedChoice.accepted && materializedChoice.pendingDirectMoveChoices == 0
               && (selected == static_cast<std::int16_t>(MonsterMoveId::LOOTER_SMOKE_BOMB)
@@ -212,7 +265,7 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
     for (std::uint64_t seed = 1; seed <= 32; ++seed) {
         auto alternative = random.wire();
         alternative.isolatedSearchSeed = seed;
-        const auto sampled = silver_bridge::materializeDeferredMonsterIntentsForTest(alternative);
+        const auto sampled = materializedRoot(alternative);
         sawSmokeBomb |= sampled.monsterMoveHistory[0][0]
             == static_cast<std::int16_t>(MonsterMoveId::LOOTER_SMOKE_BOMB);
         sawLunge |= sampled.monsterMoveHistory[0][0]
@@ -221,10 +274,10 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
     check(sawSmokeBomb && sawLunge,
           "the deferred direct choice must remain stochastic across isolated Silver RNG realizations");
 
-    Actions::SpotWeaknessAction(0, 3).actFunc(random.bc);
+    Actions::SpotWeaknessAction(0, 3)(random.bc);
     check(!random.knowledge.hasUnrepresentableHiddenIntent[0],
           "a public intent query must consume the deferred Looter choice marker");
-    const auto queriedDirectChoice = silver_bridge::inspectConvertedBattleState(random.wire());
+    const auto queriedDirectChoice = inspectRoot(random.wire());
     check(queriedDirectChoice.accepted && queriedDirectChoice.pendingDirectMoveChoices == 0
               && queriedDirectChoice.monsterMoveHistory[0][0]
                     == static_cast<std::int16_t>(random.bc.monsters.arr[0].moveHistory[0]),

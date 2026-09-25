@@ -48,11 +48,10 @@ def teacher():
         "STS_FAIR": "1", "STS_SEARCHER3": "0", "STS_SILVER_SEARCH": "1",
         "STS_SILVER_EXACT_ROOT_BUDGETS": "1", "STS_SILVER_REUSE_CAP_MODE": "allocated",
         "STS_SILVER_ADAPTIVE": "0", "STS_SILVER_VNET_LEAF_DIRECT": "0",
-        "STS_SILVER_TELEMETRY": "1",
     }
     return {
         "teacher_id": "teacher", "git_sha": "a" * 40,
-        "executable_sha256": "b" * 64, "combat_backend": "silver_uct",
+        "executable_sha256": "b" * 64, "combat_backend": "native_silver",
         "rng_regime": "project_fair", "search_configuration": search,
         "environment": environment,
         "model_artifacts": [{"role": "floor", "path": "floor", "sha256": "c" * 64}],
@@ -204,6 +203,55 @@ class TestCombatTransitionContract(unittest.TestCase):
             manifest["integrity"]["completedSeeds"] = 1
             manifest["integrity"]["quarantinedSeeds"] = 1
             with self.assertRaisesRegex(ValueError, "source seed accounting"):
+                validate_corpus(manifest)
+
+    def test_active_lizard_intervention_binds_shadow_rows_and_frozen_teacher(self):
+        try:
+            from tools.combat_transition_surrogate import _RELIC_IDS
+        except ModuleNotFoundError:
+            from combat_transition_surrogate import _RELIC_IDS
+        with tempfile.TemporaryDirectory() as directory:
+            manifest, data = self.make_bundle(Path(directory))
+            rows = [json.loads(line) for line in data.read_text().splitlines()]
+            for row in rows:
+                row["teacherId"] = "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+                row["predictorInput"]["relics"] = [
+                    {"relicId": _RELIC_IDS["LIZARD_TAIL"], "data": 1, "orderIndex": 0}
+                ]
+                row["transition"]["pre"]["relics"] = [
+                    {"id": _RELIC_IDS["LIZARD_TAIL"], "data": 1}
+                ]
+                row["transition"]["post"]["relics"] = [
+                    {"id": _RELIC_IDS["LIZARD_TAIL"], "data": 1}
+                ]
+            data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            manifest["csv"]["sha256"] = sha256(data)
+            manifest["combatTeacher"]["teacher_id"] = "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+            manifest["combatTeacher"]["git_sha"] = "d" * 40
+            manifest["combatTeacher"]["executable_sha256"] = "e" * 64
+            manifest["lizardIntervention"] = {
+                "schema": "active_lizard_shadow_intervention_v1", "activeLizard": True,
+                "baselineGitSha": "aa09f75e6be837f7f39a2e31dde234bfd2c2ef08", "collectorGitSha": "a" * 40,
+                "collectorExecutableSha256": "b" * 64,
+                "teacherId": manifest["combatTeacher"]["teacher_id"],
+                "teacherGitSha": "d" * 40, "teacherExecutableSha256": "e" * 64,
+                "teacherManifestSha256": "1" * 64,
+                "teacherModelArtifacts": manifest["combatTeacher"]["model_artifacts"],
+                "predictorInputFieldSchemaHash": FIELD_SCHEMA_HASH,
+                "sourceSeedStart": 123, "sourceSeedCount": 1,
+                "activeLizardRows": [
+                    {"sourceSeed": 123, "fightIdx": i, "activeLizard": True}
+                    for i in (0, 1)
+                ],
+                "sourceTrajectory": "untouched_normal_policy", "markOfBloomRows": "excluded",
+            }
+            result = validate_corpus(manifest)
+            self.assertEqual(result["rows"], 2)
+
+            rows[0]["predictorInput"]["relics"][0]["data"] = 0
+            data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            manifest["csv"]["sha256"] = sha256(data)
+            with self.assertRaisesRegex(ValueError, "active Lizard predictor input"):
                 validate_corpus(manifest)
 
 

@@ -26,6 +26,16 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0023](0023-native-equivalent-copy-reroot.md) reroots native Silver
+  through a different physical copy of an equivalent card by an exchanged-id
+  lookup, restoring ADR-0015's intent.
+- [ADR-0022](0022-remove-vendored-silver.md) removes the vendored Silver model,
+  its bridge, the root prior and the Silver research tools; frozen research
+  contracts move to native Silver and vendored `silver_uct` teachers are
+  rejected. It supersedes ADR-0015.
+- [ADR-0021](0021-native-silver-default.md) makes the Silver search ported
+  onto the main engine the default combat backend (its vendored opt-out was
+  removed by ADR-0022).
 - [ADR-0020](0020-silver-only-combat-remove-searcher2-and-selfplay.md) makes
   Silver the only combat searcher, removes Searcher2 with its
   search-statistics generators and controls, and removes the self-play loop.
@@ -35,9 +45,9 @@ the replacement.
 - [ADR-0018](0018-silver-default-combat-backend.md) makes Silver fair play
   the default combat backend for `run`, `bestbench` and `reprobench`; it
   supersedes ADR-0003.
-- [ADR-0015](0015-live-silver-equivalent-copy-reroot.md) preserves retained
-  live Silver visits when the human plays a different equivalent physical card
-  copy, without relaxing global search-state or transposition identity.
+- [ADR-0015](0015-live-silver-equivalent-copy-reroot.md) (superseded by
+  ADR-0022) preserved retained live Silver visits when the human played a
+  different equivalent physical card copy.
 - [ADR-0014](0014-live-ooc-visit-lock-stopping.md) enables live strict visit-lock
   stopping through an explicit policy override while retaining the false
   non-aborting provider guarantee and a rollback switch.

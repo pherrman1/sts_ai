@@ -11,18 +11,11 @@ import argparse
 import csv
 import hashlib
 import json
-import re
 import tempfile
 from pathlib import Path
 
 
-FAILURE_FIELDS = (
-    "conversion_failures",
-    "semantic_resolution_failures",
-    "transaction_failures",
-    "knowledge_failures",
-)
-SILVER_LINE = re.compile(r"^\[silver-combat\]\s+(?P<fields>.+)$")
+NATIVE_SILVER_BANNER = "[Native Silver combat backend:"
 
 
 def require(condition: bool, message: str) -> None:
@@ -41,25 +34,6 @@ def read_results(path: Path) -> list[dict[str, str]]:
         rows = list(csv.DictReader(handle))
     require(rows, f"{path}: no completed seed rows")
     require("seed" in rows[0] and "won" in rows[0], f"{path}: not a bestbench results CSV")
-    return rows
-
-
-def parse_silver_telemetry(path: Path) -> list[dict[str, int]]:
-    rows: list[dict[str, int]] = []
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        match = SILVER_LINE.match(line.strip())
-        if not match:
-            continue
-        fields: dict[str, int] = {}
-        for token in match.group("fields").split():
-            if "=" not in token:
-                continue
-            key, value = token.split("=", 1)
-            try:
-                fields[key] = int(value)
-            except ValueError:
-                continue
-        rows.append(fields)
     return rows
 
 
@@ -112,24 +86,16 @@ def validate(args: argparse.Namespace) -> str:
         require(sha256(args.binary) == args.expect_binary_sha256.lower(),
                 "binary SHA-256 does not match the frozen executable")
 
-    if args.expect_backend == "silver":
-        require(config.get("stsSilverSearchEffective") is True,
-                "Silver was requested but was not the effective backend")
-        require(config.get("silverSearchEnabled") is True,
-                "Silver live backend was not installed")
-        require(bool(config.get("silverUpstreamSha")), "Silver upstream SHA is missing")
-        require(args.expect_silver_reuse_cap_mode is not None,
-                "Silver canary requires an expected reuse-cap mode")
-        require(config.get("silverReuseCapMode") == args.expect_silver_reuse_cap_mode,
-                "effective Silver reuse-cap mode does not match")
-        require(args.log is not None, "Silver canary requires --log for mechanism/failure telemetry")
-        telemetry = parse_silver_telemetry(args.log)
-        require(telemetry, "no [silver-combat] telemetry found; treatment activation is unproved")
-        require(any(row.get("decisions", 0) > 0 and row.get("simulations", 0) > 0 for row in telemetry),
-                "Silver telemetry contains no actual decisions/simulations")
-        for field in FAILURE_FIELDS:
-            require(all(row.get(field) == 0 for row in telemetry),
-                    f"Silver telemetry reports nonzero or missing {field}")
+    # Native Silver is the only combat backend (ADR-0022). It has no per-combat
+    # telemetry; the metadata and the startup banner prove it was active.
+    require(config.get("stsSilverSearchEffective") is True,
+            "Silver was requested but was not the effective backend")
+    require(config.get("silverSearchEnabled") is True, "native Silver backend was not installed")
+    require(config.get("silverReuseCapMode") == "allocated",
+            "effective Silver reuse-cap mode is not the native allocated cap")
+    require(args.log is not None, "canary requires --log for the backend banner")
+    require(NATIVE_SILVER_BANNER in args.log.read_text(encoding="utf-8", errors="replace"),
+            "no native Silver backend banner found; treatment activation is unproved")
 
     wins = sum(int(row["won"]) for row in rows)
     return (f"benchmark_canary PASS backend={args.expect_backend} seeds={len(rows)} "
@@ -147,19 +113,19 @@ def self_test() -> int:
         record = {
             "objective": "bestbench", "seedBlock": {"lo": 942000, "hi": 942000},
             "nSeeds": 1, "sims": 64, "asc": 0, "threads": 24,
-            "config": {"effectiveCombatBackend": "silver", "stsSilverSearchEffective": True,
-                       "silverSearchEnabled": True, "silverReuseCapMode": "active",
-                       "silverUpstreamSha": "84ab3e", "executableGitSha": "deadbeef",
-                       "fairPlay": True, "searcher3": True},
+            "config": {"effectiveCombatBackend": "native_silver", "stsSilverSearchEffective": True,
+                       "silverSearchEnabled": True, "silverReuseCapMode": "allocated",
+                       "silverUpstreamSha": "", "executableGitSha": "deadbeef",
+                       "fairPlay": True, "searcher3": False},
         }
         meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
-        log.write_text("[silver-combat] decisions=2 simulations=128 conversion_failures=0 semantic_resolution_failures=0 transaction_failures=0 knowledge_failures=0\n", encoding="utf-8")
+        log.write_text("[Native Silver combat backend: Silver search on the main engine; flat budget]\n", encoding="utf-8")
         binary.write_bytes(b"frozen-binary")
-        args = argparse.Namespace(results=results, meta=meta, log=log, expect_backend="silver",
+        args = argparse.Namespace(results=results, meta=meta, log=log, expect_backend="native_silver",
                                   expect_seeds=1, expect_sims=64, expect_seed_lo=942000,
-                                  expect_executable_sha="deadbeef", expect_silver_reuse_cap_mode="active",
+                                  expect_executable_sha="deadbeef",
                                   binary=binary, expect_binary_sha256=sha256(binary), expect_asc=0,
-                                  expect_threads=24, expect_fair=True, expect_searcher3=True)
+                                  expect_threads=24, expect_fair=True, expect_searcher3=False)
         validate(args)
 
         def expect_failure(label: str, needle: str, **changes: object) -> None:
@@ -191,14 +157,25 @@ def self_test() -> int:
         expect_failure("omitted fairPlay", "expected fairPlay", expect_fair=None)
         expect_failure("omitted searcher3", "expected searcher3", expect_searcher3=None)
         expect_failure("fairPlay true/false mismatch", "fairPlay value", **{"meta.fairPlay": False})
-        expect_failure("searcher3 true/false mismatch", "searcher3 value", **{"meta.searcher3": False})
+        expect_failure("searcher3 false/true mismatch", "searcher3 value", **{"meta.searcher3": True})
         expect_failure("fairPlay false/true mismatch", "fairPlay value", expect_fair=False)
-        expect_failure("searcher3 false/true mismatch", "searcher3 value", expect_searcher3=False)
-        expect_failure("omitted Silver reuse cap", "expected reuse-cap mode", expect_silver_reuse_cap_mode=None)
+        expect_failure("searcher3 true/false mismatch", "searcher3 value", expect_searcher3=True)
+        expect_failure("vendored reuse-cap mode", "reuse-cap mode", **{"meta.silverReuseCapMode": "active"})
+        expect_failure("missing log", "requires --log", log=None)
+        meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
+        log.write_text("no banner\n", encoding="utf-8")
+        try:
+            validate(args)
+        except ValueError as exc:
+            require("banner" in str(exc), "wrong failure for a missing backend banner")
+        else:
+            raise AssertionError("canary without backend banner was accepted")
+        log.write_text("[Native Silver combat backend: Silver search on the main engine; flat budget]\n",
+                       encoding="utf-8")
 
         # Restore the valid fixture before testing a bypassed treatment.
         meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
-        record["config"]["effectiveCombatBackend"] = "native_searcher"
+        record["config"]["effectiveCombatBackend"] = "silver"
         meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
         try:
             validate(args)
@@ -216,7 +193,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--results", type=Path)
     p.add_argument("--meta", type=Path)
     p.add_argument("--log", type=Path)
-    p.add_argument("--expect-backend", choices=("silver", "native_searcher"))
+    p.add_argument("--expect-backend", choices=("native_silver",))
     p.add_argument("--expect-seeds", type=int, default=1)
     p.add_argument("--expect-sims", type=int)
     p.add_argument("--expect-seed-lo", type=int)
@@ -232,7 +209,6 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--expect-executable-sha")
     p.add_argument("--binary", type=Path)
     p.add_argument("--expect-binary-sha256")
-    p.add_argument("--expect-silver-reuse-cap-mode", choices=("allocated", "active"))
     return p
 
 

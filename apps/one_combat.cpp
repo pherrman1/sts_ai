@@ -1,100 +1,7 @@
-#include "one_combat/ooc_mcts_adapter.h"
-#include "one_combat/combat_transition_runtime.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
 // and focused search/model diagnostics.
 
-#include <algorithm>
-#include <chrono>
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <filesystem>
-#include <functional>
-#include <fstream>
-#include <limits>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <iostream>
-#include <mutex>
-#include <optional>
-#include <random>
-#include <string>
-#include <thread>
-#include <tuple>
-#include <unordered_set>
-#include <vector>
-#include <nlohmann/json.hpp>
-
-#include "game/GameContext.h"
-#include "combat/BattleContext.h"
-#include "sim/search/Action.h"
-#include "sim/search/ScumSearchAgent2.h"
-#include "sim/search/CombatValueNet.h"
-#include "sim/search/CombatCpsiNet.h"
-#include "sim/search/SilverLiveBackend.h"
-#include "sim/search/GameAction.h"
-#include "sim/search/OocSemanticAction.h"
-#include "sim/search/ExpertKnowledge.h"
-#include "sim/search/SimHealth.h"
-#include "sim/search/TrainingIntegrity.h"
-#include "game/Map.h"
-#include "sim/util/BestBenchMeta.h"
-#include "ooc_test_state.h"
-#include "ooc_checkpoint_net.h"
-#include "ooc_strategic_net.h"
-#include "ooc_strategic_tok_net.h"
-#include "combat_model_diagnostics.h"
-#include "one_combat/compact_tree.h"
-#include "one_combat/ooc_native_fallback.h"
-#include "one_combat/combat_transition.h"
-#include "one_combat/e2c_capture.h"
-#include "one_combat/run_features.h"
-#include "one_combat/ooc_policy.h"
-#include "one_combat/run_driver.h"
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifndef _WIN32
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/select.h>
-#include <unistd.h>
-#include <cstring>
-#include <cerrno>
-#endif
-#include <atomic>
-#include <iomanip>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
-
-using one_combat::CompactTreeNet;
-using one_combat::FwdMap;
-using one_combat::PathHistory;
-using one_combat::forwardMapFeatures;
-using one_combat::kNumCardIds;
-using one_combat::kNumPotions;
-using one_combat::kNumRelics;
-using one_combat::richHeader;
-using one_combat::richIdxMap;
-using one_combat::richRow;
-using one_combat::richStateHeader;
-using one_combat::oocActionNNPolicy;
-using one_combat::oocOnePlyCardRewardPolicy;
-using one_combat::oocOnePlyRestPolicy;
-using one_combat::oocOnePlyUpgradeSelectPolicy;
-using one_combat::oocOnePlyEventPolicy;
-using one_combat::oocOnePlyShopPolicy;
-using one_combat::oocOnePlyTreasurePolicy;
-using one_combat::oocOnePlyBossRelicPolicy;
-using one_combat::oocOnePlyMapPolicy;
-using one_combat::oocMapRouteSearchPolicy;
+#include "one_combat/driver_shared.h"
 
 OocCheckpointNet g_oocCheckpointNet;
 OocStrategicNet g_oocStrategicNet;
@@ -114,18 +21,18 @@ void tokEntity(const sts::GameContext &gc, const sts::search::GameAction &a,
 
 extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
 static std::vector<std::string> g_mainArgv;
-static std::string g_mainBinaryPath;
+std::string g_mainBinaryPath;
 // Resolved only after successful loading, so E3a provenance does not confuse
 // an unset/failed environment request with the policy actually exercised.
 static std::string g_effectiveOocStrategicPath;
 static std::string g_effectiveOocStrategicTokPath;
 
-static thread_local int t_trainingHealthFailures = 0;
+thread_local int t_trainingHealthFailures = 0;
 static thread_local int t_trainingBranchHealthFailures = 0;
 static thread_local bool t_trainingRunActive = false;
-static std::atomic<int> g_trainingInvalidRuns{0};
-static std::atomic<int> g_trainingInvalidBranches{0};
-static std::atomic<int> g_trainingHealthFailures{0};
+std::atomic<int> g_trainingInvalidRuns{0};
+std::atomic<int> g_trainingInvalidBranches{0};
+std::atomic<int> g_trainingHealthFailures{0};
 
 void trainingRunStart() {
     t_trainingHealthFailures = sts::search::g_simHealthFailureCount;
@@ -133,7 +40,7 @@ void trainingRunStart() {
     t_trainingRunActive = true;
 }
 
-static void trainingCampaignStart() {
+void trainingCampaignStart() {
     g_trainingInvalidRuns = 0;
     g_trainingInvalidBranches = 0;
     g_trainingHealthFailures = 0;
@@ -180,7 +87,7 @@ static std::string trainingGitValue(const char *command) {
     return value;
 }
 
-static std::string trainingExecutableGitSha() {
+std::string trainingExecutableGitSha() {
     const char *declared = std::getenv("STS_EXECUTABLE_GIT_SHA");
     if (declared && *declared) {
         const std::string sha(declared);
@@ -193,7 +100,7 @@ static std::string trainingExecutableGitSha() {
     return trainingGitValue("git rev-parse HEAD");
 }
 
-static std::string fileSha256(const std::string &path) {
+std::string fileSha256(const std::string &path) {
     // Model paths are operator-provided and may contain spaces.  Quote for the
     // repository's POSIX execution environments; a missing utility/file is
     // represented explicitly as an empty provenance value rather than guessed.
@@ -204,11 +111,11 @@ static std::string fileSha256(const std::string &path) {
     return cut == std::string::npos ? line : line.substr(0, cut);
 }
 
-static void writeTrainingProvenance(const std::string &output, const char *mode,
+void writeTrainingProvenance(const std::string &output, const char *mode,
                                     int requested, int completed, int invalid,
                                     int healthFailures, long long rows,
                                     long long seedOffset, int sims, int asc,
-                                    double epsilon = -1.0) {
+                                    double epsilon) {
     std::ofstream p(output + ".provenance.json");
     if (!p) return;
     const char *envs[] = {"STS_FAIR", "STS_REUSE_MAX_SEARCHES",
@@ -293,7 +200,7 @@ struct BenchProgress {
     void done() { if (tty) std::fprintf(stderr, "\r\033[K"); }  // clear the line
 };
 
-static int numThreads() {
+int numThreads() {
 #ifdef _OPENMP
     return omp_get_max_threads();
 #else
@@ -499,7 +406,7 @@ static double evalSkipBar(const GameContext &gc) {
     return bar;
 }
 
-static void evalCardRewardPolicy(GameContext &gc, bool allowSkip = true) {
+void evalCardRewardPolicy(GameContext &gc, bool allowSkip) {
     using RT = search::GameAction::RewardsActionType;
     auto &r = gc.info.rewardsContainer;
     while (r.cardRewardCount > 0) {
@@ -585,7 +492,7 @@ double g_oocStrategicGateEps = 0.03;     // env STS_OOC_STRATEGIC_GATE_EPS: regr
 bool   g_oocMapRoute = false;         // env STS_OOC_MAP_ROUTE=1
 int    g_oocMapRouteHorizon = 3;      // env STS_OOC_MAP_ROUTE_HORIZON (clamped 2..5)
 search::CombatCpsiNet g_cpsiNet;      // env STS_CPSI_NN=<path>: combat outcome surrogate
-static int    g_oocStrategicTok = 0;        // env STS_OOC_STRATEGIC_TOK_NN: V4 token net loaded
+int    g_oocStrategicTok = 0;        // env STS_OOC_STRATEGIC_TOK_NN: V4 token net loaded
 bool   g_oocStrategicTokCheck = false; // env STS_OOC_STRATEGIC_TOK_CHECK=1: first-decision glob parity hook
 std::string g_oocStrategicTracePath;
 thread_local std::string t_oocStrategicTraceRows;
@@ -598,15 +505,13 @@ thread_local bool t_shopV = false;            // runFullRunOOC's shopV param, fo
 RelicId g_forceRelic = RelicId::INVALID;
 // B1 shop beam search (ooc-next-wave-contracts.md §2): multi-step lookahead over
 // deterministic shop purchases, replacing the one-ply shop gate when enabled.
-static bool   g_oocShopBeam = false;        // env STS_OOC_SHOP_BEAM=1
-static int    g_oocShopBeamWidth = 32;      // env STS_OOC_SHOP_BEAM_WIDTH (clamped 4..256)
-static int    g_oocShopBeamDepth = 0;       // env STS_OOC_SHOP_BEAM_DEPTH (0 = until leave / no affordable actions)
-static int    g_oocShopBeamBudget = 4096;   // env STS_OOC_SHOP_BEAM_BUDGET: max expanded nodes per shop decision
+bool   g_oocShopBeam = false;        // env STS_OOC_SHOP_BEAM=1
+int    g_oocShopBeamWidth = 32;      // env STS_OOC_SHOP_BEAM_WIDTH (clamped 4..256)
+int    g_oocShopBeamDepth = 0;       // env STS_OOC_SHOP_BEAM_DEPTH (0 = until leave / no affordable actions)
+int    g_oocShopBeamBudget = 4096;   // env STS_OOC_SHOP_BEAM_BUDGET: max expanded nodes per shop decision
 int nativeFloorCardPick(GameContext &, int);
 double nativeFloorValue(GameContext &);
 bool oocShopBeamPolicy(GameContext &);          // B1 multi-step shop beam search (§2)
-struct StratFingerprint;                               // successor-state digest (defined below)
-static StratFingerprint stratFingerprint(const GameContext &);
 // Wave B regret decision: returns the index of the action to take (Q-max when
 // Qmax − Q(a_heur) > eps, else a_heur), or -1 when a_heur is unidentifiable
 // (caller falls back to the margin rule). Runs `heuristic` on a pre-state copy
@@ -620,18 +525,17 @@ bool regretGateTail(GameContext &, const std::vector<search::GameAction> &,
                            void (*)(GameContext &, search::ScumSearchAgent2 &),
                            const search::ScumSearchAgent2 &);
 std::string nativeShopPlan(GameContext &);
-static void resampleRemainingActEncounters(GameContext &, std::uint64_t);
 // A/B: route card picks through the deck-set NN (P(win) marginal), optionally blended with
 // the v_win GBM: marg = w*NN + (1-w)*GBM. Own skip scale (P(win) units).
-static bool   g_cardNN     = false;     // env STS_CARD_NN=1
-static double g_cardNNW    = 1.0;       // env STS_CARD_NN_W: blend weight on NN (1=pure NN)
-static double g_cardNNSkip = 0.0;       // env STS_CARD_NN_SKIP: skip iff best P(win) marginal < this
+bool   g_cardNN     = false;     // env STS_CARD_NN=1
+double g_cardNNW    = 1.0;       // env STS_CARD_NN_W: blend weight on NN (1=pure NN)
+double g_cardNNSkip = 0.0;       // env STS_CARD_NN_SKIP: skip iff best P(win) marginal < this
 // Direct paired action-value model (offered cards + skip), optionally with the
 // full map graph. Unlike marginal value models, it learns its own skip action.
-static bool   g_cardAction = false;     // env STS_CARD_ACTION=1 (CA server op)
+bool   g_cardAction = false;     // env STS_CARD_ACTION=1 (CA server op)
 // Datagen exploration: softmax temperature over card marginals (final-floor
 // units; higher = more spread). The uniform-floor prob is datagen2's `epsilon`.
-static double g_dgTemp = 2.0;   // env STS_DG_TEMP (swept: 1-2 good spread+quality, >=3 over-randomizes)
+double g_dgTemp = 2.0;   // env STS_DG_TEMP (swept: 1-2 good spread+quality, >=3 over-randomizes)
 // Per-fight combat sim budget by difficulty (env STS_SIMS_NORMAL/ELITE/BOSS; <=0 or
 // unset = use the run's base sims). Deaths cluster at elites/bosses, so we can search
 // those deep and skimp on trivial hallway fights for the same win% at far less compute.
@@ -675,11 +579,11 @@ int fightSims(const GameContext &gc, int base) {
 // (either a rollout, or the boss-survival value model v_boss blended with v_rich).
 // The gate is factored so the hard-fight set can later become DYNAMIC (learned from
 // where we die); boss-only for now.
-static int    g_bossDraft        = 0;      // STS_BOSS_DRAFT: rollout-based near-boss draft (experimental; hurt in A/B)
+int    g_bossDraft        = 0;      // STS_BOSS_DRAFT: rollout-based near-boss draft (experimental; hurt in A/B)
 int    g_bossDraftRows    = 3;      // trigger when a hard fight is within this many map rows
-static int    g_bossDraftN       = 4;      // rollout: fights to simulate forward
-static int    g_bossDraftSims    = 150;    // rollout: inner combat sim budget
-static int    g_bossDraftFutures = 2;      // rollout: sampled futures per candidate
+int    g_bossDraftN       = 4;      // rollout: fights to simulate forward
+int    g_bossDraftSims    = 150;    // rollout: inner combat sim budget
+int    g_bossDraftFutures = 2;      // rollout: sampled futures per candidate
 int    g_bossV            = 0;      // STS_BOSS_V: blend v_boss marginal into near-boss server picks
 double g_bossVW           = 0.5;    // STS_BOSS_V_W: blend weight on the boss model (0..1)
 
@@ -690,18 +594,18 @@ double g_bossVW           = 0.5;    // STS_BOSS_V_W: blend weight on the boss mo
 // modest floor-distance discount.  It intentionally makes no V/card-model query
 // for the card being picked; the regular OOC policy is used only inside a sampled
 // continuation to resolve later choices.
-static bool   g_actFightProbeDraft = false; // STS_ACT_FIGHT_PROBE_DRAFT=1
-static int    g_actFightProbeSims = 100;    // STS_ACT_FIGHT_PROBE_SIMS
-static int    g_actFightProbeFutures = 4;   // STS_ACT_FIGHT_PROBE_FUTURES
-static double g_actFightProbeFloorDecay = 0.985; // STS_ACT_FIGHT_PROBE_FLOOR_DECAY
+bool   g_actFightProbeDraft = false; // STS_ACT_FIGHT_PROBE_DRAFT=1
+int    g_actFightProbeSims = 100;    // STS_ACT_FIGHT_PROBE_SIMS
+int    g_actFightProbeFutures = 4;   // STS_ACT_FIGHT_PROBE_FUTURES
+double g_actFightProbeFloorDecay = 0.985; // STS_ACT_FIGHT_PROBE_FLOOR_DECAY
 // Optional inner-search base budgets by reached checkpoint, e.g. 400,200,100.
 // The live run's combat budget is unaffected; room-tier overrides still take
 // precedence through fightSims().
-static std::vector<int> g_actFightProbeCheckpointSims; // STS_ACT_FIGHT_PROBE_CHECKPOINT_SIMS
+std::vector<int> g_actFightProbeCheckpointSims; // STS_ACT_FIGHT_PROBE_CHECKPOINT_SIMS
 // -1 scores every remaining fight in the current act; a positive value scores only the
 // next N combat checkpoints.  This is a horizon in fights, not map nodes, so
 // routes with shops/events are not given a structurally different objective.
-static int    g_actFightProbeMaxCheckpoints = -1; // STS_ACT_FIGHT_PROBE_MAX_CHECKPOINTS
+int    g_actFightProbeMaxCheckpoints = -1; // STS_ACT_FIGHT_PROBE_MAX_CHECKPOINTS
 bool   g_actFightProbeTrace = false; // STS_ACT_FIGHT_PROBE_TRACE=1
 // Parallelize the independent immediate-action × sampled-future branches of a
 // single OOC decision.  Off by default so ordinary multi-seed benches retain
@@ -710,28 +614,28 @@ static bool   g_actFightProbeParallelBranches = false; // STS_ACT_FIGHT_PROBE_PA
 // Broader version used only for a deliberately expensive Act-1 experiment:
 // evaluate every legal OOC action (map, rewards, events, shop, rest, selects),
 // not just cards.  This is separate so the card-only oracle remains available.
-static bool   g_actFightProbeAllOoc = false; // STS_ACT_FIGHT_PROBE_ALL_OOC=1
+bool   g_actFightProbeAllOoc = false; // STS_ACT_FIGHT_PROBE_ALL_OOC=1
 // Score and advance checkpoint fights with the entity combat model instead of
 // running MCTS.  This is deliberately separate from STS_VNET: the latter is a
 // leaf evaluator inside real combat search, while this one supplies both heads
 // needed for a virtual post-combat transition.
-static bool   g_actFightProbePredict = false; // STS_ACT_FIGHT_PROBE_PREDICT=1
-static bool   g_actFightProbeEncounterNN = false; // STS_ACT_FIGHT_PROBE_ENCOUNTER_NN=1
-static double g_actFightProbePredictWinThreshold = 0.5;
+bool   g_actFightProbePredict = false; // STS_ACT_FIGHT_PROBE_PREDICT=1
+bool   g_actFightProbeEncounterNN = false; // STS_ACT_FIGHT_PROBE_ENCOUNTER_NN=1
+double g_actFightProbePredictWinThreshold = 0.5;
 static std::string g_actFightProbePredictNetPath = "selfplay/models/v_combat_entity_iter34.txt";
-static search::CombatValueNet g_actFightProbePredictNet;
+search::CombatValueNet g_actFightProbePredictNet;
 // Optional terminal pricing for the capped checkpoint objective: after the
 // final scored checkpoint, price each option's resulting branch state with the
 // native win model (P(run victory)) and add it to the utility, blended by this
 // weight.  HP-only checkpoint safety misses resource compounding (gold, relics,
 // deck) that the trunk simulation carries forward but never prices.
-static double g_actFightProbeTermWin = 0.0; // STS_ACT_FIGHT_PROBE_TERM_WIN=alpha (0 = off)
+double g_actFightProbeTermWin = 0.0; // STS_ACT_FIGHT_PROBE_TERM_WIN=alpha (0 = off)
 // Margin gate: when > 0, the all-OOC oracle overrides a decision only if its
 // best action's utility beats the runner-up by at least this margin; otherwise
 // control falls through to the ordinary policy stack.  Greedy full-run oracle
 // replacement is a recorded regression (EXPERIMENTS.md 66j/66m/67); the margin
 // is the design-doc deployment contract for learned override layers.
-static double g_actFightProbeMargin = 0.0; // STS_ACT_FIGHT_PROBE_MARGIN=m (0 = always fire)
+double g_actFightProbeMargin = 0.0; // STS_ACT_FIGHT_PROBE_MARGIN=m (0 = always fire)
 int    g_stopAfterAct = 0;            // STS_STOP_AFTER_ACT=N, benchmark horizon
 // Optional durable per-action teacher data for the all-OOC oracle.  The file
 // is append-only because benchmark runs may be stopped and resumed.
@@ -754,11 +658,11 @@ static int actFightProbeCheckpointSims(int defaultSims, int checkpointIdx) {
 // battles at STRATEGIC_BRANCH_SIMS sims each, then bootstrapped with the native
 // floor/win trees. The same branch seed per decision gives common random
 // numbers across actions; STRATEGIC_BRANCH_FUTURES averages over extra seeds.
-static int g_strategicSamplesPerRun = 1;    // STRATEGIC_SAMPLES_PER_RUN: reservoir size
-static bool g_strategicSampleAll = false;   // STRATEGIC_SAMPLE_ALL=1: label every decision
-static int g_strategicBranchFights = 3;     // STRATEGIC_BRANCH_FIGHTS: battles per branch
-static std::vector<int> g_strategicBranchSims = {150, 100, 50}; // STRATEGIC_BRANCH_SIMS per fight
-static int g_strategicBranchFutures = 1;    // STRATEGIC_BRANCH_FUTURES: branch seeds per action
+int g_strategicSamplesPerRun = 1;    // STRATEGIC_SAMPLES_PER_RUN: reservoir size
+bool g_strategicSampleAll = false;   // STRATEGIC_SAMPLE_ALL=1: label every decision
+int g_strategicBranchFights = 3;     // STRATEGIC_BRANCH_FIGHTS: battles per branch
+std::vector<int> g_strategicBranchSims = {150, 100, 50}; // STRATEGIC_BRANCH_SIMS per fight
+int g_strategicBranchFutures = 1;    // STRATEGIC_BRANCH_FUTURES: branch seeds per action
 
 static std::string actFightProbeCheckpointSimsCsv() {
     std::ostringstream out;
@@ -813,7 +717,7 @@ double potionKeepValue(const GameContext &gc) {
     return kPotionBaseKeep + g_potionBonus * proximity * scarcity;
 }
 
-static int vConnect() {
+int vConnect() {
     if (t_vSock >= 0) return t_vSock;
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) return -1;
@@ -848,7 +752,7 @@ static int vConnect() {
 // short write into a strategic fallback (card skip, empty shop plan, etc.):
 // reconnect and replay the complete request.  The old one-shot send() path
 // silently changed decisions when a persistent connection was dropped.
-static std::string vRequestLine(const std::string &requestWithNewline) {
+std::string vRequestLine(const std::string &requestWithNewline) {
     // Model loading (especially the optional Torch model) can take several
     // seconds.  A fixed launcher sleep previously let the first benchmark run
     // race server readiness and silently use fallbacks, while later runs used
@@ -1024,9 +928,8 @@ int nativeWinCardPick(GameContext &gc, int rIdx) {
 int g_bossRelicV = 0;   // STS_BOSS_RELIC=1
 int g_neowV      = 0;   // STS_NEOW_V=1
 
-using WinNet = CompactTreeNet;
-static WinNet g_winNet;
-static WinNet g_floorNet;
+WinNet g_winNet;
+WinNet g_floorNet;
 bool nativeWinPolicyAvailable() { return g_nativeOoc && g_winNet.ok; }
 bool nativeFloorPolicyAvailable() { return g_nativeOoc && !g_shopWin && g_floorNet.ok; }
 bool nativeRestWinPolicy(GameContext &gc) {
@@ -1102,7 +1005,7 @@ std::string vTransact(const std::string &req) {
 }
 
 // Marginal V(deck+card)-V(deck) for each card reward candidate (empty on error).
-static std::vector<double> vQueryMarginals(GameContext &gc, int rIdx) {
+std::vector<double> vQueryMarginals(GameContext &gc, int rIdx) {
     auto &r = gc.info.rewardsContainer;
     const int n = r.cardRewards[rIdx].size();
     std::string req = "M;";
@@ -1121,7 +1024,7 @@ static std::vector<double> vQueryMarginals(GameContext &gc, int rIdx) {
 // (coverage floor so V's blind spots still get sampled). The take-vs-skip decision
 // is handled by the caller (skip@g_cardSkipThresh on the BEST marginal), so deck
 // sizes match the exploit policy and we only diversify the card choice.
-static int sampleCardSoftmax(const std::vector<double> &marg, double temp, double uniformEps,
+int sampleCardSoftmax(const std::vector<double> &marg, double temp, double uniformEps,
                              std::default_random_engine &ex) {
     const int n = (int)marg.size();
     if (n <= 1) return 0;
@@ -1287,374 +1190,6 @@ bool bossGatedDraftPolicy(GameContext &gc) {
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// RUN TRACE: replay ONE seed with the deployed OOC policy and print a
-// human-readable line per MAP NODE (what it was, what we fought / which event,
-// and the resulting state: HP, gold, deck delta, deck, relics, potions). For
-// eyeballing the agent's decisions against human game knowledge. This is a
-// DIAGNOSTIC trace, not a mirror of runFullRunOOC: it logs but does not use
-// some event/treasure scores and omits some fallthrough policy layers.
-// ---------------------------------------------------------------------------
-static std::string tr_deck(const GameContext &gc) {
-    std::map<std::string,int> m;
-    for (const auto &c : gc.deck.cards) { std::string n = c.getName(); if (c.isUpgraded()) n += "+"; ++m[n]; }
-    std::string s;
-    for (auto &kv : m) { s += kv.first; if (kv.second > 1) s += " x" + std::to_string(kv.second); s += ", "; }
-    return s;
-}
-static std::multiset<std::string> tr_deckMs(const GameContext &gc) {
-    std::multiset<std::string> ms;
-    for (const auto &c : gc.deck.cards) { std::string n = c.getName(); if (c.isUpgraded()) n += "+"; ms.insert(n); }
-    return ms;
-}
-static std::string tr_relics(const GameContext &gc) {
-    std::string s;
-    for (const auto &ri : gc.relics.relics) { s += sts::relicNames[(int)ri.id]; s += ", "; }
-    return s.empty() ? "-" : s;
-}
-static std::string tr_potions(const GameContext &gc) {
-    std::string s;
-    for (int i = 0; i < gc.potionCapacity && i < (int)gc.potions.size(); ++i) {
-        if (gc.potions[i] == Potion::EMPTY_POTION_SLOT) continue;
-        s += sts::getPotionName(gc.potions[i]); s += ", ";
-    }
-    return s.empty() ? "-" : s;
-}
-static std::string tr_event(Event e) {
-    // enum-order names (matches include/constants/Events.h)
-    static const char *const kEventNames[] = {
-        "INVALID","MONSTER","REST","SHOP","TREASURE","NEOW","Ominous Forge","Pleading Vagrant",
-        "Ancient Writing","Old Beggar","Big Fish","Bonfire Spirits","Colosseum","Cursed Tome",
-        "Dead Adventurer","Designer in-Spire","Augmenter","Duplicator","Face Trader","Falling",
-        "Forgotten Altar","The Divine Fountain","Ghosts","Golden Idol","Golden Shrine","Wing Statue",
-        "Knowing Skull","Lab","The Ssssserpent","Living Wall","Masked Bandits","Match and Keep",
-        "Mindbloom","Hypnotizing Mushrooms","Mysterious Sphere","The Nest","Nloth","Note For Yourself",
-        "Purifier","Scrap Ooze","Secret Portal","Sensory Stone","Shining Light","The Cleric","The Joust",
-        "The Library","The Mausoleum","The Moai Head","The Woman in Blue","Tomb of Lord Red Mask",
-        "Transmogrifier","Upgrade Shrine","Vampires","We Meet Again","Wheel of Change","Winding Halls",
-        "World of Goop" };
-    const int i = (int)e;
-    return (i >= 0 && i < (int)(sizeof(kEventNames)/sizeof(*kEventNames))) ? kEventNames[i]
-                                                                           : "Event#" + std::to_string(i);
-}
-static std::string tr_deckDelta(const std::multiset<std::string> &prev, const std::multiset<std::string> &cur) {
-    std::string s;
-    for (const auto &n : cur) if (cur.count(n) > prev.count(n) && s.find("+" + n + " ") == std::string::npos) {
-        int d = (int)cur.count(n) - (int)prev.count(n);
-        s += "+" + n + (d > 1 ? "x" + std::to_string(d) : "") + " ";
-    }
-    for (const auto &n : prev) if (prev.count(n) > cur.count(n) && s.find("-" + n + " ") == std::string::npos) {
-        int d = (int)prev.count(n) - (int)cur.count(n);
-        s += "-" + n + (d > 1 ? "x" + std::to_string(d) : "") + " ";
-    }
-    return s;
-}
-
-// Log each pending card reward's OPTIONS + the model's marginal-V (final-floor units,
-// via the server "M" op) so drafts can be graded, not just the pick. skip bar = g_cardSkipThresh.
-// When the OOC action NN is active (STS_OOC_ACTION_NN=1), also query its OA endpoint and
-// show the NN's utility score for each card.
-static void tr_logDraft(GameContext &gc) {
-    // The "M" marginals op is server-only. Skip the draft log cleanly when no
-    // server is reachable (same vConnect()<0 fail-fast pattern as vTransact),
-    // instead of letting vRequestLine retry ~50x per card reward.
-    if (vConnect() < 0) return;
-    auto &r = gc.info.rewardsContainer;
-    for (int rIdx = 0; rIdx < r.cardRewardCount; ++rIdx) {
-        auto &cr = r.cardRewards[rIdx];
-        if (cr.size() == 0) continue;
-
-        // V_rich marginals (server M op)
-        std::string req = "M;";
-        for (int i = 0; i < cr.size(); ++i) { if (i) req += ','; req += std::to_string((int)cr[i].getId()); }
-        req += ';'; req += vFeatCsv(gc);
-        std::string resp = vSendRecv(req);
-        std::vector<double> marg; { std::istringstream is(resp); double v; while (is >> v) marg.push_back(v); }
-
-        // NN scores for each card option + skip
-        std::vector<double> nnScores;
-        if (g_oocCheckpointNet.ok) {
-            const std::vector<float> state = richFeatureVec(gc);
-            using RT = search::GameAction::RewardsActionType;
-            for (int i = 0; i < cr.size(); ++i) {
-                std::uint32_t abits = search::GameAction(RT::CARD, rIdx, i).bits;
-                nnScores.push_back(g_oocCheckpointNet.predict(state.data(), abits, (int)gc.screenState, gc.act));
-            }
-            std::uint32_t sbits = search::GameAction(RT::SKIP).bits;
-            nnScores.push_back(g_oocCheckpointNet.predict(state.data(), sbits, (int)gc.screenState, gc.act));
-        }
-
-        // One-ply strategic scores for each card option + the CARD(rIdx,5) skip:
-        // Q(s,a) directly (Tier-B, §72), or V(s') of the successor when
-        // STS_OOC_STRATEGIC_Q=0 (V2 behaviour).
-        std::vector<double> oneplyScores;
-        if (g_oocStrategicNet.ok) {
-            using RT = search::GameAction::RewardsActionType;
-            const std::vector<float> state = richFeatureVec(gc);
-            auto score = [&](const search::GameAction &a) {
-                if (g_oocStrategicQ) {
-                    int actionType, c1, c2, c3, cand1, cand2, cand3;
-                    strategicCands(gc, a, actionType, c1, c2, c3, cand1, cand2, cand3);
-                    const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-                    return g_oocStrategicNet.predictActionValue(state.data(), a.bits,
-                                                                cats, actionType, (int)gc.screenState);
-                }
-                GameContext probe = gc;
-                a.execute(probe);
-                return g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
-                                                      (int)probe.screenState);
-            };
-            for (int i = 0; i < cr.size(); ++i)
-                oneplyScores.push_back(score(search::GameAction(RT::CARD, rIdx, i)));
-            oneplyScores.push_back(score(search::GameAction(RT::CARD, rIdx, 5)));
-        }
-
-        std::string line = "         draft options [skip if <" + std::to_string(g_cardSkipThresh) + "]: ";
-        int best = -1; double bestv = -1e18;
-        for (int i = 0; i < cr.size(); ++i) {
-            double m = i < (int)marg.size() ? marg[i] : 0.0;
-            if (m > bestv) { bestv = m; best = i; }
-            std::string nm = cr[i].getName(); if (cr[i].isUpgraded()) nm += "+";
-            char buf[64];
-            if (i < (int)nnScores.size()) {
-                std::snprintf(buf, sizeof(buf), "%s(V:%+.2f NN:%.3f)", nm.c_str(), m, nnScores[i]);
-                line += buf;
-                if (i < (int)oneplyScores.size())
-                    line += " 1ply:" + std::to_string(oneplyScores[i]);
-                line += "  ";
-            } else {
-                std::snprintf(buf, sizeof(buf), "%s(%+.2f)  ", nm.c_str(), m);
-                line += buf;
-            }
-        }
-        line += "-> V_rich picks ";
-        line += (bestv < g_cardSkipThresh) ? "SKIP" : (std::string)(cr[best].getName());
-        if (!nnScores.empty()) {
-            int nnBest = 0;
-            for (int i = 1; i < (int)nnScores.size(); ++i)
-                if (nnScores[i] > nnScores[nnBest]) nnBest = i;
-            line += "  NN: skip=" + std::to_string(nnScores.back()) + " picks ";
-            line += (nnBest < cr.size()) ? (std::string)(cr[nnBest].getName()) : "SKIP";
-            if (nnBest > 0 && nnBest != best) line += " [DISAGREE]";
-        }
-        std::printf("%s\n", line.c_str());
-    }
-}
-
-// Show NN scores for all legal OOC actions with action descriptions.
-static void tr_logOocActions(const char *label, GameContext &gc) {
-    if (!g_oocCheckpointNet.ok) return;
-    const std::vector<float> state = richFeatureVec(gc);
-    auto actions = search::GameAction::getAllActionsInState(gc);
-    if (actions.empty()) return;
-    double best = -1e100; int bestIdx = -1;
-    for (int i = 0; i < (int)actions.size(); ++i) {
-        double s = g_oocCheckpointNet.predict(state.data(), actions[i].bits, (int)gc.screenState, gc.act);
-        std::string desc;
-        if (gc.screenState == ScreenState::REST_ROOM) {
-            int idx = actions[i].getIdx1();
-            if (idx == 0) desc = "HEAL";
-            else if (idx == 1) {
-                int smithIdx = actions[i].getIdx2();
-                if (smithIdx >= 0 && smithIdx < (int)gc.deck.cards.size())
-                    desc = std::string("smith:") + gc.deck.cards[smithIdx].getName();
-                else desc = "smith";
-            } else if (idx == 2) desc = "DIG";
-            else if (idx == 3) desc = "LIFT";
-            else if (idx == 4) desc = "TOKE";
-            else desc = "rest#" + std::to_string(idx);
-        } else {
-            desc = "#" + std::to_string(i);
-        }
-        std::printf("         [NN %s] %s = %.3f\n", label, desc.c_str(), s);
-        if (s > best) { best = s; bestIdx = i; }
-    }
-    std::printf("         [NN %s] -> picks #%d (%.3f)\n", label, bestIdx, best);
-}
-
-// Refight the CURRENT battle K times from a copy of the pre-fight state. Each copy
-// gets a different run seed, which reseeds the battle RNG streams that
-// BattleContext::init derives from it, so draw order + enemy moves vary ->
-// separates a bad fight model from an unlucky single sample. Prints end-HP
-// distribution, death rate, potions used.
-static void tr_refight(const GameContext &gc, int sims, int K) {
-    std::vector<int> hp; int deaths = 0, potUsed = 0;
-    const int potBefore = gc.potionCount;
-    for (int k = 0; k < K; ++k) {
-        GameContext g2 = gc;
-        g2.seed = gc.seed * 2654435761u + k * 40503u + 1;
-        BattleContext bc;
-        search::ScumSearchAgent2 ag; ag.simulationCountBase = fightSims(gc, sims);
-        ag.rng = std::default_random_engine(gc.seed + 999u + k);
-        ag.playoutBattle(g2, bc);
-        bc.exitBattle(g2);
-        const bool died = g2.curHp <= 0 || g2.outcome == GameOutcome::PLAYER_LOSS;
-        if (died) ++deaths; hp.push_back(std::max(0, g2.curHp));
-        potUsed += potBefore - g2.potionCount;
-    }
-    std::sort(hp.begin(), hp.end());
-    double mean = 0; for (int h : hp) mean += h; mean /= std::max(1, (int)hp.size());
-    std::printf("         >> REFIGHT x%d: deaths %d/%d  endHP min %d / med %d / mean %.1f / max %d"
-                "  avg potions used %.2f (had %d)\n",
-                K, deaths, K, hp.front(), hp[hp.size()/2], mean, hp.back(),
-                (double)potUsed / std::max(1, K), potBefore);
-}
-
-static void runTraceRun(std::uint64_t seed, int sims, int asc) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    PathHistory path; t_curPath = &path;
-    t_tokCheckPending = g_oocStrategicTokCheck;
-
-    std::printf("=== RUN TRACE seed %llu  asc %d  sims %d%s ===\n",
-                (unsigned long long)seed, asc, sims, "  [fair-play]");
-    std::printf("!!! DIAGNOSTIC TRACE: does NOT exactly reproduce runFullRunOOC policy !!!\n");
-
-    const int refightFloor = std::getenv("STS_REFIGHT_FLOOR") ? std::atoi(std::getenv("STS_REFIGHT_FLOOR")) : -1;
-    const int refightN     = std::getenv("STS_REFIGHT_N")     ? std::atoi(std::getenv("STS_REFIGHT_N"))     : 20;
-    const int combatLogFloor = std::getenv("STS_COMBAT_LOG")  ? std::atoi(std::getenv("STS_COMBAT_LOG"))    : -1;
-    int clLastTurn = -1;
-    // Per-decision combat logger (via the g_onCombatDecision hook): one line per in-fight
-    // decision -> turn, energy, player HP/block/str/dex, each alive monster's HP/block/intent, hand.
-    auto combatLog = [&clLastTurn](const BattleContext &bc) {
-        if (bc.turn != clLastTurn) { std::printf("   --- Turn %d ---\n", bc.turn); clLastTurn = bc.turn; }
-        auto ps = [&](PlayerStatus s){ auto it = bc.player.statusMap.find(s); return it != bc.player.statusMap.end() ? (int)it->second : 0; };
-        std::string mon;
-        for (int i = 0; i < bc.monsters.monsterCount; ++i) {
-            const Monster &m = bc.monsters.arr[i];
-            if (m.curHp <= 0 || !m.isTargetable()) continue;
-            DamageInfo di = m.getMoveBaseDamage(bc);
-            std::string intent = monsterMoveStrings[(int)m.moveHistory[0]];
-            if (di.damage > 0) { intent += "(" + std::to_string(di.damage);
-                                 if (di.attackCount > 1) intent += "x" + std::to_string(di.attackCount);
-                                 intent += ")"; }
-            char buf[160];
-            std::snprintf(buf, sizeof(buf), "%s HP%d+%d[%s] ", m.getName(), m.curHp, m.block, intent.c_str());
-            mon += buf;
-        }
-        std::string hand;
-        for (int i = 0; i < bc.cards.cardsInHand; ++i) {
-            std::string n = bc.cards.hand[i].getName(); if (bc.cards.hand[i].isUpgraded()) n += "+";
-            hand += n; hand += " ";
-        }
-        std::printf("   [E%d] you HP%d+%dblk Str%d Dex%d Weak%d | %s| hand: %s\n",
-                    bc.player.energy, bc.player.curHp, bc.player.block,
-                    ps(PlayerStatus::STRENGTH), ps(PlayerStatus::DEXTERITY), ps(PlayerStatus::WEAK),
-                    mon.c_str(), hand.c_str());
-    };
-    bool nodeActive = false; std::string label, desc; int preHp = gc.curHp;
-    std::multiset<std::string> prevDeck = tr_deckMs(gc);
-
-    auto flush = [&]() {
-        if (!nodeActive) return;
-        auto curDeck = tr_deckMs(gc);
-        std::string delta = tr_deckDelta(prevDeck, curDeck);
-        std::printf("[F%-2d A%d] %-9s %-22s  HP %d/%d (%+d)  gold %d\n",
-                    gc.floorNum, gc.act, label.c_str(), desc.c_str(),
-                    gc.curHp, gc.maxHp, gc.curHp - preHp, gc.gold);
-        if (!delta.empty())          std::printf("         change: %s\n", delta.c_str());
-        std::printf("         deck(%d): %s\n", (int)gc.deck.size(), tr_deck(gc).c_str());
-        std::printf("         relics: %s\n", tr_relics(gc).c_str());
-        std::printf("         potions: %s\n", tr_potions(gc).c_str());
-        prevDeck = curDeck; preHp = gc.curHp; nodeActive = false; label.clear(); desc.clear();
-    };
-    auto roomName = [](Room r) -> const char * {
-        switch (r) { case Room::MONSTER: return "MONSTER"; case Room::ELITE: return "ELITE";
-            case Room::BOSS: case Room::BOSS_TREASURE: return "BOSS"; case Room::REST: return "REST";
-            case Room::SHOP: return "SHOP"; case Room::TREASURE: return "TREASURE";
-            case Room::EVENT: return "EVENT"; default: return "?"; }
-    };
-
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
-            agent.simulationCountBase = fightSims(gc, sims);
-            BattleContext bc;
-            flush();  // a battle always begins a fresh node (fixes forced rest/event -> boss merge)
-            nodeActive = true; label = roomName(gc.curRoom);
-            desc = sts::monsterEncounterStrings[(int)gc.info.encounter];
-            if (gc.floorNum == refightFloor) {
-                std::printf("[F%-2d A%d] %-9s %-22s  (pre-fight HP %d/%d)\n",
-                            gc.floorNum, gc.act, label.c_str(), desc.c_str(), gc.curHp, gc.maxHp);
-                tr_refight(gc, sims, refightN);
-            }
-            const bool doLog = gc.floorNum == combatLogFloor;
-            if (doLog) {
-                std::printf("[F%d A%d] === COMBAT LOG: %s (HP %d/%d) ===\n",
-                            gc.floorNum, gc.act, desc.c_str(), gc.curHp, gc.maxHp);
-                clLastTurn = -1; search::g_onCombatDecision = combatLog;
-            }
-            agent.playoutBattle(gc, bc);
-            if (doLog) { search::g_onCombatDecision = nullptr;
-                         std::printf("   === end combat: you HP%d, %s ===\n", bc.player.curHp,
-                                     bc.player.curHp > 0 ? "WON" : "DIED"); }
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            flush();
-            tr_logOocActions("map", gc);
-            if (!oocActionNNPolicy(gc))
-                if (!oocMapRouteSearchPolicy(gc, agent))
-                    if (!oocOnePlyMapPolicy(gc, agent))
-                        search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
-            if (!nodeActive) { flush(); nodeActive = true; label = "EVENT"; desc = tr_event(gc.curEvent); }
-            tr_logOocActions("event", gc);
-            if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyEventPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-        } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (!nodeActive) { flush(); nodeActive = true; label = "REST"; }
-            tr_logOocActions("rest", gc);
-            if (!oocActionNNPolicy(gc)) {
-                if (!oocOnePlyRestPolicy(gc, agent)) {
-                    if (g_restWin && one_combat::restWinPolicy(gc)) {}
-                    else agent.stepOutOfCombatPolicy(gc);
-                }
-            }
-        } else if (gc.screenState == ScreenState::TREASURE_ROOM) {
-            if (!nodeActive) { flush(); nodeActive = true; label = "TREASURE"; }
-            tr_logOocActions("treasure", gc);
-            if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyTreasurePolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            if (!nodeActive) { flush(); nodeActive = true; label = "SHOP"; }
-            tr_logOocActions("shop", gc);
-            if (!oocActionNNPolicy(gc))
-                if (!oocShopBeamPolicy(gc))
-                    if (!oocOnePlyShopPolicy(gc, agent)) one_combat::shopVPolicy(gc);
-        } else if (inRemoveSelect) {
-            if (!oocActionNNPolicy(gc))
-                if (!oocShopBeamPolicy(gc)) one_combat::removeSelectVPolicy(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            using RT = search::GameAction::RewardsActionType;
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else { tr_logDraft(gc); if (!oocActionNNPolicy(gc)) { if (!oocOnePlyCardRewardPolicy(gc, agent)) one_combat::serverCardRewardPolicy(gc); } }
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            tr_logOocActions("upgrade", gc);
-            if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) one_combat::upgradeSelectWinPolicy(gc);
-        } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
-            if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    flush();
-    std::printf("=== %s  final floor %d act %d  HP %d/%d ===\n",
-                gc.outcome == GameOutcome::PLAYER_VICTORY ? "VICTORY" : "DEATH",
-                gc.floorNum, gc.act, gc.curHp, gc.maxHp);
-}
 
 // Single-arm readout of the CURRENT BEST out-of-combat stack: native floor-V
 // card picks (skip@g_cardSkipThresh, default -0.5) + heuristic path + shop-V,
@@ -1714,30 +1249,23 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.pathMode = g_pathV ? "model-driven" : "heuristic";
         meta.shopBeam = g_oocShopBeam; meta.collectKeys = g_collectKeys;
         meta.fairPlay = true;
-        meta.silverSearchEnabled = search::silverLiveBackendInstalled();
+        // Native Silver is the only combat backend (ADR-0022); the vendored-era
+        // keys keep their schema with the native values.
+        meta.silverSearchEnabled = search::nativeSilverBackendInstalled();
         meta.stsSilverSearchEffective = meta.silverSearchEnabled;
-        meta.effectiveCombatBackend = meta.silverSearchEnabled ? "silver" : "native_searcher";
-        meta.silverReuseCapMode = meta.silverSearchEnabled ? search::silverLiveReuseCapMode() : "";
-        meta.silverReuseCap = meta.silverSearchEnabled ? search::silverLiveReuseCap() : 0;
-        meta.silverUpstreamSha = meta.silverSearchEnabled
-            ? "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff" : "";
+        meta.effectiveCombatBackend = "native_silver";
+        meta.silverReuseCapMode = "allocated";
+        meta.silverReuseCap = search::nativeSilverReuseCap();
+        meta.silverUpstreamSha = "";
         meta.executableGitSha = trainingExecutableGitSha();
-        meta.silverScalingDiagnosticFile = meta.silverSearchEnabled
-            ? search::silverLiveScalingDiagnosticFile() : "";
-        meta.silverStickyQualityFile = meta.silverSearchEnabled
-            ? search::silverLiveStickyQualityFile() : "";
-        meta.silverAdaptiveEnabled = meta.silverSearchEnabled
-            && search::silverLiveAdaptiveEnabled();
-        meta.silverAdaptiveRetainedOnly = meta.silverSearchEnabled
-            && search::silverLiveAdaptiveRetainedOnly();
-        meta.silverAdaptiveTopShare = meta.silverSearchEnabled
-            ? search::silverLiveAdaptiveTopTwoVisitGapThreshold() : 0.0;
-        meta.silverExactRootBudgets = meta.silverSearchEnabled
-            && search::silverLiveExactRootBudgets();
-        meta.silverExactVisitLock = meta.silverSearchEnabled
-            && search::silverLiveExactVisitLockEnabled();
-        meta.silverRhoRacing = meta.silverSearchEnabled
-            && search::silverLiveRhoRacingEnabled();
+        meta.silverScalingDiagnosticFile = "";
+        meta.silverStickyQualityFile = "";
+        meta.silverAdaptiveEnabled = search::nativeSilverAdaptiveEnabled();
+        meta.silverAdaptiveRetainedOnly = meta.silverAdaptiveEnabled;
+        meta.silverAdaptiveTopShare = meta.silverAdaptiveEnabled ? search::nativeSilverAdaptiveTopGap() : 0.0;
+        meta.silverExactRootBudgets = search::nativeSilverExactRootBudgets();
+        meta.silverExactVisitLock = false;
+        meta.silverRhoRacing = false;
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -1881,67 +1409,10 @@ TokState buildTokState(const GameContext &gc, const PathHistory &path) {
 // used for action selection is the same 10*P(win)+expected HP objective used
 // by the offline transfer check.
 
-struct OocCounterfactualResult {
-    double won;
-    double floor;
-    double hp;
-    int bootstrapped = 0;   // 1 when floor/won came from the native models, 0 on terminal
-    bool valid = true;
-    bool survivedH = false; // alive at the requested bounded horizon (diagnostic only)
-};
 
-struct OocPrefixCheckpoint {
-    int prefixFight = 0;
-    bool survived = false;
-    double continuationValue = 0.0;
-    double floorValue = 0.0;
-    double hp = 0.0;
-    double qProduct = 0.0;
-    double denseValue = 0.0;
-    std::uint64_t silverSimulations = 0;
-    std::uint64_t combatDecisions = 0;
-    double cpuMs = 0.0;
-    double wallMs = 0.0;
-    bool valid = false;
-};
 
-struct OocContinuationCost {
-    std::uint64_t silverSimulations = 0;
-    std::uint64_t combatDecisions = 0;
-    std::uint64_t transactionSubdecisions = 0;
-    std::uint64_t transactionDecisions = 0;
-    double cpuMs = 0.0;
-    double wallMs = 0.0;
-};
 
-using OocPrefixObserver = std::function<void(const GameContext &, int,
-                                               const OocContinuationCost &)>;
 
-static void stepFrozenV4Ooc(GameContext &, search::ScumSearchAgent2 &);
-
-// Direct near-term survival supervision for out-of-combat action values.  These
-// are deliberately *outcomes of the real counterfactual continuation*, rather
-// than a hand-authored encounter tier.  `passed` means that the branch both
-// reached and won the target fight; an elite can remain unseen when the chosen
-// route avoids all remaining elites, while the next battle and current-act boss
-// are normally mandatory unless the branch dies first.
-struct FutureFightProbe {
-    bool nextCombatSeen = false, nextCombatPassed = false;
-    bool nextEliteSeen = false, nextElitePassed = false;
-    bool nextBossSeen = false, nextBossPassed = false;
-    bool completed = false;  // false only when a bounded rollout was censored
-    struct Observation {
-        Room room = Room::INVALID;
-        MonsterEncounter encounter = MonsterEncounter::INVALID;
-        int floor = 0;
-        int hp = 0;
-        int maxHp = 1;
-        bool passed = false;
-    };
-    // One record for each fight actually reached.  Across encounter-queue
-    // samples, reaching a record is precisely its estimated occurrence chance.
-    std::vector<Observation> fights;
-};
 
 struct PredictedCheckpointFight {
     double winProbability = 0.0;
@@ -1968,32 +1439,19 @@ static void nonMinionMonsterHpTotals(const BattleContext &bc, int &curHpTotal, i
 // Shared V1 labels: persistent pre-init features and terminal pre-exit outcome.
 // Ambiguous Awakened One deaths retain V1's validity mask; loss-severity
 // consumers must exclude progressAmbiguous, as the existing trainer does.
-static std::string csvQuote(const std::string &s);
-struct CombatEvalLabel {
-    bool decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid;
-    double terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome;
-    int enemyCurHp, enemyMaxHp;
-    const char *reason;
-    void write(std::ostream &out) const {
-        out << won << ',' << trueDeath << ',' << escaped << ',' << turnCapLoss << ','
-            << progressAmbiguous << ',' << labelValid << ',' << terminalHp << ',' << terminalMaxHp << ','
-            << enemyCurHp << ',' << enemyMaxHp << ',' << winHpFrac << ',' << lossRemainingFrac << ','
-            << signedOutcome << ',' << csvQuote(reason);
-    }
-};
-static const char *combatEvalLabelHeader() {
+const char *combatEvalLabelHeader() {
     return "won,trueDeath,escaped,turnCapLoss,progressAmbiguous,labelValid,terminalCombatHp,terminalCombatMaxHp,terminalNonMinionCurHp,terminalNonMinionMaxHp,winHpFrac,lossRemainingFrac,signedOutcome,quarantineReason";
 }
-static bool combatEvalEncounterValid(MonsterEncounter encounter) {
+bool combatEvalEncounterValid(MonsterEncounter encounter) {
     const int index = static_cast<int>(encounter);
     return index >= 0 && index < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
 }
-static const char *combatEvalRoomClass(Room room) {
+const char *combatEvalRoomClass(Room room) {
     return room == Room::MONSTER ? "NORMAL" : room == Room::ELITE ? "ELITE" : room == Room::BOSS ? "BOSS" : "OTHER";
 }
-static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncounter encounter,
+CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncounter encounter,
                                          int hooks, int healthBefore, int healthAfter,
-                                         bool allowInitializationTerminal = false) {
+                                         bool allowInitializationTerminal) {
     constexpr double eps = 1e-3;
     const bool representableEncounter = combatEvalEncounterValid(encounter);
     bool decided = bc.outcome != Outcome::UNDECIDED;
@@ -2028,46 +1486,22 @@ static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncoun
     return {decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid,
             terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome, enemyCurHp, enemyMaxHp, reason};
 }
-struct CombatEvalFight {
-    int act, floor;
-    Room room;
-    MonsterEncounter encounter;
-    std::string features;
-    CombatEvalLabel label{};
-};
-// Compose with the existing observer and restore even if the backend throws.
-struct CombatEvalDecisionScope {
-    decltype(search::g_onCombatDecision) previous;
-    int hooks = 0;
-    explicit CombatEvalDecisionScope(bool enabled) : enabled(enabled) {
-        if (enabled) {
-            previous = std::move(search::g_onCombatDecision);
-            search::g_onCombatDecision = [this](const BattleContext &bc) {
-                ++hooks;
-                if (previous) previous(bc);
-            };
-        }
-    }
-    ~CombatEvalDecisionScope() { if (enabled) search::g_onCombatDecision = std::move(previous); }
-private:
-    bool enabled;
-};
 
 // Continue a copied run after any out-of-combat counterfactual action. Every
 // branch in one decision uses the same agent seed and copied GameContext RNG
 // state (common random numbers).  maxFights < 0 means finish the whole run.  A
 // bounded branch resolves rewards/path choices after its last fight, stops at
 // the next battle, then bootstraps expected final floor and P(win).
-static OocCounterfactualResult
+OocCounterfactualResult
 finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
-                        PathHistory path, int maxFights = -1, bool bootstrap = false,
-                        FutureFightProbe *probe = nullptr, int stopAfterAct = 0,
-                        const std::vector<int> *fightSimsSeq = nullptr,
-                        bool usePredict = false,
-                        const OocPrefixObserver *prefixObserver = nullptr,
-                        OocContinuationCost *finalCost = nullptr,
-                        bool useFrozenV4 = false,
-                        std::vector<CombatEvalFight> *combatCapture = nullptr) {
+                        PathHistory path, int maxFights, bool bootstrap,
+                        FutureFightProbe *probe, int stopAfterAct,
+                        const std::vector<int> *fightSimsSeq,
+                        bool usePredict,
+                        const OocPrefixObserver *prefixObserver,
+                        OocContinuationCost *finalCost,
+                        bool useFrozenV4,
+                        std::vector<CombatEvalFight> *combatCapture) {
     using RT = search::GameAction::RewardsActionType;
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
@@ -2134,9 +1568,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                 }
                 continuationCost.silverSimulations += static_cast<std::uint64_t>(
                     std::max<std::int64_t>(0, agent.simulationCountTotal - simulationsBefore));
-                continuationCost.combatDecisions += search::g_silverLiveDiagnostics.decisions;
-                continuationCost.transactionSubdecisions += search::g_silverLiveDiagnostics.transactionSubdecisions;
-                continuationCost.transactionDecisions += search::g_silverLiveDiagnostics.transactionDecisions;
+                continuationCost.combatDecisions += static_cast<std::uint64_t>(
+                    search::g_nativeSilverCombatStats.decisions);
                 passed = bc.outcome == Outcome::PLAYER_VICTORY;
                 endHp = passed ? gc.curHp : 0;
                 endMaxHp = gc.maxHp;
@@ -2234,7 +1667,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
 // GameContext normally shares its Map through a shared_ptr. A counterfactual may
 // reach the next act and regenerate that map; detach it so speculative branches
 // cannot overwrite the live run's current-act map.
-static GameContext detachedCounterfactualCopy(const GameContext &gc) {
+GameContext detachedCounterfactualCopy(const GameContext &gc) {
     GameContext copy = gc;
     if (gc.map) copy.map = std::make_shared<Map>(*gc.map);
     return copy;
@@ -2264,7 +1697,7 @@ static MonsterEncounter sampleEncounterWeighted(const MonsterEncounter *pool,
 // the player, so every candidate must evaluate the known gc.boss.  Map layout
 // and all non-combat RNG stay fixed so alternatives differ principally in
 // combat fit.
-static void resampleRemainingActEncounters(GameContext &gc, std::uint64_t branchSeed) {
+void resampleRemainingActEncounters(GameContext &gc, std::uint64_t branchSeed) {
     const int actIdx = std::max(0, std::min(2, gc.act - 1));
     Random rng(branchSeed);
     const int weakCount = gc.act == 1 ? 3 : 2;
@@ -2436,16 +1869,12 @@ bool actFightProbeDraftPolicy(GameContext &gc) {
     return true;
 }
 
-struct EncounterOption {
-    MonsterEncounter encounter = MonsterEncounter::INVALID;
-    double probability = 0.0;
-};
 
 // Conditional enemy pools at a concrete combat checkpoint. Normal and elite
 // entries retain the game's no-repeat constraints; event fights are fixed by
 // their event option. This gives a probability distribution without a hand-made
 // difficulty tier.
-static std::vector<EncounterOption> possibleEncounterOptions(const GameContext &gc) {
+std::vector<EncounterOption> possibleEncounterOptions(const GameContext &gc) {
     std::vector<EncounterOption> out;
     const int actIdx = std::max(0, std::min(2, gc.act - 1));
     if (gc.curRoom == Room::MONSTER) {
@@ -2719,7 +2148,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
     return utility;
 }
 
-static std::string csvQuote(const std::string &s) {
+std::string csvQuote(const std::string &s) {
     std::string out = "\"";
     for (const char c : s) {
         if (c == '\"') out += "\"\"";
@@ -2728,7 +2157,7 @@ static std::string csvQuote(const std::string &s) {
     return out + "\"";
 }
 
-static std::string actionDescription(const search::GameAction &action, const GameContext &gc) {
+std::string actionDescription(const search::GameAction &action, const GameContext &gc) {
     std::ostringstream out;
     action.printDesc(out, gc);
     // A few event actions have no human-readable printer; retain their stable
@@ -2736,7 +2165,7 @@ static std::string actionDescription(const search::GameAction &action, const Gam
     return out.str().empty() ? "bits=" + std::to_string(action.bits) : out.str();
 }
 
-static std::string joinLegalActions(const std::vector<search::GameAction> &actions,
+std::string joinLegalActions(const std::vector<search::GameAction> &actions,
                                     const GameContext &gc) {
     std::ostringstream out;
     for (int i = 0; i < (int)actions.size(); ++i) {
@@ -2744,246 +2173,6 @@ static std::string joinLegalActions(const std::vector<search::GameAction> &actio
         out << i << ':' << actionDescription(actions[i], gc);
     }
     return out.str();
-}
-
-// Paired OOC supervision at the next real combat.  Unlike the all-act future
-// evaluator, this deliberately stops each counterfactual branch at its first
-// battle.  The branch then has two labels: what the ordinary baseline does
-// against the concrete encounter, and the weighted result of fighting every
-// encounter still possible at that checkpoint.
-static std::string oocNextCombatHeader() {
-    return "seed,decisionIdx,actionIdx,actionBits,action,legalActions,screen,act,floor,futures,"
-           "actualWin,actualHp,allEncounterWin,allEncounterHp,encounterLabels,stateFeatures";
-}
-
-struct EncounterLabel {
-    double probability = 0.0;
-    double weightedWin = 0.0;
-    double weightedHp = 0.0;
-};
-
-struct NextCombatLabel {
-    double actualWin = 0.0, actualHp = 0.0;
-    double allWin = 0.0, allHp = 0.0;
-    int seen = 0;
-    std::map<int, EncounterLabel> encounterLabels;
-};
-
-static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agentSeed,
-                                   PathHistory path, std::ostringstream *failureTrace=nullptr) {
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(agentSeed);
-    t_curPath = &path;
-    using RT = search::GameAction::RewardsActionType;
-    for (int steps = 0; steps < 180 && gc.outcome == GameOutcome::UNDECIDED; ++steps) {
-        path.update(gc);
-        const int beforeScreen=(int)gc.screenState,beforeEvent=(int)gc.curEvent,beforeHp=gc.curHp;
-        std::uint32_t executed=UINT32_MAX;
-        if(failureTrace)search::g_onGameActionExecute=[&](std::uint32_t bits,const GameContext*target){if(target==&gc&&executed==UINT32_MAX)executed=bits;};
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
-            if(failureTrace)search::g_onGameActionExecute={};
-            t_curPath = nullptr;
-            return true;
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else                            one_combat::serverCardRewardPolicy(gc);
-        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            one_combat::shopVPolicy(gc);
-        } else if (inRemoveSelect) {
-            one_combat::removeSelectVPolicy(gc);
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // handled by the deployed rest policy
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-        if(failureTrace){search::g_onGameActionExecute={};*failureTrace<<" step="<<steps<<":screen="<<beforeScreen<<",event="<<beforeEvent<<",actionBits="<<executed<<",hp="<<beforeHp<<">"<<gc.curHp<<",finalScreen="<<(int)gc.screenState<<",outcome="<<(int)gc.outcome;}
-    }
-    if(failureTrace)search::g_onGameActionExecute={};
-    t_curPath = nullptr;
-    return false;
-}
-
-static NextCombatLabel labelNextCombat(GameContext branch, int branchSims,
-                                       std::uint64_t agentSeed) {
-    NextCombatLabel label;
-    PathHistory emptyPath;
-    if (!advanceOocToNextBattle(branch, branchSims, agentSeed, emptyPath)) return label;
-    label.seen = 1;
-    const auto options = possibleEncounterOptions(branch);
-    double weight = 0.0;
-    for (int i = 0; i < (int)options.size(); ++i) {
-        GameContext local = detachedCounterfactualCopy(branch);
-        search::ScumSearchAgent2 fightAgent;
-        fightAgent.simulationCountBase = fightSims(local, branchSims);
-        fightAgent.rng = std::default_random_engine(
-            agentSeed ^ (0xd6e8feb86659fd93ULL * (std::uint64_t)(i + 1)));
-        local.info.encounter = options[i].encounter;
-        BattleContext bc{};
-        fightAgent.playoutBattle(local, bc);
-        bc.exitBattle(local);
-        const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
-        const double hp = won ? local.curHp : 0.0;
-        const double p = options[i].probability;
-        label.allWin += p * (won ? 1.0 : 0.0);
-        label.allHp += p * hp;
-        weight += p;
-        auto &el = label.encounterLabels[(int)options[i].encounter];
-        el.probability += p;
-        el.weightedWin += p * (won ? 1.0 : 0.0);
-        el.weightedHp += p * hp;
-    }
-    if (weight > 0.0) {
-        label.allWin /= weight;
-        label.allHp /= weight;
-    }
-
-    // Concrete-encounter label from the ordinary baseline continuation.  This
-    // is intentionally separate from the encounter-distribution label above.
-    GameContext actual = detachedCounterfactualCopy(branch);
-    search::ScumSearchAgent2 actualAgent;
-    actualAgent.simulationCountBase = fightSims(actual, branchSims);
-    actualAgent.rng = std::default_random_engine(agentSeed ^ 0xa0761d6478bd642fULL);
-    BattleContext actualBattle{};
-    actualAgent.playoutBattle(actual, actualBattle);
-    actualBattle.exitBattle(actual);
-    label.actualWin = actualBattle.outcome == Outcome::PLAYER_VICTORY ? 1.0 : 0.0;
-    label.actualHp = label.actualWin ? actual.curHp : 0.0;
-    return label;
-}
-
-static std::string runOocNextCombatSeed(std::uint64_t seed, int outerSims, int asc,
-                                         int branchSims, int futures) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = outerSims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine reservoir(seed * 2862933555777941757ULL + 97);
-    PathHistory path;
-    t_curPath = &path;
-    std::unique_ptr<GameContext> sampled;
-    PathHistory sampledPath;
-    std::vector<search::GameAction> sampledActions;
-    int sampledDecision = -1;
-    int eligible = 0, decisionIdx = 0;
-    int fightsLost = 0, fightsTotal = 0;
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc{};
-            agent.playoutBattle(gc, bc);
-            ++fightsTotal;
-            if (bc.outcome == Outcome::PLAYER_LOSS) ++fightsLost;
-            bc.exitBattle(gc);
-        } else {
-            const auto actions = search::GameAction::getAllActionsInState(gc);
-            if (actions.size() >= 2) {
-                ++eligible;
-                if (std::uniform_int_distribution<int>(1, eligible)(reservoir) == 1) {
-                    sampled = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
-                    sampledPath = path;
-                    sampledActions = actions;
-                    sampledDecision = decisionIdx;
-                }
-                ++decisionIdx;
-            }
-            if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14)
-                search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-            else if (gc.screenState == ScreenState::REWARDS) {
-                auto &r = gc.info.rewardsContainer;
-                if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-                else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-                else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-                else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-                else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-                else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-                else                            one_combat::serverCardRewardPolicy(gc);
-            } else if (gc.screenState == ScreenState::SHOP_ROOM) one_combat::shopVPolicy(gc);
-            else if (inRemoveSelect) one_combat::removeSelectVPolicy(gc);
-            else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {}
-            else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                     && gc.info.selectScreenType == CardSelectScreenType::UPGRADE)
-                one_combat::upgradeSelectWinPolicy(gc);
-            else agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    std::ostringstream out;
-    if (sampled) {
-        const std::string state = richRow(*sampled, sampledPath);
-        const std::string legal = joinLegalActions(sampledActions, *sampled);
-        const int nf = std::max(1, futures);
-        for (int a = 0; a < (int)sampledActions.size(); ++a) {
-            NextCombatLabel total;
-            for (int f = 0; f < nf; ++f) {
-                GameContext branch = detachedCounterfactualCopy(*sampled);
-                sampledActions[a].execute(branch);
-                const auto label = labelNextCombat(
-                    std::move(branch), branchSims,
-                    seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1))
-                         ^ (0xbf58476d1ce4e5b9ULL * (std::uint64_t)(sampledDecision + 31)));
-                total.seen += label.seen;
-                total.actualWin += label.actualWin;
-                total.actualHp += label.actualHp;
-                total.allWin += label.allWin;
-                total.allHp += label.allHp;
-                for (const auto &[encounter, el] : label.encounterLabels) {
-                    auto &dst = total.encounterLabels[encounter];
-                    dst.probability += el.probability;
-                    dst.weightedWin += el.weightedWin;
-                    dst.weightedHp += el.weightedHp;
-                }
-            }
-            std::ostringstream encounterLabels;
-            for (const auto &[encounter, el] : total.encounterLabels) {
-                if (encounterLabels.tellp() > 0) encounterLabels << '|';
-                const double prob = el.probability / nf;
-                const double win = el.probability > 0.0 ? el.weightedWin / el.probability : 0.0;
-                const double hp = el.probability > 0.0 ? el.weightedHp / el.probability : 0.0;
-                encounterLabels << encounter << ':' << prob << ':' << win << ':' << hp;
-            }
-            out << seed << ',' << sampledDecision << ',' << a << ',' << sampledActions[a].bits
-                << ',' << csvQuote(actionDescription(sampledActions[a], *sampled)) << ','
-                << csvQuote(legal) << ',' << (int)sampled->screenState << ',' << sampled->act << ','
-                << sampled->floorNum << ',' << nf << ',' << total.actualWin/nf << ','
-                << total.actualHp/nf << ',' << total.allWin/nf << ',' << total.allHp/nf << ','
-                << csvQuote(encounterLabels.str()) << ','
-                << csvQuote(state) << '\n';
-        }
-    }
-    t_curPath = nullptr;
-    return out.str();
-}
-
-static void oocNextCombatGen(int nSeeds, int outerSims, int asc, const std::string &outfile,
-                             std::uint64_t seedOffset, int branchSims, int futures) {
-    std::ofstream out(outfile, seedOffset > 0 ? std::ios::app : std::ios::out);
-    if (out.tellp() == 0) { out << oocNextCombatHeader() << '\n'; out.flush(); }
-    std::cout << "oocnextgen seeds " << seedOffset << ".." << seedOffset+nSeeds-1
-              << " outerSims " << outerSims << " branchSims " << branchSims
-              << " futures " << futures << " -> " << outfile << '\n';
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::string rows = runOocNextCombatSeed(seedOffset+s, outerSims, asc,
-                                                       branchSims, futures);
-        #pragma omp critical(ooc_next_write)
-        { out << rows; out.flush(); }
-    }
 }
 
 static std::string serializeFightComponents(const std::vector<std::vector<CheckpointFightComponent>> &all) {
@@ -3166,1268 +2355,6 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// PAIRED PATH COUNTERFACTUALS: uniformly reservoir-sample one genuine branching
-// map decision from each source run, then finish every legal child from the
-// identical parent state with common agent/game RNG. This supplies direct route
-// action values rather than trying to infer causal alternatives from trajectory
-// state values generated by the heuristic policy.
-static std::string pathCounterfactualHeader() {
-    return "seed,decisionIdx,actionIdx,candidateX,heuristicX," + richStateHeader()
-         + ",branchWon,branchFloor,branchHp";
-}
-
-static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, int asc,
-                                             int branchSims, int futures, std::uint64_t futureSalt) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = outerSims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine reservoir(seed * 2862933555777941757ULL + 17);
-    PathHistory path;
-    t_curPath = &path;
-
-    std::unique_ptr<GameContext> sampled;
-    PathHistory sampledPath;
-    std::vector<int> sampledCandidates;
-    int sampledDecision = -1, sampledHeuristic = -1;
-    int eligible = 0, decisionIdx = 0;
-    using RT = search::GameAction::RewardsActionType;
-
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; agent.playoutBattle(gc, bc); bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            std::vector<int> candidates;
-            if (gc.curMapNodeY < 0) {
-                for (const MapNode &node : gc.map->nodes[0]) if (node.edgeCount > 0) candidates.push_back(node.x);
-            } else {
-                const MapNode &node = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
-                for (int i = 0; i < node.edgeCount; ++i) candidates.push_back(node.edges[i]);
-            }
-            const int heuristic = one_combat::chooseMapAction(gc);
-            if (candidates.size() >= 2) {
-                ++eligible;
-                if (std::uniform_int_distribution<int>(1, eligible)(reservoir) == 1) {
-                    sampled = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
-                    sampledPath = path;
-                    sampledCandidates = candidates;
-                    sampledDecision = decisionIdx;
-                    sampledHeuristic = heuristic;
-                }
-                ++decisionIdx;
-            }
-            search::GameAction(heuristic).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else one_combat::serverCardRewardPolicy(gc);
-        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            one_combat::shopVPolicy(gc);
-        } else if (inRemoveSelect) {
-            one_combat::removeSelectVPolicy(gc);
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // current deployed survival-shaped rest policy
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-
-    std::ostringstream out;
-    if (sampled) {
-        const int na = static_cast<int>(sampledCandidates.size());
-        std::vector<double> bw(na, 0.0), bf(na, 0.0), bh(na, 0.0);
-        const int nf = std::max(1, futures);
-        std::vector<int> validFutures(na, 0);
-        for (int f = 0; f < nf; ++f) {
-            const std::uint64_t futureSeed = seed
-                ^ (0xa24baed4963ee407ULL * static_cast<std::uint64_t>(sampledDecision * nf + f + 1))
-                ^ (0x9e3779b97f4a7c15ULL * futureSalt);
-            for (int a = 0; a < na; ++a) {
-                GameContext branch = detachedCounterfactualCopy(*sampled);
-                search::GameAction(sampledCandidates[a]).execute(branch);
-                const OocCounterfactualResult result = finishOocCounterfactual(
-                    branch, branchSims, futureSeed, sampledPath, -1, false);
-                if (!result.valid) {
-                    ++g_trainingInvalidBranches;
-                    continue;
-                }
-                bw[a] += result.won; bf[a] += result.floor; bh[a] += result.hp;
-                ++validFutures[a];
-            }
-        }
-        t_curPath = &sampledPath;
-        const std::string state = richRow(*sampled, sampledPath);
-        for (int a = 0; a < na; ++a) {
-            if (!search::hasCompleteCounterfactualFutureSet(validFutures[a], nf, nf)) continue;
-            out << seed << ',' << sampledDecision << ',' << a << ',' << sampledCandidates[a] << ','
-                << sampledHeuristic << ',' << state << ',' << bw[a]/nf << ',' << bf[a]/nf << ','
-                << bh[a]/nf << '\n';
-        }
-    }
-    t_curPath = nullptr;
-    return out.str();
-}
-
-static void pathCounterfactualGen(int nSeeds, int outerSims, int asc, const std::string &outfile,
-                                  std::uint64_t seedOffset, int branchSims, int futures,
-                                  std::uint64_t futureSalt = 0) {
-    std::ofstream out(outfile, seedOffset > 0 ? std::ios::app : std::ios::out);
-    if (out.tellp() == 0) { out << pathCounterfactualHeader() << '\n'; out.flush(); }
-    std::cout << "pathcfgen seeds " << seedOffset << ".." << seedOffset+nSeeds-1
-              << " outerSims " << outerSims << " branchSims " << branchSims
-              << " futures " << futures << " futureSalt " << futureSalt
-              << " threads " << numThreads() << " -> " << outfile << '\n';
-    auto start = std::chrono::steady_clock::now();
-    long long rows = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runPathCounterfactualSeed(seedOffset+s, outerSims, asc,
-                                                                branchSims, futures, futureSalt);
-        #pragma omp critical(path_cf_write)
-        {
-            out << generated; out.flush();
-            rows += std::count(generated.begin(), generated.end(), '\n');
-            ++done;
-            if (done % 25 == 0 || done == nSeeds) {
-                const double elapsed = std::chrono::duration<double>(
-                    std::chrono::steady_clock::now()-start).count();
-                std::printf("  %d/%d runs, %lld action rows, %.0fs (%.2fs/run)\n",
-                            done, nSeeds, rows, elapsed, elapsed/done);
-                std::fflush(stdout);
-            }
-        }
-    }
-}
-
-static bool genuineRestVsSmith(const GameContext &gc) {
-    return !gc.hasRelic(RelicId::COFFEE_DRIPPER)
-        && !gc.relics.has(RelicId::FUSION_HAMMER)
-        && gc.deck.getUpgradeableCount() > 0;
-}
-
-// ---------------------------------------------------------------------------
-// E2c producer orchestration stays in the driver; capture state and validation
-// implementation live in one_combat/e2c_capture.
-static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
-                   long long seedOffset = 0) {
-    trainingCampaignStart();
-    one_combat::resetE2cAccounting();
-    const bool append = seedOffset > 0;
-    std::cout << "e2cgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc
-              << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << outfile << "\n";
-    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) { f << one_combat::e2cHeader(); f.flush(); }
-    auto t0 = std::chrono::steady_clock::now();
-    long long rowCount = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, true, /*e2cCapture=*/true);
-        std::string rows = one_combat::takeE2cRows();
-        #pragma omp critical(e2c_write)
-        {
-            f << rows; f.flush();
-            rowCount += std::count(rows.begin(), rows.end(), '\n');
-            if (++done % 100 == 0 || done == nSeeds) {
-                const double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld rows, %.0fs (%.2fs/run)\n", done, nSeeds, rowCount, el, el / done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld E2c rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
-    std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d "
-                "branches=%d health_failures=%d rows=%lld output=%s\n",
-                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), rowCount, outfile.c_str());
-    const auto accounting = one_combat::e2cAccounting();
-    for (int i = 0; i < 3; ++i)
-        std::printf("e2c accounting room=%s eligible=%lld raw=%lld post=%lld pairs=%lld raw_only=%lld post_only=%lld\n",
-                    i == 0 ? "MONSTER" : i == 1 ? "ELITE" : "BOSS",
-                    accounting.counts[i][0], accounting.counts[i][1], accounting.counts[i][2],
-                    accounting.counts[i][3], accounting.counts[i][4], accounting.counts[i][5]);
-    writeTrainingProvenance(outfile, "e2cgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc);
-    std::ofstream schema(outfile + ".schema.json");
-    if (schema)
-        schema << "{\n  \"schema_version\": \"e2c-v2\",\n"
-               << "  \"raw_primary_retains_incomplete_pairs\": true,\n"
-               << "  \"matched_arms_require_complete_raw_post_pairs\": true\n}\n";
-}
-
-static std::string restCounterfactualHeader() {
-    return "seed,restIdx," + richStateHeader()
-         + ",restWon,restFloor,restHp,smithWon,smithFloor,smithHp";
-}
-
-static std::string cardCounterfactualHeader() {
-    return "seed,decisionIdx,actionIdx,candidateId,candidateUpgraded," + richStateHeader()
-         + ",branchFutures,branchWon,branchFloor,branchHp"
-         + ",branchNextCombatSeen,branchNextCombatPassed"
-         + ",branchNextEliteSeen,branchNextElitePassed"
-         + ",branchNextBossSeen,branchNextBossPassed,branchFutureComplete";
-}
-
-struct DataGen2Rows {
-    std::string meta;
-    std::string rest;
-    std::string card;
-};
-
-static DataGen2Rows
-runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
-                int restCfSims = 0, int restCfFutures = 1, int restCfStride = 1,
-                int cardCfSims = 0, int cardCfFights = 3, int cardCfFutures = 1,
-                int cardCfStride = 1, int cardCfMaxPerRun = 0,
-                std::uint64_t cardCfFutureSalt = 0, int cardCfAdaptiveMaxFutures = 0,
-                double cardCfAdaptiveGap = 5.0) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-
-    PathHistory path;
-    t_curPath = &path;
-    std::vector<std::string> rows;
-    std::vector<std::string> restRows;
-    std::vector<std::string> cardRows;
-    int restIdx = 0;
-    int cardDecisionIdx = 0, cardCollected = 0;
-    using RT = search::GameAction::RewardsActionType;
-    // Data is generated with the CURRENT BEST play policy (server card picks
-    // skip@g_cardSkipThresh + heuristic path + shop-V), so labels & the state
-    // distribution match how we actually play. eps-greedy random card picks keep
-    // deck coverage broad. Requires v_server.py running.
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; agent.playoutBattle(gc, bc); bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                rows.push_back(richRow(gc, path));                 // comprehensive snapshot
-                // Softmax-sample each card reward by its V-marginal (temp g_dgTemp)
-                // + uniform floor `epsilon`: data spreads over good-but-varied play
-                // while every card still gets sampled sometimes (unbiased coverage).
-                while (r.cardRewardCount > 0) {
-                    const int rIdx = r.cardRewardCount - 1;
-                    const int nc = r.cardRewards[rIdx].size();
-
-                    // Direct action labels: from the identical pre-choice state,
-                    // finish the run after every offered card and after skip.  A
-                    // deterministic hash samples decision positions uniformly;
-                    // the per-run cap prevents one long run from dominating cost.
-                    const int stride = std::max(1, cardCfStride);
-                    const bool sampleCardCf = cardCfSims > 0 && cardCfMaxPerRun > 0
-                        && cardCollected < cardCfMaxPerRun
-                        && ((seed * 11400714819323198485ULL
-                             + (std::uint64_t)cardDecisionIdx * 0x9e3779b97f4a7c15ULL)
-                            % (std::uint64_t)stride) == 0;
-                    if (sampleCardCf) {
-                        const int na = nc + 1;                 // offered cards + skip
-                        std::vector<double> bw(na, 0.0), bf(na, 0.0), bh(na, 0.0);
-                        std::vector<double> ncs(na, 0.0), ncp(na, 0.0);
-                        std::vector<double> nes(na, 0.0), nep(na, 0.0);
-                        std::vector<double> nbs(na, 0.0), nbp(na, 0.0), nfc(na, 0.0);
-                        const int futures = std::max(1, cardCfFutures);
-                        const int maxFutures = std::max(futures, cardCfAdaptiveMaxFutures);
-                        int usedFutures = 0;
-                        bool cardCfInvalid = false;
-                        for (int f = 0; f < maxFutures; ++f) {
-                            const std::uint64_t futureSeed = seed
-                                ^ (0xd1b54a32d192ed03ULL
-                                   * (std::uint64_t)(cardDecisionIdx * futures + f + 1))
-                                ^ (0x9e3779b97f4a7c15ULL * cardCfFutureSalt);
-                            for (int a = 0; a < na; ++a) {
-                                const int choice = a < nc ? a : 5;
-                                GameContext branch = detachedCounterfactualCopy(gc);
-                                search::GameAction(RT::CARD, rIdx, choice).execute(branch);
-                                FutureFightProbe probe;
-                                OocCounterfactualResult br = finishOocCounterfactual(
-                                    branch, cardCfSims, futureSeed, path,
-                                    std::max(1, cardCfFights), true, &probe);
-                                t_curPath = &path;
-                                if (!br.valid) {
-                                    ++g_trainingInvalidBranches;
-                                    cardCfInvalid = true;
-                                    break;
-                                }
-                                bw[a] += br.won;
-                                bf[a] += br.floor;
-                                bh[a] += br.hp;
-                                ncs[a] += probe.nextCombatSeen;
-                                ncp[a] += probe.nextCombatPassed;
-                                nes[a] += probe.nextEliteSeen;
-                                nep[a] += probe.nextElitePassed;
-                                nbs[a] += probe.nextBossSeen;
-                                nbp[a] += probe.nextBossPassed;
-                                nfc[a] += probe.completed;
-                            }
-                            if (cardCfInvalid) break;
-                            usedFutures = f + 1;
-                            if (usedFutures >= futures) {
-                                std::vector<double> runningScore(na);
-                                for (int a = 0; a < na; ++a)
-                                    runningScore[a] = (bf[a] + 10.0 * bw[a]) / usedFutures;
-                                std::nth_element(runningScore.begin(), runningScore.end()-2,
-                                                 runningScore.end());
-                                const double gap = runningScore.back()
-                                                   - *(runningScore.end()-2);
-                                if (usedFutures >= maxFutures || gap > cardCfAdaptiveGap) break;
-                            }
-                        }
-                        if (!cardCfInvalid
-                            && search::hasCompleteCounterfactualFutureSet(usedFutures, usedFutures,
-                                                                            futures)) {
-                            const std::string state = richRow(gc, path);
-                            for (int a = 0; a < na; ++a) {
-                                const bool skip = a == nc;
-                                const Card *card = skip ? nullptr : &r.cardRewards[rIdx][a];
-                                std::ostringstream cr;
-                                cr << seed << ',' << cardDecisionIdx << ',' << (skip ? 5 : a) << ','
-                                   << (skip ? -1 : (int)card->getId()) << ','
-                                   << (skip ? 0 : (card->isUpgraded() ? 1 : 0)) << ',' << state << ','
-                                   << usedFutures << ',' << bw[a]/usedFutures << ','
-                                   << bf[a]/usedFutures << ',' << bh[a]/usedFutures << ','
-                                   << ncs[a]/usedFutures << ',' << ncp[a]/usedFutures << ','
-                                   << nes[a]/usedFutures << ',' << nep[a]/usedFutures << ','
-                                   << nbs[a]/usedFutures << ',' << nbp[a]/usedFutures << ','
-                                   << nfc[a]/usedFutures;
-                                cardRows.push_back(cr.str());
-                            }
-                        }
-                        ++cardCollected;
-                    }
-                    ++cardDecisionIdx;
-
-                    std::vector<double> marg = vQueryMarginals(gc, rIdx);
-                    int action;
-                    if ((int)marg.size() != nc) {                    // server error -> uniform incl skip
-                        action = std::uniform_int_distribution<int>(0, nc)(ex);
-                        if (action >= nc) action = 5;
-                    } else if (*std::max_element(marg.begin(), marg.end()) < g_cardSkipThresh) {
-                        action = 5;                                  // no card improves the deck -> skip (as exploit)
-                    } else {
-                        action = sampleCardSoftmax(marg, g_dgTemp, epsilon, ex);  // softmax which card
-                    }
-                    search::GameAction(RT::CARD, rIdx, action).execute(gc);
-                }
-            }
-        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            one_combat::shopVPolicy(gc);                                       // best shop policy (V-knapsack)
-        } else if (inRemoveSelect) {
-            one_combat::removeSelectVPolicy(gc);                               // shop removal target
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM) {
-            if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF outer rest seed=" << seed << " idx=" << restIdx << " floor=" << gc.floorNum << "\n";
-            if (restCfSims > 0 && genuineRestVsSmith(gc)
-                && restCfStride > 0 && (seed % (std::uint64_t)restCfStride) == 0) {
-                double rw = 0, rf = 0, rh = 0, sw = 0, sf = 0, sh = 0;
-                const int futures = std::max(1, restCfFutures);
-                int validFutures = 0;
-                bool restCfInvalid = false;
-                for (int f = 0; f < futures; ++f) {
-                    const std::uint64_t futureSeed = seed ^ (0x9e3779b97f4a7c15ULL
-                                                    * (std::uint64_t)(restIdx * futures + f + 1));
-                    GameContext gr = detachedCounterfactualCopy(gc);
-                    if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF apply rest valid=" << search::GameAction(0, 0).isValidAction(gr) << "\n";
-                    search::GameAction(0, 0).execute(gr);       // rest
-                    OocCounterfactualResult rr = finishOocCounterfactual(
-                        gr, restCfSims, futureSeed, path);
-                    if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF rest branch done floor=" << rr.floor << "\n";
-                    t_curPath = &path;
-                    GameContext gs = detachedCounterfactualCopy(gc);
-                    if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF apply smith valid=" << search::GameAction(1, 0).isValidAction(gs) << "\n";
-                    search::GameAction(1, 0).execute(gs);       // smith
-                    if (gs.screenState == ScreenState::CARD_SELECT
-                        && gs.info.selectScreenType == CardSelectScreenType::UPGRADE)
-                        one_combat::upgradeSelectWinPolicy(gs);
-                    OocCounterfactualResult sr = finishOocCounterfactual(
-                        gs, restCfSims, futureSeed, path);
-                    if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF smith branch done floor=" << sr.floor << "\n";
-                    t_curPath = &path;
-                    if (!rr.valid || !sr.valid) {
-                        g_trainingInvalidBranches += !rr.valid + !sr.valid;
-                        restCfInvalid = true;
-                        break;
-                    }
-                    rw += rr.won; rf += rr.floor; rh += rr.hp;
-                    sw += sr.won; sf += sr.floor; sh += sr.hp;
-                    ++validFutures;
-                }
-                if (!restCfInvalid
-                    && search::hasCompleteCounterfactualFutureSet(validFutures, validFutures,
-                                                                    futures)) {
-                    std::ostringstream cr;
-                    cr << seed << ',' << restIdx << ',' << richRow(gc, path)
-                       << ',' << rw/validFutures << ',' << rf/validFutures << ',' << rh/validFutures
-                       << ',' << sw/validFutures << ',' << sf/validFutures << ',' << sh/validFutures;
-                    restRows.push_back(cr.str());
-                }
-                ++restIdx;
-            }
-            if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF apply deployed rest policy\n";
-            if (!one_combat::restWinPolicy(gc)) {
-                auto actions = search::GameAction::getAllActionsInState(gc);
-                if (!actions.empty()) actions.front().execute(gc);
-            }
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    t_curPath = nullptr;
-    if (!trainingRunValid(gc.outcome != GameOutcome::UNDECIDED))
-        return {};
-    const int won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0;
-    const int ff = gc.floorNum, endHp = gc.curHp;
-    std::ostringstream o, ro, co;
-    for (const auto &fr : rows) o << seed << ',' << fr << ',' << won << ',' << ff << ',' << endHp << '\n';
-    for (const auto &rr : restRows) ro << rr << '\n';
-    for (const auto &cr : cardRows) co << cr << '\n';
-    return {o.str(), ro.str(), co.str()};
-}
-
-static void dataGen2(int nSeeds, int sims, int asc, double epsilon, const std::string &outfile,
-                     long long seedOffset = 0, const std::string &restOut = "",
-                     int restCfSims = 0, int restCfFutures = 1, int restCfStride = 1,
-                     const std::string &cardOut = "", int cardCfSims = 0,
-                     int cardCfFights = 3, int cardCfFutures = 1, int cardCfStride = 1,
-                     int cardCfMaxPerRun = 0, std::uint64_t cardCfFutureSalt = 0,
-                     int cardCfAdaptiveMaxFutures = 0, double cardCfAdaptiveGap = 5.0) {
-    trainingCampaignStart();
-    const bool append = seedOffset > 0;
-    std::cout << "datagen2 (rich)  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
-              << "  cardFutureSalt " << cardCfFutureSalt
-              << (append ? "  [append]" : "") << "  threads " << numThreads() << "  -> " << outfile << "\n";
-    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) { f << richHeader() << '\n'; f.flush(); }
-    std::ofstream rf;
-    if (!restOut.empty()) {
-        rf.open(restOut, append ? std::ios::app : std::ios::out);
-        if (rf.tellp() == 0) { rf << restCounterfactualHeader() << '\n'; rf.flush(); }
-    }
-    std::ofstream cf;
-    if (!cardOut.empty()) {
-        cf.open(cardOut, append ? std::ios::app : std::ios::out);
-        if (cf.tellp() == 0) { cf << cardCounterfactualHeader() << '\n'; cf.flush(); }
-    }
-    auto t0 = std::chrono::steady_clock::now();
-    long long rowCount = 0, cardRowCount = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        auto generated = runDataGen2Seed((std::uint64_t)(seedOffset + s), sims, asc, epsilon,
-                                         restCfSims, restCfFutures, restCfStride,
-                                         cardCfSims, cardCfFights, cardCfFutures, cardCfStride,
-                                         cardCfMaxPerRun, cardCfFutureSalt,
-                                         cardCfAdaptiveMaxFutures, cardCfAdaptiveGap);
-        #pragma omp critical
-        {
-            f << generated.meta; f.flush();
-            if (rf.is_open()) { rf << generated.rest; rf.flush(); }
-            if (cf.is_open()) { cf << generated.card; cf.flush(); }
-            rowCount += std::count(generated.meta.begin(), generated.meta.end(), '\n');
-            cardRowCount += std::count(generated.card.begin(), generated.card.end(), '\n');
-            if (++done % 500 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld meta rows, %lld card-CF rows, %.0fs (%.3fs/run)\n",
-                            done, nSeeds, rowCount, cardRowCount, el, el / done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld meta rows + %lld card-CF rows from %d runs in %.1fs\n",
-                rowCount, cardRowCount, nSeeds, wall);
-    writeTrainingProvenance(outfile, "datagen2", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rowCount + cardRowCount,
-                            seedOffset, sims, asc, epsilon);
-}
-
-// ---------------------------------------------------------------------------
-// Combat feature header/row for whole-combat datasets. They delegate to the
-// library (search::combatFeatureNames / combatExtractFeatures) so training data
-// and C++ inference use the same feature extraction.
-static std::string combatHeaderStr() {
-    const auto &names = search::combatFeatureNames();
-    std::string h;
-    for (size_t i = 0; i < names.size(); ++i) { if (i) h += ','; h += names[i]; }
-    return h;
-}
-
-static std::string combatFeatureRow(const BattleContext &bc) {
-    const int nf = search::combatFeatureCount();
-    std::vector<float> feat(nf);
-    search::combatExtractFeatures(bc, feat.data());
-    std::ostringstream o;
-    for (int i = 0; i < nf; ++i) {
-        if (i) o << ',';
-        const float v = feat[i];
-        if (v == (float)(long)v) o << (long)v; else o << v;   // integers stay clean
-    }
-    return o.str();
-}
-
-// One canonical battle-start row per completed fight. GameContext labels and
-// diagnostics are captured after exitBattle returns, i.e. after regainControl
-// has entered the reward screen and normal afterBattle effects have run.
-struct WholeCombatTeacher { std::string id; nlohmann::json specification; };
-
-static nlohmann::json effectiveOocPolicySpecification() {
-    nlohmann::json models = nlohmann::json::array();
-    auto addModel = [&](const char *role, const std::string &path) {
-        if (!path.empty())
-            models.push_back({{"role", role}, {"path", path}, {"sha256", fileSha256(path)}});
-    };
-    if (g_floorNet.ok) addModel("floor", g_floorNet.path);
-    if (g_winNet.ok) addModel("win", g_winNet.path);
-    if (g_oocActionNN && g_oocCheckpointNet.ok) addModel("ooc_checkpoint", g_oocCheckpointNet.path);
-    if (g_oocStrategicNet.ok) addModel("ooc_strategic", g_oocStrategicNet.path);
-    if (g_oocStrategicTokNet.ok) addModel("ooc_strategic_tok", g_oocStrategicTokNet.path);
-    if (g_oocMapRoute && g_cpsiNet.loaded()) addModel("cpsi", g_cpsiNet.path);
-    if (g_actFightProbeAllOoc && g_actFightProbePredict && g_actFightProbePredictNet.loaded())
-        addModel("act_fight_probe_predict", g_actFightProbePredictNet.path);
-    return {
-        {"schema_version", "runFullRunOOC_policy_v1"},
-        {"policy_chain", "runFullRunOOC"},
-        {"restV", false},
-        {"shopV", true},
-        {"native_ooc", g_nativeOoc},
-        {"flags", {
-            {"collect_keys", g_collectKeys},
-            {"ooc_action_nn", g_oocActionNN},
-            {"act_fight_probe_all_ooc", g_actFightProbeAllOoc},
-            {"ooc_map_route", g_oocMapRoute},
-            {"ooc_strategic_map", g_oocStrategicMap},
-            {"path_v", g_pathV},
-            {"event_v", g_eventV},
-            {"ooc_strategic_event", g_oocStrategicEvent},
-            {"ooc_strategic_card", g_oocStrategicNet.ok || g_oocStrategicTokNet.ok},
-            {"ooc_strategic_tok", g_oocStrategicTok != 0},
-            {"ooc_strategic_shop", g_oocStrategicShop},
-            {"ooc_shop_beam", g_oocShopBeam},
-            {"ooc_strategic_rest", g_oocStrategicRest},
-            {"ooc_strategic_q", g_oocStrategicQ},
-            {"ooc_strategic_score_policy", g_oocStrategicScorePolicy},
-            {"rest_win", g_restWin},
-            {"ooc_strategic_boss_relic", g_oocStrategicBossRelic},
-            {"boss_relic_v", g_bossRelicV != 0},
-            {"ooc_strategic_treasure", g_oocStrategicTreasure},
-            {"neow_v", g_neowV != 0},
-            {"card_win", g_cardWin},
-            {"card_nn", g_cardNN},
-            {"card_action", g_cardAction},
-            {"shop_win", g_shopWin},
-            {"boss_v", g_bossV != 0},
-            {"boss_draft", g_bossDraft != 0},
-            {"act_fight_probe_draft", g_actFightProbeDraft},
-            {"act_fight_probe_all_ooc", g_actFightProbeAllOoc},
-            {"act_fight_probe_predict", g_actFightProbePredict},
-            {"act_fight_probe_encounter_nn", g_actFightProbeEncounterNN},
-            {"act_fight_probe_gate_regret", g_oocStrategicGateRegret},
-        }},
-        {"parameters", {
-            {"card_skip_threshold", g_cardSkipThresh},
-            {"card_win_skip", g_cardWinSkip},
-            {"card_nn_weight", g_cardNNW},
-            {"card_nn_skip", g_cardNNSkip},
-            {"shop_beam_width", g_oocShopBeamWidth},
-            {"shop_beam_depth", g_oocShopBeamDepth},
-            {"shop_beam_budget", g_oocShopBeamBudget},
-            {"strategic_margin", g_oocStrategicMargin},
-            {"strategic_margin_card", g_oocStrategicMarginCard},
-            {"strategic_margin_rest", g_oocStrategicMarginRest},
-            {"strategic_margin_event", g_oocStrategicMarginEvent},
-            {"strategic_margin_shop", g_oocStrategicMarginShop},
-            {"strategic_margin_treasure", g_oocStrategicMarginTreasure},
-            {"strategic_margin_boss_relic", g_oocStrategicMarginBossRelic},
-            {"strategic_margin_map", g_oocStrategicMarginMap},
-            {"strategic_gate", g_oocStrategicGateRegret ? "regret" : "margin"},
-            {"strategic_gate_eps", g_oocStrategicGateEps},
-            {"map_route_horizon", g_oocMapRouteHorizon},
-            {"boss_draft_rows", g_bossDraftRows},
-            {"boss_draft_fights", g_bossDraftN},
-            {"boss_draft_sims", g_bossDraftSims},
-            {"boss_draft_futures", g_bossDraftFutures},
-            {"boss_v_weight", g_bossVW},
-            {"act_fight_probe_sims", g_actFightProbeSims},
-            {"act_fight_probe_futures", g_actFightProbeFutures},
-            {"act_fight_probe_checkpoint_sims", g_actFightProbeCheckpointSims},
-            {"act_fight_probe_floor_decay", g_actFightProbeFloorDecay},
-            {"act_fight_probe_max_checkpoints", g_actFightProbeMaxCheckpoints},
-            {"act_fight_probe_term_win", g_actFightProbeTermWin},
-            {"act_fight_probe_margin", g_actFightProbeMargin},
-            {"act_fight_probe_predict_win_threshold", g_actFightProbePredictWinThreshold},
-            {"stop_after_act", g_stopAfterAct},
-        }},
-        {"model_artifacts", std::move(models)},
-    };
-}
-
-static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
-                                                 bool allowStaleProvenance = false,
-                                                 bool requireOocPolicy = false) {
-    std::ifstream in(path); if (!in) throw std::runtime_error("wholecombatgen: cannot open teacher " + path);
-    nlohmann::json t; in >> t;
-    auto req = [&](const char *key) { if (!t.contains(key) || !t[key].is_string() || t[key].get<std::string>().empty()) throw std::runtime_error(std::string("wholecombatgen: teacher missing ")+key); return t[key].get<std::string>(); };
-    const std::string id=req("teacher_id"), gitSha=req("git_sha"), exeSha=req("executable_sha256");
-    if (id.find_first_of(",\r\n") != std::string::npos) throw std::runtime_error("wholecombatgen: teacher_id is not CSV-safe");
-    if (gitSha.size()!=40 || (!allowStaleProvenance && gitSha!=trainingExecutableGitSha())) throw std::runtime_error("wholecombatgen: teacher git_sha mismatch");
-    if (exeSha.size()!=64 || (!allowStaleProvenance && exeSha!=fileSha256(g_mainBinaryPath))) throw std::runtime_error("wholecombatgen: executable SHA256 mismatch");
-    if (req("combat_backend")!="silver_uct" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
-    if (!t.contains("search_configuration") || !t["search_configuration"].is_object()) throw std::runtime_error("wholecombatgen: missing search_configuration");
-    const auto &s=t["search_configuration"];
-    if (s.value("simulation_budgets",std::vector<int>{})!=std::vector<int>{10000} || sims!=10000
-        || s.value("exploration_parameter",-1.0)!=25.0 || s.value("exploration_parameter_chance",-1.0)!=25.0
-        || s.value("chance_widening_c",-1.0)!=3.7028 || s.value("chance_widening_alpha",-1.0)!=0.52389
-        || s.value("end_turn_widening_c",-1.0)!=3.7028 || s.value("end_turn_widening_alpha",-1.0)!=0.52389
-        || s.value("reuse_cap_mode",std::string{})!="allocated" || s.value("reuse_cap",-1)!=32768
-        || s.value("sequential_halving",true) || s.value("pruning",true) || s.value("learned_visit_puct",true)
-        || s.value("direct_learned_leaf",true) || s.value("adaptive",true))
-        throw std::runtime_error("wholecombatgen: not the frozen exact-10k ordinary Silver contract");
-    if (search::silverLiveReuseCap() != 32768)
-        throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
-    if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
-    for (const auto &[name, expected] : t["environment"].items()) { const char *actual=std::getenv(name.c_str()); if (!expected.is_string() || !actual || expected.get<std::string>()!=actual) throw std::runtime_error("wholecombatgen: environment mismatch for "+name); }
-    const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_SILVER_TELEMETRY","1"}};
-    for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
-    if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
-    for (const auto &a:t["model_artifacts"]) { const std::string role=a.value("role",std::string{}), p=a.value("path",std::string{}), h=a.value("sha256",std::string{}); if(role.empty()||p.empty()||h.size()!=64||fileSha256(p)!=h) throw std::runtime_error("wholecombatgen: artifact hash mismatch for "+role); }
-    if (requireOocPolicy && (!t.contains("ooc_policy") || t["ooc_policy"] != effectiveOocPolicySpecification()))
-        throw std::runtime_error("wholecombatgen: effective OOC policy configuration/artifacts mismatch");
-    return {id,std::move(t)};
-}
-static std::string wholePotionIds(const GameContext &gc) { std::ostringstream o; for(int i=0;i<gc.potionCapacity&&i<(int)gc.potions.size();++i){if(i)o<<';';o<<(int)gc.potions[i];} return o.str(); }
-static std::map<int,int> wholeRelics(const GameContext &gc) { std::map<int,int> o; for(const auto&r:gc.relics.relics)o[(int)r.id]=r.data; return o; }
-static std::string wholeRelicChanges(const std::map<int,int>&b,const GameContext&a){std::ostringstream o;bool first=true;for(const auto&r:a.relics.relics){auto it=b.find((int)r.id);int old=it==b.end()?0:it->second;if(old==r.data)continue;if(!first)o<<';';first=false;o<<(int)r.id<<':'<<old<<'>'<<r.data;}return o.str();}
-static std::vector<std::tuple<int,int,int>> wholeDeck(const GameContext&gc){std::vector<std::tuple<int,int,int>>o;for(const auto&c:gc.deck.cards)o.emplace_back((int)c.id,c.upgraded?1:0,c.misc);return o;}
-static int wholeCardCount(const GameContext&gc,CardId id){int n=0;for(const auto&c:gc.deck.cards)if(c.id==id)++n;return n;}
-static std::string wholeRitualChanges(const std::vector<std::tuple<int,int,int>>&b,const GameContext&a){std::ostringstream o;bool first=true;for(int i=0;i<(int)a.deck.cards.size();++i){const auto&c=a.deck.cards[i];if(c.id!=CardId::RITUAL_DAGGER)continue;int old=(i<(int)b.size()&&std::get<0>(b[i])==(int)c.id)?std::get<2>(b[i]):-1;if(old==c.misc)continue;if(!first)o<<';';first=false;o<<i<<':'<<old<<'>'<<c.misc;}return o.str();}
-
-static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,const WholeCombatTeacher&teacher){
-    trainingRunStart(); GameContext gc(CharacterClass::IRONCLAD,seed,asc); search::ScumSearchAgent2 agent;agent.simulationCountBase=sims;agent.rng=std::default_random_engine(seed);std::ostringstream out;int fightIdx=0;using RT=search::GameAction::RewardsActionType;
-    while(gc.outcome==GameOutcome::UNDECIDED){
-        if(gc.screenState==ScreenState::BATTLE){
-            const int act=gc.act,floor=gc.floorNum,room=(int)gc.curRoom,startHp=gc.curHp,startMaxHp=gc.maxHp,startGold=gc.gold,startPotionCount=gc.potionCount,startParasites=wholeCardCount(gc,CardId::PARASITE);const std::string startPotions=wholePotionIds(gc);const auto startRelics=wholeRelics(gc);const auto startDeck=wholeDeck(gc);std::string features;int hooks=0;
-            search::g_onCombatDecision=[&](const BattleContext&s){if(hooks++==0)features=combatFeatureRow(s);};BattleContext bc;agent.playoutBattle(gc,bc);const int encounter=(int)bc.encounter;search::g_onCombatDecision=nullptr;
-            if(!trainingRunValid(bc.outcome!=Outcome::UNDECIDED)||hooks==0)return{};const int won=bc.outcome==Outcome::PLAYER_VICTORY?1:0;bc.exitBattle(gc);
-            const std::string relics=wholeRelicChanges(startRelics,gc),ritual=wholeRitualChanges(startDeck,gc);const bool deckChanged=startDeck!=wholeDeck(gc),parasite=wholeCardCount(gc,CardId::PARASITE)>startParasites;std::ostringstream summary;summary<<"potions="<<startPotionCount<<'>'<<gc.potionCount<<";hp="<<startHp<<'>'<<gc.curHp<<";maxhp="<<startMaxHp<<'>'<<gc.maxHp<<";gold_delta="<<gc.gold-startGold<<";relics="<<(relics.empty()?"none":"changed")<<";deck="<<(deckChanged?"changed":"same")<<";parasite="<<(parasite?1:0)<<";stolen_gold="<<gc.info.stolenGold;const char*roomClass=room==(int)Room::MONSTER?"NORMAL":room==(int)Room::ELITE?"ELITE":room==(int)Room::BOSS?"BOSS":"OTHER";
-            out<<seed<<','<<fightIdx<<','<<act<<','<<floor<<','<<encounter<<','<<roomClass<<",0,"<<teacher.id<<','<<features<<','<<won<<','<<gc.curHp<<','<<startHp<<','<<startMaxHp<<','<<gc.maxHp<<','<<(startMaxHp>0?(double)gc.curHp/startMaxHp:0.0)<<','<<startPotions<<','<<wholePotionIds(gc)<<','<<startPotionCount<<','<<gc.potionCount<<','<<gc.gold-startGold<<','<<(gc.smokeBombUsed?1:0)<<','<<relics<<','<<ritual<<','<<(deckChanged?1:0)<<','<<(parasite?1:0)<<','<<summary.str()<<'\n';++fightIdx;
-        }else if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);else if(r.potionCount>0)search::GameAction(RT::POTION,0).execute(gc);else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);else evalCardRewardPolicy(gc);}else agent.stepOutOfCombatPolicy(gc);
-    }search::g_onCombatDecision=nullptr;return out.str();
-}
-
-// V1 producer: capture the persistent GameContext before BattleContext::init;
-// read terminal labels from BattleContext before exitBattle/afterBattle.
-// The optional runout record deliberately separates a completed trajectory
-// from the existing per-combat label validity.  An escape is still a bad V1
-// combat label, but it need not invalidate the eventual-run outcome.
-struct CombatEvalSeedResult {
-    std::string rows;
-    std::uint64_t sourceSeed = 0;
-    GameOutcome finalOutcome = GameOutcome::UNDECIDED;
-    int finalFloor = 0;
-    int finalHp = 0;
-    int fightCount = 0;
-    int invalidCombatRows = 0;
-    int simulatorHealthFailures = 0;
-    bool sourceValid = true;
-    bool trajectoryComplete = false;
-    bool trajectoryValid = false;
-    bool fatalFailure = false;
-};
-
-static const char *combatEvalGameOutcome(GameOutcome outcome) {
-    switch (outcome) {
-        case GameOutcome::PLAYER_VICTORY: return "PLAYER_VICTORY";
-        case GameOutcome::PLAYER_LOSS: return "PLAYER_LOSS";
-        case GameOutcome::UNDECIDED: return "UNDECIDED";
-    }
-    return "UNDECIDED";
-}
-
-static int combatEvalFinalWon(GameOutcome outcome) {
-    return outcome == GameOutcome::PLAYER_VICTORY ? 1
-        : outcome == GameOutcome::PLAYER_LOSS ? 0 : -1;
-}
-
-static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
-                                                 const WholeCombatTeacher &teacher,
-                                                 bool captureCombat = true) {
-    trainingRunStart();
-    const int sourceHealthFailures = search::g_simHealthFailureCount;
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    PathHistory path;
-    one_combat::resetPathPolicyState();
-    t_actFightProbeDecisionIdx = 0;
-    t_curPath = &path;
-    t_tokCheckPending = g_oocStrategicTokCheck;
-    t_shopV = true;
-    std::ostringstream out; int fightIdx = 0; bool sourceValid = true;
-    int invalidCombatRows = 0;
-    bool fatalFailure = false;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        if (gc.screenState == ScreenState::BATTLE) {
-            const int act = gc.act, floor = gc.floorNum, room = (int)gc.curRoom;
-            const MonsterEncounter encounter = gc.info.encounter;
-            const int encounterIndex = static_cast<int>(encounter);
-            const bool representableEncounter = encounterIndex >= 0 && encounterIndex < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
-            const std::string features = captureCombat ? vFeatCsv(gc) : std::string{};
-            int hooks = 0;
-            auto previousCombatObserver = std::move(search::g_onCombatDecision);
-            if (captureCombat)
-                search::g_onCombatDecision = [&](const BattleContext &) { ++hooks; };
-            BattleContext bc; const int healthBefore = search::g_simHealthFailureCount;
-            agent.playoutBattle(gc, bc);
-            search::g_onCombatDecision = std::move(previousCombatObserver);
-            const bool initializationTerminal = hooks == 0
-                && bc.turn == 0 && bc.outcome != Outcome::UNDECIDED;
-            const auto label = captureCombat
-                ? combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount,
-                                     initializationTerminal)
-                : CombatEvalLabel{};
-            const bool labelValid = captureCombat && label.labelValid;
-            const bool healthOk = captureCombat ? label.healthOk : true;
-            if (captureCombat) {
-                out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << combatEvalRoomClass(static_cast<Room>(room)) << ','
-                    << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ',';
-                label.write(out); out << '\n';
-            }
-            ++fightIdx;
-            // Keep every completed terminal as an auditable row.  A simulator
-            // or hook failure cannot safely advance the run; ordinary
-            // non-death terminations can be exited and the next fight may be
-            // collected, while the contract/trainer excludes this row.
-            if (captureCombat && !labelValid) { sourceValid = false; ++invalidCombatRows; }
-            if (captureCombat && !labelValid && (!healthOk || !hooks || !representableEncounter)) {
-                fatalFailure = true;
-                search::g_onGameActionExecute = {}; t_curPath = nullptr;
-                const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
-                return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
-                        invalidCombatRows, healthFailures, false, false, false, fatalFailure};
-            }
-            bc.exitBattle(gc);
-        } else {
-            runFullRunOocPolicyStep(gc, agent, false, true);
-        }
-    }
-    search::g_onCombatDecision = nullptr;
-    t_curPath = nullptr;
-    const bool complete = gc.outcome != GameOutcome::UNDECIDED;
-    const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
-    const bool trajectoryValid = complete && healthFailures == 0 && !fatalFailure;
-    return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
-            invalidCombatRows, healthFailures, sourceValid, complete,
-            trajectoryValid, fatalFailure};
-}
-
-static int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc) {
-    using OocAction = std::pair<int, std::uint32_t>;
-    auto traceRun = [](const auto &run) {
-        std::vector<OocAction> trace;
-        auto previous = std::move(search::g_onGameActionExecute);
-        search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
-            if (target) trace.emplace_back(static_cast<int>(target->screenState), bits);
-        };
-        const auto result = run();
-        search::g_onGameActionExecute = std::move(previous);
-        return std::make_pair(result, std::move(trace));
-    };
-
-    const auto normal = traceRun([&] {
-        return runFullRunOOC(seed, sims, asc, false, true, false);
-    });
-    WholeCombatTeacher parityTeacher{"ooc-policy-parity", nlohmann::json::object()};
-    const auto captured = traceRun([&] {
-        return runCombatEvalGenSeed(seed, sims, asc, parityTeacher, false);
-    });
-    const auto &specialized = captured.first;
-    const bool sameOutcome = normal.first.won == (specialized.finalOutcome == GameOutcome::PLAYER_VICTORY)
-        && normal.first.floor == specialized.finalFloor
-        && normal.first.hpEnd == specialized.finalHp;
-    if (!sameOutcome || normal.second != captured.second) {
-        std::cerr << "ooc policy parity failed: seed=" << seed
-                  << " normal=(" << normal.first.won << ',' << normal.first.floor << ',' << normal.first.hpEnd
-                  << ") specialized=(" << static_cast<int>(specialized.finalOutcome) << ',' << specialized.finalFloor
-                  << ',' << specialized.finalHp << ") actions=" << normal.second.size()
-                  << '/' << captured.second.size() << '\n';
-        return 1;
-    }
-    std::cout << "ooc policy parity: seed=" << seed << " actions=" << normal.second.size()
-              << " outcome=" << (normal.first.won ? "PLAYER_VICTORY" : "PLAYER_LOSS")
-              << " floor=" << normal.first.floor << " hp=" << normal.first.hpEnd << "\n";
-    return 0;
-}
-
-static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
-                          long long seedOffset, const std::string &teacherPath,
-                          const std::string &runoutPath);
-static void wholeCombatGen(int nSeeds, int sims, int asc, const std::string &outfile,
-                           long long seedOffset, const std::string &teacherPath);
-
-static int teacherSchemaCompatibilitySelfTest() {
-    for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
-             {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
-             {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
-             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
-             {"STS_SILVER_TELEMETRY", "1"}})
-        setenv(name, value, 1);
-
-    search::installSilverLiveBackend();
-    const std::filesystem::path stem = std::filesystem::temp_directory_path()
-        / ("sts_legacy_teacher_compat_" + trainingExecutableGitSha()
-           + "_" + std::to_string(search::silverLiveReuseCap()));
-    const std::filesystem::path teacherPath = stem.string() + ".json";
-    const std::filesystem::path wholePath = stem.string() + ".whole.csv";
-    const std::filesystem::path evalPath = stem.string() + ".eval.csv";
-    const auto cleanup = [&] {
-        for (const auto &path : {teacherPath, wholePath, evalPath,
-                                 std::filesystem::path(wholePath.string() + ".provenance.json"),
-                                 std::filesystem::path(evalPath.string() + ".provenance.json")}) {
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-    };
-    try {
-        const std::string leafPath = "models/silver_leaf_m10_10k.txt";
-        const nlohmann::json teacher = {
-            {"teacher_id", "legacy-schema-compat"},
-            {"git_sha", trainingExecutableGitSha()},
-            {"executable_sha256", fileSha256(g_mainBinaryPath)},
-            {"combat_backend", "silver_uct"},
-            {"rng_regime", "project_fair"},
-            {"search_configuration", {
-                {"simulation_budgets", {10000}}, {"exploration_parameter", 25.0},
-                {"exploration_parameter_chance", 25.0}, {"chance_widening_c", 3.7028},
-                {"chance_widening_alpha", 0.52389}, {"end_turn_widening_c", 3.7028},
-                {"end_turn_widening_alpha", 0.52389}, {"reuse_cap_mode", "allocated"},
-                {"reuse_cap", 32768}, {"sequential_halving", false}, {"pruning", false},
-                {"learned_visit_puct", false}, {"direct_learned_leaf", false}, {"adaptive", false},
-            }},
-            {"environment", {
-                {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
-                {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
-                {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
-                {"STS_SILVER_TELEMETRY", "1"},
-            }},
-            {"model_artifacts", {{{"role", "combat_value_or_leaf"},
-                                   {"path", leafPath}, {"sha256", fileSha256(leafPath)}}}},
-        };
-        std::ofstream out(teacherPath);
-        if (!out) throw std::runtime_error("teacher compatibility: cannot create fixture");
-        out << teacher.dump(2) << '\n';
-        out.close();
-        if (search::silverLiveReuseCap() != 32768) {
-            const auto expectCapMismatch = [&](const auto &run) {
-                bool rejected = false;
-                try { run(); }
-                catch (const std::runtime_error &error) {
-                    rejected = std::string(error.what()).find("production reuse cap mismatch") != std::string::npos;
-                }
-                if (!rejected || std::filesystem::exists(wholePath) || std::filesystem::exists(evalPath))
-                    throw std::runtime_error("frozen teacher cap mismatch must reject before output");
-            };
-            expectCapMismatch([&] { wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string()); });
-            expectCapMismatch([&] { combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), ""); });
-            cleanup();
-            std::cout << "frozen 32k teacher compatibility: both producers reject production cap mismatch before output\n";
-            return 0;
-        }
-        wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string());
-        combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), "");
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-    cleanup();
-    std::cout << "legacy teacher schema compatibility: wholecombatgen and combatevalgen without RUNOUT accepted\n";
-    return 0;
-}
-
-static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
-                          long long seedOffset, const std::string &teacherPath,
-                          const std::string &runoutPath = {}) {
-    trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false,
-                                                                           !runoutPath.empty());
-    std::ofstream f(outfile); if (!f) throw std::runtime_error("combatevalgen: cannot open output");
-    std::ofstream runout;
-    if (!runoutPath.empty()) {
-        runout.open(runoutPath);
-        if (!runout) throw std::runtime_error("combatevalgen: cannot open runout output");
-        runout << "sourceSeed,finalOutcome,finalWon,finalFloor,finalHp,fightCount,trajectoryComplete,trajectoryValid,combatRows,invalidCombatRows,teacherId,simulatorHealthFailures,fatalFailure\n";
-    }
-    f << "sourceSeed,fightIdx,act,floor,roomClass,encounter,teacherId," << richStateHeader()
-      << ',' << combatEvalLabelHeader() << '\n';
-    long long rows = 0; int completed = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const CombatEvalSeedResult generated = runCombatEvalGenSeed(seedOffset + s, sims, asc, teacher);
-        #pragma omp critical(combat_eval_write)
-        {
-            f << generated.rows; f.flush();
-            rows += std::count(generated.rows.begin(), generated.rows.end(), '\n');
-            if (generated.sourceValid) ++completed; else ++g_trainingInvalidRuns;
-            g_trainingInvalidBranches += generated.invalidCombatRows;
-            if (!runoutPath.empty()) {
-                runout << generated.sourceSeed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
-                       << combatEvalFinalWon(generated.finalOutcome) << ',' << generated.finalFloor << ','
-                       << generated.finalHp << ',' << generated.fightCount << ','
-                       << (generated.trajectoryComplete ? 1 : 0) << ','
-                       << (generated.trajectoryValid ? 1 : 0) << ','
-                       << std::count(generated.rows.begin(), generated.rows.end(), '\n') << ','
-                       << generated.invalidCombatRows << ',' << teacher.id << ','
-                       << generated.simulatorHealthFailures << ',' << (generated.fatalFailure ? 1 : 0) << '\n';
-                runout.flush();
-            }
-        }
-    }
-    std::cout << "combatevalgen teacher=" << teacher.id << " completed=" << completed << '/' << nSeeds << " quarantined=" << nSeeds-completed << " rows=" << rows << " -> " << outfile << '\n';
-    writeTrainingProvenance(outfile, "combatevalgen", nSeeds, completed, nSeeds-completed, g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
-}
-static void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath){trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("wholecombatgen: cannot open output");f<<"sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,parasiteAdded,persistentMutationSummary\n";long long rows=0;int completed=0;
-    #pragma omp parallel for schedule(dynamic)
-    for(int s=0;s<nSeeds;++s){const std::string generated=runWholeCombatGenSeed(seedOffset+s,sims,asc,teacher);
-        #pragma omp critical(whole_combat_write)
-        {f<<generated;f.flush();rows+=std::count(generated.begin(),generated.end(),'\n');if(!generated.empty())++completed;}}
-    std::cout<<"wholecombatgen teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"wholecombatgen",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
-}
-
-static nlohmann::json combatTransitionRowJson(
-    std::uint64_t sourceSeed, int fightIdx, int act, int floor, Room room,
-    int encounter, const std::string &teacherId, bool runValid,
-    bool outcomeDecided,
-    int rawCaptureCount,
-    const std::optional<one_combat::CombatTransitionRecord> &record,
-    const nlohmann::json &predictorInput) {
-    const bool captureValid = rawCaptureCount == 1 && record.has_value();
-    const bool rowValid = runValid && captureValid;
-    const std::string quarantineReason =
-        rawCaptureCount == 0 ? "missing_raw_capture" :
-        rawCaptureCount > 1 ? "repeated_raw_capture" :
-        !record ? "missing_raw_record" :
-        !runValid ? (outcomeDecided ? "invalid_run" : "unresolved") : "";
-    return {
-        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
-        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
-        {"sourceSeed", sourceSeed}, {"fightIdx", fightIdx},
-        {"act", act}, {"floor", floor},
-        {"roomClass", combatEvalRoomClass(room)}, {"encounter", encounter},
-        {"teacherId", teacherId}, {"runValid", rowValid},
-        {"quarantineReason", quarantineReason},
-        {"captureCount", rawCaptureCount},
-        {"captureStatus", rawCaptureCount == 0 ? "missing" :
-                          rawCaptureCount == 1 ? "exactly_one" : "repeated"},
-        {"predictorInput", predictorInput},
-        {"transition", captureValid ? one_combat::combatTransitionRecordJson(*record)
-                                     : nlohmann::json(nullptr)}
-    };
-}
-
-// Capture one JSONL transition per real fight at the RAW persistent-transfer
-// boundary. This is a data producer only: it never substitutes the snapshot
-// for native continuation and is not part of the default gameplay path.
-static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
-                                              const WholeCombatTeacher &teacher) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    PathHistory path;
-    t_curPath = &path;
-    std::ostringstream out;
-    int fightIdx = 0;
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        if (gc.screenState == ScreenState::BATTLE) {
-            const GameContext pre = gc;
-            const int battleAct = gc.act;
-            const int battleFloor = gc.floorNum;
-            const Room battleRoom = gc.curRoom;
-            const int battleEncounter = static_cast<int>(gc.info.encounter);
-            const auto predictorInput = one_combat::combatPredictorInputJson(
-                one_combat::captureCombatPredictorInput(
-                    pre, static_cast<MonsterEncounter>(battleEncounter),
-                    potionKeepValue(gc)));
-            std::optional<one_combat::CombatTransitionRecord> record;
-            int rawCaptureCount = 0;
-            bool decided = false;
-            bool runValid = false;
-            BattleContext bc;
-            {
-                one_combat::CombatTransitionRawObserverScope scope(
-                    [&](const BattleContext &ended, GameContext &raw) {
-                        ++rawCaptureCount;
-                        if (rawCaptureCount == 1)
-                            record = one_combat::captureCombatTransition(pre, ended, raw);
-                    });
-                agent.playoutBattle(gc, bc);
-                decided = bc.outcome != Outcome::UNDECIDED;
-                runValid = trainingRunValid(decided);
-                // Keep the RAW observer armed through the real exit.  The
-                // callback is intentionally before regainControl/afterBattle,
-                // including for loss and unresolved outcomes.
-                bc.exitBattle(gc);
-            }
-            nlohmann::json row = combatTransitionRowJson(
-                seed, fightIdx++, battleAct, battleFloor, battleRoom,
-                battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
-                predictorInput);
-            out << row.dump() << '\n';
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0) search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else evalCardRewardPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    t_curPath = nullptr;
-    return out.str();
-}
-
-// This is deliberately a test-only backend: it constructs deterministic
-// BattleContexts directly and exercises the same RAW observer, exitBattle,
-// and row serializer as combattransitiongen. It never loads a teacher, runs
-// Silver, or supplies a production collection path.
-static nlohmann::json combatTransitionFixtureTeacher() {
-    return {
-        {"teacher_id", "test-only-deterministic-transition-fixture"},
-        {"git_sha", trainingExecutableGitSha()},
-        {"executable_sha256", fileSha256(g_mainBinaryPath)},
-        {"combat_backend", "deterministic_fixture"},
-        {"rng_regime", "deterministic_fixture"},
-        {"search_configuration", nlohmann::json::object()},
-        {"environment", nlohmann::json::object()},
-        {"model_artifacts", nlohmann::json::array()}
-    };
-}
-
-static nlohmann::json combatTransitionFixtureRow(std::uint64_t seed, int fightIdx,
-                                                  Outcome outcome, int hp) {
-    trainingRunStart();
-    GameContext source(CharacterClass::IRONCLAD, seed, 0);
-    source.screenState = ScreenState::BATTLE;
-    source.curRoom = Room::MONSTER;
-    source.info.encounter = MonsterEncounter::CULTIST;
-    source.regainControlAction = [](GameContext &g) {
-        g.screenState = ScreenState::REWARDS;
-    };
-    GameContext actual = source;
-    const auto predictorInput = one_combat::combatPredictorInputJson(
-        one_combat::captureCombatPredictorInput(source, MonsterEncounter::CULTIST, 4.0));
-    BattleContext bc;
-    bc.init(actual, MonsterEncounter::CULTIST);
-    bc.player.curHp = hp;
-    bc.outcome = outcome;
-
-    std::optional<one_combat::CombatTransitionRecord> record;
-    int rawCaptureCount = 0;
-    {
-        one_combat::CombatTransitionRawObserverScope scope(
-            [&](const BattleContext &ended, GameContext &raw) {
-                ++rawCaptureCount;
-                if (rawCaptureCount == 1)
-                    record = one_combat::captureCombatTransition(source, ended, raw);
-            });
-        const bool decided = bc.outcome != Outcome::UNDECIDED;
-        const bool runValid = trainingRunValid(decided);
-        bc.exitBattle(actual);
-        return combatTransitionRowJson(
-            seed, fightIdx, source.act, source.floorNum, source.curRoom,
-            static_cast<int>(source.info.encounter),
-            "test-only-deterministic-transition-fixture", runValid, decided,
-            rawCaptureCount, record, predictorInput);
-    }
-}
-
-static int combatTransitionFixture(const std::string &outfile,
-                                   const std::string &manifestPath) {
-    GameContext fixtureSource(CharacterClass::IRONCLAD, 0xC0FFEEu, 0);
-    fixtureSource.screenState = ScreenState::BATTLE;
-    fixtureSource.curRoom = Room::MONSTER;
-    fixtureSource.info.encounter = MonsterEncounter::CULTIST;
-    const auto fixtureInput = one_combat::combatPredictorInputJson(
-        one_combat::captureCombatPredictorInput(
-            fixtureSource, MonsterEncounter::CULTIST, 4.0));
-    const std::uint64_t seed = 0xC0FFEEu;
-    const auto missing = combatTransitionRowJson(
-        seed, 99, 1, 1, Room::MONSTER, static_cast<int>(MonsterEncounter::CULTIST),
-        "test-only-deterministic-transition-fixture", false, false, 0, {},
-        fixtureInput);
-    const auto repeated = combatTransitionRowJson(
-        seed, 100, 1, 1, Room::MONSTER, static_cast<int>(MonsterEncounter::CULTIST),
-        "test-only-deterministic-transition-fixture", false, true, 2, {},
-        fixtureInput);
-    if (missing["captureStatus"] != "missing" ||
-        missing["quarantineReason"] != "missing_raw_capture" ||
-        !missing["transition"].is_null() ||
-        repeated["captureStatus"] != "repeated" ||
-        repeated["quarantineReason"] != "repeated_raw_capture" ||
-        !repeated["transition"].is_null()) {
-        throw std::runtime_error("combattransitionselftest: capture quarantine serializer failed");
-    }
-    const std::vector<nlohmann::json> rows = {
-        combatTransitionFixtureRow(seed, 0, Outcome::PLAYER_VICTORY, 23),
-        combatTransitionFixtureRow(seed, 1, Outcome::PLAYER_LOSS, 0),
-        combatTransitionFixtureRow(seed, 2, Outcome::UNDECIDED, 17),
-    };
-    std::ofstream output(outfile);
-    if (!output) throw std::runtime_error("combattransitionselftest: cannot open output");
-    for (const auto &row : rows) output << row.dump() << '\n';
-    output.close();
-
-    const auto manifest = nlohmann::json{
-        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
-        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
-        {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
-        {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
-        {"format", "jsonl"}, {"testFixture", true},
-        {"producerGitSha", trainingExecutableGitSha()},
-        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
-        {"combatTeacher", combatTransitionFixtureTeacher()},
-        {"seedSpec", {{"start", seed}, {"count", 1}}},
-        {"csv", {{"path", std::filesystem::absolute(outfile).string()},
-                  {"sha256", fileSha256(outfile)}}},
-        {"integrity", {{"requestedSeeds", 1}, {"completedSeeds", 1},
-                        {"quarantinedSeeds", 0}, {"rows", rows.size()}}}
-    };
-    std::ofstream manifestFile(manifestPath);
-    if (!manifestFile)
-        throw std::runtime_error("combattransitionselftest: cannot open manifest");
-    manifestFile << manifest.dump(2) << '\n';
-    std::cout << "combattransitionselftest wrote " << rows.size()
-              << " native rows -> " << outfile << "\n"
-              << "manifest -> " << manifestPath << '\n';
-    return 0;
-}
-
-static void combatTransitionGen(int nSeeds, int sims, int asc,
-                                const std::string &outfile, long long seedOffset,
-                                const std::string &teacherPath) {
-    trainingCampaignStart();
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
-    std::ofstream f(outfile);
-    if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
-    long long rows = 0;
-    int completed = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher);
-        #pragma omp critical(combat_transition_write)
-        {
-            f << generated;
-            f.flush();
-            rows += std::count(generated.begin(), generated.end(), '\n');
-            if (!generated.empty()) ++completed;
-        }
-    }
-    f.close();
-    nlohmann::json manifest = {
-        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
-        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
-        {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
-        {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
-        {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
-        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
-        {"combatTeacher", teacher.specification},
-        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
-        {"csv", {{"path", std::filesystem::absolute(outfile).string()},
-                  {"sha256", fileSha256(outfile)}}},
-        {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
-                        {"quarantinedSeeds", nSeeds - completed}, {"rows", rows}}}
-    };
-    std::ofstream mf(outfile + ".manifest.json");
-    if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
-    mf << manifest.dump(2) << '\n';
-    std::cout << "combattransitiongen teacher=" << teacher.id << " completed="
-              << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
-              << " rows=" << rows << " -> " << outfile << '\n';
-    writeTrainingProvenance(outfile, "combattransitiongen", nSeeds, completed,
-                            nSeeds - completed, g_trainingHealthFailures.load(),
-                            rows, seedOffset, sims, asc);
-}
-
-// Outcome-blind audit of the frozen whole-combat surrogate's deployment
-// distribution. One multi-action OOC decision is reservoir-sampled per source
-// trajectory before any sibling combat outcome is observed. Every sibling
-// retains the sampled GameContext RNG streams (matched hidden future), advances
-// to its next real battle, and uses the unchanged external combat action path.
-static std::string runCounterfactualSurrogateAuditSeed(std::uint64_t seed, int sims, int asc,
-                                                        const WholeCombatTeacher &teacher) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent; agent.simulationCountBase=sims; agent.rng=std::default_random_engine(seed);
-    std::default_random_engine reservoir(seed*2862933555777941757ULL+97);
-    PathHistory path, sampledPath; t_curPath=&path;
-    std::unique_ptr<GameContext> sampled; std::vector<search::GameAction> sampledActions;
-    int sampledDecision=-1, eligible=0, decisionIdx=0; std::uint32_t sampledChosen=UINT32_MAX;
-    using RT=search::GameAction::RewardsActionType;
-    while(gc.outcome==GameOutcome::UNDECIDED){path.update(gc);if(gc.screenState==ScreenState::BATTLE){agent.simulationCountBase=fightSims(gc,sims);BattleContext bc{};agent.playoutBattle(gc,bc);if(!trainingRunValid(bc.outcome!=Outcome::UNDECIDED)){search::g_onGameActionExecute={};t_curPath=nullptr;return{};}bc.exitBattle(gc);continue;}
-        const auto actions=search::GameAction::getAllActionsInState(gc);bool replace=false;
-        if(actions.size()>=2){++eligible;replace=std::uniform_int_distribution<int>(1,eligible)(reservoir)==1;if(replace){sampled=std::make_unique<GameContext>(detachedCounterfactualCopy(gc));sampledPath=path;sampledActions=actions;sampledDecision=decisionIdx;}++decisionIdx;}
-        std::uint32_t executed=UINT32_MAX;search::g_onGameActionExecute=[&](std::uint32_t bits,const GameContext *target){if(target==&gc&&executed==UINT32_MAX)executed=bits;};
-        if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);else if(r.potionCount>0)search::GameAction(RT::POTION,0).execute(gc);else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);else evalCardRewardPolicy(gc);}
-        else agent.stepOutOfCombatPolicy(gc);
-        search::g_onGameActionExecute={};if(replace){sampledChosen=executed;if(executed!=UINT32_MAX&&std::none_of(sampledActions.begin(),sampledActions.end(),[&](const auto&a){return a.bits==executed;})){search::GameAction chosen(executed);if(chosen.isValidAction(*sampled))sampledActions.push_back(chosen);}}
-    }
-    std::ostringstream out;if(sampled){const std::string legal=joinLegalActions(sampledActions,*sampled);for(int a=0;a<(int)sampledActions.size();++a){GameContext branch=detachedCounterfactualCopy(*sampled);sampledActions[a].execute(branch);const std::uint64_t branchSeed=seed^(0x9e3779b97f4a7c15ULL*(std::uint64_t)(sampledDecision+31));bool reached=advanceOocToNextBattle(branch,sims,branchSeed,sampledPath),valid=reached;std::string reason=reached?"":"no_next_combat",feature;int won=0,endHp=0,startHp=0,startMax=0,endMax=0;std::string encounter="INVALID",room="INVALID";
-            int battleAct=0,battleFloor=0;if(reached){battleAct=branch.act;battleFloor=branch.floorNum;BattleContext bc{};int hooks=0;search::g_onCombatDecision=[&](const BattleContext&s){if(hooks++==0){feature=combatFeatureRow(s);startHp=s.player.curHp;startMax=s.player.maxHp;}};room=roomStrings[(int)branch.curRoom];search::ScumSearchAgent2 fight;fight.simulationCountBase=sims;fight.rng=std::default_random_engine(branchSeed);const int healthBefore=search::g_simHealthFailureCount;fight.playoutBattle(branch,bc);search::g_onCombatDecision=nullptr;encounter=monsterEncounterStrings[(int)bc.encounter];valid=hooks>0&&search::isValidTrainingTerminal(bc.outcome!=Outcome::UNDECIDED,healthBefore,search::g_simHealthFailureCount,false);if(valid){won=bc.outcome==Outcome::PLAYER_VICTORY;bc.exitBattle(branch);endHp=won?branch.curHp:0;endMax=branch.maxHp;}else reason=hooks==0?"missing_first_decision_hook":"combat_health_failure";}
-            out<<seed<<','<<sampledDecision<<','<<a<<','<<sampledActions[a].bits<<','<<csvQuote(actionDescription(sampledActions[a],*sampled))<<','<<(sampledActions[a].bits==sampledChosen)<<','<<(int)sampled->screenState<<','<<sampled->act<<','<<sampled->floorNum<<','<<battleAct<<','<<battleFloor<<','<<csvQuote(encounter)<<','<<csvQuote(room)<<','<<teacher.id<<','<<valid<<','<<csvQuote(reason);
-            if(valid)out<<','<<feature;else for(int i=0;i<1766;++i)out<<",0";out<<','<<won<<','<<endHp<<','<<startHp<<','<<startMax<<','<<endMax<<','<<(startMax>0?(double)endHp/startMax:0.0)<<'\n';}}
-    search::g_onCombatDecision=nullptr;t_curPath=nullptr;return out.str();
-}
-
-static void counterfactualSurrogateAuditGen(int nSeeds,int sims,int asc,const std::string&outfile,
-                                            std::uint64_t seedOffset,const std::string&teacherPath){
-    trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("counterfactual surrogate audit: cannot open output");f<<"sourceSeed,decisionIdx,actionIdx,actionBits,action,chosen,screen,decisionAct,decisionFloor,battleAct,battleFloor,battleEncounter,roomClass,teacherId,valid,quarantineReason,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac\n";long long rows=0;int completed=0;
-    for(int s=0;s<nSeeds;++s){const auto r=runCounterfactualSurrogateAuditSeed(seedOffset+s,sims,asc,teacher);rows+=std::count(r.begin(),r.end(),'\n');if(!r.empty())++completed;f<<r;f.flush();}
-    std::cout<<"ooccfaudit teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"ooccfaudit",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
-}
 
 // ---------------------------------------------------------------------------
 // STRATEGIC data generation: one CSV row per LEGAL action at each OOC decision,
@@ -4456,43 +2383,12 @@ static std::string strategicStateCols() {
     return rest.substr(0, wonPos);                      // state columns only, in richRow() order
 }
 
-static std::string strategicHeader() {
+std::string strategicHeader() {
     return "seed,decIdx,screen,action,actionType,c1,c2,c3,cand1,cand2,cand3,chosen,"
          + strategicStateCols() + ",won,endFloor,endHp\n";
 }
 
-// Successor-state fingerprint used to detect which legal action the policy
-// actually executed. All fields are ints; two actions with identical
-// fingerprints are indistinguishable at this decision.
-struct StratFingerprint {
-    int screen, act, floor, hp, maxHp, gold;
-    int keys[3], potionCount, potions[5];
-    int deckSize, relicCount;
-    long long deckSum, deckUpSum, deckHash;   // deck-content digest (non-last cards)
-    long long relicSum, relicHash;            // relic-identity digest
-    long long selSum, selHash;                // info.haveSelectedCards digest (multi-select picks)
-    int bottledLast;                          // last bottled card id (-1)
-    int goldRew, cardRew, relicRew, potionRew;
-    int emeraldKey, sapphireKey, mapX, mapY, selectSize;
-
-    bool operator==(const StratFingerprint &o) const {
-        if (screen != o.screen || act != o.act || floor != o.floor || hp != o.hp
-            || maxHp != o.maxHp || gold != o.gold || potionCount != o.potionCount
-            || deckSize != o.deckSize || relicCount != o.relicCount
-            || deckSum != o.deckSum || deckUpSum != o.deckUpSum || deckHash != o.deckHash
-            || relicSum != o.relicSum || relicHash != o.relicHash
-            || selSum != o.selSum || selHash != o.selHash
-            || bottledLast != o.bottledLast || goldRew != o.goldRew || cardRew != o.cardRew
-            || relicRew != o.relicRew || potionRew != o.potionRew
-            || emeraldKey != o.emeraldKey || sapphireKey != o.sapphireKey
-            || mapX != o.mapX || mapY != o.mapY || selectSize != o.selectSize)
-            return false;
-        for (int i = 0; i < 3; ++i) if (keys[i] != o.keys[i]) return false;
-        for (int i = 0; i < 5; ++i) if (potions[i] != o.potions[i]) return false;
-        return true;
-    }
-};
-static StratFingerprint stratFingerprint(const GameContext &gc) {
+StratFingerprint stratFingerprint(const GameContext &gc) {
     StratFingerprint f{};
     f.screen = (int)gc.screenState; f.act = gc.act; f.floor = gc.floorNum;
     f.hp = gc.curHp; f.maxHp = gc.maxHp; f.gold = gc.gold;
@@ -4800,1752 +2696,6 @@ bool oocShopBeamPolicy(GameContext &gc) {
     return true;
 }
 
-// Strategic datagen resolves candidate identities through the policy module seam.
-static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    vDisconnect();
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    PathHistory path; t_curPath = &path;
-    using RT = search::GameAction::RewardsActionType;
-
-    std::vector<std::string> rows;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc;
-            agent.playoutBattle(gc, bc);
-            bc.exitBattle(gc);
-            continue;
-        }
-
-        // Legal actions for this decision, deduped by bits (e.g. GOLD piles).
-        std::vector<search::GameAction> actions;
-        for (const auto &a : search::GameAction::getAllActionsInState(gc)) {
-            bool dup = false;
-            for (const auto &b : actions) if (b.bits == a.bits) { dup = true; break; }
-            if (!dup) actions.push_back(a);
-        }
-        // The default card policy skips a group via CARD(rIdx,5), which the
-        // enumerator omits (it only lists actual cards); add it as a candidate.
-        if (gc.screenState == ScreenState::REWARDS
-            && gc.info.rewardsContainer.cardRewardCount > 0) {
-            const search::GameAction skipCard(RT::CARD, gc.info.rewardsContainer.cardRewardCount - 1, 5);
-            bool dup = false;
-            for (const auto &b : actions) if (b.bits == skipCard.bits) { dup = true; break; }
-            if (!dup) actions.push_back(skipCard);
-        }
-
-        // Pre-decision copy: per-action successor simulations must start here.
-        // Detach the shared map (issue 83): the live policy's transitionToAct
-        // regenerates *map in place; pre must own a copy.
-        GameContext pre = gc;
-        if (gc.map) pre.map = std::make_shared<Map>(*gc.map);
-
-        // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
-        // heuristic map pathing, forced non-card rewards one at a time, native
-        // floor card pick with skip, win-rate rest/upgrade, else the agent's
-        // heuristic OOC policy.
-        if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                // Same single-group logic as serverCardRewardPolicy.
-                const int rIdx = r.cardRewardCount - 1;
-                const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
-                const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
-                                                                         : vQuery(gc, rIdx, bossW);
-                search::GameAction(RT::CARD, rIdx, idx).execute(gc);
-            }
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // win-rate rest decision (heal vs smith)
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-
-        // Which legal action did the policy take? Simulate each on a pre-state
-        // copy and match the successor fingerprint of the real run.
-        const StratFingerprint realFp = stratFingerprint(gc);
-        const int decIdx = (int)rows.size();
-        for (const auto &a : actions) {
-            GameContext probe = pre;
-            probe.map = std::make_shared<Map>(*pre.map);   // detach the shared map before probing
-            a.execute(probe);
-            const StratFingerprint probeFp = stratFingerprint(probe);
-            const bool chosen = probeFp == realFp;
-            int actionType, c1, c2, c3, cand1, cand2, cand3;
-            strategicCands(pre, a, actionType, c1, c2, c3, cand1, cand2, cand3);
-            std::ostringstream r;
-            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ',' << a.bits << ','
-              << actionType << ',' << c1 << ',' << c2 << ',' << c3 << ','
-              << cand1 << ',' << cand2 << ',' << cand3 << ',' << (chosen ? 1 : 0) << ','
-              << richRow(pre, path);
-            rows.push_back(r.str());
-        }
-        if (actions.empty()) {
-            // e.g. MATCH_AND_KEEP: the policy still acts, but no legal action is
-            // enumerable; keep a value-only row so the state is still labeled.
-            std::ostringstream r;
-            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ",-1,-1,-1,-1,-1,-1,-1,-1,1,"
-              << richRow(pre, path);
-            rows.push_back(r.str());
-        }
-    }
-    t_curPath = nullptr;
-    if (!trainingRunValid(gc.outcome != GameOutcome::UNDECIDED)) return {};
-
-    const int won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0;
-    std::ostringstream out;
-    for (const auto &row : rows)
-        out << row << ',' << won << ',' << gc.floorNum << ',' << gc.curHp << '\n';
-    return out.str();
-}
-
-// ── Shared strategic branch label evaluator (Tier-B contract) ──────────────
-// Used by both strategicgen2 and strategicmarggen. Evaluates K=3 fights with
-// bootstrap=true and the standard 150/100/50 sim schedule. Returns the same
-// OocCounterfactualResult fields used by Tier-B label averaging.
-static OocCounterfactualResult evaluateStrategicBranch(
-    GameContext gc, std::uint64_t branchSeed, const PathHistory &path)
-{
-    return finishOocCounterfactual(std::move(gc), /*sims=*/0, branchSeed, path,
-        g_strategicBranchFights, /*bootstrap=*/true,
-        /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
-}
-
-// ── Production V4 OOC step (frozen baseline) ───────────────────────────────
-// Executes exactly one OOC decision using the current frozen V4 gate stack.
-static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
-    const bool inRemove = gc.screenState == ScreenState::CARD_SELECT
-                          && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-    using RT = search::GameAction::RewardsActionType;
-    if (gc.screenState == ScreenState::BATTLE) {
-        BattleContext bc;
-        agent.playoutBattle(gc, bc);
-        bc.exitBattle(gc);
-    } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocMapRouteSearchPolicy(gc, agent))
-                if (!oocOnePlyMapPolicy(gc, agent))
-                    search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-    } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyEventPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-    } else if (gc.screenState == ScreenState::REST_ROOM) {
-        if (!oocActionNNPolicy(gc)) {
-            if (!oocOnePlyRestPolicy(gc, agent)) {
-                if (g_restWin && one_combat::restWinPolicy(gc)) {}
-                else agent.stepOutOfCombatPolicy(gc);
-            }
-        }
-    } else if (gc.screenState == ScreenState::TREASURE_ROOM) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyTreasurePolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-    } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocShopBeamPolicy(gc))
-                if (!oocOnePlyShopPolicy(gc, agent)) one_combat::shopVPolicy(gc);
-    } else if (inRemove) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocShopBeamPolicy(gc)) one_combat::removeSelectVPolicy(gc);
-    } else if (gc.screenState == ScreenState::REWARDS) {
-        auto &r = gc.info.rewardsContainer;
-        if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-        else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-        else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-        else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-        else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-        else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-        else {
-            if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyCardRewardPolicy(gc, agent)) one_combat::serverCardRewardPolicy(gc);
-        }
-    } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-               && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) one_combat::upgradeSelectWinPolicy(gc);
-    } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-    } else {
-        agent.stepOutOfCombatPolicy(gc);
-    }
-}
-
-struct MargResult { double won, hp, floor, boot; int survivedH; };
-
-static MargResult finishMargCf(GameContext gc, std::uint64_t branchSeed,
-                                const PathHistory &path) {
-    OocCounterfactualResult r = evaluateStrategicBranch(
-        std::move(gc), branchSeed, path);
-    return {r.won, r.hp, r.floor, (double)r.bootstrapped, r.survivedH ? 1 : 0};
-}
-
-static void strategicMargGen(int nSeeds, int outerSims,
-                             int H, int maxPerRun, const std::string &outFile,
-                             long long seedOffset) {
-    std::ofstream out(outFile);
-    out << "seed,decIdx,act,floor,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
-           "continuationSeed,hiddenSeed,labelWon,labelHp,labelFloor,labelBootstrap,utility,"
-           "survivedH,continuationValue,qSample,"
-           "fallbackIdx,fallbackExact,chosenIdx,chosenExact,"
-           "v4ModelIdx,v4Margin,v4Threshold,v4Fired,v4ExecutedIdx,v4Override,"
-           "richState,actionBits,actionType,c1,c2,c3,cand1,cand2,cand3,hiddenChanged,"
-           "sourceWon,sourceFloor,sourceHp\n";
-    out.flush();
-    auto t0 = std::chrono::steady_clock::now();
-    std::mutex outMtx;
-    int totalDecisions = 0;
-    const double v4Threshold = g_oocStrategicMargin;
-
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::uint64_t seed = (std::uint64_t)(seedOffset + s);
-
-        // ── Pass 1: play full source run, collect eligible decision snapshots ──
-        struct DecisionSnap {
-            GameContext pre;
-            PathHistory prePath;
-            std::vector<search::GameAction> actions;
-            int decIdx, screen, gateKind, actNum, floorNum;
-            std::string stateRow;
-        };
-        std::vector<DecisionSnap> snaps;
-        {
-            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-            vDisconnect();
-            search::ScumSearchAgent2 agent;
-            agent.simulationCountBase = outerSims;
-            agent.rng = std::default_random_engine(seed);
-            PathHistory path;
-            t_curPath = &path;
-            int decIdx = 0;
-            while (gc.outcome == GameOutcome::UNDECIDED) {
-                path.update(gc);
-                int screen = (int)gc.screenState;
-                int gateKind = 0;
-                bool isOwned = false;
-                if (screen == 1) { gateKind = 1; isOwned = true; }
-                else if (screen == 2) { auto &r = gc.info.rewardsContainer; if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; } }
-                else if (screen == 3) { gateKind = 3; isOwned = true; }
-                else if (screen == 4) { if (gc.info.selectScreenType == CardSelectScreenType::UPGRADE) { gateKind = 4; isOwned = true; } }
-                else if (screen == 6) { gateKind = 5; isOwned = true; }
-                else if (screen == 7) { gateKind = 6; isOwned = true; }
-                else if (screen == 8) { gateKind = 7; isOwned = true; }
-
-                if (isOwned) {
-                    GameContext pre = detachedCounterfactualCopy(gc);
-                    auto actions = search::GameAction::getAllActionsInState(gc);
-                    if (actions.size() >= 2) {
-                        snaps.push_back({std::move(pre), path, std::move(actions),
-                                         decIdx, screen, gateKind, gc.act, gc.floorNum,
-                                         richRow(pre, path)});
-                    }
-                    ++decIdx;
-                }
-                stepFrozenV4Ooc(gc, agent);
-            }
-            t_curPath = nullptr;
-        }
-
-        // ── Uniform sample up to maxPerRun decisions ──
-        int nSnaps = (int)snaps.size();
-        int nSample = std::min(maxPerRun, nSnaps);
-        if (nSnaps > maxPerRun) {
-            std::mt19937_64 rng(seed ^ 0x9e3779b97f4a7c15ULL);
-            for (int i = 0; i < nSample; ++i) {
-                int j = i + (int)(rng() % (std::uint64_t)(nSnaps - i));
-                std::swap(snaps[i], snaps[j]);
-            }
-        }
-        snaps.resize(nSample);
-
-        // ── Pass 2: evaluate sampled decisions ──
-        std::ostringstream local;
-        int localDecisions = 0;
-        int sourceWon = 0, sourceFloor = 0, sourceHp = 0;
-        {
-            // Re-run the source game to get terminal outcome
-            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-            vDisconnect();
-            search::ScumSearchAgent2 agent;
-            agent.simulationCountBase = outerSims;
-            agent.rng = std::default_random_engine(seed);
-            PathHistory path;
-            t_curPath = &path;
-            while (gc.outcome == GameOutcome::UNDECIDED) {
-                path.update(gc);
-                stepFrozenV4Ooc(gc, agent);
-            }
-            sourceWon = (gc.outcome == GameOutcome::PLAYER_VICTORY) ? 1 : 0;
-            sourceFloor = gc.floorNum;
-            sourceHp = gc.curHp;
-            t_curPath = nullptr;
-        }
-
-        {
-            search::ScumSearchAgent2 evalAgent;
-            evalAgent.simulationCountBase = outerSims;
-            evalAgent.rng = std::default_random_engine(seed);
-        for (auto &snap : snaps) {
-            auto &pre = snap.pre; auto &prePath = snap.prePath;
-            auto &actions = snap.actions;
-            int screen = snap.screen, gateKind = snap.gateKind;
-            int actNum = snap.actNum, floorNum = snap.floorNum;
-            int decIdx = snap.decIdx;
-            std::string &stateRow = snap.stateRow;
-
-            // Per-action metadata
-            std::vector<std::string> actionMetas;
-            for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                int at, c1v, c2v, c3v, ca1, ca2, ca3;
-                strategicCands(pre, actions[ai], at, c1v, c2v, c3v, ca1, ca2, ca3);
-                char buf[256];
-                std::snprintf(buf, sizeof(buf), "%u,%d,%d,%d,%d,%d,%d,%d",
-                              actions[ai].bits, at, c1v, c2v, c3v, ca1, ca2, ca3);
-                actionMetas.push_back(buf);
-            }
-
-            // Fallback via fingerprint (abbreviated — identical to existing code)
-            int fallbackIdx = -1, fallbackExact = 0;
-            {
-                GameContext fbGc = detachedCounterfactualCopy(pre);
-                if (screen == 1) evalAgent.stepOutOfCombatPolicy(fbGc);
-                else if (screen == 2) one_combat::serverCardRewardPolicy(fbGc);
-                else if (screen == 3) { if (g_bossRelicV) one_combat::bossRelicVPolicy(fbGc); else evalAgent.stepOutOfCombatPolicy(fbGc); }
-                else if (screen == 4) one_combat::upgradeSelectWinPolicy(fbGc);
-                else if (screen == 6) evalAgent.stepOutOfCombatPolicy(fbGc);
-                else if (screen == 7) { if (g_restWin && one_combat::restWinPolicy(fbGc)) {} else evalAgent.stepOutOfCombatPolicy(fbGc); }
-                else if (screen == 8) one_combat::shopVPolicy(fbGc);
-                auto fbFp = stratFingerprint(fbGc);
-                for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext tGc = detachedCounterfactualCopy(pre);
-                    actions[ai].execute(tGc);
-                    if (stratFingerprint(tGc) == fbFp) {
-                        if (fallbackIdx < 0) { fallbackIdx = ai; fallbackExact = 1; }
-                        else { fallbackExact = 0; break; }
-                    }
-                }
-            }
-
-            // Source chosen
-            int chosenIdx = -1, chosenExact = 0;
-            {
-                GameContext postGc = detachedCounterfactualCopy(pre);
-                stepFrozenV4Ooc(postGc, evalAgent);
-                auto postFp = stratFingerprint(postGc);
-                for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext tGc = detachedCounterfactualCopy(pre);
-                    actions[ai].execute(tGc);
-                    if (stratFingerprint(tGc) == postFp) {
-                        if (chosenIdx < 0) { chosenIdx = ai; chosenExact = 1; }
-                        else { chosenExact = 0; break; }
-                    }
-                }
-            }
-
-            // V4 predictions
-            int v4BestIdx = -1; double v4Margin = 0; bool v4Fired = false;
-            if (g_oocStrategicTokNet.ok) {
-                TokState ts = buildTokState(pre, prePath);
-                double bestV4 = -1e100, secondV4 = -1e100;
-                for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    int at, c1v, c2v, c3v, ca1, ca2, ca3;
-                    strategicCands(pre, actions[ai], at, c1v, c2v, c3v, ca1, ca2, ca3);
-                    const int cats[6] = {c1v, c2v, c3v, ca1, ca2, ca3};
-                    int et, ei; float gg;
-                    tokEntity(pre, actions[ai], et, ei, gg);
-                    const float entT[4] = {et==0?1.f:0.f, et==1?1.f:0.f, et==2?1.f:0.f, et==3?1.f:0.f};
-                    double v = g_oocStrategicTokNet.predictActionValue(
-                        ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                        actions[ai].bits, cats, at, screen, entT, ei, gg);
-                    if (v > bestV4) { secondV4 = bestV4; bestV4 = v; v4BestIdx = ai; }
-                    else if (v > secondV4) secondV4 = v;
-                }
-                v4Margin = bestV4 - secondV4;
-                v4Fired = v4Margin >= v4Threshold;
-            }
-            int v4ExecutedIdx = (v4Fired && v4BestIdx >= 0) ? v4BestIdx : fallbackIdx;
-            int v4Override = (fallbackExact == 1 && v4Fired && v4BestIdx >= 0 && v4BestIdx != fallbackIdx) ? 1 : 0;
-
-            std::uint64_t baseSeed = seed ^ ((std::uint64_t)decIdx * 0x9e3779b97f4a7c15ULL);
-            if (!baseSeed) baseSeed = 1;
-
-            // EMIT_ROW macro (same as before)
-            #define EMIT_ROW(regimeStr, contSeed, hiddenSeedVal, hiddenChangedVal) \
-                local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum \
-                      << ',' << screen << ',' << gateKind << ',' << ai << ',' \
-                      << actions.size() << ',' << h << ',' << regimeStr << ',' << contSeed << ',' << hiddenSeedVal << ',' \
-                      << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot << ',' \
-                      << (10.0*r.won+r.hp) << ',' << r.survivedH << ',' << r.won << ',' \
-                      << (r.survivedH * r.won) << ',' << fallbackIdx << ',' << fallbackExact << ',' \
-                      << chosenIdx << ',' << chosenExact << ',' \
-                      << v4BestIdx << ',' << v4Margin << ',' << v4Threshold << ',' \
-                      << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override << ',' \
-                      << csvQuote(stateRow) << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
-
-            // Regime F, I, M (identical to existing)
-            for (int h = 0; h < H; ++h) {
-                std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
-                if (!contSeed) contSeed = 1;
-                for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext branch = detachedCounterfactualCopy(pre);
-                    actions[ai].execute(branch);
-                    MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
-                    EMIT_ROW("fixed", contSeed, 0, 0)
-                }
-            }
-            for (int h = 0; h < std::min(H, 2); ++h) {
-                std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
-                if (!contSeed) contSeed = 1;
-                for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext branch = detachedCounterfactualCopy(pre);
-                    actions[ai].execute(branch);
-                    MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
-                    EMIT_ROW("marg_id", contSeed, 0, 0)
-                }
-            }
-            for (int h = 0; h < H; ++h) {
-                std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
-                std::uint64_t hiddenSeed = baseSeed ^ ((std::uint64_t)(h + H) * 0x9e3779b97f4a7c15ULL);
-                if (!contSeed) contSeed = 1; if (!hiddenSeed) hiddenSeed = 1;
-                GameContext hiddenBase = detachedCounterfactualCopy(pre);
-                std::uint64_t hashBefore = 0, hashAfter = 0;
-                for (int i = hiddenBase.monsterListOffset; i < (int)hiddenBase.monsterList.size(); ++i)
-                    hashBefore = hashBefore * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.monsterList[i];
-                for (int i = hiddenBase.eliteMonsterListOffset; i < (int)hiddenBase.eliteMonsterList.size(); ++i)
-                    hashBefore = hashBefore * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.eliteMonsterList[i];
-                resampleRemainingActEncounters(hiddenBase, hiddenSeed);
-                for (int i = hiddenBase.monsterListOffset; i < (int)hiddenBase.monsterList.size(); ++i)
-                    hashAfter = hashAfter * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.monsterList[i];
-                for (int i = hiddenBase.eliteMonsterListOffset; i < (int)hiddenBase.eliteMonsterList.size(); ++i)
-                    hashAfter = hashAfter * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.eliteMonsterList[i];
-                int hiddenChanged = (hashBefore != hashAfter) ? 1 : 0;
-                for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext branch = detachedCounterfactualCopy(hiddenBase);
-                    actions[ai].execute(branch);
-                    MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
-                    EMIT_ROW("marg", contSeed, hiddenSeed, hiddenChanged)
-                }
-            }
-            #undef EMIT_ROW
-            ++localDecisions;
-        }
-        }  // end evalAgent scope
-
-        // Source outcome post-processing
-        std::string prefix = std::to_string(sourceWon) + "," + std::to_string(sourceFloor) + "," + std::to_string(sourceHp);
-        std::string localStr = local.str();
-        std::string from = ",0,0,0\n";
-        std::string to = "," + prefix + "\n";
-        size_t pos = 0;
-        while ((pos = localStr.find(from, pos)) != std::string::npos) {
-            localStr.replace(pos, from.length(), to);
-            pos += to.length();
-        }
-
-        #pragma omp critical(marg_write4)
-        {
-            out << localStr; out.flush();
-            totalDecisions += localDecisions;
-            if (totalDecisions % 10 == 0 || totalDecisions <= 5) {
-                double el = std::chrono::duration<double>(
-                    std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d decisions, %.0fs (%.1fs/dec)\n",
-                            totalDecisions, el, el / std::max(1, totalDecisions));
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
-}
-
-// Strong, bounded full-run adjudication for decisions selected offline by
-// tools/analyze_ooc_factor.py.  This is a diagnostic mode only: it replays the
-// frozen source trajectory, evaluates exactly the two manifest actions, and
-// never feeds a result back into live gameplay.
-struct OocFactorManifestRow {
-    std::uint64_t seed;
-    int decIdx, act, floor, screen;
-    std::uint32_t currentBits, factorBits;
-    std::array<int,7> currentDescriptor, factorDescriptor;
-};
-
-struct OocFactorResolvedDecision {
-    OocFactorManifestRow manifest;
-    GameContext pre;
-    PathHistory prePath;
-    std::vector<search::GameAction> actions;
-    int currentIdx, factorIdx;
-};
-
-static void oocFactorEvaluate(const std::string &manifestFile,
-                              const std::string &outFile, int referenceSims,
-                              int futures, int futureStart, int expectedDecisions,
-                              bool marginalTradeoff = false,
-                              bool boundedK3 = false,
-                              bool semanticFullRun = false) {
-    std::ifstream in(manifestFile);
-    if (!in) throw std::runtime_error("oocfactoreval: cannot open manifest");
-    std::string line;
-    std::getline(in, line);
-    if (line.empty()) throw std::runtime_error("oocfactoreval: manifest header is missing");
-    std::vector<std::string> header;
-    { std::stringstream hs(line); std::string h;
-      while (std::getline(hs, h, ',')) {
-          if (!h.empty() && h.back() == '\r') h.pop_back();
-          if (h.size() >= 2 && h.front() == '"' && h.back() == '"')
-              h = h.substr(1, h.size() - 2);
-          header.push_back(h);
-      } }
-    std::unordered_map<std::string,int> col;
-    for (int i = 0; i < (int)header.size(); ++i) col[header[i]] = i;
-    for (const char *name : {"seed","decIdx","act","floor","screen"})
-        if (!col.count(name)) throw std::runtime_error("oocfactoreval: manifest header mismatch");
-    const char *safeBitsCol = col.count("safeActionBits") ? "safeActionBits" : "safeBits";
-    const char *strengthBitsCol = col.count("strengthActionBits") ? "strengthActionBits" : "strengthBits";
-    if (marginalTradeoff && (!col.count(safeBitsCol) || !col.count(strengthBitsCol)))
-        throw std::runtime_error("oocfactoreval: marginal manifest header mismatch");
-    const char *safeDescriptorNames[] = {
-        "safeActionType","safeC1","safeC2","safeC3","safeCand1","safeCand2","safeCand3"};
-    const char *strengthDescriptorNames[] = {
-        "strengthActionType","strengthC1","strengthC2","strengthC3",
-        "strengthCand1","strengthCand2","strengthCand3"};
-    const bool semanticResolution = boundedK3 || semanticFullRun;
-    if (semanticResolution) {
-        for (const char *name : safeDescriptorNames)
-            if (!col.count(name)) throw std::runtime_error("oocfactoreval: missing semantic column " + std::string(name));
-        for (const char *name : strengthDescriptorNames)
-            if (!col.count(name)) throw std::runtime_error("oocfactoreval: missing semantic column " + std::string(name));
-    }
-    std::vector<OocFactorManifestRow> manifest;
-    while (std::getline(in, line)) {
-        if (line.empty()) continue;
-        std::stringstream ss(line); std::string cell;
-        std::vector<std::string> c;
-        while (std::getline(ss, cell, ',')) {
-            if (!cell.empty() && cell.back() == '\r') cell.pop_back();
-            if (cell.size() >= 2 && cell.front() == '"' && cell.back() == '"')
-                cell = cell.substr(1, cell.size() - 2);
-            c.push_back(cell);
-        }
-        if ((!marginalTradeoff && c.size() != 7)
-                || (marginalTradeoff && c.size() < 7))
-            throw std::runtime_error("oocfactoreval: malformed manifest row");
-        auto at = [&](const char *name) -> const std::string& { return c.at(col.at(name)); };
-        std::array<int,7> safeDescriptor{}, strengthDescriptor{};
-        if (semanticResolution) {
-            for (int i = 0; i < 7; ++i) {
-                safeDescriptor[i] = std::stoi(at(safeDescriptorNames[i]));
-                strengthDescriptor[i] = std::stoi(at(strengthDescriptorNames[i]));
-            }
-            if (safeDescriptor == strengthDescriptor)
-                throw std::runtime_error("oocfactoreval: safe and strength descriptors are identical");
-        }
-        manifest.push_back({std::stoull(at("seed")), std::stoi(at("decIdx")),
-                            std::stoi(at("act")), std::stoi(at("floor")),
-                            std::stoi(at("screen")),
-                            (std::uint32_t)std::stoull(at(marginalTradeoff ? safeBitsCol : "currentBits")),
-                            (std::uint32_t)std::stoull(at(marginalTradeoff ? strengthBitsCol : "factorBits")),
-                            safeDescriptor, strengthDescriptor});
-    }
-    if ((int)manifest.size() != expectedDecisions)
-        throw std::runtime_error("oocfactoreval: guarded decision count does not match manifest");
-
-    // Resolve the complete manifest before opening the output or starting any
-    // expensive full-run continuation.  A producer/evaluator indexing drift
-    // therefore fails atomically instead of leaving a partial adjudication.
-    std::vector<OocFactorResolvedDecision> resolved;
-    resolved.reserve(manifest.size());
-    std::ofstream preflight;
-    if (futures == 0) {
-        preflight.open(outFile);
-        if (!preflight) throw std::runtime_error("oocfactoreval: cannot open preflight output");
-        preflight << "seed,decIdx,act,floor,screen,replayValid,matchedDecision,"
-                     "safeMatchCount,strengthMatchCount\n";
-    }
-    for (const auto &m : manifest) {
-        GameContext gc(CharacterClass::IRONCLAD, m.seed, 0);
-        vDisconnect();
-        search::ScumSearchAgent2 agent;
-        agent.simulationCountBase = 1000;
-        agent.rng = std::default_random_engine(m.seed);
-        PathHistory path; t_curPath = &path;
-        int decIdx = 0, safeMatchCount = 0, strengthMatchCount = 0;
-        bool found = false, matchedDecision = false;
-        while (gc.outcome == GameOutcome::UNDECIDED) {
-            path.update(gc);
-            const int screen = (int)gc.screenState;
-            bool eligible = screen == 1 || screen == 3 || screen == 6
-                         || screen == 7 || screen == 8;
-            if (screen == 2)
-                eligible = gc.info.rewardsContainer.cardRewardCount > 0;
-            if (screen == 4)
-                eligible = gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
-            if (eligible) {
-                const auto actions = search::GameAction::getAllActionsInState(gc);
-                if (actions.size() >= 2) {
-                    if (decIdx == m.decIdx && gc.act == m.act
-                        && gc.floorNum == m.floor && screen == m.screen) {
-                        matchedDecision = true;
-                        int ci = -1, fi = -1;
-                        for (int i = 0; i < (int)actions.size(); ++i) {
-                            if (semanticResolution) {
-                                int at,c1,c2,c3,ca1,ca2,ca3;
-                                strategicCands(gc, actions[i], at,c1,c2,c3,ca1,ca2,ca3);
-                                const std::array<int,7> descriptor{at,c1,c2,c3,ca1,ca2,ca3};
-                                if (descriptor == m.currentDescriptor) { ci = i; ++safeMatchCount; }
-                                if (descriptor == m.factorDescriptor) { fi = i; ++strengthMatchCount; }
-                            } else {
-                                if (actions[i].bits == m.currentBits && ci < 0) ci = i;
-                                if (actions[i].bits == m.factorBits && fi < 0) fi = i;
-                            }
-                        }
-                        if (semanticResolution && safeMatchCount != 1) ci = -1;
-                        if (semanticResolution && strengthMatchCount != 1) fi = -1;
-                        if (ci >= 0 && fi >= 0) {
-                            found = true;
-                            resolved.push_back({m, detachedCounterfactualCopy(gc), path,
-                                                actions, ci, fi});
-                        }
-                    }
-                }
-                ++decIdx;
-            }
-            if (found) break;
-            stepFrozenV4Ooc(gc, agent);
-        }
-        t_curPath = nullptr;
-        if (futures == 0) {
-            preflight << m.seed << ',' << m.decIdx << ',' << m.act << ',' << m.floor
-                      << ',' << m.screen << ',' << (found ? 1 : 0) << ','
-                      << (matchedDecision ? 1 : 0) << ',' << safeMatchCount << ','
-                      << strengthMatchCount << '\n';
-        } else if (!found) {
-            throw std::runtime_error("oocfactoreval: manifest decision/action did not replay");
-        }
-    }
-    std::cout << "oocfactoreval preflight resolved " << resolved.size() << '/'
-              << manifest.size() << " decisions\n";
-    if (futures == 0) {
-        preflight.close();
-        if (resolved.size() != manifest.size())
-            throw std::runtime_error("oocfactoreval: preflight did not resolve complete manifest");
-        return;
-    }
-
-    std::ofstream out(outFile);
-    if (!out) throw std::runtime_error("oocfactoreval: cannot open output");
-    if (boundedK3) {
-        out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
-               "hiddenSeed,labelWon,labelHp,labelFloor,labelBootstrap,survivedH,"
-               "continuationValue,qProduct,denseK3,valid\n";
-    } else if (marginalTradeoff) {
-        out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
-               "hiddenSeed,won,floorEnd,hpEnd,adjudicatedValue,valid\n";
-    } else {
-        out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
-               "won,floorEnd,hpEnd,adjudicatedValue,valid\n";
-    }
-    for (const auto &d : resolved) {
-        const auto &m = d.manifest;
-        for (int j = 0; j < futures; ++j) {
-            const int future = futureStart + j;
-            std::uint64_t contSeed = m.seed
-                ^ ((std::uint64_t)(m.decIdx + 1) * 0x9e3779b97f4a7c15ULL)
-                ^ ((std::uint64_t)(future + 1) * 0xbf58476d1ce4e5b9ULL);
-            if (!contSeed) contSeed = 1;
-            std::uint64_t hiddenSeed = contSeed ^ 0x94d049bb133111ebULL;
-            if (!hiddenSeed) hiddenSeed = 1;
-            GameContext siblingBase = detachedCounterfactualCopy(d.pre);
-            if (marginalTradeoff)
-                resampleRemainingActEncounters(siblingBase, hiddenSeed);
-            const char firstRole = marginalTradeoff ? 'S' : 'C';
-            const char secondRole = marginalTradeoff ? 'V' : 'F';
-            for (const auto roleIdx : {std::pair<char,int>{firstRole, d.currentIdx},
-                                      std::pair<char,int>{secondRole, d.factorIdx}}) {
-                GameContext branch = detachedCounterfactualCopy(siblingBase);
-                d.actions[roleIdx.second].execute(branch);
-                const OocCounterfactualResult r = boundedK3
-                    ? evaluateStrategicBranch(std::move(branch), contSeed, d.prePath)
-                    : finishOocCounterfactual(
-                        std::move(branch), referenceSims, contSeed, d.prePath,
-                        -1, false, nullptr, 0, nullptr, false);
-                out << m.seed << ',' << m.decIdx << ',' << m.act << ',' << m.floor
-                    << ',' << m.screen << ',' << roleIdx.first << ','
-                    << d.actions[roleIdx.second].bits << ',' << future << ','
-                    << contSeed << ',';
-                if (marginalTradeoff) out << hiddenSeed << ',';
-                if (boundedK3) {
-                    out << r.won << ',' << r.hp << ',' << r.floor << ','
-                        << r.bootstrapped << ',' << (r.survivedH ? 1 : 0) << ','
-                        << r.won << ',' << (r.survivedH ? r.won : 0.0) << ','
-                        << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
-                } else {
-                    out << r.won << ',' << r.floor << ',' << r.hp
-                        << ',' << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
-                }
-            }
-        }
-    }
-}
-
-// Frozen-cohort K/search-budget evaluator. The JSON manifest contains one
-// entry per source decision and the complete legal sibling set captured by
-// ooccfaudit. Replay validates both action bits and the human-readable semantic
-// description before any output is opened or continuation work starts.
-struct OocBudgetAction { std::uint32_t bits; std::string semantic; bool chosen; };
-struct OocBudgetDecision {
-    std::uint64_t seed; int decIdx, act, floor, screen;
-    std::vector<OocBudgetAction> actions;
-};
-struct OocBudgetResolved {
-    OocBudgetDecision manifest; GameContext pre; PathHistory path;
-    std::vector<search::GameAction> actions;
-};
-
-static void stepCounterfactualAuditSource(GameContext &gc,
-                                           search::ScumSearchAgent2 &agent) {
-    using RT=search::GameAction::RewardsActionType;
-    if(gc.screenState==ScreenState::BATTLE){
-        agent.simulationCountBase=fightSims(gc,10000);BattleContext bc{};
-        agent.playoutBattle(gc,bc);
-        if(bc.outcome==Outcome::UNDECIDED)throw std::runtime_error("oockbudgeteval: source replay combat unresolved");
-        bc.exitBattle(gc);
-    }else if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)
-        search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-    else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;
-        if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);
-        else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);
-        else if(r.potionCount>0)search::GameAction(RT::POTION,0).execute(gc);
-        else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);
-        else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);
-        else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);
-        else evalCardRewardPolicy(gc);
-    }else agent.stepOutOfCombatPolicy(gc);
-}
-
-static void oocBudgetEvaluate(const std::string &manifestFile,
-                              const std::string &outFile,
-                              const std::vector<int> &schedule,
-                              int futures, int futureStart,
-                              const std::string &side,
-                              const std::string &specFile,
-                              int shardIndex, int shardCount,
-                              int workIndex, int workCount) {
-    if (side != "A" && side != "B")
-        throw std::runtime_error("oockbudgeteval: side must be A or B");
-    const std::map<std::string,std::string> frozenEnv={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},
-        {"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},
-        {"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},
-        {"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_NATIVE_OOC","1"}};
-    for(const auto &[name,expected]:frozenEnv){const char*actual=std::getenv(name.c_str());
-        if(!actual||actual!=expected)throw std::runtime_error("oockbudgeteval: frozen environment mismatch for "+name);}
-    if(!search::silverLiveBackendInstalled()||!search::silverLiveExactRootBudgets()
-        ||search::silverLiveReuseCapMode()!="allocated"||search::silverLiveReuseCap()!=32768
-        ||search::silverLiveAdaptiveEnabled())
-        throw std::runtime_error("oockbudgeteval: frozen Silver configuration mismatch");
-    std::ifstream specInput(specFile);if(!specInput)throw std::runtime_error("oockbudgeteval: cannot open frozen experiment spec");
-    nlohmann::json spec;specInput>>spec;
-    if(spec.value("schema",std::string{})!="ooc_k_budget_experiment_v1"
-        ||spec.at("sourceSha").get<std::string>()!=trainingExecutableGitSha()
-        ||spec.at("executable").at("sha256").get<std::string>()!=fileSha256(g_mainBinaryPath)
-        ||spec.at("manifest").at("sha256").get<std::string>()!=fileSha256(manifestFile)
-        ||spec.at("analysis").at("sha256").get<std::string>()!=fileSha256(spec.at("analysis").at("path").get<std::string>()))
-        throw std::runtime_error("oockbudgeteval: frozen spec hash/source mismatch");
-    const int frozenShardCount=spec.at("execution").at("shardCount").get<int>();
-    const int frozenWorkCount=spec.at("execution").at("recoveryWorkCount").get<int>();
-    if(spec.at("execution").at("recoveryPartition").get<std::string>()!="action_future_modulo")
-        throw std::runtime_error("oockbudgeteval: unsupported recovery partition");
-    if(shardCount!=frozenShardCount||shardCount<=0||shardIndex < -1
-        ||(shardIndex<0&&futures!=0)||shardIndex>=shardCount)
-        throw std::runtime_error("oockbudgeteval: invalid or unfrozen shard assignment");
-    if(workIndex < -1 || workIndex >= workCount || workCount != frozenWorkCount
-        || (workIndex >= 0 && futures == 0))
-        throw std::runtime_error("oockbudgeteval: invalid or unfrozen recovery work assignment");
-    std::map<std::string,std::string> modelPaths;
-    for(const auto &model:spec.at("oocModels")){
-        const std::string role=model.at("role").get<std::string>(),path=model.at("path").get<std::string>();
-        modelPaths[role]=path;
-        if(fileSha256(path)!=model.at("sha256").get<std::string>())
-            throw std::runtime_error("oockbudgeteval: frozen OOC model hash mismatch");
-    }
-    if(!g_nativeOoc||!g_floorNet.ok||!g_winNet.ok||modelPaths.size()!=2
-        ||modelPaths["floor"]!=g_floorNet.path||modelPaths["win"]!=g_winNet.path)
-        throw std::runtime_error("oockbudgeteval: frozen OOC models were not loaded/used");
-    std::vector<int> expectedFutures;
-    std::string aStage;
-    if(side=="A"){
-        aStage=schedule==std::vector<int>{10000,10000,10000}?"stageA":"stageB";
-        expectedFutures=spec.at("A").at(aStage).at("futureIdentities").get<std::vector<int>>();
-    }else expectedFutures=spec.at("B").at("futureIdentities").get<std::vector<int>>();
-    std::vector<int> actualFutures;for(int i=0;i<futures;++i)actualFutures.push_back(futureStart+i);
-    if(futures>0&&actualFutures!=expectedFutures)throw std::runtime_error("oockbudgeteval: future identities differ from frozen spec");
-    if(side=="A"){
-        bool found=false;for(const auto &s:spec.at("A").at(aStage).at("schedules"))if(s.get<std::vector<int>>()==schedule)found=true;
-        if(!found)throw std::runtime_error("oockbudgeteval: A schedule differs from frozen spec");
-    }else if(spec.at("B").at("schedule").get<std::vector<int>>()!=schedule)
-        throw std::runtime_error("oockbudgeteval: B schedule differs from frozen spec");
-    if (schedule.empty() || schedule.size() > 3
-        || std::any_of(schedule.begin(), schedule.end(), [](int v){ return v <= 0; }))
-        throw std::runtime_error("oockbudgeteval: schedule must contain 1..3 positive budgets");
-    if (futures < 0) throw std::runtime_error("oockbudgeteval: futures must be nonnegative");
-    std::ifstream input(manifestFile);
-    if (!input) throw std::runtime_error("oockbudgeteval: cannot open manifest");
-    nlohmann::json doc; input >> doc;
-    if (doc.value("schema", std::string{}) != "ooc_k_budget_manifest_v1"
-        || !doc.contains("decisions") || !doc["decisions"].is_array())
-        throw std::runtime_error("oockbudgeteval: manifest schema mismatch");
-    std::vector<OocBudgetDecision> manifest;
-    for (const auto &j : doc["decisions"]) {
-        OocBudgetDecision d{j.at("sourceSeed").get<std::uint64_t>(),
-            j.at("decisionIdx").get<int>(), j.at("act").get<int>(),
-            j.at("floor").get<int>(), j.at("screen").get<int>(), {}};
-        for (const auto &a : j.at("actions"))
-            d.actions.push_back({a.at("actionBits").get<std::uint32_t>(),
-                                 a.at("semantic").get<std::string>(),
-                                 a.at("chosen").get<bool>()});
-        if (d.actions.size() < 2) throw std::runtime_error("oockbudgeteval: incomplete sibling set");
-        if(shardIndex<0||(int)(d.seed%(std::uint64_t)shardCount)==shardIndex)
-            manifest.push_back(std::move(d));
-    }
-
-    std::vector<OocBudgetResolved> resolved;
-    for (const auto &m : manifest) {
-        GameContext gc(CharacterClass::IRONCLAD, m.seed, 0); vDisconnect();
-        search::ScumSearchAgent2 sourceAgent; sourceAgent.simulationCountBase=10000;
-        sourceAgent.rng=std::default_random_engine(m.seed);
-        PathHistory path; t_curPath=&path; int decIdx=0; bool found=false;
-        while (gc.outcome == GameOutcome::UNDECIDED) {
-            path.update(gc);
-            auto actions=search::GameAction::getAllActionsInState(gc);
-            if (actions.size() >= 2) {
-                if (decIdx == m.decIdx && gc.act == m.act && gc.floorNum == m.floor
-                    && (int)gc.screenState == m.screen) {
-                    // Preserve the audit's explicit-policy action when the
-                    // generic enumerator omitted it (notably card skip).
-                    for (const auto &expected : m.actions)
-                        if (std::none_of(actions.begin(), actions.end(), [&](const auto &a){return a.bits==expected.bits;})) {
-                            search::GameAction candidate(expected.bits);
-                            if (candidate.isValidAction(gc)) actions.push_back(candidate);
-                        }
-                    std::vector<bool> used(actions.size(), false);
-                    std::vector<search::GameAction> ordered;
-                    for (const auto &expected : m.actions) {
-                        int match=-1, count=0;
-                        for (int i=0;i<(int)actions.size();++i)
-                            if (actions[i].bits==expected.bits
-                                && actionDescription(actions[i],gc)==expected.semantic) {match=i;++count;}
-                        if (count != 1 || used[match])
-                            throw std::runtime_error("oockbudgeteval: semantic action collision/ambiguity");
-                        used[match]=true; ordered.push_back(actions[match]);
-                    }
-                    if (ordered.size()!=actions.size())
-                        throw std::runtime_error("oockbudgeteval: legal sibling set differs from manifest");
-                    resolved.push_back({m,detachedCounterfactualCopy(gc),path,std::move(ordered)});
-                    found=true;
-                }
-                ++decIdx;
-            }
-            if(found)break;
-            stepCounterfactualAuditSource(gc,sourceAgent);
-        }
-        t_curPath=nullptr;
-        if(!found) throw std::runtime_error("oockbudgeteval: frozen decision did not replay seed="+std::to_string(m.seed));
-    }
-    if(resolved.size()!=manifest.size()) throw std::runtime_error("oockbudgeteval: incomplete atomic replay");
-    std::cout<<"oockbudgeteval preflight resolved "<<resolved.size()<<'/'<<manifest.size()
-             <<" decisions shard="<<shardIndex<<'/'<<shardCount<<"\n";
-    if(futures==0) return;
-
-    std::ostringstream shardSuffix;
-    shardSuffix<<".shard-"<<std::setw(2)<<std::setfill('0')<<shardIndex
-               <<"-of-"<<shardCount;
-    if(workIndex>=0)
-        shardSuffix<<".work-"<<std::setw(2)<<std::setfill('0')<<workIndex
-                   <<"-of-"<<workCount;
-    shardSuffix<<".csv";
-    if(outFile.size()<shardSuffix.str().size()
-        ||outFile.substr(outFile.size()-shardSuffix.str().size())!=shardSuffix.str())
-        throw std::runtime_error("oockbudgeteval: output filename does not bind frozen shard assignment");
-    const std::string partialFile=outFile+".partial";
-    if(std::filesystem::exists(outFile)||std::filesystem::exists(partialFile))
-        throw std::runtime_error("oockbudgeteval: output or partial file already exists");
-    const std::string claimDir=outFile+".claim";
-    if(!std::filesystem::create_directory(claimDir))
-        throw std::runtime_error("oockbudgeteval: shard output claim already exists");
-    if(std::filesystem::exists(outFile)||std::filesystem::exists(partialFile))
-        throw std::runtime_error("oockbudgeteval: output appeared after shard claim");
-    std::ofstream out(partialFile); if(!out)throw std::runtime_error("oockbudgeteval: cannot open partial output");
-    out<<"sourceSeed,decisionIdx,act,floor,screen,actionIdx,actionBits,chosen,side,futureIdentity,"
-          "continuationSeed,hiddenSeed,schedule,prefixFight,rowKind,survivedPrefix,continuationValue,"
-          "qProduct,denseValue,terminalWon,silverSimulations,combatDecisions,cpuMs,wallMs,valid,quarantineReason\n";
-    std::ostringstream scheduleText; for(int i=0;i<(int)schedule.size();++i){if(i)scheduleText<<';';scheduleText<<schedule[i];}
-    for(const auto &d:resolved)for(int j=0;j<futures;++j){
-        const int future=futureStart+j;
-        std::uint64_t contSeed=d.manifest.seed
-            ^((std::uint64_t)(d.manifest.decIdx+1)*0x9e3779b97f4a7c15ULL)
-            ^((std::uint64_t)(future+1)*0xbf58476d1ce4e5b9ULL);
-        if(!contSeed)contSeed=1;std::uint64_t hiddenSeed=contSeed^0x94d049bb133111ebULL;if(!hiddenSeed)hiddenSeed=1;
-        GameContext siblingBase=detachedCounterfactualCopy(d.pre);resampleRemainingActEncounters(siblingBase,hiddenSeed);
-        for(int ai=0;ai<(int)d.actions.size();++ai){
-            const int workOrdinal=j*(int)d.actions.size()+ai;
-            if(workIndex>=0&&workOrdinal%workCount!=workIndex)continue;
-            GameContext branch=detachedCounterfactualCopy(siblingBase);d.actions[ai].execute(branch);
-            std::optional<GameContext> equivalenceBranch;
-            const bool checkEquivalence=side=="A"&&std::getenv("STS_OOC_K_CHECKPOINT_EQUIV");
-            if(checkEquivalence)equivalenceBranch=detachedCounterfactualCopy(branch);
-            std::vector<OocPrefixCheckpoint> prefixes;
-            OocPrefixObserver observer=[&](const GameContext &state,int fight,const OocContinuationCost &cost){
-                if(side!="A"||fight>(int)schedule.size())return;
-                GameContext snapshot=detachedCounterfactualCopy(state);
-                const bool survived=snapshot.outcome!=GameOutcome::PLAYER_LOSS;
-                double value=snapshot.outcome==GameOutcome::PLAYER_VICTORY?1.0:0.0;
-                double floor=snapshot.floorNum;
-                double rawFloor=std::numeric_limits<double>::quiet_NaN();
-                double rawWin=std::numeric_limits<double>::quiet_NaN();
-                bool valid=true;
-                if(snapshot.outcome==GameOutcome::UNDECIDED){
-                    rawFloor=vStateRaw(snapshot);rawWin=vStateWin(snapshot);
-                    // Mirror finishOocCounterfactual's established bootstrap
-                    // contract: each optional model estimate falls back to
-                    // the initialized finite value when outside its domain.
-                    if(std::isfinite(rawFloor)&&rawFloor>=snapshot.floorNum&&rawFloor<=60)
-                        floor=rawFloor;
-                    if(std::isfinite(rawWin)&&rawWin>=0&&rawWin<=1)
-                        value=rawWin;
-                    valid=std::isfinite(floor)&&std::isfinite(value);
-                }
-                if(!valid){
-                    std::ostringstream error;
-                    error<<"oockbudgeteval: invalid checkpoint bootstrap sourceSeed="<<d.manifest.seed
-                         <<" decisionIdx="<<d.manifest.decIdx<<" actionIdx="<<ai
-                         <<" futureIdentity="<<future<<" prefixFight="<<fight
-                         <<" stateFloor="<<snapshot.floorNum<<" hp="<<snapshot.curHp
-                         <<" outcome="<<(int)snapshot.outcome<<" rawFloor="<<rawFloor
-                         <<" rawWin="<<rawWin;
-                    throw std::runtime_error(error.str());
-                }
-                prefixes.push_back({fight,survived,value,floor,(double)snapshot.curHp,
-                    survived?value:0.0,10.0*value+snapshot.curHp,cost.silverSimulations,
-                    cost.combatDecisions,cost.cpuMs,cost.wallMs,valid});
-            };
-            OocContinuationCost finalCost;
-            const auto terminal=finishOocCounterfactual(std::move(branch),schedule.front(),contSeed,d.path,
-                -1,false,nullptr,0,&schedule,false,side=="A"?&observer:nullptr,&finalCost);
-            if(!terminal.valid) throw std::runtime_error("oockbudgeteval: invalid terminal continuation");
-            if(checkEquivalence){
-                OocContinuationCost controlCost;
-                const auto control=finishOocCounterfactual(std::move(*equivalenceBranch),schedule.front(),contSeed,d.path,
-                    -1,false,nullptr,0,&schedule,false,nullptr,&controlCost);
-                if(control.valid!=terminal.valid||control.won!=terminal.won||control.floor!=terminal.floor
-                    ||control.hp!=terminal.hp||controlCost.silverSimulations!=finalCost.silverSimulations
-                    ||controlCost.combatDecisions!=finalCost.combatDecisions)
-                    throw std::runtime_error("oockbudgeteval: observational checkpoint equivalence failed");
-            }
-            if(side=="A") {
-                for(int k=1;k<=(int)schedule.size();++k)
-                    if(std::none_of(prefixes.begin(),prefixes.end(),[&](const auto&p){return p.prefixFight==k;}))
-                        prefixes.push_back({k,terminal.won==1.0,terminal.won,(double)terminal.floor,terminal.hp,
-                            terminal.won,10.0*terminal.won+terminal.hp,
-                            finalCost.silverSimulations,finalCost.combatDecisions,finalCost.cpuMs,finalCost.wallMs,true});
-                std::sort(prefixes.begin(),prefixes.end(),[](const auto&a,const auto&b){return a.prefixFight<b.prefixFight;});
-            }
-            if(std::any_of(prefixes.begin(),prefixes.end(),[](const auto&p){return !p.valid||!std::isfinite(p.continuationValue)||!std::isfinite(p.qProduct)||!std::isfinite(p.denseValue);}))
-                throw std::runtime_error([&]{
-                    const auto &p=*std::find_if(prefixes.begin(),prefixes.end(),[](const auto &x){
-                        return !x.valid||!std::isfinite(x.continuationValue)
-                            ||!std::isfinite(x.qProduct)||!std::isfinite(x.denseValue);});
-                    std::ostringstream error;
-                    error<<"oockbudgeteval: invalid/non-finite prefix target sourceSeed="<<d.manifest.seed
-                         <<" decisionIdx="<<d.manifest.decIdx<<" actionIdx="<<ai
-                         <<" futureIdentity="<<future<<" prefixFight="<<p.prefixFight
-                         <<" survived="<<p.survived<<" continuationValue="<<p.continuationValue
-                         <<" qProduct="<<p.qProduct<<" denseValue="<<p.denseValue
-                         <<" valid="<<p.valid;
-                    return error.str();
-                }());
-            for(const auto&p:prefixes)out<<d.manifest.seed<<','<<d.manifest.decIdx<<','<<d.manifest.act<<','<<d.manifest.floor<<','<<d.manifest.screen<<','<<ai<<','<<d.actions[ai].bits<<','<<(d.manifest.actions[ai].chosen?1:0)<<','<<side<<','<<future<<','<<contSeed<<','<<hiddenSeed<<','<<scheduleText.str()<<','<<p.prefixFight<<",prefix,"<<(p.survived?1:0)<<','<<p.continuationValue<<','<<p.qProduct<<','<<p.denseValue<<",,"<<p.silverSimulations<<','<<p.combatDecisions<<','<<p.cpuMs<<','<<p.wallMs<<','<<(p.valid?1:0)<<",\n";
-            // Terminal truth is emitted for provenance on both sides. Analysis
-            // accepts it as reference only when side=B.
-            out<<d.manifest.seed<<','<<d.manifest.decIdx<<','<<d.manifest.act<<','<<d.manifest.floor<<','<<d.manifest.screen<<','<<ai<<','<<d.actions[ai].bits<<','<<(d.manifest.actions[ai].chosen?1:0)<<','<<side<<','<<future<<','<<contSeed<<','<<hiddenSeed<<','<<scheduleText.str()<<",0,terminal,,,,,"<<terminal.won<<','<<finalCost.silverSimulations<<','<<finalCost.combatDecisions<<','<<finalCost.cpuMs<<','<<finalCost.wallMs<<','<<(terminal.valid?1:0)<<","<<(terminal.valid?"":"invalid_terminal")<<'\n';
-        }
-    }
-    out.close();
-    std::filesystem::rename(partialFile,outFile);
-}
-
-
-// Separate semantic pilot schema. Source observation never runs a semantic
-// counterfactual; branch execution starts only after atomic manifest replay.
-struct SemanticPilotDecision {
-    nlohmann::json identity;
-    GameContext pre;
-    PathHistory path;
-    std::vector<search::OocSemanticAction> actions;
-};
-struct SemanticPilotObserverScope {
-    decltype(search::g_onGameActionExecute) previous = std::move(search::g_onGameActionExecute);
-    SemanticPilotObserverScope() { search::g_onGameActionExecute = {}; }
-    ~SemanticPilotObserverScope() { search::g_onGameActionExecute = std::move(previous); t_curPath = nullptr; }
-};
-
-static nlohmann::json semanticPilotIdentity(const GameContext &gc, int idx,
-                                            const search::OocEnumerationResult &enumeration) {
-    nlohmann::json actions = nlohmann::json::array();
-    for (int i=0; i<(int)enumeration.actions.size(); ++i) {
-        const auto &a=enumeration.actions[i];
-        actions.push_back({{"semanticActionIdx",i}, {"semanticKey",search::canonicalOocSemanticActionKey(a)},
-            {"semanticEffect",(int)a.effect}, {"semanticSource",(int)a.source},
-            {"semanticPayload",nlohmann::json::parse(search::oocSemanticActionPayloadJson(a))}});
-    }
-    return {{"sourceSeed",gc.seed},{"decisionIdx",idx},{"act",gc.act},{"floor",gc.floorNum},
-        {"screen",(int)gc.screenState},{"semanticSchemaVersion",1},{"supported",enumeration.supported},
-        {"complete",enumeration.complete},{"actions",actions}};
-}
-
-static void semanticPilotRequireIdentity(const nlohmann::json &live,const nlohmann::json &frozen) {
-    if(live!=frozen) throw std::runtime_error("semantic pilot: frozen semantic sibling/metadata mismatch");
-}
-
-static std::optional<SemanticPilotDecision> semanticPilotSource(std::uint64_t seed,
-                                                               const nlohmann::json *frozen=nullptr) {
-    SemanticPilotObserverScope observerScope;
-    trainingRunStart(); vDisconnect();
-    GameContext gc(CharacterClass::IRONCLAD,seed,0);
-    search::ScumSearchAgent2 agent; agent.simulationCountBase=10000; agent.simulationCountTotal=0;
-    agent.rng=std::default_random_engine(seed);
-    std::default_random_engine reservoir(seed*2862933555777941757ULL+97);
-    PathHistory path; t_curPath=&path;
-    std::optional<SemanticPilotDecision> selected;
-    int eligible=0;
-    CardSelectScreenType suppress=CardSelectScreenType::INVALID;
-    search::g_onGameActionExecute=[&](std::uint32_t bits,const GameContext *target) {
-        if (target!=&gc || (frozen && selected)) return;
-        path.update(gc);
-        if (suppress!=CardSelectScreenType::INVALID) {
-            if (gc.screenState!=ScreenState::CARD_SELECT || gc.info.selectScreenType!=suppress)
-                throw std::runtime_error("semantic pilot: compound selector boundary mismatch");
-            suppress=CardSelectScreenType::INVALID;
-            return;
-        }
-        const auto enumeration=search::enumerateOocSemanticActions(gc);
-        // Floor zero excludes Neow independently of its primitive options.
-        if (gc.outcome==GameOutcome::UNDECIDED && gc.floorNum>0 && enumeration.supported
-            && enumeration.complete && enumeration.actions.size()>=2) {
-            const int idx=eligible++;
-            const bool replace=frozen ? idx==frozen->at("decisionIdx").get<int>()
-                : std::uniform_int_distribution<int>(1,eligible)(reservoir)==1;
-            if (replace) {
-                auto identity=semanticPilotIdentity(gc,idx,enumeration);
-                if (frozen) semanticPilotRequireIdentity(identity,*frozen);
-                selected=SemanticPilotDecision{std::move(identity),detachedCounterfactualCopy(gc),path,enumeration.actions};
-            }
-        }
-        suppress=search::oocSemanticPrimitiveCompoundSelector(gc,bits);
-    };
-    while (gc.outcome==GameOutcome::UNDECIDED && !(frozen && selected)) {
-        path.update(gc);
-        stepCounterfactualAuditSource(gc,agent);
-        if (search::g_simHealthFailureCount!=t_trainingHealthFailures)
-            throw std::runtime_error("semantic pilot: source simulator health failure");
-    }
-    if (frozen && !selected) throw std::runtime_error("semantic pilot: frozen source decision not reached");
-    return selected;
-}
-
-static nlohmann::json semanticPilotStateFeatures() {
-    return {{"schema","rich_state_masked_hidden_v1"},{"header",richStateHeader()},
-        {"maskedColumns",{"nextEliteId","nextFight0","nextFight1","nextFight2"}}};
-}
-
-static std::string semanticPilotRichRow(const GameContext &gc,const PathHistory &path) {
-    std::stringstream header(richStateHeader()),values(richRow(gc,path));
-    std::ostringstream out; std::string name,value; int masked=0; bool first=true;
-    while(std::getline(header,name,',')) {
-        if(!std::getline(values,value,',')) throw std::runtime_error("semantic pilot: rich feature arity mismatch");
-        if(name=="nextEliteId"||name=="nextFight0"||name=="nextFight1"||name=="nextFight2") {value="-1";++masked;}
-        if(!first)out<<','; first=false; out<<value;
-    }
-    if(std::getline(values,value,',')||masked!=4)throw std::runtime_error("semantic pilot: rich feature contract mismatch");
-    return out.str();
-}
-
-static nlohmann::json semanticPilotRuntimeBinding() {
-    if (!g_nativeOoc || !g_floorNet.ok || !g_winNet.ok)
-        throw std::runtime_error("semantic pilot: loaded native floor/win models required");
-    if (!search::silverLiveBackendInstalled() || !search::silverLiveExactRootBudgets()
-        || search::silverLiveReuseCapMode()!="allocated" || search::silverLiveReuseCap()!=32768
-        || search::silverLiveAdaptiveEnabled())
-        throw std::runtime_error("semantic pilot: frozen Silver runtime mismatch");
-    nlohmann::json env=nlohmann::json::object();
-    // Freeze the complete STS environment, including unset-vs-set identity;
-    // this Linux-only pilot must not silently ignore a new policy option.
-#ifndef _WIN32
-    for(char **entry=::environ;entry && *entry;++entry) {
-        const std::string text(*entry); const auto equal=text.find('=');
-        if(equal!=std::string::npos && text.rfind("STS_",0)==0)
-            env[text.substr(0,equal)]=text.substr(equal+1);
-    }
-#else
-    throw std::runtime_error("semantic pilot: full environment binding requires Linux");
-#endif
-    if(env.value("STS_NATIVE_OOC",std::string{})!="1")
-        throw std::runtime_error("semantic pilot: STS_NATIVE_OOC=1 must be explicit");
-    for(const char *unsupported : {"STS_SILVER_VNET_LEAF_BLEND","STS_SILVER_VNET_LEAF_MODEL",
-        "STS_SILVER_ROOT_DIAG_FILE","STS_SILVER_STICKY_QUALITY_FILE","STS_SILVER_LEAF_CORPUS",
-        "STS_SIMS_NORMAL","STS_SIMS_ELITE","STS_SIMS_BOSS","STS_SIM_ADAPT",
-        "STS_BOSS_V","STS_BOSS_DRAFT","STS_CARD_NN","STS_CARD_ACTION",
-        "STS_PATH_GRAPH","STS_PATH_ACTION","STS_PATH_V"})
-        if(std::getenv(unsupported))throw std::runtime_error(std::string("semantic pilot: unsupported teacher override ")+unsupported);
-    return {{"environment",env},{"oocModels",nlohmann::json::array({
-        {{"role","floor"},{"path",g_floorNet.path},{"sha256",fileSha256(g_floorNet.path)}},
-        {{"role","win"},{"path",g_winNet.path},{"sha256",fileSha256(g_winNet.path)}}})}};
-}
-
-static void semanticPilotCapture(int count,std::uint64_t offset,const std::string &manifestFile,
-                                 const std::string &teacherFile) {
-    if (count<1 || count>16) throw std::runtime_error("semantic pilot: source scan must be 1..16 seeds");
-    const auto teacher=loadWholeCombatTeacher(teacherFile,10000);
-    auto runtime=semanticPilotRuntimeBinding();
-    if(std::filesystem::exists(manifestFile)) throw std::runtime_error("semantic pilot: manifest already exists");
-    trainingCampaignStart();
-    nlohmann::json decisions=nlohmann::json::array(),seeds=nlohmann::json::array();
-    for(int i=0;i<count;++i) {
-        seeds.push_back(offset+i);
-        auto sampled=semanticPilotSource(offset+i);
-        if(sampled) decisions.push_back(sampled->identity);
-    }
-    nlohmann::json doc={{"schema_version","ooc_semantic_manifest_v1"},
-        {"row_schema_version","ooc_semantic_action_v1"},
-        {"producer_git_sha",trainingExecutableGitSha()},
-        {"producer_executable_sha256",fileSha256(g_mainBinaryPath)},
-        {"combat_teacher",teacher.specification},{"runtime",runtime},{"stateFeatures",semanticPilotStateFeatures()},
-        {"sampling",{{"rule","policy_independent_reservoir_eligible_semantic_decisions"},{"version",1},
-            {"sourceSeeds",seeds},{"maxDecisionsPerSeed",1},{"excludeNeow",true}}},
-        {"evaluation",{{"H",1},{"budgetSchedule",{10000}},{"futureIdentities",{0}},{"rngRegime","project_fair"}}},
-        {"decisions",decisions},{"csv",nullptr},{"integrity",nullptr}};
-    std::ofstream out(manifestFile); if(!out) throw std::runtime_error("semantic pilot: cannot write capture manifest");
-    out<<doc.dump(2)<<'\n'; out.close(); if(!out) throw std::runtime_error("semantic pilot: manifest write failed");
-    std::cout<<"semantic pilot captured "<<decisions.size()<<'/'<<count<<" source decisions -> "<<manifestFile<<'\n';
-}
-
-struct SemanticPilotBranch {
-    search::OocExecutionResult executed;
-    OocCounterfactualResult result;
-    OocContinuationCost cost;
-};
-
-static SemanticPilotBranch semanticPilotBranch(GameContext branch,
-        const search::OocSemanticAction &action,std::uint64_t continuation,const PathHistory &path,
-        std::vector<CombatEvalFight> *combatCapture = nullptr, const OocPrefixObserver *checkpoint = nullptr) {
-    if(search::g_onGameActionExecute) throw std::runtime_error("semantic pilot: branch observer active");
-    const int healthBefore=search::g_simHealthFailureCount;
-    auto executed=search::executeOocSemanticAction(branch,action);
-    if(!executed.ok || executed.executedPrimitiveBits.empty() || search::g_simHealthFailureCount!=healthBefore)
-        throw std::runtime_error("semantic pilot: frozen semantic execution failed/health failure: "+executed.error);
-    const std::vector<int> schedule{10000};
-    OocContinuationCost cost;
-    const auto result=finishOocCounterfactual(std::move(branch),10000,continuation,path,
-        1,true,nullptr,0,&schedule,false,checkpoint,&cost,false,combatCapture);
-    if(!result.valid || !std::isfinite(result.won) || !std::isfinite(result.hp))
-        throw std::runtime_error("semantic pilot: invalid/quarantined continuation");
-    if(cost.transactionDecisions>cost.combatDecisions || cost.transactionDecisions>cost.transactionSubdecisions
-        || cost.silverSimulations!=10000*(cost.combatDecisions+cost.transactionSubdecisions-cost.transactionDecisions))
-        throw std::runtime_error("semantic pilot: exact teacher simulation accounting mismatch");
-    return {std::move(executed),result,cost};
-}
-
-static void semanticCombatCaptureSelfTest(GameContext source, const search::OocSemanticAction &action) {
-    auto require=[](bool ok,const char *message){if(!ok)throw std::runtime_error(message);};
-    const auto previousDecision=search::g_onCombatDecision;
-    try {
-        for(const bool win : {false,true}) {
-            int calls=0,observed=0;
-            search::g_onCombatDecision=[&](const BattleContext &){++observed;};
-            search::g_externalCombatBackend=[&](search::ScumSearchAgent2 &agent,GameContext &state,BattleContext &bc){
-                ++calls;
-                bc.init(state);
-                if(search::g_onCombatDecision)search::g_onCombatDecision(bc);
-                bc.player.maxHp=80; bc.player.curHp=win?20:0;
-                bc.monsters.arr[0].curHp=30; bc.monsters.arr[0].maxHp=50;
-                bc.outcome=win?Outcome::PLAYER_VICTORY:Outcome::PLAYER_LOSS;
-                agent.simulationCountTotal+=20000;
-                search::g_silverLiveDiagnostics={};
-                search::g_silverLiveDiagnostics.decisions=1;
-                search::g_silverLiveDiagnostics.transactionSubdecisions=2;
-                search::g_silverLiveDiagnostics.transactionDecisions=1;
-            };
-            SemanticPilotObserverScope detached;
-            std::string finalOff,finalOn;
-            OocPrefixObserver off=[&](const GameContext &gc,int,const OocContinuationCost &){finalOff=test::oocStateFingerprint(gc);};
-            OocPrefixObserver on=[&](const GameContext &gc,int,const OocContinuationCost &){finalOn=test::oocStateFingerprint(gc);};
-            const int healthBefore=search::g_simHealthFailureCount;
-            const auto control=semanticPilotBranch(detachedCounterfactualCopy(source),action,11,{},nullptr,&off);
-            const int healthOff=search::g_simHealthFailureCount;
-            std::vector<CombatEvalFight> captured;
-            const auto treatment=semanticPilotBranch(detachedCounterfactualCopy(source),action,11,{},&captured,&on);
-            require(calls==2 && observed==2,"combat capture: extra backend/observer call");
-            require(!finalOff.empty() && finalOff==finalOn,"combat capture: resulting GameContext/RNG differs");
-            require(healthBefore==healthOff && healthOff==search::g_simHealthFailureCount,"combat capture: health differs");
-            require(control.executed.ok==treatment.executed.ok && control.executed.error==treatment.executed.error
-                && control.executed.executedPrimitiveBits==treatment.executed.executedPrimitiveBits,"combat capture: primitive execution differs");
-            const auto &a=control.result; const auto &b=treatment.result;
-            require(a.won==b.won && a.hp==b.hp && a.floor==b.floor && a.bootstrapped==b.bootstrapped
-                && a.valid==b.valid && a.survivedH==b.survivedH,"combat capture: semantic labels/qProduct differ");
-            require(control.cost.silverSimulations==treatment.cost.silverSimulations
-                && control.cost.combatDecisions==treatment.cost.combatDecisions
-                && control.cost.transactionSubdecisions==treatment.cost.transactionSubdecisions
-                && control.cost.transactionDecisions==treatment.cost.transactionDecisions,"combat capture: search accounting differs");
-            require(captured.size()==1 && captured[0].label.labelValid,"combat capture: missing valid row");
-            const auto &label=captured[0].label;
-            require(label.won==win && label.trueDeath!=win && label.signedOutcome==(win?0.25:-0.6),"combat capture: independent terminal label mismatch");
-            auto entry=detachedCounterfactualCopy(source);
-            search::executeOocSemanticAction(entry,action);
-            PathHistory path; path.update(entry);
-            require(captured[0].features==richRow(entry,path),"combat capture: pre-init feature boundary differs");
-        }
-        // Boundary cases reuse the same V1 formula; no fight is simulated here.
-        BattleContext bc{}; auto gc=detachedCounterfactualCopy(source); bc.init(gc,MonsterEncounter::CULTIST);
-        bc.player.curHp=0; bc.outcome=Outcome::PLAYER_LOSS;
-        auto ambiguous=combatEvalTerminal(bc,MonsterEncounter::AWAKENED_ONE,1,0,0);
-        require(ambiguous.progressAmbiguous && ambiguous.labelValid && ambiguous.signedOutcome<0,"combat capture: V1 ambiguous-death semantics changed");
-        bc.smokeBombUsed=true;
-        auto escape=combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,0);
-        require(escape.escaped && !escape.trueDeath && !escape.labelValid && escape.signedOutcome==0,"combat capture: escape is valid");
-        bc.smokeBombUsed=false; bc.outcome=Outcome::UNDECIDED; bc.turn=100;
-        auto cap=combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,0);
-        require(cap.turnCapLoss && !cap.labelValid && cap.signedOutcome==0,"combat capture: turn cap is valid");
-        bc.outcome=Outcome::PLAYER_VICTORY; bc.player.curHp=20;
-        require(!combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,1).labelValid,"combat capture: health failure is valid");
-        require(!combatEvalTerminal(bc,MonsterEncounter::CULTIST,0,0,0).labelValid,"combat capture: missing hook is valid");
-        bc.turn=0;
-        const auto initializationWin = combatEvalTerminal(
-            bc,MonsterEncounter::CULTIST,0,0,0,true);
-        require(initializationWin.labelValid && initializationWin.won
-                && std::string(initializationWin.reason).empty(),
-                "combat capture: resolved initialization victory is valid");
-        // A terminal OOC action emits no synthetic fight row.
-        source.regainControlAction=[](GameContext &state){state.outcome=GameOutcome::PLAYER_VICTORY;};
-        {
-            SemanticPilotObserverScope detached;
-            std::vector<CombatEvalFight> captured;
-            semanticPilotBranch(detachedCounterfactualCopy(source),action,11,{},&captured);
-            require(captured.empty(),"combat capture: fabricated a fight before combat");
-        }
-        // Observer exception safety is independent of combat continuation.
-        try {CombatEvalDecisionScope scope(true); throw std::runtime_error("fixture");}catch(const std::runtime_error &){}
-        require(bool(search::g_onCombatDecision),"combat capture: observer not restored after exception");
-    } catch(...) {search::g_onCombatDecision=previousDecision;throw;}
-    search::g_onCombatDecision=previousDecision;
-}
-
-// Deterministic integration regression: real semantic branch path, observer
-// lifetime, continuation dispatch and transaction-aware simulation accounting.
-static void semanticPilotSelfTest() {
-    auto previousBackend=search::g_externalCombatBackend;
-    auto previousDiagnostics=search::g_silverLiveDiagnostics;
-    auto previousObserver=search::g_onGameActionExecute;
-    int hooks=0,backendCalls=0;
-    try {
-        search::g_onGameActionExecute=[&](std::uint32_t,const GameContext*){++hooks;};
-        GameContext gc(CharacterClass::IRONCLAD,0x51514Du,0);
-        gc.screenState=ScreenState::REST_ROOM; gc.curHp=40; gc.floorNum=1;
-        gc.regainControlAction=[](GameContext &state){state.enterBattle(MonsterEncounter::CULTIST);};
-        const auto enumeration=search::enumerateOocSemanticActions(gc);
-        auto action=std::find_if(enumeration.actions.begin(),enumeration.actions.end(),[](const auto &a){return a.effect==search::OocSemanticEffect::REST;});
-        if(action==enumeration.actions.end())throw std::runtime_error("semantic selftest: no rest action");
-        const auto identity=semanticPilotIdentity(gc,0,enumeration);
-        semanticPilotRequireIdentity(identity,nlohmann::json::parse(identity.dump()));
-        for(int mutation=0;mutation<5;++mutation) {
-            auto changed=identity;
-            if(mutation==0)changed["floor"]=999;
-            if(mutation==1)changed["actions"][0]["semanticKey"]="stale";
-            if(mutation==2)changed["actions"][0]["semanticPayload"]["extra"]=1;
-            if(mutation==3)std::swap(changed["actions"][0],changed["actions"][1]);
-            if(mutation==4)changed["actions"].erase(0);
-            bool failed=false;
-            try {semanticPilotRequireIdentity(identity,changed);}catch(const std::runtime_error &){failed=true;}
-            if(!failed||backendCalls)throw std::runtime_error("semantic selftest: frozen mismatch did not fail before backend");
-        }
-        bool rejected=false;
-        try { semanticPilotBranch(detachedCounterfactualCopy(gc),*action,11,{}); }
-        catch(const std::runtime_error &) {rejected=true;}
-        if(!rejected||hooks)throw std::runtime_error("semantic selftest: active observer was not rejected");
-        search::g_externalCombatBackend=[&](search::ScumSearchAgent2 &agent,GameContext &state,BattleContext &bc){
-            ++backendCalls;
-            if(search::g_onGameActionExecute)throw std::runtime_error("semantic selftest: observer leaked into backend");
-            bc.init(state); bc.player.curHp=0; bc.outcome=Outcome::PLAYER_LOSS;
-            agent.simulationCountTotal+=20000;
-            search::g_silverLiveDiagnostics={};
-            search::g_silverLiveDiagnostics.decisions=1;
-            search::g_silverLiveDiagnostics.transactionSubdecisions=2;
-            search::g_silverLiveDiagnostics.transactionDecisions=1;
-        };
-        {
-            SemanticPilotObserverScope detached;
-            const auto branch=semanticPilotBranch(detachedCounterfactualCopy(gc),*action,11,{});
-            if(!branch.result.valid||branch.result.survivedH||branch.result.won!=0||branch.executed.executedPrimitiveBits.size()!=1
-                ||backendCalls!=1||hooks!=0||branch.cost.silverSimulations!=20000||branch.cost.combatDecisions!=1
-                ||branch.cost.transactionSubdecisions!=2||branch.cost.transactionDecisions!=1)
-                throw std::runtime_error("semantic selftest: branch dispatch/accounting mismatch");
-        }
-        if(!search::g_onGameActionExecute)throw std::runtime_error("semantic selftest: observer not restored");
-        semanticCombatCaptureSelfTest(gc,*action);
-        const auto masked=semanticPilotRichRow(gc,{});
-        std::stringstream names(richStateHeader()),values(masked); std::string name,value; int maskedCount=0;
-        while(std::getline(names,name,',')) {
-            std::getline(values,value,',');
-            if(name=="nextEliteId"||name=="nextFight0"||name=="nextFight1"||name=="nextFight2") {
-                if(value!="-1")throw std::runtime_error("semantic selftest: hidden encounter feature leaked");
-                ++maskedCount;
-            }
-        }
-        if(maskedCount!=4)throw std::runtime_error("semantic selftest: hidden mask arity");
-        int sourceBattles=0;
-        search::g_externalCombatBackend=[&](search::ScumSearchAgent2 &agent,GameContext &state,BattleContext &bc){
-            bc.init(state); ++sourceBattles;
-            bc.outcome=sourceBattles==1?Outcome::PLAYER_VICTORY:Outcome::PLAYER_LOSS;
-            if(sourceBattles!=1)bc.player.curHp=0;
-            agent.simulationCountTotal+=10000; search::g_silverLiveDiagnostics={};
-            search::g_silverLiveDiagnostics.decisions=1;
-        };
-        const auto sampled=semanticPilotSource(0x51514Du);
-        if(!sampled || sampled->actions.size()<2)throw std::runtime_error("semantic selftest: source capture empty");
-        const auto frozen=nlohmann::json::parse(sampled->identity.dump());
-        sourceBattles=0;
-        const auto replay=semanticPilotSource(0x51514Du,&frozen);
-        if(!replay||replay->identity!=frozen)throw std::runtime_error("semantic selftest: source replay differs");
-        auto stale=frozen; stale["actions"][0]["semanticPayload"]["extra"]=1;
-        sourceBattles=0; bool mismatch=false;
-        try {semanticPilotSource(0x51514Du,&stale);}catch(const std::runtime_error &){mismatch=true;}
-        if(!mismatch)throw std::runtime_error("semantic selftest: source accepted stale payload");
-
-    } catch(...) {
-        search::g_externalCombatBackend=previousBackend;search::g_silverLiveDiagnostics=previousDiagnostics;
-        search::g_onGameActionExecute=previousObserver;throw;
-    }
-    search::g_externalCombatBackend=previousBackend;search::g_silverLiveDiagnostics=previousDiagnostics;
-    search::g_onGameActionExecute=previousObserver;
-    std::cout<<"semantic pilot integrated observer/backend/accounting checks passed\n";
-}
-
-static void semanticPilotEvaluate(int count,const std::string &manifestFile,const std::string &outFile,
-                                  const std::string &teacherFile,const std::string &combatFile = {}) {
-    const auto teacher=loadWholeCombatTeacher(teacherFile,10000);
-    std::ifstream in(manifestFile); if(!in) throw std::runtime_error("semantic pilot: cannot open frozen manifest");
-    nlohmann::json doc; in>>doc;
-    const nlohmann::json evaluation={{"H",1},{"budgetSchedule",{10000}},{"futureIdentities",{0}},{"rngRegime","project_fair"}};
-    if(doc.at("schema_version")!="ooc_semantic_manifest_v1" || doc.at("row_schema_version")!="ooc_semantic_action_v1"
-        || doc.at("producer_git_sha")!=trainingExecutableGitSha()
-        || doc.at("producer_executable_sha256")!=fileSha256(g_mainBinaryPath)
-        || doc.at("combat_teacher")!=teacher.specification || doc.at("runtime")!=semanticPilotRuntimeBinding()
-        || doc.at("stateFeatures")!=semanticPilotStateFeatures()
-        || doc.at("evaluation")!=evaluation || count<1 || count>16 || (int)doc.at("decisions").size()!=count
-        || doc.at("sampling").at("rule")!="policy_independent_reservoir_eligible_semantic_decisions"
-        || doc.at("sampling").at("version")!=1)
-        throw std::runtime_error("semantic pilot: frozen producer/teacher/evaluation mismatch");
-    const auto scanSeeds=doc.at("sampling").at("sourceSeeds").get<std::vector<std::uint64_t>>();
-    if(scanSeeds.empty()||scanSeeds.size()>16||doc.at("sampling").at("maxDecisionsPerSeed")!=1
-        ||doc.at("sampling").at("excludeNeow")!=true
-        ||std::unordered_set<std::uint64_t>(scanSeeds.begin(),scanSeeds.end()).size()!=scanSeeds.size())
-        throw std::runtime_error("semantic pilot: invalid frozen source sampling rule");
-    trainingCampaignStart();
-    std::vector<SemanticPilotDecision> resolved;
-    std::unordered_set<std::uint64_t> seeds;
-    for(const auto &d:doc.at("decisions")) {
-        const auto seed=d.at("sourceSeed").get<std::uint64_t>();
-        if(std::find(scanSeeds.begin(),scanSeeds.end(),seed)==scanSeeds.end())
-            throw std::runtime_error("semantic pilot: decision seed outside frozen source scan");
-        if(!seeds.insert(seed).second) throw std::runtime_error("semantic pilot: multiple decisions for one seed");
-        resolved.push_back(std::move(*semanticPilotSource(seed,&d)));
-    }
-    // Only after every source decision has replayed exactly may any branch run.
-    SemanticPilotObserverScope detachedObserver;
-    const std::string partial=outFile+".partial", boundManifest=outFile+".manifest.json";
-    if(std::filesystem::exists(outFile)||std::filesystem::exists(partial)||std::filesystem::exists(boundManifest))
-        throw std::runtime_error("semantic pilot: output already exists");
-    std::ofstream combatOut;
-    const std::string combatPartial=combatFile+".partial", combatManifest=combatFile+".manifest.json";
-    if(!combatFile.empty()) {
-        // Refuse aliases between either output, their sidecars and the frozen inputs.
-        std::set<std::filesystem::path> paths;
-        for(const auto &p : {outFile,partial,boundManifest,manifestFile,teacherFile,combatFile,combatPartial,combatManifest})
-            if(!paths.insert(std::filesystem::weakly_canonical(p)).second)
-                throw std::runtime_error("semantic pilot: overlapping input/output paths");
-        for(const auto &p : {combatFile,combatPartial,combatManifest})
-            if(std::filesystem::exists(p))throw std::runtime_error("semantic pilot: combat output already exists");
-        combatOut.open(combatPartial);
-        if(!combatOut)throw std::runtime_error("semantic pilot: cannot open combat output");
-        combatOut<<"sourceSeed,decisionIdx,semanticActionIdx,semanticKey,futureIdentity,branchFightIdx,continuationSeed,hiddenSeed,semanticSource,act,floor,roomClass,encounter,teacherId,"
-                 <<richStateHeader()<<','<<combatEvalLabelHeader()<<'\n'<<std::setprecision(17);
-    }
-    std::size_t combatRows=0,validCombat=0,wins=0,deaths=0,ambiguous=0;
-    std::set<std::uint64_t> combatSeeds,quarantinedSeeds;
-    std::ofstream out(partial); if(!out) throw std::runtime_error("semantic pilot: cannot open output");
-    out<<"sourceSeed,decisionIdx,act,floor,screen,semanticSchemaVersion,semanticActionIdx,semanticKey,semanticEffect,semanticSource,semanticPayload,siblingCount,futureIdentity,H,budgetSchedule,continuationSeed,hiddenSeed,executedPrimitiveBits,survivedPrefix,continuationValue,qProduct,denseReferenceValue,terminalWon,silverSimulations,combatDecisions,transactionSubdecisions,transactionDecisions,cpuMs,wallMs,teacherId,valid,quarantineReason,richRow\n";
-    out<<std::setprecision(17);
-    std::size_t rows=0;
-    const std::vector<int> schedule{10000};
-    for(const auto &d:resolved) {
-        const auto seed=d.identity.at("sourceSeed").get<std::uint64_t>();
-        const int idx=d.identity.at("decisionIdx").get<int>();
-        std::uint64_t continuation=seed^((std::uint64_t)(idx+1)*0x9e3779b97f4a7c15ULL)^0xbf58476d1ce4e5b9ULL;
-        if(!continuation)continuation=1;
-        std::uint64_t hidden=continuation^0x94d049bb133111ebULL; if(!hidden)hidden=1;
-        GameContext base=detachedCounterfactualCopy(d.pre); resampleRemainingActEncounters(base,hidden);
-        const std::string state=semanticPilotRichRow(d.pre,d.path);
-        for(int ai=0;ai<(int)d.actions.size();++ai) {
-            std::vector<CombatEvalFight> captures;
-            const auto evaluated=semanticPilotBranch(detachedCounterfactualCopy(base),d.actions[ai],continuation,d.path,
-                                                     combatFile.empty()?nullptr:&captures);
-            if(captures.size()>1)throw std::runtime_error("semantic pilot: H=1 captured multiple combats");
-            for(std::size_t fi=0;fi<captures.size();++fi) {
-                const auto &fight=captures[fi]; const auto &label=fight.label;
-                combatOut<<seed<<','<<idx<<','<<ai<<','<<csvQuote(d.identity.at("actions").at(ai).at("semanticKey").get<std::string>())
-                         <<",0,"<<fi<<','<<continuation<<','<<hidden<<','<<(int)d.actions[ai].source<<','
-                         <<fight.act<<','<<fight.floor<<','<<combatEvalRoomClass(fight.room)<<','
-                         <<csvQuote(combatEvalEncounterValid(fight.encounter)?monsterEncounterStrings[(int)fight.encounter]:"INVALID")
-                         <<','<<teacher.id<<','<<fight.features<<',';
-                label.write(combatOut); combatOut<<'\n';
-                ++combatRows; validCombat+=label.labelValid; wins+=label.labelValid&&label.won;
-                deaths+=label.labelValid&&label.trueDeath; ambiguous+=label.progressAmbiguous;
-                combatSeeds.insert(seed); if(!label.labelValid)quarantinedSeeds.insert(seed);
-            }
-            const auto &executed=evaluated.executed;
-            const auto &result=evaluated.result;
-            const auto &cost=evaluated.cost;
-            const auto &a=d.identity.at("actions").at(ai);
-            out<<seed<<','<<idx<<','<<d.pre.act<<','<<d.pre.floorNum<<','<<(int)d.pre.screenState<<",1,"<<ai<<','
-                <<csvQuote(a.at("semanticKey").get<std::string>())<<','<<(int)d.actions[ai].effect<<','<<(int)d.actions[ai].source<<','
-                <<csvQuote(a.at("semanticPayload").dump())<<','<<d.actions.size()<<",0,1,[10000],"<<continuation<<','<<hidden<<','
-                <<csvQuote(nlohmann::json(executed.executedPrimitiveBits).dump())<<','<<(result.survivedH?1:0)<<','<<result.won<<','
-                <<(result.survivedH?result.won:0.0)<<','<<(10.0*result.won+result.hp)<<',';
-            if(result.bootstrapped==0)out<<result.won;
-            out<<','<<cost.silverSimulations<<','<<cost.combatDecisions<<','<<cost.transactionSubdecisions<<','<<cost.transactionDecisions<<','
-                <<cost.cpuMs<<','<<cost.wallMs<<','<<teacher.id<<",1,,"<<csvQuote(state)<<'\n';
-            ++rows;
-        }
-    }
-    out.close(); if(!out)throw std::runtime_error("semantic pilot: CSV write failed");
-    std::filesystem::rename(partial,outFile);
-    doc["frozen_manifest"]={{"path",manifestFile},{"sha256",fileSha256(manifestFile)}};
-    doc["csv"]={{"path",outFile},{"sha256",fileSha256(outFile)}}; doc["integrity"]={{"rows",rows}};
-    std::ofstream manifestOut(boundManifest); manifestOut<<doc.dump(2)<<'\n'; manifestOut.close();
-    if(!manifestOut)throw std::runtime_error("semantic pilot: bound manifest write failed");
-    if(!combatFile.empty()) {
-        combatOut.close(); if(!combatOut)throw std::runtime_error("semantic pilot: combat CSV write failed");
-        std::filesystem::rename(combatPartial,combatFile);
-        std::vector<std::string> names; std::stringstream header(richStateHeader()); std::string name;
-        while(std::getline(header,name,','))names.push_back(name);
-        nlohmann::json combatDoc={{"schema_version","combat_evaluator_semantic_branch_v1"},
-            {"producer_git_sha",trainingExecutableGitSha()},{"producer_executable_sha256",fileSha256(g_mainBinaryPath)},
-            {"teacher",teacher.specification},{"frozen_manifest",{{"path",manifestFile},{"sha256",fileSha256(manifestFile)}}},
-            {"semantic_manifest",{{"path",boundManifest},{"sha256",fileSha256(boundManifest)}}},
-            {"csv",{{"path",combatFile},{"sha256",fileSha256(combatFile)}}},
-            {"feature_contract",{{"count",names.size()},{"state_names",names}}},
-            {"seed_spec",{{"sourceSeeds",scanSeeds}}},
-            {"integrity",{{"rows",combatRows},{"valid",validCombat},{"invalid",combatRows-validCombat},
-                {"wins",wins},{"deaths",deaths},{"ambiguous",ambiguous},{"source_seeds",combatSeeds.size()},
-                {"quarantined_source_seeds",quarantinedSeeds.size()}}}};
-        std::ofstream sidecar(combatManifest); sidecar<<combatDoc.dump(2)<<'\n'; sidecar.close();
-        if(!sidecar)throw std::runtime_error("semantic pilot: combat manifest write failed");
-    }
-    std::cout<<"semantic pilot replayed="<<resolved.size()<<" branches="<<rows<<" -> "<<outFile<<'\n';
-}
-
-static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    const bool append = seedOffset > 0;
-    std::cout << "strategicgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  threads " << numThreads()
-              << "  -> " << outFile << "\n";
-    std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) {
-        f << strategicHeader();
-        f.flush();
-    }
-    auto t0 = std::chrono::steady_clock::now();
-    long long rows = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic) reduction(+:rows)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::string r = runStrategicGenSeed((std::uint64_t)(seedOffset + s), sims, asc);
-        #pragma omp critical
-        { f << r; f.flush(); rows += std::count(r.begin(), r.end(), '\n'); }
-        if (++done % 50 == 0) {
-            double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            std::printf("  %d/%d runs, %lld rows, %.0fs\n", done, nSeeds, rows, el);
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld rows from %d runs in %.1fs\n", rows, nSeeds, wall);
-    writeTrainingProvenance(outFile, "strategicgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rows, seedOffset, sims, asc, -1.0);
-}
-
-// ---------------------------------------------------------------------------
-// STRATEGICGEN2 (Tier-B): the strategicgen row schema plus one-ply
-// counterfactual labels per action.  At each sampled decision, every legal
-// action is applied to a detached pre-decision copy and the branch is continued
-// with the deployed-default OOC policy through STRATEGIC_BRANCH_FIGHTS battles
-// (cheap sims + STS_VNET combat value net leaf), then the expected floor /
-// P(win) are bootstrapped from the native trees.  Common random numbers across
-// the actions of one decision (same branch seed); STRATEGIC_BRANCH_FUTURES
-// averages over additional branch seeds per action.
-// Row schema: strategicHeader() columns, then
-//   labelWon,labelHp,labelFloor,labelBootstrap
-// (unsampled decisions leave these empty).
-static std::string strategicHeader2() {
-    std::string h = strategicHeader();
-    if (!h.empty() && h.back() == '\n') h.pop_back();
-    return h + ",labelWon,labelHp,labelFloor,labelBootstrap\n";
-}
-
-static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    vDisconnect();
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    PathHistory path; t_curPath = &path;
-    using RT = search::GameAction::RewardsActionType;
-    std::default_random_engine reservoir(seed * 2862933555777941757ULL + 97);
-
-    std::vector<std::string> rows;
-    std::vector<std::string> rowLabel;  // per-row Tier-B label suffix ("" when unsampled)
-    // Tier-B label sets for sampled decisions: [rowStart,rowEnd) indexes into
-    // `rows` (pushed without the label suffix), `labels` holds one label string
-    // per action.  In knob mode this is the reservoir: later sampled decisions
-    // replace earlier slots so the N kept decisions are uniform over the run.
-    std::vector<std::pair<int, int>> labelRanges;
-    std::vector<std::vector<std::string>> labelSets;
-    int eligible = 0;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc;
-            agent.playoutBattle(gc, bc);
-            bc.exitBattle(gc);
-            continue;
-        }
-
-        // Legal actions for this decision, deduped by bits (e.g. GOLD piles).
-        std::vector<search::GameAction> actions;
-        for (const auto &a : search::GameAction::getAllActionsInState(gc)) {
-            bool dup = false;
-            for (const auto &b : actions) if (b.bits == a.bits) { dup = true; break; }
-            if (!dup) actions.push_back(a);
-        }
-        // The default card policy skips a group via CARD(rIdx,5), which the
-        // enumerator omits (it only lists actual cards); add it as a candidate.
-        if (gc.screenState == ScreenState::REWARDS
-            && gc.info.rewardsContainer.cardRewardCount > 0) {
-            const search::GameAction skipCard(RT::CARD, gc.info.rewardsContainer.cardRewardCount - 1, 5);
-            bool dup = false;
-            for (const auto &b : actions) if (b.bits == skipCard.bits) { dup = true; break; }
-            if (!dup) actions.push_back(skipCard);
-        }
-
-        // Pre-decision copy: per-action successor simulations must start here.
-        // Detach the shared map (issue 83): the live policy's transitionToAct
-        // regenerates *map in place; pre must own a copy.
-        GameContext pre = gc;
-        if (gc.map) pre.map = std::make_shared<Map>(*gc.map);
-        const PathHistory prePath = path;
-        const int decIdx = (int)rows.size();
-
-        // Sample this decision for Tier-B branching?  Sample-all labels every
-        // decision; otherwise uniform reservoir of STRATEGIC_SAMPLES_PER_RUN
-        // decisions (replacing an earlier slot means its branch work is lost).
-        int labelSlot = -1;
-        bool isNewSlot = false;
-        if (g_strategicSampleAll) {
-            if (!actions.empty()) {
-                labelSlot = (int)labelSets.size();
-                labelSets.push_back({});
-                isNewSlot = true;
-            }
-        } else if (!actions.empty()) {
-            ++eligible;
-            if (eligible <= g_strategicSamplesPerRun) {
-                labelSlot = (int)labelSets.size();
-                labelSets.push_back({});
-                isNewSlot = true;
-            } else if (std::uniform_int_distribution<int>(1, eligible)(reservoir)
-                       <= g_strategicSamplesPerRun) {
-                labelSlot = std::uniform_int_distribution<int>(0, g_strategicSamplesPerRun - 1)(reservoir);
-            }
-        }
-        if (labelSlot >= 0) {
-            auto &labels = labelSets[labelSlot];
-            labels.resize(actions.size());
-            for (int a = 0; a < (int)actions.size(); ++a) {
-                double won = 0, hp = 0, floor = 0, boot = 0;
-                bool branchInvalid = false;
-                for (int f = 0; f < g_strategicBranchFutures; ++f) {
-                    GameContext branch = detachedCounterfactualCopy(pre);
-                    actions[a].execute(branch);
-                    const std::uint64_t branchSeed =
-                        seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1))
-                             ^ (0xbf58476d1ce4e5b9ULL * (std::uint64_t)(decIdx + 31));
-                    const OocCounterfactualResult r = finishOocCounterfactual(
-                        std::move(branch), sims, branchSeed, prePath,
-                        g_strategicBranchFights, /*bootstrap=*/true,
-                        /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
-                    if (r.bootstrapped < 0) { branchInvalid = true; break; }
-                    won += r.won; hp += r.hp; floor += r.floor; boot += r.bootstrapped;
-                }
-                if (branchInvalid) {
-                    ++g_trainingInvalidBranches;
-                    labels.clear();
-                    break;
-                }
-                const int F = std::max(1, g_strategicBranchFutures);
-                char buf[128];
-                std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f",
-                              won / F, hp / F, floor / F, boot / F);
-                labels[a] = buf;
-            }
-            if (isNewSlot)
-                labelRanges.emplace_back((int)rows.size(), (int)rows.size() + (int)actions.size());
-            else
-                labelRanges[labelSlot] = {(int)rows.size(), (int)rows.size() + (int)actions.size()};
-        }
-
-        // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
-        // heuristic map pathing, forced non-card rewards one at a time, native
-        // floor card pick with skip, win-rate rest/upgrade, else the agent's
-        // heuristic OOC policy.
-        if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                // Same single-group logic as serverCardRewardPolicy.
-                const int rIdx = r.cardRewardCount - 1;
-                const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
-                const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
-                                                                         : vQuery(gc, rIdx, bossW);
-                search::GameAction(RT::CARD, rIdx, idx).execute(gc);
-            }
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // win-rate rest decision (heal vs smith)
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-
-        // Which legal action did the policy take? Simulate each on a pre-state
-        // copy and match the successor fingerprint of the real run.
-        const StratFingerprint realFp = stratFingerprint(gc);
-        for (int a = 0; a < (int)actions.size(); ++a) {
-            GameContext probe = pre;
-            probe.map = std::make_shared<Map>(*pre.map);   // detach the shared map before probing
-            actions[a].execute(probe);
-            const StratFingerprint probeFp = stratFingerprint(probe);
-            const bool chosen = probeFp == realFp;
-            int actionType, c1, c2, c3, cand1, cand2, cand3;
-            strategicCands(pre, actions[a], actionType, c1, c2, c3, cand1, cand2, cand3);
-            std::ostringstream r;
-            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ',' << actions[a].bits << ','
-              << actionType << ',' << c1 << ',' << c2 << ',' << c3 << ','
-              << cand1 << ',' << cand2 << ',' << cand3 << ',' << (chosen ? 1 : 0) << ','
-              << richRow(pre, prePath);
-            rows.push_back(r.str());
-            rowLabel.push_back("");
-        }
-        if (actions.empty()) {
-            // e.g. MATCH_AND_KEEP: the policy still acts, but no legal action is
-            // enumerable; keep a value-only row so the state is still labeled.
-            std::ostringstream r;
-            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ",-1,-1,-1,-1,-1,-1,-1,-1,1,"
-              << richRow(pre, prePath);
-            rows.push_back(r.str());
-            rowLabel.push_back("");
-        }
-    }
-    t_curPath = nullptr;
-
-    if (!trainingRunValid(gc.outcome != GameOutcome::UNDECIDED)) return {};
-
-    // Append the surviving Tier-B labels to their decision's rows.  The labels
-    // belong AFTER the terminal won/endFloor/endHp columns, so store them in
-    // rowLabel and emit them after the terminal fields below.
-    for (int s = 0; s < (int)labelRanges.size(); ++s) {
-        const auto &[lo, hi] = labelRanges[s];
-        const auto &labels = labelSets[s];
-        for (int i = lo; i < hi; ++i)
-            if (i - lo < (int)labels.size()) rowLabel[i] = labels[i - lo];
-    }
-
-    const int won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0;
-    std::ostringstream out;
-    for (int i = 0; i < (int)rows.size(); ++i)
-        out << rows[i] << ',' << won << ',' << gc.floorNum << ',' << gc.curHp
-            << (rowLabel[i].empty() ? "" : "," + rowLabel[i]) << '\n';
-    return out.str();
-}
-
-static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    const bool append = seedOffset > 0;
-    std::cout << "strategicgen2  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  threads " << numThreads()
-              << "  sampleAll " << g_strategicSampleAll << "  samplesPerRun "
-              << g_strategicSamplesPerRun << "  branchFights " << g_strategicBranchFights
-              << "  branchSims";
-    for (const int s : g_strategicBranchSims) std::cout << ':' << s;
-    std::cout << "  futures " << g_strategicBranchFutures << "  -> " << outFile << "\n";
-    std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) {
-        f << strategicHeader2();
-        f.flush();
-    }
-    auto t0 = std::chrono::steady_clock::now();
-    long long rows = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic) reduction(+:rows)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::string r = runStrategicGenSeed2((std::uint64_t)(seedOffset + s), sims, asc);
-        #pragma omp critical
-        { f << r; f.flush(); rows += std::count(r.begin(), r.end(), '\n'); }
-        if (++done % 50 == 0) {
-            double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            std::printf("  %d/%d runs, %lld rows, %.0fs\n", done, nSeeds, rows, el);
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld rows from %d runs in %.1fs\n", rows, nSeeds, wall);
-    std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d health_failures=%d rows=%lld output=%s\n",
-                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                g_trainingHealthFailures.load(), rows, outFile.c_str());
-    writeTrainingProvenance(outFile, "strategicgen2", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rows, seedOffset, sims, asc, -1.0);
-}
-
 // ---------------------------------------------------------------------------
 // CAUSAL LABELS: at each card reward, CRN-fork "take card i" vs "skip", play the
 // next N fights with common random numbers, and label the card's ADVANTAGE =
@@ -6626,6 +2776,44 @@ static void exportCardCfMaps(const std::string &inputPath, const std::string &ou
 }
 
 // ---------------------------------------------------------------------------
+// The STS_SILVER_* options the native Silver backend honors, with the values it
+// accepts (empty: any value). The vendored model's other options, and its
+// STS_COMBAT_* diagnostics, were removed with it (ADR-0022); frozen research
+// environments may still pin the neutral values listed here.
+static std::string unsupportedSilverOption() {
+    struct Supported { const char *name; const char *value; };
+    static const Supported kSupported[] = {
+        {"STS_SILVER_SEARCH", ""}, {"STS_SILVER_ADAPTIVE", ""},
+        {"STS_SILVER_ADAPTIVE_TOP_GAP", ""}, {"STS_SILVER_ADAPTIVE_RETAINED_ONLY", "1"},
+        {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
+        {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+        {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
+        {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
+    };
+    // Vendored-only diagnostics without the STS_SILVER_ prefix.
+    static const char *const kRemoved[] = {
+        "STS_COMBAT_BUDGET_DIAG_FILE", "STS_COMBAT_SEQUENTIAL_DIAG_FILE",
+        "STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS",
+    };
+    for (const char *name : kRemoved) {
+        if (const char *value = std::getenv(name); value && *value) return std::string(name) + "=" + value;
+    }
+    for (char **env = environ; env && *env; ++env) {
+        const std::string entry(*env);
+        if (entry.rfind("STS_SILVER_", 0) != 0) continue;
+        const auto eq = entry.find('=');
+        const std::string name = entry.substr(0, eq);
+        const std::string value = eq == std::string::npos ? "" : entry.substr(eq + 1);
+        if (value.empty()) continue;
+        bool supported = false;
+        for (const auto &option : kSupported) {
+            supported = supported || (name == option.name && (!*option.value || value == option.value));
+        }
+        if (!supported) return name + "=" + value;
+    }
+    return {};
+}
+
 int main(int argc, char **argv) {
     g_mainBinaryPath = argc > 0 ? argv[0] : "one_combat";
     g_mainArgv.clear();
@@ -7060,11 +3248,24 @@ int main(int argc, char **argv) {
         std::cerr << "error: STS_SEARCHER3 is no longer supported; Searcher3 was removed (ADR-0019)\n";
         return 2;
     }
-    // Silver owns local RNG/chance search for every combat (ADR-0020).
-    search::installSilverLiveBackend();
-    std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
-              << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
-              << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+    // Silver owns local RNG/chance search for every combat (ADR-0020), running
+    // natively on the main engine (ADR-0021); the vendored model was removed
+    // (ADR-0022).
+    if (const char *d = std::getenv("STS_NATIVE_SILVER"); d && *d && std::atoi(d) == 0) {
+        std::cerr << "error: STS_NATIVE_SILVER=0 is no longer supported; "
+                     "the vendored Silver model was removed (ADR-0022)\n";
+        return 2;
+    }
+    if (const auto option = unsupportedSilverOption(); !option.empty()) {
+        std::cerr << "error: " << option << " is not supported by the native Silver backend; "
+                     "the vendored Silver model and its options were removed (ADR-0022)\n";
+        return 2;
+    }
+    search::installNativeSilverBackend();
+    std::cout << "[Native Silver combat backend: Silver search on the main engine"
+              << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+              << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
+              << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
@@ -7395,12 +3596,26 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionlizardtargetcandidategen") {
+        if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7], true);
+    } else if (mode == "combattransitionlizardgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
+        activeLizardCombatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),
+            std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argv[8], argv[9]);
+    } else if (mode == "combattransitionlizardtargetpairgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardtargetpairgen N_PAIRS SIMS ASC OUT.jsonl TARGETS.json TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
+        activeLizardPairTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),
+            std::stoi(argv[4]), argv[5], argv[6], argv[7], argv[8], argv[9]);
     } else if (mode == "combattransitionselftest") {
         if (argc < 4) {
             std::cerr << "usage: one_combat combattransitionselftest OUT.jsonl MANIFEST.json\n";
             return 2;
         }
         return combatTransitionFixture(argv[2], argv[3]);
+    } else if (mode == "combattransitionlizardselftest") {
+        return activeLizardTransitionSelfTest();
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");

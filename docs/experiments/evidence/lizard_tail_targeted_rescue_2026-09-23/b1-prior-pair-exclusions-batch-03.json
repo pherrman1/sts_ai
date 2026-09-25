@@ -1,0 +1,1412 @@
+{
+  "schema": "lizard_tail_prior_pair_exclusion_v1",
+  "candidateJsonlSha256": "8b5b2d349208075e4de0f40580ce223807c6acbf7c004944858b5370657d2468",
+  "sourceManifests": [
+    {
+      "path": "paired.jsonl.manifest.json",
+      "sha256": "122bd32fdf834dccd1003d3f490ff63fba47c17152655c0a200e81c6d0c40ab4"
+    },
+    {
+      "path": "paired-b1-batch-01.jsonl.manifest.json",
+      "sha256": "e84f3a00af1c05ecda760b862b6278650f078165f39437ef6178f7aa897da7b9"
+    },
+    {
+      "path": "paired-b1-batch-02.jsonl.manifest.json",
+      "sha256": "9aa206070d582b5d4c351d7fe6c70c5c13f0ebcf1656db2640b5ed7a77cc84be"
+    }
+  ],
+  "targets": [
+    {
+      "sourceSeed": 4200300,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200300,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200301,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200301,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200301,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200302,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200302,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200302,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200303,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200303,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200304,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200304,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200304,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200305,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200305,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200305,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200306,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200306,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200306,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200307,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200307,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200308,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200308,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200308,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200309,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200309,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200309,
+      "fightIdx": 27
+    },
+    {
+      "sourceSeed": 4200310,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200310,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200310,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200311,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200311,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200311,
+      "fightIdx": 27
+    },
+    {
+      "sourceSeed": 4200312,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200312,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200313,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200313,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200313,
+      "fightIdx": 23
+    },
+    {
+      "sourceSeed": 4200314,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200314,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200314,
+      "fightIdx": 29
+    },
+    {
+      "sourceSeed": 4200315,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200315,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200316,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200316,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200317,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200317,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200317,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200318,
+      "fightIdx": 0
+    },
+    {
+      "sourceSeed": 4200318,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200319,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200319,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200320,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200320,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200321,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200321,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200322,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200322,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200322,
+      "fightIdx": 25
+    },
+    {
+      "sourceSeed": 4200323,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200323,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200323,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200324,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200324,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200324,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200325,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200325,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200325,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200326,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200326,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200326,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200327,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200327,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200327,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200328,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200328,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200329,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200329,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200329,
+      "fightIdx": 25
+    },
+    {
+      "sourceSeed": 4200330,
+      "fightIdx": 1
+    },
+    {
+      "sourceSeed": 4200330,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200330,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200331,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200331,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200332,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200332,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200333,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200333,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200333,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200334,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200334,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200335,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200335,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200336,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200336,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200336,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200337,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200337,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200337,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200338,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200338,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200338,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200339,
+      "fightIdx": 0
+    },
+    {
+      "sourceSeed": 4200339,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200339,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200340,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200340,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200340,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200341,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200341,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200342,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200342,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200342,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200343,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200343,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200344,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200344,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200345,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200345,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200345,
+      "fightIdx": 25
+    },
+    {
+      "sourceSeed": 4200346,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200346,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200346,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200347,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200347,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200347,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200348,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200348,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200348,
+      "fightIdx": 25
+    },
+    {
+      "sourceSeed": 4200349,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200349,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200349,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200350,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200350,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200350,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200351,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200351,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200351,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200352,
+      "fightIdx": 2
+    },
+    {
+      "sourceSeed": 4200352,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200352,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200353,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200353,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200354,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200354,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200355,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200355,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200356,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200356,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200356,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200357,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200357,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200357,
+      "fightIdx": 29
+    },
+    {
+      "sourceSeed": 4200358,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200358,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200358,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200359,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200359,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200359,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200360,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200360,
+      "fightIdx": 25
+    },
+    {
+      "sourceSeed": 4200361,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200361,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200361,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200362,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200362,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200362,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200363,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200363,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200363,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200364,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200364,
+      "fightIdx": 23
+    },
+    {
+      "sourceSeed": 4200364,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200365,
+      "fightIdx": 0
+    },
+    {
+      "sourceSeed": 4200365,
+      "fightIdx": 1
+    },
+    {
+      "sourceSeed": 4200365,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200366,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200366,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200366,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200367,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200367,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200368,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200368,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200368,
+      "fightIdx": 23
+    },
+    {
+      "sourceSeed": 4200369,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200369,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200369,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200370,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200370,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200370,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200371,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200371,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200371,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200372,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200372,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200373,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200373,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200373,
+      "fightIdx": 25
+    },
+    {
+      "sourceSeed": 4200374,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200374,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200375,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200375,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200376,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200376,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200376,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200377,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200377,
+      "fightIdx": 23
+    },
+    {
+      "sourceSeed": 4200377,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200378,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200378,
+      "fightIdx": 23
+    },
+    {
+      "sourceSeed": 4200378,
+      "fightIdx": 28
+    },
+    {
+      "sourceSeed": 4200379,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200379,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200379,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200380,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200380,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200380,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200381,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200381,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200381,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200382,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200382,
+      "fightIdx": 28
+    },
+    {
+      "sourceSeed": 4200383,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200383,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200384,
+      "fightIdx": 2
+    },
+    {
+      "sourceSeed": 4200384,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200384,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200385,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200385,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200385,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200386,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200386,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200386,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200387,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200387,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200387,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200388,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200388,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200388,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200389,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200389,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200389,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200390,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200390,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200390,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200391,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200391,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200391,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200392,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200392,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200392,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200393,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200393,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200394,
+      "fightIdx": 2
+    },
+    {
+      "sourceSeed": 4200394,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200394,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200395,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200395,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200395,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200396,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200396,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200396,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200397,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200397,
+      "fightIdx": 23
+    },
+    {
+      "sourceSeed": 4200398,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200398,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200398,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200399,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200399,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200399,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200400,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200400,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200400,
+      "fightIdx": 14
+    },
+    {
+      "sourceSeed": 4200401,
+      "fightIdx": 0
+    },
+    {
+      "sourceSeed": 4200401,
+      "fightIdx": 2
+    },
+    {
+      "sourceSeed": 4200401,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200402,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200402,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200402,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200403,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200403,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200403,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200404,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200404,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200405,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200405,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200405,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200406,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200406,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200406,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200407,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200407,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200407,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200408,
+      "fightIdx": 13
+    },
+    {
+      "sourceSeed": 4200408,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200409,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200409,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200409,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200410,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200410,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200410,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200411,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200411,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200411,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200412,
+      "fightIdx": 9
+    },
+    {
+      "sourceSeed": 4200412,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200412,
+      "fightIdx": 27
+    },
+    {
+      "sourceSeed": 4200413,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200413,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200413,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200414,
+      "fightIdx": 0
+    },
+    {
+      "sourceSeed": 4200414,
+      "fightIdx": 2
+    },
+    {
+      "sourceSeed": 4200414,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200415,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200415,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200415,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200416,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200416,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200416,
+      "fightIdx": 22
+    },
+    {
+      "sourceSeed": 4200417,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200417,
+      "fightIdx": 10
+    },
+    {
+      "sourceSeed": 4200418,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200418,
+      "fightIdx": 11
+    },
+    {
+      "sourceSeed": 4200418,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200419,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200419,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200419,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200420,
+      "fightIdx": 4
+    },
+    {
+      "sourceSeed": 4200420,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200420,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200421,
+      "fightIdx": 7
+    },
+    {
+      "sourceSeed": 4200421,
+      "fightIdx": 16
+    },
+    {
+      "sourceSeed": 4200422,
+      "fightIdx": 12
+    },
+    {
+      "sourceSeed": 4200422,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200423,
+      "fightIdx": 17
+    },
+    {
+      "sourceSeed": 4200423,
+      "fightIdx": 21
+    },
+    {
+      "sourceSeed": 4200424,
+      "fightIdx": 3
+    },
+    {
+      "sourceSeed": 4200424,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200424,
+      "fightIdx": 8
+    },
+    {
+      "sourceSeed": 4200425,
+      "fightIdx": 15
+    },
+    {
+      "sourceSeed": 4200425,
+      "fightIdx": 19
+    },
+    {
+      "sourceSeed": 4200425,
+      "fightIdx": 20
+    },
+    {
+      "sourceSeed": 4200426,
+      "fightIdx": 18
+    },
+    {
+      "sourceSeed": 4200426,
+      "fightIdx": 24
+    },
+    {
+      "sourceSeed": 4200426,
+      "fightIdx": 26
+    },
+    {
+      "sourceSeed": 4200427,
+      "fightIdx": 5
+    },
+    {
+      "sourceSeed": 4200427,
+      "fightIdx": 6
+    },
+    {
+      "sourceSeed": 4200427,
+      "fightIdx": 8
+    }
+  ]
+}

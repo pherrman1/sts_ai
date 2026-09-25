@@ -2,7 +2,8 @@
 
 StS AI is an experimental, inspectable Ironclad agent for *Slay the Spire*,
 built on gamerpuppy's `sts_lightspeed` C++ simulator. Combat decisions are made
-by the isolated Silver chance-tree search; choices between combats combine C++
+by the Silver chance-tree search, ported onto the simulator's own combat engine;
+choices between combats combine C++
 policy code, learned models, and experimental counterfactual evaluators.
 
 The project is outcome-driven: a hand-authored card tier or arbitrary
@@ -40,7 +41,7 @@ Chronological evidence, including rejected ideas, remains in
 
 ## Quick start
 
-The configured build requires CMake, C++17, OpenMP, and populated `json/` and
+The configured build requires CMake, C++20, OpenMP, and populated `json/` and
 `pybind11/` source directories:
 
 ```bash

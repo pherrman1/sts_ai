@@ -1,4 +1,5 @@
-// Explicit live-observation to isolated-Silver conversion helpers.
+// Live combat state -> Silver search view: the sanitized draw-pile observation
+// and the value-only wire protocol (SilverBridge.h) used by the live advisor.
 #ifndef STS_SILVER_CONVERSION_H
 #define STS_SILVER_CONVERSION_H
 
@@ -8,7 +9,7 @@
 #include "combat/CardInstance.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverBridge.h"
-#include "silver/CardPile.h"
+#include "combat/CardPile.h"
 
 namespace sts {
     class BattleContext;
@@ -16,7 +17,7 @@ namespace sts {
 
 namespace search {
 
-// This is the draw-pile portion of the live->Silver boundary. It deliberately
+// This is the draw-pile portion of the live->search boundary. It deliberately
 // has no reference to an index in the live vector and contains no live RNG.
 // In the normal case unknown is canonicalized as a multiset. Only a legitimate
 // full-order observation (Frozen Eye) may preserve the live vector order.
@@ -49,14 +50,13 @@ SilverRunContext makeSilverRunContext(const GameContext &live);
 SilverDrawPileObservation makeSilverDrawPileObservation(
     const BattleContext &live, const CombatKnowledgeState &knowledge);
 
-// Constructs the isolated model's actual Silver CardPile from the sanitized
-// observation. This function is the only draw-pile path from live combat into
-// the Silver model.
-silver::CardPile makeSilverCardPile(const BattleContext &live,
+// The search draw pile for the sanitized observation: the information set, or
+// the concrete order under Frozen Eye.
+CardPile makeSilverCardPile(const BattleContext &live,
                                    const CombatKnowledgeState &knowledge);
 
 // Runic Dome hides intent from the player. Callers must use this gate before
-// copying any monster move field into the isolated Silver model.
+// copying any monster move field into a Silver search state.
 bool liveMonsterIntentIsObservable(const BattleContext &live);
 
 bool sameSilverDrawPileObservation(const SilverDrawPileObservation &a,

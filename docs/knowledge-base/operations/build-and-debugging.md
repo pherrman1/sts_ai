@@ -9,7 +9,7 @@ manual checks, model-load diagnostics, and tracing boundaries.
 
 ## Current implementation
 
-`CMakeLists.txt` requires CMake 3.19 and C++17. All configurations retain
+`CMakeLists.txt` requires CMake 3.19 and C++20. All configurations retain
 `-Wno-shift-count-overflow` and `-fopenmp`; Release adds `-O3 -flto`, while
 Debug uses its normal assertion-enabled flags without forced optimization or
 LTO. It recursively gathers `src/*.cpp` into the `sts_core_objects` OBJECT
@@ -362,10 +362,8 @@ in the frozen full Git SHA, remote checkout/build paths, executable and artifact
 SHA-256 hashes, exact `bestbench` seed block, required environment, and every
 arm's unique result/log path. Keep parameters shared across arms in
 `common_env` and `command`; arm-local `env` should contain only the intended
-treatment. If Silver telemetry is expected, retain both
-`expect_silver_telemetry: true` and `STS_SILVER_TELEMETRY` in `required_env`.
-The validator rejects an absent, empty, or zero telemetry setting before a
-seed can run.
+treatment. Silver telemetry was removed with the vendored model (ADR-0022):
+`expect_silver_telemetry` must be `false`, and the validator rejects `true`.
 
 Schema version 2 adds `environment_policy` and per-arm `fresh_outputs`.
 Decision-bearing comparisons should use `environment_policy: "clean"` and
@@ -542,8 +540,7 @@ directory for each experiment; do not mix profiles from different revisions.
 ```bash
 cmake -S . -B build/pgo -DCMAKE_BUILD_TYPE=Release \
   -DSTS_PGO_MODE=GENERATE -DSTS_PGO_PROFILE_DIR="$PWD/build/pgo-profiles"
-cmake --build build/pgo --target one_combat silver-native-test -j2
-bash tools/seed_guard.sh build/pgo/silver_native_test
+cmake --build build/pgo --target one_combat -j2
 # Run the instrumented binary on representative, guarded Silver producer
 # workloads here, preserving the frozen teacher settings and refreshing its
 # executable hash. Wait for normal process exit so GCC writes the profiles.
@@ -554,9 +551,7 @@ cmake --build build/pgo --target one_combat -j2
 
 Collect profiles for every translation unit rebuilt in USE mode, including
 static-library members that `one_combat` does not pull into its final link.
-The `silver_native_test` probe above exercises `SilverSearcherBridge.cpp`,
-whose reference-searcher probe would otherwise have no profile when rebuilding
-the Silver search bridge archive. Building additional targets in USE mode
+Building additional targets in USE mode
 without collecting their profiles intentionally fails. Profile existence alone
 does not establish workload representativeness or a performance improvement.
 Compare the final USE binary against ordinary Release on held-out workloads,

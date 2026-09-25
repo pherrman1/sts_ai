@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Last verified: 2026-09-24 for Silver-only combat (ADR-0020) and the Searcher3 removal; 2026-08-26 against the current working tree
+Last verified: 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020) and the Searcher3 removal; 2026-08-26 against the current working tree
 tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
@@ -27,35 +27,13 @@ seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec
 Other modes include combat-only, data-generation, `reprobench`, and `runtrace`.
 `runtrace` is a debugging policy and does not exactly mirror `runFullRunOOC`.
 
-### Frozen hard-combat screen usage
+### Frozen hard-combat screen
 
-For the frozen `silver_hard_combat_v1` benchmark, the intended funnel is:
-
-1. **Primary cheap screen:** `hard64-dev` at the fixed 1,000-simulation
-   replay budget. Report wins/64 first; retain HP fraction, decisions, and
-   simulation count as secondary diagnostics.
-2. **Secondary quality/cost evidence:** terminal HP fraction and compute,
-   interpreted separately from the primary win count.
-3. **10,000 simulations:** teacher/reference evidence used to classify the
-   candidate pool, not the primary benchmark score.
-4. **Confirmation:** `hard64-holdout` at 1,000 simulations is reserved for
-   warranted confirmation and is not for routine tuning.
-
-`hard64-dev` and `hard64-holdout` are screening artifacts, not production
-promotion gates. A change that improves the DEV screen still requires the
-normal unit/parity and paired whole-run gameplay funnel before promotion.
-These frozen cohorts use the v1 hard-combat schema and have no trusted
-source-queue provenance. New native v2 captures persist the source-side
-historical queue-item proof outside the public Silver wire and bind it into
-the snapshot state hash; v1 replay conservatively keeps queue-item identity
-exact. Therefore v1 hard64 remains a legacy-boundary safety screen for the
-quiescent identity rule, while fresh trusted v2 captures can reproduce the
-production identity policy.
-
-All combat is project-fair Silver (ADR-0020); the known-RNG regime no longer
-exists in the executable. Historical known-RNG Searcher2 rows and non-fair
-Searcher3 rows remain separate series and must not be grouped with current
-Silver results (ADR-0002).
+The frozen `silver_hard_combat_v1` screen (`hard64-dev`/`hard64-holdout`)
+replayed captures in the vendored Silver model and was retired with it
+([ADR-0022](../../../decisions/0022-remove-vendored-silver.md)); its results
+remain in the experiment ledger. Candidates now go straight to the paired
+whole-run gameplay funnel.
 
 ## Important data flow
 
@@ -77,17 +55,17 @@ The `bestBench` banner and adjacent source comment are now emitted from the
 parsed configuration (skip threshold, rest/win layer, shop-V, path mode, native
 OOC, searcher, threads, model paths). The `.meta.json` JSON-lines sidecar is
 machine-readable provenance; use it plus observed load messages rather than the
-banner alone. The sidecar records `config.effectiveCombatBackend="silver"`,
-the effective Silver reuse-cap mode and fixed production cap, pinned Silver
-SHA, current executable Git SHA, and any scaling-diagnostic output path. The
-legacy native-searcher and combat-model keys carry fixed values for schema
-compatibility.
+banner alone. The sidecar records `config.effectiveCombatBackend="native_silver"`
+(earlier vendored-model rows record `"silver"`; ADR-0021, ADR-0022), the
+reuse-cap mode and cap, the adaptive and exact-root-budget settings, and the
+current executable Git SHA. The vendored-era and legacy native-searcher and
+combat-model keys carry fixed values for schema compatibility.
 
 ### Treatment canary before a larger cohort
 
 Before launching a decision-bearing multi-arm GCP cohort, encode its frozen
 SHA, executable/artifact hashes, common seed/configuration, required
-environment, telemetry expectation, and unique outputs in the strict manifest
+environment, and unique outputs in the strict manifest
 described in
 [`operations/build-and-debugging.md`](../operations/build-and-debugging.md#decision-bearing-gcp-run-preflight).
 Run `manifest-check`, hash-verified transfer where needed, and
@@ -105,7 +83,7 @@ python3 tools/agent/check_benchmark_canary.py \
   --results <canary.csv> \
   --meta <canary.csv.meta.json> \
   --log <canary.log> \
-  --expect-backend silver \
+  --expect-backend native_silver \
   --expect-seeds 1 \
   --expect-sims <budget> \
   --expect-seed-lo <seed> \
@@ -114,16 +92,15 @@ python3 tools/agent/check_benchmark_canary.py \
   --expect-fair \
   --no-expect-searcher3 \
   --binary <one_combat> \
-  --expect-binary-sha256 <frozen-binary-sha256> \
-  --expect-silver-reuse-cap-mode allocated
+  --expect-binary-sha256 <frozen-binary-sha256>
 ```
 
 The validator does not drive seeds. It requires one non-appended metadata
 record, the exact seed block and completed row count, the requested simulation
 budget, ascension, thread/fair/searcher configuration, and binary hash, the
-effective treatment backend, actual Silver
-decision/simulation telemetry, and zero conversion, semantic-resolution,
-transaction, and knowledge failures. A failed canary blocks the remaining
+effective `native_silver` backend with the allocated reuse cap, and the native
+backend banner in the log (native Silver has no per-combat telemetry). A
+failed canary blocks the remaining
 cohort; fix or explain the provenance/mechanism failure before spending more
 seeds. `--expect-executable-sha` is also available for a Git-backed execution
 tree; do not rely on that sidecar field alone on the documented non-Git GCP

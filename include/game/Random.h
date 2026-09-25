@@ -5,6 +5,9 @@
 #ifndef STS_LIGHTSPEED_RANDOM_H
 #define STS_LIGHTSPEED_RANDOM_H
 
+#include <cstdint>
+#include <utility>
+
 namespace java {
 
     class Random {
@@ -132,6 +135,8 @@ namespace sts {
     public:
 
         Random() : Random(0) {}
+
+        bool operator==(const Random &rhs) const = default;
 
         Random(std::uint64_t seed) {
             counter = 0;

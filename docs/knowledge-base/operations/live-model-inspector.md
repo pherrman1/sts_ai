@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-23. This page describes the private integration
+Last verified: 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -15,8 +15,10 @@ observation boundary. It never receives RNG state or controls the simulator.
 Combat observations now have two separate fail-closed evaluator paths. The
 existing CTM evaluator uses the public combat-entry importer when its model is
 available. The `silver_player_decision_v2` evaluator imports an Ironclad
-decision-0 or decision-1 Silver root, verifies converted-state parity and legal
-actions, and runs a 1,000-simulation Silver decision by default. The combat
+decision-0 or decision-1 Silver root, builds a main-engine search state from it
+(`battleContextFromWire`), and runs a 1,000-simulation Silver decision by
+default with the native `SilverSearcher` (the same search `one_combat` uses,
+ADR-0021; responses carry `"engine": "native_silver"`). The combat
 panel's `Silver +9k` button raises the active root budget to 10,000; each later
 click adds another 10,000 (20,000, 30,000, ...). The retained Silver root is
 continued incrementally, and any gameplay state change resets the next decision
@@ -24,13 +26,14 @@ to 1,000. The panel reports the requested budget, accumulated root visits, and
 total simulations returned by the advisor.
 One advisor-owned Silver session is retained for the active protocol session
 and `combatEntryHash`; a matching observed successor can therefore report an
-exact reroot with inherited visits. If the human plays a different physical
-copy of the same ordinary card, the immediate retained successor is narrowly
-rebased to that copy and also preserves inherited visits. Matching considers
-every explored action listed at the retained root, not only Silver's selected
-recommendation, so choosing another supported listed action also inherits its
-branch visits. An observation with no retained successor safely reports a
-fresh `candidate_missing` fallback.
+exact reroot with inherited visits. Matching considers every explored state in
+the retained graph, not only Silver's selected recommendation, so choosing
+another listed action also inherits its branch visits. Playing a different
+physical copy of an equivalent card reroots through that branch as well and
+reports `equivalentCopy: true` (ADR-0023). An observation with no retained
+successor safely reports a fresh `candidate_missing` fallback. Multi-card
+selections (Gambling Chip, Purity) are searched as whole subsets; the selected
+subset is lowered one `choose` at a time and then `proceed`.
 It returns the selected action, root action summaries containing
 edge visits, `visitShare`, and selection Q only when that edge has a valid Q
 value, plus the decision ordinal and reroot diagnostics.
@@ -297,20 +300,13 @@ oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.n
 override their corresponding properties when nonempty.
 `STS_MODEL_INSPECTOR_CONFIG` selects a different properties file. These
 environment-first rules provide an isolated development/test escape hatch.
-For a prior-aware Silver graph, set `STS_SILVER_ROOT_PRIOR_MODEL` in the
-advisor process environment to the absolute frozen `SilverPriorNetV1` artifact
-path. The advisor loads it at startup and, on eligible ordinary player roots,
-uses the model prior in the same root-only PUCT search shown in the graph. The
-root-action sidebar, edge inspector, and report table then show the model logit
-and normalized `P(a|state)` next to visits and Q. No prior columns are emitted
-when no model is loaded; if loaded but ineligible at a root, the report gives
-the skip reason. The prior is a root policy distribution, not Q or win
-probability. Forced roots, non-player-normal decisions, and sequential
-selection transactions do not receive the learned prior.
+The learned Silver root prior is not supported by the native evaluator: the
+advisor exits at startup when `STS_SILVER_ROOT_PRIOR_MODEL` is set.
 For an explicit Silver tree-debug capture, launch the advisor/runtime with
 `STS_SILVER_DEBUG_TREE=1`; the normal response remains unchanged when it is
 unset. The optional `STS_SILVER_DEBUG_TREE_NODE_CAP` bounds the attached graph
-(default `8192`). A captured `latest.json` can then be rendered with
+(default `8192`). Native graph nodes report `victoryCount` 0 (the native search
+does not count victories) and edges have no continuation actions. A captured `latest.json` can then be rendered with
 `python3 tools/render_combat_decision.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/combat-decision.html`.
 For an OOC MCTS search graph, launch the advisor with
 `STS_OOC_DEBUG_TREE=1` and select an OOC decision with the `mcts_ctm` policy.
@@ -424,11 +420,11 @@ Live current energy comes from `EnergyPanel.totalCount`; the player's
 `EnergyManager.energy` field is the per-turn recharge amount and does not
 decrease when a card is played.
 
-Equivalent-copy rebasing is deliberately local to the immediate live reroot.
-It proves the candidate by swapping only the retained and observed card UIDs,
-then requiring the ordinary-card equivalence and full search-state checks to
-match. It does not relax `equalForSearch()`, merge UID-distinct states in the
-global dedup table, or make chance-node identity less strict.
+Equivalent-copy rerooting is a lookup only. It exchanges the unique ids of one
+pair of search-equivalent cards in the observed state and requires the full
+search-state check to match. It does not relax `equalForSearch()`, merge
+UID-distinct states in the global dedup table, or make chance-node identity
+less strict.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore

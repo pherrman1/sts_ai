@@ -44,6 +44,11 @@
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "combat/BattleContextBinary.h"
+#include "sim/search/SearchStateHash.h"
+#include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverWireState.h"
+#include "sim/search/NativeSilverBackend.h"
+#include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
 #include "constants/MonsterMoves.h"
@@ -54,6 +59,635 @@ int runOocSemanticPipelineTests();
 int runOocSemanticTransactionsTests();
 
 using namespace sts;
+
+int testCardPile() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *what) {
+        if (!ok) {
+            std::cerr << "card_pile FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    auto card = [](CardId id, int uid) {
+        CardInstance c(id);
+        c.uniqueId = static_cast<std::int16_t>(uid);
+        return c;
+    };
+    const auto strike = card(CardId::STRIKE_RED, 1);
+    const auto defend = card(CardId::DEFEND_RED, 2);
+    const auto bash = card(CardId::BASH, 3);
+    const auto anger = card(CardId::ANGER, 4);
+    const auto wound = card(CardId::WOUND, 5);
+
+    // Concrete mode reproduces the original vector operations.
+    {
+        CardPile pile {strike, defend, bash};
+        std::vector<CardInstance> legacy {strike, defend, bash};
+        Random a(7);
+        Random b(7);
+        pile.shuffleIn(a, wound);
+        const int idx = b.random(static_cast<int>(legacy.size()) - 1);
+        legacy.insert(legacy.begin() + idx, wound);
+        check(std::equal(pile.begin(), pile.end(), legacy.begin(), legacy.end()) && a == b,
+              "concrete shuffleIn matches legacy insert");
+        Random c(9);
+        const auto top = pile.drawTop(c);
+        check(top == legacy.back() && c == Random(9), "concrete draw pops the top without RNG");
+        pile.addToBottom(anger);
+        check(pile.front() == anger && pile.isConcrete() && pile.knownTop() == 0, "concrete addToBottom");
+    }
+
+    // Information-set piles compare equal regardless of the unknown order.
+    {
+        CardPile x;
+        CardPile y;
+        x.assignInformationState({}, {strike, defend, bash}, {});
+        y.assignInformationState({}, {bash, strike, defend}, {});
+        check(x == y && !x.isConcrete(), "unknown region is canonical");
+        CardPile z;
+        z.assignInformationState({}, {strike, defend}, {bash});
+        check(!(x == z), "known top differs from unknown");
+    }
+
+    // A known top draws without RNG; the unknown region samples with RNG.
+    {
+        CardPile pile;
+        pile.assignInformationState({anger}, {strike, defend}, {bash});
+        Random rng(11);
+        const auto first = pile.drawTop(rng);
+        check(first == bash && rng.counter == 0 && pile.knownTop() == 0, "known top pops first");
+        const auto second = pile.drawTop(rng);
+        check((second == strike || second == defend) && rng.counter == 1, "unknown draw uses RNG");
+        const auto third = pile.drawTop(rng);
+        check((third == strike || third == defend) && !(third == second) && rng.counter == 1,
+              "last unknown card draws without RNG");
+        const auto fourth = pile.drawTop(rng);
+        check(fourth == anger && pile.empty() && rng.counter == 1, "known bottom drawn last");
+    }
+
+    // Unknown draws are uniform.
+    {
+        int counts[3] = {};
+        for (int seed = 1; seed <= 3000; ++seed) {
+            CardPile pile;
+            pile.assignInformationState({}, {strike, defend, bash}, {});
+            Random rng(static_cast<std::uint64_t>(seed));
+            const auto c = pile.drawTop(rng);
+            counts[c == strike ? 0 : c == defend ? 1 : 2]++;
+        }
+        check(counts[0] > 900 && counts[1] > 900 && counts[2] > 900, "unknown draw distribution");
+    }
+
+    // Placement, removal, reshuffle and mutation keep the invariants.
+    {
+        CardPile pile;
+        pile.assignInformationState({}, {strike, defend, bash}, {});
+        pile.addToTop(anger);
+        pile.addToBottom(wound);
+        check(pile.knownTop() == 1 && pile.knownBottom() == 1 && pile.back() == anger
+              && pile.front() == wound, "known placements");
+        pile.removeAt(pile.size() - 1);
+        pile.removeAt(0);
+        check(pile.knownTop() == 0 && pile.knownBottom() == 0 && pile.size() == 3, "removal bookkeeping");
+        std::vector<CardInstance> discard {wound, anger};
+        pile.absorbUnordered(discard);
+        check(discard.empty() && pile.size() == 5 && std::is_sorted(pile.begin(), pile.end()),
+              "absorb forgets order");
+        Random rng(3);
+        pile.addToTop(strike);
+        pile.reshuffleSelf(rng);
+        check(rng.counter == 0 && pile.knownTop() == 0 && std::is_sorted(pile.begin(), pile.end()),
+              "information-set reshuffle uses no RNG");
+        pile.mutateAll([](CardInstance &c) { c.upgrade(); });
+        check(std::is_sorted(pile.begin(), pile.end()), "mutation keeps unknown region sorted");
+    }
+
+    // Shuffling into a pile with no known top promotes a sampled top card.
+    {
+        CardPile pile;
+        pile.assignInformationState({}, {strike, defend, bash}, {});
+        Random rng(5);
+        pile.shuffleIn(rng, wound);
+        check(pile.size() == 4 && pile.knownTop() == 1 && rng.counter >= 1, "shuffleIn promotes the next draw");
+    }
+
+    std::cout << "card_pile " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+// Whole battles run with the draw pile in information-set mode: every engine
+// path that touches the draw pile must work there (no crash, battles finish,
+// card counts are conserved apart from cards created or removed in combat).
+int testCardPileEngine() {
+    int failures = 0;
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::CULTIST,
+        MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN,
+        MonsterEncounter::THE_GUARDIAN, MonsterEncounter::HEXAGHOST,
+        MonsterEncounter::SLIME_BOSS, MonsterEncounter::BOOK_OF_STABBING,
+        MonsterEncounter::AUTOMATON, MonsterEncounter::CHAMP,
+        MonsterEncounter::THREE_SENTRIES, MonsterEncounter::CHOSEN,
+        MonsterEncounter::NEMESIS, MonsterEncounter::TIME_EATER,
+        MonsterEncounter::WRITHING_MASS, MonsterEncounter::AWAKENED_ONE,
+    };
+    // Cards that place, shuffle in, draw from, reshuffle or search the draw pile.
+    const CardId extras[] = {
+        CardId::HEADBUTT, CardId::WARCRY, CardId::HAVOC, CardId::WILD_STRIKE,
+        CardId::RECKLESS_CHARGE, CardId::POWER_THROUGH, CardId::BATTLE_TRANCE,
+        CardId::POMMEL_STRIKE, CardId::SHRUG_IT_OFF, CardId::TRUE_GRIT,
+        CardId::SECOND_WIND, CardId::EXHUME, CardId::DEEP_BREATH,
+        CardId::FORETHOUGHT, CardId::MASTER_OF_STRATEGY, CardId::SECRET_TECHNIQUE,
+        CardId::SECRET_WEAPON, CardId::VIOLENCE, CardId::APOTHEOSIS, CardId::EVOLVE,
+    };
+    int finished = 0;
+    int wins = 0;
+    long long turns = 0;
+    for (std::uint64_t seed = 1; seed <= 60; ++seed) {
+        for (const auto encounter : encounters) {
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            for (int i = 0; i < 6; ++i) {
+                gc.deck.obtainRaw(Card(extras[(seed * 7 + i * 3) % std::size(extras)]));
+            }
+            BattleContext bc;
+            bc.init(gc, encounter);
+            std::vector<CardInstance> unknown(bc.cards.drawPile.begin(), bc.cards.drawPile.end());
+            bc.cards.drawPile.assignInformationState({}, unknown, {});
+            search::SimpleAgent agent;
+            agent.curGameContext = &gc;
+            agent.playoutBattle(bc);
+            if (bc.outcome == Outcome::UNDECIDED) {
+                std::cerr << "card_pile_engine FAIL: unfinished battle seed " << seed << '\n';
+                ++failures;
+                continue;
+            }
+            ++finished;
+            wins += bc.outcome == Outcome::PLAYER_VICTORY;
+            turns += bc.turn;
+            if (bc.cards.drawPile.isConcrete()) {
+                std::cerr << "card_pile_engine FAIL: pile became concrete, seed " << seed << '\n';
+                ++failures;
+            }
+        }
+    }
+    std::cout << "card_pile_engine battles=" << finished << " wins=" << wins << " turns=" << turns << ' '
+              << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+namespace {
+
+    BattleContext silverSearchRoot(const BattleContext &real) {
+        BattleContext root = real;
+        std::vector<CardInstance> unknown(real.cards.drawPile.begin(), real.cards.drawPile.end());
+        root.cards.drawPile.assignInformationState({}, unknown, {});
+        search::seedSearchRng(root, real.seed ^ 0x5EA5C4u);   // never the live streams
+        return root;
+    }
+
+    struct SilverBattleResult {
+        Outcome outcome = Outcome::UNDECIDED;
+        int hp = 0;
+        int turn = 0;
+        int decisions = 0;
+        int reroots = 0;
+    };
+
+    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims) {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        BattleContext bc;
+        bc.init(gc, encounter);
+        search::SilverSearchContext context;
+        context.act = gc.act;
+        std::unique_ptr<search::SilverSearcher> searcher;
+        SilverBattleResult result;
+        while (bc.outcome == Outcome::UNDECIDED && result.decisions < 2000) {
+            const auto root = silverSearchRoot(bc);
+            search::SilverSearcher::Node *node = searcher ? searcher->findNode(root) : nullptr;
+            if (node != nullptr && !node->isRandomNode) {
+                searcher->rerootAt(node, searcher->nodeCount() >= 32768);
+                ++result.reroots;
+            } else if (searcher) {
+                searcher->setRoot(root);
+            } else {
+                searcher = std::make_unique<search::SilverSearcher>(root, context);
+            }
+            searcher->search(sims);
+            const auto action = search::SilverSearcher::translateAction(
+                searcher->bestAction(), searcher->rootSearchState(), bc);
+            if (!action.isValidAction(bc)) {
+                std::cerr << "silver_searcher: invalid action chosen\n";
+                break;
+            }
+            action.execute(bc);
+            ++result.decisions;
+        }
+        result.outcome = bc.outcome;
+        result.hp = bc.player.curHp;
+        result.turn = bc.turn;
+        return result;
+    }
+
+}
+
+int testSilverSearcher() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *what) {
+        if (!ok) {
+            std::cerr << "silver_searcher FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+
+    // Lethal is found: a nearly dead Cultist and a Strike in hand.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::SimpleAgent agent;
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.monsters.arr[0].curHp = 3;
+        bc.monsters.arr[0].block = 0;
+        bc.cards.cardsInHand = 2;
+        bc.cards.hand[0] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[0].uniqueId = 80;
+        bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[1].uniqueId = 81;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        searcher.search(300);
+        const auto action = search::SilverSearcher::translateAction(
+            searcher.bestAction(), searcher.rootSearchState(), bc);
+        check(action.getActionType() == search::ActionType::CARD && action.getSourceIdx() == 1,
+              "plays the lethal Strike");
+    }
+
+    // Playing a different physical copy of an equivalent card finds the node
+    // the search expanded for the other copy, and its actions map back.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.cards.cardsInHand = 3;
+        bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[0].uniqueId = 90;
+        bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[1].uniqueId = 91;
+        bc.cards.hand[2] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[2].uniqueId = 92;
+        const BattleContext root = silverSearchRoot(bc);
+        search::SilverSearcher searcher(root, {});
+        searcher.search(400);
+        // The search expanded one Strike (the deduplicated edge); play the other.
+        int expanded = -1;
+        for (const auto &edge : searcher.rootNode().edges) {
+            if (edge.action.getActionType() == search::ActionType::CARD
+                    && root.cards.hand[edge.action.getSourceIdx()].id == CardId::STRIKE_RED) {
+                expanded = edge.action.getSourceIdx();
+            }
+        }
+        check(expanded >= 0, "search expanded a Strike");
+        BattleContext played = root;
+        search::Action(search::ActionType::CARD, expanded == 0 ? 1 : 0, 0).execute(played);
+        check(searcher.findNode(played) == nullptr, "the other copy is a different exact state");
+        auto *node = searcher.findNodeUpToEquivalentCopy(played);
+        check(node != nullptr && node->simulationCount > 0, "equivalent-copy lookup finds the expanded child");
+        if (node != nullptr) {
+            searcher.rerootAt(node, false);
+            searcher.search(50);
+            const auto action = search::SilverSearcher::translateAction(
+                searcher.bestAction(), searcher.rootSearchState(), played);
+            check(action.isValidAction(played), "retained action maps onto the played state");
+        }
+        BattleContext changed = root;
+        search::Action(search::ActionType::CARD, expanded == 0 ? 1 : 0, 0).execute(changed);
+        for (int i = 0; i < changed.cards.cardsInHand; ++i) {
+            if (changed.cards.hand[i].id == CardId::DEFEND_RED) changed.cards.hand[i].costForTurn = 0;
+        }
+        check(searcher.findNodeUpToEquivalentCopy(changed) == nullptr,
+              "a non-equivalent card difference is not remapped");
+    }
+
+    // A root with one legal action exposes it without any simulation.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEEu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.cards.cardsInHand = 0;
+        for (auto &p : bc.potions) p = Potion::EMPTY_POTION_SLOT;
+        bc.potionCount = 0;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        check(searcher.prepareRootActions() == 1, "empty hand leaves one root action");
+        check(searcher.rootNode().simulationCount == 0, "preparing root actions runs no simulation");
+        check(searcher.bestAction().getActionType() == search::ActionType::END_TURN,
+              "the sole root action is END_TURN");
+        searcher.search(50);
+        check(searcher.rootNode().edges.size() == 1 && searcher.rootNode().simulationCount == 50,
+              "search after preparing root actions keeps the same edge");
+    }
+
+    // Whole battles: the search wins clearly more than the greedy rollout policy alone.
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN,
+        MonsterEncounter::THE_GUARDIAN, MonsterEncounter::HEXAGHOST, MonsterEncounter::SLIME_BOSS,
+    };
+    int searchWins = 0;
+    int greedyWins = 0;
+    int battles = 0;
+    int decisions = 0;
+    int reroots = 0;
+    for (std::uint64_t seed = 1; seed <= 4; ++seed) {
+        for (const auto encounter : encounters) {
+            const auto r = playBattleWithSilverSearcher(seed, encounter, 200);
+            check(r.outcome != Outcome::UNDECIDED, "battle finished");
+            searchWins += r.outcome == Outcome::PLAYER_VICTORY;
+            decisions += r.decisions;
+            reroots += r.reroots;
+            ++battles;
+
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            BattleContext bc;
+            bc.init(gc, encounter);
+            search::SimpleAgent greedy;
+            greedy.curGameContext = &gc;
+            greedy.playoutBattle(bc);
+            greedyWins += bc.outcome == Outcome::PLAYER_VICTORY;
+        }
+    }
+    std::cout << "silver_searcher battles=" << battles << " searchWins=" << searchWins
+              << " greedyWins=" << greedyWins << " decisions=" << decisions
+              << " reroots=" << reroots << '\n';
+    check(searchWins > greedyWins, "search beats the greedy policy");
+
+    // Hidden intents (Runic Dome search mode): a pending roll is part of the
+    // search state, search does not resolve it at the root, and materializing
+    // it rolls a move.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0xD0E5u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        BattleContext root = silverSearchRoot(bc);
+        root.intentsHidden = true;
+        auto &worm = root.monsters.arr[0];
+        worm.pendingRollInputs = worm.captureRollInputs(root);
+        worm.pendingMoveRolls = 1;
+        BattleContext rolled = root;
+        rolled.monsters.arr[0].materializePendingMove(rolled);
+        check(rolled.monsters.arr[0].pendingMoveRolls == 0 && !root.equalForSearch(rolled),
+              "pending and rolled intents are different search states");
+        search::SilverSearcher searcher(root, {});
+        searcher.search(300);
+        check(searcher.rootSearchState().monsters.arr[0].pendingMoveRolls == 1,
+              "search keeps the root intent hidden");
+        check(search::SilverSearcher::translateAction(searcher.bestAction(), searcher.rootSearchState(), bc)
+                  .isValidAction(bc), "hidden-intent search returns a valid action");
+    }
+
+    std::cout << "silver_searcher " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+// The wire path used by the live advisor (live state -> wire -> search root)
+// gives the same search state as the native backend's own search root, and
+// actions chosen on it map back onto the live state.
+int testSilverWireState() {
+    int failures = 0;
+    auto check = [&](bool ok, const std::string &what) {
+        if (!ok) {
+            if (failures < 20) std::cerr << "silver_wire_state FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE, PLAY_COUNT_RELICS };
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::LOOTER, MonsterEncounter::GREMLIN_NOB,
+        MonsterEncounter::THREE_SENTRIES, MonsterEncounter::THE_GUARDIAN, MonsterEncounter::SLIME_BOSS,
+    };
+    const CardId extraCards[] = {
+        CardId::ARMAMENTS, CardId::HEADBUTT, CardId::TRUE_GRIT, CardId::WARCRY,
+        CardId::BURNING_PACT, CardId::EXHUME, CardId::SECRET_WEAPON, CardId::POMMEL_STRIKE,
+    };
+    int decisions = 0;
+    int hiddenRoots = 0;
+    int edgesChecked = 0;
+    int queuedRoots = 0;
+    int missedReactionRoots = 0;
+    for (const auto variant : {Variant::PLAIN, Variant::RUNIC_DOME, Variant::FROZEN_EYE,
+                               Variant::PLAY_COUNT_RELICS}) {
+        for (std::uint64_t seed = 11; seed <= 12; ++seed) {
+            for (const auto encounter : encounters) {
+                GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+                for (const auto id : extraCards) gc.deck.obtainRaw(Card(id));
+                gc.potions[0] = Potion::FIRE_POTION;
+                gc.potions[1] = Potion::BLOCK_POTION;
+                gc.potionCount = 2;
+                if (variant == Variant::RUNIC_DOME) gc.obtainRelic(RelicId::RUNIC_DOME);
+                if (variant == Variant::FROZEN_EYE) gc.obtainRelic(RelicId::FROZEN_EYE);
+                if (variant == Variant::PLAY_COUNT_RELICS) {
+                    for (const auto relic : {RelicId::KUNAI, RelicId::SHURIKEN, RelicId::PEN_NIB,
+                                             RelicId::NUNCHAKU, RelicId::INK_BOTTLE, RelicId::LETTER_OPENER,
+                                             RelicId::ORNAMENTAL_FAN}) {
+                        gc.obtainRelic(relic);
+                    }
+                }
+
+                BattleContext bc;
+                search::CombatKnowledgeState knowledge;
+                knowledge.configureHiddenMonsterIntents(variant == Variant::RUNIC_DOME);
+                knowledge.initializeFromLiveBattle(bc);
+                knowledge.beginCombatInitialization();
+                search::g_combatKnowledgeObserver = &knowledge;
+                bc.init(gc, encounter);
+                knowledge.synchronizeAfterCombatInitialization(bc);
+
+                const auto runContext = search::makeSilverRunContext(gc);
+                int steps = 0;
+                while (bc.outcome == Outcome::UNDECIDED && ++steps < 400) {
+                    knowledge.reconcilePublicDrawPileCardinality(bc);
+                    BattleContext nativeRoot;
+                    const auto error = search::nativeSilverSearchRoot(bc, knowledge, nativeRoot);
+                    const auto conversion = search::makeSilverBattleStateConversion(
+                        bc, knowledge, runContext, search::nativeSilverBattleSeed(bc));
+                    if (!error.empty() || !conversion.wire.valid) {
+                        check(false, "root not representable: " + error + " / " + conversion.failureReason);
+                        break;
+                    }
+                    const BattleContext wireRoot = search::battleContextFromWire(conversion.wire);
+                    // The wire carries only the public search seed, not the live one.
+                    nativeRoot.seed = wireRoot.seed;
+                    // The wire carries discard and exhaust piles as sorted multisets
+                    // (their order is compared when the draw pile is concrete).
+                    std::sort(nativeRoot.cards.discardPile.begin(), nativeRoot.cards.discardPile.end());
+                    std::sort(nativeRoot.cards.exhaustPile.begin(), nativeRoot.cards.exhaustPile.end());
+                    const std::string where = " seed=" + std::to_string(seed) + " encounter="
+                        + std::to_string(static_cast<int>(encounter)) + " variant="
+                        + std::to_string(static_cast<int>(variant)) + " step=" + std::to_string(steps);
+                    // The wire has no queues; an interrupted card play's pending
+                    // work is rebuilt by replaying the card.
+                    queuedRoots += nativeRoot.actionQueue.size + nativeRoot.cardQueue.size > 1;
+                    // Known limit: monster reactions queued while the card's own
+                    // pre-selection effects ran (Sharp Hide, Mode Shift) are not
+                    // rebuilt. Such a root may lack queued actions but must match
+                    // otherwise.
+                    bool missingReactions = false;
+                    if (!wireRoot.equalForSearch(nativeRoot)) {
+                        BattleContext withNativeQueue = wireRoot;
+                        withNativeQueue.actionQueue = nativeRoot.actionQueue;
+                        std::vector<int> wireTypes, nativeTypes;
+                        for (int k = 0; k < wireRoot.actionQueue.size; ++k) {
+                            wireTypes.push_back(static_cast<int>(wireRoot.actionQueue.arr[(wireRoot.actionQueue.front + k) % 128].type));
+                        }
+                        for (int k = 0; k < nativeRoot.actionQueue.size; ++k) {
+                            nativeTypes.push_back(static_cast<int>(nativeRoot.actionQueue.arr[(nativeRoot.actionQueue.front + k) % 128].type));
+                        }
+                        std::size_t matched = 0;
+                        for (const int type : nativeTypes) {
+                            if (matched < wireTypes.size() && wireTypes[matched] == type) ++matched;
+                        }
+                        missingReactions = withNativeQueue.equalForSearch(nativeRoot)
+                            && matched == wireTypes.size() && wireTypes.size() < nativeTypes.size();
+                        missedReactionRoots += missingReactions;
+                    }
+                    if (!missingReactions) {
+                        check(wireRoot.equalForSearch(nativeRoot), "wire root differs from native root" + where);
+                        check(search::hashBattleState(wireRoot) == search::hashBattleState(nativeRoot),
+                              "wire root hash differs" + where);
+                    }
+                    const auto context = search::searchContextFromWire(conversion.wire);
+                    check(search::battleContextFromWire(search::wireFromSearchState(wireRoot, context))
+                              .equalForSearch(wireRoot), "search-state wire round trip" + where);
+                    hiddenRoots += wireRoot.intentsHidden;
+
+                    search::g_combatKnowledgeObserver = nullptr;
+                    search::SilverSearcher searcher(wireRoot, context);
+                    searcher.search(40);
+                    search::g_combatKnowledgeObserver = &knowledge;
+                    for (const auto &edge : searcher.rootNode().edges) {
+                        const auto semantic = search::semanticFromSearchAction(searcher.rootSearchState(), edge.action);
+                        const auto translated = search::SilverSearcher::translateAction(
+                            edge.action, searcher.rootSearchState(), bc);
+                        check(search::semanticFingerprint(semantic)
+                                  == search::semanticFingerprint(search::semanticFromSearchAction(bc, translated)),
+                              "semantic identity changes under translation" + where);
+                        const auto resolved = search::resolveSilverSemanticAction(bc, semantic);
+                        check(resolved.ok && resolved.action.isValidAction(bc),
+                              "semantic action does not resolve on the live state: " + resolved.error + where);
+                        ++edgesChecked;
+                    }
+                    const auto action = search::SilverSearcher::translateAction(
+                        searcher.bestAction(), searcher.rootSearchState(), bc);
+                    if (!action.isValidAction(bc)) {
+                        check(false, "invalid translated action" + where);
+                        break;
+                    }
+                    action.execute(bc);
+                    ++decisions;
+                }
+                search::g_combatKnowledgeObserver = nullptr;
+                check(bc.outcome != Outcome::UNDECIDED, "battle finished");
+            }
+        }
+    }
+    std::cout << "silver_wire_state decisions=" << decisions << " hiddenRoots=" << hiddenRoots
+              << " edges=" << edgesChecked
+              << " queuedRoots=" << queuedRoots << " missedReactionRoots=" << missedReactionRoots << ' ' << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+int testBattleEquality() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *what) {
+        if (!ok) {
+            std::cerr << "battle_equality FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    const GameContext game(CharacterClass::IRONCLAD, 0xE0A1u, 0);
+    BattleContext base;
+    base.init(game, MonsterEncounter::JAW_WORM);
+    base.cards.cardsInHand = 3;
+    base.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+    base.cards.hand[0].uniqueId = 90;
+    base.cards.hand[1] = CardInstance(CardId::DEFEND_RED);
+    base.cards.hand[1].uniqueId = 91;
+    base.cards.hand[2] = CardInstance(CardId::BASH);
+    base.cards.hand[2].uniqueId = 92;
+
+    auto same = [&](const BattleContext &x, bool exact, bool search, const char *what) {
+        check((x == base) == exact, what);
+        check(x.equalForSearch(base) == search, what);
+        check(base.equalForSearch(x) == search, what);
+        if (search) {
+            check(search::hashBattleState(x) == search::hashBattleState(base), what);
+        }
+    };
+
+    same(base, true, true, "copy");
+
+    BattleContext rng = base;
+    rng.aiRng.random(5);
+    rng.shuffleRng.randomLong();
+    same(rng, false, true, "rng-only difference");
+
+    BattleContext permuted = base;
+    std::swap(permuted.cards.hand[0], permuted.cards.hand[2]);
+    same(permuted, false, true, "hand permutation");
+
+    BattleContext stale = base;
+    stale.cards.hand[5] = CardInstance(CardId::ANGER);
+    stale.monsters.arr[4].curHp = 77;
+    same(stale, true, true, "unused slots");
+
+    BattleContext hp = base;
+    hp.player.curHp -= 1;
+    same(hp, false, false, "player hp");
+
+    BattleContext status = base;
+    status.player.buff<PS::STRENGTH>(1);
+    same(status, false, false, "player status");
+
+    BattleContext move = base;
+    move.monsters.arr[0].setMove(MMID::JAW_WORM_THRASH);
+    same(move, false, false, "monster move");
+
+    BattleContext handCard = base;
+    handCard.cards.hand[1].upgrade();
+    same(handCard, false, false, "hand card upgrade");
+
+    if (base.cards.drawPile.size() >= 2) {
+        BattleContext draw = base;
+        std::swap(draw.cards.drawPile.concreteCards().front(), draw.cards.drawPile.concreteCards().back());
+        same(draw, false, false, "draw pile order");
+    } else {
+        check(false, "draw pile has fewer than two cards");
+    }
+
+    BattleContext q1 = base;
+    BattleContext q2 = base;
+    q1.addToBot(Actions::GainEnergy(1));
+    q2.addToBot(Actions::GainEnergy(2));
+    check(!(q1 == q2) && !q1.equalForSearch(q2), "queued action parameter");
+    q2 = base;
+    q2.addToBot(Actions::GainEnergy(1));
+    check(q1 == q2 && q1.equalForSearch(q2), "equal queued actions");
+
+    check(Actions::DebuffEnemy<MS::WEAK>(0, 1) == Actions::DebuffEnemy<MS::WEAK>(0, 1), "action equal");
+    check(!(Actions::DebuffEnemy<MS::WEAK>(0, 1) == Actions::DebuffEnemy<MS::WEAK>(0, 2)), "action amount");
+    check(!(Actions::DebuffEnemy<MS::WEAK>(0, 1) == Actions::DebuffEnemy<MS::VULNERABLE>(0, 1)), "action status");
+    check(!(Actions::HealPlayer(1, true) == Actions::HealPlayer(1, false)), "action victory flag");
+
+    std::cout << "battle_equality " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
 
 int testIroncladCombatCardCoverage() {
     const GameContext game(CharacterClass::IRONCLAD, 0xC0DEu, 0);
@@ -96,7 +730,7 @@ void printSizes() {
     std::cout << "sizeof MonsterGroup : " << sizeof(MonsterGroup) << '\n';
     std::cout << "sizeof CardInstance: " << sizeof(CardInstance) << '\n';
     std::cout << "sizeof CardManager : " << sizeof(CardManager) << '\n';
-    std::cout << "sizeof ActionFunction : " << sizeof(ActionFunction) << '\n';
+    std::cout << "sizeof Action : " << sizeof(Action) << '\n';
     std::cout << "sizeof ActionQueue<40> : " << sizeof(ActionQueue<40>) << '\n';
     std::cout << "sizeof BattleContext: " << sizeof(BattleContext) << '\n';
 
@@ -1176,9 +1810,9 @@ static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool 
     bc.cards.cardsInHand = largeHand ? 10 : 5;
     for (int i = 0; i < bc.cards.cardsInHand; ++i) bc.cards.hand[i] = handCards[i];
     bc.cards.drawPile.clear();
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
-    bc.cards.drawPile.push_back(CardInstance(CardId::BASH));
-    bc.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+    bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::BASH));
+    bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::STRIKE_RED));
     bc.cards.discardPile.clear();
     bc.cards.discardPile.push_back(CardInstance(CardId::BASH));
     bc.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
@@ -1372,7 +2006,7 @@ int testCombatKnowledgeBoundary() {
     first.init(gc, MonsterEncounter::CULTIST);
     makeCards(first);
     BattleContext permuted = first;
-    std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
+    std::swap(permuted.cards.drawPile.concreteCards()[0], permuted.cards.drawPile.concreteCards()[2]);
 
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;
     firstKnowledge.initializeFromLiveBattle(first);
@@ -1387,7 +2021,7 @@ int testCombatKnowledgeBoundary() {
           == search::makeSilverCardPile(permuted, permutedKnowledge),
           "unobserved concrete draw permutations must construct the same Silver CardPile");
     auto sampledUnknown = search::makeSilverCardPile(first, firstKnowledge);
-    silver::Random silverRng(0x9001u);
+    Random silverRng(0x9001u);
     (void)sampledUnknown.drawTop(silverRng);
     check(silverRng.counter == 1,
           "Silver unknown draw must consume its isolated single-model RNG exactly once");
@@ -1416,7 +2050,7 @@ int testCombatKnowledgeBoundary() {
           && topView.knownTop[1].uniqueId == topB.uniqueId,
           "multiple known top placements must retain actual stack order");
     auto deterministicTop = search::makeSilverCardPile(topLive, topKnowledge);
-    silver::Random knownTopRng(0x9002u);
+    Random knownTopRng(0x9002u);
     const CardInstance poppedTop = deterministicTop.drawTop(knownTopRng);
     check(poppedTop.uniqueId == topB.uniqueId && knownTopRng.counter == 0,
           "Silver known-top draw must be deterministic and consume no model RNG");
@@ -1483,7 +2117,7 @@ int testCombatKnowledgeBoundary() {
     eyeA.init(eyeGc, MonsterEncounter::CULTIST);
     makeCards(eyeA);
     eyeB = eyeA;
-    std::swap(eyeB.cards.drawPile[0], eyeB.cards.drawPile[2]);
+    std::swap(eyeB.cards.drawPile.concreteCards()[0], eyeB.cards.drawPile.concreteCards()[2]);
     search::CombatKnowledgeState eyeAKnowledge, eyeBKnowledge;
     eyeAKnowledge.initializeFromLiveBattle(eyeA);
     eyeBKnowledge.initializeFromLiveBattle(eyeB);
@@ -1509,23 +2143,6 @@ int testCombatKnowledgeBoundary() {
     if (failures == 0) { std::cout << "combat_knowledge PASS\n"; return 0; }
     std::cout << "combat_knowledge FAIL (" << failures << " cases)\n";
     return 1;
-}
-
-int testSilverRandomBridge() {
-    const auto fromBridge = silver_bridge::probeReferenceRandom(0x51A9u);
-    Random reference(0x51A9u);
-    const auto first = reference.random(999);
-    const auto second = reference.random(-3, 7);
-    const auto third = reference.randomLong();
-    const bool equal = fromBridge.firstRange == first && fromBridge.secondRange == second
-        && fromBridge.randomLong == third && fromBridge.counter == reference.counter
-        && fromBridge.seed0 == reference.seed0 && fromBridge.seed1 == reference.seed1;
-    if (!equal) {
-        std::cout << "silver_random_bridge FAIL\n";
-        return 1;
-    }
-    std::cout << "silver_random_bridge PASS\n";
-    return 0;
 }
 
 int testSilverSemanticActionResolution() {
@@ -1644,7 +2261,7 @@ int testSilverSemanticActionResolution() {
                                 const char *message) {
         BattleContext select = cardSelectFixture(task, 1, false);
         for (int i = 0; i < select.cards.cardsInHand; ++i) select.cards.hand[i].uniqueId = static_cast<std::int16_t>(200 + i);
-        for (int i = 0; i < static_cast<int>(select.cards.drawPile.size()); ++i) select.cards.drawPile[i].uniqueId = static_cast<std::int16_t>(300 + i);
+        for (int i = 0; i < static_cast<int>(select.cards.drawPile.size()); ++i) select.cards.drawPile.concreteCards()[i].uniqueId = static_cast<std::int16_t>(300 + i);
         for (int i = 0; i < static_cast<int>(select.cards.discardPile.size()); ++i) select.cards.discardPile[i].uniqueId = static_cast<std::int16_t>(400 + i);
         for (int i = 0; i < static_cast<int>(select.cards.exhaustPile.size()); ++i) select.cards.exhaustPile[i].uniqueId = static_cast<std::int16_t>(500 + i);
         CardInstance actual = chosen;
@@ -2119,7 +2736,7 @@ int testSimHealthSelectionFailure() {
     {
         BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
         bc.cards.drawPile.clear();
-        bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+        bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::DEFEND_RED));
         check(!search::hasLegalProgressionAction(bc),
               "empty SECRET_WEAPON options must have no legal progression action");
         check(search::classifySelectionFailure(bc) == search::SimHealthFailure::NO_LEGAL_PROGRESSION,
@@ -2511,7 +3128,7 @@ int testPoisonLoseHp() {
     m.block = 10;
     m.addDebuff<MS::POISON>(5);
 
-    Actions::PoisonLoseHpAction(0).actFunc(bc);
+    Actions::PoisonLoseHpAction(0)(bc);
 
     if (m.curHp != 15) {
         std::cout << "poison_lose_hp FAIL: curHp=" << m.curHp
@@ -2552,7 +3169,7 @@ int testTimeEaterExhaust() {
     CardQueueItem replayed(CardInstance(CardId::FIEND_FIRE), 0, 1);
     replayed.exhaustOnUse = false;
 
-    Actions::TimeEaterPlayCardQueueItem(replayed).actFunc(bc);
+    Actions::TimeEaterPlayCardQueueItem(replayed)(bc);
 
     if (!bc.curCardQueueItem.exhaustOnUse) {
         std::cout << "time_eater_exhaust FAIL: replayed Fiend Fire did not exhaust\n";
@@ -2943,8 +3560,16 @@ int main(int argc, const char* argv[]) {
         return testCombatTransitionOracle();
     } else if (command == "combat_knowledge") {
         return testCombatKnowledgeBoundary();
-    } else if (command == "silver_random_bridge") {
-        return testSilverRandomBridge();
+    } else if (command == "card_pile_engine") {
+        return testCardPileEngine();
+    } else if (command == "silver_searcher") {
+        return testSilverSearcher();
+    } else if (command == "silver_wire_state") {
+        return testSilverWireState();
+    } else if (command == "card_pile") {
+        return testCardPile();
+    } else if (command == "battle_equality") {
+        return testBattleEquality();
     } else if (command == "silver_semantic_action") {
         return testSilverSemanticActionResolution();
     } else if (command == "ooc_semantic") {

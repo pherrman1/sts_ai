@@ -5615,7 +5615,7 @@ model training was changed.
 - **Decision:** The historical next step was faithful parent snapshots and a
   small root-only replay. Subsequent experiments recorded below completed that
   line. See [the diagnostic report](evidence/silver-learned-guidance-diagnostic-2026-08-29.md)
-  and [the read-only analyzer](../../tools/analyze_silver_guidance_alias.py).
+  and the read-only analyzer `tools/analyze_silver_guidance_alias.py` (removed by ADR-0022).
 
 ## §193 Silver root-only exploration control rejected offline (2026-08-29)
 
@@ -11726,3 +11726,684 @@ No gameplay run was repeated. Results and commands are in the
 
 Knowledge impact: current research status and the independent confirmation
 evidence are recorded; qualified models and runtime defaults remain unchanged.
+
+### §343 — Active Lizard Tail CTM qualification (2026-09-23)
+
+From baseline `aa09f75e6be837f7f39a2e31dde234bfd2c2ef08`, a detached shadow
+collector used the frozen `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`
+teacher and produced 111 unique source seeds (`4200100..4200210`), 2,234 rows,
+2,223 wins, 11 deaths, and zero quarantines. Combined with the 16-seed smoke,
+the local collection used 127 unique source IDs, within the 128-source cap.
+Manifest SHA-256:
+`457e33d53c7af2f474957d2201da0f7a7c95a1f6be10de71f40782cb14f832f6`; corpus
+SHA-256:
+`4d9927ad0f23d7f9e6e1fdb1091c6cf98ff7f5935540a5103746257b550b5504`.
+
+The source-grouped split contains 87 TRAIN, 15 VALIDATION, and 9 TEST source
+seeds. Supported non-Lizard HP, potion, and relic composition exposure met the
+existing 0.1-nat mean-gap gates, although the relic result uses only 32 rows
+from four sources. The old untrained Lizard head scored worse than the
+TRAIN-only prior (TEST gap +0.76590 nat; 95% source-bootstrap CI
+[+0.61415, +0.87443]). A fixed 10-epoch fit of only the two Lizard-head
+parameters on supported TRAIN victories was therefore run under the existing
+relic recipe. Its TEST NLL was 0.69889 versus 0.19213 for the TRAIN-only prior;
+the paired source-bootstrap gap was +0.50675 nat (95% CI [+0.37380, +0.61081],
+126 winning rows / nine sources). The Lizard head is rejected by the existing
+proper-score gate. Ancestral sampling covered all 127 fully supported TEST
+pre-states (including the observed death), with zero hard-validity failures;
+this does not override the score rejection.
+
+Production `active_unqualified_lizard` remains unchanged. No Phase 3B
+specialist, runtime integration, native/Python parity qualification, gameplay
+benchmark, or live seed `13027029` check was run. The live check remains gated
+on offline qualification. See the [complete evidence packet](evidence/active_lizard_ctm_2026-09-23/README.md).
+
+**Knowledge impact:** the maintained current-research page now points to this
+negative result; active Lizard Tail remains outside qualified CTM support.
+
+### §344 — Active Lizard Tail paired rescue pilot (2026-09-23)
+
+A 32-source paired pilot (`4200100..4200131`) compared exact Silver combats
+with and without active Lizard Tail under the frozen ordinary fair 10k teacher.
+It is descriptive only: 30 pairs won in both treatments with Tail retained;
+one ordinary death became an active-treatment win with Tail consumed; and one
+ordinary death became an active-treatment win with Tail retained. The ordinary
+CTM mean predicted death rate was `0.05704` versus `0.0625` observed deaths
+(Brier `0.01474`). The observed Tail-consumption rate was `0.03125`, with Brier
+`0.03182` when compared to those same death probabilities. Two ordinary deaths
+are too few to infer a rescue rate or calibration. The retained-Tail win also
+shows active relic presence can change the policy trajectory, so consumption
+cannot be treated as a direct label for the no-Tail counterfactual. The
+existing conditional heads had only one Tail-consumed winning row to score.
+
+During collection, seven rows asserted on a potion reward when all three slots
+were full. The paired source-reward branch lacked the full-inventory guard in
+the normal reward policy; adding that guard fixed the invalid action, and all
+seven rows then completed. This is a collector fix, not CTM evidence.
+
+No rescue head, scalar extra-HP model, training, support qualification, or
+runtime integration followed. The failed Lizard-head proper-score result in
+§343 and production `active_unqualified_lizard` guard remain unchanged. See the
+[paired pilot evidence packet](evidence/lizard_tail_rescue_pilot_2026-09-23/README.md).
+
+**Knowledge impact:** exploratory evidence only; no model or runtime change.
+
+### §345 — Risk-targeted active Lizard Tail rescue experiment (2026-09-24)
+
+The preregistered 128-source cohort (`4200300..4200427`) completed candidate
+generation with 2,700 ordinary combat rows and zero quarantines. Precombat CTM
+risk-only selection yielded 128 unique targets across the four declared risk
+bands plus 19 low-risk fallbacks, because band availability overlapped by
+source. Exact-state paired collection completed 128/128 targets with zero
+quarantines.
+
+The no-Tail arm died in 27/128 fights (21.1%); active Tail won 123/128 (96.1%)
+and was consumed in 32/128 (25.0%). Among control deaths, active Tail won 22/27:
+14 wins consumed Tail, while 8 wins retained it. Silver's first action changed
+in 59/128 pairs and full action traces in 122/128, confirming that policy
+adaptation is frequent even when Tail remains. The HP-shift survival proxy
+predicted 90.3% mean win probability versus 96.1% observed active-Tail wins;
+this is not a lethal-crossing replay or a policy-aware Tail model.
+
+On 71 both-arm wins with active Tail retained, paired post-head NLL deltas did
+not meet the preregistered material-shift criterion. The CIs remain too wide to
+establish equivalence, and supported relic-group comparisons had only 5–12
+pairs. The head scores are teacher-forced descriptive screens, not
+qualification. The data support continuing with small survival/consumption
+corrections as the next research candidate while modeling policy adaptation;
+they do not justify a full specialist or establish that existing heads can be
+reused in runtime.
+
+The complete candidate, selection, paired, and analysis artifacts, hashes,
+unsupported-row counts, and interpretation are in the [targeted rescue evidence
+packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md). No training,
+support expansion, runtime integration, model/default change, native/Python
+parity test, or gameplay qualification followed. Production
+`active_unqualified_lizard` remains fail-closed.
+
+**Knowledge impact:** targeted descriptive evidence only; qualification and
+runtime boundary unchanged.
+
+### §346 — Minimal active Lizard correction diagnostic (2026-09-24)
+
+On the same 128-pair cohort, the fixed `T2` revive-HP transform lowered
+consumed-win HP NLL by `1.084` nat on 22 supported rows (paired source-bootstrap
+95% CI `[-2.165,-0.331]`). Its HP CRPS point estimate also improved; the CI
+crossed zero. `T1` improved HP scores more, but showed positive paired
+relic-constraint deltas for attacks, shuffles, and turns, so it was not
+retained. T2 is an offline development candidate only; neither transform
+qualifies the reused heads.
+
+The 3-class labels were 96 `WIN_RETAINED`, 27 `WIN_CONSUMED`, and five
+`LOSS_CONSUMED`. Six Fairy Potion rows were left at the exact boundary, leaving
+122 modeled rows; Mark of the Bloom remains excluded. B1 mechanical reserve was
+coherent on all modeled rows. The 5-fold source-grouped L2 q/r correction had
+NLL `0.5641` / Brier `0.3181`, versus B1 `0.5774` / `0.3279`, but paired
+source-bootstrap intervals for correction-minus-B1 included zero for both
+scores. The small correction therefore has no clear signal over B1, and five
+losses do not establish rescue prediction. Recommend collecting 20 additional
+`LOSS_CONSUMED` examples (25 total) before reassessing; this is not a
+qualification threshold.
+
+The 32-draw-per-supported-source offline prototype produced 3,136 class draws
+from 98 supported sources; 30 sources fell back under existing support or
+Fairy boundaries. There were zero impossible `LOSS_RETAINED` or
+spent-to-active transitions; all sampled Tail states matched class, all 3,019
+victory states had legal HP, and all terminal snapshots had legal potion and
+persistent relic state. No runtime sampler, model artifact, or production
+support changed. Classification: `LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`.
+See the [Phase A-C evidence packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic)
+and raw [analysis JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json).
+
+**Knowledge impact:** current research status and development evidence updated;
+production active-Tail qualification remains unchanged.
+
+### §347 — B1-ranked active Lizard candidate-pool extension (2026-09-24)
+
+The frozen 2,700-row precombat pool was rescored with fixed B1
+`P(LOSS_CONSUMED) = 1 - pReserveWin`. Four targeted batches added 347 unique
+paired fights after dropping 35 repeated `(sourceSeed,fightIdx)` rows that
+overlapped the original 128-pair cohort; those repeated replays differed, so
+the original observation was retained. The new rows had 305 `WIN_RETAINED`,
+34 `WIN_CONSUMED`, and eight `LOSS_CONSUMED` outcomes. This raises the distinct
+loss count from five to 13, below the prior target of 20 additional examples.
+First Silver action changed in 136/347 new pairs.
+
+The combined analysis contains 475 unique paired fights, 451 modeled rows from
+124 sources after 24 native exact-boundary exclusions. A follow-up prospective
+runtime-domain analysis additionally reapplied `full_support_reasons()` to the
+Tail-stripped state and predictor, excluding 24 unsupported rows and leaving
+427 rows from the same 124 sources (362 `WIN_RETAINED`, 53 `WIN_CONSUMED`, 12
+`LOSS_CONSUMED`). Five-fold q/r CV and source-bootstrap resampling kept all
+fights from each source together. With T2 fixed and not retuned, the
+support-domain q/r scored NLL `0.3427` / Brier `0.1932`, versus B1 `1.9890` /
+`0.2096`; q/r minus B1 source-bootstrap intervals were `[-4.9543,-0.0132]`
+and `[-0.0310,-0.0011]`. The broader descriptive analysis remains in the
+packet: its q/r scores are NLL `0.3544` / Brier `0.1994` versus B1 `1.9122` /
+`0.2158`. The prospective-domain result remains promising but data-limited;
+12 supported losses do not qualify its rare rescue class.
+
+The 35 overlapping source/fight rows are exact combat-observation duplicates:
+both arms' transition states, outcomes, Tail state, and Silver traces match.
+Only the selector's `targetRiskBand` differs. The comparator now ignores that
+metadata and records 35/35 as matching; the original cohort observation is
+still retained.
+
+The 1,611 supported, coherent, unpaired candidates had summed fixed-B1 loss
+mass `1.4045` (mean `0.000872`), below the 12 further cases needed to reach the
+sample target. Batches 2 and 3 added zero losses despite score mass about 6.05
+and 2.35 respectively. Collection stopped because the remaining pool could
+not plausibly provide the target under the fixed selection model, rather than
+because every candidate row was replayed. All four pair manifests had zero
+quarantines and clean conversion/semantic/transaction/knowledge counters. No
+training, export, runtime integration, or support expansion followed;
+`active_unqualified_lizard` remains fail-closed. See the [extension evidence
+packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension)
+and [combined B1/q/r JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json).
+The support-domain rerun is [recorded separately](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json).
+
+**Knowledge impact:** current research status and the experiment evidence now
+record the targeted-pool stop and source-grouped comparison; runtime support
+and qualification are unchanged.
+
+### §348 — Silver search ported onto the main engine: 128-seed gate (2026-09-24)
+
+Compared the Silver combat search ported onto the main simulator
+(`SilverSearcher` behind `STS_NATIVE_SILVER=1`, no conversion into the
+vendored model) with the vendored Silver backend on the §340 seed block.
+
+- **Configuration:** Release `one_combat` from commit `f81eabb` on branch
+  `claude/native-silver-searcher`, 4-core container, `bestbench 1000 128 0
+  126700` with `STS_NATIVE_SILVER=1 STS_SILVER_ADAPTIVE=1` (adaptive
+  retained-root policy, 500 → 10,000 simulations). Project-fair, native OOC
+  trees, keys skipped, ascension 0. Baseline: the vendored §340 run on the
+  same seeds (commit `2a602f6`; later commits kept vendored bestbench rows
+  identical at 200 flat simulations).
+- **Port scope:** production search path only (UCB with exploration 25, DPW
+  chance widening 3.7028/0.52389, transposition dedup, reroot with the 32,768
+  node cap, Silver's rollout policy and terminal evaluation). The draw pile
+  uses the information-set `CardPile` built from the combat knowledge
+  tracker; the six RNG streams are reseeded from a public per-battle seed and
+  treated as one chance source. Known gaps: Runic Dome intents are visible to
+  the native search (the vendored model defers them); multi-card selections
+  (Gambling Chip, Purity) are atomic subsets rather than Silver's sequential
+  picks; the vendored reroot repairs (UID swap, hand-order alignment) are
+  replaced by multiset equality plus identity-based action translation.
+- **Gameplay:** native 86/128 wins (67.2%) against vendored 83/128 (64.8%).
+  Paired difference +2.3 pp, normal 95% CI [−6.2, +10.9] pp; discordant seeds
+  17 native-only vs 14 vendored-only (McNemar z = +0.54). Mean floor 47.81 vs
+  48.26. CPU 37.37 vs 38.05 s/run. No seed failures.
+- **Interpretation:** no detectable difference in either direction at 128
+  seeds. **Inference:** the port preserves Silver's playing strength within
+  about ±8 pp; a tighter non-inferiority claim needs more seeds (GCP path).
+- **Artifacts:** [evidence packet](evidence/native_silver_gate_2026-09-24/README.md).
+
+Knowledge impact: combat-search architecture and environment variables record
+the experimental native backend; the vendored Silver backend stays the default.
+
+## §349 — Silver rollout-cost screen: B faster; original quality screen invalid (2026-09-24 onward)
+
+- **Question and baseline:** Can rollout hot-path work be reduced while
+  preserving useful fixed-time Silver decisions? The handoff baseline
+  `7b4244ef8af4508466e01a1a6b515c70015e6274` had advanced; the tested current
+  main was `1ed96f2aa564742156cc6593a1fc1915ea4e9033`.
+- **Cohort and setup:** frozen `hard64-dev` first-decision snapshots, SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`; GCC
+  13.3 Release (`-O3 -flto`), CPU 2, `OMP_NUM_THREADS=1`, and the existing
+  telemetry path. Each fixed-work run attempted 64 roots at 1,000 simulations;
+  59 roots / 59,000 simulations were valid and the same five roots returned
+  `transactional_selection_required` in every arm. All replay runs used
+  `tools/seed_guard.sh`; holdout was untouched.
+- **A — early energy rejection:** exact non-timing output parity held across
+  all valid roots. A averaged 1,401,721 µs summed search wall versus control's
+  1,286,513 µs; the two complete outer CPU samples were 1.035 s versus 1.015 s.
+  There was no speed gain, so A and its focused test were reverted.
+- **B — rollout-only unordered unknown piles:** only copied rollout scratch
+  draw/discard/exhaust piles opt out of unknown-region sorting; retained tree
+  piles remain canonical. Focused tests cover duplicate draw frequencies,
+  known top/bottom, shuffle-in, reshuffle, absorb, cost mutation, and tree
+  isolation. Across four matched repetitions, mean summed search wall fell
+  10.3% (1,274,480 to 1,143,222 µs), median summed search wall fell 5.7%, mean
+  summed rollout wall fell 13.0%, and process user CPU fell 10.9% (1.0275 to
+  0.9150 s). This is a useful throughput signal. RNG mapping changed, and B
+  executed about 0.24% more rollout actions at the same simulation count.
+- **Original fixed-work DEV quality screen — invalid:** it reported 40/59
+  current-main/control agreements and 35/59 B agreements against a 10k control
+  reference, with eight control-only versus three B-only. The 1k control and
+  10k reference shared the same `benchmark_seed`; because B changes
+  RNG-to-card mapping, control's 1k search was the exact prefix of its teacher
+  while B was not. Reclassify the former result as
+  `QUALITY_SCREEN_INVALID_SHARED_REFERENCE_RNG`. Preserve the raw rows, but do
+  not interpret them as no-harm failure or as a B quality regression.
+- **Corrective implementation and protocol:** B now requires the default-off
+  `rolloutUnsortedPilesEnabled` flag, and the replay harness defaults detailed
+  rollout diagnostics and search timing off. The harness accepts an optional
+  `isolated_search_seed` while retaining and reporting the validated
+  state-bound `benchmark_seed`; `seed_guard.sh` checks both uint64 values and
+  caps replay JSONL roots at 128. The implementation was independently reviewed
+  and frozen at `1e63068ff548abb18638e4b02d60e7e0d6dc936c`. The preregistered
+  current-main design specified three independent 10k teachers, four matched
+  1k identities per arm, and an uninstrumented CPU comparison. Its decision
+  rule, frozen eligible mask, and stop conditions are in the
+  [corrected protocol](evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md).
+- **Corrected DEV result:** On 52/59 roots with teacher-majority consensus,
+  matched fixed-work first-action agreement was 54.3% control versus 58.7% B,
+  a paired mean of `+4.3 pp` (10,000-replicate root-cluster bootstrap 95%
+  interval `[-1.4,+10.1]`;
+  16 roots favored B, 9 control, 27 tied). The preregistered non-negative mean
+  rule triggered the 1,000-control/1,100-B equal-time-equivalent screen; its
+  agreement was 54.3% versus 61.5%, `+7.2 pp` (95% interval `[+1.0,+13.5]`;
+  20/8/24 roots B-favored/control-favored/tied). Logged aggregate user CPU and
+  elapsed time were approximately 0.760/0.738 s and 0.775/0.758 s (control/B);
+  B was slower in two of four paired user-CPU samples. The uninstrumented 1k CPU
+  confirmation measured mean user CPU 0.740 s control versus 0.675 s B
+  (`-8.8%`), with B lower in all four pairs. This is first-action DEV evidence;
+  the fixed-work interval crosses zero, and no gameplay, holdout, or default
+  qualification is claimed. Evidence review found the input helper's seed
+  domain strings (`teacher/NN`, `arm/NN`) differ from the strings frozen in the
+  protocol (`teacher-NN/NN`, `arm-NN/NN`). The helper and manifest predate raw
+  outputs by mtime, but a durable pre-run amendment was not retained; exact
+  preregistration fidelity is unresolved. Seeds remain deterministic and
+  pairwise distinct per root, and each arm identity is matched. Raw data, input
+  derivation, analysis, binary hashes, and checks are in the
+  [follow-up packet](evidence/silver_rollout_cost_20260924/review_followup/README.md).
+- **C — incoming-damage reuse:** no cache was implemented. A separate
+  instrumented `-pg` diagnostic estimated `SimpleAgent::getIncomingDamage` at
+  2.6% inclusive time (1,543,022 calls) on the same fixed-work cohort. Given
+  this small share and the broad set of monster/player state dependencies, a
+  cache is not justified.
+- **D — chance saturation:** replay telemetry exposed fresh samples and
+  sibling reuses by `END_TURN`, card-play, and other categories. B recorded
+  15,709 sibling re-executions, mostly card-play actions. Exact support
+  exhaustion was not measured, so the certified avoidable count is zero and
+  15,709 is only an upper bound. No heuristic or chance behavior change was
+  introduced.
+- **Review and checks:** an independent read-only implementation review found
+  no blocking semantic defect and flagged stale sorting comments, which were
+  corrected. Release and Debug optimization-test CTests each passed 1/1; the
+  Debug run exercises the tree-isolation assertions. The complete report and
+  raw outputs are in the [evidence packet](evidence/silver_rollout_cost_20260924/README.md).
+
+Knowledge impact: the scratch-pile boundary and completed corrected DEV result
+are recorded in maintained combat-search and current-research pages. B remains
+default-off and is not gameplay-qualified.
+
+## §350 — Native Silver rollout-only unsorted draw pile: rejected at profile gate (2026-09-25)
+
+**Hypothesis:** the §349 candidate B (rollout scratch piles left unsorted) has
+a useful analogue in native Silver (`SilverSearcher`, default backend since
+ADR-0021). In native Silver only the information-set draw pile (`CardPile`)
+is kept canonically sorted; discard and exhaust are plain vectors.
+
+**Preregistered stop rule:** if removable rollout-only canonical-sort work is
+clearly below ~3% of native search CPU, stop before implementing.
+
+- **Baseline:** `856b3f8fb463be838daa1c4caf221b22bd876353`.
+- **Method:** Release (`-O3 -flto`, plus `-g`) `unit-test` binary,
+  `valgrind --tool=callgrind` on `test silver_searcher` (24 whole battles,
+  native `SilverSearcher` with reroots, 200 simulations per decision). A
+  second run used `--toggle-collect='sts::search::SilverSearcher::rolloutToEnd*'`
+  to isolate rollout scratch execution. A deck-size sensitivity run temporarily
+  (uncommitted, since reverted) added 20 cards (Pommel Strike, Shrug It Off,
+  Inflame, Twin Strike, Anger ×4 each) to the starter deck.
+- **Results (instruction counts, Ir):**
+
+  | Workload | Total Ir | `rolloutToEnd` share | Rollout `std::sort<CardInstance>` | Share of total |
+  |---|---|---|---|---|
+  | Starter deck (10 cards) | 8.62e9 | 67.4% | 163.1M | **1.89%** |
+  | 30-card deck | 6.65e9 | 65.9% | 137.5M | **2.07%** |
+
+  Almost all removable work is the `absorbUnordered()` sort in
+  `CardManager::moveDiscardPileIntoToDrawPile`. `addUnknown()` insertion and
+  the `mutateAt()`/`mutateAll()` sortedness checks were about 0.02%. Non-rollout
+  sorts (about 0.9–1.6% of the total) must stay canonical and are not
+  removable. The vendored ~9% (§349) does not transfer, because the vendored
+  engine also sorted discard/exhaust.
+- **Decision:** rejected at Phase A. No implementation, fixed-work benchmark,
+  or gameplay seeds were run or reserved.
+- **Limitations:** callgrind Ir is a proxy for CPU; no production `one_combat`
+  adaptive-budget profile was taken (**Inference:** the rollout/tree ratio and
+  hence the share should be similar). The same profile attributes about 53% to
+  `BattleContext::executeActions`, 17% to rollout card choice, and ~15% to
+  `BattleContext` copy/swap; those are the larger native rollout-cost targets.
+
+Knowledge impact: this entry plus a one-line pointer in current-research. No
+code or default changed.
+
+## §351 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
+
+- **Question:** Does zero-search selection at singleton roots, while retaining
+  the selected edge for later rerooting, change complete frozen-fight outcomes
+  or reduce search work?
+- **Frozen comparison:** main control at the time of this recorded run
+  `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`
+  versus corrected treatment `2da8eed6a9c7faecd82effdd1751265eac1b42fd`.
+  Treatment enables the benchmark-only singleton skip in the frozen replay
+  utility; the production live backend change remains independently covered by
+  the focused bridge and integration checks.
+- **Cohort/configuration:** the tracked `hard64-holdout` set from
+  `silver_hard_combat_v1_20260918`, 64 unique snapshots with stored per-fight
+  benchmark seeds (snapshot SHA256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`). Both
+  arms used 10,000 simulations per searched root, allocated reuse cap 32,768,
+  adaptive/exact-lock/rho off, and OMP 4. Every invocation used
+  `tools/seed_guard.sh`; arm order alternated by 8-case block.
+- **Results:** 64 cases were attempted; 63 were valid in both arms. Control and
+  treatment each won 57/63 with zero paired outcome flips. Treatment skipped 62
+  singleton searches, used 20.060M versus 20.720M simulations (**−3.185%**),
+  and had 183.797 versus 189.465 summed per-case replay wall seconds
+  (**−2.991%**). Mean ending HP changed by +0.159. Action trace hashes matched
+  on 60/63 valid pairs. These bounded descriptive metrics are not equivalence
+  evidence.
+- **Technical exclusion:** case `12100109/21` failed in both arms after 28
+  decisions / 280,000 simulations with the same
+  `selected_deterministic_state_mismatch` and action-trace hash. An isolated
+  rerun reproduced the same failure with current main, treatment with the
+  switch off, and treatment with it on. The row is preserved; no case was
+  substituted. The comparison is **N64 attempted / N63 valid**, so it is not a
+  complete valid N64 confirmation.
+- **Interpretation:** this is the first tracked post-reroot-correction hard64
+  replay packet. It does not validate the live wire conversion path or
+  establish gameplay safety; the live implementation remains supported only
+  by the continuity regression and focused integration smoke. The old supplied
+  59/64 report remains pre-correction and unverified.
+- **Evidence:** [frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25/README.md),
+  including raw 64-row arm outputs, pair rows, summary, shared-failure reruns,
+  and hashes.
+
+Knowledge impact: current research now records the post-correction replay
+result and its one shared technical failure. No default or quality gate changed.
+
+## §352 — Singleton reroot replay against updated current main (2026-09-25)
+
+- **Question:** Does the retained-session singleton zero-search path reduce
+  work without changing observed outcomes on the frozen hard-fight cohort
+  after merging the latest main updates?
+- **Frozen comparison:** main control
+  `46684659a0d56729d7af1f8ae2ce9eeab39a6934` versus merged treatment
+  `be47b2a1502013b04dcdd923b6d14c1c22c7dde1`. The treatment enabled only
+  `--skip-singleton-search` in the frozen replay utility. The production live
+  path is independently covered by the retained-edge bridge regression and
+  flat/adaptive integration checks.
+- **Cohort/configuration:** the same 64 stored-seed rows from the tracked
+  `hard64-holdout` set in `silver_hard_combat_v1_20260918` (snapshot SHA-256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`). Both
+  Release arms used exact 10,000 simulations per searched root, allocated
+  reuse cap 32,768, adaptive/exact-lock/rho off, and OMP 4. Alternating
+  eight-case blocks went through `tools/seed_guard.sh`; all 64 stored states
+  ran in both arms. No new states were collected.
+- **Results:** 64 cases were attempted and 63 were valid in both arms. Each
+  arm won 57/63 with zero paired outcome flips. Treatment skipped 62 singleton
+  searches, used 20.060M versus 20.720M simulations (**−3.185%**), and had
+  183.421 versus 189.820 summed per-case replay wall seconds (**−3.371%**).
+  Mean ending HP changed by +0.159; action traces matched on 60/63 valid
+  pairs. These bounded descriptive metrics are not equivalence evidence.
+- **Post-run source advance:** while the packet was being prepared, main moved
+  to `8ed346ea1e503a85640c44131c05b9e8b5f48f53` via PR #320. Rebuilding the
+  replay target from that main head produced the same control binary hash as
+  the run. After merging it into the treatment tree, the replay target also
+  retained the exact treatment binary hash used by the run. No more seeded
+  replays were launched after this byte-for-byte check because the local
+  128 arm-case allowance had been used; the raw command records retain the
+  original invocation SHAs. Main later advanced to
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a` via PRs #318 and #321. Release
+  rebuilds from that main head and final treatment merge
+  `b0393b034117cbdf5e16b994a0fe50528e89787b` again produced the recorded
+  control (`58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`)
+  and treatment (`03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`)
+  hashes. Main then advanced to `18232bf049a3facade2d5df440a67bb30135f400`
+  (PR #314); its control binary was
+  `f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773`, while
+  final treatment `b6242a65f98d90520440145600241ad5a39d3860` built to
+  `ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`.
+  Both differ from the replay binaries. Inspection found PR #314 adds a
+  default-off unsorted-rollout option (disabled in these invocations), changes
+  diagnostic timing collection defaults, and adjusts the isolated simple-
+  rollout terminal feature probe. All 64 snapshots omit `isolated_search_seed`,
+  so the new harness fallback remains the stored `benchmark_seed`. These
+  changes do not alter the default combat replay search path. No new hard64
+  screen was necessary for this merge; the N63 outcome/simulation rows remain
+  historical observations of their original binaries, and the wall-time result
+  is not reverified on the newer harness. Main later advanced via PR #322 to
+  `856b3f8fb463be838daa1c4caf221b22bd876353` and PR #323 to
+  `f8fa4a3fd9ebbbc01f2003946ee40c634bcd677d`. Release replay rebuilds from
+  current main and the merged treatment still have SHA-256
+  `f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773` and
+  `ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`.
+  PR #322 changes `one_combat` backend dispatch and PR #323 records a profile
+  result; neither changes the replay target. No new hard64 screen was needed.
+- **Technical exclusion:** case `12100109/21` failed in both arms after 28
+  decisions / 280,000 simulations with the same
+  `selected_deterministic_state_mismatch` and action-trace hash
+  `5626104837987834096`. Both raw rows remain in the packet. No case was
+  removed, replaced, or rerun, so the result remains **N64 attempted / N63
+  valid**, not complete valid N64 confirmation.
+- **Interpretation:** this updates the earlier post-correction replay whose
+  control was main at `01f6f164`. It confirms descriptive compute savings on
+  the same frozen cohort against main at `46684659`; byte-for-byte rebuilds
+  show the replay target stayed identical at main `8ed346ea` and treatment
+  commit `4b1b27f6`. It does not establish action equivalence or gameplay safety,
+  validate live wire conversion, or change a default.
+- **Evidence:** [current-main frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md),
+  including raw per-arm rows, paired records, run order, per-invocation
+  outputs, analysis scripts, and hashes.
+
+Knowledge impact: current research now records the updated-baseline replay
+and its shared technical failure. The prior comparison remains preserved as
+historical evidence; no default or quality gate changed.
+
+## §353 — `v_win` terminal-pricing audit (2026-09-24)
+
+- **Question / decision:** Is the tracked compact `v_win` suitable for a
+  relative-price lookup over combat-terminal victories? The preregistered
+  result is **`VWIN_W1_NEEDS_SMOOTHING`**. This is W1 input-readiness only; it
+  makes no gameplay-quality or runtime-promotion claim. The monotonicity
+  threshold failed, while the low-HP flat-run threshold, per-act positive HP
+  and held-potion intervals, Q4, and Q5 passed. The handoff's thresholds were
+  unchanged. The Q4 capacity model was amended before outcome analysis because
+  metadata-only inspection found both capacity 3 and 5; see commit `ca6960ad`.
+- **Collection / artifact:** 128 project-fair E2c-v2 seeds
+  `3100000..3100127`, ascension 0, collected at executable/source SHA
+  `5334920f5dc184ba9507ce9a15ed2fd96fd69bec`, `e2cgen` simulations argument
+  1,000, adaptive Silver enabled, allocated reuse cap 32,768. Model SHA-256 is
+  `fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`
+  (448 features, 1,060 trees, logistic). The current 2-seed smoke passed
+  2/2, with 92 rows and zero invalid/quarantined seeds/branches or simulator
+  health failures. The first population process stopped after representing 93
+  seeds and did not leave its final sidecar counters. E2c writes rows only for
+  runs passing `trainingRunValid`, so all 93 represented seeds passed that
+  predicate, which rejects unresolved runs and simulator-health failures;
+  attempted/completed counts and any unrepresented quarantines remain unknown.
+  The stop cause is unknown. The remaining 35 seeds have
+  complete sidecar accounting (35/35, zero invalid/quarantined seeds or
+  branches, zero health failures). Silver telemetry reported
+  `prior_model_loaded=0`; this measures the optional Silver learned root
+  prior, which was off by default, and is not a preregistration deviation.
+  Compact-policy-tree load status is Unverified from retained logs. The complete row/hash
+  inventory and interrupted-segment boundary are in the
+  [evidence packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
+- **Parity / data checks:** Before Q1–Q5, 600 RAW rows passed native/Python
+  name-aligned parity at `1e-4` (600/600 compared; max and mean difference
+  0.000000). The combined files contain 3,069 RAW and 2,706 POST rows with
+  2,706 matched pairs; there are no duplicate keys or paired outcome, room,
+  encounter, or within-seed label mismatches. There are 363 unmatched RAW and
+  no unmatched POST rows. Two complete analyses were byte-identical; result
+  JSON SHA-256 is
+  `8803126fba6a73de07b99ab8a4b5a006f17fc79d5f18f7468bdf16c38194ba98`.
+- **Q1:** Monotone HP sweeps were 63.77% of rows (95% seed-bootstrap CI
+  60.18–67.35%), below the 95% gate; overall median longest flat run was 5 HP
+  (CI 5–5), passing the 10-HP limit. Per-act mean HP slopes were
+  `0.000933`, `0.002670`, and `0.002586` probability/HP; held-potion
+  equivalents were `6.76`, `6.74`, and `6.70` HP, each with intervals above
+  zero. Full act/room/potion summaries are retained in the packet.
+- **Q2:** **Inference:** No reviewed repository intervention isolates an HP
+  offset on captured states with matched continuations. The synthetic trainer
+  probe is model-space only; paired rest branches change HP and progression,
+  path branches change route and downstream rewards, and TERM_WIN changes
+  policy (its recorded win-rate screen was null at approximately 3.1x cost).
+  **Open question:** An 8-state × 3-offset × 4-continuation (96-trajectory)
+  matched continuation test is proposed only; its 60.8 CPU-minute estimate is
+  rough and replay cost is unmeasured. The current tracked model has
+  counter-value splits on r26/r30/r31/r44/r46/r52/r68, with r32 absent and
+  r35/r116/r131 presence-only. This corrects the current-artifact
+  interpretation in ledger §§109–110; the exact model used in that historical
+  run remains unbound.
+- **Q3–Q6:** The pre-collection inventory found the named vrich, rest/path
+  counterfactual, and datagen3 files absent from checked local trees. The
+  historical E2c GCP output path is not mounted on this host, so current
+  remote existence and historical dataset byte sizes remain unverified; see
+  the packet inventory. Predicted mean P(win) was 0.545 versus equal-seed
+  observed run win rate 0.719; Brier 0.232 versus 0.187 row-prevalence
+  baseline. Treat calibration as weakly powered at 128 seeds, with
+  underprediction in this cohort. Q4 had 2,706 pairs, rank 5/5,
+  `R²=0.04776` (narrowly below 0.05); coefficient endpoint bounds exceed
+  3 HP-equivalent across the observed ranges, so the formal gate passes only
+  through the frozen low-R² clause. Q5 recorded-vs-zeroed hidden-future
+  HP-slope and potion-value rank correlations were 0.934 and 0.873;
+  zeroing is out-of-distribution-prone. Fair/zeroed per-act HP slopes were
+  0.000675/0.002274/0.002355 and potion equivalents were
+  15.59/13.55/4.45 HP; the full interval table is in the packet.
+  Q6 measured native prediction median/p95 21.761/31.249 μs over 20,000
+  direct calls and identified HP, max HP, gold, potion, deck/Parasite, and
+  exit-mutated relic inputs.
+- **Scope / evidence:** No W1 table, causal continuation replay, live gameplay,
+  runtime change, or default change. The raw E2c CSVs remain ignored local
+  data; aggregate, parity, provenance, model-counter, latency, and smoke
+  evidence are committed in
+  [the audit packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
+  See the machine-readable [results](evidence/vwin_terminal_pricing_audit_20260924/results.json).
+- **Checks:** On audit source `812fb8afb9413a5e277d3aaebdda98e95ff7f4c0`,
+  which includes `origin/main` base `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`,
+  `cmake --preset linux-gcc-release` configured and `cmake --build
+  build/linux-gcc-release --target one_combat -j2` passed. Focused CTest
+  passed 3/3
+  (`winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`,
+  `export_win_model_selftest`); Python compilation and the analyzer self-test
+  passed earlier with unchanged audit tooling. Native/Python parity passed
+  again on 600 rows after the latest-main build, max and mean difference
+  0.000000. The build emitted a narrowing-conversion warning in
+  unrelated run-timing code and an ODR warning for `Path` across root and
+  bundled `SimpleAgent.cpp`. Full CTest was not run. Draft PR #317 triggered CI
+  run 1184, but the `Linux GCC` job was skipped by the workflow's draft-PR
+  condition. The current-head CI result is tracked in PR #317. No gameplay seed
+  was rerun for verification.
+
+#### Review corrections and post-review descriptive additions (2026-09-25)
+
+- **A1–A3, A5–A7:** `prior_model_loaded=0` measures the optional Silver
+  learned root prior (off by default), not compact-policy load; that status is
+  Unverified. Silver terminal prices are score points with +1 healed HP = 1
+  point; Feed-like +1 max HP/+1 current HP is 3 points, max-only is 2. The
+  Q4 `curHp` coefficient is −3.36e−4/HP with interval excluding zero (about
+  17% of mean `s_HP=0.00195`), although the frozen gate passes by low R². The
+  Q5 Spearman gate tests ranks rather than price levels; zeroed/recorded
+  potion HP-equivalent ratios are 2.31, 2.01, and 0.66 by act. The 33
+  per-potion features have 124 splits (six with none), versus 271 for
+  `potionCount`; pot21 Fairy in a Bottle has three splits and mean 2.48
+  HP-equivalents (CI 1.07–4.27), zero in 32.7% of rows. **Inference:**
+  per-potion prices mostly encode state association, so they are not usable
+  identity prices.
+- **A4:** Using only same-seed, same-act next RAW rows exactly one floor later,
+  the matched full-belt drop/no-drop/unclassified counts are 1/153/259 and
+  space-available counts 423/464/1,406. Unmatched full-belt counts are
+  147/0/199 and space-available counts 0/0/17. Thus there are zero
+  classifiable unmatched residuals; 216 unmatched rows remain unclassified.
+  The belt was full in 413/2,706 matched rows (15.3%) and 346/363 unmatched
+  rows (95.3%).
+  One matched full-belt drop acquired Potion Belt (`r159`), which raised
+  capacity before the potion choice. The full-run reward chain takes a
+  potion only with slot capacity and cannot discard or swap a held potion;
+  the belt was full in 759/3,069 RAW rows (24.7%), and 148/301 full-belt rows
+  with classifiable adjacent-floor status had a drop (49.2%). E2c
+  `captureE2cPost` returns while gold, relic, or potion rewards remain
+  pending, so an unclaimed potion blocks POST capture.
+  The 147 proxy-confirmed full-belt drops are 4.79% (4.8%) of all 3,069 RAW
+  fights. If all 199 unmatched full-belt rows with unknown proxy status also
+  represent unclaimed potion drops, the code-path upper count is 346/3,069
+  (11.27%, or 11.3%). This is a conditional upper bound, not an estimated
+  rate; 17 unmatched space-available rows show other causes of missing POST,
+  so the actual forfeiture rate can be lower. Q4's 2,706 pairs exclude all
+  no-POST rows by inner-join construction.
+- **B1–B3:** Clamped-probe shares were 56.0%, 45.9%, and 54.1% by act.
+  Held-potion mean/median HP-equivalents under fixed-/10 → actual-span
+  denominators were 6.76/1.96 → 4.51/1.51, 6.74/1.99 → 4.28/1.66, and
+  6.70/0.85 → 4.78/0.61. Gold means were 0.357 → 0.231, 0.090 → 0.058,
+  and 0.058 → 0.040; Feed-like means were 1.548 → 1.263, 1.001 → 0.937,
+  and 0.300 → 0.140. Full mean CIs, median bootstrap CIs, and IQRs for all
+  held-potion and per-type probes are in `post_review_descriptive`. Max-only
+  mean/median values were 0.613/0.314, −0.061/0, and −0.477/0; Silver's
+  comparators are 2 (max-only) and 3 (Feed-like).
+- **B4–B7:** RAW-row and first-row-per-seed AUC were 0.708 [0.652, 0.769]
+  and 0.638 [0.528, 0.745]; 128 source seeds give weak power. Paired
+  POST/RAW median `s_HP_span` ratios were 1.0014, 0.9818, and 0.7833 for
+  monster/elite/boss, with corresponding held-potion ratios 0.9441, 0.9590,
+  and 0.6939. Near-current >0.005 drop shares were 14.5%, 21.6%, and 19.7%;
+  largest HP-equivalent drops had median/p95 3.684/29.374, 1.454/15.414,
+  and 1.806/24.842. The interruption cause is unknown; 48/128 seeds have
+  noncontiguous fight indices, all last RAW floors differ from `finalFloor`,
+  and the segment-1 last-written seed 3100091 is contiguous (0–26), ends at
+  floor 48 versus finalFloor 51, with a complete 1,387-column final CSV line.
+  `fight_index` advances across battles while E2c captures only monster, elite,
+  and Act 1–2 boss rooms; event-initiated fights and Act 3 bosses therefore
+  explain the expected index gaps. The final line is newline-terminated and
+  complete; there is no evidence of CSV truncation. The stop cause remains
+  unknown; 35/35 seeds in flight reran cleanly, so a deterministic crashing
+  seed is not supported (**Inference:** an external stop such as a timeout).
+- **Earlier post-review verification (before the current-main refresh):** after
+  merging `origin/main` at
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`, the Release
+  `one_combat` rebuild passed on branch source `82dc7f04`; existing warnings
+  were the `one_combat.cpp` narrowing conversion, duplicate `Path` ODR report,
+  and serial LTO note. Focused CTest passed 3/3, and the native/Python parity
+  fixture passed 600/600 with max/mean absolute difference 0.000000. Python
+  compilation, analyzer self-test, JSON validation, both CSV provenance hashes,
+  and `git diff --check` passed. Full CTest and new gameplay seeds were not
+  run. On that reviewed head, PR #317 was draft and GitHub skipped Linux GCC.
+- New results are isolated under the top-level `post_review_descriptive`
+  key. The preregistered outputs, thresholds, and verdict remain unchanged;
+  two current-code analyses were byte-identical at SHA-256
+  `79d4709d71baf32c70e817445b46de70df70c3f30e05972b9a359113f350dd4e`.
+
+Knowledge impact: current research now records the W1 candidate boundary
+(smoothed HP for non-act-boss wins, with gold only tentative), unstable
+fair-regime price levels, the full-belt forfeiture bounds, and the limits on
+using per-potion or max-HP prices. Architecture documents the reward-chain
+capacity rule. The post-review descriptors do not change the frozen W1
+verdict, runtime defaults, or gameplay claims.
+
+## §354 — Native Silver one-action-root bypass: paired 128-seed check (2026-09-25)
+
+Change: the native backend commits the sole action of a one-action root
+without search and keeps the retained graph for the next reroot
+(`STS_SILVER_SEARCH_SINGLETON_ROOTS=1` or exact root budgets restore
+searching). This carries the vendored bypass of §§351–352 (removed with the
+vendored model, ADR-0022) over to native Silver. The same change adds native
+simulations to `ScumSearchAgent2::simulationCountTotal`, which previously
+stayed at zero under native Silver.
+
+Setup: one Release binary, 4 threads, adaptive Silver, `bestbench 1000 128 0
+126700`, control with singleton roots searched, treatment with the new default.
+
+Result: control 82/128, treatment 86/128; paired +3.1 pp, 95% CI [−1.7, +8.0]
+pp; discordant 7/3 (McNemar z = +1.26). Mean floor 47.43 vs 47.42. Mean
+per-run time 38.58 s vs 36.09 s (−6.5%).
+
+Decision: adopt as the native default; no detectable gameplay difference, 6.5%
+faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton_bypass_2026-09-25/README.md).
+
+## §355 — Native equivalent-copy reroot: paired 128-seed check (2026-09-25)
+
+Change (ADR-0023, issue #327): when the exact node lookup misses, native Silver
+retries with the unique ids of one pair of search-equivalent cards exchanged,
+so playing a different physical copy than the one the search expanded reuses
+that branch. The advisor translates retained actions onto the live root.
+
+Setup: Release control from `main` `0eed6993` vs the branch, 4 threads,
+adaptive Silver, `bestbench 1000 128 0 126700`.
+
+Result: control 86/128, treatment 89/128; paired +2.3 pp, 95% CI [−3.2, +7.9]
+pp; discordant 8/5 (McNemar z = +0.83). Mean floor 47.42 vs 48.11. Mean
+per-run time 38.36 s vs 39.30 s (+2.5%).
+
+Decision: adopt; no detectable gameplay difference and restores ADR-0015's
+reuse. Evidence: [native_equivalent_copy_reroot_2026-09-25](evidence/native_equivalent_copy_reroot_2026-09-25/README.md).

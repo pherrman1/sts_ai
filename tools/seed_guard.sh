@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Seed-sweep argument positions verified against apps/one_combat.cpp mode dispatch
-# (2026-08-31).  Modes that parse nSeeds from argc/argv are listed; modes not in
-# this table are passed through without seed checking.
+# (2026-08-31). Other unlisted commands pass through without seed checking.
 
 MAX_AUTOMATED_SEEDS=128
 
@@ -10,7 +9,9 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["bestbench"]=3
   ["datagen3"]=2
   ["e2cgen"]=2
-  ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combatevalgen"]=2 ["ooccfaudit"]=2
+  ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionlizardtargetcandidategen"]=2
+  ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2
+  ["combatevalgen"]=2 ["ooccfaudit"]=2
   ["oocnextgen"]=2
   ["pathcfgen"]=2
   ["strategicgen"]=2        ["strategicgen2"]=2

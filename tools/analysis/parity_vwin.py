@@ -10,47 +10,14 @@ Usage: python3 tools/analysis/parity_vwin.py <tierb.csv> <trees.txt> <cpp_out.tx
 import sys
 import numpy as np
 import pandas as pd
+from vwin_tree_utils import load_trees, predict_row
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_qwin.csv"
 TREES = sys.argv[2] if len(sys.argv) > 2 else "models/v_win_trees.txt"
 CPP = sys.argv[3] if len(sys.argv) > 3 else "winnettest.out"
 
-# --- load trees (same parser as check_vwin_calibration.py) ---
-feats = []
-logistic = 0
-base_score = 0.0
-trees = []
-with open(TREES) as f:
-    for line in f:
-        parts = line.split()
-        if parts[0] == "feat":
-            feats.append(parts[1])
-        elif parts[0] == "logistic":
-            logistic = int(parts[1])
-        elif parts[0] == "base_score":
-            base_score = float(parts[1])
-        elif parts[0] == "tree":
-            n = int(parts[2])
-            nodes = []
-            for _ in range(n):
-                p = f.readline().split()
-                if p[0] == "L":
-                    nodes.append(("L", float(p[1])))
-                else:
-                    nodes.append(("S", int(p[1]), float(p[2]), int(p[3]), int(p[4])))
-            trees.append(nodes)
-
-base_margin = float(np.log(base_score / (1.0 - base_score))) if logistic else base_score
-
-def predict_row(vec):
-    acc = base_margin
-    for nodes in trees:
-        idx = 0
-        while nodes[idx][0] != "L":
-            _, fi, thr, yes, no = nodes[idx]
-            idx = yes if vec[fi] < thr else no
-        acc += nodes[idx][1]
-    return 1.0 / (1.0 + np.exp(-acc)) if logistic else acc
+# --- load trees through the shared compact-tree parser ---
+feats, trees, logistic, base_score, base_margin = load_trees(TREES)
 
 # --- read C++ predictions ---
 cpp = {}
@@ -83,7 +50,7 @@ for ch in chunk:
     X = ch[need].to_numpy(np.float32)
     for i in range(len(X)):
         if i in seen:
-            py = predict_row(X[i])
+            py = predict_row(X[i], trees, logistic, base_margin)
             diffs.append(abs(py - cpp[i]))
             first += 1
     if first >= len(cpp):

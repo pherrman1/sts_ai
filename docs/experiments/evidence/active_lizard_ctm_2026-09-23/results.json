@@ -1,0 +1,362 @@
+{
+  "ancestral": {
+    "counts": {
+      "death": 269,
+      "lizardConsumed": 1819,
+      "lizardRetained": 1976,
+      "victory": 3795
+    },
+    "drawsPerTestRow": 32,
+    "hardValidityFailureCount": 0,
+    "hardValidityFailures": {},
+    "observedOutcomes": {
+      "death": 1,
+      "win": 126
+    },
+    "rows": 127,
+    "sources": 9
+  },
+  "candidateArtifacts": {
+    "lizard-head-20260912.pt": "1e4ab2e7f2b9ec4a48684b467548e517d002561275fa2edcb0ace12fe976c484",
+    "lizard-head-20260913.pt": "14cd727f19714460d75a8edd5da053fd5d5de5e1d4e326062a92233bfeb074c7",
+    "lizard-head-20260914.pt": "2ad0cae7866f48ba31180e83d972fa79d5816f643fdc964096ca4f7a648ff3b4"
+  },
+  "classification": "LIZARD_HEAD_REJECTED_PROPER_SCORE",
+  "corpus": {
+    "manifestPath": "/home/philippherrmann/.codex/worktrees/38ef/sts_lightspeed/build/active-lizard-111.jsonl.manifest.json",
+    "manifestSha256": "457e33d53c7af2f474957d2201da0f7a7c95a1f6be10de71f40782cb14f832f6",
+    "path": "/home/philippherrmann/.codex/worktrees/38ef/sts_lightspeed/build/active-lizard-111.jsonl",
+    "rows": 2234,
+    "sha256": "4d9927ad0f23d7f9e6e1fdb1091c6cf98ff7f5935540a5103746257b550b5504",
+    "sourceSeeds": 111
+  },
+  "frozenArtifacts": {
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "holdout": {
+    "consumed": 6,
+    "meanNllByFit": [
+      0.698886513710022,
+      0.698886513710022,
+      0.698886513710022
+    ],
+    "retained": 120,
+    "rows": 126,
+    "sourceBootstrapDifference": {
+      "ci95": [
+        0.37379985512759123,
+        0.6108141266612863
+      ],
+      "mean": 0.5067515944729507,
+      "repetitions": 1000,
+      "rows": 126,
+      "sources": 9,
+      "unit": "sourceSeed"
+    },
+    "sources": 9,
+    "trainPriorNll": 0.19213494513670856,
+    "trainedMinusPriorNll": {
+      "ci95": [
+        0.37379985512759123,
+        0.6108141266612863
+      ],
+      "mean": 0.5067515944729507,
+      "repetitions": 1000,
+      "rows": 126,
+      "sources": 9,
+      "unit": "sourceSeed"
+    }
+  },
+  "productionArtifactChanged": false,
+  "recipe": {
+    "ancestralGate": "32 draws per fully-supported TEST row; zero hard-validity failures",
+    "batch": 2048,
+    "bootstrapReps": 1000,
+    "bootstrapSeed": 20260914,
+    "drawsPerTestRow": 32,
+    "epochs": 10,
+    "frozenParameters": "shared relic decoder and every non-Lizard head",
+    "gradientClip": 1.0,
+    "learningRate": 0.001,
+    "optimizer": "AdamW",
+    "partition": "split_for_seed; TRAIN fit, VALIDATION descriptive only, TEST once",
+    "precision": "fp32",
+    "properScoreGate": "source-bootstrap 95% CI upper of trained-minus-TRAIN-prior NLL must be below zero",
+    "samplingSeed": 20260917,
+    "schema": "active_lizard_head_fit_v1",
+    "seeds": [
+      20260912,
+      20260913,
+      20260914
+    ],
+    "trainableParameters": [
+      "relic_net.heads.lizard.weight",
+      "relic_net.heads.lizard.bias"
+    ],
+    "weightDecay": 0.0001
+  },
+  "reviewedImplementationSha": "67479a8381a286319244f6d673c11a716c50da52",
+  "runtimeSupportChanged": false,
+  "schema": "active_lizard_head_fit_v1",
+  "sourceSplit": {
+    "test": {
+      "rows": 159,
+      "sources": [
+        4200107,
+        4200111,
+        4200122,
+        4200139,
+        4200141,
+        4200154,
+        4200161,
+        4200178,
+        4200195
+      ]
+    },
+    "train": {
+      "rows": 1767,
+      "sources": [
+        4200101,
+        4200102,
+        4200103,
+        4200105,
+        4200106,
+        4200109,
+        4200110,
+        4200113,
+        4200114,
+        4200115,
+        4200116,
+        4200117,
+        4200118,
+        4200119,
+        4200120,
+        4200121,
+        4200123,
+        4200124,
+        4200125,
+        4200128,
+        4200129,
+        4200130,
+        4200131,
+        4200132,
+        4200133,
+        4200135,
+        4200136,
+        4200137,
+        4200142,
+        4200143,
+        4200144,
+        4200145,
+        4200146,
+        4200147,
+        4200148,
+        4200149,
+        4200150,
+        4200151,
+        4200152,
+        4200153,
+        4200155,
+        4200156,
+        4200157,
+        4200158,
+        4200159,
+        4200160,
+        4200162,
+        4200163,
+        4200165,
+        4200166,
+        4200167,
+        4200170,
+        4200171,
+        4200172,
+        4200173,
+        4200174,
+        4200176,
+        4200177,
+        4200179,
+        4200180,
+        4200181,
+        4200182,
+        4200183,
+        4200184,
+        4200185,
+        4200186,
+        4200187,
+        4200188,
+        4200189,
+        4200190,
+        4200191,
+        4200192,
+        4200193,
+        4200194,
+        4200196,
+        4200197,
+        4200198,
+        4200199,
+        4200200,
+        4200202,
+        4200203,
+        4200204,
+        4200205,
+        4200206,
+        4200208,
+        4200209,
+        4200210
+      ]
+    },
+    "validation": {
+      "rows": 308,
+      "sources": [
+        4200100,
+        4200104,
+        4200108,
+        4200112,
+        4200126,
+        4200127,
+        4200134,
+        4200138,
+        4200140,
+        4200164,
+        4200168,
+        4200169,
+        4200175,
+        4200201,
+        4200207
+      ]
+    }
+  },
+  "support": {
+    "bySplit": {
+      "test": {
+        "rows": 126,
+        "sources": 9
+      },
+      "train": {
+        "rows": 1371,
+        "sources": 87
+      },
+      "validation": {
+        "rows": 248,
+        "sources": 15
+      }
+    },
+    "fullySupportedActiveLizardWinningRows": 1745,
+    "unsupportedReasons": {
+      "entropic_brew": 16,
+      "gold_mutating_card": 8,
+      "gold_mutating_encounter": 134,
+      "gold_mutating_potion": 166,
+      "gold_mutating_relic": 27,
+      "potion_not_certified": 16,
+      "pre_stolen_gold_nonzero": 98,
+      "ritual_dagger": 38,
+      "smoke_bomb": 18,
+      "unmodeled_mutable_relic:OMAMORI": 2,
+      "writhing_mass": 14
+    }
+  },
+  "training": {
+    "consumed": 55,
+    "eligibleRows": 1371,
+    "eligibleSources": 87,
+    "fits": [
+      {
+        "batchOrderSha256": "53d5041433df8d8341b4a5f518104ca3a24f8d502a61cb4d0e1ea2ec7ec54b1c",
+        "epochs": 10,
+        "frozenSharedAndOtherHeads": true,
+        "seed": 20260912,
+        "trainConsumed": 55,
+        "trainLoss": [
+          0.9223414659500122,
+          0.8941922783851624,
+          0.8667995929718018,
+          0.8401612639427185,
+          0.814273476600647,
+          0.789129912853241,
+          0.7647230625152588,
+          0.7410436272621155,
+          0.7180808186531067,
+          0.6958230137825012
+        ],
+        "trainRetained": 1316,
+        "trainRows": 1371,
+        "trainSources": 87,
+        "trainableParameters": [
+          "heads.lizard.bias",
+          "heads.lizard.weight"
+        ]
+      },
+      {
+        "batchOrderSha256": "2eb0214dc3032c1eb34083a406335762d82e743762444e3068d987ebfc1bff43",
+        "epochs": 10,
+        "frozenSharedAndOtherHeads": true,
+        "seed": 20260913,
+        "trainConsumed": 55,
+        "trainLoss": [
+          0.9223415851593018,
+          0.8941923975944519,
+          0.8667996525764465,
+          0.8401613235473633,
+          0.8142735362052917,
+          0.789129912853241,
+          0.7647230625152588,
+          0.7410435676574707,
+          0.7180809378623962,
+          0.6958230137825012
+        ],
+        "trainRetained": 1316,
+        "trainRows": 1371,
+        "trainSources": 87,
+        "trainableParameters": [
+          "heads.lizard.bias",
+          "heads.lizard.weight"
+        ]
+      },
+      {
+        "batchOrderSha256": "cc6f3a25378fbc78d6cee01245e0f0679359fe17c2876d758bed3c94b0ea0964",
+        "epochs": 10,
+        "frozenSharedAndOtherHeads": true,
+        "seed": 20260914,
+        "trainConsumed": 55,
+        "trainLoss": [
+          0.9223415851593018,
+          0.8941922783851624,
+          0.8667996525764465,
+          0.8401613235473633,
+          0.8142735362052917,
+          0.7891299724578857,
+          0.7647231221199036,
+          0.7410436272621155,
+          0.7180808186531067,
+          0.6958230137825012
+        ],
+        "trainRetained": 1316,
+        "trainRows": 1371,
+        "trainSources": 87,
+        "trainableParameters": [
+          "heads.lizard.bias",
+          "heads.lizard.weight"
+        ]
+      }
+    ],
+    "retained": 1316,
+    "trainOnlyPriorConsumptionRate": 0.04011670313639679
+  },
+  "validation": {
+    "consumed": 11,
+    "meanNllByFit": [
+      0.6712978482246399,
+      0.6712978482246399,
+      0.6712978482246399
+    ],
+    "retained": 237,
+    "rows": 248,
+    "sources": 15
+  }
+}

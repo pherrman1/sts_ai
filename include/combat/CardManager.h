@@ -11,6 +11,7 @@
 #include "sts_common.h"
 
 #include "combat/CardInstance.h"
+#include "combat/CardPile.h"
 #include "game/Random.h"
 #include "game/Deck.h"
 
@@ -31,12 +32,11 @@ namespace sts {
         std::array<CardInstance, MAX_HAND_SIZE> limbo; // used only for end of turn during discard, for retained cards
         std::array<CardInstance,2> stasisCards { CardId::INVALID, CardId::INVALID }; // for bronze automaton fight
 
+        CardPile drawPile;
 #ifdef sts_card_manager_use_fixed_list
-        fixed_list<CardInstance, MAX_GROUP_SIZE> drawPile;
         fixed_list<CardInstance, MAX_GROUP_SIZE> discardPile;
         fixed_list<CardInstance, MAX_GROUP_SIZE> exhaustPile;
 #else
-        std::vector<CardInstance> drawPile;
         std::vector<CardInstance> discardPile;
         std::vector<CardInstance> exhaustPile;
 #endif
@@ -47,15 +47,24 @@ namespace sts {
         int drawPileBloodCardCount = 0;
         int discardPileBloodCardCount = 0;
 
+        // Compares the first cardsInHand hand slots (later slots are unused) and
+        // every other field.
+        bool operator==(const CardManager &rhs) const;
+        // As operator==, but the hand is compared as a multiset: search treats
+        // hands that differ only in card order as the same state. Once the draw
+        // pile is in information-set mode the discard and exhaust piles are
+        // compared as multisets too.
+        [[nodiscard]] bool equalForSearch(const CardManager &rhs) const;
+
         void init(const GameContext &gc, BattleContext &bc); // returns count of innate cards
 
         void createDeckCardInstanceInDrawPile(const Card &card, int deckIdx, int drawIdx);
-        void createTempCardInDrawPile(int insertIdx, CardInstance c);
+        void createTempCardShuffledIntoDrawPile(Random &cardRandomRng, CardInstance c);
         void createTempCardInDiscard(CardInstance c);
         void createTempCardInHand(CardInstance c);
 
         void removeFromDrawPileAtIdx(int idx);
-        CardInstance popFromDrawPile();
+        CardInstance popFromDrawPile(Random &shuffleRng);
 
         void removeFromHandAtIdx(int idx); // this method is dangerous if used in the wrong place.
         void removeFromHandById(std::uint16_t uniqueId); // can do more than one card if they have the same uniqueId, does this happen?
@@ -65,13 +74,12 @@ namespace sts {
         void moveToHand(const CardInstance &c);
         void moveToExhaustPile(const CardInstance &c);
 
-        void insertToDrawPile(int drawPileIdx, const CardInstance &c);
         void moveToDrawPileTop(const CardInstance &c);
         void moveToDrawPileBottom(const CardInstance &c);
         void shuffleIntoDrawPile(Random &cardRandomRng, const CardInstance &c);
 
         void moveToDiscardPile(const CardInstance &c);
-        void moveDiscardPileIntoToDrawPile();
+        void moveDiscardPileIntoToDrawPile(Random &shuffleRng);
 
         // **************
         void notifyAddCardToCombat(const CardInstance &c);

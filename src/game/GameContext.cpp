@@ -1309,6 +1309,12 @@ bool GameContext::obtainRelic(RelicId r) {
 
     switch (r) {
 
+        case RelicId::LIZARD_TAIL: {
+            // A newly acquired Tail is active until its first native revival.
+            relicData = 1;
+            break;
+        }
+
         case RelicId::ASTROLABE: {
             info.toSelectCards.clear();
             deck.addMatchingToSelectList(info.toSelectCards, [](auto c){ return c.canTransform();});
