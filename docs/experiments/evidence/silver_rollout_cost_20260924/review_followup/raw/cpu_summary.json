@@ -1,0 +1,35 @@
+{
+  "validation": "PASS; all 24 planned result files had 59 successful rows and expected seed/config metadata",
+  "cpu_confirmation": {
+    "control_user_s": [
+      0.74,
+      0.75,
+      0.74,
+      0.73
+    ],
+    "unsorted_user_s": [
+      0.66,
+      0.67,
+      0.66,
+      0.71
+    ],
+    "control_user_mean_s": 0.74,
+    "unsorted_user_mean_s": 0.675,
+    "user_cpu_change_percent": -8.783783783783772,
+    "control_user_median_s": 0.74,
+    "unsorted_user_median_s": 0.665,
+    "median_user_cpu_change_percent": -10.135135135135132,
+    "control_elapsed_s": [
+      0.76,
+      0.76,
+      0.76,
+      0.74
+    ],
+    "unsorted_elapsed_s": [
+      0.67,
+      0.68,
+      0.68,
+      0.73
+    ]
+  }
+}
