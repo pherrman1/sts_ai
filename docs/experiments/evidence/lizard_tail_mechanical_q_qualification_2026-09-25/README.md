@@ -81,17 +81,20 @@ by the exact-root-budget setting frozen for this diagnostic.
 
 The refreshed plan is
 `native_teacher_transfer/stage_b_direct_snapshot_plan.json` (SHA-256
-`8c1b45ad8e3a8066392a7d42d5a35b36499c26ffe8da193a496afd9383bb6eaf`). Its
+`cd466c738d621c05b8aa16b12978bc40de06022b09001b188bbcf86fd57966fb`). Its
 native teacher manifest is
 `native_teacher_transfer/native_silver_direct_replay_teacher.json` (SHA-256
-`a4f12177df4ff6ef69663aac44382870f46774c48d32a299c3d903c53f182bec`), bound
+`bf77c1436518514fb8c8d4e6612bbbacefd3dffa227c67c9256fdb7135a60951`), bound
 to integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
 current-main baseline `0eed6993999386737d87f040e38fb241623b5cf3`, and rebuilt
 executable SHA-256
 `ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`. The
 collector verifies the full archived predictor input and persistent snapshot
 before either paired branch, uses current native Silver at exact 10,000 fair
-simulations, and runs with `OMP_NUM_THREADS=8`.
+simulations. A local preflight at 13:34:58 UTC measured 12 logical CPUs,
+one-minute load 28.87, CPU-pressure `some` avg10 74.81%, and 7.7 GiB available
+memory. To limit contention, the plan freezes `OMP_NUM_THREADS=1`, identically
+for both paired arms.
 
 **Status: corrected replay not yet run.** It remains a diagnostic on a
 historically selected cohort and cannot qualify the candidate. If run, native

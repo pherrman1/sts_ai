@@ -954,8 +954,10 @@ snapshots and excludes only the nine burning-elite targets whose archived
 states lack `burningEliteBuff`. PR #331 made native Silver update
 `simulationCountTotal`; merged PR #332 default-initializes that counter to
 zero. The refreshed direct plan is pinned to current main
-`0eed6993999386737d87f040e38fb241623b5cf3`, the rebuilt executable, and eight
-threads. It has not yet run. The distinct fresh 320-source native
+`0eed6993999386737d87f040e38fb241623b5cf3` and the rebuilt executable. A
+pre-run resource check found load 28.87 on 12 logical CPUs, so the plan uses
+one thread identically for both arms to limit contention. It has not yet run.
+The distinct fresh 320-source native
 qualification remains pending the corrected transfer diagnostic; the
 designated GCP worker was unavailable at the earlier preflight. Therefore no
 Lizard candidate is qualified and production remains

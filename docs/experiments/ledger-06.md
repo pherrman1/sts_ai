@@ -12400,13 +12400,15 @@ faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton
   native simulation counter added by PR #331; the singleton-root bypass remains
   disabled by the frozen exact-root-budget setting. The refreshed addendum
   SHA-256 is
-  `8c1b45ad8e3a8066392a7d42d5a35b36499c26ffe8da193a496afd9383bb6eaf`; it pins
+  `cd466c738d621c05b8aa16b12978bc40de06022b09001b188bbcf86fd57966fb`; it pins
   integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
   executable SHA-256
   `ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`, the
-  refreshed native teacher manifest, and `OMP_NUM_THREADS=8`. The corrected
-  native run has not yet been performed, so there are no native scores or
-  agreement tables.
+  refreshed native teacher manifest, and `OMP_NUM_THREADS=1`. A pre-run local
+  resource check measured one-minute load 28.87 on 12 logical CPUs with 74.81%
+  CPU-pressure `some` avg10; one thread is frozen identically across arms to
+  limit contention. The corrected native run has not yet been performed, so
+  there are no native scores or agreement tables.
 - **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
   assignment is frozen with an audited new source block and outcome-blind
   BROAD32 salt. It remains pending the corrected Stage B diagnostic and

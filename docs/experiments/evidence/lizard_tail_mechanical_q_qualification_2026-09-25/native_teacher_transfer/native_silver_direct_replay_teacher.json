@@ -1,7 +1,7 @@
 {
   "combat_backend": "native_silver",
   "environment": {
-    "OMP_NUM_THREADS": "8",
+    "OMP_NUM_THREADS": "1",
     "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
     "STS_FAIR": "1",
     "STS_NATIVE_OOC": "1",
@@ -52,5 +52,5 @@
       10000
     ]
   },
-  "teacher_id": "silver-ordinary-fair-exact10k-native-00f34384-omp8"
+  "teacher_id": "silver-ordinary-fair-exact10k-native-00f34384-omp1"
 }

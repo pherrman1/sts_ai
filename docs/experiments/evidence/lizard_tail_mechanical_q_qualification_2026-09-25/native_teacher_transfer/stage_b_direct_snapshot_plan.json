@@ -17,7 +17,7 @@
   "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
   "collectorExecutableSha256": "ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be",
   "collectorGitSha": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
-  "createdAtUtc": "2026-09-25T13:25:41Z",
+  "createdAtUtc": "2026-09-25T13:35:36Z",
   "decisionRule": {
     "passAction": "Proceed to the separately assigned fresh 320-source native qualification only on this unchanged candidate and native teacher contract.",
     "retainedWinDiagnostics": "descriptive only; do not add gates after outcomes",
@@ -40,7 +40,7 @@
   ],
   "excludedTargetRationale": "The archived predictor input identifies nine burning-elite targets, but archived CombatTransitionPersistentState does not contain Map.burningEliteBuff required by BattleContext::init. These nine targets are structurally unreplayable from the existing archive; no campaign rerun or inferred buff value is allowed.",
   "executionEnvironment": {
-    "OMP_NUM_THREADS": "8",
+    "OMP_NUM_THREADS": "1",
     "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
     "STS_FAIR": "1",
     "STS_NATIVE_OOC": "1",
@@ -65,7 +65,7 @@
       "00f34384b0235bcc4053e60fee05b42dc1d23c46"
     ],
     "environment": {
-      "OMP_NUM_THREADS": "8",
+      "OMP_NUM_THREADS": "1",
       "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
       "STS_FAIR": "1",
       "STS_NATIVE_OOC": "1",
@@ -82,10 +82,10 @@
   },
   "nativeTeacherManifest": {
     "backend": "native_silver",
-    "identity": "silver-ordinary-fair-exact10k-native-00f34384-omp8",
+    "identity": "silver-ordinary-fair-exact10k-native-00f34384-omp1",
     "path": "native_silver_direct_replay_teacher.json",
     "rngRegime": "project_fair",
-    "sha256": "a4f12177df4ff6ef69663aac44382870f46774c48d32a299c3d903c53f182bec",
+    "sha256": "bf77c1436518514fb8c8d4e6612bbbacefd3dffa227c67c9256fdb7135a60951",
     "simulationBudgets": [
       10000
     ]
