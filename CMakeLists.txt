@@ -333,6 +333,7 @@ add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
 add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)
 add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
+add_test(NAME native_silver_counter_default COMMAND $<TARGET_FILE:unit-test> native_silver_counter_default)
 add_test(NAME silver_wire_state COMMAND $<TARGET_FILE:unit-test> silver_wire_state)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
@@ -486,7 +487,7 @@ set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflo
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
     simhealth_selection_failure battle_equality card_pile card_pile_engine silver_searcher silver_wire_state
-    training_integrity PROPERTIES LABELS "core")
+    native_silver_counter_default training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
     e2c_observer_scope combat_knowledge silver_semantic_action runic_dome_lifecycle
     runwin_e2c_native_parity runwin_e2c_production_native_parity

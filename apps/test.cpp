@@ -289,6 +289,16 @@ namespace {
 
 }
 
+int testNativeSilverSimulationCounterDefault() {
+    search::ScumSearchAgent2 agent;
+    if (agent.simulationCountTotal != 0) {
+        std::cerr << "native_silver_counter_default FAIL: counter did not start at zero\n";
+        return 1;
+    }
+    std::cout << "native_silver_counter_default PASS\n";
+    return 0;
+}
+
 int testSilverSearcher() {
     int failures = 0;
     auto check = [&](bool ok, const char *what) {
@@ -3488,6 +3498,8 @@ int main(int argc, const char* argv[]) {
         return testCardPileEngine();
     } else if (command == "silver_searcher") {
         return testSilverSearcher();
+    } else if (command == "native_silver_counter_default") {
+        return testNativeSilverSimulationCounterDefault();
     } else if (command == "silver_wire_state") {
         return testSilverWireState();
     } else if (command == "card_pile") {

@@ -42,7 +42,7 @@ namespace sts::search {
         g_externalCombatBackend;
 
     struct ScumSearchAgent2 {
-        std::int64_t simulationCountTotal;
+        std::int64_t simulationCountTotal = 0;
         std::vector<int> gameActionHistory;
 
         int stepCount = 0;
