@@ -36,19 +36,31 @@ NativeSilverDecision NativeSilverAdvisorSession::decide(const silver_bridge::Bat
     }
     lastInheritedVisits_ = 0;
     lastExactReroot_ = false;
+    lastEquivalentCopyReroot_ = false;
+    liveRoot_ = root;
+    SilverSearcher::Node *node = nullptr;
+    if (searcher_) {
+        node = searcher_->findNode(root);
+        if (node == nullptr || node->isRandomNode) {
+            // A different physical copy of an equivalent card was played.
+            node = searcher_->findNodeUpToEquivalentCopy(root);
+            lastEquivalentCopyReroot_ = node != nullptr;
+        }
+    }
     if (!searcher_) {
         context_ = sts::search::searchContextFromWire(wire);
         searcher_ = std::make_unique<SilverSearcher>(root, context_);
         lastFallbackReason_ = "no_predecessor";
-    } else if (SilverSearcher::Node *node = searcher_->findNode(root); node != nullptr && !node->isRandomNode) {
+    } else if (node != nullptr && !node->isRandomNode) {
         const std::int64_t inherited = node->simulationCount;
         searcher_->rerootAt(node, searcher_->nodeCount() >= kReuseCap);
         if (searcher_->nodeCount() >= kReuseCap) {
             searcher_->setRoot(root);   // compaction could not get below the cap
             lastFallbackReason_ = "allocated_cap";
+            lastEquivalentCopyReroot_ = false;
         } else {
             lastInheritedVisits_ = inherited;
-            lastExactReroot_ = true;
+            lastExactReroot_ = !lastEquivalentCopyReroot_;
             lastFallbackReason_ = "none";
         }
     } else {
@@ -72,7 +84,13 @@ NativeSilverDecision NativeSilverAdvisorSession::extend(std::int64_t additional)
 NativeSilverDecision NativeSilverAdvisorSession::result(std::int64_t simulations) const {
     NativeSilverDecision out;
     const auto &rootNode = searcher_->rootNode();
-    const auto &state = searcher_->rootSearchState();
+    // The retained root may name another copy of an equivalent card than the
+    // live root; express every action against the live root.
+    const auto &searchState = searcher_->rootSearchState();
+    const auto &state = liveRoot_;
+    const auto live = [&](const sts::search::Action &action) {
+        return SilverSearcher::translateAction(action, searchState, state);
+    };
     if (rootNode.edges.empty()) {
         out.failureReason = "silver_no_legal_actions";
         return out;
@@ -80,7 +98,7 @@ NativeSilverDecision NativeSilverAdvisorSession::result(std::int64_t simulations
     try {
         for (const auto &edge : rootNode.edges) {
             NativeSilverRootSummary summary;
-            summary.action = sts::search::semanticFromSearchAction(state, edge.action);
+            summary.action = sts::search::semanticFromSearchAction(state, live(edge.action));
             summary.edgeVisits = edge.visitCount;
             if (edge.node != nullptr && edge.node->simulationCount > 0) {
                 summary.selectionQValid = true;
@@ -89,7 +107,7 @@ NativeSilverDecision NativeSilverAdvisorSession::result(std::int64_t simulations
             out.legalActions.push_back(summary.action);
             out.rootActionSummaries.push_back(std::move(summary));
         }
-        out.action = sts::search::semanticFromSearchAction(state, searcher_->bestAction());
+        out.action = sts::search::semanticFromSearchAction(state, live(searcher_->bestAction()));
     } catch (const std::exception &) {
         out.legalActions.clear();
         out.rootActionSummaries.clear();
@@ -100,8 +118,9 @@ NativeSilverDecision NativeSilverAdvisorSession::result(std::int64_t simulations
     out.simulations = simulations;
     out.rootVisits = rootNode.simulationCount;
     out.exactReroot = lastExactReroot_;
+    out.equivalentCopyReroot = lastEquivalentCopyReroot_;
     out.inheritedVisits = lastInheritedVisits_;
-    out.fallback = !lastExactReroot_;
+    out.fallback = !lastExactReroot_ && !lastEquivalentCopyReroot_;
     out.fallbackReason = lastFallbackReason_;
     return out;
 }

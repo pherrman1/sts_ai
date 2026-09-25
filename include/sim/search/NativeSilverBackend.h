@@ -63,6 +63,7 @@ namespace sts::search {
         std::int64_t reroots = 0;
         std::int64_t freshRoots = 0;
         std::int64_t singletonSkips = 0;   // one-action roots committed without search
+        std::int64_t equivalentCopyReroots = 0;   // reroots through another copy of an equivalent card
     };
     // Totals across all threads since installation.
     NativeSilverTotals nativeSilverTotals();

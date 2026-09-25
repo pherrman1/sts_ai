@@ -322,6 +322,55 @@ int testSilverSearcher() {
               "plays the lethal Strike");
     }
 
+    // Playing a different physical copy of an equivalent card finds the node
+    // the search expanded for the other copy, and its actions map back.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.cards.cardsInHand = 3;
+        bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[0].uniqueId = 90;
+        bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[1].uniqueId = 91;
+        bc.cards.hand[2] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[2].uniqueId = 92;
+        const BattleContext root = silverSearchRoot(bc);
+        search::SilverSearcher searcher(root, {});
+        searcher.search(400);
+        // The search expanded one Strike (the deduplicated edge); play the other.
+        int expanded = -1;
+        for (const auto &edge : searcher.rootNode().edges) {
+            if (edge.action.getActionType() == search::ActionType::CARD
+                    && root.cards.hand[edge.action.getSourceIdx()].id == CardId::STRIKE_RED) {
+                expanded = edge.action.getSourceIdx();
+            }
+        }
+        check(expanded >= 0, "search expanded a Strike");
+        BattleContext played = root;
+        search::Action(search::ActionType::CARD, expanded == 0 ? 1 : 0, 0).execute(played);
+        check(searcher.findNode(played) == nullptr, "the other copy is a different exact state");
+        auto *node = searcher.findNodeUpToEquivalentCopy(played);
+        check(node != nullptr && node->simulationCount > 0, "equivalent-copy lookup finds the expanded child");
+        if (node != nullptr) {
+            searcher.rerootAt(node, false);
+            searcher.search(50);
+            const auto action = search::SilverSearcher::translateAction(
+                searcher.bestAction(), searcher.rootSearchState(), played);
+            check(action.isValidAction(played), "retained action maps onto the played state");
+        }
+        BattleContext changed = root;
+        search::Action(search::ActionType::CARD, expanded == 0 ? 1 : 0, 0).execute(changed);
+        for (int i = 0; i < changed.cards.cardsInHand; ++i) {
+            if (changed.cards.hand[i].id == CardId::DEFEND_RED) changed.cards.hand[i].costForTurn = 0;
+        }
+        check(searcher.findNodeUpToEquivalentCopy(changed) == nullptr,
+              "a non-equivalent card difference is not remapped");
+    }
+
     // A root with one legal action exposes it without any simulation.
     {
         const GameContext gc(CharacterClass::IRONCLAD, 0x5EEEu, 0);

@@ -1775,15 +1775,16 @@ int main() {
             otherEquivalentSuccessor.observation);
         const auto otherEquivalentDecision = runSilverDecision(
             *otherEquivalentSession, otherEquivalentImported.wire, config);
-        // Native Silver has no equivalent-copy reroot (ADR-0022 supersedes
-        // ADR-0015): a different physical copy is a new search state.
+        // A different physical copy of an equivalent card reuses the retained
+        // branch through findNodeUpToEquivalentCopy.
         if (!otherEquivalentFirst.accepted || !otherEquivalentDecision.accepted
             || otherEquivalentDecision.diagnostic.exactReroot
-            || !otherEquivalentDecision.diagnostic.fallback
-            || otherEquivalentDecision.diagnostic.fallbackReason != "candidate_missing"
-            || otherEquivalentDecision.diagnostic.inheritedVisits != 0)
+            || !otherEquivalentDecision.diagnostic.equivalentCopyReroot
+            || otherEquivalentDecision.diagnostic.fallback
+            || otherEquivalentDecision.diagnostic.fallbackReason != "none"
+            || otherEquivalentDecision.diagnostic.inheritedVisits <= 0)
             throw std::runtime_error(
-                "different listed action's equivalent copy did not start a fresh root");
+                "different listed action's equivalent copy did not reuse its retained branch");
 
         auto equivalentSession = makeSilverSearchSession();
         const auto equivalentFirst = runSilverDecision(*equivalentSession, rerootImported.wire, config);
@@ -1793,15 +1794,23 @@ int main() {
             throw std::runtime_error("equivalent-copy reroot test accidentally relaxed global equality");
         const auto equivalentDecision = runSilverDecision(*equivalentSession, equivalentImported.wire, config);
         if (!equivalentDecision.accepted || equivalentDecision.diagnostic.exactReroot
-            || !equivalentDecision.diagnostic.fallback
-            || equivalentDecision.diagnostic.fallbackReason != "candidate_missing"
-            || equivalentDecision.diagnostic.inheritedVisits != 0
+            || !equivalentDecision.diagnostic.equivalentCopyReroot
+            || equivalentDecision.diagnostic.fallback
+            || equivalentDecision.diagnostic.fallbackReason != "none"
+            || equivalentDecision.diagnostic.inheritedVisits <= 0
             || equivalentDecision.rootActionSummaries.empty())
-            throw std::runtime_error("equivalent physical copy did not start a fresh root: exact="
+            throw std::runtime_error("equivalent physical copy did not reuse the retained root: exact="
                 + std::to_string(equivalentDecision.diagnostic.exactReroot)
                 + " fallback=" + std::to_string(equivalentDecision.diagnostic.fallback)
                 + " reason=" + equivalentDecision.diagnostic.fallbackReason
                 + " inherited=" + std::to_string(equivalentDecision.diagnostic.inheritedVisits));
+        // The retained root names the other copy; actions must name live hand cards.
+        for (const auto &summary : equivalentDecision.rootActionSummaries) {
+            if (summary.action.type != silver_bridge::SemanticActionType::CARD) continue;
+            const bool inHand = std::any_of(equivalentImported.wire.hand.begin(), equivalentImported.wire.hand.end(),
+                [&](const CardWire &card) { return card.uniqueId == summary.action.card.uniqueId; });
+            if (!inHand) throw std::runtime_error("equivalent-copy reroot lowered a card that is not in the live hand");
+        }
 
         auto changedStateSession = makeSilverSearchSession();
         const auto changedStateFirst = runSilverDecision(*changedStateSession, rerootImported.wire, config);
@@ -1811,6 +1820,7 @@ int main() {
         const auto changedStateDecision = runSilverDecision(*changedStateSession, changedStateWire, config);
         if (!changedStateFirst.accepted || !changedStateDecision.accepted
             || changedStateDecision.diagnostic.exactReroot
+            || changedStateDecision.diagnostic.equivalentCopyReroot
             || !changedStateDecision.diagnostic.fallback
             || changedStateDecision.diagnostic.fallbackReason != "candidate_missing"
             || changedStateDecision.diagnostic.inheritedVisits != 0)

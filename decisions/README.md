@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0023](0023-native-equivalent-copy-reroot.md) reroots native Silver
+  through a different physical copy of an equivalent card by an exchanged-id
+  lookup, restoring ADR-0015's intent.
 - [ADR-0022](0022-remove-vendored-silver.md) removes the vendored Silver model,
   its bridge, the root prior and the Silver research tools; frozen research
   contracts move to native Silver and vendored `silver_uct` teachers are

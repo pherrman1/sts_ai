@@ -38,6 +38,7 @@ namespace sts::search {
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
         std::atomic<std::int64_t> g_singletonSkips {0};
+        std::atomic<std::int64_t> g_equivalentCopyReroots {0};
 
         class KnowledgeObserverScope {
         public:
@@ -115,6 +116,11 @@ namespace sts::search {
                 }
                 std::int64_t inheritedVisits = 0;
                 SilverSearcher::Node *node = searcher ? searcher->findNode(root) : nullptr;
+                if (searcher && (node == nullptr || node->isRandomNode)) {
+                    // A different physical copy of an equivalent card was played.
+                    node = searcher->findNodeUpToEquivalentCopy(root);
+                    if (node != nullptr) ++g_equivalentCopyReroots;
+                }
                 if (node != nullptr && !node->isRandomNode) {
                     inheritedVisits = node->simulationCount;
                     const bool overCap = searcher->nodeCount() >= kReuseCap;
@@ -272,7 +278,7 @@ namespace sts::search {
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),
-                g_singletonSkips.load()};
+                g_singletonSkips.load(), g_equivalentCopyReroots.load()};
     }
 
 }
