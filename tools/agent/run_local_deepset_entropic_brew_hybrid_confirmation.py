@@ -75,8 +75,8 @@ def frozen_guard_bytes() -> bytes:
         )
     except subprocess.CalledProcessError as exc:
         raise confirmation.EvidenceError("cannot read seed_guard.sh from the frozen c9 source") from exc
-    confirmation.require(guard == (REPO_ROOT / "tools/seed_guard.sh").read_bytes(),
-                         "current seed guard differs from the frozen c9 guard")
+    confirmation.require(digest_bytes(guard) == merger.FROZEN_SEED_GUARD_SHA256,
+                         "seed_guard.sh from frozen c9 differs from the reviewed guard pin")
     return guard
 
 

@@ -10,6 +10,7 @@ import json
 import math
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -562,10 +563,16 @@ def self_test() -> None:
             fixture_root, "mixed"
         )
         manifest = confirmation.read_manifest(manifest_path)
+        frozen_guard = subprocess.check_output(
+            ["git", "show", f"{confirmation.FROZEN_SHA}:tools/seed_guard.sh"],
+            cwd=REPO_ROOT,
+        )
+        require(sha256_bytes(frozen_guard) == FROZEN_SEED_GUARD_SHA256,
+                "seed guard from frozen c9 differs from the reviewed guard pin")
         guard_path = root / "tools/seed_guard.sh"
         guard_path.parent.mkdir(parents=True)
-        shutil.copyfile(REPO_ROOT / "tools/seed_guard.sh", guard_path)
-        shutil.copymode(REPO_ROOT / "tools/seed_guard.sh", guard_path)
+        guard_path.write_bytes(frozen_guard)
+        guard_path.chmod(0o755)
 
         local_files: dict[str, Path] = {}
         arms = {arm: confirmation.manifest_arm(manifest, arm) for arm in ("C", "H")}

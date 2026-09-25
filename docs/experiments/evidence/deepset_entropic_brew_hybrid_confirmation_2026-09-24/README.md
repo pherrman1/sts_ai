@@ -90,13 +90,19 @@ snapshot; their recorded GCP blocker describes the preparation-time status.
 The run's `transportToolGitSha` value `7069518b5da3b38f4bac562a9b724de158814583`
 is the repository base HEAD recorded at launch; it does not identify the
 uncommitted local transport helper contents. The analyzer, merger, and runner
-source SHA256 values for the exact files included in this PR are respectively
+SHA256 values as used for the run were respectively
 `d2d8731b5dc146b9288c92959b232ce38245906640396c83d6ab9a7f755c9e27`,
 `7783a7505956be8d39a1b51dbd9d8629d9463be3189b1c90dc5f0e6844d64ecf`, and
 `b75fc06d8bd2d20b87098218066e4878143b8111ea706c6027c425311d5ce409`. The
-analyzer hash and working-tree diff hash are also in the local runtime
-provenance record; the helper hashes are recorded here because per-chunk
-receipts bind the launch base SHA, not helper-file contents.
+PR changes the merger/runner guard lookup to read the pinned c9 guard directly,
+so their current source hashes are now
+`d3153c98bb48026a865501afaa71008ba8383bbca45876166913c9721d653d23` and
+`3a38ff3d2dadd45c6342d49fcd5ee0e943cb9d60e7dbe7d71c6d8ef1bbfbff15`.
+This compatibility-only correction lets the helpers validate the frozen c9
+guard even when the current-main guard has advanced; the experiment itself
+used the same pinned c9 guard. The analyzer hash and working-tree diff hash are
+also in the local runtime provenance record; per-chunk receipts bind the
+launch base SHA, not helper-file contents.
 
 ## Preparation checks
 
