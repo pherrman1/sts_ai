@@ -29,10 +29,8 @@ namespace sts::search {
     extern thread_local std::function<void(const BattleContext&)> g_onCombatDecision;
 
     struct ScumSearchAgent2;
-    // Executable-installed combat backend. The core agent only calls this
-    // value; it has no dependency on the isolated Silver model, so unit-test
-    // targets that do not link the vendored model still build. one_combat
-    // installs Silver at startup (ADR-0020).
+    // Executable-installed combat backend. one_combat installs native Silver
+    // (NativeSilverBackend) at startup; tests may install stubs.
     // Process-wide, immutable after executable startup.  The callback must not
     // be thread-local: bestbench runs independent whole runs in OpenMP workers
     // and an opt-in combat backend selected at process startup must be visible
@@ -42,7 +40,7 @@ namespace sts::search {
         g_externalCombatBackend;
 
     struct ScumSearchAgent2 {
-        std::int64_t simulationCountTotal;
+        std::int64_t simulationCountTotal = 0;
         std::vector<int> gameActionHistory;
 
         int stepCount = 0;
@@ -73,7 +71,7 @@ namespace sts::search {
 
         // A backend installed through g_externalCombatBackend commits validated
         // live actions through this same method, preserving health checks and
-        // optional action logging without exposing a raw Silver action index.
+        // optional action logging.
         void takeAction(BattleContext &bc, Action a);
 
         // private methods

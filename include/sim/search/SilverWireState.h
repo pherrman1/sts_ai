@@ -33,8 +33,8 @@ namespace sts::search {
     silver_bridge::SemanticAction semanticFromSearchAction(const BattleContext &state,
                                                            const Action &action);
 
-    // Stable text identity of a semantic action (same format as the vendored
-    // bridge's semanticActionFingerprint).
+    // Stable text identity of a semantic action (the format of earlier
+    // advisor captures).
     std::string semanticFingerprint(const silver_bridge::SemanticAction &action);
 
 }

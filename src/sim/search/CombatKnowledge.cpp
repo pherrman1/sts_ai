@@ -1,4 +1,4 @@
-// Observational combat information state for the isolated Silver backend.
+// Observational combat information state for the Silver search.
 #include "sim/search/CombatKnowledge.h"
 
 #include <algorithm>
