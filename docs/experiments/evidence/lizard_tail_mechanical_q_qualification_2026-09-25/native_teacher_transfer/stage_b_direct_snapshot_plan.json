@@ -1,0 +1,279 @@
+{
+  "amendsPlan": {
+    "path": "stage_b_preoutcome_plan.json",
+    "reason": "The original campaign replay could not reach archived fight indices after native outcomes changed later campaign state. This was a harness defect, not a teacher-transfer result.",
+    "sha256": "2ee9b6d1b3c4c0ca05ee8a147713a463791f802387b8443d2bf8a86f4f057d97"
+  },
+  "archivedPairJsonl": {
+    "path": "../archived_pr326/fresh_qualified_pairs.jsonl",
+    "sha256": "ad297c0d189290d1956d9fb9a5f08e417f9861238e4986ba33f2f26c0be34d5b"
+  },
+  "archivedPairManifestSha256": "a8a38bb7f19a4e2a5ff6407eeb35c42fe886fa343c69cd841cc3ce6f7e42eb23",
+  "archivedTargetSelection": {
+    "path": "../archived_pr326/frozen_target_selection.json",
+    "sha256": "a78f4e8ddccc39769a9b01f9f4fc59195b79bdfd5ec427b062ee16a03605905b"
+  },
+  "baselineGitSha": "7d3c3530450372a7f3d0f47a640e26a736cecbff",
+  "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+  "collectorExecutableSha256": "6ae8a7720c7c04e2d2d54b96ad33dbe197b020b99a480fa197da49c49a139c13",
+  "collectorGitSha": "9871198e306846dda13597951fec79af03488784",
+  "createdAtUtc": "2026-09-25T12:19:23Z",
+  "decisionRule": {
+    "passAction": "Proceed to the separately assigned fresh 320-source native qualification only on this unchanged candidate and native teacher contract.",
+    "retainedWinDiagnostics": "descriptive only; do not add gates after outcomes",
+    "stopOn": [
+      "any predictor-input or persistent-state mismatch for a replayed target",
+      "any exact-support failure",
+      "any mechanical-q parity mismatch",
+      "any candidate-vs-B1 primary row unscoreable",
+      "any learned-r row unscoreable",
+      "any T2 domain-invalid or unscored row",
+      "any source-bootstrap 95% CI lower bound above zero for candidate-vs-B1 NLL/Brier in pooled/HARD/BROAD, learned-r NLL/Brier, or T2 HP/expected-HP/downstream metrics"
+    ],
+    "teacherBoundary": "Archived vendored and fresh native evidence remain separate; no pooling or cross-teacher bootstrap."
+  },
+  "directReplayAssertionsBeforeBranches": [
+    "archived target sourceSeed and fightIdx",
+    "archived predictorInput byte-equivalent JSON value",
+    "archived persistent preState byte-equivalent JSON value",
+    "ordinary and Lizard branches differ only by injected Tail"
+  ],
+  "excludedTargetRationale": "The archived predictor input identifies nine burning-elite targets, but archived CombatTransitionPersistentState does not contain Map.burningEliteBuff required by BattleContext::init. These nine targets are structurally unreplayable from the existing archive; no campaign rerun or inferred buff value is allowed.",
+  "executionEnvironment": {
+    "OMP_NUM_THREADS": "8",
+    "STS_EXECUTABLE_GIT_SHA": "9871198e306846dda13597951fec79af03488784",
+    "STS_FAIR": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0"
+  },
+  "guardedInvocation": {
+    "arguments": [
+      "build/linux-gcc-release/one_combat",
+      "combattransitionlizardtargetpairgen",
+      "119",
+      "10000",
+      "0",
+      "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs.jsonl",
+      "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_plan.json",
+      "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/native_silver_direct_replay_teacher.json",
+      "7d3c3530450372a7f3d0f47a640e26a736cecbff",
+      "9871198e306846dda13597951fec79af03488784"
+    ],
+    "environment": {
+      "OMP_NUM_THREADS": "8",
+      "STS_EXECUTABLE_GIT_SHA": "9871198e306846dda13597951fec79af03488784",
+      "STS_FAIR": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "guardRegime": "local seed_guard limit 128; no gcp-research override",
+    "launcher": "bash tools/seed_guard.sh",
+    "workingDirectory": "."
+  },
+  "nativeTeacherManifest": {
+    "backend": "native_silver",
+    "identity": "silver-ordinary-fair-exact10k-native-9871198e-omp8",
+    "path": "native_silver_direct_replay_teacher.json",
+    "rngRegime": "project_fair",
+    "sha256": "f59d1f2b934110ef121becaea8f13742ac20b544bd98f2a031b2845f09320152",
+    "simulationBudgets": [
+      10000
+    ]
+  },
+  "pairedArms": {
+    "interventionBranchLizard": "active_data_1",
+    "noOutcomeDependentSelection": true,
+    "ordinaryBranchLizard": "absent",
+    "sameArchivedPrecombatContext": true,
+    "sameSilverSearchRngSeed": true
+  },
+  "plannedOutput": {
+    "jsonl": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs.jsonl",
+    "manifest": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs.jsonl.manifest.json",
+    "writePolicy": "all-or-none; collector writes only after all 119 pairs complete"
+  },
+  "rArtifactSha256": "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9",
+  "recordedBeforeNativeOutcomes": true,
+  "replayMode": "persistent_snapshot_direct",
+  "schema": "lizard_tail_direct_snapshot_replay_plan_v1",
+  "simulationBudget": 10000,
+  "sourceAssignment": {
+    "assignedSources": 128,
+    "path": "../archived_pr326/source_assignment.json",
+    "sha256": "46af3ba0397d523da7017daaa92fa5c37813d496fbf5608a7069ea39398ee992"
+  },
+  "sourceSelection": {
+    "archivedTargets": 128,
+    "excludedBurningEliteTargets": [
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201016
+      },
+      {
+        "fightIdx": 5,
+        "sourceSeed": 4201026
+      },
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201030
+      },
+      {
+        "fightIdx": 20,
+        "sourceSeed": 4201031
+      },
+      {
+        "fightIdx": 20,
+        "sourceSeed": 4201055
+      },
+      {
+        "fightIdx": 4,
+        "sourceSeed": 4201070
+      },
+      {
+        "fightIdx": 16,
+        "sourceSeed": 4201089
+      },
+      {
+        "fightIdx": 14,
+        "sourceSeed": 4201103
+      },
+      {
+        "fightIdx": 6,
+        "sourceSeed": 4201113
+      }
+    ],
+    "replaySourceSeeds": [
+      4201000,
+      4201001,
+      4201002,
+      4201003,
+      4201004,
+      4201005,
+      4201006,
+      4201007,
+      4201008,
+      4201009,
+      4201010,
+      4201011,
+      4201012,
+      4201013,
+      4201014,
+      4201015,
+      4201017,
+      4201018,
+      4201019,
+      4201020,
+      4201021,
+      4201022,
+      4201023,
+      4201024,
+      4201025,
+      4201027,
+      4201028,
+      4201029,
+      4201032,
+      4201033,
+      4201034,
+      4201035,
+      4201036,
+      4201037,
+      4201038,
+      4201039,
+      4201040,
+      4201041,
+      4201042,
+      4201043,
+      4201044,
+      4201045,
+      4201046,
+      4201047,
+      4201048,
+      4201049,
+      4201050,
+      4201051,
+      4201052,
+      4201053,
+      4201054,
+      4201056,
+      4201057,
+      4201058,
+      4201059,
+      4201060,
+      4201061,
+      4201062,
+      4201063,
+      4201064,
+      4201065,
+      4201066,
+      4201067,
+      4201068,
+      4201069,
+      4201071,
+      4201072,
+      4201073,
+      4201074,
+      4201075,
+      4201076,
+      4201077,
+      4201078,
+      4201079,
+      4201080,
+      4201081,
+      4201082,
+      4201083,
+      4201084,
+      4201085,
+      4201086,
+      4201087,
+      4201088,
+      4201090,
+      4201091,
+      4201092,
+      4201093,
+      4201094,
+      4201095,
+      4201096,
+      4201097,
+      4201098,
+      4201099,
+      4201100,
+      4201101,
+      4201102,
+      4201104,
+      4201105,
+      4201106,
+      4201107,
+      4201108,
+      4201109,
+      4201110,
+      4201111,
+      4201112,
+      4201114,
+      4201115,
+      4201116,
+      4201117,
+      4201118,
+      4201119,
+      4201120,
+      4201121,
+      4201122,
+      4201123,
+      4201124,
+      4201125,
+      4201126,
+      4201127
+    ],
+    "replayedNonBurningTargets": 119,
+    "selectionRule": "Exact archived PR #326 target identity and precombat snapshots; no re-selection or replacement."
+  }
+}

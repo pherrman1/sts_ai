@@ -12362,30 +12362,40 @@ verdict, runtime defaults, or gameplay claims.
   HP absolute error screens. Only 9 `LOSS_CONSUMED` labels from 9 sources were
   present, below the qualification data floor. This is development evidence,
   not qualification.
-- **Stage B — native teacher-transfer diagnostic:** the exact same 128 selected
-  precombat states and frozen source assignments were replayed with current
-  `native_silver`, fair exact-10,000 configuration. No state is reselected.
-  After processing the assigned targets, the guarded collector reported its
-  first failing source in sorted order (`4201000`) and exited with code 134:
-  `selected fight not found or source trajectory incomplete`. It wrote no pair
-  JSONL or manifest. The collector reports the same error for either an
-  incomplete source trajectory or a selected fight that is absent, so which
-  condition occurred is unresolved. No source was replaced and the run was not
-  restarted; Stage B stopped under the exact-state failure rule. There are no
-  native labels, metrics, or agreement tables to report.
+- **Stage B — native teacher-transfer diagnostic:** the first collector attempt
+  replayed the campaign rather than loading the archived precombat snapshot.
+  Its raw failure record is retained in
+  `native_teacher_transfer/stage_b_collection_failure.json`; the source
+  trajectory changed under native Silver, so its “selected fight not found or
+  source trajectory incomplete” error is a **harness failure**, not a
+  teacher-transfer result or scientific stop. It wrote no pair JSONL or native
+  outcome labels. The corrected preregistered amendment,
+  `native_teacher_transfer/stage_b_direct_snapshot_plan.json`, uses the exact
+  119 non-burning archived snapshots and lists the nine burning-elite targets
+  as structurally unreplayable because the archived state omits
+  `burningEliteBuff`. No state is reselected; before either branch, the direct
+  collector verifies the exact archived predictor input and persistent state.
+  The addendum SHA-256 is
+  `764ef9f632917f6b43b3ca8df1d3db97d45f7ad8165c1d74b1f042d3c8c204de`; it pins
+  collector commit `9871198e306846dda13597951fec79af03488784`, the exact native
+  teacher manifest, and `OMP_NUM_THREADS=8`. The corrected native run has not
+  yet been performed, so there are no native scores or agreement tables.
 - **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
   assignment is frozen with an audited new source block and outcome-blind
-  BROAD32 salt. This stage was not started because Stage B failed. Separately,
-  the designated existing GCP worker was unavailable at preflight; no
-  replacement worker was created.
-- **Decision:** no qualification or production support change. Only a fresh
-  Stage C result may qualify this candidate, but Stage B did not pass and Stage
-  C did not run. The active Lizard production guard remains fail-closed.
+  BROAD32 salt. It remains pending the corrected Stage B diagnostic and
+  designated GCP research worker; the earlier worker preflight found
+  `sts-test` absent, and no replacement worker was created.
+- **Decision:** no qualification or production support change. Stage A remains
+  development evidence. Stage B's first attempt is classified as a harness
+  failure; the corrected direct-snapshot diagnostic is pending. Only a fresh
+  Stage C result may qualify this candidate. The active Lizard production guard
+  remains fail-closed.
 - **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
   including frozen cohort artifacts, Stage A analysis, candidate manifest,
   source assignment, native teacher manifest, the preregistered Stage B plan,
   and the [raw Stage B collection failure](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_collection_failure.json).
 
 Knowledge impact: current research records the archived post-hoc screen and
-separates it from the failed native transfer diagnostic and unrun fresh
-qualification. No runtime support changed.
+separates it from the superseded Stage B harness failure, the corrected direct
+snapshot transfer plan, and unrun fresh qualification. No runtime support
+changed.

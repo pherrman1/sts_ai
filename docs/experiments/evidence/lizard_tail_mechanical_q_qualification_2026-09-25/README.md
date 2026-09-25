@@ -59,33 +59,38 @@ This is development evidence only. It does not qualify the candidate.
 
 ## Stage B — same-state native teacher-transfer diagnostic
 
-The pre-outcome plan is `native_teacher_transfer/stage_b_preoutcome_plan.json`
-(SHA-256 `2ee9b6d1b3c4c0ca05ee8a147713a463791f802387b8443d2bf8a86f4f057d97`).
-It replays the exact PR #326 target selection and source block, with no
-reselection or replacement, under current native Silver at exact 10,000 fair
-simulations. The teacher manifest is
-`native_teacher_transfer/native_silver_teacher.json` (SHA-256
-`47ed18c791198d3e0774695f7f9b4313154748967be0c0156cda89e203d08024`), bound to
-collector commit `c122d367caaad0e02897304ca5602dcae45c4afd` and executable SHA-256
-`001c2f1610381945fc4fde905f6ca746b462b92c7902d8c7b8b7044ca8d6832d`.
-
-**Status: stopped on exact-state collection failure.** After processing the
-assigned targets, the guarded collector reported its first failing source in
-sorted order (`4201000`) and exited with code 134:
-
-```text
-targeted Lizard pair failed for source 4201000: selected fight not found or source trajectory incomplete
-```
-
-No pair JSONL or manifest was written, so Stage B has no persisted native
-outcome rows or score metrics. The collector's error combines two cases—an
-incomplete source trajectory and a missing selected fight—and does not
-distinguish them. No source was replaced and the cohort was not restarted. This triggers the
-predeclared exact-state stop rule. There is no cross-teacher pooling or
-bootstrap. The invocation, hashes, configuration, exit code, raw error, and
-output accounting are preserved in
+The original campaign-replay attempt used the plan in
+`native_teacher_transfer/stage_b_preoutcome_plan.json` and produced no pair
+outcomes. Its raw failure record remains
 `native_teacher_transfer/stage_b_collection_failure.json` (SHA-256
-`c60f9c1559512ce86f4230450b9a7c1dde8d13629c63be7896f3c3ffb42fdaba`).
+`c60f9c1559512ce86f4230450b9a7c1dde8d13629c63be7896f3c3ffb42fdaba`). The
+collector replayed the campaign with native Silver and could not reach the
+archived fight index. Since campaign outcomes alter later campaign state, this
+is a **harness failure**, not a teacher-transfer failure and not a scientific
+stop result. Do not interpret its generic error as an archived-state mismatch.
+
+The corrected plan uses direct persistent-snapshot replay from the canonical
+`archived_pr326/frozen_target_selection.json`; it does not rerun or reconstruct
+the campaign. It keeps all 119 non-burning targets byte-identical to the
+archived selection and preregisters the nine burning-elite targets as
+structurally unreplayable because the archive lacks `burningEliteBuff`. The
+plan is `native_teacher_transfer/stage_b_direct_snapshot_plan.json` (SHA-256
+`764ef9f632917f6b43b3ca8df1d3db97d45f7ad8165c1d74b1f042d3c8c204de`). Its
+native teacher manifest is
+`native_teacher_transfer/native_silver_direct_replay_teacher.json` (SHA-256
+`f59d1f2b934110ef121becaea8f13742ac20b544bd98f2a031b2845f09320152`), bound
+to collector commit `9871198e306846dda13597951fec79af03488784` and executable
+SHA-256 `6ae8a7720c7c04e2d2d54b96ad33dbe197b020b99a480fa197da49c49a139c13`.
+The collector verifies the full archived predictor input and persistent
+snapshot before either paired branch, uses current native Silver at exact
+10,000 fair simulations, and runs with `OMP_NUM_THREADS=8`.
+
+**Status: corrected replay not yet run.** It remains a diagnostic on a
+historically selected cohort and cannot qualify the candidate. If run, native
+and archived-vendored rows remain separate; only exact-source/state matches
+are included in descriptive label and outcome agreement tables. No rows are
+pooled or bootstrapped across teachers. Stage C cannot start unless this
+diagnostic passes its predeclared checks.
 
 ## Stage C — fresh native qualification assignment
 
@@ -101,9 +106,9 @@ The assignment is frozen in `fresh_native/source_assignment.json` (SHA-256
   has no intersection.
 
 Stage C is not a continuation of either earlier evidence domain. It may run
-only if Stage B passes, on the frozen candidate and current native Silver, via
-the designated GCP research path. Stage C was not started because Stage B
-failed. The designated existing worker was also absent at preflight
+only if the corrected Stage B passes, on the frozen candidate and current
+native Silver, via the designated GCP research path. Stage C has not started.
+The designated existing worker was absent at the earlier preflight
 (`projects/sts-ai-502709/zones/europe-west3-c/instances/sts-test` not found);
 no replacement worker is authorized or created. Only Stage C may qualify the
 candidate.

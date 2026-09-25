@@ -943,14 +943,17 @@ A follow-up keeps the PR #326 learned `r` and T2 rule frozen while setting
 mechanical-q candidate improved pooled three-class NLL and Brier against B1,
 with exact q parity and support on all rows; the 9 `LOSS_CONSUMED` labels from
 9 sources remain below the qualification floor. This archived post-hoc screen
-is development evidence only. A same-state native-Silver transfer diagnostic
-processed its assigned targets but reported an exact-state collection failure
-for source `4201000`; the collector's error does not distinguish an absent
-selected fight from an incomplete source trajectory. No pair output was
-written, so there are no native transfer scores. The distinct fresh
-320-source native qualification was not started, and the designated GCP worker
-was unavailable at preflight. Therefore no Lizard candidate is qualified and
-production remains `active_unqualified_lizard`. See [ledger §354](../../experiments/ledger-06.md)
+is development evidence only. The first native-Silver transfer attempt
+replayed the campaign and failed to reach an archived fight index after the
+native outcomes changed the later trajectory. That is a harness failure, not
+a teacher-transfer result; it produced no native pair rows or scores. The
+corrected plan directly restores the 119 exact non-burning PR #326 persistent
+snapshots and excludes only the nine burning-elite targets whose archived
+states lack `burningEliteBuff`. It has not yet run. The distinct fresh
+320-source native qualification remains pending the corrected transfer
+diagnostic; the designated GCP worker was unavailable at the earlier
+preflight. Therefore no Lizard candidate is qualified and production remains
+`active_unqualified_lizard`. See [ledger §354](../../experiments/ledger-06.md)
 and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
