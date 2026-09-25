@@ -9,9 +9,9 @@
       "WIN_CONSUMED": 53,
       "WIN_RETAINED": 362
     },
-    "currentCodeShaAtFreeze": "e9229cd13d67cf644d148ab2496d39fd8bb1e120",
+    "currentCodeShaAtFreeze": "842457c53672f0c754ea9941d0a0494ffba60eaf",
     "duplicateFightKeysDropped": 35,
-    "fitImplementationSha256": "9abe91846c892e6794e08177b823502fa6820e2658253296cb1f9531a002b821",
+    "fitImplementationSha256": "1994d6ca5213958e9139c06c63a7c9f5c69a66bfdb4434a412b238a5b34ac380",
     "fullSupportExclusions": {
       "entropic_brew": 1,
       "gold_mutating_card": 3,
