@@ -1145,9 +1145,32 @@ void activeLizardPairTransitionGen(
             || !targetSpec.contains("excludedBurningEliteTargets")
             || !targetSpec.at("excludedBurningEliteTargets").is_array())
             throw std::runtime_error("invalid direct snapshot replay plan");
+        if (targetSpec.value("baselineGitSha", std::string{}) != baselineSha
+            || targetSpec.value("collectorGitSha", std::string{}) != collectorSha
+            || targetSpec.value("collectorExecutableSha256", std::string{})
+                != fileSha256(g_mainBinaryPath))
+            throw std::runtime_error("direct replay plan collector or baseline provenance mismatch");
+        if (!targetSpec.contains("nativeTeacherManifest")
+            || !targetSpec.at("nativeTeacherManifest").is_object())
+            throw std::runtime_error("direct replay plan is missing native teacher provenance");
+        const auto planDirectory = std::filesystem::path(targetPath).parent_path();
+        auto resolvePlanPath = [&](const nlohmann::json &artifact) {
+            std::filesystem::path path = artifact.at("path").get<std::string>();
+            if (path.is_relative()) path = planDirectory / path;
+            return std::filesystem::weakly_canonical(path);
+        };
+        const auto plannedTeacherPath = resolvePlanPath(targetSpec.at("nativeTeacherManifest"));
+        if (plannedTeacherPath != std::filesystem::weakly_canonical(teacherPath)
+            || fileSha256(plannedTeacherPath.string())
+                != targetSpec.at("nativeTeacherManifest").at("sha256").get<std::string>()
+            || targetSpec.at("nativeTeacherManifest").value("identity", std::string{}) != teacher.id
+            || teacher.specification.value("git_sha", std::string{}) != collectorSha
+            || teacher.specification.value("executable_sha256", std::string{})
+                != fileSha256(g_mainBinaryPath))
+            throw std::runtime_error("direct replay plan native teacher provenance mismatch");
         selectionPath = targetSpec.at("archivedTargetSelection").at("path").get<std::string>();
         if (selectionPath.is_relative())
-            selectionPath = std::filesystem::path(targetPath).parent_path() / selectionPath;
+            selectionPath = planDirectory / selectionPath;
         selectionPath = std::filesystem::weakly_canonical(selectionPath);
         if (!std::filesystem::is_regular_file(selectionPath)
             || fileSha256(selectionPath.string()) != targetSpec.at("archivedTargetSelection").at("sha256").get<std::string>())
@@ -1214,6 +1237,13 @@ void activeLizardPairTransitionGen(
     if (!std::is_sorted(targetSeeds.begin(), targetSeeds.end()) ||
         std::adjacent_find(targetSeeds.begin(), targetSeeds.end()) != targetSeeds.end())
         throw std::runtime_error("target selection source seeds must be unique and ascending");
+    if (directSnapshotReplay) {
+        std::vector<long long> plannedSeeds;
+        for (const auto &source : targetSpec.at("sourceSelection").at("replaySourceSeeds"))
+            plannedSeeds.push_back(source.get<long long>());
+        if (plannedSeeds != targetSeeds)
+            throw std::runtime_error("direct replay source list differs from the preregistered plan");
+    }
     std::vector<nlohmann::json> pairRows(nSeeds);
     std::vector<int> completedByTarget(nSeeds, 0);
     std::vector<std::string> errors(nSeeds);

@@ -149,6 +149,28 @@ def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None
                 or replay_plan.get('archivedTargetSelection', {}).get('sha256')
                     != manifest['targetSelection']['sha256']):
             raise ValueError('direct replay plan does not bind the target selection')
+        if (manifest['baselineGitSha'] != replay_plan.get('baselineGitSha')
+                or manifest['producerGitSha'] != replay_plan.get('collectorGitSha')
+                or manifest['producerExecutableSha256']
+                    != replay_plan.get('collectorExecutableSha256')):
+            raise ValueError('direct replay producer differs from the frozen plan')
+        teacher_plan = replay_plan.get('nativeTeacherManifest', {})
+        teacher_file = _resolve_manifest_file(teacher_plan.get('path', ''), replay_plan_file.parent)
+        if (sha256(teacher_file) != teacher_plan.get('sha256')
+                or teacher_plan.get('identity') != teacher.get('teacher_id')
+                or json.loads(teacher_file.read_text()) != teacher
+                or teacher.get('git_sha') != replay_plan.get('collectorGitSha')
+                or teacher.get('executable_sha256') != replay_plan.get('collectorExecutableSha256')
+                or teacher.get('environment') != replay_plan.get('executionEnvironment')):
+            raise ValueError('direct replay native teacher differs from the frozen plan')
+        selection_ref = Path(replay_plan['archivedTargetSelection']['path'])
+        if selection_ref.is_relative():
+            selection_ref = replay_plan_file.parent / selection_ref
+        selection_ref = selection_ref.resolve()
+        packet_root = manifest_path.parent.parent.resolve()
+        if (packet_root not in selection_ref.parents or not selection_ref.is_file()
+                or sha256(selection_ref) != manifest['targetSelection']['sha256']):
+            raise ValueError('direct replay plan does not resolve to the canonical archived selection')
         expected_excluded = {
             (4201016, 12), (4201026, 5), (4201030, 12), (4201031, 20),
             (4201055, 20), (4201070, 4), (4201089, 16), (4201103, 14),
