@@ -12358,3 +12358,20 @@ per-run time 38.58 s vs 36.09 s (−6.5%).
 
 Decision: adopt as the native default; no detectable gameplay difference, 6.5%
 faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton_bypass_2026-09-25/README.md).
+
+## §355 — Native equivalent-copy reroot: paired 128-seed check (2026-09-25)
+
+Change (ADR-0023, issue #327): when the exact node lookup misses, native Silver
+retries with the unique ids of one pair of search-equivalent cards exchanged,
+so playing a different physical copy than the one the search expanded reuses
+that branch. The advisor translates retained actions onto the live root.
+
+Setup: Release control from `main` `0eed6993` vs the branch, 4 threads,
+adaptive Silver, `bestbench 1000 128 0 126700`.
+
+Result: control 86/128, treatment 89/128; paired +2.3 pp, 95% CI [−3.2, +7.9]
+pp; discordant 8/5 (McNemar z = +0.83). Mean floor 47.42 vs 48.11. Mean
+per-run time 38.36 s vs 39.30 s (+2.5%).
+
+Decision: adopt; no detectable gameplay difference and restores ADR-0015's
+reuse. Evidence: [native_equivalent_copy_reroot_2026-09-25](evidence/native_equivalent_copy_reroot_2026-09-25/README.md).
