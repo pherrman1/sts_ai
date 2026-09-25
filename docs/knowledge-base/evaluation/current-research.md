@@ -938,6 +938,21 @@ packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README
 [broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
 and [ledger §347](../../experiments/ledger-06.md).
 
+A follow-up keeps the PR #326 learned `r` and T2 rule frozen while setting
+`q = 1 - pOrdinaryWin`. On the exact archived 128-row vendored cohort, the
+mechanical-q candidate improved pooled three-class NLL and Brier against B1,
+with exact q parity and support on all rows; the 9 `LOSS_CONSUMED` labels from
+9 sources remain below the qualification floor. This archived post-hoc screen
+is development evidence only. A same-state native-Silver transfer diagnostic
+processed its assigned targets but reported an exact-state collection failure
+for source `4201000`; the collector's error does not distinguish an absent
+selected fight from an incomplete source trajectory. No pair output was
+written, so there are no native transfer scores. The distinct fresh
+320-source native qualification was not started, and the designated GCP worker
+was unavailable at preflight. Therefore no Lizard candidate is qualified and
+production remains `active_unqualified_lizard`. See [ledger §353](../../experiments/ledger-06.md)
+and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
+
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
 over 11 maxHP classes, and 32 ancestral draws for potion/relic and complete states,

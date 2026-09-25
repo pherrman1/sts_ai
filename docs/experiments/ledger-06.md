@@ -12159,3 +12159,54 @@ result and its one shared technical failure. No default or quality gate changed.
 Knowledge impact: current research now records the updated-baseline replay
 and its shared technical failure. The prior comparison remains preserved as
 historical evidence; no default or quality gate changed.
+
+## §353 — Mechanical-q Lizard Tail post-hoc screen and native transfer (2026-09-25)
+
+- **Question:** Does replacing the learned ordinary-win probability `q` with
+  `1 - pOrdinaryWin`, while preserving the frozen learned `r` artifact and T2
+  rule from PR #326, remove the q regression without introducing a score or
+  support failure?
+- **Candidate:** mechanical `q = 1 - pOrdinaryWin`; unchanged learned `r` from
+  PR #326 (artifact SHA-256
+  `9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9`); T2
+  remains `floor(maxHP / 2)` on consumed-Tail wins. No r refit, T2 edit, or
+  production integration.
+- **Stage A — archived vendored post-hoc screen:** scored only the exact 128
+  paired rows and CTM predictions frozen in PR #326. The vendored Silver teacher
+  is retired on current main and was not rerun. Mechanical q had exact parity
+  and candidate support on all 128 rows. The pooled candidate-minus-B1
+  three-class NLL delta was `-5.44160` (source-bootstrap 95% CI
+  `[-16.24698, -0.00910]`), and the multiclass Brier delta was `-0.04653`
+  (95% CI `[-0.07691, -0.01735]`). The unchanged learned-r NLL/Brier deltas on
+  45 consumed rows were `-0.91805` / `-0.09034`, with both intervals strictly
+  below zero. The unchanged T2 rule passed its paired HP NLL, CRPS, and expected
+  HP absolute error screens. Only 9 `LOSS_CONSUMED` labels from 9 sources were
+  present, below the qualification data floor. This is development evidence,
+  not qualification.
+- **Stage B — native teacher-transfer diagnostic:** the exact same 128 selected
+  precombat states and frozen source assignments were replayed with current
+  `native_silver`, fair exact-10,000 configuration. No state is reselected.
+  After processing the assigned targets, the guarded collector reported its
+  first failing source in sorted order (`4201000`) and exited with code 134:
+  `selected fight not found or source trajectory incomplete`. It wrote no pair
+  JSONL or manifest. The collector reports the same error for either an
+  incomplete source trajectory or a selected fight that is absent, so which
+  condition occurred is unresolved. No source was replaced and the run was not
+  restarted; Stage B stopped under the exact-state failure rule. There are no
+  native labels, metrics, or agreement tables to report.
+- **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
+  assignment is frozen with an audited new source block and outcome-blind
+  BROAD32 salt. This stage was not started because Stage B failed. Separately,
+  the designated existing GCP worker was unavailable at preflight; no
+  replacement worker was created.
+- **Decision:** no qualification or production support change. Only a fresh
+  Stage C result may qualify this candidate, but Stage B did not pass and Stage
+  C did not run. The active Lizard production guard remains fail-closed.
+- **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
+  including frozen cohort artifacts, Stage A analysis, candidate manifest,
+  source assignment, native teacher manifest, the preregistered Stage B plan,
+  and the [raw Stage B collection failure](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_collection_failure.json).
+
+Knowledge impact: current research records the archived post-hoc screen and
+separates it from the failed native transfer diagnostic and unrun fresh
+qualification. No runtime support changed.
