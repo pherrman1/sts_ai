@@ -96,11 +96,18 @@ def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None
         'producerExecutableSha256', 'baselineGitSha', 'combatTeacher',
         'combatTeacherManifestSha256', 'seedSpec', 'jsonl', 'integrity', 'protocol',
     }
-    targeted = manifest.get('schema') == 'lizard_tail_targeted_paired_transition_pilot_v1'
-    expected_keys = required | ({'targetSelection', 'sourceSeeds'} if targeted else set())
+    direct_snapshot = manifest.get('schema') == 'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1'
+    targeted = manifest.get('schema') in (
+        'lizard_tail_targeted_paired_transition_pilot_v1',
+        'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1')
+    targeted_keys = {'targetSelection', 'sourceSeeds'} if targeted else set()
+    if direct_snapshot:
+        targeted_keys.add('directReplayPlan')
+    expected_keys = required | targeted_keys
     if (set(manifest) != expected_keys or manifest['schema'] not in (
             'lizard_tail_paired_transition_pilot_v1',
-            'lizard_tail_targeted_paired_transition_pilot_v1')):
+            'lizard_tail_targeted_paired_transition_pilot_v1',
+            'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1')):
         raise ValueError('paired pilot manifest keys/schema mismatch')
     if manifest['rowSchemaVersion'] != ROW_SCHEMA_VERSION or manifest['predictorInputSchemaVersion'] != PREDICTOR_SCHEMA:
         raise ValueError('paired pilot transition schema mismatch')
@@ -126,24 +133,79 @@ def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None
             raise ValueError('target-selection file missing or hash mismatch')
         targets = json.loads(target_file.read_text())
         if (targets.get('schema') != 'lizard_tail_risk_target_selection_v1'
-                or len(targets.get('targets', [])) != int(manifest['seedSpec']['count'])):
+                or not isinstance(targets.get('targets'), list)
+                or (not direct_snapshot
+                    and len(targets.get('targets', [])) != int(manifest['seedSpec']['count']))
+                or (direct_snapshot and len(targets.get('targets', [])) != 128)):
             raise ValueError('invalid risk target selection file')
-    selected_state_policy = (targets.get('stateSelection', 'preoutcome_ctm_death_risk_bands')
-                             if targeted else None)
+    if direct_snapshot:
+        replay_plan_file = _resolve_manifest_file(
+            manifest['directReplayPlan']['path'], manifest_path.parent)
+        if sha256(replay_plan_file) != manifest['directReplayPlan'].get('sha256'):
+            raise ValueError('direct replay plan missing or hash mismatch')
+        replay_plan = json.loads(replay_plan_file.read_text())
+        if (replay_plan.get('schema') != 'lizard_tail_direct_snapshot_replay_plan_v1'
+                or replay_plan.get('replayMode') != 'persistent_snapshot_direct'
+                or replay_plan.get('archivedTargetSelection', {}).get('sha256')
+                    != manifest['targetSelection']['sha256']):
+            raise ValueError('direct replay plan does not bind the target selection')
+        expected_excluded = {
+            (4201016, 12), (4201026, 5), (4201030, 12), (4201031, 20),
+            (4201055, 20), (4201070, 4), (4201089, 16), (4201103, 14),
+            (4201113, 6),
+        }
+        actual_excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in replay_plan.get('excludedBurningEliteTargets', [])}
+        manifest_excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in manifest['directReplayPlan'].get('excludedBurningEliteTargets', [])}
+        if actual_excluded != expected_excluded or manifest_excluded != expected_excluded:
+            raise ValueError('direct replay exclusions differ from the preregistered burning-elite identities')
+        targets_by_key = {
+            (int(row['sourceSeed']), int(row['fightIdx'])): row
+            for row in targets['targets']}
+        if len(targets_by_key) != 128 or any(
+                key not in targets_by_key
+                or not targets_by_key[key]['predictorInput']['globals']['isBurningElite']
+                for key in expected_excluded):
+            raise ValueError('direct replay exclusions are not the exact archived burning-elite targets')
+        if any(row['predictorInput']['globals']['isBurningElite']
+               for key, row in targets_by_key.items() if key not in expected_excluded):
+            raise ValueError('unregistered burning-elite target in direct replay selection')
+    selected_state_policy = (
+        'direct_archived_snapshot_replay_nonburning_subset_v1' if direct_snapshot else
+        targets.get('stateSelection', 'preoutcome_ctm_death_risk_bands') if targeted else None)
     if targeted and selected_state_policy not in (
             'preoutcome_ctm_death_risk_bands',
             'predeclared_qr_hard96_broad32_hash_v1',
-            'predeclared_mechanical_q_hard288_broad32_hash_v1'):
+            'predeclared_mechanical_q_hard288_broad32_hash_v1',
+            'direct_archived_snapshot_replay_nonburning_subset_v1'):
         raise ValueError('unsupported targeted state-selection policy')
     protocol = {
         'samePrecombatContext': True, 'sameSilverSearchRngSeed': True,
         'ordinaryBranchLizard': 'absent', 'interventionBranchLizard': 'active_data_1',
         'stateSelection': (selected_state_policy if targeted
                            else 'uniform_reservoir_without_outcome_filter'),
-        'markOfBloom': 'eligible_states_excluded', 'sourceTrajectory': 'untouched_normal_policy',
+        'markOfBloom': 'eligible_states_excluded', 'sourceTrajectory': (
+            'not_replayed_direct_snapshot' if direct_snapshot else 'untouched_normal_policy'),
     }
     if manifest['protocol'] != protocol:
         raise ValueError('paired pilot protocol mismatch')
+    target_by_seed = ({int(row['sourceSeed']): row for row in targets['targets']}
+                      if targeted else {})
+    selected_by_seed = ({int(seed): target_by_seed.get(int(seed))
+                         for seed in manifest.get('sourceSeeds', [])} if targeted else {})
+    if targeted and any(target is None for target in selected_by_seed.values()):
+        raise ValueError('targeted pair source is absent from frozen target selection')
+    if direct_snapshot:
+        excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in manifest['directReplayPlan']['excludedBurningEliteTargets']}
+        expected_seeds = sorted({int(row['sourceSeed']) for row in targets['targets']}
+                                - {seed for seed, _ in excluded})
+        if manifest['sourceSeeds'] != expected_seeds:
+            raise ValueError('direct replay source list is not the exact non-burning archive subset')
     seed_spec = manifest['seedSpec']
     if not isinstance(seed_spec, dict) or set(seed_spec) != {'start', 'count'}:
         raise ValueError('invalid seedSpec')
@@ -174,9 +236,14 @@ def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None
         seen.add(seed)
         eligible = int(meta.get('eligibleBattlesInSource', 0))
         ordinal = int(meta.get('selectedEligibleOrdinal', 0))
-        if eligible < 1 or not 1 <= ordinal <= eligible or int(meta.get('fightIdx', -1)) < 0:
+        if direct_snapshot:
+            if (meta.get('replayMode') != 'direct_archived_snapshot'
+                    or eligible != 0 or ordinal != 0
+                    or int(meta.get('fightIdx', -1)) < 0):
+                raise ValueError('invalid direct snapshot replay metadata')
+        elif eligible < 1 or not 1 <= ordinal <= eligible or int(meta.get('fightIdx', -1)) < 0:
             raise ValueError('invalid selected fight metadata')
-        target = targets['targets'][index] if targeted else None
+        target = selected_by_seed.get(seed) if targeted else None
         if targeted and (
                 int(target['sourceSeed']) != seed
                 or int(target['fightIdx']) != int(meta['fightIdx'])

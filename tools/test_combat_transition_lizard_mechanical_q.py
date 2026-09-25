@@ -226,12 +226,26 @@ class MechanicalQLizardTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'exact pinned PR #326 packet'):
                 analyzer._validate_existing_screen_packet_header(path)
 
+    def test_execution_failures_are_not_statistical_rejections(self):
+        self.assertEqual(analyzer._qualification_classification(
+            invalid_execution=True, nonrare_gates_pass=False,
+            rare_event_floor_pass=False),
+            'LIZARD_NATIVE_QUALIFICATION_INVALID_EXECUTION')
+        self.assertEqual(analyzer._qualification_classification(
+            invalid_execution=False, nonrare_gates_pass=False,
+            rare_event_floor_pass=True),
+            'ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_REJECTED')
+        self.assertEqual(analyzer._qualification_classification(
+            invalid_execution=False, nonrare_gates_pass=True,
+            rare_event_floor_pass=False),
+            'LIZARD_MECHANICAL_Q_NATIVE_QUALIFICATION_INCONCLUSIVE_RARE_EVENT')
+
     def test_native_transfer_agreement_compares_only_exact_matched_states(self):
-        def pair(no_tail_outcome, active_tail_outcome, *, pre_value=5):
+        def pair(no_tail_outcome, active_tail_outcome, *, pre_value=5, source=4201000):
             pre = {'marker': pre_value}
             predictor = {'marker': pre_value}
             return {
-                'pair': {'sourceSeed': 4201000, 'fightIdx': 4,
+                'pair': {'sourceSeed': source, 'fightIdx': 4,
                          'sourceStateFingerprint': f'state-{pre_value}',
                          'activeTailPostData': 0},
                 'noTail': {'transition': {'pre': pre, 'combatOutcome': no_tail_outcome},
@@ -256,6 +270,11 @@ class MechanicalQLizardTests(unittest.TestCase):
         self.assertEqual(state_mismatch['exactPrecombatStateRows'], 0)
         self.assertEqual(state_mismatch['stateMismatchRows'], 1)
         self.assertEqual(state_mismatch['threeClassLabelAgreement']['comparedRows'], 0)
+        archived_with_exclusion = archived + [pair(pilot.WIN, pilot.WIN, source=4201001)]
+        subset = analyzer._native_transfer_agreement(archived_with_exclusion, native)
+        self.assertEqual(subset['nativeRows'], 1)
+        self.assertEqual(subset['archivedRowsNotReplayed'], 1)
+        self.assertEqual(subset['exactPrecombatStateRows'], 1)
 
 
 if __name__ == '__main__':

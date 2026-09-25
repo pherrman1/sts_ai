@@ -4,6 +4,9 @@
 // one_combat/driver_shared.h.
 
 #include "one_combat/driver_shared.h"
+#include "one_combat/combat_predictor_input.h"
+
+#include <set>
 
 // ---------------------------------------------------------------------------
 // Combat feature header/row for whole-combat datasets. They delegate to the
@@ -968,12 +971,155 @@ static nlohmann::json runActiveLizardPairSeed(
     return nlohmann::json::object();
 }
 
+static nlohmann::json runActiveLizardPairFromSnapshot(
+    std::uint64_t seed, int sims, int asc, const WholeCombatTeacher &teacher,
+    const nlohmann::json &target, nlohmann::json &pairMeta) {
+    trainingRunStart();
+    const auto &frozenInput = target.at("predictorInput");
+    const auto &globals = frozenInput.at("globals");
+    const int act = globals.at("act").get<int>();
+    const int floor = globals.at("floor").get<int>();
+    const auto encounter = static_cast<MonsterEncounter>(globals.at("encounter").get<int>());
+    const auto room = static_cast<Room>(globals.at("roomClass").get<int>());
+    const auto lastRoom = static_cast<Room>(globals.at("lastRoom").get<int>());
+    if (globals.at("characterClass").get<int>() != static_cast<int>(CharacterClass::IRONCLAD)
+        || globals.at("ascension").get<int>() != asc
+        || globals.at("isBurningElite").get<bool>())
+        throw std::runtime_error("direct snapshot replay requires a non-burning Ironclad target at the requested ascension");
+
+    GameContext source(CharacterClass::IRONCLAD, seed, asc);
+    source.act = act;
+    source.floorNum = floor;
+    source.curRoom = room;
+    source.lastRoom = lastRoom;
+    source.info.encounter = encounter;
+    source.screenState = ScreenState::BATTLE;
+    source.outcome = GameOutcome::UNDECIDED;
+    source.skipBattles = false;
+    source.curMapNodeX = 0;
+    source.curMapNodeY = 0;
+    source.map = std::make_shared<Map>(Map::fromSeed(seed, asc, act, false));
+    source.map->burningEliteX = -1;
+    source.map->burningEliteY = -1;
+    source.map->burningEliteBuff = -1;
+    one_combat::applyCombatTransitionState(
+        source, one_combat::combatTransitionStateFromJson(target.at("preState")));
+    const double frozenPotionKeep = globals.at("potionKeepValue").get<double>();
+    const auto reproducedInput = one_combat::combatPredictorInputJson(
+        one_combat::captureCombatPredictorInput(source, encounter, frozenPotionKeep));
+    if (reproducedInput != frozenInput)
+        throw std::runtime_error("direct snapshot replay did not reproduce the archived predictor input");
+    const auto sourceBefore = one_combat::combatTransitionFingerprint(source);
+    if (sourceBefore != target.at("preState").dump())
+        throw std::runtime_error("direct snapshot replay did not reproduce the archived persistent state");
+
+    PathHistory selectedPath;
+    t_curPath = &selectedPath;
+    GameContext noTail = detachedCounterfactualCopy(source);
+    GameContext activeTail = detachedCounterfactualCopy(noTail);
+    activeTail.obtainRelic(RelicId::LIZARD_TAIL);
+    activeTail.relics.getRelicValueRef(RelicId::LIZARD_TAIL) = 1;
+    GameContext normalizedActive = detachedCounterfactualCopy(activeTail);
+    normalizedActive.relics.remove(RelicId::LIZARD_TAIL);
+    if (one_combat::combatTransitionFingerprint(normalizedActive) != sourceBefore)
+        throw std::runtime_error("direct Lizard pair differs beyond the injected relic");
+
+    auto runBranch = [&](GameContext &branch) {
+        const GameContext pre = detachedCounterfactualCopy(branch);
+        const auto predictorInput = one_combat::combatPredictorInputJson(
+            one_combat::captureCombatPredictorInput(
+                branch, static_cast<MonsterEncounter>(globals.at("encounter").get<int>()),
+                frozenPotionKeep));
+        std::optional<one_combat::CombatTransitionRecord> record;
+        int rawCaptureCount = 0;
+        search::ScumSearchAgent2 branchAgent;
+        branchAgent.simulationCountBase = sims;
+        branchAgent.rng = std::default_random_engine(seed);
+        branchAgent.recordActions = true;
+        BattleContext battle;
+        {
+            one_combat::CombatTransitionRawObserverScope scope(
+                [&](const BattleContext &ended, GameContext &raw) {
+                    ++rawCaptureCount;
+                    if (rawCaptureCount == 1)
+                        record = one_combat::captureCombatTransition(pre, ended, raw);
+                });
+            branchAgent.playoutBattle(branch, battle);
+            const bool decided = battle.outcome != Outcome::UNDECIDED;
+            const bool valid = trainingRunValid(decided);
+            battle.exitBattle(branch);
+            auto row = combatTransitionRowJson(
+                seed, target.at("fightIdx").get<int>(), act, floor, room,
+                static_cast<int>(encounter),
+                teacher.id, valid, decided, rawCaptureCount, record, predictorInput);
+            nlohmann::json actionTrace = nlohmann::json::array();
+            for (const int bits : branchAgent.gameActionHistory)
+                actionTrace.push_back(static_cast<std::uint32_t>(bits));
+            row["silverActionTraceBits"] = std::move(actionTrace);
+            row["silverFirstActionBits"] = branchAgent.gameActionHistory.empty()
+                ? nlohmann::json(nullptr)
+                : nlohmann::json(static_cast<std::uint32_t>(branchAgent.gameActionHistory.front()));
+            return row;
+        }
+    };
+
+    const auto noTailRow = runBranch(noTail);
+    const auto activeTailRow = runBranch(activeTail);
+    if (noTailRow["predictorInput"] != frozenInput)
+        throw std::runtime_error("direct replay ordinary predictor input differs from the archived target");
+    if (noTailRow["transition"]["pre"] != target.at("preState"))
+        throw std::runtime_error("direct replay ordinary hidden pre-state differs from the archived target");
+    if (one_combat::combatTransitionFingerprint(source) != sourceBefore)
+        throw std::runtime_error("direct paired branches mutated the archived source snapshot");
+
+    const auto &activeRelics = activeTailRow["transition"]["post"]["relics"];
+    int activeTailPostData = -1;
+    for (const auto &relic : activeRelics)
+        if (relic["id"] == static_cast<int>(RelicId::LIZARD_TAIL))
+            activeTailPostData = relic["data"];
+    if (activeTailPostData < 0)
+        throw std::runtime_error("direct paired active row omitted the raw Lizard post-state");
+    pairMeta = nlohmann::json::object();
+    pairMeta["sourceSeed"] = seed;
+    pairMeta["fightIdx"] = target.at("fightIdx");
+    pairMeta["act"] = act;
+    pairMeta["floor"] = floor;
+    pairMeta["roomClass"] = noTailRow["roomClass"];
+    pairMeta["encounter"] = globals.at("encounter");
+    pairMeta["eligibleBattlesInSource"] = 0;
+    pairMeta["selectedEligibleOrdinal"] = 0;
+    pairMeta["replayMode"] = "direct_archived_snapshot";
+    pairMeta["targetRiskBand"] = target.at("riskBand");
+    pairMeta["targetPDeath"] = target.at("pDeath");
+    pairMeta["sourceStateFingerprint"] = sourceBefore;
+    pairMeta["noTailOutcome"] = noTailRow["transition"]["combatOutcome"];
+    pairMeta["activeTailOutcome"] = activeTailRow["transition"]["combatOutcome"];
+    pairMeta["activeTailPostData"] = activeTailPostData;
+    t_curPath = nullptr;
+    return nlohmann::json{{"noTail", noTailRow}, {"activeTail", activeTailRow}};
+}
+
 void activeLizardPairTransitionGen(
     int nSeeds, int sims, int asc, const std::string &outfile,
     const std::string &targetPath, const std::string &teacherPath,
     const std::string &baselineSha, const std::string &collectorSha) {
     if (nSeeds < 1 || nSeeds > 320)
         throw std::runtime_error("targeted Lizard pilot requires 1..320 pairs");
+    if (nSeeds > 128) {
+#ifndef _WIN32
+        char hostname[256]{};
+        const char *researchContext = std::getenv("STS_GCP_RESEARCH_CONTEXT");
+        const bool designatedResearchRun =
+            researchContext != nullptr && std::string(researchContext) == "sts-test"
+            && gethostname(hostname, sizeof(hostname) - 1) == 0
+            && std::string(hostname) == "sts-test"
+            && std::filesystem::current_path() == "/home/philippherrmann/sts_sweep";
+#else
+        const bool designatedResearchRun = false;
+#endif
+        if (!designatedResearchRun)
+            throw std::runtime_error("Lizard pair runs above 128 sources require the designated sts-test GCP research context");
+    }
     if (sims != 10000)
         throw std::runtime_error("paired Lizard pilot requires exact-10k Silver");
     auto validSha = [](const std::string &s) {
@@ -985,19 +1131,85 @@ void activeLizardPairTransitionGen(
         throw std::runtime_error("paired Lizard pilot requires full baseline and collector SHAs");
     trainingCampaignStart();
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, true);
-    const auto selection = nlohmann::json::parse(std::ifstream(targetPath));
+    const auto targetSpec = nlohmann::json::parse(std::ifstream(targetPath));
+    const bool directSnapshotReplay = targetSpec.value("schema", std::string{})
+        == "lizard_tail_direct_snapshot_replay_plan_v1";
+    nlohmann::json selection;
+    std::filesystem::path selectionPath;
+    std::vector<nlohmann::json> replayTargets;
+    nlohmann::json excludedTargets = nlohmann::json::array();
+    if (directSnapshotReplay) {
+        if (targetSpec.value("replayMode", std::string{}) != "persistent_snapshot_direct"
+            || !targetSpec.contains("archivedTargetSelection")
+            || !targetSpec.at("archivedTargetSelection").is_object()
+            || !targetSpec.contains("excludedBurningEliteTargets")
+            || !targetSpec.at("excludedBurningEliteTargets").is_array())
+            throw std::runtime_error("invalid direct snapshot replay plan");
+        selectionPath = targetSpec.at("archivedTargetSelection").at("path").get<std::string>();
+        if (selectionPath.is_relative())
+            selectionPath = std::filesystem::path(targetPath).parent_path() / selectionPath;
+        selectionPath = std::filesystem::weakly_canonical(selectionPath);
+        if (!std::filesystem::is_regular_file(selectionPath)
+            || fileSha256(selectionPath.string()) != targetSpec.at("archivedTargetSelection").at("sha256").get<std::string>())
+            throw std::runtime_error("direct replay plan does not resolve to its pinned archived target selection");
+        selection = nlohmann::json::parse(std::ifstream(selectionPath));
+        if (selection.value("schema", std::string{}) != "lizard_tail_risk_target_selection_v1"
+            || !selection.contains("targets") || !selection.at("targets").is_array())
+            throw std::runtime_error("direct replay plan points to an invalid archived target selection");
+
+        static const std::array<std::pair<long long, int>, 9> expectedExclusions = {{
+            {4201016, 12}, {4201026, 5}, {4201030, 12}, {4201031, 20},
+            {4201055, 20}, {4201070, 4}, {4201089, 16}, {4201103, 14},
+            {4201113, 6}
+        }};
+        std::set<std::pair<long long, int>> excluded;
+        for (const auto &item : targetSpec.at("excludedBurningEliteTargets")) {
+            if (!item.is_object() || item.size() != 2 || !item.contains("sourceSeed")
+                || !item.contains("fightIdx"))
+                throw std::runtime_error("direct replay plan has malformed excluded target identity");
+            excluded.emplace(item.at("sourceSeed").get<long long>(), item.at("fightIdx").get<int>());
+        }
+        const std::set<std::pair<long long, int>> expected(expectedExclusions.begin(), expectedExclusions.end());
+        if (excluded != expected || excluded.size() != targetSpec.at("excludedBurningEliteTargets").size())
+            throw std::runtime_error("direct replay plan burning-elite exclusions differ from the preregistered target set");
+        for (const auto &target : selection.at("targets")) {
+            const auto identity = std::make_pair(target.at("sourceSeed").get<long long>(),
+                                                 target.at("fightIdx").get<int>());
+            const bool burning = target.at("predictorInput").at("globals").at("isBurningElite").get<bool>();
+            if (excluded.count(identity)) {
+                if (!burning) throw std::runtime_error("direct replay exclusion is not an archived burning-elite target");
+                excludedTargets.push_back({{"sourceSeed", identity.first},
+                                           {"fightIdx", identity.second}});
+            } else {
+                if (burning) throw std::runtime_error("direct replay found an unregistered burning-elite target");
+                replayTargets.push_back(target);
+            }
+        }
+        if (excluded.size() != expectedExclusions.size()
+            || excludedTargets.size() != expectedExclusions.size()
+            || replayTargets.size() != static_cast<std::size_t>(nSeeds)
+            || selection.at("targets").size() != replayTargets.size() + excludedTargets.size())
+            throw std::runtime_error("direct replay plan does not partition the archived targets exactly");
+    } else {
+        selectionPath = std::filesystem::weakly_canonical(targetPath);
+        selection = targetSpec;
+        if (!selection.contains("targets") || !selection.at("targets").is_array())
+            throw std::runtime_error("targeted Lizard pilot selection lacks targets");
+        replayTargets = selection.at("targets").get<std::vector<nlohmann::json>>();
+    }
     if (selection.value("schema", std::string{}) != "lizard_tail_risk_target_selection_v1" ||
-        !selection.contains("targets") || !selection["targets"].is_array() ||
-        selection["targets"].size() != static_cast<std::size_t>(nSeeds))
+        replayTargets.size() != static_cast<std::size_t>(nSeeds))
         throw std::runtime_error("targeted Lizard pilot selection schema/count mismatch");
     if (!selection.contains("stateSelection") || !selection["stateSelection"].is_string() ||
         selection["stateSelection"].get<std::string>().empty())
         throw std::runtime_error("targeted Lizard pilot requires a frozen state-selection label");
-    const std::string stateSelection = selection["stateSelection"].get<std::string>();
-    const long long seedOffset = selection["targets"].front().at("sourceSeed").get<long long>();
+    const std::string stateSelection = directSnapshotReplay
+        ? "direct_archived_snapshot_replay_nonburning_subset_v1"
+        : selection["stateSelection"].get<std::string>();
+    const long long seedOffset = replayTargets.front().at("sourceSeed").get<long long>();
     std::vector<long long> targetSeeds;
     targetSeeds.reserve(nSeeds);
-    for (const auto &target : selection["targets"])
+    for (const auto &target : replayTargets)
         targetSeeds.push_back(target.at("sourceSeed").get<long long>());
     if (!std::is_sorted(targetSeeds.begin(), targetSeeds.end()) ||
         std::adjacent_find(targetSeeds.begin(), targetSeeds.end()) != targetSeeds.end())
@@ -1008,11 +1220,12 @@ void activeLizardPairTransitionGen(
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
         try {
-            const auto &target = selection["targets"][s];
+            const auto &target = replayTargets[s];
             const long long sourceSeed = targetSeeds.at(s);
             nlohmann::json pairMeta;
-            const nlohmann::json pair = runActiveLizardPairSeed(
-                sourceSeed, sims, asc, teacher, target, pairMeta);
+            const nlohmann::json pair = directSnapshotReplay
+                ? runActiveLizardPairFromSnapshot(sourceSeed, sims, asc, teacher, target, pairMeta)
+                : runActiveLizardPairSeed(sourceSeed, sims, asc, teacher, target, pairMeta);
             if (pair.contains("noTail") && pair.contains("activeTail")) {
                 pairRows[s] = nlohmann::json({{"pair", pairMeta}, {"noTail", pair["noTail"]},
                                               {"activeTail", pair["activeTail"]}});
@@ -1041,7 +1254,9 @@ void activeLizardPairTransitionGen(
     const int completed = static_cast<int>(pairs);
     const auto producerExecutableSha = fileSha256(g_mainBinaryPath);
     nlohmann::json manifest = {
-        {"schema", "lizard_tail_targeted_paired_transition_pilot_v1"},
+        {"schema", directSnapshotReplay
+             ? "lizard_tail_direct_snapshot_paired_transition_diagnostic_v1"
+             : "lizard_tail_targeted_paired_transition_pilot_v1"},
         {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
         {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
         {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
@@ -1051,8 +1266,8 @@ void activeLizardPairTransitionGen(
         {"combatTeacherManifestSha256", fileSha256(teacherPath)},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
         {"sourceSeeds", targetSeeds},
-        {"targetSelection", {{"path", std::filesystem::absolute(targetPath).string()},
-                               {"sha256", fileSha256(targetPath)}}},
+        {"targetSelection", {{"path", selectionPath.string()},
+                               {"sha256", fileSha256(selectionPath.string())}}},
         {"jsonl", {{"path", std::filesystem::absolute(outfile).string()},
                      {"sha256", fileSha256(outfile)}}},
         {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
@@ -1062,8 +1277,18 @@ void activeLizardPairTransitionGen(
                        {"interventionBranchLizard", "active_data_1"},
                        {"stateSelection", stateSelection},
                        {"markOfBloom", "eligible_states_excluded"},
-                       {"sourceTrajectory", "untouched_normal_policy"}}}
+                       {"sourceTrajectory", directSnapshotReplay
+                            ? "not_replayed_direct_snapshot"
+                            : "untouched_normal_policy"}}}
     };
+    if (directSnapshotReplay) {
+        manifest["directReplayPlan"] = {
+            {"path", std::filesystem::absolute(targetPath).string()},
+            {"sha256", fileSha256(targetPath)},
+            {"mode", "persistent_snapshot_direct"},
+            {"excludedBurningEliteTargets", std::move(excludedTargets)}
+        };
+    }
     const std::string manifestPath = outfile + ".manifest.json";
     std::ofstream mf(manifestPath);
     if (!mf) throw std::runtime_error("paired Lizard pilot: cannot write manifest");

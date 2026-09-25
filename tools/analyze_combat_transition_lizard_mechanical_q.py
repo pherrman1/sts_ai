@@ -200,8 +200,8 @@ def _validate_existing_screen_packet_header(manifest_path: Path) -> dict:
 def _native_transfer_agreement(archived_pairs, native_pairs) -> dict:
     archived_by_source = {int(row['pair']['sourceSeed']): row for row in archived_pairs}
     native_by_source = {int(row['pair']['sourceSeed']): row for row in native_pairs}
-    if set(archived_by_source) != set(native_by_source):
-        raise ValueError('native transfer source set differs from archived PR #326 cohort')
+    if not set(native_by_source).issubset(archived_by_source):
+        raise ValueError('native transfer contains a source outside archived PR #326 cohort')
     class_names = list(minimal.CLASS_NAMES)
     class_matrix = {old: {new: 0 for new in class_names} for old in class_names}
     arm_matrix = {
@@ -219,7 +219,7 @@ def _native_transfer_agreement(archived_pairs, native_pairs) -> dict:
         if value == pilot.DEATH:
             return 'DEATH'
         raise ValueError('transfer pair has undecided combat outcome')
-    for source in sorted(archived_by_source):
+    for source in sorted(native_by_source):
         old, new = archived_by_source[source], native_by_source[source]
         old_state = (old['pair']['fightIdx'], old['pair']['sourceStateFingerprint'],
                      old['noTail']['transition']['pre'], old['noTail']['predictorInput'])
@@ -245,6 +245,7 @@ def _native_transfer_agreement(archived_pairs, native_pairs) -> dict:
     compared = len(exact_state_sources)
     return {
         'archivedRows': len(archived_pairs), 'nativeRows': len(native_pairs),
+        'archivedRowsNotReplayed': len(set(archived_by_source) - set(native_by_source)),
         'exactPrecombatStateRows': compared,
         'stateMismatchRows': len(state_mismatches), 'stateMismatchSources': state_mismatches,
         'threeClassLabelAgreement': {
@@ -272,6 +273,18 @@ def _has_clear_positive_delta(metric_results) -> bool:
         if interval is not None and interval[0] > 0.0:
             return True
     return False
+
+
+def _qualification_classification(*, invalid_execution: bool,
+                                  nonrare_gates_pass: bool,
+                                  rare_event_floor_pass: bool) -> str:
+    if invalid_execution:
+        return 'LIZARD_NATIVE_QUALIFICATION_INVALID_EXECUTION'
+    if nonrare_gates_pass and rare_event_floor_pass:
+        return 'ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED'
+    if nonrare_gates_pass:
+        return 'LIZARD_MECHANICAL_Q_NATIVE_QUALIFICATION_INCONCLUSIVE_RARE_EVENT'
+    return 'ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_REJECTED'
 
 
 def _score_conditional_arm(pairs, models, *, arm):
@@ -387,7 +400,7 @@ def _load_frozen_selection(manifest_path, manifest, pairs):
         raise ValueError('target selection hash mismatch')
     selection = json.loads(selection_path.read_text())
     source_assignment_path = pilot._resolve_manifest_file(
-        selection['sourceAssignmentPath'], manifest_path.parent)
+        selection['sourceAssignmentPath'], selection_path.parent)
     source_assignment_sha = sha256(source_assignment_path)
     if source_assignment_sha != selection.get('sourceAssignmentSha256'):
         raise ValueError('predeclared source assignment hash mismatch')
@@ -399,7 +412,39 @@ def _load_frozen_selection(manifest_path, manifest, pairs):
     target_by_source = {int(row['sourceSeed']): row for row in targets}
     if len(target_by_source) != len(targets) or set(target_by_source) != set(assignment_by_source):
         raise ValueError('targets do not exactly match the predeclared source assignment')
-    if len(pairs) != len(targets):
+    direct_snapshot = manifest.get('schema') == 'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1'
+    excluded_sources = set()
+    if direct_snapshot:
+        replay_plan_path = pilot._resolve_manifest_file(
+            manifest['directReplayPlan']['path'], manifest_path.parent)
+        if sha256(replay_plan_path) != manifest['directReplayPlan'].get('sha256'):
+            raise ValueError('direct replay plan hash mismatch')
+        replay_plan = json.loads(replay_plan_path.read_text())
+        if (replay_plan.get('schema') != 'lizard_tail_direct_snapshot_replay_plan_v1'
+                or replay_plan.get('replayMode') != 'persistent_snapshot_direct'
+                or replay_plan.get('archivedTargetSelection', {}).get('sha256')
+                    != manifest['targetSelection']['sha256']):
+            raise ValueError('direct replay plan target-selection identity mismatch')
+        excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in replay_plan.get('excludedBurningEliteTargets', [])}
+        expected_excluded = {
+            (4201016, 12), (4201026, 5), (4201030, 12), (4201031, 20),
+            (4201055, 20), (4201070, 4), (4201089, 16), (4201103, 14),
+            (4201113, 6),
+        }
+        if excluded != expected_excluded:
+            raise ValueError('direct replay plan burning-elite exclusion identities changed')
+        for source, fight in excluded:
+            target = target_by_source.get(source)
+            if (target is None or int(target['fightIdx']) != fight
+                    or not target['predictorInput']['globals']['isBurningElite']):
+                raise ValueError('direct replay exclusion does not identify its archived burning-elite target')
+        excluded_sources = {source for source, _ in excluded}
+        expected_replay_sources = set(assignment_by_source) - excluded_sources
+        if {int(pair['pair']['sourceSeed']) for pair in pairs} != expected_replay_sources:
+            raise ValueError('direct replay pairs are not the exact preregistered non-burning archive subset')
+    if len(pairs) != len(targets) and not direct_snapshot:
         raise ValueError('target selection and paired source counts differ')
     for source, target in target_by_source.items():
         if target.get('qualificationCohort') != assignment_by_source[source]:
@@ -409,8 +454,8 @@ def _load_frozen_selection(manifest_path, manifest, pairs):
         target = target_by_source.get(source)
         if (target is None or int(target['fightIdx']) != int(pair['pair']['fightIdx'])):
             raise ValueError(f'paired target identity mismatch for source {source}')
-    candidate_manifest_path = manifest_path.parent / 'fresh_candidate_states.jsonl.manifest.json'
-    candidate_data_path = manifest_path.parent / 'fresh_candidate_states.jsonl'
+    candidate_manifest_path = selection_path.parent / 'fresh_candidate_states.jsonl.manifest.json'
+    candidate_data_path = selection_path.parent / 'fresh_candidate_states.jsonl'
     if selection.get('candidateGeneratorManifestSha256'):
         if sha256(candidate_manifest_path) != selection['candidateGeneratorManifestSha256']:
             raise ValueError('fresh candidate-state manifest hash mismatch')
@@ -757,14 +802,30 @@ def _analyze(manifest_path: Path, candidate_path: Path, expected_candidate_sha: 
         and pooled_primary['brierIntervalShowsNoClearDegradation']
         and not broad_clear_degradation)
     t2_gate = hp_by_cohort['POOLED']['gate']
+    pooled_t2 = hp_by_cohort['POOLED']
+    t2_domain_clean = (
+        pooled_t2['T2']['unscoreableBecauseTransformedTargetOutsideModelDomain'] == 0
+        and not pooled_t2['T2']['unscoredReasons']
+        and all(value == pooled_t2['T2']['candidateRows']
+                for value in pooled_t2['T2ScoredRowsByMetric'].values()))
+    invalid_execution_reasons = []
+    if not all_q_parity:
+        invalid_execution_reasons.append('mechanical_q_parity')
+    if support['exactSupportRows'] != len(pairs):
+        invalid_execution_reasons.append('exact_support')
+    if not pooled_primary['allRowsB1Scoreable']:
+        invalid_execution_reasons.append('primary_rows_unscoreable')
+    if not r_result['allConsumedRowsB1Scoreable']:
+        invalid_execution_reasons.append('consumed_rows_unscoreable')
+    if not t2_domain_clean:
+        invalid_execution_reasons.append('T2_domain_or_scoreability')
+    invalid_execution = bool(invalid_execution_reasons)
     qualification_gates_without_rare = (
         primary_gate and q_gate and r_nonrare_gate and all(t2_gate.values()))
-    if qualification_gates_without_rare and rare_floor:
-        classification = 'ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED'
-    elif qualification_gates_without_rare and not rare_floor:
-        classification = 'LIZARD_MECHANICAL_Q_NATIVE_QUALIFICATION_INCONCLUSIVE_RARE_EVENT'
-    else:
-        classification = 'ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_REJECTED'
+    classification = _qualification_classification(
+        invalid_execution=invalid_execution,
+        nonrare_gates_pass=qualification_gates_without_rare,
+        rare_event_floor_pass=rare_floor)
     hard_name = next((name for name in cohort_names if name.startswith('HARD')), None)
     hard_clear_degradation = False
     if hard_name:
@@ -794,7 +855,6 @@ def _analyze(manifest_path: Path, candidate_path: Path, expected_candidate_sha: 
         clear_r_regression = any(
             _has_clear_positive_delta([r_comparison.get(metric)])
             for metric in ('nll', 'brier'))
-        pooled_t2 = hp_by_cohort['POOLED']
         t2_delta = pooled_t2['pairedSourceBootstrapT2MinusT0']
         clear_t2_regression = any(
             _has_clear_positive_delta([t2_delta.get(metric)])
@@ -802,11 +862,6 @@ def _analyze(manifest_path: Path, candidate_path: Path, expected_candidate_sha: 
                            'maxHpNll', 'potionMaskNll')) or any(
             _has_clear_positive_delta([result])
             for result in t2_delta.get('supportedRelicGroupConstraintNllByGroup', {}).values())
-        t2_domain_clean = (
-            pooled_t2['T2']['unscoreableBecauseTransformedTargetOutsideModelDomain'] == 0
-            and not pooled_t2['T2']['unscoredReasons']
-            and all(value == pooled_t2['T2']['candidateRows']
-                    for value in pooled_t2['T2ScoredRowsByMetric'].values()))
         exact_transfer_states = (transfer_agreement is not None
                                  and transfer_agreement['exactPrecombatStateRows'] == len(pairs)
                                  and transfer_agreement['stateMismatchRows'] == 0)
@@ -924,6 +979,16 @@ def _analyze(manifest_path: Path, candidate_path: Path, expected_candidate_sha: 
             'requiredConsumedRows': 20, 'observedLossConsumed': loss_count,
             'observedDistinctLossSources': loss_sources, 'observedConsumedRows': consumed_count,
             'passed': rare_floor,
+        },
+        'executionValidity': {
+            'valid': not invalid_execution,
+            'invalidReasons': invalid_execution_reasons,
+            'supportRows': support['exactSupportRows'],
+            'expectedRows': len(pairs),
+            'allPrimaryRowsB1Scoreable': pooled_primary['allRowsB1Scoreable'],
+            'allConsumedRowsB1Scoreable': r_result['allConsumedRowsB1Scoreable'],
+            'T2ZeroUnscoredOrDomainInvalidRows': t2_domain_clean,
+            'mechanicalQParityEveryRow': all_q_parity,
         },
         'gates': {
             'qParityEveryScoreableRow': q_gate,
