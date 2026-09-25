@@ -1596,6 +1596,9 @@ experimental and is not qualified for promotion. See [ledger-06 §349](../../exp
 the [corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
 the [follow-up results and raw evidence](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/README.md),
 and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
+The native Silver analogue (draw pile only) was rejected at its profile
+gate: removable rollout-only sort work is about 2% of native search CPU
+([ledger-06 §350](../../experiments/ledger-06.md)).
 
 ### Whole-Act OOC evaluator
 
