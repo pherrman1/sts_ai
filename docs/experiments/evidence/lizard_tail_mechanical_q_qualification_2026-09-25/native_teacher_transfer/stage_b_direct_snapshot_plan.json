@@ -15,8 +15,8 @@
   },
   "baselineGitSha": "0eed6993999386737d87f040e38fb241623b5cf3",
   "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
-  "collectorExecutableSha256": "ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be",
-  "collectorGitSha": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
+  "collectorExecutableSha256": "7ae22fff67d54b40320ea7db2f1ec147d08b71e7ece278c3b9c7f6fa0144279a",
+  "collectorGitSha": "afa06c6be69bbc4637901ad53923caac890925d1",
   "createdAtUtc": "2026-09-25T13:41:20Z",
   "decisionRule": {
     "passAction": "Proceed to the separately assigned fresh 320-source native qualification only on this unchanged candidate and native teacher contract.",
@@ -82,10 +82,10 @@
   },
   "nativeTeacherManifest": {
     "backend": "native_silver",
-    "identity": "silver-ordinary-fair-exact10k-native-00f34384-omp1",
+    "identity": "silver-ordinary-fair-exact10k-native-afa06c6b-omp1",
     "path": "native_silver_direct_replay_teacher.json",
     "rngRegime": "project_fair",
-    "sha256": "bf77c1436518514fb8c8d4e6612bbbacefd3dffa227c67c9256fdb7135a60951",
+    "sha256": "074b6caa4a4b6023974069b356096365398fd8568ceae284bfe6230a9f6f8b42",
     "simulationBudgets": [
       10000
     ]
