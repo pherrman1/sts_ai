@@ -970,6 +970,23 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    screen.
 2. `runFullRunOOC` evaluates opt-in action networks/evaluators first, then map,
    rewards, shop, rest, boss-relic/Neow, and finally the base policy.
+   `collectFreeOocReward` in `apps/one_combat/ooc_checkpoint_policy.cpp`
+   takes a potion only when `potionCount < potionCapacity`; the subsequent
+   full-run REWARDS handlers in `apps/one_combat/run_driver.cpp` do not discard
+   or swap a carried potion to create space. A Potion Belt reward collected
+   earlier in that chain can add two slots before the potion decision. In the
+   3,069-fight `v_win` audit, 147 unmatched full-belt drops were classified
+   by the adjacent-floor proxy (4.79%, or 4.8% of RAW fights); 199 more
+   unmatched full-belt rows had unknown proxy status. If all 199 represent
+   forfeited drops, the code-path upper count is 346/3,069 (11.27%, or 11.3%).
+   This is a conditional upper bound, not an estimated rate: 17 unmatched
+   space-available rows show that missing POST capture has other causes.
+   Capacity was full in 95.3% of unmatched RAW rows versus 15.3% of matched
+   rows; one matched full-belt drop was explained by a new Potion Belt. The
+   belt was full in 759/3,069 RAW rows (24.7%); among 301 full-belt rows with
+   classifiable adjacent-floor status, 148 (49.2%) had a potion drop. The run
+   policy takes a potion only when capacity is available and has no discard or
+   swap path. The exact cohort forfeiture rate is unknown.
    When `STS_COLLECT_KEYS=1` (default off), every REWARDS handler takes the
    emerald (burning elite) / sapphire (chest) key via `RT::KEY` right after
    gold/relic/potion, and every act-3+ rest room takes the ruby key (RECALL,

@@ -341,6 +341,7 @@ add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_sem
 add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
 add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py --self-test)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
+add_test(NAME vwin_terminal_pricing_audit_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analysis/vwin_terminal_pricing_audit.py --self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
@@ -493,7 +494,7 @@ set_tests_properties(vnettest_selftest winnettest_selftest
 set_tests_properties(py_compile_parity_test py_compile_analyze_ooc_factor
     check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest
     PROPERTIES LABELS "tooling")
-set_tests_properties(analyze_postcombat_raw_terminal_selftest PROPERTIES LABELS "research-repro")
+set_tests_properties(analyze_postcombat_raw_terminal_selftest vwin_terminal_pricing_audit_selftest PROPERTIES LABELS "research-repro")
 set_property(TEST paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")
 
