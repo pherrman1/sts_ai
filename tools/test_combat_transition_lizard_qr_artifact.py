@@ -2,6 +2,7 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tools import combat_transition_lizard_qr_artifact as qr
 from tools.combat_transition_lizard_minimal import LOSS_CONSUMED, WIN_CONSUMED, WIN_RETAINED
@@ -35,6 +36,25 @@ class LizardQrArtifactTests(unittest.TestCase):
         self.assertLessEqual(r, 1)
         self.assertAlmostEqual(sum(classes), 1.0)
         self.assertEqual(classes, [1-q, q*r, q*(1-r)])
+
+    def test_signed_reserve_minus_ordinary_feature_is_not_clipped(self):
+        artifact = {'qModel': 'q', 'rModel': 'r'}
+        seen = []
+
+        def fixed_prediction(model, features):
+            seen.append((model, float(features[0, 1]) if model == 'q'
+                         else float(features[0, 0])))
+            return [.25 if model == 'q' else .75]
+
+        with mock.patch.object(qr, '_model_predict', side_effect=fixed_prediction):
+            q, r, classes = qr.predict_qr(.80, .60, artifact)
+        self.assertTrue(0 <= q <= 1)
+        self.assertTrue(0 <= r <= 1)
+        self.assertEqual(seen[0][0], 'q')
+        self.assertAlmostEqual(seen[0][1], -.20)
+        self.assertEqual(seen[1][0], 'r')
+        self.assertAlmostEqual(seen[1][1], .60)
+        self.assertAlmostEqual(sum(classes), 1.0)
 
     def test_artifact_hash_and_schema_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:

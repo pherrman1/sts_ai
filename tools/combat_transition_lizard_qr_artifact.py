@@ -90,10 +90,11 @@ def predict_qr(p_ordinary_win: float, p_reserve_win: float, artifact: dict) -> t
     po, pr = float(p_ordinary_win), float(p_reserve_win)
     if not math.isfinite(po) or not math.isfinite(pr) or not 0 <= po <= 1 or not 0 <= pr <= 1:
         raise ValueError('survival probabilities must be finite and in [0,1]')
-    if pr + 1e-12 < po:
-        raise ValueError('mechanical B1 probabilities are incoherent')
-    uplift = max(0.0, pr - po) if pr < po else pr - po
-    q_features = np.asarray([[_logit(1.0 - po), uplift]], dtype=np.float64)
+    # This is the frozen signed feature definition. Some supported states have
+    # mechanically incoherent B1 class masses (pReserveWin < pOrdinaryWin);
+    # preserve their exact signed difference here and report B1 incoherence in
+    # the qualification analysis rather than clipping it during selection.
+    q_features = np.asarray([[_logit(1.0 - po), pr - po]], dtype=np.float64)
     r_features = np.asarray([[pr]], dtype=np.float64)
     q = float(_model_predict(artifact['qModel'], q_features)[0])
     r = float(_model_predict(artifact['rModel'], r_features)[0])
