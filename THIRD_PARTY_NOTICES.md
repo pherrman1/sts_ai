@@ -2,9 +2,14 @@
 
 ## Silver combat-model port
 
-The isolated Silver combat-model components in
-`third_party/silver_lightspeed/` (plus the value-only bridge headers in
-`include/sim/search/`) are copied from or adapted from
+The Silver search and its supporting combat-engine changes are adapted from
+the Silver fork: `src/sim/search/SilverSearcher.cpp`,
+`src/sim/search/SilverRolloutAgent.cpp`, `src/sim/search/SearchRng.cpp` and
+their headers, the information-set `include/combat/CardPile.h`, the search
+equality and hashing in `BattleContext`/`CardManager`/`SearchStateHash`, the
+deferred Runic Dome intents in `Monster`, and the value-only wire types in
+`include/sim/search/SilverBridge.h`. The vendored copy that previously lived in
+`third_party/silver_lightspeed/` was removed (ADR-0022). The source is
 [`daniel-ziegler/sts_lightspeed`](https://github.com/daniel-ziegler/sts_lightspeed)
 at commit `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`.
 

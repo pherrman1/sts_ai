@@ -1,6 +1,6 @@
 # ADR-0015: Rebase the immediate live Silver root for equivalent card copies
 
-- Status: accepted
+- Status: superseded by [ADR-0022](0022-remove-vendored-silver.md)
 - Date: 2026-09-19
 
 ## Context

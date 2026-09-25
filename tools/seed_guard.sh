@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Seed-sweep argument positions verified against apps/one_combat.cpp mode dispatch
-# (2026-08-31). silver_hard_combat_replay is bounded by JSONL root count and
-# validates both the state-bound snapshot seed and any independent search seed.
-# Other unlisted commands pass through without seed checking.
+# (2026-08-31). Other unlisted commands pass through without seed checking.
 
 MAX_AUTOMATED_SEEDS=128
 
@@ -57,9 +55,6 @@ check_oversized() {
           exit 1
         fi
       fi
-    elif [ "$exe" = "silver_hard_combat_replay" ]; then
-      local snapshots="${argv[$((i + 1))]:-}"
-      check_silver_replay_snapshots "$snapshots" "$MAX_AUTOMATED_SEEDS"
     elif [ "$exe" = "python" ] || [ "$exe" = "python3" ]; then
       local script="${argv[$((i + 1))]:-}"
       local script_name
@@ -75,56 +70,6 @@ check_oversized() {
     fi
     i=$((i + 1))
   done
-}
-
-check_silver_replay_snapshots() {
-  local snapshots="$1"
-  local maximum="$2"
-  python3 - "$snapshots" "$maximum" <<'PY'
-import json
-import sys
-
-path, maximum_text = sys.argv[1:]
-maximum = int(maximum_text)
-uint64_max = (1 << 64) - 1
-count = 0
-
-def fail(message):
-    print(f"SEED_GUARD: silver_hard_combat_replay {message}", file=sys.stderr)
-    raise SystemExit(1)
-
-if not path:
-    fail("requires a snapshot JSONL path")
-try:
-    stream = open(path, encoding="utf-8")
-except OSError as error:
-    fail(f"cannot read {path}: {error}")
-
-with stream:
-    for line_number, line in enumerate(stream, 1):
-        if not line.strip():
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError as error:
-            fail(f"invalid JSON on line {line_number}: {error}")
-        if not isinstance(row, dict):
-            fail(f"line {line_number} must contain a JSON object")
-        for key in ("benchmark_seed", "isolated_search_seed"):
-            if key not in row:
-                if key == "isolated_search_seed":
-                    continue
-                fail(f"line {line_number} is missing {key}")
-            value = row[key]
-            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= uint64_max:
-                fail(f"line {line_number} {key} must be an unsigned 64-bit integer")
-        count += 1
-        if maximum > 0 and count > maximum:
-            fail(f"requests {count} snapshot roots; automated maximum is {maximum}")
-
-if count == 0:
-    fail("requires at least one snapshot root")
-PY
 }
 
 if [ $# -eq 0 ]; then

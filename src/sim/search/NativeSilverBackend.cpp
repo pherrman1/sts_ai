@@ -26,6 +26,7 @@ namespace sts::search {
         struct Options {
             bool installed = false;
             bool adaptive = true;
+            bool exactRootBudgets = false;   // flat budget without the boss multiplier
             double topGap = kDefaultTopGap;
         };
         Options g_options;
@@ -84,6 +85,7 @@ namespace sts::search {
             bc.init(gc);
             knowledge.synchronizeAfterCombatInitialization(bc);
             ++g_combats;
+            g_nativeSilverCombatStats = {};
 
             SilverSearchContext context;
             context.act = gc.act;
@@ -91,7 +93,7 @@ namespace sts::search {
             context.omamoriCharged = gc.relics.has(RelicId::OMAMORI)
                 && gc.relics.getRelicValue(RelicId::OMAMORI) > 0;
 
-            const std::int64_t flatBudget = isBossEncounter(bc.encounter)
+            const std::int64_t flatBudget = isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
 
@@ -145,6 +147,8 @@ namespace sts::search {
                 }
                 g_simulations += simulations;
                 ++g_decisions;
+                ++g_nativeSilverCombatStats.decisions;
+                g_nativeSilverCombatStats.simulations += simulations;
                 searching.resume();
 
                 const auto action = SilverSearcher::translateAction(
@@ -221,6 +225,9 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
             g_options.topGap = std::atof(raw);
         }
+        if (const char *raw = std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")) {
+            g_options.exactRootBudgets = std::atoi(raw) != 0;
+        }
         g_externalCombatBackend = runNativeSilverCombat;
     }
 
@@ -231,6 +238,20 @@ namespace sts::search {
     bool nativeSilverAdaptiveEnabled() {
         return g_options.adaptive;
     }
+
+    double nativeSilverAdaptiveTopGap() {
+        return g_options.topGap;
+    }
+
+    bool nativeSilverExactRootBudgets() {
+        return g_options.exactRootBudgets;
+    }
+
+    std::int64_t nativeSilverReuseCap() {
+        return static_cast<std::int64_t>(kReuseCap);
+    }
+
+    thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load()};

@@ -1,7 +1,7 @@
 # ADR-0021: Native Silver search on the main engine is the default
 
 Date: 2026-09-24
-Status: accepted
+Status: accepted; its vendored opt-out and fallback were removed by [ADR-0022](0022-remove-vendored-silver.md)
 
 Amends: [ADR-0020](0020-silver-only-combat-remove-searcher2-and-selfplay.md),
 which made the vendored Silver model the only combat searcher. Silver stays the

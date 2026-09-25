@@ -14,7 +14,7 @@ LABELS = ["won", "trueDeath", "escaped", "turnCapLoss", "progressAmbiguous", "la
           "lossRemainingFrac", "signedOutcome", "quarantineReason"]
 
 FROZEN_TEACHER = {
-    "combat_backend": "silver_uct", "rng_regime": "project_fair",
+    "combat_backend": "native_silver", "rng_regime": "project_fair",
     "search_configuration": {
         "simulation_budgets": [10000], "exploration_parameter": 25.0,
         "exploration_parameter_chance": 25.0, "chance_widening_c": 3.7028,
