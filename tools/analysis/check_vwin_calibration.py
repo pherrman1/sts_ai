@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from vwin_tree_utils import load_trees as load_compact_trees, predict_row as predict_compact_row
 
 CKPT = None
 ARGS = [a for a in sys.argv[1:]]
@@ -111,51 +112,12 @@ def net_predictor(ckpt_path):
 
 # --- load the native tree format (export_win_model.py output) ---
 def load_trees(path):
-    feats = []
-    logistic = 0
-    base_score = 0.0
-    trees = []
-    with open(path) as f:
-        for line in f:
-            parts = line.split()
-            if parts[0] == "nfeat":
-                nfeat = int(parts[1])
-            elif parts[0] == "feat":
-                feats.append(parts[1])
-            elif parts[0] == "logistic":
-                logistic = int(parts[1])
-            elif parts[0] == "base_score":
-                base_score = float(parts[1])
-            elif parts[0] == "ntrees":
-                ntrees = int(parts[1])
-            elif parts[0] == "tree":
-                n = int(parts[2])
-                nodes = []
-                for _ in range(n):
-                    p = f.readline().split()
-                    if p[0] == "L":
-                        nodes.append(("L", float(p[1])))
-                    else:
-                        nodes.append(("S", int(p[1]), float(p[2]), int(p[3]), int(p[4])))
-                trees.append(nodes)
-    feat_idx = {name: i for i, name in enumerate(feats)}
-    # Mirror the C++ WinNet::predict exactly (one_combat.cpp): base_score is a
-    # probability; it is converted to logit space before adding leaf margins,
-    # then sigmoided. Starting from the raw probability instead of its logit
-    # inflates every prediction by ~1.0 logit — a systematic checker bias.
-    base_margin = float(np.log(base_score / (1.0 - base_score))) if logistic else base_score
+    feats, trees, logistic, base_score, base_margin = load_compact_trees(path)
     print(f"loaded {len(trees)} trees, {len(feats)} feats, logistic={logistic}, "
           f"base={base_score} (logit {base_margin:.4f})")
 
     def predict_row(vec):
-        acc = base_margin
-        for nodes in trees:
-            idx = 0
-            while nodes[idx][0] != "L":
-                _, fi, thr, yes, no = nodes[idx]
-                idx = yes if vec[fi] < thr else no
-            acc += nodes[idx][1]
-        return 1.0 / (1.0 + np.exp(-acc)) if logistic else acc
+        return predict_compact_row(vec, trees, logistic, base_margin)
 
     return feats, predict_row
 

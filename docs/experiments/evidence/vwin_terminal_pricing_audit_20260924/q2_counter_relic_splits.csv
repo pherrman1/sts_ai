@@ -1,0 +1,12 @@
+relic_id,relic_name_current_enum,feature_present_in_model,split_count,counter_value_split_count_threshold_gt_1,split_threshold_counts
+26,Happy Flower,True,210,8,"[{'threshold': 1.0, 'count': 202}, {'threshold': 2.0, 'count': 6}, {'threshold': 3.0, 'count': 2}]"
+30,Incense Burner,True,213,26,"[{'threshold': 1.0, 'count': 187}, {'threshold': 2.0, 'count': 13}, {'threshold': 3.0, 'count': 10}, {'threshold': 4.0, 'count': 3}]"
+31,Ink Bottle,True,211,39,"[{'threshold': 1.0, 'count': 172}, {'threshold': 2.0, 'count': 23}, {'threshold': 3.0, 'count': 9}, {'threshold': 4.0, 'count': 4}, {'threshold': 5.0, 'count': 1}, {'threshold': 6.0, 'count': 1}, {'threshold': 8.0, 'count': 1}]"
+32,Inserter,False,0,0,[]
+35,Lizard Tail,True,106,0,"[{'threshold': 1.0, 'count': 106}]"
+44,Nunchaku,True,205,60,"[{'threshold': 1.0, 'count': 145}, {'threshold': 2.0, 'count': 39}, {'threshold': 3.0, 'count': 7}, {'threshold': 4.0, 'count': 7}, {'threshold': 5.0, 'count': 2}, {'threshold': 6.0, 'count': 2}, {'threshold': 7.0, 'count': 3}]"
+46,Omamori,True,208,100,"[{'threshold': 1.0, 'count': 108}, {'threshold': 2.0, 'count': 63}, {'threshold': 3.0, 'count': 37}]"
+52,Pen Nib,True,298,27,"[{'threshold': 1.0, 'count': 271}, {'threshold': 2.0, 'count': 5}, {'threshold': 3.0, 'count': 6}, {'threshold': 4.0, 'count': 2}, {'threshold': 5.0, 'count': 8}, {'threshold': 6.0, 'count': 2}, {'threshold': 7.0, 'count': 1}, {'threshold': 8.0, 'count': 3}]"
+68,Sundial,True,169,11,"[{'threshold': 1.0, 'count': 158}, {'threshold': 2.0, 'count': 10}, {'threshold': 3.0, 'count': 1}]"
+116,Neow's Lament,True,234,0,"[{'threshold': 1.0, 'count': 234}]"
+131,Thread and Needle,True,169,0,"[{'threshold': 1.0, 'count': 169}]"

@@ -1,0 +1,10 @@
+Current-baseline E2c Silver smoke: PASS
+
+Baseline executable provenance SHA: 5334920f5dc184ba9507ce9a15ed2fd96fd69bec
+Model: models/v_win_trees.txt (SHA-256 fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70)
+Seeds: 3109000-3109001 (2 requested, 2 completed); ascension 0; e2cgen sims argument 1000.
+Effective configuration: STS_SILVER_SEARCH=1; STS_SILVER_ADAPTIVE=1; STS_SILVER_REUSE_CAP_MODE=allocated; STS_REUSE_MAX_SEARCHES=32768; STS_SILVER_TELEMETRY=1; STS_FAIR=1; OMP_NUM_THREADS=4; native OOC floor/win trees on. Silver telemetry showed adaptive escalations. The Searcher2 policy prior is no longer auto-loaded on this baseline (prior_model_loaded=0).
+
+Raw command outcome: 2/2 runs; 92 E2c-v2 rows; RAW=48; POST=44; matched fight pairs=44; quarantined/invalid seeds=0; quarantined branches=0; simulator health hard failures=0. Runtime 39s (19.74s/run).
+
+This smoke was used only as the required collection gate. No Q1-Q5 metrics were computed from it.
