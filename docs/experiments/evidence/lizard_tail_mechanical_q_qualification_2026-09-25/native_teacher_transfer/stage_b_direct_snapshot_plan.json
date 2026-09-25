@@ -13,11 +13,11 @@
     "path": "../archived_pr326/frozen_target_selection.json",
     "sha256": "a78f4e8ddccc39769a9b01f9f4fc59195b79bdfd5ec427b062ee16a03605905b"
   },
-  "baselineGitSha": "7d3c3530450372a7f3d0f47a640e26a736cecbff",
+  "baselineGitSha": "0eed6993999386737d87f040e38fb241623b5cf3",
   "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
-  "collectorExecutableSha256": "6ae8a7720c7c04e2d2d54b96ad33dbe197b020b99a480fa197da49c49a139c13",
-  "collectorGitSha": "9871198e306846dda13597951fec79af03488784",
-  "createdAtUtc": "2026-09-25T12:19:23Z",
+  "collectorExecutableSha256": "ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be",
+  "collectorGitSha": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
+  "createdAtUtc": "2026-09-25T13:25:41Z",
   "decisionRule": {
     "passAction": "Proceed to the separately assigned fresh 320-source native qualification only on this unchanged candidate and native teacher contract.",
     "retainedWinDiagnostics": "descriptive only; do not add gates after outcomes",
@@ -41,7 +41,7 @@
   "excludedTargetRationale": "The archived predictor input identifies nine burning-elite targets, but archived CombatTransitionPersistentState does not contain Map.burningEliteBuff required by BattleContext::init. These nine targets are structurally unreplayable from the existing archive; no campaign rerun or inferred buff value is allowed.",
   "executionEnvironment": {
     "OMP_NUM_THREADS": "8",
-    "STS_EXECUTABLE_GIT_SHA": "9871198e306846dda13597951fec79af03488784",
+    "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
     "STS_FAIR": "1",
     "STS_NATIVE_OOC": "1",
     "STS_SEARCHER3": "0",
@@ -61,12 +61,12 @@
       "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs.jsonl",
       "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_plan.json",
       "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/native_silver_direct_replay_teacher.json",
-      "7d3c3530450372a7f3d0f47a640e26a736cecbff",
-      "9871198e306846dda13597951fec79af03488784"
+      "0eed6993999386737d87f040e38fb241623b5cf3",
+      "00f34384b0235bcc4053e60fee05b42dc1d23c46"
     ],
     "environment": {
       "OMP_NUM_THREADS": "8",
-      "STS_EXECUTABLE_GIT_SHA": "9871198e306846dda13597951fec79af03488784",
+      "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
       "STS_FAIR": "1",
       "STS_NATIVE_OOC": "1",
       "STS_SEARCHER3": "0",
@@ -82,10 +82,10 @@
   },
   "nativeTeacherManifest": {
     "backend": "native_silver",
-    "identity": "silver-ordinary-fair-exact10k-native-9871198e-omp8",
+    "identity": "silver-ordinary-fair-exact10k-native-00f34384-omp8",
     "path": "native_silver_direct_replay_teacher.json",
     "rngRegime": "project_fair",
-    "sha256": "f59d1f2b934110ef121becaea8f13742ac20b544bd98f2a031b2845f09320152",
+    "sha256": "a4f12177df4ff6ef69663aac44382870f46774c48d32a299c3d903c53f182bec",
     "simulationBudgets": [
       10000
     ]

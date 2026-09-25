@@ -2,7 +2,7 @@
   "combat_backend": "native_silver",
   "environment": {
     "OMP_NUM_THREADS": "8",
-    "STS_EXECUTABLE_GIT_SHA": "9871198e306846dda13597951fec79af03488784",
+    "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
     "STS_FAIR": "1",
     "STS_NATIVE_OOC": "1",
     "STS_SEARCHER3": "0",
@@ -12,8 +12,8 @@
     "STS_SILVER_SEARCH": "1",
     "STS_SILVER_VNET_LEAF_DIRECT": "0"
   },
-  "executable_sha256": "6ae8a7720c7c04e2d2d54b96ad33dbe197b020b99a480fa197da49c49a139c13",
-  "git_sha": "9871198e306846dda13597951fec79af03488784",
+  "executable_sha256": "ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be",
+  "git_sha": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
   "model_artifacts": [
     {
       "path": "models/policy_trees_c.txt",
@@ -52,5 +52,5 @@
       10000
     ]
   },
-  "teacher_id": "silver-ordinary-fair-exact10k-native-9871198e-omp8"
+  "teacher_id": "silver-ordinary-fair-exact10k-native-00f34384-omp8"
 }

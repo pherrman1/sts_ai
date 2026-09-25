@@ -74,16 +74,24 @@ The corrected plan uses direct persistent-snapshot replay from the canonical
 the campaign. It keeps all 119 non-burning targets byte-identical to the
 archived selection and preregisters the nine burning-elite targets as
 structurally unreplayable because the archive lacks `burningEliteBuff`. The
-plan is `native_teacher_transfer/stage_b_direct_snapshot_plan.json` (SHA-256
-`764ef9f632917f6b43b3ca8df1d3db97d45f7ad8165c1d74b1f042d3c8c204de`). Its
+Main advanced through PR #332 to `0eed6993999386737d87f040e38fb241623b5cf3`,
+which default-initializes `simulationCountTotal` to zero after PR #331 made the
+native backend increment it. PR #331's singleton-root bypass remains disabled
+by the exact-root-budget setting frozen for this diagnostic.
+
+The refreshed plan is
+`native_teacher_transfer/stage_b_direct_snapshot_plan.json` (SHA-256
+`8c1b45ad8e3a8066392a7d42d5a35b36499c26ffe8da193a496afd9383bb6eaf`). Its
 native teacher manifest is
 `native_teacher_transfer/native_silver_direct_replay_teacher.json` (SHA-256
-`f59d1f2b934110ef121becaea8f13742ac20b544bd98f2a031b2845f09320152`), bound
-to collector commit `9871198e306846dda13597951fec79af03488784` and executable
-SHA-256 `6ae8a7720c7c04e2d2d54b96ad33dbe197b020b99a480fa197da49c49a139c13`.
-The collector verifies the full archived predictor input and persistent
-snapshot before either paired branch, uses current native Silver at exact
-10,000 fair simulations, and runs with `OMP_NUM_THREADS=8`.
+`a4f12177df4ff6ef69663aac44382870f46774c48d32a299c3d903c53f182bec`), bound
+to integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
+current-main baseline `0eed6993999386737d87f040e38fb241623b5cf3`, and rebuilt
+executable SHA-256
+`ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`. The
+collector verifies the full archived predictor input and persistent snapshot
+before either paired branch, uses current native Silver at exact 10,000 fair
+simulations, and runs with `OMP_NUM_THREADS=8`.
 
 **Status: corrected replay not yet run.** It remains a diagnostic on a
 historically selected cohort and cannot qualify the candidate. If run, native

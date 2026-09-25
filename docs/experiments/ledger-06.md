@@ -12395,11 +12395,18 @@ faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton
   as structurally unreplayable because the archived state omits
   `burningEliteBuff`. No state is reselected; before either branch, the direct
   collector verifies the exact archived predictor input and persistent state.
-  The addendum SHA-256 is
-  `764ef9f632917f6b43b3ca8df1d3db97d45f7ad8165c1d74b1f042d3c8c204de`; it pins
-  collector commit `9871198e306846dda13597951fec79af03488784`, the exact native
-  teacher manifest, and `OMP_NUM_THREADS=8`. The corrected native run has not
-  yet been performed, so there are no native scores or agreement tables.
+  Main advanced through PR #332 to
+  `0eed6993999386737d87f040e38fb241623b5cf3`, which default-initializes the
+  native simulation counter added by PR #331; the singleton-root bypass remains
+  disabled by the frozen exact-root-budget setting. The refreshed addendum
+  SHA-256 is
+  `8c1b45ad8e3a8066392a7d42d5a35b36499c26ffe8da193a496afd9383bb6eaf`; it pins
+  integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
+  executable SHA-256
+  `ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`, the
+  refreshed native teacher manifest, and `OMP_NUM_THREADS=8`. The corrected
+  native run has not yet been performed, so there are no native scores or
+  agreement tables.
 - **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
   assignment is frozen with an audited new source block and outcome-blind
   BROAD32 salt. It remains pending the corrected Stage B diagnostic and

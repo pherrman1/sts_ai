@@ -951,10 +951,14 @@ native outcomes changed the later trajectory. That is a harness failure, not
 a teacher-transfer result; it produced no native pair rows or scores. The
 corrected plan directly restores the 119 exact non-burning PR #326 persistent
 snapshots and excludes only the nine burning-elite targets whose archived
-states lack `burningEliteBuff`. It has not yet run. The distinct fresh
-320-source native qualification remains pending the corrected transfer
-diagnostic; the designated GCP worker was unavailable at the earlier
-preflight. Therefore no Lizard candidate is qualified and production remains
+states lack `burningEliteBuff`. PR #331 made native Silver update
+`simulationCountTotal`; merged PR #332 default-initializes that counter to
+zero. The refreshed direct plan is pinned to current main
+`0eed6993999386737d87f040e38fb241623b5cf3`, the rebuilt executable, and eight
+threads. It has not yet run. The distinct fresh 320-source native
+qualification remains pending the corrected transfer diagnostic; the
+designated GCP worker was unavailable at the earlier preflight. Therefore no
+Lizard candidate is qualified and production remains
 `active_unqualified_lizard`. See [ledger §355](../../experiments/ledger-06.md)
 and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
