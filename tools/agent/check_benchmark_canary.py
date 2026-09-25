@@ -216,7 +216,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--results", type=Path)
     p.add_argument("--meta", type=Path)
     p.add_argument("--log", type=Path)
-    p.add_argument("--expect-backend", choices=("silver", "native_searcher"))
+    p.add_argument("--expect-backend", choices=("silver", "native_silver", "native_searcher"))
     p.add_argument("--expect-seeds", type=int, default=1)
     p.add_argument("--expect-sims", type=int)
     p.add_argument("--expect-seed-lo", type=int)

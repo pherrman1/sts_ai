@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0021](0021-native-silver-default.md) makes the Silver search ported
+  onto the main engine the default combat backend; the vendored model runs on
+  `STS_NATIVE_SILVER=0` or when a vendored-only Silver option is set.
 - [ADR-0020](0020-silver-only-combat-remove-searcher2-and-selfplay.md) makes
   Silver the only combat searcher, removes Searcher2 with its
   search-statistics generators and controls, and removes the self-play loop.

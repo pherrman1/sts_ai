@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-24 for the experimental native Silver backend, the Silver-only dispatch (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-19 against the current working tree.
+Last verified: 2026-09-25 for the native Silver default (ADR-0021) and Silver-only dispatch (ADR-0020), and against PR #314 for its default-off §349 rollout scratch-pile boundary.
 
 ## Purpose
 
@@ -145,9 +145,9 @@ Runic Dome prevents future intent materialization. Looter and Mugger use
 `assignInformationState` and this deferred choice are project-fair adaptations
 of the vendored simulator.
 
-## Native Silver backend (experimental)
+## Native Silver backend (default)
 
-`STS_NATIVE_SILVER=1` replaces the vendored model with `SilverSearcher`
+The default combat backend (ADR-0021) is `SilverSearcher`
 (`src/sim/search/SilverSearcher.cpp`), a port of the Silver fork's
 `BattleSearcher` production path that runs directly on the main
 `BattleContext`, installed by `NativeSilverBackend`. At each decision the
@@ -174,8 +174,10 @@ unchanged. Remaining gaps against the vendored model: Gambling Chip and Purity
 selections are atomic subsets; the vendored reroot repairs are replaced by
 multiset equality plus action translation. On the standard 128-seed block it won 86/128 against the
 vendored 83/128 (no detectable difference;
-[§348](../../experiments/ledger-06.md)). The vendored backend remains the
-default.
+[§348](../../experiments/ledger-06.md)). `one_combat` selects the vendored
+backend below on `STS_NATIVE_SILVER=0` or when a vendored-only `STS_SILVER_*`
+option is set (captures, diagnostics, telemetry, leaf VNet, root prior); an
+explicit `STS_NATIVE_SILVER=1` with such an option is an error.
 
 ## Silver backend
 
@@ -446,6 +448,17 @@ incompatible rows are not combined.
   derived.
 - Search mutates copies/determinizations. Only a canonical live-valid action
   may mutate the committed battle.
+- The §349 Silver rollout-cost candidate leaves retained tree `CardPile` states
+  canonical. `SilverSearchConfig::rolloutUnsortedPilesEnabled` defaults off;
+  when explicitly enabled, only rollout scratch draw/discard/exhaust piles may
+  keep the unknown region unordered. Unknown draws remain uniform over the
+  multiset; known top and bottom order remains position-sensitive. Rollout
+  scratch must never enter a retained node, and diagnostic terminal state is
+  canonicalized before bridge serialization. The representation can map a
+  fixed RNG value to a different card while preserving the draw distribution.
+  B remains experimental and is not qualified for default promotion. See
+  [ledger-06 §349](../../experiments/ledger-06.md) and the
+  [evidence packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
 - Unresolved exit, empty action set, invalid edge, bridge failure, or model-load
   failure takes an explicit defensive path; it must not award progress, reuse
   stale state, or claim a model loaded.
