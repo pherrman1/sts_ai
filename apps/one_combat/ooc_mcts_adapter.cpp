@@ -463,8 +463,14 @@ bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
 }
 std::optional<sts::search::OocActionId> OocGameContextModel::soleLegalAction(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) return std::nullopt;
-    const auto &actions = metadata(id).candidates;
-    if (actions.size()==1 && actions.front().primitive.isValidAction(state(id))) return actions.front().id;
+    auto &cached = mutableMetadata(id);
+    const auto &actions = cached.candidates;
+    if (actions.size()==1 && actions.front().primitive.isValidAction(state(id))) {
+        if (!cached.priors)
+            cached.priors = std::vector<sts::search::OocPlannerAction>{{actions.front().id, 1.0}};
+        tracePrior(id, cached, *cached.priors);
+        return actions.front().id;
+    }
     return std::nullopt;
 }
 const OocGameContextModel::Candidate &OocGameContextModel::candidate(sts::search::OocStateId id,
@@ -2084,17 +2090,31 @@ void oocMctsAdapterSelfTest() {
                 };
                 OocAdapterOptions singletonOptions;
                 singletonOptions.priorTracePath=singletonTracePath;
+                singletonOptions.priorTraceRunSeed=44;
+                singletonOptions.priorTraceDecisionIndex=5;
+                singletonOptions.priorTraceSearchSeed=1234567;
                 singletonOptions.rootPrimitiveBits=std::set<std::uint32_t>{primitive.front().bits};
                 OocGameContextModel singletonProvider(canonical,path,{},singletonOptions,dependencies);
+                const auto singletonAction=singletonProvider.soleLegalAction(0);
+                sts::search::OocMctsConfig singletonConfig;
+                singletonConfig.maxDepth=1;
+                const auto singletonBypass=searchWithSoleRootShortcut(singletonProvider,
+                    singletonConfig,singletonAction,1);
                 const auto singletonActions=singletonProvider.legalActions(0);
                 std::ifstream singletonInput(singletonTracePath);
                 require(static_cast<bool>(std::getline(singletonInput,traceLine)),"singleton prior trace row exists");
+                std::string singletonExtraLine;
                 const auto singletonRow=nlohmann::json::parse(traceLine);
-                require(singletonActions.size()==1 && singletonActions.front().prior==1.0
+                require(!std::getline(singletonInput,singletonExtraLine)
+                    && singletonAction && singletonBypass.selectedAction==singletonAction
+                    && singletonBypass.metrics.trivialRootBypasses==1
+                    && singletonActions.size()==1 && singletonActions.front().prior==1.0
                     && inferenceCalls==0 && singletonRow.at("singleton")==true
                     && singletonRow.at("candidateCount")==1
+                    && singletonRow.at("runSeed")==44 && singletonRow.at("decisionIndex")==5
+                    && singletonRow.at("searchSeed")==1234567
                     && !singletonRow.contains("tokenState") && !singletonRow.contains("sourcePrimitives"),
-                    "singleton trace preserves exact unit prior and fast path");
+                    "production singleton root shortcut emits exactly one compact unit-prior trace row");
                 std::remove(singletonTracePath.c_str());
             }
         }
