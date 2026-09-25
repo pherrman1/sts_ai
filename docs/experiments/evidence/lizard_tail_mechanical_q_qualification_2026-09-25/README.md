@@ -79,19 +79,20 @@ which default-initializes `simulationCountTotal` to zero after PR #331 made the
 native backend increment it. PR #331's singleton-root bypass remains disabled
 by the exact-root-budget setting frozen for this diagnostic.
 
-The refreshed plan is
-`native_teacher_transfer/stage_b_direct_snapshot_plan.json` (SHA-256
-`9dde779d1d3d9fdfed83debfa9af101df96088ed0aba7aff7c597cec76928c03`). Its
-native teacher manifest is
-`native_teacher_transfer/native_silver_direct_replay_teacher.json` (SHA-256
-`bf77c1436518514fb8c8d4e6612bbbacefd3dffa227c67c9256fdb7135a60951`), bound
-to integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
+The refreshed plan
+`native_teacher_transfer/stage_b_direct_snapshot_plan.json` currently has
+SHA-256
+`da0c9ec818645da6c2b7f27a5b152c585325a925420d25b12f192a80161e3601`. Its
+native teacher manifest
+`native_teacher_transfer/native_silver_direct_replay_teacher.json` has SHA-256
+`074b6caa4a4b6023974069b356096365398fd8568ceae284bfe6230a9f6f8b42` and is
+bound to collector source commit `afa06c6be69bbc4637901ad53923caac890925d1`,
 current-main baseline `0eed6993999386737d87f040e38fb241623b5cf3`, and rebuilt
 executable SHA-256
-`ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`. The
+`7ae22fff67d54b40320ea7db2f1ec147d08b71e7ece278c3b9c7f6fa0144279a`. The
 collector verifies the full archived predictor input and persistent snapshot
-before either paired branch, uses current native Silver at exact 10,000 fair
-simulations. A local preflight at 13:34:58 UTC measured 12 logical CPUs,
+before either paired branch, and uses current native Silver at exact 10,000
+fair simulations. A local preflight at 13:34:58 UTC measured 12 logical CPUs,
 one-minute load 28.87, CPU-pressure `some` avg10 74.81%, and 7.7 GiB available
 memory. To limit contention, the plan freezes `OMP_NUM_THREADS=1`, identically
 for both paired arms.
@@ -109,14 +110,33 @@ The current plan duplicates those exact nine exclusions at the required
 top-level field; the selection, 119/9 partition, candidate, teacher, and gates
 are unchanged.
 
-**Status: native pair collection has not started.** This plan-validation
-failure is a pre-outcome harness/configuration issue, not a teacher-transfer
-result. The direct transfer remains diagnostic on a historically selected
-cohort and cannot qualify the candidate. Native and archived-vendored rows
-remain separate; only exact-source/state matches are included in descriptive
-label and outcome agreement tables. No rows are pooled or bootstrapped across
-teachers. Stage C cannot start unless the corrected diagnostic passes its
-predeclared checks.
+The first pair execution then reached source 4201000, fight 26, and aborted
+with `std::bad_function_call` when the restored bare `GameContext` won a
+battle without its normal `afterBattle` continuation installed. It produced no
+pair rows or retained native labels. This is recorded as
+`LIZARD_NATIVE_QUALIFICATION_INVALID_EXECUTION` in
+`native_teacher_transfer/stage_b_direct_snapshot_callback_failure.json`
+(SHA-256
+`186b2df2937298747f605478d445f00870192e2abb50c085abad2365643de72b`); the raw
+log is
+`native_teacher_transfer/stage_b_direct_snapshot_collection_retry1.log`
+(SHA-256
+`351c6aad9d625a363bd7d37fea62d248bef38ece38bb103c56e8f12d0ec06091`). The
+collector now installs the same post-battle callback used by the ordinary
+save loader before cloning either arm. Its victory-path self-test and the
+focused Python tests passed.
+
+**Status: Stage B retry 2 is running.** It uses the refreshed plan and native
+teacher hashes above, 119 exact states, 10,000 fair simulations, and one
+thread. At the last status check it had been active for about three hours;
+the collector buffers output until all rows validate, so its raw log remains
+empty and pair JSONL/manifest files are not yet materialized. No Stage B
+outcomes are available. The direct transfer remains diagnostic on a
+historically selected cohort and cannot qualify the candidate. Native and
+archived-vendored rows remain separate; only exact-source/state matches are
+included in descriptive label and outcome agreement tables. No rows are
+pooled or bootstrapped across teachers. Stage C cannot start unless the
+corrected diagnostic passes its predeclared checks.
 
 ## Stage C — fresh native qualification assignment
 
