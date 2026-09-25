@@ -12400,15 +12400,26 @@ faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton
   native simulation counter added by PR #331; the singleton-root bypass remains
   disabled by the frozen exact-root-budget setting. The refreshed addendum
   SHA-256 is
-  `cd466c738d621c05b8aa16b12978bc40de06022b09001b188bbcf86fd57966fb`; it pins
+  `9dde779d1d3d9fdfed83debfa9af101df96088ed0aba7aff7c597cec76928c03`; it pins
   integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
   executable SHA-256
   `ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`, the
   refreshed native teacher manifest, and `OMP_NUM_THREADS=1`. A pre-run local
   resource check measured one-minute load 28.87 on 12 logical CPUs with 74.81%
   CPU-pressure `some` avg10; one thread is frozen identically across arms to
-  limit contention. The corrected native run has not yet been performed, so
-  there are no native scores or agreement tables.
+  limit contention. The first guarded invocation exited before its pair loop
+  with `invalid direct snapshot replay plan`: the collector and analyzer
+  require the nine preregistered exclusions at the plan top level, while the
+  first refreshed plan held them only inside `sourceSelection`. The corrected
+  plan now includes that unchanged top-level list. The raw attempt log and
+  failure record are retained at
+  `evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_collection.log`
+  (SHA-256
+  `d8089f349723cbea4a8cb22aa89588005dfb0e52978264c5354b3527ee55cc94`) and
+  `stage_b_direct_plan_validation_failure.json` (SHA-256
+  `d6823b7c4ed0dab919d6dcc101aa0a4d474d87fa68efb1507c3c9a17f1072cb3`). No
+  pair JSONL, pair manifest, or combat outcomes were written; this is a
+  pre-outcome plan-validation failure, not a teacher-transfer result.
 - **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
   assignment is frozen with an audited new source block and outcome-blind
   BROAD32 salt. It remains pending the corrected Stage B diagnostic and
@@ -12425,6 +12436,6 @@ faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton
   and the [raw Stage B collection failure](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_collection_failure.json).
 
 Knowledge impact: current research records the archived post-hoc screen and
-separates it from the superseded Stage B harness failure, the corrected direct
-snapshot transfer plan, and unrun fresh qualification. No runtime support
-changed.
+separates both pre-outcome Stage B harness/plan-validation failures from the
+corrected direct-snapshot transfer plan and unrun fresh qualification. No
+runtime support changed.

@@ -81,7 +81,7 @@ by the exact-root-budget setting frozen for this diagnostic.
 
 The refreshed plan is
 `native_teacher_transfer/stage_b_direct_snapshot_plan.json` (SHA-256
-`cd466c738d621c05b8aa16b12978bc40de06022b09001b188bbcf86fd57966fb`). Its
+`9dde779d1d3d9fdfed83debfa9af101df96088ed0aba7aff7c597cec76928c03`). Its
 native teacher manifest is
 `native_teacher_transfer/native_silver_direct_replay_teacher.json` (SHA-256
 `bf77c1436518514fb8c8d4e6612bbbacefd3dffa227c67c9256fdb7135a60951`), bound
@@ -96,12 +96,27 @@ one-minute load 28.87, CPU-pressure `some` avg10 74.81%, and 7.7 GiB available
 memory. To limit contention, the plan freezes `OMP_NUM_THREADS=1`, identically
 for both paired arms.
 
-**Status: corrected replay not yet run.** It remains a diagnostic on a
-historically selected cohort and cannot qualify the candidate. If run, native
-and archived-vendored rows remain separate; only exact-source/state matches
-are included in descriptive label and outcome agreement tables. No rows are
-pooled or bootstrapped across teachers. Stage C cannot start unless this
-diagnostic passes its predeclared checks.
+The first guarded invocation of this refreshed plan stopped at C++ plan
+validation with `invalid direct snapshot replay plan`. The C++ collector and
+analyzer require `excludedBurningEliteTargets` at the plan top level; the
+original refreshed plan had the same nine identities nested only under
+`sourceSelection`. It exited before the pair loop and wrote no pair JSONL,
+manifest, or combat outcomes. Preserve the [raw log](native_teacher_transfer/stage_b_direct_snapshot_collection.log)
+(SHA-256 `d8089f349723cbea4a8cb22aa89588005dfb0e52978264c5354b3527ee55cc94`)
+and [failure record](native_teacher_transfer/stage_b_direct_plan_validation_failure.json)
+(SHA-256 `d6823b7c4ed0dab919d6dcc101aa0a4d474d87fa68efb1507c3c9a17f1072cb3`).
+The current plan duplicates those exact nine exclusions at the required
+top-level field; the selection, 119/9 partition, candidate, teacher, and gates
+are unchanged.
+
+**Status: native pair collection has not started.** This plan-validation
+failure is a pre-outcome harness/configuration issue, not a teacher-transfer
+result. The direct transfer remains diagnostic on a historically selected
+cohort and cannot qualify the candidate. Native and archived-vendored rows
+remain separate; only exact-source/state matches are included in descriptive
+label and outcome agreement tables. No rows are pooled or bootstrapped across
+teachers. Stage C cannot start unless the corrected diagnostic passes its
+predeclared checks.
 
 ## Stage C — fresh native qualification assignment
 

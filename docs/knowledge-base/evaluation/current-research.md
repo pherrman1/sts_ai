@@ -956,8 +956,11 @@ states lack `burningEliteBuff`. PR #331 made native Silver update
 zero. The refreshed direct plan is pinned to current main
 `0eed6993999386737d87f040e38fb241623b5cf3` and the rebuilt executable. A
 pre-run resource check found load 28.87 on 12 logical CPUs, so the plan uses
-one thread identically for both arms to limit contention. It has not yet run.
-The distinct fresh 320-source native
+one thread identically for both arms to limit contention. The first guarded
+invocation failed before the pair loop because the direct plan omitted the
+top-level copy of the nine exclusions required by the collector; it generated
+no pair rows or outcomes. The corrected plan includes the unchanged list.
+Fresh native outcomes remain uncollected. The distinct fresh 320-source native
 qualification remains pending the corrected transfer diagnostic; the
 designated GCP worker was unavailable at the earlier preflight. Therefore no
 Lizard candidate is qualified and production remains

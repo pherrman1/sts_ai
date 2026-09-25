@@ -17,7 +17,7 @@
   "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
   "collectorExecutableSha256": "ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be",
   "collectorGitSha": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
-  "createdAtUtc": "2026-09-25T13:35:36Z",
+  "createdAtUtc": "2026-09-25T13:41:20Z",
   "decisionRule": {
     "passAction": "Proceed to the separately assigned fresh 320-source native qualification only on this unchanged candidate and native teacher contract.",
     "retainedWinDiagnostics": "descriptive only; do not add gates after outcomes",
@@ -275,5 +275,43 @@
     ],
     "replayedNonBurningTargets": 119,
     "selectionRule": "Exact archived PR #326 target identity and precombat snapshots; no re-selection or replacement."
-  }
+  },
+  "excludedBurningEliteTargets": [
+    {
+      "fightIdx": 12,
+      "sourceSeed": 4201016
+    },
+    {
+      "fightIdx": 5,
+      "sourceSeed": 4201026
+    },
+    {
+      "fightIdx": 12,
+      "sourceSeed": 4201030
+    },
+    {
+      "fightIdx": 20,
+      "sourceSeed": 4201031
+    },
+    {
+      "fightIdx": 20,
+      "sourceSeed": 4201055
+    },
+    {
+      "fightIdx": 4,
+      "sourceSeed": 4201070
+    },
+    {
+      "fightIdx": 16,
+      "sourceSeed": 4201089
+    },
+    {
+      "fightIdx": 14,
+      "sourceSeed": 4201103
+    },
+    {
+      "fightIdx": 6,
+      "sourceSeed": 4201113
+    }
+  ]
 }
