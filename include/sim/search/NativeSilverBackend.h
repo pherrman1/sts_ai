@@ -15,10 +15,12 @@ namespace sts::search {
     //
     // Budgets: flat `simulationCountBase`
     // per decision (x bossSimulationMultiplier in boss fights) unless the
-    // retained-root adaptive policy is enabled, in which case fresh and
-    // single-action roots search 10,000 and a retained root stops at 500 when
-    // its top-two visit-share gap reaches the threshold. The adaptive settings
-    // come from STS_SILVER_ADAPTIVE and STS_SILVER_ADAPTIVE_TOP_GAP.
+    // retained-root adaptive policy is enabled, in which case fresh roots
+    // search 10,000 and a retained root stops at 500 when its top-two
+    // visit-share gap reaches the threshold. The adaptive settings come from
+    // STS_SILVER_ADAPTIVE and STS_SILVER_ADAPTIVE_TOP_GAP. A root with one
+    // legal action is committed without search unless root budgets are exact
+    // or STS_SILVER_SEARCH_SINGLETON_ROOTS=1.
     void installNativeSilverBackend();
     bool nativeSilverBackendInstalled();
     bool nativeSilverAdaptiveEnabled();
@@ -26,6 +28,10 @@ namespace sts::search {
     // STS_SILVER_EXACT_ROOT_BUDGETS=1: the flat budget applies in boss fights
     // too (no boss multiplier).
     bool nativeSilverExactRootBudgets();
+    // Whether one-action roots are searched: only with exact root budgets or
+    // STS_SILVER_SEARCH_SINGLETON_ROOTS=1; otherwise their action is committed
+    // without search.
+    bool nativeSilverSearchesSingletonRoots();
     // Node count at which the retained graph is compacted on reroot.
     std::int64_t nativeSilverReuseCap();
 
@@ -56,6 +62,7 @@ namespace sts::search {
         std::int64_t simulations = 0;
         std::int64_t reroots = 0;
         std::int64_t freshRoots = 0;
+        std::int64_t singletonSkips = 0;   // one-action roots committed without search
     };
     // Totals across all threads since installation.
     NativeSilverTotals nativeSilverTotals();

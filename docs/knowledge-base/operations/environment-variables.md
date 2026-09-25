@@ -40,10 +40,11 @@ diagnostics.
 |----------|--------|---------|------------|
 | `STS_SILVER_SEARCH` | Accepted for compatibility; Silver is always installed. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_NATIVE_SILVER` | Accepted for compatibility; `0` (the removed vendored model) makes `one_combat` exit with an error (ADR-0022) | native | `main` |
-| `STS_SILVER_ADAPTIVE` | Enable retained-root adaptive Silver: fresh and single-action roots search 10,000; a retained root stops at 500 when its top-two visit-share gap reaches `STS_SILVER_ADAPTIVE_TOP_GAP`; `0` gives flat Silver | on only for `run`/`bestbench`/`reprobench` without a sims argument; every other invocation resolves an unset value to `0` (flat caller budget) unless `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or `STS_SILVER_ADAPTIVE_TOP_GAP` is set (ADR-0018, ADR-0020) | `NativeSilverBackend` |
+| `STS_SILVER_ADAPTIVE` | Enable retained-root adaptive Silver: fresh multi-action roots search 10,000; a retained root stops at 500 when its top-two visit-share gap reaches `STS_SILVER_ADAPTIVE_TOP_GAP`; `0` gives flat Silver | on only for `run`/`bestbench`/`reprobench` without a sims argument; every other invocation resolves an unset value to `0` (flat caller budget) unless `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or `STS_SILVER_ADAPTIVE_TOP_GAP` is set (ADR-0018, ADR-0020) | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Stopping threshold for `STS_SILVER_ADAPTIVE` (top-vs-second visit-share gap `>=` this value) | `0.2932885906040268` | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | Accepted only as `1` (adaptive Silver is always retained-only) | `1` | `main` |
-| `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier); used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
+| `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier) and one-action roots are searched; used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
+| `STS_SILVER_SEARCH_SINGLETON_ROOTS` | `1`: search roots with one legal action instead of committing that action without search | off (one-action roots unsearched) | `NativeSilverBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |
 | `STS_SILVER_TELEMETRY` | Accepted only as `0`; Silver telemetry was removed | `0` | `main` |

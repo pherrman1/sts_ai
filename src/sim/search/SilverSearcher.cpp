@@ -764,6 +764,13 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
     }
 }
 
+std::size_t search::SilverSearcher::prepareRootActions() {
+    if (root->state->outcome == Outcome::UNDECIDED && root->edges.empty()) {
+        enumerateActionsForNode(*root, *root->state);
+    }
+    return root->edges.size();
+}
+
 search::Action search::SilverSearcher::bestAction() const {
     if (root->edges.empty()) {
         throw std::runtime_error("SilverSearcher::bestAction() called with no available actions");

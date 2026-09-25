@@ -322,6 +322,27 @@ int testSilverSearcher() {
               "plays the lethal Strike");
     }
 
+    // A root with one legal action exposes it without any simulation.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEEu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.cards.cardsInHand = 0;
+        for (auto &p : bc.potions) p = Potion::EMPTY_POTION_SLOT;
+        bc.potionCount = 0;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        check(searcher.prepareRootActions() == 1, "empty hand leaves one root action");
+        check(searcher.rootNode().simulationCount == 0, "preparing root actions runs no simulation");
+        check(searcher.bestAction().getActionType() == search::ActionType::END_TURN,
+              "the sole root action is END_TURN");
+        searcher.search(50);
+        check(searcher.rootNode().edges.size() == 1 && searcher.rootNode().simulationCount == 50,
+              "search after preparing root actions keeps the same edge");
+    }
+
     // Whole battles: the search wins clearly more than the greedy rollout policy alone.
     const MonsterEncounter encounters[] = {
         MonsterEncounter::JAW_WORM, MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN,

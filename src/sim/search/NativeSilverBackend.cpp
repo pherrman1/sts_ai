@@ -27,6 +27,7 @@ namespace sts::search {
             bool installed = false;
             bool adaptive = true;
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
+            bool searchSingletonRoots = false;
             double topGap = kDefaultTopGap;
         };
         Options g_options;
@@ -36,6 +37,7 @@ namespace sts::search {
         std::atomic<std::int64_t> g_simulations {0};
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
+        std::atomic<std::int64_t> g_singletonSkips {0};
 
         class KnowledgeObserverScope {
         public:
@@ -131,7 +133,14 @@ namespace sts::search {
                 // Simulated actions must not reach the live knowledge tracker.
                 KnowledgeObserverSuspension searching;
                 std::int64_t simulations = 0;
-                if (g_options.adaptive) {
+                // A root with one legal action needs no search: commit it and keep
+                // the retained graph for the next reroot. Exact-root-budget
+                // contracts search every root.
+                const bool skipSearch = !g_options.exactRootBudgets && !g_options.searchSingletonRoots
+                    && searcher->prepareRootActions() == 1;
+                if (skipSearch) {
+                    ++g_singletonSkips;
+                } else if (g_options.adaptive) {
                     searcher->search(kAdaptiveInitial);
                     simulations = kAdaptiveInitial;
                     const bool retained = inheritedVisits > 0;
@@ -149,6 +158,7 @@ namespace sts::search {
                 ++g_decisions;
                 ++g_nativeSilverCombatStats.decisions;
                 g_nativeSilverCombatStats.simulations += simulations;
+                agent.simulationCountTotal += simulations;
                 searching.resume();
 
                 const auto action = SilverSearcher::translateAction(
@@ -228,6 +238,9 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")) {
             g_options.exactRootBudgets = std::atoi(raw) != 0;
         }
+        if (const char *raw = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS")) {
+            g_options.searchSingletonRoots = std::atoi(raw) != 0;
+        }
         g_externalCombatBackend = runNativeSilverCombat;
     }
 
@@ -247,6 +260,10 @@ namespace sts::search {
         return g_options.exactRootBudgets;
     }
 
+    bool nativeSilverSearchesSingletonRoots() {
+        return g_options.exactRootBudgets || g_options.searchSingletonRoots;
+    }
+
     std::int64_t nativeSilverReuseCap() {
         return static_cast<std::int64_t>(kReuseCap);
     }
@@ -254,7 +271,8 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
     NativeSilverTotals nativeSilverTotals() {
-        return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load()};
+        return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),
+                g_singletonSkips.load()};
     }
 
 }
