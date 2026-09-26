@@ -12774,7 +12774,48 @@ Batched/SIMD state execution was not pursued: no uniform hot loop exists
 Decision: adopt; this is a pure speedup with exact parity. Evidence:
 [sim_hotpath_profile_2026-09-26](evidence/sim_hotpath_profile_2026-09-26/README.md).
 
-## §361 — Native contextual V4 deck parity and runtime screen (2026-09-26)
+## §361 — OOC MCTS reroot opportunity: measure, do not implement (2026-09-26)
+
+Issue #339, Phase A only. Every live OOC decision builds a fresh search tree.
+The question was whether the next real decision state is already stored in the
+previous search, and how much search work that stored node carries.
+
+Method: a new opt-in observer, `STS_OOC_MCTS_REUSE_TRACE`. It fingerprints
+every stored decision node of each completed live search, then matches the next
+real root against them. It uses two identities:
+- **public**: the state the sampled search holds fixed. Hidden seeds, pool
+  order, unrevealed encounter suffixes and hidden chest/event contents are
+  excluded.
+- **rng**: public plus all RNG draw counters.
+
+Live actions and all non-timing search counters are byte-identical with the
+trace on and off.
+
+Workload: the 2026-09-18 OOC CPU-profile seeds 12002032 and 12002033, at OOC
+2048 and the current default depth 512. 273 real OOC decisions: 162 searched,
+110 singleton, 1 abort.
+
+Results:
+- **rng identity: 0 matches.** Sampling redraws the unrevealed encounter
+  suffix, which advances `monsterRng` counters in every stored particle.
+- **public identity: 94 of 159 searched decisions (58%)** match a node under
+  the previously selected action, at depths 1/2/3+ = 60/25/9. No match crosses
+  a real combat.
+- **Retained work is small.** One real outcome maps to a median of 64 publicly
+  identical sibling particles. The best single node keeps a median of 30
+  visits (max 42): 0.90% of all searched simulations.
+- Upper bound: merging all identical particles would keep 26.6%. That is
+  belief/transposition merging, which the issue excludes without separate
+  evidence.
+
+Decision: stop after measurement, per the issue's decision rule. No
+persistent-tree or reroot code is added. **Open question:** whether collapsing
+publicly deterministic sampled transitions is semantically sound.
+
+Evidence:
+[ooc_reroot_opportunity_2026-09-26](evidence/ooc_reroot_opportunity_2026-09-26/README.md).
+
+## §362 — Native contextual V4 deck parity and runtime screen (2026-09-26)
 
 The task began in a fresh Codex-app-managed worktree at
 `b65615bb78aa982b0fca097d86876009eb34ec6a`. During execution, fetched
@@ -12783,9 +12824,10 @@ to `ffd51f3bc43b03aa356c419567d77b1eecc636a`, then through PR #362 to
 `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #362 changed Silver handling
 for deferred Guardian Mode Shift, so the task branch was fast-forwarded before
 final verification. The contextual native header, exporter, semantic evaluator,
-and ledger were unchanged by that upstream update. This result is §361; the
-upstream change did not append a ledger section. No §357–§360 question or
-default was reopened.
+and ledger were unchanged by that upstream update. This result was originally
+recorded as §361; PR #362 itself did not append a ledger section. PR #366 later
+recorded its separate §361 reroot measurement on main, so this contextual
+rejection is numbered §362 here. No §357–§360 question or default was reopened.
 
 The prototype revision at commit `71e9ace30a876a3c0ed12254615eb58814d87d14`
 made the V4 native net accept both the original `OOC_STRAT_V4` attention
@@ -12860,12 +12902,7 @@ verified root and per-candidate OOC value-distribution bins. `ooc_mcts_adapter`
 also exercised the existing depth-safety and semantic grouping/multiplicity
 fixtures.
 
-A separate one-seed, seed-guarded attention-model diagnostic enabled
-`STS_RUN_PROFILE` under OMP=1 and the exact-10k Silver budget. Live OOC MCTS
-remained unset for this profile-only run; it emitted 53 floor rows, a sum of
-196 OOC-decision counters, and zero MCTS simulations, and the analyzer parsed
-the output. This is diagnostic-contract evidence, not a quality or timing
-comparison. Independently, `live_ooc_protocol` verified the current advisor's
+Independently, `live_ooc_protocol` verified the current advisor's
 `ooc_value_distribution_v1` root distribution and per-candidate bins. The
 Release `one_combat`, advisor, policy-test, parity-test and native-probe
 targets built successfully. GitHub Actions CI remains the draft PR's
@@ -12898,7 +12935,9 @@ prototype.
 
 [Evidence packet](evidence/ooc_contextual_native_runtime_2026-09-26/README.md)
 contains frozen artifact identities, parity results, both exact-GELU and tanh
-speed distributions, raw build/export/test logs, profile diagnostics, and the
-failed tanh parity attempt. Knowledge impact: current native architecture stays
-at `OOC_STRAT_V4`; §361 records the rejected C1 prototype and follow-up. No
+speed distributions, raw build/export/test logs, and the failed tanh parity
+attempt. Profile-only and rejected-preflight diagnostics were omitted during
+review because they do not support parity or the speed decision. Knowledge
+impact: current native architecture stays at `OOC_STRAT_V4`; §362 records the
+rejected C1 prototype and follow-up. No
 gameplay-quality or default-promotion result exists.

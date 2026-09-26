@@ -110,6 +110,18 @@ provider guarantee. The Smoke-excluded V2 artifact and remaining continuation
 abort paths do not qualify the provider guarantee; live stopping uses the explicit
 unqualified policy instead.
 
+Each live search builds a fresh tree; there is no reroot or tree reuse across
+real decisions. Live `STS_OOC_MCTS_REUSE_TRACE=<fresh.jsonl>` measures the
+opportunity without changing search. Full-state identity never matches, because
+sampling redraws the unrevealed encounter suffix and so advances `monsterRng`
+counters in every stored particle. Public-state identity matches often within
+noncombat stretches, never across a real combat. Even then the matched outcome
+is split across many independent sibling particles, since sampled mode can add
+a particle on every chance visit. Rerooting to one particle therefore retains
+little work (§361: 0.90% of searched simulations on the representative
+workload). Merging publicly identical particles would change search semantics
+and is an open question.
+
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
 `OocGameContextModel` integration through explicit `one_combat oocmctsselftest`

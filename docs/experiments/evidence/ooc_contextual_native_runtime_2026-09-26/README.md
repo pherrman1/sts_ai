@@ -1,13 +1,16 @@
 # Contextual V4 native runtime evidence — prototype withdrawn after review
 
-Final baseline: `6bae3a67c63d1f724908e2ee87b27d51e32d30a0` (`origin/main`).
+Experiment baseline at capture: `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`
+(`origin/main` at that time).
 The fresh Codex-app-managed worktree initially started at
 `b65615bb78aa982b0fca097d86876009eb34ec6a`; fetched `origin/main` advanced to
 `ffd51f3bc43b03aa356c419567d77b1eecc636a` and then through PR #362 to the final
 baseline. PR #362 changed Silver handling for deferred Guardian Mode Shift, so
 the task branch was fast-forwarded before final verification. The contextual
-header, exporter, evaluator, and ledger were unchanged by that update. Upstream
-§360 is retained and this result is recorded as §361.
+header, exporter, evaluator, and ledger were unchanged by that update. After
+the experiment, PR #366 added a separate §361 reroot-opportunity entry and
+advanced `main` to `212aa25485bc6e8f0a5a91eb35edc7485056cb5a`. This contextual
+rejection follows it as §362 in the integrated ledger.
 
 > **Final disposition:** The initial implementation and exact-GELU parity/timing
 > results below describe prototype commit `71e9ace30a876a3c0ed12254615eb58814d87d14`.
@@ -98,12 +101,6 @@ new gameplay seeds were used for parity or the performance comparison.
 - `live_ooc_protocol` verified the advisor's `ooc_value_distribution_v1` root
   distribution and per-candidate bins. `live_ooc_policy_contextual` passed
   through current `LiveOocMctsPolicy` and returned candidate value data.
-- A separate, seed-guarded attention-model diagnostic ran one A0 seed with the
-  exact 10k Silver budget and OMP=1 while `STS_RUN_PROFILE` was enabled. Live
-  OOC MCTS remained unset for this profile-only run; it emitted 53 floor
-  records, a sum of 196 OOC-decision counters, and zero MCTS simulations.
-  `tools/analyze_run_profile.py` parsed and reconciled the output. This was a
-  diagnostic-contract check, not a quality or timing comparison.
 
 ## Focused verification
 
@@ -125,15 +122,16 @@ new gameplay seeds were used for parity or the performance comparison.
 - Python compilation checks passed for the exporter, semantic evaluator, and
   native verification wrapper.
 - GitHub Actions CI was not run locally. The checked-in workflow skips draft
-  pull requests, so its Linux GCC gate will start only after a reviewer marks
-  the PR ready; this task leaves it in draft as requested.
+  pull requests; Linux GCC is the authoritative repository check before merge.
 
 Raw current-main outputs are `current_main_native_verification.log`,
 `focused_ctest.log`, `release_build.log`, `frozen_export.log`,
-`exporter_selftest.log`, and the `profile_smoke_current_main_*` files. The
-initial-base logs are retained as `release_build_pre_rebase.log`,
-`profile_smoke_initial_b656_*`, and `profile_smoke_pre_final_source/` for
-provenance.
+and `exporter_selftest.log`. The initial-base build log is retained as
+`release_build_pre_rebase.log` for provenance.
+
+Review cleanup omitted 28 profile-only and rejected-preflight artifacts
+(58,244 text lines, about 2.1 MB); those diagnostics did not inform parity or
+speed decisions.
 
 No default, MCTS, stopping, depth, RNG, semantic-candidate, Silver, or
 gameplay-quality promotion is made. C1 support and its artifact are not retained
@@ -163,4 +161,4 @@ and `-7.229%` for 33–64 (25 calls; weak evidence). The raw timing is
 No high-accuracy GELU approximation was implemented or timed because the
 speed-only treatment did not clear the first gate. No 8-seed smoke was run.
 The final PR tree removes the C1 model format, loader branch, artifact, and
-tests; §361 and the exact-GELU prototype evidence remain for the research record.
+tests; §362 and the exact-GELU prototype evidence remain for the research record.
