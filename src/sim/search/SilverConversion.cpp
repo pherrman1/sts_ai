@@ -312,6 +312,13 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.cardSelect.setCostToZero = true;
     out.cardSelect.selectedBits = 0;
     out.curCardQueueItem = toWire(live.curCardQueueItem);
+    if (live.inputState == InputState::CARD_SELECT) {
+        out.pendingCardQueueObserved = true;
+        const auto &queue = live.cardQueue;
+        for (int i = 0; i < queue.size; ++i) {
+            out.pendingCardQueue.push_back(toWire(queue.arr[(queue.frontIdx + i) % CardQueue::capacity]));
+        }
+    }
     return conversion;
 }
 

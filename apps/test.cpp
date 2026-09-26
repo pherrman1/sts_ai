@@ -708,6 +708,51 @@ int testSilverWireState() {
             ++failures;
         }
     };
+    {
+        // A Headbutt played under Double Tap stops at its discard selection
+        // with the Double Tap copy in the card queue. The replay cannot
+        // rebuild that copy (the status is spent), so the wire carries the
+        // observed card queue.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        for (int played = 0; played < 2;) {
+            int idx = 0;
+            while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::DEFEND_RED
+                   && bc.cards.hand[idx].id != CardId::STRIKE_RED) ++idx;
+            check(idx < bc.cards.cardsInHand, "double tap fixture: no Strike or Defend in hand");
+            if (idx == bc.cards.cardsInHand) break;
+            search::Action(search::ActionType::CARD, idx, 0).execute(bc);
+            ++played;
+        }
+        CardInstance headbutt(CardId::HEADBUTT);
+        headbutt.uniqueId = 900;
+        bc.cards.moveToHand(headbutt);
+        bc.player.buff<PlayerStatus::DOUBLE_TAP>(1);
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        check(bc.inputState == InputState::CARD_SELECT
+                  && bc.cardSelectInfo.cardSelectTask == CardSelectTask::HEADBUTT
+                  && bc.cardQueue.size == 1 && bc.cardQueue.front().purgeOnUse,
+              "double tap fixture: Headbutt did not stop at its selection with a queued copy");
+
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        const auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        check(wire.valid && wire.pendingCardQueueObserved && wire.pendingCardQueue.size() == 1,
+              "double tap fixture: wire did not observe the card queue");
+        const BattleContext root = search::battleContextFromWire(wire);
+        check(root.cardQueue == bc.cardQueue, "double tap fixture: search root lost the Double Tap copy");
+        check(root.actionQueue.size == bc.actionQueue.size, "double tap fixture: action queue differs");
+        const auto context = search::searchContextFromWire(wire);
+        check(search::battleContextFromWire(search::wireFromSearchState(root, context)).cardQueue == root.cardQueue,
+              "double tap fixture: card queue lost in the search-state wire round trip");
+        auto unobserved = wire;
+        unobserved.pendingCardQueueObserved = false;
+        unobserved.pendingCardQueue.clear();
+        check(search::battleContextFromWire(unobserved).cardQueue.size == 0,
+              "double tap fixture: without an observed queue the replay is expected to miss the copy");
+    }
+
     enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE, PLAY_COUNT_RELICS };
     const MonsterEncounter encounters[] = {
         MonsterEncounter::JAW_WORM, MonsterEncounter::LOOTER, MonsterEncounter::GREMLIN_NOB,
