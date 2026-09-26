@@ -1,0 +1,30 @@
+{
+  "binarySha256": "c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244",
+  "canaryValidation": "CANARY_MECHANISM_AND_PROVENANCE_PASS",
+  "chunkCountPerArm": 4,
+  "executionOrder": [
+    "C1",
+    "H1",
+    "C2",
+    "H2",
+    "C3",
+    "H3",
+    "C4",
+    "H4"
+  ],
+  "frozenSourceGitSha": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+  "mergeReportSha256": "fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282",
+  "perSeedSha256": "4ac503913f7db42bc7783440fc7a743cf348a1880dcb346a9ba8ac9069c29100",
+  "qualityClassification": "OOC_HYBRID_QUALITY_CONFIRMED",
+  "schemaVersion": 1,
+  "scientificProtocolChanged": false,
+  "seedCountPerArm": 512,
+  "seedRange": [
+    990000,
+    990511
+  ],
+  "status": "COMPLETE",
+  "summarySha256": "0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce",
+  "transport": "local-seed-guarded-four-by-128",
+  "transportToolGitSha": "7069518b5da3b38f4bac562a9b724de158814583"
+}

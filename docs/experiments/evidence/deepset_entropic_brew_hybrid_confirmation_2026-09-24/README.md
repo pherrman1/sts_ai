@@ -45,8 +45,8 @@ build details are in [artifact-sha256.txt](artifact-sha256.txt) and
 
 The source and executable used for gameplay remain the frozen c9 source and
 binary. No gameplay source/binary, arm, model, seed, clean-environment
-treatment variable, or statistical setting changed. The local transport bound
-CPU affinity to cores 0–7; `OMP_NUM_THREADS=24` remained pinned for both arms.
+treatment variable, or statistical setting changed. `OMP_NUM_THREADS=24`
+remained pinned for both arms.
 
 ## Execution result
 
@@ -63,10 +63,11 @@ remain enforced.
 The 512-pair run used seeds `990000..990511`, OMP 24, and the unchanged
 500,000-replicate paired bootstrap and −5 pp non-inferiority gate. It ran in
 eight normal guarded invocations, in order `C1,H1,C2,H2,C3,H3,C4,H4`; each
-invocation covered 128 seeds. `taskset -c 0-7` limited CPU affinity as local
-transport metadata while both arms retained `OMP_NUM_THREADS=24`. Every
-invocation used the frozen c9 `tools/seed_guard.sh`; no guard bypass or seed
-count increase was used.
+invocation covered 128 seeds. The launcher externally limited the run to CPUs
+0–7; per-chunk receipts do not encode CPU affinity. This run-level detail is
+preserved in [local-runtime-provenance.json](run-evidence/local-runtime-provenance.json).
+Both arms retained `OMP_NUM_THREADS=24`. Every invocation used the frozen c9
+`tools/seed_guard.sh`; no guard bypass or seed count increase was used.
 
 Results: C won 277/512 and H won 292/512. The paired H−C win difference was
 `+2.9297 pp`, with paired bootstrap 95% CI `[-1.7578,+7.6172] pp`. The lower
@@ -76,14 +77,24 @@ is **`OOC_HYBRID_QUALITY_CONFIRMED`**. There were 208 both-win, 151 both-loss,
 `p=0.2576`. This confirms the predeclared non-inferiority gate for this cohort;
 it does not claim superiority or change the default.
 
-The complete local evidence is preserved under the ignored workspace path
-`build/local_deepset_hybrid_confirmation_7069518/`, including all eight chunk
-outputs and transport receipts, the strict merged arms, canary validation,
-per-seed analysis, summary, and completion/provenance records. The analyzer
-summary SHA256 is
-`0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce`; the
-merge report SHA256 is
-`fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282`.
+The full chunk outputs, logs, transport receipts, and merged arm files remain
+in the ignored workspace path
+`build/local_deepset_hybrid_confirmation_7069518/`. The compact
+decision-bearing artifacts are committed under [`run-evidence/`](run-evidence/):
+
+- [summary.json](run-evidence/summary.json) — SHA256
+  `0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce`.
+- [per-seed.csv](run-evidence/per-seed.csv) — SHA256
+  `4ac503913f7db42bc7783440fc7a743cf348a1880dcb346a9ba8ac9069c29100`.
+- [merge-report.json](run-evidence/merge-report.json) — SHA256
+  `fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282`.
+- [canary-validation.json](run-evidence/canary-validation.json) — SHA256
+  `886dae715b04df441c06ee160d36778647929d3e4958553bef7a3e7bef19f60d`.
+- [transport-completion.json](run-evidence/transport-completion.json) — SHA256
+  `f92a045e456836a85f1a3b0e2ed86964d850134278e523544a76368da8441a22`.
+- [local-runtime-provenance.json](run-evidence/local-runtime-provenance.json) — SHA256
+  `978b00a6a30e8b847397ff4dd935a292acc08de146f353288254112f46ac396b`.
+
 `confirmation-plan.json` and both run manifests remain the frozen preparation
 snapshot; their recorded GCP blocker describes the preparation-time status.
 

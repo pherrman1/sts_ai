@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -157,18 +158,29 @@ def preflight_only(work_root: Path) -> None:
                                     seed_start=989999, seed_count=1)
     check_fresh_paths(work_root, all_target_paths(work_root, canary_manifest))
 
-    for arm in ("C", "H"):
-        arm_manifest = confirmation.manifest_arm(canary_manifest, arm)
-        env = {**canary_manifest["common_env"], **arm_manifest["env"]}
-        command = [item if item != "{results}" else arm_manifest["results"]
-                   for item in canary_manifest["command"]]
-        subprocess.run(guarded_canary_argv(env, command, guard_only=True), cwd=REPO_ROOT,
-                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-    for spec in merger.expected_specs():
-        env = merger.expected_environment(confirmation_manifest, spec)
-        command = merger.expected_game_command(confirmation_manifest, spec)
-        subprocess.run(merger.guarded_argv(env, ["guard-only", *command]), cwd=REPO_ROOT,
-                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    with tempfile.TemporaryDirectory(prefix="deepset-confirmation-preflight-") as temp_dir:
+        guard_root = Path(temp_dir)
+        guard_path = guard_root / "tools/seed_guard.sh"
+        guard_path.parent.mkdir(parents=True)
+        guard_path.write_bytes(guard_bytes)
+        guard_path.chmod(0o755)
+        confirmation.require(confirmation.sha256(guard_path) == merger.FROZEN_SEED_GUARD_SHA256,
+                             "staged c9 seed guard hash mismatch during preflight")
+
+        # Run guard-only checks from the directory containing the verified c9
+        # guard; the repository root may carry a newer, unpinned guard.
+        for arm in ("C", "H"):
+            arm_manifest = confirmation.manifest_arm(canary_manifest, arm)
+            env = {**canary_manifest["common_env"], **arm_manifest["env"]}
+            command = [item if item != "{results}" else arm_manifest["results"]
+                       for item in canary_manifest["command"]]
+            subprocess.run(guarded_canary_argv(env, command, guard_only=True), cwd=guard_root,
+                           check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        for spec in merger.expected_specs():
+            env = merger.expected_environment(confirmation_manifest, spec)
+            command = merger.expected_game_command(confirmation_manifest, spec)
+            subprocess.run(merger.guarded_argv(env, ["guard-only", *command]), cwd=guard_root,
+                           check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     print("local transport preflight PASS: frozen pins verified; 2 canaries and 8 chunks are guard-valid; no paths created")
 
 

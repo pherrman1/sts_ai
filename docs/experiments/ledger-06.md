@@ -11703,15 +11703,19 @@ No gameplay run was repeated. Results and commands are in the
   simulations, 24 threads, Act-3 horizon, and the frozen −5 pp gate. Execution
   changed transport only: eight normal seed-guarded 128-seed invocations in
   `C1,H1,C2,H2,C3,H3,C4,H4` order, with `OMP_NUM_THREADS=24` and CPU affinity
-  0–7 recorded as transport metadata. Both arms completed all 512 seeds and
-  passed strict receipt/seed merging before analysis. C won 277/512 and H
+  externally limited to CPUs 0–7. Per-chunk receipts do not encode CPU
+  affinity; the run-level value is preserved in the tracked local runtime
+  provenance record. Both arms completed all 512 seeds and passed strict
+  receipt/seed merging before analysis. C won 277/512 and H
   292/512; paired H−C was `+2.9297 pp` (paired bootstrap 95% CI
   `[-1.7578,+7.6172] pp`). Its lower bound is above the −5 pp margin, meeting
   the predeclared non-inferiority criterion and yielding
   **`OOC_HYBRID_QUALITY_CONFIRMED`** for this cohort. This is not a superiority
   claim or offline CTM qualification; the hybrid remains opt-in and no runtime
-  default changed. The ignored local evidence is under
-  `build/local_deepset_hybrid_confirmation_7069518/`; summary SHA256
+  default changed. Compact decision-bearing evidence is committed in the
+  [confirmation evidence packet](evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md);
+  full chunk outputs, logs, transport receipts, and merged arm files remain
+  ignored under `build/local_deepset_hybrid_confirmation_7069518/`. Summary SHA256
   `0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce`, merge
   report SHA256
   `fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282`.
