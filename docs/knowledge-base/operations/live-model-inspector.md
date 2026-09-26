@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -463,6 +463,13 @@ read-only screen and choice converters. The observation contains:
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
+  Neow phase 3 accepts exactly two early-death offers or four ordinary offers,
+  with all active button slots matching the captured reward order. Import clears
+  unused native Neow slots to `INVALID`; legal-action enumeration and MCTS use
+  only captured offers, preserving their original option indices and live hints.
+  No random offers are synthesized. Native fresh-run generation remains four
+  offers. These paths have Java projection and native import/transition/search
+  fixture coverage; this does not assert a new live-game qualification streak.
 - `liveChoices`: occurrence-bound native action identities and single-command
   structured MCP hints. Duplicate labels are never action identity.
 - `mcpState`: the exact current MCP screen conversion used by the driver to

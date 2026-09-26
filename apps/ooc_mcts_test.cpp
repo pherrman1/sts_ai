@@ -144,6 +144,7 @@ void tests() {
     };
     auto randomObserveConfig=config; randomObserveConfig.observeRootLock=true;
     randomObserveConfig.rootCheckpointSimulations={1,64,128};
+    randomObserveConfig.profileSearch = true;
     const auto randomFull=planner.search(randomReference,0,128);
     const auto randomRecorded=OocMctsPlanner(randomObserveConfig).search(randomObserved,0,128);
     require(referenceDraws==observedDraws && randomFull.selectedAction==randomRecorded.selectedAction
@@ -192,6 +193,20 @@ void tests() {
     const auto detachedResult = OocMctsPlanner(distributionConfig).search(detached,0,3);
     require(detachedResult.rootValues->bins[0] == 3 && detachedResult.rootValues->bins[1] == 0,
         "terminal death reached inside detached leaf evaluation retains its endpoint");
+    require(randomFull.metrics.expandedActionHistogram.empty()
+        && randomRecorded.metrics.expandedActionHistogram == std::map<std::size_t, std::uint64_t>{{1, 1}},
+        "exact histogram defaults off and counts expanded singleton root once");
+    Toy wide;
+    for (unsigned i = 1; i <= 10; ++i) {
+        wide.actions[0].push_back({i, 1});
+        wide.terminals[i] = i / 10.0;
+    }
+    wide.transition = [](auto, auto a, auto &) { return a; };
+    auto wideConfig = config; wideConfig.profileSearch = true;
+    const auto wideResult = OocMctsPlanner(wideConfig).search(wide, 0, 32);
+    require(wideResult.metrics.expandedActionHistogram == std::map<std::size_t, std::uint64_t>{{10, 1}}
+        && wideResult.metrics.expandedNodes3PlusActions == 1,
+        "exact ten-way expansion reconciles with existing coarse census");
     auto checkpointModel = deterministic();
     auto checkpointConfig = config;
     checkpointConfig.rootCheckpointSimulations = {2, 3, 4};
@@ -439,19 +454,66 @@ void tests() {
         && x.outcomeParticles == y.outcomeParticles && x.transitionSamples == y.transitionSamples
         && x.leafEvaluations == y.leafEvaluations && x.maxDepthReached == y.maxDepthReached, "exact replay metrics");
 
-    // A cycle verifies horizon depth and newly expanded leaf stopping.
+    // A safety-cap hit invalidates the entire root, never a value-bearing leaf.
     t = Toy{}; t.leaf = .3; t.actions = {{0, {{0, 1}}}};
     t.transition = [](auto, auto, auto &) { return 0; };
     auto cfg = config; cfg.maxDepth = 2; cfg.wideningK = .01;
     auto h = OocMctsPlanner(cfg).search(t, 0, 20);
-    require(h.metrics.maxDepthReached == 2 && h.metrics.leafEvaluations == 20, "depth counts transitions");
-    require(std::abs(h.rootActions[0].q - .3) < 1e-12, "leaf backup");
-    cfg.maxDepth = 0;
+    require(h.aborted && !h.selectedAction && h.rootActions.empty()
+        && h.abortReason == "ooc_depth_safety_cap_2_state_0"
+        && h.metrics.maxDepthReached == 2 && h.metrics.simulations == 1
+        && h.metrics.simulationAttempts == 2 && t.leafCalls == 1,
+        "cycle aborts without evaluating or backing up the cap-hit state");
+    auto combinedCapture = cfg;
+    combinedCapture.captureValueDistribution = true;
+    combinedCapture.profileSearch = true;
+    t.leafCalls = 0;
+    const auto capturedCap = OocMctsPlanner(combinedCapture).search(t, 0, 20);
+    require(capturedCap.aborted && capturedCap.abortReason == h.abortReason
+        && !capturedCap.rootValues && capturedCap.actionValues.empty()
+        && capturedCap.metrics.simulations == h.metrics.simulations
+        && capturedCap.metrics.transitionSamples == h.metrics.transitionSamples
+        && t.leafCalls == 1,
+        "combined profiling and distribution capture preserve fail-closed cap and discard samples");
+    cfg.maxDepth = 0; t.leafCalls = 0;
     h = OocMctsPlanner(cfg).search(t, 0, 3);
-    require(!h.selectedAction && h.metrics.transitionSamples == 0 && h.metrics.maxDepthReached == 0, "root horizon");
+    require(h.aborted && !h.selectedAction && h.metrics.transitionSamples == 0
+        && h.metrics.maxDepthReached == 0 && t.leafCalls == 0, "root safety cap");
     t.terminals[0] = 1;
     h = OocMctsPlanner(cfg).search(t, 0, 3);
-    require(h.metrics.leafEvaluations == 0 && !h.selectedAction, "terminal precedes horizon");
+    require(!h.aborted && h.metrics.leafEvaluations == 0 && !h.selectedAction,
+        "true terminal does not require further traversal at cap");
+    t.terminals.clear(); t.boundary = true;
+    h = OocMctsPlanner(cfg).search(t, 0, 3);
+    require(!h.aborted && t.leafCalls == 3, "semantic boundary remains valid at cap");
+    cfg = config;
+    require(cfg.maxDepth == 512, "default safety cap is 512");
+    struct SafetyChain : Toy {
+        std::vector<OocPlannerAction> legalActions(OocStateId) const override { return {{0,1}}; }
+        bool isDeterministicTransition(OocStateId, OocActionId) const override { return true; }
+    } safetyChain;
+    safetyChain.terminals[64] = 1;
+    safetyChain.transition = [](auto state, auto, auto &) { return state+1; };
+    auto beyond32 = OocMctsPlanner(cfg).search(safetyChain, 0, 80);
+    require(!beyond32.aborted && beyond32.metrics.maxDepthReached == 64
+        && beyond32.metrics.simulations == 80, "ordinary search grows beyond old horizon");
+    safetyChain.terminals.clear();
+    auto runaway = OocMctsPlanner(cfg).search(safetyChain, 0, 600);
+    require(runaway.aborted && runaway.metrics.maxDepthReached == 512
+        && runaway.abortReason == "ooc_depth_safety_cap_512_state_512",
+        "default cap catches runaway graph");
+    auto below32 = config; below32.maxDepth = 32;
+    auto parityA = stochastic(), parityB = stochastic();
+    const auto lowCap = OocMctsPlanner(below32).search(parityA, 0, 5000);
+    const auto highCap = planner.search(parityB, 0, 5000);
+    require(lowCap.selectedAction == highCap.selectedAction
+        && lowCap.metrics.transitionSamples == highCap.metrics.transitionSamples
+        && lowCap.metrics.depthSum == highCap.metrics.depthSum,
+        "cap value does not change below-cap selection or sampling");
+    for (std::size_t i=0; i<lowCap.rootActions.size(); ++i)
+        require(lowCap.rootActions[i].visits == highCap.rootActions[i].visits
+            && lowCap.rootActions[i].q == highCap.rootActions[i].q,
+            "below-cap root statistics exact parity");
 
     t = Toy{}; t.boundary = true; t.leaf = .4;
     auto boundaryResult = planner.search(t, 0, 3);

@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -33,11 +33,17 @@ never by value. Providers may explicitly mark a transition deterministic; after
 its first sample the core reuses that single child instead of widening it. Action Q is the Monte Carlo mean of sampled trajectory values.
 
 Depth counts action transitions (root zero); exact terminals precede model-defined
-leaf boundaries, which precede the depth horizon,
+leaf boundaries, which precede the technical depth safety guard,
 and newly expanded downstream nonterminal leaves use the injected evaluator.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
-`cPuct=1.5`, `k=2`, `alpha=0.5`, depth 32. Priors normalize with uniform zero-mass
+`cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
+non-boundary state at `depth >= maxDepth` aborts the entire root with
+`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`; partial action statistics
+are discarded. The cap-hit state is never evaluated as a normal leaf.
+`maxDepthReached` includes the offending depth for diagnosis. Live accounting
+records this under `continuationLimitAborts`/`continuation_reasons`, without
+inventing an unsupported combat. Priors normalize with uniform zero-mass
 fallback. Before PUCT, every legal action receives one visit, choosing the
 highest-prior unvisited action and then ascending ID. Zero individual priors
 cannot suppress actions; cPuct=0 visits all actions once, then exploits Q.
@@ -425,7 +431,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `CPUCT` |1.5|finite nonnegative PUCT exploration multiplier|
 | `WIDEN_K` |2|finite positive chance-particle width coefficient|
 | `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
-| `MAX_DEPTH` |32|integer1..32 searched action transitions|
+| `MAX_DEPTH` |512|integer1..512; fail-closed technical safety cap, not a value horizon|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
@@ -438,6 +444,9 @@ with `ceil(k*N^alpha)`; action candidates are fully expanded, so this substrate
 is not double progressive widening. Root-Q selection changes only the final
 choice, not tree allocation. Leaf projection steps do not count toward tree
 `MAX_DEPTH`. None of these knobs changes real Silver's budget or parameters.
+Historical depth-8/16/32 parameter-screen receipts and the frozen
+`tools/ooc_mcts_parameter_search.py` design describe the old value-bearing
+horizon and must be replayed on their recorded source SHA, not this runtime.
 The boss leaf is evaluated through one shared helper from both ordinary
 `leafValue()` and the live resolved-checkpoint branch. It uses no planner or
 gameplay RNG, never calls `v_win`, and fails the simulation/root closed if any
@@ -1111,3 +1120,64 @@ flowchart LR
 - `docs/knowledge-base/evaluation/current-research.md` — current research routing
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`
+
+
+### Real-run floor and decision profile
+
+Set `STS_RUN_PROFILE=/path/to/fresh.jsonl` for default-off observational
+profiling in `runFullRunOOC`. An empty/unset path creates no output and performs
+no floor clock reads or branching-histogram updates. Rows are serialized across
+workers and write failures are explicit. This does not enable OOC MCTS, change
+its budgets/model/RNG, or force full-budget execution. Unlike the older
+`STS_OOC_MCTS_CHECKPOINT_TRACE` shadow diagnostic, it records checkpoints inside
+the existing search with no second search. It preserves singleton bypasses and
+all configured early stopping. If both diagnostics are explicitly enabled,
+the older shadow still runs and its extra work is included in floor totals.
+
+A floor interval starts when the real driver first observes `(act, floor)` and
+ends when it first observes the next pair, or when the run stops/aborts. All
+screens on the same floor share one row. Map-choice/entry work is charged to
+the floor being left. Metadata names the floor being measured, including room,
+coordinates and all observed combat encounters. Outcomes distinguish advancing,
+death, victory, requested act-stop victory and abort. Fallbacks/support aborts
+are separate counts, not floor outcomes. Exceptions emit a partial floor row
+with the error; completed-component counters on that row do not account for
+unfinished work and must not be treated as a complete profile.
+
+Floor rows report wall and thread CPU time, real-combat lifecycle time,
+combat decisions/simulations, and differences of the existing run-level OOC
+search/transition/particle/leaf/CTM counters. Real-combat timing includes state
+conversion and backend overhead, not just Silver tree search. OOC time includes
+search preparation and result construction. Component times are nested inside
+floor totals; do not add totals and components. I/O and profile overhead can
+remain in floor totals, so this is not an isolated speed benchmark. Final floor
+emission and post-run reporting are outside the sum of floor intervals.
+
+Each actual OOC search records root actions (prior, visits, mean Q), selected
+semantic key, execution/fallback status, configured/completed simulations,
+exact expanded-node legal-action histogram, sampling work and depth. The
+histogram counts each expansion, including repeated sampled decision states;
+terminal/semantic boundary states do not expand and are excluded. Histograms
+sum to the existing coarse expansion census. Singleton roots have zero
+expansions/simulations. Root checkpoints at 128/256/512/1024/2048/4096 appear
+only when reached. A support-aborted search retains partial expansion and
+checkpoint evidence but has no final action statistics.
+
+`python3 tools/analyze_run_profile.py PROFILE.jsonl --output SUMMARY.json`
+validates floor/decision counts, execution/fallback/abort statuses, and search
+work. Floor records explicitly count `unprofiled_disabled` calls and
+`unprofiled_observer` early returns: neither emits a search row, and only the
+latter contributes to fallbacks. Older schema-1 records default these counters
+to zero; an old profile with such unrecorded early returns cannot be certified
+and is rejected. Partial abort floors remain unqualified. The analyzer reports
+exact branching shares, slow
+floors by wall/CPU, room mean/median cost, top-5/top-10 CPU share, and root
+stability cross-tabs. It derives visit/Q gaps, prior entropy and a strict visit
+winner lock using `leader_visits - runner_up_visits > remaining_budget`.
+That mathematical visit lock is not a guarantee against later support failure.
+
+`b_stable_observed` is the earliest recorded checkpoint after which the winner
+never changes through the **observed** final search. `b_stable_full_budget` is
+null for early-stopped, singleton, boundary or aborted searches. Full-budget
+cross-tabs use only uncensored searches and can be selection-biased. Neither
+statistic qualifies an adaptive stopping policy on independent future searches.

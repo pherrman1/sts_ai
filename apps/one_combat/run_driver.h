@@ -31,6 +31,7 @@ void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &
 // environment parsing, model loading, and the counterfactual evaluators in
 // the integration translation unit while giving the run loop its lifecycle
 // entry points.
+void runFloorProfileSelfTest();
 void trainingRunStart();
 bool trainingRunValid(bool outcomeDecided);
 void vDisconnect();

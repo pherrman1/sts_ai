@@ -46,6 +46,7 @@
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverUselessAction.h"
 #include "sim/search/SilverWireState.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
@@ -250,9 +251,11 @@ namespace {
         int turn = 0;
         int decisions = 0;
         int reroots = 0;
+        std::vector<std::uint32_t> actions;
+        std::vector<search::SearchRngState> rng;
     };
 
-    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims) {
+    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims, bool profileEnabled = false, bool diagnose = false) {
         GameContext gc(CharacterClass::IRONCLAD, seed, 0);
         BattleContext bc;
         bc.init(gc, encounter);
@@ -271,14 +274,22 @@ namespace {
             } else {
                 searcher = std::make_unique<search::SilverSearcher>(root, context);
             }
+            search::SilverTreeProfile profile;
+            searcher->profile = profileEnabled ? &profile : nullptr;
             searcher->search(sims);
+            searcher->profile = nullptr;
+            if (profileEnabled && profile.completed != sims)
+                throw std::runtime_error("profile denominator includes inherited visits or misses simulations");
             const auto action = search::SilverSearcher::translateAction(
                 searcher->bestAction(), searcher->rootSearchState(), bc);
             if (!action.isValidAction(bc)) {
                 std::cerr << "silver_searcher: invalid action chosen\n";
                 break;
             }
+            if (diagnose) (void)search::proveSilverUselessBlock(bc, action);
+            result.actions.push_back(action.bits);
             action.execute(bc);
+            result.rng.push_back(search::captureSearchRng(bc));
             ++result.decisions;
         }
         result.outcome = bc.outcome;
@@ -297,6 +308,138 @@ int testSilverSearcher() {
             ++failures;
         }
     };
+
+    // Final choice is edge visits only; even Q ties keep enumeration order.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        searcher.prepareRootActions();
+        auto *root = &const_cast<search::SilverSearcher::Node &>(searcher.rootNode());
+        check(root && root->edges.size() >= 2, "root selection fixture has two actions");
+        if (root && root->edges.size() >= 2) {
+            root->edges.resize(2);
+            search::SilverSearcher::Node low, high;
+            low.simulationCount = high.simulationCount = 10;
+            low.evaluationSum = 1; high.evaluationSum = 1000;
+            root->edges[0].node = &low; root->edges[1].node = &high;
+            root->edges[0].visitCount = 20; root->edges[1].visitCount = 10;
+            check(searcher.bestAction().bits == root->edges[0].action.bits,
+                  "more visits beats higher mean Q");
+            root->edges[1].visitCount = 20;
+            check(searcher.bestAction().bits == root->edges[0].action.bits,
+                  "visit tie ignores Q and keeps first edge");
+            std::swap(root->edges[0], root->edges[1]);
+            check(searcher.bestAction().bits == root->edges[0].action.bits,
+                  "tie follows enumeration order rather than action identity");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
+        bc.cards.cardsInHand = 1;
+        bc.cards.hand[0] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[0].uniqueId = 81;
+        bc.potionCount = 0;
+        for (auto &p : bc.potions) p = Potion::EMPTY_POTION_SLOT;
+        const search::Action defend(search::ActionType::CARD, 0, 0);
+        const auto before = bc;
+        const auto proof = search::proveSilverUselessBlock(bc, defend);
+        if (!proof.verified) std::cerr << "useless block fixture rejected: " << proof.reason << '\n';
+        check(proof.verified && proof.energySpent == 1 && proof.blockGained == 5
+              && proof.energyWasteDelta == -1 && !proof.snapshot.empty(),
+              "last-card temporary block has an equivalent forced End Turn continuation");
+        check(bc == before, "diagnostic never changes live state or RNG");
+        auto changed = bc;
+        changed.player.setHasStatus<PlayerStatus::BARRICADE>(true);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "retained block fails closed");
+        changed = bc; changed.player.buff<PlayerStatus::JUGGERNAUT>(5);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "block damage trigger fails closed");
+        changed = bc; changed.player.setHasRelic<RelicId::INK_BOTTLE>(true);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "card-play relic fails closed");
+        changed = bc; changed.monsters.arr[0].moveHistory[0] = MMID::CULTIST_DARK_STRIKE;
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "incoming damage fails closed");
+        changed = bc; changed.cards.cardsInHand = 2;
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "unforced continuation fails closed");
+        changed = bc; changed.cards.hand[0] = CardInstance(CardId::SHRUG_IT_OFF);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "draw effect is outside qualified class");
+        const auto off = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200);
+        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, false, true);
+        check(off.actions == on.actions && off.rng == on.rng && off.hp == on.hp
+            && off.turn == on.turn && off.outcome == on.outcome,
+            "diagnostics preserve every full-fight action, RNG stream, and result");
+
+    }
+
+    // Exact endpoint/depth fixtures and opt-in observational parity.
+    {
+        using Profile = search::SilverTreeProfile;
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.monsters.arr[0].curHp = 1;
+        bc.monsters.arr[0].block = 0;
+        bc.cards.cardsInHand = 1;
+        bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[0].uniqueId = 81;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        check(searcher.profile == nullptr, "profiling defaults off");
+        Profile profile;
+        searcher.profile = &profile;
+        searcher.search(1);
+        check(profile.completed == 1 && profile.endpoints[Profile::VICTORY].tree[1] == 1
+              && profile.endpoints[Profile::VICTORY].total[1] == 1,
+              "one lethal action ends at tree/total depth one");
+        BattleContext stochastic;
+        stochastic.init(gc, MonsterEncounter::CULTIST);
+        stochastic.player.energy = 0;
+        search::SilverSearcher chanceSearcher(silverSearchRoot(stochastic), {});
+        Profile chanceProfile;
+        chanceSearcher.profile = &chanceProfile;
+        chanceSearcher.search(1);
+        std::int64_t depthOne = 0;
+        for (const auto &endpoint : chanceProfile.endpoints) {
+            const auto it = endpoint.tree.find(1);
+            if (it != endpoint.tree.end()) depthOne += it->second;
+        }
+        check(chanceSearcher.stats.chanceOutcomesSampled > 0 && depthOne == 1,
+              "chance outcome edge does not add another action to tree depth");
+        bc.inputState = InputState::CHOOSE_STANCE_ACTION;
+        searcher.setRoot(silverSearchRoot(bc));
+        profile = {};
+        searcher.search(3);
+        searcher.search(4);
+        check(profile.completed == 7 && profile.endpoints[Profile::NONTERMINAL].tree[0] == 7
+              && profile.endpoints[Profile::NONTERMINAL].total[0] == 7,
+              "no-action nonterminal root and chunked denominator are exact");
+        bc.outcome = Outcome::PLAYER_LOSS;
+        bc.player.curHp = 0;
+        profile = {};
+        profile.record(bc, 2, 3);
+        check(profile.endpoints[Profile::DEATH].tree[2] == 1
+              && profile.endpoints[Profile::DEATH].total[5] == 1, "death depths separate tree and rollout");
+        bc.player.curHp = 20;
+        profile.record(bc, 4, 0);
+        check(profile.endpoints[Profile::ENGINE_STOP].tree[4] == 1, "non-death engine loss stays separate");
+        bc.turn = 501;
+        profile.record(bc, 5, 1);
+        check(profile.endpoints[Profile::TURN_LIMIT].total[6] == 1, "turn limit stays separate");
+        searcher.setRoot(silverSearchRoot(bc));
+        profile = {};
+        searcher.search(7);
+        check(profile.completed == 0, "terminal-root initialization is not a completed simulation");
+
+        const auto off = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200);
+        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true);
+        check(off.actions == on.actions && off.rng == on.rng && off.hp == on.hp
+              && off.turn == on.turn && off.outcome == on.outcome && off.reroots == on.reroots,
+              "profile on/off preserves every action, all six RNG streams, and final result");
+        check(on.reroots > 0, "profile parity fixture exercises rerooted searches");
+        const auto both = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true, true);
+        check(off.actions == both.actions && off.rng == both.rng && off.hp == both.hp
+              && off.turn == both.turn && off.outcome == both.outcome && off.reroots == both.reroots,
+              "combined tree profiling and useless-action proof preserve fight and RNG");
+    }
 
     // Lethal is found: a nearly dead Cultist and a Strike in hand.
     {

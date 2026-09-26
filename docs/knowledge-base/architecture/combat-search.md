@@ -283,3 +283,111 @@ and [research/](../research/README.md). Chronological evidence is indexed by
 Use those sources for benchmark numbers, rejected variants, promotion
 decisions, and implementation history. Keep this page limited to the current
 architecture and behavior contract.
+
+
+### Final Silver root selection and narrow useless-action diagnostic
+
+`SilverSearcher::bestAction()` selects the edge with the largest
+`Edge::visitCount`. It updates only on strict `>`, so ties keep the first
+**enumerated edge**, including an all-zero tie. Mean Q, exploration/UCB score,
+prior and child-node visit count are not final-selection tie-breaks. This same
+method serves flat/adaptive/exact budgets, retained roots, singleton bypasses,
+and `NativeSilverAdvisorSession::result`. Retained edge visits participate in
+the choice; counts are not restricted to new simulations at the current root.
+UCB/Q still affect tree allocation before this final choice. There is no root
+prior in the active Silver backend.
+
+The backend maps the chosen action's card identity to the concrete live state
+with `translateAction`, including equivalent-copy mapping, and fails if it is
+illegal. The advisor performs that mapping and semantic lowering; a lowering
+failure rejects the response. These transformations express the selected
+semantic action rather than reranking candidates. The adapter's diagnostic
+Q is `child.evaluationSum / child.simulationCount`; it is a heuristic value,
+not a probability or the final selection score.
+
+`STS_SILVER_USELESS_TRACE=/path/to/fresh.jsonl` records a census after the real
+root action is selected. The initial qualified class is deliberately narrow:
+a legal energy-spending red Defend is the only card in hand, no potion remains,
+no player power/status is present, only Burning Blood (or no relic) is allowed,
+and no live enemy currently has an attack intent. The play must leave an empty
+hand and no other decision besides End Turn, increase block, spend energy,
+and leave HP, monsters and RNG unchanged immediately. Relic/power/retention/
+card-draw/attack/unforced cases fail closed.
+
+The proof executes two copied continuations: Defend then forced End Turn,
+versus End Turn immediately. Both must reach the same next-turn player
+boundary while undecided. `BattleContext::operator==` then compares all
+ordered card piles, Player/Monster fields, flags, counters and all six RNG
+streams, with only these explicit exceptions:
+
+- `energyWasted` is reported separately; it changes Silver's non-victory
+  heuristic (`-1.75 * energyWasted`, except shape encounters), not gameplay.
+- Extra execution-loop steps on the Defend branch are reported. The comparator
+  must have at least as much loop-guard headroom; roots near a guard are rejected.
+- The static benchmark `sum` sink is excluded by the existing equality operator;
+  it has no gameplay/search-selection role.
+
+Thus `provably_useless` means this **frozen concrete state and its forced
+End-Turn continuation** has an equivalent mechanical continuation (or more
+loop headroom with the comparator). It does not assert equivalence for other
+hidden RNG states, other block cards, or optional continuations. Diagnostic
+copies suspend the live knowledge observer and restore the debug pointer.
+The result is never used to choose/prune an action or change a budget.
+
+Verified rows contain seed/floor/turn/decision identity, snapshot fingerprint
+and full binary snapshot, selected/comparator actions, all root edge visits
+and child Q denominators, configured/completed simulations, and the proof's
+resource/counter differences. Snapshot round-trip must preserve the root's
+search state, ordered cards and RNG before a result is accepted. The verifier
+`bash tools/seed_guard.sh build/.../silver_useless_replay TRACE.jsonl` replays
+all verified examples (up to 128 locally). `tools/analyze_silver_useless.py`
+checks final-selection/Q accounting and groups higher-Q, near-equal-Q and
+lower-Q-but-selected cases. Its absolute 1e-6 near-Q band is a descriptive
+label, not a confidence interval. A zero census does not establish absence of
+other wasted-block classes. No policy fix follows from these diagnostics alone.
+### Silver tree profile
+
+`STS_SILVER_TREE_PROFILE=/path/to/fresh.jsonl` enables aggregate diagnostics
+for real decisions executed by `NativeSilverBackend` (not the separate live
+advisor path). Unset/empty means no file and no histogram updates. The writer
+serializes rows across worker threads; a failed open/write is an explicit error.
+The profile does not change policy, budgets, evaluation, or RNG. Rows identify
+seed, act/floor, encounter, room, turn, decision, player/enemy HP, configured
+maximum budget, actual completed simulations, allocated nodes, root actions,
+inherited visits, selected action, and singleton skips.
+
+The denominator is **newly completed simulations in this real decision**,
+including both adaptive chunks but excluding all inherited visits and terminal
+root initialization. Singleton skips have zero samples. Each completed step
+calls the heuristic evaluator once; Native Silver has no neural leaf evaluator.
+Endpoint counts sum to completed simulations. Descent-bound exceptions are
+recorded separately in an error row and rethrown; analysis rejects incomplete
+searches instead of including their partial counts. The analyzer requires explicit
+boolean budget-mode flags, zero completed simulations for singleton skips, the
+full configured budget for flat searches, and exactly 500 or 10,000 completed
+simulations with a 10,000 maximum for adaptive searches.
+
+Endpoint classes follow simulator outcomes: `victory` includes escapes the
+engine treats as victory; `death` requires PLAYER_LOSS with HP <= 0;
+`turn_limit` is a PLAYER_LOSS beyond turn 500; `engine_stop` is any other
+PLAYER_LOSS (including no-damage/loop-guard stops); `nonterminal` is UNDECIDED
+when no supported action is available. Turn-limit classification takes
+precedence over HP. Engine losses must not be interpreted as sampled deaths.
+
+Tree depth counts selected action edges from the current root; chance-outcome
+edges do not add a second action. Total endpoint depth adds rollout actions.
+A newly reached nonterminal tree leaf normally receives a SilverRolloutAgent
+rollout before heuristic evaluation, so terminal **evaluated endpoints** do
+not imply terminal tree leaves. `nonterminal_rollout_starts` and `rollout_calls`
+make this distinction visible; cycle rollouts are counted separately. Exact
+histograms retain maxima and quantiles without dumping states or whole trees.
+
+Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
+SUMMARY.json` to validate all denominators and generate counts/shares and depth
+quantiles by act, room, encounter, turn, decision, HP quarter, enemy HP in
+25-point bands, and configured budget. The report ranks encounters with at
+least 20 observed decisions (override `--minimum-decisions`) and includes one
+complete fight's evolution per encounter. It uses simulation-weighted shares,
+not averages of per-decision percentages. Zero-sample shares are null. Reused
+visits and correlated search samples are not independent gameplay outcomes;
+terminal reachability alone establishes no search-quality or budget claim.
