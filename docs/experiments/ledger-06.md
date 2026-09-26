@@ -12506,3 +12506,115 @@ these timings were not isolated for a performance claim.
 **Conclusion:** this diagnostic measures evaluated endpoints separately from
 search depth and rollout starts. It does not justify a leaf model, pruning,
 search-budget change, or a gameplay-quality claim.
+
+## §358 — Exact OOC branching and real-floor/decision profile (2026-09-26)
+
+Issue #341: observational implementation against main
+`b23aad9d8885c6eca332b1f5cccf3890755bbecf`. `STS_RUN_PROFILE` captures existing
+search checkpoints and exact expansion cardinality without changing early
+stopping, singleton shortcuts, models, budgets, or RNG. Earlier artifacts lack
+this combined floor/decision/exact-histogram schema, so a fresh bounded run
+was needed. No scientific promotion or adaptive policy was implemented.
+
+[Evidence manifest](evidence/ooc_run_profile_2026-09-26/manifest.json) records
+commands and source/model/binary/artifact hashes. Seed 0, A0, OMP=1, fair native
+Silver exact 10k; native V4 plus `combat_transition_near_full_except_smoke_v2`
+CTM, OOC MCTS 2048 with existing strict-lock stopping and depth cap 32. Both
+on/off arms use identical settings. This branch is independent of the pending
+#336 depth-cap and #344 Silver-profile changes. The source hashes, not the
+baseline SHA alone, identify instrumented code. Model loading succeeded.
+
+The run completed with death to Slime Boss on floor 16: coverage is **Act 1
+only**, not a representative estimate across all acts or seeds. Its 17 floor
+intervals cover 45 OOC decisions (29 searched, 15 singleton bypasses, one
+boundary/fallback), 43,540 completed simulations, 41,780 transition samples,
+and 8,193 CTM samples. All nine matching floor aggregates reconcile exactly
+with existing completed-run telemetry; decision rows reconcile with floors.
+
+40,635 expanded nodes span exact cardinalities 1–22 and 24. Singleton nodes
+are 32.3022%. The full histogram, room means/medians, top-10 wall/CPU floor
+lists, encounter costs, prior/visit/Q statistics, and stability cross-tabs are
+in compressed `summary.json.gz`, backed by raw `profile.jsonl.gz`.
+
+Measured floor CPU totals were 35.7148 s: 28.9845 s in OOC search scope and
+6.7211 s in real-combat lifecycle scope. These are nested components of the
+floor total, not additional costs. The top 5 / top 10 floors account for
+55.0695% / 83.6623% of floor CPU. Highest wall costs were the initial Neow/map
+interval (4.643 s; engine room INVALID), floor 6 Lagavulin (4.407 s), floor 11
+rest (4.273 s), floor 12 event (3.372 s), and floor 16 Slime Boss (2.977 s).
+No performance improvement claim follows from this one-run profile.
+
+Observed retrospective stability for the 29 searched decisions was first
+seen at 128 in 25 cases, 256 in one, and only at the observed stopping point
+1953/2000/2028 in one case each. Thus 86.21% had the same observed winner from
+128 onward, 89.66% from 256 onward. **Every searched decision stopped early**:
+there are zero full-budget stability labels. Singleton/boundary roots also
+have no stability label. The analyzer keeps censored and full-budget
+statistics separate and does not infer unexecuted search outcomes.
+
+Validation: focused Debug planner/adapter/analyzer CTest 3/3 passed. Fixtures
+prove exact singleton/10-way expansion counts, checkpoint root-statistic and
+sampling-draw parity, preservation of early stopping and singleton bypasses,
+and one floor row per interval with correct metadata/counter differences.
+Five analyzer tests cover stability, strict lock/ties, missing checkpoints,
+histogram corruption and floor reconciliation. Full-run on/off comparison
+matches all nine gameplay fields, 41 non-timing MCTS fields, and byte-identical
+OOC action traces; timing is excluded. Raw outputs and comparison hashes are
+included in the evidence directory. Compressed reanalysis is reproducible.
+
+**Conclusion / cheapest next experiment:** capture a small fixed set of roots
+with late observed winner changes plus matched early-stable roots, then run
+full-budget detached shadow searches for those roots while preserving the
+actual policy. That would resolve censoring before testing a budget rule. The
+present evidence alone neither qualifies early stopping nor justifies pruning
+wide nodes. The additional later-act pilot below extends coverage; independent
+gameplay qualification remains outside this engineering issue.
+
+### Additional later-act coverage pilot
+
+The user requested a pilot beyond Act 1. The predeclared coverage search was
+seeds 1–8 in ascending order, stopping at the first completed A0 run reaching
+Act 2 and then repeating that seed with profiling off. This selects for
+coverage, not an unbiased win-rate or speed sample. Seed 1 met the criterion
+on the first correctly configured attempt and **won at floor 51, Act 3, with
+38/85 HP**. No other A0 seeds were screened. The source is the frozen
+implementation `fbe390532addaeaa93b3703d29c1df44dcfe2a24`; rebuilt Release binary
+SHA-256 exactly matches the original pilot's binary. Models, fair native
+Silver exact-10k budget, OOC MCTS 2048, early stopping and all other settings
+remain unchanged.
+
+[Additional evidence](evidence/ooc_run_profile_2026-09-26/later_act_pilot/manifest.json)
+contains raw/compressed traces, commands, hashes, metadata, per-act accounting,
+parity and summaries. There are 53 `(act,floor)` intervals and 148 OOC decisions:
+84 searched, 61 singleton bypasses, three boundary/fallback decisions. The run
+completed 118,596 simulations and 22,203 CTM samples, with 112,757 expanded
+nodes; singleton expansion share was 39.9044%.
+
+| Act | Floor intervals | OOC decisions | Total floor CPU s | OOC scope CPU s | Real-combat lifecycle CPU s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 18 | 50 | 29.3236 | 23.6408 | 5.6773 |
+| 2 | 18 | 55 | 54.2016 | 41.3275 | 12.8654 |
+| 3 | 17 | 43 | 55.6456 | 39.4552 | 16.1839 |
+
+Component scopes remain nested inside the floor total. Top-five/top-ten floors
+accounted for 25.7362%/42.8233% of CPU. Of 84 searched decisions, 73 retained
+the observed winner from checkpoint 128 onward, but **all 84 stopped early**;
+there are still zero full-budget stability labels. This does not qualify a
+stopping rule or performance improvement.
+
+The matching off run also won at floor 51 with 38/85 HP. All nine gameplay
+fields, 41 non-timing search fields and byte-identical OOC action traces match.
+All nine corresponding floor/run counter totals reconcile; the analyzer also
+validates decision/floor accounting across act boundaries. Source code and
+model artifacts were not changed for this extension.
+
+One initial runner invocation swapped positional ascension/seed arguments,
+producing A1 seed 0 (death at floor 40) instead of A0 seed 1. Output validation
+caught the mismatch; it was excluded and retained in `excluded_a1_seed0/`
+with actual settings, logs, traces and hashes. It is not pooled with the
+matching pilot. The corrected runner additionally asserts ascension, exact
+seed block and executable source identity from the output metadata.
+
+Knowledge impact: expanded descriptive evidence in this ledger; maintained
+profiling semantics and defaults are unchanged. Coverage now includes all
+three acts, while representative multi-seed qualification remains unrun.

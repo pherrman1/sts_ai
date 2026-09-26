@@ -144,6 +144,7 @@ void tests() {
     };
     auto randomObserveConfig=config; randomObserveConfig.observeRootLock=true;
     randomObserveConfig.rootCheckpointSimulations={1,64,128};
+    randomObserveConfig.profileSearch = true;
     const auto randomFull=planner.search(randomReference,0,128);
     const auto randomRecorded=OocMctsPlanner(randomObserveConfig).search(randomObserved,0,128);
     require(referenceDraws==observedDraws && randomFull.selectedAction==randomRecorded.selectedAction
@@ -151,6 +152,20 @@ void tests() {
         && randomFull.rootActions[0].q==randomRecorded.rootActions[0].q
         && randomFull.metrics.transitionSamples==randomRecorded.metrics.transitionSamples,
         "observation preserves every sampling draw and full-budget stochastic particle result");
+    require(randomFull.metrics.expandedActionHistogram.empty()
+        && randomRecorded.metrics.expandedActionHistogram == std::map<std::size_t, std::uint64_t>{{1, 1}},
+        "exact histogram defaults off and counts expanded singleton root once");
+    Toy wide;
+    for (unsigned i = 1; i <= 10; ++i) {
+        wide.actions[0].push_back({i, 1});
+        wide.terminals[i] = i / 10.0;
+    }
+    wide.transition = [](auto, auto a, auto &) { return a; };
+    auto wideConfig = config; wideConfig.profileSearch = true;
+    const auto wideResult = OocMctsPlanner(wideConfig).search(wide, 0, 32);
+    require(wideResult.metrics.expandedActionHistogram == std::map<std::size_t, std::uint64_t>{{10, 1}}
+        && wideResult.metrics.expandedNodes3PlusActions == 1,
+        "exact ten-way expansion reconciles with existing coarse census");
     auto checkpointModel = deterministic();
     auto checkpointConfig = config;
     checkpointConfig.rootCheckpointSimulations = {2, 3, 4};
