@@ -1,0 +1,62 @@
+17,763,438,322 (100.0%)  PROGRAM TOTALS
+Ir                       file:function
+--------------------------------------------------------------------------------
+17,763,438,322 (100.0%)  ???:0x000000000001f540 [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+17,761,309,625 (99.99%)  ???:(below main)
+17,761,309,613 (99.99%)  ./csu/../csu/libc-start.c:__libc_start_main@@GLIBC_2.34 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+17,761,308,954 (99.99%)  ./csu/../sysdeps/nptl/libc_start_call_main.h:(below main) [/usr/lib/x86_64-linux-gnu/libc.so.6]
+17,761,298,359 (99.99%)  apps/test.cpp:main
+17,761,297,979 (99.99%)  apps/test.cpp:main
+17,761,296,193 (99.99%)  apps/test.cpp:silverProfile(long, int)
+17,145,957,423 (96.52%)  src/sim/search/SilverSearcher.cpp:silverProfile(long, int)
+17,051,502,053 (95.99%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::step()
+13,551,930,778 (76.29%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::rolloutToEnd(sts::BattleContext&)
+10,851,272,567 (61.09%)  src/sim/search/Action.cpp:sts::search::Action::execute(sts::BattleContext&) const
+10,654,183,910 (59.98%)  src/sim/search/Action.cpp:sts::search::Action::execute(sts::BattleContext&) const
+10,059,201,993 (56.63%)  src/combat/BattleContext.cpp:sts::BattleContext::executeActions()
+ 4,487,592,792 (25.26%)  src/combat/Actions.cpp:sts::Action::operator()(sts::BattleContext&) const
+ 4,156,501,871 (23.40%)  src/combat/Actions.cpp:sts::Action::operator()(sts::BattleContext&) const
+ 3,129,642,712 (17.62%)  src/sim/search/SilverRolloutAgent.cpp:sts::search::SilverRolloutAgent::chooseBattleCardPlay(sts::BattleContext const&) [clone .part.0]
+ 2,839,594,527 (15.99%)  src/sim/search/SilverRolloutAgent.cpp:sts::search::SilverRolloutAgent::chooseBattleCardPlay(sts::BattleContext const&) [clone .part.0]
+ 2,102,939,831 (11.84%)  src/combat/BattleContext.cpp:sts::BattleContext::playCardQueueItem(sts::CardQueueItem) [clone .isra.0]
+ 1,737,357,662 ( 9.78%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::getOrCreateNode(sts::BattleContext&&)
+ 1,580,866,535 ( 8.90%)  src/combat/BattleContext.cpp:sts::BattleContext::drawCards(int)
+ 1,437,444,184 ( 8.09%)  src/combat/CardInstance.cpp:sts::CardInstance::canUseOnAnyTarget(sts::BattleContext const&) const
+ 1,342,649,623 ( 7.56%)  src/combat/CardManager.cpp:sts::BattleContext::drawCards(int)
+ 1,330,089,398 ( 7.49%)  src/combat/BattleContext.cpp:sts::BattleContext::useCard()
+ 1,196,430,623 ( 6.74%)  src/combat/CardInstance.cpp:sts::CardInstance::canUseOnAnyTarget(sts::BattleContext const&) const
+ 1,081,163,755 ( 6.09%)  src/combat/CardInstance.cpp:sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const
+   765,527,565 ( 4.31%)  include/combat/ActionQueue.h:sts::ActionQueue<128>::pushBack(sts::Action)
+   757,395,872 ( 4.26%)  include/combat/BattleContext.h:sts::BattleContext::operator=(sts::BattleContext const&)
+   699,827,465 ( 3.94%)  bits/move.h:std::enable_if<std::__and_<std::__not_<std::__is_tuple_like<sts::BattleContext> >, std::is_move_constructible<sts::BattleContext>, std::is_move_assignable<sts::Bat
+   692,886,580 ( 3.90%)  include/combat/CardPile.h:sts::CardPile::drawTop(sts::Random&)
+   582,122,632 ( 3.28%)  bits/stl_algo.h:void std::__sort<__gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, __gnu_cxx::__ops::_Iter
+   551,997,010 ( 3.11%)  src/combat/CardManager.cpp:sts::CardManager::moveDiscardPileIntoToDrawPile(sts::Random&)
+   549,989,613 ( 3.10%)  src/combat/MonsterGroup.cpp:sts::BattleContext::executeActions()
+   526,448,661 ( 2.96%)  src/combat/MonsterSpecific.cpp:sts::Monster::takeTurn(sts::BattleContext&)
+   514,326,430 ( 2.90%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::SilverSearcher(sts::BattleContext const&, sts::search::SilverSearchContext const&) [clone .isra.0]
+   514,256,861 ( 2.90%)  src/combat/MonsterSpecific.cpp:sts::Monster::takeTurn(sts::BattleContext&)
+   494,068,920 ( 2.78%)  include/combat/CardPile.h:sts::CardPile::drawTop(sts::Random&)
+   478,559,345 ( 2.69%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::resetForSearch()
+   477,111,724 ( 2.69%)  ???:0x000000000011db30 [???]
+   477,111,635 ( 2.69%)  /usr/include/x86_64-linux-gnu/bits/string_fortified.h:sts::search::SilverSearcher::resetForSearch()
+   477,110,692 ( 2.69%)  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S:__memset_avx2_unaligned_erms [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   474,434,044 ( 2.67%)  bits/stl_algo.h:sts::CardManager::moveDiscardPileIntoToDrawPile(sts::Random&)
+   439,694,935 ( 2.48%)  src/sim/search/SearchStateHash.cpp:sts::search::hashBattleState(sts::BattleContext const&)
+   435,330,805 ( 2.45%)  src/sim/search/SearchStateHash.cpp:sts::search::hashBattleState(sts::BattleContext const&)
+   424,914,474 ( 2.39%)  src/combat/BattleContext.cpp:sts::search::SilverSearcher::getOrCreateNode(sts::BattleContext&&)
+   408,449,853 ( 2.30%)  include/combat/ActionQueue.h:sts::ActionQueue<128>::pushBack(sts::Action)
+   391,534,556 ( 2.20%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::SilverSearcher(sts::BattleContext const&, sts::search::SilverSearchContext const&) [clone .isra.0]
+   391,109,290 ( 2.20%)  include/combat/ActionQueue.h:sts::BattleContext::executeActions()
+   371,941,763 ( 2.09%)  src/sim/search/Action.cpp:sts::search::Action::isValidAction(sts::BattleContext const&) const [clone .part.0]
+   360,901,275 ( 2.03%)  src/combat/BattleContext.cpp:sts::BattleContext::equalForSearch(sts::BattleContext const&) const [clone .part.0]
+   357,077,712 ( 2.01%)  bitset:sts::ActionQueue<128>::pushBack(sts::Action)
+   350,986,160 ( 1.98%)  src/combat/CardInstance.cpp:sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const
+   346,415,473 ( 1.95%)  src/sim/search/SilverRolloutAgent.cpp:(anonymous namespace)::getBestCardToPlay(sts::BattleContext const&, sts::fixed_list<int, 10> const&, bool, std::linear_congruential_engin
+   336,955,510 ( 1.90%)  src/combat/BattleContext.cpp:sts::BattleContext::useAttackCard()
+   315,848,350 ( 1.78%)  src/combat/Player.cpp:sts::BattleContext::executeActions()
+   301,093,759 ( 1.70%)  ???:0x000000000011dd50 [???]
+   295,744,301 ( 1.66%)  ???:operator delete(void*, unsigned long) [/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33]
+   290,394,843 ( 1.63%)  ???:0x00000000048ec430 [???]
+   286,228,412 ( 1.61%)  ???:operator new(unsigned long) [/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33]
+   285,044,774 ( 1.60%)  ???:operator delete(void*) [/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33]

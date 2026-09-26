@@ -41,6 +41,24 @@ namespace sts {
         }
 #else
         std::array<Action,capacity> arr;
+
+        // Copies only the queued slots (at the same ring positions): a
+        // BattleContext is copied on every search step, and the queue is
+        // mostly empty. Slots outside the queue are never read.
+        ActionQueue() = default;
+        ActionQueue(const ActionQueue &rhs) { *this = rhs; }
+        ActionQueue &operator=(const ActionQueue &rhs) {
+            front = rhs.front;
+            back = rhs.back;
+            size = rhs.size;
+            bits = rhs.bits;
+            postVictoryBits = rhs.postVictoryBits;
+            for (int i = 0, cur = rhs.front; i < rhs.size; ++i, ++cur) {
+                if (cur >= capacity) cur = 0;
+                arr[cur] = rhs.arr[cur];
+            }
+            return *this;
+        }
 #endif
 
         void clear();

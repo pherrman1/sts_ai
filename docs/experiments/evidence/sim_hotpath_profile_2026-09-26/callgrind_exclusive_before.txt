@@ -1,0 +1,32 @@
+18,502,967,601 (100.0%)  PROGRAM TOTALS
+Ir                      file:function
+--------------------------------------------------------------------------------
+1,176,079,069 ( 6.36%)  src/combat/BattleContext.cpp:sts::BattleContext::executeActions()
+1,034,023,472 ( 5.59%)  src/combat/CardInstance.cpp:sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const
+  871,082,439 ( 4.71%)  include/combat/BattleContext.h:sts::BattleContext::operator=(sts::BattleContext const&)
+  804,494,554 ( 4.35%)  src/sim/search/SilverRolloutAgent.cpp:sts::search::SilverRolloutAgent::chooseBattleCardPlay(sts::BattleContext const&) [clone .part.0]
+  751,557,351 ( 4.06%)  src/combat/Actions.cpp:sts::Action::operator()(sts::BattleContext&) const
+  477,110,692 ( 2.58%)  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S:__memset_avx2_unaligned_erms [/usr/lib/x86_64-linux-gnu/libc.so.6]
+  408,449,853 ( 2.21%)  include/combat/ActionQueue.h:sts::ActionQueue<128>::pushBack(sts::Action)
+  391,109,290 ( 2.11%)  include/combat/ActionQueue.h:sts::BattleContext::executeActions()
+  357,077,712 ( 1.93%)  bitset:sts::ActionQueue<128>::pushBack(sts::Action)
+  315,531,420 ( 1.71%)  include/combat/CardPile.h:sts::CardPile::drawTop(sts::Random&)
+  305,187,834 ( 1.65%)  src/sim/search/SilverRolloutAgent.cpp:(anonymous namespace)::getBestCardToPlay(sts::BattleContext const&, sts::fixed_list<int, 10> const&, bool, std::linear_congruential_engine
+  294,449,120 ( 1.59%)  src/combat/Player.cpp:sts::BattleContext::executeActions()
+  265,085,629 ( 1.43%)  src/combat/BattleContext.cpp:sts::BattleContext::playCardQueueItem(sts::CardQueueItem) [clone .isra.0]
+  253,810,172 ( 1.37%)  src/sim/search/SearchStateHash.cpp:sts::search::(anonymous namespace)::cardHash(sts::CardInstance const&) [clone .isra.0]
+  251,216,692 ( 1.36%)  src/combat/CardManager.cpp:sts::BattleContext::drawCards(int)
+  223,234,267 ( 1.21%)  bits/stl_algo.h:void std::__sort<__gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, __gnu_cxx::__ops::_Iter_
+  221,974,820 ( 1.20%)  src/combat/BattleContext.cpp:sts::BattleContext::useCard()
+  217,438,368 ( 1.18%)  src/combat/CardManager.cpp:sts::BattleContext::useCard()
+  216,837,036 ( 1.17%)  include/constants/Cards.h:sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const
+  202,076,754 ( 1.09%)  src/sim/search/Action.cpp:sts::search::Action::execute(sts::BattleContext&) const
+  192,962,599 ( 1.04%)  include/combat/BattleContext.h:sts::BattleContext::BattleContext(sts::BattleContext const&)
+  192,288,996 ( 1.04%)  src/sim/search/SilverSearcher.cpp:sts::search::SilverSearcher::step()
+  189,457,754 ( 1.02%)  src/combat/CardManager.cpp:sts::CardManager::notifyAddToHand(sts::CardInstance const&)
+  184,677,066 ( 1.00%)  src/combat/CardManager.cpp:sts::CardManager::moveToDiscardPile(sts::CardInstance const&)
+  182,926,549 ( 0.99%)  src/sim/search/CombatKnowledge.cpp:sts::search::emitCombatKnowledgeEvent(sts::search::CombatKnowledgeEventType, sts::CardInstance const&)
+  181,520,633 ( 0.98%)  src/sim/search/SearchStateHash.cpp:sts::search::hashBattleState(sts::BattleContext const&)
+  179,434,800 ( 0.97%)  include/game/Random.h:sts::Random::random(int)
+  168,867,868 ( 0.91%)  include/combat/CardInstance.h:void std::__sort<__gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, __gnu_cxx:
+  165,012,947 ( 0.89%)  src/sim/search/Action.cpp:sts::search::Action::isValidAction(sts::BattleContext const&) const [clone .part.0]
