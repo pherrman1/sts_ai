@@ -350,7 +350,7 @@ def run_frozen_confirmation(work_root: Path) -> dict[str, Any]:
     plan_path = work_root / "transport-plan.json"
     plan_path.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    # Mechanically prove every invocation stays within the historical frozen guard's 128-seed cap
+    # Mechanically prove every invocation stays within the local 128-seed cap
     # before the first canary starts. This invokes only seed_guard.sh guard-only.
     for arm in ("C", "H"):
         arm_manifest = confirmation.manifest_arm(canary_manifest, arm)
@@ -431,7 +431,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work-root", type=Path, default=DEFAULT_WORK_ROOT)
     parser.add_argument("--preflight-only", action="store_true",
-                        help="verify pins, collisions, and historical frozen guard without writing outputs or running seeds")
+                        help="verify pins, collisions, and 128-seed guard without writing outputs or running seeds")
     args = parser.parse_args()
     try:
         if args.preflight_only:
