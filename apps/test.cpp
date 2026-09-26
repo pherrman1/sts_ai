@@ -602,8 +602,8 @@ int testSilverWireState() {
                     // The wire has no queues; an interrupted card play's pending
                     // work is rebuilt by replaying the card.
                     queuedRoots += nativeRoot.actionQueue.size + nativeRoot.cardQueue.size > 1;
-                    // Known limit: monster reactions queued while the card's own
-                    // pre-selection effects ran (Sharp Hide, Mode Shift) are not
+                    // Known limit: monster reactions queued by the card's own
+                    // pre-selection hit (a Mode Shift it triggered) are not
                     // rebuilt. Such a root may lack queued actions but must match
                     // otherwise.
                     bool missingReactions = false;
