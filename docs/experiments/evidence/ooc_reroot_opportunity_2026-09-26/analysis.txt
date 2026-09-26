@@ -1,0 +1,103 @@
+{
+ "identity": "rng",
+ "decisions": 273,
+ "searchedDecisions": 162,
+ "singletonDecisions": 110,
+ "all": {
+  "decisions": 273,
+  "withPreviousSearch": 268,
+  "selectedBranchHits": 0,
+  "anyBranchHits": 0,
+  "hitRate": 0.0,
+  "depth": {},
+  "combatOnPath": 0,
+  "publicStochasticOnPath": 0,
+  "retainedVisits": 0,
+  "retainedVisitsMedian": 0,
+  "retainedVisitsMax": 0,
+  "mergedVisits": 0,
+  "mergedVisitsMedian": 0
+ },
+ "searched": {
+  "decisions": 162,
+  "withPreviousSearch": 159,
+  "selectedBranchHits": 0,
+  "anyBranchHits": 0,
+  "hitRate": 0.0,
+  "depth": {},
+  "combatOnPath": 0,
+  "publicStochasticOnPath": 0,
+  "retainedVisits": 0,
+  "retainedVisitsMedian": 0,
+  "retainedVisitsMax": 0,
+  "mergedVisits": 0,
+  "mergedVisitsMedian": 0
+ },
+ "searchedSimulations": 230377,
+ "retainedFractionOfSearchedSimulations": 0.0,
+ "mergedFractionOfSearchedSimulations": 0.0
+}
+{
+ "identity": "public",
+ "decisions": 273,
+ "searchedDecisions": 162,
+ "singletonDecisions": 110,
+ "all": {
+  "decisions": 273,
+  "withPreviousSearch": 268,
+  "selectedBranchHits": 198,
+  "anyBranchHits": 198,
+  "hitRate": 0.7252747252747253,
+  "depth": {
+   "1": 134,
+   "2": 55,
+   "3+": 9
+  },
+  "combatOnPath": 0,
+  "publicStochasticOnPath": 28,
+  "retainedVisits": 4723,
+  "retainedVisitsMedian": 31,
+  "retainedVisitsMax": 46,
+  "mergedVisits": 150576,
+  "mergedVisitsMedian": 936
+ },
+ "searched": {
+  "decisions": 162,
+  "withPreviousSearch": 159,
+  "selectedBranchHits": 94,
+  "anyBranchHits": 94,
+  "hitRate": 0.5802469135802469,
+  "depth": {
+   "1": 60,
+   "2": 25,
+   "3+": 9
+  },
+  "combatOnPath": 0,
+  "publicStochasticOnPath": 24,
+  "retainedVisits": 2084,
+  "retainedVisitsMedian": 30,
+  "retainedVisitsMax": 42,
+  "mergedVisits": 61311,
+  "mergedVisitsMedian": 875
+ },
+ "searchedSimulations": 230377,
+ "retainedFractionOfSearchedSimulations": 0.009046041922587759,
+ "mergedFractionOfSearchedSimulations": 0.26613333796342514
+}
+public-identity searched misses by (previous screen, screen, floor changed):
+  (5, 2, True) 13
+  (2, 2, True) 12
+  (7, 2, True) 9
+  (1, 2, True) 6
+  (2, 8, True) 5
+  (2, 3, True) 4
+  (3, 5, False) 4
+  (8, 2, True) 3
+  (1, 2, False) 2
+  (5, 8, True) 1
+  (4, 5, False) 1
+  (6, 2, True) 1
+  (5, 4, True) 1
+  (4, 2, True) 1
+  (7, 5, True) 1
+  (2, 7, True) 1

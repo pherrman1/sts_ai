@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
 
 namespace one_combat {
@@ -1112,6 +1113,151 @@ double threadCpuSeconds() {
         throw std::runtime_error("OOC MCTS thread CPU clock unavailable");
     return double(t.tv_sec) + double(t.tv_nsec) * 1e-9;
 }
+// Reroot-opportunity measurement (issue #339): observation only. Identity is
+// the state as the sampled live search treats it. Hidden stream seeds, pool
+// order, unrevealed encounter suffixes and hidden chest/Dead Adventurer
+// contents are re-determinized at every transition, so they are excluded.
+// Public identity keeps the copied native room/potion/rarity counters; the
+// RNG identity additionally keeps stream draw counters, which the search's
+// own encounter re-determinization advances.
+std::string liveReuseTrace;
+std::uint64_t reusePublicFingerprint(const GameContext &g, const PathHistory &path, bool rngCounters) {
+    sts::test::ooc_state_detail::Writer w;
+    w.values(g.noteForYourselfCard, g.skipBattles);
+    if (rngCounters)
+        for (auto stream : {&g.aiRng, &g.cardRandomRng, &g.cardRng, &g.eventRng,
+                &g.mathUtilRng, &g.merchantRng, &g.miscRng, &g.monsterHpRng,
+                &g.monsterRng, &g.neowRng, &g.potionRng, &g.relicRng,
+                &g.shuffleRng, &g.treasureRng}) w.value(stream->counter);
+    w.values(g.monsterChance, g.shopChance, g.treasureChance,
+             g.potionChance, g.cardRarityFactor);
+    const auto members = [&](auto pool) {
+        std::sort(pool.begin(), pool.end());
+        w.sequence(pool);
+    };
+    members(g.eventList); members(g.shrineList); members(g.specialOneTimeEventList);
+    members(g.commonRelicPool); members(g.uncommonRelicPool); members(g.rareRelicPool);
+    members(g.shopRelicPool); members(g.bossRelicPool); members(g.colorlessCardPool);
+    w.value(g.monsterListOffset);
+    for (int i = 0; i < std::min<int>(g.monsterListOffset, g.monsterList.size()); ++i) w.value(g.monsterList[i]);
+    w.value(g.eliteMonsterListOffset);
+    for (int i = 0; i < std::min<int>(g.eliteMonsterListOffset, g.eliteMonsterList.size()); ++i)
+        w.value(g.eliteMonsterList[i]);
+    if (!(g.act == 3 && g.ascension >= 20)) w.value(g.secondBoss);
+    auto info = g.info;
+    if (g.screenState == sts::ScreenState::TREASURE_ROOM) {
+        info.haveGold = false;
+        info.tier = sts::RelicTier::COMMON;
+    }
+    if (g.screenState == sts::ScreenState::EVENT_SCREEN && g.curEvent == sts::Event::DEAD_ADVENTURER
+            && info.phase >= 0 && info.phase <= int(info.rewards.size()))
+        std::sort(info.rewards.begin() + info.phase, info.rewards.end());
+    w.values(g.outcome, g.screenState, info, g.lastRoom, g.curEvent, g.curRoom, g.boss,
+             g.shopRemoveCount, g.speedrunPace, g.curMapNodeX, g.curMapNodeY, static_cast<bool>(g.map));
+    if (g.map) {
+        w.values(g.map->burningEliteX, g.map->burningEliteY, g.map->burningEliteBuff);
+        for (const auto &row : g.map->nodes) w.sequence(row);
+    }
+    w.values(g.act, g.ascension, g.floorNum, g.cc, g.curHp, g.maxHp, g.gold,
+             g.potionCount, g.potionCapacity, g.wingBootsCharges);
+    w.sequence(g.potions);
+    w.sequence(g.relics.relics);
+    w.values(g.relics.relicBits0, g.relics.relicBits1, g.relics.relicBits2);
+    w.sequence(g.deck.cards);
+    w.sequence(g.deck.cardTypeCounts);
+    w.sequence(g.deck.bottleIdxs);
+    w.values(g.deck.upgradeableCount, g.deck.transformableCount,
+             g.blueKey, g.greenKey, g.redKey,
+             static_cast<bool>(g.regainControlAction), g.smokeBombUsed);
+    w.sequence(path.roomVisits);
+    w.value(path.lastNodeKey);
+    return std::hash<std::string>{}(w.finish());
+}
+struct ReuseCandidate {
+    std::uint64_t visits = 0, subtreeDecisionNodes = 0;
+    std::uint32_t depth = 0;
+    sts::search::OocActionId rootAction = 0;
+    bool combat = false, publicStochastic = false;
+};
+// Stored decision nodes of the most recent completed non-singleton search.
+struct ReuseIndex {
+    bool valid = false, truncated = false;
+    std::uint64_t seed = 0, decision = 0, simulations = 0, storedDecisionNodes = 0;
+    int floor = -1, screen = -1;
+    sts::search::OocActionId selected = 0;
+    std::unordered_multimap<std::uint64_t, ReuseCandidate> rng, publicState;
+};
+thread_local ReuseIndex t_reuseIndex;
+ReuseIndex buildReuseIndex(const OocGameContextModel &model, const sts::search::OocTreeSnapshot &tree) {
+    ReuseIndex index;
+    index.truncated = tree.truncated;
+    const auto n = tree.nodes.size();
+    std::vector<std::optional<std::uint64_t>> parent(n);
+    std::vector<std::vector<std::uint64_t>> children(n);
+    for (const auto &edge : tree.edges)
+        if (edge.childId) { parent[*edge.childId] = edge.parentId; children[edge.parentId].push_back(*edge.childId); }
+    std::vector<std::uint64_t> rngKey(n), publicKey(n), subtree(n);
+    std::vector<ReuseCandidate> info(n);
+    for (std::uint64_t i = 0; i < n; ++i) {
+        const auto &node = tree.nodes[i];
+        if (!node.chance) {
+            rngKey[i] = reusePublicFingerprint(model.state(node.state), model.pathHistory(node.state), true);
+            publicKey[i] = reusePublicFingerprint(model.state(node.state), model.pathHistory(node.state), false);
+        }
+    }
+    // Snapshot nodes are breadth-first: every parent precedes its children.
+    for (std::uint64_t i = 0; i < n; ++i) {
+        const auto &node = tree.nodes[i];
+        if (!parent[i]) continue;
+        auto &current = info[i];
+        current = info[*parent[i]];
+        if (node.chance) {
+            if (node.depth == 0) current.rootAction = node.action;
+            std::set<std::uint64_t> outcomes;
+            for (auto child : children[i]) outcomes.insert(publicKey[child]);
+            current.publicStochastic = current.publicStochastic || outcomes.size() > 1;
+        } else {
+            current.depth = node.depth;
+            current.visits = node.visits;
+            current.combat = current.combat || model.prediction(node.state).used;
+        }
+    }
+    for (std::uint64_t i = n; i-- > 0;) {
+        subtree[i] += tree.nodes[i].chance ? 0 : 1;
+        if (parent[i]) subtree[*parent[i]] += subtree[i];
+    }
+    for (std::uint64_t i = 1; i < n; ++i) {
+        if (tree.nodes[i].chance) continue;
+        info[i].subtreeDecisionNodes = subtree[i];
+        index.rng.emplace(rngKey[i], info[i]);
+        index.publicState.emplace(publicKey[i], info[i]);
+        ++index.storedDecisionNodes;
+    }
+    return index;
+}
+nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_multimap<std::uint64_t, ReuseCandidate> &stored,
+                              std::uint64_t key) {
+    const auto [first, last] = stored.equal_range(key);
+    std::uint64_t matches = 0, selectedMatches = 0, selectedVisits = 0;
+    const ReuseCandidate *best = nullptr;
+    for (auto it = first; it != last; ++it) {
+        const auto &candidate = it->second;
+        const bool selected = candidate.rootAction == index.selected;
+        ++matches; selectedMatches += selected;
+        if (selected) selectedVisits += candidate.visits;
+        const bool bestSelected = best && best->rootAction == index.selected;
+        if (!best || (selected && !bestSelected) || (selected == bestSelected && candidate.visits > best->visits))
+            best = &candidate;
+    }
+    // Summed visits over publicly identical particles bound what merging them
+    // could retain; direct rerooting retains only the best single particle.
+    nlohmann::json row = {{"matches", matches}, {"selectedBranchMatches", selectedMatches},
+        {"selectedBranchVisitsSum", selectedVisits}};
+    if (best) row["best"] = {{"depth", best->depth}, {"visits", best->visits},
+        {"subtreeDecisionNodes", best->subtreeDecisionNodes}, {"underSelectedAction", best->rootAction == index.selected},
+        {"combatOnPath", best->combat}, {"publicStochasticOnPath", best->publicStochastic}};
+    return row;
+}
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
 std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
@@ -1129,6 +1275,7 @@ void configureLiveOocMcts() {
     }
     liveRootLockTrace.clear();
     liveCheckpointTrace.clear();
+    liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     if (!liveEnabled) return;
@@ -1175,6 +1322,14 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
     liveConfig.observeRootLock = !liveRootLockTrace.empty();
+    if (const char *trace = std::getenv("STS_OOC_MCTS_REUSE_TRACE")) liveReuseTrace = trace;
+    if (!liveReuseTrace.empty()) {
+        if (!liveGraphPath.empty())
+            throw std::runtime_error("STS_OOC_MCTS_REUSE_TRACE cannot be combined with STS_OOC_MCTS_GRAPH_FILE");
+        std::ofstream out(liveReuseTrace, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_REUSE_TRACE cannot open output");
+        std::cout << "[ooc-reuse-observer ON live_policy_unchanged=1 tree_node_cap=100000]\n";
+    }
     if (const char *trace = std::getenv("STS_OOC_MCTS_CHECKPOINT_TRACE")) liveCheckpointTrace = trace;
     if (!liveCheckpointTrace.empty()) {
         if (liveSimulations != 2048 || liveConfig.selectByMeanQ || liveConfig.observeRootLock)
@@ -1247,7 +1402,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     samples = 0;
     if (selected) selected->reset();
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
-    config.captureTree = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
+    const bool graphCapture = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
+    const bool reuseObserved = !liveReuseTrace.empty();
+    config.captureTree = graphCapture || reuseObserved;
+    if (reuseObserved) config.treeNodeCap = 100000;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
     const auto sole = model.soleLegalAction(0);
     if (!runProfilePath().empty()) {
@@ -1258,8 +1416,46 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
                 if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
         }
     }
+    nlohmann::json reuseRow;
+    if (reuseObserved) {
+        if (t_reuseIndex.seed != seed || t_reuseIndex.decision >= index) t_reuseIndex = {};
+        const auto &prior = t_reuseIndex;
+        reuseRow = {{"schemaVersion", 1}, {"seed", seed}, {"decisionIndex", index},
+            {"floor", gc.floorNum}, {"act", gc.act}, {"screen", int(gc.screenState)}, {"singleton", sole.has_value()},
+            {"previousSearch", prior.valid}};
+        if (prior.valid) {
+            reuseRow["previous"] = {{"decisionIndex", prior.decision}, {"decisionGap", index - prior.decision},
+                {"floor", prior.floor}, {"screen", prior.screen}, {"simulations", prior.simulations},
+                {"storedDecisionNodes", prior.storedDecisionNodes}, {"truncated", prior.truncated}};
+            reuseRow["rng"] = reuseMatchJson(prior, prior.rng, reusePublicFingerprint(gc, path, true));
+            reuseRow["public"] = reuseMatchJson(prior, prior.publicState, reusePublicFingerprint(gc, path, false));
+        }
+    }
     auto result = searchWithSoleRootShortcut(model, config, sole, simulations);
-    if (config.captureTree) {
+    if (reuseObserved) {
+        reuseRow["searched"] = !result.metrics.trivialRootBypasses;
+        reuseRow["aborted"] = result.aborted;
+        reuseRow["simulations"] = result.metrics.simulations;
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveReuseTrace, std::ios::app);
+        if (!out || !(out << reuseRow.dump() << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_REUSE_TRACE write failed");
+    }
+    // A singleton bypass executes without a tree; retain the earlier index so
+    // forced chains are measured against the last real search.
+    if (reuseObserved && !result.metrics.trivialRootBypasses) {
+        if (result.tree && result.selectedAction) {
+            t_reuseIndex = buildReuseIndex(model, *result.tree);
+            t_reuseIndex.valid = true;
+            t_reuseIndex.selected = *result.selectedAction;
+            t_reuseIndex.simulations = result.metrics.simulations;
+            t_reuseIndex.floor = gc.floorNum;
+            t_reuseIndex.screen = int(gc.screenState);
+        } else t_reuseIndex = {};
+        t_reuseIndex.seed = seed;
+        t_reuseIndex.decision = index;
+    }
+    if (graphCapture) {
         if (result.tree) {
             annotateOocTree(model, *result.tree);
             for (auto &node : result.tree->nodes)
