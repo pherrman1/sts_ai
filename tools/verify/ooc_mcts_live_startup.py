@@ -40,6 +40,11 @@ def main():
         ('zero simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '0'}, False, 'must be positive'),
         ('malformed simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '-1'}, False, 'positive integer'),
         ('malformed gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_GAP_STOP_20': 'true'}, False, 'STS_OOC_MCTS_GAP_STOP_20 invalid value'),
+        ('unwritable reuse trace', {'STS_OOC_MCTS': '1',
+            'STS_OOC_MCTS_REUSE_TRACE': str(root / 'build/absent-ooc-mcts-startup-dir/reuse.jsonl')}, False,
+            'STS_OOC_MCTS_REUSE_TRACE cannot open output'),
+        ('reuse trace rejects graph capture', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_REUSE_TRACE': bad,
+            'STS_OOC_MCTS_GRAPH_FILE': bad}, False, 'cannot be combined with STS_OOC_MCTS_GRAPH_FILE'),
     ]
     if args.artifact:
         with tempfile.TemporaryDirectory() as temporary:
