@@ -12774,7 +12774,48 @@ Batched/SIMD state execution was not pursued: no uniform hot loop exists
 Decision: adopt; this is a pure speedup with exact parity. Evidence:
 [sim_hotpath_profile_2026-09-26](evidence/sim_hotpath_profile_2026-09-26/README.md).
 
-## §361 — Mechanical-q Lizard Tail archived screen and current-main transfer status (2026-09-26)
+## §361 — OOC MCTS reroot opportunity: measure, do not implement (2026-09-26)
+
+Issue #339, Phase A only. Every live OOC decision builds a fresh search tree.
+The question was whether the next real decision state is already stored in the
+previous search, and how much search work that stored node carries.
+
+Method: a new opt-in observer, `STS_OOC_MCTS_REUSE_TRACE`. It fingerprints
+every stored decision node of each completed live search, then matches the next
+real root against them. It uses two identities:
+- **public**: the state the sampled search holds fixed. Hidden seeds, pool
+  order, unrevealed encounter suffixes and hidden chest/event contents are
+  excluded.
+- **rng**: public plus all RNG draw counters.
+
+Live actions and all non-timing search counters are byte-identical with the
+trace on and off.
+
+Workload: the 2026-09-18 OOC CPU-profile seeds 12002032 and 12002033, at OOC
+2048 and the current default depth 512. 273 real OOC decisions: 162 searched,
+110 singleton, 1 abort.
+
+Results:
+- **rng identity: 0 matches.** Sampling redraws the unrevealed encounter
+  suffix, which advances `monsterRng` counters in every stored particle.
+- **public identity: 94 of 159 searched decisions (58%)** match a node under
+  the previously selected action, at depths 1/2/3+ = 60/25/9. No match crosses
+  a real combat.
+- **Retained work is small.** One real outcome maps to a median of 64 publicly
+  identical sibling particles. The best single node keeps a median of 30
+  visits (max 42): 0.90% of all searched simulations.
+- Upper bound: merging all identical particles would keep 26.6%. That is
+  belief/transposition merging, which the issue excludes without separate
+  evidence.
+
+Decision: stop after measurement, per the issue's decision rule. No
+persistent-tree or reroot code is added. **Open question:** whether collapsing
+publicly deterministic sampled transitions is semantically sound.
+
+Evidence:
+[ooc_reroot_opportunity_2026-09-26](evidence/ooc_reroot_opportunity_2026-09-26/README.md).
+
+## §362 — Mechanical-q Lizard Tail archived screen and current-main transfer status (2026-09-26)
 
 - **Question:** Does replacing the learned ordinary-win probability `q` with
   `1 - pOrdinaryWin`, while preserving the frozen learned `r` artifact and T2
