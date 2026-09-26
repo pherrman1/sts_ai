@@ -1,0 +1,29 @@
+{
+  "1": {
+    "floor_intervals": 18,
+    "decisions": 50,
+    "thread_cpu_seconds": 29.323594532,
+    "ooc_cpu_seconds": 23.640827193999993,
+    "real_combat_cpu_seconds": 5.677282784,
+    "ooc_simulations": 37258,
+    "ctm_samples": 8131
+  },
+  "2": {
+    "floor_intervals": 18,
+    "decisions": 55,
+    "thread_cpu_seconds": 54.201571388000005,
+    "ooc_cpu_seconds": 41.327463008000024,
+    "real_combat_cpu_seconds": 12.865407631999997,
+    "ooc_simulations": 43527,
+    "ctm_samples": 6933
+  },
+  "3": {
+    "floor_intervals": 17,
+    "decisions": 43,
+    "thread_cpu_seconds": 55.64555606099999,
+    "ooc_cpu_seconds": 39.455200489999996,
+    "real_combat_cpu_seconds": 16.18394679299999,
+    "ooc_simulations": 37811,
+    "ctm_samples": 7139
+  }
+}
