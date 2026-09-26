@@ -297,7 +297,10 @@ root initialization. Singleton skips have zero samples. Each completed step
 calls the heuristic evaluator once; Native Silver has no neural leaf evaluator.
 Endpoint counts sum to completed simulations. Descent-bound exceptions are
 recorded separately in an error row and rethrown; analysis rejects incomplete
-searches instead of including their partial counts.
+searches instead of including their partial counts. The analyzer requires explicit
+boolean budget-mode flags, zero completed simulations for singleton skips, the
+full configured budget for flat searches, and exactly 500 or 10,000 completed
+simulations with a 10,000 maximum for adaptive searches.
 
 Endpoint classes follow simulator outcomes: `victory` includes escapes the
 engine treats as victory; `death` requires PLAYER_LOSS with HP <= 0;

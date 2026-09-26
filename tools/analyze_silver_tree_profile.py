@@ -38,8 +38,19 @@ def validate(row):
         raise ValueError('endpoint/evaluator denominator mismatch')
     if not 0 <= row['nonterminal_rollout_starts'] <= row['rollout_calls'] <= completed:
         raise ValueError('rollout denominator mismatch')
-    if completed > natural(row['configured_simulations']):
-        raise ValueError('completed exceeds configured budget')
+    configured = natural(row['configured_simulations'])
+    if any(type(row.get(flag)) is not bool for flag in ('adaptive', 'singleton_skip')):
+        raise ValueError('adaptive and singleton_skip must be explicit booleans')
+    if row['adaptive'] and configured != 10000:
+        raise ValueError('adaptive maximum budget must be 10000')
+    if row['singleton_skip']:
+        if completed != 0:
+            raise ValueError('singleton skip must have zero completed simulations')
+    elif row['adaptive']:
+        if completed not in (500, 10000):
+            raise ValueError('adaptive search must complete 500 or 10000 simulations')
+    elif completed != configured:
+        raise ValueError('flat search must complete its configured budget')
     return row
 
 
