@@ -353,6 +353,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         sts::search::OocMctsConfig config;
         config.seed = searchSeed_;
         config.captureTree = captureTree_;
+        config.captureValueDistribution = true;
         config.treeNodeCap = treeNodeCap_;
         const auto search = searchWithSoleRootShortcut(provider, config, provider.soleLegalAction(0), 512);
         if (search.aborted) {
@@ -367,6 +368,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         LiveOocDecision result;
         result.policy = name();
         result.tree = search.tree;
+        result.valueDistribution = search.rootValues.value_or(sts::search::OocValueDistribution{});
         result.candidates.reserve(rootActions.size());
         for (const auto &root : rootActions) {
             const auto &candidate = provider.candidate(0, root.id);
@@ -385,6 +387,9 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                 ? static_cast<double>(root.visits) / search.metrics.simulations : 0.0;
             result.candidates.push_back({key, payload, candidate.primitive.bits, root.q,
                                          root.visits, share, root.prior});
+            const auto values = search.actionValues.find(root.id);
+            result.candidates.back().valueDistribution = values == search.actionValues.end()
+                ? sts::search::OocValueDistribution{} : values->second;
         }
         if (result.tree) annotateOocTree(provider, *result.tree);
         std::sort(result.candidates.begin(), result.candidates.end(),

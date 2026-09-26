@@ -753,6 +753,18 @@ struct ImaginedScope {
 #endif
 }
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
+    bool terminal = false;
+    return evaluateLeafImpl(id, rng, terminal);
+}
+sts::search::OocLeafEvaluation OocGameContextModel::evaluateLeafWithOutcome(
+        sts::search::OocStateId id, std::mt19937_64 &rng) {
+    bool terminal = false;
+    const double value = evaluateLeafImpl(id, rng, terminal);
+    return {value, terminal};
+}
+double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
+        std::mt19937_64 &rng, bool &terminal) {
+    terminal = terminalValue(id).has_value();
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
     if (options.stopAtMapCheckpoint && id != 0
             && state(id).screenState == sts::ScreenState::MAP_SCREEN)
@@ -765,8 +777,8 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
             dependencies.sampleHiddenCounters(child.gc, rng);
     }
     if (!options.checkpointLeaves) {
-        if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
-        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
         return options.bossLeaf ? bossLeafValue(child.gc)
             : dependencies.leafValue(child.gc, child.path);
     }
@@ -781,8 +793,8 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
     unsigned additionalCombats = 0;
     const auto checkpoint = [&]() -> std::optional<double> {
         child.path.update(child.gc);
-        if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
-        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
         if (child.gc.screenState == sts::ScreenState::MAP_SCREEN && additionalCombats >= options.leafCombats) {
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);

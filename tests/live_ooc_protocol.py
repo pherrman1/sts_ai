@@ -172,6 +172,28 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(chosen["visits"], max(c["visits"] for c in evaluator["candidateSummaries"]))
         self.assertEqual(evaluator["selectedLiveAction"]["kind"], "choose")
         self.assertIsInstance(evaluator["selectedLiveAction"]["choiceIndex"], int)
+        self.assertEqual(evaluator["valueSemantics"], "mean_backed_up_value_0_1")
+        root = evaluator["valueDistribution"]
+        self.assertEqual(root["schema"], "ooc_value_distribution_v1")
+        self.assertEqual(root["normalization"], "share_of_own_samples")
+        self.assertEqual(len(root["bins"]), 22)
+        self.assertEqual(sum(root["bins"]), root["count"])
+        self.assertEqual(root["terminalDeaths"], root["bins"][0])
+        self.assertEqual(root["terminalVictories"], root["bins"][21])
+        combined = [0] * 22
+        weighted = 0
+        for candidate in evaluator["candidateSummaries"]:
+            values = candidate["valueDistribution"]
+            self.assertEqual(values["count"], candidate["visits"])
+            self.assertEqual(sum(values["bins"]), values["count"])
+            if values["count"]:
+                self.assertAlmostEqual(values["mean"], candidate["q"])
+                weighted += values["mean"] * values["count"]
+            else:
+                self.assertIsNone(values["mean"])
+            combined = [a + b for a, b in zip(combined, values["bins"])]
+        self.assertEqual(combined, root["bins"])
+        self.assertAlmostEqual(root["mean"], weighted / root["count"])
         self.assertNotIn("tree", evaluator)
 
     def test_opt_in_mcts_tree_capture_is_bounded_and_keeps_root_scores(self):

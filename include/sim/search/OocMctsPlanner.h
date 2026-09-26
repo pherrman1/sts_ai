@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstddef>
 #include <optional>
+#include <array>
+#include <map>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -13,6 +15,7 @@ namespace sts::search {
 using OocStateId = std::uint64_t;
 using OocActionId = std::uint32_t;
 struct OocPlannerAction { OocActionId id; double prior; };
+struct OocLeafEvaluation { double value; bool terminal = false; };
 // A support failure invalidates the whole root, not a scalar leaf or action.
 class OocSearchUnsupported : public std::runtime_error {
 public: using std::runtime_error::runtime_error;
@@ -31,6 +34,11 @@ public:
     virtual double leafValue(OocStateId state) const = 0;
     // Detached continuation may need independent draws before checkpoint value.
     virtual double evaluateLeaf(OocStateId state, std::mt19937_64 &) { return leafValue(state); }
+    // Providers with detached continuations explicitly report their endpoint.
+    // A low model evaluation alone must never imply terminal death.
+    virtual OocLeafEvaluation evaluateLeafWithOutcome(OocStateId state, std::mt19937_64 &rng) {
+        return {evaluateLeaf(state, rng), false};
+    }
     // True only when every configured search path excludes OocSearchUnsupported.
     // Observed zero aborts are insufficient; providers must prove this guarantee.
     virtual bool searchGuaranteedNonAborting() const { return false; }
@@ -56,6 +64,7 @@ struct OocMctsConfig {
     // Explicit online candidate: after simulation 512, stop at a >=20% root
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
+    bool captureValueDistribution = false; // root-only observational aggregates
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool captureTree = false;
     std::size_t treeNodeCap = 4096;
@@ -103,6 +112,18 @@ struct OocMctsMetrics {
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
     double hypotheticalTailWallSeconds = 0;
 };
+// Fixed bins: explicit terminal death; 20 value intervals across [0,1];
+// explicit terminal victory. A nonterminal value of zero is not a death.
+struct OocValueDistribution {
+    std::array<std::uint64_t, 22> bins{};
+    std::uint64_t count = 0;
+    double sum = 0;
+    void record(double value, int terminalKind) {
+        const int interval = value >= 1 ? 19 : static_cast<int>(value * 20);
+        const int bin = terminalKind == 1 ? 0 : terminalKind == 2 ? 21 : 1 + interval;
+        ++bins[bin]; ++count; sum += value;
+    }
+};
 struct OocRootActionStats {
     OocActionId id;
     double prior;
@@ -123,6 +144,8 @@ struct OocMctsResult {
     std::vector<OocRootCheckpointStats> rootCheckpoints;
     OocMctsMetrics metrics;
     std::optional<OocTreeSnapshot> tree;
+    std::optional<OocValueDistribution> rootValues;
+    std::map<OocActionId, OocValueDistribution> actionValues;
 };
 class OocMctsPlanner {
 public:

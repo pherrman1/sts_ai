@@ -151,6 +151,47 @@ void tests() {
         && randomFull.rootActions[0].q==randomRecorded.rootActions[0].q
         && randomFull.metrics.transitionSamples==randomRecorded.metrics.transitionSamples,
         "observation preserves every sampling draw and full-budget stochastic particle result");
+    auto distributionConfig = config; distributionConfig.captureValueDistribution = true;
+    auto distributionModel = alternating();
+    std::vector<std::uint64_t> distributionDraws;
+    distributionModel.transition = [&](auto, auto, auto &rng) {
+        const auto draw = rng(); distributionDraws.push_back(draw); return OocStateId(1 + draw % 2);
+    };
+    const auto distribution = OocMctsPlanner(distributionConfig).search(distributionModel, 0, 128);
+    require(!randomFull.rootValues && randomFull.actionValues.empty()
+        && distributionDraws == referenceDraws && distribution.selectedAction == randomFull.selectedAction
+        && distribution.rootActions[0].visits == randomFull.rootActions[0].visits
+        && distribution.rootActions[0].q == randomFull.rootActions[0].q,
+        "distribution capture preserves exact sampling draws, allocation, value and selection");
+    const auto &values = *distribution.rootValues;
+    require(values.count == 128 && values.bins[0] + values.bins[21] == 128
+        && values.sum / values.count == distribution.rootActions[0].q
+        && values.bins == distribution.actionValues.at(0).bins,
+        "terminal samples and candidate/root means conserve every backup");
+    auto mixed = deterministic(); mixed.terminals = {{1, 0}, {2, 1}};
+    mixed.actions[0].push_back({3, 1}); mixed.actions[3] = {{3, 1}}; mixed.leaf = 0;
+    const auto mixedResult = OocMctsPlanner(distributionConfig).search(mixed, 0, 3);
+    require(mixedResult.rootValues->count == 3 && mixedResult.rootValues->bins[0] == 1
+        && mixedResult.rootValues->bins[1] == 1 && mixedResult.rootValues->bins[21] == 1,
+        "a nonterminal zero evaluation stays separate from exact terminal death");
+    std::array<std::uint64_t,22> combined{};
+    for (const auto &action : mixedResult.rootActions) {
+        const auto &candidate = mixedResult.actionValues.at(action.id);
+        require(candidate.count == action.visits && candidate.sum / candidate.count == action.q,
+            "per-candidate distribution is the backed-up root Q sample set");
+        for (std::size_t i=0; i<combined.size(); ++i) combined[i] += candidate.bins[i];
+    }
+    require(combined == mixedResult.rootValues->bins, "candidate bins conserve baseline bins");
+    OocValueDistribution edges; edges.record(0,0); edges.record(.05,0); edges.record(1,0);
+    require(edges.bins[1] == 1 && edges.bins[2] == 1 && edges.bins[20] == 1
+        && edges.bins[0] == 0 && edges.bins[21] == 0, "fixed model-value bucket boundaries");
+    struct DetachedTerminal : Toy {
+        OocLeafEvaluation evaluateLeafWithOutcome(OocStateId, std::mt19937_64 &) override { return {0,true}; }
+    } detached;
+    detached.boundary = true; detached.leaf = 0;
+    const auto detachedResult = OocMctsPlanner(distributionConfig).search(detached,0,3);
+    require(detachedResult.rootValues->bins[0] == 3 && detachedResult.rootValues->bins[1] == 0,
+        "terminal death reached inside detached leaf evaluation retains its endpoint");
     auto checkpointModel = deterministic();
     auto checkpointConfig = config;
     checkpointConfig.rootCheckpointSimulations = {2, 3, 4};
@@ -308,9 +349,10 @@ void tests() {
         if (action==2) throw OocSearchUnsupported("toy unsupported");
         return 1;
     };
-    const auto discarded=planner.search(unsupported,0,128);
+    const auto discarded=OocMctsPlanner(distributionConfig).search(unsupported,0,128);
     require(discarded.aborted && discarded.abortReason=="toy unsupported"
         && !discarded.selectedAction && discarded.rootActions.empty()
+        && !discarded.rootValues && discarded.actionValues.empty()
         && discarded.metrics.simulations==1 && discarded.metrics.simulationAttempts==2,
         "one unsupported transition discards entire root, including previous supported Q");
     auto t = deterministic();

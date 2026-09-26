@@ -165,6 +165,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
     private volatile OocOverlay oocOverlay;
+    private OocOverlay.Choice hoveredOocChoice;
     private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
     private volatile boolean showAdvisorPanel = true;
@@ -333,6 +334,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
         float scale = Settings.scale;
+        hoveredOocChoice = null;
         if (showAdvisorPanel) {
             renderAdvisorPanel(sb);
         } else {
@@ -362,7 +364,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         float top = Settings.HEIGHT - 170.0f * scale;
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
-        if (showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale)) {
+        boolean inlineOoc = showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale);
+        if (inlineOoc && (overlay == null || overlay.distribution == null)) {
             graphButtonX = 24.0f * scale;
             graphButtonBottom = 50.0f * scale;
             graphButtonLayoutSequence = newest.sequence;
@@ -371,8 +374,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return;
         }
         float width = (combat ? 500.0f : 420.0f) * scale;
-        int rows = overlay == null ? 0 : overlay.panelChoices().size();
-        float height = (combat ? COMBAT_PANEL_HEIGHT : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
+        int rows = overlay == null || inlineOoc ? 0 : overlay.panelChoices().size();
+        boolean histogram = !combat && overlay != null && overlay.distribution != null;
+        float height = (combat ? COMBAT_PANEL_HEIGHT : histogram ? 292.0f + 54.0f * rows
+                : rows == 0 ? 220.0f : 136.0f + 54.0f * rows) * scale;
         float bottom = top - height;
 
         // Use the game's existing white texture for the glass panels so the mod
@@ -396,7 +401,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             renderCombatPanel(sb, x, top, width, bottom, scale);
             if (showActionRecommendations) renderSilverActionBadges(sb, scale);
         } else {
-            renderNonCombatPanel(sb, x, top, width, bottom, scale);
+            renderNonCombatPanel(sb, x, top, width, bottom, scale, inlineOoc);
         }
         graphButtonX = x + (SILVER_BOOST_BUTTON_X + SILVER_BOOST_BUTTON_WIDTH + 10.0f) * scale;
         graphButtonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
@@ -705,12 +710,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             String label = choice == null ? prefix + (view == null ? "Waiting" : "Not scored")
                     : prefix + choice.scoreLabel(view.choices.indexOf(choice) + 1);
             String detail = followUpText(choice);
+            if (choice != null && (anchor.hovered || mouseIn(anchor.x, anchor.bottom - (detail.isEmpty() ? 0 : 22 * scale),
+                    anchor.width, (detail.isEmpty() ? 32 : 54) * scale))) hoveredOocChoice = choice;
             renderInlineBadge(sb, anchor.x, anchor.bottom, anchor.width, label,
                     choice != null && choice.selected, choice != null, scale, detail);
         }
         String status = view == null ? "Waiting for advisor" : "OK".equals(view.status)
-                ? "V4 · amber = recommended" : "UNSUPPORTED".equals(view.status)
-                ? "V4 · no supported recommendation" : "Advisor unavailable";
+                ? "Amber = recommended" : "UNSUPPORTED".equals(view.status)
+                ? "No supported recommendation" : "Advisor unavailable";
         renderSmallText(sb, status + " · " + Keyboard.getKeyName(loadToggleKey()) + " hide",
                 24 * scale, 28 * scale, MUTED, .72f);
         return true;
@@ -725,7 +732,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (choice == null || choice.followUpUuid.isEmpty() || AbstractDungeon.player == null) return "";
         for (AbstractCard card : AbstractDungeon.player.masterDeck.group)
             if (choice.followUpUuid.equals(String.valueOf(card.uuid)))
-                return String.format(Locale.ROOT, "Next: %s · Q %.2f", card.name, choice.followUp.get("q").getAsDouble());
+                return String.format(Locale.ROOT, "Next: %s · V4 score %.2f", card.name, choice.followUp.get("q").getAsDouble());
         return "";
     }
 
@@ -789,51 +796,96 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
     }
 
+    private boolean mouseIn(float x, float bottom, float width, float height) {
+        return InputHelper.mX >= x && InputHelper.mX <= x + width
+                && InputHelper.mY >= bottom && InputHelper.mY <= bottom + height;
+    }
+
     private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
-                                      float bottom, float scale) {
+                                      float bottom, float scale, boolean inline) {
         OocOverlay view = currentOocOverlay();
         String subtitle = view == null ? "Waiting for current choices" :
-                ("v4_q".equals(view.policy) ? "V4" : view.policy.toUpperCase(Locale.ROOT))
-                + "  ·  " + capitalize(view.screen.replace('_', ' '));
-        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
-        if (showActionRecommendations && view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
-            List<OocOverlay.Choice> panelChoices = view.panelChoices();
-            for (int row = 0; row < panelChoices.size(); ++row) {
-                OocOverlay.Choice choice = panelChoices.get(row);
-                int rank = view.choices.indexOf(choice);
-                float rowBottom = top - (122 + 44 * row) * scale;
-                drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 38 * scale, scale);
-                if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
-                        width - 28 * scale, 38 * scale, WARNING, 2 * scale);
-                renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + "  " + choice.label,
-                        x + 23 * scale, rowBottom + 26 * scale, width - 150 * scale,
-                        choice.selected ? CYAN : Color.WHITE, .78f);
-                renderSmallText(sb, String.format(Locale.ROOT, "N %d · Q %.3f", choice.visits, choice.q),
-                        x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
+                (!view.choices.isEmpty() && "forced_no_search".equals(view.choices.get(0).valueSemantics)
+                        ? "Forced choice" : "v4_q".equals(view.policy) ? "V4 action score" : "Mean search value")
+                + " · " + capitalize(view.screen.replace('_', ' '));
+        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .78f);
+        boolean histogram = view != null && view.distribution != null;
+        float listTop = top - (histogram ? 178 : 0) * scale;
+        if (view != null && showActionRecommendations && "OK".equals(view.status)) {
+            if (!inline) {
+                List<OocOverlay.Choice> panelChoices = view.panelChoices();
+                for (int row = 0; row < panelChoices.size(); ++row) {
+                    OocOverlay.Choice choice = panelChoices.get(row);
+                    int rank = view.choices.indexOf(choice);
+                    float rowBottom = listTop - (128 + 54 * row) * scale;
+                    if (mouseIn(x + 14 * scale, rowBottom, width - 28 * scale, 48 * scale))
+                        hoveredOocChoice = choice;
+                    drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 48 * scale, scale);
+                    if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
+                            width - 28 * scale, 48 * scale, WARNING, 2 * scale);
+                    renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + " " + choice.label,
+                            x + 23 * scale, rowBottom + 37 * scale, width - 160 * scale,
+                            choice.selected ? CYAN : Color.WHITE, .74f);
+                    String value = "forced_no_search".equals(choice.valueSemantics) ? "Forced"
+                            : "mean_backed_up_value_0_1".equals(choice.valueSemantics)
+                            ? choice.visits == 0 ? "No samples" : String.format(Locale.ROOT, "Mean %.3f", choice.q)
+                            : String.format(Locale.ROOT, "Score %.3f", choice.q);
+                    renderFittedText(sb, value, x + width - 133 * scale, rowBottom + 37 * scale,
+                            110 * scale, MUTED, .70f);
+                    if ("mean_backed_up_value_0_1".equals(choice.valueSemantics))
+                        renderSmallText(sb, String.format(Locale.ROOT, "N %d · visits %.1f%% · prior %.1f%%",
+                                choice.visits, 100 * choice.visitShare, 100 * choice.prior),
+                                x + 23 * scale, rowBottom + 17 * scale, MUTED, .65f);
+                }
             }
-            if ("card_reward".equals(view.screen))
-                renderSmallText(sb, "Scores below cards", x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
-            else if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
-                    x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
-            renderOocCardBadges(sb, view, scale);
-        } else if (!showActionRecommendations) {
-            renderSmallText(sb, view != null && "OK".equals(view.status)
-                            ? "Recommendations hidden" : view == null ? "Waiting for advisor" : "Advisor unavailable",
-                    x + 18 * scale, top - 105 * scale, MUTED, .86f);
-            renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
-                    x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
-        } else {
-            renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
-                    "UNSUPPORTED".equals(view.status) ? "No supported recommendation" : "Advisor unavailable",
-                    x + 18 * scale, top - 105 * scale, WARNING, .86f);
-            String reason = view == null ? "Scores appear when the current response is ready." : view.reason.replace('_', ' ');
-            renderFittedText(sb, reason, x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
+            renderOocCardBadges(sb, view, scale, !inline);
+        } else if (!histogram) {
+            renderSmallText(sb, !showActionRecommendations ? "Recommendations hidden"
+                    : view == null ? "Waiting for advisor" : "No supported recommendation",
+                    x + 18 * scale, top - 105 * scale, MUTED, .82f);
+            if (view != null) renderFittedText(sb, view.reason.replace('_', ' '),
+                    x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
         }
+        if (histogram) renderOocDistribution(sb, view, hoveredOocChoice, x, top - 96 * scale, width, scale);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
                 x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
     }
 
-    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale) {
+    private void renderOocDistribution(SpriteBatch sb, OocOverlay view, OocOverlay.Choice hovered,
+                                       float x, float top, float width, float scale) {
+        OocOverlay.Distribution[] layers = view.distributionLayers(hovered);
+        OocOverlay.Distribution baseline = layers[0], overlay = layers[1];
+        renderFittedText(sb, baseline.summary("All search samples"), x + 16 * scale, top,
+                width - 32 * scale, CYAN, .67f);
+        String detail = hovered == null ? "Hover a choice to compare its sampled values"
+                : overlay == null ? "No distribution for this choice" : overlay.summary(hovered.label);
+        renderFittedText(sb, detail, x + 16 * scale, top - 20 * scale, width - 32 * scale, WARNING, .65f);
+        float plotX = x + 20 * scale, plotBottom = top - 122 * scale;
+        float plotWidth = width - 40 * scale, plotHeight = 74 * scale, bar = plotWidth / 22;
+        // Both layers use a fixed 0..100% y axis and the same 22 buckets.
+        drawRect(sb, plotX, plotBottom, plotWidth, plotHeight, PANEL_INNER);
+        renderSmallText(sb, "100%", plotX, plotBottom + plotHeight + 13 * scale, MUTED, .52f);
+        for (int i = 0; i < 22; ++i) {
+            float bx = plotX + i * bar;
+            float baseHeight = (float)baseline.share(i) * plotHeight;
+            if (baseHeight > 0) drawRect(sb, bx + scale, plotBottom, bar - 2 * scale, baseHeight, CYAN_DIM);
+            if (overlay != null && overlay.count > 0) {
+                float overlayHeight = (float)overlay.share(i) * plotHeight;
+                if (overlayHeight > 0) drawBorder(sb, bx + scale, plotBottom, bar - 2 * scale,
+                        overlayHeight, WARNING, Math.min(1.5f * scale, overlayHeight));
+            }
+        }
+        renderFittedText(sb, "Death | other evaluated values 0 → 1 | Victory",
+                plotX, plotBottom - 5 * scale, plotWidth, MUTED, .61f);
+        if (hovered != null) renderFittedText(sb,
+                String.format(Locale.ROOT, "Choice visits %.1f%% · prior %.1f%% · N %d",
+                        100 * hovered.visitShare, 100 * hovered.prior, hovered.visits),
+                plotX, plotBottom - 26 * scale, plotWidth, MUTED, .65f);
+        else renderSmallText(sb, "Shares of each set · terminal samples are not model probabilities",
+                plotX, plotBottom - 26 * scale, MUTED, .55f);
+    }
+
+    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale, boolean drawBadges) {
         if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.CARD_REWARD
                 || AbstractDungeon.cardRewardScreen == null) return;
         List<AbstractCard> cards = AbstractDungeon.cardRewardScreen.rewardGroup;
@@ -842,7 +894,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             OocOverlay.Choice choice = view.choices.get(rank);
             if (!"choose".equals(choice.kind) || choice.index < 1 || choice.index > cards.size()) continue;
             AbstractCard card = cards.get(choice.index - 1);
-            float width = 166 * scale;
+            if (card.hb.hovered) hoveredOocChoice = choice;
+            if (!drawBadges) continue;
+            float width = 206 * scale;
             float x = Math.max(0, Math.min(Settings.WIDTH - width, card.current_x - width / 2));
             float bottom = Math.max(95 * scale, card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - 48 * scale);
             drawRect(sb, x, bottom, width, 34 * scale, PANEL_INNER);
