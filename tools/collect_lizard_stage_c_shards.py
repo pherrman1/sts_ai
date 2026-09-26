@@ -132,12 +132,25 @@ def validate_common(root: Path, plan_path: Path, plan: dict) -> tuple[list[int],
                 or sha256(attempt_path) != amendment["attemptRecordSha256"]):
             raise ValueError("Stage-C operational amendment provenance mismatch")
         attempt = load_json(attempt_path)
-        if (attempt.get("schema") != "active_lizard_stage_c_attempt_record_v1"
-                or attempt.get("status") != "ABORTED_INDEX_WRITE_FAILURE"
-                or attempt.get("planSha256") != amendment["supersededPlanSha256"]
-                or attempt.get("candidateScoringOrSelectionRun") is not False
-                or attempt.get("candidateShardSeedsRevalidated")
-                    != amendment.get("reusedCandidateShardSeeds")):
+        common_attempt_mismatch = (
+            attempt.get("schema") != "active_lizard_stage_c_attempt_record_v1"
+            or attempt.get("planSha256") != amendment["supersededPlanSha256"]
+            or attempt.get("candidateScoringOrSelectionRun") is not False)
+        if attempt.get("status") == "ABORTED_INDEX_WRITE_FAILURE":
+            attempt_mismatch = (
+                attempt.get("candidateShardSeedsRevalidated")
+                != amendment.get("reusedCandidateShardSeeds"))
+        elif attempt.get("status") == "SUPERSEDED_BY_CURRENT_MAIN_ADVANCE":
+            prior_attempt_path = resolve(root, attempt["supersededAttemptRecordPath"])
+            attempt_mismatch = (
+                not prior_attempt_path.is_file()
+                or sha256(prior_attempt_path) != attempt["supersededAttemptRecordSha256"]
+                or attempt.get("currentMainAfterAdvanceSha") != plan.get("currentMainBaselineSha")
+                or attempt.get("candidateShardSeedsReused")
+                    != amendment.get("reusedCandidateShardSeeds"))
+        else:
+            attempt_mismatch = True
+        if common_attempt_mismatch or attempt_mismatch:
             raise ValueError("Stage-C operational amendment attempt record is inconsistent")
     for relative, expected_sha in plan.get("frozenRepositoryFiles", {}).items():
         frozen_path = resolve(root, relative)

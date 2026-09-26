@@ -1007,25 +1007,35 @@ regression. Its 19/119 vendored/native label disagreements remain descriptive;
 teacher rows are not pooled. Stage B permits the fresh run, but does not
 qualify the candidate. The frozen fresh 320-source assignment remains disjoint
 from 367 prior Lizard sources. Following ADR-0024, the user authorized its
-local execution. The candidate, assignment, native teacher, executable,
-selector/analyzer code, and gates are frozen in
+local execution. The original scientific plan freezes the candidate,
+assignment, selection rules, and gates in
 `stage_c_preoutcome_plan.json` (SHA-256
 `54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`). The
 collector uses eight independent source processes with one OpenMP thread each;
 completed sources are saved with per-seed manifests and checksums for resume.
-The initial candidate attempt completed eight source shards but failed when the
-write-once artifact helper refused to replace its mutable progress index. All
-eight shard data/manifest/provenance/log sets passed independent validation;
-no candidate selection/scoring, pair generation, or qualification analysis
-ran. Their outputs remain local scratch, and the empty failed index is
-preserved in quarantine. The execution-only amendment plan
-`stage_c_preoutcome_plan_retry1_indexfix.json` (SHA-256
-`52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769`) binds the
-corrected atomic index writer and failure record. The original candidate,
-source assignment, teacher, selection rule, worker topology, and qualification
-gates remain unchanged. Two focused unit tests and the amended-plan preflight
-pass. The corrected run has not restarted yet; it will resume from 8/320
-validated candidate shards. Production remains `active_unqualified_lizard`. See [ledger
+The first candidate attempt completed eight source shards but failed when its
+write-once artifact helper refused to replace the mutable progress index. All
+eight data/manifest/provenance/log sets validated against the then-frozen
+producer; no target selection/scoring, pair collection, or qualification
+analysis ran. Afterward, main advanced to `212aa25485bc6e8f0a5a91eb35edc7485056cb5a`
+through PR #366. Its OOC MCTS observer is opt-in, and
+`STS_OOC_MCTS_REUSE_TRACE` is unset in the frozen teacher config; Stage B retry
+6 remains the proceed diagnostic. The merged PR source was clean-built at
+producer commit `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable
+SHA-256 `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`,
+and teacher-manifest SHA-256
+`c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. The
+older eight shards are preserved but excluded so all Stage-C rows share that
+one producer and executable hash. The corrected current-main plan
+`stage_c_preoutcome_plan_retry2_current_main_indexfix.json` (SHA-256
+`2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2`)
+records the base advance and supersedes the earlier execution amendment without
+changing the candidate, assignment, selection rule, worker topology, or gates.
+Its attempt record is
+`stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
+`58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
+corrected current-main run has not restarted yet; no current-main candidate
+shard has completed. Production remains `active_unqualified_lizard`. See [ledger
 §362](../../experiments/ledger-06.md) and the [mechanical-q evidence
 packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 

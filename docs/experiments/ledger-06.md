@@ -12983,30 +12983,46 @@ Evidence:
   eight source shards passed independent producer/teacher/seed and file-hash
   validation. No target selection, candidate scoring, pair collection, or
   qualification analysis ran. The empty failed index was preserved in local
-  quarantine, and the eight valid shards remain available for resume. The
-  execution-only amendment plan
+  quarantine. The write-once behavior remains for immutable per-source outputs;
+  only the progress index now uses atomic replacement. Two focused tests cover
+  both behaviors. Remote main then advanced from `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`
+  to `212aa25485bc6e8f0a5a91eb35edc7485056cb5a` in PR #366. The intervening
+  native-search change is the opt-in `STS_OOC_MCTS_REUSE_TRACE` observer, which
+  is unset in the frozen Stage-B/Stage-C teacher configuration; Stage B retry 6
+  remains applicable. The merged PR source was clean-built at producer commit
+  `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable SHA-256
+  `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`, with
+  current-main teacher manifest SHA-256
+  `c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. The
+  earlier eight shards are preserved but excluded because they used the old
+  executable; all 320 fresh sources will use the same current-main binary. The
+  first execution-only amendment plan
   `stage_c_preoutcome_plan_retry1_indexfix.json` (SHA-256
   `52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769`) binds
-  the corrected collector and compact failed-attempt record; source assignment,
-  candidate, teacher, selection, worker topology, and gates are unchanged. The
-  atomic-index update unit tests and amended-plan preflight pass. At this
-  ledger update the corrected run has not restarted; it resumes from 8/320
-  validated shards. Only Stage C can qualify the candidate.
+  the checkpoint-writer correction. The current-main execution amendment
+  `stage_c_preoutcome_plan_retry2_current_main_indexfix.json` (SHA-256
+  `2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2`) binds
+  the refreshed teacher/binary and records why the eight old-executable shards
+  are not reused. The source assignment, candidate, selection, worker topology,
+  and qualification gates are unchanged. The updated preflight passes. At this
+  ledger update the refreshed run has not restarted; no current-main candidate
+  shard has completed. Only Stage C can qualify the candidate.
 - **Decision:** Stage A remains development evidence. Retry 6 passed the
   current-main transfer proceed gate and authorizes the already-frozen Stage C
   run, but neither Stage A nor B qualifies the candidate. The Stage-C
   scientific plan and resource preflight remain frozen. The first Stage-C
   candidate attempt stopped on the checkpoint-index bug after eight valid
-  source shards; the corrected execution amendment is frozen and will resume
-  those shards without rerunning them. No target selection or paired outcomes
-  have been produced. No runtime support changed; production remains
+  old-executable shards; the corrected collector preserves them but excludes
+  them after the main advance so the qualification cohort uses one current-main
+  binary. The refreshed plan is frozen; no current-main candidate shards, target
+  selection, or paired outcomes have been produced. No runtime support changed; production remains
   `active_unqualified_lizard`.
 - **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
   including frozen cohort artifacts, Stage A analysis, candidate manifest,
   source assignment, retry-5 history, retry-6 current-main teacher/plan/pairs,
   analyzer output, compact checkpoint hash index (payloads excluded as scratch),
-  the Stage-C scientific and execution-amendment plans, failed-attempt hash
-  record, and teacher manifest. The obsolete >128 GCP gate was
+  the Stage-C scientific and execution-amendment plans, both failed-attempt
+  provenance records, and current-main teacher manifest. The obsolete >128 GCP gate was
   removed per ADR-0024, and the repository's local 320 experiment maximum is
   used without a cloud bypass. The clean Release build and focused Event-room
   regression passed; GitHub Actions did not start because of the account
