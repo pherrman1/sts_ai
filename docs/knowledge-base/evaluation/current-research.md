@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-25 for the OOC contextual semantic-prior offline qualification,
+Last verified: 2026-09-26 for the active-Lizard current-main teacher-transfer
+gate and frozen Stage-C pre-outcome plan; 2026-09-25 for the OOC contextual semantic-prior offline qualification,
 the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
 review of the merged DeepSets Brew-fallback quality-confirmation preparation;
@@ -982,14 +983,26 @@ transfer evidence, not qualification. Current main is
 equivalent-copy reroot behavior, which the frozen exact-root-budget setting
 does not disable; PR #362 changed `SilverWireState` and `SilverConversion` to
 preserve pending card queues at card-selection roots and settle Guardian Mode
-Shift before replay. The same exact 119 states need a new current-teacher
-diagnostic before Stage C. The frozen fresh 320-source assignment remains
-disjoint from 367 prior Lizard sources. Following ADR-0024, the user has
-authorized its local execution if the current-teacher Stage-B gate passes.
-Freeze the final source/build/artifact provenance and resource budget, then use
-the repository seed guard; Stage C has not started. Production remains
-`active_unqualified_lizard`. See [ledger §361](../../experiments/ledger-06.md) and the
-[mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
+Shift before replay. Retry 6 then reran the exact same 119 states against
+current native Silver (baseline `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`):
+119/119 exact snapshots, support, and mechanical-q parity; 80
+`WIN_RETAINED`, 30 `WIN_CONSUMED`, and 9 `LOSS_CONSUMED`. The frozen transfer
+analysis passed the proceed gate with no clear candidate, learned-r, or T2
+regression. Its 19/119 vendored/native label disagreements remain descriptive;
+teacher rows are not pooled. Stage B permits the fresh run, but does not
+qualify the candidate. The frozen fresh 320-source assignment remains disjoint
+from 367 prior Lizard sources. Following ADR-0024, the user authorized its
+local execution. The candidate, assignment, native teacher, executable,
+selector/analyzer code, and gates are frozen in
+`stage_c_preoutcome_plan.json` (SHA-256
+`54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`). The
+collector uses eight independent source processes with one OpenMP thread each;
+completed sources are saved with per-seed manifests and checksums for resume.
+Preflight found 12 logical CPUs, 10 GiB available memory, 369 GB free disk,
+load average 1.44, and no recent CPU pressure. Stage-C source collection has
+not started. Production remains `active_unqualified_lizard`. See [ledger
+§361](../../experiments/ledger-06.md) and the [mechanical-q evidence
+packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal

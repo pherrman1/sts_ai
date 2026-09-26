@@ -12880,38 +12880,81 @@ Decision: adopt; this is a pure speedup with exact parity. Evidence:
   `tools/combat_transition_lizard_pair_pilot.py` SHA-256
   `d681103e100a32b47aa6ca371b2a73752bb2c0dbeb93ed39288b50d4bf097a2d`. Stage
   B is a transfer diagnostic, not qualification.
+- **Stage B retry 6 — current-main teacher transfer:** after PR #362, the
+  baseline was `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. The exact same 119
+  non-burning snapshots and nine preregistered exclusions were replayed with
+  native Silver exact-10k fair search, an observed 8-thread OpenMP team,
+  collector source `9ca24419bc8799e45aaa5df4b937ab9c11920ab4`, and executable
+  SHA-256
+  `038d69a177b07baf8efc10a523b47b655bddc7a2d3f27eef74707ab4b02cbe6a`. The
+  frozen plan SHA is `7a83ceb0e4c9336922a683a0c97d9c04b5afb219de30d02ecc48ed3e26d6cfcb`;
+  the teacher manifest SHA is
+  `648593cc572930c0887b0339881b80da61e563c3407d2aca4f60ffb80650f5d1`. All
+  119 states, support rows, and mechanical-q parity checks passed. Labels were
+  80 `WIN_RETAINED`, 30 `WIN_CONSUMED`, and 9 `LOSS_CONSUMED`; as a transfer
+  diagnostic, it does not meet the rare-loss floor. Candidate-minus-B1 pooled
+  three-class NLL delta was `-5.85699` (95% CI `[-17.50884,+0.00700]`) and
+  Brier delta `-0.03223` (CI `[-0.06387,-0.00142]`). The 39 consumed-row
+  learned-r NLL delta was `-1.05627` (CI `[-2.96512,+0.00543]`) and Brier
+  delta `-0.07813` (CI `[-0.17577,+0.01696]`). T2 scored 30 supported wins;
+  HP NLL, CRPS, and expected-HP absolute-error deltas were `-1.62445`,
+  `-4.63706`, and `-5.30852`, all with 95% intervals below zero. There were
+  19/119 vendored/native three-class label disagreements; the teachers remain
+  unpooled. The frozen analyzer passed the transfer proceed gate. Analysis
+  SHA-256 is
+  `947bf1ab459ec29f46bb13e362b8f310f21efdb4617bb6434dd485894b740951`; the
+  final pair JSONL SHA-256 is
+  `9f8c46bd196ed9a9c1f2a90515ac36329418bd7dde6e880e97b6c12fbf798456`. The
+  119 bulky checkpoint payloads remain local scratch; the compact checkpoint
+  hash index is
+  `stage_b_direct_snapshot_checkpoint_sha256_index_retry6_current_main_omp8.tsv`
+  with SHA-256
+  `38a68642a32319ade68c03c9f1cff97f26f6fbbec4fcbaf2196dd431d03cda0f`.
+  This diagnostic permits Stage C to proceed but is not qualification.
 - **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
   assignment is frozen with an audited fresh block and outcome-blind BROAD32
   salt. Its 320 unique sources were rechecked disjoint from all 367 recorded
   prior Lizard sources (assignment SHA-256
   `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`). Retry 5
-  applies only to the teacher pinned to `0eed6993999386737d87f040e38fb241623b5cf3`.
+  applies only to the teacher pinned to `0eed6993999386737d87f040e38fb241623b5cf3`;
+  retry 6 is the matching current-main transfer diagnostic on baseline
+  `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`.
   Main advanced through `ffd51f3bc43b03aa356c419567d77b1eecc636a1` to current
   base `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native
   Silver equivalent-copy reroot behavior, which is not disabled by the frozen
   exact-root-budget setting. PR #362 changed `SilverWireState` and
   `SilverConversion` to preserve pending card queues at card-selection roots
-  and settle Guardian Mode Shift before replay. Retry 5 is historical evidence,
-  not a current-main Stage-B pass. The same 119 states need a current-teacher
-  diagnostic before Stage C. Current main retired the GCP research workflow in
+  and settle Guardian Mode Shift before replay. Retry 5 remains historical
+  evidence; retry 6 passes the current-main Stage-B proceed gate. Current main retired the GCP research workflow in
   PR #361; under ADR-0024, the frozen 320-source Stage C can run locally without
   a general seed ceiling after the current-teacher Stage-B gate passes. The
   user has authorized that conditional local run. Before launch, freeze the
   final source/build/artifact provenance and resource budget, then use the
-  repository seed guard. Stage C has not started.
-- **Decision:** Stage A remains development evidence. Retry 5 is a valid,
-  provenance-pinned historical teacher-transfer diagnostic but does not pass
-  the current-main Stage-B gate. Stage C must wait for a current-teacher Stage-B
-  diagnostic and its frozen local resource/provenance preflight. No runtime
-  support changed; production remains `active_unqualified_lizard`.
+  repository seed guard. The pre-outcome plan is frozen at SHA-256
+  `54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`. It pins
+  the candidate, teacher/executable, selector/analyzer sources, and unchanged
+  gates. Candidate and pair collection use eight one-thread subprocess workers;
+  each source is durable and independently resumable, while shard payloads stay
+  out of the PR. Preflight found 12 logical CPUs, 10 GiB available RAM, 369 GB
+  free disk, load average 1.44, and no recent CPU pressure. Stage C collection
+  has not started. Only Stage C can qualify the candidate.
+- **Decision:** Stage A remains development evidence. Retry 6 passed the
+  current-main transfer proceed gate and authorizes the already-frozen Stage C
+  run, but neither Stage A nor B qualifies the candidate. The Stage-C
+  pre-outcome plan and resource preflight are frozen; no fresh candidate or pair
+  outcomes are collected yet. No runtime support changed; production remains
+  `active_unqualified_lizard`.
 - **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
   including frozen cohort artifacts, Stage A analysis, candidate manifest,
-  source assignment, retry-5 historical native teacher manifest and plan, the
-  119-pair JSONL (whose per-pair checkpoint payloads were validated during the
-  run and intentionally excluded as redundant scratch), analyzer output,
-  debug-only event-target replay, and the current-main drift note.
+  source assignment, retry-5 history, retry-6 current-main teacher/plan/pairs,
+  analyzer output, compact checkpoint hash index (payloads excluded as scratch),
+  and Stage-C pre-outcome plan/teacher manifest. The obsolete >128 GCP gate was
+  removed per ADR-0024, and the repository's local 320 experiment maximum is
+  used without a cloud bypass. The clean Release build and focused Event-room
+  regression passed; GitHub Actions did not start because of the account
+  payment/spending-limit block (not a code verdict).
 
 Knowledge impact: current research now records the event-continuation harness
-fix, analyzer schema compatibility fix, historical teacher-transfer result,
-and required current-main recheck. No runtime support or candidate parameters
-changed.
+fix, analyzer schema compatibility fix, retry-6 current-main transfer result,
+and the frozen Stage-C pre-outcome plan. No runtime support or candidate
+parameters changed.

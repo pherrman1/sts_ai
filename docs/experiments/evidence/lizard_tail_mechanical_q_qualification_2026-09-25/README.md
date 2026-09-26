@@ -293,10 +293,67 @@ the exact-root-budget flag does not disable that path. PR #362 also changed
 `SilverWireState` and `SilverConversion` to preserve pending card queues at
 card-selection roots and settle Guardian Mode Shift before replay. Retry 5
 remains valid, provenance-pinned historical evidence, but its analyzer decision
-is not a current-main Stage-B pass. Before Stage C, rerun the same exact 119
-selected states with provenance regenerated for the current native teacher.
-Keep the candidate, r, T2, cohort, and gates frozen; do not pool or replace the
-historical retry-5 rows.
+is not a current-main Stage-B pass. That drift required one more run of the
+same exact 119 states, recorded below; it did not change the candidate, `r`,
+T2, cohort, or gates.
+
+### Retry 6 — current-main native teacher-transfer diagnostic
+
+Retry 6 uses the exact 119 non-burning snapshots and nine preregistered
+burning-elite exclusions from PR #326, after PR #362 reached current baseline
+`6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. The candidate, r, T2, selected
+states, Stage-C assignment, and transfer gates were unchanged. The frozen plan
+SHA-256 is
+`7a83ceb0e4c9336922a683a0c97d9c04b5afb219de30d02ecc48ed3e26d6cfcb`; its
+native teacher manifest SHA-256 is
+`648593cc572930c0887b0339881b80da61e563c3407d2aca4f60ffb80650f5d1`, with
+teacher id
+`silver-ordinary-fair-exact10k-native-9ca24419-current-main-omp8`. The run
+used collector source `9ca24419bc8799e45aaa5df4b937ab9c11920ab4`, executable
+SHA-256
+`038d69a177b07baf8efc10a523b47b655bddc7a2d3f27eef74707ab4b02cbe6a`, exact
+10,000 fair Silver simulations, and an observed eight-thread OpenMP team.
+
+All 119 rows validate against the exact archived states, every pair has exact
+support, and every row has mechanical-q parity. Labels are 80
+`WIN_RETAINED`, 30 `WIN_CONSUMED`, and 9 `LOSS_CONSUMED`; the rare-loss floor
+is expectedly unmet in this transfer cohort. The frozen transfer analyzer
+reports `PROCEED_TO_FRESH_NATIVE_QUALIFICATION` with no clear candidate, learned
+r, or T2 regression. Pooled candidate-minus-B1 three-class NLL is `-5.85699`
+(source-bootstrap 95% CI `[-17.50884,+0.00700]`); multiclass Brier is
+`-0.03223` (CI `[-0.06387,-0.00142]`). On 39 consumed rows, learned-r NLL is
+`-1.05627` (CI `[-2.96512,+0.00543]`) and Brier is `-0.07813` (CI
+`[-0.17577,+0.01696]`). T2 scored 30 supported consumed wins; HP NLL, CRPS,
+and expected-HP absolute-error deltas are `-1.62445`, `-4.63706`, and
+`-5.30852`, with all three intervals below zero. Archived/native three-class
+labels agree on 100/119 rows and disagree on 19; this is a descriptive
+teacher-transfer table only, with no cross-teacher pooling.
+
+The pair JSONL SHA-256 is
+`9f8c46bd196ed9a9c1f2a90515ac36329418bd7dde6e880e97b6c12fbf798456`, the
+manifest SHA-256 is
+`ab2191d3cc526ee0f58274185b714958c7e0af65b2d1b998df71c2c7c4e74734`, and the
+analysis SHA-256 is
+`947bf1ab459ec29f46bb13e362b8f310f21efdb4617bb6434dd485894b740951`. The
+raw collection log and successful C++ checkpoint-resume verification log are
+retained. All 119 per-pair checkpoint files were independently reloaded and
+validated by the C++ collector; the compact checkpoint SHA index is
+`native_teacher_transfer/stage_b_direct_snapshot_checkpoint_sha256_index_retry6_current_main_omp8.tsv`
+(SHA-256
+`38a68642a32319ade68c03c9f1cff97f26f6fbbec4fcbaf2196dd431d03cda0f`). The
+large checkpoint payloads remain local scratch and are excluded from the PR.
+
+### PR #330 correction and verification status
+
+The obsolete `sts-test`/GCP authorization for collections above 128 was
+removed; the experiment-specific 320 maximum remains. The Event-room direct
+snapshot continuation regression is covered by
+`combat_transition_active_lizard_fixture`. A clean Release build and that
+focused CTest passed for the reviewed C++ source; the compiled executable SHA
+is recorded above. GitHub's `Linux GCC` check on the then-current PR head did
+not start any job steps because the account's payment/spending limit blocked
+GitHub Actions (run `36266190518`, check `108471198252`). That is not a code
+failure, but it is also not a passing CI result.
 
 ## Stage C — fresh native qualification assignment
 
@@ -313,15 +370,29 @@ The assignment is frozen in `fresh_native/source_assignment.json` (SHA-256
 
 Stage C is not a continuation of either earlier evidence domain. It may run
 only if a Stage-B diagnostic on the current native teacher passes, on the frozen
-candidate. Stage C has not started.
+candidate. Retry 6 passes that proceed gate; it is transfer evidence, not
+qualification.
 The 2026-09-26 Stage-C freshness audit reconfirmed all 320 unique assigned
 sources are disjoint from the 367 prior Lizard sources; the assignment SHA-256
 remains
-`752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`. The
-current-main PR #361 retired the GCP research workflow. Under ADR-0024, the
-user has authorized running this frozen assignment locally if the current-main
-Stage-B diagnostic passes. Before launch, freeze the final source, build,
-teacher, and candidate provenance and local resource budget; invoke all seed
-collection through `tools/seed_guard.sh`. The source assignment and
-qualification gates remain unchanged. Stage C has not started, and only Stage
-C may qualify the candidate.
+`752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`. Under
+ADR-0024 the fixed assignment runs locally with the repository seed guard and
+without a GCP bypass. The pre-outcome plan is frozen in
+`fresh_native/stage_c_preoutcome_plan.json` (SHA-256
+`54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`). It pins
+the unchanged candidate, assignment, current-main binary and native-Silver
+teacher, selector/analyzer source hashes, and all qualification gates. Its
+teacher manifest is
+`fresh_native/native_silver_stage_c_teacher_omp1_8workers.json` (SHA-256
+`d548f05a1f7ddfa0872426c109d5999cdb8436de0b7068d6fec5b4e6b3f96610`). The
+run uses eight independent source workers, each with `OMP_NUM_THREADS=1` (eight
+total worker threads); each completed seed is durably retained with its own
+data, manifest, provenance sidecar, and log. Collection resumes only from
+matching hashes and provenance, while aggregate output is assembled in frozen
+source order. Per-source payloads are local scratch; the review packet will
+retain aggregate data, manifests, and a compact hash index.
+
+The preflight found 12 logical CPUs, load average 1.44, about 10 GiB available
+RAM, 369 GB free disk, and zero recent CPU pressure. The Stage-C source
+collection has not started yet; only a fresh native qualification can qualify
+the candidate. Production remains `active_unqualified_lizard`.

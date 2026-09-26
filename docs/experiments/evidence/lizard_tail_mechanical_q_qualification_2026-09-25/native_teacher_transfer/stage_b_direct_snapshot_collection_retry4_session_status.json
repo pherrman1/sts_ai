@@ -1,0 +1,77 @@
+{
+  "attempt": "retry4_omp8_resumable",
+  "collectorCommit": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+  "collectorSessionPoll": {
+    "lastObserved": "stopped_by_sigint_exit_130_after_trace",
+    "lastPollAtUtc": "2026-09-26T14:12:17Z",
+    "sessionId": 88344
+  },
+  "exclusiveCollectorLock": {
+    "heldAtObservation": false,
+    "path": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs_retry4_omp8_resumable.jsonl.checkpoints/.collector.lock"
+  },
+  "executableSha256": "350345e79ac2ffc2392d5b46a07f5b98292829e619f342ed3d5c4f2f56b1047b",
+  "interpretation": "The traced resume was stopped with SIGINT after ten minutes; it had loaded 116/119 verified checkpoints, completed no additional pairs, and published no final JSONL or manifest. Three worker threads were consuming about one CPU each; stack samples entered SilverSearcher::rerootAt and allocator code, with no recorded failure exception. The exclusive lock is released. A temporary diagnostic build will now run only the exact three unfinished states in separate diagnostic output; the pinned binary is preserved.",
+  "observedAtUtc": "2026-09-26T14:12:17Z",
+  "outputs": {
+    "pairJsonlExists": false,
+    "pairManifestExists": false
+  },
+  "planSha256": "f62a89735c0782f219d0c44f2d0d84f769eba42ef2719c58fb59d86d8d66d042",
+  "progress": {
+    "actualOpenMpTeamSize": 8,
+    "checkpointedPairs": 116,
+    "lastProgressAtUtc": "2026-09-26T12:54:47Z",
+    "lastProgressElapsedSeconds": 150,
+    "missingTargets": [
+      {
+        "fightIdx": 15,
+        "sourceSeed": 4201028
+      },
+      {
+        "fightIdx": 18,
+        "sourceSeed": 4201056
+      },
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201117
+      }
+    ],
+    "requestedPairs": 119
+  },
+  "rawLog": {
+    "modifiedAtUtc": "2026-09-26T12:54:47Z",
+    "path": "stage_b_direct_snapshot_collection_retry4_omp8_resumable.log",
+    "sha256": "2c1daa928c5e6b95648b2d011c7dbe0506e0e7b33b99e93d60d596f1491fe5f2",
+    "sizeBytes": 36818
+  },
+  "schema": "lizard_tail_stage_b_session_status_v1",
+  "startedAtUtc": "2026-09-26T12:52:16Z",
+  "resourceStatus": {
+    "loadAverage": [
+      "3.39",
+      "3.34",
+      "3.28"
+    ],
+    "memAvailable": "11197268 kB",
+    "cpuPressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=22624848138\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0",
+    "correctLockProbeExitCode": 1
+  },
+  "eta": "Unknown; 0 of 3 remaining pairs completed for about 44 minutes, so observed tail throughput does not support a defensible estimate.",
+  "debugging": {
+    "method": "strace syscall and userspace stack tracing",
+    "scope": "Resume the exact frozen 119-pair plan; only three incomplete pairs will execute.",
+    "traceLog": "stage_b_direct_snapshot_debug_retry4_omp8.strace",
+    "progressLog": "stage_b_direct_snapshot_debug_retry4_omp8.log",
+    "sessionId": 88344,
+    "ptraceEnabled": true,
+    "traceSizeBytes": 15038671,
+    "sampledOpenMpCpuThreads": 3,
+    "sampledResidentMemoryBytes": 897695744,
+    "traceStoppedBy": "SIGINT",
+    "traceStoppedAtLocal": "2026-09-26 16:10:09 CEST",
+    "traceResult": "SIGINT arrived while the OpenMP main thread waited at the parallel-region barrier; worker threads remained active. No SIGSEGV/SIGABRT/collector error was recorded.",
+    "pinnedExecutableBackup": "/tmp/one_combat_retry4_pinned_350345e7",
+    "pinnedExecutableSha256": "350345e79ac2ffc2392d5b46a07f5b98292829e619f342ed3d5c4f2f56b1047b"
+  }
+}
