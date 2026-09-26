@@ -1656,6 +1656,25 @@ int main() {
         if (!convertedStatesEqualForSearch(v4ContinuationCanonical,
                                            v4ContinuationImported.wire))
             throw std::runtime_error("v4 continuation search-state parity failed");
+        // An observed pending card queue (a Double Tap copy of the played
+        // card) is imported item by item with the played card's identity.
+        {
+            auto withQueue = v4Continuation;
+            auto copy = producerQueueJson(v4Successor.wire.curCardQueueItem);
+            copy["purgeOnUse"] = true;
+            copy["autoplay"] = true;
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array({copy});
+            const auto queued = one_combat::advisor::importSilverRoot(withQueue);
+            if (!queued.ok || !queued.wire.pendingCardQueueObserved || queued.wire.pendingCardQueue.size() != 1
+                || !queued.wire.pendingCardQueue[0].purgeOnUse || !queued.wire.pendingCardQueue[0].autoplay
+                || queued.wire.pendingCardQueue[0].card.uniqueId != queued.wire.curCardQueueItem.card.uniqueId)
+                throw std::runtime_error("pending card queue was not imported");
+            if (v4ContinuationImported.wire.pendingCardQueueObserved)
+                throw std::runtime_error("absent pending card queue was treated as observed");
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = 5;
+            if (one_combat::advisor::importSilverRoot(withQueue).reason != "silver_card_queue_item")
+                throw std::runtime_error("malformed pending card queue was accepted");
+        }
         auto missingV4Queue = v4Continuation;
         missingV4Queue["silverRoot"]["combat"].erase("curCardQueueItem");
         if (one_combat::advisor::importSilverRoot(missingV4Queue).reason
