@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "constants/Potions.h"
+#include "sim/search/CombatKnowledge.h"
 #include "sim/search/SearchRng.h"
 
 namespace sts::search {
@@ -108,6 +109,98 @@ namespace sts::search {
                 || std::any_of(cards.drawPile.begin(), cards.drawPile.end(), same)
                 || std::any_of(cards.discardPile.begin(), cards.discardPile.end(), same)
                 || std::any_of(cards.exhaustPile.begin(), cards.exhaustPile.end(), same);
+        }
+
+        template <int N>
+        std::vector<sts::Action> queuedActions(const ActionQueue<N> &queue) {
+            std::vector<sts::Action> out;
+            for (int i = 0; i < queue.size; ++i) out.push_back(queue.arr[(queue.front + i) % N]);
+            return out;
+        }
+
+        // Replays the interrupted card on a copy of `root` (card back in hand,
+        // cost refunded, per-turn play counts and Ink Bottle/Nunchaku/Pen Nib
+        // counters rolled back) and restores the
+        // work still pending when its selection opens: the part of the queue
+        // the play produced that the replay has not yet run. Actions the
+        // replay adds while running are not copied, because the replay applies
+        // the pre-selection effects a second time (a second hit can cross a
+        // threshold such as the Guardian's Mode Shift). Effects the first play
+        // already consumed (Vigor, the Pen Nib buff, Double Tap, Necronomicon)
+        // are not rolled back, so triggers that depend on them may differ.
+        bool restoreInterruptedPlayQueues(BattleContext &root) {
+            const CardQueueItem item = root.curCardQueueItem;
+            if (root.cards.cardsInHand >= CardManager::MAX_HAND_SIZE) return false;
+            BattleContext replay = root;
+            auto &p = replay.player;
+            if (p.cardsPlayedThisTurn > 0) --p.cardsPlayedThisTurn;
+            if (item.card.getType() == CardType::ATTACK && p.attacksPlayedThisTurn > 0) --p.attacksPlayedThisTurn;
+            if (item.card.getType() == CardType::SKILL && p.skillsPlayedThisTurn > 0) --p.skillsPlayedThisTurn;
+            if (item.card.costForTurn > 0 && !item.freeToPlay && !item.autoplay) p.energy += item.card.costForTurn;
+            // Relic counters the play advanced (they wrap to 0 when they fire).
+            if (p.hasRelic<RelicId::INK_BOTTLE>()) p.inkBottleCounter = p.inkBottleCounter == 0 ? 9 : p.inkBottleCounter - 1;
+            if (item.card.getType() == CardType::ATTACK) {
+                if (p.hasRelic<RelicId::NUNCHAKU>()) p.nunchakuCounter = p.nunchakuCounter == 0 ? 9 : p.nunchakuCounter - 1;
+                if (p.hasRelic<RelicId::PEN_NIB>()) p.penNibCounter = p.penNibCounter == -1 ? 8 : p.penNibCounter - 1;
+            }
+            // The replay hits a second time: keep every monster alive so it
+            // reaches the selection, and revive a target the real hit killed
+            // so the card can be used again. Monster health does not enter
+            // the actions the play queues.
+            constexpr int kReplayMonsterHp = 1 << 20;
+            if (item.card.requiresTarget() && item.target >= 0 && item.target < replay.monsters.monsterCount) {
+                auto &target = replay.monsters.arr[item.target];
+                if (target.isDying() && !target.isHalfDead() && !target.isEscaping()) {
+                    target.curHp = 1;
+                    ++replay.monsters.monstersAlive;
+                }
+            }
+            for (int i = 0; i < replay.monsters.monsterCount; ++i) {
+                auto &m = replay.monsters.arr[i];
+                if (m.isTargetable()) m.curHp = m.maxHp = kReplayMonsterHp;
+            }
+            replay.cards.moveToHand(item.card);
+            replay.inputState = InputState::EXECUTING_ACTIONS;
+            replay.cardSelectInfo = CardSelectInfo{};
+            replay.actionQueue.clear();
+            replay.cardQueue.clear();
+            CombatKnowledgeObserver *const observer = g_combatKnowledgeObserver;
+            g_combatKnowledgeObserver = nullptr;   // the replay is not live play
+            std::vector<sts::Action> played;
+            try {
+                replay.playCardQueueItem(item);
+                played = queuedActions(replay.actionQueue);
+                replay.executeActions();
+            } catch (const std::exception &) {
+                g_combatKnowledgeObserver = observer;
+                return false;
+            }
+            g_combatKnowledgeObserver = observer;
+            if (replay.inputState != InputState::CARD_SELECT
+                    || replay.cardSelectInfo.cardSelectTask != root.cardSelectInfo.cardSelectTask
+                    || replay.outcome != Outcome::UNDECIDED
+                    || cardIsInAnyPile(replay, item.card.uniqueId)) {
+                return false;
+            }
+            // The pending part of the play's queue is its longest suffix that
+            // still appears, in order, in the replay's remaining queue.
+            const auto remaining = queuedActions(replay.actionQueue);
+            const auto pendingFrom = [&](std::size_t first) {
+                std::size_t k = 0;
+                for (std::size_t i = first; i < played.size(); ++i) {
+                    while (k < remaining.size() && !(remaining[k] == played[i])) ++k;
+                    if (k == remaining.size()) return false;
+                    ++k;
+                }
+                return true;
+            };
+            std::size_t keep = played.size();
+            while (keep > 0 && !pendingFrom(played.size() - keep)) --keep;
+            if (keep == 0) return false;
+            root.actionQueue.clear();
+            for (std::size_t i = played.size() - keep; i < played.size(); ++i) root.actionQueue.pushBack(played[i]);
+            root.cardQueue = replay.cardQueue;
+            return true;
         }
 
         CardSource selectSource(CardSelectTask task) {
@@ -281,16 +374,19 @@ namespace sts::search {
         out.curCardQueueItem.purgeOnUse = q.purgeOnUse;
         out.curCardQueueItem.exhaustOnUse = q.exhaustOnUse;
 
+        seedSearchRng(out, in.isolatedSearchSeed);
+
         // A selection made while a card is being played (Headbutt, Warcry,
-        // ...) interrupts that play: the card is in no pile and its
-        // OnAfterCardUsed, which moves it to its destination, is still queued.
-        // The wire carries no action queue, so restore that action.
+        // Burning Pact, ...) interrupts that play: the card is in no pile and
+        // the rest of its work is still queued. The wire carries no queues, so
+        // rebuild them by replaying the card; if the replay does not reach the
+        // same selection, restore at least the OnAfterCardUsed that moves the
+        // card to its destination.
         if (out.inputState == InputState::CARD_SELECT && out.curCardQueueItem.card.id != CardId::INVALID
-                && !cardIsInAnyPile(out, out.curCardQueueItem.card.uniqueId)) {
+                && !cardIsInAnyPile(out, out.curCardQueueItem.card.uniqueId)
+                && !restoreInterruptedPlayQueues(out)) {
             out.addToBot(Actions::OnAfterCardUsed());
         }
-
-        seedSearchRng(out, in.isolatedSearchSeed);
         return out;
     }
 

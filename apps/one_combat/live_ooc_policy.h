@@ -23,6 +23,7 @@ struct LiveOocCandidateScore {
     // Optional display-only preview of the separate selector decision.
     // Never an executable compound action or part of the parent's Q value.
     std::string followUpPreview;
+    std::optional<sts::search::OocValueDistribution> valueDistribution;
 };
 
 // Common provider output. MCP lowering is separate and consumes these stable
@@ -34,6 +35,7 @@ struct LiveOocDecision {
     std::vector<LiveOocCandidateScore> candidates;
     int selectedIndex = -1;
     std::optional<sts::search::OocTreeSnapshot> tree;
+    std::optional<sts::search::OocValueDistribution> valueDistribution;
 };
 
 class LiveOocPolicy {

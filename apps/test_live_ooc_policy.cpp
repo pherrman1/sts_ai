@@ -160,6 +160,9 @@ int main(int argc, char **argv) {
             && forcedDecision.candidates[0].prior == 1.0
             && forcedDecision.candidates[0].visitShare == 1.0
             && forcedDecision.candidates[0].visits == 0
+            && forcedDecision.valueDistribution && forcedDecision.valueDistribution->count == 0
+            && forcedDecision.candidates[0].valueDistribution
+            && forcedDecision.candidates[0].valueDistribution->count == 0
             && forcedBefore == test::oocStateFingerprint(forcedMap),
             "live advisor returns sole map action without model sampling or mutation: "
                 + forcedDecision.reason + " candidates=" + std::to_string(forcedDecision.candidates.size()));
@@ -263,6 +266,10 @@ int main(int argc, char **argv) {
                         && !preview.contains("q") && !preview.contains("card"),
                         "remove/transform preview invented a scored target");
         }
+        model->q2b = 200;
+        const auto rawUtility = scoreLiveOocV4(gc, path, *model);
+        require(rawUtility.supported && rawUtility.candidates.front().q > 100,
+                "raw finite V4 utility is not clamped to probability or percentage units");
         model->q2b = std::numeric_limits<float>::infinity();
         require(scoreLiveOocV4(gc, path, *model).reason == "NONFINITE_Q", "infinite Q accepted");
         model->q2b = std::numeric_limits<float>::quiet_NaN();
@@ -345,6 +352,27 @@ int main(int argc, char **argv) {
         };
         OocAdapterOptions checkpoint;checkpoint.checkpointLeaves=true;
         checkpoint.stopAtMapCheckpoint=true;
+        for (const auto outcome : {GameOutcome::PLAYER_LOSS, GameOutcome::PLAYER_VICTORY}) {
+            auto terminalDeps = deps;
+            terminalDeps.continuationStep = [outcome](GameContext &state, PathHistory &, std::mt19937_64 &rng) {
+                (void)rng(); state.outcome = outcome;
+            };
+            OocGameContextModel terminalLeaf(pending, path, {}, checkpoint, terminalDeps);
+            OocGameContextModel scalarLeaf(pending, path, {}, checkpoint, terminalDeps);
+            std::mt19937_64 annotatedRng(17), scalarRng(17);
+            const auto sample = terminalLeaf.evaluateLeafWithOutcome(0, annotatedRng);
+            const double scalar = scalarLeaf.evaluateLeaf(0, scalarRng);
+            require(sample.terminal && sample.value == scalar && annotatedRng == scalarRng
+                    && sample.value == (outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0),
+                    "detached continuation endpoint or exact scalar/RNG parity lost");
+        }
+        auto zeroDeps = deps;
+        zeroDeps.leafValue = [](const GameContext &, const PathHistory &) { return 0.; };
+        OocGameContextModel zeroLeaf(pending, path, {}, checkpoint, zeroDeps);
+        std::mt19937_64 zeroRng(17);
+        const auto zeroSample = zeroLeaf.evaluateLeafWithOutcome(0, zeroRng);
+        require(!zeroSample.terminal && zeroSample.value == 0,
+                "nonterminal MAP model zero must not become terminal death");
         OocGameContextModel checkpointModel(pending, path, {}, checkpoint, std::move(deps));
         std::mt19937_64 checkpointRng(17);
         require(checkpointModel.evaluateLeaf(0, checkpointRng) == 0.25 && leafSawMap

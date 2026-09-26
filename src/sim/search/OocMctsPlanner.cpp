@@ -41,6 +41,8 @@ struct Search {
     std::deque<DecisionNode> arena;
     std::vector<std::uint64_t> wideningLimits;
 
+    int terminalKind = 0;
+    std::map<OocActionId, OocValueDistribution> actionValues;
     bool rootWinnerLocked(const DecisionNode &node, std::uint64_t remaining) const {
         if (node.actions.empty()) return false;
         // With no challenger the visit winner cannot change. The caller still
@@ -68,6 +70,7 @@ struct Search {
 
     void expand(DecisionNode &node) {
         auto actions = model.legalActions(node.state);
+        if (config.profileSearch) ++metrics.expandedActionHistogram[actions.size()];
         if (actions.empty()) ++metrics.expandedNodes0Actions;
         else if (actions.size() == 1) ++metrics.expandedNodes1Action;
         else if (actions.size() == 2) ++metrics.expandedNodes2Actions;
@@ -93,21 +96,34 @@ struct Search {
         metrics.chanceNodes += actions.size();
         node.expanded = true;
     }
+    double leaf(OocStateId state) {
+        ++metrics.leafEvaluations;
+        if (!config.captureValueDistribution) return checkedValue(model.evaluateLeaf(state, rng));
+        const auto sample = model.evaluateLeafWithOutcome(state, rng);
+        const double value = checkedValue(sample.value);
+        terminalKind = sample.terminal ? value == 0 ? 1 : value == 1 ? 2 : 0 : 0;
+        return value;
+    }
     double evaluate(DecisionNode &node, std::uint32_t depth, bool root = false) {
         metrics.maxDepthReached = std::max(metrics.maxDepthReached, depth);
         metrics.depthSum += depth;
         ++node.visits;
-        if (auto value = model.terminalValue(node.state)) return checkedValue(*value);
-        if (model.isLeafBoundary(node.state) || depth == config.maxDepth) {
-            ++metrics.leafEvaluations;
-            return checkedValue(model.evaluateLeaf(node.state, rng));
+        if (auto value = model.terminalValue(node.state)) {
+            terminalKind = *value == 0 ? 1 : *value == 1 ? 2 : 0;
+            return checkedValue(*value);
         }
+        terminalKind = 0;
+        if (model.isLeafBoundary(node.state)) {
+            return leaf(node.state);
+        }
+        if (depth >= config.maxDepth)
+            throw OocSearchUnsupported("ooc_depth_safety_cap_" + std::to_string(config.maxDepth)
+                + "_state_" + std::to_string(node.state));
         if (!node.expanded) {
             expand(node);
             // Root expands before action selection; new downstream leaves stop.
             if (!root) {
-                ++metrics.leafEvaluations;
-                return checkedValue(model.evaluateLeaf(node.state, rng));
+                return leaf(node.state);
             }
         }
         ChanceNode *chosen = nullptr;
@@ -151,6 +167,7 @@ struct Search {
         }
         double value = evaluate(*next, depth + 1);
         chance.totalValue += value;
+        if (root && config.captureValueDistribution) actionValues[chance.action.id].record(value, terminalKind);
         return value;
     }
 };
@@ -195,12 +212,14 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     std::chrono::steady_clock::time_point lockTime;
     search.metrics.decisionNodes = 1;
     OocMctsResult result;
+    if (config.captureValueDistribution) result.rootValues.emplace();
     std::size_t checkpointIndex = 0;
     try {
         for (std::uint64_t i = 0; i < simulations; ++i) {
             ++search.metrics.simulationAttempts;
-            search.evaluate(node, 0, true);
+            const double value = search.evaluate(node, 0, true);
             ++search.metrics.simulations;
+            if (result.rootValues) result.rootValues->record(value, search.terminalKind);
             const auto remaining = simulations - search.metrics.simulations;
             while (checkpointIndex < config.rootCheckpointSimulations.size()
                 && search.metrics.simulations >= config.rootCheckpointSimulations[checkpointIndex]) {
@@ -244,7 +263,8 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
         search.metrics.hypotheticalTailWallSeconds =
             std::chrono::duration<double>(std::chrono::steady_clock::now()-lockTime).count();
     result.metrics = search.metrics;
-    if (result.aborted) return result;
+    if (result.aborted) { result.rootValues.reset(); return result; }
+    if (config.captureValueDistribution) result.actionValues = std::move(search.actionValues);
     const ChanceNode *best = nullptr;
     for (const auto &action : node.actions) {
         result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q()});

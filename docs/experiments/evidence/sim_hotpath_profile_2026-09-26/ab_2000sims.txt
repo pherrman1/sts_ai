@@ -1,0 +1,16 @@
+base sims_per_s=74442.1
+queue sims_per_s=80027.9
+base sims_per_s=74686.2
+queue sims_per_s=78045.1
+base sims_per_s=73434
+queue sims_per_s=79256.2
+base sims_per_s=75517.7
+queue sims_per_s=74371.4
+base sims_per_s=72958.3
+queue sims_per_s=73486.5
+base sims_per_s=72225.8
+queue sims_per_s=78276.3
+base sims_per_s=73411.6
+queue sims_per_s=75731.7
+base sims_per_s=71381.4
+queue sims_per_s=79334.1

@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-25 for the `v_win` terminal-pricing post-review additions,
+Last verified: 2026-09-25 for the OOC contextual semantic-prior offline qualification,
+the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
 review of the merged DeepSets Brew-fallback quality-confirmation preparation;
 2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
@@ -32,6 +33,22 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## OOC MCTS contextual deck-prior offline qualification
+
+The newly trained 3,200-parameter contextual deck block is
+**`CONTEXTUAL_SEMANTIC_PRIOR_PASS`** against PR #329's saved authoritative
+prior trace. On 6,317 unique prior-covered non-singleton inputs, top semantic
+action agreement was 98.89%, median TV 0.000109, and p90 TV 0.018815. The
+historical source-policy gate also passed at 97.95% agreement, median TV
+0.003128, and p90 TV 0.034804. All broad-screen guards passed; SHOP agreement
+was 97.70% with median/p90 TV 0.002183/0.016985. The missing old student
+checkpoint was not recreated; this is a new seed-0, 30-epoch representation
+student frozen outside the worktree. This qualifies offline fidelity only. No
+native contextual inference, MCTS/gameplay smoke, policy-strength test, or
+default change was made. A separate native implementation and parity/runtime
+task is the next step. See [ledger §356](../../experiments/ledger-06.md) and
+the [evidence packet](../../experiments/evidence/ooc_contextual_semantic_prior_2026-09-25/README.md).
 
 ## OOC 20% gap-stop quality gate
 
@@ -87,15 +104,14 @@ other sections retain their prior verification and linked evidence.
 
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 
-The independent 512-pair gameplay confirmation is **`PREPARATION_COMPLETE_RUN_BLOCKED`**.
-The frozen source, artifacts, clean C/H manifests, analyzer, and local
-mechanism/provenance checks are prepared and reviewed. No canary or quality
-seed has run. The designated GCP research instance `sts-test` was not found in
-`sts-ai-502709/europe-west3-c`; no replacement host or local seed run was
-used. The gameplay-quality result is therefore **unknown**, and the opt-in
-DeepSets treatment remains unqualified. Resume only on the designated instance
-after verifying and inventorying its existing checkout and output paths. See
-[the evidence and resume packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
+The independent 512-pair gameplay confirmation is **`OOC_HYBRID_QUALITY_CONFIRMED`**.
+The frozen local paired run completed on 2026-09-25: C won 277/512 and H won
+292/512; H minus C was +2.9297 pp with paired bootstrap 95% CI
+[-1.7578, +7.6172] pp, passing the preregistered -5.0 pp non-inferiority margin.
+This does not establish superiority or change the opt-in default. The former
+GCP blocker describes preparation only; no server restoration or resume is
+needed. Frozen preparation manifests remain historical evidence. See
+[the completed evidence packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
 
 ## Purpose
 
@@ -969,7 +985,7 @@ before Stage C. The frozen fresh 320-source assignment remains disjoint from
 367 prior Lizard sources. Current main also retired the GCP research workflow
 in PR #361, so Stage C's execution path must be reconciled with current
 repository policy before launch. Stage C has not started; production remains
-`active_unqualified_lizard`. See [ledger §355](../../experiments/ledger-06.md) and the
+`active_unqualified_lizard`. See [ledger §361](../../experiments/ledger-06.md) and the
 [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)

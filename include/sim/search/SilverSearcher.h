@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <memory>
+#include <array>
+#include <map>
 #include <random>
 #include <vector>
 
@@ -41,6 +43,26 @@ namespace sts::search {
         std::int64_t chanceOutcomesSampled = 0;
         std::int64_t chanceSiblingReuse = 0;
         std::int64_t chanceTranspositions = 0;
+    };
+
+    // Diagnostic counts for newly executed simulations only. Reset by the
+    // caller at each real decision; retained node visits are never included.
+    struct SilverTreeProfile {
+        enum Endpoint { VICTORY, DEATH, TURN_LIMIT, ENGINE_STOP, NONTERMINAL, COUNT };
+        inline static constexpr const char *names[COUNT] = {
+            "victory", "death", "turn_limit", "engine_stop", "nonterminal"
+        };
+        struct Depths {
+            std::map<int, std::int64_t> tree; // action edges, excluding chance-outcome edges
+            std::map<int, std::int64_t> total; // tree plus rollout actions
+        };
+        std::array<Depths, COUNT> endpoints;
+        std::int64_t completed = 0;
+        std::int64_t rolloutCalls = 0;
+        std::int64_t nonterminalRolloutStarts = 0;
+        std::int64_t cycleRollouts = 0;
+        std::int64_t descentAborts = 0;
+        void record(const BattleContext &state, int treeDepth, int rolloutDepth);
     };
 
     // Silver's combat search (MCTS over a transposition graph with chance nodes
@@ -84,6 +106,7 @@ namespace sts::search {
         double endTurnWideningAlpha = 0.52389;
         SilverEvalWeights evalWeights;
         SilverSearchStats stats;
+        SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -93,6 +116,11 @@ namespace sts::search {
 
         // The node for `state` in the current graph, or nullptr.
         [[nodiscard]] Node *findNode(const BattleContext &state) const;
+        // The decision node for `state` with the unique ids of one pair of
+        // search-equivalent cards exchanged, or nullptr: the player used a
+        // different physical copy than the one the search expanded. Actions of
+        // that node still apply to `state` through translateAction.
+        [[nodiscard]] Node *findNodeUpToEquivalentCopy(const BattleContext &state) const;
 
         // Make `node` the root, keeping its subtree. When `compact`, nodes
         // unreachable from it are reclaimed first.
@@ -162,7 +190,7 @@ namespace sts::search {
         int selectBestEdgeToSearch(const Node &cur) const;
         int wideningCap(int category, std::int64_t visits);
         Edge *selectChanceOutcome(Node &chance);
-        double rolloutToEnd(BattleContext &state);
+        double rolloutToEnd(BattleContext &state, int treeDepth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);

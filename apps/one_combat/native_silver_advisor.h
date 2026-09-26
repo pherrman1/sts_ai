@@ -26,6 +26,7 @@ struct NativeSilverDecision {
     std::vector<silver_bridge::SemanticAction> legalActions;
     std::vector<NativeSilverRootSummary> rootActionSummaries;
     bool exactReroot = false;
+    bool equivalentCopyReroot = false;   // rerooted through another copy of an equivalent card
     std::int64_t inheritedVisits = 0;
     bool fallback = false;
     std::string fallbackReason = "none";
@@ -52,6 +53,8 @@ private:
     sts::search::SilverSearchContext context_;
     std::int64_t lastInheritedVisits_ = 0;
     bool lastExactReroot_ = false;
+    bool lastEquivalentCopyReroot_ = false;
+    sts::BattleContext liveRoot_;
     std::string lastFallbackReason_ = "none";
 
     NativeSilverDecision result(std::int64_t simulations) const;

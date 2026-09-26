@@ -43,6 +43,21 @@ namespace {
         return lhs.uniqueId == rhs.uniqueId || (!lhs.usesSpecialData() && !rhs.usesSpecialData());
     }
 
+    void swapUniqueIds(BattleContext &bc, std::int16_t a, std::int16_t b) {
+        const auto swap = [a, b](CardInstance &c) {
+            if (c.uniqueId == a) c.uniqueId = b;
+            else if (c.uniqueId == b) c.uniqueId = a;
+        };
+        auto &cards = bc.cards;
+        for (int i = 0; i < cards.cardsInHand; ++i) swap(cards.hand[i]);
+        cards.drawPile.mutateAll(swap);
+        for (auto &c : cards.discardPile) swap(c);
+        for (auto &c : cards.exhaustPile) swap(c);
+        for (auto &c : cards.limbo) swap(c);
+        for (auto &c : cards.stasisCards) swap(c);
+        swap(bc.curCardQueueItem.card);
+    }
+
     // Single-card selectors where choosing any of several equivalent cards is the
     // same decision, and the pile each one selects from.
     const CardInstance *selectableCard(const BattleContext &bc, int idx) {
@@ -160,6 +175,27 @@ search::SilverSearcher::Node *search::SilverSearcher::findNode(const BattleConte
     return nullptr;
 }
 
+search::SilverSearcher::Node *search::SilverSearcher::findNodeUpToEquivalentCopy(const BattleContext &state) const {
+    std::vector<CardInstance> cards(state.cards.hand.begin(), state.cards.hand.begin() + state.cards.cardsInHand);
+    cards.insert(cards.end(), state.cards.drawPile.begin(), state.cards.drawPile.end());
+    cards.insert(cards.end(), state.cards.discardPile.begin(), state.cards.discardPile.end());
+    cards.insert(cards.end(), state.cards.exhaustPile.begin(), state.cards.exhaustPile.end());
+    BattleContext candidate;
+    for (std::size_t i = 0; i < cards.size(); ++i) {
+        if (cards[i].usesSpecialData()) continue;
+        for (std::size_t j = i + 1; j < cards.size(); ++j) {
+            if (cards[i].uniqueId == cards[j].uniqueId || !cardsEquivalentForSearch(cards[i], cards[j])) {
+                continue;
+            }
+            candidate = state;
+            swapUniqueIds(candidate, cards[i].uniqueId, cards[j].uniqueId);
+            Node *node = findNode(candidate);
+            if (node != nullptr && !node->isRandomNode) return node;
+        }
+    }
+    return nullptr;
+}
+
 void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
     if (compact) {
         // Keep everything reachable from the new root, following child edges and
@@ -266,6 +302,20 @@ search::SilverSearcher::Node *search::SilverSearcher::getOrCreateNode(BattleCont
     return newNode;
 }
 
+void search::SilverTreeProfile::record(const BattleContext &state, int treeDepth, int rolloutDepth) {
+    Endpoint kind = NONTERMINAL;
+    if (state.outcome == Outcome::PLAYER_VICTORY) kind = VICTORY;
+    else if (state.outcome == Outcome::PLAYER_LOSS) {
+        // executeActions uses PLAYER_LOSS for safety and no-damage stops too.
+        if (state.turn > 500) kind = TURN_LIMIT;
+        else if (state.player.curHp <= 0) kind = DEATH;
+        else kind = ENGINE_STOP;
+    }
+    ++completed;
+    ++endpoints[kind].tree[treeDepth];
+    ++endpoints[kind].total[treeDepth + rolloutDepth];
+}
+
 void search::SilverSearcher::search(std::int64_t simulations) {
     if (root->state->outcome != Outcome::UNDECIDED) return;
     for (std::int64_t i = 0; i < simulations; ++i) {
@@ -284,10 +334,12 @@ void search::SilverSearcher::step() {
     Node *cur = root;
     Edge *stagedOutcomeEdge = nullptr;  // outcome 0 of a chance node created this iteration
     int depth = 0;
+    int actionDepth = 0;
     while (true) {
         // The transposition graph can cycle (e.g. Entropic Brew re-rolling itself);
         // on-path checks below roll out instead, and this bound is a backstop.
         if (++depth > 5000) {
+            if (profile) ++profile->descentAborts;
             throw std::runtime_error("SilverSearcher::step descent exceeded depth bound");
         }
 
@@ -302,14 +354,15 @@ void search::SilverSearcher::step() {
             ++outcomeEdge->visitCount;
             Node *child = outcomeEdge->node;
             if (onPath(child)) {
+                if (profile) ++profile->cycleRollouts;
                 BattleContext &rollout = (rolloutScratch = *child->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout));
+                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return;
             }
             searchStack.push_back(child);
             if (child->simulationCount == 0) {
                 BattleContext &rollout = (rolloutScratch = *child->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout));
+                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return;
             }
             cur = child;
@@ -317,6 +370,7 @@ void search::SilverSearcher::step() {
         }
 
         if (cur->state->outcome != Outcome::UNDECIDED) {
+            if (profile) profile->record(*cur->state, actionDepth, 0);
             updateFromPlayout(searchStack, evaluateEndState(*cur->state));
             return;
         }
@@ -324,6 +378,7 @@ void search::SilverSearcher::step() {
         if (cur->edges.empty()) {
             enumerateActionsForNode(*cur, *cur->state);
             if (cur->edges.empty()) {
+                if (profile) profile->record(*cur->state, actionDepth, 0);
                 updateFromPlayout(searchStack, evaluateEndState(*cur->state));
                 return;
             }
@@ -332,11 +387,13 @@ void search::SilverSearcher::step() {
         const int selectIdx = selectBestEdgeToSearch(*cur);
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
+        if (profile) ++actionDepth;
 
         if (edge.node != nullptr) {
             if (onPath(edge.node)) {
+                if (profile) ++profile->cycleRollouts;
                 BattleContext &rollout = (rolloutScratch = *edge.node->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout));
+                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return;
             }
             cur = edge.node;
@@ -382,14 +439,15 @@ void search::SilverSearcher::step() {
         edge.node = child;
 
         if (onPath(child)) {
+            if (profile) ++profile->cycleRollouts;
             BattleContext &rollout = (rolloutScratch = *child->state);
-            updateFromPlayout(searchStack, rolloutToEnd(rollout));
+            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
             return;
         }
         searchStack.push_back(child);
         if (child->simulationCount == 0) {
             BattleContext &rollout = (rolloutScratch = *child->state);
-            updateFromPlayout(searchStack, rolloutToEnd(rollout));
+            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
             return;
         }
         cur = child;
@@ -497,7 +555,12 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
     return &chance.edges.back();
 }
 
-double search::SilverSearcher::rolloutToEnd(BattleContext &bc) {
+double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
+    int rolloutDepth = 0;
+    if (profile) {
+        ++profile->rolloutCalls;
+        if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
+    }
     while (bc.outcome == Outcome::UNDECIDED) {
         Action action;
         if (bc.inputState == InputState::PLAYER_NORMAL) {
@@ -517,7 +580,9 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc) {
             break;
         }
         action.execute(bc);
+        if (profile) ++rolloutDepth;
     }
+    if (profile) profile->record(bc, treeDepth, rolloutDepth);
     return evaluateEndState(bc);
 }
 

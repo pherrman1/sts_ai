@@ -11691,9 +11691,45 @@ fallback 3,708 us. OpenSSL-disabled configure and non-CTM `main` build passed.
 No gameplay run was repeated. Results and commands are in the
 [PR #310 verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/main-7b4244-source/COMMANDS.md).
 
-Knowledge impact: current research status now records an experimental hybrid
-path and its bounded engineering evidence; qualified models and runtime defaults
-remain unchanged.
+- **Independent 512-pair confirmation (2026-09-25):** Frozen gameplay source
+  `c9ecfb2041f8061d89bd728b8dccded2e8e12adf` and binary SHA256
+  `c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244` were
+  used unchanged. After correcting the analyzer's c9 metadata expectation to
+  `models.policyNet="off"` and adding a regression test, analyzer and canary
+  self-tests passed; both preserved `989999` canaries passed mechanism and
+  provenance validation. Independent V4 policy-load and effective-config
+  checks remained enforced. The paired confirmation used exactly seeds
+  `990000..990511`, Ascension 0, 10,000 Silver simulations, 2,048 OOC MCTS
+  simulations, 24 threads, Act-3 horizon, and the frozen −5 pp gate. Execution
+  changed transport only: eight normal seed-guarded 128-seed invocations in
+  `C1,H1,C2,H2,C3,H3,C4,H4` order, with `OMP_NUM_THREADS=24` and CPU affinity
+  externally limited to CPUs 0–7. Per-chunk receipts do not encode CPU
+  affinity; the run-level value is preserved in the tracked local runtime
+  provenance record. Both arms completed all 512 seeds and passed strict
+  receipt/seed merging before analysis. C won 277/512 and H
+  292/512; paired H−C was `+2.9297 pp` (paired bootstrap 95% CI
+  `[-1.7578,+7.6172] pp`). Its lower bound is above the −5 pp margin, meeting
+  the predeclared non-inferiority criterion and yielding
+  **`OOC_HYBRID_QUALITY_CONFIRMED`** for this cohort. This is not a superiority
+  claim or offline CTM qualification; the hybrid remains opt-in and no runtime
+  default changed. Compact decision-bearing evidence is committed in the
+  [confirmation evidence packet](evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md);
+  full chunk outputs, logs, transport receipts, and merged arm files remain
+  ignored under `build/local_deepset_hybrid_confirmation_7069518/`. Summary SHA256
+  `0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce`, merge
+  report SHA256
+  `fef01e97b6eba1b0a8fa4394676c2081c913f35780a12c14747abe1dc8cdb282`.
+  Preserved canaries passed validation after the metadata fix. The local runner
+  then repeated the same canary seed in its fresh output root before C1; those
+  additional canary outputs also passed and remained excluded from analysis.
+  CPU affinity was transport-only; the pinned clean treatment environments
+  retained `OMP_NUM_THREADS=24`. The recorded `transportToolGitSha` is launch
+  base HEAD `7069518b5da3b38f4bac562a9b724de158814583`, not a commit containing
+  the then-working-tree helper files. The analyzer/merger/runner file hashes
+  are recorded in the confirmation evidence README.
+
+Knowledge impact: current research status and the independent confirmation
+evidence are recorded; qualified models and runtime defaults remain unchanged.
 
 ### §343 — Active Lizard Tail CTM qualification (2026-09-23)
 
@@ -12359,7 +12395,386 @@ per-run time 38.58 s vs 36.09 s (−6.5%).
 Decision: adopt as the native default; no detectable gameplay difference, 6.5%
 faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton_bypass_2026-09-25/README.md).
 
-## §355 — Mechanical-q Lizard Tail post-hoc screen and native transfer (2026-09-25)
+## §355 — Native equivalent-copy reroot: paired 128-seed check (2026-09-25)
+
+Change (ADR-0023, issue #327): when the exact node lookup misses, native Silver
+retries with the unique ids of one pair of search-equivalent cards exchanged,
+so playing a different physical copy than the one the search expanded reuses
+that branch. The advisor translates retained actions onto the live root.
+
+Setup: Release control from `main` `0eed6993` vs the branch, 4 threads,
+adaptive Silver, `bestbench 1000 128 0 126700`.
+
+Result: control 86/128, treatment 89/128; paired +2.3 pp, 95% CI [−3.2, +7.9]
+pp; discordant 8/5 (McNemar z = +0.83). Mean floor 47.42 vs 48.11. Mean
+per-run time 38.36 s vs 39.30 s (+2.5%).
+
+Decision: adopt; no detectable gameplay difference and restores ADR-0015's
+reuse. Evidence: [native_equivalent_copy_reroot_2026-09-25](evidence/native_equivalent_copy_reroot_2026-09-25/README.md).
+
+## §356 — Retrained contextual deck semantic-prior qualification (2026-09-25)
+
+- **Question / decision:** Does a newly trained 3,200-parameter contextual
+  O(n) deck block preserve the deployed42 teacher's actual OOC MCTS semantic
+  prior after grouping and multiplicity correction? The result is
+  **`CONTEXTUAL_SEMANTIC_PRIOR_PASS`**. This is a new frozen student, not a
+  byte-identical recovery of the missing historical `45a3ce…` checkpoint.
+- **Trace / provenance:** Reused PR #329's saved trace only; no new seeds or
+  capture were run. The gzip at
+  `/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/trace_mainline.jsonl.gz`
+  has SHA-256
+  `192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370`; its
+  decompressed SHA-256 is
+  `9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1`.
+  It contains 24,959 records from seeds 12450008–12450015; 11,474
+  prior-covered, non-singleton, nonuniform occurrences yield 6,317 unique
+  canonical prior inputs (1,402 SHOP occurrences / 1,002 unique SHOP inputs).
+  The recovered `strategic_tierb.csv` and seed-disjoint split match their
+  required SHA-256 values `c428f229bdf7cfe070ff06fd1664978e6e49bbde872d5929ef4fa50f56ba008b`
+  and `0efe5b56e1f87c0642827c14e55790db517b55820d54620edd32420012e8b67b`;
+  the cache uses `raw-to-grouped-v2`.
+- **Teacher / source audit:** Tracked native teacher SHA-256 is
+  `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`;
+  reconstructed Python teacher SHA-256 is
+  `5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8`.
+  Export parity re-created the tracked native file byte-for-byte, with max
+  logit/Q/value differences `1.06e-5 / 1.28e-5 / 8.19e-6`. On the captured
+  trace, Python-vs-native maximum source/candidate logit error was
+  `2.6703e-5` (<`1e-4`), source argmax matched 6,317/6,317 inputs, and the
+  rebuilt final prior maximum error was `1.9898e-6`. The captured teacher's
+  own raw-weight and normalized-prior formulas reproduced within
+  `1.2e-16` and `5.6e-16` respectively.
+- **Training:** Recreated the exact Tier-B train/validation split (3,720/930
+  seeds; 578,391/145,460 grouped states) and trained seed 0 for 30 epochs on
+  CUDA with AdamW, learning rate `1e-3`, weight decay `1e-4`, 4,096 groups per
+  batch, and representation MSE only. The checkpoint contains all 115 teacher
+  tensors exactly plus exactly six contextual-deck tensors (3,200 parameters);
+  no policy/Q loss or end-to-end fine-tuning was used. The final validation
+  representation cosine mean/median was `0.94753 / 0.95696`. The durable,
+  read-only checkpoint is outside `.codex/worktrees` at
+  `/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/retrained-contextual-student/contextual_student_frozen.pt`,
+  SHA-256 `bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761`.
+- **Historical source-policy gate:** 100,314 held-out groups / 567,642 source
+  rows passed: argmax agreement `97.945%`, median/p90 TV
+  `0.003128 / 0.034804`. Card Reward agreement was `99.187%`; SHOP was
+  `93.864%` (median/p90 TV `0.008026 / 0.027206`). These reproduce the
+  previously declared source-policy threshold and are not themselves the
+  semantic-prior result.
+- **Semantic-prior gate:** On the primary 6,317 unique prior inputs, top
+  semantic-action agreement was `98.892%`, median/p90 TV
+  `0.000109 / 0.018815`, ordered top-two agreement `96.881%`, and top-two
+  teacher/student margin correlation `0.999871`. The call-weighted 11,474-row
+  result was `98.771%` agreement with median/p90 TV
+  `0.003513 / 0.028456`. All broad-screen guards passed. SHOP was explicitly
+  checked: 1,002 unique inputs, `97.705%` agreement, median/p90 TV
+  `0.002183 / 0.016985`. The event screen had `94.581%` agreement, below the
+  95% overall headline threshold but above the 90% broad-screen guard, with
+  median/p90 TV `0.011271 / 0.047501`; rest (90 unique)
+  and treasure (72) remain smaller descriptive strata. Direct primitive and
+  grouped-semantic agreement were `98.926%` and `98.887%`; full strata and
+  representative decoded records are in the evidence packet.
+- **Current-main drift:** The trace source was branch head `03079d52`; at
+  evaluation `origin/main` was `0eed6993`. The intervening OOC adapter change
+  adds the singleton-root fast path. The merged trace code preserves that
+  no-prior-cache behavior when tracing is unset and writes singleton rows only
+  when the opt-in trace path is set. Inspection found the non-singleton
+  candidate construction, `priorSourceGroups`, and `policyLogits`/multiplicity
+  prior calculation unchanged; singleton records are excluded from the
+  primary population. The saved trace therefore remains authoritative for the
+  evaluated non-singleton inputs.
+- **Scope / next step:** This is offline prior-fidelity qualification only.
+  No new seeds, native contextual inference, runtime benchmark, MCTS/gameplay
+  smoke, policy-strength gate, default change, or claim of tree/gameplay
+  equivalence. A separate native contextual inference plus parity/runtime task
+  is now justified. See the [evidence packet](evidence/ooc_contextual_semantic_prior_2026-09-25/README.md)
+  for exact commands, full screen/stratum tables, hashes, and raw result JSON.
+
+Knowledge impact: current research now records the offline pass and its exact
+boundary. No native runtime or default is promoted.
+
+## §357 — Native Silver endpoint/tree-depth descriptive profile (2026-09-26)
+
+Issue #344 adds opt-in counters only, against main
+`b23aad9d8885c6eca332b1f5cccf3890755bbecf`. The fixed diagnostic cohort is
+seeds 0–7, A0, fair native Silver, flat 1,000 caller simulations with the
+existing boss multiplier and singleton bypass, OMP=1, existing native-GBM
+`bestbench` OOC policy. No new policy, model, RNG, or budget intervention.
+Earlier artifacts do not contain this new endpoint/depth schema; a fresh small
+cohort was necessary. This is implementation/descriptive evidence, not an
+expensive scientific qualification or a promotion.
+
+[Evidence directory](evidence/native_silver_tree_profile_2026-09-26/manifest.json)
+contains source/model/binary hashes, exact guarded commands, logs, result CSVs,
+compressed raw JSONL, full grouped analysis, and the one-seed on/off comparison.
+The source hashes identify the instrumented code; the baseline SHA alone does
+not identify that code. Both compact-tree models reported successful loading.
+
+All 8 runs completed: 3,726 real decisions, 5,225,000 new simulations, 55
+encounters across acts 1–3 and MONSTER/ELITE/BOSS/EVENT rooms. All endpoint and
+histogram denominators reconcile. Evaluated endpoints were 4,770,360 victory
+(91.2988%) and 454,640 death (8.7012%); no nonterminal, turn-limit, engine-stop,
+or aborted search was observed. These are correlated simulation samples, not
+independent run outcomes.
+
+Crucially, 4,648,023 simulations started their rollout at a nonterminal tree
+leaf. The 100% terminal **evaluated endpoint** share does not mean the tree
+itself reached those outcomes: Silver rolls new leaves forward and then uses
+its heuristic, with no neural leaf evaluator. Tree action depth p50/p90/p99/max
+was 3/6/8/16; total depth including rollout was 15/36/57/107. Chance-outcome
+edges do not double-count their action. Inherited visits are excluded at each
+real decision, including after rerooting.
+
+Simulation death share was 3.463% in act 1, 4.514% in act 2, and 17.164% in
+act 3. The supplied analysis includes room/encounter/turn/decision/HP/budget
+views, encounter rankings at a 20-decision minimum, and a complete fight
+trajectory per encounter. All ordinary-terminal shares tie at 100%, so those
+rankings do not establish meaningful encounter differences. The cohort uses
+one caller budget and cannot support a budget-response inference.
+
+Focused Debug fixtures prove exact lethal/nonterminal/death/safety accounting,
+chance-edge depths, chunked denominators, terminal-root exclusion, and on/off
+full-fight equality of every action, six RNG streams, outcome, HP and turn,
+including reroot reuse. Analyzer fixtures reject invalid counts and error rows.
+A Release full-run seed-0 on/off comparison matches every gameplay CSV field;
+timing is excluded. The uninstrumented branch is not a speed benchmark and
+these timings were not isolated for a performance claim.
+
+**Conclusion:** this diagnostic measures evaluated endpoints separately from
+search depth and rollout starts. It does not justify a leaf model, pruning,
+search-budget change, or a gameplay-quality claim.
+
+## §358 — Exact OOC branching and real-floor/decision profile (2026-09-26)
+
+Issue #341: observational implementation against main
+`b23aad9d8885c6eca332b1f5cccf3890755bbecf`. `STS_RUN_PROFILE` captures existing
+search checkpoints and exact expansion cardinality without changing early
+stopping, singleton shortcuts, models, budgets, or RNG. Earlier artifacts lack
+this combined floor/decision/exact-histogram schema, so a fresh bounded run
+was needed. No scientific promotion or adaptive policy was implemented.
+
+[Evidence manifest](evidence/ooc_run_profile_2026-09-26/manifest.json) records
+commands and source/model/binary/artifact hashes. Seed 0, A0, OMP=1, fair native
+Silver exact 10k; native V4 plus `combat_transition_near_full_except_smoke_v2`
+CTM, OOC MCTS 2048 with existing strict-lock stopping and depth cap 32. Both
+on/off arms use identical settings. This branch is independent of the pending
+#336 depth-cap and #344 Silver-profile changes. The source hashes, not the
+baseline SHA alone, identify instrumented code. Model loading succeeded.
+
+The run completed with death to Slime Boss on floor 16: coverage is **Act 1
+only**, not a representative estimate across all acts or seeds. Its 17 floor
+intervals cover 45 OOC decisions (29 searched, 15 singleton bypasses, one
+boundary/fallback), 43,540 completed simulations, 41,780 transition samples,
+and 8,193 CTM samples. All nine matching floor aggregates reconcile exactly
+with existing completed-run telemetry; decision rows reconcile with floors.
+
+40,635 expanded nodes span exact cardinalities 1–22 and 24. Singleton nodes
+are 32.3022%. The full histogram, room means/medians, top-10 wall/CPU floor
+lists, encounter costs, prior/visit/Q statistics, and stability cross-tabs are
+in compressed `summary.json.gz`, backed by raw `profile.jsonl.gz`.
+
+Measured floor CPU totals were 35.7148 s: 28.9845 s in OOC search scope and
+6.7211 s in real-combat lifecycle scope. These are nested components of the
+floor total, not additional costs. The top 5 / top 10 floors account for
+55.0695% / 83.6623% of floor CPU. Highest wall costs were the initial Neow/map
+interval (4.643 s; engine room INVALID), floor 6 Lagavulin (4.407 s), floor 11
+rest (4.273 s), floor 12 event (3.372 s), and floor 16 Slime Boss (2.977 s).
+No performance improvement claim follows from this one-run profile.
+
+Observed retrospective stability for the 29 searched decisions was first
+seen at 128 in 25 cases, 256 in one, and only at the observed stopping point
+1953/2000/2028 in one case each. Thus 86.21% had the same observed winner from
+128 onward, 89.66% from 256 onward. **Every searched decision stopped early**:
+there are zero full-budget stability labels. Singleton/boundary roots also
+have no stability label. The analyzer keeps censored and full-budget
+statistics separate and does not infer unexecuted search outcomes.
+
+Validation: focused Debug planner/adapter/analyzer CTest 3/3 passed. Fixtures
+prove exact singleton/10-way expansion counts, checkpoint root-statistic and
+sampling-draw parity, preservation of early stopping and singleton bypasses,
+and one floor row per interval with correct metadata/counter differences.
+Five analyzer tests cover stability, strict lock/ties, missing checkpoints,
+histogram corruption and floor reconciliation. Full-run on/off comparison
+matches all nine gameplay fields, 41 non-timing MCTS fields, and byte-identical
+OOC action traces; timing is excluded. Raw outputs and comparison hashes are
+included in the evidence directory. Compressed reanalysis is reproducible.
+
+**Conclusion / cheapest next experiment:** capture a small fixed set of roots
+with late observed winner changes plus matched early-stable roots, then run
+full-budget detached shadow searches for those roots while preserving the
+actual policy. That would resolve censoring before testing a budget rule. The
+present evidence alone neither qualifies early stopping nor justifies pruning
+wide nodes. The additional later-act pilot below extends coverage; independent
+gameplay qualification remains outside this engineering issue.
+
+### Additional later-act coverage pilot
+
+The user requested a pilot beyond Act 1. The predeclared coverage search was
+seeds 1–8 in ascending order, stopping at the first completed A0 run reaching
+Act 2 and then repeating that seed with profiling off. This selects for
+coverage, not an unbiased win-rate or speed sample. Seed 1 met the criterion
+on the first correctly configured attempt and **won at floor 51, Act 3, with
+38/85 HP**. No other A0 seeds were screened. The source is the frozen
+implementation `fbe390532addaeaa93b3703d29c1df44dcfe2a24`; rebuilt Release binary
+SHA-256 exactly matches the original pilot's binary. Models, fair native
+Silver exact-10k budget, OOC MCTS 2048, early stopping and all other settings
+remain unchanged.
+
+[Additional evidence](evidence/ooc_run_profile_2026-09-26/later_act_pilot/manifest.json)
+contains raw/compressed traces, commands, hashes, metadata, per-act accounting,
+parity and summaries. There are 53 `(act,floor)` intervals and 148 OOC decisions:
+84 searched, 61 singleton bypasses, three boundary/fallback decisions. The run
+completed 118,596 simulations and 22,203 CTM samples, with 112,757 expanded
+nodes; singleton expansion share was 39.9044%.
+
+| Act | Floor intervals | OOC decisions | Total floor CPU s | OOC scope CPU s | Real-combat lifecycle CPU s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 18 | 50 | 29.3236 | 23.6408 | 5.6773 |
+| 2 | 18 | 55 | 54.2016 | 41.3275 | 12.8654 |
+| 3 | 17 | 43 | 55.6456 | 39.4552 | 16.1839 |
+
+Component scopes remain nested inside the floor total. Top-five/top-ten floors
+accounted for 25.7362%/42.8233% of CPU. Of 84 searched decisions, 73 retained
+the observed winner from checkpoint 128 onward, but **all 84 stopped early**;
+there are still zero full-budget stability labels. This does not qualify a
+stopping rule or performance improvement.
+
+The matching off run also won at floor 51 with 38/85 HP. All nine gameplay
+fields, 41 non-timing search fields and byte-identical OOC action traces match.
+All nine corresponding floor/run counter totals reconcile; the analyzer also
+validates decision/floor accounting across act boundaries. Source code and
+model artifacts were not changed for this extension.
+
+One initial runner invocation swapped positional ascension/seed arguments,
+producing A1 seed 0 (death at floor 40) instead of A0 seed 1. Output validation
+caught the mismatch; it was excluded and retained in `excluded_a1_seed0/`
+with actual settings, logs, traces and hashes. It is not pooled with the
+matching pilot. The corrected runner additionally asserts ascension, exact
+seed block and executable source identity from the output metadata.
+
+Knowledge impact: expanded descriptive evidence in this ledger; maintained
+profiling semantics and defaults are unchanged. Coverage now includes all
+three acts, while representative multi-seed qualification remains unrun.
+
+## §359 — Silver root-selection contract and narrow useless-action census (2026-09-26)
+
+Issue #345, baseline main `b23aad9d8885c6eca332b1f5cccf3890755bbecf`.
+Code and focused arranged-root fixtures establish the final rule: maximum
+**edge visits**, strict-greater update, first enumerated edge on ties. Q,
+child-node visits, prior and UCB do not break final ties. Backend/advisor,
+flat/adaptive/exact budgets and rerooting use the same method; singleton bypass
+has only its sole edge. Card-identity translation/semantic lowering do not
+rerank actions. Current semantics are maintained in the combat-search KB.
+
+The opt-in diagnostic starts with a last-card red Defend, no potion, no player
+power/status, no relic except Burning Blood, and no incoming attack intent.
+After the selected play, End Turn must be forced. Two copied continuations
+(Defend + End Turn versus End Turn) must have identical complete next-turn
+state and RNG, except reported unused-energy score bookkeeping and at least
+as much loop-guard headroom for the comparator. Exact ordered piles and all
+Player/Monster fields are compared. Snapshot round-trip is required. This is
+**frozen concrete-state** mechanical evidence, not a public-information
+pruning rule or a claim over other random futures. Live knowledge observation
+is suspended for the copies; their results never affect action selection.
+
+[Evidence manifest](evidence/silver_useless_action_census_2026-09-26/manifest.json)
+records source/model/binary/artifact hashes and exact guarded commands. Earlier
+artifacts lack this predicate and cannot establish its rate, so the requested
+small fresh census was necessary. Fixed seeds 0–7, A0, OMP=1, flat 1k native
+fair Silver with existing boss multiplier/singleton bypass, existing native
+GBM OOC policy. Both compact-tree models loaded successfully. All 8 runs
+completed; no budget/policy/model/RNG change was tested or promoted.
+
+**Result: 0 verified selected actions / 3,726 real decisions.** Reasons were
+3,499 outside the last-Defend/no-potions class, 226 not a concrete quiet root,
+and one unqualified relic state. No root-statistic causal classification is
+possible from this zero census. The replay verifier reports `verified=0 PASS`;
+that is not evidence of replaying a positive observed example. The positive
+mechanical fixture and several trigger counterexamples are tested separately.
+The result does not establish that ordinary wasted-block behavior is absent.
+
+Focused Debug Silver and analyzer CTest passed 2/2. Native fixtures prove
+visits-versus-Q selection and tie order, one equivalent block/End-Turn state,
+rejection of Barricade/Juggernaut/Ink Bottle/incoming attack/extra card/draw
+effects, preservation of the original state, and full-fight on/off equality
+of every action, all six RNG streams and outcome/HP/turn. Three analyzer tests
+cover visit/tie classification and zero-census reporting. Release full-run
+seed-0 on/off gameplay CSV fields match; timing is excluded. No large gameplay
+benchmark, live-mod deployment, or independent scientific review was run.
+
+An implementation fact relevant to later diagnosis: Silver's non-victory
+heuristic subtracts `1.75 * energyWasted` except in shape encounters. Spending
+otherwise-useless energy changes this score bookkeeping, despite identical
+mechanical continuation. This is a possible mechanism to examine, **not a
+causal finding from this census**. The trace records that difference alongside
+root Q/visits for any future verified example.
+
+**Cheapest justified follow-up:** reproduce the excluded relic case and qualify
+its exact relic mechanics, or separately qualify a last-playable-card class
+with other unplayable cards remaining. Keep exact state/RNG equality and trigger
+counterexamples. Do not suppress Defend or change final selection from this
+evidence. No predicate broadening or policy change was implemented here.
+
+### Expanded fixed census: seeds 8–39
+
+The user requested more seeds without broadening the predicate. The fixed
+extension uses 32 new A0 seeds, **8–39**, at the same flat-1k native fair Silver
+configuration and native GBM OOC policy. The preserved executable is byte-for-
+byte identical to the original eight-seed census, built from
+`10c1a4b79268ddef5e78ccf6d9ffe23434b4b3db`; source and model hashes match the
+original manifest. OMP remains 1. Output metadata verifies the exact seed
+block, ascension, executable source, backend and budget mode.
+
+[Expanded evidence](evidence/silver_useless_action_census_2026-09-26/expanded_seeds_8_39/manifest.json)
+contains the commands, CSV/meta/logs, compressed trace, separate and combined
+summaries, replay result, parity check and hashes. All 32 requested runs
+completed, producing **15,107 additional decisions and zero verified selected
+actions**. Exclusions were 13,931 outside the last-Defend/no-potions class and
+1,176 not concrete quiet roots.
+
+The original artifact hashes and disjoint seed sets were verified before
+combining. Across **40 seeds (0–39), there are 18,833 decisions and zero verified
+cases**: 17,430 outside the narrow class, 1,402 not concrete quiet roots, and
+one unqualified relic state. This does not establish that ordinary wasted
+block is absent; it provides no positive snapshot and no Q/visit causal
+classification. The unchanged predicate was deliberately not expanded after
+seeing zero cases.
+
+Seed 8's matching trace-off run agrees on all nine gameplay CSV fields,
+excluding timing. The replay verifier reports `verified=0 PASS`, explicitly
+not a positive replay result. Three analyzer tests pass; compressed trace
+reanalysis and all packaged artifact hashes agree. No runtime, policy, model,
+budget or maintained diagnostic semantics changed. Knowledge impact: bounded
+census evidence expanded in this ledger; no default or quality promotion.
+
+## §360 — Native Silver hot-path profile; live-only action-queue copy (2026-09-26)
+
+Issue #350. Profiled native Silver with callgrind on a fixed workload,
+`test silver_profile 2000 4`: 89 roots from 12 act-1–3 encounters, one
+searcher per combat.
+
+Profile:
+- Rollouts: 73% of instructions, of which the rollout policy is 17%.
+- Node dedup: 11%.
+- `BattleContext` copies and moves: 13.5%.
+- The exclusive profile is flat; the top function takes 6%.
+
+The one concentrated structural cost: the 128-slot action queue is 6.2 KB of
+the 8 KB `BattleContext`, and it was copied whole on every copy, move and swap.
+`ActionQueue` now copies only its queued slots.
+
+Result:
+- Instructions: −4.0%.
+- Median throughput: +6.5% at 2,000 simulations, +6.2% at 10,000.
+- Search visit digests are identical.
+- `bestbench 1000 8 0 126700` rows are identical apart from timings.
+
+Batched/SIMD state execution was not pursued: no uniform hot loop exists
+(**Inference** from the flat profile).
+
+Decision: adopt; this is a pure speedup with exact parity. Evidence:
+[sim_hotpath_profile_2026-09-26](evidence/sim_hotpath_profile_2026-09-26/README.md).
+
+## §361 — Mechanical-q Lizard Tail archived screen and current-main transfer status (2026-09-26)
 
 - **Question:** Does replacing the learned ordinary-win probability `q` with
   `1 - pOrdinaryWin`, while preserving the frozen learned `r` artifact and T2
