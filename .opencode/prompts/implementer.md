@@ -43,10 +43,10 @@ Seed-sweep safety:
   before running them:
     tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0
     tools/seed_guard.sh guard-only ./build/one_combat bestbench 1000 8 0
-- local automated calls above 128 seeds are rejected; large research runs use
-  the designated GCP launcher and its explicit unbounded `--gcp-research` mode
-- verified smoke checks: 8–16 seeds; focused validation: ≤32;
-  statistical validation: ≤64; 128 remains the local automated ceiling
+- use the smallest justified experiment; larger local runs require explicit
+  authorization and frozen provenance, seed ranges/counts, budgets, and decision rules
+- choose smoke and focused-validation samples from the question and budget;
+  there is no fixed local numerical seed ceiling
 - prefer the cheapest useful verification
 
 Tests:

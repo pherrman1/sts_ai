@@ -1,7 +1,9 @@
 # ADR-0006: Automated game-seed verification is capped at 128
 
 Date: 2026-08-13
-Status: superseded in part by [ADR-0009](0009-unbounded-gcp-research-seed-runs.md)
+Status: superseded by [ADR-0024](0024-local-research-execution.md).
+
+Historical decision text below is retained as provenance, not current guidance.
 
 ## Context
 

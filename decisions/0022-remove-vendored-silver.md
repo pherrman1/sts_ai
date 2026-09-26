@@ -7,6 +7,9 @@ Supersedes: [ADR-0015](0015-live-silver-equivalent-copy-reroot.md) (equivalent
 physical-copy reroot). Amends [ADR-0021](0021-native-silver-default.md), whose
 vendored opt-out and fallback are removed.
 
+The launcher-specific GCP manifest guidance below is historical; ADR-0024
+retires that launcher. The native backend and telemetry contract remains.
+
 ## Context
 
 ADR-0021 made the Silver search ported onto the main engine the default and

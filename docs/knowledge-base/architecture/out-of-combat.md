@@ -722,7 +722,7 @@ shared across sibling actions for the same rollout/encounter occurrence. The
 mode writes the requested CSV plus `.json` and `.report.txt` summaries and
 has a deterministic `--self-test` canary. Run seed-driven commands through
 `tools/seed_guard.sh`; this mode has one source seed, so its rollout count is
-not mistaken for a multi-seed sweep by the local 128-seed guard.
+not mistaken for a multi-seed sweep by the seed-count validator.
 
 `GameContext` owns run RNG streams, deck, relics, potions, map, resources,
 act/floor, and the active `ScreenState`

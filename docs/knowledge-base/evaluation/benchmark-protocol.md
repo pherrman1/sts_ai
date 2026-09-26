@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Last verified: 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020) and the Searcher3 removal; 2026-08-26 against the current working tree
+Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020) and the Searcher3 removal; 2026-08-26 against the current working tree
 tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
@@ -63,15 +63,15 @@ combat-model keys carry fixed values for schema compatibility.
 
 ### Treatment canary before a larger cohort
 
-Before launching a decision-bearing multi-arm GCP cohort, encode its frozen
+Before launching a decision-bearing multi-arm research cohort, encode its frozen
 SHA, executable/artifact hashes, common seed/configuration, required
-environment, and unique outputs in the strict manifest
+environment, budgets, decision rules, and unique outputs in an experiment manifest
 described in
-[`operations/build-and-debugging.md`](../operations/build-and-debugging.md#decision-bearing-gcp-run-preflight).
-Run `manifest-check`, hash-verified transfer where needed, and
-`exact-sha-preflight`. Launch each arm with `run-manifest`; this makes a missing
-required setting or reused output a pre-seed failure rather than a post-run
-discovery.
+[`operations/build-and-debugging.md`](../operations/build-and-debugging.md#decision-bearing-research-run-preflight).
+Verify source/build binding and hashes, required settings, and fresh output
+paths before invoking each arm through the frozen seed guard. Missing settings
+or reused outputs must fail before seed execution. Larger local cohorts require
+explicit authorization.
 
 Before an experimental arm grows beyond its smallest smoke, run one fresh
 guarded seed using the exact frozen executable, flags, budget, thread regime,
@@ -103,7 +103,7 @@ backend banner in the log (native Silver has no per-combat telemetry). A
 failed canary blocks the remaining
 cohort; fix or explain the provenance/mechanism failure before spending more
 seeds. `--expect-executable-sha` is also available for a Git-backed execution
-tree; do not rely on that sidecar field alone on the documented non-Git GCP
+tree; do not rely on that sidecar field alone on the historical non-Git GCP
 rsync checkout. CTest runs the validator's synthetic pass/fail self-test.
 
 ## Invariants and assumptions

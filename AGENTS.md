@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-09-12 for documentation routing and completion boundaries.
+Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-12 for documentation routing and completion boundaries.
 
 ## Purpose and authority
 
@@ -85,10 +85,10 @@ routing.
   accepted change may share its worktree; use separate worktrees for
   independent branches or experiments.
 - Use the cheapest focused verification that proves the change. Every command
-  that drives game seeds must go through the repository seed-run guard. Local
-  automated execution is capped at 128 seeds. Large research sweeps run
-  through the designated GCP research path, which has no fixed seed ceiling;
-  agents choose the smallest sample justified by the experiment design. See
+  that drives game seeds must go through the repository seed-run guard. Seed-based
+  runs use the smallest justified experiment. Larger local runs require explicit
+  authorization, with frozen provenance, seed ranges/counts, budgets, and
+  decision rules recorded before execution; there is no fixed numerical ceiling. See
   [build-and-debugging.md](docs/knowledge-base/operations/build-and-debugging.md)
   and the [research-experiment skill](.agents/skills/research-experiment/SKILL.md).
 - GitHub Actions CI (`.github/workflows/ci.yml`) is the authoritative
