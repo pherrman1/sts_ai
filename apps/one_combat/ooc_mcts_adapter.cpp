@@ -1,3 +1,4 @@
+#include "run_profile.h"
 #include "ooc_mcts_adapter.h"
 #include "ooc_profile.h"
 #include "combat_transition_runtime.h"
@@ -1069,7 +1070,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_CPUCT") { const double x = number(); if (x < 0) invalid(); config.cPuct = x; }
     else if (key == "STS_OOC_MCTS_WIDEN_K") { const double x = number(); if (x <= 0) invalid(); config.wideningK = x; }
     else if (key == "STS_OOC_MCTS_WIDEN_ALPHA") { const double x = number(); if (x <= 0 || x >= 1) invalid(); config.wideningAlpha = x; }
-    else if (key == "STS_OOC_MCTS_MAX_DEPTH") { const auto x = integer(); if (!x || x > 32) invalid(); config.maxDepth = x; }
+    else if (key == "STS_OOC_MCTS_MAX_DEPTH") { const auto x = integer(); if (!x || x > 512) invalid(); config.maxDepth = x; }
     else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3) invalid(); opts.leafCombats = x; }
     else invalid();
 }
@@ -1081,7 +1082,8 @@ const char *const liveControlKeys[] = {
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
-    if (result.abortReason.rfind("continuation_step_limit_",0) == 0) {
+    if (result.abortReason.rfind("continuation_step_limit_",0) == 0
+            || result.abortReason.rfind("ooc_depth_safety_cap_",0) == 0) {
         ++continuation.continuationLimitAborts;
         ++continuation.continuationReasons[result.abortReason];
     } else if (result.abortReason.rfind("semantic_execution:",0) == 0) {
@@ -1235,7 +1237,16 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
     config.captureTree = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
-    auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
+    const auto sole = model.soleLegalAction(0);
+    if (!runProfilePath().empty()) {
+        config.profileSearch = true;
+        // Preserve the singleton shortcut and every existing stopping rule.
+        if (!sole) {
+            for (const std::uint64_t checkpoint : {128, 256, 512, 1024, 2048, 4096})
+                if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
+        }
+    }
+    auto result = searchWithSoleRootShortcut(model, config, sole, simulations);
     if (config.captureTree) {
         if (result.tree) {
             annotateOocTree(model, *result.tree);
@@ -1330,8 +1341,42 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     std::optional<OocGameContextModel::Candidate> selected;
     const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation, &selected);
     profile.stop();
-    metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
-    metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
+    const double wallElapsed = std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
+    const double cpuElapsed = threadCpuSeconds()-cpuStart;
+    metrics.wallSeconds += wallElapsed;
+    metrics.cpuSeconds += cpuElapsed;
+    nlohmann::json decisionProfile;
+    if (!runProfilePath().empty()) {
+        using nlohmann::json;
+        const auto actionsJson = [](const std::vector<sts::search::OocRootActionStats> &actions) {
+            auto output = json::array();
+            for (const auto &a : actions)
+                output.push_back({{"id", a.id}, {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+            return output;
+        };
+        auto checkpoints = json::array();
+        for (const auto &c : result.rootCheckpoints)
+            checkpoints.push_back({{"simulations", c.simulations}, {"actions", actionsJson(c.actions)}});
+        const auto &m = result.metrics;
+        decisionProfile = {{"schema", 1}, {"kind", "ooc_decision"}, {"seed", std::to_string(seed)},
+            {"decision", index}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"room", sts::roomStrings[int(gc.curRoom)]},
+            {"wall_seconds", wallElapsed}, {"thread_cpu_seconds", cpuElapsed},
+            {"configured_simulations", liveSimulations}, {"completed_simulations", m.simulations},
+            {"attempts", m.simulationAttempts}, {"singleton_bypass", m.trivialRootBypasses},
+            {"aborted", result.aborted}, {"abort_reason", result.abortReason},
+            {"selected_action", result.selectedAction ? json(*result.selectedAction) : json(nullptr)},
+            {"selected_key", selected ? selected->key : ""},
+            {"selection_rule", liveConfig.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
+            {"actions", actionsJson(result.rootActions)}, {"checkpoints", checkpoints},
+            {"expanded_action_histogram", runProfileHistogram(m.expandedActionHistogram)},
+            {"expanded_nodes", m.expandedNodes0Actions + m.expandedNodes1Action
+                + m.expandedNodes2Actions + m.expandedNodes3PlusActions},
+            {"outcome_particles", m.outcomeParticles}, {"transition_samples", m.transitionSamples},
+            {"ctm_samples", samples}, {"leaf_evaluations", m.leafEvaluations},
+            {"max_depth", m.maxDepthReached}, {"depth_sum", m.depthSum},
+            {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20}};
+    }
     if (!liveCheckpointTrace.empty()) {
         ImaginedScope scope;
         auto shadowOptions = liveOptions;
@@ -1388,6 +1433,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     auto &m = metrics.search;
     m.outcomeParticles+=result.metrics.outcomeParticles; m.decisionNodes+=result.metrics.decisionNodes;
     m.chanceNodes+=result.metrics.chanceNodes; m.particleRevisits+=result.metrics.particleRevisits;
+    for (const auto &[actions, count] : result.metrics.expandedActionHistogram)
+        m.expandedActionHistogram[actions] += count;
     m.expandedNodes0Actions+=result.metrics.expandedNodes0Actions;
     m.expandedNodes1Action+=result.metrics.expandedNodes1Action;
     m.expandedNodes2Actions+=result.metrics.expandedNodes2Actions;
@@ -1408,6 +1455,11 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto rootScreen = gc.screenState;
     const auto rootSelector = gc.info.selectScreenType;
     const auto traceDecision = [&](bool executed, const std::string &reason) {
+        if (!decisionProfile.is_null()) {
+            decisionProfile["executed"] = executed;
+            decisionProfile["execution_reason"] = reason;
+            writeRunProfile(decisionProfile);
+        }
         if (liveTrace.empty()) return;
         std::lock_guard<std::mutex> lock(liveTraceMutex);
         std::ofstream out(liveTrace + ".actions.jsonl", std::ios::app);
@@ -1540,6 +1592,7 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
 #include "../../tests/data/ooc_v4_policy_fixture.h"
 namespace one_combat {
 void oocMctsAdapterSelfTest() {
+    runFloorProfileSelfTest();
     using namespace sts;
     using namespace sts::search;
     {
@@ -2348,7 +2401,7 @@ void oocMctsAdapterSelfTest() {
                 for(std::size_t i=0;i<actions.size();++i) primitiveActions.push_back({actions[i].bits,weights[i]});
             }
             std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
-            bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+            bool isLeafBoundary(OocStateId id) const override { return id != 0 || adapter.isLeafBoundary(id); }
             std::vector<OocPlannerAction> legalActions(OocStateId id) const override {
                 require(id==0,"bounded MAP comparison never expands a child"); return primitiveActions;
             }
@@ -2370,7 +2423,7 @@ void oocMctsAdapterSelfTest() {
             std::vector<std::uint64_t> rngAfterDraw;
             CurrentPrefixRoot(const GameContext &g,const PathHistory &p):adapter(g,p) {}
             std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
-            bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+            bool isLeafBoundary(OocStateId id) const override { return id != 0 || adapter.isLeafBoundary(id); }
             std::vector<OocPlannerAction> legalActions(OocStateId id) const override { return adapter.legalActions(id); }
             OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override {
                 const auto child=adapter.sampleSuccessor(id,a,r);
@@ -2384,7 +2437,7 @@ void oocMctsAdapterSelfTest() {
                 return adapter.isDeterministicTransition(id,a);
             }
         } current(gc,path);
-        OocMctsConfig config; config.maxDepth=1;
+        OocMctsConfig config;
         const auto expected=OocMctsPlanner(config).search(baseline,0,32);
         const auto actual=OocMctsPlanner(config).search(current,0,32);
         require(actual.selectedAction==expected.selectedAction && actual.rootActions.size()==expected.rootActions.size()
@@ -2709,9 +2762,22 @@ void oocMctsAdapterSelfTest() {
         && std::abs(bossCheckpointValue-nativeCheckpointValue)>1e-6,
         "checkpoint boss leaf returns combat expectation instead of native v_win");
     {
+        OocMctsResult capped; capped.aborted=true;
+        capped.abortReason="ooc_depth_safety_cap_512_state_513";
+        OocContinuationMetrics capCounters;
+        recordSearchAbort(capped,capCounters);
+        require(capCounters.continuationLimitAborts==1
+            && capCounters.continuationReasons.at(capped.abortReason)==1
+            && capCounters.imaginedCombats==0 && capCounters.unsupportedCombats==0
+            && capCounters.supportReasons.empty(),
+            "tree safety cap is a continuation abort, never a combat support failure");
         OocMctsConfig parsed; OocAdapterOptions opts{true};
         applyLiveControl("STS_OOC_MCTS_EARLY_STOP","1",parsed,opts);
         require(parsed.allowUnqualifiedRootStop,"explicit early-stop enable parsed");
+        for (const auto *cap : {"1", "32", "256", "512"}) {
+            applyLiveControl("STS_OOC_MCTS_MAX_DEPTH",cap,parsed,opts);
+            require(parsed.maxDepth == std::stoul(cap),"safety cap override parsed");
+        }
         applyLiveControl("STS_OOC_MCTS_EARLY_STOP","0",parsed,opts);
         require(!parsed.allowUnqualifiedRootStop,"early-stop rollback parsed");
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
@@ -2726,7 +2792,7 @@ void oocMctsAdapterSelfTest() {
         for (const auto &invalid : std::vector<std::pair<std::string,std::string>>{
             {"STS_OOC_MCTS_EARLY_STOP","true"},{"STS_OOC_MCTS_EARLY_STOP","2"},{"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
             {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},
-            {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","33"},
+            {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},
             {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
             {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
@@ -2979,7 +3045,7 @@ void oocMctsAdapterSelfTest() {
         OocActionId entry;
         SingleEntryModel(OocGameContextModel &a,OocActionId e):adapter(a),entry(e) {}
         std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
-        bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+        bool isLeafBoundary(OocStateId id) const override { return id != 0 || adapter.isLeafBoundary(id); }
         std::vector<OocPlannerAction> legalActions(OocStateId id) const override {
             require(id==0,"single-entry planner must stop at depth one"); return {{entry,1.0}};
         }
@@ -2992,7 +3058,7 @@ void oocMctsAdapterSelfTest() {
     const auto samplesBefore=fake->sampleCalls;
     OocGameContextModel plannerCombat(combatRoot,path,fake);
     SingleEntryModel entryModel(plannerCombat,sourceId(plannerCombat,restAction.bits));
-    OocMctsConfig chanceConfig; chanceConfig.maxDepth=1; chanceConfig.seed=12345;
+    OocMctsConfig chanceConfig; chanceConfig.seed=12345;
     OocMctsPlanner chancePlanner(chanceConfig);
     const auto chanceResult=chancePlanner.search(entryModel,0,32);
     std::mt19937_64 expectedChanceRng(chanceConfig.seed);
@@ -3163,12 +3229,12 @@ void oocMctsAdapterSelfTest() {
             OocGameContextModel &adapter;
             explicit BoundModel(OocGameContextModel &a):adapter(a) {}
             std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
-            bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+            bool isLeafBoundary(OocStateId id) const override { return id != 0 || adapter.isLeafBoundary(id); }
             std::vector<OocPlannerAction> legalActions(OocStateId id) const override { return adapter.legalActions(id); }
             OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override { return adapter.sampleSuccessor(id,a,r); }
             double leafValue(OocStateId) const override { throw OocSearchUnsupported("continuation_step_limit_1024"); }
         } bounded(adapter);
-        OocMctsConfig config; config.maxDepth=1;
+        OocMctsConfig config;
         const auto result=OocMctsPlanner(config).search(bounded,0,1);
         auto counters=adapter.continuationMetrics();
         recordSearchAbort(result,counters);
@@ -3320,6 +3386,14 @@ void oocMctsAdapterSelfTest() {
         && soleBypass.rootActions.size()==1 && soleBypass.rootActions[0].prior==1.0
         && soleBypass.rootActions[0].visits==0,
         "sole map root bypasses unsupported hypothetical continuation");
+    auto profileConfig = liveConfig;
+    profileConfig.profileSearch = true;
+    const auto profiledSole = searchWithSoleRootShortcut(soleModel, profileConfig, soleAction, 128);
+    require(profiledSole.selectedAction == soleBypass.selectedAction
+        && profiledSole.metrics.trivialRootBypasses == 1
+        && profiledSole.metrics.simulationAttempts == 0
+        && profiledSole.metrics.expandedActionHistogram.empty(),
+        "branch profiling preserves sole-root bypass and zero work");
     auto soleWithPotions=detachedCopy(sole);
     soleWithPotions.potions[0]=Potion::FIRE_POTION;
     soleWithPotions.potionCount=1;
@@ -3615,9 +3689,9 @@ void oocMctsAdapterSelfTest() {
         // Isolate one searched combat edge from native reward/projection work.
         fixed.regainControlAction=[](GameContext &g) { g.screenState=ScreenState::MAP_SCREEN; };
         PathHistory fixedPath;fixedPath.update(fixed);
-        OocAdapterOptions opts; opts.checkpointLeaves=true;
+        OocAdapterOptions opts; opts.checkpointLeaves=true; opts.stopAtMapCheckpoint=true;
         OocGameContextModel before(fixed,fixedPath,reference,opts),after(fixed,fixedPath,native,opts);
-        auto cfg=OocMctsConfig{}; cfg.seed=20260914;cfg.maxDepth=1;
+        auto cfg=OocMctsConfig{}; cfg.seed=20260914;
         const auto start=std::chrono::steady_clock::now();
         const auto oldResult=OocMctsPlanner(cfg).search(before,0,512);
         const double oldSeconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();

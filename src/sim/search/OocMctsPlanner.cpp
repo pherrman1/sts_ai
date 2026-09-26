@@ -68,6 +68,7 @@ struct Search {
 
     void expand(DecisionNode &node) {
         auto actions = model.legalActions(node.state);
+        if (config.profileSearch) ++metrics.expandedActionHistogram[actions.size()];
         if (actions.empty()) ++metrics.expandedNodes0Actions;
         else if (actions.size() == 1) ++metrics.expandedNodes1Action;
         else if (actions.size() == 2) ++metrics.expandedNodes2Actions;
@@ -98,10 +99,13 @@ struct Search {
         metrics.depthSum += depth;
         ++node.visits;
         if (auto value = model.terminalValue(node.state)) return checkedValue(*value);
-        if (model.isLeafBoundary(node.state) || depth == config.maxDepth) {
+        if (model.isLeafBoundary(node.state)) {
             ++metrics.leafEvaluations;
             return checkedValue(model.evaluateLeaf(node.state, rng));
         }
+        if (depth >= config.maxDepth)
+            throw OocSearchUnsupported("ooc_depth_safety_cap_" + std::to_string(config.maxDepth)
+                + "_state_" + std::to_string(node.state));
         if (!node.expanded) {
             expand(node);
             // Root expands before action selection; new downstream leaves stop.

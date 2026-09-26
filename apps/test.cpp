@@ -255,7 +255,7 @@ namespace {
         std::vector<search::SearchRngState> rng;
     };
 
-    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims, bool diagnose = false) {
+    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims, bool profileEnabled = false, bool diagnose = false) {
         GameContext gc(CharacterClass::IRONCLAD, seed, 0);
         BattleContext bc;
         bc.init(gc, encounter);
@@ -274,7 +274,12 @@ namespace {
             } else {
                 searcher = std::make_unique<search::SilverSearcher>(root, context);
             }
+            search::SilverTreeProfile profile;
+            searcher->profile = profileEnabled ? &profile : nullptr;
             searcher->search(sims);
+            searcher->profile = nullptr;
+            if (profileEnabled && profile.completed != sims)
+                throw std::runtime_error("profile denominator includes inherited visits or misses simulations");
             const auto action = search::SilverSearcher::translateAction(
                 searcher->bestAction(), searcher->rootSearchState(), bc);
             if (!action.isValidAction(bc)) {
@@ -359,11 +364,81 @@ int testSilverSearcher() {
         changed = bc; changed.cards.hand[0] = CardInstance(CardId::SHRUG_IT_OFF);
         check(!search::proveSilverUselessBlock(changed, defend).verified, "draw effect is outside qualified class");
         const auto off = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200);
-        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true);
+        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, false, true);
         check(off.actions == on.actions && off.rng == on.rng && off.hp == on.hp
             && off.turn == on.turn && off.outcome == on.outcome,
             "diagnostics preserve every full-fight action, RNG stream, and result");
 
+    }
+
+    // Exact endpoint/depth fixtures and opt-in observational parity.
+    {
+        using Profile = search::SilverTreeProfile;
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.monsters.arr[0].curHp = 1;
+        bc.monsters.arr[0].block = 0;
+        bc.cards.cardsInHand = 1;
+        bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[0].uniqueId = 81;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        check(searcher.profile == nullptr, "profiling defaults off");
+        Profile profile;
+        searcher.profile = &profile;
+        searcher.search(1);
+        check(profile.completed == 1 && profile.endpoints[Profile::VICTORY].tree[1] == 1
+              && profile.endpoints[Profile::VICTORY].total[1] == 1,
+              "one lethal action ends at tree/total depth one");
+        BattleContext stochastic;
+        stochastic.init(gc, MonsterEncounter::CULTIST);
+        stochastic.player.energy = 0;
+        search::SilverSearcher chanceSearcher(silverSearchRoot(stochastic), {});
+        Profile chanceProfile;
+        chanceSearcher.profile = &chanceProfile;
+        chanceSearcher.search(1);
+        std::int64_t depthOne = 0;
+        for (const auto &endpoint : chanceProfile.endpoints) {
+            const auto it = endpoint.tree.find(1);
+            if (it != endpoint.tree.end()) depthOne += it->second;
+        }
+        check(chanceSearcher.stats.chanceOutcomesSampled > 0 && depthOne == 1,
+              "chance outcome edge does not add another action to tree depth");
+        bc.inputState = InputState::CHOOSE_STANCE_ACTION;
+        searcher.setRoot(silverSearchRoot(bc));
+        profile = {};
+        searcher.search(3);
+        searcher.search(4);
+        check(profile.completed == 7 && profile.endpoints[Profile::NONTERMINAL].tree[0] == 7
+              && profile.endpoints[Profile::NONTERMINAL].total[0] == 7,
+              "no-action nonterminal root and chunked denominator are exact");
+        bc.outcome = Outcome::PLAYER_LOSS;
+        bc.player.curHp = 0;
+        profile = {};
+        profile.record(bc, 2, 3);
+        check(profile.endpoints[Profile::DEATH].tree[2] == 1
+              && profile.endpoints[Profile::DEATH].total[5] == 1, "death depths separate tree and rollout");
+        bc.player.curHp = 20;
+        profile.record(bc, 4, 0);
+        check(profile.endpoints[Profile::ENGINE_STOP].tree[4] == 1, "non-death engine loss stays separate");
+        bc.turn = 501;
+        profile.record(bc, 5, 1);
+        check(profile.endpoints[Profile::TURN_LIMIT].total[6] == 1, "turn limit stays separate");
+        searcher.setRoot(silverSearchRoot(bc));
+        profile = {};
+        searcher.search(7);
+        check(profile.completed == 0, "terminal-root initialization is not a completed simulation");
+
+        const auto off = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200);
+        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true);
+        check(off.actions == on.actions && off.rng == on.rng && off.hp == on.hp
+              && off.turn == on.turn && off.outcome == on.outcome && off.reroots == on.reroots,
+              "profile on/off preserves every action, all six RNG streams, and final result");
+        check(on.reroots > 0, "profile parity fixture exercises rerooted searches");
+        const auto both = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true, true);
+        check(off.actions == both.actions && off.rng == both.rng && off.hp == both.hp
+              && off.turn == both.turn && off.outcome == both.outcome && off.reroots == both.reroots,
+              "combined tree profiling and useless-action proof preserve fight and RNG");
     }
 
     // Lethal is found: a nearly dead Cultist and a Strike in hand.

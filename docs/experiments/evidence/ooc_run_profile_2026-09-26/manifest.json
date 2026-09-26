@@ -1,0 +1,43 @@
+{
+  "issue": 341,
+  "baseline_sha": "b23aad9d8885c6eca332b1f5cccf3890755bbecf",
+  "kind": "one fixed diagnostic run and matching on/off verification; no policy or budget change",
+  "commands": [
+    "OMP_NUM_THREADS=1 STS_NATIVE_OOC=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_OOC_MCTS=1 STS_OOC_MCTS_SIMS=2048 STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native STS_RUN_PROFILE=build/issue341/profile.jsonl STS_OOC_MCTS_TRACE=build/issue341/on-mcts.csv bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 10000 1 0 0 build/issue341/on.csv",
+    "OMP_NUM_THREADS=1 STS_NATIVE_OOC=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_OOC_MCTS=1 STS_OOC_MCTS_SIMS=2048 STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native STS_RUN_PROFILE= STS_OOC_MCTS_TRACE=build/issue341/off-mcts.csv bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 10000 1 0 0 build/issue341/off.csv",
+    "python3 tools/analyze_run_profile.py build/issue341/profile.jsonl --output build/issue341/summary.json"
+  ],
+  "source_sha256": {
+    "apps/one_combat/run_driver.cpp": "4c4abbf1edf292f40816aba68ecb29e9bb603bfe16363362f3093619e39009d2",
+    "apps/one_combat/run_profile.h": "f7aef0a3598f0d3e3d3c2f6d861c7fd39d43028a227784d45e7215e581c20e47",
+    "apps/one_combat/ooc_mcts_adapter.cpp": "0cbbb11195b67fba188fc76d4b59bd7350fa751ef8b23b339811c655427318a3",
+    "include/sim/search/OocMctsPlanner.h": "0905b8f0c8536f4985e69cc73ff8164c8b56fae0250c7612aa4c10befb7f3481",
+    "src/sim/search/OocMctsPlanner.cpp": "f8e608d3646dc9385d4421efd538143736132eac92f6880a9716ca4fea767711",
+    "tools/analyze_run_profile.py": "1e999f4e4e6975aff440f9b93fb40b3a614293c0a670ab9ff891dac4e6fcf8d2"
+  },
+  "model_sha256": {
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "selfplay/models/combat_transition_near_full_except_smoke_v2.native": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "binary_sha256": "a24a2a359a18ca015f4abdef9a09de455d844d6a679876153b0c3d145a1b93c2",
+  "artifact_sha256": {
+    "off-mcts.csv.actions.jsonl": "249a05ceafe4f7199c927c78fc9cfb6c59acabb9728a6ac1d088be6ef5b528ed",
+    "off.csv": "9a2e72e6273e3a52e89b0163187ab9b0c5fe0a9ec3698087912503e46953d0a7",
+    "on-mcts.csv.support.jsonl": "ccefa751e18f030274a8fe6356af5316a3bc848fd35c26cd0da55d3d3fdcc042",
+    "off-mcts.csv": "22859aa3ad1d3ef6aa7cd1264c0094fac7b51532edaaf5d34d3e92fa31b6f2f9",
+    "parity.json": "e65fbce3423d35bed1e2a5f894599958a8bf656470cefb94daca0be4e4da1788",
+    "summary.json.gz": "03a8bd2159d4f00dd7f81aa289fd55e11f32477f034f83be3d5a078da9d6f2cc",
+    "off.csv.meta.json": "d055deae45733bc7f84ad621f996e5d29c4ddb15371e523bdf115c2d8bf20717",
+    "reconciliation.json": "89884526e61444df3238237a5784cc6d6dbb73540c89d660b9b5276424f1ba26",
+    "off.log": "d39e5313b3e0e98afca9e2b89968488b1bc136dce75560f0ff78200186adad60",
+    "on.log": "09f4ea754e1c6406dede535199c87e9c5b0f3bd1598394653cc98a66c499d38e",
+    "on-mcts.csv": "8ae6d547391a9f53c0078c767e0153c971c03563ec77e9a69bb34360a4610287",
+    "off-mcts.csv.support.jsonl": "ccefa751e18f030274a8fe6356af5316a3bc848fd35c26cd0da55d3d3fdcc042",
+    "profile.jsonl.gz": "3dc62842b638bc6fc9657624c84e74d691d6048f7d971eb982f794e6ce7c9589",
+    "on.csv.meta.json": "18302265798d76799a9250fdc3d9a1fb1cad56b3f6a8000251609e2a8cc0b0c6",
+    "on.csv": "4458d75a7dd668acf66430bbdfb3c7fa1bb424ffb493407bc805339b4ada5e53",
+    "on-mcts.csv.actions.jsonl": "249a05ceafe4f7199c927c78fc9cfb6c59acabb9728a6ac1d088be6ef5b528ed"
+  }
+}
