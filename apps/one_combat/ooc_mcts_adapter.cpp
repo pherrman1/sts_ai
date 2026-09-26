@@ -16,12 +16,16 @@
 #include "sim/search/NativeSilverBackend.h"
 #include "../ooc_test_state.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 #include <type_traits>
+#include <nlohmann/json.hpp>
 
 namespace one_combat {
 static_assert(!std::is_constructible_v<OocGameContextModel, const GameContext &>,
@@ -29,6 +33,7 @@ static_assert(!std::is_constructible_v<OocGameContextModel, const GameContext &>
 namespace {
 std::string liveGraphPath;
 std::uint64_t liveGraphDecisionIndex = 1;
+std::mutex liveTraceMutex;
 GameContext detachedCopy(const GameContext &parent) {
     GameContext child = parent;
     if (parent.map) child.map = std::make_shared<sts::Map>(*parent.map);
@@ -459,7 +464,14 @@ bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
 std::optional<sts::search::OocActionId> OocGameContextModel::soleLegalAction(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) return std::nullopt;
     const auto &actions = metadata(id).candidates;
-    if (actions.size()==1 && actions.front().primitive.isValidAction(state(id))) return actions.front().id;
+    if (actions.size()==1 && actions.front().primitive.isValidAction(state(id))) {
+        if (options.priorTracePath.empty()) return actions.front().id;
+        auto &cached = mutableMetadata(id);
+        if (!cached.priors)
+            cached.priors = std::vector<sts::search::OocPlannerAction>{{actions.front().id, 1.0}};
+        tracePrior(id, cached, *cached.priors);
+        return actions.front().id;
+    }
     return std::nullopt;
 }
 const OocGameContextModel::Candidate &OocGameContextModel::candidate(sts::search::OocStateId id,
@@ -501,6 +513,8 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         throw std::runtime_error("OOC MCTS policy-logit count mismatch");
     for (double logit : sourceLogits)
         if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
+    if (!options.priorTracePath.empty())
+        cached.priorTraceSources = Metadata::PriorTraceSources{sources, sourceLogits};
     std::vector<double> logits;
     logits.reserve(actions.size());
     for (std::size_t i = 0; i < actions.size(); ++i) {
@@ -516,6 +530,172 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     cached.logits = logits;
     return logits;
 }
+void OocGameContextModel::tracePrior(sts::search::OocStateId id, Metadata &cached,
+    const std::vector<sts::search::OocPlannerAction> &actions) const {
+    if (options.priorTracePath.empty() || cached.priorTraceWritten) return;
+    const auto &gc = state(id);
+    const auto &candidates = cached.candidates;
+    if (actions.size() != candidates.size())
+        throw std::runtime_error("OOC MCTS prior trace candidate count mismatch");
+
+    const bool singleton = candidates.size() == 1;
+    const bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
+    const bool modelPrior = cached.sourcePriorCovered && !uniform && !singleton;
+    static constexpr std::array<const char *, 10> screenNames = {"invalid", "event", "card reward",
+        "boss relic", "card select", "map", "treasure", "rest", "shop", "battle"};
+    const int screenId = int(gc.screenState);
+    const std::string screenName = screenId >= 0 && screenId < int(screenNames.size())
+        ? screenNames[screenId] : "unknown";
+    const int roomId = int(gc.curRoom);
+    const std::string roomName = roomId >= 0 && roomId < int(std::size(sts::roomStrings))
+        ? sts::roomStrings[roomId] : "unknown";
+    nlohmann::json row = {
+        {"schemaVersion", 1},
+        {"runSeed", options.priorTraceRunSeed},
+        {"decisionIndex", options.priorTraceDecisionIndex},
+        {"searchSeed", options.priorTraceSearchSeed},
+        {"modelStateId", id},
+        {"stateRole", id == 0 ? "root" : "hypothetical"},
+        {"floor", gc.floorNum},
+        {"screenId", screenId}, {"screen", screenName},
+        {"roomId", roomId}, {"room", roomName},
+        {"priorTemperature", options.priorTemperature},
+        {"candidateCount", candidates.size()},
+        {"sourcePriorCovered", cached.sourcePriorCovered},
+        {"singleton", singleton},
+        {"uniformPrior", uniform},
+        {"candidates", nlohmann::json::array()}
+    };
+
+    std::vector<double> normalizedWeights;
+    if (modelPrior) {
+        if (!cached.logits || cached.logits->size() != candidates.size())
+            throw std::runtime_error("OOC MCTS prior trace missing production candidate logits");
+        if (!cached.priorTraceSources)
+            throw std::runtime_error("OOC MCTS prior trace missing native source logits");
+        const auto &sources = cached.priorTraceSources->actions;
+        const auto &sourceLogits = cached.priorTraceSources->logits;
+        if (sources.size() != sourceLogits.size())
+            throw std::runtime_error("OOC MCTS prior trace source-logit count mismatch");
+        std::map<std::uint32_t, std::size_t> sourceIndexes;
+        for (std::size_t i = 0; i < sources.size(); ++i) {
+            if (!sourceIndexes.emplace(sources[i].bits, i).second)
+                throw std::runtime_error("OOC MCTS prior trace duplicate source primitive");
+            if (!std::isfinite(sourceLogits[i]))
+                throw std::runtime_error("OOC MCTS prior trace nonfinite source logit");
+        }
+        if (cached.priorSourceGroups.empty() && sources.size() != candidates.size())
+            throw std::runtime_error("OOC MCTS prior trace direct-source count mismatch");
+        if (!cached.priorSourceGroups.empty() && cached.priorSourceGroups.size() != candidates.size())
+            throw std::runtime_error("OOC MCTS prior trace source-group count mismatch");
+
+        const auto tokenState = buildTokStatePure(gc, states.at(id).path);
+        if (tokenState.nDk < 0 || tokenState.nDk > 96
+                || tokenState.nRl < 0 || tokenState.nRl > 64
+                || tokenState.nPt < 0 || tokenState.nPt > 8)
+            throw std::runtime_error("OOC MCTS prior trace invalid token-state length");
+        nlohmann::json tokens = {{"glob", nlohmann::json::array()},
+            {"deck", {{"nDk", tokenState.nDk}, {"tokens", nlohmann::json::array()}}},
+            {"relic", {{"nRl", tokenState.nRl}, {"tokens", nlohmann::json::array()}}},
+            {"potion", {{"nPt", tokenState.nPt}, {"tokens", nlohmann::json::array()}}}};
+        for (const float value : tokenState.glob) {
+            if (!std::isfinite(value)) throw std::runtime_error("OOC MCTS prior trace nonfinite global input");
+            tokens["glob"].push_back(value);
+        }
+        for (int i = 0; i < tokenState.nDk; ++i)
+            tokens["deck"]["tokens"].push_back({tokenState.dk[i][0], tokenState.dk[i][1], tokenState.dk[i][2]});
+        for (int i = 0; i < tokenState.nRl; ++i)
+            tokens["relic"]["tokens"].push_back({tokenState.rl[i][0], tokenState.rl[i][1]});
+        for (int i = 0; i < tokenState.nPt; ++i)
+            tokens["potion"]["tokens"].push_back({tokenState.pt[i][0], tokenState.pt[i][1]});
+        row["tokenState"] = std::move(tokens);
+
+        row["sourcePrimitives"] = nlohmann::json::array();
+        for (std::size_t i = 0; i < sources.size(); ++i) {
+            int type, c1, c2, c3, d1, d2, d3, entityType, entityId;
+            float price;
+            strategicCands(gc, sources[i], type, c1, c2, c3, d1, d2, d3);
+            tokEntity(gc, sources[i], entityType, entityId, price);
+            if (!std::isfinite(price))
+                throw std::runtime_error("OOC MCTS prior trace nonfinite source-action feature");
+            row["sourcePrimitives"].push_back({
+                {"primitiveBits", sources[i].bits}, {"actionType", type},
+                {"cats", {c1, c2, c3, d1, d2, d3}}, {"screen", int(gc.screenState)},
+                {"entityType", entityType}, {"entityId", entityId},
+                {"goldGePrice", price}, {"teacherSourceLogit", sourceLogits[i]}});
+        }
+
+        std::vector<double> reproducedCandidateLogits;
+        reproducedCandidateLogits.reserve(candidates.size());
+        for (std::size_t i = 0; i < candidates.size(); ++i) {
+            double reproduced = 0;
+            if (cached.priorSourceGroups.empty()) {
+                const auto found = sourceIndexes.find(candidates[i].primitive.bits);
+                if (found == sourceIndexes.end())
+                    throw std::runtime_error("OOC MCTS prior trace direct primitive source missing");
+                reproduced = sourceLogits.at(found->second);
+            } else {
+                const auto &group = cached.priorSourceGroups.at(i);
+                if (group.empty()) throw std::runtime_error("OOC MCTS prior trace empty semantic source group");
+                for (const auto source : group) {
+                    const auto found = sourceIndexes.find(source.bits);
+                    if (found == sourceIndexes.end())
+                        throw std::runtime_error("OOC MCTS prior trace semantic source missing");
+                    reproduced += sourceLogits.at(found->second);
+                }
+                reproduced /= group.size();
+            }
+            if (!std::isfinite(reproduced) || reproduced != cached.logits->at(i))
+                throw std::runtime_error("OOC MCTS prior trace candidate-logit reproduction mismatch");
+            reproducedCandidateLogits.push_back(reproduced);
+        }
+
+        auto expectedWeights = oocPolicyWeights(reproducedCandidateLogits, options.priorTemperature);
+        std::map<std::uint32_t, std::size_t> multiplicity;
+        for (const auto &candidate : candidates) ++multiplicity[candidate.primitive.bits];
+        for (std::size_t i = 0; i < expectedWeights.size(); ++i) {
+            expectedWeights[i] /= multiplicity.at(candidates[i].primitive.bits);
+            if (!std::isfinite(expectedWeights[i]) || actions[i].id != candidates[i].id
+                    || expectedWeights[i] != actions[i].prior)
+                throw std::runtime_error("OOC MCTS prior trace planner-weight reproduction mismatch");
+        }
+        const double totalWeight = std::accumulate(expectedWeights.begin(), expectedWeights.end(), 0.0);
+        if (!std::isfinite(totalWeight) || totalWeight <= 0)
+            throw std::runtime_error("OOC MCTS prior trace invalid prior normalization");
+        normalizedWeights.reserve(expectedWeights.size());
+        for (const double weight : expectedWeights) normalizedWeights.push_back(weight / totalWeight);
+
+        row["teacherCandidateLogits"] = reproducedCandidateLogits;
+        row["teacherRawPriorWeights"] = expectedWeights;
+        row["teacherNormalizedPrior"] = normalizedWeights;
+    }
+
+    for (std::size_t i = 0; i < candidates.size(); ++i) {
+        if (actions[i].id != candidates[i].id)
+            throw std::runtime_error("OOC MCTS prior trace candidate ID/order mismatch");
+        const auto &candidate = candidates[i];
+        nlohmann::json groups = nlohmann::json::array();
+        if (!cached.priorSourceGroups.empty())
+            for (const auto source : cached.priorSourceGroups.at(i)) groups.push_back(source.bits);
+        nlohmann::json item = {{"candidateId", candidate.id}, {"semanticKey", candidate.key},
+            {"primitiveBits", candidate.primitive.bits}, {"hasSemantic", candidate.semantic.has_value()},
+            {"compoundSelector", int(candidate.compoundSelector)}, {"priorSourceGroup", std::move(groups)},
+            {"searchPriorWeight", actions[i].prior}};
+        if (modelPrior) {
+            item["teacherCandidateLogit"] = cached.logits->at(i);
+            item["teacherRawPriorWeight"] = actions[i].prior;
+            item["teacherNormalizedPrior"] = normalizedWeights.at(i);
+        }
+        row["candidates"].push_back(std::move(item));
+    }
+
+    std::lock_guard<std::mutex> lock(liveTraceMutex);
+    std::ofstream out(options.priorTracePath, std::ios::app);
+    if (!out) throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE cannot open output");
+    out << row.dump() << '\n';
+    if (!out) throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE write failed");
+    cached.priorTraceWritten = true;
+}
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
     OocProfileScope priorBuild(OocProfileBucket::PriorBuild);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
@@ -526,6 +706,7 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     if (actions.size() == 1) {
         std::vector<sts::search::OocPlannerAction> result{{actions.front().id, 1.0}};
         cached.priors = result;
+        tracePrior(id, cached, result);
         return result;
     }
     const bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
@@ -541,6 +722,7 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     for (std::size_t i=0; i<actions.size(); ++i)
         result.push_back({actions[i].id, weights[i]});
     cached.priors = result;
+    tracePrior(id, cached, result);
     return result;
 }
 sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocStateId id,
@@ -844,7 +1026,6 @@ sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
 std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
-std::mutex liveTraceMutex;
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
     x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -968,6 +1149,11 @@ void configureLiveOocMcts() {
     }
     liveConfig = {}; liveOptions = {true};
     liveOptions.sampleNoncombat = true;
+    if (const char *trace = std::getenv("STS_OOC_MCTS_PRIOR_TRACE"); trace && *trace) {
+        liveOptions.priorTracePath = trace;
+        std::ofstream out(liveOptions.priorTracePath, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE cannot open output");
+    }
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
@@ -1027,7 +1213,8 @@ void configureLiveOocMcts() {
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
         << (brewFallbackArtifact ? "\"" + std::string(brewFallbackArtifact) + "\"" : "null")
         << ",\"dispatchRule\":\""
-        << (brewFallbackArtifact ? "precombat_entropic_brew_to_standard" : "single_artifact") << "\"}\n";
+        << (brewFallbackArtifact ? "precombat_entropic_brew_to_standard" : "single_artifact")
+        << "\",\"priorTrace\":\"" << liveOptions.priorTracePath << "\"}\n";
     std::cout.precision(precision);
 }
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
@@ -1035,12 +1222,18 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected) {
     ImaginedScope scope;
-    OocGameContextModel model(gc, path, std::move(sampler), liveOptions);
+    auto config = liveConfig;
+    config.seed = oocMctsSearchSeed(seed, index);
+    auto options = liveOptions;
+    if (!options.priorTracePath.empty()) {
+        options.priorTraceRunSeed = seed;
+        options.priorTraceDecisionIndex = index;
+        options.priorTraceSearchSeed = config.seed;
+    }
+    OocGameContextModel model(gc, path, std::move(sampler), std::move(options));
     samples = 0;
     if (selected) selected->reset();
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
-    auto config = liveConfig;
-    config.seed = oocMctsSearchSeed(seed, index);
     config.captureTree = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
     auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
@@ -1142,7 +1335,9 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
     if (!liveCheckpointTrace.empty()) {
         ImaginedScope scope;
-        OocGameContextModel shadow(gc, path, liveSampler, liveOptions);
+        auto shadowOptions = liveOptions;
+        shadowOptions.priorTracePath.clear();
+        OocGameContextModel shadow(gc, path, liveSampler, std::move(shadowOptions));
         if (!shadow.terminalValue(0) && !shadow.isLeafBoundary(0)) {
             auto config=liveConfig;
             config.seed=oocMctsSearchSeed(seed,index);
@@ -1639,6 +1834,11 @@ void oocMctsAdapterSelfTest() {
     model.state(child).map->nodes[0][0].room=room;
     // Compare the adapter against the complete semantic surface, independently
     // execute each semantic edge, and audit the source-level prior bridge.
+    bool directTraceChecked = false, compoundTraceChecked = false;
+    std::uint64_t traceFileSuffix = std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto newTraceFile = [&]() {
+        return "/tmp/ooc_mcts_prior_selftest_" + std::to_string(traceFileSuffix++) + ".jsonl";
+    };
     auto checkCandidates = [&](GameContext fixture, bool execute=true) {
         auto canonical = detachedCopy(fixture);
         collectForcedRewardGold(canonical);
@@ -1733,6 +1933,207 @@ void oocMctsAdapterSelfTest() {
                     "compound target weights split equally");
             }
         } else for(auto action:actual) require(action.prior==1,"unqualified V4 semantic roots are wholly uniform");
+        const bool traceMapCase = map && !directTraceChecked;
+        const bool traceCompoundCase = !map && !compoundTraceChecked
+            && canonical.screenState==ScreenState::CARD_SELECT
+            && canonical.info.selectScreenType==CardSelectScreenType::UPGRADE;
+        if(traceMapCase || traceCompoundCase) {
+            require(qualified,"trace fidelity fixture must be prior-covered");
+            const auto tracePath = newTraceFile();
+            OocAdapterOptions traceOptions;
+            traceOptions.priorTracePath=tracePath;
+            traceOptions.priorTraceRunSeed=44;
+            traceOptions.priorTraceDecisionIndex=5;
+            traceOptions.priorTraceSearchSeed=1234567;
+            OocGameContextModel traced(canonical,path,{},traceOptions);
+            const auto tracedActions=traced.legalActions(0);
+            const auto tracedAgain=traced.legalActions(0);
+            require(tracedActions.size()==actual.size() && tracedAgain.size()==actual.size(),
+                "trace keeps production candidate count");
+            for(std::size_t i=0;i<actual.size();++i)
+                require(tracedActions[i].id==actual[i].id && tracedActions[i].prior==actual[i].prior
+                    && tracedAgain[i].id==actual[i].id && tracedAgain[i].prior==actual[i].prior,
+                    "tracing preserves candidate order and raw planner weights");
+            std::ifstream traceInput(tracePath);
+            std::string traceLine, extraLine;
+            require(std::getline(traceInput,traceLine) && !std::getline(traceInput,extraLine),
+                "first prior build writes exactly one trace row");
+            const auto row=nlohmann::json::parse(traceLine);
+            require(row.at("schemaVersion")==1 && row.at("runSeed")==44
+                && row.at("decisionIndex")==5 && row.at("searchSeed")==1234567
+                && row.at("modelStateId")==0 && row.at("stateRole")=="root"
+                && row.at("floor")==canonical.floorNum && row.at("screenId")==int(canonical.screenState)
+                && row.at("candidateCount")==actual.size() && row.at("sourcePriorCovered")==true
+                && row.at("singleton")==false && row.at("uniformPrior")==false,
+                "trace identifies the root prior context and population class");
+            const auto tracedLogits=traced.policyLogits(0);
+            require(row.at("teacherCandidateLogits").size()==actual.size()
+                && row.at("teacherRawPriorWeights").size()==actual.size()
+                && row.at("teacherNormalizedPrior").size()==actual.size(),
+                "trace contains one candidate logit and prior per production candidate");
+            double totalWeight=0;
+            for(const auto &action:actual) totalWeight+=action.prior;
+            require(std::isfinite(totalWeight) && totalWeight>0,"fixture prior mass is finite");
+            for(std::size_t i=0;i<actual.size();++i) {
+                const auto &candidate=provider.candidate(0,actual[i].id);
+                const auto &tracedCandidate=row.at("candidates").at(i);
+                require(tracedCandidate.at("candidateId")==candidate.id
+                    && tracedCandidate.at("semanticKey")==candidate.key
+                    && tracedCandidate.at("primitiveBits")==candidate.primitive.bits
+                    && tracedCandidate.at("hasSemantic")==candidate.semantic.has_value()
+                    && tracedCandidate.at("compoundSelector")==int(candidate.compoundSelector),
+                    "trace candidate IDs, order and semantic metadata match production");
+                std::vector<std::uint32_t> expectedGroup;
+                if(!map) {
+                    const auto choiceKey=canonicalOocMctsChoiceKey(*candidate.semantic);
+                    for(const auto &binding:bindings.bindings)
+                        if(GameAction(binding.primitiveBits).isValidAction(canonical)
+                            && canonicalOocMctsChoiceKey(binding.semantic)==choiceKey)
+                            expectedGroup.push_back(binding.primitiveBits);
+                }
+                require(tracedCandidate.at("priorSourceGroup").get<std::vector<std::uint32_t>>()
+                    ==expectedGroup,"trace preserves current semantic source groups, including direct MAP empties");
+                require(tracedLogits[i]==row.at("teacherCandidateLogits").at(i).get<double>()
+                    && tracedLogits[i]==tracedCandidate.at("teacherCandidateLogit").get<double>()
+                    && actual[i].prior==tracedCandidate.at("teacherRawPriorWeight").get<double>()
+                    && std::abs(actual[i].prior/totalWeight
+                        -tracedCandidate.at("teacherNormalizedPrior").get<double>())<1e-12,
+                    "trace logits and normalized priors reproduce legalActions exactly");
+            }
+            std::vector<std::uint32_t> expectedSources;
+            std::set<std::uint32_t> seenSources;
+            if(map) {
+                for(const auto action:primitive)
+                    if(seenSources.insert(action.bits).second) expectedSources.push_back(action.bits);
+            } else {
+                for(const auto &representative:representatives) {
+                    const auto choiceKey=canonicalOocMctsChoiceKey(representative.semantic);
+                    for(const auto &binding:bindings.bindings)
+                        if(GameAction(binding.primitiveBits).isValidAction(canonical)
+                            && canonicalOocMctsChoiceKey(binding.semantic)==choiceKey
+                            && seenSources.insert(binding.primitiveBits).second)
+                            expectedSources.push_back(binding.primitiveBits);
+                }
+            }
+            const auto &serializedSources=row.at("sourcePrimitives");
+            require(serializedSources.size()==expectedSources.size()
+                && sourceLogits.size()==expectedSources.size(),
+                "one native source logit is captured per distinct source primitive");
+            for(std::size_t i=0;i<expectedSources.size();++i) {
+                const auto bits=expectedSources[i];
+                const auto &source=serializedSources.at(i);
+                require(source.at("primitiveBits")==bits
+                    && source.at("teacherSourceLogit").get<double>()==sourceLogits.at(bits),
+                    "trace source primitive order and native logits match current V4 inputs");
+                int type,c1,c2,c3,d1,d2,d3,entityType,entityId; float price;
+                const GameAction action(bits);
+                strategicCands(canonical,action,type,c1,c2,c3,d1,d2,d3);
+                tokEntity(canonical,action,entityType,entityId,price);
+                require(source.at("actionType")==type
+                    && source.at("cats")==nlohmann::json({c1,c2,c3,d1,d2,d3})
+                    && source.at("screen")==int(canonical.screenState)
+                    && source.at("entityType")==entityType && source.at("entityId")==entityId
+                    && source.at("goldGePrice").get<float>()==price,
+                    "trace source features match strategicCands and tokEntity");
+            }
+            const auto expectedTokens=buildTokState(canonical,path);
+            const auto &serializedTokens=row.at("tokenState");
+            require(serializedTokens.at("glob").size()==TOK_NGLOB,
+                "trace captures all 42 exact state globals");
+            for(int i=0;i<TOK_NGLOB;++i)
+                require(serializedTokens.at("glob").at(i).get<float>()==expectedTokens.glob[i],
+                    "trace globals equal buildTokState");
+            for(const auto &[key,count,values,width] : std::array<std::tuple<const char *,int,const int *,int>,3>{
+                    std::tuple{"deck",expectedTokens.nDk,&expectedTokens.dk[0][0],3},
+                    std::tuple{"relic",expectedTokens.nRl,&expectedTokens.rl[0][0],2},
+                    std::tuple{"potion",expectedTokens.nPt,&expectedTokens.pt[0][0],2}}) {
+                const std::string block=key;
+                const std::string countKey=block=="deck"?"nDk":block=="relic"?"nRl":"nPt";
+                const auto &serialized=serializedTokens.at(block);
+                require(serialized.at(countKey)==count && serialized.at("tokens").size()==count,
+                    "trace token arrays use their exact valid lengths");
+                for(int i=0;i<count;++i) for(int j=0;j<width;++j)
+                    require(serialized.at("tokens").at(i).at(j)==values[i*width+j],
+                        "trace valid token values equal buildTokState");
+            }
+            std::remove(tracePath.c_str());
+            if(map) directTraceChecked=true; else compoundTraceChecked=true;
+
+            if(traceCompoundCase) {
+                const auto uniformTracePath=newTraceFile();
+                std::size_t inferenceCalls=0;
+                auto dependencies=defaultOocMctsDependencies();
+                dependencies.policyLogits=[&](const GameContext &,const PathHistory &,
+                                               const std::vector<GameAction> &actions) {
+                    ++inferenceCalls; return std::vector<double>(actions.size(),0.0);
+                };
+                OocAdapterOptions uniformOptions;
+                uniformOptions.uniformPrior=true;
+                uniformOptions.priorTracePath=uniformTracePath;
+                OocGameContextModel uniformProvider(canonical,path,{},uniformOptions,dependencies);
+                const auto uniformActions=uniformProvider.legalActions(0);
+                std::ifstream uniformInput(uniformTracePath);
+                require(static_cast<bool>(std::getline(uniformInput,traceLine)),"uniform prior trace row exists");
+                const auto uniformRow=nlohmann::json::parse(traceLine);
+                require(!inferenceCalls && uniformRow.at("sourcePriorCovered")==true
+                    && uniformRow.at("uniformPrior")==true
+                    && !uniformRow.contains("tokenState") && !uniformRow.contains("sourcePrimitives")
+                    && uniformActions.size()==actual.size(),
+                    "explicit uniform trace stays compact and does not force policy inference");
+                std::remove(uniformTracePath.c_str());
+            }
+            if(traceMapCase) {
+                const auto singletonTracePath=newTraceFile();
+                std::size_t inferenceCalls=0;
+                auto dependencies=defaultOocMctsDependencies();
+                dependencies.policyLogits=[&](const GameContext &,const PathHistory &,
+                                               const std::vector<GameAction> &actions) {
+                    ++inferenceCalls; return std::vector<double>(actions.size(),0.0);
+                };
+                OocAdapterOptions singletonOptions;
+                singletonOptions.priorTracePath=singletonTracePath;
+                singletonOptions.priorTraceRunSeed=44;
+                singletonOptions.priorTraceDecisionIndex=5;
+                singletonOptions.priorTraceSearchSeed=1234567;
+                singletonOptions.rootPrimitiveBits=std::set<std::uint32_t>{primitive.front().bits};
+                OocGameContextModel singletonProvider(canonical,path,{},singletonOptions,dependencies);
+                const auto singletonAction=singletonProvider.soleLegalAction(0);
+                sts::search::OocMctsConfig singletonConfig;
+                singletonConfig.maxDepth=1;
+                const auto singletonBypass=searchWithSoleRootShortcut(singletonProvider,
+                    singletonConfig,singletonAction,1);
+                std::ifstream singletonInput(singletonTracePath);
+                require(static_cast<bool>(std::getline(singletonInput,traceLine)),
+                    "singleton shortcut writes its prior trace row");
+                std::string singletonExtraLine;
+                const auto singletonRow=nlohmann::json::parse(traceLine);
+                require(singletonAction && singletonBypass.selectedAction==singletonAction
+                    && singletonBypass.metrics.trivialRootBypasses==1
+                    && inferenceCalls==0 && singletonRow.at("singleton")==true
+                    && singletonRow.at("candidateCount")==1
+                    && singletonRow.at("runSeed")==44 && singletonRow.at("decisionIndex")==5
+                    && singletonRow.at("searchSeed")==1234567
+                    && singletonRow.at("candidates").at(0).at("candidateId")==*singletonAction
+                    && singletonRow.at("candidates").at(0).at("searchPriorWeight")==1.0
+                    && !singletonRow.contains("tokenState") && !singletonRow.contains("sourcePrimitives"),
+                    "production singleton root shortcut emits exactly one compact unit-prior trace row");
+                require(!std::getline(singletonInput,singletonExtraLine),
+                    "singleton shortcut writes only one prior trace row");
+                singletonInput.close();
+                const auto singletonActions=singletonProvider.legalActions(0);
+                require(singletonActions.size()==1 && singletonActions.front().id==*singletonAction
+                    && singletonActions.front().prior==1.0,
+                    "legalActions reuses the singleton shortcut prior");
+                std::ifstream singletonPostInput(singletonTracePath);
+                std::string singletonPostLine;
+                singletonExtraLine.clear();
+                require(static_cast<bool>(std::getline(singletonPostInput,singletonPostLine))
+                    && nlohmann::json::parse(singletonPostLine)==singletonRow
+                    && !std::getline(singletonPostInput,singletonExtraLine),
+                    "singleton legalActions lookup does not duplicate its shortcut trace");
+                std::remove(singletonTracePath.c_str());
+            }
+        }
         OocAdapterOptions uniform; uniform.uniformPrior=true;
         OocGameContextModel uniformProvider(canonical,path,{},uniform);
         for(auto action:uniformProvider.legalActions(0)) require(action.prior==1,"explicit uniform semantic siblings");
