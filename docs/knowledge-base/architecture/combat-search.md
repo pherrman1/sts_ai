@@ -279,3 +279,65 @@ and [research/](../research/README.md). Chronological evidence is indexed by
 Use those sources for benchmark numbers, rejected variants, promotion
 decisions, and implementation history. Keep this page limited to the current
 architecture and behavior contract.
+
+
+### Final Silver root selection and narrow useless-action diagnostic
+
+`SilverSearcher::bestAction()` selects the edge with the largest
+`Edge::visitCount`. It updates only on strict `>`, so ties keep the first
+**enumerated edge**, including an all-zero tie. Mean Q, exploration/UCB score,
+prior and child-node visit count are not final-selection tie-breaks. This same
+method serves flat/adaptive/exact budgets, retained roots, singleton bypasses,
+and `NativeSilverAdvisorSession::result`. Retained edge visits participate in
+the choice; counts are not restricted to new simulations at the current root.
+UCB/Q still affect tree allocation before this final choice. There is no root
+prior in the active Silver backend.
+
+The backend maps the chosen action's card identity to the concrete live state
+with `translateAction`, including equivalent-copy mapping, and fails if it is
+illegal. The advisor performs that mapping and semantic lowering; a lowering
+failure rejects the response. These transformations express the selected
+semantic action rather than reranking candidates. The adapter's diagnostic
+Q is `child.evaluationSum / child.simulationCount`; it is a heuristic value,
+not a probability or the final selection score.
+
+`STS_SILVER_USELESS_TRACE=/path/to/fresh.jsonl` records a census after the real
+root action is selected. The initial qualified class is deliberately narrow:
+a legal energy-spending red Defend is the only card in hand, no potion remains,
+no player power/status is present, only Burning Blood (or no relic) is allowed,
+and no live enemy currently has an attack intent. The play must leave an empty
+hand and no other decision besides End Turn, increase block, spend energy,
+and leave HP, monsters and RNG unchanged immediately. Relic/power/retention/
+card-draw/attack/unforced cases fail closed.
+
+The proof executes two copied continuations: Defend then forced End Turn,
+versus End Turn immediately. Both must reach the same next-turn player
+boundary while undecided. `BattleContext::operator==` then compares all
+ordered card piles, Player/Monster fields, flags, counters and all six RNG
+streams, with only these explicit exceptions:
+
+- `energyWasted` is reported separately; it changes Silver's non-victory
+  heuristic (`-1.75 * energyWasted`, except shape encounters), not gameplay.
+- Extra execution-loop steps on the Defend branch are reported. The comparator
+  must have at least as much loop-guard headroom; roots near a guard are rejected.
+- The static benchmark `sum` sink is excluded by the existing equality operator;
+  it has no gameplay/search-selection role.
+
+Thus `provably_useless` means this **frozen concrete state and its forced
+End-Turn continuation** has an equivalent mechanical continuation (or more
+loop headroom with the comparator). It does not assert equivalence for other
+hidden RNG states, other block cards, or optional continuations. Diagnostic
+copies suspend the live knowledge observer and restore the debug pointer.
+The result is never used to choose/prune an action or change a budget.
+
+Verified rows contain seed/floor/turn/decision identity, snapshot fingerprint
+and full binary snapshot, selected/comparator actions, all root edge visits
+and child Q denominators, configured/completed simulations, and the proof's
+resource/counter differences. Snapshot round-trip must preserve the root's
+search state, ordered cards and RNG before a result is accepted. The verifier
+`bash tools/seed_guard.sh build/.../silver_useless_replay TRACE.jsonl` replays
+all verified examples (up to 128 locally). `tools/analyze_silver_useless.py`
+checks final-selection/Q accounting and groups higher-Q, near-equal-Q and
+lower-Q-but-selected cases. Its absolute 1e-6 near-Q band is a descriptive
+label, not a confidence interval. A zero census does not establish absence of
+other wasted-block classes. No policy fix follows from these diagnostics alone.

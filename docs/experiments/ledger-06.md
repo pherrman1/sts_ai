@@ -12375,3 +12375,62 @@ per-run time 38.36 s vs 39.30 s (+2.5%).
 
 Decision: adopt; no detectable gameplay difference and restores ADR-0015's
 reuse. Evidence: [native_equivalent_copy_reroot_2026-09-25](evidence/native_equivalent_copy_reroot_2026-09-25/README.md).
+
+## §358 — Silver root-selection contract and narrow useless-action census (2026-09-26)
+
+Issue #345, baseline main `b23aad9d8885c6eca332b1f5cccf3890755bbecf`.
+Code and focused arranged-root fixtures establish the final rule: maximum
+**edge visits**, strict-greater update, first enumerated edge on ties. Q,
+child-node visits, prior and UCB do not break final ties. Backend/advisor,
+flat/adaptive/exact budgets and rerooting use the same method; singleton bypass
+has only its sole edge. Card-identity translation/semantic lowering do not
+rerank actions. Current semantics are maintained in the combat-search KB.
+
+The opt-in diagnostic starts with a last-card red Defend, no potion, no player
+power/status, no relic except Burning Blood, and no incoming attack intent.
+After the selected play, End Turn must be forced. Two copied continuations
+(Defend + End Turn versus End Turn) must have identical complete next-turn
+state and RNG, except reported unused-energy score bookkeeping and at least
+as much loop-guard headroom for the comparator. Exact ordered piles and all
+Player/Monster fields are compared. Snapshot round-trip is required. This is
+**frozen concrete-state** mechanical evidence, not a public-information
+pruning rule or a claim over other random futures. Live knowledge observation
+is suspended for the copies; their results never affect action selection.
+
+[Evidence manifest](evidence/silver_useless_action_census_2026-09-26/manifest.json)
+records source/model/binary/artifact hashes and exact guarded commands. Earlier
+artifacts lack this predicate and cannot establish its rate, so the requested
+small fresh census was necessary. Fixed seeds 0–7, A0, OMP=1, flat 1k native
+fair Silver with existing boss multiplier/singleton bypass, existing native
+GBM OOC policy. Both compact-tree models loaded successfully. All 8 runs
+completed; no budget/policy/model/RNG change was tested or promoted.
+
+**Result: 0 verified selected actions / 3,726 real decisions.** Reasons were
+3,499 outside the last-Defend/no-potions class, 226 not a concrete quiet root,
+and one unqualified relic state. No root-statistic causal classification is
+possible from this zero census. The replay verifier reports `verified=0 PASS`;
+that is not evidence of replaying a positive observed example. The positive
+mechanical fixture and several trigger counterexamples are tested separately.
+The result does not establish that ordinary wasted-block behavior is absent.
+
+Focused Debug Silver and analyzer CTest passed 2/2. Native fixtures prove
+visits-versus-Q selection and tie order, one equivalent block/End-Turn state,
+rejection of Barricade/Juggernaut/Ink Bottle/incoming attack/extra card/draw
+effects, preservation of the original state, and full-fight on/off equality
+of every action, all six RNG streams and outcome/HP/turn. Three analyzer tests
+cover visit/tie classification and zero-census reporting. Release full-run
+seed-0 on/off gameplay CSV fields match; timing is excluded. No large gameplay
+benchmark, live-mod deployment, or independent scientific review was run.
+
+An implementation fact relevant to later diagnosis: Silver's non-victory
+heuristic subtracts `1.75 * energyWasted` except in shape encounters. Spending
+otherwise-useless energy changes this score bookkeeping, despite identical
+mechanical continuation. This is a possible mechanism to examine, **not a
+causal finding from this census**. The trace records that difference alongside
+root Q/visits for any future verified example.
+
+**Cheapest justified follow-up:** reproduce the excluded relic case and qualify
+its exact relic mechanics, or separately qualify a last-playable-card class
+with other unplayable cards remaining. Keep exact state/RNG equality and trigger
+counterexamples. Do not suppress Defend or change final selection from this
+evidence. No predicate broadening or policy change was implemented here.
