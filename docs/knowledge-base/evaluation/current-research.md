@@ -977,15 +977,17 @@ reran all 119 exact non-burning snapshots with the then-current native teacher
 pinned to `0eed6993999386737d87f040e38fb241623b5cf3` and one executable; all 119
 rows had exact support and mechanical-q parity. Its predeclared analyzer
 decision was `PROCEED_TO_FRESH_NATIVE_QUALIFICATION`; this is historical
-transfer evidence, not qualification. Current main later advanced to
-`ffd51f3bc43b03aa356c419567d77b1eecc636a`, including PR #327's native Silver
-equivalent-copy reroot change, which the frozen exact-root-budget setting does
-not disable. The same exact 119 states need a new current-teacher diagnostic
-before Stage C. The frozen fresh 320-source assignment remains disjoint from
-367 prior Lizard sources. Following ADR-0024, the user has authorized its local
-execution if the current-teacher Stage-B gate passes. Freeze the final
-source/build/artifact provenance and resource budget, then use the repository
-seed guard; Stage C has not started. Production remains
+transfer evidence, not qualification. Current main is
+`6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native Silver's
+equivalent-copy reroot behavior, which the frozen exact-root-budget setting
+does not disable; PR #362 changed `SilverWireState` and `SilverConversion` to
+preserve pending card queues at card-selection roots and settle Guardian Mode
+Shift before replay. The same exact 119 states need a new current-teacher
+diagnostic before Stage C. The frozen fresh 320-source assignment remains
+disjoint from 367 prior Lizard sources. Following ADR-0024, the user has
+authorized its local execution if the current-teacher Stage-B gate passes.
+Freeze the final source/build/artifact provenance and resource budget, then use
+the repository seed guard; Stage C has not started. Production remains
 `active_unqualified_lizard`. See [ledger §361](../../experiments/ledger-06.md) and the
 [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 

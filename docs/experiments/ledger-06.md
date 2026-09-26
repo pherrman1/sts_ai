@@ -12886,14 +12886,17 @@ Decision: adopt; this is a pure speedup with exact parity. Evidence:
   prior Lizard sources (assignment SHA-256
   `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`). Retry 5
   applies only to the teacher pinned to `0eed6993999386737d87f040e38fb241623b5cf3`.
-  Current main is now `ffd51f3bc43b03aa356c419567d77b1eecc636a1`; merged PR #327
-  changed native Silver equivalent-copy reroot behavior, which is not disabled
-  by the frozen exact-root-budget setting. Retry 5 is historical evidence, not
-  a current-main Stage-B pass. The same 119 states need a current-teacher
-  diagnostic before Stage C. Current main retired the GCP research workflow
-  in PR #361; under ADR-0024, the frozen 320-source Stage C can run locally
-  without a general seed ceiling after the current-teacher Stage-B gate passes.
-  The user has authorized that conditional local run. Before launch, freeze the
+  Main advanced through `ffd51f3bc43b03aa356c419567d77b1eecc636a1` to current
+  base `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native
+  Silver equivalent-copy reroot behavior, which is not disabled by the frozen
+  exact-root-budget setting. PR #362 changed `SilverWireState` and
+  `SilverConversion` to preserve pending card queues at card-selection roots
+  and settle Guardian Mode Shift before replay. Retry 5 is historical evidence,
+  not a current-main Stage-B pass. The same 119 states need a current-teacher
+  diagnostic before Stage C. Current main retired the GCP research workflow in
+  PR #361; under ADR-0024, the frozen 320-source Stage C can run locally without
+  a general seed ceiling after the current-teacher Stage-B gate passes. The
+  user has authorized that conditional local run. Before launch, freeze the
   final source/build/artifact provenance and resource budget, then use the
   repository seed guard. Stage C has not started.
 - **Decision:** Stage A remains development evidence. Retry 5 is a valid,

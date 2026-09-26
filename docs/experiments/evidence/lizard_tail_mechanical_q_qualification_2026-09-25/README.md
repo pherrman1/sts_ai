@@ -285,15 +285,18 @@ together.
 ### Later current-main drift
 
 After retry 5 completed, `main` advanced from the Stage-B run base
-`0eed6993999386737d87f040e38fb241623b5cf3` to
-`ffd51f3bc43b03aa356c419567d77b1eecc636a1`. The intervening PR #327 changed
-native Silver's equivalent-copy reroot behavior in
-`src/sim/search/NativeSilverBackend.cpp`; the exact-root-budget flag does not
-disable this path. Therefore retry 5 remains valid, provenance-pinned
-historical evidence, but its analyzer decision is not a current-main Stage-B
-pass. Before Stage C, rerun the same exact 119 selected states with provenance
-regenerated for the current native teacher. Keep the candidate, r, T2, cohort,
-and gates frozen; do not pool or replace the historical retry-5 rows.
+`0eed6993999386737d87f040e38fb241623b5cf3` through
+`ffd51f3bc43b03aa356c419567d77b1eecc636a1` to current base
+`6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native Silver's
+equivalent-copy reroot behavior in `src/sim/search/NativeSilverBackend.cpp`;
+the exact-root-budget flag does not disable that path. PR #362 also changed
+`SilverWireState` and `SilverConversion` to preserve pending card queues at
+card-selection roots and settle Guardian Mode Shift before replay. Retry 5
+remains valid, provenance-pinned historical evidence, but its analyzer decision
+is not a current-main Stage-B pass. Before Stage C, rerun the same exact 119
+selected states with provenance regenerated for the current native teacher.
+Keep the candidate, r, T2, cohort, and gates frozen; do not pool or replace the
+historical retry-5 rows.
 
 ## Stage C — fresh native qualification assignment
 
