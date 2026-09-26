@@ -3,8 +3,6 @@ set -euo pipefail
 # Seed-sweep argument positions verified against apps/one_combat.cpp mode dispatch
 # (2026-08-31). Other unlisted commands pass through without seed checking.
 
-MAX_AUTOMATED_SEEDS=128
-
 declare -A ONE_COMBAT_SEED_INDEX=(
   ["bestbench"]=3
   ["datagen3"]=2
@@ -31,7 +29,7 @@ exe_name() {
   echo "$name"
 }
 
-check_oversized() {
+check_seed_counts() {
   local argv=("$@")
   local i=0
   while [ $i -lt ${#argv[@]} ]; do
@@ -39,19 +37,22 @@ check_oversized() {
     exe="$(exe_name "${argv[$i]}")"
     if [ "$exe" = "one_combat" ]; then
       local mode="${argv[$((i + 1))]:-}"
-      local idx="${ONE_COMBAT_SEED_INDEX[$mode]:-}"
+      local idx=""
+      if [ -n "$mode" ]; then
+        idx="${ONE_COMBAT_SEED_INDEX[$mode]:-}"
+      fi
       if [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
         # Semantic label pilot is deliberately bounded independently of the
-        # general sweep ceiling, including when a research host is selected.
+        # general seed-count validation (a native mode contract).
         if [ "$mode" = "oocsemanticcapture" ] || [ "$mode" = "oocsemanticeval" ]; then
-          if ! [[ "$seeds" =~ ^[0-9]+$ ]] || [ "$seeds" -lt 1 ] || [ "$seeds" -gt 16 ]; then
+          if ! [[ "$seeds" =~ ^0*([1-9]|1[0-6])$ ]]; then
             echo "SEED_GUARD: $mode requires 1..16 source seeds/decisions" >&2
             exit 1
           fi
         fi
-        if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
-          echo "SEED_GUARD: $exe $mode requests $seeds seeds; automated maximum is $MAX_AUTOMATED_SEEDS" >&2
+        if ! [[ "$seeds" =~ ^[0-9]+$ ]] || ! [[ "$seeds" =~ [1-9] ]]; then
+          echo "SEED_GUARD: $exe requires a positive integer seed count" >&2
           exit 1
         fi
       fi
@@ -59,11 +60,14 @@ check_oversized() {
       local script="${argv[$((i + 1))]:-}"
       local script_name
       script_name="$(exe_name "$script")"
-      local idx="${PYTHON_SEED_INDEX[$script_name]:-}"
+      local idx=""
+      if [ -n "$script_name" ] && [ "${argv[$((i + 2))]:-}" != "--self-test" ]; then
+        idx="${PYTHON_SEED_INDEX[$script_name]:-}"
+      fi
       if [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
-        if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
-          echo "SEED_GUARD: $script_name requests $seeds seeds; automated maximum is $MAX_AUTOMATED_SEEDS" >&2
+        if ! [[ "$seeds" =~ ^[0-9]+$ ]] || ! [[ "$seeds" =~ [1-9] ]]; then
+          echo "SEED_GUARD: $exe requires a positive integer seed count" >&2
           exit 1
         fi
       fi
@@ -73,18 +77,15 @@ check_oversized() {
 }
 
 if [ $# -eq 0 ]; then
-  echo "Usage: tools/seed_guard.sh [--gcp-research] [guard-only] <command...>" >&2
+  echo "Usage: tools/seed_guard.sh [guard-only] <command...>" >&2
   echo "  With 'guard-only': validates seed count and exits 0/1 without running the command." >&2
   echo "  Without 'guard-only': validates seed count, then execs the command if valid." >&2
-  echo "  With '--gcp-research': use only on the designated GCP benchmark host;" >&2
-  echo "    seed parsing remains enabled but the local 128-seed ceiling is disabled." >&2
   exit 1
 fi
 
-gcp_research=false
-if [ "$1" = "--gcp-research" ]; then
-  gcp_research=true
-  shift
+if [[ "$1" == --* ]]; then
+  echo "SEED_GUARD: unknown option $1" >&2
+  exit 1
 fi
 
 guard_only=false
@@ -98,23 +99,7 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-if $gcp_research; then
-  # The unrestricted path is mechanically tied to the designated remote
-  # working copy. The launcher supplies the context marker; local invocations
-  # cannot opt into this mode merely by adding a flag.
-  research_context="${STS_GCP_RESEARCH_CONTEXT:-}"
-  research_root="/home/philippherrmann/sts_sweep"
-  if [ "$research_context" != "sts-test" ] || [ "$(hostname)" != "sts-test" ] || [ "$PWD" != "$research_root" ]; then
-    echo "SEED_GUARD: --gcp-research requires host sts-test in $research_root via the GCP launcher" >&2
-    exit 1
-  fi
-  # The GCP path keeps all argument and replay-cell parsing, but deliberately
-  # has no numeric ceiling. It is an explicit operating mode, not a local
-  # safety bypass or a replacement for experiment provenance controls.
-  MAX_AUTOMATED_SEEDS=0
-fi
-
-check_oversized "$@"
+check_seed_counts "$@"
 
 if $guard_only; then
   exit 0

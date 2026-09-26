@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -18,7 +18,7 @@ instead of resolving `git rev-parse HEAD` from the launcher's working
 directory. Git working-tree variables remain independently relevant to dirty
 state and other Git-derived diagnostics.
 
-`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; the exact-SHA GCP research manifest accepts its CLI and reserves its `.provenance.json` sidecar.
+`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; reserve its `.provenance.json` sidecar alongside fresh outputs in the frozen experiment manifest.
 
 #### RAW combat-transition producer
 
@@ -245,8 +245,10 @@ the already collected pre-parity raw corpus is retained as explicitly
 auxiliary LL analysis, but must not be relabeled or pooled as the primary new
 V_win/L corpus.
 
-The large corpus uses 128-source shards through the designated GCP research
-path. Raw shards, manifests, teacher/model identities, logs, timings and
+The corpus design uses 128-source shards; larger local collection requires
+explicit authorization and the research preflight. This shard size is an
+experiment choice, not a repository ceiling. Raw shards, manifests, teacher/model
+identities, logs, timings and
 coverage reports remain outside Git; semantic-branch, E2/E2c and other
 historical corpora are auxiliary evidence and are not silently pooled into
 this battle-start corpus.
@@ -255,8 +257,8 @@ this battle-start corpus.
 
 `tools/run_ooc_semantic_confirmation.py` is a deliberately fixed experiment
 runner for seeds 992000 through 993023: 64 independent shards, each retaining
-the native 16-source command ceiling. It runs only through the designated GCP
-launcher and preserves completed, validated shards. `freeze`, `capture`, `gate`
+the native 16-source command ceiling. It can run locally when explicitly
+authorized and preserves completed, validated shards. `freeze`, `capture`, `gate`
 and `evaluate` are separate stages. Evaluation requires every capture to
 validate, an explicit hash-bound capture-distribution review, and frozen
 analysis script hashes. The source archive, pinned dependencies, Release
@@ -332,7 +334,7 @@ tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manife
 
 tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json stageA_B.shard-00-of-24.csv 10000 4 100 B build/ooc_k_budget/experiment.json 0 24
 
-# Launch one command of each arm per index 0..23 (concurrently on the GCP host),
+# Launch one command of each arm per index 0..23 (with concurrency within the authorized local resource budget),
 # substituting the same zero-padded index in the filename and numeric argument.
 python tools/analyze_ooc_k_budget.py stageA_A.shard-*-of-24.csv stageA_B.shard-*-of-24.csv --spec build/ooc_k_budget/experiment.json --output analysis.json
 ```
