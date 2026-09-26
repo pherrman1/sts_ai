@@ -304,9 +304,6 @@ int main(int argc, char **argv) {
                 "duplicate native primitive enumeration accepted");
 
         require(argc == 2 && model->load(argv[1]), "tracked V4 model failed to load");
-        require(model->deckEncoderVersion == OocStrategicTokNet::DeckEncoderVersion::AttentionV4
-                    || model->deckEncoderVersion == OocStrategicTokNet::DeckEncoderVersion::ContextualC1,
-                "loaded V4 artifact has a supported deck encoder version");
         gc.screenState = ScreenState::REST_ROOM;
         const auto actual = scoreLiveOocV4(gc, path, *model);
         require(actual.supported, "tracked model scoring failed: " + actual.reason);
@@ -324,43 +321,6 @@ int main(int argc, char **argv) {
                 tokens.nRl, tokens.rl, tokens.nPt, tokens.pt, action.bits, cats, type,
                 int(gc.screenState), entity, entityId, goldGePrice);
             require(candidate.q == expected, "prepared scorer differs from direct V4 Q");
-        }
-        {
-            struct NeverCombatSampler final : CombatTransitionSampler {
-                CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
-                    return {false, "profile fixture stops at the map checkpoint"};
-                }
-                CombatRuntimeSample sample(const GameContext &, const CombatPredictorInputV1 &,
-                                           std::mt19937_64 &) const override {
-                    throw std::runtime_error("Big Fish checkpoint fixture unexpectedly sampled combat");
-                }
-            };
-            GameContext event(CharacterClass::IRONCLAD, 0x51514Du, 0);
-            event.screenState = ScreenState::EVENT_SCREEN;
-            event.curRoom = Room::EVENT;
-            event.curEvent = Event::BIG_FISH;
-            event.info.hpAmount0 = 20;
-            event.info.hpAmount1 = 5;
-            event.regainControlAction = [](GameContext &state) {
-                state.screenState = ScreenState::MAP_SCREEN;
-                state.regainControlAction = nullptr;
-            };
-            PathHistory eventPath;
-            eventPath.update(event);
-            auto leaf = CompactTreeNet{};
-            leaf.ok = true;
-            leaf.logistic = true;
-            leaf.baseMargin = 0;
-            leaf.nodes.push_back({-1, 0.0f, 0, 0});
-            leaf.roots = {0, 1};
-            auto sampler = std::make_shared<NeverCombatSampler>();
-            LiveOocMctsPolicy contextualMcts(*model, sampler, &leaf, &leaf);
-            contextualMcts.setSearchSeed(19);
-            const auto decision = contextualMcts.score(event, eventPath, 0);
-            require(decision.supported && decision.candidates.size() > 1
-                    && decision.valueDistribution && decision.valueDistribution->count > 0,
-                "loaded V4 artifact did not produce a current LiveOocMctsPolicy decision: "
-                    + decision.reason);
         }
         GameContext pending(CharacterClass::IRONCLAD, 991, 0);
         pending.openCardSelectScreen(CardSelectScreenType::REMOVE, 1);

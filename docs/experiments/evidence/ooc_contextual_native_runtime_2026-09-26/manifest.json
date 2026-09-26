@@ -10,7 +10,8 @@
     "one_combat_sha256": "85b8f838c9253566cc5ccde1bcef02b97c8e8c5306a0947288163cd4f76aec7d",
     "student_checkpoint_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761",
     "teacher_checkpoint_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
-    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370"
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370",
+    "contextual_artifact_retained_in_final_tree": false
   },
   "baseline_sha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
   "build": {
@@ -43,7 +44,7 @@
     "sts_run_profile_enabled": true
   },
   "evidence_sha256": {
-    "README.md": "80c6508c7f374c6dedaba49d04348b7837c2e9411d101e511f2d2f82257ea816",
+    "README.md": "b2bcd02b0ebeeb9934b7414b97e78130594d413d77c6794d8882c3f9e3707082",
     "ab_timing.json": "d0f0ef8fabe066fb8d350432d678f2d4afb6fc1db470a8323d5a0c8adddccc50",
     "current_main_native_verification.log": "ecd612af8035e8d067b5309bb91ea21da7ded11cf1b8ceae1e0ac2ec6d336386",
     "exporter_missing_checkpoint.log": "bc2fd7cc94841f50eb7dd0342064fb58b787ba43e6e7b41e2f0aa57cb3120b21",
@@ -84,7 +85,11 @@
     "release_build.log": "f57841c54768fced1b788e7743dc0e8bcef7a12d207b66e0a5c4c5436e355313",
     "release_build_pre_rebase.log": "25c09ea058b01cda24d730e82883c8ac96a69482c90a6d33a11480744419a2ce",
     "semantic_prior_result.json": "1c288f048919292fef847790e964e8a52644f356f120fdfd571949759cba0499",
-    "semantic_prior_result_pre_exact_gelu.json": "17f7f4a6815e3f1bb7ff74de2b455ac251f0f2ff4d8e730698a7117e853417c2"
+    "semantic_prior_result_pre_exact_gelu.json": "17f7f4a6815e3f1bb7ff74de2b455ac251f0f2ff4d8e730698a7117e853417c2",
+    "tanh_speed_diagnostic.json": "dabdcd751bc7350f97cc1eb3a7789820c34c50f6f14cf04195c85cebab9a662d",
+    "tanh_speed_diagnostic.md": "dac9ac195f5fab796b253ee697ba0f86931f6240e69a258ecfcd1631e440195a",
+    "tanh_speed_diagnostic.patch": "8f73d75b0f52d7a2f629a82869f948613d09bb35385d37c81c3c8ff9c8dab86c",
+    "tanh_speed_diagnostic_compile.log": "b947fbccac9e121a486b71e3520c8efbc38458f9791c95122096c68b5673aadc"
   },
   "export": {
     "checkpoint_sha256_gate": true,
@@ -128,7 +133,8 @@
   "knowledge_impact": {
     "default_promotion": false,
     "experiment_record": "docs/experiments/ledger-06.md \u00a7361",
-    "updated_maintained_contract": "docs/knowledge-base/architecture/ooc-strategic-v4.md"
+    "updated_maintained_contract": false,
+    "reason": "The C1 prototype was removed after the speed gate failed; the current OOC_STRAT_V4 architecture contract remains unchanged."
   },
   "ledger_section": 361,
   "live_origin_main_check": "git ls-remote and git fetch verified 6bae3a67c63d1f724908e2ee87b27d51e32d30a0; origin task branch absent before push",
@@ -155,18 +161,6 @@
   },
   "schema": "ooc-contextual-native-runtime-evidence-v1",
   "semantic_classification": "CONTEXTUAL_SEMANTIC_PRIOR_PASS",
-  "source_sha256": {
-    "CMakeLists.txt": "4a882b4409ce18a0b778f55277ac2ed9b4eee77323c106d8cf680ca9299ecc37",
-    "EXPERIMENTS.md": "c3474ff1abd1a611cc2c8c2d5da828c351cf722fd2f577e09d0f038130eabbb0",
-    "apps/ooc_strategic_tok_net.h": "2d585ba1ac62ae9a5d19068c593f67dd1b2a58c60a0959464aaca57d42278f74",
-    "apps/test_live_ooc_policy.cpp": "1b12973c57c809c4b30364e7e661c0d15a95a44034bd0d88747df399c5a0650b",
-    "docs/experiments/ledger-06.md": "3bd660aec5e409f7599278b3c5cc591a54eddd53af43436d732b833b6444f5ee",
-    "docs/knowledge-base/architecture/ooc-strategic-v4.md": "bc66d8395ef27ba885fbc38c2f2731d5d448a8a809e59457b0ea722ffc0be69e",
-    "export_strategic_tok.py": "1df249f16a9be6698241b98b7c21ba4cdc07c5bb3b24f025d26b9ec247e43f46",
-    "tests/ooc_contextual_native_probe.cpp": "6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7",
-    "tools/evaluate_ooc_contextual_semantic_trace.py": "288d5fb6ed19f6b5b2591ef38c80b6eb95fa4fdc8973ab5c84e8b8a3ae59c328",
-    "tools/verify_ooc_contextual_native.py": "dc98ed5d6d751d5fac120152724aa649016f41b1e9d69ca8e9af831331068512"
-  },
   "timing": {
     "calls_per_arm_per_operation": 31585,
     "format": "ooc-contextual-native-performance-v1",
@@ -453,5 +447,67 @@
     "prior_count": 6317,
     "thread_cpu_clock": "CLOCK_THREAD_CPUTIME_ID",
     "warmup_passes_per_arm": 1
+  },
+  "tested_source_revision": "71e9ace30a876a3c0ed12254615eb58814d87d14",
+  "tested_source_sha256": {
+    "CMakeLists.txt": "4a882b4409ce18a0b778f55277ac2ed9b4eee77323c106d8cf680ca9299ecc37",
+    "EXPERIMENTS.md": "c3474ff1abd1a611cc2c8c2d5da828c351cf722fd2f577e09d0f038130eabbb0",
+    "apps/ooc_strategic_tok_net.h": "2d585ba1ac62ae9a5d19068c593f67dd1b2a58c60a0959464aaca57d42278f74",
+    "apps/test_live_ooc_policy.cpp": "1b12973c57c809c4b30364e7e661c0d15a95a44034bd0d88747df399c5a0650b",
+    "docs/experiments/ledger-06.md": "3bd660aec5e409f7599278b3c5cc591a54eddd53af43436d732b833b6444f5ee",
+    "docs/knowledge-base/architecture/ooc-strategic-v4.md": "bc66d8395ef27ba885fbc38c2f2731d5d448a8a809e59457b0ea722ffc0be69e",
+    "export_strategic_tok.py": "1df249f16a9be6698241b98b7c21ba4cdc07c5bb3b24f025d26b9ec247e43f46",
+    "tests/ooc_contextual_native_probe.cpp": "6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7",
+    "tools/evaluate_ooc_contextual_semantic_trace.py": "288d5fb6ed19f6b5b2591ef38c80b6eb95fa4fdc8973ab5c84e8b8a3ae59c328",
+    "tools/verify_ooc_contextual_native.py": "dc98ed5d6d751d5fac120152724aa649016f41b1e9d69ca8e9af831331068512"
+  },
+  "final_tree_source_sha256": {
+    "EXPERIMENTS.md": "762bf6c6772e2ee16d3a3b01374643a0e77354683dddf7c7f10d1da3d760a3a6",
+    "docs/experiments/ledger-06.md": "829fdb3526c706e5b1e0e5df5fa30f2dd49827cad0b292a0a2f4454d5b492c53"
+  },
+  "review_followup": {
+    "baseline_source_revision": "71e9ace30a876a3c0ed12254615eb58814d87d14",
+    "treatment": "Temporary C1 activation replacement: exact std::erf GELU to the existing V4 tanh-GELU formula. Speed-only; the known fidelity failure was not retested or accepted.",
+    "treatment_header_sha256": "0d2d01c53d5139075dce6d4f7b591e409a41d542edbee21a14dbb3386da2b8d0",
+    "probe_sha256": "cdc9d9a018eb8ac031b8e20495e4a22ed7500a9c7bd9af62ab05786548a2e6f0",
+    "probe_source_sha256": "6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370",
+    "attention_artifact_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "contextual_weights_artifact_sha256": "6d308d5fea278ea8aecc90d1f8bf44efe839b11c57d1362020f1e47f6dba68f7",
+    "unique_prior_count": 6317,
+    "source_candidate_calls": 37985,
+    "warmup_passes_per_arm": 1,
+    "measured_passes_per_arm": 5,
+    "calls_per_arm_per_operation": 31585,
+    "thread_cpu_clock": "CLOCK_THREAD_CPUTIME_ID",
+    "omp_threads": 1,
+    "metrics": {
+      "deck": {
+        "attention_cpu_seconds": 1.3020927789999304,
+        "tanh_contextual_cpu_seconds": 1.5314043120000815,
+        "b_over_a_ratio": 1.17610997979443,
+        "reduction_percent": -17.61099797944301
+      },
+      "prepare": {
+        "attention_cpu_seconds": 2.677834997999919,
+        "tanh_contextual_cpu_seconds": 2.8845966030000305,
+        "b_over_a_ratio": 1.077212227472769,
+        "reduction_percent": -7.72122274727689
+      },
+      "prior": {
+        "attention_cpu_seconds": 4.526271675999881,
+        "tanh_contextual_cpu_seconds": 4.760330831999896,
+        "b_over_a_ratio": 1.051711247745267,
+        "reduction_percent": -5.171124774526703
+      }
+    },
+    "complete_prior_improvement_threshold_percent": 5.0,
+    "complete_prior_gate_pass": false,
+    "phase_3_eight_seed_smoke": "not run because the gate failed",
+    "accurate_approximation_implemented_or_timed": false,
+    "decision": "Stop after the speed-only tanh diagnostic and remove permanent C1 runtime, artifact, exporter/evaluator support, and tests from the final PR tree.",
+    "raw_timing": "tanh_speed_diagnostic.json",
+    "treatment_patch": "tanh_speed_diagnostic.patch",
+    "build_provenance": "tanh_speed_diagnostic_compile.log"
   }
 }

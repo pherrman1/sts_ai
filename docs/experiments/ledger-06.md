@@ -12787,26 +12787,28 @@ and ledger were unchanged by that upstream update. This result is §361; the
 upstream change did not append a ledger section. No §357–§360 question or
 default was reopened.
 
-The V4 native net now accepts both the original `OOC_STRAT_V4` attention
-artifact and `OOC_STRAT_C1`. V4 continues through the existing attention
-implementation; C1 shares the same `deckTok` tokens and changes only deck
-aggregation. Empty decks remain zero vectors. C1 reads exactly six appended
-context tensors and rejects trailing bytes. The exporter fails closed on the
+The prototype revision at commit `71e9ace30a876a3c0ed12254615eb58814d87d14`
+made the V4 native net accept both the original `OOC_STRAT_V4` attention
+artifact and `OOC_STRAT_C1`. V4 continued through the existing attention
+implementation; C1 shared the same `deckTok` tokens and changed only deck
+aggregation. Empty decks remained zero vectors. C1 read exactly six appended
+context tensors and rejected trailing bytes. The exporter failed closed on the
 frozen checkpoint SHA, deployed-teacher identity, exact 115-tensor shared
-weights, six contextual tensors, and the 3,200-parameter count. The durable
-811,976-byte C1 artifact is
-`selfplay/models/ooc_strategic_tok_contextual.native`
+weights, six contextual tensors, and the 3,200-parameter count. It produced an
+811,976-byte C1 artifact for the experiment
 (SHA-256 `6d308d5fea278ea8aecc90d1f8bf44efe839b11c57d1362020f1e47f6dba68f7`).
-The `.pt` checkpoint is not committed.
+After the performance follow-up below, the C1 artifact and implementation are
+not retained in the final PR tree. The `.pt` checkpoint was not committed.
 
 One checkpoint-contract detail differs from the handoff's requested GELU
 approximation: the frozen contextual block in `ContextualDeck` was trained and
 evaluated using PyTorch's default exact GELU, while V4's existing layers use
 the tanh approximation. A tanh C1 attempt failed the declared full-trace
 parity thresholds (deck `1.055e-3`, source logits `1.065e-3`, prior
-`1.171e-4`). C1 therefore uses exact GELU to preserve the frozen weights'
-actual behavior. No parity threshold was relaxed; the failed attempt remains
-in the evidence directory.
+`1.171e-4`). The historical prototype used exact GELU to preserve the frozen
+weights' actual behavior. No parity threshold was relaxed; the failed attempt remains
+in the evidence directory. The C1 runtime was removed after the speed-only
+follow-up below.
 
 ### Native/Python parity
 
@@ -12848,7 +12850,9 @@ promotion.
 
 ### Current-main integration diagnostics
 
-The focused Release suite passed 10/10: attention compatibility, contextual
+These checks were run against prototype commit `71e9ace30a876a3c0ed12254615eb58814d87d14`;
+the C1-specific code and tests are not part of the final PR tree. The focused
+Release suite passed 10/10: attention compatibility, contextual
 artifact load and trailing-byte rejection, profiler attribution, attention and
 contextual `LiveOocMctsPolicy`, `live_ooc_parity`, `live_ooc_protocol`,
 `ooc_mcts_adapter`, and `run_profile_analysis`. The advisor protocol test
@@ -12867,9 +12871,34 @@ Release `one_combat`, advisor, policy-test, parity-test and native-probe
 targets built successfully. GitHub Actions CI remains the draft PR's
 clean-repository gate.
 
+### Review follow-up: tanh GELU speed-only screen and disposition
+
+After review identified scalar `std::erf` as a likely hot operation, a temporary
+speed-only build replaced C1 exact GELU with the same tanh-GELU formula already
+used by V4. The source baseline was the prototype commit above; the frozen
+6,317-state trace, attention artifact, contextual weights, one warm-up pass,
+five measured alternating A/B passes, one thread, and thread CPU clock were
+held fixed. The tanh implementation was already known to fail parity, so this
+run made no fidelity claim and did not relax any gate.
+
+| Operation | Attention CPU s | Tanh C1 CPU s | B/A | Reduction |
+| --- | ---: | ---: | ---: | ---: |
+| Deck encoder | 1.302093 | 1.531404 | 1.176110 | `-17.611%` |
+| `prepareState` | 2.677835 | 2.884597 | 1.077212 | `-7.721%` |
+| Complete prior | 4.526272 | 4.760331 | 1.051711 | `-5.171%` |
+
+The predeclared complete-prior improvement threshold was `>=5%`; tanh C1 was
+5.171% slower, so the gate failed decisively. Deck-count bucket results are in
+the raw JSON; the 33–64 bucket contains only 25 measured calls. No fast GELU
+approximation was implemented or timed, and Phase 3's eight-seed live smoke was
+not run. The permanent C1 runtime, native artifact, exporter/evaluator support,
+and C1 tests were removed from the final PR tree. The exact-GELU parity and
+initial timing results above remain historical evidence for the rejected
+prototype.
+
 [Evidence packet](evidence/ooc_contextual_native_runtime_2026-09-26/README.md)
-contains frozen artifact identities, per-output parity, complete timing
-distributions and deck-count buckets, raw CTest/build/export logs, profile
-smoke artifacts, and the failed tanh attempt. Knowledge impact: native
-contextual runtime evidence added here; the contextual artifact remains
-opt-in, with no gameplay-quality or default promotion.
+contains frozen artifact identities, parity results, both exact-GELU and tanh
+speed distributions, raw build/export/test logs, profile diagnostics, and the
+failed tanh parity attempt. Knowledge impact: current native architecture stays
+at `OOC_STRAT_V4`; §361 records the rejected C1 prototype and follow-up. No
+gameplay-quality or default-promotion result exists.
