@@ -394,6 +394,24 @@ namespace sts::search {
 
         seedSearchRng(out, in.isolatedSearchSeed);
 
+        // Vanilla defers the Guardian's Mode Shift: the hit that exhausts it
+        // queues a state change, so a selection opened by the same card shows
+        // Mode Shift at or below zero and the offensive move. The engine
+        // shifts at the hit; settle it the same way, queueing the 20 block
+        // behind the interrupted card's pending work.
+        std::vector<int> shiftedGuardians;
+        for (int i = 0; i < out.monsters.monsterCount; ++i) {
+            auto &m = out.monsters.arr[i];
+            if (m.id == MonsterId::THE_GUARDIAN && !m.isDeadOrEscaped()
+                    && m.hasStatus<MonsterStatus::MODE_SHIFT>() && m.getStatus<MonsterStatus::MODE_SHIFT>() <= 0) {
+                CombatKnowledgeObserver *const observer = g_combatKnowledgeObserver;
+                g_combatKnowledgeObserver = nullptr;   // not a live event
+                m.enterGuardianDefensiveMode();
+                g_combatKnowledgeObserver = observer;
+                shiftedGuardians.push_back(i);
+            }
+        }
+
         // A selection made while a card is being played (Headbutt, Warcry,
         // Burning Pact, ...) interrupts that play: the card is in no pile and
         // the rest of its work is still queued. The wire carries no queues, so
@@ -405,6 +423,7 @@ namespace sts::search {
                 && !restoreInterruptedPlayQueues(out)) {
             out.addToBot(Actions::OnAfterCardUsed());
         }
+        for (const int idx : shiftedGuardians) out.addToBot(Actions::MonsterGainBlock(idx, 20));
         // An observed card queue is exact; it replaces the replay's.
         if (in.pendingCardQueueObserved) {
             out.cardQueue.clear();

@@ -170,6 +170,8 @@ namespace sts {
         void rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in);
         void materializePendingMove(BattleContext &bc);  // evaluates deferred rolls; no-op when none
         void cancelPendingMove();                        // a forced move override discards them
+        // The Guardian's Mode Shift trigger without its 20 block (the caller queues it).
+        void enterGuardianDefensiveMode();
 
         [[nodiscard]] int calculateDamageToPlayer(const BattleContext &bc, int baseDamage) const;
         void attackPlayerHelper(BattleContext &bc, int baseDamage, int times=1);
