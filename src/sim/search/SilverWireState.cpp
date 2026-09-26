@@ -37,6 +37,33 @@ namespace sts::search {
                     in.costForTurn, in.upgraded, in.freeToPlayOnce, in.retain};
         }
 
+        CardQueueItem fromWire(const silver_bridge::CardQueueItemWire &in) {
+            CardQueueItem out;
+            out.card = fromWire(in.card);
+            out.target = in.target;
+            out.isEndTurn = in.isEndTurn;
+            out.triggerOnUse = in.triggerOnUse;
+            out.ignoreEnergyTotal = in.ignoreEnergyTotal;
+            out.energyOnUse = in.energyOnUse;
+            out.freeToPlay = in.freeToPlay;
+            out.randomTarget = in.randomTarget;
+            out.autoplay = in.autoplay;
+            out.regretCardCount = in.regretCardCount;
+            out.purgeOnUse = in.purgeOnUse;
+            out.exhaustOnUse = in.exhaustOnUse;
+            return out;
+        }
+
+        silver_bridge::CardQueueItemWire toWire(const CardQueueItem &in) {
+            silver_bridge::CardQueueItemWire out;
+            out.card = toWire(in.card); out.target = in.target; out.isEndTurn = in.isEndTurn;
+            out.triggerOnUse = in.triggerOnUse; out.ignoreEnergyTotal = in.ignoreEnergyTotal;
+            out.energyOnUse = in.energyOnUse; out.freeToPlay = in.freeToPlay; out.randomTarget = in.randomTarget;
+            out.autoplay = in.autoplay; out.regretCardCount = in.regretCardCount;
+            out.purgeOnUse = in.purgeOnUse; out.exhaustOnUse = in.exhaustOnUse;
+            return out;
+        }
+
         std::vector<CardInstance> fromWire(const std::vector<CardWire> &in) {
             std::vector<CardInstance> out;
             out.reserve(in.size());
@@ -360,21 +387,30 @@ namespace sts::search {
         select.data0 = in.cardSelect.data0;
         select.cardSelectTask = static_cast<CardSelectTask>(in.cardSelect.task);
 
-        const auto &q = in.curCardQueueItem;
-        out.curCardQueueItem.card = fromWire(q.card);
-        out.curCardQueueItem.target = q.target;
-        out.curCardQueueItem.isEndTurn = q.isEndTurn;
-        out.curCardQueueItem.triggerOnUse = q.triggerOnUse;
-        out.curCardQueueItem.ignoreEnergyTotal = q.ignoreEnergyTotal;
-        out.curCardQueueItem.energyOnUse = q.energyOnUse;
-        out.curCardQueueItem.freeToPlay = q.freeToPlay;
-        out.curCardQueueItem.randomTarget = q.randomTarget;
-        out.curCardQueueItem.autoplay = q.autoplay;
-        out.curCardQueueItem.regretCardCount = q.regretCardCount;
-        out.curCardQueueItem.purgeOnUse = q.purgeOnUse;
-        out.curCardQueueItem.exhaustOnUse = q.exhaustOnUse;
+        out.curCardQueueItem = fromWire(in.curCardQueueItem);
+        if (in.pendingCardQueue.size() > static_cast<std::size_t>(CardQueue::capacity)) {
+            throw std::invalid_argument("Silver pending card queue exceeds capacity");
+        }
 
         seedSearchRng(out, in.isolatedSearchSeed);
+
+        // Vanilla defers the Guardian's Mode Shift: the hit that exhausts it
+        // queues a state change, so a selection opened by the same card shows
+        // Mode Shift at or below zero and the offensive move. The engine
+        // shifts at the hit; settle it the same way, queueing the 20 block
+        // behind the interrupted card's pending work.
+        std::vector<int> shiftedGuardians;
+        for (int i = 0; i < out.monsters.monsterCount; ++i) {
+            auto &m = out.monsters.arr[i];
+            if (m.id == MonsterId::THE_GUARDIAN && !m.isDeadOrEscaped()
+                    && m.hasStatus<MonsterStatus::MODE_SHIFT>() && m.getStatus<MonsterStatus::MODE_SHIFT>() <= 0) {
+                CombatKnowledgeObserver *const observer = g_combatKnowledgeObserver;
+                g_combatKnowledgeObserver = nullptr;   // not a live event
+                m.enterGuardianDefensiveMode();
+                g_combatKnowledgeObserver = observer;
+                shiftedGuardians.push_back(i);
+            }
+        }
 
         // A selection made while a card is being played (Headbutt, Warcry,
         // Burning Pact, ...) interrupts that play: the card is in no pile and
@@ -386,6 +422,12 @@ namespace sts::search {
                 && !cardIsInAnyPile(out, out.curCardQueueItem.card.uniqueId)
                 && !restoreInterruptedPlayQueues(out)) {
             out.addToBot(Actions::OnAfterCardUsed());
+        }
+        for (const int idx : shiftedGuardians) out.addToBot(Actions::MonsterGainBlock(idx, 20));
+        // An observed card queue is exact; it replaces the replay's.
+        if (in.pendingCardQueueObserved) {
+            out.cardQueue.clear();
+            for (const auto &item : in.pendingCardQueue) out.cardQueue.pushBack(fromWire(item));
         }
         return out;
     }
@@ -499,13 +541,14 @@ namespace sts::search {
         out.cardSelect.setCostToZero = true;
         out.cardSelect.selectedBits = 0;
 
-        const auto &q = state.curCardQueueItem;
-        auto &wq = out.curCardQueueItem;
-        wq.card = toWire(q.card); wq.target = q.target; wq.isEndTurn = q.isEndTurn;
-        wq.triggerOnUse = q.triggerOnUse; wq.ignoreEnergyTotal = q.ignoreEnergyTotal;
-        wq.energyOnUse = q.energyOnUse; wq.freeToPlay = q.freeToPlay; wq.randomTarget = q.randomTarget;
-        wq.autoplay = q.autoplay; wq.regretCardCount = q.regretCardCount;
-        wq.purgeOnUse = q.purgeOnUse; wq.exhaustOnUse = q.exhaustOnUse;
+        out.curCardQueueItem = toWire(state.curCardQueueItem);
+        if (state.inputState == InputState::CARD_SELECT) {
+            out.pendingCardQueueObserved = true;
+            const auto &queue = state.cardQueue;
+            for (int i = 0; i < queue.size; ++i) {
+                out.pendingCardQueue.push_back(toWire(queue.arr[(queue.frontIdx + i) % CardQueue::capacity]));
+            }
+        }
         return out;
     }
 

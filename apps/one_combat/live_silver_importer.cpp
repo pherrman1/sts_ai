@@ -19,6 +19,7 @@
 #include "combat/CardSelectInfo.h"
 #include "combat/InputState.h"
 #include "combat/CardInstance.h"
+#include "combat/CardQueue.h"
 #include "live_silver_mapping.h"
 
 namespace one_combat::advisor {
@@ -1033,34 +1034,55 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
     }
 
+    // Parses one vanilla CardQueueItem projection; an empty string means ok.
+    const auto parseQueueItem = [&](const json &item, silver_bridge::CardQueueItemWire &out) -> std::string {
+        out.card.uniqueId = -1;
+        CardRecord queueCard;
+        if (item.contains("card") && item.at("card").is_null()) {
+            // Vanilla end-turn autoplay items have no card object.  The
+            // remaining public queue flags still belong in the retained
+            // native CardQueueItem.
+        } else if (item.contains("card") && parseGenericCard(item.at("card"), queueCard)) {
+            if (isOffColorIroncladCard(queueCard.wire)) return "silver_off_color_card";
+            auto id = context.cardIds.find(queueCard.uuid);
+            if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
+            queueCard.wire.uniqueId = id->second; out.card = queueCard.wire;
+        } else if (item.contains("card")) return "silver_played_card";
+        out.target = item.value("target", 0);
+        out.isEndTurn = item.value("isEndTurn", false);
+        out.triggerOnUse = item.value("triggerOnUse", true);
+        out.ignoreEnergyTotal = item.value("ignoreEnergyTotal", false);
+        out.energyOnUse = item.value("energyOnUse", 0);
+        out.freeToPlay = item.value("freeToPlay", false);
+        out.randomTarget = item.value("randomTarget", false);
+        out.autoplay = item.value("autoplay", false);
+        out.regretCardCount = item.value("regretCardCount", 0);
+        out.purgeOnUse = item.value("purgeOnUse", false);
+        out.exhaustOnUse = item.value("exhaustOnUse", false);
+        return {};
+    };
     wire.curCardQueueItem.card.uniqueId = -1;
     const auto queueIt = combat.find("curCardQueueItem");
     if (decision > 0 && (queueIt == combat.end() || !queueIt->is_object()
         || !queueIt->contains("card") || queueIt->at("card").is_null()))
         return unsupported("silver_card_queue_item");
     if (queueIt != combat.end() && queueIt->is_object()) {
-        CardRecord queueCard;
-        if (queueIt->contains("card") && queueIt->at("card").is_null()) {
-            // Vanilla end-turn autoplay items have no card object.  The
-            // remaining public queue flags still belong in the retained
-            // native CardQueueItem.
-        } else if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
-            if (isOffColorIroncladCard(queueCard.wire)) return unsupported("silver_off_color_card");
-            auto id = context.cardIds.find(queueCard.uuid);
-            if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
-            queueCard.wire.uniqueId = id->second; wire.curCardQueueItem.card = queueCard.wire;
-        } else if (queueIt->contains("card")) return unsupported("silver_played_card");
-        wire.curCardQueueItem.target = queueIt->value("target", 0);
-        wire.curCardQueueItem.isEndTurn = queueIt->value("isEndTurn", false);
-        wire.curCardQueueItem.triggerOnUse = queueIt->value("triggerOnUse", true);
-        wire.curCardQueueItem.ignoreEnergyTotal = queueIt->value("ignoreEnergyTotal", false);
-        wire.curCardQueueItem.energyOnUse = queueIt->value("energyOnUse", 0);
-        wire.curCardQueueItem.freeToPlay = queueIt->value("freeToPlay", false);
-        wire.curCardQueueItem.randomTarget = queueIt->value("randomTarget", false);
-        wire.curCardQueueItem.autoplay = queueIt->value("autoplay", false);
-        wire.curCardQueueItem.regretCardCount = queueIt->value("regretCardCount", 0);
-        wire.curCardQueueItem.purgeOnUse = queueIt->value("purgeOnUse", false);
-        wire.curCardQueueItem.exhaustOnUse = queueIt->value("exhaustOnUse", false);
+        if (const auto reason = parseQueueItem(*queueIt, wire.curCardQueueItem); !reason.empty())
+            return unsupported(reason);
+    }
+    // Optional: the vanilla card queue still pending at a selection (Double
+    // Tap, Duplication or Necronomicon copies), front first. Without it the
+    // search root rebuilds the queue by replaying the interrupted card.
+    if (const auto pendingIt = combat.find("pendingCardQueue"); pendingIt != combat.end() && !pendingIt->is_null()) {
+        if (!pendingIt->is_array() || pendingIt->size() > static_cast<std::size_t>(sts::CardQueue::capacity))
+            return unsupported("silver_card_queue_item");
+        for (const auto &item : *pendingIt) {
+            if (!item.is_object()) return unsupported("silver_card_queue_item");
+            silver_bridge::CardQueueItemWire parsed;
+            if (const auto reason = parseQueueItem(item, parsed); !reason.empty()) return unsupported(reason);
+            wire.pendingCardQueue.push_back(parsed);
+        }
+        wire.pendingCardQueueObserved = true;
     }
     wire.potionCount = std::count_if(wire.potions.begin(), wire.potions.end(), [](auto id) {
         return id != static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT);

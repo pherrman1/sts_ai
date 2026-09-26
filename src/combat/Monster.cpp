@@ -235,6 +235,14 @@ int Monster::getStatusInternal(MonsterStatus s) const {
     }
 }
 
+void Monster::enterGuardianDefensiveMode() {
+    removeStatus<MS::MODE_SHIFT>();
+    cancelPendingMove();
+    setMove(MMID::THE_GUARDIAN_DEFENSIVE_MODE);
+    search::emitHiddenMonsterIntentMaterialized(
+        idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+}
+
 bool Monster::isAlive() const {
     return curHp > 0;
 }
@@ -545,11 +553,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (hasStatus<MS::MODE_SHIFT>()) {
                 const int newModeShiftAmount = getStatus<MS::MODE_SHIFT>() - amount;
                 if (newModeShiftAmount <= 0) {
-                    removeStatus<MS::MODE_SHIFT>();
-                    cancelPendingMove();
-                    setMove(MMID::THE_GUARDIAN_DEFENSIVE_MODE);
-                    search::emitHiddenMonsterIntentMaterialized(
-                        idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+                    enterGuardianDefensiveMode();
                     bc.addToBot( Actions::MonsterGainBlock(idx, 20) );
                 } else {
                     setStatus<MS::MODE_SHIFT>(newModeShiftAmount);

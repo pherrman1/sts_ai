@@ -105,7 +105,13 @@ producer asserts this exact tracking; the old per-turn combat-damage total is
 not an accepted approximation. The resolved `CardQueueItem` is captured by a
 prefix on `AbstractPlayer.useCard(...)`, after vanilla resolves random
 targeting and before `GameActionManager` removes the queue entry; post-update
-observation is too late to retain that public item. Boolean monster powers are
+observation is too late to retain that public item. At a card selection the
+importer also accepts an optional `combat.pendingCardQueue` array: vanilla's
+`GameActionManager.cardQueue` still pending at that point (not the item being
+played), front first, with items in the `curCardQueueItem` shape. A malformed array fails as
+`silver_card_queue_item`. The producer does not emit it yet. Without it, copies
+queued by a spent Double Tap, Duplication or Necronomicon are missing from the
+search root (issue #328). Boolean monster powers are
 presence states at the importer boundary, so a negative or sentinel Java amount
 still sets the status bit before numeric amount validation. The stable slot
 registry keeps ordinary Large Slime split children at native slots 0/1; the

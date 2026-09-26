@@ -146,11 +146,23 @@ draw, `OnAfterCardUsed`, relic triggers, Sharp Hide) is copied into the root.
 The replay hits a second time, so on the copy every monster is made
 unkillable and a target the real hit killed is revived; otherwise the replay
 could end the combat or fail to use the card before the selection opens.
-Monster reactions to the card's pre-selection hit (a Mode Shift it triggered)
-are not rebuilt: after the hit the monster looks the same whether this card
-or an earlier one triggered them. Effects the first play consumed (Vigor, the
-Pen Nib buff, Double Tap, Necronomicon) are not rolled back. When the replay
-does not reach the same selection, only `OnAfterCardUsed` is restored.
+Monster reactions to the card's pre-selection hit are not rebuilt in general:
+after the hit the monster looks the same whether this card or an earlier one
+triggered them. The Guardian's Mode Shift is the exception. Vanilla defers the
+shift to a queued state change, so at the selection the live Guardian still
+shows Mode Shift at or below zero and its offensive move (**Unverified**
+against the installed jar). The root settles such a Guardian as the engine
+does at the hit: `Monster::enterGuardianDefensiveMode`, then its 20 block
+queued behind the card's pending work. A wire built from the engine's own
+state already carries the shift but loses the queued block. Effects the first play consumed (Vigor, the
+Pen Nib buff, Double Tap, Necronomicon) are not rolled back. Vigor and the Pen
+Nib buff only change pre-selection damage, but a spent Double Tap, Duplication
+or Necronomicon queued a copy of the card that the replay cannot rebuild. The
+wire therefore carries a runtime-only `pendingCardQueue`, left out of the JSON
+schema. When it was observed it replaces the replay's card queue. The native
+conversion fills it from the live card queue at every selection, and the
+importer reads an optional `pendingCardQueue` array from the mod. When the
+replay does not reach the same selection, only `OnAfterCardUsed` is restored.
 `semanticFromSearchAction` maps search actions to the
 index-free `SemanticAction` the advisor lowers to live actions, and
 `NativeSilverAdvisorSession` keeps one searcher per combat for reroot and
@@ -279,8 +291,14 @@ invocation details from
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
 - At a mid-card selection the advisor's root lacks monster reactions to the
-  card's pre-selection effects and does not undo effects the first play
-  consumed (see Live advisor).
+  card's pre-selection effects, apart from the Guardian's deferred Mode Shift
+  (see Live advisor). Copies queued by a spent
+  Double Tap, Duplication or Necronomicon are present only when the producer
+  sends `pendingCardQueue`, which the mod does not emit yet (issue #328).
+- **Open question:** the mod emits the Guardian's `miscInfo` as the current
+  Mode Shift amount, while the engine's `miscInfo` is the shift threshold (30
+  at A0, +10 per cycle). Without the power (Defensive Mode) it omits
+  `miscInfo`, so the importer rejects the root.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 

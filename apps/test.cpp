@@ -708,6 +708,113 @@ int testSilverWireState() {
             ++failures;
         }
     };
+    {
+        // A Headbutt played under Double Tap stops at its discard selection
+        // with the Double Tap copy in the card queue. The replay cannot
+        // rebuild that copy (the status is spent), so the wire carries the
+        // observed card queue.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        for (int played = 0; played < 2;) {
+            int idx = 0;
+            while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::DEFEND_RED
+                   && bc.cards.hand[idx].id != CardId::STRIKE_RED) ++idx;
+            check(idx < bc.cards.cardsInHand, "double tap fixture: no Strike or Defend in hand");
+            if (idx == bc.cards.cardsInHand) break;
+            search::Action(search::ActionType::CARD, idx, 0).execute(bc);
+            ++played;
+        }
+        CardInstance headbutt(CardId::HEADBUTT);
+        headbutt.uniqueId = 900;
+        bc.cards.moveToHand(headbutt);
+        bc.player.buff<PlayerStatus::DOUBLE_TAP>(1);
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        check(bc.inputState == InputState::CARD_SELECT
+                  && bc.cardSelectInfo.cardSelectTask == CardSelectTask::HEADBUTT
+                  && bc.cardQueue.size == 1 && bc.cardQueue.front().purgeOnUse,
+              "double tap fixture: Headbutt did not stop at its selection with a queued copy");
+
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        const auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        check(wire.valid && wire.pendingCardQueueObserved && wire.pendingCardQueue.size() == 1,
+              "double tap fixture: wire did not observe the card queue");
+        const BattleContext root = search::battleContextFromWire(wire);
+        check(root.cardQueue == bc.cardQueue, "double tap fixture: search root lost the Double Tap copy");
+        check(root.actionQueue.size == bc.actionQueue.size, "double tap fixture: action queue differs");
+        const auto context = search::searchContextFromWire(wire);
+        check(search::battleContextFromWire(search::wireFromSearchState(root, context)).cardQueue == root.cardQueue,
+              "double tap fixture: card queue lost in the search-state wire round trip");
+        auto unobserved = wire;
+        unobserved.pendingCardQueueObserved = false;
+        unobserved.pendingCardQueue.clear();
+        check(search::battleContextFromWire(unobserved).cardQueue.size == 0,
+              "double tap fixture: without an observed queue the replay is expected to miss the copy");
+    }
+
+    {
+        // A Headbutt whose hit exhausts the Guardian's Mode Shift opens its
+        // selection with the shift applied and its 20 block queued behind the
+        // card. Vanilla defers the shift, so the live view at that selection
+        // still shows Mode Shift at or below zero and the pre-hit move; the
+        // search root built from that view must match the engine's.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::THE_GUARDIAN);
+        for (int played = 0; played < 2;) {
+            int idx = 0;
+            while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::DEFEND_RED) ++idx;
+            if (idx == bc.cards.cardsInHand) {
+                idx = 0;
+                while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::STRIKE_RED) ++idx;
+            }
+            check(idx < bc.cards.cardsInHand, "mode shift fixture: no Strike or Defend in hand");
+            if (idx == bc.cards.cardsInHand) break;
+            search::Action(search::ActionType::CARD, idx, 0).execute(bc);
+            ++played;
+        }
+        auto &guardian = bc.monsters.arr[0];
+        guardian.block = 0;
+        guardian.setStatus<MonsterStatus::MODE_SHIFT>(1);
+        const std::array<MonsterMoveId, 2> preHitMoves {guardian.moveHistory[0], guardian.moveHistory[1]};
+        CardInstance headbutt(CardId::HEADBUTT);
+        headbutt.uniqueId = 901;
+        bc.cards.moveToHand(headbutt);
+        const int hpBefore = guardian.curHp;
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        const int damage = hpBefore - bc.monsters.arr[0].curHp;
+        check(bc.inputState == InputState::CARD_SELECT && damage > 0
+                  && !bc.monsters.arr[0].hasStatus<MonsterStatus::MODE_SHIFT>()
+                  && bc.monsters.arr[0].moveHistory[0] == MonsterMoveId::THE_GUARDIAN_DEFENSIVE_MODE
+                  && bc.actionQueue.size == 2,
+              "mode shift fixture: Headbutt did not shift the Guardian at its selection");
+
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        auto &live = wire.monsters[0];
+        live.statusBits |= 1ULL << static_cast<int>(MonsterStatus::MODE_SHIFT);
+        live.uniquePower0 = 1 - damage;
+        live.moveHistory = {static_cast<std::int16_t>(preHitMoves[0]), static_cast<std::int16_t>(preHitMoves[1])};
+        const BattleContext root = search::battleContextFromWire(wire);
+        check(root.actionQueue == bc.actionQueue, "mode shift fixture: Mode Shift block not queued behind the card");
+        check(!root.monsters.arr[0].hasStatus<MonsterStatus::MODE_SHIFT>()
+                  && root.monsters.arr[0].moveHistory[0] == bc.monsters.arr[0].moveHistory[0]
+                  && root.monsters.arr[0].moveHistory[1] == bc.monsters.arr[0].moveHistory[1],
+              "mode shift fixture: deferred shift not settled");
+        BattleContext nativeRoot;
+        check(search::nativeSilverSearchRoot(bc, knowledge, nativeRoot).empty(), "mode shift fixture: native root");
+        nativeRoot.seed = root.seed;
+        std::sort(nativeRoot.cards.discardPile.begin(), nativeRoot.cards.discardPile.end());
+        std::sort(nativeRoot.cards.exhaustPile.begin(), nativeRoot.cards.exhaustPile.end());
+        check(root.equalForSearch(nativeRoot), "mode shift fixture: settled root differs from the native root");
+        auto unshifted = wire;
+        unshifted.monsters[0].uniquePower0 = 5;
+        check(search::battleContextFromWire(unshifted).monsters.arr[0].hasStatus<MonsterStatus::MODE_SHIFT>(),
+              "mode shift fixture: a positive Mode Shift must not be settled");
+    }
+
     enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE, PLAY_COUNT_RELICS };
     const MonsterEncounter encounters[] = {
         MonsterEncounter::JAW_WORM, MonsterEncounter::LOOTER, MonsterEncounter::GREMLIN_NOB,
@@ -776,8 +883,9 @@ int testSilverWireState() {
                     // work is rebuilt by replaying the card.
                     queuedRoots += nativeRoot.actionQueue.size + nativeRoot.cardQueue.size > 1;
                     // Known limit: monster reactions queued by the card's own
-                    // pre-selection hit (a Mode Shift it triggered) are not
-                    // rebuilt. Such a root may lack queued actions but must match
+                    // pre-selection hit (here a Mode Shift, already applied in
+                    // the engine state this wire comes from) are not rebuilt.
+                    // Such a root may lack queued actions but must match
                     // otherwise.
                     bool missingReactions = false;
                     if (!wireRoot.equalForSearch(nativeRoot)) {

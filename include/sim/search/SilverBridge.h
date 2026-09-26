@@ -175,6 +175,13 @@ struct BattleStateWire {
     PileWire drawPile, discardPile, exhaustPile;
     CardSelectWire cardSelect;
     CardQueueItemWire curCardQueueItem;
+    // Runtime-only, like historicalQueueItemAtSource: the card queue still
+    // pending at a card selection (a copy queued by Double Tap, Duplication or
+    // Necronomicon), front first. Absent from legacy JSON; when it was not
+    // observed the search root keeps the queue its replay of the interrupted
+    // card rebuilds.
+    bool pendingCardQueueObserved = false;
+    std::vector<CardQueueItemWire> pendingCardQueue;
     std::uint32_t miscBits = 0;
 };
 
