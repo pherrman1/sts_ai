@@ -575,6 +575,59 @@ Exact duplicate/missing primitive mappings, incomplete semantic enumeration,
 nonfinite Q, and invalid schema produce errors. Only explicit unsupported
 support/model states permit the driver's deterministic fallback.
 
+#### OOC values and sampled distributions
+
+`advisor_stdio.cpp` copies `LiveOocCandidateScore.q` into
+`candidateSummaries[].q` without rescaling. The evaluator's `valueSemantics`
+field distinguishes three cases:
+
+- `mcts_ctm`: `mean_backed_up_value_0_1`. `OocMctsPlanner.cpp` computes each
+  root action's Q as `ChanceNode.totalValue / visits` (zero when unvisited).
+  Every backed-up leaf passes a finite `[0,1]` check. Live search uses the
+  public win-value model at checkpoints and exact 0/1 for terminal loss/win;
+  this is a **mean search value**, not an established calibrated run-win
+  probability. PUCT uses this mean plus a separate exploration term; the
+  displayed value is not that selection score. Final choice uses visits,
+  then mean, then action identity. A sole legal action bypasses search and
+  displays **No samples**, not a fabricated zero-valued evaluation.
+- `v4_q`: `raw_v4_action_score`. `scoreLiveOocV4` calls
+  `OocStrategicTokNet::predictActionValue`, whose output is
+  `q2b + sum(q2w[i] * GELU(q0b[i] + q0w[i] dot state_action_encoding))`.
+  It has no sigmoid or probability bounds. `train_strategic_tok.py` defaults
+  to `STRAT_Q_TARGET=absolute`, targeting `10 * labelWon + labelHp`;
+  `fallback_centered` instead subtracts the behavior action's target.
+  The runtime header does not establish that training provenance, so the UI
+  says **V4 score**. Finite values above 1 or 100 are allowed by this raw
+  utility head and are covered by native/display fixtures; they are neither
+  percentages nor accumulated MCTS values. No clamping is applied.
+- Native pass-through choices: `forced_no_search`. Their placeholder Q is
+  not an evaluation; the UI says **Forced**.
+
+The live MCTS provider enables observational `captureValueDistribution`.
+`ooc_value_distribution_v1` retains fixed-size aggregates at the root and
+per root action, not whole leaf states: 22 counts, total count, mean, terminal
+loss count and terminal win count. Bin 0 is an exact terminal-value 0;
+models returning nonterminal 0 go in bin 1. Bins 1–20 cover `[0,.05)`,
+`[.05,.10)`, …, `[.95,1]`; bin 21 is exact terminal-value 1. Terminal
+classification comes from `terminalValue` or the explicit terminal outcome
+of a detached `evaluateLeafWithOutcome` continuation, never an inferred low
+model score. Unsupported searches discard partial distributions. The sum of
+candidate bins equals the baseline; each candidate count equals its visits.
+
+The persistent upper-left MCTS panel draws the baseline in cyan, including
+when action badges are inline. Hover adds the candidate as an amber outline
+on the same fixed buckets and 0–100% y axis. Leaving hover removes only that
+outline. Both layers use `share_of_own_samples` (each bin divided by that
+layer's count), and show count, mean and **sampled death** fraction separately.
+This fraction is terminal losses actually reached within the search horizon,
+not predicted eventual mortality; reused particles and adaptive search visits
+are correlated samples, not an unbiased policy-risk estimate. Visits, visit
+share and policy prior remain separate labels. The parser checks the schema,
+counts, means and root/candidate conservation before displaying an OK result.
+A zero-simulation shortcut has empty bins and null mean. The aggregates can
+later gain explicit sampled-consequence fields without retaining leaf states.
+Capture does not alter selection, RNG draws or the planner's objective.
+
 `STS_LIVE_OOC_MODEL` (inspector property `oocModel`) loads the native V4 model
 once in the advisor process. The stable runtime manifest records its SHA-256;
 the evaluator also reports a content fingerprint. Missing/incompatible OOC
