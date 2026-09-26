@@ -140,9 +140,13 @@ work is rebuilt by replaying the card on a copy of the root: the card goes
 back to hand with its cost refunded and the per-turn play counts and Ink
 Bottle/Nunchaku/Pen Nib counters rolled back, and the part of the queue the
 play produced that is still unrun when the selection opens (Burning Pact's
-draw, `OnAfterCardUsed`, relic triggers) is copied into the root. Monster
-reactions queued while the card's own pre-selection effects ran (Sharp Hide,
-a Mode Shift) are not rebuilt, and effects the first play consumed (Vigor, the
+draw, `OnAfterCardUsed`, relic triggers, Sharp Hide) is copied into the root.
+The replay hits a second time, so on the copy every monster is made
+unkillable and a target the real hit killed is revived; otherwise the replay
+could end the combat or fail to use the card before the selection opens.
+Monster reactions to the card's pre-selection hit (a Mode Shift it triggered)
+are not rebuilt: after the hit the monster looks the same whether this card
+or an earlier one triggered them. Effects the first play consumed (Vigor, the
 Pen Nib buff, Double Tap, Necronomicon) are not rolled back. When the replay
 does not reach the same selection, only `OnAfterCardUsed` is restored.
 `semanticFromSearchAction` maps search actions to the

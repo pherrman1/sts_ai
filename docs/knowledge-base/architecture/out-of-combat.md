@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -452,6 +452,20 @@ variation tests; this does not establish policy quality or full belief-model qua
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested.
+
+`STS_OOC_MCTS_PRIOR_TRACE=<jsonl path>` is a separate, strictly opt-in capture
+of the authoritative current `OocGameContextModel` prior. It appends one
+schema-versioned row per state on that state's first `legalActions()` prior
+build, including root and hypothetical search states. Prior-covered
+non-singleton rows retain the exact `buildTokStatePure` token values, each
+distinct `strategicCands`/`tokEntity` source input and native source logit, the
+ordered semantic candidates and their unchanged `priorSourceGroups`, grouped
+candidate logits, raw planner weights and normalized diagnostic prior.
+Singleton, uncovered and explicitly uniform rows stay compact and do not
+force skipped policy inference. The trace checks source coverage, grouped-logit
+reconstruction, candidate order, finite values and exact raw planner weights
+before writing. It does not create a second search or change search RNG,
+candidate ordering or returned priors; use a fresh path for each capture.
 
 `STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
 the full-run trace boundary. Defaults remain off. Thread-local CPU scopes

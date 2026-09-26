@@ -1,0 +1,318 @@
+{
+  "architecture": {
+    "activation": "GELU",
+    "fc1": "64->32",
+    "fc2": "32->32",
+    "pool": "valid-token mean; zero for empty deck",
+    "residual": "LayerNorm(t_i + delta_i), eps=1e-5",
+    "teacher_tensor_equality": "all exact",
+    "teacher_tensors": 115,
+    "trainable_parameters": 3200,
+    "trainable_tensors": [
+      "contextDeck.fc1.bias",
+      "contextDeck.fc1.weight",
+      "contextDeck.fc2.bias",
+      "contextDeck.fc2.weight",
+      "contextDeck.norm.bias",
+      "contextDeck.norm.weight"
+    ]
+  },
+  "artifacts": {
+    "frozen_student_checkpoint": "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/retrained-contextual-student/contextual_student_frozen.pt",
+    "frozen_student_checkpoint_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761",
+    "plain_mean_targets_sha256": "57fe91797d144532bba0f55f684d6bc36769665809cf4fb1e408f8adce528bea",
+    "state_cache": "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/retrained-contextual-student/tierb_state_raw-to-grouped-v2.f16",
+    "state_cache_layout": "raw-to-grouped-v2",
+    "state_cache_sha256": "91792d7f97d0de1d34ecf64f4daa6a5808532cdea0d23aca407e730430c802aa",
+    "teacher_targets_sha256": "3511d5deee11db14dbabb5daafa24b02c1392c40132407ac9ec834f09a78e7b2",
+    "training_script_sha256": "d468c27a85e9c8eca2a79f94888874c87832f0f4b85b36aa30778ee41243d0bb"
+  },
+  "capture_or_gameplay_seeds_collected": 0,
+  "final_validation_representation": {
+    "cosine_mean": 0.9475304484367371,
+    "cosine_median": 0.956957221031189,
+    "cosine_p10": 0.9006454944610596,
+    "mae": 0.1509152203798294,
+    "mse": 0.03996153175830841,
+    "student_teacher_norm_ratio_mean": 0.9468026161193848
+  },
+  "input_hashes": {
+    "corpus_sha256": "c428f229bdf7cfe070ff06fd1664978e6e49bbde872d5929ef4fa50f56ba008b",
+    "native_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "split_sha256": "0efe5b56e1f87c0642827c14e55790db517b55820d54620edd32420012e8b67b",
+    "teacher_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370"
+  },
+  "plain_mean_validation": {
+    "cosine_mean": 0.468720406293869,
+    "cosine_median": 0.4603976905345917,
+    "cosine_p10": 0.24865899980068207,
+    "mae": 0.4902648329734802,
+    "mse": 0.3581544756889343,
+    "student_teacher_norm_ratio_mean": 0.7939164042472839
+  },
+  "python_native_parity": {
+    "authoritative_captured_native_trace_preflight": {
+      "artifacts": {
+        "native_teacher_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+        "preflight_script_sha256": "56c253ca36ee7dc73038b3f0ac32dbacb5da0396470aeb86c348a03abef3761e",
+        "teacher_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+        "trace_decompressed_sha256": "9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1",
+        "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370"
+      },
+      "population": {
+        "decompressed_trace_sha256": "9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1",
+        "eligible_trace_occurrences": 11474,
+        "max_captured_final_prior_formula_error": 5.551115123125783e-16,
+        "max_captured_raw_weight_formula_error": 1.1102230246251565e-16,
+        "shop_trace_occurrences": 1402,
+        "singleton_trace_records": 12308,
+        "source_prior_uncovered_records": 6905,
+        "trace_records": 24959,
+        "uniform_prior_records": 6905,
+        "unique_canonical_priors": 6317,
+        "unique_shop_priors": 1002
+      },
+      "python_native_teacher_preflight": {
+        "captured_teacher_source_rows": 37985,
+        "max_abs_python_vs_captured_candidate_logit": 2.6702880859375e-05,
+        "max_abs_python_vs_captured_native_source_logit": 2.6702880859375e-05,
+        "max_abs_python_vs_captured_raw_semantic_weight": 6.185886067266999e-06,
+        "max_abs_rebuilt_teacher_final_prior": 1.9898164111964434e-06,
+        "source_argmax_parity": 1.0,
+        "source_primitives_argmax_parity_count": 6317,
+        "unique_prior_count": 6317
+      },
+      "result": "PASS",
+      "version": "ooc-contextual-python-teacher-trace-preflight-v1"
+    },
+    "check": "32 repository Numpy/native-mirror versus PyTorch cases",
+    "command": [
+      "/usr/bin/python3",
+      "/home/philippherrmann/.codex/worktrees/c99d/sts_lightspeed/export_strategic_tok.py",
+      "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/deployed_teacher_reconstructed.pt",
+      "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/retrained-contextual-student/teacher_python_native_parity.native"
+    ],
+    "numeric_errors": {
+      "max_logit_error": 1.06e-05,
+      "max_q_error": 1.28e-05,
+      "max_value_error": 8.19e-06
+    },
+    "reexport_byte_identical_to_tracked_native": true,
+    "reexported_native_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "returncode": 0,
+    "stdout_sha256": "4c240c413f6b145eb0d51715efbd5c0f60ac326aefcb5a98bca8fa90d68077c4",
+    "teacher_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+    "trace_preflight_command": [
+      "/usr/bin/python3",
+      "/home/philippherrmann/.codex/worktrees/c99d/sts_lightspeed/tools/evaluate_ooc_contextual_semantic_trace.py",
+      "--teacher-only",
+      "--trace",
+      "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/trace_mainline.jsonl.gz",
+      "--teacher",
+      "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/deployed_teacher_reconstructed.pt",
+      "--out",
+      "/home/philippherrmann/Documents/Codex/2026-09-25/ooc-contextual-semantic-prior/retrained-contextual-student/teacher_trace_parity.json"
+    ],
+    "trace_preflight_stdout_sha256": "d17657ff7563778f1b2d808e3f5d4b917208a3878f112c080a8782d560a94411",
+    "tracked_native_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+  },
+  "recipe": {
+    "batch_groups": 4096,
+    "end_to_end_finetuning": false,
+    "lr": 0.001,
+    "max_epochs": 30,
+    "optimizer": "AdamW",
+    "policy_or_q_loss": false,
+    "representation_mse_only": true,
+    "seed": 0,
+    "weight_decay": 0.0001
+  },
+  "split": {
+    "groups_total": 723851,
+    "groups_train": 578391,
+    "groups_validation": 145460,
+    "train_seeds": 3720,
+    "validation_seeds": 930
+  },
+  "training_history": [
+    {
+      "epoch": 1,
+      "train_representation_mse": 0.15288930358909633,
+      "validation": {
+        "cosine_mean": 0.8818056583404541,
+        "cosine_median": 0.8950507640838623,
+        "cosine_p10": 0.7933441400527954,
+        "mae": 0.24575935304164886,
+        "mse": 0.1012752428650856,
+        "student_teacher_norm_ratio_mean": 0.7041223049163818
+      }
+    },
+    {
+      "epoch": 2,
+      "train_representation_mse": 0.07737813472487544
+    },
+    {
+      "epoch": 3,
+      "train_representation_mse": 0.059595095043533185
+    },
+    {
+      "epoch": 4,
+      "train_representation_mse": 0.05496452099924026
+    },
+    {
+      "epoch": 5,
+      "train_representation_mse": 0.052596727276994035,
+      "validation": {
+        "cosine_mean": 0.9310222864151001,
+        "cosine_median": 0.9436091780662537,
+        "cosine_p10": 0.8680197596549988,
+        "mae": 0.1735459268093109,
+        "mse": 0.05248691514134407,
+        "student_teacher_norm_ratio_mean": 0.9199870228767395
+      }
+    },
+    {
+      "epoch": 6,
+      "train_representation_mse": 0.0509531565742491
+    },
+    {
+      "epoch": 7,
+      "train_representation_mse": 0.049670649920390886
+    },
+    {
+      "epoch": 8,
+      "train_representation_mse": 0.04861666942281568
+    },
+    {
+      "epoch": 9,
+      "train_representation_mse": 0.047705781232653566
+    },
+    {
+      "epoch": 10,
+      "train_representation_mse": 0.046887391309673815,
+      "validation": {
+        "cosine_mean": 0.9377477169036865,
+        "cosine_median": 0.9490074515342712,
+        "cosine_p10": 0.8797577023506165,
+        "mae": 0.16489477455615997,
+        "mse": 0.04748474434018135,
+        "student_teacher_norm_ratio_mean": 0.9297327399253845
+      }
+    },
+    {
+      "epoch": 11,
+      "train_representation_mse": 0.04621438741970858
+    },
+    {
+      "epoch": 12,
+      "train_representation_mse": 0.04553147993958149
+    },
+    {
+      "epoch": 13,
+      "train_representation_mse": 0.044944340505418526
+    },
+    {
+      "epoch": 14,
+      "train_representation_mse": 0.044391311718109956
+    },
+    {
+      "epoch": 15,
+      "train_representation_mse": 0.04387378589413423,
+      "validation": {
+        "cosine_mean": 0.9417277574539185,
+        "cosine_median": 0.9522661566734314,
+        "cosine_p10": 0.8876622319221497,
+        "mae": 0.15975356101989746,
+        "mse": 0.04452802240848541,
+        "student_teacher_norm_ratio_mean": 0.9360784292221069
+      }
+    },
+    {
+      "epoch": 16,
+      "train_representation_mse": 0.043408516446454125
+    },
+    {
+      "epoch": 17,
+      "train_representation_mse": 0.04292975531991468
+    },
+    {
+      "epoch": 18,
+      "train_representation_mse": 0.04250232018793346
+    },
+    {
+      "epoch": 19,
+      "train_representation_mse": 0.04209421250102352
+    },
+    {
+      "epoch": 20,
+      "train_representation_mse": 0.04169908978893637,
+      "validation": {
+        "cosine_mean": 0.9444531798362732,
+        "cosine_median": 0.9545050859451294,
+        "cosine_p10": 0.8943191766738892,
+        "mae": 0.15581537783145905,
+        "mse": 0.04245062172412872,
+        "student_teacher_norm_ratio_mean": 0.9413307309150696
+      }
+    },
+    {
+      "epoch": 21,
+      "train_representation_mse": 0.041368163870192785
+    },
+    {
+      "epoch": 22,
+      "train_representation_mse": 0.041012072673164486
+    },
+    {
+      "epoch": 23,
+      "train_representation_mse": 0.04070351221773721
+    },
+    {
+      "epoch": 24,
+      "train_representation_mse": 0.040403169545160586
+    },
+    {
+      "epoch": 25,
+      "train_representation_mse": 0.0401314675375274,
+      "validation": {
+        "cosine_mean": 0.9461746215820312,
+        "cosine_median": 0.9558993577957153,
+        "cosine_p10": 0.897916316986084,
+        "mae": 0.15301889181137085,
+        "mse": 0.04103650152683258,
+        "student_teacher_norm_ratio_mean": 0.9456608295440674
+      }
+    },
+    {
+      "epoch": 26,
+      "train_representation_mse": 0.03983229736577989
+    },
+    {
+      "epoch": 27,
+      "train_representation_mse": 0.03960254222550287
+    },
+    {
+      "epoch": 28,
+      "train_representation_mse": 0.03934610175431857
+    },
+    {
+      "epoch": 29,
+      "train_representation_mse": 0.039141032922599406
+    },
+    {
+      "epoch": 30,
+      "train_representation_mse": 0.03893455992128267,
+      "validation": {
+        "cosine_mean": 0.9475304484367371,
+        "cosine_median": 0.956957221031189,
+        "cosine_p10": 0.9006454944610596,
+        "mae": 0.1509152203798294,
+        "mse": 0.03996153175830841,
+        "student_teacher_norm_ratio_mean": 0.9468026161193848
+      }
+    }
+  ],
+  "training_wall_seconds": 83.3235699160141,
+  "version": "contextual-deck-repr-deployed42-retrained-v1"
+}
