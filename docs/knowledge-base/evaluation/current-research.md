@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-25 for the OOC contextual semantic-prior offline qualification,
+Last verified: 2026-09-26 for the closed OOC MCTS reroot-opportunity measurement;
+2026-09-25 for the OOC contextual semantic-prior offline qualification,
 the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
 review of the merged DeepSets Brew-fallback quality-confirmation preparation;
@@ -33,6 +34,19 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## OOC MCTS tree reuse / rerooting (#339) — closed after measurement
+
+**Closed (2026-09-26, §361).** On the representative 2-seed OOC 2048 workload:
+- Full-state (RNG-counter) identity never matches the previous search's tree.
+- Public-state identity matches 58% of searched decisions, but only within
+  noncombat stretches.
+- Rerooting to the single matched particle keeps a median of 30 visits, 0.90%
+  of searched simulations. Direct selected-branch rerooting is not implemented.
+
+Merging publicly identical particles (upper bound 26.6%) would be a separate,
+semantics-changing proposal; it is an open question.
+[Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
 
 ## OOC MCTS contextual deck-prior offline qualification
 
