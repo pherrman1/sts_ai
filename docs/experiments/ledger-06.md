@@ -12434,3 +12434,35 @@ its exact relic mechanics, or separately qualify a last-playable-card class
 with other unplayable cards remaining. Keep exact state/RNG equality and trigger
 counterexamples. Do not suppress Defend or change final selection from this
 evidence. No predicate broadening or policy change was implemented here.
+
+### Expanded fixed census: seeds 8–39
+
+The user requested more seeds without broadening the predicate. The fixed
+extension uses 32 new A0 seeds, **8–39**, at the same flat-1k native fair Silver
+configuration and native GBM OOC policy. The preserved executable is byte-for-
+byte identical to the original eight-seed census, built from
+`10c1a4b79268ddef5e78ccf6d9ffe23434b4b3db`; source and model hashes match the
+original manifest. OMP remains 1. Output metadata verifies the exact seed
+block, ascension, executable source, backend and budget mode.
+
+[Expanded evidence](evidence/silver_useless_action_census_2026-09-26/expanded_seeds_8_39/manifest.json)
+contains the commands, CSV/meta/logs, compressed trace, separate and combined
+summaries, replay result, parity check and hashes. All 32 requested runs
+completed, producing **15,107 additional decisions and zero verified selected
+actions**. Exclusions were 13,931 outside the last-Defend/no-potions class and
+1,176 not concrete quiet roots.
+
+The original artifact hashes and disjoint seed sets were verified before
+combining. Across **40 seeds (0–39), there are 18,833 decisions and zero verified
+cases**: 17,430 outside the narrow class, 1,402 not concrete quiet roots, and
+one unqualified relic state. This does not establish that ordinary wasted
+block is absent; it provides no positive snapshot and no Q/visit causal
+classification. The unchanged predicate was deliberately not expanded after
+seeing zero cases.
+
+Seed 8's matching trace-off run agrees on all nine gameplay CSV fields,
+excluding timing. The replay verifier reports `verified=0 PASS`, explicitly
+not a positive replay result. Three analyzer tests pass; compressed trace
+reanalysis and all packaged artifact hashes agree. No runtime, policy, model,
+budget or maintained diagnostic semantics changed. Knowledge impact: bounded
+census evidence expanded in this ledger; no default or quality promotion.
