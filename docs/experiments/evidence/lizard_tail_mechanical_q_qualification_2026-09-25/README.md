@@ -437,9 +437,10 @@ records the main advance and supersedes the prior operational plan without
 changing the candidate, source assignment, selection rules, simulation budget,
 worker topology, or gates. The corresponding provenance record is
 `stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
-`58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). At this
-update the refreshed collector has not restarted: no current-main candidate
-shards have completed. It will collect all 320 assigned sources under the
-single frozen executable, with eight subprocesses and one OpenMP thread each.
-Only a fresh native qualification can qualify the candidate. Production remains
-`active_unqualified_lizard`.
+`58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
+refreshed collector started at `2026-09-26T20:47:18Z`; by `20:49:49Z`, the
+durable current-main index recorded 36/320 completed sources. The collector
+reports eight subprocess workers, each with one OpenMP thread, and source logs
+record `OMP_NUM_THREADS=1`. Target selection, pair generation, and qualification
+analysis have not started. Only a fresh native qualification can qualify the
+candidate. Production remains `active_unqualified_lizard`.

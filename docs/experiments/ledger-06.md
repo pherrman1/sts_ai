@@ -13004,9 +13004,12 @@ Evidence:
   `2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2`) binds
   the refreshed teacher/binary and records why the eight old-executable shards
   are not reused. The source assignment, candidate, selection, worker topology,
-  and qualification gates are unchanged. The updated preflight passes. At this
-  ledger update the refreshed run has not restarted; no current-main candidate
-  shard has completed. Only Stage C can qualify the candidate.
+  and qualification gates are unchanged. The updated preflight passes. The
+  refreshed collector started at `2026-09-26T20:47:18Z`; by `20:49:49Z`, its
+  durable index recorded 36/320 current-main sources. It reports eight
+  subprocess workers with one OpenMP thread each. Target selection, pair
+  collection, and qualification analysis have not started. Only Stage C can
+  qualify the candidate.
 - **Decision:** Stage A remains development evidence. Retry 6 passed the
   current-main transfer proceed gate and authorizes the already-frozen Stage C
   run, but neither Stage A nor B qualifies the candidate. The Stage-C

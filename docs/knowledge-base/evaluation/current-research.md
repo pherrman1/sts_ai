@@ -1034,8 +1034,11 @@ changing the candidate, assignment, selection rule, worker topology, or gates.
 Its attempt record is
 `stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
 `58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
-corrected current-main run has not restarted yet; no current-main candidate
-shard has completed. Production remains `active_unqualified_lizard`. See [ledger
+corrected current-main candidate collection started at `2026-09-26T20:47:18Z`;
+36/320 source shards were durably indexed by `20:49:49Z`. The collector reports
+eight subprocesses with one OpenMP thread each. Pair generation and
+qualification analysis have not started. Production remains
+`active_unqualified_lizard`. See [ledger
 §362](../../experiments/ledger-06.md) and the [mechanical-q evidence
 packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
