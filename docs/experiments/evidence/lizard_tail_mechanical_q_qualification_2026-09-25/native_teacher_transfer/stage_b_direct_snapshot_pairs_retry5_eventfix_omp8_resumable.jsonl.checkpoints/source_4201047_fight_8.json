@@ -1,0 +1,1232 @@
+{
+  "ascension": 0,
+  "collectorGitSha": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+  "fightIdx": 8,
+  "pairRow": {
+    "activeTail": {
+      "act": 1,
+      "captureCount": 1,
+      "captureStatus": "exactly_one",
+      "encounter": 20,
+      "fightIdx": 8,
+      "floor": 16,
+      "predictorInput": {
+        "cards": [
+          {
+            "bottleBinding": -1,
+            "cardId": 25,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 57,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 94,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 154,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 179,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 198,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 208,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 222,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 289,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 301,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          }
+        ],
+        "fieldSchemaHash": "1a92692da9247008",
+        "globals": {
+          "act": 1,
+          "ascension": 0,
+          "characterClass": 0,
+          "curHp": 80,
+          "encounter": 20,
+          "floor": 16,
+          "gold": 133,
+          "isBurningElite": false,
+          "lastRoom": 1,
+          "maxHp": 80,
+          "potionCapacity": 3,
+          "potionCount": 3,
+          "potionKeepValue": 4.0,
+          "roomClass": 6
+        },
+        "potions": [
+          {
+            "potionId": 38,
+            "slot": 0
+          },
+          {
+            "potionId": 39,
+            "slot": 1
+          },
+          {
+            "potionId": 4,
+            "slot": 2
+          },
+          {
+            "potionId": 1,
+            "slot": 3
+          },
+          {
+            "potionId": 1,
+            "slot": 4
+          }
+        ],
+        "relics": [
+          {
+            "data": 0,
+            "orderIndex": 0,
+            "relicId": 53
+          },
+          {
+            "data": 0,
+            "orderIndex": 1,
+            "relicId": 141
+          },
+          {
+            "data": 0,
+            "orderIndex": 2,
+            "relicId": 173
+          },
+          {
+            "data": 0,
+            "orderIndex": 3,
+            "relicId": 10
+          },
+          {
+            "data": 1,
+            "orderIndex": 4,
+            "relicId": 35
+          }
+        ],
+        "schemaVersion": "combat_predictor_input_v1"
+      },
+      "quarantineReason": "",
+      "roomClass": "BOSS",
+      "rowSchemaVersion": "combat_transition_row_v2",
+      "runValid": true,
+      "schemaVersion": "combat_transition_v1",
+      "silverActionTraceBits": [
+        536870912,
+        9,
+        0,
+        536870914,
+        1073741825,
+        1,
+        2,
+        1073741826,
+        3,
+        2147483648,
+        0,
+        2147483648,
+        2147483648,
+        3,
+        2,
+        2147483648,
+        0,
+        1073741831,
+        0,
+        2147483648,
+        4,
+        0,
+        2,
+        1073741825,
+        2147483648,
+        0
+      ],
+      "silverFirstActionBits": 536870912,
+      "sourceSeed": 4201047,
+      "teacherId": "silver-ordinary-fair-exact10k-native-5aeb7256-omp8-eventfix",
+      "transition": {
+        "combatOutcome": 1,
+        "post": {
+          "bottleIdxs": [
+            -1,
+            -1,
+            -1
+          ],
+          "cardTypeCounts": [
+            9,
+            9,
+            1,
+            0
+          ],
+          "combatRng": [
+            {
+              "counter": 7,
+              "seed0": 12290352310181127068,
+              "seed1": 7408030301174367172
+            },
+            {
+              "counter": 13,
+              "seed0": 17427877516066042870,
+              "seed1": 3442283544475558562
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            },
+            {
+              "counter": 1,
+              "seed0": 15685498330622025512,
+              "seed1": 2972456508132820440
+            },
+            {
+              "counter": 46,
+              "seed0": 12934743841235068419,
+              "seed1": 7864973577777386312
+            },
+            {
+              "counter": 3,
+              "seed0": 2360592877180870827,
+              "seed1": 12718241142621617163
+            }
+          ],
+          "curHp": 6,
+          "deck": [
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 25,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 289,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 222,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 94,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 301,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 154,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 179,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 57,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 208,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 198,
+              "misc": 0,
+              "upgraded": false
+            }
+          ],
+          "gold": 133,
+          "maxHp": 80,
+          "potionCapacity": 3,
+          "potionCount": 1,
+          "potions": [
+            1,
+            39,
+            1,
+            1,
+            1
+          ],
+          "relicBits": [
+            9007233614480384,
+            0,
+            35184372097024
+          ],
+          "relics": [
+            {
+              "data": 0,
+              "id": 53
+            },
+            {
+              "data": 0,
+              "id": 141
+            },
+            {
+              "data": 0,
+              "id": 173
+            },
+            {
+              "data": 0,
+              "id": 10
+            },
+            {
+              "data": 1,
+              "id": 35
+            }
+          ],
+          "smokeBombUsed": false,
+          "stolenGold": 0,
+          "transformableCount": 19,
+          "upgradeableCount": 15
+        },
+        "pre": {
+          "bottleIdxs": [
+            -1,
+            -1,
+            -1
+          ],
+          "cardTypeCounts": [
+            9,
+            9,
+            1,
+            0
+          ],
+          "combatRng": [
+            {
+              "counter": 7,
+              "seed0": 6918587667891011096,
+              "seed1": 6626732873453006762
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            },
+            {
+              "counter": 1,
+              "seed0": 5475649404355070233,
+              "seed1": 10384727707933315155
+            },
+            {
+              "counter": 46,
+              "seed0": 12934743841235068419,
+              "seed1": 7864973577777386312
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            }
+          ],
+          "curHp": 80,
+          "deck": [
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 25,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 289,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 222,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 94,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 301,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 154,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 179,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 57,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 208,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 198,
+              "misc": 0,
+              "upgraded": false
+            }
+          ],
+          "gold": 133,
+          "maxHp": 80,
+          "potionCapacity": 3,
+          "potionCount": 3,
+          "potions": [
+            38,
+            39,
+            4,
+            1,
+            1
+          ],
+          "relicBits": [
+            9007233614480384,
+            0,
+            35184372097024
+          ],
+          "relics": [
+            {
+              "data": 0,
+              "id": 53
+            },
+            {
+              "data": 0,
+              "id": 141
+            },
+            {
+              "data": 0,
+              "id": 173
+            },
+            {
+              "data": 0,
+              "id": 10
+            },
+            {
+              "data": 1,
+              "id": 35
+            }
+          ],
+          "smokeBombUsed": false,
+          "stolenGold": 0,
+          "transformableCount": 19,
+          "upgradeableCount": 15
+        },
+        "rawGameOutcome": 1,
+        "schemaVersion": "combat_transition_v1"
+      }
+    },
+    "noTail": {
+      "act": 1,
+      "captureCount": 1,
+      "captureStatus": "exactly_one",
+      "encounter": 20,
+      "fightIdx": 8,
+      "floor": 16,
+      "predictorInput": {
+        "cards": [
+          {
+            "bottleBinding": -1,
+            "cardId": 25,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 57,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 94,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 104,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 154,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 179,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 198,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 208,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 222,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 289,
+            "misc": 0,
+            "upgraded": true
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 301,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          },
+          {
+            "bottleBinding": -1,
+            "cardId": 321,
+            "misc": 0,
+            "upgraded": false
+          }
+        ],
+        "fieldSchemaHash": "1a92692da9247008",
+        "globals": {
+          "act": 1,
+          "ascension": 0,
+          "characterClass": 0,
+          "curHp": 80,
+          "encounter": 20,
+          "floor": 16,
+          "gold": 133,
+          "isBurningElite": false,
+          "lastRoom": 1,
+          "maxHp": 80,
+          "potionCapacity": 3,
+          "potionCount": 3,
+          "potionKeepValue": 4.0,
+          "roomClass": 6
+        },
+        "potions": [
+          {
+            "potionId": 38,
+            "slot": 0
+          },
+          {
+            "potionId": 39,
+            "slot": 1
+          },
+          {
+            "potionId": 4,
+            "slot": 2
+          },
+          {
+            "potionId": 1,
+            "slot": 3
+          },
+          {
+            "potionId": 1,
+            "slot": 4
+          }
+        ],
+        "relics": [
+          {
+            "data": 0,
+            "orderIndex": 0,
+            "relicId": 53
+          },
+          {
+            "data": 0,
+            "orderIndex": 1,
+            "relicId": 141
+          },
+          {
+            "data": 0,
+            "orderIndex": 2,
+            "relicId": 173
+          },
+          {
+            "data": 0,
+            "orderIndex": 3,
+            "relicId": 10
+          }
+        ],
+        "schemaVersion": "combat_predictor_input_v1"
+      },
+      "quarantineReason": "",
+      "roomClass": "BOSS",
+      "rowSchemaVersion": "combat_transition_row_v2",
+      "runValid": true,
+      "schemaVersion": "combat_transition_v1",
+      "silverActionTraceBits": [
+        536870912,
+        9,
+        3,
+        4,
+        1073741825,
+        0,
+        2147483648,
+        4,
+        0,
+        1,
+        2147483648,
+        536870914,
+        1073741825,
+        536870913,
+        0,
+        4,
+        2,
+        0,
+        0,
+        2147483648,
+        1,
+        1,
+        1073741831,
+        2147483648,
+        3,
+        4,
+        0,
+        2147483648,
+        3,
+        3,
+        2147483648,
+        0
+      ],
+      "silverFirstActionBits": 536870912,
+      "sourceSeed": 4201047,
+      "teacherId": "silver-ordinary-fair-exact10k-native-5aeb7256-omp8-eventfix",
+      "transition": {
+        "combatOutcome": 1,
+        "post": {
+          "bottleIdxs": [
+            -1,
+            -1,
+            -1
+          ],
+          "cardTypeCounts": [
+            9,
+            9,
+            1,
+            0
+          ],
+          "combatRng": [
+            {
+              "counter": 7,
+              "seed0": 12290352310181127068,
+              "seed1": 7408030301174367172
+            },
+            {
+              "counter": 13,
+              "seed0": 17427877516066042870,
+              "seed1": 3442283544475558562
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            },
+            {
+              "counter": 1,
+              "seed0": 15685498330622025512,
+              "seed1": 2972456508132820440
+            },
+            {
+              "counter": 46,
+              "seed0": 12934743841235068419,
+              "seed1": 7864973577777386312
+            },
+            {
+              "counter": 3,
+              "seed0": 2360592877180870827,
+              "seed1": 12718241142621617163
+            }
+          ],
+          "curHp": 32,
+          "deck": [
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 25,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 289,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 222,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 94,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 301,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 154,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 179,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 57,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 208,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 198,
+              "misc": 0,
+              "upgraded": false
+            }
+          ],
+          "gold": 133,
+          "maxHp": 80,
+          "potionCapacity": 3,
+          "potionCount": 0,
+          "potions": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "relicBits": [
+            9007199254742016,
+            0,
+            35184372097024
+          ],
+          "relics": [
+            {
+              "data": 0,
+              "id": 53
+            },
+            {
+              "data": 0,
+              "id": 141
+            },
+            {
+              "data": 0,
+              "id": 173
+            },
+            {
+              "data": 0,
+              "id": 10
+            }
+          ],
+          "smokeBombUsed": false,
+          "stolenGold": 0,
+          "transformableCount": 19,
+          "upgradeableCount": 15
+        },
+        "pre": {
+          "bottleIdxs": [
+            -1,
+            -1,
+            -1
+          ],
+          "cardTypeCounts": [
+            9,
+            9,
+            1,
+            0
+          ],
+          "combatRng": [
+            {
+              "counter": 7,
+              "seed0": 6918587667891011096,
+              "seed1": 6626732873453006762
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            },
+            {
+              "counter": 1,
+              "seed0": 5475649404355070233,
+              "seed1": 10384727707933315155
+            },
+            {
+              "counter": 46,
+              "seed0": 12934743841235068419,
+              "seed1": 7864973577777386312
+            },
+            {
+              "counter": 0,
+              "seed0": 5871461650048458781,
+              "seed1": 15685498330622025512
+            }
+          ],
+          "curHp": 80,
+          "deck": [
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 321,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 104,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 25,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 289,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 222,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 94,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 301,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 154,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 179,
+              "misc": 0,
+              "upgraded": false
+            },
+            {
+              "id": 57,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 208,
+              "misc": 0,
+              "upgraded": true
+            },
+            {
+              "id": 198,
+              "misc": 0,
+              "upgraded": false
+            }
+          ],
+          "gold": 133,
+          "maxHp": 80,
+          "potionCapacity": 3,
+          "potionCount": 3,
+          "potions": [
+            38,
+            39,
+            4,
+            1,
+            1
+          ],
+          "relicBits": [
+            9007199254742016,
+            0,
+            35184372097024
+          ],
+          "relics": [
+            {
+              "data": 0,
+              "id": 53
+            },
+            {
+              "data": 0,
+              "id": 141
+            },
+            {
+              "data": 0,
+              "id": 173
+            },
+            {
+              "data": 0,
+              "id": 10
+            }
+          ],
+          "smokeBombUsed": false,
+          "stolenGold": 0,
+          "transformableCount": 19,
+          "upgradeableCount": 15
+        },
+        "rawGameOutcome": 1,
+        "schemaVersion": "combat_transition_v1"
+      }
+    },
+    "pair": {
+      "act": 1,
+      "activeTailOutcome": 1,
+      "activeTailPostData": 1,
+      "eligibleBattlesInSource": 0,
+      "encounter": 20,
+      "fightIdx": 8,
+      "floor": 16,
+      "noTailOutcome": 1,
+      "replayMode": "direct_archived_snapshot",
+      "roomClass": "BOSS",
+      "selectedEligibleOrdinal": 0,
+      "sourceSeed": 4201047,
+      "sourceStateFingerprint": "{\"bottleIdxs\":[-1,-1,-1],\"cardTypeCounts\":[9,9,1,0],\"combatRng\":[{\"counter\":7,\"seed0\":6918587667891011096,\"seed1\":6626732873453006762},{\"counter\":0,\"seed0\":5871461650048458781,\"seed1\":15685498330622025512},{\"counter\":0,\"seed0\":5871461650048458781,\"seed1\":15685498330622025512},{\"counter\":1,\"seed0\":5475649404355070233,\"seed1\":10384727707933315155},{\"counter\":46,\"seed0\":12934743841235068419,\"seed1\":7864973577777386312},{\"counter\":0,\"seed0\":5871461650048458781,\"seed1\":15685498330622025512}],\"curHp\":80,\"deck\":[{\"id\":321,\"misc\":0,\"upgraded\":false},{\"id\":321,\"misc\":0,\"upgraded\":false},{\"id\":321,\"misc\":0,\"upgraded\":false},{\"id\":321,\"misc\":0,\"upgraded\":false},{\"id\":321,\"misc\":0,\"upgraded\":false},{\"id\":104,\"misc\":0,\"upgraded\":false},{\"id\":104,\"misc\":0,\"upgraded\":false},{\"id\":104,\"misc\":0,\"upgraded\":false},{\"id\":104,\"misc\":0,\"upgraded\":false},{\"id\":25,\"misc\":0,\"upgraded\":false},{\"id\":289,\"misc\":0,\"upgraded\":true},{\"id\":222,\"misc\":0,\"upgraded\":false},{\"id\":94,\"misc\":0,\"upgraded\":true},{\"id\":301,\"misc\":0,\"upgraded\":false},{\"id\":154,\"misc\":0,\"upgraded\":false},{\"id\":179,\"misc\":0,\"upgraded\":false},{\"id\":57,\"misc\":0,\"upgraded\":true},{\"id\":208,\"misc\":0,\"upgraded\":true},{\"id\":198,\"misc\":0,\"upgraded\":false}],\"gold\":133,\"maxHp\":80,\"potionCapacity\":3,\"potionCount\":3,\"potions\":[38,39,4,1,1],\"relicBits\":[9007199254742016,0,35184372097024],\"relics\":[{\"data\":0,\"id\":53},{\"data\":0,\"id\":141},{\"data\":0,\"id\":173},{\"data\":0,\"id\":10}],\"smokeBombUsed\":false,\"stolenGold\":0,\"transformableCount\":19,\"upgradeableCount\":15}",
+      "targetPDeath": 0.3591383695602417,
+      "targetRiskBand": "HARD96_QR_MAX_P_LOSS_CONSUMED"
+    }
+  },
+  "pairRowSha256": "20a414024b6e7aa9e3225483bb37c3ea9ffbd17241dd05f3d80f98837fda51ff",
+  "planSha256": "7cc41d8588db740c80f4a79f3c29c610bfceed1e805b211596a9aa61b77d5fb9",
+  "producerExecutableSha256": "a055597f5c62cf29f6dd1912990400040044604be1b110f4119f43ee1e7ace16",
+  "schema": "lizard_direct_snapshot_pair_checkpoint_v1",
+  "simulationBudget": 10000,
+  "sourceSeed": 4201047,
+  "teacherManifestSha256": "e81dc96da406b661b7b465a8790c63d8ff92516802b71ce1a4744a9b1e337be8"
+}
