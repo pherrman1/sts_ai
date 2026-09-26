@@ -1097,3 +1097,58 @@ flowchart LR
 - `docs/knowledge-base/evaluation/current-research.md` — current research routing
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`
+
+
+### Real-run floor and decision profile
+
+Set `STS_RUN_PROFILE=/path/to/fresh.jsonl` for default-off observational
+profiling in `runFullRunOOC`. An empty/unset path creates no output and performs
+no floor clock reads or branching-histogram updates. Rows are serialized across
+workers and write failures are explicit. This does not enable OOC MCTS, change
+its budgets/model/RNG, or force full-budget execution. Unlike the older
+`STS_OOC_MCTS_CHECKPOINT_TRACE` shadow diagnostic, it records checkpoints inside
+the existing search with no second search. It preserves singleton bypasses and
+all configured early stopping. If both diagnostics are explicitly enabled,
+the older shadow still runs and its extra work is included in floor totals.
+
+A floor interval starts when the real driver first observes `(act, floor)` and
+ends when it first observes the next pair, or when the run stops/aborts. All
+screens on the same floor share one row. Map-choice/entry work is charged to
+the floor being left. Metadata names the floor being measured, including room,
+coordinates and all observed combat encounters. Outcomes distinguish advancing,
+death, victory, requested act-stop victory and abort. Fallbacks/support aborts
+are separate counts, not floor outcomes. Exceptions emit a partial floor row
+with the error; completed-component counters on that row do not account for
+unfinished work and must not be treated as a complete profile.
+
+Floor rows report wall and thread CPU time, real-combat lifecycle time,
+combat decisions/simulations, and differences of the existing run-level OOC
+search/transition/particle/leaf/CTM counters. Real-combat timing includes state
+conversion and backend overhead, not just Silver tree search. OOC time includes
+search preparation and result construction. Component times are nested inside
+floor totals; do not add totals and components. I/O and profile overhead can
+remain in floor totals, so this is not an isolated speed benchmark. Final floor
+emission and post-run reporting are outside the sum of floor intervals.
+
+Each actual OOC search records root actions (prior, visits, mean Q), selected
+semantic key, execution/fallback status, configured/completed simulations,
+exact expanded-node legal-action histogram, sampling work and depth. The
+histogram counts each expansion, including repeated sampled decision states;
+terminal/semantic boundary states do not expand and are excluded. Histograms
+sum to the existing coarse expansion census. Singleton roots have zero
+expansions/simulations. Root checkpoints at 128/256/512/1024/2048/4096 appear
+only when reached. A support-aborted search retains partial expansion and
+checkpoint evidence but has no final action statistics.
+
+`python3 tools/analyze_run_profile.py PROFILE.jsonl --output SUMMARY.json`
+validates floor/decision accounting and reports exact branching shares, slow
+floors by wall/CPU, room mean/median cost, top-5/top-10 CPU share, and root
+stability cross-tabs. It derives visit/Q gaps, prior entropy and a strict visit
+winner lock using `leader_visits - runner_up_visits > remaining_budget`.
+That mathematical visit lock is not a guarantee against later support failure.
+
+`b_stable_observed` is the earliest recorded checkpoint after which the winner
+never changes through the **observed** final search. `b_stable_full_budget` is
+null for early-stopped, singleton, boundary or aborted searches. Full-budget
+cross-tabs use only uncensored searches and can be selection-biased. Neither
+statistic qualifies an adaptive stopping policy on independent future searches.

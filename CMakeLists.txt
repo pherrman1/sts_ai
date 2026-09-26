@@ -274,6 +274,7 @@ set_tests_properties(ooc_mcts PROPERTIES LABELS "core")
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
 # receive CTest entries separately). bash -n only parses, never executes.
+add_test(NAME run_profile_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/tests/test_run_profile.py)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
 add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <optional>
+#include <map>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -57,6 +58,7 @@ struct OocMctsConfig {
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
     // Diagnostic only: retain a bounded view of the completed search tree.
+    bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;
     std::size_t treeNodeCap = 4096;
 };
@@ -91,6 +93,7 @@ struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;
     // Number of expanded decision nodes grouped by legal-action cardinality.
     // Kept as search diagnostics; these counters do not affect selection.
+    std::map<std::size_t, std::uint64_t> expandedActionHistogram;
     std::uint64_t expandedNodes0Actions = 0, expandedNodes1Action = 0;
     std::uint64_t expandedNodes2Actions = 0, expandedNodes3PlusActions = 0;
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;

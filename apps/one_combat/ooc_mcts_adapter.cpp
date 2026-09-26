@@ -1,3 +1,4 @@
+#include "run_profile.h"
 #include "ooc_mcts_adapter.h"
 #include "ooc_profile.h"
 #include "combat_transition_runtime.h"
@@ -1042,7 +1043,16 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     config.seed = oocMctsSearchSeed(seed, index);
     config.captureTree = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
-    auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
+    const auto sole = model.soleLegalAction(0);
+    if (!runProfilePath().empty()) {
+        config.profileSearch = true;
+        // Preserve the singleton shortcut and every existing stopping rule.
+        if (!sole) {
+            for (const std::uint64_t checkpoint : {128, 256, 512, 1024, 2048, 4096})
+                if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
+        }
+    }
+    auto result = searchWithSoleRootShortcut(model, config, sole, simulations);
     if (config.captureTree) {
         if (result.tree) {
             annotateOocTree(model, *result.tree);
@@ -1137,8 +1147,42 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     std::optional<OocGameContextModel::Candidate> selected;
     const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation, &selected);
     profile.stop();
-    metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
-    metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
+    const double wallElapsed = std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
+    const double cpuElapsed = threadCpuSeconds()-cpuStart;
+    metrics.wallSeconds += wallElapsed;
+    metrics.cpuSeconds += cpuElapsed;
+    nlohmann::json decisionProfile;
+    if (!runProfilePath().empty()) {
+        using nlohmann::json;
+        const auto actionsJson = [](const std::vector<sts::search::OocRootActionStats> &actions) {
+            auto output = json::array();
+            for (const auto &a : actions)
+                output.push_back({{"id", a.id}, {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+            return output;
+        };
+        auto checkpoints = json::array();
+        for (const auto &c : result.rootCheckpoints)
+            checkpoints.push_back({{"simulations", c.simulations}, {"actions", actionsJson(c.actions)}});
+        const auto &m = result.metrics;
+        decisionProfile = {{"schema", 1}, {"kind", "ooc_decision"}, {"seed", std::to_string(seed)},
+            {"decision", index}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"room", sts::roomStrings[int(gc.curRoom)]},
+            {"wall_seconds", wallElapsed}, {"thread_cpu_seconds", cpuElapsed},
+            {"configured_simulations", liveSimulations}, {"completed_simulations", m.simulations},
+            {"attempts", m.simulationAttempts}, {"singleton_bypass", m.trivialRootBypasses},
+            {"aborted", result.aborted}, {"abort_reason", result.abortReason},
+            {"selected_action", result.selectedAction ? json(*result.selectedAction) : json(nullptr)},
+            {"selected_key", selected ? selected->key : ""},
+            {"selection_rule", liveConfig.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
+            {"actions", actionsJson(result.rootActions)}, {"checkpoints", checkpoints},
+            {"expanded_action_histogram", runProfileHistogram(m.expandedActionHistogram)},
+            {"expanded_nodes", m.expandedNodes0Actions + m.expandedNodes1Action
+                + m.expandedNodes2Actions + m.expandedNodes3PlusActions},
+            {"outcome_particles", m.outcomeParticles}, {"transition_samples", m.transitionSamples},
+            {"ctm_samples", samples}, {"leaf_evaluations", m.leafEvaluations},
+            {"max_depth", m.maxDepthReached}, {"depth_sum", m.depthSum},
+            {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20}};
+    }
     if (!liveCheckpointTrace.empty()) {
         ImaginedScope scope;
         OocGameContextModel shadow(gc, path, liveSampler, liveOptions);
@@ -1193,6 +1237,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     auto &m = metrics.search;
     m.outcomeParticles+=result.metrics.outcomeParticles; m.decisionNodes+=result.metrics.decisionNodes;
     m.chanceNodes+=result.metrics.chanceNodes; m.particleRevisits+=result.metrics.particleRevisits;
+    for (const auto &[actions, count] : result.metrics.expandedActionHistogram)
+        m.expandedActionHistogram[actions] += count;
     m.expandedNodes0Actions+=result.metrics.expandedNodes0Actions;
     m.expandedNodes1Action+=result.metrics.expandedNodes1Action;
     m.expandedNodes2Actions+=result.metrics.expandedNodes2Actions;
@@ -1213,6 +1259,11 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto rootScreen = gc.screenState;
     const auto rootSelector = gc.info.selectScreenType;
     const auto traceDecision = [&](bool executed, const std::string &reason) {
+        if (!decisionProfile.is_null()) {
+            decisionProfile["executed"] = executed;
+            decisionProfile["execution_reason"] = reason;
+            writeRunProfile(decisionProfile);
+        }
         if (liveTrace.empty()) return;
         std::lock_guard<std::mutex> lock(liveTraceMutex);
         std::ofstream out(liveTrace + ".actions.jsonl", std::ios::app);
@@ -1345,6 +1396,7 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
 #include "../../tests/data/ooc_v4_policy_fixture.h"
 namespace one_combat {
 void oocMctsAdapterSelfTest() {
+    runFloorProfileSelfTest();
     using namespace sts;
     using namespace sts::search;
     {
@@ -2919,6 +2971,14 @@ void oocMctsAdapterSelfTest() {
         && soleBypass.rootActions.size()==1 && soleBypass.rootActions[0].prior==1.0
         && soleBypass.rootActions[0].visits==0,
         "sole map root bypasses unsupported hypothetical continuation");
+    auto profileConfig = liveConfig;
+    profileConfig.profileSearch = true;
+    const auto profiledSole = searchWithSoleRootShortcut(soleModel, profileConfig, soleAction, 128);
+    require(profiledSole.selectedAction == soleBypass.selectedAction
+        && profiledSole.metrics.trivialRootBypasses == 1
+        && profiledSole.metrics.simulationAttempts == 0
+        && profiledSole.metrics.expandedActionHistogram.empty(),
+        "branch profiling preserves sole-root bypass and zero work");
     auto soleWithPotions=detachedCopy(sole);
     soleWithPotions.potions[0]=Potion::FIRE_POTION;
     soleWithPotions.potionCount=1;
