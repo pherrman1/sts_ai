@@ -48,6 +48,7 @@ diagnostics.
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |
 | `STS_SILVER_TELEMETRY` | Accepted only as `0`; Silver telemetry was removed | `0` | `main` |
+| `STS_SILVER_USELESS_TRACE` | Default-off JSONL census for the qualified last-card Defend/forced-End-Turn equivalence class, with root statistics and replay snapshots. Observes concrete RNG after selection; never a search/pruning input. | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_TREE_PROFILE` | Opt-in append-only JSONL path for real backend decisions: endpoint classes, tree/rollout depths, context, budgets and reuse. Use a fresh file per run; an unwritable path fails explicitly. See [combat search](../architecture/combat-search.md#silver-tree-profile). | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_DEBUG_TREE` | Default-off debug capture: attach the reachable native Silver search graph (node states, visits/Qs, semantic edge labels, chance metadata) to each advisor combat response. Does not alter search or ordinary responses when unset. | unset/off | `apps/one_combat/advisor_stdio.cpp`; `apps/one_combat/native_silver_advisor.cpp` |
 | `STS_SILVER_DEBUG_TREE_NODE_CAP` | Maximum native graph nodes included by `STS_SILVER_DEBUG_TREE`; oversized captures are marked truncated. | `8192` (maximum `100000`) | `apps/one_combat/advisor_stdio.cpp` |

@@ -5,6 +5,7 @@
 #include <memory>
 #include <fstream>
 #include <mutex>
+#include <cmath>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -16,6 +17,7 @@
 #include "sim/search/SearchRng.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverUselessAction.h"
 
 namespace sts::search {
 
@@ -34,6 +36,56 @@ namespace sts::search {
             double topGap = kDefaultTopGap;
         };
         Options g_options;
+        std::string g_uselessTrace;
+        std::mutex g_uselessMutex;
+
+        void traceUselessAction(const GameContext &gc, const BattleContext &bc, int decision,
+                               const SilverSearcher &searcher, const Action &chosen,
+                               std::int64_t configured, std::int64_t completed) {
+            if (g_uselessTrace.empty()) return;
+            const auto proof = proveSilverUselessBlock(bc, chosen);
+            using nlohmann::json;
+            json row = {{"schema", 1}, {"seed", std::to_string(gc.seed)}, {"act", gc.act},
+                {"floor", bc.floorNum}, {"encounter", monsterEncounterEnumNames[int(bc.encounter)]},
+                {"turn", bc.turn}, {"decision", decision}, {"chosen_action", chosen.bits},
+                {"configured_simulations", configured}, {"completed_simulations", completed},
+                {"provably_useless", proof.verified}, {"reason", proof.reason},
+                {"proof_scope", "frozen_concrete_state_forced_end_turn"},
+                {"selection_rule", "most_edge_visits_first_enumerated_tie"}};
+            if (proof.verified) {
+                json actions = json::array();
+                double chosenQ = 0, comparatorQ = 0;
+                bool hasChosenQ = false, hasComparatorQ = false;
+                for (const auto &edge : searcher.rootNode().edges) {
+                    const auto live = SilverSearcher::translateAction(edge.action, searcher.rootSearchState(), bc);
+                    const bool hasQ = edge.node && edge.node->simulationCount > 0;
+                    const double q = hasQ ? edge.node->evaluationSum / edge.node->simulationCount : 0;
+                    actions.push_back({{"action", live.bits}, {"edge_visits", edge.visitCount},
+                        {"child_visits", edge.node ? edge.node->simulationCount : 0},
+                        {"q", hasQ ? json(q) : json(nullptr)}, {"prior", nullptr}});
+                    if (live.bits == chosen.bits) { chosenQ = q; hasChosenQ = hasQ; }
+                    if (live.getActionType() == ActionType::END_TURN) { comparatorQ = q; hasComparatorQ = hasQ; }
+                }
+                row["root_actions"] = actions;
+                row["comparator_action"] = Action(ActionType::END_TURN).bits;
+                row["snapshot"] = proof.snapshot;
+                std::uint64_t fingerprint = 14695981039346656037ULL;
+                for (const auto byte : proof.snapshot) { fingerprint ^= byte; fingerprint *= 1099511628211ULL; }
+                row["snapshot_fnv1a64"] = std::to_string(fingerprint);
+                row["root_loop_count"] = bc.loopCount;
+                row["root_energy_wasted"] = bc.energyWasted;
+                row["energy_spent"] = proof.energySpent; row["block_gained"] = proof.blockGained;
+                row["energy_wasted_delta"] = proof.energyWasteDelta;
+                row["extra_loop_steps"] = proof.extraLoopSteps;
+                row["classification"] = !hasChosenQ || !hasComparatorQ ? "missing_q"
+                    : std::abs(chosenQ - comparatorQ) <= 1e-6 ? "near_equal_q"
+                    : chosenQ > comparatorQ ? "higher_q_for_useless_action" : "lower_q_but_selected";
+                row["q_difference"] = hasChosenQ && hasComparatorQ ? json(chosenQ - comparatorQ) : json(nullptr);
+            }
+            std::lock_guard<std::mutex> lock(g_uselessMutex);
+            std::ofstream out(g_uselessTrace, std::ios::app);
+            if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("cannot write STS_SILVER_USELESS_TRACE");
+        }
         std::ofstream g_treeProfile;
         std::mutex g_treeProfileMutex;
 
@@ -239,6 +291,8 @@ namespace sts::search {
                 if (!action.isValidAction(bc)) {
                     fail(gc, bc, "selected action is not valid on the live state");
                 }
+                traceUselessAction(gc, bc, decision, *searcher, action,
+                    g_options.adaptive ? kAdaptiveTotal : flatBudget, simulations);
                 if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
                     inheritedVisits, configured, skipSearch, action.bits);
                 agent.takeAction(bc, action);
@@ -302,6 +356,12 @@ namespace sts::search {
     }
 
     void installNativeSilverBackend() {
+        g_uselessTrace.clear();
+        if (const char *path = std::getenv("STS_SILVER_USELESS_TRACE"); path && *path) {
+            g_uselessTrace = path;
+            std::ofstream out(g_uselessTrace, std::ios::app);
+            if (!out) throw std::runtime_error("cannot open STS_SILVER_USELESS_TRACE");
+        }
         // Installation happens before worker threads start. An empty/unset path
         // leaves diagnostics completely disabled; use a fresh path for each run.
         if (g_treeProfile.is_open()) g_treeProfile.close();

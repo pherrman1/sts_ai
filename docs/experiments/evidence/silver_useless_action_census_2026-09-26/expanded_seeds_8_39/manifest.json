@@ -1,0 +1,542 @@
+{
+  "source_sha": "10c1a4b79268ddef5e78ccf6d9ffe23434b4b3db",
+  "source_sha256": {
+    "include/sim/search/SilverUselessAction.h": "baf9722e20e972bebb6ea5bb1f841976ea2739c4f59b47b4c4a0c0fedb4d0553",
+    "src/sim/search/SilverUselessAction.cpp": "f628ded11a9630e402b89fc78cb9aa7017f4a877a3374ae16904f947ddd72cad",
+    "src/sim/search/NativeSilverBackend.cpp": "7b4cf058894812737f11d6a952ebb0a034b4d023cddf427de78e933ea6007176",
+    "apps/one_combat.cpp": "5e1691186fde4425b5293d0389612e12f50b7d2727f45e4d5be9ad74175e688f",
+    "apps/silver_useless_replay.cpp": "c312c4b7c394d35f94c3e4341146d535e9213e26dea12cee1aee157b79a32a27",
+    "tools/analyze_silver_useless.py": "2f07ce6db9ed5dc0eb23f7341248a32cc1301572d708e9eb70def9ce0a7ddb97"
+  },
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "binary_sha256": "41e92363b087e698b015d02749edabdbe237da90d98a7447c4dcb7651e626165",
+  "cohort": {
+    "new_seeds": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39
+    ],
+    "previous_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "ascension": 0,
+    "silver_simulations": 1000,
+    "regime": "native fair Silver flat budget; existing boss multiplier/singleton bypass; native GBM OOC"
+  },
+  "decision_rule": "Report the fixed 32-seed census regardless of positive/zero result; no predicate broadening or policy change; combine with original eight only after disjoint-seed and original-artifact validation.",
+  "commands": [
+    {
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/issue345/frozen_one_combat",
+        "bestbench",
+        "1000",
+        "32",
+        "0",
+        "8",
+        "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue345-extra/on.csv"
+      ],
+      "env": {
+        "OMP_NUM_THREADS": "1",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_USELESS_TRACE": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue345-extra/trace.jsonl"
+      },
+      "log": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue345-extra/on.log"
+    },
+    {
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/issue345/frozen_one_combat",
+        "bestbench",
+        "1000",
+        "1",
+        "0",
+        "8",
+        "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue345-extra/off.csv"
+      ],
+      "env": {
+        "OMP_NUM_THREADS": "1",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_USELESS_TRACE": ""
+      },
+      "log": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue345-extra/off.log"
+    },
+    {
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/linux-gcc-debug-ccache/silver_useless_replay",
+        "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue345-extra/trace.jsonl"
+      ]
+    }
+  ],
+  "new_results": [
+    {
+      "seed": "8",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "37",
+      "maxHp": "50",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "8.51874"
+    },
+    {
+      "seed": "9",
+      "won": "0",
+      "floor": "50",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "90",
+      "fightsLost": "1",
+      "deathCombat": "30",
+      "deathEncounter": "54",
+      "sec": "5.96967"
+    },
+    {
+      "seed": "10",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "42",
+      "maxHp": "90",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "7.16672"
+    },
+    {
+      "seed": "11",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "21",
+      "maxHp": "92",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "6.0879"
+    },
+    {
+      "seed": "12",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "52",
+      "maxHp": "80",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "3.8924"
+    },
+    {
+      "seed": "13",
+      "won": "0",
+      "floor": "42",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "97",
+      "fightsLost": "1",
+      "deathCombat": "25",
+      "deathEncounter": "47",
+      "sec": "5.58632"
+    },
+    {
+      "seed": "14",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "60",
+      "maxHp": "85",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "10.1055"
+    },
+    {
+      "seed": "15",
+      "won": "0",
+      "floor": "50",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "39",
+      "fightsLost": "1",
+      "deathCombat": "21",
+      "deathEncounter": "55",
+      "sec": "4.41843"
+    },
+    {
+      "seed": "16",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "38",
+      "maxHp": "91",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.53382"
+    },
+    {
+      "seed": "17",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "32",
+      "maxHp": "95",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "14.86"
+    },
+    {
+      "seed": "18",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "43",
+      "maxHp": "80",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "7.51984"
+    },
+    {
+      "seed": "19",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "51",
+      "maxHp": "85",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "6.64462"
+    },
+    {
+      "seed": "20",
+      "won": "0",
+      "floor": "50",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "40",
+      "fightsLost": "1",
+      "deathCombat": "29",
+      "deathEncounter": "53",
+      "sec": "4.42145"
+    },
+    {
+      "seed": "21",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "41",
+      "maxHp": "80",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "3.49752"
+    },
+    {
+      "seed": "22",
+      "won": "0",
+      "floor": "33",
+      "act": "2",
+      "hpEnd": "0",
+      "maxHp": "80",
+      "fightsLost": "1",
+      "deathCombat": "13",
+      "deathEncounter": "38",
+      "sec": "2.5551"
+    },
+    {
+      "seed": "23",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "15",
+      "maxHp": "83",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "3.96144"
+    },
+    {
+      "seed": "24",
+      "won": "0",
+      "floor": "33",
+      "act": "2",
+      "hpEnd": "0",
+      "maxHp": "85",
+      "fightsLost": "1",
+      "deathCombat": "19",
+      "deathEncounter": "38",
+      "sec": "2.54182"
+    },
+    {
+      "seed": "25",
+      "won": "0",
+      "floor": "42",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "61",
+      "fightsLost": "1",
+      "deathCombat": "24",
+      "deathEncounter": "50",
+      "sec": "3.74692"
+    },
+    {
+      "seed": "26",
+      "won": "0",
+      "floor": "50",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "105",
+      "fightsLost": "1",
+      "deathCombat": "27",
+      "deathEncounter": "54",
+      "sec": "4.54094"
+    },
+    {
+      "seed": "27",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "11",
+      "maxHp": "100",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.80271"
+    },
+    {
+      "seed": "28",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "12",
+      "maxHp": "40",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.79812"
+    },
+    {
+      "seed": "29",
+      "won": "0",
+      "floor": "40",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "80",
+      "fightsLost": "1",
+      "deathCombat": "22",
+      "deathEncounter": "51",
+      "sec": "3.3852"
+    },
+    {
+      "seed": "30",
+      "won": "0",
+      "floor": "50",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "92",
+      "fightsLost": "1",
+      "deathCombat": "26",
+      "deathEncounter": "55",
+      "sec": "6.20067"
+    },
+    {
+      "seed": "31",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "24",
+      "maxHp": "85",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "4.12797"
+    },
+    {
+      "seed": "32",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "80",
+      "maxHp": "80",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.85506"
+    },
+    {
+      "seed": "33",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "55",
+      "maxHp": "101",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "3.74129"
+    },
+    {
+      "seed": "34",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "27",
+      "maxHp": "88",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.44063"
+    },
+    {
+      "seed": "35",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "31",
+      "maxHp": "97",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "2.91202"
+    },
+    {
+      "seed": "36",
+      "won": "0",
+      "floor": "50",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "80",
+      "fightsLost": "1",
+      "deathCombat": "27",
+      "deathEncounter": "54",
+      "sec": "7.15135"
+    },
+    {
+      "seed": "37",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "22",
+      "maxHp": "51",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.24647"
+    },
+    {
+      "seed": "38",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "22",
+      "maxHp": "40",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.20852"
+    },
+    {
+      "seed": "39",
+      "won": "0",
+      "floor": "33",
+      "act": "2",
+      "hpEnd": "0",
+      "maxHp": "87",
+      "fightsLost": "1",
+      "deathCombat": "21",
+      "deathEncounter": "37",
+      "sec": "2.13998"
+    }
+  ],
+  "off_result": [
+    {
+      "seed": "8",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "37",
+      "maxHp": "50",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "5.33598"
+    }
+  ],
+  "replay_result": "silver_useless_replay verified=0 PASS",
+  "analysis_provenance": {
+    "analyzer": "tools/analyze_silver_useless.py",
+    "analyzer_sha256": "2f07ce6db9ed5dc0eb23f7341248a32cc1301572d708e9eb70def9ce0a7ddb97",
+    "new_input": "trace.jsonl.gz",
+    "combined_inputs": [
+      "../trace.jsonl.gz",
+      "trace.jsonl.gz"
+    ],
+    "method": "Run analyze(rows) separately on the 32 new seeds and on the concatenation of original and new rows after disjoint seed and original artifact hash checks."
+  },
+  "original_evidence_manifest_sha256": "d603665a06d67f80bfd5e79f351d28cce4e721a39d5f1c644afc07e91cc838c7",
+  "original_trace_sha256": "e2947b951f9ad0e5726a61eaef196422236057bcb74d2150f07153a4a8b1e9c9",
+  "scope": "Fixed 32 new seeds with unchanged detector; combined disjoint 40-seed descriptive census. Zero is not proof that broad useless-block behavior is absent.",
+  "replay_binary_sha256": "65efd3634bd325b06d056b69df966a85558a5552292e2e938c7dc346e9814ce2",
+  "artifact_sha256": {
+    "combined_summary.json": "fe470b93bdaba22f6c43e58fe56244fa98f93516b4d33deea8297ee7999e3774",
+    "off.csv": "bdb1a9fb90db16999b018e6c9271d7120d3ace684f117a26900de58d423d5f80",
+    "off.csv.meta.json": "fe85d69aff28e3ada66480672fecc9225d03520c59549d8fa478539ed0976cd0",
+    "off.log": "b017125eeda9ef190ff11c97ab172f202ed14abe453075f9279802b1a27e7d83",
+    "on.csv": "e7fffe16f26c526471d4ad170017a64b6ed9e254c1b6976808fdf44bfdaa9c41",
+    "on.csv.meta.json": "53a699c0c0e8518ca57a52f29f7965d5a01653c1396f223790ff5f3f3f798a2d",
+    "on.log": "8c2251cff5744d3d04a5b250bffc5c1b44201d86467dc2149987cc56d25f4acd",
+    "parity.json": "a3853b68bb500dfed50f3a948a25513d73b4c67e420334db0ab3bc8eacef1fe4",
+    "replay.log": "93f90ff87a5f5017ca48d083f239ca7003fdac15df6d714905d8cb48808d0c18",
+    "summary.json": "3af04c4ee10ff4f0172c9ff7935d587bcabc0290ec36d49ba97c6647e4e45a48",
+    "trace.jsonl.gz": "0533220e34e11039673cbe3df88e2aaba012e215ae44853d575a2c59379006a8"
+  }
+}
