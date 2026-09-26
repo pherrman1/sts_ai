@@ -599,6 +599,104 @@ int testSilverSearcher() {
     return failures == 0 ? 0 : 1;
 }
 
+// Throughput profile of native Silver search (issue #350). Collects the
+// decision roots of a mid-run Ironclad deck fighting encounters from all three
+// acts (played at 100 simulations a decision), then times a search of `sims`
+// simulations from every `stride`-th root, one searcher per combat as in
+// production. Output is deterministic apart from the timings; `digest`
+// fingerprints every root's edge visits.
+int silverProfile(std::int64_t sims, int stride) {
+    const std::pair<MonsterEncounter, int> encounters[] = {
+        {MonsterEncounter::JAW_WORM, 1}, {MonsterEncounter::GREMLIN_NOB, 1},
+        {MonsterEncounter::LAGAVULIN, 1}, {MonsterEncounter::THE_GUARDIAN, 1},
+        {MonsterEncounter::HEXAGHOST, 1}, {MonsterEncounter::CHOSEN, 2},
+        {MonsterEncounter::BOOK_OF_STABBING, 2}, {MonsterEncounter::AUTOMATON, 2},
+        {MonsterEncounter::CHAMP, 2}, {MonsterEncounter::THREE_DARKLINGS, 3},
+        {MonsterEncounter::NEMESIS, 3}, {MonsterEncounter::TIME_EATER, 3},
+    };
+    const CardId extraCards[] = {
+        CardId::INFLAME, CardId::SHRUG_IT_OFF, CardId::POMMEL_STRIKE, CardId::CARNAGE,
+        CardId::BATTLE_TRANCE, CardId::UPPERCUT, CardId::FEEL_NO_PAIN, CardId::TWIN_STRIKE,
+        CardId::HEADBUTT, CardId::TRUE_GRIT, CardId::METALLICIZE, CardId::HEMOKINESIS,
+    };
+    struct Combat {
+        search::SilverSearchContext context;
+        std::vector<BattleContext> roots;
+    };
+    std::vector<Combat> combats;
+    std::size_t rootCount = 0;
+    int decisions = 0;
+    for (const auto &[encounter, act] : encounters) {
+        GameContext gc(CharacterClass::IRONCLAD, 7, 0);
+        gc.act = act;
+        gc.curHp = gc.maxHp = 80;
+        for (const auto id : extraCards) gc.deck.obtainRaw(Card(id));
+        gc.obtainRelic(RelicId::VAJRA);
+        gc.obtainRelic(RelicId::ORICHALCUM);
+        gc.potions[0] = Potion::FIRE_POTION;
+        gc.potions[1] = Potion::BLOCK_POTION;
+        gc.potionCount = 2;
+
+        BattleContext bc;
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        knowledge.beginCombatInitialization();
+        search::g_combatKnowledgeObserver = &knowledge;
+        bc.init(gc, encounter);
+        knowledge.synchronizeAfterCombatInitialization(bc);
+        search::SilverSearchContext context;
+        context.act = act;
+        combats.push_back({context, {}});
+        int steps = 0;
+        while (bc.outcome == Outcome::UNDECIDED && ++steps < 400) {
+            knowledge.reconcilePublicDrawPileCardinality(bc);
+            BattleContext root;
+            if (!search::nativeSilverSearchRoot(bc, knowledge, root).empty()) break;
+            if (decisions++ % stride == 0) {
+                combats.back().roots.push_back(root);
+                ++rootCount;
+            }
+            search::g_combatKnowledgeObserver = nullptr;
+            search::SilverSearcher searcher(root, context);
+            searcher.search(100);
+            search::g_combatKnowledgeObserver = &knowledge;
+            const auto action = search::SilverSearcher::translateAction(
+                searcher.bestAction(), searcher.rootSearchState(), bc);
+            if (!action.isValidAction(bc)) break;
+            action.execute(bc);
+        }
+        search::g_combatKnowledgeObserver = nullptr;
+    }
+
+    // As in production: one searcher per combat, re-rooted at each decision.
+    std::int64_t totalSims = 0;
+    std::int64_t totalNodes = 0;
+    std::uint64_t digest = 0;
+    double seconds = 0.0;
+    for (const auto &combat : combats) {
+        if (combat.roots.empty()) continue;
+        search::SilverSearcher searcher(combat.roots.front(), combat.context);
+        for (const auto &root : combat.roots) {
+            const auto start = std::chrono::steady_clock::now();
+            searcher.setRoot(root);
+            searcher.search(sims);
+            seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+            totalSims += searcher.rootNode().simulationCount;
+            // Search outcome fingerprint: parity checks for speed changes.
+            for (const auto &edge : searcher.rootNode().edges) {
+                digest = digest * 1000003 + static_cast<std::uint64_t>(edge.visitCount);
+            }
+            digest = digest * 1000003 + static_cast<std::uint64_t>(search::hashBattleState(root));
+        }
+        totalNodes += searcher.stats.nodesCreated;
+    }
+    std::cout << "silver_profile roots=" << rootCount << " decisions=" << decisions
+              << " sims=" << totalSims << " nodes=" << totalNodes << " digest=" << digest
+              << " seconds=" << seconds
+              << " sims_per_s=" << (seconds > 0 ? static_cast<double>(totalSims) / seconds : 0.0) << '\n';
+    return 0;
+}
+
 // The wire path used by the live advisor (live state -> wire -> search root)
 // gives the same search state as the native backend's own search root, and
 // actions chosen on it map back onto the live state.
@@ -3709,6 +3807,10 @@ int main(int argc, const char* argv[]) {
         return testSilverSearcher();
     } else if (command == "silver_wire_state") {
         return testSilverWireState();
+    } else if (command == "silver_profile") {
+        const std::int64_t sims = argc > 2 ? std::stoll(argv[2]) : 2000;
+        const int stride = argc > 3 ? std::max(1, std::stoi(argv[3])) : 1;
+        return silverProfile(sims, stride);
     } else if (command == "card_pile") {
         return testCardPile();
     } else if (command == "battle_equality") {

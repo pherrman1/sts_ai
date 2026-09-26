@@ -209,6 +209,17 @@ combat stats; `STS_SILVER_DEBUG_TREE` attaches the retained search graph to
 advisor responses. The production search path does not depend on a diagnostic
 callback.
 
+`test silver_profile <sims> <stride>` times native Silver on fixed roots from
+12 act-1–3 encounters, with one searcher per combat as in production. It
+prints simulations/s and a digest of every root's edge visits, so a speed
+change can be checked for exact search parity. Measured throughput (ledger
+§360, 4-vCPU container): about 73k simulations/s at 10,000 simulations per
+root. Rollouts (the rollout policy plus action execution) take about 73% of
+instructions, node dedup about 11%, and state copies the bulk of the rest.
+The profile is flat, with no function above about 6% exclusive.
+`ActionQueue` copies only its queued slots. The 128-slot ring is 6.2 KB of
+`BattleContext`, and slots outside the queue are never read.
+
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.
@@ -252,7 +263,7 @@ Primary code:
 - `apps/one_combat.cpp`, `apps/one_combat/native_silver_advisor.cpp`
 
 Focused coverage includes `test battle_equality`, `card_pile`,
-`card_pile_engine`, `silver_searcher`, `silver_wire_state`,
+`card_pile_engine`, `silver_searcher`, `silver_wire_state`, `silver_profile`,
 `silver_semantic_action`, `cardselect_parity`, `cardselect_canonical`,
 `runic-dome-lifecycle-test`, `combat-knowledge-neutrality-test`,
 `live_silver_importer_test` and `tests/live_advisor_protocol.py`. Use current

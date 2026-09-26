@@ -12745,3 +12745,31 @@ not a positive replay result. Three analyzer tests pass; compressed trace
 reanalysis and all packaged artifact hashes agree. No runtime, policy, model,
 budget or maintained diagnostic semantics changed. Knowledge impact: bounded
 census evidence expanded in this ledger; no default or quality promotion.
+
+## §360 — Native Silver hot-path profile; live-only action-queue copy (2026-09-26)
+
+Issue #350. Profiled native Silver with callgrind on a fixed workload,
+`test silver_profile 2000 4`: 89 roots from 12 act-1–3 encounters, one
+searcher per combat.
+
+Profile:
+- Rollouts: 73% of instructions, of which the rollout policy is 17%.
+- Node dedup: 11%.
+- `BattleContext` copies and moves: 13.5%.
+- The exclusive profile is flat; the top function takes 6%.
+
+The one concentrated structural cost: the 128-slot action queue is 6.2 KB of
+the 8 KB `BattleContext`, and it was copied whole on every copy, move and swap.
+`ActionQueue` now copies only its queued slots.
+
+Result:
+- Instructions: −4.0%.
+- Median throughput: +6.5% at 2,000 simulations, +6.2% at 10,000.
+- Search visit digests are identical.
+- `bestbench 1000 8 0 126700` rows are identical apart from timings.
+
+Batched/SIMD state execution was not pursued: no uniform hot loop exists
+(**Inference** from the flat profile).
+
+Decision: adopt; this is a pure speedup with exact parity. Evidence:
+[sim_hotpath_profile_2026-09-26](evidence/sim_hotpath_profile_2026-09-26/README.md).

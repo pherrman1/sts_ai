@@ -31,7 +31,7 @@ namespace sts {
     // action was created with. Two queued actions compare equal exactly when
     // they would do the same thing, which lets search code compare and hash
     // pending action queues. Each variant is trivially copyable, so copying a
-    // BattleContext copies its action queue with memcpy.
+    // BattleContext copies the queued actions with plain copies.
     //
     // X(Name, type1,field1, type2,field2, ...) declares ActData_Name with those
     // fields; its operator() (in Actions.cpp) performs the action.
