@@ -12420,22 +12420,77 @@ faster. Evidence: [native_singleton_bypass_2026-09-25](evidence/native_singleton
   `d6823b7c4ed0dab919d6dcc101aa0a4d474d87fa68efb1507c3c9a17f1072cb3`). No
   pair JSONL, pair manifest, or combat outcomes were written; this is a
   pre-outcome plan-validation failure, not a teacher-transfer result.
+- **Later Stage B update (2026-09-26):** retry 4 durably wrote 116/119 pairs
+  and stalled on three `Room::EVENT` targets: `(4201028,15)` Masked Bandits,
+  `(4201056,18)` Mysterious Sphere, and `(4201117,12)` Masked Bandits. Debug
+  tracing proved all three direct snapshots and predictor inputs matched and
+  all six Silver playout arms returned. The infinite loop was in post-combat
+  `afterBattle()`/`regainControl()`: snapshots lack `curEvent` and the transient
+  event callback, so the generic `Room::EVENT` fallback recursively invoked
+  the same callback. A debug-only three-target rerun completed both arms for
+  all three pairs with 8 OpenMP threads. The collector now returns direct
+  snapshot Event rooms to the map after RAW combat capture, without inventing
+  event rewards. At the time of collection, main was
+  `0eed6993999386737d87f040e38fb241623b5cf3`. Retry 5 recollected all 119 rows
+  under one executable and teacher manifest; it completed in 127 seconds with 119/119 checkpoints,
+  119/119 exact support, exact mechanical-q parity, and no snapshot mismatch.
+  Pair JSONL SHA-256 is
+  `3e02b7d1175190edc0cb7933ba32ce87d614a3e2836f7ef4c6e473bd8a5f3658`;
+  teacher manifest SHA-256 is
+  `e81dc96da406b661b7b465a8790c63d8ff92516802b71ce1a4744a9b1e337be8`; the
+  producer executable SHA-256 is
+  `a055597f5c62cf29f6dd1912990400040044604be1b110f4119f43ee1e7ace16`.
+  Exact plan: `stage_b_direct_snapshot_plan_retry5_eventfix_omp8_resumable.json`
+  (SHA-256
+  `7cc41d8588db740c80f4a79f3c29c610bfceed1e805b211596a9aa61b77d5fb9`).
+  Two analyzer input-validation defects initially stopped scoring before
+  outcome analysis: the exact-key schema omitted collector `pairCheckpointing`
+  metadata, and the direct-snapshot path check used nonexistent
+  `Path.is_relative()`. The validator now accepts and checks the exact
+  metadata and uses `not Path.is_absolute()`; scoring, bootstrap, and gates
+  were untouched. Against the retry-5 teacher pinned to the then-current base,
+  the predeclared analyzer reports
+  `PROCEED_TO_FRESH_NATIVE_QUALIFICATION`. Native labels are 81
+  `WIN_RETAINED`, 28 `WIN_CONSUMED`, and 10 `LOSS_CONSUMED`; all 119 rows have
+  exact support and q parity. Pooled candidate-minus-B1 three-class NLL is
+  `-5.81982` (source-bootstrap 95% CI `[-17.44907,+0.02927]`) and Brier is
+  `-0.02613` (95% CI `[-0.05668,+0.00352]`). On 38 consumed rows, learned-r
+  NLL/Brier deltas are `-1.01041` / `-0.06454`; neither interval shows a clear
+  regression. T2 scored 28 supported consumed wins and its HP NLL, CRPS, and
+  expected-HP absolute-error intervals favor T2. The vendored/native
+  three-class label agreement is 99/119; this remains a descriptive table
+  only, with no cross-teacher pooling. The analysis JSON SHA-256 is
+  `454b8afa9518875bb90359df5184641fa2b813ee97d0fbf888b6f6f8d605add8`; the
+  strict direct-snapshot validator fix is pinned by
+  `tools/combat_transition_lizard_pair_pilot.py` SHA-256
+  `d681103e100a32b47aa6ca371b2a73752bb2c0dbeb93ed39288b50d4bf097a2d`. Stage
+  B is a transfer diagnostic, not qualification.
 - **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
-  assignment is frozen with an audited new source block and outcome-blind
-  BROAD32 salt. It remains pending the corrected Stage B diagnostic and
-  designated GCP research worker; the earlier worker preflight found
-  `sts-test` absent, and no replacement worker was created.
-- **Decision:** no qualification or production support change. Stage A remains
-  development evidence. Stage B's first attempt is classified as a harness
-  failure; the corrected direct-snapshot diagnostic is pending. Only a fresh
-  Stage C result may qualify this candidate. The active Lizard production guard
-  remains fail-closed.
+  assignment is frozen with an audited fresh block and outcome-blind BROAD32
+  salt. Its 320 unique sources were rechecked disjoint from all 367 recorded
+  prior Lizard sources (assignment SHA-256
+  `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`). Retry 5
+  applies only to the teacher pinned to `0eed6993999386737d87f040e38fb241623b5cf3`.
+  Current main is now `ffd51f3bc43b03aa356c419567d77b1eecc636a1`; merged PR #327
+  changed native Silver equivalent-copy reroot behavior, which is not disabled
+  by the frozen exact-root-budget setting. Retry 5 is historical evidence, not
+  a current-main Stage-B pass. The same 119 states need a current-teacher
+  diagnostic before Stage C. Current main also retired the GCP research
+  workflow in PR #361; the previously frozen Stage-C execution assumption must
+  be reconciled with current repository policy before launch. Stage C has not
+  started.
+- **Decision:** Stage A remains development evidence. Retry 5 is a valid,
+  provenance-pinned historical teacher-transfer diagnostic but does not pass
+  the current-main Stage-B gate. Stage C must wait for a current-teacher Stage-B
+  diagnostic and an execution path consistent with current main. No runtime
+  support changed; production remains `active_unqualified_lizard`.
 - **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
   including frozen cohort artifacts, Stage A analysis, candidate manifest,
-  source assignment, native teacher manifest, the preregistered Stage B plan,
-  and the [raw Stage B collection failure](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_collection_failure.json).
+  source assignment, retry-5 historical native teacher manifest and plan, full
+  119-pair JSONL/checkpoints, analyzer output, debug-only event-target replay,
+  and the current-main drift note.
 
-Knowledge impact: current research records the archived post-hoc screen and
-separates both pre-outcome Stage B harness/plan-validation failures from the
-corrected direct-snapshot transfer plan and unrun fresh qualification. No
-runtime support changed.
+Knowledge impact: current research now records the event-continuation harness
+fix, analyzer schema compatibility fix, historical teacher-transfer result,
+and required current-main recheck. No runtime support or candidate parameters
+changed.

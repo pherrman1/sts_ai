@@ -979,6 +979,18 @@ static void installDirectSnapshotPostBattleAction(GameContext &gc) {
     // callback installed by initFromSave. A won branch still needs the normal
     // post-battle continuation when BattleContext::exitBattle calls
     // regainControl() after RAW capture.
+    if (gc.curRoom == Room::EVENT) {
+        // Event snapshots omit curEvent and the option-specific callback (which
+        // may also capture transient reward state). Calling afterBattle() here
+        // would see an unknown event and recursively call regainControl(). RAW
+        // combat labels have already been captured before this continuation, so
+        // finish the direct replay without fabricating event rewards.
+        gc.regainControlAction = [](GameContext &context) {
+            context.screenState = ScreenState::MAP_SCREEN;
+            context.regainControlAction = nullptr;
+        };
+        return;
+    }
     gc.regainControlAction = [](GameContext &context) { context.afterBattle(); };
 }
 

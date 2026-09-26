@@ -102,13 +102,27 @@ def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None
         'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1')
     targeted_keys = {'targetSelection', 'sourceSeeds'} if targeted else set()
     if direct_snapshot:
-        targeted_keys.add('directReplayPlan')
+        targeted_keys.update({'directReplayPlan', 'pairCheckpointing'})
     expected_keys = required | targeted_keys
     if (set(manifest) != expected_keys or manifest['schema'] not in (
             'lizard_tail_paired_transition_pilot_v1',
             'lizard_tail_targeted_paired_transition_pilot_v1',
             'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1')):
         raise ValueError('paired pilot manifest keys/schema mismatch')
+    if direct_snapshot:
+        checkpointing = manifest['pairCheckpointing']
+        expected_checkpointing_keys = {
+            'schema', 'directory', 'atomicWritePerCompletedPair',
+            'exclusiveCollectorLock', 'resumeValidatesPlanTeacherCollectorAndRowChecksum',
+        }
+        if (set(checkpointing) != expected_checkpointing_keys
+                or checkpointing.get('schema') != 'lizard_direct_snapshot_pair_checkpoint_v1'
+                or not isinstance(checkpointing.get('directory'), str)
+                or not checkpointing['directory']
+                or any(checkpointing.get(key) is not True for key in (
+                    'atomicWritePerCompletedPair', 'exclusiveCollectorLock',
+                    'resumeValidatesPlanTeacherCollectorAndRowChecksum'))):
+            raise ValueError('direct snapshot pair-checkpoint provenance mismatch')
     if manifest['rowSchemaVersion'] != ROW_SCHEMA_VERSION or manifest['predictorInputSchemaVersion'] != PREDICTOR_SCHEMA:
         raise ValueError('paired pilot transition schema mismatch')
     if manifest['predictorInputFieldSchemaHash'] != FIELD_SCHEMA_HASH or manifest['format'] != 'jsonl':
@@ -164,7 +178,7 @@ def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None
                 or teacher.get('environment') != replay_plan.get('executionEnvironment')):
             raise ValueError('direct replay native teacher differs from the frozen plan')
         selection_ref = Path(replay_plan['archivedTargetSelection']['path'])
-        if selection_ref.is_relative():
+        if not selection_ref.is_absolute():
             selection_ref = replay_plan_file.parent / selection_ref
         selection_ref = selection_ref.resolve()
         packet_root = manifest_path.parent.parent.resolve()

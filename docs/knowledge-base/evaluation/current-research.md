@@ -953,19 +953,24 @@ corrected plan directly restores the 119 exact non-burning PR #326 persistent
 snapshots and excludes only the nine burning-elite targets whose archived
 states lack `burningEliteBuff`. PR #331 made native Silver update
 `simulationCountTotal`; merged PR #332 default-initializes that counter to
-zero. The refreshed direct plan is pinned to current main
-`0eed6993999386737d87f040e38fb241623b5cf3` and the rebuilt executable. A
-pre-run resource check found load 28.87 on 12 logical CPUs, so the plan uses
-one thread identically for both arms to limit contention. The first guarded
-invocation failed before the pair loop because the direct plan omitted the
-top-level copy of the nine exclusions required by the collector; it generated
-no pair rows or outcomes. The corrected plan includes the unchanged list.
-Fresh native outcomes remain uncollected. The distinct fresh 320-source native
-qualification remains pending the corrected transfer diagnostic; the
-designated GCP worker was unavailable at the earlier preflight. Therefore no
-Lizard candidate is qualified and production remains
-`active_unqualified_lizard`. See [ledger §355](../../experiments/ledger-06.md)
-and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
+zero. Retry 4 saved 116 pairs, then stalled on three Event-room snapshots
+because the direct snapshot lacked `curEvent` and the event-option callback:
+the generic `afterBattle()` callback recursively called `regainControl()`. A
+neutral post-capture return-to-map continuation fixed the collector. Retry 5
+reran all 119 exact non-burning snapshots with the then-current native teacher
+pinned to `0eed6993999386737d87f040e38fb241623b5cf3` and one executable; all 119
+rows had exact support and mechanical-q parity. Its predeclared analyzer
+decision was `PROCEED_TO_FRESH_NATIVE_QUALIFICATION`; this is historical
+transfer evidence, not qualification. Current main later advanced to
+`ffd51f3bc43b03aa356c419567d77b1eecc636a`, including PR #327's native Silver
+equivalent-copy reroot change, which the frozen exact-root-budget setting does
+not disable. The same exact 119 states need a new current-teacher diagnostic
+before Stage C. The frozen fresh 320-source assignment remains disjoint from
+367 prior Lizard sources. Current main also retired the GCP research workflow
+in PR #361, so Stage C's execution path must be reconciled with current
+repository policy before launch. Stage C has not started; production remains
+`active_unqualified_lizard`. See [ledger §355](../../experiments/ledger-06.md) and the
+[mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
