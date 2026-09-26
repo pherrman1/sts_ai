@@ -64,12 +64,21 @@ public:
         if (!enabled || !active) return;
         const double wallElapsed = one_combat::runProfileWall() - wall;
         const double cpuElapsed = one_combat::oocProfileCpu() - cpu;
+        const auto observerSkips = [](const one_combat::LiveOocMctsMetrics &metrics) {
+            const auto &reasons = metrics.continuation.supportReasons;
+            const auto it = reasons.find("semantic_observer_active");
+            return it == reasons.end() ? std::uint64_t{0} : std::uint64_t(it->second);
+        };
         auto row = context;
         row.update({{"wall_seconds", wallElapsed}, {"thread_cpu_seconds", cpuElapsed},
             {"real_combat_wall_seconds", combatWall}, {"real_combat_cpu_seconds", combatCpu},
             {"combat_decisions", combatDecisions}, {"combat_simulations", combatSimulations},
             {"ooc_decisions", m.decisions - start.decisions},
             {"ooc_owned", m.owned - start.owned}, {"fallbacks", m.fallback - start.fallback},
+            // Disabled calls and observer early returns emit no decision row.
+            {"unprofiled_disabled", (m.decisions - m.owned - m.fallback)
+                - (start.decisions - start.owned - start.fallback)},
+            {"unprofiled_observer", observerSkips(m) - observerSkips(start)},
             {"support_aborts", m.supportAborts - start.supportAborts},
             {"ooc_wall_seconds", m.wallSeconds - start.wallSeconds},
             {"ooc_cpu_seconds", m.cpuSeconds - start.cpuSeconds},
@@ -93,17 +102,21 @@ void runFloorProfileSelfTest() {
     one_combat::LiveOocMctsMetrics metrics;
     const int firstFloor = gc.floorNum;
     profile.advance(gc, metrics);
-    metrics.decisions = 2; metrics.search.simulations = 128;
+    metrics.decisions = 3; metrics.owned = 1; metrics.fallback = 1;
+    metrics.continuation.supportReasons["semantic_observer_active"] = 1;
+    metrics.search.simulations = 128;
     profile.advance(gc, metrics); // another screen on the same floor
     ++gc.floorNum; gc.curRoom = Room::ELITE;
     profile.advance(gc, metrics);
-    ++metrics.decisions; metrics.search.simulations += 256;
+    ++metrics.decisions; ++metrics.owned; metrics.search.simulations += 256;
     ++gc.floorNum; gc.curRoom = Room::REST;
     profile.advance(gc, metrics);
     profile.finish(metrics, "death");
     profile.finish(metrics, "death"); // no duplicate final row
     if (rows.size() != 3 || rows[0]["floor"] != firstFloor
-        || rows[0]["ooc_simulations"] != 128 || rows[0]["ooc_decisions"] != 2
+        || rows[0]["ooc_simulations"] != 128 || rows[0]["ooc_decisions"] != 3
+        || rows[0]["unprofiled_disabled"] != 1 || rows[0]["unprofiled_observer"] != 1
+        || rows[1]["unprofiled_disabled"] != 0 || rows[1]["unprofiled_observer"] != 0
         || rows[1]["floor"] != firstFloor + 1 || rows[1]["room"] != "ELITE"
         || rows[1]["ooc_simulations"] != 256 || rows[1]["ooc_decisions"] != 1
         || rows[2]["floor"] != firstFloor + 2 || rows[2]["status"] != "death"

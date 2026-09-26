@@ -95,6 +95,25 @@ def analyze(rows):
         cohort = grouped.pop(fk(row), [])
         if row['status'] == 'abort':
             continue # partial work remains explicitly unqualified
+        # Old schema-1 profiles have no exemptions; never infer missing rows
+        # from a deficit, which could hide a dropped singleton/boundary record.
+        disabled = row.get('unprofiled_disabled', 0)
+        observer = row.get('unprofiled_observer', 0)
+        counters = ('ooc_decisions', 'ooc_owned', 'fallbacks', 'support_aborts')
+        if any(type(n) is not int or n < 0 for n in
+               [disabled, observer] + [row[k] for k in counters]):
+            raise ValueError('invalid floor decision counters')
+        if any(type(d.get(k)) is not bool for d in cohort for k in ('executed', 'aborted')):
+            raise ValueError('decision execution and abort flags must be explicit booleans')
+        expected = {
+            'ooc_decisions': len(cohort) + disabled + observer,
+            'ooc_owned': sum(d['executed'] for d in cohort),
+            'fallbacks': sum(not d['executed'] for d in cohort) + observer,
+            'support_aborts': sum(d['aborted'] for d in cohort),
+        }
+        for field, count in expected.items():
+            if row[field] != count:
+                raise ValueError(f'floor {fk(row)} does not reconcile: {field}')
         for floor_field, decision_field in [('ooc_simulations', 'completed_simulations'),
                 ('leaf_evaluations', 'leaf_evaluations'), ('transition_samples', 'transition_samples'),
                 ('outcome_particles', 'outcome_particles'), ('ctm_samples', 'ctm_samples')]:

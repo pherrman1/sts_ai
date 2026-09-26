@@ -1141,7 +1141,13 @@ only when reached. A support-aborted search retains partial expansion and
 checkpoint evidence but has no final action statistics.
 
 `python3 tools/analyze_run_profile.py PROFILE.jsonl --output SUMMARY.json`
-validates floor/decision accounting and reports exact branching shares, slow
+validates floor/decision counts, execution/fallback/abort statuses, and search
+work. Floor records explicitly count `unprofiled_disabled` calls and
+`unprofiled_observer` early returns: neither emits a search row, and only the
+latter contributes to fallbacks. Older schema-1 records default these counters
+to zero; an old profile with such unrecorded early returns cannot be certified
+and is rejected. Partial abort floors remain unqualified. The analyzer reports
+exact branching shares, slow
 floors by wall/CPU, room mean/median cost, top-5/top-10 CPU share, and root
 stability cross-tabs. It derives visit/Q gaps, prior entropy and a strict visit
 winner lock using `leader_visits - runner_up_visits > remaining_budget`.
