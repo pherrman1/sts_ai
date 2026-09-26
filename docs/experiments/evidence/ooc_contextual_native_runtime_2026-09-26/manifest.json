@@ -1,0 +1,457 @@
+{
+  "artifacts": {
+    "attention_native_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "contextual_native_bytes": 811976,
+    "contextual_native_sha256": "6d308d5fea278ea8aecc90d1f8bf44efe839b11c57d1362020f1e47f6dba68f7",
+    "live_ooc_parity_test_sha256": "86b38cc5009c589f928dbdbc8b20ab7efc1f68f693858d2bf2a782a477b69e73",
+    "live_ooc_policy_test_sha256": "a3b9c77502d4014d495ad5664447e85df646ad50d78218c25e84d5019e04792e",
+    "native_probe_sha256": "2c5507bb54a8ba3410abce11d6e544540616acd948b779e7e5919bc847cc6818",
+    "one_combat_advisor_sha256": "d944b52df70485351efdc0b11b45419231e0275c066104086bc1566804b406e9",
+    "one_combat_sha256": "85b8f838c9253566cc5ccde1bcef02b97c8e8c5306a0947288163cd4f76aec7d",
+    "student_checkpoint_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761",
+    "teacher_checkpoint_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370"
+  },
+  "baseline_sha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+  "build": {
+    "build_preset": "linux-gcc-build",
+    "ccache_attempt": "read-only cache error; same Release build completed using non-ccache preset",
+    "configure_preset": "linux-gcc-release",
+    "exit_code": 0,
+    "log": "release_build.log",
+    "targets": [
+      "one_combat",
+      "test_live_ooc_policy",
+      "ooc_contextual_native_probe",
+      "one_combat_advisor",
+      "live_ooc_parity_test"
+    ]
+  },
+  "current_main_update": "PR #362 changes deferred Guardian Mode Shift handling in Silver; task branch fast-forwarded before final verification",
+  "current_profile_smoke": {
+    "aggregate_floor_ooc_decision_counters": 196,
+    "analysis_log": "profile_smoke_current_main_analysis.log",
+    "analyzer_decision_records": 0,
+    "binary_git_sha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+    "classification": "profile diagnostic only; not gameplay-quality evidence or a timing comparison",
+    "csv_path": "profile_smoke_current_main.csv",
+    "floor_records": 53,
+    "live_ooc_mcts_enabled": false,
+    "mcts_simulations": 0,
+    "profile_path": "profile_smoke_current_main.jsonl",
+    "run_mode": "seed-guarded bestbench, A0 seed 0, exact 10k Silver, OMP=1",
+    "sts_run_profile_enabled": true
+  },
+  "evidence_sha256": {
+    "README.md": "80c6508c7f374c6dedaba49d04348b7837c2e9411d101e511f2d2f82257ea816",
+    "ab_timing.json": "d0f0ef8fabe066fb8d350432d678f2d4afb6fc1db470a8323d5a0c8adddccc50",
+    "current_main_native_verification.log": "ecd612af8035e8d067b5309bb91ea21da7ded11cf1b8ceae1e0ac2ec6d336386",
+    "exporter_missing_checkpoint.log": "bc2fd7cc94841f50eb7dd0342064fb58b787ba43e6e7b41e2f0aa57cb3120b21",
+    "exporter_selftest.log": "42c294d95390b789dafea16f82d906fb6003b15388c2854217aaa51fd85d37db",
+    "focused_ctest.log": "6296ab48496b523ce5c55367ad14ac40976159a2641f33cfc7c22a2b28726ad9",
+    "frozen_export.log": "e5b0d533f168ad950be3f10c154074cd96a72029de333a4fd9935b0790daa05b",
+    "native_contextual_trace.jsonl.gz": "64fc5d5d4b8efa84a6c4461bf7f386a2d34f8842edaafbc215d71c7e9788ee10",
+    "native_contextual_trace_pre_exact_gelu.jsonl.gz": "eb6412c59e0ec6d52611d9ea1420aa54d1f978535c5d7ee4a0a13b7808cfc41d",
+    "native_runtime_result.json": "667b586c4927bd2c076b642f3dcf4fbac9922873a19d8e2ec304fc42d2c2aaf2",
+    "profile_preflight_rejected_300_silver/profile_smoke_seed0.csv": "d15f03ea971535263f9e36547e9dd93d597d708c5cb5df3823026892708b3cd4",
+    "profile_preflight_rejected_300_silver/profile_smoke_seed0.csv.meta.json": "f8e9a7a62659e9a9c55785358b3b8890aca42274b42d16ec42e2bbab1d7321db",
+    "profile_preflight_rejected_300_silver/profile_smoke_seed0.log": "47f0fa5194e0e94bfc737925c9e2824e8294197bf54d0c3870c96e8bc3da3525",
+    "profile_preflight_rejected_without_exact_root_budget/profile_smoke_seed0.csv": "d15f03ea971535263f9e36547e9dd93d597d708c5cb5df3823026892708b3cd4",
+    "profile_preflight_rejected_without_exact_root_budget/profile_smoke_seed0.csv.meta.json": "6262e3adb7cd3a6ce8e83c63683c8f6275bbdd533ff029d69d64592d61c181da",
+    "profile_preflight_rejected_without_exact_root_budget/profile_smoke_seed0.log": "8dae283b122a5339a39c000c55e75c88c201f18383a11d50c2ca6002def52da5",
+    "profile_smoke_current_main.csv": "d5f8f67f55b0c0ea9bab317b1e3915b70a19d918f70ee64161529b2d1ec5a09d",
+    "profile_smoke_current_main.csv.meta.json": "2146b5c2a010d6e3205615e8d331e4939fac1913283c1cd1c9f0a803b2b0129f",
+    "profile_smoke_current_main.jsonl": "6ed2c62eaa522df2703ed47641a9c4cd8869ba1c8608ab23b52f352405af964f",
+    "profile_smoke_current_main.log": "d44acdd954a1e4262f65e2edbc4cb36a688771fbc8187d3e6491f0f8a3df84eb",
+    "profile_smoke_current_main_analysis.log": "c74eb73176295ca51324ba96755d8672065788360e5b3c13f1534b1596cfb4c5",
+    "profile_smoke_current_main_summary.json": "4454a83481cf7ba631c2039b308b4c19b016553a1a545a52902d52b563cd7cdd",
+    "profile_smoke_ffd.csv": "d16f5caa725726549f86953ac791bd3939d636f234c7e7f8d3b0891176ce6890",
+    "profile_smoke_ffd.csv.meta.json": "ea3e5adfa72205d51c7ab2e2484b7246ce20c6076d8a482734b4ad4c0d941491",
+    "profile_smoke_ffd.jsonl": "703a839a816d2e3c912f999d5586e0bf996b918c2aa49817616fe647ca843275",
+    "profile_smoke_ffd.log": "60b5ee5909cb7bc40a2d5f918b0cd65dfc5f8899dacf36129fc7ccdd49945b11",
+    "profile_smoke_ffd_analysis.log": "cdf8b0a5c862bbeef022d31cac2529677ed6d057b97766d2dd59e4d87164c792",
+    "profile_smoke_ffd_summary.json": "1a48209df7f31f2266507ea86e5bd4045865777df250899db22340edc51c98b5",
+    "profile_smoke_initial_b656.csv": "5fb1ade9702897fc94dbc07d404953e284ecbf0bc4daf019ee0474c593e07367",
+    "profile_smoke_initial_b656.csv.meta.json": "fcbb40be37f8e1e6b8c0576a98796d274e13109e49b69992aaf6204e976431ed",
+    "profile_smoke_initial_b656.jsonl": "2ab782103c50a5a02f57bba567d29340a33544d90149d9ea684e864b619e9dbf",
+    "profile_smoke_initial_b656.log": "aa8625d06dd25f0333744dfba2fc21fb367e286b4ab0da24a3ebb6a421a7064d",
+    "profile_smoke_initial_b656_summary.json": "fac9294ba5a7c6d2dda23650ead4e8f6caf8b3ffff7c2f7a8c1a7d5a8a749f4a",
+    "profile_smoke_pre_final_source/profile_smoke_seed0.csv": "0faf631a3ef00ed816040e1b4945a8c17af9ddc316f0e02d14cbb49dbc8bbcfd",
+    "profile_smoke_pre_final_source/profile_smoke_seed0.csv.meta.json": "88529bfd20344e803cd8f315a25d32a20a03b567544b1f4449b0397f49dbdebc",
+    "profile_smoke_pre_final_source/profile_smoke_seed0.jsonl": "f6992f2004fee04f0e84ad9f48488b3ace77e371a1a5029b53e4c5f982a5633a",
+    "profile_smoke_pre_final_source/profile_smoke_seed0.log": "7aebf465306892f0bdd56a08e6b50b4f0a4c0d541ae5ad62d70d8d7faf7f4855",
+    "profile_smoke_pre_final_source/profile_smoke_seed0_summary.json": "8bd0d87ee9029fa0a8b04f9e3b1657795b4a9c3f772a0d9ec87c508e47ab1a26",
+    "release_build.log": "f57841c54768fced1b788e7743dc0e8bcef7a12d207b66e0a5c4c5436e355313",
+    "release_build_pre_rebase.log": "25c09ea058b01cda24d730e82883c8ac96a69482c90a6d33a11480744419a2ce",
+    "semantic_prior_result.json": "1c288f048919292fef847790e964e8a52644f356f120fdfd571949759cba0499",
+    "semantic_prior_result_pre_exact_gelu.json": "17f7f4a6815e3f1bb7ff74de2b455ac251f0f2ff4d8e730698a7117e853417c2"
+  },
+  "export": {
+    "checkpoint_sha256_gate": true,
+    "contextual_parameter_count": 3200,
+    "contextual_tensors": 6,
+    "export_log": "frozen_export.log",
+    "export_parity_checks": 32,
+    "gelu_deviation": "C1 uses exact PyTorch GELU to match the frozen checkpoint; tanh approximation failed full-trace parity. V4 retains the original approximation.",
+    "missing_checkpoint_log": "exporter_missing_checkpoint.log",
+    "missing_explicit_checkpoint_fails_closed": true,
+    "selftest_log": "exporter_selftest.log",
+    "shared_teacher_tensors_unchanged": 115
+  },
+  "focused_ctest": {
+    "github_linux_gcc": "draft pull requests are skipped by the checked-in workflow condition; no remote CI run is expected until ready_for_review",
+    "log": "focused_ctest.log",
+    "log_reports_all_passed": true,
+    "test_names": [
+      "live_ooc_policy",
+      "live_ooc_policy_contextual",
+      "live_ooc_parity",
+      "live_ooc_protocol",
+      "run_profile_analysis",
+      "ooc_mcts_adapter",
+      "ooc_strategic_tok_attention_compat",
+      "ooc_strategic_tok_contextual_load",
+      "ooc_strategic_tok_contextual_rejects_trailing",
+      "ooc_strategic_tok_contextual_profile"
+    ],
+    "tests_failed": 0,
+    "tests_passed": 10
+  },
+  "full_prior_speed_gate": {
+    "observed_reduction_percent": -3.1570219694986967,
+    "pass": false,
+    "phase_3_paired_8_seed_smoke": "not run; threshold not met",
+    "threshold_reduction_percent": 5.0
+  },
+  "initial_worktree_sha": "b65615bb78aa982b0fca097d86876009eb34ec6a",
+  "intermediate_fetched_main_sha": "ffd51f3bc43b03aa356c419567d77b1eecc636a1",
+  "knowledge_impact": {
+    "default_promotion": false,
+    "experiment_record": "docs/experiments/ledger-06.md \u00a7361",
+    "updated_maintained_contract": "docs/knowledge-base/architecture/ooc-strategic-v4.md"
+  },
+  "ledger_section": 361,
+  "live_origin_main_check": "git ls-remote and git fetch verified 6bae3a67c63d1f724908e2ee87b27d51e32d30a0; origin task branch absent before push",
+  "locally_available_origin_main_sha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+  "native_python_parity": {
+    "gates": {
+      "deck_representation": true,
+      "grouped_candidate_logits": true,
+      "normalized_semantic_prior": true,
+      "source_policy_logits": true
+    },
+    "max_abs_error": {
+      "deck_representation": 1.1324882507324219e-06,
+      "grouped_candidate_logits": 3.0517578125e-05,
+      "normalized_semantic_prior": 2.8438970357536064e-06,
+      "source_policy_logits": 3.0517578125e-05
+    },
+    "pass": true,
+    "source_logit_count": 37985,
+    "top_semantic_action_mismatch_examples": [],
+    "top_semantic_action_mismatches": 0,
+    "top_semantic_action_parity": true,
+    "unique_prior_count": 6317
+  },
+  "schema": "ooc-contextual-native-runtime-evidence-v1",
+  "semantic_classification": "CONTEXTUAL_SEMANTIC_PRIOR_PASS",
+  "source_sha256": {
+    "CMakeLists.txt": "4a882b4409ce18a0b778f55277ac2ed9b4eee77323c106d8cf680ca9299ecc37",
+    "EXPERIMENTS.md": "c3474ff1abd1a611cc2c8c2d5da828c351cf722fd2f577e09d0f038130eabbb0",
+    "apps/ooc_strategic_tok_net.h": "2d585ba1ac62ae9a5d19068c593f67dd1b2a58c60a0959464aaca57d42278f74",
+    "apps/test_live_ooc_policy.cpp": "1b12973c57c809c4b30364e7e661c0d15a95a44034bd0d88747df399c5a0650b",
+    "docs/experiments/ledger-06.md": "3bd660aec5e409f7599278b3c5cc591a54eddd53af43436d732b833b6444f5ee",
+    "docs/knowledge-base/architecture/ooc-strategic-v4.md": "bc66d8395ef27ba885fbc38c2f2731d5d448a8a809e59457b0ea722ffc0be69e",
+    "export_strategic_tok.py": "1df249f16a9be6698241b98b7c21ba4cdc07c5bb3b24f025d26b9ec247e43f46",
+    "tests/ooc_contextual_native_probe.cpp": "6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7",
+    "tools/evaluate_ooc_contextual_semantic_trace.py": "288d5fb6ed19f6b5b2591ef38c80b6eb95fa4fdc8973ab5c84e8b8a3ae59c328",
+    "tools/verify_ooc_contextual_native.py": "dc98ed5d6d751d5fac120152724aa649016f41b1e9d69ca8e9af831331068512"
+  },
+  "timing": {
+    "calls_per_arm_per_operation": 31585,
+    "format": "ooc-contextual-native-performance-v1",
+    "measured_passes_per_arm": 5,
+    "metrics": {
+      "deck": {
+        "attention_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 3.407867443406657e-05,
+          "median_seconds_per_call": 3.4203999999871115e-05,
+          "p90_seconds_per_call": 5.7396999999959064e-05,
+          "p99_seconds_per_call": 7.493099999988928e-05,
+          "total_cpu_seconds": 1.0763749319999927
+        },
+        "attention_total_cpu_seconds": 1.0763749319999927,
+        "b_over_a_ratio": 1.0677524390729205,
+        "contextual_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 3.638758774734656e-05,
+          "median_seconds_per_call": 3.683900000028828e-05,
+          "p90_seconds_per_call": 5.887000000015519e-05,
+          "p99_seconds_per_call": 7.57220000000558e-05,
+          "total_cpu_seconds": 1.1493019589999411
+        },
+        "contextual_total_cpu_seconds": 1.1493019589999411,
+        "deck_token_count_buckets": {
+          "attention": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 1.0587973285199143e-05,
+              "median_seconds_per_call": 9.077000000079494e-06,
+              "p90_seconds_per_call": 1.783400000032742e-05,
+              "p99_seconds_per_call": 2.0528000000297197e-05,
+              "total_cpu_seconds": 0.07332171500000406
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 5.165972924566102e-05,
+              "median_seconds_per_call": 4.959299999995892e-05,
+              "p90_seconds_per_call": 6.877899999935266e-05,
+              "p99_seconds_per_call": 7.879799999965797e-05,
+              "total_cpu_seconds": 0.6403223439999683
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 8.332544000007047e-05,
+              "median_seconds_per_call": 8.32160000001636e-05,
+              "p90_seconds_per_call": 8.380700000021335e-05,
+              "p99_seconds_per_call": 8.413800000006688e-05,
+              "total_cpu_seconds": 0.002083136000001762
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 2.946468439542635e-05,
+              "median_seconds_per_call": 2.944500000001682e-05,
+              "p90_seconds_per_call": 3.67589999998863e-05,
+              "p99_seconds_per_call": 4.062600000009908e-05,
+              "total_cpu_seconds": 0.3606477370000185
+            }
+          },
+          "contextual": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 1.1916527075806609e-05,
+              "median_seconds_per_call": 1.0279000000057437e-05,
+              "p90_seconds_per_call": 1.9807000000149344e-05,
+              "p99_seconds_per_call": 2.196099999984824e-05,
+              "total_cpu_seconds": 0.08252194999996076
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 5.3776325857201175e-05,
+              "median_seconds_per_call": 5.2457999999866445e-05,
+              "p90_seconds_per_call": 7.012199999989477e-05,
+              "p99_seconds_per_call": 7.784599999993702e-05,
+              "total_cpu_seconds": 0.6665575590000086
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 8.358679999995289e-05,
+              "median_seconds_per_call": 8.387700000023202e-05,
+              "p90_seconds_per_call": 8.450900000056549e-05,
+              "p99_seconds_per_call": 8.834599999918424e-05,
+              "total_cpu_seconds": 0.002089669999998822
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 3.2527187908494526e-05,
+              "median_seconds_per_call": 3.2220000000471316e-05,
+              "p90_seconds_per_call": 3.971499999977368e-05,
+              "p99_seconds_per_call": 4.506500000012181e-05,
+              "total_cpu_seconds": 0.398132779999973
+            }
+          }
+        },
+        "reduction_percent": -6.77524390729205
+      },
+      "prepare": {
+        "attention_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 7.037745502611657e-05,
+          "median_seconds_per_call": 6.943999999986517e-05,
+          "p90_seconds_per_call": 9.561900000054635e-05,
+          "p99_seconds_per_call": 0.00011501600000052292,
+          "total_cpu_seconds": 2.2228719169998916
+        },
+        "attention_total_cpu_seconds": 2.2228719169998916,
+        "b_over_a_ratio": 1.0352967772906485,
+        "contextual_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 7.286155238245603e-05,
+          "median_seconds_per_call": 7.296700000036793e-05,
+          "p90_seconds_per_call": 9.786399999978102e-05,
+          "p99_seconds_per_call": 0.00011567699999925907,
+          "total_cpu_seconds": 2.3013321319998736
+        },
+        "contextual_total_cpu_seconds": 2.3013321319998736,
+        "deck_token_count_buckets": {
+          "attention": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 4.517339667869268e-05,
+              "median_seconds_per_call": 4.409299999963423e-05,
+              "p90_seconds_per_call": 5.250899999964531e-05,
+              "p99_seconds_per_call": 5.676700000023516e-05,
+              "total_cpu_seconds": 0.31282577199994677
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 8.920863509479601e-05,
+              "median_seconds_per_call": 8.724300000029217e-05,
+              "p90_seconds_per_call": 0.00010765199999962505,
+              "p99_seconds_per_call": 0.00011909300000034762,
+              "total_cpu_seconds": 1.1057410319999965
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.00012277831999998767,
+              "median_seconds_per_call": 0.00012219899999976747,
+              "p90_seconds_per_call": 0.00012507499999969696,
+              "p99_seconds_per_call": 0.0001312059999998283,
+              "total_cpu_seconds": 0.003069457999999692
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 6.546042933006117e-05,
+              "median_seconds_per_call": 6.545200000029894e-05,
+              "p90_seconds_per_call": 7.363799999993148e-05,
+              "p99_seconds_per_call": 8.17739999998679e-05,
+              "total_cpu_seconds": 0.8012356549999486
+            }
+          },
+          "contextual": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 4.665488765341779e-05,
+              "median_seconds_per_call": 4.560600000047543e-05,
+              "p90_seconds_per_call": 5.507399999959972e-05,
+              "p99_seconds_per_call": 6.067400000020484e-05,
+              "total_cpu_seconds": 0.32308509699991816
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 9.159233174666814e-05,
+              "median_seconds_per_call": 8.954800000005037e-05,
+              "p90_seconds_per_call": 0.00010916499999957807,
+              "p99_seconds_per_call": 0.0001194339999992522,
+              "total_cpu_seconds": 1.1352869519999516
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.00012272735999996343,
+              "median_seconds_per_call": 0.0001222800000002522,
+              "p90_seconds_per_call": 0.00012642700000053964,
+              "p99_seconds_per_call": 0.000130364000000327,
+              "total_cpu_seconds": 0.0030681839999990856
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 6.86186191993468e-05,
+              "median_seconds_per_call": 6.862800000018154e-05,
+              "p90_seconds_per_call": 7.710499999902254e-05,
+              "p99_seconds_per_call": 8.782400000040269e-05,
+              "total_cpu_seconds": 0.8398918990000048
+            }
+          }
+        },
+        "reduction_percent": -3.5296777290648507
+      },
+      "prior": {
+        "attention_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 0.00011991611986701693,
+          "median_seconds_per_call": 0.0001129320000003986,
+          "p90_seconds_per_call": 0.0001659709999994874,
+          "p99_seconds_per_call": 0.0002035819999992583,
+          "total_cpu_seconds": 3.7875506459997297
+        },
+        "attention_total_cpu_seconds": 3.7875506459997297,
+        "b_over_a_ratio": 1.031570219694987,
+        "contextual_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 0.00012370189811618904,
+          "median_seconds_per_call": 0.00011666800000043054,
+          "p90_seconds_per_call": 0.00017069000000091705,
+          "p99_seconds_per_call": 0.00021061500000030264,
+          "total_cpu_seconds": 3.907124451999831
+        },
+        "contextual_total_cpu_seconds": 3.907124451999831,
+        "deck_token_count_buckets": {
+          "attention": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 9.413018844764476e-05,
+              "median_seconds_per_call": 9.275400000063883e-05,
+              "p90_seconds_per_call": 0.00011064799999971342,
+              "p99_seconds_per_call": 0.00016132300000037958,
+              "total_cpu_seconds": 0.65185155499994
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 0.00014196042807582606,
+              "median_seconds_per_call": 0.0001396020000008491,
+              "p90_seconds_per_call": 0.00018640000000047507,
+              "p99_seconds_per_call": 0.0002169070000004325,
+              "total_cpu_seconds": 1.759599505999864
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.0001473948799999647,
+              "median_seconds_per_call": 0.00014634499999921502,
+              "p90_seconds_per_call": 0.00016696299999985342,
+              "p99_seconds_per_call": 0.0001709910000009529,
+              "total_cpu_seconds": 0.0036848719999991175
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 0.00011212538504901362,
+              "median_seconds_per_call": 0.00010808200000056445,
+              "p90_seconds_per_call": 0.0001408240000007055,
+              "p99_seconds_per_call": 0.00018719099999842115,
+              "total_cpu_seconds": 1.3724147129999267
+            }
+          },
+          "contextual": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 9.6491203465694e-05,
+              "median_seconds_per_call": 9.462799999937488e-05,
+              "p90_seconds_per_call": 0.00011538599999916244,
+              "p99_seconds_per_call": 0.00016534999999961997,
+              "total_cpu_seconds": 0.6682015839999309
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 0.00014608415514320315,
+              "median_seconds_per_call": 0.00014345900000023448,
+              "p90_seconds_per_call": 0.0001918400000011644,
+              "p99_seconds_per_call": 0.00022645499999995877,
+              "total_cpu_seconds": 1.810713103000003
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.0001465781599999616,
+              "median_seconds_per_call": 0.00014330799999839883,
+              "p90_seconds_per_call": 0.0001545000000007235,
+              "p99_seconds_per_call": 0.00018521800000037558,
+              "total_cpu_seconds": 0.00366445399999904
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 0.000116384420833325,
+              "median_seconds_per_call": 0.00011171999999959326,
+              "p90_seconds_per_call": 0.000148920000000885,
+              "p99_seconds_per_call": 0.00019480599999965875,
+              "total_cpu_seconds": 1.424545310999898
+            }
+          }
+        },
+        "reduction_percent": -3.1570219694986967
+      }
+    },
+    "order": "alternating A/B and B/A by measured pass; A=attention, B=contextual",
+    "prior_count": 6317,
+    "thread_cpu_clock": "CLOCK_THREAD_CPUTIME_ID",
+    "warmup_passes_per_arm": 1
+  }
+}

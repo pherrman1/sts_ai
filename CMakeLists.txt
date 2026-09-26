@@ -176,6 +176,10 @@ target_compile_definitions(test_live_ooc_policy PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:test_live_ooc_policy> ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
 set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME live_ooc_policy_contextual COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:test_live_ooc_policy> ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_contextual.native)
+set_tests_properties(live_ooc_policy_contextual PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
     apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
@@ -510,6 +514,30 @@ add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard
     $<TARGET_FILE:one_combat> oocmctsselftest)
 set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;STS_OOC_STRATEGIC_TOK_NN=${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native")
+
+add_executable(ooc_contextual_native_probe tests/ooc_contextual_native_probe.cpp)
+target_include_directories(ooc_contextual_native_probe PRIVATE apps json/include)
+add_test(NAME ooc_strategic_tok_attention_compat
+    COMMAND $<TARGET_FILE:ooc_contextual_native_probe> --compat
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+set_tests_properties(ooc_strategic_tok_attention_compat PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME ooc_strategic_tok_contextual_load
+    COMMAND $<TARGET_FILE:ooc_contextual_native_probe> --context-load
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_contextual.native)
+set_tests_properties(ooc_strategic_tok_contextual_load PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME ooc_strategic_tok_contextual_rejects_trailing
+    COMMAND $<TARGET_FILE:ooc_contextual_native_probe> --reject-trailing-context
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_contextual.native)
+set_tests_properties(ooc_strategic_tok_contextual_rejects_trailing PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME ooc_strategic_tok_contextual_profile
+    COMMAND $<TARGET_FILE:ooc_contextual_native_probe> --profile-check
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_contextual.native)
+set_tests_properties(ooc_strategic_tok_contextual_profile PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke"
+    ENVIRONMENT "STS_OOC_CPU_PROFILE=1")
 
 # Captured-state probability probe; no gameplay or default integration.
 add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_probe.cpp

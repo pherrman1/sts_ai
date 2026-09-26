@@ -1,6 +1,7 @@
 # OOC strategic net V4 — token-based run state (Phase A, round 5)
 
-Last verified: 2026-09-24 for raw-to-grouped-v2 state-cache mapping.
+Last verified: 2026-09-26 for the contextual C1 extension and
+raw-to-grouped-v2 state-cache mapping.
 Historical V4 implementation status from 2026-08-09 (feature-leak audit:
 8 genuine leaks removed; bossId confirmed legit; code corrected NGLOB=42;
 corrected model trained and gated; trainer glob-block feature-order skew fixed
@@ -288,6 +289,38 @@ z_deck = mean_i out[i]
 ```
 Zero tokens never participate (trainer masks invalid; C++ loops valid).
 
+### Contextual extension: `OOC_STRAT_C1`
+
+`OOC_STRAT_C1` is a versioned extension loaded by the same
+`OocStrategicTokNet` and selected through the existing
+`STS_OOC_STRATEGIC_TOK_NN=<artifact>` seam. It preserves the complete V4
+header, dimensions, and tensor prefix, then appends six row-major float32
+arrays in this order:
+
+```
+contextDeckFc1W[32×64], contextDeckFc1B[32],
+contextDeckFc2W[32×32], contextDeckFc2B[32],
+contextDeckLnW[32], contextDeckLnB[32]
+```
+
+Those arrays correspond to the student's six `contextDeck` tensors and total
+3,200 parameters. The exporter only emits C1 when the checkpoint SHA, all 115
+shared teacher tensors, six contextual tensors, 3,200-parameter count, and
+teacher artifact identities match the frozen provenance. The tracked artifact
+is `selfplay/models/ooc_strategic_tok_contextual.native`; the `.pt` checkpoint
+is not tracked. C1 rejects truncated payloads and trailing bytes.
+
+C1 changes deck aggregation only. It computes the mean of valid V4 `deckTok`
+tokens, concatenates `[token, mean]`, applies `Linear(64→32)`, **exact GELU**,
+`Linear(32→32)`, residual addition, LayerNorm (`eps=1e-5`), and mean-pools the
+valid outputs. An empty deck remains a zero vector. The frozen contextual
+checkpoint uses PyTorch's default exact GELU, so C1 follows that checkpoint
+behavior; V4 continues through the existing tanh-GELU attention path and its
+binary layout remains unchanged. C1 remains opt-in; §361 did not promote it
+to the default. This exact-GELU distinction is recorded with native parity
+evidence in [§361](../../experiments/ledger-06.md) and the [evidence
+packet](../../experiments/evidence/ooc_contextual_native_runtime_2026-09-26/README.md).
+
 ## 6. C++ integration (Track C, one_combat.cpp edits)
 
 - New file `apps/ooc_strategic_tok_net.h`: `struct OocStrategicTokNet` with
@@ -295,8 +328,8 @@ Zero tokens never participate (trainer masks invalid; C++ loops valid).
 - Token builder in one_combat.cpp from `GameContext` (mirror `richRow` loops):
   `struct TokState { float glob[42]; int nDk, nRl, nPt; int dk[96][3]; int rl[64][2]; int pt[8][2]; }`
   built once per decision, reused across actions of that decision.
-- Env: `STS_OOC_STRATEGIC_TOK_NN=<path>` loads the V4 net. When loaded, the
-  four gates (`oocOnePlyCardRewardPolicy`, `oocOnePlyRestPolicy`,
+- Env: `STS_OOC_STRATEGIC_TOK_NN=<path>` loads a versioned V4 or C1 net.
+  When loaded, the four gates (`oocOnePlyCardRewardPolicy`, `oocOnePlyRestPolicy`,
   `oocOnePlyUpgradeSelectPolicy`, `oocOnePlyEventPolicy`) score with the tok net
   (same margin gate `STS_OOC_STRATEGIC_MARGIN`); V3 (`STS_OOC_STRATEGIC_NN`)
   remains fallback. `STS_OOC_STRATEGIC_Q` no longer applies to the tok path.

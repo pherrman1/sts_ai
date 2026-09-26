@@ -1,6 +1,6 @@
-// Native OOC strategic TOKEN model (V4).  Token-based run state with a single
-// deck self-attention layer; loaded from the binary exported by
-// export_strategic_tok.py (magic OOC_STRAT_V4).
+// Native OOC strategic TOKEN model (V4). Token-based run state with either
+// the original deck self-attention layer or the versioned contextual deck
+// block; both artifacts are exported by export_strategic_tok.py.
 #pragma once
 #include "one_combat/ooc_profile.h"
 #include <cstdio>
@@ -10,6 +10,7 @@
 #include <string>
 
 struct OocStrategicTokNet {
+    enum class DeckEncoderVersion { AttentionV4, ContextualC1 };
     static constexpr int NGLB = 42, NHIDDEN = 256, NHIDDEN2 = 128, NBITS = 32;
     static constexpr int DECKDIM = 32, RELDIM = 16, POTDIM = 8;
     static constexpr int MAXDK = 96, MAXRL = 64, MAXPT = 8;
@@ -38,6 +39,9 @@ struct OocStrategicTokNet {
     float deckQkvW[QDIM][DECKDIM], deckQkvB[QDIM];
     float deckProjW[DECKDIM][DECKDIM], deckProjB[DECKDIM];
     float deckLnW[DECKDIM], deckLnB[DECKDIM];
+    float contextDeckFc1W[DECKDIM][2 * DECKDIM], contextDeckFc1B[DECKDIM];
+    float contextDeckFc2W[DECKDIM][DECKDIM], contextDeckFc2B[DECKDIM];
+    float contextDeckLnW[DECKDIM], contextDeckLnB[DECKDIM];
 
     // relic/potion token encoders (mean-pool, no attention)
     float relTokW[RELDIM][RLTOKIN], relTokB[RELDIM];
@@ -79,6 +83,7 @@ struct OocStrategicTokNet {
     float q2w[POLHID], q2b;
 
     bool ok = false;
+    DeckEncoderVersion deckEncoderVersion = DeckEncoderVersion::AttentionV4;
     std::string path;
 
     bool load(const std::string &path, bool quiet = false) {
@@ -88,8 +93,14 @@ struct OocStrategicTokNet {
             return std::fread(dst, 1, count, f) == count;
         };
         char hdr[13] = {};
-        if (!readBlock(hdr, 12) || std::memcmp(hdr, "OOC_STRAT_V4", 12) != 0) {
+        if (!readBlock(hdr, 12)) {
             std::fprintf(stderr, "[ooc-strat-tok-net] truncated payload in %s\n", path.c_str());
+            std::fclose(f); return false;
+        }
+        const bool contextual = std::memcmp(hdr, "OOC_STRAT_C1", 12) == 0;
+        const bool attention = std::memcmp(hdr, "OOC_STRAT_V4", 12) == 0;
+        if (!attention && !contextual) {
+            std::fprintf(stderr, "[ooc-strat-tok-net] unsupported artifact version in %s\n", path.c_str());
             std::fclose(f); return false;
         }
         int dims[17];
@@ -103,7 +114,7 @@ struct OocStrategicTokNet {
             std::fprintf(stderr, "[ooc-strat-tok-net] truncated payload in %s\n", path.c_str());
             std::fclose(f); return false;
         }
-        const bool complete =
+        bool complete =
                readBlock(globMean, sizeof(globMean))
             && readBlock(globInv, sizeof(globInv))
             && readBlock(eCard, sizeof(eCard))
@@ -155,19 +166,35 @@ struct OocStrategicTokNet {
             && readBlock(q0b, sizeof(q0b))
             && readBlock(q2w, sizeof(q2w))
             && readBlock(&q2b, sizeof(q2b));
+        if (complete && contextual) {
+            complete = readBlock(contextDeckFc1W, sizeof(contextDeckFc1W))
+                && readBlock(contextDeckFc1B, sizeof(contextDeckFc1B))
+                && readBlock(contextDeckFc2W, sizeof(contextDeckFc2W))
+                && readBlock(contextDeckFc2B, sizeof(contextDeckFc2B))
+                && readBlock(contextDeckLnW, sizeof(contextDeckLnW))
+                && readBlock(contextDeckLnB, sizeof(contextDeckLnB));
+        }
+        const bool contextualHasUnexpectedTrailingBytes = complete && contextual
+            && (std::fgetc(f) != EOF || std::ferror(f));
         std::fclose(f);
         if (!complete) {
             std::fprintf(stderr, "[ooc-strat-tok-net] truncated payload in %s\n", path.c_str());
             return false;
         }
+        if (contextualHasUnexpectedTrailingBytes) {
+            std::fprintf(stderr, "[ooc-strat-tok-net] unexpected trailing bytes in %s\n", path.c_str());
+            return false;
+        }
         ok = true;
+        deckEncoderVersion = contextual ? DeckEncoderVersion::ContextualC1
+                                        : DeckEncoderVersion::AttentionV4;
         this->path = path;
         if (!quiet) std::printf("[ooc-strat-tok-net] loaded %s\n", path.c_str());
         return true;
     }
 
-    // Deck tokens: GELU(Linear41->32), then 1-head self-attention (D=32) over
-    // the valid tokens, LayerNorm(eps=1e-5) residual, mean-pool -> z_deck.
+    // Deck tokens: GELU(Linear41->32), followed by the artifact-selected
+    // aggregation over valid tokens -> z_deck.
     void encodeDeck(int nDk, const int dk[][3], float *zDeck) const {
         if (nDk > MAXDK) nDk = MAXDK;
         float tok[MAXDK][DECKDIM];
@@ -188,6 +215,52 @@ struct OocStrategicTokNet {
         }
         if (nDk <= 0) {
             for (int d = 0; d < DECKDIM; ++d) zDeck[d] = 0.0f;
+            return;
+        }
+        if (deckEncoderVersion == DeckEncoderVersion::ContextualC1) {
+            float mean[DECKDIM] = {};
+            for (int i = 0; i < nDk; ++i)
+                for (int d = 0; d < DECKDIM; ++d)
+                    mean[d] += tok[i][d];
+            for (int d = 0; d < DECKDIM; ++d) mean[d] /= nDk;
+            float pair[2 * DECKDIM];
+            float mid[DECKDIM];
+            for (int i = 0; i < nDk; ++i) {
+                for (int d = 0; d < DECKDIM; ++d) {
+                    pair[d] = tok[i][d];
+                    pair[DECKDIM + d] = mean[d];
+                }
+                float hidden[DECKDIM];
+                for (int j = 0; j < DECKDIM; ++j) {
+                    float sum = contextDeckFc1B[j];
+                    for (int k = 0; k < 2 * DECKDIM; ++k)
+                        sum += contextDeckFc1W[j][k] * pair[k];
+                    hidden[j] = exactGelu(sum);
+                }
+                for (int d = 0; d < DECKDIM; ++d) {
+                    float sum = contextDeckFc2B[d];
+                    for (int k = 0; k < DECKDIM; ++k)
+                        sum += contextDeckFc2W[d][k] * hidden[k];
+                    mid[d] = tok[i][d] + sum;
+                }
+                float mu = 0;
+                for (int d = 0; d < DECKDIM; ++d) mu += mid[d];
+                mu /= DECKDIM;
+                float var = 0;
+                for (int d = 0; d < DECKDIM; ++d) {
+                    const float delta = mid[d] - mu;
+                    var += delta * delta;
+                }
+                const float invStd = 1.0f / std::sqrt(var / DECKDIM + 1e-5f);
+                for (int d = 0; d < DECKDIM; ++d)
+                    tok[i][d] = (mid[d] - mu) * invStd * contextDeckLnW[d]
+                        + contextDeckLnB[d];
+            }
+            for (int d = 0; d < DECKDIM; ++d) {
+                float sum = 0;
+                for (int i = 0; i < nDk; ++i) sum += tok[i][d];
+                zDeck[d] = sum / nDk;
+            }
             return;
         }
         float qkv[MAXDK][QDIM];
@@ -591,6 +664,9 @@ struct OocStrategicTokNet {
     static float gelu(float x) {
         const float a = x * x * x * 0.044715f;
         return 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + a)));
+    }
+    static float exactGelu(float x) {
+        return 0.5f * x * (1.0f + std::erf(x * 0.7071067811865475f));
     }
 };
 

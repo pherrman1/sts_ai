@@ -159,6 +159,24 @@ def load_unique_trace(path: Path):
     }
 
 
+def load_native_predictions(path: Path, expected_count: int):
+    opener = gzip.open if path.suffix == ".gz" else open
+    predictions = []
+    with opener(path, "rt", encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            if not line.strip():
+                continue
+            prediction = json.loads(line)
+            required = ("priorKey", "deckRepresentation", "sourceLogits",
+                        "candidateLogits", "normalizedPrior")
+            if any(name not in prediction for name in required):
+                raise ValueError(f"native prediction is missing fields at line {line_number}")
+            predictions.append(prediction)
+    if len(predictions) != expected_count:
+        raise ValueError(f"native prediction count {len(predictions)} != {expected_count}")
+    return predictions
+
+
 def pack_token_state(state):
     glob = np.asarray(state["glob"], dtype=np.float32)
     if glob.shape != (NGLOB,):
@@ -501,12 +519,18 @@ def main():
     parser.add_argument("--teacher-only", action="store_true",
                         help="validate Python teacher against captured native trace, without loading/evaluating a student")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--native-results", type=Path,
+                        help="optional JSONL(.gz) output from the native contextual trace probe")
+    parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda",
+                        help="inference device for the frozen Python replay (default: cuda)")
     args = parser.parse_args()
     if not args.teacher_only and (args.source_result is None or args.student is None):
         parser.error("--source-result and --student are required unless --teacher-only is set")
     required_paths = [args.trace, args.teacher]
     if not args.teacher_only:
         required_paths.extend((args.source_result, args.student))
+        if args.native_results is not None:
+            required_paths.append(args.native_results)
     for path in required_paths:
         if not path.is_file():
             raise FileNotFoundError(path)
@@ -521,10 +545,10 @@ def main():
         if (source_result.get("artifacts", {}).get("student_sha256") != sha256(args.student)
                 or source_result.get("artifacts", {}).get("teacher_sha256") != sha256(args.teacher)):
             raise ValueError("source-policy result is not bound to these exact teacher/student artifacts")
-    if not torch.cuda.is_available():
+    if args.device == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for the semantic trace replay")
-    device = "cuda"
-    torch.set_num_threads(4)
+    device = args.device
+    torch.set_num_threads(4 if device == "cuda" else 1)
 
     teacher_ckpt = torch.load(args.teacher, map_location="cpu", weights_only=False)
     if teacher_ckpt.get("native_sha256") != NATIVE_SHA256:
@@ -665,11 +689,57 @@ def main():
         raise AssertionError("teacher/student source candidate counts differ")
 
     metric_rows = []
+    native_predictions = (load_native_predictions(args.native_results, len(records))
+                          if args.native_results is not None else None)
+    native_parity = None
+    if native_predictions is not None:
+        native_parity = {
+            "unique_prior_count": len(records),
+            "source_logit_count": 0,
+            "max_abs_error": {"deck_representation": 0.0, "source_policy_logits": 0.0,
+                              "grouped_candidate_logits": 0.0, "normalized_semantic_prior": 0.0},
+            "top_semantic_action_mismatches": 0,
+            "top_semantic_action_mismatch_examples": [],
+        }
     for i, (key, row) in enumerate(records):
         py_student_source = np.asarray(student_sources[i], dtype=np.float64)
         py_student_candidate = candidate_logits(row, py_student_source)
         _, py_student_prior = semantic_prior(py_student_candidate, row["candidates"],
                                               float(row["priorTemperature"]))
+        if native_predictions is not None:
+            native = native_predictions[i]
+            if native["priorKey"] != key:
+                raise ValueError(f"native prior order/key mismatch at row {i}: {native['priorKey']} != {key}")
+            native_deck = np.asarray(native["deckRepresentation"], dtype=np.float64)
+            native_source = np.asarray(native["sourceLogits"], dtype=np.float64)
+            native_candidate = np.asarray(native["candidateLogits"], dtype=np.float64)
+            native_prior = np.asarray(native["normalizedPrior"], dtype=np.float64)
+            py_deck = np.asarray(z_student[i], dtype=np.float64)
+            if (native_deck.shape != (32,) or native_source.shape != py_student_source.shape
+                    or native_candidate.shape != py_student_candidate.shape
+                    or native_prior.shape != py_student_prior.shape
+                    or not np.isfinite(native_deck).all() or not np.isfinite(native_source).all()
+                    or not np.isfinite(native_candidate).all() or not np.isfinite(native_prior).all()):
+                raise ValueError(f"native output shape or finite-value mismatch for prior {key}")
+            errors = {
+                "deck_representation": float(np.max(np.abs(native_deck - py_deck), initial=0.0)),
+                "source_policy_logits": float(np.max(np.abs(native_source - py_student_source), initial=0.0)),
+                "grouped_candidate_logits": float(np.max(np.abs(native_candidate - py_student_candidate), initial=0.0)),
+                "normalized_semantic_prior": float(np.max(np.abs(native_prior - py_student_prior), initial=0.0)),
+            }
+            for name, error in errors.items():
+                native_parity["max_abs_error"][name] = max(native_parity["max_abs_error"][name], error)
+            native_parity["source_logit_count"] += len(native_source)
+            python_top = int(np.argmax(py_student_prior))
+            native_top = int(np.argmax(native_prior))
+            if python_top != native_top:
+                native_parity["top_semantic_action_mismatches"] += 1
+                if len(native_parity["top_semantic_action_mismatch_examples"]) < 16:
+                    native_parity["top_semantic_action_mismatch_examples"].append({
+                        "prior_key": key, "python_index": python_top, "native_index": native_top,
+                        "python_semantic_key": row["candidates"][python_top]["semanticKey"],
+                        "native_semantic_key": row["candidates"][native_top]["semanticKey"],
+                    })
         captured_teacher_candidate = teacher_candidate_rows[i]
         captured_teacher_prior = teacher_prior_rows[i]
         if len(py_student_prior) != len(captured_teacher_prior):
@@ -682,6 +752,16 @@ def main():
         metric["teacher_source_logits"] = np.asarray(teacher_sources[i], dtype=np.float64)
         metric["student_source_logits"] = py_student_source
         metric_rows.append(metric)
+
+    if native_parity is not None:
+        native_parity["gates"] = {
+            name: error < 1e-4
+            for name, error in native_parity["max_abs_error"].items()
+        }
+        native_parity["top_semantic_action_parity"] = (
+            native_parity["top_semantic_action_mismatches"] == 0)
+        native_parity["pass"] = (all(native_parity["gates"].values())
+                                  and native_parity["top_semantic_action_parity"])
 
     weights = np.asarray([occurrences[key] for key, _ in records], dtype=np.int32)
     overall_unique = distribution_stats(metric_rows)
@@ -749,10 +829,13 @@ def main():
                  "semantic_evaluator_sha256": sha256(Path(__file__)),
                  "native_teacher_sha256": NATIVE_SHA256,
                  "source_policy_result_sha256": sha256(args.source_result)}
+    if args.native_results is not None:
+        artifacts["native_trace_results_sha256"] = sha256(args.native_results)
     result = {"version": "ooc-contextual-semantic-prior-trace-v1",
               "artifacts": artifacts,
               "population": census,
               "python_native_teacher_preflight": parity,
+              "native_python_contextual_parity": native_parity,
               "unique_prior_metrics": overall_unique,
               "trace_occurrence_weighted_metrics": overall_occurrences,
               "by_screen": screen_metrics,
@@ -770,7 +853,7 @@ def main():
                               "top_prior_probability_error": "absolute student-versus-teacher prior error at the teacher-selected top semantic candidate",
                               "margin": "difference between the highest and second-highest raw candidate logits before primitive multiplicity correction",
                               "multiplicity": "softmax semantic-candidate logits, divide each candidate weight by the count of candidates sharing its primitiveBits, then renormalize"},
-              "interpretation": "offline semantic-prior qualification on the captured PR #329 trace; no native contextual runtime or gameplay claim"}
+              "interpretation": "offline semantic-prior qualification on the captured PR #329 trace; native contextual parity is included only when native results are supplied; no gameplay claim"}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps(result, indent=2, sort_keys=True), flush=True)

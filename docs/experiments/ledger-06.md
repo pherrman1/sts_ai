@@ -12773,3 +12773,103 @@ Batched/SIMD state execution was not pursued: no uniform hot loop exists
 
 Decision: adopt; this is a pure speedup with exact parity. Evidence:
 [sim_hotpath_profile_2026-09-26](evidence/sim_hotpath_profile_2026-09-26/README.md).
+
+## §361 — Native contextual V4 deck parity and runtime screen (2026-09-26)
+
+The task began in a fresh Codex-app-managed worktree at
+`b65615bb78aa982b0fca097d86876009eb34ec6a`. During execution, fetched
+`origin/main` first advanced through §360 and subsequent local-research updates
+to `ffd51f3bc43b03aa356c419567d77b1eecc636a`, then through PR #362 to
+`6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #362 changed Silver handling
+for deferred Guardian Mode Shift, so the task branch was fast-forwarded before
+final verification. The contextual native header, exporter, semantic evaluator,
+and ledger were unchanged by that upstream update. This result is §361; the
+upstream change did not append a ledger section. No §357–§360 question or
+default was reopened.
+
+The V4 native net now accepts both the original `OOC_STRAT_V4` attention
+artifact and `OOC_STRAT_C1`. V4 continues through the existing attention
+implementation; C1 shares the same `deckTok` tokens and changes only deck
+aggregation. Empty decks remain zero vectors. C1 reads exactly six appended
+context tensors and rejects trailing bytes. The exporter fails closed on the
+frozen checkpoint SHA, deployed-teacher identity, exact 115-tensor shared
+weights, six contextual tensors, and the 3,200-parameter count. The durable
+811,976-byte C1 artifact is
+`selfplay/models/ooc_strategic_tok_contextual.native`
+(SHA-256 `6d308d5fea278ea8aecc90d1f8bf44efe839b11c57d1362020f1e47f6dba68f7`).
+The `.pt` checkpoint is not committed.
+
+One checkpoint-contract detail differs from the handoff's requested GELU
+approximation: the frozen contextual block in `ContextualDeck` was trained and
+evaluated using PyTorch's default exact GELU, while V4's existing layers use
+the tanh approximation. A tanh C1 attempt failed the declared full-trace
+parity thresholds (deck `1.055e-3`, source logits `1.065e-3`, prior
+`1.171e-4`). C1 therefore uses exact GELU to preserve the frozen weights'
+actual behavior. No parity threshold was relaxed; the failed attempt remains
+in the evidence directory.
+
+### Native/Python parity
+
+The existing §356 semantic evaluator still classifies the frozen student as
+`CONTEXTUAL_SEMANTIC_PRIOR_PASS`. Native C1 and the exact Python student were
+compared across 6,317 unique eligible canonical priors (37,985 source logits):
+
+| Output | Maximum absolute error | Gate |
+| --- | ---: | ---: |
+| Deck representation | `1.1325e-6` | `<1e-4` |
+| Source policy logits | `3.0518e-5` | `<1e-4` |
+| Grouped candidate logits | `3.0518e-5` | `<1e-4` |
+| Multiplicity-corrected normalized prior | `2.8439e-6` | `<1e-4` |
+| Top semantic action mismatch | `0 / 6,317` | exact |
+
+The replay preserves captured candidate order, grouped source averaging,
+primitive multiplicity correction and normalization. An attention-artifact
+golden-vector test protects the existing V4 deck encoder.
+
+### Controlled Release runtime
+
+The two artifact arms ran one-threaded on the same 6,317 states, after one
+warm-up pass and over five measured passes with A/B order alternated. Trace
+decompression and parsing are outside the timed regions. Calls per arm were
+31,585 for deck-only encoding, `prepareState`, and complete policy-prior
+evaluation. Times use the thread CPU clock; per-call medians and tails are in
+the linked raw evidence.
+
+| Operation | Attention total CPU s | Contextual total CPU s | B/A | Reduction |
+| --- | ---: | ---: | ---: | ---: |
+| Deck encoder | 1.076375 | 1.149302 | 1.06775 | `-6.78%` |
+| `prepareState` | 2.222872 | 2.301332 | 1.03530 | `-3.53%` |
+| Complete prior | 3.787551 | 3.907124 | 1.03157 | `-3.16%` |
+
+The decision-bearing complete-prior metric is slower by 3.16%, so the
+predeclared `>=5%` improvement gate failed. Phase 3's paired 8-seed live smoke
+was not triggered. There is no gameplay-quality result and no default
+promotion.
+
+### Current-main integration diagnostics
+
+The focused Release suite passed 10/10: attention compatibility, contextual
+artifact load and trailing-byte rejection, profiler attribution, attention and
+contextual `LiveOocMctsPolicy`, `live_ooc_parity`, `live_ooc_protocol`,
+`ooc_mcts_adapter`, and `run_profile_analysis`. The advisor protocol test
+verified root and per-candidate OOC value-distribution bins. `ooc_mcts_adapter`
+also exercised the existing depth-safety and semantic grouping/multiplicity
+fixtures.
+
+A separate one-seed, seed-guarded attention-model diagnostic enabled
+`STS_RUN_PROFILE` under OMP=1 and the exact-10k Silver budget. Live OOC MCTS
+remained unset for this profile-only run; it emitted 53 floor rows, a sum of
+196 OOC-decision counters, and zero MCTS simulations, and the analyzer parsed
+the output. This is diagnostic-contract evidence, not a quality or timing
+comparison. Independently, `live_ooc_protocol` verified the current advisor's
+`ooc_value_distribution_v1` root distribution and per-candidate bins. The
+Release `one_combat`, advisor, policy-test, parity-test and native-probe
+targets built successfully. GitHub Actions CI remains the draft PR's
+clean-repository gate.
+
+[Evidence packet](evidence/ooc_contextual_native_runtime_2026-09-26/README.md)
+contains frozen artifact identities, per-output parity, complete timing
+distributions and deck-count buckets, raw CTest/build/export logs, profile
+smoke artifacts, and the failed tanh attempt. Knowledge impact: native
+contextual runtime evidence added here; the contextual artifact remains
+opt-in, with no gameplay-quality or default promotion.
