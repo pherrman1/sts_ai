@@ -1,0 +1,4 @@
+[export-strategic-tok] selftest checkpoint -> /tmp/opencode/tok_selftest.pt
+exported /tmp/ooc_contextual_export_selftest.native: 32 parity checks passed (max err logit 3.10e-08, value 2.45e-08, Q 3.00e-08)
+artifact format: OOC_STRAT_V4
+file size: 799,176 bytes
