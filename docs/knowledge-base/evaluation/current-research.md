@@ -104,15 +104,14 @@ other sections retain their prior verification and linked evidence.
 
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 
-The independent 512-pair gameplay confirmation is **`PREPARATION_COMPLETE_RUN_BLOCKED`**.
-The frozen source, artifacts, clean C/H manifests, analyzer, and local
-mechanism/provenance checks are prepared and reviewed. No canary or quality
-seed has run. The designated GCP research instance `sts-test` was not found in
-`sts-ai-502709/europe-west3-c`; no replacement host or local seed run was
-used. The gameplay-quality result is therefore **unknown**, and the opt-in
-DeepSets treatment remains unqualified. Resume only on the designated instance
-after verifying and inventorying its existing checkout and output paths. See
-[the evidence and resume packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
+The independent 512-pair gameplay confirmation is **`OOC_HYBRID_QUALITY_CONFIRMED`**.
+The frozen local paired run completed on 2026-09-25: C won 277/512 and H won
+292/512; H minus C was +2.9297 pp with paired bootstrap 95% CI
+[-1.7578, +7.6172] pp, passing the preregistered -5.0 pp non-inferiority margin.
+This does not establish superiority or change the opt-in default. The former
+GCP blocker describes preparation only; no server restoration or resume is
+needed. Frozen preparation manifests remain historical evidence. See
+[the completed evidence packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
 
 ## Purpose
 

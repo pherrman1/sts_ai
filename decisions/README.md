@@ -54,6 +54,10 @@ the replacement.
 
 ## Current routing ADRs
 
+- [ADR-0024](0024-local-research-execution.md) retires the cloud launcher and
+  fixed local seed ceiling, preserving explicit authorization and frozen
+  provenance for larger local research runs. It supersedes ADR-0006/0009.
+
 - [ADR-0017](0017-silver-quiescent-queue-item-identity.md) accepts
   quiescent Silver queue-item identity without retained-root rewriting.
 - [ADR-0016](0016-silver-settled-queue-item-identity.md) records the rejected

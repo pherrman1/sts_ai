@@ -1,7 +1,9 @@
 # ADR-0009: Automated GCP research runs have no fixed seed ceiling
 
 Date: 2026-08-14
-Status: accepted
+Status: superseded by [ADR-0024](0024-local-research-execution.md).
+
+Historical decision text below is retained as provenance, not current guidance.
 
 ## Context
 

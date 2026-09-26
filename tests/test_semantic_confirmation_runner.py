@@ -3,9 +3,30 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from tools.run_ooc_semantic_confirmation import capture_distribution, verify_evaluated_binding, digest, START, STOP
+from tools.run_ooc_semantic_confirmation import capture_distribution, verify_evaluated_binding, digest, START, STOP, shard_command
 
 class RunnerTests(unittest.TestCase):
+    def test_local_shard_uses_frozen_guard_without_host_context(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'producer with spaces'
+            (source / 'tools').mkdir(parents=True)
+            guard = source / 'tools/seed_guard.sh'
+            guard.write_text('exec "$@"\n')
+            binary = source / 'one_combat'
+            binary.write_text('#!/bin/sh\npwd; printf "%s\\n" "$@"\n')
+            binary.chmod(0o755)
+            # Fake timer forwards argv; no gameplay or GNU time dependency.
+            timer = source / 'timer'
+            timer.write_text('#!/bin/sh\nshift 3; exec "$@"\n')
+            timer.chmod(0o755)
+            args = ['oocsemanticcapture', '16', '992000', 'output with spaces']
+            command = shard_command(timer, source, binary, source/'shard', 'capture', args)
+            result = subprocess.run(command, cwd=source, env={'PATH': '/usr/bin:/bin'},
+                                    text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.splitlines(), [str(source), *args])
+
     def test_exact_capture_cohort(self):
         manifests=[]
         for s in range(START,STOP,16):
