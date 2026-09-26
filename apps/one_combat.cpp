@@ -897,6 +897,7 @@ std::string vSendRecv(const std::string &reqNoNl) {
 
 // native V_win helpers use the shared compact-tree reader and rich feature map.
 std::vector<float> richFeatureVec(GameContext &gc);
+double vStateWinNativeFeatures(const std::vector<float> &raw);
 bool   winNetOk();
 static double winNetPredict(const std::vector<float> &raw);
 
@@ -976,7 +977,12 @@ std::string nativeShopPlan(GameContext &gc) {
 
 double vStateWinNative(GameContext &gc) {
     if (!g_winNet.ok) throw std::runtime_error("OOC MCTS requires native v_win");
-    const double value = g_winNet.predict(richFeatureVec(gc));
+    return vStateWinNativeFeatures(richFeatureVec(gc));
+}
+
+double vStateWinNativeFeatures(const std::vector<float> &raw) {
+    if (!g_winNet.ok) throw std::runtime_error("OOC MCTS requires native v_win");
+    const double value = g_winNet.predict(raw);
     if (!std::isfinite(value) || value < 0 || value > 1)
         throw std::runtime_error("OOC MCTS invalid native v_win value");
     return value;

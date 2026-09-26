@@ -93,6 +93,8 @@ double vStateRaw(GameContext &gc);
 double vStateWin(GameContext &gc);
 // Throws when native model is unavailable; never contacts v_server.
 double vStateWinNative(GameContext &gc);
+// Same checks as vStateWinNative for an already-built rich feature vector.
+double vStateWinNativeFeatures(const std::vector<float> &raw);
 std::string vSendRecv(const std::string &request);
 std::string mapGraphCsv(const GameContext &gc, bool rooms);
 std::string mapSpecialCsv(const GameContext &gc);
