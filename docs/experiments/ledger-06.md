@@ -12936,25 +12936,43 @@ Decision: adopt; this is a pure speedup with exact parity. Evidence:
   gates. Candidate and pair collection use eight one-thread subprocess workers;
   each source is durable and independently resumable, while shard payloads stay
   out of the PR. Preflight found 12 logical CPUs, 10 GiB available RAM, 369 GB
-  free disk, load average 1.44, and no recent CPU pressure. Stage C collection
-  has not started. Only Stage C can qualify the candidate.
+  free disk, load average 1.44, and no recent CPU pressure. The first candidate
+  collection attempt completed eight guarded source commands, then stopped
+  because its mutable progress index used the write-once artifact writer. All
+  eight source shards passed independent producer/teacher/seed and file-hash
+  validation. No target selection, candidate scoring, pair collection, or
+  qualification analysis ran. The empty failed index was preserved in local
+  quarantine, and the eight valid shards remain available for resume. The
+  execution-only amendment plan
+  `stage_c_preoutcome_plan_retry1_indexfix.json` (SHA-256
+  `52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769`) binds
+  the corrected collector and compact failed-attempt record; source assignment,
+  candidate, teacher, selection, worker topology, and gates are unchanged. The
+  atomic-index update unit tests and amended-plan preflight pass. At this
+  ledger update the corrected run has not restarted; it resumes from 8/320
+  validated shards. Only Stage C can qualify the candidate.
 - **Decision:** Stage A remains development evidence. Retry 6 passed the
   current-main transfer proceed gate and authorizes the already-frozen Stage C
   run, but neither Stage A nor B qualifies the candidate. The Stage-C
-  pre-outcome plan and resource preflight are frozen; no fresh candidate or pair
-  outcomes are collected yet. No runtime support changed; production remains
+  scientific plan and resource preflight remain frozen. The first Stage-C
+  candidate attempt stopped on the checkpoint-index bug after eight valid
+  source shards; the corrected execution amendment is frozen and will resume
+  those shards without rerunning them. No target selection or paired outcomes
+  have been produced. No runtime support changed; production remains
   `active_unqualified_lizard`.
 - **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
   including frozen cohort artifacts, Stage A analysis, candidate manifest,
   source assignment, retry-5 history, retry-6 current-main teacher/plan/pairs,
   analyzer output, compact checkpoint hash index (payloads excluded as scratch),
-  and Stage-C pre-outcome plan/teacher manifest. The obsolete >128 GCP gate was
+  the Stage-C scientific and execution-amendment plans, failed-attempt hash
+  record, and teacher manifest. The obsolete >128 GCP gate was
   removed per ADR-0024, and the repository's local 320 experiment maximum is
   used without a cloud bypass. The clean Release build and focused Event-room
   regression passed; GitHub Actions did not start because of the account
-  payment/spending-limit block (not a code verdict).
+  payment/spending-limit block (not a code verdict). The focused Stage-C shard
+  index self-test now also passes after the retry-1 checkpoint-writer fix.
 
 Knowledge impact: current research now records the event-continuation harness
 fix, analyzer schema compatibility fix, retry-6 current-main transfer result,
-and the frozen Stage-C pre-outcome plan. No runtime support or candidate
-parameters changed.
+the frozen Stage-C scientific plan, and its checkpoint-index execution
+correction. No runtime support or candidate parameters changed.

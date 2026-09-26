@@ -37,13 +37,14 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def atomic_write(path: Path, payload: bytes) -> None:
+def atomic_write(path: Path, payload: bytes, *, replace_existing: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
-        if path.read_bytes() != payload:
+        if path.read_bytes() == payload:
+            return
+        if not replace_existing:
             raise RuntimeError(f"refusing to overwrite different frozen output: {path}")
-        return
-    temporary = path.with_name(path.name + f".tmp.{os.getpid()}")
+    temporary = path.with_name(path.name + f".tmp.{os.getpid()}.{time.time_ns()}")
     with temporary.open("xb") as stream:
         stream.write(payload)
         stream.flush()
@@ -56,8 +57,9 @@ def atomic_write(path: Path, payload: bytes) -> None:
         os.close(directory_fd)
 
 
-def atomic_json(path: Path, value: object) -> None:
-    atomic_write(path, (json.dumps(value, indent=2, sort_keys=True) + "\n").encode())
+def atomic_json(path: Path, value: object, *, replace_existing: bool = False) -> None:
+    atomic_write(path, (json.dumps(value, indent=2, sort_keys=True) + "\n").encode(),
+                 replace_existing=replace_existing)
 
 
 def load_json(path: Path) -> dict:
@@ -120,6 +122,23 @@ def validate_common(root: Path, plan_path: Path, plan: dict) -> tuple[list[int],
     script_path = Path(__file__).resolve()
     if sha256(script_path) != plan["collectorScriptSha256"]:
         raise ValueError("Stage-C shard collector source hash mismatch")
+    amendment = plan.get("operationalAmendment")
+    if amendment is not None:
+        previous_plan_path = resolve(root, amendment["supersededPlanPath"])
+        attempt_path = resolve(root, amendment["attemptRecordPath"])
+        if (not previous_plan_path.is_file()
+                or sha256(previous_plan_path) != amendment["supersededPlanSha256"]
+                or not attempt_path.is_file()
+                or sha256(attempt_path) != amendment["attemptRecordSha256"]):
+            raise ValueError("Stage-C operational amendment provenance mismatch")
+        attempt = load_json(attempt_path)
+        if (attempt.get("schema") != "active_lizard_stage_c_attempt_record_v1"
+                or attempt.get("status") != "ABORTED_INDEX_WRITE_FAILURE"
+                or attempt.get("planSha256") != amendment["supersededPlanSha256"]
+                or attempt.get("candidateScoringOrSelectionRun") is not False
+                or attempt.get("candidateShardSeedsRevalidated")
+                    != amendment.get("reusedCandidateShardSeeds")):
+            raise ValueError("Stage-C operational amendment attempt record is inconsistent")
     for relative, expected_sha in plan.get("frozenRepositoryFiles", {}).items():
         frozen_path = resolve(root, relative)
         if not frozen_path.is_file() or sha256(frozen_path) != expected_sha:
@@ -285,7 +304,7 @@ def write_index(path: Path, phase: str, plan_path: Path, teacher_path: Path,
         "ompThreadsPerProcess": 1,
         "completedSources": len(entries),
         "entries": [entries[seed] for seed in sorted(entries)],
-    })
+    }, replace_existing=True)
 
 
 def run_task(root: Path, phase: str, seed: int, paths: dict[str, Path],

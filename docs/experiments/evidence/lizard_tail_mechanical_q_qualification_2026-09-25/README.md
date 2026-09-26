@@ -392,7 +392,33 @@ matching hashes and provenance, while aggregate output is assembled in frozen
 source order. Per-source payloads are local scratch; the review packet will
 retain aggregate data, manifests, and a compact hash index.
 
-The preflight found 12 logical CPUs, load average 1.44, about 10 GiB available
-RAM, 369 GB free disk, and zero recent CPU pressure. The Stage-C source
-collection has not started yet; only a fresh native qualification can qualify
-the candidate. Production remains `active_unqualified_lizard`.
+The initial candidate-collection attempt exposed an execution-only checkpoint
+bug: the progress index was created with the write-once artifact helper, so
+later index updates failed after the first batch of eight source commands had
+completed. Each of those eight per-source data/manifest/provenance/log sets
+independently validated against the frozen executable, teacher, and seeds. The
+collector stopped before candidate selection/scoring, pair generation, or
+qualification analysis. Its empty index was preserved under the ignored
+`fresh_native/shards/quarantine/attempt_retry1_index_write_failure/` directory;
+the validated source shards remain durable and will be reused after rechecking.
+The compact failure record is
+`fresh_native/stage_c_candidate_collection_attempt1_index_failure.json` (SHA-256
+`6c252d3a656d768ed5aef6ee3b27bcbd8b8d2a2c00e6a3fe8858b2e5e6c51dcb`).
+
+The fix makes only progress-index writes atomically replaceable; immutable
+source shards still refuse overwrite. Two focused unit tests pass, including
+repeated index updates and the write-once shard-output guard. The scientific
+contract remains the original frozen plan
+`stage_c_preoutcome_plan.json` (SHA-256
+`54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`). Its
+execution-only amendment is
+`fresh_native/stage_c_preoutcome_plan_retry1_indexfix.json` (SHA-256
+`52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769`), which
+binds the corrected collector SHA-256
+`e2896c1182b2abc6acad0a67a7fe735fb0f68899747455faed2aa7aa40b33af5`, the
+superseded plan, the failure record, and the eight shards eligible for resume.
+The source assignment, candidate, teacher, selection rules, simulation budget,
+worker topology, and qualification gates are unchanged. At this update the
+corrected run has not restarted; 8/320 validated candidate shards are retained
+and 312 sources remain. Only a fresh native qualification can qualify the
+candidate. Production remains `active_unqualified_lizard`.
