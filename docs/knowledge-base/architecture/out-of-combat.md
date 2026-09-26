@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -33,11 +33,17 @@ never by value. Providers may explicitly mark a transition deterministic; after
 its first sample the core reuses that single child instead of widening it. Action Q is the Monte Carlo mean of sampled trajectory values.
 
 Depth counts action transitions (root zero); exact terminals precede model-defined
-leaf boundaries, which precede the depth horizon,
+leaf boundaries, which precede the technical depth safety guard,
 and newly expanded downstream nonterminal leaves use the injected evaluator.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
-`cPuct=1.5`, `k=2`, `alpha=0.5`, depth 32. Priors normalize with uniform zero-mass
+`cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
+non-boundary state at `depth >= maxDepth` aborts the entire root with
+`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`; partial action statistics
+are discarded. The cap-hit state is never evaluated as a normal leaf.
+`maxDepthReached` includes the offending depth for diagnosis. Live accounting
+records this under `continuationLimitAborts`/`continuation_reasons`, without
+inventing an unsupported combat. Priors normalize with uniform zero-mass
 fallback. Before PUCT, every legal action receives one visit, choosing the
 highest-prior unvisited action and then ascending ID. Zero individual priors
 cannot suppress actions; cPuct=0 visits all actions once, then exploits Q.
@@ -425,7 +431,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `CPUCT` |1.5|finite nonnegative PUCT exploration multiplier|
 | `WIDEN_K` |2|finite positive chance-particle width coefficient|
 | `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
-| `MAX_DEPTH` |32|integer1..32 searched action transitions|
+| `MAX_DEPTH` |512|integer1..512; fail-closed technical safety cap, not a value horizon|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
@@ -438,6 +444,9 @@ with `ceil(k*N^alpha)`; action candidates are fully expanded, so this substrate
 is not double progressive widening. Root-Q selection changes only the final
 choice, not tree allocation. Leaf projection steps do not count toward tree
 `MAX_DEPTH`. None of these knobs changes real Silver's budget or parameters.
+Historical depth-8/16/32 parameter-screen receipts and the frozen
+`tools/ooc_mcts_parameter_search.py` design describe the old value-bearing
+horizon and must be replayed on their recorded source SHA, not this runtime.
 The boss leaf is evaluated through one shared helper from both ordinary
 `leafValue()` and the live resolved-checkpoint branch. It uses no planner or
 gameplay RNG, never calls `v_win`, and fails the simulation/root closed if any
@@ -452,6 +461,20 @@ variation tests; this does not establish policy quality or full belief-model qua
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested.
+
+`STS_OOC_MCTS_PRIOR_TRACE=<jsonl path>` is a separate, strictly opt-in capture
+of the authoritative current `OocGameContextModel` prior. It appends one
+schema-versioned row per state on that state's first `legalActions()` prior
+build, including root and hypothetical search states. Prior-covered
+non-singleton rows retain the exact `buildTokStatePure` token values, each
+distinct `strategicCands`/`tokEntity` source input and native source logit, the
+ordered semantic candidates and their unchanged `priorSourceGroups`, grouped
+candidate logits, raw planner weights and normalized diagnostic prior.
+Singleton, uncovered and explicitly uniform rows stay compact and do not
+force skipped policy inference. The trace checks source coverage, grouped-logit
+reconstruction, candidate order, finite values and exact raw planner weights
+before writing. It does not create a second search or change search RNG,
+candidate ordering or returned priors; use a fresh path for each capture.
 
 `STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
 the full-run trace boundary. Defaults remain off. Thread-local CPU scopes

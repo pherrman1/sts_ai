@@ -41,8 +41,9 @@ struct OocMctsConfig {
     double cPuct = 1.5;
     double wideningK = 2.0;
     double wideningAlpha = 0.5;
-    // Depth counts sampled action transitions; root depth is zero.
-    std::uint32_t maxDepth = 32;
+    // Safety cap on sampled action transitions (root zero), never a leaf horizon.
+    // Keep the field name for configuration/receipt compatibility.
+    std::uint32_t maxDepth = 512;
     std::uint64_t seed = 0;
     // Optional final root choice; tree selection remains PUCT.
     bool selectByMeanQ = false;
@@ -114,7 +115,7 @@ struct OocRootCheckpointStats {
     std::vector<OocRootActionStats> actions;
 };
 struct OocMctsResult {
-    // Absent for terminal/boundary roots or a zero-depth horizon.
+    // Absent for terminal/boundary roots or an aborted search.
     std::optional<OocActionId> selectedAction;
     bool aborted = false;
     std::string abortReason;

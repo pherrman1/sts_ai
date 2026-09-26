@@ -140,9 +140,13 @@ work is rebuilt by replaying the card on a copy of the root: the card goes
 back to hand with its cost refunded and the per-turn play counts and Ink
 Bottle/Nunchaku/Pen Nib counters rolled back, and the part of the queue the
 play produced that is still unrun when the selection opens (Burning Pact's
-draw, `OnAfterCardUsed`, relic triggers) is copied into the root. Monster
-reactions queued while the card's own pre-selection effects ran (Sharp Hide,
-a Mode Shift) are not rebuilt, and effects the first play consumed (Vigor, the
+draw, `OnAfterCardUsed`, relic triggers, Sharp Hide) is copied into the root.
+The replay hits a second time, so on the copy every monster is made
+unkillable and a target the real hit killed is revived; otherwise the replay
+could end the combat or fail to use the card before the selection opens.
+Monster reactions to the card's pre-selection hit (a Mode Shift it triggered)
+are not rebuilt: after the hit the monster looks the same whether this card
+or an earlier one triggered them. Effects the first play consumed (Vigor, the
 Pen Nib buff, Double Tap, Necronomicon) are not rolled back. When the replay
 does not reach the same selection, only `OnAfterCardUsed` is restored.
 `semanticFromSearchAction` maps search actions to the
@@ -279,3 +283,50 @@ and [research/](../research/README.md). Chronological evidence is indexed by
 Use those sources for benchmark numbers, rejected variants, promotion
 decisions, and implementation history. Keep this page limited to the current
 architecture and behavior contract.
+
+### Silver tree profile
+
+`STS_SILVER_TREE_PROFILE=/path/to/fresh.jsonl` enables aggregate diagnostics
+for real decisions executed by `NativeSilverBackend` (not the separate live
+advisor path). Unset/empty means no file and no histogram updates. The writer
+serializes rows across worker threads; a failed open/write is an explicit error.
+The profile does not change policy, budgets, evaluation, or RNG. Rows identify
+seed, act/floor, encounter, room, turn, decision, player/enemy HP, configured
+maximum budget, actual completed simulations, allocated nodes, root actions,
+inherited visits, selected action, and singleton skips.
+
+The denominator is **newly completed simulations in this real decision**,
+including both adaptive chunks but excluding all inherited visits and terminal
+root initialization. Singleton skips have zero samples. Each completed step
+calls the heuristic evaluator once; Native Silver has no neural leaf evaluator.
+Endpoint counts sum to completed simulations. Descent-bound exceptions are
+recorded separately in an error row and rethrown; analysis rejects incomplete
+searches instead of including their partial counts. The analyzer requires explicit
+boolean budget-mode flags, zero completed simulations for singleton skips, the
+full configured budget for flat searches, and exactly 500 or 10,000 completed
+simulations with a 10,000 maximum for adaptive searches.
+
+Endpoint classes follow simulator outcomes: `victory` includes escapes the
+engine treats as victory; `death` requires PLAYER_LOSS with HP <= 0;
+`turn_limit` is a PLAYER_LOSS beyond turn 500; `engine_stop` is any other
+PLAYER_LOSS (including no-damage/loop-guard stops); `nonterminal` is UNDECIDED
+when no supported action is available. Turn-limit classification takes
+precedence over HP. Engine losses must not be interpreted as sampled deaths.
+
+Tree depth counts selected action edges from the current root; chance-outcome
+edges do not add a second action. Total endpoint depth adds rollout actions.
+A newly reached nonterminal tree leaf normally receives a SilverRolloutAgent
+rollout before heuristic evaluation, so terminal **evaluated endpoints** do
+not imply terminal tree leaves. `nonterminal_rollout_starts` and `rollout_calls`
+make this distinction visible; cycle rollouts are counted separately. Exact
+histograms retain maxima and quantiles without dumping states or whole trees.
+
+Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
+SUMMARY.json` to validate all denominators and generate counts/shares and depth
+quantiles by act, room, encounter, turn, decision, HP quarter, enemy HP in
+25-point bands, and configured budget. The report ranks encounters with at
+least 20 observed decisions (override `--minimum-decisions`) and includes one
+complete fight's evolution per encounter. It uses simulation-weighted shares,
+not averages of per-decision percentages. Zero-sample shares are null. Reused
+visits and correlated search samples are not independent gameplay outcomes;
+terminal reachability alone establishes no search-quality or budget claim.

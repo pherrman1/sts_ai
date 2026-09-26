@@ -3,6 +3,9 @@
 #include <atomic>
 #include <cstdlib>
 #include <memory>
+#include <fstream>
+#include <mutex>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -31,6 +34,61 @@ namespace sts::search {
             double topGap = kDefaultTopGap;
         };
         Options g_options;
+        std::ofstream g_treeProfile;
+        std::mutex g_treeProfileMutex;
+
+        nlohmann::json histogram(const std::map<int, std::int64_t> &counts) {
+            auto result = nlohmann::json::object();
+            for (const auto &[depth, count] : counts) result[std::to_string(depth)] = count;
+            return result;
+        }
+
+        void writeTreeProfile(const GameContext &gc, const BattleContext &bc, int decision,
+                              std::int64_t combatId, const SilverSearcher &searcher, const SilverTreeProfile &profile,
+                              std::int64_t inherited, std::int64_t configured, bool skipped,
+                              const nlohmann::json &action, const std::string &error = {}) {
+            using nlohmann::json;
+            json endpoints = json::object();
+            for (int i = 0; i < SilverTreeProfile::COUNT; ++i) {
+                const auto &d = profile.endpoints[i];
+                std::int64_t count = 0;
+                for (const auto &[depth, n] : d.tree) count += n;
+                endpoints[SilverTreeProfile::names[i]] = {
+                    {"count", count}, {"tree_depth", histogram(d.tree)},
+                    {"total_depth", histogram(d.total)}};
+            }
+            int enemyHp = 0;
+            for (int i = 0; i < bc.monsters.monsterCount; ++i)
+                if (!bc.monsters.arr[i].isDeadOrEscaped()) enemyHp += bc.monsters.arr[i].curHp;
+            const json row = {
+                {"schema", 1}, {"combat_id", combatId}, {"seed", std::to_string(gc.seed)}, {"act", gc.act},
+                {"floor", bc.floorNum}, {"room", roomStrings[static_cast<int>(gc.curRoom)]},
+                {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
+                {"turn", bc.turn}, {"decision", decision}, {"hp", bc.player.curHp},
+                {"max_hp", bc.player.maxHp}, {"enemy_hp", enemyHp},
+                {"configured_simulations", configured}, {"completed_simulations", profile.completed},
+                {"inherited_visits", inherited}, {"nodes", searcher.nodeCount()},
+                {"root_actions", searcher.rootNode().edges.size()},
+                {"singleton_skip", skipped}, {"adaptive", g_options.adaptive},
+                {"heuristic_evaluations", profile.completed}, {"neural_evaluations", 0},
+                {"rollout_calls", profile.rolloutCalls}, {"cycle_rollouts", profile.cycleRollouts},
+                {"nonterminal_rollout_starts", profile.nonterminalRolloutStarts},
+                {"descent_aborts", profile.descentAborts}, {"endpoints", endpoints},
+                {"action", action}, {"error", error}};
+            std::lock_guard<std::mutex> lock(g_treeProfileMutex);
+            g_treeProfile << row.dump() << '\n';
+            g_treeProfile.flush();
+            if (!g_treeProfile) throw std::runtime_error("cannot write STS_SILVER_TREE_PROFILE");
+        }
+
+        struct ProfileScope {
+            SilverSearcher &searcher;
+            SilverTreeProfile data;
+            explicit ProfileScope(SilverSearcher &s) : searcher(s) {
+                if (g_treeProfile.is_open()) searcher.profile = &data;
+            }
+            ~ProfileScope() { searcher.profile = nullptr; }
+        };
 
         std::atomic<std::int64_t> g_combats {0};
         std::atomic<std::int64_t> g_decisions {0};
@@ -87,7 +145,7 @@ namespace sts::search {
             KnowledgeObserverScope observer(knowledge);
             bc.init(gc);
             knowledge.synchronizeAfterCombatInitialization(bc);
-            ++g_combats;
+            const auto combatId = ++g_combats;
             g_nativeSilverCombatStats = {};
 
             SilverSearchContext context;
@@ -136,6 +194,9 @@ namespace sts::search {
                 }
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
+                ProfileScope profiling(*searcher);
+                const auto configured = g_options.adaptive ? kAdaptiveTotal : flatBudget;
+
                 // Simulated actions must not reach the live knowledge tracker.
                 KnowledgeObserverSuspension searching;
                 std::int64_t simulations = 0;
@@ -144,21 +205,27 @@ namespace sts::search {
                 // contracts search every root.
                 const bool skipSearch = !g_options.exactRootBudgets && !g_options.searchSingletonRoots
                     && searcher->prepareRootActions() == 1;
-                if (skipSearch) {
-                    ++g_singletonSkips;
-                } else if (g_options.adaptive) {
-                    searcher->search(kAdaptiveInitial);
-                    simulations = kAdaptiveInitial;
-                    const bool retained = inheritedVisits > 0;
-                    const bool stop = retained && searcher->rootNode().edges.size() > 1
-                        && searcher->topTwoVisitShareGap() >= g_options.topGap;
-                    if (!stop) {
-                        searcher->search(kAdaptiveTotal - kAdaptiveInitial);
-                        simulations = kAdaptiveTotal;
+                try {
+                    if (skipSearch) {
+                        ++g_singletonSkips;
+                    } else if (g_options.adaptive) {
+                        searcher->search(kAdaptiveInitial);
+                        simulations = kAdaptiveInitial;
+                        const bool retained = inheritedVisits > 0;
+                        const bool stop = retained && searcher->rootNode().edges.size() > 1
+                            && searcher->topTwoVisitShareGap() >= g_options.topGap;
+                        if (!stop) {
+                            searcher->search(kAdaptiveTotal - kAdaptiveInitial);
+                            simulations = kAdaptiveTotal;
+                        }
+                    } else {
+                        searcher->search(flatBudget);
+                        simulations = flatBudget;
                     }
-                } else {
-                    searcher->search(flatBudget);
-                    simulations = flatBudget;
+                } catch (const std::exception &e) {
+                    if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
+                        inheritedVisits, configured, skipSearch, nullptr, e.what());
+                    throw;
                 }
                 g_simulations += simulations;
                 ++g_decisions;
@@ -172,6 +239,8 @@ namespace sts::search {
                 if (!action.isValidAction(bc)) {
                     fail(gc, bc, "selected action is not valid on the live state");
                 }
+                if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
+                    inheritedVisits, configured, skipSearch, action.bits);
                 agent.takeAction(bc, action);
             }
         }
@@ -233,6 +302,14 @@ namespace sts::search {
     }
 
     void installNativeSilverBackend() {
+        // Installation happens before worker threads start. An empty/unset path
+        // leaves diagnostics completely disabled; use a fresh path for each run.
+        if (g_treeProfile.is_open()) g_treeProfile.close();
+        if (const char *path = std::getenv("STS_SILVER_TREE_PROFILE"); path && *path) {
+            g_treeProfile.clear();
+            g_treeProfile.open(path, std::ios::app);
+            if (!g_treeProfile) throw std::runtime_error("cannot open STS_SILVER_TREE_PROFILE");
+        }
         g_options = Options{};
         g_options.installed = true;
         if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE")) {

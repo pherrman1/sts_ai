@@ -1,0 +1,52 @@
+{
+  "baseline_sha": "b23aad9d8885c6eca332b1f5cccf3890755bbecf",
+  "issue": 344,
+  "kind": "bounded descriptive engineering smoke; not a quality or performance qualification",
+  "configuration": {
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "ascension": 0,
+    "flat_simulations": 1000,
+    "boss_multiplier": "existing default",
+    "OMP_NUM_THREADS": 1,
+    "STS_SILVER_ADAPTIVE": 0,
+    "ooc_policy": "existing bestbench native GBM policy",
+    "fair": true
+  },
+  "commands": [
+    "OMP_NUM_THREADS=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_TREE_PROFILE=build/issue344/profile.jsonl bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 1000 8 0 0 build/issue344/on.csv",
+    "OMP_NUM_THREADS=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_TREE_PROFILE= bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 1000 1 0 0 build/issue344/off.csv",
+    "python3 tools/analyze_silver_tree_profile.py build/issue344/profile.jsonl --output build/issue344/summary.json"
+  ],
+  "source_sha256": {
+    "include/sim/search/SilverSearcher.h": "fab5ecf80a79f1113dc1afb4653ab23f6bf4af831dfad739c2644daeb10a7d30",
+    "src/sim/search/SilverSearcher.cpp": "6bc9246b99626c964c8b81577e8f65fe11f14a6be4d9e5104c77a8f331c6be0e",
+    "src/sim/search/NativeSilverBackend.cpp": "c533b2e748e42087a14c1284a896ebd25bad211440ac183e5b5048f359ef3e45",
+    "apps/one_combat.cpp": "ae0d4f80be278e64cc196bf20da050913552e3d333195be6d3665237aeb90f13",
+    "tools/analyze_silver_tree_profile.py": "9ecc0e06ba9f7b20f21c8a2f1e0d631bf59ba428d96f40e5e30c1b948df81180"
+  },
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "binary_sha256": "ab2beffca730220843966177771aa3d14654ebcab4ef70a519f15a9644a46dfa",
+  "artifacts_sha256": {
+    "off.csv": "d425c3a644e398f1c6da03740505a4cd29d79e172e52f9141f44588971fadcd5",
+    "off.csv.meta.json": "a60718caa9605a735ee37b59d86968777d2877e97603ee8311415a6706c53615",
+    "off.log": "8814e387a509951bf672ddb4dff5ec3a548ad5950e0a774c41348d483d6cfb7a",
+    "on.csv": "8d13f0f89cf54931322b527dbe2425094b236cfa712fdc6e6edc8c5452413ac1",
+    "on.csv.meta.json": "b8f02a21f1d83a5f828f841d46566e6d749b21c2a703d6f9dfe5f11bc11b2b83",
+    "on.log": "aa0c11fce26f5038e4b8b1909d18499df511a85936a7ccf6580d6267c5145a6b",
+    "parity.json": "fe85eab742b7ef4fe3406303cd7453d774b9754db48e7445ac9f2d91dbddcb13",
+    "profile.jsonl.gz": "f2dea9c03f873c9fb4689e6e56b98156121e02808e07bbf204dc7dd7ef741ada",
+    "summary.json.gz": "cacc1de869ea13869a7eb3f6c6eef1616b64c172ad53817a6910a7d7ec188dcf"
+  }
+}

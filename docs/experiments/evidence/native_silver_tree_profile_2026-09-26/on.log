@@ -1,0 +1,7 @@
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+BEST stack config: skip@-0.5  rest=win-rate  shop-V=ON  path=heuristic  shop-beam=off  native-OOC=ON  keys=skip  searcher=Silver  fair-play  seeds 0..7  asc 0  sims 1000  threads 1
+BEST models: floor=models/v_rich_trees.txt  win=models/v_win_trees.txt
+BEST                    win%= 75.0   avg_floor= 49.1   avg_hp_end= 32.0   cpu_sec/run=4.45   wall=35.6s
