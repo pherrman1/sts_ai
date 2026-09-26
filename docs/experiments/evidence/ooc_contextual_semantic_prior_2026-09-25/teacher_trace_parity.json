@@ -1,0 +1,34 @@
+{
+  "artifacts": {
+    "native_teacher_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "preflight_script_sha256": "56c253ca36ee7dc73038b3f0ac32dbacb5da0396470aeb86c348a03abef3761e",
+    "teacher_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+    "trace_decompressed_sha256": "9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370"
+  },
+  "population": {
+    "decompressed_trace_sha256": "9f95592e9dfbf9b199dbdd81f1b4cae2e654e52a871c227c888ace47f7fb1cb1",
+    "eligible_trace_occurrences": 11474,
+    "max_captured_final_prior_formula_error": 5.551115123125783e-16,
+    "max_captured_raw_weight_formula_error": 1.1102230246251565e-16,
+    "shop_trace_occurrences": 1402,
+    "singleton_trace_records": 12308,
+    "source_prior_uncovered_records": 6905,
+    "trace_records": 24959,
+    "uniform_prior_records": 6905,
+    "unique_canonical_priors": 6317,
+    "unique_shop_priors": 1002
+  },
+  "python_native_teacher_preflight": {
+    "captured_teacher_source_rows": 37985,
+    "max_abs_python_vs_captured_candidate_logit": 2.6702880859375e-05,
+    "max_abs_python_vs_captured_native_source_logit": 2.6702880859375e-05,
+    "max_abs_python_vs_captured_raw_semantic_weight": 6.185886067266999e-06,
+    "max_abs_rebuilt_teacher_final_prior": 1.9898164111964434e-06,
+    "source_argmax_parity": 1.0,
+    "source_primitives_argmax_parity_count": 6317,
+    "unique_prior_count": 6317
+  },
+  "result": "PASS",
+  "version": "ooc-contextual-python-teacher-trace-preflight-v1"
+}

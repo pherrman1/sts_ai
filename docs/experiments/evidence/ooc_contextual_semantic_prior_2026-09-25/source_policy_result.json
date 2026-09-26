@@ -1,0 +1,124 @@
+{
+  "artifacts": {
+    "corpus_sha256": "c428f229bdf7cfe070ff06fd1664978e6e49bbde872d5929ef4fa50f56ba008b",
+    "native_teacher_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "source_evaluator_sha256": "92d6a3d5a73c62f0eeffef774e954bc4dbac9e21111e34e497c8a27d69b3d207",
+    "split_sha256": "0efe5b56e1f87c0642827c14e55790db517b55820d54620edd32420012e8b67b",
+    "state_cache_layout": "raw-to-grouped-v2",
+    "state_cache_manifest_sha256": "aa452f26e35ef62d0950311db6e1be882864e247bd248fc3dce4c60b35524e55",
+    "state_cache_sha256": "91792d7f97d0de1d34ecf64f4daa6a5808532cdea0d23aca407e730430c802aa",
+    "student_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761",
+    "target_cache_manifest_sha256": "8b22b699b60995b0dd443bdd90440d4412e56adaef3623e86c6b0c870cc2ffa2",
+    "target_cache_sha256": "3511d5deee11db14dbabb5daafa24b02c1392c40132407ac9ec834f09a78e7b2",
+    "teacher_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8"
+  },
+  "by_screen": {
+    "boss_relic": {
+      "argmax_agreement": 0.9907407407407407,
+      "groups": 1512,
+      "source_rows": 6048,
+      "tv_max": 0.23157400565012476,
+      "tv_mean": 0.00926112986278128,
+      "tv_median": 0.0016501051889362274,
+      "tv_p90": 0.028529424526101566
+    },
+    "card_reward": {
+      "argmax_agreement": 0.9918700584393262,
+      "groups": 58180,
+      "source_rows": 339945,
+      "tv_max": 0.2456855913590517,
+      "tv_mean": 0.007154837095800085,
+      "tv_median": 5.279933223289188e-06,
+      "tv_p90": 0.024435001155460143
+    },
+    "event": {
+      "argmax_agreement": 0.9307483914663055,
+      "groups": 5906,
+      "source_rows": 15681,
+      "tv_max": 0.2898200943206056,
+      "tv_mean": 0.018274030673295936,
+      "tv_median": 0.010484098633171623,
+      "tv_p90": 0.04538267827512717
+    },
+    "map": {
+      "argmax_agreement": 0.9874084543235256,
+      "groups": 15566,
+      "source_rows": 35912,
+      "tv_max": 0.2947370359454533,
+      "tv_mean": 0.012345127708228161,
+      "tv_median": 0.007292310077742826,
+      "tv_p90": 0.029091839097856412
+    },
+    "rest": {
+      "argmax_agreement": 0.9432589718719689,
+      "groups": 6186,
+      "source_rows": 17983,
+      "tv_max": 0.5219561905714692,
+      "tv_mean": 0.041163230210965705,
+      "tv_median": 0.0259473796723009,
+      "tv_p90": 0.0973384653588742
+    },
+    "selector_upgrade": {
+      "argmax_agreement": 0.9408672798948752,
+      "groups": 5327,
+      "source_rows": 97436,
+      "tv_max": 0.3886420931570425,
+      "tv_mean": 0.031324315622712234,
+      "tv_median": 0.024979653238632063,
+      "tv_p90": 0.06537507730672082
+    },
+    "shop": {
+      "argmax_agreement": 0.9386391251518833,
+      "groups": 4938,
+      "source_rows": 49239,
+      "tv_max": 0.1986680532987919,
+      "tv_mean": 0.011375006883290592,
+      "tv_median": 0.008025970322878745,
+      "tv_p90": 0.027205700223215452
+    },
+    "treasure": {
+      "argmax_agreement": 1.0,
+      "groups": 2699,
+      "source_rows": 5398,
+      "tv_max": 0.12077254559795712,
+      "tv_mean": 0.008182776963733795,
+      "tv_median": 0.003935554369405498,
+      "tv_p90": 0.020772953027931897
+    }
+  },
+  "gate": {
+    "card_reward_and_shop_no_major_collapse": true,
+    "overall_argmax_ge_0_95": true,
+    "overall_median_tv_le_0_03": true,
+    "overall_p90_tv_le_0_10": true,
+    "pass": true
+  },
+  "gate_policy": {
+    "card_reward_and_shop_review_guard": "each argmax >= 0.90; median TV <= 0.05; p90 TV <= 0.15",
+    "overall": "argmax >= 0.95; median TV <= 0.03; p90 TV <= 0.10"
+  },
+  "historical_old_checkpoint_reference": {
+    "argmax_agreement": 0.9795,
+    "card_reward_argmax_agreement": 0.9919,
+    "shop_argmax_agreement": 0.9386,
+    "tv_median": 0.00313,
+    "tv_p90": 0.0348
+  },
+  "interpretation": "source-action softmax at T=1 over Tier-B candidate rows; no semantic aggregation/multiplicity correction and no Q/policy training",
+  "overall": {
+    "argmax_agreement": 0.9794545128297147,
+    "groups": 100314,
+    "source_rows": 567642,
+    "tv_max": 0.5219561905714692,
+    "tv_mean": 0.01226266925923568,
+    "tv_median": 0.0031280018839798286,
+    "tv_p90": 0.0348043539892862
+  },
+  "population": {
+    "bounded_teacher_target_replay_groups": 128,
+    "bounded_teacher_target_replay_max_logit_error": 0.0,
+    "heldout_groups": 100314,
+    "source_candidate_rows": 567642
+  },
+  "version": "contextual-deployed42-source-policy-v1"
+}
