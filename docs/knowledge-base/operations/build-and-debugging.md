@@ -578,7 +578,7 @@ malformed artifacts and does not replace real-model parity.
 `one_combat oocmctsselftest` optionally accepts
 `STS_OOC_MCTS_MICROBENCH_MODEL=/absolute/path/to/combat_transition_v1.native`.
 With the normal native V4/win test setup, this runs a fixed 512-simulation,
-depth-one detached native-search fixture. It compares the uncached sampler with
+map-checkpoint detached native-search fixture. It compares the uncached sampler with
 edge preparation, checks all root statistics/tree counters/snapshots/history,
 and prints `MICROBENCH` timing/counters plus `MICROBENCH_PARITY` exact outputs.
 The native regain-control callback isolates searched combat from reward
