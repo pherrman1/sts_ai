@@ -183,6 +183,65 @@ int main(int argc,char **argv){try{
                 "Bottled relic live choice must retain take and skip");
         }
     }
+    // Captured Neow choices, including reordered offers and nontrivial live indices.
+    for (bool reverse : {false, true}) {
+        auto source=base; source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::NEOW;
+        auto wire=project(source,path,"neow_two_offers");
+        auto &offers=wire["ooc"]["details"]["neow"];
+        offers=J::array({{{"bonus","THREE_ENEMY_KILL"},{"drawback","NONE"}},
+                         {{"bonus","TEN_PERCENT_HP_BONUS"},{"drawback","NONE"}}});
+        if(reverse) std::swap(offers[0],offers[1]);
+        wire["ooc"]["liveChoices"]=J::array({
+            {{"nativeAction",{{"kind","option"},{"index",0}}},{"liveAction",{{"kind","choose"},{"choiceIndex",7}}}},
+            {{"nativeAction",{{"kind","option"},{"index",1}}},{"liveAction",{{"kind","choose"},{"choiceIndex",3}}}}});
+        advisor::LiveOocStateV1 live;
+        const auto imported=advisor::importLiveOocStateV1(wire,live);
+        check(imported.ok,"two-offer Neow import: "+imported.message);
+        const auto actions=v4CandidateActions(live.projected);
+        check(actions.size()==2 && actions[0].getIdx1()==0 && actions[1].getIdx1()==1,
+              "two Neow offers must produce exactly two ordered actions");
+        check(live.projected.info.neowRewards[2].r==Neow::Bonus::INVALID
+            && live.mctsRoot.state.info.neowRewards[3].r==Neow::Bonus::INVALID,
+            "missing Neow slots must not contain fabricated offers");
+        std::vector<std::uint32_t> bits;
+        for(int i=0;i<2;++i) {
+            bits.push_back(actions[i].bits);
+            check(J(live.mctsRoot.state.info.neowRewards[i].r)==offers[i]["bonus"],"Neow offer order/identity");
+            check(advisor::lowerLiveOocAction(live,actions[i].bits)["choiceIndex"]==(i==0?7:3),
+                  "Neow live mapping lost captured index");
+            auto after=live.mctsRoot.state;
+            actions[i].execute(after);
+            const bool lament=offers[i]["bonus"]=="THREE_ENEMY_KILL";
+            check(after.screenState==ScreenState::MAP_SCREEN
+                && (lament ? after.hasRelic(RelicId::NEOWS_LAMENT)
+                           : after.maxHp==live.mctsRoot.state.maxHp+live.mctsRoot.state.maxHp/10),
+                "Neow transition applied wrong offer");
+        }
+        advisor::validateLiveOocActionSet(live,bits);
+        OocMctsDependencies deps;
+        deps.policyAvailable=[] {return true;};
+        deps.policyLogits=[](const GameContext &,const PathHistory &,const std::vector<A> &as) {
+            return std::vector<double>(as.size(),0.0);
+        };
+        deps.leafValue=[](const GameContext &g,const PathHistory &) {
+            return g.hasRelic(RelicId::NEOWS_LAMENT) ? 0.75 : 0.25;
+        };
+        OocAdapterOptions options; options.checkpointLeaves=true; options.stopAtMapCheckpoint=true;
+        OocGameContextModel root(live.mctsRoot.state,live.mctsRoot.path,{},options,deps);
+        sts::search::OocMctsConfig config;config.seed=31;
+        const auto result=sts::search::OocMctsPlanner(config).search(root,0,32);
+        check(!result.aborted && result.rootActions.size()==2 && result.selectedAction,
+              "two-offer root must run ordinary OOC MCTS");
+        const auto selected=root.candidate(0,*result.selectedAction).primitive;
+        check(selected.getIdx1()==(reverse?1:0),"MCTS must value the actual captured Lament offer");
+        for(const auto &a:result.rootActions) check(a.visits>0,"both real Neow offers must be searched");
+        for(int count : {0,1,3,5}) {
+            auto invalid=wire;invalid["ooc"]["details"]["neow"]=J::array();
+            for(int i=0;i<count;++i) invalid["ooc"]["details"]["neow"].push_back(offers[0]);
+            advisor::LiveOocStateV1 rejected;
+            check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"invalid Neow count accepted");
+        }
+    }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);
@@ -245,6 +304,18 @@ int main(int argc,char **argv){try{
             continue;
         }
         check(result.ok,name+": "+result.message);
+        if(name=="neow") {
+            check(v4CandidateActions(live.projected).size()==4,"ordinary Neow must retain four offers");
+            for(int i=0;i<4;++i) {
+                check(live.projected.info.neowRewards[i].r==source.info.neowRewards[i].r
+                    && live.projected.info.neowRewards[i].d==source.info.neowRewards[i].d
+                    && live.mctsRoot.state.info.neowRewards[i].r==source.info.neowRewards[i].r,
+                    "ordinary Neow identity/order changed");
+                check(advisor::lowerLiveOocAction(live,A(i).bits)["choiceIndex"]==i+1,
+                    "ordinary Neow live mapping changed");
+            }
+        }
+
         check(live.mctsRoot.state.monsterListOffset==0
                 && live.mctsRoot.state.eliteMonsterListOffset==0,
                 name+" empty public combat history must not borrow path-symbol counts");

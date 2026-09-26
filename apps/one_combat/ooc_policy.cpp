@@ -896,6 +896,7 @@ void bossRelicVPolicy(GameContext &gc) {
 void neowVPolicy(GameContext &gc) {
     int best = 0; double bestV = -1e18;
     for (int i = 0; i < (int)gc.info.neowRewards.size(); ++i) {
+        if (gc.info.neowRewards[i].r == Neow::Bonus::INVALID) continue;
         GameContext g2 = gc;
         g2.map = std::make_shared<Map>(*gc.map);
         g2.chooseNeowOption(g2.info.neowRewards[i]);

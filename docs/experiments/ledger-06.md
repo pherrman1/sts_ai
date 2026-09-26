@@ -12456,6 +12456,57 @@ reuse. Evidence: [native_equivalent_copy_reroot_2026-09-25](evidence/native_equi
 Knowledge impact: current research now records the offline pass and its exact
 boundary. No native runtime or default is promoted.
 
+## §357 — Native Silver endpoint/tree-depth descriptive profile (2026-09-26)
+
+Issue #344 adds opt-in counters only, against main
+`b23aad9d8885c6eca332b1f5cccf3890755bbecf`. The fixed diagnostic cohort is
+seeds 0–7, A0, fair native Silver, flat 1,000 caller simulations with the
+existing boss multiplier and singleton bypass, OMP=1, existing native-GBM
+`bestbench` OOC policy. No new policy, model, RNG, or budget intervention.
+Earlier artifacts do not contain this new endpoint/depth schema; a fresh small
+cohort was necessary. This is implementation/descriptive evidence, not an
+expensive scientific qualification or a promotion.
+
+[Evidence directory](evidence/native_silver_tree_profile_2026-09-26/manifest.json)
+contains source/model/binary hashes, exact guarded commands, logs, result CSVs,
+compressed raw JSONL, full grouped analysis, and the one-seed on/off comparison.
+The source hashes identify the instrumented code; the baseline SHA alone does
+not identify that code. Both compact-tree models reported successful loading.
+
+All 8 runs completed: 3,726 real decisions, 5,225,000 new simulations, 55
+encounters across acts 1–3 and MONSTER/ELITE/BOSS/EVENT rooms. All endpoint and
+histogram denominators reconcile. Evaluated endpoints were 4,770,360 victory
+(91.2988%) and 454,640 death (8.7012%); no nonterminal, turn-limit, engine-stop,
+or aborted search was observed. These are correlated simulation samples, not
+independent run outcomes.
+
+Crucially, 4,648,023 simulations started their rollout at a nonterminal tree
+leaf. The 100% terminal **evaluated endpoint** share does not mean the tree
+itself reached those outcomes: Silver rolls new leaves forward and then uses
+its heuristic, with no neural leaf evaluator. Tree action depth p50/p90/p99/max
+was 3/6/8/16; total depth including rollout was 15/36/57/107. Chance-outcome
+edges do not double-count their action. Inherited visits are excluded at each
+real decision, including after rerooting.
+
+Simulation death share was 3.463% in act 1, 4.514% in act 2, and 17.164% in
+act 3. The supplied analysis includes room/encounter/turn/decision/HP/budget
+views, encounter rankings at a 20-decision minimum, and a complete fight
+trajectory per encounter. All ordinary-terminal shares tie at 100%, so those
+rankings do not establish meaningful encounter differences. The cohort uses
+one caller budget and cannot support a budget-response inference.
+
+Focused Debug fixtures prove exact lethal/nonterminal/death/safety accounting,
+chance-edge depths, chunked denominators, terminal-root exclusion, and on/off
+full-fight equality of every action, six RNG streams, outcome, HP and turn,
+including reroot reuse. Analyzer fixtures reject invalid counts and error rows.
+A Release full-run seed-0 on/off comparison matches every gameplay CSV field;
+timing is excluded. The uninstrumented branch is not a speed benchmark and
+these timings were not isolated for a performance claim.
+
+**Conclusion:** this diagnostic measures evaluated endpoints separately from
+search depth and rollout starts. It does not justify a leaf model, pruning,
+search-budget change, or a gameplay-quality claim.
+
 ## §358 — Exact OOC branching and real-floor/decision profile (2026-09-26)
 
 Issue #341: observational implementation against main
