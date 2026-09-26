@@ -44,6 +44,10 @@ set_target_properties(runic-dome-lifecycle-test PROPERTIES OUTPUT_NAME runic_dom
 target_include_directories(runic-dome-lifecycle-test PRIVATE include json/include)
 target_link_options(runic-dome-lifecycle-test PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-useless-replay apps/silver_useless_replay.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-useless-replay PROPERTIES OUTPUT_NAME silver_useless_replay)
+target_include_directories(silver-useless-replay PRIVATE include json/include)
+
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(combat-knowledge-neutrality-test PROPERTIES OUTPUT_NAME combat_knowledge_neutrality_test)
@@ -274,7 +278,11 @@ set_tests_properties(ooc_mcts PROPERTIES LABELS "core")
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
 # receive CTest entries separately). bash -n only parses, never executes.
+add_test(NAME silver_useless_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/tests/test_silver_useless.py)
+add_test(NAME run_profile_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/tests/test_run_profile.py)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
+add_test(NAME silver_tree_profile_analysis COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tools/tests/test_silver_tree_profile.py)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
 add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest
     tests.test_ooc_semantic_confirmation tests.test_semantic_confirmation_runner

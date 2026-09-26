@@ -790,13 +790,26 @@ final class LiveOocCapture {
             if (rs instanceof List) for (Object reward : list(rs))
                 offers.add(object("type", String.valueOf(field(reward, "type")), "drawback", String.valueOf(field(reward, "drawback"))));
             e.put("neowRewards", offers);
-            if (offers.size() == 4 && "3".equals(String.valueOf(phase)) && active.size() == 4) {
-                List<Object> nativeOffers = new ArrayList<>();
-                for (Object offer : offers) nativeOffers.add(object("bonus", map(offer).get("type"), "drawback", map(offer).get("drawback")));
-                map(out.get("details")).put("neow", nativeOffers);
-                out.remove("unsupportedReason"); out.put("screen", "neow");
-            }
+            captureNeowOffers(out, offers, String.valueOf(phase), options);
         }
+    }
+
+    // Both normal and early-death rewards use phase 3. Qualify the complete
+    // captured slot mapping before exposing any offer to the native advisor.
+    static void captureNeowOffers(Map<String,Object> out, List<Object> offers,
+            String phase, List<Object> options) {
+        if (!(offers.size() == 2 || offers.size() == 4) || !"3".equals(phase)
+                || options.size() != offers.size()) return;
+        for (int i = 0; i < options.size(); ++i) {
+            Map<String,Object> option = map(options.get(i));
+            if (!Integer.valueOf(i).equals(option.get("index"))
+                    || !Boolean.FALSE.equals(option.get("disabled"))) return;
+        }
+        List<Object> nativeOffers = new ArrayList<>();
+        for (Object offer : offers)
+            nativeOffers.add(object("bonus", map(offer).get("type"), "drawback", map(offer).get("drawback")));
+        map(out.get("details")).put("neow", nativeOffers);
+        out.remove("unsupportedReason"); out.put("screen", "neow");
     }
 
     private static void shop(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)

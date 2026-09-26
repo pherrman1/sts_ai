@@ -1,6 +1,6 @@
 # Native Silver hot-path profile and live-only action-queue copy (2026-09-26)
 
-Issue #350, ledger §359.
+Issue #350, ledger §360.
 
 ## Workload
 

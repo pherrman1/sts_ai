@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-25 for the `v_win` terminal-pricing post-review additions,
+Last verified: 2026-09-25 for the OOC contextual semantic-prior offline qualification,
+the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
 review of the merged DeepSets Brew-fallback quality-confirmation preparation;
 2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
@@ -32,6 +33,22 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## OOC MCTS contextual deck-prior offline qualification
+
+The newly trained 3,200-parameter contextual deck block is
+**`CONTEXTUAL_SEMANTIC_PRIOR_PASS`** against PR #329's saved authoritative
+prior trace. On 6,317 unique prior-covered non-singleton inputs, top semantic
+action agreement was 98.89%, median TV 0.000109, and p90 TV 0.018815. The
+historical source-policy gate also passed at 97.95% agreement, median TV
+0.003128, and p90 TV 0.034804. All broad-screen guards passed; SHOP agreement
+was 97.70% with median/p90 TV 0.002183/0.016985. The missing old student
+checkpoint was not recreated; this is a new seed-0, 30-epoch representation
+student frozen outside the worktree. This qualifies offline fidelity only. No
+native contextual inference, MCTS/gameplay smoke, policy-strength test, or
+default change was made. A separate native implementation and parity/runtime
+task is the next step. See [ledger §356](../../experiments/ledger-06.md) and
+the [evidence packet](../../experiments/evidence/ooc_contextual_semantic_prior_2026-09-25/README.md).
 
 ## OOC 20% gap-stop quality gate
 

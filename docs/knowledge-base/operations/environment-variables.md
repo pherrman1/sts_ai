@@ -48,6 +48,8 @@ diagnostics.
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |
 | `STS_SILVER_TELEMETRY` | Accepted only as `0`; Silver telemetry was removed | `0` | `main` |
+| `STS_SILVER_USELESS_TRACE` | Default-off JSONL census for the qualified last-card Defend/forced-End-Turn equivalence class, with root statistics and replay snapshots. Observes concrete RNG after selection; never a search/pruning input. | unset/off | `NativeSilverBackend` |
+| `STS_SILVER_TREE_PROFILE` | Opt-in append-only JSONL path for real backend decisions: endpoint classes, tree/rollout depths, context, budgets and reuse. Use a fresh file per run; an unwritable path fails explicitly. See [combat search](../architecture/combat-search.md#silver-tree-profile). | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_DEBUG_TREE` | Default-off debug capture: attach the reachable native Silver search graph (node states, visits/Qs, semantic edge labels, chance metadata) to each advisor combat response. Does not alter search or ordinary responses when unset. | unset/off | `apps/one_combat/advisor_stdio.cpp`; `apps/one_combat/native_silver_advisor.cpp` |
 | `STS_SILVER_DEBUG_TREE_NODE_CAP` | Maximum native graph nodes included by `STS_SILVER_DEBUG_TREE`; oversized captures are marked truncated. | `8192` (maximum `100000`) | `apps/one_combat/advisor_stdio.cpp` |
 | `STS_SILVER_ROOT_PRIOR_MODEL` | Removed with the root prior (ADR-0022); `one_combat_advisor` exits at startup and `one_combat` exits with an error when it is set | unset | `advisor_stdio.cpp`; `main` |
@@ -78,6 +80,7 @@ enable flag:
 | `STS_OOC_MCTS_LEAF_VALUE` | `native`, `constant`, or `boss`; boss mode averages a survival-dominant expected-HP utility over all ten Act1--4 bosses and does not call `v_win` at the leaf | `native` | `configureLiveOocMcts`, `OocGameContextModel::leafValue` |
 | `STS_OOC_MCTS_EARLY_STOP` | Strict visit-lock stopping even without a non-aborting provider guarantee; may skip later support/continuation aborts; `0` restores guarantee requirement; root-lock trace overrides stopping | `1` when OOC MCTS enabled | `configureLiveOocMcts`, `OocMctsPlanner::search` |
 | `STS_OOC_MCTS_ROOT_LOCK_TRACE` | Optional JSONL per searched root: hypothetical earliest strict visit lock/action/remaining budget/suffix time and eventual abort/completion; forces full budget and suppresses all root shortcuts; no support qualification | unset (off) | `configureLiveOocMcts`, `selectOocMctsAction` |
+| `STS_RUN_PROFILE` | Append-only JSONL for real floor timing/counters and in-search OOC root checkpoints/exact branching; preserves budgets, early stops and singleton shortcuts. Analyze with `tools/analyze_run_profile.py`. Fresh path per run. | unset/off | `runFullRunOOC`, `selectOocMctsAction`, `oocMctsPolicyStep` |
 | `STS_OOC_MCTS_TRACE` | Optional completed-run CSV of search/continuation/combat counts and timing plus `.support.jsonl`; works with OFF | unset | `writeLiveOocMctsTrace` |
 | `STS_OOC_STRATEGIC_TOK_CHECK` | First-decision glob parity hook | `0` (off) | `main` ~L9305 |
 | `STS_OOC_STRATEGIC_Q` | Q-head vs V2 successor-value scoring; `0` = V2 | `1` (Q head) | `main` ~L9310 |

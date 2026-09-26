@@ -368,7 +368,7 @@ def validate_meta(meta: dict[str, Any], arm_name: str, expected_seed_start: int,
     require(models.get("floor") == "models/v_rich_trees.txt"
             and models.get("win") == "models/v_win_trees.txt",
             f"{arm_name}: floor/win model paths mismatch")
-    require(models.get("policyNet") == "ON" and models.get("combatVNet") == "off" and models.get("pvNet") == "off"
+    require(models.get("policyNet") == "off" and models.get("combatVNet") == "off" and models.get("pvNet") == "off"
             and models.get("distVNet") == "off",
             f"{arm_name}: unexpected extra value-network artifacts")
     require(bool(binary_sha), f"{arm_name}: missing verified binary SHA256")
@@ -850,7 +850,7 @@ def synthetic_fixture(root: Path, outcomes: str,
                            "silverUpstreamSha": SILVER_SHA, "searcher3": False,
                            "collectKeys": False},
                 "models": {"floor": "models/v_rich_trees.txt", "win": "models/v_win_trees.txt",
-                           "combatVNet": "off", "policyNet": "ON", "pvNet": "off", "distVNet": "off"}}
+                           "combatVNet": "off", "policyNet": "off", "pvNet": "off", "distVNet": "off"}}
         (directory / "results.csv.meta.json").write_text(json.dumps(meta) + "\n", encoding="utf-8")
     # Return the actual file hashes so integrity-path tests do not need synthetic
     # byte strings whose digests match production artifacts.
@@ -870,6 +870,23 @@ def self_test() -> None:
         manifest["binary"]["sha256"] = local_hashes["binary"]
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         synthetic_hashes = {role: local_hashes[role] for role in (*artifact_roles, "binary")}
+
+        # c9's bestbench metadata labels this legacy policyNet field "off".
+        # The V4 strategic TOK load and effective leaf-policy setting are
+        # checked independently by parse_arm_log and trace validation.
+        c_arm = manifest_arm(read_manifest(manifest_path), "C")
+        c_meta = read_one_json(standard / "results.csv.meta.json")
+        validate_meta(c_meta, "C", SEED_START, SEED_COUNT,
+                      local_hashes["binary"], c_arm["results"])
+        altered_meta = dict(c_meta)
+        altered_meta["models"] = {**c_meta["models"], "policyNet": "ON"}
+        try:
+            validate_meta(altered_meta, "C", SEED_START, SEED_COUNT,
+                          local_hashes["binary"], c_arm["results"])
+        except EvidenceError as exc:
+            assert "unexpected extra value-network artifacts" in str(exc)
+        else:
+            raise AssertionError("legacy policyNet metadata regression test did not fail")
 
         expected_artifact_hashes = {role: local_hashes[role] for role in artifact_roles}
         summary_path = root / "end-to-end-summary.json"

@@ -1,9 +1,11 @@
 #pragma once
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <map>
 #include <optional>
 #include <set>
+#include <string>
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
@@ -37,6 +39,11 @@ struct OocAdapterOptions {
     bool sampleNoncombat = false;
     // Optional live-capture root restriction; child states remain semantic.
     std::optional<std::set<std::uint32_t>> rootPrimitiveBits;
+    // Strictly opt-in serialization of the exact prior inputs consumed by OOC MCTS.
+    std::string priorTracePath;
+    std::uint64_t priorTraceRunSeed = 0;
+    std::uint64_t priorTraceDecisionIndex = 0;
+    std::uint64_t priorTraceSearchSeed = 0;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -80,6 +87,10 @@ private:
         std::unique_ptr<PreparedCombatTransition> combat;
     };
     struct Metadata {
+        struct PriorTraceSources {
+            std::vector<GameAction> actions;
+            std::vector<double> logits;
+        };
         bool boundary = true;
         std::vector<Candidate> candidates;
         bool sourcePriorCovered = false;
@@ -88,6 +99,8 @@ private:
         std::vector<Edge> edges;
         std::optional<std::vector<double>> logits;
         std::optional<std::vector<sts::search::OocPlannerAction>> priors;
+        std::optional<PriorTraceSources> priorTraceSources;
+        bool priorTraceWritten = false;
     };
     struct Snapshot { GameContext gc; PathHistory path; mutable std::optional<Metadata> metadata;
         CombatPrediction combatPrediction; };
@@ -100,7 +113,10 @@ private:
     mutable OocContinuationMetrics continuation_;
     const Metadata &metadata(sts::search::OocStateId) const;
     Metadata &mutableMetadata(sts::search::OocStateId) const;
+    void tracePrior(sts::search::OocStateId, Metadata &,
+        const std::vector<sts::search::OocPlannerAction> &) const;
     double bossLeafValue(const GameContext &) const;
+    double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal);
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
         const PreparedCombatTransition * = nullptr);
 public:
@@ -128,6 +144,7 @@ public:
                                             std::mt19937_64 &) override;
     double leafValue(sts::search::OocStateId) const override;
     double evaluateLeaf(sts::search::OocStateId, std::mt19937_64 &) override;
+    sts::search::OocLeafEvaluation evaluateLeafWithOutcome(sts::search::OocStateId, std::mt19937_64 &) override;
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.

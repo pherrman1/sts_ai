@@ -1,0 +1,38 @@
+{
+  "ooc_decisions": {
+    "floor_sum": 45,
+    "run_total": 45
+  },
+  "ooc_owned": {
+    "floor_sum": 44,
+    "run_total": 44
+  },
+  "fallbacks": {
+    "floor_sum": 1,
+    "run_total": 1
+  },
+  "ooc_simulations": {
+    "floor_sum": 43540,
+    "run_total": 43540
+  },
+  "transition_samples": {
+    "floor_sum": 41780,
+    "run_total": 41780
+  },
+  "ctm_samples": {
+    "floor_sum": 8193,
+    "run_total": 8193
+  },
+  "leaf_evaluations": {
+    "floor_sum": 43540,
+    "run_total": 43540
+  },
+  "outcome_particles": {
+    "floor_sum": 41780,
+    "run_total": 41780
+  },
+  "support_aborts": {
+    "floor_sum": 0,
+    "run_total": 0
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "gameplay_fields_match": [
+    "seed",
+    "won",
+    "floor",
+    "act",
+    "hpEnd",
+    "maxHp",
+    "fightsLost",
+    "deathCombat",
+    "deathEncounter"
+  ],
+  "on_result": {
+    "seed": "8",
+    "won": "1",
+    "floor": "51",
+    "act": "3",
+    "hpEnd": "37",
+    "maxHp": "50",
+    "fightsLost": "0",
+    "deathCombat": "-1",
+    "deathEncounter": "-1",
+    "sec": "8.51874"
+  },
+  "off_result": {
+    "seed": "8",
+    "won": "1",
+    "floor": "51",
+    "act": "3",
+    "hpEnd": "37",
+    "maxHp": "50",
+    "fightsLost": "0",
+    "deathCombat": "-1",
+    "deathEncounter": "-1",
+    "sec": "5.33598"
+  },
+  "timing_excluded": true
+}

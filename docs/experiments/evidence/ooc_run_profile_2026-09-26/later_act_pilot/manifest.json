@@ -1,0 +1,183 @@
+{
+  "source_sha": "fbe390532addaeaa93b3703d29c1df44dcfe2a24",
+  "binary_sha256": "a24a2a359a18ca015f4abdef9a09de455d844d6a679876153b0c3d145a1b93c2",
+  "model_sha256": {
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "selfplay/models/combat_transition_near_full_except_smoke_v2.native": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "source_sha256": {
+    "apps/one_combat/run_driver.cpp": "4c4abbf1edf292f40816aba68ecb29e9bb603bfe16363362f3093619e39009d2",
+    "apps/one_combat/run_profile.h": "f7aef0a3598f0d3e3d3c2f6d861c7fd39d43028a227784d45e7215e581c20e47",
+    "apps/one_combat/ooc_mcts_adapter.cpp": "0cbbb11195b67fba188fc76d4b59bd7350fa751ef8b23b339811c655427318a3",
+    "include/sim/search/OocMctsPlanner.h": "0905b8f0c8536f4985e69cc73ff8164c8b56fae0250c7612aa4c10befb7f3481",
+    "src/sim/search/OocMctsPlanner.cpp": "f8e608d3646dc9385d4421efd538143736132eac92f6880a9716ca4fea767711",
+    "tools/analyze_run_profile.py": "1e999f4e4e6975aff440f9b93fb40b3a614293c0a670ab9ff891dac4e6fcf8d2"
+  },
+  "selection_rule": "Try seeds 1..8 ascending until act >=2; keep every attempt; coverage-selected descriptive pilot, not an unbiased quality sample. Replay selected seed with profiling off.",
+  "commands": [
+    {
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/linux-gcc-release-ccache/one_combat",
+        "bestbench",
+        "10000",
+        "1",
+        "0",
+        "1",
+        "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/on.csv"
+      ],
+      "env": {
+        "OMP_NUM_THREADS": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_MCTS_COMBAT_MODEL": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+        "STS_RUN_PROFILE": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/profile.jsonl",
+        "STS_OOC_MCTS_TRACE": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/on-mcts.csv"
+      },
+      "log": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/on.log"
+    },
+    {
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/linux-gcc-release-ccache/one_combat",
+        "bestbench",
+        "10000",
+        "1",
+        "0",
+        "1",
+        "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/off.csv"
+      ],
+      "env": {
+        "OMP_NUM_THREADS": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_MCTS_COMBAT_MODEL": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+        "STS_RUN_PROFILE": "",
+        "STS_OOC_MCTS_TRACE": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/off-mcts.csv"
+      },
+      "log": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/off.log"
+    }
+  ],
+  "attempts": [
+    {
+      "seed": "1",
+      "won": "1",
+      "floor": "51",
+      "act": "3",
+      "hpEnd": "38",
+      "maxHp": "85",
+      "fightsLost": "0",
+      "deathCombat": "-1",
+      "deathEncounter": "-1",
+      "sec": "139.187"
+    }
+  ],
+  "selected_seed": 1,
+  "off_result": {
+    "seed": "1",
+    "won": "1",
+    "floor": "51",
+    "act": "3",
+    "hpEnd": "38",
+    "maxHp": "85",
+    "fightsLost": "0",
+    "deathCombat": "-1",
+    "deathEncounter": "-1",
+    "sec": "139.469"
+  },
+  "excluded_attempt": {
+    "directory": "excluded_a1_seed0",
+    "reason": "Runner swapped ascension and seedOffset; actual A1 seed0 excluded from matching A0 pilot. Output validation caught mismatch.",
+    "actual_result": {
+      "seed": "0",
+      "won": "0",
+      "floor": "40",
+      "act": "3",
+      "hpEnd": "0",
+      "maxHp": "90",
+      "fightsLost": "1",
+      "deathCombat": "23",
+      "deathEncounter": "50",
+      "sec": "107.01"
+    }
+  },
+  "artifact_sha256": {
+    "excluded_a1_seed0/manifest.json": "00933452d8acdd1dbc08fc65d7e4d0cfba18b87918960f45334e2a81a5ad7fa1",
+    "excluded_a1_seed0/on-mcts.csv": "38fb8d4f8fe339ae21fe98202b09f1f04b16a2b487e7c803252ea81378e7d4b6",
+    "excluded_a1_seed0/on-mcts.csv.actions.jsonl.gz": "1da39349b807d7ba04e0d101b8094c3ea3ab14096b8dac09c707ddabf4464f8c",
+    "excluded_a1_seed0/on-mcts.csv.support.jsonl.gz": "ebc259986b5aeb1ac7c49dbc58dacbeb1401dd0f17bfa2ac2470fdcd98d216c9",
+    "excluded_a1_seed0/on.csv": "7fea661e5db241594dbfd5d6424a034c26ff255272401c8bf5bf1cd7a6bfe704",
+    "excluded_a1_seed0/on.csv.meta.json": "d6a1dad5487dda90ffd7f51f43df21def47a734f1d800c100d62fd85dd94918a",
+    "excluded_a1_seed0/on.log": "1a01d8f8e459420b90ba2dd2f2bd645dbc1b86b6f74f569bb0d27c69ca77d863",
+    "excluded_a1_seed0/profile.jsonl.gz": "1f091d0fe84f3744dc28ad83172c3295c74d9255dbb03be25a48193c237d9347",
+    "seed-1/analysis.log": "cb26e374a001a48cd20880fbac8ab3e126a6906b5e3839bb76ae9fca4ba63696",
+    "seed-1/by_act.json": "42aa71b4087266069dc1277a149517e4652c8b39f156f16d5622283946611d7f",
+    "seed-1/off-mcts.csv": "6fbd9d0cfa4299b9b11e99def9ba96a4ed63c948f8a3f7b72542ff10390a4bbd",
+    "seed-1/off-mcts.csv.actions.jsonl.gz": "301c2ecdd52d9c582cef9ca68d2b315eb3c0c1045646cd577a57ac1e38ecf0d5",
+    "seed-1/off-mcts.csv.support.jsonl.gz": "bb056c9dc07c299676725b2e2b1897e0779903b66213081c0b4f3a01c0829d4e",
+    "seed-1/off.csv": "ba5bfa1d147366bf27fc39e1c9803d26dd41b6c85b3b3bf15096ca5dc939bf67",
+    "seed-1/off.csv.meta.json": "40ea274ff1681290200293b5a4833134c4ceee1c9568b4d39c191e59465d6e1d",
+    "seed-1/off.log": "e71fc85525d357c0b9ca0656b77e3f8cf38dcc689ca751547ca2460151ae1cfc",
+    "seed-1/on-mcts.csv": "d2d49eca772e288d3ba3efe662bc722a54fe388eb310bf8b776e73b2c5896409",
+    "seed-1/on-mcts.csv.actions.jsonl.gz": "301c2ecdd52d9c582cef9ca68d2b315eb3c0c1045646cd577a57ac1e38ecf0d5",
+    "seed-1/on-mcts.csv.support.jsonl.gz": "bb056c9dc07c299676725b2e2b1897e0779903b66213081c0b4f3a01c0829d4e",
+    "seed-1/on.csv": "c54ee53c30492626d276ab90d8c64ec34c5b711441bc056d3f3217f35ee8a7fd",
+    "seed-1/on.csv.meta.json": "560ae04182a6bdddcd9050436ff68718f771b5de13a0f6c8a20e48f6fb17e2e6",
+    "seed-1/on.log": "552d47bc3b765ffa32973a3596a3cf78ce0dee4f003d878c27d2fec94942cbed",
+    "seed-1/parity.json": "f256a3fb03f0644b73c2d0287d5f2e53ace0667ef5e37049ad7d64afdd303c8c",
+    "seed-1/profile.jsonl.gz": "9efc11a92ded6ae79d944b0af1dd1385f82ec7a3520023a2a848d781f17920c4",
+    "seed-1/reconciliation.json": "83ac0268b8ce4e7350e00052f2e9c533f798254e435b35386a8181ffba72255b",
+    "seed-1/summary.json.gz": "1ba0697ba30b65d855bceb2acbf1c387268d13080546ee100b3f229fd48a5a0b"
+  },
+  "analysis_commands": [
+    [
+      "python3",
+      "tools/analyze_run_profile.py",
+      "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/profile.jsonl",
+      "--output",
+      "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/issue341-extra/seed-1/summary.json"
+    ]
+  ],
+  "selected_run_coverage_by_act": {
+    "1": {
+      "floor_intervals": 18,
+      "decisions": 50,
+      "thread_cpu_seconds": 29.323594532,
+      "ooc_cpu_seconds": 23.640827193999993,
+      "real_combat_cpu_seconds": 5.677282784,
+      "ooc_simulations": 37258,
+      "ctm_samples": 8131
+    },
+    "2": {
+      "floor_intervals": 18,
+      "decisions": 55,
+      "thread_cpu_seconds": 54.201571388000005,
+      "ooc_cpu_seconds": 41.327463008000024,
+      "real_combat_cpu_seconds": 12.865407631999997,
+      "ooc_simulations": 43527,
+      "ctm_samples": 6933
+    },
+    "3": {
+      "floor_intervals": 17,
+      "decisions": 43,
+      "thread_cpu_seconds": 55.64555606099999,
+      "ooc_cpu_seconds": 39.455200489999996,
+      "real_combat_cpu_seconds": 16.18394679299999,
+      "ooc_simulations": 37811,
+      "ctm_samples": 7139
+    }
+  },
+  "scope": "Additional coverage-selected descriptive pilot; fixed existing policy, budgets, models and fair/known-RNG regime. No speed/quality/stopping qualification."
+}

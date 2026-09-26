@@ -527,8 +527,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.info.potionIdx=integer(d,"potionIdx",-1,4);g.info.gold=integer(d,"gold",-1,1000000);
             g.info.cardIdx=integer(d,"cardIdx",-1,g.deck.size()-1);
             if(g.curEvent==Event::NEOW) {
-                const auto &ns=array(d,"neow",4);require(ns.size()==4,"four Neow offers required");
-                for(int i=0;i<4;++i) {
+                const auto &ns=array(d,"neow",4);
+                require(ns.size()==2 || ns.size()==4,"two or four Neow offers required");
+                g.info.neowRewards.fill({Neow::Bonus::INVALID,Neow::Drawback::INVALID});
+                for(std::size_t i=0;i<ns.size();++i) {
                     g.info.neowRewards[i].r=id<Neow::Bonus>(ns[i].at("bonus"),Neow::Bonus::INVALID);
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }

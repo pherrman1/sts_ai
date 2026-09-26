@@ -200,6 +200,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             const auto liveAction = ooc.at("liveChoices").at(0).at("liveAction");
             evaluator["status"] = "OK";
             evaluator["mode"] = "native_pass_through";
+            evaluator["valueSemantics"] = "forced_no_search";
             evaluator["selectedSemanticKey"] = "ooc-live:v1:pass-through";
             evaluator["selectedLabel"] = "proceed";
             evaluator["selectedLiveAction"] = liveAction;
@@ -221,6 +222,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             const auto &liveAction = *forcedGoldAction;
             evaluator["status"] = "OK";
             evaluator["mode"] = "native_pass_through";
+            evaluator["valueSemantics"] = "forced_no_search";
             evaluator["selectedSemanticKey"] = "ooc-live:v1:take-gold";
             evaluator["selectedLabel"] = "collect gold";
             evaluator["selectedLiveAction"] = liveAction;
@@ -306,12 +308,23 @@ json oocResponse(const one_combat::advisor::Request &request,
             evaluator["reason"] = decision.reason;
         } else {
             try {
+                const auto distributionJson = [](const sts::search::OocValueDistribution &d) {
+                    return json{{"schema", "ooc_value_distribution_v1"}, {"bins", d.bins},
+                        {"count", d.count}, {"mean", d.count ? json(d.sum / d.count) : json(nullptr)},
+                        {"terminalDeaths", d.bins[0]}, {"terminalVictories", d.bins[21]},
+                        {"normalization", "share_of_own_samples"}};
+                };
+                evaluator["valueSemantics"] = decision.policy == "mcts_ctm"
+                    ? "mean_backed_up_value_0_1" : "raw_v4_action_score";
+                if (decision.valueDistribution)
+                    evaluator["valueDistribution"] = distributionJson(*decision.valueDistribution);
                 evaluator["candidateSummaries"] = json::array();
                 for (const auto &c : decision.candidates) {
                     json summary = {{"semanticKey", c.semanticKey},
                         {"semanticPayload", json::parse(c.payload)}, {"label", c.semanticKey}, {"q", c.q},
                         {"visits", c.visits}, {"visitShare", c.visitShare}, {"prior", c.prior},
                         {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}};
+                    if (c.valueDistribution) summary["valueDistribution"] = distributionJson(*c.valueDistribution);
                     if (!c.followUpPreview.empty()) summary["followUpPreview"] = json::parse(c.followUpPreview);
                     evaluator["candidateSummaries"].push_back(std::move(summary));
                 }
