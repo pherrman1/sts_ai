@@ -7,6 +7,9 @@
 #include "one_combat/combat_predictor_input.h"
 
 #include <set>
+#ifndef _WIN32
+#include <sys/file.h>
+#endif
 
 // ---------------------------------------------------------------------------
 // Combat feature header/row for whole-combat datasets. They delegate to the
@@ -1256,8 +1259,206 @@ void activeLizardPairTransitionGen(
     std::vector<nlohmann::json> pairRows(nSeeds);
     std::vector<int> completedByTarget(nSeeds, 0);
     std::vector<std::string> errors(nSeeds);
+    std::filesystem::path checkpointDirectory;
+    std::string directPlanSha;
+    std::string teacherManifestSha;
+    std::string producerExecutableSha;
+    int resumedPairCount = 0;
+#ifndef _WIN32
+    struct CheckpointRunLock {
+        int descriptor = -1;
+        explicit CheckpointRunLock(const std::filesystem::path &path) {
+            descriptor = ::open(path.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
+            if (descriptor < 0)
+                throw std::runtime_error("cannot open direct replay lock: " + path.string());
+            if (::flock(descriptor, LOCK_EX | LOCK_NB) != 0) {
+                const int savedError = errno;
+                ::close(descriptor);
+                descriptor = -1;
+                throw std::runtime_error("another direct replay collector holds lock "
+                                         + path.string() + ": " + std::strerror(savedError));
+            }
+        }
+        ~CheckpointRunLock() {
+            if (descriptor >= 0) {
+                ::flock(descriptor, LOCK_UN);
+                ::close(descriptor);
+            }
+        }
+    };
+    std::unique_ptr<CheckpointRunLock> checkpointRunLock;
+#endif
+    auto writeTextFile = [](const std::filesystem::path &path, const std::string &text) {
+        std::ofstream file(path, std::ios::binary | std::ios::trunc);
+        if (!file) throw std::runtime_error("cannot open temporary output: " + path.string());
+        file.write(text.data(), static_cast<std::streamsize>(text.size()));
+        file.flush();
+        if (!file) throw std::runtime_error("cannot flush temporary output: " + path.string());
+        file.close();
+        if (!file) throw std::runtime_error("cannot close temporary output: " + path.string());
+#ifndef _WIN32
+        const int descriptor = ::open(path.c_str(), O_RDONLY);
+        if (descriptor < 0)
+            throw std::runtime_error("cannot open temporary output for sync: " + path.string());
+        const int syncResult = ::fsync(descriptor);
+        const int closeResult = ::close(descriptor);
+        if (syncResult != 0 || closeResult != 0)
+            throw std::runtime_error("cannot durably sync temporary output: " + path.string());
+#endif
+    };
+    auto renameCompletedFile = [](const std::filesystem::path &temporary,
+                                  const std::filesystem::path &destination) {
+        std::error_code error;
+        std::filesystem::rename(temporary, destination, error);
+        if (error)
+            throw std::runtime_error("atomic rename failed for " + destination.string()
+                                     + ": " + error.message());
+#if defined(__linux__)
+        auto parent = destination.parent_path();
+        if (parent.empty()) parent = ".";
+        const int directoryDescriptor = ::open(parent.c_str(), O_RDONLY | O_DIRECTORY);
+        if (directoryDescriptor < 0)
+            throw std::runtime_error("cannot open output directory for sync: " + parent.string());
+        const int syncResult = ::fsync(directoryDescriptor);
+        const int closeResult = ::close(directoryDescriptor);
+        if (syncResult != 0 || closeResult != 0)
+            throw std::runtime_error("cannot durably sync output directory: " + parent.string());
+#endif
+    };
+    auto retainOrCreateFinalFile = [&](const std::filesystem::path &temporary,
+                                       const std::filesystem::path &destination) {
+        if (std::filesystem::exists(destination)) {
+            if (fileSha256(temporary.string()) != fileSha256(destination.string())) {
+                std::error_code ignored;
+                std::filesystem::remove(temporary, ignored);
+                throw std::runtime_error("refusing to overwrite different completed output: "
+                                         + destination.string());
+            }
+            std::error_code ignored;
+            std::filesystem::remove(temporary, ignored);
+            return;
+        }
+        renameCompletedFile(temporary, destination);
+    };
+    auto checkpointPathFor = [&](int index) {
+        const long long sourceSeed = targetSeeds.at(index);
+        const int fightIdx = replayTargets.at(index).at("fightIdx").get<int>();
+        return checkpointDirectory / ("source_" + std::to_string(sourceSeed)
+                                      + "_fight_" + std::to_string(fightIdx) + ".json");
+    };
+    auto validateCheckpointRow = [&](const nlohmann::json &row, int index) {
+        const auto &target = replayTargets.at(index);
+        const long long sourceSeed = targetSeeds.at(index);
+        const int fightIdx = target.at("fightIdx").get<int>();
+        if (!row.is_object() || !row.contains("pair") || !row.contains("noTail")
+            || !row.contains("activeTail") || !row.at("pair").is_object())
+            throw std::runtime_error("checkpoint pair row has an invalid shape");
+        const auto &pairMeta = row.at("pair");
+        if (pairMeta.value("sourceSeed", std::numeric_limits<long long>::min()) != sourceSeed
+            || pairMeta.value("fightIdx", std::numeric_limits<int>::min()) != fightIdx
+            || pairMeta.value("replayMode", std::string{}) != "direct_archived_snapshot"
+            || pairMeta.value("sourceStateFingerprint", std::string{})
+                != target.at("preState").dump())
+            throw std::runtime_error("checkpoint target identity or archived state mismatch");
+        const auto &noTailRow = row.at("noTail");
+        const auto &activeTailRow = row.at("activeTail");
+        for (const auto *armRow : {&noTailRow, &activeTailRow})
+            if (!armRow->is_object()
+                || armRow->value("sourceSeed", std::numeric_limits<long long>::min()) != sourceSeed
+                || armRow->value("fightIdx", std::numeric_limits<int>::min()) != fightIdx
+                || !armRow->contains("predictorInput")
+                || !armRow->contains("transition"))
+                throw std::runtime_error("checkpoint arm identity or predictor input missing");
+        if (noTailRow.at("predictorInput") != target.at("predictorInput"))
+            throw std::runtime_error("checkpoint no-Tail predictor input differs from archived target");
+        auto strippedActiveInput = activeTailRow.at("predictorInput");
+        if (!strippedActiveInput.is_object() || !strippedActiveInput.contains("relics")
+            || !strippedActiveInput.at("relics").is_array())
+            throw std::runtime_error("checkpoint active-Tail predictor input has an invalid shape");
+        nlohmann::json activeRelics = nlohmann::json::array();
+        int injectedTailCount = 0;
+        for (const auto &relic : strippedActiveInput.at("relics")) {
+            if (relic.value("relicId", -1) == static_cast<int>(RelicId::LIZARD_TAIL)) {
+                if (relic.value("data", -1) != 1)
+                    throw std::runtime_error("checkpoint active-Tail predictor input has the wrong Tail data");
+                ++injectedTailCount;
+            } else {
+                activeRelics.push_back(relic);
+            }
+        }
+        if (injectedTailCount != 1)
+            throw std::runtime_error("checkpoint active-Tail predictor input lacks exactly one injected Tail");
+        strippedActiveInput["relics"] = std::move(activeRelics);
+        if (strippedActiveInput != target.at("predictorInput"))
+            throw std::runtime_error("checkpoint active-Tail predictor input differs beyond injected Tail");
+        const auto &noTailTransition = noTailRow.at("transition");
+        if (noTailTransition.is_object()
+            && noTailTransition.at("pre") != target.at("preState"))
+            throw std::runtime_error("checkpoint no-Tail pre-state differs from archived snapshot");
+    };
+
+    if (directSnapshotReplay) {
+        directPlanSha = fileSha256(targetPath);
+        teacherManifestSha = fileSha256(teacherPath);
+        producerExecutableSha = fileSha256(g_mainBinaryPath);
+        checkpointDirectory = std::filesystem::path(outfile + ".checkpoints");
+        std::filesystem::create_directories(checkpointDirectory);
+#ifndef _WIN32
+        checkpointRunLock = std::make_unique<CheckpointRunLock>(
+            checkpointDirectory / ".collector.lock");
+#endif
+        for (int s = 0; s < nSeeds; ++s) {
+            const auto checkpointPath = checkpointPathFor(s);
+            if (!std::filesystem::exists(checkpointPath)) continue;
+            std::ifstream checkpointFile(checkpointPath, std::ios::binary);
+            if (!checkpointFile)
+                throw std::runtime_error("cannot read pair checkpoint: " + checkpointPath.string());
+            const auto checkpoint = nlohmann::json::parse(checkpointFile);
+            if (checkpoint.value("schema", std::string{})
+                    != "lizard_direct_snapshot_pair_checkpoint_v1"
+                || checkpoint.value("planSha256", std::string{}) != directPlanSha
+                || checkpoint.value("teacherManifestSha256", std::string{}) != teacherManifestSha
+                || checkpoint.value("collectorGitSha", std::string{}) != collectorSha
+                || checkpoint.value("producerExecutableSha256", std::string{})
+                    != producerExecutableSha
+                || checkpoint.value("simulationBudget", -1) != sims
+                || checkpoint.value("ascension", -1) != asc
+                || checkpoint.value("sourceSeed", std::numeric_limits<long long>::min())
+                    != targetSeeds.at(s)
+                || checkpoint.value("fightIdx", std::numeric_limits<int>::min())
+                    != replayTargets.at(s).at("fightIdx").get<int>()
+                || !checkpoint.contains("pairRow"))
+                throw std::runtime_error("pair checkpoint provenance mismatch: "
+                                         + checkpointPath.string());
+            const auto &row = checkpoint.at("pairRow");
+            validateCheckpointRow(row, s);
+            const auto payloadPath = std::filesystem::path(checkpointPath.string() + ".verify.tmp");
+            writeTextFile(payloadPath, row.dump());
+            const auto payloadSha = fileSha256(payloadPath.string());
+            std::error_code ignored;
+            std::filesystem::remove(payloadPath, ignored);
+            if (checkpoint.value("pairRowSha256", std::string{}) != payloadSha)
+                throw std::runtime_error("pair checkpoint payload checksum mismatch: "
+                                         + checkpointPath.string());
+            pairRows[s] = row;
+            completedByTarget[s] = 1;
+            ++resumedPairCount;
+        }
+        std::cout << "lizard direct-snapshot resume loaded=" << resumedPairCount
+                  << '/' << nSeeds << " checkpoint_directory="
+                  << checkpointDirectory.string() << std::endl;
+    }
+    std::atomic<int> completedPairCount{resumedPairCount};
+    const auto collectionStart = std::chrono::steady_clock::now();
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
+        if (completedByTarget[s]) continue;
+#ifdef _OPENMP
+        const int workerCount = omp_get_num_threads();
+#else
+        const int workerCount = 1;
+#endif
+        const auto pairStart = std::chrono::steady_clock::now();
         try {
             const auto &target = replayTargets[s];
             const long long sourceSeed = targetSeeds.at(s);
@@ -1268,12 +1469,61 @@ void activeLizardPairTransitionGen(
             if (pair.contains("noTail") && pair.contains("activeTail")) {
                 pairRows[s] = nlohmann::json({{"pair", pairMeta}, {"noTail", pair["noTail"]},
                                               {"activeTail", pair["activeTail"]}});
+                if (directSnapshotReplay) {
+                    validateCheckpointRow(pairRows[s], s);
+                    const auto checkpointPath = checkpointPathFor(s);
+                    const auto payloadPath = std::filesystem::path(checkpointPath.string()
+                                                                   + ".payload.tmp");
+                    const std::string pairRowText = pairRows[s].dump();
+                    writeTextFile(payloadPath, pairRowText);
+                    const auto pairRowSha = fileSha256(payloadPath.string());
+                    const auto checkpoint = nlohmann::json({
+                        {"schema", "lizard_direct_snapshot_pair_checkpoint_v1"},
+                        {"planSha256", directPlanSha},
+                        {"teacherManifestSha256", teacherManifestSha},
+                        {"collectorGitSha", collectorSha},
+                        {"producerExecutableSha256", producerExecutableSha},
+                        {"simulationBudget", sims}, {"ascension", asc},
+                        {"sourceSeed", sourceSeed},
+                        {"fightIdx", target.at("fightIdx")},
+                        {"pairRowSha256", pairRowSha}, {"pairRow", pairRows[s]}
+                    });
+                    const auto temporaryCheckpointPath = std::filesystem::path(
+                        checkpointPath.string() + ".tmp");
+                    writeTextFile(temporaryCheckpointPath, checkpoint.dump(2) + "\n");
+                    renameCompletedFile(temporaryCheckpointPath, checkpointPath);
+                    std::error_code ignored;
+                    std::filesystem::remove(payloadPath, ignored);
+                }
                 completedByTarget[s] = 1;
+                if (directSnapshotReplay) {
+                    const int completed = completedPairCount.fetch_add(1) + 1;
+                    const auto pairElapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                        std::chrono::steady_clock::now() - pairStart).count();
+                    const auto totalElapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                        std::chrono::steady_clock::now() - collectionStart).count();
+                    #pragma omp critical(lizard_pair_progress_log)
+                    {
+                        std::cout << "lizard pair completed=" << completed << '/' << nSeeds
+                                  << " source=" << sourceSeed
+                                  << " fight=" << target.at("fightIdx")
+                                  << " pair_elapsed_s=" << pairElapsed
+                                  << " total_elapsed_s=" << totalElapsed
+                                  << " omp_threads=" << workerCount
+                                  << " checkpoint=" << checkpointPathFor(s).string()
+                                  << std::endl;
+                    }
+                }
             } else {
                 errors[s] = "selected fight not found or source trajectory incomplete";
             }
         } catch (const std::exception &error) {
             errors[s] = error.what();
+            #pragma omp critical(lizard_pair_progress_log)
+            {
+                std::cout << "lizard pair failed source=" << targetSeeds.at(s)
+                          << " error=" << errors[s] << std::endl;
+            }
         }
     }
     for (int s = 0; s < nSeeds; ++s) {
@@ -1281,17 +1531,36 @@ void activeLizardPairTransitionGen(
             throw std::runtime_error("targeted Lizard pair failed for source "
                                      + std::to_string(targetSeeds[s]) + ": " + errors[s]);
     }
-    std::ofstream f(outfile);
-    if (!f) throw std::runtime_error("paired Lizard pilot: cannot open output");
     long long pairs = 0;
-    for (int s = 0; s < nSeeds; ++s) {
-        if (!completedByTarget[s]) continue;
-        f << pairRows[s].dump() << '\n';
-        ++pairs;
+    if (directSnapshotReplay) {
+        if (completedPairCount.load() != nSeeds)
+            throw std::runtime_error("direct snapshot replay ended without all pair checkpoints");
+        const auto outputTemporary = std::filesystem::path(outfile + ".assembling.tmp");
+        std::ofstream f(outputTemporary, std::ios::binary | std::ios::trunc);
+        if (!f) throw std::runtime_error("paired Lizard pilot: cannot open assembled output");
+        for (int s = 0; s < nSeeds; ++s) {
+            if (!completedByTarget[s])
+                throw std::runtime_error("direct snapshot replay is missing a completed target checkpoint");
+            f << pairRows[s].dump() << '\n';
+            ++pairs;
+        }
+        f.flush();
+        if (!f) throw std::runtime_error("paired Lizard pilot: cannot flush assembled output");
+        f.close();
+        if (!f) throw std::runtime_error("paired Lizard pilot: cannot close assembled output");
+        retainOrCreateFinalFile(outputTemporary, outfile);
+    } else {
+        std::ofstream f(outfile);
+        if (!f) throw std::runtime_error("paired Lizard pilot: cannot open output");
+        for (int s = 0; s < nSeeds; ++s) {
+            if (!completedByTarget[s]) continue;
+            f << pairRows[s].dump() << '\n';
+            ++pairs;
+        }
+        f.close();
     }
-    f.close();
     const int completed = static_cast<int>(pairs);
-    const auto producerExecutableSha = fileSha256(g_mainBinaryPath);
+    if (!directSnapshotReplay) producerExecutableSha = fileSha256(g_mainBinaryPath);
     nlohmann::json manifest = {
         {"schema", directSnapshotReplay
              ? "lizard_tail_direct_snapshot_paired_transition_diagnostic_v1"
@@ -1327,11 +1596,25 @@ void activeLizardPairTransitionGen(
             {"mode", "persistent_snapshot_direct"},
             {"excludedBurningEliteTargets", std::move(excludedTargets)}
         };
+        manifest["pairCheckpointing"] = {
+            {"schema", "lizard_direct_snapshot_pair_checkpoint_v1"},
+            {"directory", std::filesystem::absolute(checkpointDirectory).string()},
+            {"atomicWritePerCompletedPair", true},
+            {"exclusiveCollectorLock", true},
+            {"resumeValidatesPlanTeacherCollectorAndRowChecksum", true}
+        };
     }
     const std::string manifestPath = outfile + ".manifest.json";
-    std::ofstream mf(manifestPath);
-    if (!mf) throw std::runtime_error("paired Lizard pilot: cannot write manifest");
-    mf << manifest.dump(2) << '\n';
+    if (directSnapshotReplay) {
+        const std::string manifestText = manifest.dump(2) + "\n";
+        const auto manifestTemporary = std::filesystem::path(manifestPath + ".tmp");
+        writeTextFile(manifestTemporary, manifestText);
+        retainOrCreateFinalFile(manifestTemporary, manifestPath);
+    } else {
+        std::ofstream mf(manifestPath);
+        if (!mf) throw std::runtime_error("paired Lizard pilot: cannot write manifest");
+        mf << manifest.dump(2) << '\n';
+    }
     std::cout << "combattransitionlizardpairgen teacher=" << teacher.id
               << " completed=" << completed << '/' << nSeeds << " pairs=" << pairs
               << " -> " << outfile << '\n';
