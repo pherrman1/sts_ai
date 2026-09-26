@@ -1,0 +1,318 @@
+{
+  "analysisToolSha256": "d2d8731b5dc146b9288c92959b232ce38245906640396c83d6ab9a7f755c9e27",
+  "artifactSha256": {
+    "fast_ctm": "a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a",
+    "floor_model": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "standard_ctm": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "v4_policy": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "win_model": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+  },
+  "binarySha256": "c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244",
+  "bootstrap": {
+    "interval": "two-sided percentile 95%, linear interpolation",
+    "numpyVersion": "2.5.1",
+    "pythonVersion": "3.12.3",
+    "replicates": 500000,
+    "resamplingUnit": "paired seed rows",
+    "rng": "NumPy PCG64",
+    "seed": 20260924
+  },
+  "classification": "OOC_HYBRID_QUALITY_CONFIRMED",
+  "configuration": {
+    "ascension": 0,
+    "combatBackend": "Silver",
+    "combatBudget": 10000,
+    "environmentPolicy": "clean",
+    "fairPlay": true,
+    "hybridEnvironment": {
+      "HOME": "/home/philippherrmann",
+      "OMP_NUM_THREADS": "24",
+      "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "STS_COLLECT_KEYS": "0",
+      "STS_EXECUTABLE_GIT_SHA": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+      "STS_FAIR": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_OOC_MCTS": "1",
+      "STS_OOC_MCTS_BREW_FALLBACK_MODEL": "checkouts/deepset-entropic-brew-confirmation-2026-09-24/selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+      "STS_OOC_MCTS_COMBAT_MODEL": "artifacts/deepset-entropic-brew-confirmation-2026-09-24/deepset-fast.native",
+      "STS_OOC_MCTS_CPUCT": "1.5",
+      "STS_OOC_MCTS_EARLY_STOP": "1",
+      "STS_OOC_MCTS_GAP_STOP_20": "0",
+      "STS_OOC_MCTS_LEAF_COMBATS": "0",
+      "STS_OOC_MCTS_LEAF_POLICY": "v4",
+      "STS_OOC_MCTS_LEAF_VALUE": "native",
+      "STS_OOC_MCTS_MAX_DEPTH": "32",
+      "STS_OOC_MCTS_PRIOR": "policy",
+      "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+      "STS_OOC_MCTS_SIMS": "2048",
+      "STS_OOC_MCTS_TEMPERATURE": "1",
+      "STS_OOC_MCTS_TRACE": "results/deepset-entropic-brew-confirmation-2026-09-24-confirmation-H.mcts.csv",
+      "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+      "STS_OOC_MCTS_WIDEN_K": "2",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "checkouts/deepset-entropic-brew-confirmation-2026-09-24/selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP": "32768",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_STOP_AFTER_ACT": "3"
+    },
+    "keys": false,
+    "oocMctsSimulations": 2048,
+    "silverPinnedSha": "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff",
+    "standardEnvironment": {
+      "HOME": "/home/philippherrmann",
+      "OMP_NUM_THREADS": "24",
+      "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "STS_COLLECT_KEYS": "0",
+      "STS_EXECUTABLE_GIT_SHA": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+      "STS_FAIR": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_OOC_MCTS": "1",
+      "STS_OOC_MCTS_COMBAT_MODEL": "checkouts/deepset-entropic-brew-confirmation-2026-09-24/selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+      "STS_OOC_MCTS_CPUCT": "1.5",
+      "STS_OOC_MCTS_EARLY_STOP": "1",
+      "STS_OOC_MCTS_GAP_STOP_20": "0",
+      "STS_OOC_MCTS_LEAF_COMBATS": "0",
+      "STS_OOC_MCTS_LEAF_POLICY": "v4",
+      "STS_OOC_MCTS_LEAF_VALUE": "native",
+      "STS_OOC_MCTS_MAX_DEPTH": "32",
+      "STS_OOC_MCTS_PRIOR": "policy",
+      "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+      "STS_OOC_MCTS_SIMS": "2048",
+      "STS_OOC_MCTS_TEMPERATURE": "1",
+      "STS_OOC_MCTS_TRACE": "results/deepset-entropic-brew-confirmation-2026-09-24-confirmation-C.mcts.csv",
+      "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+      "STS_OOC_MCTS_WIDEN_K": "2",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "checkouts/deepset-entropic-brew-confirmation-2026-09-24/selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP": "32768",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_STOP_AFTER_ACT": "3"
+    },
+    "stopAfterAct": 3,
+    "threads": 24
+  },
+  "continuationReasons": {
+    "hybrid": {},
+    "standard": {}
+  },
+  "frozenExecutableGitSha": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+  "hybridDiagnostics": {
+    "brewFallbackPreparations": 63979,
+    "fallbackRate": 0.007090561337860665,
+    "fallbackSamples": 66432,
+    "fallbackSupportFailures": 1,
+    "fastPreparations": 8959143,
+    "fastSamples": 9235676,
+    "fastSupportFailures": 213,
+    "preparations": 9023122,
+    "sumPerSeedUniqueBrewPredictorStates": 4491,
+    "uniqueBrewPredictorStatesAggregation": "sum of per-seed unique counts; no cross-seed deduplication"
+  },
+  "pairedMetrics": {
+    "ctmPreparations": {
+      "hybridMean": 17623.28515625,
+      "hybridMinusStandardMean": 155.716796875,
+      "pairedBootstrap95CI": [
+        -110.369287109375,
+        425.4064453124997
+      ],
+      "standardMean": 17467.568359375
+    },
+    "endHp": {
+      "hybridMean": 27.462890625,
+      "hybridMinusStandardMean": 2.177734375,
+      "pairedBootstrap95CI": [
+        -0.46875,
+        4.83203125
+      ],
+      "standardMean": 25.28515625
+    },
+    "fightsLost": {
+      "hybridMean": 0.4296875,
+      "hybridMinusStandardMean": -0.02734375,
+      "pairedBootstrap95CI": [
+        -0.07421875,
+        0.01953125
+      ],
+      "standardMean": 0.45703125
+    },
+    "finalAct": {
+      "hybridMean": 2.7890625,
+      "hybridMinusStandardMean": 0.033203125,
+      "pairedBootstrap95CI": [
+        -0.00390625,
+        0.0703125
+      ],
+      "standardMean": 2.755859375
+    },
+    "finalFloor": {
+      "hybridMean": 46.224609375,
+      "hybridMinusStandardMean": 0.609375,
+      "pairedBootstrap95CI": [
+        -0.11328125,
+        1.337890625
+      ],
+      "standardMean": 45.615234375
+    },
+    "imaginedCombats": {
+      "hybridMean": 18168.59765625,
+      "hybridMinusStandardMean": 159.771484375,
+      "pairedBootstrap95CI": [
+        -119.6171875,
+        443.041015625
+      ],
+      "standardMean": 18008.826171875
+    },
+    "maxHp": {
+      "hybridMean": 82.689453125,
+      "hybridMinusStandardMean": -0.234375,
+      "pairedBootstrap95CI": [
+        -1.564453125,
+        1.103515625
+      ],
+      "standardMean": 82.923828125
+    },
+    "mctsCpuSeconds": {
+      "hybridMean": 76.36937065239454,
+      "hybridMinusStandardMean": -43.15151376013086,
+      "pairedBootstrap95CI": [
+        -49.3149181464524,
+        -34.68425186718516
+      ],
+      "standardMean": 119.52088441252539
+    },
+    "mctsSimulations": {
+      "hybridMean": 110190.478515625,
+      "hybridMinusStandardMean": 1447.806640625,
+      "pairedBootstrap95CI": [
+        -376.235205078125,
+        3283.0469726562496
+      ],
+      "standardMean": 108742.671875
+    },
+    "mctsWallSeconds": {
+      "hybridMean": 211.83355106039647,
+      "hybridMinusStandardMean": -134.49204648210937,
+      "pairedBootstrap95CI": [
+        -146.85671255200194,
+        -120.82162827842608
+      ],
+      "standardMean": 346.3255975425058
+    },
+    "oocDecisions": {
+      "hybridMean": 134.060546875,
+      "hybridMinusStandardMean": 1.79296875,
+      "pairedBootstrap95CI": [
+        -0.30078125,
+        3.904296875
+      ],
+      "standardMean": 132.267578125
+    },
+    "realCombats": {
+      "hybridMean": 24.064453125,
+      "hybridMinusStandardMean": 0.310546875,
+      "pairedBootstrap95CI": [
+        -0.0546875,
+        0.6796875
+      ],
+      "standardMean": 23.75390625
+    },
+    "supportAborts": {
+      "hybridMean": 0.41796875,
+      "hybridMinusStandardMean": 0.048828125,
+      "pairedBootstrap95CI": [
+        -0.021484375,
+        0.12109375
+      ],
+      "standardMean": 0.369140625
+    },
+    "wholeRunSeconds": {
+      "hybridMean": 338.3693201171875,
+      "hybridMinusStandardMean": -132.782069140625,
+      "pairedBootstrap95CI": [
+        -146.4114017529297,
+        -117.98274609375001
+      ],
+      "standardMean": 471.1513892578125
+    },
+    "win": {
+      "hybridMean": 0.5703125,
+      "hybridMinusStandardMean": 0.029296875,
+      "pairedBootstrap95CI": [
+        -0.017578125,
+        0.076171875
+      ],
+      "standardMean": 0.541015625
+    }
+  },
+  "primaryEndpoint": {
+    "hybridMinusStandard": 0.029296875,
+    "hybridMinusStandardPercentagePoints": 2.9296875,
+    "metric": "paired whole-run Act-3 win difference",
+    "nonInferiorityMargin": -0.05,
+    "nonInferiorityMarginPercentagePoints": -5.0,
+    "pairedBootstrap95CI": [
+      -0.017578125,
+      0.076171875
+    ],
+    "pairedBootstrap95CIPercentagePoints": [
+      -1.7578125,
+      7.6171875
+    ]
+  },
+  "screeningCohort": {
+    "includedInPrimary": false,
+    "range": [
+      980000,
+      980063
+    ],
+    "reason": "independent exploratory screen; excluded from the 512-pair confirmation statistic"
+  },
+  "seedCount": 512,
+  "seedRange": [
+    990000,
+    990511
+  ],
+  "supportReasonCounterInterpretation": "Counts include unsupported-combat causes and other recorded decision/search fallbacks; totals can exceed unsupportedCombats.",
+  "supportReasons": {
+    "hybrid": {
+      "pre_smoke_bomb_used": 1,
+      "smoke_bomb": 211,
+      "writhing_ritual_intersection": 2
+    },
+    "standard": {
+      "pre_smoke_bomb_used": 1,
+      "smoke_bomb": 188
+    }
+  },
+  "timingInterpretation": "Observed whole-run and MCTS time are operational diagnostics; different decisions/search work prevent a per-call causal interpretation.",
+  "wins": {
+    "bothLose": 151,
+    "bothWin": 208,
+    "exactTwoSidedDiscordantBinomialP": 0.2576337765467217,
+    "hybrid": 292,
+    "hybridOnly": 84,
+    "standard": 277,
+    "standardOnly": 69
+  }
+}
