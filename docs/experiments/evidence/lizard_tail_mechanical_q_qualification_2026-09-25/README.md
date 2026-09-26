@@ -234,10 +234,13 @@ producer executable SHA-256 is
 used the local seed guard, exact 10,000 fair simulations, and
 `OMP_NUM_THREADS=8`. It completed 119/119 pairs in 127 seconds. The JSONL SHA-256
 is `3e02b7d1175190edc0cb7933ba32ce87d614a3e2836f7ef4c6e473bd8a5f3658`; all
-119 pair checkpoints match the plan, teacher, executable, source/fight
-identity, final row, and C++ row checksum. The manifest reports 119 completed,
-zero quarantined, exact support on every row, and no predictor-input or
-persistent-state mismatch. The output manifest SHA-256 is
+119 per-pair checkpoint payloads were verified against the plan, teacher,
+executable, source/fight identity, final row, and C++ row checksum. Those
+checkpoint JSON files are resumable scratch artifacts and are intentionally
+excluded from this repository because the final JSONL and manifest preserve
+the completed result. The manifest reports 119 completed, zero quarantined,
+exact support on every row, and no predictor-input or persistent-state
+mismatch. The output manifest SHA-256 is
 `ac02252444f2ab3cab41f96f6574aa53684e7ffa845c80ef14e89181c7b26fa8`; the raw
 collector log SHA-256 is
 `d7c6643b7bb89a41b7c8245e664d0b139b2c5ef7dbd86ba21c1fe4736e93b2f6`.
@@ -312,8 +315,10 @@ The 2026-09-26 Stage-C freshness audit reconfirmed all 320 unique assigned
 sources are disjoint from the 367 prior Lizard sources; the assignment SHA-256
 remains
 `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`. The
-original designated GCP worker was absent at the last preflight. Since then,
-current main PR #361 retired the GCP research workflow, so the frozen
-GCP-specific execution assumption must be reconciled with current repository
-policy before launch. The source assignment and qualification gates remain
-unchanged. Only Stage C may qualify the candidate.
+current-main PR #361 retired the GCP research workflow. Under ADR-0024, the
+user has authorized running this frozen assignment locally if the current-main
+Stage-B diagnostic passes. Before launch, freeze the final source, build,
+teacher, and candidate provenance and local resource budget; invoke all seed
+collection through `tools/seed_guard.sh`. The source assignment and
+qualification gates remain unchanged. Stage C has not started, and only Stage
+C may qualify the candidate.

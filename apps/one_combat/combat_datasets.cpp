@@ -1129,21 +1129,6 @@ void activeLizardPairTransitionGen(
     const std::string &baselineSha, const std::string &collectorSha) {
     if (nSeeds < 1 || nSeeds > 320)
         throw std::runtime_error("targeted Lizard pilot requires 1..320 pairs");
-    if (nSeeds > 128) {
-#ifndef _WIN32
-        char hostname[256]{};
-        const char *researchContext = std::getenv("STS_GCP_RESEARCH_CONTEXT");
-        const bool designatedResearchRun =
-            researchContext != nullptr && std::string(researchContext) == "sts-test"
-            && gethostname(hostname, sizeof(hostname) - 1) == 0
-            && std::string(hostname) == "sts-test"
-            && std::filesystem::current_path() == "/home/philippherrmann/sts_sweep";
-#else
-        const bool designatedResearchRun = false;
-#endif
-        if (!designatedResearchRun)
-            throw std::runtime_error("Lizard pair runs above 128 sources require the designated sts-test GCP research context");
-    }
     if (sims != 10000)
         throw std::runtime_error("paired Lizard pilot requires exact-10k Silver");
     auto validSha = [](const std::string &s) {
@@ -1659,6 +1644,23 @@ int activeLizardTransitionSelfTest() {
     restoredVictory.exitBattle(restored);
     if (restored.screenState != ScreenState::REWARDS)
         throw std::runtime_error("active Lizard selftest: direct snapshot victory continuation failed");
+
+    // The archived event snapshot does not carry curEvent or its transient
+    // option callback. Its victory continuation must go directly to the map;
+    // calling afterBattle() here would recurse through regainControl().
+    GameContext restoredEvent(CharacterClass::IRONCLAD, 920260925u, 0);
+    restoredEvent.screenState = ScreenState::BATTLE;
+    restoredEvent.curRoom = Room::EVENT;
+    restoredEvent.curEvent = Event::INVALID;
+    restoredEvent.info.encounter = MonsterEncounter::CULTIST;
+    installDirectSnapshotPostBattleAction(restoredEvent);
+    BattleContext restoredEventVictory;
+    restoredEventVictory.init(restoredEvent, MonsterEncounter::CULTIST);
+    restoredEventVictory.outcome = Outcome::PLAYER_VICTORY;
+    restoredEventVictory.exitBattle(restoredEvent);
+    if (restoredEvent.screenState != ScreenState::MAP_SCREEN
+        || restoredEvent.regainControlAction != nullptr)
+        throw std::runtime_error("active Lizard selftest: event snapshot victory continuation failed");
 
     GameContext fairy = detachedCounterfactualCopy(shadow);
     fairy.potions[0] = Potion::FAIRY_POTION;

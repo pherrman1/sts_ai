@@ -12890,20 +12890,23 @@ Decision: adopt; this is a pure speedup with exact parity. Evidence:
   changed native Silver equivalent-copy reroot behavior, which is not disabled
   by the frozen exact-root-budget setting. Retry 5 is historical evidence, not
   a current-main Stage-B pass. The same 119 states need a current-teacher
-  diagnostic before Stage C. Current main also retired the GCP research
-  workflow in PR #361; the previously frozen Stage-C execution assumption must
-  be reconciled with current repository policy before launch. Stage C has not
-  started.
+  diagnostic before Stage C. Current main retired the GCP research workflow
+  in PR #361; under ADR-0024, the frozen 320-source Stage C can run locally
+  without a general seed ceiling after the current-teacher Stage-B gate passes.
+  The user has authorized that conditional local run. Before launch, freeze the
+  final source/build/artifact provenance and resource budget, then use the
+  repository seed guard. Stage C has not started.
 - **Decision:** Stage A remains development evidence. Retry 5 is a valid,
   provenance-pinned historical teacher-transfer diagnostic but does not pass
   the current-main Stage-B gate. Stage C must wait for a current-teacher Stage-B
-  diagnostic and an execution path consistent with current main. No runtime
+  diagnostic and its frozen local resource/provenance preflight. No runtime
   support changed; production remains `active_unqualified_lizard`.
 - **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
   including frozen cohort artifacts, Stage A analysis, candidate manifest,
-  source assignment, retry-5 historical native teacher manifest and plan, full
-  119-pair JSONL/checkpoints, analyzer output, debug-only event-target replay,
-  and the current-main drift note.
+  source assignment, retry-5 historical native teacher manifest and plan, the
+  119-pair JSONL (whose per-pair checkpoint payloads were validated during the
+  run and intentionally excluded as redundant scratch), analyzer output,
+  debug-only event-target replay, and the current-main drift note.
 
 Knowledge impact: current research now records the event-continuation harness
 fix, analyzer schema compatibility fix, historical teacher-transfer result,

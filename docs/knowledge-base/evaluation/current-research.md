@@ -982,9 +982,10 @@ transfer evidence, not qualification. Current main later advanced to
 equivalent-copy reroot change, which the frozen exact-root-budget setting does
 not disable. The same exact 119 states need a new current-teacher diagnostic
 before Stage C. The frozen fresh 320-source assignment remains disjoint from
-367 prior Lizard sources. Current main also retired the GCP research workflow
-in PR #361, so Stage C's execution path must be reconciled with current
-repository policy before launch. Stage C has not started; production remains
+367 prior Lizard sources. Following ADR-0024, the user has authorized its local
+execution if the current-teacher Stage-B gate passes. Freeze the final
+source/build/artifact provenance and resource budget, then use the repository
+seed guard; Stage C has not started. Production remains
 `active_unqualified_lizard`. See [ledger §361](../../experiments/ledger-06.md) and the
 [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
