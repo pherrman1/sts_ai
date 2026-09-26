@@ -95,7 +95,14 @@ and exhaust, as multisets.
 The backend reroots onto the dedup node equal to the new live view when one
 exists, compacting unreachable nodes at the 32,768-node cap, and maps the
 chosen root action to the live state by card identity
-(`SilverSearcher::translateAction`). A root with exactly one legal action
+(`SilverSearcher::translateAction`, which falls back to a search-equivalent
+copy). When no node matches exactly, `findNodeUpToEquivalentCopy` retries with
+the unique ids of one pair of search-equivalent cards exchanged, so playing a
+different physical copy than the one the search expanded (the root
+deduplicates equivalent copies) still reuses that branch (ADR-0023). The
+exchange is only a lookup: `equalForSearch` and the dedup table stay exact,
+and cards whose special data matters (Ritual Dagger, Genetic Algorithm) are
+never exchanged. A root with exactly one legal action
 (for example a forced End Turn or a one-option selection) is committed without
 search; the retained graph is kept, so the next decision can still reroot
 through it. `STS_SILVER_SEARCH_SINGLETON_ROOTS=1` and exact root budgets
@@ -127,19 +134,27 @@ vendored model's 83/128 (no detectable difference;
 protocol (`SilverBridge.h`). `battleContextFromWire` (`SilverWireState.cpp`)
 builds the search root: the draw pile from the wire's information set, discard
 and exhaust from their multisets, RNG seeded from the wire's public search
-seed, and Runic Dome pending intents. The wire has no action queue; at a card
-selection interrupted mid-play (the playing card is in no pile) it restores
-the pending `OnAfterCardUsed`, but other queued continuations (Burning Pact's
-draw after the exhaust choice, damage queued behind a Headbutt) are not
-representable. `semanticFromSearchAction` maps search actions to the
+seed, and Runic Dome pending intents. The wire has no action queue. At a card
+selection interrupted mid-play (the playing card is in no pile) the pending
+work is rebuilt by replaying the card on a copy of the root: the card goes
+back to hand with its cost refunded and the per-turn play counts and Ink
+Bottle/Nunchaku/Pen Nib counters rolled back, and the part of the queue the
+play produced that is still unrun when the selection opens (Burning Pact's
+draw, `OnAfterCardUsed`, relic triggers) is copied into the root. Monster
+reactions queued while the card's own pre-selection effects ran (Sharp Hide,
+a Mode Shift) are not rebuilt, and effects the first play consumed (Vigor, the
+Pen Nib buff, Double Tap, Necronomicon) are not rolled back. When the replay
+does not reach the same selection, only `OnAfterCardUsed` is restored.
+`semanticFromSearchAction` maps search actions to the
 index-free `SemanticAction` the advisor lowers to live actions, and
 `NativeSilverAdvisorSession` keeps one searcher per combat for reroot and
-incremental budgets. Playing a different physical copy of an equivalent card
-is a different search state and starts a fresh root (ADR-0022 supersedes
-ADR-0015). `test silver_wire_state` checks that live -> wire -> root equals the
-backend's own root (up to discard order and the live seed) through battles
-with Runic Dome and Frozen Eye, and that every root action keeps its semantic
-identity on the live state.
+incremental budgets. The advisor uses the same equivalent-copy reroot and
+translates the retained root's actions onto the live root before lowering
+them, so they always name a physical card in the live hand. `test silver_wire_state` checks that live -> wire -> root equals the
+backend's own root (up to discard order and the live seed), queues included,
+through battles with Runic Dome, Frozen Eye and play-count relics, and that
+every root action keeps its semantic identity on the live state; it counts
+the roots that only lack a monster reaction separately.
 
 ## Action enumeration / semantic bridge
 
@@ -246,8 +261,9 @@ invocation details from
   fields such as `uniqueId` and retain state.
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
-- The advisor's wire cannot carry queued continuations other than an
-  interrupted card's `OnAfterCardUsed`.
+- At a mid-card selection the advisor's root lacks monster reactions to the
+  card's pre-selection effects and does not undo effects the first play
+  consumed (see Live advisor).
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 

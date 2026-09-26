@@ -29,8 +29,8 @@ and `combatEntryHash`; a matching observed successor can therefore report an
 exact reroot with inherited visits. Matching considers every explored state in
 the retained graph, not only Silver's selected recommendation, so choosing
 another listed action also inherits its branch visits. Playing a different
-physical copy of an equivalent card is a different search state and starts a
-fresh root (`equivalentCopy` is always false). An observation with no retained
+physical copy of an equivalent card reroots through that branch as well and
+reports `equivalentCopy: true` (ADR-0023). An observation with no retained
 successor safely reports a fresh `candidate_missing` fallback. Multi-card
 selections (Gambling Chip, Purity) are searched as whole subsets; the selected
 subset is lowered one `choose` at a time and then `proceed`.
@@ -420,11 +420,11 @@ Live current energy comes from `EnergyPanel.totalCount`; the player's
 `EnergyManager.energy` field is the per-turn recharge amount and does not
 decrease when a card is played.
 
-Equivalent-copy rebasing is deliberately local to the immediate live reroot.
-It proves the candidate by swapping only the retained and observed card UIDs,
-then requiring the ordinary-card equivalence and full search-state checks to
-match. It does not relax `equalForSearch()`, merge UID-distinct states in the
-global dedup table, or make chance-node identity less strict.
+Equivalent-copy rerooting is a lookup only. It exchanges the unique ids of one
+pair of search-equivalent cards in the observed state and requires the full
+search-state check to match. It does not relax `equalForSearch()`, merge
+UID-distinct states in the global dedup table, or make chance-node identity
+less strict.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore

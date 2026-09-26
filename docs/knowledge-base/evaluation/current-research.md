@@ -47,7 +47,7 @@ checkpoint was not recreated; this is a new seed-0, 30-epoch representation
 student frozen outside the worktree. This qualifies offline fidelity only. No
 native contextual inference, MCTS/gameplay smoke, policy-strength test, or
 default change was made. A separate native implementation and parity/runtime
-task is the next step. See [ledger §355](../../experiments/ledger-06.md) and
+task is the next step. See [ledger §356](../../experiments/ledger-06.md) and
 the [evidence packet](../../experiments/evidence/ooc_contextual_semantic_prior_2026-09-25/README.md).
 
 ## OOC 20% gap-stop quality gate

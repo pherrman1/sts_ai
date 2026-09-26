@@ -43,6 +43,21 @@ namespace {
         return lhs.uniqueId == rhs.uniqueId || (!lhs.usesSpecialData() && !rhs.usesSpecialData());
     }
 
+    void swapUniqueIds(BattleContext &bc, std::int16_t a, std::int16_t b) {
+        const auto swap = [a, b](CardInstance &c) {
+            if (c.uniqueId == a) c.uniqueId = b;
+            else if (c.uniqueId == b) c.uniqueId = a;
+        };
+        auto &cards = bc.cards;
+        for (int i = 0; i < cards.cardsInHand; ++i) swap(cards.hand[i]);
+        cards.drawPile.mutateAll(swap);
+        for (auto &c : cards.discardPile) swap(c);
+        for (auto &c : cards.exhaustPile) swap(c);
+        for (auto &c : cards.limbo) swap(c);
+        for (auto &c : cards.stasisCards) swap(c);
+        swap(bc.curCardQueueItem.card);
+    }
+
     // Single-card selectors where choosing any of several equivalent cards is the
     // same decision, and the pile each one selects from.
     const CardInstance *selectableCard(const BattleContext &bc, int idx) {
@@ -155,6 +170,27 @@ search::SilverSearcher::Node *search::SilverSearcher::findNode(const BattleConte
     for (std::size_t i = hash & stateToNodeMask; stateToNode[i].node != nullptr; i = (i + 1) & stateToNodeMask) {
         if (stateToNode[i].hash == hash && stateToNode[i].node->state->equalForSearch(state)) {
             return stateToNode[i].node;
+        }
+    }
+    return nullptr;
+}
+
+search::SilverSearcher::Node *search::SilverSearcher::findNodeUpToEquivalentCopy(const BattleContext &state) const {
+    std::vector<CardInstance> cards(state.cards.hand.begin(), state.cards.hand.begin() + state.cards.cardsInHand);
+    cards.insert(cards.end(), state.cards.drawPile.begin(), state.cards.drawPile.end());
+    cards.insert(cards.end(), state.cards.discardPile.begin(), state.cards.discardPile.end());
+    cards.insert(cards.end(), state.cards.exhaustPile.begin(), state.cards.exhaustPile.end());
+    BattleContext candidate;
+    for (std::size_t i = 0; i < cards.size(); ++i) {
+        if (cards[i].usesSpecialData()) continue;
+        for (std::size_t j = i + 1; j < cards.size(); ++j) {
+            if (cards[i].uniqueId == cards[j].uniqueId || !cardsEquivalentForSearch(cards[i], cards[j])) {
+                continue;
+            }
+            candidate = state;
+            swapUniqueIds(candidate, cards[i].uniqueId, cards[j].uniqueId);
+            Node *node = findNode(candidate);
+            if (node != nullptr && !node->isRandomNode) return node;
         }
     }
     return nullptr;

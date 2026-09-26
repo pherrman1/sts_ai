@@ -93,6 +93,11 @@ namespace sts::search {
 
         // The node for `state` in the current graph, or nullptr.
         [[nodiscard]] Node *findNode(const BattleContext &state) const;
+        // The decision node for `state` with the unique ids of one pair of
+        // search-equivalent cards exchanged, or nullptr: the player used a
+        // different physical copy than the one the search expanded. Actions of
+        // that node still apply to `state` through translateAction.
+        [[nodiscard]] Node *findNodeUpToEquivalentCopy(const BattleContext &state) const;
 
         // Make `node` the root, keeping its subtree. When `compact`, nodes
         // unreachable from it are reclaimed first.
