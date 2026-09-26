@@ -113,14 +113,16 @@ final class InlineChoices {
                 }
                 Object button = AbstractDungeon.overlayMenu.cancelButton;
                 if (!Boolean.TRUE.equals(field(button, "isHidden")))
-                    result.add(below(action("cancel", 0), "Leave", ((Hitbox)field(button, "hb")).cX,
-                            ((Hitbox)field(button, "hb")).y - 40 * s));
+                    result.add(shopLeave((Hitbox)field(button, "hb")));
             }
         } catch (ReflectiveOperationException | RuntimeException unavailable) {
             // Never guess a choice binding after a mod/API changes. The caller
             // retains unmatched recommendations in its fallback panel.
         }
         return result;
+    }
+    static Anchor shopLeave(Hitbox hb) {
+        return below(action("cancel", 0), "Leave", hb.cX, hb.y - 40 * Settings.scale).source(hb);
     }
     private static Anchor card(JsonObject action, String label, AbstractCard card, int gap) {
         return below(action, label, card.current_x,
