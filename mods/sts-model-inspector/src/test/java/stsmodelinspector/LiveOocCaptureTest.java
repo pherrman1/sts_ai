@@ -18,6 +18,43 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        for (int count : new int[]{2,4}) {
+            java.util.List<Object> offers = new java.util.ArrayList<>();
+            java.util.List<Object> options = new java.util.ArrayList<>();
+            for (int i=0; i<count; ++i) {
+                offers.add(obj("type", i==0 ? "THREE_ENEMY_KILL" : "TEN_PERCENT_HP_BONUS", "drawback", "NONE"));
+                options.add(obj("index", i, "disabled", false));
+            }
+            Map<String,Object> captured = obj("screen", "event", "details", obj(),
+                    "unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:Neow:3");
+            LiveOocCapture.captureNeowOffers(captured, offers, "3", options);
+            java.util.List<?> actual = (java.util.List<?>)((Map<?,?>)captured.get("details")).get("neow");
+            if (!"neow".equals(captured.get("screen")) || captured.containsKey("unsupportedReason")
+                    || actual.size()!=count)
+                throw new AssertionError("Neow offer count was not preserved");
+            for (int i=0; i<count; ++i)
+                if (!((Map<?,?>)offers.get(i)).get("type").equals(((Map<?,?>)actual.get(i)).get("bonus")))
+                    throw new AssertionError("Neow offer order was changed");
+            for (String phase : new String[]{"0","1","2","4"}) {
+                Map<String,Object> rejected = obj("screen","event","details",obj(),"unsupportedReason","phase");
+                LiveOocCapture.captureNeowOffers(rejected,offers,phase,options);
+                if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("Neow non-choice phase accepted");
+            }
+            for (int slot : new int[]{-1,1,4}) {
+                options.set(0,obj("index",slot,"disabled",false));
+                Map<String,Object> rejected = obj("screen","event","details",obj(),"unsupportedReason","slots");
+                LiveOocCapture.captureNeowOffers(rejected,offers,"3",options);
+                if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("Neow slot mismatch accepted");
+            }
+            options.set(0,obj("index",0,"disabled",true));
+            Map<String,Object> disabled = obj("screen","event","details",obj(),"unsupportedReason","disabled");
+            LiveOocCapture.captureNeowOffers(disabled,offers,"3",options);
+            if (!disabled.containsKey("unsupportedReason")) throw new AssertionError("disabled Neow slot accepted");
+            options.remove(0);
+            Map<String,Object> rejected = obj("screen","event","details",obj(),"unsupportedReason","missing");
+            LiveOocCapture.captureNeowOffers(rejected,offers,"3",options);
+            if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("incomplete Neow buttons accepted");
+        }
         check("MawBank", -1, false, 1, null);
         check("MawBank", -2, true, 0, null);
         check("Happy Flower", 2, false, 2, null);
@@ -185,6 +222,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: Neow two/four-offer projection, 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
     }
 }

@@ -742,7 +742,12 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
         case Event::WINDING_HALLS:
             return 0x7;
 
-        case Event::NEOW:
+        case Event::NEOW: {
+            int bits = 0;
+            for (int i = 0; i < static_cast<int>(gc.info.neowRewards.size()); ++i)
+                if (gc.info.neowRewards[i].r != Neow::Bonus::INVALID) bits |= 1 << i;
+            return bits;
+        }
         case Event::KNOWING_SKULL:
         case Event::THE_WOMAN_IN_BLUE:
             return 0xF;
