@@ -143,6 +143,22 @@ namespace sts::search {
                 if (p.hasRelic<RelicId::NUNCHAKU>()) p.nunchakuCounter = p.nunchakuCounter == 0 ? 9 : p.nunchakuCounter - 1;
                 if (p.hasRelic<RelicId::PEN_NIB>()) p.penNibCounter = p.penNibCounter == -1 ? 8 : p.penNibCounter - 1;
             }
+            // The replay hits a second time: keep every monster alive so it
+            // reaches the selection, and revive a target the real hit killed
+            // so the card can be used again. Monster health does not enter
+            // the actions the play queues.
+            constexpr int kReplayMonsterHp = 1 << 20;
+            if (item.card.requiresTarget() && item.target >= 0 && item.target < replay.monsters.monsterCount) {
+                auto &target = replay.monsters.arr[item.target];
+                if (target.isDying() && !target.isHalfDead() && !target.isEscaping()) {
+                    target.curHp = 1;
+                    ++replay.monsters.monstersAlive;
+                }
+            }
+            for (int i = 0; i < replay.monsters.monsterCount; ++i) {
+                auto &m = replay.monsters.arr[i];
+                if (m.isTargetable()) m.curHp = m.maxHp = kReplayMonsterHp;
+            }
             replay.cards.moveToHand(item.card);
             replay.inputState = InputState::EXECUTING_ACTIONS;
             replay.cardSelectInfo = CardSelectInfo{};
