@@ -1,7 +1,8 @@
 # Current research status
 
 Last verified: 2026-09-27 for the active-Lizard fresh native Stage-C
-qualification and unchanged production support; 2026-09-26 for the current-main
+qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
+promotion, and default-stack plumbing; 2026-09-26 for the current-main
 teacher-transfer gate, frozen Stage-C plan and checkpoint recovery, and the
 closed OOC MCTS reroot-opportunity measurement;
 2026-09-25 for the OOC contextual semantic-prior offline qualification,
@@ -1066,9 +1067,48 @@ were `-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
 primary, learned-r, and T2 gates passed; no clear HARD288 or BROAD32
 degradation was detected. The 32 BROAD32 outcomes were all retained wins and
 therefore contain no consumed-tail rows. Stage C is offline qualification
-only: no runtime support was integrated, and production remains
-`active_unqualified_lizard`. See [ledger §364](../../experiments/ledger-06.md)
-and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
+only and did not itself integrate runtime support. The subsequent DeepSets plus
+standard-Attention Brew integration added the qualified correction and passed
+deterministic parity, including after the branch was re-synced with current
+main. The original eight-pair whole-run canary was invalid because the forced
+Tail was inserted spent; its treatment did not exercise the correction. The
+disjoint follow-up cohort `991008..991015` passed the predeclared Gate 2
+integration checks after the forced-Tail initializer was corrected. All 16 runs
+completed; treatment had 120,708 Lizard preparations and samples with zero
+Lizard support failures. A single treatment seed recorded 41
+`active_unqualified_lizard` aborts on the predeclared Fairy/Mark exact-path
+boundaries; those matched the 41 boundary exclusions, with no abort from an
+eligible correction state. Both arms won 8/8, which is descriptive only.
+
+After Gate 2, the exact qualified DeepSets payload was packaged as
+`selfplay/models/combat_transition_deepsets_lizard_t2.native`. Its tensor
+payload remains SHA-256
+`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`; package
+metadata is pinned to the Gate 2 PASS result hash. With `STS_OOC_MCTS=1` and
+the combat model unset, the default stack is DeepSets, the standard Attention
+Brew fallback, and the active-Lizard correction. `STS_OOC_MCTS` itself remains
+off by default. Active Lizard + Entropic Brew, Fairy Potion, and Mark of the
+Bloom remain excluded or exact-path boundaries. The original invalid cohort
+remains preserved separately from the successful follow-up.
+
+Two no-model-override Gate 3 smokes on frozen implementation
+`529c214562fd7eda4842f4386c05303c4d3d3d47` reported the automatic stack in the
+startup line and combat telemetry. The ordinary case had no forced relic; the
+forced-Tail case recorded 17,610 Lizard preparations and 17,608 samples. It
+also recorded two existing `unsupported:smoke_bomb` exclusions, with no fast or
+Brew-fallback support counter failures. The auxiliary `[ooc-mcts-config]` line
+is malformed JSON, although its text shows the expected model/fallback/active
+fields. The ordinary case produced complete outputs and its final `BEST`
+summary, but the wrapper did not save its subprocess exit code after failing
+while parsing that line; the seed was not repeated. See the
+[Gate 3 smoke packet](../../experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate3_default_smokes_2026-09-27/README.md).
+
+After current main advanced with the Match and Keep policy, the merged branch
+again passed frozen Gate 1 parity, the 31-row Brew fixture, and focused
+combat-transition/OOC tests. See [ledger §364](../../experiments/ledger-06.md)
+for Stage C, [ledger §365](../../experiments/ledger-06.md) for the original
+integration attempt, [ledger §366](../../experiments/ledger-06.md) for the
+follow-up/default, and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <map>
 using namespace one_combat;
 using json=nlohmann::json;
 CombatPredictorInputV1 predictor(const json &j) {
@@ -26,12 +27,181 @@ CombatTransitionPersistentState persistent(const json &j) {
     for(const auto &c:j.at("deck"))s.deck.push_back({c.at("id"),c.at("misc"),c.at("upgraded")});
     for(int i=0;i<6;++i){auto &r=s.combatRng[i];auto v=j.at("combatRng")[i];r.counter=v.at("counter");r.seed0=v.at("seed0");r.seed1=v.at("seed1");}return s;
 }
+bool stateHasRelic(const CombatTransitionPersistentState &s,int id) {
+    return std::any_of(s.relics.begin(),s.relics.end(),[&](const auto &r){return r.id==id;});
+}
+int stateRelicData(const CombatTransitionPersistentState &s,int id) {
+    const auto it=std::find_if(s.relics.begin(),s.relics.end(),[&](const auto &r){return r.id==id;});
+    return it==s.relics.end()?-1:it->data;
+}
+bool tailBit(const CombatTransitionPersistentState &s) {
+    constexpr int id=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    return (s.relicBits.at(id/64)&(std::uint64_t{1}<<(id%64)))!=0;
+}
+CombatPredictorInputV1 stripTail(CombatPredictorInputV1 p) {
+    constexpr int id=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    p.relics.erase(std::remove_if(p.relics.begin(),p.relics.end(),[](const auto &r){return r.relicId==id;}),p.relics.end());
+    for(std::size_t i=0;i<p.relics.size();++i)p.relics[i].orderIndex=static_cast<int>(i);
+    return p;
+}
+CombatTransitionPersistentState stripTail(CombatTransitionPersistentState s) {
+    constexpr int id=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    s.relics.erase(std::remove_if(s.relics.begin(),s.relics.end(),[](const auto &r){return r.id==id;}),s.relics.end());
+    s.relicBits.at(id/64)&=~(std::uint64_t{1}<<(id%64));
+    return s;
+}
+bool rngContract(const CombatTransitionPersistentState &pre,
+    const CombatTransitionPersistentState &post,int encounter) {
+    const auto expected=replayNativeComposedMisc(pre.combatRng[2],encounter);
+    if(post.combatRng[2].counter!=expected.counter || post.combatRng[2].seed0!=expected.seed0 ||
+        post.combatRng[2].seed1!=expected.seed1)return false;
+    for(int i:{0,1,3,4,5})if(post.combatRng[i].counter!=pre.combatRng[i].counter ||
+        post.combatRng[i].seed0!=pre.combatRng[i].seed0 ||
+        post.combatRng[i].seed1!=pre.combatRng[i].seed1)return false;
+    return true;
+}
 int main(int argc,char **argv) {
     try {
         if(argc==3 && std::string(argv[1])=="--require-standard-fallback") {
             CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(argv[2]);
             std::cout << "pinned standard fallback SHA256 PASS\n";
             return 0;
+        }
+        if(argc==6 && std::string(argv[1])=="--lizard-parity") {
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],true);
+            NativeCombatTransitionSampler directSampler(argv[2]);
+            std::ifstream pairs(argv[4]),selectionFile(argv[5]);
+            if(!pairs || !selectionFile)throw std::runtime_error("Lizard parity input file");
+            const auto selection=json::parse(selectionFile);
+            std::map<std::pair<int,int>,json> targets;
+            for(const auto &target:selection.at("targets"))
+                targets.emplace(std::make_pair(target.at("sourceSeed").get<int>(),
+                    target.at("fightIdx").get<int>()),target);
+            std::string line;int rows=0;
+            constexpr int tailId=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+            while(std::getline(pairs,line)) {
+                const auto pair=json::parse(line);const auto &active=pair.at("activeTail");
+                const int source=active.at("sourceSeed"),fight=active.at("fightIdx");
+                const auto targetIt=targets.find({source,fight});
+                if(targetIt==targets.end())throw std::runtime_error("Stage-C pair missing frozen selected target");
+                auto p=predictor(active.at("predictorInput"));
+                auto pre=persistent(active.at("transition").at("pre"));
+                if(!stateHasRelic(pre,tailId) || stateRelicData(pre,tailId)!=1)
+                    throw std::runtime_error("Stage-C active Tail state does not carry an active relic");
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const auto prediction=hybrid.activeLizardPrediction(gc,p);
+                if(!prediction.supported)
+                    throw std::runtime_error("Stage-C active Lizard unsupported: "+prediction.reason);
+                json branches=json::object();
+                for(int outcomeClass=0;outcomeClass<3;++outcomeClass) {
+                    const auto branchSeed=991000+std::uint64_t(rows)*3+outcomeClass;
+                    std::mt19937_64 rng(branchSeed);
+                    const auto result=hybrid.sampleActiveLizardClass(gc,p,rng,outcomeClass);
+                    if(outcomeClass==2) {
+                        if(result.outcome!=CombatRuntimeSample::Outcome::DEATH)
+                            throw std::runtime_error("forced consumed-loss class did not end in death");
+                        branches["consumedLoss"]={{"death",true}};
+                        continue;
+                    }
+                    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY)
+                        throw std::runtime_error("forced Lizard winning class did not produce a victory");
+                    const auto &post=result.rawPost;
+                    const bool consumed=outcomeClass==1;
+                    const bool tailState=stateHasRelic(post,tailId) &&
+                        stateRelicData(post,tailId)==(consumed?0:1) && tailBit(post) &&
+                        post.relicBits==pre.relicBits;
+                    const bool hpLegal=post.curHp>=1 && post.curHp<=post.maxHp;
+                    const int hpDelta=consumed?post.curHp-prediction.t2HeadInputHp:0;
+                    const bool t2HeadInput=prediction.t2HeadInputHp==p.globals.maxHp/2;
+                    const bool hpClassLegal=!consumed || (hpDelta>=-160 && hpDelta<=143);
+                    bool t2ConditionalIdentity=true;
+                    if(consumed) {
+                        auto directPre=stripTail(pre);
+                        auto directInput=stripTail(p);
+                        directPre.curHp=prediction.t2HeadInputHp;
+                        directInput.globals.curHp=prediction.t2HeadInputHp;
+                        auto directPrepared=directSampler.prepareState(directPre,directInput);
+                        if(!directPrepared->support().supported)
+                            throw std::runtime_error("direct frozen T2 conditional child became unsupported");
+                        std::mt19937_64 directRng(branchSeed);
+                        const auto direct=directPrepared->sampleConditionedVictory(directRng);
+                        const auto withoutTail=stripTail(post);
+                        t2ConditionalIdentity=direct.outcome==CombatRuntimeSample::Outcome::VICTORY &&
+                            directRng==rng && combatTransitionStateJson(direct.rawPost)==
+                                combatTransitionStateJson(withoutTail);
+                    }
+                    const bool correctRng=rngContract(pre,post,p.globals.encounter);
+                    const int activeCount=static_cast<int>(std::count_if(post.potions.begin(),post.potions.end(),
+                        [](int potion){return potion>1;}));
+                    const bool potionCount=activeCount==post.potionCount;
+                    if(!hpLegal || !correctRng || !potionCount || !tailState ||
+                        (consumed&&(!t2HeadInput||!hpClassLegal||!t2ConditionalIdentity)))
+                        throw std::runtime_error("forced Lizard branch violated HP/Tail/RNG/state invariants");
+                    branches[consumed?"consumedWin":"ordinaryWin"]={{"victory",true},
+                        {"tailPresent",stateHasRelic(post,tailId)},
+                        {"tailData",stateRelicData(post,tailId)},
+                        {"tailBit",tailBit(post)},
+                        {"relicBitsPreserved",post.relicBits==pre.relicBits},
+                        {"sampledMaxHp",consumed?post.maxHp:0},
+                        {"t2HeadInputHp",consumed?prediction.t2HeadInputHp:0},
+                        {"actualPostHp",consumed?post.curHp:0},
+                        {"hpDelta",hpDelta},{"t2HeadInputApplied",!consumed||t2HeadInput},
+                        {"t2ConditionalIdentity",t2ConditionalIdentity},
+                        {"hpClassLegal",hpClassLegal},
+                        {"hpLegal",hpLegal},{"rngContract",correctRng},{"potionCount",potionCount}};
+                }
+                std::cout<<json{{"sourceSeed",source},{"fightIdx",fight},
+                    {"prediction",{{"supported",prediction.supported},{"reason",prediction.reason},
+                        {"pOrdinaryWin",prediction.pOrdinaryWin},{"pReserveWin",prediction.pReserveWin},
+                        {"qTailConsumed",prediction.qTailConsumed},
+                        {"rWinGivenConsumed",prediction.rWinGivenConsumed},
+                        {"classProbabilities",prediction.classProbabilities},
+                        {"t2HeadInputHp",prediction.t2HeadInputHp}}},
+                    {"branches",branches}}.dump()<<'\n';
+                ++rows;
+            }
+            if(rows!=320 || static_cast<int>(targets.size())!=320)
+                throw std::runtime_error("Lizard parity must cover the frozen 320-row selection");
+            return 0;
+        }
+        if(argc==5 && std::string(argv[1])=="--lizard-dispatch") {
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],true);
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("Lizard dispatch fixture file");
+            std::string line;int rows=0;
+            while(std::getline(file,line)) {
+                const auto fixture=json::parse(line);auto p=predictor(fixture.at("predictorInput"));
+                auto pre=persistent(fixture.at("preState"));sts::GameContext gc;
+                applyCombatTransitionState(gc,pre);
+                const auto support=hybrid.support(gc,p),forecast=hybrid.forecastSupport(p);
+                const auto prepared=hybrid.prepare(gc,p);
+                if(prepared->support().supported!=support.supported ||
+                    prepared->support().reason!=support.reason)
+                    throw std::runtime_error("Lizard dispatch prepare/support mismatch: "+
+                        support.reason+" vs "+prepared->support().reason);
+                int outcome=-1;
+                if(support.supported) {
+                    std::mt19937_64 rng(771100+rows);
+                    outcome=static_cast<int>(prepared->sample(rng).outcome);
+                }
+                auto prediction=hybrid.activeLizardPrediction(gc,p);
+                std::cout<<json{{"name",fixture.at("name")},{"supported",support.supported},
+                    {"reason",support.reason},{"forecastSupported",forecast.supported},
+                    {"forecastReason",forecast.reason},{"preparedSupported",prepared->support().supported},
+                    {"predictionSupported",prediction.supported},{"predictionReason",prediction.reason},
+                    {"sampleOutcome",outcome}}.dump()<<'\n';
+                ++rows;
+            }
+            const auto metrics=hybrid.takeMetrics();
+            std::cerr<<json{{"dispatchFixtures",rows},{"preparations",metrics.preparations},
+                {"fastPreparations",metrics.fastPreparations},
+                {"fallbackPreparations",metrics.fallbackPreparations},
+                {"lizardPreparations",metrics.lizardPreparations},
+                {"lizardSamples",metrics.lizardSamples},
+                {"lizardBoundaryExclusions",metrics.lizardBoundaryExclusions},
+                {"lizardSupportFailures",metrics.lizardSupportFailures},
+                {"fastSupportFailures",metrics.fastSupportFailures},
+                {"fallbackSupportFailures",metrics.fallbackSupportFailures}}.dump()<<'\n';
+            return rows==8?0:1;
         }
         if(argc==6 && std::string(argv[1])=="--benchmark") {
             NativeCombatTransitionSampler fast(argv[2]),standard(argv[3]);

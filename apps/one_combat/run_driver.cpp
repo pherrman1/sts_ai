@@ -236,6 +236,20 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     }
 }
 
+bool installRunForcedRelic(GameContext &gc, RelicId relic) {
+    if (relic == RelicId::INVALID || gc.relics.has(relic)) return false;
+
+    // GameContext::obtainRelic initializes a new Lizard Tail's native active
+    // flag to 1. Match that state while retaining the force-run helper's
+    // side-effect-free direct insertion for other relics.
+    const int initialData = relic == RelicId::LIZARD_TAIL ? 1 : 0;
+    gc.relics.add({relic, initialData});
+    for (std::vector<RelicId> *pool : {&gc.commonRelicPool, &gc.uncommonRelicPool,
+                                       &gc.rareRelicPool, &gc.shopRelicPool, &gc.bossRelicPool})
+        pool->erase(std::remove(pool->begin(), pool->end(), relic), pool->end());
+    return true;
+}
+
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
 // map/rewards/events/campfires/shops via the ordered OOC policy chain).
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
@@ -255,12 +269,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
-    if (g_forceRelic != RelicId::INVALID && !gc.relics.has(g_forceRelic)) {
-        gc.relics.add({g_forceRelic, 0});
-        for (std::vector<RelicId> *pool : {&gc.commonRelicPool, &gc.uncommonRelicPool,
-                                           &gc.rareRelicPool, &gc.shopRelicPool, &gc.bossRelicPool})
-            pool->erase(std::remove(pool->begin(), pool->end(), g_forceRelic), pool->end());
-    }
+    installRunForcedRelic(gc, g_forceRelic);
 
     PathHistory path;                // pv* features for V queries (train/serve parity)
     if (e2cCapture) {
