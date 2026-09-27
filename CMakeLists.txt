@@ -300,7 +300,9 @@ add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_over
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
 add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simulator_correctness_pr9_19)
+add_test(NAME simulator_relic_fidelity COMMAND $<TARGET_FILE:unit-test> simulator_relic_fidelity)
 set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
+set_tests_properties(simulator_relic_fidelity PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
 add_test(NAME ironclad_card_coverage COMMAND $<TARGET_FILE:unit-test> ironclad_card_coverage)
@@ -478,6 +480,10 @@ add_test(NAME combat_transition_active_lizard_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionlizardselftest)
 set_tests_properties(combat_transition_active_lizard_fixture PROPERTIES
     ENVIRONMENT "STS_NATIVE_OOC=0")
+add_test(NAME collect_lizard_stage_c_shards_selftest
+    COMMAND python3 -m unittest tools.test_collect_lizard_stage_c_shards)
+set_tests_properties(collect_lizard_stage_c_shards_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "research-repro")
 add_test(NAME combat_transition_fixture_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/combat_transition_contract.py
         ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.manifest.json)

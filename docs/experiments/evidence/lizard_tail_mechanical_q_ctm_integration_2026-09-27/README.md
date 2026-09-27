@@ -95,6 +95,49 @@ at `fcee01d2319d40719cddcb6a6c81ff888ea2720b873d7223b7abe0683192bdbf`, and
 the source assignment at
 `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`.
 
+### Gate 1 revalidation after current-main advance
+
+Before handoff, the branch was re-synced with fetched `origin/main`
+`31571bbd406f7bc0435d3010fc14cfee6897ff33`, which includes the separate fresh
+Stage-C Lizard qualification. The focused Release build succeeded:
+
+```bash
+cmake --build --preset linux-gcc-build --target combat_transition_runtime_probe one_combat --parallel 2
+```
+
+The rebuilt `combat_transition_runtime_probe` SHA-256 is
+`1ed808cfa04b9dbdddbae256d410f664b252690613e5d656253c526ee69ec692`;
+`one_combat` SHA-256 is
+`8c4f87c4339690541dd7f0585ba235d9b419ae409e7dd0e8f63e80d9817cf845`. The
+320-row parity verifier was rerun against the merged source:
+
+```bash
+python3 tools/verify/combat_transition_lizard_runtime_parity.py --probe build/linux-gcc-release/combat_transition_runtime_probe --fast /tmp/lizard-integration-gate1/deepsets-lizard-candidate.native --standard selfplay/models/combat_transition_near_full_except_smoke_v2.native --output docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/post_merge_native_parity.json
+```
+
+It wrote
+[`post_merge_native_parity.json`](post_merge_native_parity.json). It again
+reported zero support or semantic mismatches, maximum errors below `1e-4`,
+320/320 conditional T2 child identity checks, and all eight dispatch fixtures
+passing. The existing 31-row Brew/DeepSets fixture was also rerun:
+
+```bash
+build/linux-gcc-release/combat_transition_runtime_probe --hybrid /tmp/lizard-integration-gate1/deepsets-lizard-candidate.native selfplay/models/combat_transition_near_full_except_smoke_v2.native tests/fixtures/combat_transition_near_full.jsonl > /tmp/lizard-integration-postmerge-brew-rows.jsonl 2> /tmp/lizard-integration-postmerge-brew-metrics.json
+```
+
+All 31 rows passed, with 13 ordinary DeepSets and 18 standard-Attention
+fallbacks. The rerun output was byte identical to the recorded
+`deepsets_brew_fixture.jsonl`, and its counters matched the recorded metrics.
+
+The focused regression command passed all 5 tests:
+
+```bash
+ctest --test-dir build/linux-gcc-release --output-on-failure -R '^(combat_transition_near_full_sampler_selftest|combat_transition_native_fixture|combat_transition_active_lizard_fixture|ooc_mcts_adapter|combat_transition_runtime_loader)$'
+```
+
+No gameplay seeds were rerun. This validates Gate 1 and the forced-relic test
+fix on the re-synced source; it does not repair the spent Gate 2 canary.
+
 ## Gate 2 — forced-Lizard integration canary
 
 **FAIL — the treatment did not exercise active Lizard.** The exact eight pairs

@@ -1,0 +1,6 @@
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+lizard direct-snapshot resume loaded=119/119 checkpoint_directory=docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs_retry6_current_main_omp8.jsonl.checkpoints
+combattransitionlizardpairgen teacher=silver-ordinary-fair-exact10k-native-9ca24419-current-main-omp8 completed=119/119 pairs=119 -> docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs_retry6_current_main_omp8.jsonl

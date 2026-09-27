@@ -1791,9 +1791,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     static int combatEntryRelicData(String id, int counter, boolean usedUp) {
-        // Java's spent Neow's Lament uses -2; native CTM stores remaining
-        // charges in [0, 3]. Keep every other value exact and fail closed.
-        return "NeowsBlessing".equals(id) && usedUp && counter == -2 ? 0 : counter;
+        // A spent Neow's Lament or Omamori may report Java's -2 used-up
+        // sentinel; native CTM stores remaining charges (0 when spent).
+        // Keep every other value exact and fail closed.
+        final boolean spentCharges = "NeowsBlessing".equals(id) || "Omamori".equals(id);
+        return spentCharges && usedUp && counter == -2 ? 0 : counter;
     }
 
     private static String relicEntryJson() {

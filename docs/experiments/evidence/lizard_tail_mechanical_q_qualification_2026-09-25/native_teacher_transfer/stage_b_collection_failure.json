@@ -1,0 +1,52 @@
+{
+  "schema": "lizard_tail_native_teacher_transfer_collection_failure_v1",
+  "stage": "B",
+  "status": "failed_exact_state_collection",
+  "collectorGitSha": "c122d367caaad0e02897304ca5602dcae45c4afd",
+  "executableSha256": "001c2f1610381945fc4fde905f6ca746b462b92c7902d8c7b8b7044ca8d6832d",
+  "teacherManifestSha256": "47ed18c791198d3e0774695f7f9b4313154748967be0c0156cda89e203d08024",
+  "targetSelectionSha256": "a78f4e8ddccc39769a9b01f9f4fc59195b79bdfd5ec427b062ee16a03605905b",
+  "sourceAssignmentSha256": "46af3ba0397d523da7017daaa92fa5c37813d496fbf5608a7069ea39398ee992",
+  "firstReportedFailureInSortedSourceOrder": {
+    "sourceSeed": 4201000,
+    "fightIdx": 26
+  },
+  "configuration": {
+    "teacher": "native_silver",
+    "fair": true,
+    "simulations": 10000,
+    "ompThreads": 1,
+    "nativeOoc": true,
+    "searcher3": false,
+    "silverSearch": true,
+    "silverExactRootBudgets": true,
+    "silverReuseCapMode": "allocated",
+    "silverAdaptive": false,
+    "silverVnetLeafDirect": false
+  },
+  "seedGuardInvocation": [
+    "bash",
+    "tools/seed_guard.sh",
+    "build/linux-gcc-release/one_combat",
+    "combattransitionlizardtargetpairgen",
+    "128",
+    "10000",
+    "0",
+    "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/fresh_native_teacher_pairs.jsonl",
+    "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/frozen_target_selection.json",
+    "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/native_silver_teacher.json",
+    "dd8d3c80e26c11ab32d3faee2ae4c168ab7b0001",
+    "c122d367caaad0e02897304ca5602dcae45c4afd"
+  ],
+  "exitCode": 134,
+  "stdout": "",
+  "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  targeted Lizard pair failed for source 4201000: selected fight not found or source trajectory incomplete\n",
+  "failureInterpretation": "The collector did not produce the selected pair. Its error combines an incomplete source trajectory and an absent selected fight; this run does not distinguish those cases.",
+  "outputs": {
+    "pairJsonlWritten": false,
+    "manifestWritten": false,
+    "partialOutputWritten": false
+  },
+  "retryOrReplacement": "none",
+  "stageCStarted": false
+}

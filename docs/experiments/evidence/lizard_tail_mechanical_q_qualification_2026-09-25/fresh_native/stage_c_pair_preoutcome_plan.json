@@ -1,0 +1,232 @@
+{
+  "analysisPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_stage_c_analysis.json",
+  "ascension": 0,
+  "baselineGitSha": "dd8d3c80e26c11ab32d3faee2ae4c168ab7b0001",
+  "broad32Salt": "active-lizard-mechanical-q-native-fresh-broad32-sha256-2026-09-25-v1",
+  "broad32Sources": [
+    4202288,
+    4202319
+  ],
+  "candidateGeneratorManifestSha256": "d12e16839ef0463f5f6f986a265303e04dbd1f70ab0c20fcef6ae159baa9542f",
+  "candidateGeneratorPlanPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_preoutcome_plan_retry2_current_main_indexfix.json",
+  "candidateGeneratorPlanSha256": "2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2",
+  "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+  "candidateJsonlPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_candidate_states.jsonl",
+  "candidateJsonlSha256": "47cde28815abe3b8c9022335e05159b0efcf65e523c76cc1d8490abe6cecf2d9",
+  "candidateManifestPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_candidate_states.jsonl.manifest.json",
+  "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+  "candidatePath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/mechanical_q_candidate.json",
+  "candidateSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+  "collectorGitSha": "45ff412f2f48ee4ff8b14325b8e317688a3a2880",
+  "collectorScriptPath": "tools/collect_lizard_stage_c_shards.py",
+  "collectorScriptSha256": "ae0d010c812473d66e671071979ba6526d1f6fda762e4b1148712b04827a4a3d",
+  "currentMainBaselineSha": "212aa25485bc6e8f0a5a91eb35edc7485056cb5a",
+  "executablePath": "/tmp/lizard-review-build-45ff412f/one_combat",
+  "executableSha256": "8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea",
+  "freshSourceCount": 320,
+  "freshSourceEndInclusive": 4202319,
+  "freshSourceStart": 4202000,
+  "freshnessAudit": {
+    "auditResult": "FRESH_320_SOURCE_BLOCK",
+    "candidateBlockIntersection": [],
+    "previousLizardSourceIntervals": [
+      [
+        4200100,
+        4200210
+      ],
+      [
+        4200300,
+        4200427
+      ],
+      [
+        4201000,
+        4201127
+      ]
+    ],
+    "previousUniqueSourceSeeds": 367,
+    "searched": "all docs/experiments/evidence/*lizard* JSON/JSONL sourceSeed rows and seedSpec/sourceSeeds, plus exact seven-digit seed mentions in docs/experiments/ledger-06.md and docs/knowledge-base/evaluation/current-research.md"
+  },
+  "frozenAfterCandidateCorpusValidated": true,
+  "frozenAtLocal": "2026-09-26T22:41:02+02:00",
+  "frozenAtUtc": "2026-09-26T21:22:37.149773+00:00",
+  "frozenBeforePairOutcomes": true,
+  "frozenRepositoryFiles": {
+    "apps/one_combat.cpp": "d88a7ee7f54414d74b21661afb0ac02846bae62b3fa8712ca5b5a35c26a67659",
+    "apps/one_combat/combat_datasets.cpp": "5dde4f87316100b56a78b29f9987a4baa82c7d3647271de94e021b85a19b24db",
+    "tools/analyze_combat_transition_lizard_mechanical_q.py": "5f74d7ba20b72d00dd3f0997e49b375a60499fc15ea7126eeb2427ccf5b88934",
+    "tools/combat_predictor_input_contract.py": "3274f85e3939728c8bb076e307e65423d260df4356a311494001b2abac250a77",
+    "tools/combat_transition_composed.py": "86331aa705c2040913f3bbeae59d5e9ccba832ac26015145d528f459cd9e0fd7",
+    "tools/combat_transition_composed_evaluate.py": "0824e85bc2616c59f0647b212bd2842e0e4071d8bffb87c77232ed47e0abdd16",
+    "tools/combat_transition_contract.py": "0260d05a53f321c5783444411eb0b111230f2c95994238a6b6dfd6ca15d74c35",
+    "tools/combat_transition_lizard_mechanical_q.py": "fcee01d2319d40719cddcb6a6c81ff888ea2720b873d7223b7abe0683192bdbf",
+    "tools/combat_transition_lizard_pair_pilot.py": "d681103e100a32b47aa6ca371b2a73752bb2c0dbeb93ed39288b50d4bf097a2d",
+    "tools/seed_guard.sh": "bf2c2247319019e8e37032ab0b9cfce0f14fff2588868c753438e0a391d2c3c1"
+  },
+  "gcpResearchWorkflow": "not_used; current-main ADR-0024 authorizes frozen local collection",
+  "hard288Sources": [
+    4202000,
+    4202287
+  ],
+  "interveningMainChangeReview": {
+    "change": "opt-in OOC MCTS reroot-opportunity observer",
+    "decision": "No native Silver behavior change is enabled by the frozen teacher config; Stage B retry 6 remains the proceed diagnostic. Stage C is rebuilt and rerun with exact current-main provenance.",
+    "enableVariable": "STS_OOC_MCTS_REUSE_TRACE",
+    "fromBaselineSha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+    "source": "PR #366",
+    "stageBAndStageCTeacherEnvironment": "variable unset",
+    "toBaselineSha": "212aa25485bc6e8f0a5a91eb35edc7485056cb5a"
+  },
+  "nativeTeacher": {
+    "combat_backend": "native_silver",
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "STS_EXECUTABLE_GIT_SHA": "45ff412f2f48ee4ff8b14325b8e317688a3a2880",
+      "STS_FAIR": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "executable_sha256": "8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea",
+    "git_sha": "45ff412f2f48ee4ff8b14325b8e317688a3a2880",
+    "model_artifacts": [
+      {
+        "path": "models/policy_trees_c.txt",
+        "role": "policy",
+        "sha256": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+      },
+      {
+        "path": "models/v_rich_trees.txt",
+        "role": "floor",
+        "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+      },
+      {
+        "path": "models/v_win_trees.txt",
+        "role": "win",
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+      }
+    ],
+    "rng_regime": "project_fair",
+    "search_configuration": {
+      "adaptive": false,
+      "belief": "not_applicable_silver_private_chance_search",
+      "chance_widening_alpha": 0.52389,
+      "chance_widening_c": 3.7028,
+      "direct_learned_leaf": false,
+      "end_turn_widening_alpha": 0.52389,
+      "end_turn_widening_c": 3.7028,
+      "exploration_parameter": 25.0,
+      "exploration_parameter_chance": 25.0,
+      "learned_visit_puct": false,
+      "particles": "not_applicable_silver_private_chance_search",
+      "pruning": false,
+      "reuse_cap": 32768,
+      "reuse_cap_mode": "allocated",
+      "sequential_halving": false,
+      "simulation_budgets": [
+        10000
+      ]
+    },
+    "teacher_id": "silver-ordinary-fair-exact10k-native-45ff412f-stagec-8proc-omp1"
+  },
+  "nativeTeacherManifestPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/native_silver_stage_c_teacher_current_main_212aa_omp1_8workers.json",
+  "nativeTeacherManifestSha256": "c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8",
+  "nonQualificationStages": [
+    "archived vendored post-hoc screen",
+    "same-state native teacher-transfer diagnostic"
+  ],
+  "operationalAmendment": {
+    "amendmentId": "stage-c-current-main-build-after-retry1-indexfix-2026-09-26",
+    "attemptRecordPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_candidate_collection_attempt2_main_advance.json",
+    "attemptRecordSha256": "58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972",
+    "rationale": "Remote main advanced after the initial candidate attempt. The opt-in observer is disabled by the frozen teacher environment, but Stage C is rebuilt at the merged current-main source and all old-binary shards are excluded to keep exact executable provenance uniform.",
+    "reusedCandidateShardSeeds": [],
+    "scienceContractUnchanged": true,
+    "scope": "producer-provenance-refresh_only",
+    "supersededPlanPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_preoutcome_plan_retry1_indexfix.json",
+    "supersededPlanSha256": "52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769"
+  },
+  "pairJsonlPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_targeted_pairs.jsonl",
+  "pairManifestPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_targeted_pairs.jsonl.manifest.json",
+  "pairPreoutcomePlanPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_pair_preoutcome_plan.json",
+  "phase": "pairs",
+  "productionSupportStatus": "active_unqualified_lizard",
+  "purpose": "fresh_native_qualification",
+  "qDefinition": "q = 1 - pOrdinaryWin",
+  "qualificationGates": {
+    "T2": [
+      "at least 20 supported consumed-win rows",
+      "HP NLL and CRPS source-bootstrap intervals strictly below zero",
+      "expected-HP absolute error shows no clear degradation",
+      "no clear downstream degradation",
+      "zero T2 unscored or transformed-target domain-invalid rows"
+    ],
+    "dataFloor": {
+      "LOSS_CONSUMED": ">=20",
+      "consumedRows": ">=20",
+      "distinctLossSources": ">=10"
+    },
+    "doNotModifyAfterResults": true,
+    "gateImplementationPath": "tools/analyze_combat_transition_lizard_mechanical_q.py",
+    "gateImplementationSha256": "5f74d7ba20b72d00dd3f0997e49b375a60499fc15ea7126eeb2427ccf5b88934",
+    "learnedR": [
+      "all consumed rows B1-scoreable",
+      "learned-r NLL source-bootstrap 95% CI strictly below zero",
+      "learned-r Brier mean not worse"
+    ],
+    "mechanicalQ": "exact parity with q=1-pOrdinaryWin on every row",
+    "primaryCandidateVsB1": [
+      "all rows B1-scoreable",
+      "exact support on every pair",
+      "pooled three-class NLL source-bootstrap 95% CI strictly below zero",
+      "pooled multiclass Brier mean not worse and interval shows no clear degradation",
+      "no clear BROAD32 degradation"
+    ]
+  },
+  "rArtifactSha256": "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9",
+  "rMode": "frozen_learned_r",
+  "reviewedBranchBaseSha": "212aa25485bc6e8f0a5a91eb35edc7485056cb5a",
+  "rngRegime": "project_fair",
+  "schema": "active_lizard_mechanical_q_stage_c_pair_plan_v1",
+  "selectionPolicy": {
+    "broad32": "lexicographically smallest SHA-256 of sourceSeed:fightIdx:fixedSalt; salt frozen in source assignment",
+    "eligibility": "prospective-support eligible; exclude Mark of the Bloom, Fairy Potion, pre-existing Tail, and unsupported candidate states",
+    "hard288": "maximize (1-pOrdinaryWin)*(1-r); exact tie-break ascending fightIdx",
+    "usesCombatOutcome": false
+  },
+  "selectionRule": "HARD288 selects one prospective-support combat per source maximizing (1-pOrdinaryWin)*(1-r), with ascending fightIdx exact tie-break",
+  "shardRoot": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/shards",
+  "simulationBudget": 10000,
+  "sourceAssignmentPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/source_assignment.json",
+  "sourceAssignmentSha256": "752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a",
+  "stage": "C",
+  "stageBTransferEvidence": {
+    "analysisPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_analysis_retry6_current_main_omp8.json",
+    "analysisSha256": "947bf1ab459ec29f46bb13e362b8f310f21efdb4617bb6434dd485894b740951",
+    "classification": "VENDORED_TO_NATIVE_LIZARD_TEACHER_TRANSFER_DIAGNOSTIC",
+    "decision": "PROCEED_TO_FRESH_NATIVE_QUALIFICATION",
+    "exactSupportRows": 119,
+    "mechanicalQParityEveryRow": true,
+    "passedProceedGate": true,
+    "threeClassCounts": {
+      "LOSS_CONSUMED": 9,
+      "WIN_CONSUMED": 30,
+      "WIN_RETAINED": 80
+    },
+    "validRows": 119
+  },
+  "stageCOnlyQualificationLabel": "ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED",
+  "status": "FROZEN_PREOUTCOME",
+  "t2Rule": "T2_revive: curHp = floor(maxHP/2) for WIN_CONSUMED conditional CTM heads",
+  "targetSelectionPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_target_selection.json",
+  "targetSelectionSha256": "68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493",
+  "workerTopology": {
+    "maxConcurrentProcesses": 8,
+    "ompThreadsPerProcess": 1,
+    "resumeUnit": "one sourceSeed per independently manifested subprocess",
+    "totalWorkerThreads": 8
+  }
+}

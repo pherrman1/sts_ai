@@ -1,5 +1,6 @@
 #include "combat_transition.h"
 
+#include <stdexcept>
 #include <sstream>
 #include <utility>
 
@@ -127,6 +128,64 @@ J combatTransitionStateJson(const CombatTransitionPersistentState &state) {
         {"upgradeableCount", state.upgradeableCount},
         {"transformableCount", state.transformableCount}, {"combatRng", std::move(rng)}
     };
+}
+
+CombatTransitionPersistentState combatTransitionStateFromJson(const J &value) {
+    static const std::array<const char *, 16> keys = {
+        "curHp", "maxHp", "gold", "potionCount", "potionCapacity", "potions",
+        "smokeBombUsed", "stolenGold", "relics", "relicBits", "deck",
+        "cardTypeCounts", "bottleIdxs", "upgradeableCount", "transformableCount",
+        "combatRng"
+    };
+    if (!value.is_object() || value.size() != keys.size())
+        throw std::runtime_error("combat transition snapshot has an invalid object shape");
+    for (const auto *key : keys)
+        if (!value.contains(key))
+            throw std::runtime_error(std::string("combat transition snapshot missing ") + key);
+
+    CombatTransitionPersistentState state;
+    state.curHp = value.at("curHp").get<int>();
+    state.maxHp = value.at("maxHp").get<int>();
+    state.gold = value.at("gold").get<int>();
+    state.potionCount = value.at("potionCount").get<int>();
+    state.potionCapacity = value.at("potionCapacity").get<int>();
+    state.potions = value.at("potions").get<std::array<int, 5>>();
+    state.smokeBombUsed = value.at("smokeBombUsed").get<bool>();
+    state.stolenGold = value.at("stolenGold").get<int>();
+    state.relicBits = value.at("relicBits").get<std::array<std::uint64_t, 3>>();
+    state.cardTypeCounts = value.at("cardTypeCounts").get<std::array<int, 4>>();
+    state.bottleIdxs = value.at("bottleIdxs").get<std::array<int, 3>>();
+    state.upgradeableCount = value.at("upgradeableCount").get<int>();
+    state.transformableCount = value.at("transformableCount").get<int>();
+
+    if (!value.at("relics").is_array() || !value.at("deck").is_array()
+        || !value.at("combatRng").is_array() || value.at("combatRng").size() != 6)
+        throw std::runtime_error("combat transition snapshot has invalid array fields");
+    for (const auto &relic : value.at("relics")) {
+        if (!relic.is_object() || relic.size() != 2 || !relic.contains("id")
+            || !relic.contains("data"))
+            throw std::runtime_error("combat transition snapshot has an invalid relic");
+        state.relics.push_back({relic.at("id").get<int>(), relic.at("data").get<int>()});
+    }
+    for (const auto &card : value.at("deck")) {
+        if (!card.is_object() || card.size() != 3 || !card.contains("id")
+            || !card.contains("misc") || !card.contains("upgraded"))
+            throw std::runtime_error("combat transition snapshot has an invalid card");
+        state.deck.push_back({card.at("id").get<int>(), card.at("misc").get<std::int16_t>(),
+                              card.at("upgraded").get<bool>()});
+    }
+    for (std::size_t i = 0; i < state.combatRng.size(); ++i) {
+        const auto &rng = value.at("combatRng").at(i);
+        if (!rng.is_object() || rng.size() != 3 || !rng.contains("counter")
+            || !rng.contains("seed0") || !rng.contains("seed1"))
+            throw std::runtime_error("combat transition snapshot has an invalid RNG state");
+        state.combatRng[i] = {
+            rng.at("counter").get<std::int32_t>(),
+            rng.at("seed0").get<std::uint64_t>(),
+            rng.at("seed1").get<std::uint64_t>()
+        };
+    }
+    return state;
 }
 
 J combatTransitionRecordJson(const CombatTransitionRecord &record) {
