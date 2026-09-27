@@ -530,6 +530,92 @@ static void vwinFinishDecision(VwinCollector &capture, VwinPendingDecision pendi
     capture.trace.push_back("D:" + std::to_string(row.decisionIdx) + ":" + chosenKey);
 }
 
+static std::string vwinResolveChosenKey(const GameContext &gc, std::uint32_t bits,
+                                       const std::vector<std::string> &allowedKeys);
+
+static bool vwinPendingAwaitsSelector(const VwinPendingDecision &pending,
+                                      const GameContext &gc) {
+    return pending.selector != CardSelectScreenType::INVALID
+        && gc.screenState == ScreenState::CARD_SELECT
+        && gc.info.selectScreenType == pending.selector;
+}
+
+static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
+                                     PathHistory &path,
+                                     search::ScumSearchAgent2 &agent) {
+    auto finishPendingDecision = [&] {
+        if (!capture.pendingAction) return;
+        auto pending = std::move(*capture.pendingAction);
+        capture.pendingAction.reset();
+        vwinFinishDecision(capture, std::move(pending), agent,
+                           one_combat::captureOocPolicyThreadState());
+    };
+
+    auto previous = std::move(search::g_onGameActionExecute);
+    search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+        if (target == &gc) {
+            path.update(gc);
+            bool consumedCompoundSelector = false;
+            if (capture.pendingAction
+                && vwinPendingAwaitsSelector(*capture.pendingAction, gc)) {
+                capture.pendingAction->observedPrimitiveBits.push_back(bits);
+                consumedCompoundSelector = true;
+            }
+            if (!consumedCompoundSelector) {
+                finishPendingDecision();
+                bool supported = false, complete = false;
+                std::string error;
+                auto options = vwinOptions(gc, supported, complete, error);
+                std::vector<std::string> keys;
+                keys.reserve(options.size());
+                for (const auto &option : options) keys.push_back(option.key);
+                const auto selector = search::oocSemanticPrimitiveCompoundSelector(gc, bits);
+                const auto chosenKey = selector == CardSelectScreenType::INVALID
+                    ? vwinResolveChosenKey(gc, bits, keys) : std::string{};
+                if ((!supported || !complete) && error.empty())
+                    error = "semantic_option_enumeration_unsupported_or_incomplete";
+                else if (supported && complete && options.size() >= 2 && chosenKey.empty()
+                         && selector == CardSelectScreenType::INVALID)
+                    error = "chosen_primitive_binding_unresolved";
+                const auto rowIndex = vwinBeginDecision(capture, gc, path,
+                    options, chosenKey, supported, complete, error,
+                    selector != CardSelectScreenType::INVALID);
+                if (gc.screenState == ScreenState::MAP_SCREEN) {
+                    capture.mapRows.push_back({capture.branchId, capture.deviationIdx,
+                        capture.mapRowIdx++, gc.act, gc.floorNum, gc.curMapNodeX,
+                        gc.curMapNodeY, richRow(gc, path)});
+                }
+                VwinPendingDecision pending;
+                pending.rowIndex = rowIndex;
+                pending.chosenKey = chosenKey;
+                pending.selector = selector;
+                pending.observedPrimitiveBits.push_back(bits);
+                if (selector != CardSelectScreenType::INVALID) {
+                    pending.options = std::move(options);
+                    pending.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+                    pending.path = path;
+                }
+                capture.pendingAction = std::move(pending);
+            }
+        }
+        if (previous) previous(bits, target);
+    };
+    try {
+        runFullRunOocPolicyStep(gc, agent, false, true);
+    } catch (...) {
+        search::g_onGameActionExecute = std::move(previous);
+        throw;
+    }
+    search::g_onGameActionExecute = std::move(previous);
+
+    // A source action that opened its compound selector is only half of the
+    // semantic decision. Keep it pending across policy steps until the target
+    // is selected, or until policy moves to a different screen.
+    if (!capture.pendingAction
+        || !vwinPendingAwaitsSelector(*capture.pendingAction, gc))
+        finishPendingDecision();
+}
+
 static bool vwinSelectedDecision(const VwinCollector &capture, int decisionIdx) {
     for (const auto &[type, samples] : capture.sampled) {
         (void)type;
@@ -855,67 +941,7 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             if (!vwin || !vwin->captureRefresh) {
                 runFullRunOocPolicyStep(gc, agent, false, true);
             } else {
-                auto previous = std::move(search::g_onGameActionExecute);
-                search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
-                    if (target == &gc) {
-                        path.update(gc);
-                        bool consumedCompoundSelector = false;
-                        if (vwin->pendingAction
-                            && vwin->pendingAction->selector != CardSelectScreenType::INVALID) {
-                            const auto expected = vwin->pendingAction->selector;
-                            if (gc.screenState == ScreenState::CARD_SELECT
-                                && gc.info.selectScreenType == expected) {
-                                vwin->pendingAction->observedPrimitiveBits.push_back(bits);
-                                consumedCompoundSelector = true;
-                            }
-                        }
-                        if (!consumedCompoundSelector) {
-                            finishPendingDecision();
-                            bool supported = false, complete = false;
-                            std::string error;
-                            auto options = vwinOptions(gc, supported, complete, error);
-                            std::vector<std::string> keys;
-                            keys.reserve(options.size());
-                            for (const auto &option : options) keys.push_back(option.key);
-                            const auto selector = search::oocSemanticPrimitiveCompoundSelector(gc, bits);
-                            const auto chosenKey = selector == CardSelectScreenType::INVALID
-                                ? vwinResolveChosenKey(gc, bits, keys) : std::string{};
-                            if ((!supported || !complete) && error.empty())
-                                error = "semantic_option_enumeration_unsupported_or_incomplete";
-                            else if (supported && complete && options.size() >= 2 && chosenKey.empty()
-                                     && selector == CardSelectScreenType::INVALID)
-                                error = "chosen_primitive_binding_unresolved";
-                            const auto rowIndex = vwinBeginDecision(*vwin, gc, path,
-                                options, chosenKey, supported, complete, error,
-                                selector != CardSelectScreenType::INVALID);
-                            if (gc.screenState == ScreenState::MAP_SCREEN) {
-                                vwin->mapRows.push_back({vwin->branchId, vwin->deviationIdx,
-                                    vwin->mapRowIdx++, gc.act, gc.floorNum, gc.curMapNodeX,
-                                    gc.curMapNodeY, richRow(gc, path)});
-                            }
-                            VwinPendingDecision pending;
-                            pending.rowIndex = rowIndex;
-                            pending.chosenKey = chosenKey;
-                            pending.selector = selector;
-                            pending.observedPrimitiveBits.push_back(bits);
-                            if (selector != CardSelectScreenType::INVALID) {
-                                pending.options = std::move(options);
-                                pending.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
-                                pending.path = path;
-                            }
-                            vwin->pendingAction = std::move(pending);
-                        }
-                    }
-                    if (previous) previous(bits, target);
-                };
-                try {
-                    runFullRunOocPolicyStep(gc, agent, false, true);
-                } catch (...) {
-                    search::g_onGameActionExecute = std::move(previous);
-                    throw;
-                }
-                search::g_onGameActionExecute = std::move(previous);
-                finishPendingDecision();
+                vwinRefreshRunPolicyStep(*vwin, gc, path, agent);
             }
         }
     }
@@ -1738,8 +1764,116 @@ int vwinRefreshCompoundSelfTest() {
                 std::string(fixture.name) + " chosen semantic branch replays the observed source action");
         ++checked;
     }
+
+    struct PolicyFixtureGuard {
+        bool oocActionNN = g_oocActionNN;
+        bool actFightProbeAllOoc = g_actFightProbeAllOoc;
+        bool oocMapRoute = g_oocMapRoute;
+        bool oocStrategicRest = g_oocStrategicRest;
+        bool restWin = g_restWin;
+        int pathV = g_pathV;
+        int eventV = g_eventV;
+        const PathHistory *currentPath = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        ~PolicyFixtureGuard() {
+            g_oocActionNN = oocActionNN;
+            g_actFightProbeAllOoc = actFightProbeAllOoc;
+            g_oocMapRoute = oocMapRoute;
+            g_oocStrategicRest = oocStrategicRest;
+            g_restWin = restWin;
+            g_pathV = pathV;
+            g_eventV = eventV;
+            t_curPath = currentPath;
+            one_combat::restoreOocPolicyThreadState(policy);
+        }
+    } guard;
+    g_oocActionNN = false;
+    g_actFightProbeAllOoc = false;
+    g_oocMapRoute = false;
+    g_oocStrategicRest = false;
+    g_restWin = false;
+    g_pathV = 0;
+    g_eventV = 0;
+
+    GameContext source(CharacterClass::IRONCLAD, 0x334334ULL, 0);
+    source.screenState = ScreenState::REST_ROOM;
+    source.curRoom = Room::REST;
+    source.act = 1;
+    source.curHp = 70;
+    source.regainControlAction = [](GameContext &gc) {
+        gc.screenState = ScreenState::MAP_SCREEN;
+        gc.regainControlAction = nullptr;
+    };
+    require(source.deck.getUpgradeableCount() > 0,
+            "step-boundary fixture has an upgradeable card for the smith action");
+
+    VwinCollector stepCapture;
+    stepCapture.sourceSeed = 13000000ULL;
+    stepCapture.samplesPerType = 1;
+    stepCapture.allowSampling = true;
+    PathHistory stepPath;
+    search::ScumSearchAgent2 stepAgent;
+    stepAgent.rng = std::default_random_engine(998877);
+    t_curPath = &stepPath;
+    std::vector<std::uint32_t> observedSmithBits;
+    auto previous = std::move(search::g_onGameActionExecute);
+    search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+        if (target == &source) observedSmithBits.push_back(bits);
+    };
+    try {
+        vwinRefreshRunPolicyStep(stepCapture, source, stepPath, stepAgent);
+        require(source.screenState == ScreenState::CARD_SELECT
+                && source.info.selectScreenType == CardSelectScreenType::UPGRADE,
+                "real policy step executes Smith and opens its card target selector");
+        require(stepCapture.pendingAction
+                && vwinPendingAwaitsSelector(*stepCapture.pendingAction, source)
+                && stepCapture.pendingAction->observedPrimitiveBits.size() == 1,
+                "Smith decision remains pending after the source action step");
+        require(stepCapture.decisions.size() == 1
+                && stepCapture.decisions.front().chosenKey.empty()
+                && stepCapture.eligibleByType.empty(),
+                "Smith is not resolved or sampled before its selector target");
+
+        vwinRefreshRunPolicyStep(stepCapture, source, stepPath, stepAgent);
+        search::g_onGameActionExecute = std::move(previous);
+    } catch (...) {
+        search::g_onGameActionExecute = std::move(previous);
+        throw;
+    }
+    require(source.screenState == ScreenState::MAP_SCREEN
+            && !stepCapture.pendingAction && observedSmithBits.size() == 2,
+            "second real policy step selects the card and closes the compound decision");
+    const auto &smithRow = stepCapture.decisions.front();
+    require(!smithRow.chosenKey.empty()
+            && stepCapture.eligibleByType[smithRow.type] == 1
+            && vwinSelectedDecision(stepCapture, smithRow.decisionIdx),
+            "step-spanning Smith decision resolves and enters the reservoir");
+    const auto &smithSample = stepCapture.sampled.at(smithRow.type).front();
+    require(smithSample.options.size() >= 2
+            && std::all_of(smithSample.options.begin(), smithSample.options.end(),
+                [](const auto &option) { return option.semantic.has_value(); }),
+            "step-spanning Smith decision retains semantic branch alternatives");
+    const auto chosenSmith = std::find_if(smithSample.options.begin(), smithSample.options.end(),
+        [&](const auto &option) { return option.key == smithSample.chosenKey; });
+    require(chosenSmith != smithSample.options.end(),
+            "step-spanning Smith sample retains the observed semantic choice");
+    auto smithReplay = detachedCounterfactualCopy(*smithSample.pre);
+    previous = std::move(search::g_onGameActionExecute);
+    search::g_onGameActionExecute = {};
+    search::OocExecutionResult smithExecution;
+    try {
+        smithExecution = search::executeOocSemanticAction(smithReplay, *chosenSmith->semantic);
+        search::g_onGameActionExecute = std::move(previous);
+    } catch (...) {
+        search::g_onGameActionExecute = std::move(previous);
+        throw;
+    }
+    require(smithExecution.ok && smithExecution.executedPrimitiveBits == observedSmithBits
+            && vwinCompoundStateFingerprint(smithReplay) == vwinCompoundStateFingerprint(source),
+            "step-spanning Smith chosen branch replays the observed selector action");
     std::cout << "vwin compound contract: " << checked
-              << " Smith/Peace Pipe/shop/event decisions sampled, branched, and chosen-replay matched\n";
+              << " Smith/Peace Pipe/shop/event semantic fixtures plus a real two-step Smith capture "
+                 "sampled, branched, and chosen-replay matched\n";
     return 0;
 }
 

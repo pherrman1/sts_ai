@@ -321,7 +321,10 @@ repeatability, copied agent/RNG and policy state, the rich-feature width and
 thread CPU clock. It does not rerun generated trajectories or compare their
 non-timing outputs across seeds. `vwinrefreshcompoundselftest` exercises Smith,
 Peace Pipe, shop-removal and event compound decisions through selector
-resolution, branch execution and chosen-action replay parity. The
+resolution, branch execution and chosen-action replay parity. It also runs the
+production OOC policy step twice for a real rest-site Smith: the first step
+must leave the decision pending on the upgrade selector, and the second must
+resolve, sample and replay the full semantic choice. The
 `vwin_refresh_rejects_vpath_override` contract test runs with `STS_VPATH=1` and
 requires the frozen-policy guard to reject it. `vwinrefreshbranchselftest` is a
 single-seed, seed-guarded full-run chosen-branch replay check.
