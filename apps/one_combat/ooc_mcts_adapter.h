@@ -174,6 +174,11 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// Offers `card` alone as a card reward on a detached copy of `gc`, runs one
+// decision of the caller's OOC guide (`step`) inside the imagined scope, and
+// reports whether the guide added the card. Used to value Match and Keep cards.
+bool oocHypotheticalCardTaken(const GameContext &, const PathHistory &, const sts::Card &,
+    const std::function<void(GameContext &)> &step);
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &, int realCombats);
 void oocMctsAdapterSelfTest();
 }

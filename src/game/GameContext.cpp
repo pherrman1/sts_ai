@@ -2447,22 +2447,36 @@ void GameContext::chooseBossRelic(int idx) {
 }
 
 
-void GameContext::chooseMatchAndKeepCards(int idx1, int idx2) {
-    if (idx1 < 0 || idx1 >= 12 || info.toSelectCards[idx1].card.id == CardId::INVALID
-        || idx2 == idx1 || idx2 < 0 || idx2 >= 12 || info.toSelectCards[idx2].card.id == CardId::INVALID
-            ) {
-        assert(false);}
+void GameContext::chooseMatchAndKeepSlot(int idx) {
+    // Java flips one card per click; the second click of an attempt is chosen
+    // after the first card is visible. info.eventData is attempts remaining.
+    if (idx < 0 || idx >= static_cast<int>(info.toSelectCards.size())
+        || info.toSelectCards[idx].deckIdx == MATCH_AND_KEEP_MATCHED
+        || info.toSelectCards[idx].deckIdx == MATCH_AND_KEEP_FACE_UP) {
+        assert(false);
+        return;
+    }
 
-    auto &s1 = info.toSelectCards[idx1].card;
-    auto &s2 = info.toSelectCards[idx2].card;
+    int faceUp = -1;
+    for (int i = 0; i < static_cast<int>(info.toSelectCards.size()); ++i) {
+        if (info.toSelectCards[i].deckIdx == MATCH_AND_KEEP_FACE_UP) {
+            faceUp = i;
+        }
+    }
+    if (faceUp < 0) {
+        info.toSelectCards[idx].deckIdx = MATCH_AND_KEEP_FACE_UP;
+        return;
+    }
 
-    if (s1.id == s2.id) {
-        deck.obtain(*this, s1, 1);
-        info.toSelectCards[idx1].deckIdx = 0;
-        info.toSelectCards[idx2].deckIdx = 0;
+    auto &first = info.toSelectCards[faceUp];
+    auto &second = info.toSelectCards[idx];
+    if (first.card.id == second.card.id) {
+        deck.obtain(*this, first.card, 1);
+        first.deckIdx = MATCH_AND_KEEP_MATCHED;
+        second.deckIdx = MATCH_AND_KEEP_MATCHED;
     } else {
-        info.toSelectCards[idx1].deckIdx = 1;
-        info.toSelectCards[idx2].deckIdx = 1;
+        first.deckIdx = MATCH_AND_KEEP_SEEN;
+        second.deckIdx = MATCH_AND_KEEP_SEEN;
     }
 
     if (--info.eventData == 0) {
@@ -2470,6 +2484,11 @@ void GameContext::chooseMatchAndKeepCards(int idx1, int idx2) {
         info.eventData = 0;
         regainControl();
     }
+}
+
+void GameContext::chooseMatchAndKeepCards(int idx1, int idx2) {
+    chooseMatchAndKeepSlot(idx1);
+    chooseMatchAndKeepSlot(idx2);
 }
 
 void GameContext::chooseTreasureRoomOption(bool openChest) {
@@ -3102,8 +3121,7 @@ void GameContext::chooseEventOption(int idx) {
         }
 
         case Event::MATCH_AND_KEEP:
-            // handled elsewhere
-            assert(false);
+            chooseMatchAndKeepSlot(idx);
             break;
 
         case Event::MINDBLOOM: {
