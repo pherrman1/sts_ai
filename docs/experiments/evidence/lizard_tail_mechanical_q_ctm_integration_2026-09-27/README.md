@@ -218,11 +218,17 @@ as a production default, no default model-selection code changed, and the two
 no-model-environment plumbing smokes were not run. OOC MCTS remains globally
 off unless the caller sets `STS_OOC_MCTS=1`.
 
+The exporter now emits only `integration_candidate` metadata, with qualification
+and default flags false; its `--production` option was removed. Production
+packaging and default wiring remain reserved for Gate 3 after a valid active-
+Tail Gate 2 canary.
+
 ## Knowledge impact
 
-The environment-variable reference now records the active initialization
-semantics for `STS_FORCE_RELIC=LIZARD_TAIL`; the current-research page and
-experiment ledger record the failed integration canary. Current baselines
+The environment-variable reference records both forced-relic initialization
+semantics and `STS_OOC_MCTS_ACTIVE_LIZARD`; the exporter is restricted to
+non-production metadata until a valid Gate 2 canary. The current-research page
+and experiment ledger record the failed integration canary. Current baselines
 remain unchanged because Gate 3 did not qualify a default. Stable Lizard
 sampling behavior is documented at the sampler and OOC adapter entry points.
 The existing PR #330 and PR #351 evidence remains the scientific qualification;

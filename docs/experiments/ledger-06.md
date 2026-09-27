@@ -13314,8 +13314,15 @@ runtime support changed.
   remains opt-in. The eight fixed pairs are spent;
   any new active-Tail canary needs a new frozen plan. This is not a win-rate
   qualification, and the existing PR #330/#351 quality evidence is unchanged.
+- **Packaging guard and environment reference:** review found that the
+  re-export tool's `--production` option could mark an artifact qualified and
+  default without a valid integration canary. The option was removed; the tool
+  now emits only an `integration_candidate` with qualification/default flags
+  false. The environment-variable reference also documents the opt-in
+  `STS_OOC_MCTS_ACTIVE_LIZARD` switch, its `0`/`1` values, and its required Brew
+  fallback model.
 - **Knowledge impact:** updated the maintained environment reference with the
-  forced-Tail initialization semantics and current research status with the
-  invalid integration result and post-merge deterministic revalidation;
-  baselines remain unchanged. No trained model, promoted artifact, or default
-  configuration changed.
+  forced-Tail initialization semantics and active-Lizard opt-in; current
+  research records the invalid integration result and post-merge deterministic
+  revalidation. Baselines remain unchanged. No trained model, promoted artifact,
+  or default configuration changed.

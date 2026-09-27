@@ -26,7 +26,7 @@ def canonical_sha256(value: object) -> str:
                           ensure_ascii=False).encode("utf-8"))
 
 
-def reexport(source: Path, candidate_path: Path, *, production: bool) -> bytes:
+def reexport(source: Path, candidate_path: Path) -> bytes:
     original = source.read_bytes()
     if sha256(original) != FAST_SOURCE_SHA256:
         raise ValueError("qualified DeepSets artifact hash mismatch")
@@ -82,35 +82,12 @@ def reexport(source: Path, candidate_path: Path, *, production: bool) -> bytes:
             "fairy_potion_exact_boundary",
             "mark_of_bloom_exact_path",
         ],
-        "status": "production_default_when_ooc_enabled" if production else "integration_candidate",
-        "qualified": bool(production),
-        "defaultChanged": bool(production),
+        "status": "integration_candidate",
+        "qualified": False,
+        "defaultChanged": False,
     }
     metadata["activeLizardCorrection"] = correction
-    metadata["defaultForOocMcts"] = bool(production)
-    if production:
-        metadata["experimentalDeepSets"]["qualified"] = True
-        metadata["experimentalDeepSets"]["defaultChanged"] = True
-        metadata["qualification"]["classification"] = (
-            "DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED"
-        )
-        metadata["qualification"]["promotionEvidence"] = {
-            "deepSetsBrewFallback": {
-                "pullRequest": 351,
-                "pairedRuns": 512,
-                "controlWins": 277,
-                "hybridWins": 292,
-                "pairedDifferencePp": 2.9297,
-                "paired95CiPp": [-1.7578, 7.6172],
-                "nonInferiorityMarginPp": -5.0,
-            },
-            "activeLizard": {
-                "pullRequest": 330,
-                "candidateManifestSha256": CANDIDATE_SHA256,
-                "frozenQrArtifactSha256": QR_SHA256,
-            },
-            "integrationEvidence": "docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/README.md",
-        }
+    metadata["defaultForOocMcts"] = False
 
     header = json.dumps(metadata, sort_keys=True, separators=(",", ":"),
                         ensure_ascii=False).encode("utf-8")
@@ -122,10 +99,8 @@ def main() -> None:
     parser.add_argument("source", type=Path, help="exact PR #351 DeepSets fast artifact")
     parser.add_argument("candidate", type=Path, help="frozen Lizard candidate manifest")
     parser.add_argument("output", type=Path, help="new native artifact path")
-    parser.add_argument("--production", action="store_true",
-                        help="mark the stack qualified and default for enabled OOC MCTS")
     args = parser.parse_args()
-    output = reexport(args.source, args.candidate, production=args.production)
+    output = reexport(args.source, args.candidate)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(output)
     cursor = len(MAGIC) + 8
@@ -136,7 +111,8 @@ def main() -> None:
         "artifactSha256": sha256(output),
         "tensorPayloadSha256": sha256(payload),
         "tensorPayloadBytes": len(payload),
-        "production": args.production,
+        "status": "integration_candidate",
+        "defaultForOocMcts": False,
     }, sort_keys=True))
 
 
