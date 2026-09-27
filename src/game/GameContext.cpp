@@ -1116,6 +1116,15 @@ void GameContext::enterAct3VictoryRoom() {
     }
 }
 
+bool GameContext::isEliteTriggerCombat() const {
+    if (curRoom == Room::ELITE) {
+        return true;
+    }
+    return curRoom == Room::EVENT
+        && (curEvent == Event::DEAD_ADVENTURER
+            || info.encounter == MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+}
+
 void GameContext::enterBattle(MonsterEncounter encounter) {
     screenState = ScreenState::BATTLE;
     info.encounter = encounter;
@@ -2607,6 +2616,8 @@ void GameContext::chooseEventOption(int idx) {
             } else if (idx == 1) { // [Victory]
                 // Java adds the rare and uncommon relics when the fight is
                 // chosen; potion and card rewards are rolled after combat.
+                // The fight is an elite for combat relics, but Black Star
+                // adds nothing: the reward is always these two relics.
                 const RelicId rareRelic = returnRandomRelic(RelicTier::RARE);
                 const RelicId uncommonRelic = returnRandomRelic(RelicTier::UNCOMMON);
                 int goldAmt = 100;
@@ -2698,6 +2709,10 @@ void GameContext::chooseEventOption(int idx) {
                         reward.addGold(goldAmt);
                         if (addRelic) {
                             reward.addRelic(combatRewardRelic);
+                        }
+                        // eliteTrigger: Black Star applies to this fight.
+                        if (gc.hasRelic(RelicId::BLACK_STAR)) {
+                            reward.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
                         }
                         reward.addCardReward(gc.createCardReward(Room::EVENT));
                         gc.addPotionRewards(reward);

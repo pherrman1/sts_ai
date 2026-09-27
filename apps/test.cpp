@@ -1581,6 +1581,57 @@ int testSimulatorRelicFidelity() {
             return fail("Colosseum Victory rewards are wrong");
         }
 
+        // Black Star adds nothing to Colosseum's fixed two-relic reward.
+        GameContext star(CharacterClass::IRONCLAD, 123456789, 0);
+        star.obtainRelic(RelicId::BLACK_STAR);
+        if (!colosseum(star)) return fail("Colosseum did not enter the slaver fight");
+        star.regainControl();
+        star.chooseEventOption(1);
+        star.regainControl();
+        if (star.info.rewardsContainer.relicCount != 2) return fail("Black Star changed Colosseum rewards");
+
+        // eliteTrigger: the Nob and Dead Adventurer fights are elites for
+        // combat relics; the slaver fight and ordinary event fights are not.
+        auto slingStrength = [](Room room, Event event, MonsterEncounter encounter) {
+            GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+            gc.obtainRelic(RelicId::SLING_OF_COURAGE);
+            gc.curRoom = room;
+            gc.curEvent = event;
+            gc.info.encounter = encounter;
+            BattleContext bc;
+            bc.init(gc, encounter);
+            return bc.player.strength;
+        };
+        if (slingStrength(Room::EVENT, Event::COLOSSEUM, MonsterEncounter::COLOSSEUM_EVENT_NOBS) != 2
+                || slingStrength(Room::EVENT, Event::DEAD_ADVENTURER, MonsterEncounter::GREMLIN_NOB) != 2
+                || slingStrength(Room::ELITE, Event::INVALID, MonsterEncounter::GREMLIN_NOB) != 2) {
+            return fail("Sling of Courage did not trigger in an elite-trigger fight");
+        }
+        if (slingStrength(Room::EVENT, Event::COLOSSEUM, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS) != 0
+                || slingStrength(Room::EVENT, Event::MASKED_BANDITS, MonsterEncounter::MASKED_BANDITS_EVENT) != 0) {
+            return fail("Sling of Courage triggered outside an elite-trigger fight");
+        }
+
+        // Dead Adventurer's fight gets the Black Star relic.
+        auto adventurerRelics = [](bool blackStar) {
+            GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+            if (blackStar) gc.obtainRelic(RelicId::BLACK_STAR);
+            gc.curRoom = Room::EVENT;
+            gc.curEvent = Event::DEAD_ADVENTURER;
+            gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+            gc.setupEvent();
+            for (int i = 0; i < 3 && gc.screenState == ScreenState::EVENT_SCREEN; ++i) {
+                gc.chooseEventOption(0);
+            }
+            if (gc.screenState != ScreenState::BATTLE) return -1;
+            gc.regainControl();
+            return gc.screenState == ScreenState::REWARDS ? gc.info.rewardsContainer.relicCount : -1;
+        };
+        const int withoutStar = adventurerRelics(false);
+        if (withoutStar < 0 || adventurerRelics(true) != withoutStar + 1) {
+            return fail("Dead Adventurer fight did not add the Black Star relic");
+        }
+
         // The Nob fight continues the same-floor streams; other fights reseed.
         GameContext a(CharacterClass::IRONCLAD, 123456789, 0);
         GameContext b = a;

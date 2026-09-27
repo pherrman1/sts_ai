@@ -262,6 +262,9 @@ namespace sts {
         [[nodiscard]] const MapNode& getCurMapNode() const;
         [[nodiscard]] int fractionMaxHp(float percent, HpType type=HpType::FLOOR) const;
         [[nodiscard]] bool hasRelic(RelicId r) const;
+        // Java eliteTrigger: elite rooms plus the Dead Adventurer fight and
+        // Colosseum's Nob fight, which trigger elite relic effects.
+        [[nodiscard]] bool isEliteTriggerCombat() const;
         [[nodiscard]] bool hasKey(Key key) const;
 
         [[nodiscard]] bool hasLessThanTwoCampfireRelics() const;
