@@ -272,6 +272,8 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
                         long long seedOffset, const std::string &teacherPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();
+int vwinRefreshRewardTypeSelfTest();
+int vwinRefreshFatalRunoutCountSelfTest(std::uint64_t seed, int sims);
 int vwinVPathPolicyGuardSelfTest();
 int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);
 

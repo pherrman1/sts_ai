@@ -321,6 +321,15 @@ add_test(NAME vwin_refresh_compound_decision_contract
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshcompoundselftest)
 set_tests_properties(vwin_refresh_compound_decision_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_card_reward_classification
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshrewardselftest)
+set_tests_properties(vwin_refresh_card_reward_classification PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_fatal_runout_fight_count
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> vwinrefreshfatalcountselftest 13000000 100)
+set_tests_properties(vwin_refresh_fatal_runout_fight_count PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_rejects_vpath_override
     COMMAND ${CMAKE_COMMAND} -E env STS_VPATH=1
         $<TARGET_FILE:one_combat> vwinvpathguardselftest)

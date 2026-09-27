@@ -3666,6 +3666,29 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 1;
         }
+    } else if (mode == "vwinrefreshrewardselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshrewardselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshRewardTypeSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshfatalcountselftest") {
+        if (argc < 3 || argc > 4) {
+            std::cerr << "usage: one_combat vwinrefreshfatalcountselftest SEED [SIMS]\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshFatalRunoutCountSelfTest(std::stoull(argv[2]),
+                argc > 3 ? std::stoi(argv[3]) : 100);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     } else if (mode == "vwinvpathguardselftest") {
         if (argc != 2) {
             std::cerr << "usage: one_combat vwinvpathguardselftest\n";

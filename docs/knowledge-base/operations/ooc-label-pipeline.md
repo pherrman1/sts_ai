@@ -280,7 +280,10 @@ Each source trajectory and each deferred sibling branch writes:
     choices use the semantic-action API. Compound selector primitives remain
     part of their parent semantic action; the collector resolves the full chosen
     semantic key from the observed source-plus-selector primitive sequence before
-    admitting that decision to the outcome-blind reservoir.
+    admitting that decision to the outcome-blind reservoir. On REWARDS screens,
+    `CARD_REWARD` covers only card take/skip and Singing Bowl skip choices, with
+    siblings limited to the same card-reward group; gold, potion, relic, key, and
+    leave actions do not enter this sampling pool.
 - `branches`: one row per sampled sibling, with the chosen option retained and
   at most five other options selected by a deterministic SHA-256 rank when a
   decision has more than six choices. Branches start from detached

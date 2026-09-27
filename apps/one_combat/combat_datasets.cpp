@@ -338,12 +338,11 @@ static std::string vwinMapOptionKey(std::uint32_t bits) {
     return out.str();
 }
 
-static std::string vwinDecisionType(const GameContext &gc) {
+static std::string vwinScreenDecisionType(const GameContext &gc) {
     if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) return "MAP";
     if (gc.screenState == ScreenState::EVENT_SCREEN)
         return gc.curEvent == Event::NEOW ? "NEOW" : "EVENT";
     if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) return "BOSS_RELIC";
-    if (gc.screenState == ScreenState::REWARDS) return "CARD_REWARD";
     if (gc.curRoom == Room::REST || gc.screenState == ScreenState::REST_ROOM) return "REST";
     if (gc.curRoom == Room::SHOP || gc.screenState == ScreenState::SHOP_ROOM) return "SHOP";
     if (gc.screenState == ScreenState::CARD_SELECT) {
@@ -370,6 +369,53 @@ static std::vector<VwinOption> vwinOptions(const GameContext &gc,
     error = enumeration.error;
     for (const auto &action : enumeration.actions)
         result.push_back({vwinOptionKey(action), 0, false, action});
+    return result;
+}
+
+static bool vwinIsCardRewardChoice(const VwinOption &option) {
+    if (!option.semantic || option.semantic->source != search::OocSemanticSource::REWARDS)
+        return false;
+    using Effect = search::OocSemanticEffect;
+    return option.semantic->effect == Effect::TAKE_CARD
+        || option.semantic->effect == Effect::SKIP_CARD_REWARD
+        || option.semantic->effect == Effect::SINGING_BOWL;
+}
+
+static std::string vwinDecisionType(const GameContext &gc,
+                                    const std::vector<VwinOption> &options,
+                                    const std::string &chosenKey,
+                                    std::uint32_t chosenPrimitiveBits) {
+    if (gc.screenState != ScreenState::REWARDS) return vwinScreenDecisionType(gc);
+    const auto chosen = std::find_if(options.begin(), options.end(), [&](const auto &option) {
+        return option.key == chosenKey;
+    });
+    if (chosen != options.end())
+        return vwinIsCardRewardChoice(*chosen) ? "CARD_REWARD" : std::string{};
+    if (search::GameAction(chosenPrimitiveBits).getRewardsActionType()
+        == search::GameAction::RewardsActionType::CARD)
+        return "CARD_REWARD";
+    // Gold, potion, relic, key, and leave actions are deterministic pickups or
+    // screen control. Keep them out of the card-reward sampling pool.
+    return {};
+}
+
+static std::vector<VwinOption> vwinCardRewardGroupOptions(
+        const std::vector<VwinOption> &options, const std::string &chosenKey) {
+    const auto chosen = std::find_if(options.begin(), options.end(), [&](const auto &option) {
+        return option.key == chosenKey;
+    });
+    if (chosen == options.end() || !vwinIsCardRewardChoice(*chosen)) return {};
+    const auto *chosenTarget = std::get_if<search::OocRewardTarget>(&chosen->semantic->target);
+    if (!chosenTarget) return {};
+
+    std::vector<VwinOption> result;
+    for (const auto &option : options) {
+        if (!vwinIsCardRewardChoice(option)) continue;
+        const auto *target = std::get_if<search::OocRewardTarget>(&option.semantic->target);
+        if (target && target->cardGroup == chosenTarget->cardGroup
+            && target->groupOccurrence == chosenTarget->groupOccurrence)
+            result.push_back(option);
+    }
     return result;
 }
 
@@ -449,6 +495,7 @@ static void vwinMaybeSampleDecision(VwinCollector &capture, std::size_t rowIndex
 static std::size_t vwinBeginDecision(VwinCollector &capture, const GameContext &gc,
                                      const PathHistory &path,
                                      const std::vector<VwinOption> &options,
+                                     const std::string &decisionType,
                                      const std::string &chosenKey,
                                      bool supported, bool complete,
                                      const std::string &error,
@@ -460,7 +507,7 @@ static std::size_t vwinBeginDecision(VwinCollector &capture, const GameContext &
     row.act = gc.act;
     row.floor = gc.floorNum;
     row.screen = static_cast<int>(gc.screenState);
-    row.type = vwinDecisionType(gc);
+    row.type = decisionType;
     row.supported = supported;
     row.complete = complete;
     row.error = error;
@@ -572,30 +619,45 @@ static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
                 const auto selector = search::oocSemanticPrimitiveCompoundSelector(gc, bits);
                 const auto chosenKey = selector == CardSelectScreenType::INVALID
                     ? vwinResolveChosenKey(gc, bits, keys) : std::string{};
-                if ((!supported || !complete) && error.empty())
-                    error = "semantic_option_enumeration_unsupported_or_incomplete";
-                else if (supported && complete && options.size() >= 2 && chosenKey.empty()
-                         && selector == CardSelectScreenType::INVALID)
-                    error = "chosen_primitive_binding_unresolved";
-                const auto rowIndex = vwinBeginDecision(capture, gc, path,
-                    options, chosenKey, supported, complete, error,
-                    selector != CardSelectScreenType::INVALID);
-                if (gc.screenState == ScreenState::MAP_SCREEN) {
-                    capture.mapRows.push_back({capture.branchId, capture.deviationIdx,
-                        capture.mapRowIdx++, gc.act, gc.floorNum, gc.curMapNodeX,
-                        gc.curMapNodeY, richRow(gc, path)});
+                const auto decisionType = vwinDecisionType(gc, options, chosenKey, bits);
+                if (gc.screenState != ScreenState::REWARDS || decisionType == "CARD_REWARD") {
+                    if (decisionType == "CARD_REWARD" && !chosenKey.empty()) {
+                        auto cardOptions = vwinCardRewardGroupOptions(options, chosenKey);
+                        const bool chosenPresent = std::any_of(cardOptions.begin(), cardOptions.end(),
+                            [&](const auto &option) { return option.key == chosenKey; });
+                        if (chosenPresent) {
+                            options = std::move(cardOptions);
+                        } else {
+                            supported = false;
+                            complete = false;
+                            if (error.empty()) error = "card_reward_group_binding_unresolved";
+                        }
+                    }
+                    if ((!supported || !complete) && error.empty())
+                        error = "semantic_option_enumeration_unsupported_or_incomplete";
+                    else if (supported && complete && options.size() >= 2 && chosenKey.empty()
+                             && selector == CardSelectScreenType::INVALID)
+                        error = "chosen_primitive_binding_unresolved";
+                    const auto rowIndex = vwinBeginDecision(capture, gc, path,
+                        options, decisionType, chosenKey, supported, complete, error,
+                        selector != CardSelectScreenType::INVALID);
+                    if (gc.screenState == ScreenState::MAP_SCREEN) {
+                        capture.mapRows.push_back({capture.branchId, capture.deviationIdx,
+                            capture.mapRowIdx++, gc.act, gc.floorNum, gc.curMapNodeX,
+                            gc.curMapNodeY, richRow(gc, path)});
+                    }
+                    VwinPendingDecision pending;
+                    pending.rowIndex = rowIndex;
+                    pending.chosenKey = chosenKey;
+                    pending.selector = selector;
+                    pending.observedPrimitiveBits.push_back(bits);
+                    if (selector != CardSelectScreenType::INVALID) {
+                        pending.options = std::move(options);
+                        pending.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+                        pending.path = path;
+                    }
+                    capture.pendingAction = std::move(pending);
                 }
-                VwinPendingDecision pending;
-                pending.rowIndex = rowIndex;
-                pending.chosenKey = chosenKey;
-                pending.selector = selector;
-                pending.observedPrimitiveBits.push_back(bits);
-                if (selector != CardSelectScreenType::INVALID) {
-                    pending.options = std::move(options);
-                    pending.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
-                    pending.path = path;
-                }
-                capture.pendingAction = std::move(pending);
             }
         }
         if (previous) previous(bits, target);
@@ -701,7 +763,8 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
                                                  const WholeCombatTeacher &teacher,
                                                  bool captureCombat = true,
                                                  VwinCollector *vwin = nullptr,
-                                                 const VwinBranchStart *branch = nullptr) {
+                                                 const VwinBranchStart *branch = nullptr,
+                                                 bool forceMissingCombatDecisionHookForTest = false) {
     trainingRunStart();
     const int sourceHealthFailures = search::g_simHealthFailureCount;
     GameContext gc = branch
@@ -826,7 +889,8 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             BattleContext bc;
             const int healthBefore = search::g_simHealthFailureCount;
             std::unique_ptr<CombatEvalDecisionScope> decisionScope;
-            if (captureCombat || (vwin && vwin->captureBoss))
+            if ((captureCombat || (vwin && vwin->captureBoss))
+                && !forceMissingCombatDecisionHookForTest)
                 decisionScope = std::make_unique<CombatEvalDecisionScope>(true);
             std::unique_ptr<one_combat::CombatTransitionRawObserverScope> rawScope;
             const int rawCaptureBefore = vwin ? vwin->rawCaptureCount : 0;
@@ -860,7 +924,7 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
             agent.playoutBattle(gc, bc);
             if (decisionScope) hooks = decisionScope->hooks;
-            const bool initializationTerminal = hooks == 0
+            const bool initializationTerminal = !forceMissingCombatDecisionHookForTest && hooks == 0
                 && bc.turn == 0 && bc.outcome != Outcome::UNDECIDED;
             const auto label = (captureCombat || (vwin && vwin->captureBoss))
                 ? combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount,
@@ -909,7 +973,7 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
                 const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
                 if (vwin) for (auto &entry : vwin->bossEntries) entry.sourceTrajectoryValid = false;
                 if (vwin) vwin->combatRows = out.str();
-                return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
+                return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx + 1,
                         invalidCombatRows, healthFailures, false, false, false, fatalFailure};
             }
             bc.exitBattle(gc);
@@ -956,6 +1020,39 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
     return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
             invalidCombatRows, healthFailures, sourceValid, complete,
             trajectoryValid, fatalFailure};
+}
+
+int vwinRefreshFatalRunoutCountSelfTest(std::uint64_t seed, int sims) {
+    if (sims < 1) throw std::runtime_error("vwin fatal runout selftest: SIMS must be positive");
+    const auto savedActionHook = std::move(search::g_onGameActionExecute);
+    const auto savedCombatHook = std::move(search::g_onCombatDecision);
+    const auto savedPolicy = one_combat::captureOocPolicyThreadState();
+    search::g_onGameActionExecute = {};
+    search::g_onCombatDecision = {};
+
+    CombatEvalSeedResult generated;
+    try {
+        const WholeCombatTeacher fixture{"vwin-fatal-runout-count-selftest",
+                                         nlohmann::json::object()};
+        generated = runCombatEvalGenSeed(seed, sims, 0, fixture, true, nullptr, nullptr, true);
+    } catch (...) {
+        search::g_onGameActionExecute = savedActionHook;
+        search::g_onCombatDecision = savedCombatHook;
+        one_combat::restoreOocPolicyThreadState(savedPolicy);
+        throw;
+    }
+    search::g_onGameActionExecute = savedActionHook;
+    search::g_onCombatDecision = savedCombatHook;
+    one_combat::restoreOocPolicyThreadState(savedPolicy);
+
+    const auto combatRows = static_cast<int>(std::count(generated.rows.begin(),
+                                                         generated.rows.end(), '\n'));
+    if (!generated.fatalFailure || generated.invalidCombatRows != 1 || combatRows != 1)
+        throw std::runtime_error("vwin fatal runout selftest: fixture did not produce one fatal combat row");
+    if (generated.fightCount != combatRows)
+        throw std::runtime_error("vwin fatal runout selftest: runout fightCount differs from combat row count");
+    std::cout << "vwin fatal runout contract: fatal fightCount matches its emitted combat row\n";
+    return 0;
 }
 
 int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc) {
@@ -1607,6 +1704,81 @@ static std::string vwinCompoundStateFingerprint(const GameContext &gc) {
     return out.str();
 }
 
+int vwinRefreshRewardTypeSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("vwin reward type selftest: " + message);
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 0x334334ULL, 0);
+    Rewards rewards;
+    rewards.addGold(50);
+    rewards.addPotion(Potion::BLOCK_POTION);
+    rewards.addRelic(RelicId::ANCHOR);
+    CardReward firstGroup;
+    firstGroup.push_back(Card(CardId::BASH));
+    firstGroup.push_back(Card(CardId::STRIKE_RED));
+    CardReward secondGroup;
+    secondGroup.push_back(Card(CardId::DEFEND_RED));
+    secondGroup.push_back(Card(CardId::IRON_WAVE));
+    rewards.addCardReward(firstGroup);
+    rewards.addCardReward(secondGroup);
+    gc.openCombatRewardScreen(rewards);
+
+    bool supported = false, complete = false;
+    std::string error;
+    auto options = vwinOptions(gc, supported, complete, error);
+    require(supported && complete, "mixed reward screen enumeration is complete: " + error);
+    using Effect = search::OocSemanticEffect;
+    auto findEffect = [&](Effect effect) {
+        return std::find_if(options.begin(), options.end(), [&](const auto &option) {
+            return option.semantic && option.semantic->effect == effect;
+        });
+    };
+    const auto card = findEffect(Effect::TAKE_CARD);
+    const auto skip = findEffect(Effect::SKIP_CARD_REWARD);
+    require(card != options.end() && skip != options.end(),
+            "card take and skip alternatives exist");
+    require(vwinDecisionType(gc, options, card->key, card->primitiveBits) == "CARD_REWARD"
+            && vwinDecisionType(gc, options, skip->key, skip->primitiveBits) == "CARD_REWARD",
+            "taking or skipping a card is labelled CARD_REWARD");
+
+    const auto cardGroupOptions = vwinCardRewardGroupOptions(options, card->key);
+    require(cardGroupOptions.size() == 3,
+            "card sample contains exactly the selected group's two cards and skip");
+    require(std::all_of(cardGroupOptions.begin(), cardGroupOptions.end(), vwinIsCardRewardChoice),
+            "card sample excludes gold, potion, relic, and leave actions");
+    require(std::any_of(cardGroupOptions.begin(), cardGroupOptions.end(), [&](const auto &option) {
+        return option.key == card->key;
+    }), "card sample retains the chosen card");
+    require(std::any_of(cardGroupOptions.begin(), cardGroupOptions.end(), [&](const auto &option) {
+        return option.key == skip->key;
+    }), "card sample retains the selected group's skip option");
+
+    for (const auto effect : {Effect::TAKE_GOLD, Effect::TAKE_POTION,
+                              Effect::TAKE_RELIC, Effect::LEAVE_REWARDS}) {
+        const auto pickup = findEffect(effect);
+        require(pickup != options.end(), "reward fixture includes a non-card action");
+        require(vwinDecisionType(gc, options, pickup->key, pickup->primitiveBits).empty(),
+                "non-card reward action is skipped instead of labelled CARD_REWARD");
+    }
+
+    gc.relics.add({RelicId::SINGING_BOWL, 0});
+    error.clear();
+    options = vwinOptions(gc, supported, complete, error);
+    const auto bowl = std::find_if(options.begin(), options.end(), [&](const auto &option) {
+        return option.semantic && option.semantic->effect == Effect::SINGING_BOWL;
+    });
+    require(bowl != options.end(), "Singing Bowl skip action exists");
+    require(vwinDecisionType(gc, options, bowl->key, bowl->primitiveBits) == "CARD_REWARD",
+            "Singing Bowl skip remains a card-reward choice");
+    const auto bowlOptions = vwinCardRewardGroupOptions(options, bowl->key);
+    require(bowlOptions.size() == 3
+            && std::all_of(bowlOptions.begin(), bowlOptions.end(), vwinIsCardRewardChoice),
+            "Singing Bowl alternatives remain limited to that card group");
+
+    std::cout << "vwin reward type contract: card take/skip sampled by group; pickups skipped\n";
+    return 0;
+}
+
 int vwinRefreshCompoundSelfTest() {
     auto require = [](bool ok, const std::string &message) {
         if (!ok) throw std::runtime_error("vwin compound selftest: " + message);
@@ -1708,7 +1880,8 @@ int vwinRefreshCompoundSelfTest() {
         capture.samplesPerType = 1;
         capture.allowSampling = true;
         PathHistory path;
-        const auto rowIndex = vwinBeginDecision(capture, pre, path, options, "", true, true, "", true);
+        const auto rowIndex = vwinBeginDecision(capture, pre, path, options,
+            vwinScreenDecisionType(pre), "", true, true, "", true);
         require(capture.eligibleByType.empty(),
                 std::string(fixture.name) + " waits for the selector before reservoir admission");
         VwinPendingDecision pending;
