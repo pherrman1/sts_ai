@@ -15,8 +15,13 @@ fallback stack. It does not repeat either qualification cohort.
   `429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`.
 - Gate 1 integration-candidate artifact SHA-256:
   `40743022491de57d864dc911b3db1bd7bb7dceb9d60f2481c55145d66864aa25`.
-  This is a metadata re-export of the exact qualified tensors; Gate 3 will
-  package the same payload with production metadata only after Gate 2 passes.
+  The exact binary is included as
+  [`integration_candidate.native`](integration_candidate.native) so a clean
+  checkout can replay Gate 1. Its metadata says
+  `status=integration_candidate`, `qualified=false`, `defaultChanged=false`,
+  and `defaultForOocMcts=false`; it is a non-production test input. It is a
+  metadata re-export of the exact qualified tensors. Gate 3 would package the
+  same payload with production metadata only after Gate 2 passes.
 - Standard Attention Brew fallback SHA-256:
   `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
 - Frozen Lizard candidate manifest SHA-256:
@@ -86,8 +91,10 @@ Python syntax checks and `git diff --check` passed.
 
 Files `native_parity.json`, `deepsets_brew_fixture.jsonl`, and
 `deepsets_brew_fixture.metrics.json` contain machine-readable outcomes. The
-320 paired states, selection, manifest, candidate, and q/r artifact are copied
-with their original hashes into this packet. The frozen Python T2 reference
+320 paired states, selection, manifest, candidate binary, and q/r artifact are
+copied with their original hashes into this packet. The Gate 2 frozen manifest
+records the original `/tmp` candidate path; its candidate hash matches the
+tracked `integration_candidate.native` exactly. The frozen Python T2 reference
 `tools/combat_transition_lizard_minimal.py` is pinned in the parity report at
 SHA-256 `2465502731defca4ace9cfcd84eb222a8330b206297f50aaba55e1ad34e584eb`;
 the q/r predictor `tools/combat_transition_lizard_mechanical_q.py` is pinned
@@ -112,7 +119,7 @@ The rebuilt `combat_transition_runtime_probe` SHA-256 is
 320-row parity verifier was rerun against the merged source:
 
 ```bash
-python3 tools/verify/combat_transition_lizard_runtime_parity.py --probe build/linux-gcc-release/combat_transition_runtime_probe --fast /tmp/lizard-integration-gate1/deepsets-lizard-candidate.native --standard selfplay/models/combat_transition_near_full_except_smoke_v2.native --output docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/post_merge_native_parity.json
+python3 tools/verify/combat_transition_lizard_runtime_parity.py --probe build/linux-gcc-release/combat_transition_runtime_probe --fast docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/integration_candidate.native --standard selfplay/models/combat_transition_near_full_except_smoke_v2.native --output docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/post_merge_native_parity.json
 ```
 
 It wrote
@@ -122,7 +129,7 @@ reported zero support or semantic mismatches, maximum errors below `1e-4`,
 passing. The existing 31-row Brew/DeepSets fixture was also rerun:
 
 ```bash
-build/linux-gcc-release/combat_transition_runtime_probe --hybrid /tmp/lizard-integration-gate1/deepsets-lizard-candidate.native selfplay/models/combat_transition_near_full_except_smoke_v2.native tests/fixtures/combat_transition_near_full.jsonl > /tmp/lizard-integration-postmerge-brew-rows.jsonl 2> /tmp/lizard-integration-postmerge-brew-metrics.json
+build/linux-gcc-release/combat_transition_runtime_probe --hybrid docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/integration_candidate.native selfplay/models/combat_transition_near_full_except_smoke_v2.native tests/fixtures/combat_transition_near_full.jsonl > /tmp/lizard-integration-postmerge-brew-rows.jsonl 2> /tmp/lizard-integration-postmerge-brew-metrics.json
 ```
 
 All 31 rows passed, with 13 ordinary DeepSets and 18 standard-Attention

@@ -1074,6 +1074,9 @@ re-synced with current main. Its fixed eight-pair whole-run canary was invalid:
 the forced Tail was inserted spent, so treatment did not exercise the correction.
 A narrow harness fix now initializes forced Lizard Tail as active; no gameplay
 cohort was repeated, no default changed, and the correction remains opt-in.
+The exact Gate 1 candidate is tracked in the integration packet as an
+explicitly non-production test input (`qualified=false`, defaults unchanged)
+so the deterministic parity result can be replayed from a clean checkout.
 See [ledger §364](../../experiments/ledger-06.md) for Stage C,
 [ledger §365](../../experiments/ledger-06.md) for integration, and the
 [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).

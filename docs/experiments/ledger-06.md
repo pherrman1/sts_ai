@@ -13264,7 +13264,13 @@ runtime support changed.
   13 ordinary / 18 fallback routing counts. Focused CTest passed 5/5. The
   machine-readable parity output is preserved as
   `evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/post_merge_native_parity.json`.
-  No gameplay seeds were rerun.
+  The exact parity input is included in that packet as
+  `integration_candidate.native` (SHA-256
+  `40743022491de57d864dc911b3db1bd7bb7dceb9d60f2481c55145d66864aa25`) with
+  `status=integration_candidate`, `qualified=false`, `defaultChanged=false`,
+  and `defaultForOocMcts=false`; it is a non-production test input. The
+  historical Gate 2 manifest retains its original `/tmp` path, whose artifact
+  hash matches this tracked copy. No gameplay seeds were rerun.
 - **Gate 2 plan and provenance:** The predeclared canary ran exactly eight
   paired seeds `991000..991007`, Ascension 0, Act-3 horizon, project-fair
   native Silver at 10,000 real-combat simulations, and 2,048 OOC MCTS
@@ -13302,9 +13308,10 @@ runtime support changed.
   Focused Release build succeeded and focused CTest passed 5/5. No gameplay
   runs were repeated or extended.
 - **Decision:** Gate 1 passes; Gate 2 does not. Gate 3 was not run, the exact
-  candidate payload was not packaged as a production artifact, and default
-  selection did not change. `STS_OOC_MCTS` remains off by default and the
-  active-Lizard correction remains opt-in. The eight fixed pairs are spent;
+  candidate was included only as a non-production evidence input and was not
+  packaged as a production artifact; default selection did not change.
+  `STS_OOC_MCTS` remains off by default and the active-Lizard correction
+  remains opt-in. The eight fixed pairs are spent;
   any new active-Tail canary needs a new frozen plan. This is not a win-rate
   qualification, and the existing PR #330/#351 quality evidence is unchanged.
 - **Knowledge impact:** updated the maintained environment reference with the
