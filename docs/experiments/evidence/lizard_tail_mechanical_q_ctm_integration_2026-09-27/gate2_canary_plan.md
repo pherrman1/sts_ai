@@ -73,7 +73,6 @@ STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
 STS_OOC_STRATEGIC_TREASURE=1
 STS_SILVER_ADAPTIVE=0
 STS_SILVER_EXACT_ROOT_BUDGETS=1
-STS_SILVER_REUSE_CAP=32768
 STS_SILVER_REUSE_CAP_MODE=allocated
 STS_SILVER_SEARCH=1
 STS_SILVER_TELEMETRY=0
@@ -83,13 +82,15 @@ STS_EXECUTABLE_GIT_SHA=<reviewed source commit SHA>
 STS_OOC_MCTS_TRACE=<fresh per-run trace path>
 ```
 
-The historic PR #351 confirmation manifest pinned `STS_SILVER_TELEMETRY=1`.
-Current `main` removed that vendored-backend telemetry under ADR-0022 and
-rejects any value except the neutral `0`. The first launch preflight caught
-this before `bestbench` began: all 16 startup attempts exited before producing
-a result row or sidecar. The frozen gameplay environment therefore keeps the
-same PR #351 settings with this one current-main compatibility value set to
-`0`; no gameplay seed was consumed by the failed startup attempts.
+The historic PR #351 confirmation manifest pinned `STS_SILVER_TELEMETRY=1`
+and `STS_SILVER_REUSE_CAP=32768`. Current `main` removed vendored-backend
+telemetry under ADR-0022 and accepts only the neutral telemetry value `0`;
+the native backend fixes the reuse cap at 32,768 and rejects the removed cap
+override. Two launch preflights caught these stale settings before
+`bestbench` began: all 32 startup attempts exited before producing a result
+row or sidecar. The frozen gameplay environment keeps the PR #351 search
+settings while setting telemetry to `0` and leaving the fixed reuse-cap
+override unset. No gameplay seed was consumed by either failed preflight.
 
 Set only the arm variable differently:
 
