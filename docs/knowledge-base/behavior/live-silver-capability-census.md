@@ -32,10 +32,12 @@ The pinned native boundary has explicit representations for:
   indices are not compacted after a death, escape, summon, or replacement.
 - the ordinary `LARGE_SLIME` split preserves native child slots 0 and 1;
   `SLIME_BOSS` remains the separate 0 and 2 layout.
-- the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla can
-  form that event composition, but this pinned simulator has no
-  `MonsterEncounter` or faithful four-slot layout for it; the live importer
-  reports `silver_unsupported_four_byrds` explicitly;
+- the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla
+  defines a "4 Byrds" encounter, but no normal act pool or event generates it
+  (Act 2 uses "3 Byrds" and "Chosen and Byrds"), so it is not expected in
+  standard runs (**Unverified** against `desktop-1.0.jar`). This pinned
+  simulator has no `MonsterEncounter` or four-slot layout for it; the live
+  importer reports `silver_unsupported_four_byrds` explicitly;
 - exact player damage-event bookkeeping when the observer's post-
   `AbstractPlayer.damage()` boundary is installed; each finalized public damage
   call is one event, and the last such unblocked damage is retained.
