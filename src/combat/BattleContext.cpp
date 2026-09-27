@@ -52,6 +52,14 @@ void BattleContext::init(const GameContext &gc, MonsterEncounter encounterToInit
     cardRandomRng = startRandom;
     miscRng = gc.miscRng;
     potionRng = gc.potionRng;
+    if (encounterToInit == MonsterEncounter::COLOSSEUM_EVENT_NOBS) {
+        // Colosseum's second fight is on the same floor; Java does not reseed,
+        // so continue the streams synced back from the slaver fight.
+        aiRng = gc.aiRng;
+        monsterHpRng = gc.monsterHpRng;
+        shuffleRng = gc.shuffleRng;
+        cardRandomRng = gc.cardRandomRng;
+    }
 
     ascension = gc.ascension;
     outcome = Outcome::UNDECIDED;

@@ -1539,6 +1539,70 @@ int testSimulatorRelicFidelity() {
         }
     }
 
+    // Colosseum: a reward-less slaver fight reopens the event; Victory adds
+    // rare+uncommon relics, 100 gold, a potion roll and a card reward.
+    {
+        auto colosseum = [](GameContext &gc) {
+            gc.act = 2;
+            gc.floorNum = 25;
+            gc.curMapNodeY = 9;
+            gc.curRoom = Room::EVENT;
+            gc.curEvent = Event::COLOSSEUM;
+            gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+            gc.setupEvent();
+            gc.chooseEventOption(0);
+            return gc.screenState == ScreenState::BATTLE
+                && gc.info.encounter == MonsterEncounter::COLOSSEUM_EVENT_SLAVERS;
+        };
+
+        GameContext leave(CharacterClass::IRONCLAD, 123456789, 0);
+        if (!colosseum(leave)) return fail("Colosseum did not enter the slaver fight");
+        leave.regainControl(); // BattleContext::exitBattle hands back control
+        if (leave.screenState != ScreenState::EVENT_SCREEN || leave.info.eventData != 1
+                || search::GameAction::getValidEventSelectBits(leave) != 0x3) {
+            return fail("Colosseum did not reopen with Cowardice/Victory");
+        }
+        leave.chooseEventOption(0);
+        if (leave.screenState != ScreenState::MAP_SCREEN) return fail("Colosseum Cowardice did not leave");
+
+        GameContext fight(CharacterClass::IRONCLAD, 123456789, 0);
+        if (!colosseum(fight)) return fail("Colosseum did not enter the slaver fight");
+        fight.regainControl();
+        fight.chooseEventOption(1);
+        if (fight.screenState != ScreenState::BATTLE
+                || fight.info.encounter != MonsterEncounter::COLOSSEUM_EVENT_NOBS) {
+            return fail("Colosseum Victory did not enter the Nob fight");
+        }
+        fight.regainControl();
+        const auto &r = fight.info.rewardsContainer;
+        if (fight.screenState != ScreenState::REWARDS || r.goldRewardCount != 1 || r.gold[0] != 100
+                || r.relicCount != 2 || getRelicTier(r.relics[0]) != RelicTier::RARE
+                || getRelicTier(r.relics[1]) != RelicTier::UNCOMMON || r.cardRewardCount != 1) {
+            return fail("Colosseum Victory rewards are wrong");
+        }
+
+        // The Nob fight continues the same-floor streams; other fights reseed.
+        GameContext a(CharacterClass::IRONCLAD, 123456789, 0);
+        GameContext b = a;
+        b.aiRng = Random(777, 5);
+        b.monsterHpRng = Random(778, 6);
+        b.shuffleRng = Random(779, 7);
+        b.cardRandomRng = Random(780, 8);
+        BattleContext nobsA, nobsB, slaversA, slaversB;
+        nobsA.init(a, MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        nobsB.init(b, MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        slaversA.init(a, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+        slaversB.init(b, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+        if (nobsA.shuffleRng == nobsB.shuffleRng || nobsA.cardRandomRng == nobsB.cardRandomRng
+                || nobsA.aiRng == nobsB.aiRng) {
+            return fail("Colosseum Nob fight reseeded same-floor streams");
+        }
+        if (!(slaversA.shuffleRng == slaversB.shuffleRng) || !(slaversA.aiRng == slaversB.aiRng)
+                || !(slaversA.cardRandomRng == slaversB.cardRandomRng)) {
+            return fail("ordinary fight did not reseed from seed+floor");
+        }
+    }
+
     std::cout << "simulator_relic_fidelity PASS\n";
     return 0;
 }

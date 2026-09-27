@@ -859,6 +859,10 @@ void GameContext::setupEvent() { // todo necronomicon event
             openCardSelectScreen(CardSelectScreenType::BONFIRE_SPIRITS, 1);
             break;
 
+        case Event::COLOSSEUM:
+            info.eventData = 0;
+            break;
+
         case Event::CURSED_TOME:
             info.eventData = 0;
             break;
@@ -2585,9 +2589,48 @@ void GameContext::chooseEventOption(int idx) {
             break;
         }
 
-        case Event::COLOSSEUM: // todo
-            regainControl();
+        case Event::COLOSSEUM: {
+            if (info.eventData == 0) {
+                // [Fight]: Java clears the room rewards and sets rewardAllowed
+                // false, then reopens the event after the slaver fight.
+                info.eventData = 1;
+                regainControlAction = [](GameContext &gc) {
+                    gc.screenState = ScreenState::EVENT_SCREEN;
+                    gc.regainControlAction = returnToMapAction;
+                };
+                enterBattle(MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+
+            } else if (idx == 0) { // [Cowardice]
+                regainControlAction = returnToMapAction;
+                regainControl();
+
+            } else if (idx == 1) { // [Victory]
+                // Java adds the rare and uncommon relics when the fight is
+                // chosen; potion and card rewards are rolled after combat.
+                const RelicId rareRelic = returnRandomRelic(RelicTier::RARE);
+                const RelicId uncommonRelic = returnRandomRelic(RelicTier::UNCOMMON);
+                int goldAmt = 100;
+                if (hasRelic(RelicId::GOLDEN_IDOL)) {
+                    goldAmt += std::round(static_cast<float>(goldAmt) * 0.25f);
+                }
+                info.eventData = 2;
+                regainControlAction = [=](GameContext &gc) {
+                    Rewards reward;
+                    reward.addGold(goldAmt);
+                    reward.addRelic(rareRelic);
+                    reward.addRelic(uncommonRelic);
+                    gc.addPotionRewards(reward);
+                    reward.addCardReward(gc.createCardReward(Room::EVENT));
+                    gc.openCombatRewardScreen(reward);
+                    gc.regainControlAction = returnToMapAction;
+                };
+                enterBattle(MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+
+            } else {
+                assert(false);
+            }
             break;
+        }
 
         case Event::CURSED_TOME: {
             int &phase = info.eventData;
