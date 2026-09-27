@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -263,6 +263,9 @@ experimental action/policy overrides off. `loadWholeCombatTeacher` also
 requires the teacher's `ooc_policy` and loaded artifact hashes to match the
 effective runtime configuration. The V4 token artifact must match pinned
 SHA-256 `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`.
+The frozen-policy guard also rejects enabled `STS_VPATH`/V-informed route
+scoring, which is configured separately from the newer path-policy flags and
+is not represented by the teacher's effective-policy manifest.
 
 Each source trajectory and each deferred sibling branch writes:
 
@@ -272,10 +275,12 @@ Each source trajectory and each deferred sibling branch writes:
   composed `g_onBattleExitRaw` observer before `regainControl`/`afterBattle`;
   `postAfterBattleHp` is filled after the ordinary exit call returns. This is
   evaluation/probe data and is not a training target.
-- `decisions`: decision type, complete option keys, chosen option and
-  enumeration support/completeness. MAP uses primitive actions; other OOC
-  choices use the semantic-action API. Compound selector primitives remain
-  part of their parent semantic action.
+  - `decisions`: decision type, complete option keys, chosen option and
+    enumeration support/completeness. MAP uses primitive actions; other OOC
+    choices use the semantic-action API. Compound selector primitives remain
+    part of their parent semantic action; the collector resolves the full chosen
+    semantic key from the observed source-plus-selector primitive sequence before
+    admitting that decision to the outcome-blind reservoir.
 - `branches`: one row per sampled sibling, with the chosen option retained and
   at most five other options selected by a deterministic SHA-256 rank when a
   decision has more than six choices. Branches start from detached
@@ -311,10 +316,15 @@ The validator checks each output hash/header, finite numeric fields, seed and
 branch joins, one run-out outcome per branch, sampled chosen-option presence,
 the six-option cap, the 70/15/15 split metadata, chosen-replay status, and one
 `WIN_RAW` row per victory in each valid trajectory.
-`vwinrefreshselftest` covers option-cap and two-source-seed reservoir
-determinism, copied agent/RNG and policy state, the rich-feature width and
-thread CPU clock. `vwinrefreshbranchselftest` is a single-seed, seed-guarded
-full-run chosen-branch replay check.
+`vwinrefreshselftest` covers option-cap determinism, per-seed reservoir-helper
+repeatability, copied agent/RNG and policy state, the rich-feature width and
+thread CPU clock. It does not rerun generated trajectories or compare their
+non-timing outputs across seeds. `vwinrefreshcompoundselftest` exercises Smith,
+Peace Pipe, shop-removal and event compound decisions through selector
+resolution, branch execution and chosen-action replay parity. The
+`vwin_refresh_rejects_vpath_override` contract test runs with `STS_VPATH=1` and
+requires the frozen-policy guard to reject it. `vwinrefreshbranchselftest` is a
+single-seed, seed-guarded full-run chosen-branch replay check.
 
 The A1 command uses 128 sources from 13,000,000, K=1, exact 10k and 100% chosen
 replay checks. It is run only after the implementation review and frozen SHA:

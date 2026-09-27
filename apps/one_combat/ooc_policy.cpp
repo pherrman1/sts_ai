@@ -73,6 +73,10 @@ void configureVPathPolicyFromEnvironment() {
     }
 }
 
+bool vPathPolicyEnabled() {
+    return g_vPath != 0;
+}
+
 void configureRestVPolicyFromEnvironment() {
     if (const char *d = std::getenv("STS_REST_V_THRESH")) {
         g_restVThreshold = std::atof(d);

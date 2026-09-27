@@ -152,6 +152,7 @@ void removeSelectVPolicy(GameContext &);
 void neowVPolicy(GameContext &);
 bool configurePathActionPolicyFromEnvironment();
 void configureVPathPolicyFromEnvironment();
+bool vPathPolicyEnabled();
 void configureRestVPolicyFromEnvironment();
 void resetPathPolicyState();
 

@@ -35,8 +35,11 @@ public final class CombatBoundaryTest {
         }
         if (STSModelInspector.combatEntryRelicData("NeowsBlessing", -2, true) != 0
                 || STSModelInspector.combatEntryRelicData("NeowsBlessing", -1, true) != -1
-                || STSModelInspector.combatEntryRelicData("Omamori", -2, true) != -2)
-            throw new AssertionError("spent Neow mapping is not exact and relic-specific");
+                || STSModelInspector.combatEntryRelicData("Omamori", -2, true) != 0
+                || STSModelInspector.combatEntryRelicData("Omamori", 2, false) != 2
+                || STSModelInspector.combatEntryRelicData("Omamori", -2, false) != -2
+                || STSModelInspector.combatEntryRelicData("Pen Nib", -2, true) != -2)
+            throw new AssertionError("spent charge mapping is not exact and relic-specific");
         String forecast = STSModelInspector.ctmResponseJson(
                 "{\"evaluators\":[{\"id\":\"silver_player_decision_v2\",\"status\":\"UNSUPPORTED\"},"
                 + "{\"id\":\"ctm_combat_entry_v2\",\"status\":\"OK\",\"deathProbability\":0.2}]}");

@@ -271,6 +271,8 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                         long long seedOffset, const std::string &teacherPath);
 int vwinRefreshSelfTest();
+int vwinRefreshCompoundSelfTest();
+int vwinVPathPolicyGuardSelfTest();
 int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);
 
 int combatTransitionFixture(const std::string &outfile,

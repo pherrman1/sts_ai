@@ -300,7 +300,9 @@ add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_over
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
 add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simulator_correctness_pr9_19)
+add_test(NAME simulator_relic_fidelity COMMAND $<TARGET_FILE:unit-test> simulator_relic_fidelity)
 set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
+set_tests_properties(simulator_relic_fidelity PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
 add_test(NAME ironclad_card_coverage COMMAND $<TARGET_FILE:unit-test> ironclad_card_coverage)
@@ -314,6 +316,15 @@ add_test(NAME battle_start_runout_contract
 set_tests_properties(battle_start_runout_contract PROPERTIES LABELS "core;research-repro")
 add_test(NAME vwin_refresh_producer_contract COMMAND $<TARGET_FILE:one_combat> vwinrefreshselftest)
 set_tests_properties(vwin_refresh_producer_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_compound_decision_contract
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshcompoundselftest)
+set_tests_properties(vwin_refresh_compound_decision_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_rejects_vpath_override
+    COMMAND ${CMAKE_COMMAND} -E env STS_VPATH=1
+        $<TARGET_FILE:one_combat> vwinvpathguardselftest)
+set_tests_properties(vwin_refresh_rejects_vpath_override PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_branch_parity
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh

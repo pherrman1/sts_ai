@@ -3655,6 +3655,28 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 1;
         }
+    } else if (mode == "vwinrefreshcompoundselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshcompoundselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshCompoundSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinvpathguardselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinvpathguardselftest\n";
+            return 2;
+        }
+        try {
+            return vwinVPathPolicyGuardSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     } else if (mode == "vwinrefreshbranchselftest") {
         if (argc < 3 || argc > 5) {
             std::cerr << "usage: one_combat vwinrefreshbranchselftest SEED [SIMS] [ASC]\n";

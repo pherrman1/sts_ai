@@ -657,7 +657,11 @@ serialized or scored. Wing Boots is imported with a separate public charge
   counter, while direct MAP roots with active charges fail closed because the
   frozen value models do not encode remaining charges; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
 where live/native counter initialization differs. Maw Bank has an explicit
-source-derived active/spent conversion; other unqualified positive counters
+source-derived active/spent conversion, and a spent Neow's Lament or
+Omamori reporting Java's used-up -2 is native 0 remaining charges in both the
+OOC capture and the combat-entry payload, because the CTM rejects negative
+charge data; other
+unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns
 `SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot
 reconstruct the native history-dependent upgradeable count. Confirmation-only
