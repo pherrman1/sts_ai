@@ -97,24 +97,84 @@ the source assignment at
 
 ## Gate 2 — forced-Lizard integration canary
 
-**Pending review and source freeze.** The committed `gate2_canary_plan.md` fixes the eight paired seeds,
-arms, environment, budgets, and decision rules before collection. The exact
-reviewed source SHA, built executable hash, and final frozen per-run manifest
-will be written before the first gameplay seed. Results will be appended here
-without extending the cohort.
+**FAIL — the treatment did not exercise active Lizard.** The exact eight pairs
+(`991000..991007`) completed in both arms, but Gate 2 requires nonzero treatment
+Lizard preparations and samples. All eight treatment records had
+`activeLizardEnabled=true` and both `lizardPreparations=0` and
+`lizardSamples=0`. The canary cannot establish active-Lizard integration.
+
+The frozen run manifest is
+`gate2_failed_canary_2026-09-27/gate2_frozen_manifest_final.json` (SHA-256
+`bb0e964bb2b19af1f18559c51b3d1b094c9f5bb538e47d2bdc0c089c9d8900b3`); it pins
+the executable SHA-256 `63975e203b240f987a1b87fac8778fb25f434cfa5e23834bfda1cd5a7e6fc7ee`
+and executable source SHA `bcdb92e66043483681b2cd3259c97edbefed23cb`. The 16
+run result rows, sidecars, traces, process logs, preflight records, guard-only
+checks, and a hash-indexed summary are preserved under
+`gate2_failed_canary_2026-09-27/`.
+
+| Seed | Control W/F/HP (s) | Treatment W/F/HP (s) | Treatment Lizard prep/sample |
+| ---: | :--- | :--- | :--- |
+| 991000 | 0 / 50 / 0 (89.962) | 0 / 50 / 0 (89.562) | 0 / 0 |
+| 991001 | 0 / 25 / 0 (30.691) | 0 / 25 / 0 (30.683) | 0 / 0 |
+| 991002 | 1 / 51 / 65 (135.632) | 1 / 51 / 65 (134.996) | 0 / 0 |
+| 991003 | 1 / 51 / 43 (119.835) | 1 / 51 / 43 (120.532) | 0 / 0 |
+| 991004 | 0 / 42 / 0 (68.858) | 0 / 42 / 0 (68.854) | 0 / 0 |
+| 991005 | 1 / 51 / 41 (97.734) | 1 / 51 / 41 (86.563) | 0 / 0 |
+| 991006 | 1 / 51 / 58 (145.593) | 1 / 51 / 58 (144.349) | 0 / 0 |
+| 991007 | 1 / 51 / 13 (81.017) | 1 / 51 / 13 (80.420) | 0 / 0 |
+
+`W/F/HP` means win flag, final floor, and ending HP; parentheses contain run
+seconds. These outcomes are descriptive only and do not compare the active
+Lizard correction because the forced relic was not active in either arm. All
+16 commands returned zero and produced their result, sidecar, and trace files.
+Across the runs, `unsupportedCombats`, `mctsSupportAborts`, hybrid fast and
+fallback support failures, and Lizard support failures were zero. The standard
+Brew fallback was prepared 712 times in each arm of seed `991002` and zero
+times in the other runs. Control and treatment win/floor/HP outcomes matched on
+all eight seeds.
+
+### Gate 2 diagnosis and run history
+
+`runFullRunOOC` inserted a forced relic with `data=0` for every relic. The
+simulator instead initializes a newly acquired Lizard Tail with `data=1` in
+`GameContext::obtainRelic`; battle setup copies that value into the player's
+active-relic flag, and the CTM wrapper intentionally recognizes only
+`LIZARD_TAIL` with `data=1`. Thus `STS_FORCE_RELIC=LIZARD_TAIL` logged as set but
+did not create an active Tail. A narrow initialization helper now preserves
+zero-initialized data for ordinary forced relics and uses `data=1` for forced
+Lizard Tail. The active-Lizard CTest fixture now checks both the forced relic
+record and its battle-start flag; the focused CTest set passed 5/5. The
+post-correction `one_combat` SHA-256 is
+`3e8eb01c41ec7615d99b87003ae71fe5068430f083b270ea41c9a974af269b22`. This
+correction was made after collection; no gameplay seed was rerun.
+
+Two setup-only preflights caught stale historical Silver variables before any
+gameplay seed started: 16 attempts with removed `STS_SILVER_TELEMETRY=1`, then
+16 attempts with the removed `STS_SILVER_REUSE_CAP=32768`. Both groups exited
+before `bestbench` and produced no result rows or sidecars. The final manifest
+uses telemetry `0` and leaves the native fixed reuse-cap override unset. The
+corrected final cohort is the single set of eight fixed pairs above; no
+replacements or extensions were run.
+
+Gate 1 still passes. **Gate 3 was not run:** this Gate 2 failure blocks default
+promotion, the production artifact package step, and the two default-plumbing
+smokes. `STS_OOC_MCTS` remains off by default; the Lizard correction remains
+opt-in and the standard Attention Brew fallback remains explicitly configured.
 
 ## Gate 3 — default plumbing
 
-**Pending Gate 2.** If Gates 1 and 2 pass, the exact DeepSets payload will be
-re-exported as the tracked production default for enabled OOC MCTS, with the
-standard Attention Brew fallback. OOC MCTS remains globally off unless the
-caller sets `STS_OOC_MCTS=1`. Two no-model-environment plumbing smokes will then
-verify the default stack.
+**Not run; blocked by Gate 2.** The exact DeepSets payload was not re-exported
+as a production default, no default model-selection code changed, and the two
+no-model-environment plumbing smokes were not run. OOC MCTS remains globally
+off unless the caller sets `STS_OOC_MCTS=1`.
 
 ## Knowledge impact
 
-Current research and baseline pages will be updated if Gate 3 qualifies the
-default. Stable implementation behavior is documented at the sampler and OOC
-adapter entry points. The existing PR #330 and PR #351 evidence remains the
-scientific qualification; this packet records integration correctness and
-plumbing only.
+The environment-variable reference now records the active initialization
+semantics for `STS_FORCE_RELIC=LIZARD_TAIL`; the current-research page and
+experiment ledger record the failed integration canary. Current baselines
+remain unchanged because Gate 3 did not qualify a default. Stable Lizard
+sampling behavior is documented at the sampler and OOC adapter entry points.
+The existing PR #330 and PR #351 evidence remains the scientific qualification;
+this packet records deterministic integration correctness, the failed canary,
+and its harness correction only.

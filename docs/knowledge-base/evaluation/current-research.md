@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-26 for the closed OOC MCTS reroot-opportunity measurement;
+Last verified: 2026-09-27 for the active-Lizard DeepSets/Brew integration canary;
+2026-09-26 for the closed OOC MCTS reroot-opportunity measurement;
 2026-09-25 for the OOC contextual semantic-prior offline qualification,
 the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
@@ -126,6 +127,27 @@ This does not establish superiority or change the opt-in default. The former
 GCP blocker describes preparation only; no server restoration or resume is
 needed. Frozen preparation manifests remain historical evidence. See
 [the completed evidence packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
+
+## Active-Lizard correction in DeepSets/Brew CTM — integration not qualified
+
+Gate 1 deterministic native parity passed on the frozen 320 Stage-C rows with
+zero support or semantic mismatches; the existing 31-row DeepSets/Brew fixture
+and eight-row dispatch fixture also passed. Gate 2 is
+**`INVALID_TREATMENT_NOT_EXERCISED`**: all 16 runs for seeds `991000..991007`
+completed, but the treatment's `lizardPreparations` and `lizardSamples` were
+zero in every pair. The run-start `STS_FORCE_RELIC` helper had inserted
+Lizard Tail with `data=0`, while native acquisition and battle setup require
+`data=1` for active Tail. The helper and focused regression fixture were
+corrected after collection; no replacement or extension seed was run.
+
+The eight control/treatment pairs had identical win, floor, and ending-HP
+outcomes (5/8 wins per arm), but they are not evidence about the Lizard
+correction because neither arm started with active Tail. Gate 3 was not run:
+there is no default CTM artifact or model-selection change, the Lizard
+correction remains opt-in, and `STS_OOC_MCTS` remains globally off. Do not
+promote this integration from the descriptive outcomes; any new active-Tail
+canary needs its own frozen plan. See [ledger §363](../../experiments/ledger-06.md)
+and the [integration report](../../experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/README.md).
 
 ## Purpose
 

@@ -1073,6 +1073,20 @@ void activeLizardPairTransitionGen(
 }
 
 int activeLizardTransitionSelfTest() {
+    GameContext forcedTail(CharacterClass::IRONCLAD, 920260922u, 0);
+    if (!installRunForcedRelic(forcedTail, RelicId::LIZARD_TAIL) ||
+        forcedTail.relics.getRelicValue(RelicId::LIZARD_TAIL) != 1)
+        throw std::runtime_error("active Lizard selftest: forced Tail was not initialized active");
+    BattleContext forcedTailBattle;
+    forcedTailBattle.init(forcedTail, MonsterEncounter::CULTIST);
+    if (!forcedTailBattle.player.hasRelic<RelicId::LIZARD_TAIL>())
+        throw std::runtime_error("active Lizard selftest: forced Tail missing from battle state");
+
+    GameContext forcedAnchor(CharacterClass::IRONCLAD, 920260921u, 0);
+    if (!installRunForcedRelic(forcedAnchor, RelicId::ANCHOR) ||
+        forcedAnchor.relics.getRelicValue(RelicId::ANCHOR) != 0)
+        throw std::runtime_error("active Lizard selftest: ordinary forced relic data changed");
+
     GameContext source(CharacterClass::IRONCLAD, 920260923u, 0);
     source.screenState = ScreenState::BATTLE;
     source.curRoom = Room::MONSTER;

@@ -21,6 +21,10 @@ struct RunResult {
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV,
                         bool shopV, bool e2cCapture = false);
 
+// Install the STS_FORCE_RELIC run-start override with native initial relic
+// data, preserving the override's relic-pool removal behavior.
+bool installRunForcedRelic(sts::GameContext &, sts::RelicId);
+
 // Apply the exact ordered non-combat policy chain used by runFullRunOOC.
 // Callers own the battle branch and must invoke this only for non-BATTLE
 // screens so specialized combat capture can remain local to the caller.

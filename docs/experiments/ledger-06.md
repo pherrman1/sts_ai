@@ -12941,3 +12941,70 @@ review because they do not support parity or the speed decision. Knowledge
 impact: current native architecture stays at `OOC_STRAT_V4`; §362 records the
 rejected C1 prototype and follow-up. No
 gameplay-quality or default-promotion result exists.
+
+## §363 — Active-Lizard correction in the DeepSets/Brew CTM stack: parity pass, integration canary invalid (2026-09-27)
+
+- **Question and baseline:** Can the freshly qualified active-Lizard correction
+  compose with the gameplay-qualified DeepSets plus standard-Attention Brew
+  fallback CTM stack? Task baseline was PR #330 merge
+  `812ce0235e67aa9832142f69c6c8fc89d6875372`; the fresh current-main checkout
+  began at `be84fd934131395e87858195d74c169146a36ccf`. Existing PR #330 and
+  PR #351 qualification cohorts were reused only as accepted evidence; neither
+  cohort was repeated.
+- **Gate 1:** The integration passed frozen 320-row Stage-C deterministic
+  native parity at `1e-4` tolerance with zero support/semantic mismatches.
+  Maximum absolute errors were `5.364418e-7` ordinary survival,
+  `3.576279e-7` reserve survival, `5.364418e-7` q, `3.884913e-7` r, and
+  `5.364418e-7` for class probabilities. Conditional T2 child identity passed
+  on all 320 rows. The existing 31-row DeepSets/Brew mechanism fixture passed
+  with 13 ordinary DeepSets and 18 standard Attention fallback routes. The
+  eight-row dispatch fixture passed ordinary DeepSets, Brew fallback, active
+  Lizard, later-position Lizard, spent Tail, Lizard+Brew fail-closed, Fairy,
+  and Mark of the Bloom routes. The reviewed integration implementation was
+  `bcdb92e66043483681b2cd3259c97edbefed23cb`.
+- **Gate 2 plan and provenance:** The predeclared canary ran exactly eight
+  paired seeds `991000..991007`, Ascension 0, Act-3 horizon, project-fair
+  native Silver at 10,000 real-combat simulations, and 2,048 OOC MCTS
+  simulations. `STS_FORCE_RELIC=LIZARD_TAIL` was set in both arms; only
+  `STS_OOC_MCTS_ACTIVE_LIZARD` differed. The frozen final manifest SHA-256 is
+  `bb0e964bb2b19af1f18559c51b3d1b094c9f5bb538e47d2bdc0c089c9d8900b3`;
+  source SHA is `bcdb92e66043483681b2cd3259c97edbefed23cb`, executable SHA-256
+  `63975e203b240f987a1b87fac8778fb25f434cfa5e23834bfda1cd5a7e6fc7ee`.
+- **Result and classification:** All 16 whole-run processes returned zero and
+  produced result rows, sidecars, and traces. Every run had zero
+  `unsupportedCombats`, `mctsSupportAborts`, hybrid fast/fallback support
+  failures, and Lizard support failures. However, all eight treatment telemetry
+  rows also had zero Lizard preparations and samples. The cause was the forced
+  relic helper: it inserted every relic with `data=0`, whereas
+  `GameContext::obtainRelic` initializes a new active Tail with `data=1` and
+  battle setup uses that value as the active-relic flag. Therefore both arms
+  started without active Lizard, and this canary is
+  **`INVALID_TREATMENT_NOT_EXERCISED`** despite successful process completion.
+  Control and treatment outcomes matched on all eight pairs at 5/8 wins each;
+  these are descriptive only and do not compare the correction. See
+  [the complete result and raw-output bundle](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate2_failed_canary_2026-09-27/)
+  and [the report](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/README.md).
+- **Run history and correction:** Two stale-environment startup groups each
+  contained 16 invocations that exited with code 2 before `bestbench`: first
+  the removed `STS_SILVER_TELEMETRY=1`, then the removed
+  `STS_SILVER_REUSE_CAP=32768`. Neither group created a result or sidecar or
+  consumed a gameplay seed. The final manifest used telemetry `0` and left
+  the fixed native reuse cap override unset. After discovering the inactive
+  forced Tail, `installRunForcedRelic` was changed to initialize only Lizard
+  Tail with `data=1`; ordinary forced relics remain zero-initialized. The
+  active-Lizard CTest now verifies the forced relic's data and battle-start
+  flag, along with an ordinary Anchor control. The post-correction
+  `one_combat` SHA-256 is
+  `3e8eb01c41ec7615d99b87003ae71fe5068430f083b270ea41c9a974af269b22`.
+  Focused Release build succeeded and focused CTest passed 5/5. No gameplay
+  runs were repeated or extended.
+- **Decision:** Gate 1 passes; Gate 2 does not. Gate 3 was not run, the exact
+  candidate payload was not packaged as a production artifact, and default
+  selection did not change. `STS_OOC_MCTS` remains off by default and the
+  active-Lizard correction remains opt-in. The eight fixed pairs are spent;
+  any new active-Tail canary needs a new frozen plan. This is not a win-rate
+  qualification, and the existing PR #330/#351 quality evidence is unchanged.
+- **Knowledge impact:** updated the maintained environment reference with the
+  forced-Tail initialization semantics and current research status with the
+  invalid integration result; baselines remain unchanged. No trained model,
+  promoted artifact, or default configuration changed.
