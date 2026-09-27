@@ -43,6 +43,7 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/MatchAndKeepPolicy.h"
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
@@ -1655,6 +1656,121 @@ int testSimulatorRelicFidelity() {
     }
 
     std::cout << "simulator_relic_fidelity PASS\n";
+    return 0;
+}
+
+// Match and Keep: one click per action, pair resolution, and a fair
+// fixed-pattern chooser that never reads unseen slots.
+int testMatchAndKeep() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "match_and_keep FAIL: " << msg << '\n';
+        return 1;
+    };
+    auto start = [](std::uint64_t seed) {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::MATCH_AND_KEEP;
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.setupEvent();
+        return gc;
+    };
+    using GC = GameContext;
+    auto slotActions = [](const GameContext &gc) {
+        return static_cast<int>(search::GameAction::getAllActionsInState(gc).size());
+    };
+
+    // Mechanics: the first click only turns a card face up.
+    {
+        auto gc = start(123456789);
+        if (gc.info.toSelectCards.size() != 12 || gc.info.eventData != 5 || slotActions(gc) != 12) {
+            return fail("setup is not 12 unseen slots with 5 attempts");
+        }
+        for (const auto &s : gc.info.toSelectCards) {
+            if (s.deckIdx != GC::MATCH_AND_KEEP_UNSEEN) return fail("slot not unseen at setup");
+        }
+        const int deckSize = gc.deck.size();
+        search::GameAction(0).execute(gc);
+        if (gc.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_FACE_UP || gc.info.eventData != 5
+                || slotActions(gc) != 11 || search::GameAction(0).isValidAction(gc)) {
+            return fail("first click did not only turn slot 0 face up");
+        }
+        int twin = -1, other = -1;
+        for (int i = 1; i < 12; ++i) {
+            if (gc.info.toSelectCards[i].card.id == gc.info.toSelectCards[0].card.id) twin = i;
+            else if (other < 0) other = i;
+        }
+        GameContext mismatch = gc;
+        search::GameAction(twin).execute(gc);
+        if (gc.deck.size() != deckSize + 1 || gc.info.eventData != 4
+                || gc.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_MATCHED
+                || gc.info.toSelectCards[twin].deckIdx != GC::MATCH_AND_KEEP_MATCHED
+                || slotActions(gc) != 10) {
+            return fail("matching pair was not added and removed");
+        }
+        search::GameAction(other).execute(mismatch);
+        if (mismatch.deck.size() != deckSize || mismatch.info.eventData != 4
+                || mismatch.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_SEEN
+                || mismatch.info.toSelectCards[other].deckIdx != GC::MATCH_AND_KEEP_SEEN) {
+            return fail("mismatch did not leave both cards seen face down");
+        }
+    }
+
+    // Five attempts end the event on the map.
+    {
+        auto gc = start(987654321);
+        for (int click = 0; click < 10; ++click) {
+            if (gc.screenState != ScreenState::EVENT_SCREEN) return fail("event ended early");
+            search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        }
+        if (gc.screenState != ScreenState::MAP_SCREEN || !gc.info.toSelectCards.empty()) {
+            return fail("event did not end after five attempts");
+        }
+    }
+
+    // Fairness: permuting the hidden cards of unseen slots never changes a click.
+    for (std::uint64_t seed : {11ULL, 22ULL, 33ULL, 44ULL}) {
+        for (bool wantAll : {false, true}) {
+            auto gc = start(seed);
+            const auto want = [wantAll](const Card &) { return wantAll; };
+            while (gc.screenState == ScreenState::EVENT_SCREEN) {
+                auto shuffled = gc;
+                std::vector<int> unseen;
+                for (int i = 0; i < 12; ++i) {
+                    if (shuffled.info.toSelectCards[i].deckIdx == GC::MATCH_AND_KEEP_UNSEEN) unseen.push_back(i);
+                }
+                for (std::size_t k = 1; k < unseen.size(); ++k) {
+                    std::swap(shuffled.info.toSelectCards[unseen[0]].card, shuffled.info.toSelectCards[unseen[k]].card);
+                }
+                const int slot = search::chooseMatchAndKeepSlot(gc, want);
+                if (search::chooseMatchAndKeepSlot(shuffled, want) != slot) {
+                    return fail("chooser read a hidden card");
+                }
+                search::GameAction(slot).execute(gc);
+            }
+        }
+    }
+
+    // Declining: after the first attempt, an unwanted card is never matched.
+    // Wanting: every pair seen before the last attempt is completed.
+    for (std::uint64_t seed = 1; seed <= 40; ++seed) {
+        auto gc = start(seed);
+        search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        const int afterFirst = gc.deck.size();
+        while (gc.screenState == ScreenState::EVENT_SCREEN) {
+            search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        }
+        if (gc.deck.size() != afterFirst) return fail("declining policy matched an unwanted card");
+
+        auto greedy = start(seed);
+        const int before = greedy.deck.size();
+        while (greedy.screenState == ScreenState::EVENT_SCREEN) {
+            search::GameAction(search::chooseMatchAndKeepSlot(greedy, [](const Card &) { return true; })).execute(greedy);
+        }
+        if (greedy.deck.size() < before + 1) return fail("wanting policy matched nothing in five attempts");
+    }
+
+    std::cout << "match_and_keep PASS\n";
     return 0;
 }
 
@@ -4056,6 +4172,8 @@ int main(int argc, const char* argv[]) {
         return testIssueFixes();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
+    } else if (command == "match_and_keep") {
+        return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {
         return testSimulatorRelicFidelity();
     } else if (command == "relic_reward_sapphire") {
