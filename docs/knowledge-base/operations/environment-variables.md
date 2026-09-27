@@ -44,6 +44,7 @@ diagnostics.
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Stopping threshold for `STS_SILVER_ADAPTIVE` (top-vs-second visit-share gap `>=` this value) | `0.2932885906040268` | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | Accepted only as `1` (adaptive Silver is always retained-only) | `1` | `main` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier) and one-action roots are searched; used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
+| `STS_SILVER_ESCAPE_PENALTY` | `<normal>,<elite>`: Silver score penalty (HP-equivalent) for a Smoke Bomb escape in normal and elite-trigger fights, capped at half the HP left; see combat-search.md | unset (`0,0`, escape scored as a win) | `NativeSilverBackend` |
 | `STS_SILVER_SEARCH_SINGLETON_ROOTS` | `1`: search roots with one legal action instead of committing that action without search | off (one-action roots unsearched) | `NativeSilverBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |

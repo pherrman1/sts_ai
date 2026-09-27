@@ -1659,6 +1659,47 @@ int testSimulatorRelicFidelity() {
     return 0;
 }
 
+// Silver escape valuation (#370): a Smoke Bomb escape forfeits rewards.
+int testSilverEscapePenalty() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_escape_penalty FAIL: " << msg << '\n';
+        return 1;
+    };
+    // Whether Silver's first action is to drink the Smoke Bomb in slot 0.
+    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty) {
+        GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
+        gc.curRoom = elite ? Room::ELITE : Room::MONSTER;
+        gc.curHp = hp;
+        gc.potions[0] = Potion::SMOKE_BOMB;
+        gc.potionCount = 1;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        search::SilverSearchContext context;
+        context.act = 1;
+        context.eliteRewards = elite;
+        search::SilverSearcher searcher(silverSearchRoot(bc), context);
+        searcher.evalWeights.escapePenalty = elite ? 0 : penalty;
+        searcher.evalWeights.eliteEscapePenalty = elite ? penalty : 0;
+        searcher.search(3000);
+        const auto action = searcher.bestAction();
+        return action.getActionType() == search::ActionType::POTION && action.getSourceIdx() == 0;
+    };
+    // Historical valuation: an escape counts as a full victory, so Silver
+    // flees even an easy normal fight at full HP.
+    if (!flees(80, MonsterEncounter::CULTIST, false, 0)) return fail("fixture: no escape without penalty");
+    // Forfeited rewards make Silver fight easy normal fights with HP to spare.
+    for (auto encounter : {MonsterEncounter::CULTIST, MonsterEncounter::JAW_WORM}) {
+        for (int hp : {40, 80}) {
+            if (flees(hp, encounter, false, 15)) return fail("penalty still flees an easy fight");
+        }
+    }
+    // The HP cap keeps a low-HP emergency escape preferred.
+    if (!flees(10, MonsterEncounter::GREMLIN_NOB, true, 40)) return fail("low-HP elite escape suppressed");
+    if (!flees(10, MonsterEncounter::JAW_WORM, false, 15)) return fail("low-HP escape suppressed");
+    std::cout << "silver_escape_penalty PASS\n";
+    return 0;
+}
+
 // Match and Keep: one click per action, pair resolution, and a fair
 // fixed-pattern chooser that never reads unseen slots.
 int testMatchAndKeep() {
@@ -4172,6 +4213,8 @@ int main(int argc, const char* argv[]) {
         return testIssueFixes();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
+    } else if (command == "silver_escape_penalty") {
+        return testSilverEscapePenalty();
     } else if (command == "match_and_keep") {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {

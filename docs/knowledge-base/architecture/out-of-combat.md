@@ -576,6 +576,14 @@ the result as the complete legal action space. MAP, BATTLE and INVALID screens
 are unsupported; Match and Keep and malformed selector states cannot be
 presented as complete supported decisions.
 
+A combat that starts with a Smoke Bomb is outside the qualified CTM support.
+The OOC model wraps its sampler (`maskInitialSmokeBomb`) so such a combat is
+valued as if the Smoke Bomb slot were empty (no escape) and the Smoke Bomb is
+returned unused afterwards; a potion generated into that slot is dropped. This
+Phase-0 approximation (#370) replaces the former whole-search abort. It is
+pessimistic where an escape would help; against bosses only slot occupancy
+differs, because escape is blocked there.
+
 Match and Keep is enabled in the simulator (shrine selection, and therefore
 event outcomes, changed for affected seeds). Each action is one click on one of
 12 slots; slot state is `info.toSelectCards[i].deckIdx` (-1 unseen, 1 seen face

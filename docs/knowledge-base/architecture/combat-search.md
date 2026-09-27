@@ -190,6 +190,19 @@ drunk (it procs on lethal), and Smoke Bomb is skipped where escape is blocked.
 Alchemize is not used for the discard rule because its combat effect is not
 implemented in the simulator.
 
+A Smoke Bomb escape ends combat as `PLAYER_VICTORY` with `smokeBombUsed`, and
+Silver's terminal evaluation historically scores it exactly like a win, although
+the escape forfeits the combat rewards. In the 510,030-fight Silver corpus
+(ledger-06), 3,765 fights start with a Smoke Bomb and about 2,923 of them end in
+an escape (the other 78 of 3,001 escapes used a Brew-generated Smoke Bomb). A
+seeded unit fixture shows Silver fleeing even Cultist and Jaw Worm at full HP.
+`SilverEvalWeights::escapePenalty`/`eliteEscapePenalty` subtract the forfeited
+rewards, capped at half the HP left when escaping, because a death also scores
+positively and an uncapped penalty could make a low-HP escape look worse than
+dying. Elite-trigger fights (`GameContext::isEliteTriggerCombat`) use the elite
+penalty. Both default to 0 (historical behavior) until a paired gameplay gate
+decides; `STS_SILVER_ESCAPE_PENALTY` enables them (#370).
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. `STS_MULTISELECT_CANONICAL=1` optionally

@@ -19,6 +19,7 @@ namespace sts::search {
         int act = 1;
         bool actBossRoom = false;     // the fight is the act boss room (act-transition heal follows)
         bool omamoriCharged = false;  // a charged Omamori absorbs Writhing Mass's Parasite
+        bool eliteRewards = false;    // elite-trigger fight: an escape also forfeits the relic
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
@@ -34,6 +35,12 @@ namespace sts::search {
         double goldWeight = 0.25;
         double maxHpWeight = 2.0;
         double parasitePenalty = 12;
+        // A Smoke Bomb escape ends combat as PLAYER_VICTORY but forfeits the
+        // combat rewards. Both default to 0 (the historical escape-as-victory
+        // valuation); STS_SILVER_ESCAPE_PENALTY=<normal>,<elite> enables them.
+        // The applied penalty is capped at half the HP left when escaping.
+        double escapePenalty = 0;
+        double eliteEscapePenalty = 0;
     };
 
     struct SilverSearchStats {
