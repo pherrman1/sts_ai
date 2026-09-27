@@ -41,11 +41,15 @@ The required misc counter delta is derived from encounter; potion delta is
 zero. See [the exact continuation evidence](../../experiments/evidence/combat_rng_continuation_2026-09-14.md)
 and [current research](../evaluation/current-research.md).
 
-All battles recreate AI/card-random/monster-HP/shuffle even at the same floor.
-Current normal controller paths contain no reachable same-floor successor:
-Colosseum is disabled and its handler is a TODO, event combats return to
-rewards/map, and the A20 second boss increments floor. Corpus source ordering
-confirms zero same-floor pairs among 485,031 consecutive fights. Card-random
+Battles recreate AI/card-random/monster-HP/shuffle from `seed + floorNum`,
+except Colosseum's second fight (`COLOSSEUM_EVENT_NOBS`), which continues the
+four streams synced back from the same-floor slaver fight, as Java does not
+reseed between them. Colosseum is the only same-floor combat chain; other
+event combats return to rewards/map, and the A20 second boss increments floor.
+The 485,031-fight corpus predates enabling Colosseum (zero same-floor pairs),
+so the CTM continuation evidence below does not cover the Nob fight's
+inherited streams; it is an **Open question** for exact known-RNG
+continuation. Card-random
 and shuffle OOC consumers after combat run after normal floor or boss-treasure
 reset (including Pandora's Box). Their RAW post values need no generated state
 for normal supported continuation; exact six-stream RAW snapshot synthesis is

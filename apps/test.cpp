@@ -43,6 +43,7 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/MatchAndKeepPolicy.h"
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
@@ -1471,6 +1472,306 @@ static BattleContext simulatorCorrectnessBattle(std::initializer_list<RelicId> r
 
 static void simulatorCorrectnessPlay(BattleContext &bc, int handIdx = 0, int targetIdx = 0) {
     search::Action(search::ActionType::CARD, handIdx, targetIdx).execute(bc);
+}
+
+// Card colors, Dolly's Mirror and Orrery: simulator fidelity fixes for the
+// Ironclad A0 domain.
+int testSimulatorRelicFidelity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "simulator_relic_fidelity FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // Every class transform-pool card carries its class color.
+    const CardColor classColors[4] {CardColor::RED, CardColor::GREEN, CardColor::BLUE, CardColor::PURPLE};
+    for (int cc = 0; cc < 4; ++cc) {
+        for (int i = 0; i < TransformCardPool::cardPoolSize[cc]; ++i) {
+            const CardId id = TransformCardPool::colorCardPool[cc][i];
+            if (getCardColor(id) != classColors[cc]) {
+                return fail(std::string("wrong color for ") + cardEnumStrings[static_cast<int>(id)]);
+            }
+        }
+    }
+
+    // A red card is excluded from its own Ironclad transform.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        Random rng(42);
+        for (int i = 0; i < 500; ++i) {
+            for (CardId exclude : {CardId::BRUTALITY, CardId::COMBUST}) {
+                if (gc.getTransformedCard(rng, exclude, false).getId() == exclude) {
+                    return fail("transform returned its own red source card");
+                }
+            }
+        }
+    }
+
+    // Dolly's Mirror opens a whole-deck duplicate selector and copies the pick.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        const int deckSize = gc.deck.size();
+        if (!gc.obtainRelic(RelicId::DOLLYS_MIRROR)) return fail("Dolly's Mirror opened no screen");
+        if (gc.screenState != ScreenState::CARD_SELECT
+                || gc.info.selectScreenType != CardSelectScreenType::DUPLICATE
+                || gc.info.toSelectCount != 1
+                || static_cast<int>(gc.info.toSelectCards.size()) != deckSize) {
+            return fail("Dolly's Mirror selector is not a one-pick whole-deck duplicate");
+        }
+        const CardId picked = gc.info.toSelectCards[deckSize - 1].card.getId();
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.chooseSelectCardScreenOption(deckSize - 1);
+        if (gc.deck.size() != deckSize + 1 || gc.deck.cards[deckSize].getId() != picked) {
+            return fail("Dolly's Mirror did not add a copy of the picked card");
+        }
+    }
+
+    // Orrery opens five ordinary card rewards.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        gc.curRoom = Room::SHOP;
+        if (!gc.obtainRelic(RelicId::ORRERY)) return fail("Orrery opened no screen");
+        const auto &r = gc.info.rewardsContainer;
+        if (gc.screenState != ScreenState::REWARDS || r.cardRewardCount != 5
+                || r.goldRewardCount != 0 || r.relicCount != 0 || r.potionCount != 0) {
+            return fail("Orrery did not open exactly five card rewards");
+        }
+        for (int i = 0; i < 5; ++i) {
+            if (r.cardRewards[i].size() != 3) return fail("Orrery card reward is not three cards");
+        }
+    }
+
+    // Colosseum: a reward-less slaver fight reopens the event; Victory adds
+    // rare+uncommon relics, 100 gold, a potion roll and a card reward.
+    {
+        auto colosseum = [](GameContext &gc) {
+            gc.act = 2;
+            gc.floorNum = 25;
+            gc.curMapNodeY = 9;
+            gc.curRoom = Room::EVENT;
+            gc.curEvent = Event::COLOSSEUM;
+            gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+            gc.setupEvent();
+            gc.chooseEventOption(0);
+            return gc.screenState == ScreenState::BATTLE
+                && gc.info.encounter == MonsterEncounter::COLOSSEUM_EVENT_SLAVERS;
+        };
+
+        GameContext leave(CharacterClass::IRONCLAD, 123456789, 0);
+        if (!colosseum(leave)) return fail("Colosseum did not enter the slaver fight");
+        leave.regainControl(); // BattleContext::exitBattle hands back control
+        if (leave.screenState != ScreenState::EVENT_SCREEN || leave.info.eventData != 1
+                || search::GameAction::getValidEventSelectBits(leave) != 0x3) {
+            return fail("Colosseum did not reopen with Cowardice/Victory");
+        }
+        leave.chooseEventOption(0);
+        if (leave.screenState != ScreenState::MAP_SCREEN) return fail("Colosseum Cowardice did not leave");
+
+        GameContext fight(CharacterClass::IRONCLAD, 123456789, 0);
+        if (!colosseum(fight)) return fail("Colosseum did not enter the slaver fight");
+        fight.regainControl();
+        fight.chooseEventOption(1);
+        if (fight.screenState != ScreenState::BATTLE
+                || fight.info.encounter != MonsterEncounter::COLOSSEUM_EVENT_NOBS) {
+            return fail("Colosseum Victory did not enter the Nob fight");
+        }
+        fight.regainControl();
+        const auto &r = fight.info.rewardsContainer;
+        if (fight.screenState != ScreenState::REWARDS || r.goldRewardCount != 1 || r.gold[0] != 100
+                || r.relicCount != 2 || getRelicTier(r.relics[0]) != RelicTier::RARE
+                || getRelicTier(r.relics[1]) != RelicTier::UNCOMMON || r.cardRewardCount != 1) {
+            return fail("Colosseum Victory rewards are wrong");
+        }
+
+        // Black Star adds nothing to Colosseum's fixed two-relic reward.
+        GameContext star(CharacterClass::IRONCLAD, 123456789, 0);
+        star.obtainRelic(RelicId::BLACK_STAR);
+        if (!colosseum(star)) return fail("Colosseum did not enter the slaver fight");
+        star.regainControl();
+        star.chooseEventOption(1);
+        star.regainControl();
+        if (star.info.rewardsContainer.relicCount != 2) return fail("Black Star changed Colosseum rewards");
+
+        // eliteTrigger: the Nob and Dead Adventurer fights are elites for
+        // combat relics; the slaver fight and ordinary event fights are not.
+        auto slingStrength = [](Room room, Event event, MonsterEncounter encounter) {
+            GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+            gc.obtainRelic(RelicId::SLING_OF_COURAGE);
+            gc.curRoom = room;
+            gc.curEvent = event;
+            gc.info.encounter = encounter;
+            BattleContext bc;
+            bc.init(gc, encounter);
+            return bc.player.strength;
+        };
+        if (slingStrength(Room::EVENT, Event::COLOSSEUM, MonsterEncounter::COLOSSEUM_EVENT_NOBS) != 2
+                || slingStrength(Room::EVENT, Event::DEAD_ADVENTURER, MonsterEncounter::GREMLIN_NOB) != 2
+                || slingStrength(Room::ELITE, Event::INVALID, MonsterEncounter::GREMLIN_NOB) != 2) {
+            return fail("Sling of Courage did not trigger in an elite-trigger fight");
+        }
+        if (slingStrength(Room::EVENT, Event::COLOSSEUM, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS) != 0
+                || slingStrength(Room::EVENT, Event::MASKED_BANDITS, MonsterEncounter::MASKED_BANDITS_EVENT) != 0) {
+            return fail("Sling of Courage triggered outside an elite-trigger fight");
+        }
+
+        // Dead Adventurer's fight gets the Black Star relic.
+        auto adventurerRelics = [](bool blackStar) {
+            GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+            if (blackStar) gc.obtainRelic(RelicId::BLACK_STAR);
+            gc.curRoom = Room::EVENT;
+            gc.curEvent = Event::DEAD_ADVENTURER;
+            gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+            gc.setupEvent();
+            for (int i = 0; i < 3 && gc.screenState == ScreenState::EVENT_SCREEN; ++i) {
+                gc.chooseEventOption(0);
+            }
+            if (gc.screenState != ScreenState::BATTLE) return -1;
+            gc.regainControl();
+            return gc.screenState == ScreenState::REWARDS ? gc.info.rewardsContainer.relicCount : -1;
+        };
+        const int withoutStar = adventurerRelics(false);
+        if (withoutStar < 0 || adventurerRelics(true) != withoutStar + 1) {
+            return fail("Dead Adventurer fight did not add the Black Star relic");
+        }
+
+        // The Nob fight continues the same-floor streams; other fights reseed.
+        GameContext a(CharacterClass::IRONCLAD, 123456789, 0);
+        GameContext b = a;
+        b.aiRng = Random(777, 5);
+        b.monsterHpRng = Random(778, 6);
+        b.shuffleRng = Random(779, 7);
+        b.cardRandomRng = Random(780, 8);
+        BattleContext nobsA, nobsB, slaversA, slaversB;
+        nobsA.init(a, MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        nobsB.init(b, MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        slaversA.init(a, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+        slaversB.init(b, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+        if (nobsA.shuffleRng == nobsB.shuffleRng || nobsA.cardRandomRng == nobsB.cardRandomRng
+                || nobsA.aiRng == nobsB.aiRng) {
+            return fail("Colosseum Nob fight reseeded same-floor streams");
+        }
+        if (!(slaversA.shuffleRng == slaversB.shuffleRng) || !(slaversA.aiRng == slaversB.aiRng)
+                || !(slaversA.cardRandomRng == slaversB.cardRandomRng)) {
+            return fail("ordinary fight did not reseed from seed+floor");
+        }
+    }
+
+    std::cout << "simulator_relic_fidelity PASS\n";
+    return 0;
+}
+
+// Match and Keep: one click per action, pair resolution, and a fair
+// fixed-pattern chooser that never reads unseen slots.
+int testMatchAndKeep() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "match_and_keep FAIL: " << msg << '\n';
+        return 1;
+    };
+    auto start = [](std::uint64_t seed) {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::MATCH_AND_KEEP;
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.setupEvent();
+        return gc;
+    };
+    using GC = GameContext;
+    auto slotActions = [](const GameContext &gc) {
+        return static_cast<int>(search::GameAction::getAllActionsInState(gc).size());
+    };
+
+    // Mechanics: the first click only turns a card face up.
+    {
+        auto gc = start(123456789);
+        if (gc.info.toSelectCards.size() != 12 || gc.info.eventData != 5 || slotActions(gc) != 12) {
+            return fail("setup is not 12 unseen slots with 5 attempts");
+        }
+        for (const auto &s : gc.info.toSelectCards) {
+            if (s.deckIdx != GC::MATCH_AND_KEEP_UNSEEN) return fail("slot not unseen at setup");
+        }
+        const int deckSize = gc.deck.size();
+        search::GameAction(0).execute(gc);
+        if (gc.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_FACE_UP || gc.info.eventData != 5
+                || slotActions(gc) != 11 || search::GameAction(0).isValidAction(gc)) {
+            return fail("first click did not only turn slot 0 face up");
+        }
+        int twin = -1, other = -1;
+        for (int i = 1; i < 12; ++i) {
+            if (gc.info.toSelectCards[i].card.id == gc.info.toSelectCards[0].card.id) twin = i;
+            else if (other < 0) other = i;
+        }
+        GameContext mismatch = gc;
+        search::GameAction(twin).execute(gc);
+        if (gc.deck.size() != deckSize + 1 || gc.info.eventData != 4
+                || gc.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_MATCHED
+                || gc.info.toSelectCards[twin].deckIdx != GC::MATCH_AND_KEEP_MATCHED
+                || slotActions(gc) != 10) {
+            return fail("matching pair was not added and removed");
+        }
+        search::GameAction(other).execute(mismatch);
+        if (mismatch.deck.size() != deckSize || mismatch.info.eventData != 4
+                || mismatch.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_SEEN
+                || mismatch.info.toSelectCards[other].deckIdx != GC::MATCH_AND_KEEP_SEEN) {
+            return fail("mismatch did not leave both cards seen face down");
+        }
+    }
+
+    // Five attempts end the event on the map.
+    {
+        auto gc = start(987654321);
+        for (int click = 0; click < 10; ++click) {
+            if (gc.screenState != ScreenState::EVENT_SCREEN) return fail("event ended early");
+            search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        }
+        if (gc.screenState != ScreenState::MAP_SCREEN || !gc.info.toSelectCards.empty()) {
+            return fail("event did not end after five attempts");
+        }
+    }
+
+    // Fairness: permuting the hidden cards of unseen slots never changes a click.
+    for (std::uint64_t seed : {11ULL, 22ULL, 33ULL, 44ULL}) {
+        for (bool wantAll : {false, true}) {
+            auto gc = start(seed);
+            const auto want = [wantAll](const Card &) { return wantAll; };
+            while (gc.screenState == ScreenState::EVENT_SCREEN) {
+                auto shuffled = gc;
+                std::vector<int> unseen;
+                for (int i = 0; i < 12; ++i) {
+                    if (shuffled.info.toSelectCards[i].deckIdx == GC::MATCH_AND_KEEP_UNSEEN) unseen.push_back(i);
+                }
+                for (std::size_t k = 1; k < unseen.size(); ++k) {
+                    std::swap(shuffled.info.toSelectCards[unseen[0]].card, shuffled.info.toSelectCards[unseen[k]].card);
+                }
+                const int slot = search::chooseMatchAndKeepSlot(gc, want);
+                if (search::chooseMatchAndKeepSlot(shuffled, want) != slot) {
+                    return fail("chooser read a hidden card");
+                }
+                search::GameAction(slot).execute(gc);
+            }
+        }
+    }
+
+    // Declining: after the first attempt, an unwanted card is never matched.
+    // Wanting: every pair seen before the last attempt is completed.
+    for (std::uint64_t seed = 1; seed <= 40; ++seed) {
+        auto gc = start(seed);
+        search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        const int afterFirst = gc.deck.size();
+        while (gc.screenState == ScreenState::EVENT_SCREEN) {
+            search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        }
+        if (gc.deck.size() != afterFirst) return fail("declining policy matched an unwanted card");
+
+        auto greedy = start(seed);
+        const int before = greedy.deck.size();
+        while (greedy.screenState == ScreenState::EVENT_SCREEN) {
+            search::GameAction(search::chooseMatchAndKeepSlot(greedy, [](const Card &) { return true; })).execute(greedy);
+        }
+        if (greedy.deck.size() < before + 1) return fail("wanting policy matched nothing in five attempts");
+    }
+
+    std::cout << "match_and_keep PASS\n";
+    return 0;
 }
 
 // Focused semantic regressions for upstream gamerpuppy/sts_lightspeed PRs #9-#19.
@@ -3871,6 +4172,10 @@ int main(int argc, const char* argv[]) {
         return testIssueFixes();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
+    } else if (command == "match_and_keep") {
+        return testMatchAndKeep();
+    } else if (command == "simulator_relic_fidelity") {
+        return testSimulatorRelicFidelity();
     } else if (command == "relic_reward_sapphire") {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {

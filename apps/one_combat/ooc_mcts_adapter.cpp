@@ -1550,6 +1550,25 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     }
     return result;
 }
+bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, const sts::Card &card,
+    const std::function<void(GameContext &)> &step) {
+    ImaginedScope scope;
+    auto offer = detachedCopy(gc);
+    sts::CardReward reward;
+    reward.push_back(card);
+    offer.info.rewardsContainer = sts::Rewards();
+    offer.info.rewardsContainer.addCardReward(reward);
+    offer.screenState = sts::ScreenState::REWARDS;
+    offer.regainControlAction = [](GameContext &g) {
+        g.screenState = sts::ScreenState::MAP_SCREEN;
+        g.regainControlAction = nullptr;
+    };
+    const auto before = offer.deck.size();
+    PathHistory offerPath = path;
+    t_curPath = &offerPath;
+    step(offer);
+    return offer.deck.size() > before;
+}
 bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
     std::uint64_t index, LiveOocMctsMetrics &metrics) {
     ++metrics.decisions;
@@ -2798,6 +2817,16 @@ void oocMctsAdapterSelfTest() {
     OocGameContextModel noMap(fixture,path); require(noMap.isLeafBoundary(0),"missing map boundary");
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN; fixture.curEvent=Event::MATCH_AND_KEEP;
     OocGameContextModel match(fixture,path); require(match.isLeafBoundary(0),"match and keep boundary");
+    {
+        // Match and Keep valuation: a lone-card offer on a detached copy; the
+        // caller's step decides, and the source state is never touched.
+        const auto sourceBefore=test::oocStateFingerprint(gc);
+        const auto take=[](GameContext &offer){ GameAction(GameAction::RewardsActionType::CARD,0,0).execute(offer); };
+        const auto skip=[](GameContext &offer){ offer.regainControl(); };
+        require(oocHypotheticalCardTaken(gc,path,sts::Card(CardId::ANGER),take),"hypothetical offer take");
+        require(!oocHypotheticalCardTaken(gc,path,sts::Card(CardId::ANGER),skip),"hypothetical offer skip");
+        require(test::oocStateFingerprint(gc)==sourceBefore,"hypothetical offer leaves source untouched");
+    }
     // Live outcome sampling must not optimize against copied future streams or
     // freeze random successors in the deterministic-edge cache.
     {

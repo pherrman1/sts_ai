@@ -27,6 +27,17 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV,
 void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &,
                              bool restV, bool shopV);
 
+// Match and Keep: one fixed-pattern click (sim/search/MatchAndKeepPolicy.h).
+// Cards are valued by the active guide as a lone card reward: OOC MCTS when
+// `mctsMetrics` is given, otherwise the ordinary policy chain. Returns false
+// outside the event.
+namespace one_combat { struct PathHistory; struct LiveOocMctsMetrics; }
+bool matchAndKeepPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &, bool restV, bool shopV,
+                            const one_combat::PathHistory &, std::uint64_t runSeed,
+                            std::uint64_t decisionIndex, one_combat::LiveOocMctsMetrics *mctsMetrics);
+// True while the policy chain runs on a hypothetical Match and Keep offer.
+extern thread_local bool t_oocHypotheticalStep;
+
 // Concrete seams shared with retained one_combat.cpp drivers.  These keep
 // environment parsing, model loading, and the counterfactual evaluators in
 // the integration translation unit while giving the run loop its lifecycle

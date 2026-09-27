@@ -35,8 +35,11 @@ public final class CombatBoundaryTest {
         }
         if (STSModelInspector.combatEntryRelicData("NeowsBlessing", -2, true) != 0
                 || STSModelInspector.combatEntryRelicData("NeowsBlessing", -1, true) != -1
-                || STSModelInspector.combatEntryRelicData("Omamori", -2, true) != -2)
-            throw new AssertionError("spent Neow mapping is not exact and relic-specific");
-        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 9 entry-relic checks passed");
+                || STSModelInspector.combatEntryRelicData("Omamori", -2, true) != 0
+                || STSModelInspector.combatEntryRelicData("Omamori", 2, false) != 2
+                || STSModelInspector.combatEntryRelicData("Omamori", -2, false) != -2
+                || STSModelInspector.combatEntryRelicData("Pen Nib", -2, true) != -2)
+            throw new AssertionError("spent charge mapping is not exact and relic-specific");
+        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 12 entry-relic checks passed");
     }
 }

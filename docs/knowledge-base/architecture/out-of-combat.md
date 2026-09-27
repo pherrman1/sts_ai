@@ -573,8 +573,21 @@ persisted semantic target identity.
 `enumerateOocSemanticActions` returns `supported`, `complete`, `error` and
 canonically ordered actions. Consumers must check completeness before treating
 the result as the complete legal action space. MAP, BATTLE and INVALID screens
-are unsupported; disabled Match and Keep and malformed selector states cannot
-be presented as complete supported decisions.
+are unsupported; Match and Keep and malformed selector states cannot be
+presented as complete supported decisions.
+
+Match and Keep is enabled in the simulator (shrine selection, and therefore
+event outcomes, changed for affected seeds). Each action is one click on one of
+12 slots; slot state is `info.toSelectCards[i].deckIdx` (-1 unseen, 1 seen face
+down, 2 face up this attempt, 0 matched), `info.eventData` counts the 5
+attempts, and a matched pair is added to the deck. Its clicks are not searched:
+`matchAndKeepPolicyStep` (`run_driver.cpp`) plays the fair fixed pattern in
+`sim/search/MatchAndKeepPolicy` for real runs and for OOC MCTS continuations.
+The pattern reads a slot's card only after that slot was flipped. Each seen
+card is valued by the active primary guide as a lone card reward
+(`oocHypotheticalCardTaken`): OOC MCTS when it is enabled, otherwise the
+ordinary V4/one-ply chain; inside a search only the chain is used, so no search
+nests inside another.
 
 A compound may combine a source option with one target only when its complete
 candidate set is public before the source click and that click reveals no new

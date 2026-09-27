@@ -4,11 +4,13 @@
 #include <chrono>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <mutex>
 #include <sstream>
 
 #include "combat/BattleContext.h"
 #include "sim/search/GameAction.h"
+#include "sim/search/MatchAndKeepPolicy.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "e2c_capture.h"
@@ -124,8 +126,63 @@ void runFloorProfileSelfTest() {
         throw std::runtime_error("floor profile boundary/metadata/delta fixture failed");
 }
 
+thread_local bool t_oocHypotheticalStep = false;
+
+namespace {
+// Per event instance cache of "would the active guide take this card".
+struct MatchAndKeepWantCache {
+    std::uint64_t seed = 0;
+    int act = -1;
+    int floor = -1;
+    std::map<std::pair<int, bool>, bool> want;
+};
+thread_local MatchAndKeepWantCache t_matchAndKeepWant;
+} // namespace
+
+bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
+                            const one_combat::PathHistory &path, std::uint64_t runSeed,
+                            std::uint64_t decisionIndex, one_combat::LiveOocMctsMetrics *mctsMetrics) {
+    if (gc.screenState != ScreenState::EVENT_SCREEN || gc.curEvent != Event::MATCH_AND_KEEP) return false;
+    auto &cache = t_matchAndKeepWant;
+    if (cache.seed != gc.seed || cache.act != gc.act || cache.floor != gc.floorNum) {
+        cache = MatchAndKeepWantCache{gc.seed, gc.act, gc.floorNum, {}};
+    }
+    const auto want = [&](const Card &card) {
+        const auto key = std::make_pair(static_cast<int>(card.id), card.isUpgraded());
+        if (const auto it = cache.want.find(key); it != cache.want.end()) return it->second;
+        // The active primary guide values the card as a lone card reward:
+        // OOC MCTS when enabled, otherwise the ordinary V4/one-ply chain.
+        const bool take = one_combat::oocHypotheticalCardTaken(gc, path, card, [&](GameContext &offer) {
+            if (mctsMetrics) {
+                const std::uint64_t index = (decisionIndex << 12)
+                    ^ (static_cast<std::uint64_t>(card.id) << 1) ^ std::uint64_t(card.isUpgraded());
+                if (one_combat::oocMctsPolicyStep(offer, path, runSeed, index, *mctsMetrics)) return;
+            }
+            const bool saved = t_oocHypotheticalStep;
+            t_oocHypotheticalStep = true;
+            try {
+                runFullRunOocPolicyStep(offer, agent, restV, shopV);
+            } catch (...) {
+                t_oocHypotheticalStep = saved;
+                throw;
+            }
+            t_oocHypotheticalStep = saved;
+        });
+        cache.want.emplace(key, take);
+        return take;
+    };
+    search::GameAction(search::chooseMatchAndKeepSlot(gc, want)).execute(gc);
+    return true;
+}
+
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
+    if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
+        static const one_combat::PathHistory emptyPath;
+        matchAndKeepPolicyStep(gc, agent, restV, shopV, t_curPath ? *t_curPath : emptyPath,
+                               gc.seed, 0, nullptr);
+        return;
+    }
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                 && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     t_shopV = shopV;
@@ -140,8 +197,10 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     } else if (g_eventV && gc.screenState == ScreenState::EVENT_SCREEN
                && gc.curEvent != Event::NEOW && one_combat::eventVPolicy(gc)) {
     } else if (gc.screenState == ScreenState::REWARDS) {
-        one_combat::captureE2cPost(gc);
-        one_combat::recordE2cScreenState(gc.screenState);
+        if (!t_oocHypotheticalStep) { // a Match and Keep valuation is not a real reward
+            one_combat::captureE2cPost(gc);
+            one_combat::recordE2cScreenState(gc.screenState);
+        }
         if (one_combat::collectFreeOocReward(gc, g_collectKeys)) {}
         else if (actFightProbeDraftPolicy(gc)) {}
         else if (bossGatedDraftPolicy(gc)) {}
@@ -256,7 +315,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             }
         } else {
             const auto index = oocDecisionIndex++;
-            if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
+            if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
+                    one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
+            } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
                 runFullRunOocPolicyStep(gc, agent, restV, shopV);
         }
     }
