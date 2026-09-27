@@ -808,10 +808,13 @@ full-corpus misc post states, including 413,799/413,799 supported states, withou
 using post counters. The 97,154 supported misc changes rule out literal
 copy-through, but do not require learned RNG state or a new support gate.
 
-The four other streams are recreated on every battle entry. The normal
-controller has no reachable same-floor combat chain: Colosseum is disabled
-and unimplemented, event callbacks end at rewards/map, and A20's second boss
-increments floor. There are zero same-floor pairs among 485,031 consecutive
+The four other streams are recreated on every battle entry. At the time of
+this evidence the normal controller had no reachable same-floor combat chain:
+Colosseum was disabled and unimplemented, event callbacks ended at rewards/map,
+and A20's second boss increments floor. Colosseum is now enabled and its Nob
+fight continues the slaver fight's streams (see
+[RNG ownership](../behavior/determinism-and-rng.md)); that chain is not
+covered by this evidence. There are zero same-floor pairs among 485,031 consecutive
 source-ordered corpus fights. Intervening OOC reads of card-random/shuffle
 also occur after their floor/boss-treasure reset. No support change is needed;
 no runtime adapter, model training or multi-fight qualification ran.
