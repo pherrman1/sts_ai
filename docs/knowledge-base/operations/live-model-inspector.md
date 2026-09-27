@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-09-27 for the combat final-HP panel; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -37,6 +37,38 @@ subset is lowered one `choose` at a time and then `proceed`.
 It returns the selected action, root action summaries containing
 edge visits, `visitShare`, and selection Q only when that edge has a valid Q
 value, plus the decision ordinal and reroot diagnostics.
+
+#### Combat final-HP samples
+
+Every OK Silver result also carries `finalHpDistribution`
+(`silver_final_hp_distribution_v1`) and a `finalHp` layer on each root action
+summary. Each simulation Silver runs at the current root adds one sample: the
+player HP when its combat ended (tree terminal or rollout), before
+post-combat relic heals such as Burning Blood, or a death. `hpCounts` share
+one `0..axisMaxHp` axis (at least the root max HP); index 0 holds deaths.
+Turn-cap losses, engine stops and halted rollouts are `unresolved` and are
+excluded from `count`. Samples accumulate across `Silver +9k` extensions of
+the same root and restart at every new root; visits inherited through a
+reroot are not included, so `count + unresolved` equals the simulations run
+at this root, not `rootVisits`. Root action layers partition the root layer.
+`SilverOutcomeCapture` is caller-owned, default off, and only counts;
+`live_silver_importer` checks that capturing leaves visits, values and the
+selected action unchanged. The samples follow Silver's UCB tree policy and
+rollout policy, so they are search-conditioned outcomes, not an unbiased
+estimate of the eventual result of the recommended line; low-visit actions
+have few samples.
+
+The combat panel shows these samples instead of the CTM combat-entry
+forecast, which remains in the protocol but is no longer displayed. The left
+card shows **Sampled deaths** (share of resolved samples) and the sample
+count. The right card, **HP at combat end**, draws a cyan histogram on a
+fixed 0..max-HP axis with the death bar in red, a white marker at the current
+HP, and the expected final HP (deaths as 0) with its change from now. Hovering
+a hand card outlines, in amber on the same y scale, the samples of every
+searched play of that physical card (UUID); while aiming at a monster, only
+plays at that target. Hovering End Turn shows its samples. The display uses
+only identity-matched responses and does not depend on the CTM model or the
+response's CTM status.
 Unsupported encounter, relic, information, or schema states remain explicit
 `UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
 controller or a qualification of Silver policy quality. `STALE` responses
@@ -188,9 +220,7 @@ as well. The overlay is presentation-only and does not change policy
 or driver decisions. Combat-entry projection translates only the spent
 Neow's Lament sentinel (`counter=-2`, `usedUp=true`) to native zero remaining
 charges. Active charges and other relic counters remain exact; the CTM support
-gate is unchanged. Unavailable CTM forecasts show their reason instead of an
-indefinite waiting message. CTM display status comes from its own evaluator,
-so unsupported Silver decisions cannot suppress a valid CTM forecast. Workshop
+gate is unchanged. Workshop
 and game/dependency JARs remain outside Git. The native v4 importer is
 fail-closed for unknown mappings, resolving snapshots, unsupported selection
 tasks or option capacities, and native mechanics absent from the pinned

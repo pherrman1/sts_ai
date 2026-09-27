@@ -249,6 +249,26 @@ class AdvisorProtocolTest(unittest.TestCase):
         selected = next(row for row in summaries
                         if row["fingerprint"] == silver["selectedAction"])
         self.assertEqual(selected["liveAction"], silver["selectedLiveAction"])
+        # Final-HP samples cover every simulation at this root on one shared
+        # 0..axisMaxHp axis (index 0 = deaths) and root actions partition them.
+        for current in silver_results:
+            dist = current["finalHpDistribution"]
+            self.assertEqual(dist["schema"], "silver_final_hp_distribution_v1")
+            self.assertEqual(dist["currentHp"], 80)
+            self.assertEqual(dist["maxHp"], 80)
+            bins = dist["axisMaxHp"] + 1
+            root_layer = dist["root"]
+            self.assertEqual(root_layer["count"] + root_layer["unresolved"],
+                             current["totalSimulations"])
+            layers = [row["finalHp"] for row in current["rootActionSummaries"]]
+            for layer in [root_layer] + layers:
+                self.assertEqual(len(layer["hpCounts"]), bins)
+                self.assertEqual(sum(layer["hpCounts"]), layer["count"])
+                self.assertEqual(layer["hpCounts"][0], layer["deaths"])
+            for key in ("count", "deaths", "unresolved"):
+                self.assertEqual(sum(layer[key] for layer in layers), root_layer[key])
+            self.assertEqual([sum(column) for column in zip(*(l["hpCounts"] for l in layers))],
+                             root_layer["hpCounts"])
         debug_result = self.run_advisor([json.dumps(wires[0])], self.model, tree_debug=True)[0]
         debug_silver = next(row for row in debug_result["evaluators"]
                             if row["id"] == "silver_player_decision_v2")

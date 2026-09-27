@@ -316,6 +316,36 @@ void search::SilverTreeProfile::record(const BattleContext &state, int treeDepth
     ++endpoints[kind].total[treeDepth + rolloutDepth];
 }
 
+void search::SilverOutcomeCapture::Layer::record(const BattleContext &end) {
+    int hp = 0;
+    const bool victory = end.outcome == Outcome::PLAYER_VICTORY && end.player.curHp > 0;
+    // Same death classification as SilverTreeProfile.
+    const bool death = end.outcome == Outcome::PLAYER_LOSS && end.turn <= 500 && end.player.curHp <= 0;
+    if (victory) {
+        hp = end.player.curHp;
+    } else if (death) {
+        ++deaths;
+    } else {
+        ++unresolved;
+        return;
+    }
+    if (hpCounts.size() <= static_cast<std::size_t>(hp)) hpCounts.resize(hp + 1, 0);
+    ++hpCounts[hp];
+    ++count;
+}
+
+void search::SilverOutcomeCapture::record(int rootEdge, const BattleContext &end) {
+    root.record(end);
+    if (rootEdge < 0) return;
+    if (edges.size() <= static_cast<std::size_t>(rootEdge)) edges.resize(rootEdge + 1);
+    edges[rootEdge].record(end);
+}
+
+void search::SilverSearcher::recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth) {
+    if (profile) profile->record(end, treeDepth, rolloutDepth);
+    if (outcomes) outcomes->record(currentRootEdge, end);
+}
+
 void search::SilverSearcher::search(std::int64_t simulations) {
     if (root->state->outcome != Outcome::UNDECIDED) return;
     for (std::int64_t i = 0; i < simulations; ++i) {
@@ -331,6 +361,7 @@ void search::SilverSearcher::step() {
     auto onPath = [&](Node *n) {
         return std::find(searchStack.begin(), searchStack.end(), n) != searchStack.end();
     };
+    currentRootEdge = -1;
     Node *cur = root;
     Edge *stagedOutcomeEdge = nullptr;  // outcome 0 of a chance node created this iteration
     int depth = 0;
@@ -370,7 +401,7 @@ void search::SilverSearcher::step() {
         }
 
         if (cur->state->outcome != Outcome::UNDECIDED) {
-            if (profile) profile->record(*cur->state, actionDepth, 0);
+            recordEndpoint(*cur->state, actionDepth, 0);
             updateFromPlayout(searchStack, evaluateEndState(*cur->state));
             return;
         }
@@ -378,13 +409,14 @@ void search::SilverSearcher::step() {
         if (cur->edges.empty()) {
             enumerateActionsForNode(*cur, *cur->state);
             if (cur->edges.empty()) {
-                if (profile) profile->record(*cur->state, actionDepth, 0);
+                recordEndpoint(*cur->state, actionDepth, 0);
                 updateFromPlayout(searchStack, evaluateEndState(*cur->state));
                 return;
             }
         }
 
         const int selectIdx = selectBestEdgeToSearch(*cur);
+        if (cur == root) currentRootEdge = selectIdx;
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
         if (profile) ++actionDepth;
@@ -582,7 +614,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         action.execute(bc);
         if (profile) ++rolloutDepth;
     }
-    if (profile) profile->record(bc, treeDepth, rolloutDepth);
+    recordEndpoint(bc, treeDepth, rolloutDepth);
     return evaluateEndState(bc);
 }
 

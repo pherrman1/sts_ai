@@ -450,6 +450,14 @@ json silverTreeSnapshotJson(const silver_bridge::SilverTreeSnapshot &snapshot) {
     return output;
 }
 
+json finalHpLayerJson(const sts::search::SilverOutcomeCapture::Layer &layer,
+                      std::size_t bins) {
+    auto counts = layer.hpCounts;
+    counts.resize(bins, 0);
+    return {{"count", layer.count}, {"deaths", layer.deaths},
+            {"unresolved", layer.unresolved}, {"hpCounts", counts}};
+}
+
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
@@ -536,6 +544,18 @@ json silverEvaluator(const one_combat::advisor::Request &request,
                      [](const auto *a, const auto *b) { return a->edgeVisits > b->edgeVisits; });
     std::int64_t totalVisits = 0;
     for (const auto *summary : ranked) totalVisits += summary->edgeVisits;
+    // Every layer shares one 0..axisMaxHp axis; victories can exceed the root
+    // max HP (e.g. Feed).
+    const std::size_t finalHpBins = std::max<std::size_t>(
+        static_cast<std::size_t>(std::max(decision.rootMaxHp, 0)) + 1,
+        decision.outcomes.root.hpCounts.size());
+    evaluator["finalHpDistribution"] = {
+        {"schema", "silver_final_hp_distribution_v1"},
+        {"scope", "simulations_since_root"},
+        {"hpSemantics", "player_hp_at_combat_end_before_post_combat_heals"},
+        {"currentHp", decision.rootHp}, {"maxHp", decision.rootMaxHp},
+        {"axisMaxHp", finalHpBins - 1},
+        {"root", finalHpLayerJson(decision.outcomes.root, finalHpBins)}};
     std::string rankingText;
     for (const auto *summary : ranked) {
         json item = {
@@ -546,6 +566,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
             {"edgeVisits", summary->edgeVisits}, {"selectionQValid", summary->selectionQValid},
             {"visitShare", totalVisits == 0 ? 0.0 : static_cast<double>(summary->edgeVisits) / totalVisits}};
         if (summary->selectionQValid) item["selectionQ"] = summary->selectionQ;
+        const auto edge = static_cast<std::size_t>(summary - decision.rootActionSummaries.data());
+        item["finalHp"] = finalHpLayerJson(decision.outcomes.edges.at(edge), finalHpBins);
         evaluator["rootActionSummaries"].push_back(std::move(item));
     }
     for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {

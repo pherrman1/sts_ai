@@ -12,6 +12,7 @@ java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.LiveOocCaptur
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.OocOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatBoundaryTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PotionOverlayTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatHpOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.TargetLabelsTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.SilverBudgetTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.GraphExportSnapshotTest

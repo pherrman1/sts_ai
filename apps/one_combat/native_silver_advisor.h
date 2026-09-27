@@ -30,6 +30,12 @@ struct NativeSilverDecision {
     std::int64_t inheritedVisits = 0;
     bool fallback = false;
     std::string fallbackReason = "none";
+    // End-of-combat samples of every simulation run at this root since it
+    // became the root (decide plus later extends); inherited visits excluded.
+    // `outcomes.edges` is indexed like rootActionSummaries.
+    sts::search::SilverOutcomeCapture outcomes;
+    int rootHp = 0;
+    int rootMaxHp = 0;
 };
 
 // Silver search for the live advisor, run natively on the main engine. One
@@ -56,6 +62,7 @@ private:
     bool lastEquivalentCopyReroot_ = false;
     sts::BattleContext liveRoot_;
     std::string lastFallbackReason_ = "none";
+    sts::search::SilverOutcomeCapture outcomes_;
 
     NativeSilverDecision result(std::int64_t simulations) const;
 };

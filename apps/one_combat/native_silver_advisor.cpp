@@ -67,6 +67,8 @@ NativeSilverDecision NativeSilverAdvisorSession::decide(const silver_bridge::Bat
         searcher_->setRoot(root);
         lastFallbackReason_ = "candidate_missing";
     }
+    outcomes_.reset();
+    searcher_->outcomes = &outcomes_;
     searcher_->search(simulations);
     return result(simulations);
 }
@@ -122,6 +124,10 @@ NativeSilverDecision NativeSilverAdvisorSession::result(std::int64_t simulations
     out.inheritedVisits = lastInheritedVisits_;
     out.fallback = !lastExactReroot_ && !lastEquivalentCopyReroot_;
     out.fallbackReason = lastFallbackReason_;
+    out.outcomes = outcomes_;
+    out.outcomes.edges.resize(rootNode.edges.size());
+    out.rootHp = state.player.curHp;
+    out.rootMaxHp = state.player.maxHp;
     return out;
 }
 
