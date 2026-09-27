@@ -182,6 +182,13 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     auto qualifiedDeepSets=specialistDeepSets;
     qualifiedDeepSets["qualified"]=true;
     qualifiedDeepSets["defaultChanged"]=true;
+    const auto productionPromotionEvidence=nlohmann::json({
+        {"gate2Classification","GATE2_ACTIVE_LIZARD_COMPOSED_RUNTIME_CANARY_PASS"},
+        {"gate2ResultsSha256","1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9"},
+        {"gate2FrozenImplementationSha","5c818c0e30aa20fb178bfde19355c01852afef84"},
+        {"deepsetsQualificationClassification","OOC_HYBRID_QUALITY_CONFIRMED"},
+        {"deepsetsQualificationSummarySha256","0afa5319c21706ef380b76825035514c76dbe694bbafa4ed6293a75ce48b98ce"},
+        {"lizardCandidateManifestSha256","15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617"}});
     const bool lizardCandidate=metadata_.contains("activeLizardCorrection");
     const bool promotedLizard= lizardCandidate &&
         metadata_.at("activeLizardCorrection").value("status",std::string{})=="production_default_when_ooc_enabled";
@@ -207,11 +214,23 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         require(statusOk && c.value("qualified",false)==promotedLizard &&
             c.value("defaultChanged",false)==promotedLizard,
             "combat runtime active-Lizard promotion status");
-        if(promotedLizard)
+        if(promotedLizard) {
+            require(sha256File(path)==
+                    "abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab",
+                "combat runtime production artifact bytes differ from the Gate 2-reviewed package");
             require(metadata_.value("defaultForOocMcts",false) &&
                 metadata_.at("qualification").value("classification",std::string{})=="DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED",
                 "combat runtime production default qualification");
-        else
+            require(c.value("gate2ResultsSha256",std::string{})==
+                    productionPromotionEvidence.at("gate2ResultsSha256") &&
+                c.value("gate2Classification",std::string{})==
+                    productionPromotionEvidence.at("gate2Classification") &&
+                c.value("gate2FrozenImplementationSha",std::string{})==
+                    productionPromotionEvidence.at("gate2FrozenImplementationSha") &&
+                metadata_.value("productionPromotionEvidence",nlohmann::json::object())==
+                    productionPromotionEvidence,
+                "combat runtime production Gate 2 provenance");
+        } else
             require(!metadata_.value("defaultForOocMcts",false),
                 "combat runtime candidate cannot claim production default");
         lizardCorrection_=c;

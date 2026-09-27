@@ -13339,3 +13339,62 @@ runtime support changed.
   research records the invalid integration result and post-merge deterministic
   revalidation. Baselines remain unchanged. No trained model, promoted artifact,
   or default configuration changed.
+
+## §366 — Active-Lizard DeepSets/Brew integration: fresh canary and default plumbing (2026-09-27)
+
+- **Question and baseline:** Does the corrected active-Tail initializer allow
+  the qualified Lizard correction to run in the already-qualified DeepSets plus
+  standard-Attention Brew-fallback stack, and can that exact stack become the
+  default when OOC MCTS is explicitly enabled? The task baseline was PR #330
+  merge `812ce0235e67aa9832142f69c6c8fc89d6875372`. Before Gate 2 follow-up,
+  the implementation branch included current main through
+  `56381780ff4382c85564b02a86d45325b4421021` at merge commit
+  `1acb8c7d52b8cd82de5e20da9a96407c49129033`. PR #330 and PR #351 qualification
+  evidence was reused; neither quality cohort was repeated.
+- **Gate 2 follow-up:** The original `991000..991007` canary remains invalid
+  because the forced Tail was inserted spent. A fresh, disjoint cohort ran
+  exactly eight paired seeds `991008..991015`, control then treatment, A0,
+  Act-3 horizon, 10,000 project-fair native Silver combat simulations and
+  2,048 OOC MCTS simulations per run. All 16 runs completed and reached floor
+  51; both arms won 8/8, descriptive only. Treatment reported 120,708 Lizard
+  preparations and samples, 225 consumed wins, 30 consumed losses, and zero
+  Lizard support failures. The single treatment seed with support aborts had 41
+  `active_unqualified_lizard` reasons, 39 fast-path and 2 Brew-fallback support
+  failures, and 41 boundary exclusions. The frozen adapter route and reason
+  identify these as predeclared Fairy/Mark exact-path cases, including two
+  Brew-plus-boundary intersections; raw telemetry does not distinguish Fairy
+  from Mark of the Bloom. No eligible correction failure or other treatment
+  support reason was observed. Per-run accounting, result/sidecar/trace
+  validation, HP bounds, and state/RNG/numerical log scans passed. The frozen
+  result JSON SHA-256 is
+  `1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`; the
+  manifest pins source commit `5c818c0e30aa20fb178bfde19355c01852afef84`,
+  candidate artifact `40743022491de57d864dc911b3db1bd7bb7dceb9d60f2481c55145d66864aa25`,
+  and seeds/budgets. See the
+  [follow-up evidence packet](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate2_followup_canary_2026-09-27/).
+- **Gate 1 and production package:** Re-exported the exact DeepSets tensor
+  payload (`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`)
+  as `selfplay/models/combat_transition_deepsets_lizard_t2.native`; artifact
+  SHA-256 is `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`.
+  Packaging requires the exact hashed Gate 2 PASS report and verifies its
+  frozen inputs and raw evidence files. The runtime pins the production
+  artifact bytes and promotion provenance. On that artifact, deterministic
+  parity passed 320/320 rows, all conditional T2 child identity checks, and
+  all eight dispatch fixtures with zero support/semantic mismatches; maximum
+  probability error was `5.364418e-7` at `1e-4` tolerance. The 31-row
+  DeepSets/Brew fixture matched saved output and metrics byte for byte. Focused
+  Release build and CTest passed; two default-plumbing smoke cases are recorded
+  in the linked Gate 3 packet when run.
+- **Default behavior:** With `STS_OOC_MCTS=1` and
+  `STS_OOC_MCTS_COMBAT_MODEL` unset, the adapter selects the promoted DeepSets
+  artifact, pinned standard Attention Brew fallback, and active-Lizard
+  correction. Explicit combat/fallback paths remain usable. Setting
+  `STS_OOC_MCTS_ACTIVE_LIZARD=0` disables the correction as a diagnostic
+  rollback. OOC MCTS remains off unless explicitly enabled. Active Lizard plus
+  Entropic Brew, Fairy Potion, and Mark of the Bloom retain their declared
+  boundary behavior.
+- **Knowledge impact:** current baselines, current research, OOC architecture,
+  environment-variable reference, and this evidence packet now record the
+  enabled-OOC default and its boundaries. PR #330 and PR #351 remain the
+  scientific quality qualification; this section records the integration and
+  default-plumbing evidence only.

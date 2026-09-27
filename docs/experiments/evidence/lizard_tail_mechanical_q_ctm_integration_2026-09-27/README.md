@@ -20,8 +20,9 @@ fallback stack. It does not repeat either qualification cohort.
   checkout can replay Gate 1. Its metadata says
   `status=integration_candidate`, `qualified=false`, `defaultChanged=false`,
   and `defaultForOocMcts=false`; it is a non-production test input. It is a
-  metadata re-export of the exact qualified tensors. Gate 3 would package the
-  same payload with production metadata only after Gate 2 passes.
+  metadata re-export of the exact qualified tensors. The Gate 3 production
+  artifact is tracked separately at
+  `selfplay/models/combat_transition_deepsets_lizard_t2.native`.
 - Standard Attention Brew fallback SHA-256:
   `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
 - Frozen Lizard candidate manifest SHA-256:
@@ -232,26 +233,59 @@ promotion, the production artifact package step, and the two default-plumbing
 smokes. `STS_OOC_MCTS` remains off by default; the Lizard correction remains
 opt-in and the standard Attention Brew fallback remains explicitly configured.
 
-## Gate 3 — default plumbing
+## Gate 2 follow-up — fresh active-Tail whole-run canary
 
-**Not run; blocked by Gate 2.** The exact DeepSets payload was not re-exported
-as a production default, no default model-selection code changed, and the two
-no-model-environment plumbing smokes were not run. OOC MCTS remains globally
-off unless the caller sets `STS_OOC_MCTS=1`.
+**PASS with declared exact-path boundary behavior.** The invalid `991000..991007`
+cohort above remains preserved and was not reused. The corrected forced-Tail
+helper was exercised on exactly eight fresh paired seeds, `991008..991015`,
+with control then treatment, Ascension 0, Act-3 horizon, project-fair native
+Silver at 10,000 combat simulations, and 2,048 OOC simulations. All 16 runs
+completed, produced validated rows/sidecars/traces, and reached floor 51. Both
+arms won 8/8; those outcomes are descriptive only.
 
-The exporter now emits only `integration_candidate` metadata, with qualification
-and default flags false; its `--production` option was removed. Production
-packaging and default wiring remain reserved for Gate 3 after a valid active-
-Tail Gate 2 canary.
+Treatment reported 120,708 Lizard preparations and samples, 225 consumed wins,
+30 consumed losses, and zero Lizard support failures. It recorded 6,148
+predeclared boundary exclusions. Seed 991015 had 41
+`active_unqualified_lizard` aborts (39 fast-path and 2 Brew-fallback support
+failure counters); all 41 matched the boundary-exclusion count for that seed,
+and no other treatment support reason occurred. The runtime routes Fairy and
+Mark-of-the-Bloom exact-path boundaries through the existing sampler; the
+aggregate counter does not separate those two types. These remain excluded
+boundary behavior, not eligible Lizard-correction states. Control recorded 529
+expected `active_unqualified_lizard` aborts with the correction disabled.
+Per-run accounting identities, complete output validation, end HP bounds, and
+log scans for NaN/state/RNG diagnostics passed.
+
+The complete frozen manifest, runner, guard records, and raw outputs are in
+[`gate2_followup_canary_2026-09-27/`](gate2_followup_canary_2026-09-27/).
+The immutable machine result is `gate2_results.json`, SHA-256
+`1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
+
+## Gate 3 — production default plumbing
+
+After Gate 2 passed, the production packager was restored with a fail-closed
+requirement for the exact hash-pinned Gate 2 PASS report and its verified raw
+evidence files. It produced
+`selfplay/models/combat_transition_deepsets_lizard_t2.native`, artifact
+SHA-256 `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`.
+The tensor-payload SHA-256 remains
+`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`; no
+tensors changed. Production metadata records the Gate 2 result and source
+commit hashes. The loader checks the Gate 2 hash, Lizard candidate identity,
+and DeepSets qualification evidence before accepting a production artifact.
+
+When `STS_OOC_MCTS=1` and `STS_OOC_MCTS_COMBAT_MODEL` is unset, the adapter
+selects this artifact, the standard Attention Brew fallback, and active-Lizard
+correction. `STS_OOC_MCTS` itself remains off unless explicitly enabled.
+Explicit combat model, Brew fallback, and active-Lizard rollback overrides
+remain available. Two no-model-environment default smoke cases are recorded
+in [the Gate 3 smoke packet](gate3_default_smokes_2026-09-27/README.md).
 
 ## Knowledge impact
 
-The environment-variable reference records both forced-relic initialization
-semantics and `STS_OOC_MCTS_ACTIVE_LIZARD`; the exporter is restricted to
-non-production metadata until a valid Gate 2 canary. The current-research page
-and experiment ledger record the failed integration canary. Current baselines
-remain unchanged because Gate 3 did not qualify a default. Stable Lizard
-sampling behavior is documented at the sampler and OOC adapter entry points.
-The existing PR #330 and PR #351 evidence remains the scientific qualification;
-this packet records deterministic integration correctness, the failed canary,
-and its harness correction only.
+The environment-variable reference, current-research page, current baselines,
+and OOC architecture page now describe the enabled-OOC default stack and its
+explicit boundaries. The invalid original cohort remains separate from the
+valid Gate 2 follow-up. PR #330 and PR #351 remain the scientific qualification;
+Gate 1 and Gate 2 establish integration correctness, and Gate 3 establishes
+default plumbing. The default selection still does not enable OOC MCTS globally.

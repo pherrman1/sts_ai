@@ -1343,21 +1343,27 @@ void configureLiveOocMcts() {
         if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_LOCK_TRACE cannot open output");
         std::cout << "[ooc-root-lock-observer ON full_budget=1 hypothetical_only=1]\n";
     }
-    const char *artifact = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
-    if (!artifact || !*artifact) throw std::runtime_error("STS_OOC_MCTS requires STS_OOC_MCTS_COMBAT_MODEL");
-    const char *brewFallbackArtifact = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
-    if (brewFallbackArtifact && !*brewFallbackArtifact)
+    const char *artifactOverride = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
+    if (artifactOverride && !*artifactOverride)
+        throw std::runtime_error("STS_OOC_MCTS_COMBAT_MODEL cannot be empty when set");
+    const bool automaticDefaultStack=artifactOverride==nullptr;
+    const std::string artifact=automaticDefaultStack?
+        "selfplay/models/combat_transition_deepsets_lizard_t2.native":artifactOverride;
+    const char *brewFallbackOverride = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
+    if (brewFallbackOverride && !*brewFallbackOverride)
         throw std::runtime_error("STS_OOC_MCTS_BREW_FALLBACK_MODEL cannot be empty when set");
+    const std::string brewFallbackArtifact=brewFallbackOverride?brewFallbackOverride:
+        (automaticDefaultStack?"selfplay/models/combat_transition_near_full_except_smoke_v2.native":"");
     const char *activeLizardOverride=std::getenv("STS_OOC_MCTS_ACTIVE_LIZARD");
-    bool activeLizardEnabled=false;
+    bool activeLizardEnabled=automaticDefaultStack;
     if(activeLizardOverride) {
         if(std::string(activeLizardOverride)=="0")activeLizardEnabled=false;
         else if(std::string(activeLizardOverride)=="1")activeLizardEnabled=true;
         else throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD must be 0 or 1 when set");
     }
-    if(activeLizardEnabled && !brewFallbackArtifact)
+    if(activeLizardEnabled && brewFallbackArtifact.empty())
         throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD=1 requires STS_OOC_MCTS_BREW_FALLBACK_MODEL");
-    if(brewFallbackArtifact)
+    if(!brewFallbackArtifact.empty())
         liveSampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
             artifact,brewFallbackArtifact,activeLizardEnabled);
     else
@@ -1365,7 +1371,7 @@ void configureLiveOocMcts() {
     const auto precision = std::cout.precision();
     std::cout << std::setprecision(17) << "[live OOC MCTS ON sims=" << liveSimulations
         << " combat_model=" << artifact
-        << (brewFallbackArtifact ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
+        << (!brewFallbackArtifact.empty() ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
             " dispatch=precombat_entropic_brew" : std::string{})
         << " active_lizard_correction=" << (activeLizardEnabled?"1":"0")
         << " prior=" << (liveOptions.uniformPrior ? "uniform" : "policy")
@@ -1389,9 +1395,9 @@ void configureLiveOocMcts() {
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
-        << (brewFallbackArtifact ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
+        << (!brewFallbackArtifact.empty() ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
         << ",\"dispatchRule\":\""
-        << (brewFallbackArtifact ? "precombat_entropic_brew_to_standard" : "single_artifact")
+        << (!brewFallbackArtifact.empty() ? "precombat_entropic_brew_to_standard" : "single_artifact")
         << ",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
         << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\"}\n";
     std::cout.precision(precision);
