@@ -24,6 +24,7 @@ struct LiveOocCandidateScore {
     // Never an executable compound action or part of the parent's Q value.
     std::string followUpPreview;
     std::optional<sts::search::OocValueDistribution> valueDistribution;
+    std::optional<sts::search::OocHpDistribution> hpDistribution;
 };
 
 // Common provider output. MCP lowering is separate and consumes these stable
@@ -36,6 +37,9 @@ struct LiveOocDecision {
     int selectedIndex = -1;
     std::optional<sts::search::OocTreeSnapshot> tree;
     std::optional<sts::search::OocValueDistribution> valueDistribution;
+    // Player HP where each simulation's evaluation ended; root player state.
+    std::optional<sts::search::OocHpDistribution> hpDistribution;
+    int rootHp = 0, rootMaxHp = 0, rootFloor = 0;
 };
 
 class LiveOocPolicy {

@@ -71,6 +71,36 @@ public final class OocOverlayTest {
                 || !mctsView.choices.get(0).scoreLabel(1).equals("#1 · Mean 0.000 · N 20")
                 || !baseline.summary("Baseline").contains("sampled death 20.0%"))
             throw new AssertionError("baseline, hover normalization, death/low-value separation or label changed");
+        if (mctsView.hpRoot != null || !Double.isNaN(baseline.standardError()))
+            throw new AssertionError("absent HP samples or value spread were invented");
+        // Endpoint HP: one shared axis, candidates partition the root.
+        JsonObject hpResponse = parser.parse(mctsResponse.toString()).getAsJsonObject();
+        JsonObject hpEvaluator = hpResponse.getAsJsonArray("evaluators").get(0).getAsJsonObject();
+        JsonObject hpDist = parser.parse("{\"schema\":\"ooc_endpoint_hp_distribution_v1\",\"currentHp\":3,"
+                + "\"maxHp\":4,\"rootFloor\":7,\"axisMaxHp\":4,\"root\":{\"count\":50,\"deaths\":0,"
+                + "\"unresolved\":0,\"hpCounts\":[0,0,10,40,0],\"floorOffsets\":{\"0\":10,\"1\":40}}}").getAsJsonObject();
+        hpEvaluator.add("endpointHpDistribution", hpDist);
+        for (JsonElement e : hpEvaluator.getAsJsonArray("candidateSummaries")) {
+            JsonObject c = e.getAsJsonObject();
+            long n = c.get("visits").getAsLong();
+            c.add("endpointHp", parser.parse("{\"count\":" + n + ",\"deaths\":0,\"unresolved\":0,\"hpCounts\":"
+                    + (n == 10 ? "[0,0,10,0,0]" : "[0,0,0," + n + ",0]") + ",\"floorOffsets\":{}}"));
+        }
+        OocOverlay hpView = OocOverlay.parse(hpResponse.toString(), observation);
+        OocOverlay.Choice tenVisits = null;
+        for (OocOverlay.Choice choice : hpView.choices) if (choice.visits == 10) tenVisits = choice;
+        if (hpView.hpRoot.count != 50 || hpView.hpAxis.currentHp != 3 || hpView.hpAxis.axisMaxHp != 4
+                || !hpView.hpHorizon.equals("HP at floor +0–1") || hpView.hpUnchanged()
+                || tenVisits == null || tenVisits.hp.meanHp() != 2)
+            throw new AssertionError("endpoint HP axis, horizon or candidate layer lost");
+        hpEvaluator.getAsJsonArray("candidateSummaries").get(0).getAsJsonObject().getAsJsonObject("endpointHp")
+                .addProperty("unresolved", 1);
+        rejects(hpResponse, observation);
+        JsonObject spread = distribution(0, 4);
+        spread.addProperty("mean", .5); spread.addProperty("sumSquares", 1.16);
+        // Samples with mean .5 and sum of squares 1.16: variance (1.16-1)/3, SE sqrt(variance/4).
+        if (Math.abs(new OocOverlay.Distribution(spread).standardError() - Math.sqrt(0.16 / 3 / 4)) > 1e-12)
+            throw new AssertionError("value standard error wrong");
         JsonObject mctsFirst = mcts.getAsJsonArray("candidateSummaries").get(0).getAsJsonObject();
         mctsFirst.addProperty("q",1.1); rejects(mctsResponse, observation); mctsFirst.addProperty("q",0);
         mcts.add("valueDistribution", distribution(9,41)); rejects(mctsResponse, observation);

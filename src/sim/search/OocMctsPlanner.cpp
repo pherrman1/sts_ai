@@ -42,7 +42,9 @@ struct Search {
     std::vector<std::uint64_t> wideningLimits;
 
     int terminalKind = 0;
+    std::optional<OocEndpoint> endpoint;
     std::map<OocActionId, OocValueDistribution> actionValues;
+    std::map<OocActionId, OocHpDistribution> actionHp;
     bool rootWinnerLocked(const DecisionNode &node, std::uint64_t remaining) const {
         if (node.actions.empty()) return false;
         // With no challenger the visit winner cannot change. The caller still
@@ -100,6 +102,7 @@ struct Search {
         ++metrics.leafEvaluations;
         if (!config.captureValueDistribution) return checkedValue(model.evaluateLeaf(state, rng));
         const auto sample = model.evaluateLeafWithOutcome(state, rng);
+        endpoint = sample.endpoint;
         const double value = checkedValue(sample.value);
         terminalKind = sample.terminal ? value == 0 ? 1 : value == 1 ? 2 : 0 : 0;
         return value;
@@ -110,6 +113,7 @@ struct Search {
         ++node.visits;
         if (auto value = model.terminalValue(node.state)) {
             terminalKind = *value == 0 ? 1 : *value == 1 ? 2 : 0;
+            if (config.captureValueDistribution) endpoint = model.endpoint(node.state);
             return checkedValue(*value);
         }
         terminalKind = 0;
@@ -167,7 +171,10 @@ struct Search {
         }
         double value = evaluate(*next, depth + 1);
         chance.totalValue += value;
-        if (root && config.captureValueDistribution) actionValues[chance.action.id].record(value, terminalKind);
+        if (root && config.captureValueDistribution) {
+            actionValues[chance.action.id].record(value, terminalKind);
+            actionHp[chance.action.id].record(endpoint, terminalKind);
+        }
         return value;
     }
 };
@@ -212,7 +219,7 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     std::chrono::steady_clock::time_point lockTime;
     search.metrics.decisionNodes = 1;
     OocMctsResult result;
-    if (config.captureValueDistribution) result.rootValues.emplace();
+    if (config.captureValueDistribution) { result.rootValues.emplace(); result.rootHp.emplace(); }
     std::size_t checkpointIndex = 0;
     try {
         for (std::uint64_t i = 0; i < simulations; ++i) {
@@ -220,6 +227,7 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
             const double value = search.evaluate(node, 0, true);
             ++search.metrics.simulations;
             if (result.rootValues) result.rootValues->record(value, search.terminalKind);
+            if (result.rootHp) result.rootHp->record(search.endpoint, search.terminalKind);
             const auto remaining = simulations - search.metrics.simulations;
             while (checkpointIndex < config.rootCheckpointSimulations.size()
                 && search.metrics.simulations >= config.rootCheckpointSimulations[checkpointIndex]) {
@@ -263,8 +271,11 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
         search.metrics.hypotheticalTailWallSeconds =
             std::chrono::duration<double>(std::chrono::steady_clock::now()-lockTime).count();
     result.metrics = search.metrics;
-    if (result.aborted) { result.rootValues.reset(); return result; }
-    if (config.captureValueDistribution) result.actionValues = std::move(search.actionValues);
+    if (result.aborted) { result.rootValues.reset(); result.rootHp.reset(); return result; }
+    if (config.captureValueDistribution) {
+        result.actionValues = std::move(search.actionValues);
+        result.actionHp = std::move(search.actionHp);
+    }
     const ChanceNode *best = nullptr;
     for (const auto &action : node.actions) {
         result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q()});

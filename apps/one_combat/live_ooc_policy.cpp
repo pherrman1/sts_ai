@@ -369,6 +369,10 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         result.policy = name();
         result.tree = search.tree;
         result.valueDistribution = search.rootValues.value_or(sts::search::OocValueDistribution{});
+        result.hpDistribution = search.rootHp.value_or(sts::search::OocHpDistribution{});
+        result.rootHp = projected.curHp;
+        result.rootMaxHp = projected.maxHp;
+        result.rootFloor = projected.floorNum;
         result.candidates.reserve(rootActions.size());
         for (const auto &root : rootActions) {
             const auto &candidate = provider.candidate(0, root.id);
@@ -390,6 +394,9 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             const auto values = search.actionValues.find(root.id);
             result.candidates.back().valueDistribution = values == search.actionValues.end()
                 ? sts::search::OocValueDistribution{} : values->second;
+            const auto hp = search.actionHp.find(root.id);
+            result.candidates.back().hpDistribution = hp == search.actionHp.end()
+                ? sts::search::OocHpDistribution{} : hp->second;
         }
         if (result.tree) annotateOocTree(provider, *result.tree);
         std::sort(result.candidates.begin(), result.candidates.end(),

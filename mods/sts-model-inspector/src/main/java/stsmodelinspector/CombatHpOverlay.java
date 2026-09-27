@@ -35,6 +35,7 @@ final class CombatHpOverlay {
             count = sum;
         }
         int axisMaxHp() { return counts.length - 1; }
+        long[] counts() { return counts.clone(); }
         /** Share of this layer's resolved samples with final HP in [fromHp, toHp]. */
         double share(int fromHp, int toHp) {
             if (count == 0) return 0;
@@ -142,29 +143,12 @@ final class CombatHpOverlay {
         return null;
     }
 
-    /** The largest per-range share among the root and every action, for one stable y scale. */
-    double maxShare(int buckets) {
-        double maximum = maxShare(root, buckets);
-        for (Action action : actions) maximum = Math.max(maximum, maxShare(action.layer, buckets));
-        return maximum;
-    }
-
-    /** Inclusive HP range of bar `bucket` in [1, buckets]; bar 0 is deaths. */
-    int[] bucketRange(int bucket, int buckets) {
-        if (bucket == 0) return new int[] {0, 0};
-        int span = axisMaxHp();
-        return new int[] {1 + (bucket - 1) * span / buckets, bucket * span / buckets};
-    }
-
-    int buckets() { return Math.max(1, Math.min(40, axisMaxHp())); }
-
-    private double maxShare(Layer layer, int buckets) {
-        double maximum = layer.deathShare();
-        for (int bucket = 1; bucket <= buckets; ++bucket) {
-            int[] range = bucketRange(bucket, buckets);
-            maximum = Math.max(maximum, layer.share(range[0], range[1]));
-        }
-        return maximum;
+    /** The shared HP axis over the root and every action layer. */
+    HpAxis axis() {
+        List<Layer> layers = new ArrayList<>();
+        layers.add(root);
+        for (Action action : actions) layers.add(action.layer);
+        return new HpAxis(currentHp, maxHp, axisMaxHp(), layers);
     }
 
     /** Null when the response carries no OK Silver evaluator with final-HP samples. */

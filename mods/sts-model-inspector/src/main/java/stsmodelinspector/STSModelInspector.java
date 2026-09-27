@@ -430,7 +430,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
         renderSmallText(sb, "HP at combat end", rightX + 14.0f * scale,
                 cardTop - 13.0f * scale, Color.WHITE, 0.92f);
-        renderFinalHpHistogram(sb, view, hovered, rightX + 12.0f * scale,
+        if (view == null || view.root.count == 0) {
+            float textTop = cardBottom + cardHeight - 38.0f * scale;
+            renderFittedText(sb, view == null ? "Awaiting Silver search" : "No resolved simulations",
+                    rightX + 12.0f * scale, textTop, rightWidth - 24.0f * scale, WARNING, 0.78f);
+            if (view == null && silverReason != null && !silverReason.isEmpty()) renderFittedText(sb,
+                    silverReason.replace('_', ' '), rightX + 12.0f * scale, textTop - 24.0f * scale,
+                    rightWidth - 24.0f * scale, MUTED, 0.65f);
+        } else renderHpHistogram(sb, view.axis(), view.root, hovered, rightX + 12.0f * scale,
                 cardBottom + 14.0f * scale, rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
         renderSmallText(sb, silverBudgetSummary(), x + 16.0f * scale, bottom + 68.0f * scale,
@@ -826,38 +833,70 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
     }
 
+    /**
+     * Two boxes like the combat panel. Left: the search's mean value (a model
+     * estimate, not a calibrated probability) and, on hover, the choice's gap to
+     * the recommended one with its search-noise error. Right: player HP where
+     * each simulation was evaluated, on a fixed 0..max HP axis.
+     */
     private void renderOocDistribution(SpriteBatch sb, OocOverlay view, OocOverlay.Choice hovered,
                                        float x, float top, float width, float scale) {
-        OocOverlay.Distribution[] layers = view.distributionLayers(hovered);
-        OocOverlay.Distribution baseline = layers[0], overlay = layers[1];
-        renderFittedText(sb, baseline.summary("All search samples"), x + 16 * scale, top,
-                width - 32 * scale, CYAN, .67f);
-        String detail = hovered == null ? "Hover a choice to compare its sampled values"
-                : overlay == null ? "No distribution for this choice" : overlay.summary(hovered.label);
-        renderFittedText(sb, detail, x + 16 * scale, top - 20 * scale, width - 32 * scale, WARNING, .65f);
-        float plotX = x + 20 * scale, plotBottom = top - 122 * scale;
-        float plotWidth = width - 40 * scale, plotHeight = 74 * scale, bar = plotWidth / 22;
-        // Both layers use a fixed 0..100% y axis and the same 22 buckets.
-        drawRect(sb, plotX, plotBottom, plotWidth, plotHeight, PANEL_INNER);
-        renderSmallText(sb, "100%", plotX, plotBottom + plotHeight + 13 * scale, MUTED, .52f);
-        for (int i = 0; i < 22; ++i) {
-            float bx = plotX + i * bar;
-            float baseHeight = (float)baseline.share(i) * plotHeight;
-            if (baseHeight > 0) drawRect(sb, bx + scale, plotBottom, bar - 2 * scale, baseHeight, CYAN_DIM);
-            if (overlay != null && overlay.count > 0) {
-                float overlayHeight = (float)overlay.share(i) * plotHeight;
-                if (overlayHeight > 0) drawBorder(sb, bx + scale, plotBottom, bar - 2 * scale,
-                        overlayHeight, WARNING, Math.min(1.5f * scale, overlayHeight));
-            }
+        float cardTop = top + 4 * scale, cardHeight = 150 * scale, cardBottom = cardTop - cardHeight;
+        float leftX = x + 14 * scale, leftWidth = 172 * scale;
+        float rightX = x + 198 * scale, rightWidth = width - 212 * scale;
+        drawCard(sb, leftX, cardBottom, leftWidth, cardHeight, scale);
+        drawCard(sb, rightX, cardBottom, rightWidth, cardHeight, scale);
+
+        OocOverlay.Distribution all = view.distribution;
+        renderSmallText(sb, "Win estimate", leftX + 14 * scale, cardTop - 13 * scale, Color.WHITE, .92f);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
+                all.mean == null ? "—" : String.format(Locale.ROOT, "%.3f", all.mean),
+                leftX + 14 * scale, cardTop - 38 * scale, CYAN);
+        renderFittedText(sb, "model value · n " + all.count, leftX + 14 * scale, cardTop - 66 * scale,
+                leftWidth - 28 * scale, MUTED, .66f);
+        OocOverlay.Choice best = null;
+        for (OocOverlay.Choice choice : view.choices) if (choice.selected) best = choice;
+        if (hovered != null) {
+            renderFittedText(sb, hovered.label, leftX + 14 * scale, cardTop - 92 * scale,
+                    leftWidth - 28 * scale, WARNING, .70f);
+            renderFittedText(sb, valueGap(hovered, best), leftX + 14 * scale, cardTop - 112 * scale,
+                    leftWidth - 28 * scale, WARNING, .70f);
+            renderFittedText(sb, String.format(Locale.ROOT, "N %d · visits %.0f%%", hovered.visits,
+                    100 * hovered.visitShare), leftX + 14 * scale, cardTop - 131 * scale,
+                    leftWidth - 28 * scale, MUTED, .62f);
+        } else renderFittedText(sb, "Hover a choice to compare", leftX + 14 * scale, cardTop - 92 * scale,
+                leftWidth - 28 * scale, MUTED, .64f);
+
+        renderSmallText(sb, view.hpHorizon.isEmpty() ? "HP ahead" : view.hpHorizon,
+                rightX + 14 * scale, cardTop - 13 * scale, Color.WHITE, .92f);
+        float textTop = cardTop - 44 * scale;
+        if (view.hpRoot == null || view.hpRoot.count == 0) {
+            renderFittedText(sb, view.hpRoot == null ? "No HP samples from this advisor" : "No resolved simulations",
+                    rightX + 12 * scale, textTop, rightWidth - 24 * scale, MUTED, .72f);
+        } else if (view.hpUnchanged() && (hovered == null || hovered.hp == null
+                || hovered.hp.count == 0 || hovered.hp.share(view.hpAxis.currentHp, view.hpAxis.currentHp) == 1.0)) {
+            renderFittedText(sb, "No HP change within the search horizon",
+                    rightX + 12 * scale, textTop, rightWidth - 24 * scale, MUTED, .72f);
+            renderFittedText(sb, "every sample stays at " + view.hpAxis.currentHp + " HP",
+                    rightX + 12 * scale, textTop - 22 * scale, rightWidth - 24 * scale, MUTED, .64f);
+        } else {
+            renderHpHistogram(sb, view.hpAxis, view.hpRoot, hovered == null ? null : hovered.hp,
+                    rightX + 12 * scale, cardBottom + 14 * scale, rightWidth - 24 * scale, cardHeight - 54 * scale, scale);
+            renderFittedText(sb, "Deaths " + view.hpRoot.deathLabel() + (hovered != null && hovered.hp != null
+                    ? "  ·  hover " + hovered.hp.deathLabel() : ""), rightX + 12 * scale, cardTop - 30 * scale,
+                    rightWidth - 90 * scale, MUTED, .60f);
         }
-        renderFittedText(sb, "Death | other evaluated values 0 → 1 | Victory",
-                plotX, plotBottom - 5 * scale, plotWidth, MUTED, .61f);
-        if (hovered != null) renderFittedText(sb,
-                String.format(Locale.ROOT, "Choice visits %.1f%% · prior %.1f%% · N %d",
-                        100 * hovered.visitShare, 100 * hovered.prior, hovered.visits),
-                plotX, plotBottom - 26 * scale, plotWidth, MUTED, .65f);
-        else renderSmallText(sb, "Shares of each set · terminal samples are not model probabilities",
-                plotX, plotBottom - 26 * scale, MUTED, .55f);
+    }
+
+    /** "best", or the gap to the recommended choice with ±1 standard error of the difference. */
+    private static String valueGap(OocOverlay.Choice hovered, OocOverlay.Choice best) {
+        if (hovered.distribution == null || hovered.distribution.mean == null) return "No samples";
+        if (best == null || best == hovered) return String.format(Locale.ROOT, "%.3f · recommended", hovered.q);
+        if (best.distribution == null || best.distribution.mean == null) return String.format(Locale.ROOT, "%.3f", hovered.q);
+        double gap = hovered.distribution.mean - best.distribution.mean;
+        double error = Math.hypot(hovered.distribution.standardError(), best.distribution.standardError());
+        if (!Double.isFinite(error)) return String.format(Locale.ROOT, "%+.3f vs #1", gap);
+        return String.format(Locale.ROOT, "%+.3f ± %.3f%s", gap, error, Math.abs(gap) < 2 * error ? "  ≈ tie" : "");
     }
 
     private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale, boolean drawBadges) {
@@ -1075,17 +1114,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return -1;
     }
 
-    private void renderFinalHpHistogram(SpriteBatch sb, CombatHpOverlay view, CombatHpOverlay.Layer hovered,
-                                        float x, float bottom, float width, float height, float scale) {
-        if (view == null || view.root.count == 0) {
-            renderFittedText(sb, view == null ? "Awaiting Silver search" : "No resolved simulations",
-                    x, bottom + height - 12.0f * scale, width, WARNING, 0.78f);
-            if (view == null && silverReason != null && !silverReason.isEmpty()) renderFittedText(sb,
-                    silverReason.replace('_', ' '), x, bottom + height - 36.0f * scale, width, MUTED, 0.65f);
-            return;
-        }
-        // Fixed 0..max HP axis; bar 0 holds deaths. One y scale per response
-        // (the largest share of any layer) keeps hover outlines comparable.
+    /** Cyan root samples on a fixed 0..max HP axis, the hovered layer as an amber outline. */
+    private void renderHpHistogram(SpriteBatch sb, HpAxis view, CombatHpOverlay.Layer root,
+                                   CombatHpOverlay.Layer hovered, float x, float bottom, float width,
+                                   float height, float scale) {
         final int buckets = view.buckets();
         final double maximum = Math.max(1e-9, view.maxShare(buckets));
         float statsWidth = 66.0f * scale;
@@ -1102,7 +1134,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (int bucket = 0; bucket <= buckets; ++bucket) {
             int[] range = view.bucketRange(bucket, buckets);
             float bx = chartX + bucket * barWidth;
-            float baseHeight = (float) (chartHeight * view.root.share(range[0], range[1]) / maximum);
+            float baseHeight = (float) (chartHeight * root.share(range[0], range[1]) / maximum);
             if (baseHeight > 0) drawRect(sb, bx + scale * 0.5f, chartBottom,
                     Math.max(scale, barWidth - scale), baseHeight, bucket == 0 ? DEATH : CYAN_DIM);
             if (hovered != null && hovered.count > 0) {
@@ -1113,19 +1145,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             }
         }
         // Current HP marker.
-        float markerX = chartX + barWidth + (float) (view.currentHp - 1) / Math.max(1, view.axisMaxHp())
+        float markerX = chartX + barWidth + (float) (view.currentHp - 1) / Math.max(1, view.axisMaxHp)
                 * (chartWidth - barWidth);
         sb.setColor(Color.WHITE);
         sb.draw(ImageMaster.WHITE_SQUARE_IMG, markerX, chartBottom, scale, chartHeight);
         renderSmallText(sb, "0", chartX, chartBottom - 1.0f * scale, MUTED, 0.66f);
-        renderSmallText(sb, Integer.toString(view.axisMaxHp()), chartX + chartWidth - 18.0f * scale,
+        renderSmallText(sb, Integer.toString(view.axisMaxHp), chartX + chartWidth - 18.0f * scale,
                 chartBottom - 1.0f * scale, MUTED, 0.66f);
         renderSmallText(sb, "now " + view.currentHp, Math.max(chartX + 16.0f * scale, Math.min(
                 markerX - 14.0f * scale, chartX + chartWidth - 70.0f * scale)),
                 chartBottom - 1.0f * scale, Color.WHITE, 0.66f);
         // Expected final HP (deaths as 0) and its change from now: all, then hover.
         float statsX = x + width - statsWidth;
-        renderFinalHpStats(sb, view.root, view.currentHp, statsX, bottom + height, statsWidth, CYAN, scale);
+        renderFinalHpStats(sb, root, view.currentHp, statsX, bottom + height, statsWidth, CYAN, scale);
         if (hovered != null)
             renderFinalHpStats(sb, hovered, view.currentHp, statsX, bottom + height - 40.0f * scale,
                     statsWidth, WARNING, scale);

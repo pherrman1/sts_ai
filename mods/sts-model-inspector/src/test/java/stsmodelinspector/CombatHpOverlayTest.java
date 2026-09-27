@@ -87,10 +87,11 @@ public final class CombatHpOverlayTest {
                 || view.forPotion(2, false, 1) == null || view.forPotion(2, false, 2) != null
                 || view.forPotion(2, true, -1) != null || view.forPotion(1, false, -1) != null)
             throw new AssertionError("potion slot, operation or target conflated");
-        int[] deaths = view.bucketRange(0, view.buckets());
-        int[] last = view.bucketRange(view.buckets(), view.buckets());
-        if (view.buckets() != 4 || deaths[0] != 0 || deaths[1] != 0 || last[1] != 4
-                || Math.abs(view.maxShare(view.buckets()) - 1.0) > 1e-12)
+        HpAxis axis = view.axis();
+        int[] deaths = axis.bucketRange(0, axis.buckets());
+        int[] last = axis.bucketRange(axis.buckets(), axis.buckets());
+        if (axis.buckets() != 4 || deaths[0] != 0 || deaths[1] != 0 || last[1] != 4 || axis.currentHp != 4
+                || Math.abs(axis.maxShare(axis.buckets()) - 1.0) > 1e-12)
             throw new AssertionError("axis buckets or shared scale wrong");
         if (!view.matches("s", 7, "h") || view.matches("s", 8, "h"))
             throw new AssertionError("stale samples accepted");
