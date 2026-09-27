@@ -1077,6 +1077,13 @@ cohort was repeated, no default changed, and the correction remains opt-in.
 The exact Gate 1 candidate is tracked in the integration packet as an
 explicitly non-production test input (`qualified=false`, defaults unchanged)
 so the deterministic parity result can be replayed from a clean checkout.
+The re-export tool now only emits that unqualified candidate; production
+qualification metadata and default wiring are deferred until a valid Gate 2
+canary and Gate 3.
+After current main advanced with the Match and Keep policy, the merged branch
+again passed frozen Gate 1 parity, the 31-row Brew fixture, and the focused
+combat-transition/OOC tests. A separate follow-up Gate 2 plan uses the disjoint
+seeds `991008..991015`; its whole-run outcome is pending.
 See [ledger §364](../../experiments/ledger-06.md) for Stage C,
 [ledger §365](../../experiments/ledger-06.md) for integration, and the
 [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).

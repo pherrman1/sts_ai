@@ -13271,6 +13271,19 @@ runtime support changed.
   and `defaultForOocMcts=false`; it is a non-production test input. The
   historical Gate 2 manifest retains its original `/tmp` path, whose artifact
   hash matches this tracked copy. No gameplay seeds were rerun.
+- **Revalidation after current main advanced:** current main
+  `56381780ff4382c85564b02a86d45325b4421021` added the Match and Keep policy.
+  It was merged at `1acb8c7d52b8cd82de5e20da9a96407c49129033`. The focused
+  Release build completed; `combat_transition_runtime_probe` SHA-256 remained
+  `1ed808cfa04b9dbdddbae256d410f664b252690613e5d656253c526ee69ec692` and
+  `one_combat` SHA-256 is
+  `ab397c4a4079102095cdc34a167686dd4913aa83553dd5f6c6d88c92ab0cac38`.
+  Gate 1 again passed 320/320 parity rows, zero support/semantic mismatches,
+  all T2 identity checks, and all dispatch fixtures using the tracked candidate.
+  The 31-row Brew fixture matched its saved rows and metrics byte-for-byte.
+  Focused CTest passed 6/6, including `match_and_keep` and the five
+  combat-transition/OOC tests. The forced-relic data=1 helper remains intact.
+  No gameplay seeds were run in this deterministic revalidation.
 - **Gate 2 plan and provenance:** The predeclared canary ran exactly eight
   paired seeds `991000..991007`, Ascension 0, Act-3 horizon, project-fair
   native Silver at 10,000 real-combat simulations, and 2,048 OOC MCTS

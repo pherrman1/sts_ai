@@ -145,6 +145,27 @@ ctest --test-dir build/linux-gcc-release --output-on-failure -R '^(combat_transi
 No gameplay seeds were rerun. This validates Gate 1 and the forced-relic test
 fix on the re-synced source; it does not repair the spent Gate 2 canary.
 
+### Gate 1 revalidation after current main advanced
+
+Current main advanced to `56381780ff4382c85564b02a86d45325b4421021` with the
+Match and Keep policy change. It was merged into this branch at
+`1acb8c7d52b8cd82de5e20da9a96407c49129033`. The focused Release build
+completed for `combat_transition_runtime_probe`, `one_combat`, and
+`unit-test`; the executable hashes are:
+
+- `combat_transition_runtime_probe`: `1ed808cfa04b9dbdddbae256d410f664b252690613e5d656253c526ee69ec692`
+- `one_combat`: `ab397c4a4079102095cdc34a167686dd4913aa83553dd5f6c6d88c92ab0cac38`
+
+The 320-row parity verifier was rerun with the tracked integration candidate
+and again passed with zero support/semantic mismatches, all 320 T2 child
+identity checks, and all eight dispatch fixtures. Its output is
+[`post_main_advance_native_parity.json`](post_main_advance_native_parity.json).
+The existing Brew fixture again passed all 31 rows (13 ordinary DeepSets, 18
+Attention fallback), and both its row output and metrics matched the preserved
+fixture byte for byte. Focused CTest passed 6/6, including the Match and Keep
+regression plus the five combat-transition/OOC tests. No gameplay seeds were
+run during this deterministic revalidation.
+
 ## Gate 2 — forced-Lizard integration canary
 
 **FAIL — the treatment did not exercise active Lizard.** The exact eight pairs
