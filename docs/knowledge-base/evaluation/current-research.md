@@ -1064,7 +1064,7 @@ primary, learned-r, and T2 gates passed; no clear HARD288 or BROAD32
 degradation was detected. The 32 BROAD32 outcomes were all retained wins and
 therefore contain no consumed-tail rows. Stage C is offline qualification
 only: no runtime support was integrated, and production remains
-`active_unqualified_lizard`. See [ledger §363](../../experiments/ledger-06.md)
+`active_unqualified_lizard`. See [ledger §364](../../experiments/ledger-06.md)
 and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)

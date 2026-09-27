@@ -1,0 +1,8 @@
+--- a/apps/ooc_strategic_tok_net.h
++++ b/apps/ooc_strategic_tok_net.h
+@@ -668,3 +668,4 @@
+     static float exactGelu(float x) {
+-        return 0.5f * x * (1.0f + std::erf(x * 0.7071067811865475f));
++        const float a = x * x * x * 0.044715f;
++        return 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + a)));
+     }

@@ -1,0 +1,4 @@
+exported selfplay/models/ooc_strategic_tok_contextual.native: 32 parity checks passed (max err logit 1.48e-05, value 2.50e-05, Q 1.73e-05)
+artifact format: OOC_STRAT_C1
+contextual provenance: {"checkpoint_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761", "context_parameters": 3200, "context_tensors": 6, "native_teacher_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c", "shared_teacher_tensors": 115, "teacher_checkpoint_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8"}
+file size: 811,976 bytes

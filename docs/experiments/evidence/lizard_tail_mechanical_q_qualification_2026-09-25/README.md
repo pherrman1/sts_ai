@@ -463,6 +463,20 @@ rerun. The final paired JSONL SHA-256 is
 manifest SHA-256 is
 `c0269eb57ce3fe4eeb2890e7d58f06a2b778f62da43fb9345612e42aa69bc78b`.
 
+#### Pair-plan timestamp correction
+
+The frozen pair plan remains unchanged at SHA-256
+`dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`. Its
+`frozenAtUtc` value (`2026-09-26T21:22:37.149773+00:00`) agrees with the
+observed artifact mtime (`2026-09-26T23:22:37.150061+02:00`). The candidate
+JSONL and manifest mtimes are `23:11:10.402490+02:00` and
+`23:11:10.426052+02:00`, about 11m27s earlier, so the recorded UTC freeze
+follows candidate-corpus validation. `frozenAtLocal=2026-09-26T22:41:02+02:00`
+is stale/inherited metadata (20:41:02Z, before the current-main candidate
+collection started at 20:47:18Z); it is not the pair-plan freeze time. This
+note corrects the timestamp interpretation without changing the frozen plan or
+any outcome evidence.
+
 The frozen fresh-qualification analysis is
 `fresh_native/fresh_stage_c_analysis.json` (SHA-256
 `d1f87d5a74170445fbd7ce5f3f22abd36bd14569942883276ebfc3c03b389984`). It

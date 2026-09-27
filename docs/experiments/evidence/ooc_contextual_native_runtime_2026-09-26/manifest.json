@@ -1,0 +1,478 @@
+{
+  "artifacts": {
+    "attention_native_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "contextual_native_bytes": 811976,
+    "contextual_native_sha256": "6d308d5fea278ea8aecc90d1f8bf44efe839b11c57d1362020f1e47f6dba68f7",
+    "live_ooc_parity_test_sha256": "86b38cc5009c589f928dbdbc8b20ab7efc1f68f693858d2bf2a782a477b69e73",
+    "live_ooc_policy_test_sha256": "a3b9c77502d4014d495ad5664447e85df646ad50d78218c25e84d5019e04792e",
+    "native_probe_sha256": "2c5507bb54a8ba3410abce11d6e544540616acd948b779e7e5919bc847cc6818",
+    "one_combat_advisor_sha256": "d944b52df70485351efdc0b11b45419231e0275c066104086bc1566804b406e9",
+    "one_combat_sha256": "85b8f838c9253566cc5ccde1bcef02b97c8e8c5306a0947288163cd4f76aec7d",
+    "student_checkpoint_sha256": "bc22f8b03646da79754c1fcfe04f49f20ed5f51ff9ba5250cf715d390d04a761",
+    "teacher_checkpoint_sha256": "5bc14fb437131d4bdc531ea775e22eca1f6834976d4670ec0aabb2fb14b735b8",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370",
+    "contextual_artifact_retained_in_final_tree": false
+  },
+  "baseline_sha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+  "build": {
+    "build_preset": "linux-gcc-build",
+    "ccache_attempt": "read-only cache error; same Release build completed using non-ccache preset",
+    "configure_preset": "linux-gcc-release",
+    "exit_code": 0,
+    "log": "release_build.log",
+    "targets": [
+      "one_combat",
+      "test_live_ooc_policy",
+      "ooc_contextual_native_probe",
+      "one_combat_advisor",
+      "live_ooc_parity_test"
+    ]
+  },
+  "current_main_update": "PR #362 changes deferred Guardian Mode Shift handling in Silver; task branch fast-forwarded before final verification",
+  "evidence_sha256": {
+    "README.md": "408dac64e53e4f35f9a0666652613e204bba47a56b36d1a5152e2a3c69e8a08c",
+    "ab_timing.json": "d0f0ef8fabe066fb8d350432d678f2d4afb6fc1db470a8323d5a0c8adddccc50",
+    "current_main_native_verification.log": "ecd612af8035e8d067b5309bb91ea21da7ded11cf1b8ceae1e0ac2ec6d336386",
+    "exporter_missing_checkpoint.log": "bc2fd7cc94841f50eb7dd0342064fb58b787ba43e6e7b41e2f0aa57cb3120b21",
+    "exporter_selftest.log": "42c294d95390b789dafea16f82d906fb6003b15388c2854217aaa51fd85d37db",
+    "focused_ctest.log": "6296ab48496b523ce5c55367ad14ac40976159a2641f33cfc7c22a2b28726ad9",
+    "frozen_export.log": "e5b0d533f168ad950be3f10c154074cd96a72029de333a4fd9935b0790daa05b",
+    "native_contextual_trace.jsonl.gz": "64fc5d5d4b8efa84a6c4461bf7f386a2d34f8842edaafbc215d71c7e9788ee10",
+    "native_contextual_trace_pre_exact_gelu.jsonl.gz": "eb6412c59e0ec6d52611d9ea1420aa54d1f978535c5d7ee4a0a13b7808cfc41d",
+    "native_runtime_result.json": "667b586c4927bd2c076b642f3dcf4fbac9922873a19d8e2ec304fc42d2c2aaf2",
+    "release_build.log": "f57841c54768fced1b788e7743dc0e8bcef7a12d207b66e0a5c4c5436e355313",
+    "release_build_pre_rebase.log": "25c09ea058b01cda24d730e82883c8ac96a69482c90a6d33a11480744419a2ce",
+    "semantic_prior_result.json": "1c288f048919292fef847790e964e8a52644f356f120fdfd571949759cba0499",
+    "semantic_prior_result_pre_exact_gelu.json": "17f7f4a6815e3f1bb7ff74de2b455ac251f0f2ff4d8e730698a7117e853417c2",
+    "tanh_speed_diagnostic.json": "dabdcd751bc7350f97cc1eb3a7789820c34c50f6f14cf04195c85cebab9a662d",
+    "tanh_speed_diagnostic.md": "dac9ac195f5fab796b253ee697ba0f86931f6240e69a258ecfcd1631e440195a",
+    "tanh_speed_diagnostic.patch": "8f73d75b0f52d7a2f629a82869f948613d09bb35385d37c81c3c8ff9c8dab86c",
+    "tanh_speed_diagnostic_compile.log": "b947fbccac9e121a486b71e3520c8efbc38458f9791c95122096c68b5673aadc"
+  },
+  "export": {
+    "checkpoint_sha256_gate": true,
+    "contextual_parameter_count": 3200,
+    "contextual_tensors": 6,
+    "export_log": "frozen_export.log",
+    "export_parity_checks": 32,
+    "gelu_deviation": "C1 uses exact PyTorch GELU to match the frozen checkpoint; tanh approximation failed full-trace parity. V4 retains the original approximation.",
+    "missing_checkpoint_log": "exporter_missing_checkpoint.log",
+    "missing_explicit_checkpoint_fails_closed": true,
+    "selftest_log": "exporter_selftest.log",
+    "shared_teacher_tensors_unchanged": 115
+  },
+  "focused_ctest": {
+    "github_linux_gcc": "draft pull requests are skipped by the checked-in workflow condition; no remote CI run is expected until ready_for_review",
+    "log": "focused_ctest.log",
+    "log_reports_all_passed": true,
+    "test_names": [
+      "live_ooc_policy",
+      "live_ooc_policy_contextual",
+      "live_ooc_parity",
+      "live_ooc_protocol",
+      "run_profile_analysis",
+      "ooc_mcts_adapter",
+      "ooc_strategic_tok_attention_compat",
+      "ooc_strategic_tok_contextual_load",
+      "ooc_strategic_tok_contextual_rejects_trailing",
+      "ooc_strategic_tok_contextual_profile"
+    ],
+    "tests_failed": 0,
+    "tests_passed": 10
+  },
+  "full_prior_speed_gate": {
+    "observed_reduction_percent": -3.1570219694986967,
+    "pass": false,
+    "phase_3_paired_8_seed_smoke": "not run; threshold not met",
+    "threshold_reduction_percent": 5.0
+  },
+  "initial_worktree_sha": "b65615bb78aa982b0fca097d86876009eb34ec6a",
+  "intermediate_fetched_main_sha": "ffd51f3bc43b03aa356c419567d77b1eecc636a1",
+  "knowledge_impact": {
+    "default_promotion": false,
+    "experiment_record": "docs/experiments/ledger-06.md §362",
+    "updated_maintained_contract": false,
+    "reason": "The C1 prototype was removed after the speed gate failed; the current OOC_STRAT_V4 architecture contract remains unchanged."
+  },
+  "ledger_section": 362,
+  "live_origin_main_check": "git ls-remote and git fetch verified 6bae3a67c63d1f724908e2ee87b27d51e32d30a0; origin task branch absent before push",
+  "locally_available_origin_main_sha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+  "native_python_parity": {
+    "gates": {
+      "deck_representation": true,
+      "grouped_candidate_logits": true,
+      "normalized_semantic_prior": true,
+      "source_policy_logits": true
+    },
+    "max_abs_error": {
+      "deck_representation": 1.1324882507324219e-06,
+      "grouped_candidate_logits": 3.0517578125e-05,
+      "normalized_semantic_prior": 2.8438970357536064e-06,
+      "source_policy_logits": 3.0517578125e-05
+    },
+    "pass": true,
+    "source_logit_count": 37985,
+    "top_semantic_action_mismatch_examples": [],
+    "top_semantic_action_mismatches": 0,
+    "top_semantic_action_parity": true,
+    "unique_prior_count": 6317
+  },
+  "schema": "ooc-contextual-native-runtime-evidence-v1",
+  "semantic_classification": "CONTEXTUAL_SEMANTIC_PRIOR_PASS",
+  "timing": {
+    "calls_per_arm_per_operation": 31585,
+    "format": "ooc-contextual-native-performance-v1",
+    "measured_passes_per_arm": 5,
+    "metrics": {
+      "deck": {
+        "attention_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 3.407867443406657e-05,
+          "median_seconds_per_call": 3.4203999999871115e-05,
+          "p90_seconds_per_call": 5.7396999999959064e-05,
+          "p99_seconds_per_call": 7.493099999988928e-05,
+          "total_cpu_seconds": 1.0763749319999927
+        },
+        "attention_total_cpu_seconds": 1.0763749319999927,
+        "b_over_a_ratio": 1.0677524390729205,
+        "contextual_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 3.638758774734656e-05,
+          "median_seconds_per_call": 3.683900000028828e-05,
+          "p90_seconds_per_call": 5.887000000015519e-05,
+          "p99_seconds_per_call": 7.57220000000558e-05,
+          "total_cpu_seconds": 1.1493019589999411
+        },
+        "contextual_total_cpu_seconds": 1.1493019589999411,
+        "deck_token_count_buckets": {
+          "attention": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 1.0587973285199143e-05,
+              "median_seconds_per_call": 9.077000000079494e-06,
+              "p90_seconds_per_call": 1.783400000032742e-05,
+              "p99_seconds_per_call": 2.0528000000297197e-05,
+              "total_cpu_seconds": 0.07332171500000406
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 5.165972924566102e-05,
+              "median_seconds_per_call": 4.959299999995892e-05,
+              "p90_seconds_per_call": 6.877899999935266e-05,
+              "p99_seconds_per_call": 7.879799999965797e-05,
+              "total_cpu_seconds": 0.6403223439999683
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 8.332544000007047e-05,
+              "median_seconds_per_call": 8.32160000001636e-05,
+              "p90_seconds_per_call": 8.380700000021335e-05,
+              "p99_seconds_per_call": 8.413800000006688e-05,
+              "total_cpu_seconds": 0.002083136000001762
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 2.946468439542635e-05,
+              "median_seconds_per_call": 2.944500000001682e-05,
+              "p90_seconds_per_call": 3.67589999998863e-05,
+              "p99_seconds_per_call": 4.062600000009908e-05,
+              "total_cpu_seconds": 0.3606477370000185
+            }
+          },
+          "contextual": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 1.1916527075806609e-05,
+              "median_seconds_per_call": 1.0279000000057437e-05,
+              "p90_seconds_per_call": 1.9807000000149344e-05,
+              "p99_seconds_per_call": 2.196099999984824e-05,
+              "total_cpu_seconds": 0.08252194999996076
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 5.3776325857201175e-05,
+              "median_seconds_per_call": 5.2457999999866445e-05,
+              "p90_seconds_per_call": 7.012199999989477e-05,
+              "p99_seconds_per_call": 7.784599999993702e-05,
+              "total_cpu_seconds": 0.6665575590000086
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 8.358679999995289e-05,
+              "median_seconds_per_call": 8.387700000023202e-05,
+              "p90_seconds_per_call": 8.450900000056549e-05,
+              "p99_seconds_per_call": 8.834599999918424e-05,
+              "total_cpu_seconds": 0.002089669999998822
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 3.2527187908494526e-05,
+              "median_seconds_per_call": 3.2220000000471316e-05,
+              "p90_seconds_per_call": 3.971499999977368e-05,
+              "p99_seconds_per_call": 4.506500000012181e-05,
+              "total_cpu_seconds": 0.398132779999973
+            }
+          }
+        },
+        "reduction_percent": -6.77524390729205
+      },
+      "prepare": {
+        "attention_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 7.037745502611657e-05,
+          "median_seconds_per_call": 6.943999999986517e-05,
+          "p90_seconds_per_call": 9.561900000054635e-05,
+          "p99_seconds_per_call": 0.00011501600000052292,
+          "total_cpu_seconds": 2.2228719169998916
+        },
+        "attention_total_cpu_seconds": 2.2228719169998916,
+        "b_over_a_ratio": 1.0352967772906485,
+        "contextual_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 7.286155238245603e-05,
+          "median_seconds_per_call": 7.296700000036793e-05,
+          "p90_seconds_per_call": 9.786399999978102e-05,
+          "p99_seconds_per_call": 0.00011567699999925907,
+          "total_cpu_seconds": 2.3013321319998736
+        },
+        "contextual_total_cpu_seconds": 2.3013321319998736,
+        "deck_token_count_buckets": {
+          "attention": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 4.517339667869268e-05,
+              "median_seconds_per_call": 4.409299999963423e-05,
+              "p90_seconds_per_call": 5.250899999964531e-05,
+              "p99_seconds_per_call": 5.676700000023516e-05,
+              "total_cpu_seconds": 0.31282577199994677
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 8.920863509479601e-05,
+              "median_seconds_per_call": 8.724300000029217e-05,
+              "p90_seconds_per_call": 0.00010765199999962505,
+              "p99_seconds_per_call": 0.00011909300000034762,
+              "total_cpu_seconds": 1.1057410319999965
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.00012277831999998767,
+              "median_seconds_per_call": 0.00012219899999976747,
+              "p90_seconds_per_call": 0.00012507499999969696,
+              "p99_seconds_per_call": 0.0001312059999998283,
+              "total_cpu_seconds": 0.003069457999999692
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 6.546042933006117e-05,
+              "median_seconds_per_call": 6.545200000029894e-05,
+              "p90_seconds_per_call": 7.363799999993148e-05,
+              "p99_seconds_per_call": 8.17739999998679e-05,
+              "total_cpu_seconds": 0.8012356549999486
+            }
+          },
+          "contextual": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 4.665488765341779e-05,
+              "median_seconds_per_call": 4.560600000047543e-05,
+              "p90_seconds_per_call": 5.507399999959972e-05,
+              "p99_seconds_per_call": 6.067400000020484e-05,
+              "total_cpu_seconds": 0.32308509699991816
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 9.159233174666814e-05,
+              "median_seconds_per_call": 8.954800000005037e-05,
+              "p90_seconds_per_call": 0.00010916499999957807,
+              "p99_seconds_per_call": 0.0001194339999992522,
+              "total_cpu_seconds": 1.1352869519999516
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.00012272735999996343,
+              "median_seconds_per_call": 0.0001222800000002522,
+              "p90_seconds_per_call": 0.00012642700000053964,
+              "p99_seconds_per_call": 0.000130364000000327,
+              "total_cpu_seconds": 0.0030681839999990856
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 6.86186191993468e-05,
+              "median_seconds_per_call": 6.862800000018154e-05,
+              "p90_seconds_per_call": 7.710499999902254e-05,
+              "p99_seconds_per_call": 8.782400000040269e-05,
+              "total_cpu_seconds": 0.8398918990000048
+            }
+          }
+        },
+        "reduction_percent": -3.5296777290648507
+      },
+      "prior": {
+        "attention_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 0.00011991611986701693,
+          "median_seconds_per_call": 0.0001129320000003986,
+          "p90_seconds_per_call": 0.0001659709999994874,
+          "p99_seconds_per_call": 0.0002035819999992583,
+          "total_cpu_seconds": 3.7875506459997297
+        },
+        "attention_total_cpu_seconds": 3.7875506459997297,
+        "b_over_a_ratio": 1.031570219694987,
+        "contextual_call_distribution": {
+          "calls": 31585,
+          "mean_seconds_per_call": 0.00012370189811618904,
+          "median_seconds_per_call": 0.00011666800000043054,
+          "p90_seconds_per_call": 0.00017069000000091705,
+          "p99_seconds_per_call": 0.00021061500000030264,
+          "total_cpu_seconds": 3.907124451999831
+        },
+        "contextual_total_cpu_seconds": 3.907124451999831,
+        "deck_token_count_buckets": {
+          "attention": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 9.413018844764476e-05,
+              "median_seconds_per_call": 9.275400000063883e-05,
+              "p90_seconds_per_call": 0.00011064799999971342,
+              "p99_seconds_per_call": 0.00016132300000037958,
+              "total_cpu_seconds": 0.65185155499994
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 0.00014196042807582606,
+              "median_seconds_per_call": 0.0001396020000008491,
+              "p90_seconds_per_call": 0.00018640000000047507,
+              "p99_seconds_per_call": 0.0002169070000004325,
+              "total_cpu_seconds": 1.759599505999864
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.0001473948799999647,
+              "median_seconds_per_call": 0.00014634499999921502,
+              "p90_seconds_per_call": 0.00016696299999985342,
+              "p99_seconds_per_call": 0.0001709910000009529,
+              "total_cpu_seconds": 0.0036848719999991175
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 0.00011212538504901362,
+              "median_seconds_per_call": 0.00010808200000056445,
+              "p90_seconds_per_call": 0.0001408240000007055,
+              "p99_seconds_per_call": 0.00018719099999842115,
+              "total_cpu_seconds": 1.3724147129999267
+            }
+          },
+          "contextual": {
+            "1-8": {
+              "calls": 6925,
+              "mean_seconds_per_call": 9.6491203465694e-05,
+              "median_seconds_per_call": 9.462799999937488e-05,
+              "p90_seconds_per_call": 0.00011538599999916244,
+              "p99_seconds_per_call": 0.00016534999999961997,
+              "total_cpu_seconds": 0.6682015839999309
+            },
+            "17-32": {
+              "calls": 12395,
+              "mean_seconds_per_call": 0.00014608415514320315,
+              "median_seconds_per_call": 0.00014345900000023448,
+              "p90_seconds_per_call": 0.0001918400000011644,
+              "p99_seconds_per_call": 0.00022645499999995877,
+              "total_cpu_seconds": 1.810713103000003
+            },
+            "33-64": {
+              "calls": 25,
+              "mean_seconds_per_call": 0.0001465781599999616,
+              "median_seconds_per_call": 0.00014330799999839883,
+              "p90_seconds_per_call": 0.0001545000000007235,
+              "p99_seconds_per_call": 0.00018521800000037558,
+              "total_cpu_seconds": 0.00366445399999904
+            },
+            "9-16": {
+              "calls": 12240,
+              "mean_seconds_per_call": 0.000116384420833325,
+              "median_seconds_per_call": 0.00011171999999959326,
+              "p90_seconds_per_call": 0.000148920000000885,
+              "p99_seconds_per_call": 0.00019480599999965875,
+              "total_cpu_seconds": 1.424545310999898
+            }
+          }
+        },
+        "reduction_percent": -3.1570219694986967
+      }
+    },
+    "order": "alternating A/B and B/A by measured pass; A=attention, B=contextual",
+    "prior_count": 6317,
+    "thread_cpu_clock": "CLOCK_THREAD_CPUTIME_ID",
+    "warmup_passes_per_arm": 1
+  },
+  "tested_source_revision": "71e9ace30a876a3c0ed12254615eb58814d87d14",
+  "tested_source_sha256": {
+    "CMakeLists.txt": "4a882b4409ce18a0b778f55277ac2ed9b4eee77323c106d8cf680ca9299ecc37",
+    "EXPERIMENTS.md": "c3474ff1abd1a611cc2c8c2d5da828c351cf722fd2f577e09d0f038130eabbb0",
+    "apps/ooc_strategic_tok_net.h": "2d585ba1ac62ae9a5d19068c593f67dd1b2a58c60a0959464aaca57d42278f74",
+    "apps/test_live_ooc_policy.cpp": "1b12973c57c809c4b30364e7e661c0d15a95a44034bd0d88747df399c5a0650b",
+    "docs/experiments/ledger-06.md": "3bd660aec5e409f7599278b3c5cc591a54eddd53af43436d732b833b6444f5ee",
+    "docs/knowledge-base/architecture/ooc-strategic-v4.md": "bc66d8395ef27ba885fbc38c2f2731d5d448a8a809e59457b0ea722ffc0be69e",
+    "export_strategic_tok.py": "1df249f16a9be6698241b98b7c21ba4cdc07c5bb3b24f025d26b9ec247e43f46",
+    "tests/ooc_contextual_native_probe.cpp": "6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7",
+    "tools/evaluate_ooc_contextual_semantic_trace.py": "288d5fb6ed19f6b5b2591ef38c80b6eb95fa4fdc8973ab5c84e8b8a3ae59c328",
+    "tools/verify_ooc_contextual_native.py": "dc98ed5d6d751d5fac120152724aa649016f41b1e9d69ca8e9af831331068512"
+  },
+  "final_tree_source_sha256": {
+    "EXPERIMENTS.md": "762bf6c6772e2ee16d3a3b01374643a0e77354683dddf7c7f10d1da3d760a3a6",
+    "docs/experiments/ledger-06.md": "829fdb3526c706e5b1e0e5df5fa30f2dd49827cad0b292a0a2f4454d5b492c53"
+  },
+  "review_followup": {
+    "baseline_source_revision": "71e9ace30a876a3c0ed12254615eb58814d87d14",
+    "treatment": "Temporary C1 activation replacement: exact std::erf GELU to the existing V4 tanh-GELU formula. Speed-only; the known fidelity failure was not retested or accepted.",
+    "treatment_header_sha256": "0d2d01c53d5139075dce6d4f7b591e409a41d542edbee21a14dbb3386da2b8d0",
+    "probe_sha256": "cdc9d9a018eb8ac031b8e20495e4a22ed7500a9c7bd9af62ab05786548a2e6f0",
+    "probe_source_sha256": "6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7",
+    "trace_gzip_sha256": "192b623ca28887e7da646aca16efaecd041583261265e1af23b83a1eab958370",
+    "attention_artifact_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "contextual_weights_artifact_sha256": "6d308d5fea278ea8aecc90d1f8bf44efe839b11c57d1362020f1e47f6dba68f7",
+    "unique_prior_count": 6317,
+    "source_candidate_calls": 37985,
+    "warmup_passes_per_arm": 1,
+    "measured_passes_per_arm": 5,
+    "calls_per_arm_per_operation": 31585,
+    "thread_cpu_clock": "CLOCK_THREAD_CPUTIME_ID",
+    "omp_threads": 1,
+    "metrics": {
+      "deck": {
+        "attention_cpu_seconds": 1.3020927789999304,
+        "tanh_contextual_cpu_seconds": 1.5314043120000815,
+        "b_over_a_ratio": 1.17610997979443,
+        "reduction_percent": -17.61099797944301
+      },
+      "prepare": {
+        "attention_cpu_seconds": 2.677834997999919,
+        "tanh_contextual_cpu_seconds": 2.8845966030000305,
+        "b_over_a_ratio": 1.077212227472769,
+        "reduction_percent": -7.72122274727689
+      },
+      "prior": {
+        "attention_cpu_seconds": 4.526271675999881,
+        "tanh_contextual_cpu_seconds": 4.760330831999896,
+        "b_over_a_ratio": 1.051711247745267,
+        "reduction_percent": -5.171124774526703
+      }
+    },
+    "complete_prior_improvement_threshold_percent": 5.0,
+    "complete_prior_gate_pass": false,
+    "phase_3_eight_seed_smoke": "not run because the gate failed",
+    "accurate_approximation_implemented_or_timed": false,
+    "decision": "Stop after the speed-only tanh diagnostic and remove permanent C1 runtime, artifact, exporter/evaluator support, and tests from the final PR tree.",
+    "raw_timing": "tanh_speed_diagnostic.json",
+    "treatment_patch": "tanh_speed_diagnostic.patch",
+    "build_provenance": "tanh_speed_diagnostic_compile.log"
+  },
+  "review_integration": {
+    "pr_base_sha": "212aa25485bc6e8f0a5a91eb35edc7485056cb5a",
+    "ledger_section": 362,
+    "removed_profile_files": 28,
+    "removed_profile_text_lines": 58244,
+    "removed_profile_bytes": 2118329
+  }
+}
