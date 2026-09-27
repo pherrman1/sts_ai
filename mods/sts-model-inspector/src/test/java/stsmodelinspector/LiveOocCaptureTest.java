@@ -61,6 +61,8 @@ public final class LiveOocCaptureTest {
         check("Pen Nib", 9, false, 9, null);
         check("Girya", 3, false, 3, null);
         check("Omamori", 2, false, 2, null);
+        check("Omamori", -2, true, 0, null);
+        check("Omamori", 0, false, 0, null);
         check("NeowsBlessing", -2, true, 0, null);
         check("NeowsBlessing", 3, false, 3, null);
         check("NeowsBlessing", -1, true, -1, null);
