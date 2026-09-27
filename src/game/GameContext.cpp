@@ -1371,6 +1371,16 @@ bool GameContext::obtainRelic(RelicId r) {
             break;
         }
 
+        case RelicId::DOLLYS_MIRROR: {
+            // Java opens the whole master deck; an empty deck has nothing to copy.
+            if (deck.size() == 0) {
+                break;
+            }
+            openCardSelectScreen(CardSelectScreenType::DUPLICATE, 1);
+            opensScreen = true;
+            break;
+        }
+
         case RelicId::EMPTY_CAGE: {
             openCardSelectScreen(CardSelectScreenType::REMOVE, 2);
             opensScreen = true;
@@ -1400,6 +1410,17 @@ bool GameContext::obtainRelic(RelicId r) {
 
         case RelicId::OMAMORI: {
             relicData = 2;
+            break;
+        }
+
+        case RelicId::ORRERY: {
+            // Java adds five ordinary card rewards for the current room.
+            Rewards reward;
+            for (int i = 0; i < 5; ++i) {
+                reward.addCardReward(createCardReward(curRoom));
+            }
+            openCombatRewardScreen(reward);
+            opensScreen = true;
             break;
         }
 

@@ -554,6 +554,11 @@ final class LiveOocCapture {
             // the live importer carries the counter in a separate field.
             return 0;
         }
+        if ("NeowsBlessing".equals(id)) {
+            // Spent Java -2 is native 0 remaining charges; the CTM rejects
+            // negative Neow's Lament data. Share the combat-entry mapping.
+            return STSModelInspector.combatEntryRelicData(id, counter, usedUp);
+        }
         if ("MawBank".equals(id)) {
             // Java tests usedUp and writes counter=-2 on spending; native
             // obtainRelic starts at 1, loseGold(inShop) writes 0.

@@ -61,7 +61,9 @@ public final class LiveOocCaptureTest {
         check("Pen Nib", 9, false, 9, null);
         check("Girya", 3, false, 3, null);
         check("Omamori", 2, false, 2, null);
-        check("NeowsBlessing", -2, true, -2, null);
+        check("NeowsBlessing", -2, true, 0, null);
+        check("NeowsBlessing", 3, false, 3, null);
+        check("NeowsBlessing", -1, true, -1, null);
         check("Burning Blood", -1, false, -1, null);
         check("Lizard Tail", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
         check("Lizard Tail", -2, true, 0, null);

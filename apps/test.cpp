@@ -1473,6 +1473,76 @@ static void simulatorCorrectnessPlay(BattleContext &bc, int handIdx = 0, int tar
     search::Action(search::ActionType::CARD, handIdx, targetIdx).execute(bc);
 }
 
+// Card colors, Dolly's Mirror and Orrery: simulator fidelity fixes for the
+// Ironclad A0 domain.
+int testSimulatorRelicFidelity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "simulator_relic_fidelity FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // Every class transform-pool card carries its class color.
+    const CardColor classColors[4] {CardColor::RED, CardColor::GREEN, CardColor::BLUE, CardColor::PURPLE};
+    for (int cc = 0; cc < 4; ++cc) {
+        for (int i = 0; i < TransformCardPool::cardPoolSize[cc]; ++i) {
+            const CardId id = TransformCardPool::colorCardPool[cc][i];
+            if (getCardColor(id) != classColors[cc]) {
+                return fail(std::string("wrong color for ") + cardEnumStrings[static_cast<int>(id)]);
+            }
+        }
+    }
+
+    // A red card is excluded from its own Ironclad transform.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        Random rng(42);
+        for (int i = 0; i < 500; ++i) {
+            for (CardId exclude : {CardId::BRUTALITY, CardId::COMBUST}) {
+                if (gc.getTransformedCard(rng, exclude, false).getId() == exclude) {
+                    return fail("transform returned its own red source card");
+                }
+            }
+        }
+    }
+
+    // Dolly's Mirror opens a whole-deck duplicate selector and copies the pick.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        const int deckSize = gc.deck.size();
+        if (!gc.obtainRelic(RelicId::DOLLYS_MIRROR)) return fail("Dolly's Mirror opened no screen");
+        if (gc.screenState != ScreenState::CARD_SELECT
+                || gc.info.selectScreenType != CardSelectScreenType::DUPLICATE
+                || gc.info.toSelectCount != 1
+                || static_cast<int>(gc.info.toSelectCards.size()) != deckSize) {
+            return fail("Dolly's Mirror selector is not a one-pick whole-deck duplicate");
+        }
+        const CardId picked = gc.info.toSelectCards[deckSize - 1].card.getId();
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.chooseSelectCardScreenOption(deckSize - 1);
+        if (gc.deck.size() != deckSize + 1 || gc.deck.cards[deckSize].getId() != picked) {
+            return fail("Dolly's Mirror did not add a copy of the picked card");
+        }
+    }
+
+    // Orrery opens five ordinary card rewards.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        gc.curRoom = Room::SHOP;
+        if (!gc.obtainRelic(RelicId::ORRERY)) return fail("Orrery opened no screen");
+        const auto &r = gc.info.rewardsContainer;
+        if (gc.screenState != ScreenState::REWARDS || r.cardRewardCount != 5
+                || r.goldRewardCount != 0 || r.relicCount != 0 || r.potionCount != 0) {
+            return fail("Orrery did not open exactly five card rewards");
+        }
+        for (int i = 0; i < 5; ++i) {
+            if (r.cardRewards[i].size() != 3) return fail("Orrery card reward is not three cards");
+        }
+    }
+
+    std::cout << "simulator_relic_fidelity PASS\n";
+    return 0;
+}
+
 // Focused semantic regressions for upstream gamerpuppy/sts_lightspeed PRs #9-#19.
 // Each block is deliberately a small native fixture so the check fails on the
 // pre-port behavior without depending on a gameplay sweep.
@@ -3871,6 +3941,8 @@ int main(int argc, const char* argv[]) {
         return testIssueFixes();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
+    } else if (command == "simulator_relic_fidelity") {
+        return testSimulatorRelicFidelity();
     } else if (command == "relic_reward_sapphire") {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
