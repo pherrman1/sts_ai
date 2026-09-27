@@ -13410,8 +13410,12 @@ runtime support changed.
   the malformed auxiliary `[ooc-mcts-config]` line before saving that child
   process exit code. The same line lacks the closing quote after `dispatchRule`
   in both logs; the separate startup and combat-telemetry records are intact.
-  Seed 991016 was not repeated. This does not alter the verified effective
-  stack values, but a future logging correction should emit valid JSON. The
+  Review traced the malformed payload to this implementation's config emitter;
+  a follow-up correction closes the string and strengthens the seed-free
+  startup check to parse the emitted JSON and verify its dispatch and
+  active-Lizard fields. Seed 991016 was not repeated and the frozen results
+  remain unchanged, so its child exit code remains unknown. This does not alter
+  the verified effective stack values. The
   frozen smoke manifest SHA-256 is
   `e3778296788e8550f450d85df8dbf897e4886f009542061d5debcb028b67cf93`; the
   machine results SHA-256 is

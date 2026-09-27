@@ -292,7 +292,10 @@ forced-Tail smoke made 17,610 preparations and 17,608 samples; two support
 aborts were the existing `smoke_bomb` exclusion. The ordinary run produced all
 outputs and its normal final summary, but its subprocess exit code was not
 captured by the validator. The auxiliary `[ooc-mcts-config]` line is malformed
-JSON; its values and the separate startup/telemetry records remain present.
+JSON because this implementation omitted the closing quote after
+`dispatchRule`. The follow-up correction fixes the emitted JSON and adds a
+seed-free startup check that parses the config record; the frozen smoke logs
+remain unchanged, so the ordinary run's exit code is still unavailable.
 
 ## Knowledge impact
 
@@ -302,5 +305,6 @@ explicit boundaries. The invalid original cohort remains separate from the
 valid Gate 2 follow-up. PR #330 and PR #351 remain the scientific qualification;
 Gate 1 and Gate 2 establish integration correctness, and Gate 3 startup and
 combat telemetry establish default plumbing. The ordinary smoke's exit code
-was not captured, and its auxiliary config JSON line is malformed. The default
-selection still does not enable OOC MCTS globally.
+was not captured. Its frozen auxiliary config JSON line records the logging
+defect fixed in the follow-up correction. The default selection still does
+not enable OOC MCTS globally.

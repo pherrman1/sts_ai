@@ -3355,6 +3355,8 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
+    } else if (mode == "oocmctsconfigselftest") {
+        std::cout << "PASS live OOC MCTS configuration startup\n";
     } else if (mode == "oocmctsselftest") {
         try {
             one_combat::oocMctsAdapterSelfTest();

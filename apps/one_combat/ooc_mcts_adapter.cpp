@@ -1398,7 +1398,7 @@ void configureLiveOocMcts() {
         << (!brewFallbackArtifact.empty() ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
         << ",\"dispatchRule\":\""
         << (!brewFallbackArtifact.empty() ? "precombat_entropic_brew_to_standard" : "single_artifact")
-        << ",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
+        << "\",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
         << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\"}\n";
     std::cout.precision(precision);
 }

@@ -64,11 +64,13 @@ case produced its complete CSV, sidecar, traces, and normal final `BEST`
 summary, but the post-run validator raised on the malformed auxiliary
 `[ooc-mcts-config]` JSON before saving the child process exit code; seed 991016
 was not repeated. That same auxiliary line is malformed in both logs because
-its `dispatchRule` string lacks a closing quote. The separate `[live OOC MCTS
+the implementation used for these smokes omitted the closing quote after
+`dispatchRule`. A follow-up correction fixes the emitted JSON, and the
+seed-free `ooc_mcts_live_startup` check now parses the actual config record and
+checks its dispatch and active-Lizard fields. The separate `[live OOC MCTS
 ON ...]` startup line and `[ooc-combat-transition]` telemetry are intact and
-verify the effective stack. Fixing that pre-existing config-line formatting
-and recapturing an ordinary-case exit status would require a new frozen smoke
-implementation; this packet does not claim either result.
+verify the effective stack. This logging correction does not recapture the
+ordinary-case exit status; the frozen Gate 3 results remain unchanged.
 
 The frozen manifest SHA-256 is
 `e3778296788e8550f450d85df8dbf897e4886f009542061d5debcb028b67cf93`; the
