@@ -273,13 +273,26 @@ The tensor-payload SHA-256 remains
 tensors changed. Production metadata records the Gate 2 result and source
 commit hashes. The loader checks the Gate 2 hash, Lizard candidate identity,
 and DeepSets qualification evidence before accepting a production artifact.
+Gate 1 parity was rerun against the packaged production bytes: all 320 rows,
+T2 child-identity checks, and eight dispatch fixtures passed with zero support
+or semantic mismatches. The maximum probability error was `5.364418e-7` at
+`1e-4` tolerance. The 31-row DeepSets/Brew output and metrics remained byte
+identical to their pinned fixture. The machine-readable result is
+[`production_artifact_native_parity.json`](production_artifact_native_parity.json)
+(SHA-256 `7f6abc72c32605c6e0375eb31875902f80f33beafd8c9de0bbb907a7acf18a75`).
 
 When `STS_OOC_MCTS=1` and `STS_OOC_MCTS_COMBAT_MODEL` is unset, the adapter
 selects this artifact, the standard Attention Brew fallback, and active-Lizard
 correction. `STS_OOC_MCTS` itself remains off unless explicitly enabled.
 Explicit combat model, Brew fallback, and active-Lizard rollback overrides
 remain available. Two no-model-environment default smoke cases are recorded
-in [the Gate 3 smoke packet](gate3_default_smokes_2026-09-27/README.md).
+in [the Gate 3 smoke packet](gate3_default_smokes_2026-09-27/README.md). Both
+startup lines and combat telemetry showed the promoted default stack. The
+forced-Tail smoke made 17,610 preparations and 17,608 samples; two support
+aborts were the existing `smoke_bomb` exclusion. The ordinary run produced all
+outputs and its normal final summary, but its subprocess exit code was not
+captured by the validator. The auxiliary `[ooc-mcts-config]` line is malformed
+JSON; its values and the separate startup/telemetry records remain present.
 
 ## Knowledge impact
 
@@ -287,5 +300,7 @@ The environment-variable reference, current-research page, current baselines,
 and OOC architecture page now describe the enabled-OOC default stack and its
 explicit boundaries. The invalid original cohort remains separate from the
 valid Gate 2 follow-up. PR #330 and PR #351 remain the scientific qualification;
-Gate 1 and Gate 2 establish integration correctness, and Gate 3 establishes
-default plumbing. The default selection still does not enable OOC MCTS globally.
+Gate 1 and Gate 2 establish integration correctness, and Gate 3 startup and
+combat telemetry establish default plumbing. The ordinary smoke's exit code
+was not captured, and its auxiliary config JSON line is malformed. The default
+selection still does not enable OOC MCTS globally.

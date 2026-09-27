@@ -1091,6 +1091,18 @@ off by default. Active Lizard + Entropic Brew, Fairy Potion, and Mark of the
 Bloom remain excluded or exact-path boundaries. The original invalid cohort
 remains preserved separately from the successful follow-up.
 
+Two no-model-override Gate 3 smokes on frozen implementation
+`529c214562fd7eda4842f4386c05303c4d3d3d47` reported the automatic stack in the
+startup line and combat telemetry. The ordinary case had no forced relic; the
+forced-Tail case recorded 17,610 Lizard preparations and 17,608 samples. It
+also recorded two existing `unsupported:smoke_bomb` exclusions, with no fast or
+Brew-fallback support counter failures. The auxiliary `[ooc-mcts-config]` line
+is malformed JSON, although its text shows the expected model/fallback/active
+fields. The ordinary case produced complete outputs and its final `BEST`
+summary, but the wrapper did not save its subprocess exit code after failing
+while parsing that line; the seed was not repeated. See the
+[Gate 3 smoke packet](../../experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate3_default_smokes_2026-09-27/README.md).
+
 After current main advanced with the Match and Keep policy, the merged branch
 again passed frozen Gate 1 parity, the 31-row Brew fixture, and focused
 combat-transition/OOC tests. See [ledger §364](../../experiments/ledger-06.md)

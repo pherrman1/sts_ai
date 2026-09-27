@@ -13383,8 +13383,9 @@ runtime support changed.
   all eight dispatch fixtures with zero support/semantic mismatches; maximum
   probability error was `5.364418e-7` at `1e-4` tolerance. The 31-row
   DeepSets/Brew fixture matched saved output and metrics byte for byte. Focused
-  Release build and CTest passed; two default-plumbing smoke cases are recorded
-  in the linked Gate 3 packet when run.
+  Release build and six focused CTests passed. The production-artifact parity
+  report SHA-256 is
+  `7f6abc72c32605c6e0375eb31875902f80f33beafd8c9de0bbb907a7acf18a75`.
 - **Default behavior:** With `STS_OOC_MCTS=1` and
   `STS_OOC_MCTS_COMBAT_MODEL` unset, the adapter selects the promoted DeepSets
   artifact, pinned standard Attention Brew fallback, and active-Lizard
@@ -13393,6 +13394,29 @@ runtime support changed.
   rollback. OOC MCTS remains off unless explicitly enabled. Active Lizard plus
   Entropic Brew, Fairy Potion, and Mark of the Bloom retain their declared
   boundary behavior.
+- **Gate 3 default smokes:** The two frozen cases ran on implementation commit
+  `529c214562fd7eda4842f4386c05303c4d3d3d47`, executable SHA-256
+  `ebe2dcc09b0ca76867a12332f583e7529a58991033afeb7b7a00fb065a5e10fe`, with
+  combat-model, Brew-fallback, and active-Lizard override variables omitted.
+  Both guard-only preflights passed. Seeds 991016 (no forced relic) and 991017
+  (forced `LIZARD_TAIL`) produced complete result, sidecar, trace, and log
+  outputs at floor 51. Both startup lines and combat telemetry identified the
+  promoted model, standard Attention fallback, and active-Lizard correction.
+  The forced-Tail case reported 17,610 preparations and 17,608 samples; its two
+  support aborts were the existing `unsupported:smoke_bomb` model exclusion,
+  with zero fast/fallback support-failure counters.
+- **Smoke evidence limits:** The ordinary case's complete outputs and final
+  `BEST` summary were produced, but the post-run wrapper failed while parsing
+  the malformed auxiliary `[ooc-mcts-config]` line before saving that child
+  process exit code. The same line lacks the closing quote after `dispatchRule`
+  in both logs; the separate startup and combat-telemetry records are intact.
+  Seed 991016 was not repeated. This does not alter the verified effective
+  stack values, but a future logging correction should emit valid JSON. The
+  frozen smoke manifest SHA-256 is
+  `e3778296788e8550f450d85df8dbf897e4886f009542061d5debcb028b67cf93`; the
+  machine results SHA-256 is
+  `a1a66cae7b5e13b8f936df7b72cea62e58c1ad96500e9c8d257adffca64ad4be`. See
+  the [Gate 3 smoke packet](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate3_default_smokes_2026-09-27/README.md).
 - **Knowledge impact:** current baselines, current research, OOC architecture,
   environment-variable reference, and this evidence packet now record the
   enabled-OOC default and its boundaries. PR #330 and PR #351 remain the
