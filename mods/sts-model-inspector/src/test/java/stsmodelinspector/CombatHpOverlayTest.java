@@ -43,12 +43,18 @@ public final class CombatHpOverlayTest {
         rows.add(row("Strike -> Monster 1", card("strike", 1), 3, layer(1, 0, 0, 2, 0)));
         rows.add(row("Strike -> Monster 2", card("strike", 2), 2, layer(0, 0, 0, 0, 2)));
         rows.add(row("End Turn", endTurn, 1, layer(0, 1, 0, 0, 0)));
+        JsonObject potion = new JsonObject();
+        potion.addProperty("kind", "potion");
+        potion.addProperty("potionSlot", 2);
+        potion.addProperty("discard", false);
+        potion.addProperty("targetIndex", 1);
+        rows.add(row("Use Fire Potion -> Monster 1", potion, 1, layer(0, 0, 1, 0, 0)));
         JsonObject distribution = new JsonObject();
         distribution.addProperty("schema", CombatHpOverlay.SCHEMA);
         distribution.addProperty("currentHp", 4);
         distribution.addProperty("maxHp", 4);
         distribution.addProperty("axisMaxHp", 4);
-        distribution.add("root", layer(1, 1, 0, 2, 2));
+        distribution.add("root", layer(1, 1, 1, 2, 2));
         JsonObject silver = new JsonObject();
         silver.addProperty("id", "silver_player_decision_v2");
         silver.addProperty("status", "OK");
@@ -65,9 +71,9 @@ public final class CombatHpOverlayTest {
         response.add("evaluators", evaluators);
 
         CombatHpOverlay view = CombatHpOverlay.parse(response.toString());
-        if (view == null || view.root.count != 6 || view.root.deaths != 1 || view.axisMaxHp() != 4
-                || Math.abs(view.root.meanHp() - (1 + 3 * 2 + 4 * 2) / 6.0) > 1e-12
-                || !view.root.deathLabel().equals("16.7%") || !view.root.hpLabel(4).equals("≈3 HP (-2)"))
+        if (view == null || view.root.count != 7 || view.root.deaths != 1 || view.axisMaxHp() != 4
+                || Math.abs(view.root.meanHp() - (1 + 2 + 3 * 2 + 4 * 2) / 7.0) > 1e-12
+                || !view.root.deathLabel().equals("14.3%") || !view.root.hpLabel(4).equals("≈2 HP (-2)"))
             throw new AssertionError("root samples or labels lost");
         CombatHpOverlay.Layer anyTarget = view.forCard("strike", -1);
         CombatHpOverlay.Layer second = view.forCard("strike", 2);
@@ -77,6 +83,10 @@ public final class CombatHpOverlayTest {
             throw new AssertionError("card hover aggregation or target restriction wrong");
         if (view.forEndTurn() == null || view.forEndTurn().meanHp() != 1)
             throw new AssertionError("end-turn layer lost");
+        if (view.forPotion(2, false, -1) == null || view.forPotion(2, false, -1).meanHp() != 2
+                || view.forPotion(2, false, 1) == null || view.forPotion(2, false, 2) != null
+                || view.forPotion(2, true, -1) != null || view.forPotion(1, false, -1) != null)
+            throw new AssertionError("potion slot, operation or target conflated");
         int[] deaths = view.bucketRange(0, view.buckets());
         int[] last = view.bucketRange(view.buckets(), view.buckets());
         if (view.buckets() != 4 || deaths[0] != 0 || deaths[1] != 0 || last[1] != 4

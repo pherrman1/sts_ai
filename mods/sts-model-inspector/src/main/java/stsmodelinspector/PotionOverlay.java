@@ -7,19 +7,20 @@ import java.util.*;
 final class PotionOverlay {
     static final class Entry {
         final int slot, target, rank;
+        final long visits;   // root edge visits, -1 when not reported
         final boolean discard, selected;
         final Double q;
-        Entry(JsonObject action, int rank, boolean selected, Double q) {
+        Entry(JsonObject action, int rank, boolean selected, Double q, long visits) {
             slot = action.get("potionSlot").getAsInt();
             discard = action.get("discard").getAsBoolean();
             target = action.has("targetIndex") ? action.get("targetIndex").getAsInt() : -1;
             if (slot < 1 || (action.has("targetIndex") && (target < 1 || discard)))
                 throw new IllegalArgumentException("invalid physical potion action");
-            this.rank = rank; this.selected = selected; this.q = q;
+            this.rank = rank; this.selected = selected; this.q = q; this.visits = visits;
         }
-        String text(String targetName) {
-            return (discard ? "Discard" : "Use") + (target > 0 ? " → " + targetName : "")
-                    + "  #" + rank + (q == null ? " · no score" : String.format(Locale.ROOT, " · Q %.2f", q));
+        /** Compact badge under the potion icon: operation, rank and visits. */
+        String badge() {
+            return (discard ? "Discard " : "") + "#" + rank + (visits >= 0 ? " · " + visits + "v" : "");
         }
     }
     final String session, hash;
@@ -31,6 +32,12 @@ final class PotionOverlay {
     }
     boolean matches(String session, long sequence, String hash) {
         return this.session.equals(session) && this.sequence == sequence && this.hash.equals(hash);
+    }
+    /** The best-ranked use or discard action of this physical slot, or null. */
+    Entry best(int slot) {
+        Entry best = null;
+        for (Entry entry : entries) if (entry.slot == slot && (best == null || entry.rank < best.rank)) best = entry;
+        return best;
     }
     List<Entry> forSlot(int slot, boolean discard) {
         List<Entry> result = new ArrayList<>();
@@ -56,7 +63,8 @@ final class PotionOverlay {
                 Double q = row.has("selectionQValid") && row.get("selectionQValid").getAsBoolean()
                         ? row.get("selectionQ").getAsDouble() : null;
                 if (q != null && !Double.isFinite(q)) throw new IllegalArgumentException("invalid potion score");
-                entries.add(new Entry(action, rank, action.equals(evaluator.get("selectedLiveAction")), q));
+                long visits = row.has("edgeVisits") ? row.get("edgeVisits").getAsLong() : -1;
+                entries.add(new Entry(action, rank, action.equals(evaluator.get("selectedLiveAction")), q, visits));
             }
         }
         return new PotionOverlay(response, entries);

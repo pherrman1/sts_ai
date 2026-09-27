@@ -66,7 +66,10 @@ fixed 0..max-HP axis with the death bar in red, a white marker at the current
 HP, and the expected final HP (deaths as 0) with its change from now. Hovering
 a hand card outlines, in amber on the same y scale, the samples of every
 searched play of that physical card (UUID); while aiming at a monster, only
-plays at that target. Hovering End Turn shows its samples. The display uses
+plays at that target. Hovering End Turn shows its samples. Hovering a potion
+icon, or opening its menu, shows every searched use of that slot; aiming it
+narrows to that target, and hovering the menu's Discard button shows the
+discard. The display uses
 only identity-matched responses and does not depend on the CTM model or the
 response's CTM status.
 Unsupported encounter, relic, information, or schema states remain explicit
@@ -205,17 +208,17 @@ marker after the exact target is resolved. Unsupported effects, incomplete
 public continuations, and screens whose target cannot be matched remain
 explicit `UNSUPPORTED` results.
 
-Potion use and discard labels remain visible in named, physically ordered
-columns below the inventory without requiring hover. Columns clear the combat
-panel and move below an open potion menu; target selection hides the rankings.
-They retain physical slot and target distinctions. Card and potion target labels
+In combat each scored potion gets one small badge under its top-bar icon:
+the best-ranked Silver action for that physical slot (`#rank · visits`,
+prefixed `Discard` when discarding ranks best), amber-bordered when it is
+Silver's selection. Unscored potions get no badge, and badges hide while the
+potion menu is open. The per-target and use/discard detail is in the hover
+distribution instead (see *Combat final-HP samples*). Card and potion target labels
 use live monster names, with indices only to distinguish duplicate names. Native
 Silver slots and compact live potion targets resolve separately. Silver root summaries include
 an additive `liveAction` binding for this display; unsupported lowering is
 `null`. OOC inventory potion actions remain outside the current MCTS semantic
-support boundary:
-the UI says `not scored`, or `unavailable` when the actual potion rejects that
-operation. Freshness and unsupported/error suppression apply to potion scores
+support boundary and show no badge. Freshness and unsupported/error suppression apply to potion scores
 as well. The overlay is presentation-only and does not change policy
 or driver decisions. Combat-entry projection translates only the spent
 Neow's Lament sentinel (`counter=-2`, `usedUp=true`) to native zero remaining

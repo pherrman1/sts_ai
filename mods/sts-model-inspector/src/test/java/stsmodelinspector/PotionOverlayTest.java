@@ -20,7 +20,8 @@ public final class PotionOverlayTest {
             throw new AssertionError("physical slot or use/discard conflated");
         PotionOverlay.Entry best = view.forSlot(2, false).get(0);
         if (!best.selected || best.rank != 2 || best.target != 2 || best.q != 3.5
-                || !best.text("Cultist").contains("→ Cultist")) throw new AssertionError("target/rank/selection lost");
+                || !best.badge().equals("#2") || view.best(2) != best || view.best(1) != null)
+            throw new AssertionError("target/rank/selection lost");
         if (view.forSlot(2, false).get(1).q != null || view.forSlot(2, true).get(0).target != -1)
             throw new AssertionError("invented Q or discard target");
         if (!view.matches("s", 7, "h") || view.matches("s", 8, "h")

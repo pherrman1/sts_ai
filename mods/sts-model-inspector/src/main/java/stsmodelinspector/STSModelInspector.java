@@ -743,51 +743,31 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 width - 16 * scale, MUTED, .65f);
     }
 
+    /**
+     * One rank badge under each combat potion icon: its best-ranked Silver use
+     * or discard action. Hovering the potion (or its open menu) shows that
+     * action's final-HP samples in the combat panel.
+     */
     private void renderPotionBadges(SpriteBatch sb, float scale) {
-        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null) return;
+        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null
+                || newest == null || !"combat".equals(newest.boundary)) return;
         com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
-        if (popup != null && popup.targetMode) return;
+        if (popup != null && !popup.isHidden) return;
         PotionOverlay view = potionOverlay;
-        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) view = null;
-        float width = 220 * scale;
-        float gap = 8 * scale;
-        float groupWidth = AbstractDungeon.player.potions.size() * (width + gap) - gap;
-        float firstX = AbstractDungeon.player.potions.isEmpty() ? 0 : Math.max(8 * scale,
-                Math.min(Math.max(540 * scale, AbstractDungeon.player.potions.get(0).hb.cX - width / 2),
-                        Settings.WIDTH - groupWidth - 8 * scale));
+        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) return;
+        float width = 96 * scale, height = 24 * scale;
         for (int slot = 0; slot < AbstractDungeon.player.potions.size(); ++slot) {
             com.megacrit.cardcrawl.potions.AbstractPotion potion = AbstractDungeon.player.potions.get(slot);
-            if (potion == null || "Potion Slot".equals(potion.ID)) continue;
-            try {
-                // Persistent columns identify the physical slot and stay readable
-                // even when several potions have ranked use/discard actions.
-                float x = firstX + slot * (width + gap);
-                float bottom = Settings.HEIGHT - 190 * scale;
-                if (popup != null && !popup.isHidden) {
-                    com.megacrit.cardcrawl.helpers.Hitbox menuBottom =
-                            (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot");
-                    bottom = Math.min(bottom, menuBottom.y - 74 * scale);
-                }
-                renderFittedText(sb, "P" + (slot + 1) + " · " + potion.name,
-                        x + 8 * scale, bottom + 52 * scale, width - 16 * scale, MUTED, .68f);
-                List<PotionOverlay.Entry> use = view == null ? Collections.emptyList() : view.forSlot(slot + 1, false);
-                List<PotionOverlay.Entry> discard = view == null ? Collections.emptyList() : view.forSlot(slot + 1, true);
-                if (!potion.canUse() || use.isEmpty()) {
-                    renderInlineBadge(sb, x, bottom, width, "Use · " + (potion.canUse() ? "not scored" : "unavailable"),
-                            false, false, scale);
-                    bottom -= 36 * scale;
-                } else for (PotionOverlay.Entry entry : use) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
-                    bottom -= 36 * scale;
-                }
-                if (!potion.canDiscard() || discard.isEmpty())
-                    renderInlineBadge(sb, x, bottom, width, "Discard · " + (potion.canDiscard() ? "not scored" : "unavailable"),
-                            false, false, scale);
-                else for (PotionOverlay.Entry entry : discard) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
-                    bottom -= 36 * scale;
-                }
-            } catch (ReflectiveOperationException | RuntimeException unavailable) { /* Hide unbound UI. */ }
+            if (potion == null || "Potion Slot".equals(potion.ID) || potion.hb == null) continue;
+            PotionOverlay.Entry entry = view.best(slot + 1);
+            if (entry == null) continue;
+            float x = Math.max(0, Math.min(Settings.WIDTH - width, potion.hb.cX - width / 2));
+            float bottom = potion.hb.y - height - 4 * scale;
+            drawRect(sb, x, bottom, width, height, PANEL_INNER);
+            drawBorder(sb, x, bottom, width, height, entry.selected ? WARNING : CARD_BORDER,
+                    (entry.selected ? 2 : 1) * scale);
+            renderFittedText(sb, entry.badge(), x + 6 * scale, bottom + height - 4 * scale,
+                    width - 12 * scale, entry.selected ? CYAN : Color.WHITE, .62f);
         }
     }
 
@@ -1008,6 +988,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private CombatHpOverlay.Layer hoveredCombatLayer(CombatHpOverlay view, String[] label) {
         com.megacrit.cardcrawl.characters.AbstractPlayer player = AbstractDungeon.player;
         if (player == null) return null;
+        CombatHpOverlay.Layer potion = hoveredPotionLayer(view, player, label);
+        if (potion != null) return potion;
         Object dragged = optionalField(player, "hoveredCard");
         AbstractCard card = dragged instanceof AbstractCard ? (AbstractCard) dragged : null;
         if (card == null && player.hand != null)
@@ -1031,6 +1013,47 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (hb instanceof com.megacrit.cardcrawl.helpers.Hitbox && ((com.megacrit.cardcrawl.helpers.Hitbox) hb).hovered) {
             label[0] = "End Turn";
             return view.forEndTurn();
+        }
+        return null;
+    }
+
+    /** The open potion menu's slot (Discard when its lower button is hovered), else a hovered potion icon. */
+    private CombatHpOverlay.Layer hoveredPotionLayer(CombatHpOverlay view,
+            com.megacrit.cardcrawl.characters.AbstractPlayer player, String[] label) {
+        if (AbstractDungeon.topPanel == null || player.potions == null) return null;
+        com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
+        if (popup != null && !popup.isHidden) {
+            Object slotValue = optionalField(popup, "slot");
+            if (!(slotValue instanceof Integer)) return null;
+            int slot = (Integer) slotValue;
+            if (slot < 0 || slot >= player.potions.size() || player.potions.get(slot) == null) return null;
+            String name = player.potions.get(slot).name;
+            if (popup.targetMode) {
+                Object aimed = optionalField(popup, "hoveredMonster");
+                AbstractMonster monster = aimed instanceof AbstractMonster ? (AbstractMonster) aimed : null;
+                int target = liveTargetIndex(monster);
+                CombatHpOverlay.Layer layer = target > 0 ? view.forPotion(slot + 1, false, target) : null;
+                if (layer != null) {
+                    label[0] = name + " → " + monster.name;
+                    return layer;
+                }
+                label[0] = name;
+                return view.forPotion(slot + 1, false, -1);
+            }
+            Object discard = optionalField(popup, "hbBot");
+            if (discard instanceof com.megacrit.cardcrawl.helpers.Hitbox
+                    && ((com.megacrit.cardcrawl.helpers.Hitbox) discard).hovered) {
+                label[0] = "Discard " + name;
+                return view.forPotion(slot + 1, true, -1);
+            }
+            label[0] = name;
+            return view.forPotion(slot + 1, false, -1);
+        }
+        for (int slot = 0; slot < player.potions.size(); ++slot) {
+            com.megacrit.cardcrawl.potions.AbstractPotion potion = player.potions.get(slot);
+            if (potion == null || potion.hb == null || !potion.hb.hovered) continue;
+            label[0] = potion.name;
+            return view.forPotion(slot + 1, false, -1);
         }
         return null;
     }

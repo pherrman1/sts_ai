@@ -122,6 +122,21 @@ final class CombatHpOverlay {
         return matched.isEmpty() ? null : Layer.sum(matched, bins);
     }
 
+    /**
+     * Samples of every searched use (or discard) of the potion in this 1-based
+     * slot; a positive target restricts uses to that monster. Null when absent.
+     */
+    Layer forPotion(int slot, boolean discard, int targetIndex) {
+        List<Layer> matched = new ArrayList<>();
+        for (Action action : actions) {
+            if (!"potion".equals(action.kind()) || action.liveAction.get("potionSlot").getAsInt() != slot
+                    || action.liveAction.get("discard").getAsBoolean() != discard) continue;
+            if (!discard && targetIndex > 0 && action.targetIndex() != targetIndex) continue;
+            matched.add(action.layer);
+        }
+        return matched.isEmpty() ? null : Layer.sum(matched, bins);
+    }
+
     Layer forEndTurn() {
         for (Action action : actions) if ("end_turn".equals(action.kind())) return action.layer;
         return null;
