@@ -12941,3 +12941,291 @@ review because they do not support parity or the speed decision. Knowledge
 impact: current native architecture stays at `OOC_STRAT_V4`; §362 records the
 rejected C1 prototype and follow-up. No
 gameplay-quality or default-promotion result exists.
+
+## §363 — Mechanical-q Lizard Tail archived screen and current-main transfer status (2026-09-26)
+
+- **Question:** Does replacing the learned ordinary-win probability `q` with
+  `1 - pOrdinaryWin`, while preserving the frozen learned `r` artifact and T2
+  rule from PR #326, remove the q regression without introducing a score or
+  support failure?
+- **Candidate:** mechanical `q = 1 - pOrdinaryWin`; unchanged learned `r` from
+  PR #326 (artifact SHA-256
+  `9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9`); T2
+  remains `floor(maxHP / 2)` on consumed-Tail wins. No r refit, T2 edit, or
+  production integration.
+- **Stage A — archived vendored post-hoc screen:** scored only the exact 128
+  paired rows and CTM predictions frozen in PR #326. The vendored Silver teacher
+  is retired on current main and was not rerun. Mechanical q had exact parity
+  and candidate support on all 128 rows. The pooled candidate-minus-B1
+  three-class NLL delta was `-5.44160` (source-bootstrap 95% CI
+  `[-16.24698, -0.00910]`), and the multiclass Brier delta was `-0.04653`
+  (95% CI `[-0.07691, -0.01735]`). The unchanged learned-r NLL/Brier deltas on
+  45 consumed rows were `-0.91805` / `-0.09034`, with both intervals strictly
+  below zero. The unchanged T2 rule passed its paired HP NLL, CRPS, and expected
+  HP absolute error screens. Only 9 `LOSS_CONSUMED` labels from 9 sources were
+  present, below the qualification data floor. This is development evidence,
+  not qualification.
+- **Stage B — native teacher-transfer diagnostic:** the first collector attempt
+  replayed the campaign rather than loading the archived precombat snapshot.
+  Its raw failure record is retained in
+  `native_teacher_transfer/stage_b_collection_failure.json`; the source
+  trajectory changed under native Silver, so its “selected fight not found or
+  source trajectory incomplete” error is a **harness failure**, not a
+  teacher-transfer result or scientific stop. It wrote no pair JSONL or native
+  outcome labels. The corrected preregistered amendment,
+  `native_teacher_transfer/stage_b_direct_snapshot_plan.json`, uses the exact
+  119 non-burning archived snapshots and lists the nine burning-elite targets
+  as structurally unreplayable because the archived state omits
+  `burningEliteBuff`. No state is reselected; before either branch, the direct
+  collector verifies the exact archived predictor input and persistent state.
+  Main advanced through PR #332 to
+  `0eed6993999386737d87f040e38fb241623b5cf3`, which default-initializes the
+  native simulation counter added by PR #331; the singleton-root bypass remains
+  disabled by the frozen exact-root-budget setting. The refreshed addendum
+  SHA-256 is
+  `9dde779d1d3d9fdfed83debfa9af101df96088ed0aba7aff7c597cec76928c03`; it pins
+  integrated collector commit `00f34384b0235bcc4053e60fee05b42dc1d23c46`,
+  executable SHA-256
+  `ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be`, the
+  refreshed native teacher manifest, and `OMP_NUM_THREADS=1`. A pre-run local
+  resource check measured one-minute load 28.87 on 12 logical CPUs with 74.81%
+  CPU-pressure `some` avg10; one thread is frozen identically across arms to
+  limit contention. The first guarded invocation exited before its pair loop
+  with `invalid direct snapshot replay plan`: the collector and analyzer
+  require the nine preregistered exclusions at the plan top level, while the
+  first refreshed plan held them only inside `sourceSelection`. The corrected
+  plan now includes that unchanged top-level list. The raw attempt log and
+  failure record are retained at
+  `evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_collection.log`
+  (SHA-256
+  `d8089f349723cbea4a8cb22aa89588005dfb0e52978264c5354b3527ee55cc94`) and
+  `stage_b_direct_plan_validation_failure.json` (SHA-256
+  `d6823b7c4ed0dab919d6dcc101aa0a4d474d87fa68efb1507c3c9a17f1072cb3`). No
+  pair JSONL, pair manifest, or combat outcomes were written; this is a
+  pre-outcome plan-validation failure, not a teacher-transfer result.
+- **Later Stage B update (2026-09-26):** retry 4 durably wrote 116/119 pairs
+  and stalled on three `Room::EVENT` targets: `(4201028,15)` Masked Bandits,
+  `(4201056,18)` Mysterious Sphere, and `(4201117,12)` Masked Bandits. Debug
+  tracing proved all three direct snapshots and predictor inputs matched and
+  all six Silver playout arms returned. The infinite loop was in post-combat
+  `afterBattle()`/`regainControl()`: snapshots lack `curEvent` and the transient
+  event callback, so the generic `Room::EVENT` fallback recursively invoked
+  the same callback. A debug-only three-target rerun completed both arms for
+  all three pairs with 8 OpenMP threads. The collector now returns direct
+  snapshot Event rooms to the map after RAW combat capture, without inventing
+  event rewards. At the time of collection, main was
+  `0eed6993999386737d87f040e38fb241623b5cf3`. Retry 5 recollected all 119 rows
+  under one executable and teacher manifest; it completed in 127 seconds with 119/119 checkpoints,
+  119/119 exact support, exact mechanical-q parity, and no snapshot mismatch.
+  Pair JSONL SHA-256 is
+  `3e02b7d1175190edc0cb7933ba32ce87d614a3e2836f7ef4c6e473bd8a5f3658`;
+  teacher manifest SHA-256 is
+  `e81dc96da406b661b7b465a8790c63d8ff92516802b71ce1a4744a9b1e337be8`; the
+  producer executable SHA-256 is
+  `a055597f5c62cf29f6dd1912990400040044604be1b110f4119f43ee1e7ace16`.
+  Exact plan: `stage_b_direct_snapshot_plan_retry5_eventfix_omp8_resumable.json`
+  (SHA-256
+  `7cc41d8588db740c80f4a79f3c29c610bfceed1e805b211596a9aa61b77d5fb9`).
+  Two analyzer input-validation defects initially stopped scoring before
+  outcome analysis: the exact-key schema omitted collector `pairCheckpointing`
+  metadata, and the direct-snapshot path check used nonexistent
+  `Path.is_relative()`. The validator now accepts and checks the exact
+  metadata and uses `not Path.is_absolute()`; scoring, bootstrap, and gates
+  were untouched. Against the retry-5 teacher pinned to the then-current base,
+  the predeclared analyzer reports
+  `PROCEED_TO_FRESH_NATIVE_QUALIFICATION`. Native labels are 81
+  `WIN_RETAINED`, 28 `WIN_CONSUMED`, and 10 `LOSS_CONSUMED`; all 119 rows have
+  exact support and q parity. Pooled candidate-minus-B1 three-class NLL is
+  `-5.81982` (source-bootstrap 95% CI `[-17.44907,+0.02927]`) and Brier is
+  `-0.02613` (95% CI `[-0.05668,+0.00352]`). On 38 consumed rows, learned-r
+  NLL/Brier deltas are `-1.01041` / `-0.06454`; neither interval shows a clear
+  regression. T2 scored 28 supported consumed wins and its HP NLL, CRPS, and
+  expected-HP absolute-error intervals favor T2. The vendored/native
+  three-class label agreement is 99/119; this remains a descriptive table
+  only, with no cross-teacher pooling. The analysis JSON SHA-256 is
+  `454b8afa9518875bb90359df5184641fa2b813ee97d0fbf888b6f6f8d605add8`; the
+  strict direct-snapshot validator fix is pinned by
+  `tools/combat_transition_lizard_pair_pilot.py` SHA-256
+  `d681103e100a32b47aa6ca371b2a73752bb2c0dbeb93ed39288b50d4bf097a2d`. Stage
+  B is a transfer diagnostic, not qualification.
+- **Stage B retry 6 — current-main teacher transfer:** after PR #362, the
+  baseline was `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. The exact same 119
+  non-burning snapshots and nine preregistered exclusions were replayed with
+  native Silver exact-10k fair search, an observed 8-thread OpenMP team,
+  collector source `9ca24419bc8799e45aaa5df4b937ab9c11920ab4`, and executable
+  SHA-256
+  `038d69a177b07baf8efc10a523b47b655bddc7a2d3f27eef74707ab4b02cbe6a`. The
+  frozen plan SHA is `7a83ceb0e4c9336922a683a0c97d9c04b5afb219de30d02ecc48ed3e26d6cfcb`;
+  the teacher manifest SHA is
+  `648593cc572930c0887b0339881b80da61e563c3407d2aca4f60ffb80650f5d1`. All
+  119 states, support rows, and mechanical-q parity checks passed. Labels were
+  80 `WIN_RETAINED`, 30 `WIN_CONSUMED`, and 9 `LOSS_CONSUMED`; as a transfer
+  diagnostic, it does not meet the rare-loss floor. Candidate-minus-B1 pooled
+  three-class NLL delta was `-5.85699` (95% CI `[-17.50884,+0.00700]`) and
+  Brier delta `-0.03223` (CI `[-0.06387,-0.00142]`). The 39 consumed-row
+  learned-r NLL delta was `-1.05627` (CI `[-2.96512,+0.00543]`) and Brier
+  delta `-0.07813` (CI `[-0.17577,+0.01696]`). T2 scored 30 supported wins;
+  HP NLL, CRPS, and expected-HP absolute-error deltas were `-1.62445`,
+  `-4.63706`, and `-5.30852`, all with 95% intervals below zero. There were
+  19/119 vendored/native three-class label disagreements; the teachers remain
+  unpooled. The frozen analyzer passed the transfer proceed gate. Analysis
+  SHA-256 is
+  `947bf1ab459ec29f46bb13e362b8f310f21efdb4617bb6434dd485894b740951`; the
+  final pair JSONL SHA-256 is
+  `9f8c46bd196ed9a9c1f2a90515ac36329418bd7dde6e880e97b6c12fbf798456`. The
+  119 bulky checkpoint payloads remain local scratch; the compact checkpoint
+  hash index is
+  `stage_b_direct_snapshot_checkpoint_sha256_index_retry6_current_main_omp8.tsv`
+  with SHA-256
+  `38a68642a32319ade68c03c9f1cff97f26f6fbbec4fcbaf2196dd431d03cda0f`.
+  This diagnostic permits Stage C to proceed but is not qualification.
+- **Stage C — fresh native qualification:** a 320-source HARD288/BROAD32
+  assignment is frozen with an audited fresh block and outcome-blind BROAD32
+  salt. Its 320 unique sources were rechecked disjoint from all 367 recorded
+  prior Lizard sources (assignment SHA-256
+  `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`). Retry 5
+  applies only to the teacher pinned to `0eed6993999386737d87f040e38fb241623b5cf3`;
+  retry 6 is the matching current-main transfer diagnostic on baseline
+  `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`.
+  Main advanced through `ffd51f3bc43b03aa356c419567d77b1eecc636a1` to current
+  base `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native
+  Silver equivalent-copy reroot behavior, which is not disabled by the frozen
+  exact-root-budget setting. PR #362 changed `SilverWireState` and
+  `SilverConversion` to preserve pending card queues at card-selection roots
+  and settle Guardian Mode Shift before replay. Retry 5 remains historical
+  evidence; retry 6 passes the current-main Stage-B proceed gate. Current main retired the GCP research workflow in
+  PR #361; under ADR-0024, the frozen 320-source Stage C can run locally without
+  a general seed ceiling after the current-teacher Stage-B gate passes. The
+  user has authorized that conditional local run. Before launch, freeze the
+  final source/build/artifact provenance and resource budget, then use the
+  repository seed guard. The pre-outcome plan is frozen at SHA-256
+  `54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`. It pins
+  the candidate, teacher/executable, selector/analyzer sources, and unchanged
+  gates. Candidate and pair collection use eight one-thread subprocess workers;
+  each source is durable and independently resumable, while shard payloads stay
+  out of the PR. Preflight found 12 logical CPUs, 10 GiB available RAM, 369 GB
+  free disk, load average 1.44, and no recent CPU pressure. The first candidate
+  collection attempt completed eight guarded source commands, then stopped
+  because its mutable progress index used the write-once artifact writer. All
+  eight source shards passed independent producer/teacher/seed and file-hash
+  validation. No target selection, candidate scoring, pair collection, or
+  qualification analysis ran. The empty failed index was preserved in local
+  quarantine. The write-once behavior remains for immutable per-source outputs;
+  only the progress index now uses atomic replacement. Two focused tests cover
+  both behaviors. Remote main then advanced from `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`
+  to `212aa25485bc6e8f0a5a91eb35edc7485056cb5a` in PR #366. The intervening
+  native-search change is the opt-in `STS_OOC_MCTS_REUSE_TRACE` observer, which
+  is unset in the frozen Stage-B/Stage-C teacher configuration; Stage B retry 6
+  remains applicable. The merged PR source was clean-built at producer commit
+  `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable SHA-256
+  `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`, with
+  current-main teacher manifest SHA-256
+  `c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. The
+  earlier eight shards are preserved but excluded because they used the old
+  executable; all 320 fresh sources will use the same current-main binary. The
+  first execution-only amendment plan
+  `stage_c_preoutcome_plan_retry1_indexfix.json` (SHA-256
+  `52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769`) binds
+  the checkpoint-writer correction. The current-main execution amendment
+  `stage_c_preoutcome_plan_retry2_current_main_indexfix.json` (SHA-256
+  `2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2`) binds
+  the refreshed teacher/binary and records why the eight old-executable shards
+  are not reused. The source assignment, candidate, selection, worker topology,
+  and qualification gates are unchanged. The updated preflight passes. The
+  refreshed collector started at `2026-09-26T20:47:18Z`; by `20:49:49Z`, its
+  durable index recorded 36/320 current-main sources. It reports eight
+  subprocess workers with one OpenMP thread each. Target selection, pair
+  collection, and qualification analysis have not started. Only Stage C can
+  qualify the candidate.
+- **Decision:** Stage A remains development evidence. Retry 6 passed the
+  current-main transfer proceed gate and authorizes the already-frozen Stage C
+  run, but neither Stage A nor B qualifies the candidate. The Stage-C
+  scientific plan and resource preflight remain frozen. The first Stage-C
+  candidate attempt stopped on the checkpoint-index bug after eight valid
+  old-executable shards; the corrected collector preserves them but excludes
+  them after the main advance so the qualification cohort uses one current-main
+  binary. The refreshed plan is frozen; no current-main candidate shards, target
+  selection, or paired outcomes have been produced. No runtime support changed; production remains
+  `active_unqualified_lizard`.
+- **Evidence:** [stage packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md),
+  including frozen cohort artifacts, Stage A analysis, candidate manifest,
+  source assignment, retry-5 history, retry-6 current-main teacher/plan/pairs,
+  analyzer output, compact checkpoint hash index (payloads excluded as scratch),
+  the Stage-C scientific and execution-amendment plans, both failed-attempt
+  provenance records, and current-main teacher manifest. The obsolete >128 GCP gate was
+  removed per ADR-0024, and the repository's local 320 experiment maximum is
+  used without a cloud bypass. The clean Release build and focused Event-room
+  regression passed; GitHub Actions did not start because of the account
+  payment/spending-limit block (not a code verdict). The focused Stage-C shard
+  index self-test now also passes after the retry-1 checkpoint-writer fix.
+
+Knowledge impact: current research now records the event-continuation harness
+fix, analyzer schema compatibility fix, retry-6 current-main transfer result,
+the frozen Stage-C scientific plan, and its checkpoint-index execution
+correction. No runtime support or candidate parameters changed.
+
+## §364 — Active Lizard fresh native Stage-C qualification (2026-09-27)
+
+- **Hypothesis:** replacing learned q with mechanical `q = 1-pOrdinaryWin`,
+  while retaining the exact #326 learned-r artifact and T2 rule, improves the
+  three-class transition model on a fresh native-Silver cohort without a clear
+  BROAD32 degradation.
+- **Frozen cohort and selection:** 320 fresh sources, `4202000..4202319`,
+  disjoint from the audited 367 prior Lizard sources. HARD288 selected one
+  prospective-support combat per source maximizing `(1-pOrdinaryWin)*(1-r)`;
+  BROAD32 used the frozen outcome-blind SHA-256 salt. The candidate pool
+  contained 6,509 rows; the selector scored 4,674 eligible states and froze
+  320 targets (288 HARD288, 32 BROAD32). Assignment SHA-256 is
+  `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`; target
+  selection SHA-256 is
+  `68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493`.
+- **Teacher and execution:** current-main baseline
+  `212aa25485bc6e8f0a5a91eb35edc7485056cb5a`, producer commit
+  `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable SHA-256
+  `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`, and
+  native-Silver teacher manifest SHA-256
+  `c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`.
+  Teacher search was fair, exact 10,000 simulations; collection used eight
+  subprocesses with one OpenMP thread each. The separate pre-outcome pair plan
+  SHA-256 is
+  `dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`.
+  All 320 per-source pair shards, manifests, and provenance records validated.
+  The initial collector invocation exited only during aggregate-time module
+  import after producing all shards; running it as a Python module reused all
+  320 saved outputs without rerunning seeds.
+- **Pair-plan timestamp correction:** the frozen `fresh_native/stage_c_pair_preoutcome_plan.json` remains unchanged at SHA-256 `dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`. Its `frozenAtUtc` value, `2026-09-26T21:22:37.149773+00:00`, agrees with the observed file mtime `2026-09-26T23:22:37.150061+02:00`. The candidate JSONL and manifest mtimes are `23:11:10.402490+02:00` and `23:11:10.426052+02:00`, about 11m27s earlier; the recorded UTC freeze therefore follows candidate-corpus validation. `frozenAtLocal=2026-09-26T22:41:02+02:00` is stale/inherited metadata (20:41:02Z, before current-main candidate collection started at 20:47:18Z) and is not the pair-plan freeze time. This documentation corrects the interpretation only; no frozen plan or outcome artifact was changed.
+- **Integrity and outcome counts:** the final pair JSONL SHA-256 is
+  `d60bf8004234abf6549997ab4cff12da6650cc50d4f42b2d6bceb6a07f5cdf73`; the
+  manifest SHA-256 is
+  `c0269eb57ce3fe4eeb2890e7d58f06a2b778f62da43fb9345612e42aa69bc78b`.
+  All 320 rows were valid, exactly supported, and passed mechanical-q parity.
+  Outcomes were 195 `WIN_RETAINED`, 105 `WIN_CONSUMED`, and 20 `LOSS_CONSUMED`
+  from 20 distinct sources; 125 consumed rows were B1-scoreable. All 32
+  BROAD32 rows were `WIN_RETAINED`.
+- **Predeclared qualification result:** the frozen analyzer output SHA-256 is
+  `d1f87d5a74170445fbd7ce5f3f22abd36bd14569942883276ebfc3c03b389984`; it
+  classifies the candidate
+  `ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED`. Pooled
+  candidate-minus-B1 three-class NLL was `-12.99026` (source-bootstrap 95% CI
+  `[-23.75822,-4.36279]`) and multiclass Brier was `-0.05266` (CI
+  `[-0.07482,-0.03239]`). Learned-r NLL and Brier deltas on 125 consumed rows
+  were `-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
+  `[-0.16692,-0.07162]`). T2-minus-T0 on 105 supported consumed wins was
+  `-1.06154` HP NLL (CI `[-1.47307,-0.67843]`), `-3.18088` HP CRPS (CI
+  `[-4.85606,-1.51303]`), and `-2.84107` expected-HP absolute error (CI
+  `[-4.77866,-1.02229]`). Data floor, exact support, q parity, primary,
+  learned-r, and T2 gates passed; no clear HARD288 or BROAD32 degradation was
+  detected. The T2 requirement for at least 20 supported consumed-win rows
+  was met with 105, and no T2 row was unscored or outside its model domain.
+- **Decision and boundary:** Stage C qualifies the frozen research candidate
+  under the predeclared native-teacher gates. It does not integrate runtime
+  support or change the production guard; production remains
+  `active_unqualified_lizard` pending a separate reviewed implementation and
+  promotion decision. Stage A vendored post-hoc evidence, Stage B same-state
+  teacher-transfer diagnostics, and Stage C fresh native qualification remain
+  separate evidence domains. See the [full packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md#stage-c-fresh-native-qualification-assignment)
+  and raw [analysis JSON](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_stage_c_analysis.json).
+
+Knowledge impact: current research records that the frozen mechanical-q,
+learned-r, T2 candidate passed its fresh native Stage-C qualification. No
+runtime support changed.

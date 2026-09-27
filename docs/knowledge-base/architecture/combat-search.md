@@ -111,9 +111,11 @@ restore searching such roots. Other roots search a flat
 `STS_SILVER_EXACT_ROOT_BUDGETS=1`) or, with `STS_SILVER_ADAPTIVE`, 10,000 for
 fresh roots and 500 for a retained root whose top-two visit-share gap reaches
 `STS_SILVER_ADAPTIVE_TOP_GAP`. Searched simulations are added to
-`ScumSearchAgent2::simulationCountTotal`. The knowledge observer
-is detached while searching. `g_nativeSilverCombatStats` holds the current
-thread's decisions and simulations for its latest combat.
+`ScumSearchAgent2::simulationCountTotal`, which is default-initialized to zero
+so native backends can safely accumulate counts for every default-constructed
+agent. The knowledge observer is detached while searching.
+`g_nativeSilverCombatStats` holds the current thread's decisions and
+simulations for its latest combat.
 
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's

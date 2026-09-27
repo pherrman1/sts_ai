@@ -1,6 +1,9 @@
 # Current research status
 
-Last verified: 2026-09-26 for the closed OOC MCTS reroot-opportunity measurement;
+Last verified: 2026-09-27 for the active-Lizard fresh native Stage-C
+qualification and unchanged production support; 2026-09-26 for the current-main
+teacher-transfer gate, frozen Stage-C plan and checkpoint recovery, and the
+closed OOC MCTS reroot-opportunity measurement;
 2026-09-25 for the OOC contextual semantic-prior offline qualification,
 the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
@@ -969,6 +972,100 @@ packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README
 [prospective-domain analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json),
 [broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
 and [ledger §347](../../experiments/ledger-06.md).
+
+A follow-up keeps the PR #326 learned `r` and T2 rule frozen while setting
+`q = 1 - pOrdinaryWin`. On the exact archived 128-row vendored cohort, the
+mechanical-q candidate improved pooled three-class NLL and Brier against B1,
+with exact q parity and support on all rows; the 9 `LOSS_CONSUMED` labels from
+9 sources remain below the qualification floor. This archived post-hoc screen
+is development evidence only. The first native-Silver transfer attempt
+replayed the campaign and failed to reach an archived fight index after the
+native outcomes changed the later trajectory. That is a harness failure, not
+a teacher-transfer result; it produced no native pair rows or scores. The
+corrected plan directly restores the 119 exact non-burning PR #326 persistent
+snapshots and excludes only the nine burning-elite targets whose archived
+states lack `burningEliteBuff`. PR #331 made native Silver update
+`simulationCountTotal`; merged PR #332 default-initializes that counter to
+zero. Retry 4 saved 116 pairs, then stalled on three Event-room snapshots
+because the direct snapshot lacked `curEvent` and the event-option callback:
+the generic `afterBattle()` callback recursively called `regainControl()`. A
+neutral post-capture return-to-map continuation fixed the collector. Retry 5
+reran all 119 exact non-burning snapshots with the then-current native teacher
+pinned to `0eed6993999386737d87f040e38fb241623b5cf3` and one executable; all 119
+rows had exact support and mechanical-q parity. Its predeclared analyzer
+decision was `PROCEED_TO_FRESH_NATIVE_QUALIFICATION`; this is historical
+transfer evidence, not qualification. Current main is
+`6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native Silver's
+equivalent-copy reroot behavior, which the frozen exact-root-budget setting
+does not disable; PR #362 changed `SilverWireState` and `SilverConversion` to
+preserve pending card queues at card-selection roots and settle Guardian Mode
+Shift before replay. Retry 6 then reran the exact same 119 states against
+current native Silver (baseline `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`):
+119/119 exact snapshots, support, and mechanical-q parity; 80
+`WIN_RETAINED`, 30 `WIN_CONSUMED`, and 9 `LOSS_CONSUMED`. The frozen transfer
+analysis passed the proceed gate with no clear candidate, learned-r, or T2
+regression. Its 19/119 vendored/native label disagreements remain descriptive;
+teacher rows are not pooled. Stage B permits the fresh run, but does not
+qualify the candidate. The frozen fresh 320-source assignment remains disjoint
+from 367 prior Lizard sources. Following ADR-0024, the user authorized its
+local execution. The original scientific plan freezes the candidate,
+assignment, selection rules, and gates in
+`stage_c_preoutcome_plan.json` (SHA-256
+`54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`). The
+collector uses eight independent source processes with one OpenMP thread each;
+completed sources are saved with per-seed manifests and checksums for resume.
+The first candidate attempt completed eight source shards but failed when its
+write-once artifact helper refused to replace the mutable progress index. All
+eight data/manifest/provenance/log sets validated against the then-frozen
+producer; no target selection/scoring, pair collection, or qualification
+analysis ran. Afterward, main advanced to `212aa25485bc6e8f0a5a91eb35edc7485056cb5a`
+through PR #366. Its OOC MCTS observer is opt-in, and
+`STS_OOC_MCTS_REUSE_TRACE` is unset in the frozen teacher config; Stage B retry
+6 remains the proceed diagnostic. The merged PR source was clean-built at
+producer commit `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable
+SHA-256 `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`,
+and teacher-manifest SHA-256
+`c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. The
+older eight shards are preserved but excluded so all Stage-C rows share that
+one producer and executable hash. The corrected current-main plan
+`stage_c_preoutcome_plan_retry2_current_main_indexfix.json` (SHA-256
+`2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2`)
+records the base advance and supersedes the earlier execution amendment without
+changing the candidate, assignment, selection rule, worker topology, or gates.
+Its attempt record is
+`stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
+`58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
+current-main Stage-C run completed with one producer commit and executable:
+320/320 source candidate shards, 6,509 candidate rows, 4,674
+prospective-support eligible states, and 320 outcome-blind selected targets
+(288 HARD288 plus 32 BROAD32). The selected-target file SHA-256 is
+`68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493`. The
+separate frozen pair plan SHA-256 is
+`dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`; the
+current-main native-Silver teacher manifest is
+`c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. Pair
+collection completed all 320 exact-10k fair native-Silver pairs using eight
+subprocesses with one OpenMP thread each. All 320 rows passed execution,
+support, and mechanical-q checks. Labels were 195 `WIN_RETAINED`, 105
+`WIN_CONSUMED`, and 20 `LOSS_CONSUMED` from 20 distinct sources; all 125
+consumed rows were B1-scoreable.
+
+The frozen analyzer classified the candidate
+`ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED`. Candidate-minus-B1
+pooled three-class NLL was `-12.99026` (source-bootstrap 95% CI
+`[-23.75822,-4.36279]`) and multiclass Brier was `-0.05266` (CI
+`[-0.07482,-0.03239]`). Learned-r NLL and Brier deltas on 125 consumed rows
+were `-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
+`[-0.16692,-0.07162]`). T2-minus-T0 on 105 supported consumed wins was
+`-1.06154` HP NLL (CI `[-1.47307,-0.67843]`), `-3.18088` HP CRPS (CI
+`[-4.85606,-1.51303]`), and `-2.84107` expected-HP absolute error (CI
+`[-4.77866,-1.02229]`). The rare-event floor, exact-support, q-parity,
+primary, learned-r, and T2 gates passed; no clear HARD288 or BROAD32
+degradation was detected. The 32 BROAD32 outcomes were all retained wins and
+therefore contain no consumed-tail rows. Stage C is offline qualification
+only: no runtime support was integrated, and production remains
+`active_unqualified_lizard`. See [ledger §364](../../experiments/ledger-06.md)
+and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal

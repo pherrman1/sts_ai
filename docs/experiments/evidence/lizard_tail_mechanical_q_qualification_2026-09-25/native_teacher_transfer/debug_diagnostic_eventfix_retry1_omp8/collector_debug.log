@@ -1,0 +1,640 @@
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+lizard direct-snapshot resume loaded=0/3 checkpoint_directory=docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl.checkpoints
+lizard_debug monotonic_ms=417002966 thread=133916884496768 pair source=4201117 fight=12 phase=snapshot_restore_begin
+lizard_debug monotonic_ms=417002966 thread=133916809754304 pair source=4201056 fight=18 phase=snapshot_restore_begin
+lizard_debug monotonic_ms=417002966 thread=133916801361600 pair source=4201028 fight=15 phase=snapshot_restore_begin
+lizard_debug monotonic_ms=417002966 thread=133916884496768 pair source=4201117 fight=12 phase=snapshot_validated act=2 floor=25 encounter=61 room=2
+lizard_debug monotonic_ms=417002966 thread=133916809754304 pair source=4201056 fight=18 phase=snapshot_validated act=3 floor=36 encounter=63 room=2
+lizard_debug monotonic_ms=417002966 thread=133916884496768 pair source=4201117 fight=12 arm=noTail phase=playout_begin
+lizard_debug monotonic_ms=417002966 thread=133916884496768 silver phase=decision_begin decision=1 encounter=61 turn=0 nodes=0
+lizard_debug monotonic_ms=417002966 thread=133916801361600 pair source=4201028 fight=15 phase=snapshot_validated act=2 floor=29 encounter=61 room=2
+lizard_debug monotonic_ms=417002966 thread=133916809754304 pair source=4201056 fight=18 arm=noTail phase=playout_begin
+lizard_debug monotonic_ms=417002966 thread=133916809754304 silver phase=decision_begin decision=1 encounter=63 turn=0 nodes=0
+lizard_debug monotonic_ms=417002966 thread=133916884496768 silver phase=search_begin decision=1 budget=10000 nodes=1
+lizard_debug monotonic_ms=417002966 thread=133916801361600 pair source=4201028 fight=15 arm=noTail phase=playout_begin
+lizard_debug monotonic_ms=417002966 thread=133916801361600 silver phase=decision_begin decision=1 encounter=61 turn=0 nodes=0
+lizard_debug monotonic_ms=417002967 thread=133916809754304 silver phase=search_begin decision=1 budget=10000 nodes=1
+lizard_debug monotonic_ms=417002967 thread=133916801361600 silver phase=search_begin decision=1 budget=10000 nodes=1
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=search_end decision=1 elapsed_ms=90 nodes=11726 search_steps=10000
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=decision_end decision=1 simulations=10000 outcome=0 nodes=11726
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=decision_begin decision=2 encounter=61 turn=0 nodes=11726
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=decision_reroot decision=2 node_count=11726 inherited_visits=9600 compact=0
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=11726 decision_states=10001 dedup_slots=65536 root_edges=9
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=11726 decision_states=10001 dedup_slots=65536
+lizard_debug monotonic_ms=417003056 thread=133916884496768 silver phase=search_begin decision=2 budget=10000 nodes=11726
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=search_end decision=1 elapsed_ms=103 nodes=11558 search_steps=10000
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=decision_end decision=1 simulations=10000 outcome=0 nodes=11558
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=decision_begin decision=2 encounter=63 turn=0 nodes=11558
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=decision_reroot decision=2 node_count=11558 inherited_visits=8133 compact=0
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=reroot_begin compact=0 all_nodes=11558 decision_states=9999 dedup_slots=65536 root_edges=7
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=reroot_end elapsed_ms=0 all_nodes=11558 decision_states=9999 dedup_slots=65536
+lizard_debug monotonic_ms=417003070 thread=133916809754304 silver phase=search_begin decision=2 budget=10000 nodes=11558
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=search_end decision=1 elapsed_ms=138 nodes=11415 search_steps=10000
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=decision_end decision=1 simulations=10000 outcome=0 nodes=11415
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=decision_begin decision=2 encounter=61 turn=0 nodes=11415
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=decision_reroot decision=2 node_count=11415 inherited_visits=7768 compact=0
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=11415 decision_states=10001 dedup_slots=65536 root_edges=10
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=11415 decision_states=10001 dedup_slots=65536
+lizard_debug monotonic_ms=417003106 thread=133916801361600 silver phase=search_begin decision=2 budget=10000 nodes=11415
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=search_end decision=2 elapsed_ms=95 nodes=24029 search_steps=20000
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=decision_end decision=2 simulations=10000 outcome=0 nodes=24029
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=decision_begin decision=3 encounter=61 turn=0 nodes=24029
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=decision_reroot decision=3 node_count=24029 inherited_visits=17631 compact=0
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=24029 decision_states=19997 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=24029 decision_states=19997 dedup_slots=65536
+lizard_debug monotonic_ms=417003152 thread=133916884496768 silver phase=search_begin decision=3 budget=10000 nodes=24029
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=search_end decision=2 elapsed_ms=111 nodes=22914 search_steps=20000
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=decision_end decision=2 simulations=10000 outcome=0 nodes=22914
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=decision_begin decision=3 encounter=63 turn=0 nodes=22914
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=decision_reroot decision=3 node_count=22914 inherited_visits=18778 compact=0
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=reroot_begin compact=0 all_nodes=22914 decision_states=19941 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=reroot_end elapsed_ms=0 all_nodes=22914 decision_states=19941 dedup_slots=65536
+lizard_debug monotonic_ms=417003181 thread=133916809754304 silver phase=search_begin decision=3 budget=10000 nodes=22914
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=search_end decision=2 elapsed_ms=129 nodes=21875 search_steps=20000
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=decision_end decision=2 simulations=10000 outcome=0 nodes=21875
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=decision_begin decision=3 encounter=61 turn=0 nodes=21875
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=decision_reroot decision=3 node_count=21875 inherited_visits=16683 compact=0
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=21875 decision_states=20001 dedup_slots=65536 root_edges=9
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=21875 decision_states=20001 dedup_slots=65536
+lizard_debug monotonic_ms=417003235 thread=133916801361600 silver phase=search_begin decision=3 budget=10000 nodes=21875
+lizard_debug monotonic_ms=417003248 thread=133916884496768 silver phase=search_end decision=3 elapsed_ms=96 nodes=36513 search_steps=30000
+lizard_debug monotonic_ms=417003248 thread=133916884496768 silver phase=decision_end decision=3 simulations=10000 outcome=0 nodes=36513
+lizard_debug monotonic_ms=417003248 thread=133916884496768 silver phase=decision_begin decision=4 encounter=61 turn=0 nodes=36513
+lizard_debug monotonic_ms=417003248 thread=133916884496768 silver phase=decision_reroot decision=4 node_count=36513 inherited_visits=26998 compact=1
+lizard_debug monotonic_ms=417003248 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=36513 decision_states=29970 dedup_slots=65536 root_edges=5
+lizard_debug monotonic_ms=417003256 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=34506 reachable_states=28174 retained_slots=28174
+lizard_debug monotonic_ms=417003259 thread=133916884496768 silver phase=reroot_end elapsed_ms=11 all_nodes=34506 decision_states=28174 dedup_slots=65536
+lizard_debug monotonic_ms=417003259 thread=133916884496768 silver phase=search_begin decision=4 budget=10000 nodes=34506
+lizard_debug monotonic_ms=417003275 thread=133916809754304 silver phase=search_end decision=3 elapsed_ms=93 nodes=34151 search_steps=30000
+lizard_debug monotonic_ms=417003275 thread=133916809754304 silver phase=decision_end decision=3 simulations=10000 outcome=0 nodes=34151
+lizard_debug monotonic_ms=417003275 thread=133916809754304 silver phase=decision_begin decision=4 encounter=63 turn=1 nodes=34151
+lizard_debug monotonic_ms=417003275 thread=133916809754304 silver phase=search_begin decision=4 budget=10000 nodes=34151
+lizard_debug monotonic_ms=417003299 thread=133916809754304 silver phase=search_end decision=4 elapsed_ms=23 nodes=34151 search_steps=40000
+lizard_debug monotonic_ms=417003299 thread=133916809754304 silver phase=decision_end decision=4 simulations=10000 outcome=0 nodes=34151
+lizard_debug monotonic_ms=417003299 thread=133916809754304 silver phase=decision_begin decision=5 encounter=63 turn=1 nodes=34151
+lizard_debug monotonic_ms=417003299 thread=133916809754304 silver phase=decision_reroot decision=5 node_count=34151 inherited_visits=9655 compact=1
+lizard_debug monotonic_ms=417003299 thread=133916809754304 silver phase=reroot_begin compact=1 all_nodes=34151 decision_states=29741 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417003300 thread=133916809754304 silver phase=reroot_walk_complete reachable_nodes=6698 reachable_states=6042 retained_slots=6042
+lizard_debug monotonic_ms=417003315 thread=133916809754304 silver phase=reroot_end elapsed_ms=16 all_nodes=6698 decision_states=6042 dedup_slots=65536
+lizard_debug monotonic_ms=417003315 thread=133916809754304 silver phase=search_begin decision=5 budget=10000 nodes=6698
+lizard_debug monotonic_ms=417003316 thread=133916884496768 silver phase=search_end decision=4 elapsed_ms=56 nodes=34506 search_steps=40000
+lizard_debug monotonic_ms=417003316 thread=133916884496768 silver phase=decision_end decision=4 simulations=10000 outcome=0 nodes=34506
+lizard_debug monotonic_ms=417003316 thread=133916884496768 silver phase=decision_begin decision=5 encounter=61 turn=0 nodes=34506
+lizard_debug monotonic_ms=417003316 thread=133916884496768 silver phase=decision_reroot decision=5 node_count=34506 inherited_visits=9911 compact=1
+lizard_debug monotonic_ms=417003316 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=34506 decision_states=28174 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417003319 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=11857 reachable_states=9911 retained_slots=9911
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=search_end decision=5 elapsed_ms=17 nodes=10424 search_steps=50000
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=decision_end decision=5 simulations=10000 outcome=0 nodes=10424
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=decision_begin decision=6 encounter=63 turn=1 nodes=10424
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=decision_reroot decision=6 node_count=10424 inherited_visits=19427 compact=0
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=reroot_begin compact=0 all_nodes=10424 decision_states=9312 dedup_slots=65536 root_edges=2
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=reroot_end elapsed_ms=0 all_nodes=10424 decision_states=9312 dedup_slots=65536
+lizard_debug monotonic_ms=417003333 thread=133916809754304 silver phase=search_begin decision=6 budget=10000 nodes=10424
+lizard_debug monotonic_ms=417003334 thread=133916884496768 silver phase=reroot_end elapsed_ms=18 all_nodes=11857 decision_states=9911 dedup_slots=65536
+lizard_debug monotonic_ms=417003334 thread=133916884496768 silver phase=search_begin decision=5 budget=10000 nodes=11857
+lizard_debug monotonic_ms=417003347 thread=133916809754304 silver phase=search_end decision=6 elapsed_ms=14 nodes=13519 search_steps=60000
+lizard_debug monotonic_ms=417003347 thread=133916809754304 silver phase=decision_end decision=6 simulations=10000 outcome=0 nodes=13519
+lizard_debug monotonic_ms=417003347 thread=133916809754304 silver phase=decision_begin decision=7 encounter=63 turn=2 nodes=13519
+lizard_debug monotonic_ms=417003348 thread=133916809754304 silver phase=search_begin decision=7 budget=10000 nodes=13519
+lizard_debug monotonic_ms=417003349 thread=133916809754304 silver phase=search_end decision=7 elapsed_ms=1 nodes=13519 search_steps=70000
+lizard_debug monotonic_ms=417003349 thread=133916809754304 silver phase=decision_end decision=7 simulations=10000 outcome=1 nodes=13519
+lizard_debug monotonic_ms=417003354 thread=133916809754304 pair source=4201056 fight=18 arm=noTail phase=playout_end elapsed_ms=387 outcome=1 sim_count_total=70000 actions=7 raw_captures=0
+lizard_debug monotonic_ms=417003354 thread=133916809754304 pair source=4201056 fight=18 arm=noTail phase=exit_battle_end valid=1
+lizard_debug monotonic_ms=417003354 thread=133916809754304 pair source=4201056 fight=18 arm=noTail phase=row_built
+lizard_debug monotonic_ms=417003354 thread=133916809754304 pair source=4201056 fight=18 arm=activeTail phase=playout_begin
+lizard_debug monotonic_ms=417003354 thread=133916809754304 silver phase=decision_begin decision=1 encounter=63 turn=0 nodes=0
+lizard_debug monotonic_ms=417003354 thread=133916809754304 silver phase=search_begin decision=1 budget=10000 nodes=1
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=search_end decision=3 elapsed_ms=124 nodes=32433 search_steps=30000
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=decision_end decision=3 simulations=10000 outcome=0 nodes=32433
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=decision_begin decision=4 encounter=61 turn=0 nodes=32433
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=decision_reroot decision=4 node_count=32433 inherited_visits=13691 compact=0
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=32433 decision_states=30001 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=32433 decision_states=30001 dedup_slots=65536
+lizard_debug monotonic_ms=417003360 thread=133916801361600 silver phase=search_begin decision=4 budget=10000 nodes=32433
+lizard_debug monotonic_ms=417003406 thread=133916884496768 silver phase=search_end decision=5 elapsed_ms=71 nodes=24355 search_steps=50000
+lizard_debug monotonic_ms=417003406 thread=133916884496768 silver phase=decision_end decision=5 simulations=10000 outcome=0 nodes=24355
+lizard_debug monotonic_ms=417003406 thread=133916884496768 silver phase=decision_begin decision=6 encounter=61 turn=1 nodes=24355
+lizard_debug monotonic_ms=417003406 thread=133916884496768 silver phase=search_begin decision=6 budget=10000 nodes=24355
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=search_end decision=1 elapsed_ms=53 nodes=11662 search_steps=10000
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=decision_end decision=1 simulations=10000 outcome=0 nodes=11662
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=decision_begin decision=2 encounter=63 turn=0 nodes=11662
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=decision_reroot decision=2 node_count=11662 inherited_visits=6578 compact=0
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=reroot_begin compact=0 all_nodes=11662 decision_states=9999 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=reroot_end elapsed_ms=0 all_nodes=11662 decision_states=9999 dedup_slots=65536
+lizard_debug monotonic_ms=417003407 thread=133916809754304 silver phase=search_begin decision=2 budget=10000 nodes=11662
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=search_end decision=2 elapsed_ms=51 nodes=23207 search_steps=20000
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=decision_end decision=2 simulations=10000 outcome=0 nodes=23207
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=decision_begin decision=3 encounter=63 turn=0 nodes=23207
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=decision_reroot decision=3 node_count=23207 inherited_visits=16233 compact=0
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=reroot_begin compact=0 all_nodes=23207 decision_states=19913 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=reroot_end elapsed_ms=0 all_nodes=23207 decision_states=19913 dedup_slots=65536
+lizard_debug monotonic_ms=417003459 thread=133916809754304 silver phase=search_begin decision=3 budget=10000 nodes=23207
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=search_end decision=6 elapsed_ms=55 nodes=24355 search_steps=60000
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=decision_end decision=6 simulations=10000 outcome=0 nodes=24355
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=decision_begin decision=7 encounter=61 turn=1 nodes=24355
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=decision_reroot decision=7 node_count=24355 inherited_visits=8696 compact=0
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=24355 decision_states=19911 dedup_slots=65536 root_edges=7
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=24355 decision_states=19911 dedup_slots=65536
+lizard_debug monotonic_ms=417003461 thread=133916884496768 silver phase=search_begin decision=7 budget=10000 nodes=24355
+lizard_debug monotonic_ms=417003482 thread=133916801361600 silver phase=search_end decision=4 elapsed_ms=122 nodes=43073 search_steps=40000
+lizard_debug monotonic_ms=417003482 thread=133916801361600 silver phase=decision_end decision=4 simulations=10000 outcome=0 nodes=43073
+lizard_debug monotonic_ms=417003482 thread=133916801361600 silver phase=decision_begin decision=5 encounter=61 turn=0 nodes=43073
+lizard_debug monotonic_ms=417003482 thread=133916801361600 silver phase=decision_reroot decision=5 node_count=43073 inherited_visits=19071 compact=1
+lizard_debug monotonic_ms=417003482 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=43073 decision_states=40001 dedup_slots=131072 root_edges=5
+lizard_debug monotonic_ms=417003491 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=28296 reachable_states=26615 retained_slots=26615
+lizard_debug monotonic_ms=417003502 thread=133916801361600 silver phase=reroot_end elapsed_ms=19 all_nodes=28296 decision_states=26615 dedup_slots=131072
+lizard_debug monotonic_ms=417003502 thread=133916801361600 silver phase=search_begin decision=5 budget=10000 nodes=28296
+lizard_debug monotonic_ms=417003512 thread=133916809754304 silver phase=search_end decision=3 elapsed_ms=53 nodes=34356 search_steps=30000
+lizard_debug monotonic_ms=417003512 thread=133916809754304 silver phase=decision_end decision=3 simulations=10000 outcome=0 nodes=34356
+lizard_debug monotonic_ms=417003512 thread=133916809754304 silver phase=decision_begin decision=4 encounter=63 turn=1 nodes=34356
+lizard_debug monotonic_ms=417003512 thread=133916809754304 silver phase=search_begin decision=4 budget=10000 nodes=34356
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=search_end decision=7 elapsed_ms=60 nodes=24355 search_steps=70000
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=decision_end decision=7 simulations=10000 outcome=0 nodes=24355
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=decision_begin decision=8 encounter=61 turn=1 nodes=24355
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=decision_reroot decision=8 node_count=24355 inherited_visits=17248 compact=0
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=24355 decision_states=19911 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=24355 decision_states=19911 dedup_slots=65536
+lizard_debug monotonic_ms=417003521 thread=133916884496768 silver phase=search_begin decision=8 budget=10000 nodes=24355
+lizard_debug monotonic_ms=417003537 thread=133916809754304 silver phase=search_end decision=4 elapsed_ms=24 nodes=34356 search_steps=40000
+lizard_debug monotonic_ms=417003537 thread=133916809754304 silver phase=decision_end decision=4 simulations=10000 outcome=0 nodes=34356
+lizard_debug monotonic_ms=417003537 thread=133916809754304 silver phase=decision_begin decision=5 encounter=63 turn=1 nodes=34356
+lizard_debug monotonic_ms=417003537 thread=133916809754304 silver phase=decision_reroot decision=5 node_count=34356 inherited_visits=9725 compact=1
+lizard_debug monotonic_ms=417003537 thread=133916809754304 silver phase=reroot_begin compact=1 all_nodes=34356 decision_states=29661 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417003539 thread=133916809754304 silver phase=reroot_walk_complete reachable_nodes=7263 reachable_states=6581 retained_slots=6581
+lizard_debug monotonic_ms=417003553 thread=133916809754304 silver phase=reroot_end elapsed_ms=15 all_nodes=7263 decision_states=6581 dedup_slots=65536
+lizard_debug monotonic_ms=417003553 thread=133916809754304 silver phase=search_begin decision=5 budget=10000 nodes=7263
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=search_end decision=5 elapsed_ms=18 nodes=11249 search_steps=50000
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=decision_end decision=5 simulations=10000 outcome=0 nodes=11249
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=decision_begin decision=6 encounter=63 turn=1 nodes=11249
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=decision_reroot decision=6 node_count=11249 inherited_visits=19464 compact=0
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=reroot_begin compact=0 all_nodes=11249 decision_states=10130 dedup_slots=65536 root_edges=2
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=reroot_end elapsed_ms=0 all_nodes=11249 decision_states=10130 dedup_slots=65536
+lizard_debug monotonic_ms=417003571 thread=133916809754304 silver phase=search_begin decision=6 budget=10000 nodes=11249
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=search_end decision=8 elapsed_ms=58 nodes=27708 search_steps=80000
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=decision_end decision=8 simulations=10000 outcome=0 nodes=27708
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=decision_begin decision=9 encounter=61 turn=1 nodes=27708
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=decision_reroot decision=9 node_count=27708 inherited_visits=27425 compact=0
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=27708 decision_states=24632 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=27708 decision_states=24632 dedup_slots=65536
+lizard_debug monotonic_ms=417003580 thread=133916884496768 silver phase=search_begin decision=9 budget=10000 nodes=27708
+lizard_debug monotonic_ms=417003585 thread=133916809754304 silver phase=search_end decision=6 elapsed_ms=14 nodes=14476 search_steps=60000
+lizard_debug monotonic_ms=417003585 thread=133916809754304 silver phase=decision_end decision=6 simulations=10000 outcome=0 nodes=14476
+lizard_debug monotonic_ms=417003585 thread=133916809754304 silver phase=decision_begin decision=7 encounter=63 turn=2 nodes=14476
+lizard_debug monotonic_ms=417003585 thread=133916809754304 silver phase=search_begin decision=7 budget=10000 nodes=14476
+lizard_debug monotonic_ms=417003586 thread=133916809754304 silver phase=search_end decision=7 elapsed_ms=1 nodes=14476 search_steps=70000
+lizard_debug monotonic_ms=417003586 thread=133916809754304 silver phase=decision_end decision=7 simulations=10000 outcome=1 nodes=14476
+lizard_debug monotonic_ms=417003588 thread=133916801361600 silver phase=search_end decision=5 elapsed_ms=85 nodes=39307 search_steps=50000
+lizard_debug monotonic_ms=417003588 thread=133916801361600 silver phase=decision_end decision=5 simulations=10000 outcome=0 nodes=39307
+lizard_debug monotonic_ms=417003588 thread=133916801361600 silver phase=decision_begin decision=6 encounter=61 turn=0 nodes=39307
+lizard_debug monotonic_ms=417003588 thread=133916801361600 silver phase=decision_reroot decision=6 node_count=39307 inherited_visits=1778 compact=1
+lizard_debug monotonic_ms=417003588 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=39307 decision_states=36615 dedup_slots=131072 root_edges=3
+lizard_debug monotonic_ms=417003589 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=2158 reachable_states=1978 retained_slots=1978
+lizard_debug monotonic_ms=417003591 thread=133916809754304 pair source=4201056 fight=18 arm=activeTail phase=playout_end elapsed_ms=237 outcome=1 sim_count_total=70000 actions=7 raw_captures=0
+lizard_debug monotonic_ms=417003591 thread=133916809754304 pair source=4201056 fight=18 arm=activeTail phase=exit_battle_end valid=1
+lizard_debug monotonic_ms=417003591 thread=133916809754304 pair source=4201056 fight=18 arm=activeTail phase=row_built
+lizard_debug monotonic_ms=417003592 thread=133916809754304 pair source=4201056 fight=18 phase=pair_complete
+lizard pair completed=1/3 source=4201056 fight=18 pair_elapsed_s=0 total_elapsed_s=0 omp_threads=8 checkpoint=docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl.checkpoints/source_4201056_fight_18.json
+lizard_debug monotonic_ms=417003609 thread=133916801361600 silver phase=reroot_end elapsed_ms=20 all_nodes=2158 decision_states=1978 dedup_slots=131072
+lizard_debug monotonic_ms=417003609 thread=133916801361600 silver phase=search_begin decision=6 budget=10000 nodes=2158
+lizard_debug monotonic_ms=417003634 thread=133916884496768 silver phase=search_end decision=9 elapsed_ms=54 nodes=33176 search_steps=90000
+lizard_debug monotonic_ms=417003634 thread=133916884496768 silver phase=decision_end decision=9 simulations=10000 outcome=0 nodes=33176
+lizard_debug monotonic_ms=417003634 thread=133916884496768 silver phase=decision_begin decision=10 encounter=61 turn=1 nodes=33176
+lizard_debug monotonic_ms=417003634 thread=133916884496768 silver phase=decision_reroot decision=10 node_count=33176 inherited_visits=37171 compact=1
+lizard_debug monotonic_ms=417003634 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=33176 decision_states=29437 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417003641 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=30222 reachable_states=27102 retained_slots=27102
+lizard_debug monotonic_ms=417003644 thread=133916884496768 silver phase=reroot_end elapsed_ms=10 all_nodes=30222 decision_states=27102 dedup_slots=65536
+lizard_debug monotonic_ms=417003644 thread=133916884496768 silver phase=search_begin decision=10 budget=10000 nodes=30222
+lizard_debug monotonic_ms=417003681 thread=133916801361600 silver phase=search_end decision=6 elapsed_ms=72 nodes=13537 search_steps=60000
+lizard_debug monotonic_ms=417003681 thread=133916801361600 silver phase=decision_end decision=6 simulations=10000 outcome=0 nodes=13537
+lizard_debug monotonic_ms=417003681 thread=133916801361600 silver phase=decision_begin decision=7 encounter=61 turn=1 nodes=13537
+lizard_debug monotonic_ms=417003681 thread=133916801361600 silver phase=search_begin decision=7 budget=10000 nodes=13537
+lizard_debug monotonic_ms=417003699 thread=133916884496768 silver phase=search_end decision=10 elapsed_ms=54 nodes=34314 search_steps=100000
+lizard_debug monotonic_ms=417003699 thread=133916884496768 silver phase=decision_end decision=10 simulations=10000 outcome=0 nodes=34314
+lizard_debug monotonic_ms=417003699 thread=133916884496768 silver phase=decision_begin decision=11 encounter=61 turn=1 nodes=34314
+lizard_debug monotonic_ms=417003699 thread=133916884496768 silver phase=decision_reroot decision=11 node_count=34314 inherited_visits=46671 compact=1
+lizard_debug monotonic_ms=417003699 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=34314 decision_states=30654 dedup_slots=65536 root_edges=2
+lizard_debug monotonic_ms=417003708 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=33524 reachable_states=30000 retained_slots=30000
+lizard_debug monotonic_ms=417003711 thread=133916884496768 silver phase=reroot_end elapsed_ms=12 all_nodes=33524 decision_states=30000 dedup_slots=65536
+lizard_debug monotonic_ms=417003711 thread=133916884496768 silver phase=search_begin decision=11 budget=10000 nodes=33524
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=search_end decision=7 elapsed_ms=87 nodes=14354 search_steps=70000
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=decision_end decision=7 simulations=10000 outcome=0 nodes=14354
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=decision_begin decision=8 encounter=61 turn=1 nodes=14354
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=decision_reroot decision=8 node_count=14354 inherited_visits=9733 compact=0
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=14354 decision_states=11978 dedup_slots=131072 root_edges=7
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=14354 decision_states=11978 dedup_slots=131072
+lizard_debug monotonic_ms=417003769 thread=133916801361600 silver phase=search_begin decision=8 budget=10000 nodes=14354
+lizard_debug monotonic_ms=417003770 thread=133916884496768 silver phase=search_end decision=11 elapsed_ms=58 nodes=33524 search_steps=110000
+lizard_debug monotonic_ms=417003770 thread=133916884496768 silver phase=decision_end decision=11 simulations=10000 outcome=0 nodes=33524
+lizard_debug monotonic_ms=417003770 thread=133916884496768 silver phase=decision_begin decision=12 encounter=61 turn=1 nodes=33524
+lizard_debug monotonic_ms=417003770 thread=133916884496768 silver phase=decision_reroot decision=12 node_count=33524 inherited_visits=5011 compact=1
+lizard_debug monotonic_ms=417003770 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=33524 decision_states=30000 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417003771 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=5333 reachable_states=4896 retained_slots=4896
+lizard_debug monotonic_ms=417003795 thread=133916884496768 silver phase=reroot_end elapsed_ms=25 all_nodes=5333 decision_states=4896 dedup_slots=65536
+lizard_debug monotonic_ms=417003795 thread=133916884496768 silver phase=search_begin decision=12 budget=10000 nodes=5333
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=search_end decision=12 elapsed_ms=50 nodes=12848 search_steps=120000
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=decision_end decision=12 simulations=10000 outcome=0 nodes=12848
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=decision_begin decision=13 encounter=61 turn=2 nodes=12848
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=decision_reroot decision=13 node_count=12848 inherited_visits=2478 compact=0
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=12848 decision_states=11612 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=12848 decision_states=11612 dedup_slots=65536
+lizard_debug monotonic_ms=417003846 thread=133916884496768 silver phase=search_begin decision=13 budget=10000 nodes=12848
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=search_end decision=13 elapsed_ms=17 nodes=14575 search_steps=130000
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=decision_end decision=13 simulations=10000 outcome=0 nodes=14575
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=decision_begin decision=14 encounter=61 turn=2 nodes=14575
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=decision_reroot decision=14 node_count=14575 inherited_visits=12141 compact=0
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=14575 decision_states=13126 dedup_slots=65536 root_edges=5
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=14575 decision_states=13126 dedup_slots=65536
+lizard_debug monotonic_ms=417003864 thread=133916884496768 silver phase=search_begin decision=14 budget=10000 nodes=14575
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=search_end decision=8 elapsed_ms=102 nodes=28510 search_steps=80000
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=decision_end decision=8 simulations=10000 outcome=0 nodes=28510
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=decision_begin decision=9 encounter=61 turn=1 nodes=28510
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=decision_reroot decision=9 node_count=28510 inherited_visits=1480 compact=0
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=28510 decision_states=19967 dedup_slots=131072 root_edges=7
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=28510 decision_states=19967 dedup_slots=131072
+lizard_debug monotonic_ms=417003872 thread=133916801361600 silver phase=search_begin decision=9 budget=10000 nodes=28510
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=search_end decision=14 elapsed_ms=13 nodes=15032 search_steps=140000
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=decision_end decision=14 simulations=10000 outcome=0 nodes=15032
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=decision_begin decision=15 encounter=61 turn=2 nodes=15032
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=decision_reroot decision=15 node_count=15032 inherited_visits=19636 compact=0
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15032 decision_states=13529 dedup_slots=65536 root_edges=4
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15032 decision_states=13529 dedup_slots=65536
+lizard_debug monotonic_ms=417003878 thread=133916884496768 silver phase=search_begin decision=15 budget=10000 nodes=15032
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=search_end decision=15 elapsed_ms=12 nodes=15317 search_steps=150000
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=decision_end decision=15 simulations=10000 outcome=0 nodes=15317
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=decision_begin decision=16 encounter=61 turn=2 nodes=15317
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=decision_reroot decision=16 node_count=15317 inherited_visits=30355 compact=0
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15317 decision_states=13776 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15317 decision_states=13776 dedup_slots=65536
+lizard_debug monotonic_ms=417003890 thread=133916884496768 silver phase=search_begin decision=16 budget=10000 nodes=15317
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=search_end decision=16 elapsed_ms=11 nodes=15519 search_steps=160000
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=decision_end decision=16 simulations=10000 outcome=0 nodes=15519
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=decision_begin decision=17 encounter=61 turn=2 nodes=15519
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=decision_reroot decision=17 node_count=15519 inherited_visits=40580 compact=0
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15519 decision_states=13949 dedup_slots=65536 root_edges=2
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15519 decision_states=13949 dedup_slots=65536
+lizard_debug monotonic_ms=417003902 thread=133916884496768 silver phase=search_begin decision=17 budget=10000 nodes=15519
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=search_end decision=17 elapsed_ms=11 nodes=15688 search_steps=170000
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=decision_end decision=17 simulations=10000 outcome=0 nodes=15688
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=decision_begin decision=18 encounter=61 turn=2 nodes=15688
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=decision_reroot decision=18 node_count=15688 inherited_visits=50558 compact=0
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15688 decision_states=14098 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15688 decision_states=14098 dedup_slots=65536
+lizard_debug monotonic_ms=417003913 thread=133916884496768 silver phase=search_begin decision=18 budget=10000 nodes=15688
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=search_end decision=18 elapsed_ms=11 nodes=15817 search_steps=180000
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=decision_end decision=18 simulations=10000 outcome=0 nodes=15817
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=decision_begin decision=19 encounter=61 turn=3 nodes=15817
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=decision_reroot decision=19 node_count=15817 inherited_visits=827 compact=0
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15817 decision_states=14211 dedup_slots=65536 root_edges=5
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15817 decision_states=14211 dedup_slots=65536
+lizard_debug monotonic_ms=417003924 thread=133916884496768 silver phase=search_begin decision=19 budget=10000 nodes=15817
+lizard_debug monotonic_ms=417003925 thread=133916884496768 silver phase=search_end decision=19 elapsed_ms=0 nodes=15851 search_steps=190000
+lizard_debug monotonic_ms=417003925 thread=133916884496768 silver phase=decision_end decision=19 simulations=10000 outcome=1 nodes=15851
+lizard_debug monotonic_ms=417003936 thread=133916884496768 pair source=4201117 fight=12 arm=noTail phase=playout_end elapsed_ms=969 outcome=1 sim_count_total=190000 actions=19 raw_captures=0
+lizard_debug monotonic_ms=417003936 thread=133916884496768 pair source=4201117 fight=12 arm=noTail phase=exit_battle_end valid=1
+lizard_debug monotonic_ms=417003936 thread=133916884496768 pair source=4201117 fight=12 arm=noTail phase=row_built
+lizard_debug monotonic_ms=417003936 thread=133916884496768 pair source=4201117 fight=12 arm=activeTail phase=playout_begin
+lizard_debug monotonic_ms=417003936 thread=133916884496768 silver phase=decision_begin decision=1 encounter=61 turn=0 nodes=0
+lizard_debug monotonic_ms=417003936 thread=133916884496768 silver phase=search_begin decision=1 budget=10000 nodes=1
+lizard_debug monotonic_ms=417003971 thread=133916801361600 silver phase=search_end decision=9 elapsed_ms=98 nodes=41553 search_steps=90000
+lizard_debug monotonic_ms=417003971 thread=133916801361600 silver phase=decision_end decision=9 simulations=10000 outcome=0 nodes=41553
+lizard_debug monotonic_ms=417003971 thread=133916801361600 silver phase=decision_begin decision=10 encounter=61 turn=1 nodes=41553
+lizard_debug monotonic_ms=417003971 thread=133916801361600 silver phase=decision_reroot decision=10 node_count=41553 inherited_visits=11401 compact=1
+lizard_debug monotonic_ms=417003971 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=41553 decision_states=29945 dedup_slots=131072 root_edges=7
+lizard_debug monotonic_ms=417003976 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=16391 reachable_states=12187 retained_slots=12187
+lizard_debug monotonic_ms=417003991 thread=133916801361600 silver phase=reroot_end elapsed_ms=20 all_nodes=16391 decision_states=12187 dedup_slots=131072
+lizard_debug monotonic_ms=417003991 thread=133916801361600 silver phase=search_begin decision=10 budget=10000 nodes=16391
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=search_end decision=1 elapsed_ms=57 nodes=11824 search_steps=10000
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=decision_end decision=1 simulations=10000 outcome=0 nodes=11824
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=decision_begin decision=2 encounter=61 turn=0 nodes=11824
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=decision_reroot decision=2 node_count=11824 inherited_visits=9634 compact=0
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=11824 decision_states=10001 dedup_slots=65536 root_edges=9
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=11824 decision_states=10001 dedup_slots=65536
+lizard_debug monotonic_ms=417003994 thread=133916884496768 silver phase=search_begin decision=2 budget=10000 nodes=11824
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=search_end decision=2 elapsed_ms=62 nodes=24071 search_steps=20000
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=decision_end decision=2 simulations=10000 outcome=0 nodes=24071
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=decision_begin decision=3 encounter=61 turn=0 nodes=24071
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=decision_reroot decision=3 node_count=24071 inherited_visits=17740 compact=0
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=24071 decision_states=19988 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=24071 decision_states=19988 dedup_slots=65536
+lizard_debug monotonic_ms=417004057 thread=133916884496768 silver phase=search_begin decision=3 budget=10000 nodes=24071
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=search_end decision=10 elapsed_ms=113 nodes=29046 search_steps=100000
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=decision_end decision=10 simulations=10000 outcome=0 nodes=29046
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=decision_begin decision=11 encounter=61 turn=1 nodes=29046
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=decision_reroot decision=11 node_count=29046 inherited_visits=21229 compact=0
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=29046 decision_states=22183 dedup_slots=131072 root_edges=5
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=29046 decision_states=22183 dedup_slots=131072
+lizard_debug monotonic_ms=417004104 thread=133916801361600 silver phase=search_begin decision=11 budget=10000 nodes=29046
+lizard_debug monotonic_ms=417004124 thread=133916884496768 silver phase=search_end decision=3 elapsed_ms=67 nodes=36430 search_steps=30000
+lizard_debug monotonic_ms=417004124 thread=133916884496768 silver phase=decision_end decision=3 simulations=10000 outcome=0 nodes=36430
+lizard_debug monotonic_ms=417004124 thread=133916884496768 silver phase=decision_begin decision=4 encounter=61 turn=0 nodes=36430
+lizard_debug monotonic_ms=417004124 thread=133916884496768 silver phase=decision_reroot decision=4 node_count=36430 inherited_visits=22963 compact=1
+lizard_debug monotonic_ms=417004124 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=36430 decision_states=29925 dedup_slots=65536 root_edges=5
+lizard_debug monotonic_ms=417004132 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=34781 reachable_states=28465 retained_slots=28465
+lizard_debug monotonic_ms=417004135 thread=133916884496768 silver phase=reroot_end elapsed_ms=11 all_nodes=34781 decision_states=28465 dedup_slots=65536
+lizard_debug monotonic_ms=417004135 thread=133916884496768 silver phase=search_begin decision=4 budget=10000 nodes=34781
+lizard_debug monotonic_ms=417004192 thread=133916884496768 silver phase=search_end decision=4 elapsed_ms=56 nodes=34781 search_steps=40000
+lizard_debug monotonic_ms=417004192 thread=133916884496768 silver phase=decision_end decision=4 simulations=10000 outcome=0 nodes=34781
+lizard_debug monotonic_ms=417004192 thread=133916884496768 silver phase=decision_begin decision=5 encounter=61 turn=0 nodes=34781
+lizard_debug monotonic_ms=417004192 thread=133916884496768 silver phase=decision_reroot decision=5 node_count=34781 inherited_visits=9912 compact=1
+lizard_debug monotonic_ms=417004192 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=34781 decision_states=28465 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417004196 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=11780 reachable_states=9912 retained_slots=9912
+lizard_debug monotonic_ms=417004209 thread=133916884496768 silver phase=reroot_end elapsed_ms=17 all_nodes=11780 decision_states=9912 dedup_slots=65536
+lizard_debug monotonic_ms=417004209 thread=133916884496768 silver phase=search_begin decision=5 budget=10000 nodes=11780
+lizard_debug monotonic_ms=417004219 thread=133916801361600 silver phase=search_end decision=11 elapsed_ms=114 nodes=41665 search_steps=110000
+lizard_debug monotonic_ms=417004219 thread=133916801361600 silver phase=decision_end decision=11 simulations=10000 outcome=0 nodes=41665
+lizard_debug monotonic_ms=417004219 thread=133916801361600 silver phase=decision_begin decision=12 encounter=61 turn=1 nodes=41665
+lizard_debug monotonic_ms=417004219 thread=133916801361600 silver phase=decision_reroot decision=12 node_count=41665 inherited_visits=3019 compact=1
+lizard_debug monotonic_ms=417004219 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=41665 decision_states=32182 dedup_slots=131072 root_edges=4
+lizard_debug monotonic_ms=417004223 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=12054 reachable_states=9285 retained_slots=9285
+lizard_debug monotonic_ms=417004244 thread=133916801361600 silver phase=reroot_end elapsed_ms=25 all_nodes=12054 decision_states=9285 dedup_slots=131072
+lizard_debug monotonic_ms=417004244 thread=133916801361600 silver phase=search_begin decision=12 budget=10000 nodes=12054
+lizard_debug monotonic_ms=417004279 thread=133916884496768 silver phase=search_end decision=5 elapsed_ms=69 nodes=24309 search_steps=50000
+lizard_debug monotonic_ms=417004279 thread=133916884496768 silver phase=decision_end decision=5 simulations=10000 outcome=0 nodes=24309
+lizard_debug monotonic_ms=417004279 thread=133916884496768 silver phase=decision_begin decision=6 encounter=61 turn=1 nodes=24309
+lizard_debug monotonic_ms=417004279 thread=133916884496768 silver phase=search_begin decision=6 budget=10000 nodes=24309
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=search_end decision=6 elapsed_ms=55 nodes=24309 search_steps=60000
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=decision_end decision=6 simulations=10000 outcome=0 nodes=24309
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=decision_begin decision=7 encounter=61 turn=1 nodes=24309
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=decision_reroot decision=7 node_count=24309 inherited_visits=8616 compact=0
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=24309 decision_states=19912 dedup_slots=65536 root_edges=7
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=24309 decision_states=19912 dedup_slots=65536
+lizard_debug monotonic_ms=417004335 thread=133916884496768 silver phase=search_begin decision=7 budget=10000 nodes=24309
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=search_end decision=12 elapsed_ms=103 nodes=24681 search_steps=120000
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=decision_end decision=12 simulations=10000 outcome=0 nodes=24681
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=decision_begin decision=13 encounter=61 turn=1 nodes=24681
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=decision_reroot decision=13 node_count=24681 inherited_visits=807 compact=0
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=24681 decision_states=19285 dedup_slots=131072 root_edges=3
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=24681 decision_states=19285 dedup_slots=131072
+lizard_debug monotonic_ms=417004348 thread=133916801361600 silver phase=search_begin decision=13 budget=10000 nodes=24681
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=search_end decision=7 elapsed_ms=58 nodes=24309 search_steps=70000
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=decision_end decision=7 simulations=10000 outcome=0 nodes=24309
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=decision_begin decision=8 encounter=61 turn=1 nodes=24309
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=decision_reroot decision=8 node_count=24309 inherited_visits=16642 compact=0
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=24309 decision_states=19912 dedup_slots=65536 root_edges=7
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=24309 decision_states=19912 dedup_slots=65536
+lizard_debug monotonic_ms=417004394 thread=133916884496768 silver phase=search_begin decision=8 budget=10000 nodes=24309
+lizard_debug monotonic_ms=417004441 thread=133916801361600 silver phase=search_end decision=13 elapsed_ms=93 nodes=38888 search_steps=130000
+lizard_debug monotonic_ms=417004441 thread=133916801361600 silver phase=decision_end decision=13 simulations=10000 outcome=0 nodes=38888
+lizard_debug monotonic_ms=417004441 thread=133916801361600 silver phase=decision_begin decision=14 encounter=61 turn=1 nodes=38888
+lizard_debug monotonic_ms=417004441 thread=133916801361600 silver phase=decision_reroot decision=14 node_count=38888 inherited_visits=1474 compact=1
+lizard_debug monotonic_ms=417004441 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=38888 decision_states=29285 dedup_slots=131072 root_edges=2
+lizard_debug monotonic_ms=417004443 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=6267 reachable_states=4428 retained_slots=4428
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=search_end decision=8 elapsed_ms=54 nodes=27792 search_steps=80000
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=decision_end decision=8 simulations=10000 outcome=0 nodes=27792
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=decision_begin decision=9 encounter=61 turn=1 nodes=27792
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=decision_reroot decision=9 node_count=27792 inherited_visits=27285 compact=0
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=27792 decision_states=24728 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=27792 decision_states=24728 dedup_slots=65536
+lizard_debug monotonic_ms=417004449 thread=133916884496768 silver phase=search_begin decision=9 budget=10000 nodes=27792
+lizard_debug monotonic_ms=417004462 thread=133916801361600 silver phase=reroot_end elapsed_ms=20 all_nodes=6267 decision_states=4428 dedup_slots=131072
+lizard_debug monotonic_ms=417004462 thread=133916801361600 silver phase=search_begin decision=14 budget=10000 nodes=6267
+lizard_debug monotonic_ms=417004501 thread=133916884496768 silver phase=search_end decision=9 elapsed_ms=52 nodes=33304 search_steps=90000
+lizard_debug monotonic_ms=417004501 thread=133916884496768 silver phase=decision_end decision=9 simulations=10000 outcome=0 nodes=33304
+lizard_debug monotonic_ms=417004501 thread=133916884496768 silver phase=decision_begin decision=10 encounter=61 turn=1 nodes=33304
+lizard_debug monotonic_ms=417004501 thread=133916884496768 silver phase=decision_reroot decision=10 node_count=33304 inherited_visits=37158 compact=1
+lizard_debug monotonic_ms=417004501 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=33304 decision_states=29588 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417004508 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=30237 reachable_states=27166 retained_slots=27166
+lizard_debug monotonic_ms=417004512 thread=133916884496768 silver phase=reroot_end elapsed_ms=11 all_nodes=30237 decision_states=27166 dedup_slots=65536
+lizard_debug monotonic_ms=417004512 thread=133916884496768 silver phase=search_begin decision=10 budget=10000 nodes=30237
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=search_end decision=14 elapsed_ms=82 nodes=21663 search_steps=140000
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=decision_end decision=14 simulations=10000 outcome=0 nodes=21663
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=decision_begin decision=15 encounter=61 turn=2 nodes=21663
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=decision_reroot decision=15 node_count=21663 inherited_visits=274 compact=0
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=21663 decision_states=14428 dedup_slots=131072 root_edges=9
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=21663 decision_states=14428 dedup_slots=131072
+lizard_debug monotonic_ms=417004545 thread=133916801361600 silver phase=search_begin decision=15 budget=10000 nodes=21663
+lizard_debug monotonic_ms=417004564 thread=133916884496768 silver phase=search_end decision=10 elapsed_ms=51 nodes=34485 search_steps=100000
+lizard_debug monotonic_ms=417004564 thread=133916884496768 silver phase=decision_end decision=10 simulations=10000 outcome=0 nodes=34485
+lizard_debug monotonic_ms=417004564 thread=133916884496768 silver phase=decision_begin decision=11 encounter=61 turn=1 nodes=34485
+lizard_debug monotonic_ms=417004564 thread=133916884496768 silver phase=decision_reroot decision=11 node_count=34485 inherited_visits=46630 compact=1
+lizard_debug monotonic_ms=417004564 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=34485 decision_states=30821 dedup_slots=65536 root_edges=2
+lizard_debug monotonic_ms=417004574 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=33722 reachable_states=30189 retained_slots=30189
+lizard_debug monotonic_ms=417004577 thread=133916884496768 silver phase=reroot_end elapsed_ms=12 all_nodes=33722 decision_states=30189 dedup_slots=65536
+lizard_debug monotonic_ms=417004577 thread=133916884496768 silver phase=search_begin decision=11 budget=10000 nodes=33722
+lizard_debug monotonic_ms=417004611 thread=133916801361600 silver phase=search_end decision=15 elapsed_ms=66 nodes=36790 search_steps=150000
+lizard_debug monotonic_ms=417004611 thread=133916801361600 silver phase=decision_end decision=15 simulations=10000 outcome=0 nodes=36790
+lizard_debug monotonic_ms=417004611 thread=133916801361600 silver phase=decision_begin decision=16 encounter=61 turn=2 nodes=36790
+lizard_debug monotonic_ms=417004611 thread=133916801361600 silver phase=decision_reroot decision=16 node_count=36790 inherited_visits=2145 compact=1
+lizard_debug monotonic_ms=417004611 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=36790 decision_states=23905 dedup_slots=131072 root_edges=8
+lizard_debug monotonic_ms=417004612 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=3525 reachable_states=2103 retained_slots=2103
+lizard_debug monotonic_ms=417004628 thread=133916801361600 silver phase=reroot_end elapsed_ms=17 all_nodes=3525 decision_states=2103 dedup_slots=131072
+lizard_debug monotonic_ms=417004628 thread=133916801361600 silver phase=search_begin decision=16 budget=10000 nodes=3525
+lizard_debug monotonic_ms=417004634 thread=133916884496768 silver phase=search_end decision=11 elapsed_ms=56 nodes=33722 search_steps=110000
+lizard_debug monotonic_ms=417004634 thread=133916884496768 silver phase=decision_end decision=11 simulations=10000 outcome=0 nodes=33722
+lizard_debug monotonic_ms=417004634 thread=133916884496768 silver phase=decision_begin decision=12 encounter=61 turn=1 nodes=33722
+lizard_debug monotonic_ms=417004634 thread=133916884496768 silver phase=decision_reroot decision=12 node_count=33722 inherited_visits=5011 compact=1
+lizard_debug monotonic_ms=417004634 thread=133916884496768 silver phase=reroot_begin compact=1 all_nodes=33722 decision_states=30189 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417004636 thread=133916884496768 silver phase=reroot_walk_complete reachable_nodes=5323 reachable_states=4886 retained_slots=4886
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=search_end decision=16 elapsed_ms=14 nodes=6260 search_steps=160000
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=decision_end decision=16 simulations=10000 outcome=0 nodes=6260
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=decision_begin decision=17 encounter=61 turn=2 nodes=6260
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=decision_reroot decision=17 node_count=6260 inherited_visits=9265 compact=0
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=6260 decision_states=3820 dedup_slots=131072 root_edges=6
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=6260 decision_states=3820 dedup_slots=131072
+lizard_debug monotonic_ms=417004643 thread=133916801361600 silver phase=search_begin decision=17 budget=10000 nodes=6260
+lizard_debug monotonic_ms=417004645 thread=133916801361600 silver phase=search_end decision=17 elapsed_ms=2 nodes=6614 search_steps=170000
+lizard_debug monotonic_ms=417004645 thread=133916801361600 silver phase=decision_end decision=17 simulations=10000 outcome=1 nodes=6614
+lizard_debug monotonic_ms=417004647 thread=133916801361600 pair source=4201028 fight=15 arm=noTail phase=playout_end elapsed_ms=1681 outcome=1 sim_count_total=170000 actions=17 raw_captures=0
+lizard_debug monotonic_ms=417004647 thread=133916801361600 pair source=4201028 fight=15 arm=noTail phase=exit_battle_end valid=1
+lizard_debug monotonic_ms=417004648 thread=133916801361600 pair source=4201028 fight=15 arm=noTail phase=row_built
+lizard_debug monotonic_ms=417004648 thread=133916801361600 pair source=4201028 fight=15 arm=activeTail phase=playout_begin
+lizard_debug monotonic_ms=417004648 thread=133916801361600 silver phase=decision_begin decision=1 encounter=61 turn=0 nodes=0
+lizard_debug monotonic_ms=417004648 thread=133916801361600 silver phase=search_begin decision=1 budget=10000 nodes=1
+lizard_debug monotonic_ms=417004658 thread=133916884496768 silver phase=reroot_end elapsed_ms=24 all_nodes=5323 decision_states=4886 dedup_slots=65536
+lizard_debug monotonic_ms=417004658 thread=133916884496768 silver phase=search_begin decision=12 budget=10000 nodes=5323
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=search_end decision=12 elapsed_ms=48 nodes=12806 search_steps=120000
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=decision_end decision=12 simulations=10000 outcome=0 nodes=12806
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=decision_begin decision=13 encounter=61 turn=2 nodes=12806
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=decision_reroot decision=13 node_count=12806 inherited_visits=2478 compact=0
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=12806 decision_states=11573 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=12806 decision_states=11573 dedup_slots=65536
+lizard_debug monotonic_ms=417004707 thread=133916884496768 silver phase=search_begin decision=13 budget=10000 nodes=12806
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=search_end decision=13 elapsed_ms=17 nodes=14452 search_steps=130000
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=decision_end decision=13 simulations=10000 outcome=0 nodes=14452
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=decision_begin decision=14 encounter=61 turn=2 nodes=14452
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=decision_reroot decision=14 node_count=14452 inherited_visits=12167 compact=0
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=14452 decision_states=13017 dedup_slots=65536 root_edges=5
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=14452 decision_states=13017 dedup_slots=65536
+lizard_debug monotonic_ms=417004725 thread=133916884496768 silver phase=search_begin decision=14 budget=10000 nodes=14452
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=search_end decision=14 elapsed_ms=13 nodes=14925 search_steps=140000
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=decision_end decision=14 simulations=10000 outcome=0 nodes=14925
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=decision_begin decision=15 encounter=61 turn=2 nodes=14925
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=decision_reroot decision=15 node_count=14925 inherited_visits=20796 compact=0
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=14925 decision_states=13434 dedup_slots=65536 root_edges=4
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=14925 decision_states=13434 dedup_slots=65536
+lizard_debug monotonic_ms=417004739 thread=133916884496768 silver phase=search_begin decision=15 budget=10000 nodes=14925
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=search_end decision=1 elapsed_ms=92 nodes=11905 search_steps=10000
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=decision_end decision=1 simulations=10000 outcome=0 nodes=11905
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=decision_begin decision=2 encounter=61 turn=0 nodes=11905
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=decision_reroot decision=2 node_count=11905 inherited_visits=2679 compact=0
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=11905 decision_states=10001 dedup_slots=65536 root_edges=13
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=11905 decision_states=10001 dedup_slots=65536
+lizard_debug monotonic_ms=417004740 thread=133916801361600 silver phase=search_begin decision=2 budget=10000 nodes=11905
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=search_end decision=15 elapsed_ms=12 nodes=15237 search_steps=150000
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=decision_end decision=15 simulations=10000 outcome=0 nodes=15237
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=decision_begin decision=16 encounter=61 turn=2 nodes=15237
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=decision_reroot decision=16 node_count=15237 inherited_visits=26801 compact=0
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15237 decision_states=13701 dedup_slots=65536 root_edges=3
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15237 decision_states=13701 dedup_slots=65536
+lizard_debug monotonic_ms=417004751 thread=133916884496768 silver phase=search_begin decision=16 budget=10000 nodes=15237
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=search_end decision=16 elapsed_ms=11 nodes=15423 search_steps=160000
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=decision_end decision=16 simulations=10000 outcome=0 nodes=15423
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=decision_begin decision=17 encounter=61 turn=2 nodes=15423
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=decision_reroot decision=17 node_count=15423 inherited_visits=29700 compact=0
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15423 decision_states=13867 dedup_slots=65536 root_edges=2
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15423 decision_states=13867 dedup_slots=65536
+lizard_debug monotonic_ms=417004763 thread=133916884496768 silver phase=search_begin decision=17 budget=10000 nodes=15423
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=search_end decision=17 elapsed_ms=11 nodes=15600 search_steps=170000
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=decision_end decision=17 simulations=10000 outcome=0 nodes=15600
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=decision_begin decision=18 encounter=61 turn=2 nodes=15600
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=decision_reroot decision=18 node_count=15600 inherited_visits=50629 compact=0
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15600 decision_states=14021 dedup_slots=65536 root_edges=1
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15600 decision_states=14021 dedup_slots=65536
+lizard_debug monotonic_ms=417004774 thread=133916884496768 silver phase=search_begin decision=18 budget=10000 nodes=15600
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=search_end decision=18 elapsed_ms=10 nodes=15728 search_steps=180000
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=decision_end decision=18 simulations=10000 outcome=0 nodes=15728
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=decision_begin decision=19 encounter=61 turn=3 nodes=15728
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=decision_reroot decision=19 node_count=15728 inherited_visits=827 compact=0
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=reroot_begin compact=0 all_nodes=15728 decision_states=14133 dedup_slots=65536 root_edges=5
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=reroot_end elapsed_ms=0 all_nodes=15728 decision_states=14133 dedup_slots=65536
+lizard_debug monotonic_ms=417004785 thread=133916884496768 silver phase=search_begin decision=19 budget=10000 nodes=15728
+lizard_debug monotonic_ms=417004786 thread=133916884496768 silver phase=search_end decision=19 elapsed_ms=0 nodes=15761 search_steps=190000
+lizard_debug monotonic_ms=417004786 thread=133916884496768 silver phase=decision_end decision=19 simulations=10000 outcome=1 nodes=15761
+lizard_debug monotonic_ms=417004794 thread=133916884496768 pair source=4201117 fight=12 arm=activeTail phase=playout_end elapsed_ms=858 outcome=1 sim_count_total=190000 actions=19 raw_captures=0
+lizard_debug monotonic_ms=417004794 thread=133916884496768 pair source=4201117 fight=12 arm=activeTail phase=exit_battle_end valid=1
+lizard_debug monotonic_ms=417004794 thread=133916884496768 pair source=4201117 fight=12 arm=activeTail phase=row_built
+lizard_debug monotonic_ms=417004794 thread=133916884496768 pair source=4201117 fight=12 phase=pair_complete
+lizard pair completed=2/3 source=4201117 fight=12 pair_elapsed_s=1 total_elapsed_s=1 omp_threads=8 checkpoint=docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl.checkpoints/source_4201117_fight_12.json
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=search_end decision=2 elapsed_ms=79 nodes=22759 search_steps=20000
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=decision_end decision=2 simulations=10000 outcome=0 nodes=22759
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=decision_begin decision=3 encounter=61 turn=0 nodes=22759
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=decision_reroot decision=3 node_count=22759 inherited_visits=7548 compact=0
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=22759 decision_states=20001 dedup_slots=65536 root_edges=9
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=22759 decision_states=20001 dedup_slots=65536
+lizard_debug monotonic_ms=417004820 thread=133916801361600 silver phase=search_begin decision=3 budget=10000 nodes=22759
+lizard_debug monotonic_ms=417004896 thread=133916801361600 silver phase=search_end decision=3 elapsed_ms=76 nodes=33083 search_steps=30000
+lizard_debug monotonic_ms=417004896 thread=133916801361600 silver phase=decision_end decision=3 simulations=10000 outcome=0 nodes=33083
+lizard_debug monotonic_ms=417004896 thread=133916801361600 silver phase=decision_begin decision=4 encounter=61 turn=0 nodes=33083
+lizard_debug monotonic_ms=417004896 thread=133916801361600 silver phase=decision_reroot decision=4 node_count=33083 inherited_visits=14933 compact=1
+lizard_debug monotonic_ms=417004896 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=33083 decision_states=30001 dedup_slots=65536 root_edges=6
+lizard_debug monotonic_ms=417004899 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=15919 reachable_states=15401 retained_slots=15401
+lizard_debug monotonic_ms=417004906 thread=133916801361600 silver phase=reroot_end elapsed_ms=10 all_nodes=15919 decision_states=15401 dedup_slots=65536
+lizard_debug monotonic_ms=417004906 thread=133916801361600 silver phase=search_begin decision=4 budget=10000 nodes=15919
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=search_end decision=4 elapsed_ms=74 nodes=26258 search_steps=40000
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=decision_end decision=4 simulations=10000 outcome=0 nodes=26258
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=decision_begin decision=5 encounter=61 turn=0 nodes=26258
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=decision_reroot decision=5 node_count=26258 inherited_visits=1403 compact=0
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=26258 decision_states=25401 dedup_slots=65536 root_edges=4
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=26258 decision_states=25401 dedup_slots=65536
+lizard_debug monotonic_ms=417004981 thread=133916801361600 silver phase=search_begin decision=5 budget=10000 nodes=26258
+lizard_debug monotonic_ms=417005055 thread=133916801361600 silver phase=search_end decision=5 elapsed_ms=74 nodes=36889 search_steps=50000
+lizard_debug monotonic_ms=417005055 thread=133916801361600 silver phase=decision_end decision=5 simulations=10000 outcome=0 nodes=36889
+lizard_debug monotonic_ms=417005055 thread=133916801361600 silver phase=decision_begin decision=6 encounter=61 turn=1 nodes=36889
+lizard_debug monotonic_ms=417005056 thread=133916801361600 silver phase=search_begin decision=6 budget=10000 nodes=36889
+lizard_debug monotonic_ms=417005120 thread=133916801361600 silver phase=search_end decision=6 elapsed_ms=64 nodes=36889 search_steps=60000
+lizard_debug monotonic_ms=417005120 thread=133916801361600 silver phase=decision_end decision=6 simulations=10000 outcome=0 nodes=36889
+lizard_debug monotonic_ms=417005120 thread=133916801361600 silver phase=decision_begin decision=7 encounter=61 turn=1 nodes=36889
+lizard_debug monotonic_ms=417005120 thread=133916801361600 silver phase=decision_reroot decision=7 node_count=36889 inherited_visits=1801 compact=1
+lizard_debug monotonic_ms=417005120 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=36889 decision_states=35401 dedup_slots=131072 root_edges=16
+lizard_debug monotonic_ms=417005121 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=3146 reachable_states=2634 retained_slots=2634
+lizard_debug monotonic_ms=417005136 thread=133916801361600 silver phase=reroot_end elapsed_ms=16 all_nodes=3146 decision_states=2634 dedup_slots=131072
+lizard_debug monotonic_ms=417005136 thread=133916801361600 silver phase=search_begin decision=7 budget=10000 nodes=3146
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=search_end decision=7 elapsed_ms=68 nodes=16512 search_steps=70000
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=decision_end decision=7 simulations=10000 outcome=0 nodes=16512
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=decision_begin decision=8 encounter=61 turn=1 nodes=16512
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=decision_reroot decision=8 node_count=16512 inherited_visits=5881 compact=0
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=16512 decision_states=12614 dedup_slots=131072 root_edges=13
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=16512 decision_states=12614 dedup_slots=131072
+lizard_debug monotonic_ms=417005204 thread=133916801361600 silver phase=search_begin decision=8 budget=10000 nodes=16512
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=search_end decision=8 elapsed_ms=73 nodes=29508 search_steps=80000
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=decision_end decision=8 simulations=10000 outcome=0 nodes=29508
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=decision_begin decision=9 encounter=61 turn=1 nodes=29508
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=decision_reroot decision=9 node_count=29508 inherited_visits=12200 compact=0
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=29508 decision_states=22469 dedup_slots=131072 root_edges=9
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=29508 decision_states=22469 dedup_slots=131072
+lizard_debug monotonic_ms=417005278 thread=133916801361600 silver phase=search_begin decision=9 budget=10000 nodes=29508
+lizard_debug monotonic_ms=417005356 thread=133916801361600 silver phase=search_end decision=9 elapsed_ms=77 nodes=42152 search_steps=90000
+lizard_debug monotonic_ms=417005356 thread=133916801361600 silver phase=decision_end decision=9 simulations=10000 outcome=0 nodes=42152
+lizard_debug monotonic_ms=417005356 thread=133916801361600 silver phase=decision_begin decision=10 encounter=61 turn=1 nodes=42152
+lizard_debug monotonic_ms=417005356 thread=133916801361600 silver phase=decision_reroot decision=10 node_count=42152 inherited_visits=8364 compact=1
+lizard_debug monotonic_ms=417005356 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=42152 decision_states=32186 dedup_slots=131072 root_edges=8
+lizard_debug monotonic_ms=417005360 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=17796 reachable_states=13819 retained_slots=13819
+lizard_debug monotonic_ms=417005374 thread=133916801361600 silver phase=reroot_end elapsed_ms=17 all_nodes=17796 decision_states=13819 dedup_slots=131072
+lizard_debug monotonic_ms=417005374 thread=133916801361600 silver phase=search_begin decision=10 budget=10000 nodes=17796
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=search_end decision=10 elapsed_ms=82 nodes=30412 search_steps=100000
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=decision_end decision=10 simulations=10000 outcome=0 nodes=30412
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=decision_begin decision=11 encounter=61 turn=1 nodes=30412
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=decision_reroot decision=11 node_count=30412 inherited_visits=10449 compact=0
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=30412 decision_states=23469 dedup_slots=131072 root_edges=5
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=30412 decision_states=23469 dedup_slots=131072
+lizard_debug monotonic_ms=417005457 thread=133916801361600 silver phase=search_begin decision=11 budget=10000 nodes=30412
+lizard_debug monotonic_ms=417005537 thread=133916801361600 silver phase=search_end decision=11 elapsed_ms=80 nodes=43768 search_steps=110000
+lizard_debug monotonic_ms=417005537 thread=133916801361600 silver phase=decision_end decision=11 simulations=10000 outcome=0 nodes=43768
+lizard_debug monotonic_ms=417005537 thread=133916801361600 silver phase=decision_begin decision=12 encounter=61 turn=1 nodes=43768
+lizard_debug monotonic_ms=417005537 thread=133916801361600 silver phase=decision_reroot decision=12 node_count=43768 inherited_visits=2514 compact=1
+lizard_debug monotonic_ms=417005537 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=43768 decision_states=33451 dedup_slots=131072 root_edges=4
+lizard_debug monotonic_ms=417005540 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=12073 reachable_states=9199 retained_slots=9199
+lizard_debug monotonic_ms=417005556 thread=133916801361600 silver phase=reroot_end elapsed_ms=19 all_nodes=12073 decision_states=9199 dedup_slots=131072
+lizard_debug monotonic_ms=417005556 thread=133916801361600 silver phase=search_begin decision=12 budget=10000 nodes=12073
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=search_end decision=12 elapsed_ms=72 nodes=25579 search_steps=120000
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=decision_end decision=12 simulations=10000 outcome=0 nodes=25579
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=decision_begin decision=13 encounter=61 turn=1 nodes=25579
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=decision_reroot decision=13 node_count=25579 inherited_visits=1113 compact=0
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=25579 decision_states=19049 dedup_slots=131072 root_edges=4
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=25579 decision_states=19049 dedup_slots=131072
+lizard_debug monotonic_ms=417005628 thread=133916801361600 silver phase=search_begin decision=13 budget=10000 nodes=25579
+lizard_debug monotonic_ms=417005689 thread=133916801361600 silver phase=search_end decision=13 elapsed_ms=60 nodes=39271 search_steps=130000
+lizard_debug monotonic_ms=417005689 thread=133916801361600 silver phase=decision_end decision=13 simulations=10000 outcome=0 nodes=39271
+lizard_debug monotonic_ms=417005689 thread=133916801361600 silver phase=decision_begin decision=14 encounter=61 turn=1 nodes=39271
+lizard_debug monotonic_ms=417005689 thread=133916801361600 silver phase=decision_reroot decision=14 node_count=39271 inherited_visits=1138 compact=1
+lizard_debug monotonic_ms=417005689 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=39271 decision_states=28992 dedup_slots=131072 root_edges=4
+lizard_debug monotonic_ms=417005690 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=5185 reachable_states=4091 retained_slots=4091
+lizard_debug monotonic_ms=417005707 thread=133916801361600 silver phase=reroot_end elapsed_ms=17 all_nodes=5185 decision_states=4091 dedup_slots=131072
+lizard_debug monotonic_ms=417005707 thread=133916801361600 silver phase=search_begin decision=14 budget=10000 nodes=5185
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=search_end decision=14 elapsed_ms=60 nodes=18905 search_steps=140000
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=decision_end decision=14 simulations=10000 outcome=0 nodes=18905
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=decision_begin decision=15 encounter=61 turn=2 nodes=18905
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=decision_reroot decision=15 node_count=18905 inherited_visits=74 compact=0
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=18905 decision_states=13998 dedup_slots=131072 root_edges=6
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=18905 decision_states=13998 dedup_slots=131072
+lizard_debug monotonic_ms=417005767 thread=133916801361600 silver phase=search_begin decision=15 budget=10000 nodes=18905
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=search_end decision=15 elapsed_ms=51 nodes=32385 search_steps=150000
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=decision_end decision=15 simulations=10000 outcome=0 nodes=32385
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=decision_begin decision=16 encounter=61 turn=2 nodes=32385
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=decision_reroot decision=16 node_count=32385 inherited_visits=257 compact=0
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=32385 decision_states=23171 dedup_slots=131072 root_edges=6
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=32385 decision_states=23171 dedup_slots=131072
+lizard_debug monotonic_ms=417005819 thread=133916801361600 silver phase=search_begin decision=16 budget=10000 nodes=32385
+lizard_debug monotonic_ms=417005866 thread=133916801361600 silver phase=search_end decision=16 elapsed_ms=47 nodes=43214 search_steps=160000
+lizard_debug monotonic_ms=417005866 thread=133916801361600 silver phase=decision_end decision=16 simulations=10000 outcome=0 nodes=43214
+lizard_debug monotonic_ms=417005866 thread=133916801361600 silver phase=decision_begin decision=17 encounter=61 turn=2 nodes=43214
+lizard_debug monotonic_ms=417005866 thread=133916801361600 silver phase=decision_reroot decision=17 node_count=43214 inherited_visits=412 compact=1
+lizard_debug monotonic_ms=417005866 thread=133916801361600 silver phase=reroot_begin compact=1 all_nodes=43214 decision_states=31611 dedup_slots=131072 root_edges=6
+lizard_debug monotonic_ms=417005866 thread=133916801361600 silver phase=reroot_walk_complete reachable_nodes=1210 reachable_states=960 retained_slots=960
+lizard_debug monotonic_ms=417005885 thread=133916801361600 silver phase=reroot_end elapsed_ms=18 all_nodes=1210 decision_states=960 dedup_slots=131072
+lizard_debug monotonic_ms=417005885 thread=133916801361600 silver phase=search_begin decision=17 budget=10000 nodes=1210
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=search_end decision=17 elapsed_ms=14 nodes=4660 search_steps=170000
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=decision_end decision=17 simulations=10000 outcome=0 nodes=4660
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=decision_begin decision=18 encounter=61 turn=2 nodes=4660
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=decision_reroot decision=18 node_count=4660 inherited_visits=8207 compact=0
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=4660 decision_states=3763 dedup_slots=131072 root_edges=5
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=4660 decision_states=3763 dedup_slots=131072
+lizard_debug monotonic_ms=417005899 thread=133916801361600 silver phase=search_begin decision=18 budget=10000 nodes=4660
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=search_end decision=18 elapsed_ms=2 nodes=5042 search_steps=180000
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=decision_end decision=18 simulations=10000 outcome=0 nodes=5042
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=decision_begin decision=19 encounter=61 turn=2 nodes=5042
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=decision_reroot decision=19 node_count=5042 inherited_visits=16317 compact=0
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=reroot_begin compact=0 all_nodes=5042 decision_states=4079 dedup_slots=131072 root_edges=4
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=reroot_end elapsed_ms=0 all_nodes=5042 decision_states=4079 dedup_slots=131072
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=search_begin decision=19 budget=10000 nodes=5042
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=search_end decision=19 elapsed_ms=0 nodes=5157 search_steps=190000
+lizard_debug monotonic_ms=417005902 thread=133916801361600 silver phase=decision_end decision=19 simulations=10000 outcome=1 nodes=5157
+lizard_debug monotonic_ms=417005904 thread=133916801361600 pair source=4201028 fight=15 arm=activeTail phase=playout_end elapsed_ms=1256 outcome=1 sim_count_total=190000 actions=19 raw_captures=0
+lizard_debug monotonic_ms=417005904 thread=133916801361600 pair source=4201028 fight=15 arm=activeTail phase=exit_battle_end valid=1
+lizard_debug monotonic_ms=417005904 thread=133916801361600 pair source=4201028 fight=15 arm=activeTail phase=row_built
+lizard_debug monotonic_ms=417005904 thread=133916801361600 pair source=4201028 fight=15 phase=pair_complete
+lizard pair completed=3/3 source=4201028 fight=15 pair_elapsed_s=2 total_elapsed_s=2 omp_threads=8 checkpoint=docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl.checkpoints/source_4201028_fight_15.json
+combattransitionlizardpairgen teacher=silver-ordinary-fair-exact10k-native-5aeb7256-omp8-debug-only completed=3/3 pairs=3 -> docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl
