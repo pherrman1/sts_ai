@@ -221,9 +221,11 @@ const std::vector<LiveEncounterSupportEntry> &encounterSupportManifest() {
     return manifest;
 }
 const std::vector<LiveEncounterExclusionEntry> &encounterExclusionManifest() {
-    // FOUR_BYRDS is a valid vanilla event formation, but the pinned native
-    // simulator has no MonsterEncounter/slot layout for it.  Keep it explicit
-    // instead of allowing encounter detection to fall through as unknown.
+    // FOUR_BYRDS: Java defines a "4 Byrds" encounter, but no normal act pool
+    // or event generates it (Act 2 uses "3 Byrds" and "Chosen and Byrds"), so
+    // it is not expected in standard runs. The pinned native simulator has no
+    // MonsterEncounter/slot layout for it. Keep it explicit instead of
+    // allowing encounter detection to fall through as unknown.
     static const std::vector<LiveEncounterExclusionEntry> exclusions = {
         {"FOUR_BYRDS", "native simulator has no FOUR_BYRDS encounter or faithful four-slot layout"},
     };
