@@ -1346,18 +1346,28 @@ void configureLiveOocMcts() {
     const char *artifact = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
     if (!artifact || !*artifact) throw std::runtime_error("STS_OOC_MCTS requires STS_OOC_MCTS_COMBAT_MODEL");
     const char *brewFallbackArtifact = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
-    if (brewFallbackArtifact) {
-        if (!*brewFallbackArtifact)
-            throw std::runtime_error("STS_OOC_MCTS_BREW_FALLBACK_MODEL cannot be empty when set");
-        liveSampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(artifact,brewFallbackArtifact);
-    } else {
-        liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
+    if (brewFallbackArtifact && !*brewFallbackArtifact)
+        throw std::runtime_error("STS_OOC_MCTS_BREW_FALLBACK_MODEL cannot be empty when set");
+    const char *activeLizardOverride=std::getenv("STS_OOC_MCTS_ACTIVE_LIZARD");
+    bool activeLizardEnabled=false;
+    if(activeLizardOverride) {
+        if(std::string(activeLizardOverride)=="0")activeLizardEnabled=false;
+        else if(std::string(activeLizardOverride)=="1")activeLizardEnabled=true;
+        else throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD must be 0 or 1 when set");
     }
+    if(activeLizardEnabled && !brewFallbackArtifact)
+        throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD=1 requires STS_OOC_MCTS_BREW_FALLBACK_MODEL");
+    if(brewFallbackArtifact)
+        liveSampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
+            artifact,brewFallbackArtifact,activeLizardEnabled);
+    else
+        liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
     const auto precision = std::cout.precision();
     std::cout << std::setprecision(17) << "[live OOC MCTS ON sims=" << liveSimulations
         << " combat_model=" << artifact
         << (brewFallbackArtifact ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
             " dispatch=precombat_entropic_brew" : std::string{})
+        << " active_lizard_correction=" << (activeLizardEnabled?"1":"0")
         << " prior=" << (liveOptions.uniformPrior ? "uniform" : "policy")
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
@@ -1379,10 +1389,11 @@ void configureLiveOocMcts() {
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
-        << (brewFallbackArtifact ? "\"" + std::string(brewFallbackArtifact) + "\"" : "null")
+        << (brewFallbackArtifact ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
         << ",\"dispatchRule\":\""
         << (brewFallbackArtifact ? "precombat_entropic_brew_to_standard" : "single_artifact")
-        << "\",\"priorTrace\":\"" << liveOptions.priorTracePath << "\"}\n";
+        << ",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
+        << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\"}\n";
     std::cout.precision(precision);
 }
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
@@ -1722,8 +1733,8 @@ bool executeOocMctsRoot(GameContext &gc, const OocGameContextModel::Candidate &s
 
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int realCombats) {
     EntropicBrewFallbackCombatTransitionSampler::Metrics brewMetrics;
-    if (auto hybrid=std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSampler))
-        brewMetrics=hybrid->takeMetrics();
+    const auto hybridSampler=std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSampler);
+    if (hybridSampler) brewMetrics=hybridSampler->takeMetrics();
     if (oocProfileEnabled()) {
         static const char *names[] = {"mcts", "real_combat", "metadata", "policy_logits",
             "policy_prepare", "policy_predict", "successor", "combat_prepare", "combat_resolve",
@@ -1743,7 +1754,15 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
             {"fallbackRate",brewMetrics.fallbackRate},
             {"uniqueBrewPredictorStates",brewMetrics.uniqueBrewPredictorStates},
             {"fastSupportFailures",brewMetrics.fastSupportFailures},
-            {"fallbackSupportFailures",brewMetrics.fallbackSupportFailures}};
+            {"fallbackSupportFailures",brewMetrics.fallbackSupportFailures},
+            {"activeLizardEnabled",hybridSampler && hybridSampler->activeLizardEnabled()},
+            {"lizardPreparations",brewMetrics.lizardPreparations},
+            {"lizardSamples",brewMetrics.lizardSamples},
+            {"lizardOrdinaryWins",brewMetrics.lizardOrdinaryWins},
+            {"lizardConsumedWins",brewMetrics.lizardConsumedWins},
+            {"lizardConsumedLosses",brewMetrics.lizardConsumedLosses},
+            {"lizardBoundaryExclusions",brewMetrics.lizardBoundaryExclusions},
+            {"lizardSupportFailures",brewMetrics.lizardSupportFailures}};
         std::cerr << "[ooc-cpu-profile] " << nlohmann::json{{"seed",seed},
             {"processCpuAtReportSec",oocProfileCpu(CLOCK_PROCESS_CPUTIME_ID)},
             {"mctsCpuSec",m.cpuSeconds},{"realCombats",realCombats},{"counters",counters},
@@ -1755,6 +1774,19 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
             {"combatTransitionHybrid",hybrid}}.dump() << '\n';
         oocProfileCounters = {};
     }
+    if(hybridSampler)
+        std::cerr << "[ooc-combat-transition] " << nlohmann::json{{"seed",seed},
+            {"activeLizardEnabled",hybridSampler->activeLizardEnabled()},
+            {"lizardPreparations",brewMetrics.lizardPreparations},
+            {"lizardSamples",brewMetrics.lizardSamples},
+            {"lizardOrdinaryWins",brewMetrics.lizardOrdinaryWins},
+            {"lizardConsumedWins",brewMetrics.lizardConsumedWins},
+            {"lizardConsumedLosses",brewMetrics.lizardConsumedLosses},
+            {"lizardBoundaryExclusions",brewMetrics.lizardBoundaryExclusions},
+            {"lizardSupportFailures",brewMetrics.lizardSupportFailures},
+            {"fastSupportFailures",brewMetrics.fastSupportFailures},
+            {"fallbackSupportFailures",brewMetrics.fallbackSupportFailures},
+            {"standardBrewFallbackPreparations",brewMetrics.fallbackPreparations}}.dump() << '\n';
     if (liveTrace.empty()) return;
     std::lock_guard<std::mutex> lock(liveTraceMutex);
     const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,earlyStopVisitGap20,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples,hybridPreparations,hybridFastPreparations,hybridFallbackPreparations,hybridFastSamples,hybridFallbackSamples,hybridFallbackRate,hybridUniqueBrewStates,hybridFastSupportFailures,hybridFallbackSupportFailures\n";
