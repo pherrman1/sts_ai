@@ -13036,3 +13036,68 @@ Knowledge impact: current research now records the event-continuation harness
 fix, analyzer schema compatibility fix, retry-6 current-main transfer result,
 the frozen Stage-C scientific plan, and its checkpoint-index execution
 correction. No runtime support or candidate parameters changed.
+
+## §363 — Active Lizard fresh native Stage-C qualification (2026-09-27)
+
+- **Hypothesis:** replacing learned q with mechanical `q = 1-pOrdinaryWin`,
+  while retaining the exact #326 learned-r artifact and T2 rule, improves the
+  three-class transition model on a fresh native-Silver cohort without a clear
+  BROAD32 degradation.
+- **Frozen cohort and selection:** 320 fresh sources, `4202000..4202319`,
+  disjoint from the audited 367 prior Lizard sources. HARD288 selected one
+  prospective-support combat per source maximizing `(1-pOrdinaryWin)*(1-r)`;
+  BROAD32 used the frozen outcome-blind SHA-256 salt. The candidate pool
+  contained 6,509 rows; the selector scored 4,674 eligible states and froze
+  320 targets (288 HARD288, 32 BROAD32). Assignment SHA-256 is
+  `752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a`; target
+  selection SHA-256 is
+  `68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493`.
+- **Teacher and execution:** current-main baseline
+  `212aa25485bc6e8f0a5a91eb35edc7485056cb5a`, producer commit
+  `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable SHA-256
+  `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`, and
+  native-Silver teacher manifest SHA-256
+  `c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`.
+  Teacher search was fair, exact 10,000 simulations; collection used eight
+  subprocesses with one OpenMP thread each. The separate pre-outcome pair plan
+  SHA-256 is
+  `dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`.
+  All 320 per-source pair shards, manifests, and provenance records validated.
+  The initial collector invocation exited only during aggregate-time module
+  import after producing all shards; running it as a Python module reused all
+  320 saved outputs without rerunning seeds.
+- **Integrity and outcome counts:** the final pair JSONL SHA-256 is
+  `d60bf8004234abf6549997ab4cff12da6650cc50d4f42b2d6bceb6a07f5cdf73`; the
+  manifest SHA-256 is
+  `c0269eb57ce3fe4eeb2890e7d58f06a2b778f62da43fb9345612e42aa69bc78b`.
+  All 320 rows were valid, exactly supported, and passed mechanical-q parity.
+  Outcomes were 195 `WIN_RETAINED`, 105 `WIN_CONSUMED`, and 20 `LOSS_CONSUMED`
+  from 20 distinct sources; 125 consumed rows were B1-scoreable. All 32
+  BROAD32 rows were `WIN_RETAINED`.
+- **Predeclared qualification result:** the frozen analyzer output SHA-256 is
+  `d1f87d5a74170445fbd7ce5f3f22abd36bd14569942883276ebfc3c03b389984`; it
+  classifies the candidate
+  `ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED`. Pooled
+  candidate-minus-B1 three-class NLL was `-12.99026` (source-bootstrap 95% CI
+  `[-23.75822,-4.36279]`) and multiclass Brier was `-0.05266` (CI
+  `[-0.07482,-0.03239]`). Learned-r NLL and Brier deltas on 125 consumed rows
+  were `-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
+  `[-0.16692,-0.07162]`). T2-minus-T0 on 105 supported consumed wins was
+  `-1.06154` HP NLL (CI `[-1.47307,-0.67843]`), `-3.18088` HP CRPS (CI
+  `[-4.85606,-1.51303]`), and `-2.84107` expected-HP absolute error (CI
+  `[-4.77866,-1.02229]`). Data floor, exact support, q parity, primary,
+  learned-r, and T2 gates passed; no clear HARD288 or BROAD32 degradation was
+  detected. The T2 requirement for at least 20 supported consumed-win rows
+  was met with 105, and no T2 row was unscored or outside its model domain.
+- **Decision and boundary:** Stage C qualifies the frozen research candidate
+  under the predeclared native-teacher gates. It does not integrate runtime
+  support or change the production guard; production remains
+  `active_unqualified_lizard` pending a separate reviewed implementation and
+  promotion decision. Stage A vendored post-hoc evidence, Stage B same-state
+  teacher-transfer diagnostics, and Stage C fresh native qualification remain
+  separate evidence domains. See the [full packet](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md#stage-c-fresh-native-qualification-assignment)
+  and raw [analysis JSON](evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/fresh_stage_c_analysis.json).
+
+Knowledge impact: current research records that the frozen mechanical-q,
+learned-r, T2 candidate passed its fresh native Stage-C qualification. No
+runtime support changed.

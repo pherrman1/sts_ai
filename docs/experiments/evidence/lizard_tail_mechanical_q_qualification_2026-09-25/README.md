@@ -438,9 +438,48 @@ changing the candidate, source assignment, selection rules, simulation budget,
 worker topology, or gates. The corresponding provenance record is
 `stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
 `58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
-refreshed collector started at `2026-09-26T20:47:18Z`; by `20:49:49Z`, the
-durable current-main index recorded 36/320 completed sources. The collector
-reports eight subprocess workers, each with one OpenMP thread, and source logs
-record `OMP_NUM_THREADS=1`. Target selection, pair generation, and qualification
-analysis have not started. Only a fresh native qualification can qualify the
-candidate. Production remains `active_unqualified_lizard`.
+current-main candidate collection started at `2026-09-26T20:47:18Z` and
+completed 320/320 source shards. The aggregated candidate corpus has 6,509
+rows, 0 quarantined sources, and JSONL SHA-256
+`47cde28815abe3b8c9022335e05159b0efcf65e523c76cc1d8490abe6cecf2d9`; its
+manifest SHA-256 is
+`d12e16839ef0463f5f6f986a265303e04dbd1f70ab0c20fcef6ae159baa9542f`. The
+predeclared selector scored 4,674 eligible states and froze 320 targets (288
+HARD288 plus 32 BROAD32); target-selection SHA-256 is
+`68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493`.
+
+The separate pre-outcome pair plan is
+`fresh_native/stage_c_pair_preoutcome_plan.json` (SHA-256
+`dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`). It
+binds that exact selection, the frozen candidate, Stage-B proceed analysis,
+source assignment, native teacher, and 10,000-simulation fair-search setup.
+Eight independent subprocesses each used one OpenMP thread. The first
+collector invocation generated and validated all 320 per-source outputs, then
+failed only during final aggregation because direct script invocation did not
+put the repository package on Python's import path. Reinvoking the same
+collector as a module validated and reused all 320 durable shards; no seed was
+rerun. The final paired JSONL SHA-256 is
+`d60bf8004234abf6549997ab4cff12da6650cc50d4f42b2d6bceb6a07f5cdf73`, and its
+manifest SHA-256 is
+`c0269eb57ce3fe4eeb2890e7d58f06a2b778f62da43fb9345612e42aa69bc78b`.
+
+The frozen fresh-qualification analysis is
+`fresh_native/fresh_stage_c_analysis.json` (SHA-256
+`d1f87d5a74170445fbd7ce5f3f22abd36bd14569942883276ebfc3c03b389984`). It
+classifies the frozen candidate as
+`ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED`. All 320 rows were
+valid, exactly supported, and had mechanical-q parity. The pooled labels were
+195 `WIN_RETAINED`, 105 `WIN_CONSUMED`, and 20 `LOSS_CONSUMED` from 20 distinct
+sources; 125 consumed rows were B1-scoreable. Candidate-minus-B1 pooled
+three-class NLL was `-12.99026` (source-bootstrap 95% CI
+`[-23.75822,-4.36279]`) and multiclass Brier was `-0.05266` (CI
+`[-0.07482,-0.03239]`). Learned-r NLL/Brier deltas on consumed rows were
+`-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
+`[-0.16692,-0.07162]`). T2-minus-T0 on 105 supported consumed wins was
+`-1.06154` HP NLL (CI `[-1.47307,-0.67843]`), `-3.18088` HP CRPS (CI
+`[-4.85606,-1.51303]`), and `-2.84107` expected-HP absolute error (CI
+`[-4.77866,-1.02229]`). The rare-event, exact-support, q-parity, primary,
+learned-r, and T2 gates passed, with no clear HARD288 or BROAD32 degradation.
+All 32 BROAD32 outcomes were retained wins, so that cohort had no consumed-tail
+rows. This is an offline candidate qualification only; runtime behavior did
+not change and production remains `active_unqualified_lizard`.

@@ -1,8 +1,9 @@
 # Current research status
 
-Last verified: 2026-09-26 for the active-Lizard current-main teacher-transfer
-gate, frozen Stage-C plan and checkpoint recovery, and the closed OOC
-MCTS reroot-opportunity measurement;
+Last verified: 2026-09-27 for the active-Lizard fresh native Stage-C
+qualification and unchanged production support; 2026-09-26 for the current-main
+teacher-transfer gate, frozen Stage-C plan and checkpoint recovery, and the
+closed OOC MCTS reroot-opportunity measurement;
 2026-09-25 for the OOC contextual semantic-prior offline qualification,
 the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
@@ -1034,13 +1035,37 @@ changing the candidate, assignment, selection rule, worker topology, or gates.
 Its attempt record is
 `stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
 `58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
-corrected current-main candidate collection started at `2026-09-26T20:47:18Z`;
-36/320 source shards were durably indexed by `20:49:49Z`. The collector reports
-eight subprocesses with one OpenMP thread each. Pair generation and
-qualification analysis have not started. Production remains
-`active_unqualified_lizard`. See [ledger
-§362](../../experiments/ledger-06.md) and the [mechanical-q evidence
-packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
+current-main Stage-C run completed with one producer commit and executable:
+320/320 source candidate shards, 6,509 candidate rows, 4,674
+prospective-support eligible states, and 320 outcome-blind selected targets
+(288 HARD288 plus 32 BROAD32). The selected-target file SHA-256 is
+`68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493`. The
+separate frozen pair plan SHA-256 is
+`dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`; the
+current-main native-Silver teacher manifest is
+`c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. Pair
+collection completed all 320 exact-10k fair native-Silver pairs using eight
+subprocesses with one OpenMP thread each. All 320 rows passed execution,
+support, and mechanical-q checks. Labels were 195 `WIN_RETAINED`, 105
+`WIN_CONSUMED`, and 20 `LOSS_CONSUMED` from 20 distinct sources; all 125
+consumed rows were B1-scoreable.
+
+The frozen analyzer classified the candidate
+`ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED`. Candidate-minus-B1
+pooled three-class NLL was `-12.99026` (source-bootstrap 95% CI
+`[-23.75822,-4.36279]`) and multiclass Brier was `-0.05266` (CI
+`[-0.07482,-0.03239]`). Learned-r NLL and Brier deltas on 125 consumed rows
+were `-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
+`[-0.16692,-0.07162]`). T2-minus-T0 on 105 supported consumed wins was
+`-1.06154` HP NLL (CI `[-1.47307,-0.67843]`), `-3.18088` HP CRPS (CI
+`[-4.85606,-1.51303]`), and `-2.84107` expected-HP absolute error (CI
+`[-4.77866,-1.02229]`). The rare-event floor, exact-support, q-parity,
+primary, learned-r, and T2 gates passed; no clear HARD288 or BROAD32
+degradation was detected. The 32 BROAD32 outcomes were all retained wins and
+therefore contain no consumed-tail rows. Stage C is offline qualification
+only: no runtime support was integrated, and production remains
+`active_unqualified_lizard`. See [ledger §363](../../experiments/ledger-06.md)
+and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
