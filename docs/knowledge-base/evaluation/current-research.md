@@ -2123,6 +2123,23 @@ provenance-bound, so its result is not rewritten. See [ledger
 §353](../../experiments/ledger-06.md) and the [complete evidence
 packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.md).
 
+### `v_win` refresh implementation status (#334)
+
+The opt-in `vwinrefreshgen` and `bossheadroom347gen` producers now encode the
+accepted exact-10k/V4 data contract, deferred semantic siblings, victory-boundary
+`WIN_RAW` capture, chosen-replay parity, and paired #347 boss-budget arms. The
+bundle validator and Stage-1 paired-bootstrap analyzer are implemented and
+have local contract/self-tests. This is implementation status only: the A1
+128-seed pilot, #347 Stage-1 replays, A2 collection, model training, lookup-table
+fidelity, MCTS leaf coverage/timing, and any gameplay or default-promotion gate
+have not been run. No result from the tracked model's §353 audit is changed by
+these producers.
+
+The opt-in MCTS leaf-state trace remains outside this implementation until the
+open #363 adapter/profile seam is available. No inference should be made from
+the new OOC branch/action trace about leaf-state coverage or in-context
+`v_win` latency. See the [collector and validation contract](../operations/ooc-label-pipeline.md#v_win-refresh-and-347-boss-headroom-collector).
+
 ## Routing / evidence
 
 - [Current baselines](current-baselines.md) — executable configuration and

@@ -6,6 +6,8 @@
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
 
+#include <iomanip>
+#include <openssl/evp.h>
 #include <set>
 #ifndef _WIN32
 #include <sys/file.h>
@@ -210,6 +212,347 @@ struct CombatEvalSeedResult {
     bool fatalFailure = false;
 };
 
+struct VwinOption {
+    std::string key;
+    std::uint32_t primitiveBits = 0;
+    bool mapPrimitive = false;
+    std::optional<search::OocSemanticAction> semantic;
+};
+
+struct VwinSampledDecision {
+    int decisionIdx = -1;
+    int fightIdx = 0;
+    std::string type;
+    std::string chosenKey;
+    std::unique_ptr<GameContext> pre;
+    PathHistory path;
+    search::ScumSearchAgent2 agentAfter;
+    OocPolicyThreadState policyAfter;
+    std::vector<VwinOption> options;
+    std::size_t sourceTraceIndex = 0;
+};
+
+struct VwinMapRow {
+    std::string branchId;
+    int deviationIdx = 0, rowIdx = 0, act = 0, floor = 0, mapX = 0, mapY = 0;
+    std::string features;
+};
+
+struct VwinRawRow {
+    std::string branchId;
+    int deviationIdx = 0, rowIdx = 0, act = 0, floor = 0, mapX = 0, mapY = 0;
+    std::string roomClass, encounter, features;
+    int actBoss = 0, preHp = 0, preMaxHp = 0, prePotions = 0, preGold = 0;
+    int postAfterBattleHp = -1;
+};
+
+struct VwinDecisionRow {
+    std::string branchId;
+    int deviationIdx = 0, decisionIdx = 0, act = 0, floor = 0, screen = 0;
+    std::string type, chosenKey, error;
+    bool supported = false, complete = false;
+    std::vector<std::string> candidateKeys;
+};
+
+struct VwinBossEntry {
+    std::unique_ptr<GameContext> pre;
+    PathHistory path;
+    search::ScumSearchAgent2 agent;
+    OocPolicyThreadState policy;
+    int fightIdx = 0, act = 0, floor = 0, sourceWon = -1;
+    int terminalHp = -1, postAfterBattleHp = -1, firstActionBits = -1;
+    double signedOutcome = 0.0;
+    bool labelValid = false, sourceTrajectoryValid = false;
+    std::string encounter, roomClass;
+};
+
+struct VwinPendingDecision {
+    std::size_t rowIndex = 0;
+    std::string chosenKey;
+    CardSelectScreenType selector = CardSelectScreenType::INVALID;
+};
+
+struct VwinCollector {
+    std::uint64_t sourceSeed = 0;
+    int samplesPerType = 0;
+    std::string branchId = "source";
+    int deviationIdx = 0;
+    bool captureRefresh = false, captureBoss = false, allowSampling = false;
+    int decisionIdx = 0, fightIdx = 0, mapRowIdx = 0, rawRowIdx = 0;
+    std::map<std::string, int> eligibleByType;
+    std::map<std::string, std::mt19937_64> reservoirRng;
+    std::map<std::string, std::vector<VwinSampledDecision>> sampled;
+    std::vector<VwinMapRow> mapRows;
+    std::vector<VwinRawRow> rawRows;
+    std::vector<VwinDecisionRow> decisions;
+    std::vector<VwinBossEntry> bossEntries;
+    std::string combatRows;
+    std::vector<std::string> trace;
+    std::optional<VwinPendingDecision> pendingAction;
+    std::optional<VwinPendingDecision> pendingCompound;
+    int pendingRawIndex = -1;
+    int rawCaptureCount = 0;
+    int winCount = 0;
+};
+
+struct VwinBranchStart {
+    const VwinSampledDecision *decision = nullptr;
+    VwinOption option;
+    std::string branchId;
+};
+
+struct VwinArmResult {
+    int won = -1, terminalHp = -1, postAfterBattleHp = -1, firstActionBits = -1;
+    double signedOutcome = 0.0, cpuSeconds = 0.0;
+    std::uint64_t simulations = 0, decisions = 0;
+    bool valid = false;
+    std::string outcome, quarantineReason;
+};
+
+static std::string vwinSha256(const std::string &text) {
+    unsigned char digest[EVP_MAX_MD_SIZE]{};
+    unsigned int size = 0;
+    EVP_MD_CTX *raw = EVP_MD_CTX_new();
+    if (!raw) throw std::runtime_error("vwin refresh: cannot allocate SHA256 context");
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context(raw, EVP_MD_CTX_free);
+    if (EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr) != 1
+        || EVP_DigestUpdate(context.get(), text.data(), text.size()) != 1
+        || EVP_DigestFinal_ex(context.get(), digest, &size) != 1 || size != 32)
+        throw std::runtime_error("vwin refresh: SHA256 computation failed");
+    std::ostringstream out;
+    out << std::hex << std::setfill('0');
+    for (unsigned int i = 0; i < size; ++i) out << std::setw(2) << static_cast<unsigned>(digest[i]);
+    return out.str();
+}
+
+static std::string vwinOptionKey(const search::OocSemanticAction &action) {
+    return search::canonicalOocSemanticActionKey(action);
+}
+
+static std::string vwinMapOptionKey(std::uint32_t bits) {
+    std::ostringstream out;
+    out << "map:" << std::hex << std::setw(8) << std::setfill('0') << bits;
+    return out.str();
+}
+
+static std::string vwinDecisionType(const GameContext &gc) {
+    if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) return "MAP";
+    if (gc.screenState == ScreenState::EVENT_SCREEN)
+        return gc.curEvent == Event::NEOW ? "NEOW" : "EVENT";
+    if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) return "BOSS_RELIC";
+    if (gc.screenState == ScreenState::REWARDS) return "CARD_REWARD";
+    if (gc.curRoom == Room::REST || gc.screenState == ScreenState::REST_ROOM) return "REST";
+    if (gc.curRoom == Room::SHOP || gc.screenState == ScreenState::SHOP_ROOM) return "SHOP";
+    if (gc.screenState == ScreenState::CARD_SELECT) {
+        if (gc.curRoom == Room::REST) return "REST";
+        if (gc.curRoom == Room::SHOP) return "SHOP";
+        return "OTHER_SELECTOR";
+    }
+    return "OTHER_SELECTOR";
+}
+
+static std::vector<VwinOption> vwinOptions(const GameContext &gc,
+                                           bool &supported, bool &complete,
+                                           std::string &error) {
+    std::vector<VwinOption> result;
+    if (gc.screenState == ScreenState::MAP_SCREEN) {
+        supported = complete = true;
+        for (const auto &action : search::GameAction::getAllActionsInState(gc))
+            result.push_back({vwinMapOptionKey(action.bits), action.bits, true, std::nullopt});
+        return result;
+    }
+    const auto enumeration = search::enumerateOocSemanticActions(gc);
+    supported = enumeration.supported;
+    complete = enumeration.complete;
+    error = enumeration.error;
+    for (const auto &action : enumeration.actions)
+        result.push_back({vwinOptionKey(action), 0, false, action});
+    return result;
+}
+
+static std::vector<VwinOption> vwinLimitOptions(const std::vector<VwinOption> &options,
+                                                const std::string &chosenKey,
+                                                std::uint64_t seed, int decisionIdx) {
+    if (options.size() <= 6) return options;
+    std::vector<std::pair<std::string, VwinOption>> ranked;
+    for (const auto &option : options) {
+        if (option.key == chosenKey) continue;
+        ranked.emplace_back(vwinSha256("vwin-option-cap-334-v1:" + std::to_string(seed)
+            + ":" + std::to_string(decisionIdx) + ":" + option.key), option);
+    }
+    std::sort(ranked.begin(), ranked.end(), [](const auto &a, const auto &b) {
+        return a.first == b.first ? a.second.key < b.second.key : a.first < b.first;
+    });
+    std::vector<VwinOption> result;
+    const auto chosen = std::find_if(options.begin(), options.end(), [&](const auto &option) {
+        return option.key == chosenKey;
+    });
+    if (chosen == options.end()) return {};
+    result.push_back(*chosen);
+    for (std::size_t i = 0; i < 5 && i < ranked.size(); ++i) result.push_back(ranked[i].second);
+    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
+        return a.key < b.key;
+    });
+    return result;
+}
+
+static std::optional<std::size_t> vwinReservoirSlot(std::mt19937_64 &rng, int seen,
+                                                     int capacity, std::size_t retained) {
+    if (seen < 1 || capacity < 1)
+        throw std::runtime_error("vwin refresh: invalid reservoir sampling state");
+    if (retained < static_cast<std::size_t>(capacity)) return retained;
+    const auto selected = std::uniform_int_distribution<int>(1, seen)(rng);
+    if (selected > capacity) return std::nullopt;
+    return static_cast<std::size_t>(selected - 1);
+}
+
+static std::size_t vwinBeginDecision(VwinCollector &capture, const GameContext &gc,
+                                     const PathHistory &path,
+                                     std::vector<VwinOption> options,
+                                     const std::string &chosenKey,
+                                     bool supported, bool complete,
+                                     const std::string &error) {
+    VwinDecisionRow row;
+    row.branchId = capture.branchId;
+    row.deviationIdx = capture.deviationIdx;
+    row.decisionIdx = capture.decisionIdx++;
+    row.act = gc.act;
+    row.floor = gc.floorNum;
+    row.screen = static_cast<int>(gc.screenState);
+    row.type = vwinDecisionType(gc);
+    row.supported = supported;
+    row.complete = complete;
+    row.error = error;
+    row.chosenKey = chosenKey;
+    for (const auto &option : options) row.candidateKeys.push_back(option.key);
+    const std::size_t rowIndex = capture.decisions.size();
+    capture.decisions.push_back(row);
+
+    if (!capture.allowSampling || !supported || !complete || options.size() < 2
+        || chosenKey.empty()
+        || std::none_of(options.begin(), options.end(), [&](const auto &option) {
+               return option.key == chosenKey;
+           })
+        || capture.samplesPerType <= 0) return rowIndex;
+    int &seen = capture.eligibleByType[row.type];
+    ++seen;
+    auto rng = capture.reservoirRng.find(row.type);
+    if (rng == capture.reservoirRng.end()) {
+        const std::string identity = "vwin-refresh-334-v1:" + std::to_string(capture.sourceSeed)
+            + ":" + row.type;
+        const auto digest = vwinSha256(identity);
+        const std::uint64_t state = std::stoull(digest.substr(0, 16), nullptr, 16);
+        rng = capture.reservoirRng.emplace(row.type, std::mt19937_64(state)).first;
+    }
+    auto &reservoir = capture.sampled[row.type];
+    const auto slot = vwinReservoirSlot(rng->second, seen, capture.samplesPerType,
+                                        reservoir.size());
+    if (!slot) return rowIndex;
+    VwinSampledDecision sample;
+    sample.decisionIdx = row.decisionIdx;
+    sample.fightIdx = capture.fightIdx;
+    sample.type = row.type;
+    sample.chosenKey = chosenKey;
+    sample.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+    sample.path = path;
+    sample.options = std::move(options);
+    if (*slot == reservoir.size()) reservoir.push_back(std::move(sample));
+    else reservoir[*slot] = std::move(sample);
+    return rowIndex;
+}
+
+static void vwinFinishDecision(VwinCollector &capture, std::size_t rowIndex,
+                               const std::string &chosenKey,
+                               const search::ScumSearchAgent2 &agent,
+                               const OocPolicyThreadState &policyState) {
+    if (rowIndex >= capture.decisions.size())
+        throw std::runtime_error("vwin refresh: decision row index is out of range");
+    auto &row = capture.decisions[rowIndex];
+    row.chosenKey = chosenKey;
+    if (chosenKey.empty() && !row.error.empty()) row.error += ";chosen_option_unresolved";
+    const auto found = capture.sampled.find(row.type);
+    if (found != capture.sampled.end()) {
+        for (auto &sample : found->second) {
+            if (sample.decisionIdx != row.decisionIdx) continue;
+            sample.chosenKey = chosenKey;
+            sample.options = vwinLimitOptions(sample.options, chosenKey,
+                                               capture.sourceSeed, sample.decisionIdx);
+            sample.agentAfter = agent;
+            sample.policyAfter = policyState;
+            sample.sourceTraceIndex = capture.trace.size();
+            break;
+        }
+    }
+    capture.trace.push_back("D:" + std::to_string(row.decisionIdx) + ":" + chosenKey);
+}
+
+static bool vwinSelectedDecision(const VwinCollector &capture, int decisionIdx) {
+    for (const auto &[type, samples] : capture.sampled) {
+        (void)type;
+        if (std::any_of(samples.begin(), samples.end(), [&](const auto &sample) {
+                return sample.decisionIdx == decisionIdx;
+            })) return true;
+    }
+    return false;
+}
+
+static std::string vwinRunoutHeader() {
+    return "sourceSeed,branchId,deviationIdx,finalOutcome,finalWon,finalFloor,finalHp,fightCount,"
+           "trajectoryComplete,trajectoryValid,combatRows,invalidCombatRows,teacherId,"
+           "simulatorHealthFailures,fatalFailure";
+}
+
+static std::string vwinCombatHeader() {
+    return "sourceSeed,branchId,deviationIdx," + std::string("fightIdx,act,floor,roomClass,encounter,teacherId,")
+        + richStateHeader() + "," + combatEvalLabelHeader();
+}
+
+static std::string vwinMapHeader() {
+    return "sourceSeed,branchId,deviationIdx,rowIdx,act,floor,mapX,mapY,teacherId,"
+        + richStateHeader();
+}
+
+static std::string vwinRawHeader() {
+    return "sourceSeed,branchId,deviationIdx,rowIdx,act,floor,mapX,mapY,teacherId,"
+        + richStateHeader() + ",roomClass,actBoss,encounter,preHp,preMaxHp,prePotions,preGold,postAfterBattleHp";
+}
+
+static std::string vwinDecisionHeader() {
+    return "sourceSeed,branchId,deviationIdx,decisionIdx,type,act,floor,screen,optionCount,"
+        "chosenKey,supported,complete,sampled,candidateKeysJson,error";
+}
+
+static std::string vwinBranchHeader() {
+    return "sourceSeed,decisionIdx,type,optionKey,chosen,branchId,won,finalFloor,finalHp,valid";
+}
+
+static std::string vwinResolveChosenKey(const GameContext &gc, std::uint32_t bits,
+                                       const std::vector<std::string> &allowedKeys) {
+    if (gc.screenState == ScreenState::MAP_SCREEN) {
+        const auto key = vwinMapOptionKey(bits);
+        return std::find(allowedKeys.begin(), allowedKeys.end(), key) != allowedKeys.end()
+            ? key : std::string{};
+    }
+    const auto bindings = search::enumerateOocSemanticPrimitiveBindings(gc);
+    if (!bindings.supported || !bindings.complete) return {};
+    std::set<std::string> matches;
+    for (const auto &binding : bindings.bindings) {
+        if (binding.primitiveBits != bits) continue;
+        const auto key = vwinOptionKey(binding.semantic);
+        if (std::find(allowedKeys.begin(), allowedKeys.end(), key) != allowedKeys.end())
+            matches.insert(key);
+    }
+    return matches.size() == 1 ? *matches.begin() : std::string{};
+}
+
+static std::uint64_t vwinThreadCpuNanos() {
+    timespec value{};
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &value) != 0)
+        throw std::runtime_error("vwin refresh: thread CPU clock unavailable");
+    return static_cast<std::uint64_t>(value.tv_sec) * 1000000000ULL
+        + static_cast<std::uint64_t>(value.tv_nsec);
+}
+
 static const char *combatEvalGameOutcome(GameOutcome outcome) {
     switch (outcome) {
         case GameOutcome::PLAYER_VICTORY: return "PLAYER_VICTORY";
@@ -226,21 +569,102 @@ static int combatEvalFinalWon(GameOutcome outcome) {
 
 static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
                                                  const WholeCombatTeacher &teacher,
-                                                 bool captureCombat = true) {
+                                                 bool captureCombat = true,
+                                                 VwinCollector *vwin = nullptr,
+                                                 const VwinBranchStart *branch = nullptr) {
     trainingRunStart();
     const int sourceHealthFailures = search::g_simHealthFailureCount;
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
+    GameContext gc = branch
+        ? detachedCounterfactualCopy(*branch->decision->pre)
+        : GameContext(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent;
+    if (branch) {
+        agent = branch->decision->agentAfter;
+    } else {
+        agent.simulationCountBase = sims;
+        agent.rng = std::default_random_engine(seed);
+    }
     PathHistory path;
-    one_combat::resetPathPolicyState();
-    t_actFightProbeDecisionIdx = 0;
+    int fightIdx = 0;
+    if (branch) {
+        path = branch->decision->path;
+        one_combat::restoreOocPolicyThreadState(branch->decision->policyAfter);
+        fightIdx = branch->decision->fightIdx;
+    } else {
+        one_combat::resetPathPolicyState();
+        t_actFightProbeDecisionIdx = 0;
+        t_tokCheckPending = g_oocStrategicTokCheck;
+        t_shopV = true;
+    }
     t_curPath = &path;
-    t_tokCheckPending = g_oocStrategicTokCheck;
-    t_shopV = true;
-    std::ostringstream out; int fightIdx = 0; bool sourceValid = true;
+    std::ostringstream out; bool sourceValid = true;
     int invalidCombatRows = 0;
     bool fatalFailure = false;
+    if (vwin) {
+        vwin->sourceSeed = seed;
+        vwin->fightIdx = fightIdx;
+        vwin->decisionIdx = branch ? branch->decision->decisionIdx + 1 : 0;
+        vwin->mapRowIdx = 0;
+        vwin->rawRowIdx = 0;
+        vwin->pendingAction.reset();
+        vwin->pendingCompound.reset();
+        vwin->pendingRawIndex = -1;
+        vwin->rawCaptureCount = 0;
+        vwin->winCount = 0;
+        if (branch) {
+            VwinDecisionRow row;
+            row.branchId = vwin->branchId;
+            row.deviationIdx = vwin->deviationIdx;
+            row.decisionIdx = branch->decision->decisionIdx;
+            row.act = gc.act;
+            row.floor = gc.floorNum;
+            row.screen = static_cast<int>(gc.screenState);
+            row.type = branch->decision->type;
+            row.chosenKey = branch->option.key;
+            row.supported = row.complete = true;
+            for (const auto &option : branch->decision->options)
+                row.candidateKeys.push_back(option.key);
+            vwin->decisions.push_back(std::move(row));
+            if (gc.screenState == ScreenState::MAP_SCREEN) {
+                vwin->mapRows.push_back({vwin->branchId, vwin->deviationIdx,
+                    vwin->mapRowIdx++, gc.act, gc.floorNum, gc.curMapNodeX,
+                    gc.curMapNodeY, richRow(gc, path)});
+            }
+            vwin->trace.push_back("D:" + std::to_string(branch->decision->decisionIdx)
+                                  + ":" + branch->option.key);
+            const int healthBefore = search::g_simHealthFailureCount;
+            auto previous = std::move(search::g_onGameActionExecute);
+            search::g_onGameActionExecute = {};
+            try {
+                if (branch->option.mapPrimitive) {
+                    search::GameAction(branch->option.primitiveBits).execute(gc);
+                } else if (branch->option.semantic) {
+                    const auto executed = search::executeOocSemanticAction(gc, *branch->option.semantic);
+                    if (!executed.ok || executed.executedPrimitiveBits.empty())
+                        throw std::runtime_error("vwin refresh: branch semantic action failed: "
+                                                 + executed.error);
+                } else {
+                    throw std::runtime_error("vwin refresh: branch option has no executable action");
+                }
+                search::g_onGameActionExecute = std::move(previous);
+            } catch (...) {
+                search::g_onGameActionExecute = std::move(previous);
+                throw;
+            }
+            if (healthBefore != search::g_simHealthFailureCount)
+                throw std::runtime_error("vwin refresh: health failure during forced branch action");
+        }
+    }
+
+    auto finishPendingDecision = [&] {
+        if (!vwin || !vwin->pendingAction) return;
+        const auto pending = *vwin->pendingAction;
+        vwinFinishDecision(*vwin, pending.rowIndex, pending.chosenKey, agent,
+                           one_combat::captureOocPolicyThreadState());
+        vwin->pendingAction.reset();
+        vwin->pendingCompound.reset();
+    };
+
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
@@ -250,48 +674,207 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             const bool representableEncounter = encounterIndex >= 0 && encounterIndex < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
             const std::string features = captureCombat ? vFeatCsv(gc) : std::string{};
             int hooks = 0;
-            auto previousCombatObserver = std::move(search::g_onCombatDecision);
-            if (captureCombat)
-                search::g_onCombatDecision = [&](const BattleContext &) { ++hooks; };
-            BattleContext bc; const int healthBefore = search::g_simHealthFailureCount;
+            const bool captureActions = vwin && (vwin->captureRefresh
+                || (vwin->captureBoss && gc.curRoom == Room::BOSS));
+            const int bossEntryIdx = vwin && vwin->captureBoss && gc.curRoom == Room::BOSS
+                ? static_cast<int>(vwin->bossEntries.size()) : -1;
+            if (captureActions) {
+                agent.recordActions = true;
+                agent.gameActionHistory.clear();
+            }
+            if (bossEntryIdx >= 0) {
+                VwinBossEntry entry;
+                entry.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+                entry.path = path;
+                entry.agent = agent;
+                entry.policy = one_combat::captureOocPolicyThreadState();
+                entry.fightIdx = fightIdx;
+                entry.act = act;
+                entry.floor = floor;
+                entry.encounter = representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID";
+                entry.roomClass = combatEvalRoomClass(static_cast<Room>(room));
+                vwin->bossEntries.push_back(std::move(entry));
+            }
+            BattleContext bc;
+            const int healthBefore = search::g_simHealthFailureCount;
+            std::unique_ptr<CombatEvalDecisionScope> decisionScope;
+            if (captureCombat || (vwin && vwin->captureBoss))
+                decisionScope = std::make_unique<CombatEvalDecisionScope>(true);
+            std::unique_ptr<one_combat::CombatTransitionRawObserverScope> rawScope;
+            const int rawCaptureBefore = vwin ? vwin->rawCaptureCount : 0;
+            const int preHp = gc.curHp, preMaxHp = gc.maxHp, prePotions = gc.potionCount, preGold = gc.gold;
+            const int mapX = gc.curMapNodeX, mapY = gc.curMapNodeY;
+            if (vwin && vwin->captureRefresh) {
+                rawScope = std::make_unique<one_combat::CombatTransitionRawObserverScope>(
+                    [&](const BattleContext &ended, GameContext &raw) {
+                        if (ended.outcome != Outcome::PLAYER_VICTORY) return;
+                        VwinRawRow row;
+                        row.branchId = vwin->branchId;
+                        row.deviationIdx = vwin->deviationIdx;
+                        row.rowIdx = vwin->rawRowIdx++;
+                        row.act = act;
+                        row.floor = floor;
+                        row.mapX = mapX;
+                        row.mapY = mapY;
+                        row.roomClass = combatEvalRoomClass(static_cast<Room>(room));
+                        row.encounter = representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID";
+                        row.features = richRow(raw, path);
+                        row.actBoss = static_cast<Room>(room) == Room::BOSS ? 1 : 0;
+                        row.preHp = preHp;
+                        row.preMaxHp = preMaxHp;
+                        row.prePotions = prePotions;
+                        row.preGold = preGold;
+                        vwin->rawRows.push_back(std::move(row));
+                        vwin->pendingRawIndex = static_cast<int>(vwin->rawRows.size()) - 1;
+                        ++vwin->rawCaptureCount;
+                        ++vwin->winCount;
+                    });
+            }
             agent.playoutBattle(gc, bc);
-            search::g_onCombatDecision = std::move(previousCombatObserver);
+            if (decisionScope) hooks = decisionScope->hooks;
             const bool initializationTerminal = hooks == 0
                 && bc.turn == 0 && bc.outcome != Outcome::UNDECIDED;
-            const auto label = captureCombat
+            const auto label = (captureCombat || (vwin && vwin->captureBoss))
                 ? combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount,
                                      initializationTerminal)
                 : CombatEvalLabel{};
             const bool labelValid = captureCombat && label.labelValid;
-            const bool healthOk = captureCombat ? label.healthOk : true;
-            if (captureCombat) {
+            const bool healthOk = (captureCombat || (vwin && vwin->captureBoss))
+                ? label.healthOk : search::g_simHealthFailureCount == healthBefore;
+            if (vwin && captureActions) {
+                for (const int bits : agent.gameActionHistory)
+                    vwin->trace.push_back("A:" + std::to_string(fightIdx) + ":" + std::to_string(bits));
+            }
+            if (vwin && bossEntryIdx >= 0) {
+                auto &entry = vwin->bossEntries.at(static_cast<std::size_t>(bossEntryIdx));
+                entry.firstActionBits = agent.gameActionHistory.empty()
+                    ? -1 : agent.gameActionHistory.front();
+                entry.sourceWon = bc.outcome == Outcome::PLAYER_VICTORY ? 1
+                    : bc.outcome == Outcome::PLAYER_LOSS ? 0 : -1;
+                entry.terminalHp = bc.player.curHp;
+                entry.signedOutcome = label.signedOutcome;
+                entry.labelValid = label.labelValid;
+            }
+            if (captureCombat && (!vwin || vwin->captureRefresh)) {
+                if (vwin && vwin->captureRefresh) {
+                    out << seed << ',' << vwin->branchId << ',' << vwin->deviationIdx << ','
+                        << fightIdx << ',' << act << ',' << floor << ','
+                        << combatEvalRoomClass(static_cast<Room>(room)) << ','
+                        << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID")
+                        << ',' << teacher.id << ',' << richRow(gc, path) << ',';
+                    label.write(out); out << '\n';
+                } else {
                 out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << combatEvalRoomClass(static_cast<Room>(room)) << ','
                     << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ',';
                 label.write(out); out << '\n';
+                }
             }
-            ++fightIdx;
             // Keep every completed terminal as an auditable row.  A simulator
             // or hook failure cannot safely advance the run; ordinary
             // non-death terminations can be exited and the next fight may be
             // collected, while the contract/trainer excludes this row.
             if (captureCombat && !labelValid) { sourceValid = false; ++invalidCombatRows; }
-            if (captureCombat && !labelValid && (!healthOk || !hooks || !representableEncounter)) {
+            if ((captureCombat && !labelValid && (!healthOk || !hooks || !representableEncounter))
+                || (vwin && (bc.outcome == Outcome::UNDECIDED || !healthOk))) {
                 fatalFailure = true;
                 search::g_onGameActionExecute = {}; t_curPath = nullptr;
                 const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
+                if (vwin) for (auto &entry : vwin->bossEntries) entry.sourceTrajectoryValid = false;
+                if (vwin) vwin->combatRows = out.str();
                 return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
                         invalidCombatRows, healthFailures, false, false, false, fatalFailure};
             }
             bc.exitBattle(gc);
+            decisionScope.reset();
+            rawScope.reset();
+            if (vwin && vwin->captureRefresh) {
+                if (bc.outcome == Outcome::PLAYER_VICTORY
+                    && vwin->rawCaptureCount != rawCaptureBefore + 1)
+                    throw std::runtime_error("vwin refresh: victory did not produce exactly one WIN_RAW row");
+                if (vwin->pendingRawIndex >= 0) {
+                    vwin->rawRows.at(static_cast<std::size_t>(vwin->pendingRawIndex)).postAfterBattleHp = gc.curHp;
+                    vwin->pendingRawIndex = -1;
+                }
+                vwin->trace.push_back("C:" + std::to_string(fightIdx) + ":"
+                    + std::to_string(static_cast<int>(bc.outcome)) + ":"
+                    + std::to_string(bc.player.curHp) + ":" + std::to_string(gc.curHp));
+            }
+            if (vwin && bossEntryIdx >= 0) {
+                auto &entry = vwin->bossEntries.at(static_cast<std::size_t>(bossEntryIdx));
+                entry.postAfterBattleHp = gc.curHp;
+            }
+            if (captureActions) {
+                agent.recordActions = false;
+                agent.gameActionHistory.clear();
+            }
+            ++fightIdx;
+            if (vwin) vwin->fightIdx = fightIdx;
         } else {
-            runFullRunOocPolicyStep(gc, agent, false, true);
+            if (!vwin || !vwin->captureRefresh) {
+                runFullRunOocPolicyStep(gc, agent, false, true);
+            } else {
+                auto previous = std::move(search::g_onGameActionExecute);
+                search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+                    if (target == &gc) {
+                        path.update(gc);
+                        bool consumedCompoundSelector = false;
+                        if (vwin->pendingCompound) {
+                            const auto expected = vwin->pendingCompound->selector;
+                            if (gc.screenState == ScreenState::CARD_SELECT
+                                && gc.info.selectScreenType == expected) {
+                                vwin->pendingCompound.reset();
+                                consumedCompoundSelector = true;
+                            } else {
+                                vwin->pendingCompound.reset();
+                            }
+                        }
+                        if (!consumedCompoundSelector) {
+                            finishPendingDecision();
+                            bool supported = false, complete = false;
+                            std::string error;
+                            auto options = vwinOptions(gc, supported, complete, error);
+                            std::vector<std::string> keys;
+                            keys.reserve(options.size());
+                            for (const auto &option : options) keys.push_back(option.key);
+                            const auto chosenKey = vwinResolveChosenKey(gc, bits, keys);
+                            if ((!supported || !complete) && error.empty())
+                                error = "semantic_option_enumeration_unsupported_or_incomplete";
+                            else if (supported && complete && options.size() >= 2 && chosenKey.empty())
+                                error = "chosen_primitive_binding_unresolved";
+                            const auto rowIndex = vwinBeginDecision(*vwin, gc, path,
+                                std::move(options), chosenKey, supported, complete, error);
+                            if (gc.screenState == ScreenState::MAP_SCREEN) {
+                                vwin->mapRows.push_back({vwin->branchId, vwin->deviationIdx,
+                                    vwin->mapRowIdx++, gc.act, gc.floorNum, gc.curMapNodeX,
+                                    gc.curMapNodeY, richRow(gc, path)});
+                            }
+                            vwin->pendingAction = VwinPendingDecision{rowIndex, chosenKey,
+                                search::oocSemanticPrimitiveCompoundSelector(gc, bits)};
+                            if (vwin->pendingAction->selector != CardSelectScreenType::INVALID)
+                                vwin->pendingCompound = vwin->pendingAction;
+                        }
+                    }
+                    if (previous) previous(bits, target);
+                };
+                try {
+                    runFullRunOocPolicyStep(gc, agent, false, true);
+                } catch (...) {
+                    search::g_onGameActionExecute = std::move(previous);
+                    throw;
+                }
+                search::g_onGameActionExecute = std::move(previous);
+                if (!vwin->pendingCompound) finishPendingDecision();
+            }
         }
     }
+    finishPendingDecision();
     search::g_onCombatDecision = nullptr;
     t_curPath = nullptr;
     const bool complete = gc.outcome != GameOutcome::UNDECIDED;
     const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
     const bool trajectoryValid = complete && healthFailures == 0 && !fatalFailure;
+    if (vwin) for (auto &entry : vwin->bossEntries) entry.sourceTrajectoryValid = trajectoryValid;
+    if (vwin) vwin->combatRows = out.str();
     return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
             invalidCombatRows, healthFailures, sourceValid, complete,
             trajectoryValid, fatalFailure};
@@ -437,6 +1020,663 @@ void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
     std::cout << "combatevalgen teacher=" << teacher.id << " completed=" << completed << '/' << nSeeds << " quarantined=" << nSeeds-completed << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, "combatevalgen", nSeeds, completed, nSeeds-completed, g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
 }
+
+static void vwinRequireProductionPolicy(const WholeCombatTeacher &teacher) {
+    constexpr const char *kPinnedV4TokenSha256 =
+        "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c";
+    auto require = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("vwin refresh: expected frozen V4 policy: ") + what);
+    };
+    require(g_nativeOoc && g_floorNet.ok && g_winNet.ok, "native floor/win heads loaded");
+    require(g_oocStrategicTokNet.ok && g_oocStrategicTok == 1, "V4 token model loaded");
+    require(fileSha256(g_oocStrategicTokNet.path) == kPinnedV4TokenSha256,
+            "pinned V4 token artifact SHA-256");
+    require(!g_collectKeys, "act-4 keys disabled");
+    require(g_oocStrategicRest && g_oocStrategicEvent && g_oocStrategicShop
+            && g_oocStrategicTreasure && g_oocStrategicBossRelic,
+            "V4 strategic gates enabled");
+    const auto effectiveMargin = [](double overrideMargin) {
+        return overrideMargin >= 0.0 ? overrideMargin : g_oocStrategicMargin;
+    };
+    require(effectiveMargin(g_oocStrategicMarginCard) == 1.0
+            && effectiveMargin(g_oocStrategicMarginRest) == 1.0
+            && effectiveMargin(g_oocStrategicMarginEvent) == 1.0
+            && effectiveMargin(g_oocStrategicMarginShop) == 1.0
+            && effectiveMargin(g_oocStrategicMarginTreasure) == 1.0
+            && effectiveMargin(g_oocStrategicMarginBossRelic) == 1.0,
+            "all active V4 gate margins are 1.0");
+    require(!g_oocActionNN, "experimental OOC action model disabled");
+    require(g_oocStrategicMargin == 1.0, "V4 strategic margin is 1.0");
+    require(!g_oocMapRoute && !g_oocStrategicMap && g_pathV == 0 && g_eventV == 0
+            && !g_oocShopBeam && g_oocStrategicQ && !g_oocStrategicScorePolicy
+            && !g_restWin && g_bossRelicV == 0 && g_neowV == 0
+            && !g_cardWin && !g_cardNN && !g_cardAction && !g_shopWin && g_bossV == 0
+            && g_bossDraft == 0 && !g_actFightProbeDraft && !g_actFightProbeAllOoc
+            && !g_actFightProbePredict && !g_actFightProbeEncounterNN
+            && !g_oocStrategicGateRegret,
+            "non-default action/policy interventions disabled");
+    if (const char *mcts = std::getenv("STS_OOC_MCTS"))
+        require(std::string(mcts) == "0", "STS_OOC_MCTS is off");
+    const auto &spec = teacher.specification;
+    require(spec.contains("ooc_policy") && spec["ooc_policy"].is_object(),
+            "teacher binds ooc_policy");
+    const auto &policy = spec["ooc_policy"];
+    const auto &flags = policy.at("flags");
+    const auto &parameters = policy.at("parameters");
+    require(flags.value("native_ooc", false), "teacher native_ooc=true");
+    require(!flags.value("collect_keys", true), "teacher collect_keys=false");
+    require(flags.value("ooc_strategic_rest", false)
+            && flags.value("ooc_strategic_event", false)
+            && flags.value("ooc_strategic_shop", false)
+            && flags.value("ooc_strategic_treasure", false)
+            && flags.value("ooc_strategic_boss_relic", false),
+            "teacher V4 strategic gates");
+    require(flags.value("ooc_strategic_tok", false)
+            && flags.value("ooc_strategic_card", false), "teacher V4 token/card gate");
+    require(flags.value("ooc_strategic_q", false), "teacher strategic Q scoring is enabled");
+    require(parameters.value("strategic_margin", -1.0) == 1.0,
+            "teacher strategic margin");
+    require(policy.value("shopV", false) && policy.value("restV", true) == false,
+            "teacher default shop/rest fallback chain");
+    for (const char *flag : {"ooc_action_nn", "act_fight_probe_all_ooc", "ooc_map_route",
+            "ooc_strategic_map", "path_v", "event_v", "ooc_shop_beam",
+            "ooc_strategic_score_policy", "rest_win", "boss_relic_v", "neow_v", "card_win",
+            "card_nn", "card_action", "shop_win", "boss_v", "boss_draft",
+            "act_fight_probe_draft", "act_fight_probe_predict", "act_fight_probe_encounter_nn",
+            "act_fight_probe_gate_regret"})
+        require(!flags.value(flag, true), "teacher disables non-default intervention flag");
+    const auto &artifacts = policy.at("model_artifacts");
+    require(std::any_of(artifacts.begin(), artifacts.end(), [](const auto &artifact) {
+        return artifact.value("role", std::string{}) == "ooc_strategic_tok";
+    }), "teacher hashes the V4 token artifact");
+}
+
+static void vwinWriteCollector(std::ostream &mapOut, std::ostream &rawOut,
+                               std::ostream &decisionOut, std::ostream &combatOut,
+                               std::uint64_t sourceSeed, const VwinCollector &capture,
+                               const WholeCombatTeacher &teacher) {
+    for (const auto &row : capture.mapRows)
+        mapOut << sourceSeed << ',' << row.branchId << ',' << row.deviationIdx << ','
+               << row.rowIdx << ',' << row.act << ',' << row.floor << ',' << row.mapX << ','
+               << row.mapY << ',' << teacher.id << ',' << row.features << '\n';
+    for (const auto &row : capture.rawRows)
+        rawOut << sourceSeed << ',' << row.branchId << ',' << row.deviationIdx << ','
+               << row.rowIdx << ',' << row.act << ',' << row.floor << ',' << row.mapX << ','
+               << row.mapY << ',' << teacher.id << ',' << row.features << ','
+               << csvQuote(row.roomClass) << ',' << row.actBoss << ',' << csvQuote(row.encounter)
+               << ',' << row.preHp << ',' << row.preMaxHp << ',' << row.prePotions << ','
+               << row.preGold << ',' << row.postAfterBattleHp << '\n';
+    for (const auto &row : capture.decisions) {
+        nlohmann::json keys = nlohmann::json::array();
+        for (const auto &key : row.candidateKeys) keys.push_back(key);
+        decisionOut << sourceSeed << ',' << row.branchId << ',' << row.deviationIdx << ','
+                    << row.decisionIdx << ',' << row.type << ',' << row.act << ',' << row.floor
+                    << ',' << row.screen << ',' << row.candidateKeys.size() << ','
+                    << csvQuote(row.chosenKey) << ',' << (row.supported ? 1 : 0) << ','
+                    << (row.complete ? 1 : 0) << ','
+                    << (vwinSelectedDecision(capture, row.decisionIdx) ? 1 : 0) << ','
+                    << csvQuote(keys.dump()) << ',' << csvQuote(row.error) << '\n';
+    }
+    combatOut << capture.combatRows;
+}
+
+static void vwinWriteRunout(std::ostream &out, std::uint64_t sourceSeed,
+                            const VwinCollector &capture,
+                            const CombatEvalSeedResult &result,
+                            const WholeCombatTeacher &teacher,
+                            const char *branchParity) {
+    out << sourceSeed << ',' << capture.branchId << ',' << capture.deviationIdx << ','
+        << combatEvalGameOutcome(result.finalOutcome) << ','
+        << combatEvalFinalWon(result.finalOutcome) << ',' << result.finalFloor << ','
+        << result.finalHp << ',' << result.fightCount << ','
+        << (result.trajectoryComplete ? 1 : 0) << ',' << (result.trajectoryValid ? 1 : 0)
+        << ',' << std::count(result.rows.begin(), result.rows.end(), '\n') << ','
+        << result.invalidCombatRows << ',' << teacher.id << ','
+        << result.simulatorHealthFailures << ',' << (result.fatalFailure ? 1 : 0) << ','
+        << branchParity << '\n';
+}
+
+static std::vector<VwinSampledDecision *> vwinSamplesInSourceOrder(VwinCollector &capture) {
+    std::vector<VwinSampledDecision *> result;
+    for (auto &[type, samples] : capture.sampled) {
+        (void)type;
+        for (auto &sample : samples) result.push_back(&sample);
+    }
+    std::sort(result.begin(), result.end(), [](const auto *a, const auto *b) {
+        return a->decisionIdx < b->decisionIdx;
+    });
+    return result;
+}
+
+void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                    long long seedOffset, const std::string &teacherPath,
+                    int samplesPerType, int parityPercent) {
+    if (nSeeds < 1 || sims != 10000 || asc != 0 || samplesPerType < 1
+        || parityPercent < 0 || parityPercent > 100 || seedOffset < 0
+        || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
+        throw std::runtime_error("vwin refresh: requires N>0, exact 10k, Ascension 0, K>0, parity rate 0..100, and a nonnegative nonoverflowing seed range");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
+    vwinRequireProductionPolicy(teacher);
+    search::g_richCombatFeatures = true;
+    const std::vector<std::string> suffixes = {
+        ".map.csv", ".win_raw.csv", ".decisions.csv", ".branches.csv",
+        ".combat.csv", ".runout.csv", ".manifest.json"};
+    for (const auto &suffix : suffixes)
+        if (std::filesystem::exists(outPrefix + suffix))
+            throw std::runtime_error("vwin refresh: refusing to overwrite existing output "
+                                     + outPrefix + suffix);
+    std::ofstream mapOut(outPrefix + ".map.csv");
+    std::ofstream rawOut(outPrefix + ".win_raw.csv");
+    std::ofstream decisionOut(outPrefix + ".decisions.csv");
+    std::ofstream branchOut(outPrefix + ".branches.csv");
+    std::ofstream combatOut(outPrefix + ".combat.csv");
+    std::ofstream runoutOut(outPrefix + ".runout.csv");
+    if (!mapOut || !rawOut || !decisionOut || !branchOut || !combatOut || !runoutOut)
+        throw std::runtime_error("vwin refresh: cannot open one or more outputs");
+    mapOut << vwinMapHeader() << '\n';
+    rawOut << vwinRawHeader() << '\n';
+    decisionOut << vwinDecisionHeader() << '\n';
+    branchOut << vwinBranchHeader() << '\n';
+    combatOut << vwinCombatHeader() << '\n';
+    runoutOut << vwinRunoutHeader() << ",branchParity\n";
+
+    nlohmann::json branchSummary = nlohmann::json::array();
+    struct VwinTypeSummary {
+        std::uint64_t decisions = 0, unsupported = 0, incomplete = 0;
+        std::uint64_t eligible = 0, candidateOptions = 0, sampled = 0, branches = 0;
+        double branchCpuSeconds = 0.0;
+    };
+    std::map<std::string, VwinTypeSummary> typeSummary;
+    std::uint64_t sourceMapRows = 0, sourceRawRows = 0, branchMapRows = 0,
+                  branchRawRows = 0, decisionRows = 0, branchRows = 0;
+    int completedSources = 0, validSources = 0, parityChecks = 0, parityFailures = 0;
+    for (int index = 0; index < nSeeds; ++index) {
+        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + index);
+        VwinCollector source;
+        source.sourceSeed = seed;
+        source.samplesPerType = samplesPerType;
+        source.branchId = "source";
+        source.deviationIdx = 0;
+        source.captureRefresh = true;
+        source.allowSampling = true;
+        const auto generated = runCombatEvalGenSeed(seed, sims, asc, teacher, true, &source);
+        for (const auto &decision : source.decisions) {
+            if (decision.branchId != "source") continue;
+            auto &summary = typeSummary[decision.type];
+            ++summary.decisions;
+            if (!decision.supported) ++summary.unsupported;
+            if (!decision.complete) ++summary.incomplete;
+            const bool eligible = decision.supported && decision.complete
+                && decision.candidateKeys.size() >= 2 && !decision.chosenKey.empty()
+                && std::find(decision.candidateKeys.begin(), decision.candidateKeys.end(),
+                             decision.chosenKey) != decision.candidateKeys.end();
+            if (eligible) {
+                ++summary.eligible;
+                summary.candidateOptions += decision.candidateKeys.size();
+            }
+            if (vwinSelectedDecision(source, decision.decisionIdx)) ++summary.sampled;
+        }
+        vwinWriteCollector(mapOut, rawOut, decisionOut, combatOut, seed, source, teacher);
+        vwinWriteRunout(runoutOut, seed, source, generated, teacher, "NA");
+        sourceMapRows += source.mapRows.size();
+        sourceRawRows += source.rawRows.size();
+        decisionRows += source.decisions.size();
+        if (generated.trajectoryComplete) ++completedSources;
+        if (generated.trajectoryValid) ++validSources;
+
+        for (auto *sample : vwinSamplesInSourceOrder(source)) {
+            for (const auto &option : sample->options) {
+                const bool chosen = option.key == sample->chosenKey;
+                const std::string branchId = "s" + std::to_string(seed) + "-d"
+                    + std::to_string(sample->decisionIdx) + "-" + vwinSha256(option.key).substr(0, 12);
+                VwinBranchStart start{sample, option, branchId};
+                VwinCollector branch;
+                branch.sourceSeed = seed;
+                branch.branchId = branchId;
+                branch.deviationIdx = 1;
+                branch.captureRefresh = true;
+                branch.allowSampling = false;
+                const auto branchCpuStart = vwinThreadCpuNanos();
+                const auto branched = runCombatEvalGenSeed(seed, sims, asc, teacher, true,
+                                                            &branch, &start);
+                const double branchCpuSeconds = static_cast<double>(
+                    vwinThreadCpuNanos() - branchCpuStart) / 1.0e9;
+                auto &summary = typeSummary[sample->type];
+                ++summary.branches;
+                summary.branchCpuSeconds += branchCpuSeconds;
+                bool parity = false;
+                bool parityApplicable = false;
+                const auto parityHash = vwinSha256("vwin-branch-parity-334-v1:"
+                    + std::to_string(seed) + ":" + std::to_string(sample->decisionIdx));
+                const int parityBucket = static_cast<int>(std::stoul(parityHash.substr(0, 8), nullptr, 16) % 100);
+                if (chosen && generated.trajectoryValid && parityBucket < parityPercent) {
+                    parityApplicable = true;
+                    const auto first = source.trace.begin()
+                        + static_cast<std::ptrdiff_t>(sample->sourceTraceIndex);
+                    const std::vector<std::string> expected(first, source.trace.end());
+                    parity = expected == branch.trace
+                        && branched.finalOutcome == generated.finalOutcome
+                        && branched.finalFloor == generated.finalFloor
+                        && branched.finalHp == generated.finalHp;
+                    ++parityChecks;
+                    if (!parity) ++parityFailures;
+                }
+                vwinWriteCollector(mapOut, rawOut, decisionOut, combatOut, seed, branch, teacher);
+                vwinWriteRunout(runoutOut, seed, branch, branched, teacher,
+                    parityApplicable ? (parity ? "PASS" : "FAIL") : "NA");
+                branchMapRows += branch.mapRows.size();
+                branchRawRows += branch.rawRows.size();
+                decisionRows += branch.decisions.size();
+                ++branchRows;
+                branchOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
+                          << csvQuote(option.key) << ',' << (chosen ? 1 : 0) << ','
+                          << branchId << ',' << combatEvalFinalWon(branched.finalOutcome) << ','
+                          << branched.finalFloor << ',' << branched.finalHp << ','
+                          << ((branched.trajectoryValid && (!parityApplicable || parity)
+                               && (!chosen || generated.trajectoryValid)) ? 1 : 0) << '\n';
+                branchSummary.push_back({{"sourceSeed", seed},
+                    {"decisionIdx", sample->decisionIdx}, {"type", sample->type},
+                    {"optionKey", option.key}, {"chosen", chosen}, {"branchId", branchId},
+                    {"cpuSeconds", branchCpuSeconds},
+                    {"trajectoryValid", branched.trajectoryValid},
+                    {"chosenReplayParity", parityApplicable ? nlohmann::json(parity)
+                                                             : nlohmann::json(nullptr)}});
+            }
+        }
+        mapOut.flush(); rawOut.flush(); decisionOut.flush(); branchOut.flush();
+        combatOut.flush(); runoutOut.flush();
+    }
+    mapOut.close(); rawOut.close(); decisionOut.close(); branchOut.close();
+    combatOut.close(); runoutOut.close();
+    nlohmann::json outputHashes = nlohmann::json::object();
+    for (const auto &suffix : {".map.csv", ".win_raw.csv", ".decisions.csv", ".branches.csv",
+                               ".combat.csv", ".runout.csv"})
+        outputHashes[std::string(suffix).substr(1)] = fileSha256(outPrefix + suffix);
+    nlohmann::json perType = nlohmann::json::object();
+    for (const auto &[type, summary] : typeSummary) {
+        perType[type] = {
+            {"decisions", summary.decisions},
+            {"unsupported", summary.unsupported},
+            {"incomplete", summary.incomplete},
+            {"eligible", summary.eligible},
+            {"candidateOptions", summary.candidateOptions},
+            {"sampled", summary.sampled},
+            {"branches", summary.branches},
+            {"branchCpuSeconds", summary.branchCpuSeconds},
+            {"meanBranchCpuSeconds", summary.branches > 0
+                ? summary.branchCpuSeconds / static_cast<double>(summary.branches) : 0.0},
+        };
+    }
+    nlohmann::json manifest = {
+        {"schemaVersion", "vwin_refresh_334_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherPath", std::filesystem::absolute(teacherPath).string()},
+        {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification},
+        {"policy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"sampling", {{"schema", "outcome_blind_reservoir_per_type_v1"},
+                       {"samplesPerType", samplesPerType}, {"optionCap", 6},
+                       {"capRule", "chosen_plus_five_sha256_ranked"},
+                       {"capDomain", "vwin-option-cap-334-v1:{seed}:{decisionIdx}:{optionKey}"}}},
+        {"split", {{"rule", "source_seed_sha256_prefix_v1"},
+                    {"domain", "vwin-refresh-334-v1:{seed}"},
+                    {"prefixBytes", 4}, {"trainLt", 0.70}, {"validationLt", 0.85},
+                    {"branchesInheritSourceSeed", true}}},
+        {"branchParity", {{"percent", parityPercent},
+                           {"rule", "sha256_bucket_decision_v1"},
+                           {"domain", "vwin-branch-parity-334-v1:{seed}:{decisionIdx}"},
+                           {"checks", parityChecks}, {"failures", parityFailures}}},
+        {"stateFeatures", {{"schema", "rich_state_v1"}, {"header", richStateHeader()},
+                           {"headerSha256", vwinSha256(richStateHeader())}, {"count", 1017}}},
+        {"integrity", {{"completedSources", completedSources}, {"validSources", validSources},
+            {"sourceMapRows", sourceMapRows}, {"sourceWinRawRows", sourceRawRows},
+            {"branchMapRows", branchMapRows}, {"branchWinRawRows", branchRawRows},
+            {"decisionRows", decisionRows}, {"branches", branchRows},
+            {"chosenReplayChecks", parityChecks}, {"chosenReplayFailures", parityFailures}}},
+        {"outputs", outputHashes}, {"perType", std::move(perType)},
+        {"branchRows", std::move(branchSummary)}
+    };
+    std::ofstream manifestOut(outPrefix + ".manifest.json");
+    if (!manifestOut) throw std::runtime_error("vwin refresh: cannot write manifest");
+    manifestOut << manifest.dump(2) << '\n';
+    if (!manifestOut) throw std::runtime_error("vwin refresh: manifest write failed");
+    if (parityFailures != 0)
+        throw std::runtime_error("vwin refresh: chosen replay parity failed for "
+                                 + std::to_string(parityFailures) + " branches");
+    std::cout << "vwin refresh teacher=" << teacher.id << " completed=" << completedSources
+              << '/' << nSeeds << " valid=" << validSources << " branches=" << branchRows
+              << " chosenParity=" << parityChecks << '/' << parityChecks
+              << " map=" << sourceMapRows + branchMapRows << " win_raw="
+              << sourceRawRows + branchRawRows << " -> " << outPrefix << "\n";
+}
+
+static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget) {
+    trainingRunStart();
+    GameContext gc = detachedCounterfactualCopy(*entry.pre);
+    PathHistory path = entry.path;
+    search::ScumSearchAgent2 agent = entry.agent;
+    agent.simulationCountBase = budget;
+    agent.recordActions = true;
+    agent.gameActionHistory.clear();
+    one_combat::restoreOocPolicyThreadState(entry.policy);
+    t_curPath = &path;
+    const int healthBefore = search::g_simHealthFailureCount;
+    const std::int64_t simulationsBefore = agent.simulationCountTotal;
+    CombatEvalDecisionScope decisionScope(true);
+    BattleContext bc;
+    const std::uint64_t cpuStart = vwinThreadCpuNanos();
+    agent.playoutBattle(gc, bc);
+    const std::uint64_t cpuEnd = vwinThreadCpuNanos();
+    const bool initializationTerminal = decisionScope.hooks == 0
+        && bc.turn == 0 && bc.outcome != Outcome::UNDECIDED;
+    const auto label = combatEvalTerminal(bc, entry.pre->info.encounter,
+        decisionScope.hooks, healthBefore, search::g_simHealthFailureCount,
+        initializationTerminal);
+    VwinArmResult result;
+    result.outcome = bc.outcome == Outcome::PLAYER_VICTORY ? "PLAYER_VICTORY"
+        : bc.outcome == Outcome::PLAYER_LOSS ? "PLAYER_LOSS" : "UNDECIDED";
+    result.won = bc.outcome == Outcome::PLAYER_VICTORY ? 1
+        : bc.outcome == Outcome::PLAYER_LOSS ? 0 : -1;
+    result.terminalHp = bc.player.curHp;
+    result.postAfterBattleHp = -1;
+    result.firstActionBits = agent.gameActionHistory.empty()
+        ? -1 : agent.gameActionHistory.front();
+    result.signedOutcome = label.signedOutcome;
+    result.cpuSeconds = static_cast<double>(cpuEnd - cpuStart) / 1.0e9;
+    result.simulations = static_cast<std::uint64_t>(std::max<std::int64_t>(0,
+        agent.simulationCountTotal - simulationsBefore));
+    result.decisions = static_cast<std::uint64_t>(decisionScope.hooks);
+    result.valid = label.labelValid && bc.outcome != Outcome::UNDECIDED;
+    if (!result.valid) result.quarantineReason = !label.healthOk ? "simulator_health_failure"
+        : decisionScope.hooks == 0 && !initializationTerminal ? "missing_combat_decision_hook"
+        : bc.outcome == Outcome::UNDECIDED ? "undecided_combat" : label.reason;
+    bc.exitBattle(gc);
+    result.postAfterBattleHp = gc.curHp;
+    t_curPath = nullptr;
+    return result;
+}
+
+int vwinRefreshSelfTest() {
+    auto require = [](bool ok, const char *message) {
+        if (!ok) throw std::runtime_error(std::string("vwin refresh selftest: ") + message);
+    };
+    std::vector<VwinOption> options;
+    for (int i = 0; i < 12; ++i)
+        options.push_back({"option:" + std::to_string(i), static_cast<std::uint32_t>(i),
+                           true, std::nullopt});
+    const std::string chosen = "option:8";
+    const auto cappedA = vwinLimitOptions(options, chosen, 13000000, 17);
+    std::reverse(options.begin(), options.end());
+    const auto cappedB = vwinLimitOptions(options, chosen, 13000000, 17);
+    require(cappedA.size() == 6 && cappedB.size() == 6, "option cap is exactly six");
+    require(std::any_of(cappedA.begin(), cappedA.end(), [&](const auto &option) {
+        return option.key == chosen;
+    }), "option cap retains chosen option");
+    std::vector<std::string> keysA, keysB;
+    for (const auto &option : cappedA) keysA.push_back(option.key);
+    for (const auto &option : cappedB) keysB.push_back(option.key);
+    std::sort(keysA.begin(), keysA.end());
+    std::sort(keysB.begin(), keysB.end());
+    require(keysA == keysB, "option cap is input-order independent");
+    require(vwinLimitOptions({options[0], options[1]}, options[0].key, 1, 1).size() == 2,
+            "option cap preserves small option sets");
+    require(vwinSha256("vwin-refresh-selftest").size() == 64,
+            "SHA256 identity has 64 lowercase hex characters");
+    auto reservoirSelections = [](std::uint64_t seed) {
+        const auto digest = vwinSha256("vwin-refresh-334-v1:" + std::to_string(seed) + ":MAP");
+        const auto initial = std::stoull(digest.substr(0, 16), nullptr, 16);
+        std::mt19937_64 rng(initial);
+        std::vector<int> reservoir;
+        constexpr int capacity = 5;
+        for (int seen = 1; seen <= 257; ++seen) {
+            const auto slot = vwinReservoirSlot(rng, seen, capacity, reservoir.size());
+            if (!slot) continue;
+            if (*slot == reservoir.size()) reservoir.push_back(seen);
+            else reservoir[*slot] = seen;
+        }
+        std::sort(reservoir.begin(), reservoir.end());
+        return reservoir;
+    };
+    for (const std::uint64_t seed : {13000000ULL, 13000001ULL})
+        require(reservoirSelections(seed) == reservoirSelections(seed),
+                "two-source-seed reservoir sampling is deterministic");
+
+    std::default_random_engine sourceRng(112233);
+    auto copiedRng = sourceRng;
+    (void)copiedRng();
+    require(sourceRng() == std::default_random_engine(112233)(),
+            "agent RNG copy is isolated");
+    search::ScumSearchAgent2 sourceAgent;
+    sourceAgent.simulationCountBase = 10000;
+    sourceAgent.rng = std::default_random_engine(112233);
+    auto branchAgent = sourceAgent;
+    branchAgent.simulationCountBase = 100000;
+    (void)branchAgent.rng();
+    require(sourceAgent.simulationCountBase == 10000
+            && sourceAgent.rng == std::default_random_engine(112233),
+            "agent budget and RNG copy are isolated");
+
+    const auto savedPolicy = one_combat::captureOocPolicyThreadState();
+    auto alteredPolicy = savedPolicy;
+    alteredPolicy.pathActionUses += 7;
+    alteredPolicy.pathAggr += 1.25;
+    alteredPolicy.tokCheckPending = !savedPolicy.tokCheckPending;
+    alteredPolicy.shopV = !savedPolicy.shopV;
+    alteredPolicy.strategicTraceRows += "fixture";
+    alteredPolicy.strategicTraceDecision += 3;
+    alteredPolicy.actFightProbeDecisionIdx += 4;
+    alteredPolicy.actFightProbeActionIdx += 5;
+    alteredPolicy.actFightProbeFutureIdx += 6;
+    one_combat::restoreOocPolicyThreadState(alteredPolicy);
+    const auto restoredPolicy = one_combat::captureOocPolicyThreadState();
+    const bool policyCopied = restoredPolicy.pathActionUses == alteredPolicy.pathActionUses
+        && restoredPolicy.pathAggr == alteredPolicy.pathAggr
+        && restoredPolicy.tokCheckPending == alteredPolicy.tokCheckPending
+        && restoredPolicy.shopV == alteredPolicy.shopV
+        && restoredPolicy.strategicTraceRows == alteredPolicy.strategicTraceRows
+        && restoredPolicy.strategicTraceDecision == alteredPolicy.strategicTraceDecision
+        && restoredPolicy.actFightProbeDecisionIdx == alteredPolicy.actFightProbeDecisionIdx
+        && restoredPolicy.actFightProbeActionIdx == alteredPolicy.actFightProbeActionIdx
+        && restoredPolicy.actFightProbeFutureIdx == alteredPolicy.actFightProbeFutureIdx;
+    one_combat::restoreOocPolicyThreadState(savedPolicy);
+    require(policyCopied, "OOC policy thread state copy/restore");
+    require(one_combat::captureOocPolicyThreadState().pathActionUses == savedPolicy.pathActionUses,
+            "OOC policy thread state restoration");
+
+    std::stringstream featureHeader(richStateHeader());
+    std::string feature;
+    int featureCount = 0;
+    while (std::getline(featureHeader, feature, ',')) ++featureCount;
+    require(featureCount == 1017, "rich state feature schema is 1,017 columns");
+    require(vwinThreadCpuNanos() > 0, "thread CPU clock is available");
+    std::cout << "vwin refresh contract: deterministic option cap and two-seed reservoir, "
+                 "detached agent/policy snapshots, "
+                 "1,017-feature header, and thread CPU clock passed\n";
+    return 0;
+}
+
+int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc) {
+    if (sims < 1 || asc != 0)
+        throw std::runtime_error("vwin branch parity selftest: require positive SIMS and Ascension 0");
+    WholeCombatTeacher fixture{"vwin-branch-parity-selftest", nlohmann::json::object()};
+    VwinCollector source;
+    source.sourceSeed = seed;
+    source.samplesPerType = 1;
+    source.branchId = "source";
+    source.captureRefresh = true;
+    source.allowSampling = true;
+    const auto sourceResult = runCombatEvalGenSeed(seed, sims, asc, fixture, false, &source);
+    if (!sourceResult.trajectoryValid)
+        throw std::runtime_error("vwin branch parity selftest: source trajectory is invalid");
+    auto samples = vwinSamplesInSourceOrder(source);
+    if (samples.empty())
+        throw std::runtime_error("vwin branch parity selftest: no supported multi-option decision sampled");
+    auto *sample = samples.front();
+    const auto chosen = std::find_if(sample->options.begin(), sample->options.end(), [&](const auto &option) {
+        return option.key == sample->chosenKey;
+    });
+    if (chosen == sample->options.end())
+        throw std::runtime_error("vwin branch parity selftest: chosen option was not retained by cap");
+    VwinBranchStart start{sample, *chosen, "selftest-chosen-replay"};
+    VwinCollector replay;
+    replay.sourceSeed = seed;
+    replay.branchId = start.branchId;
+    replay.deviationIdx = 1;
+    replay.captureRefresh = true;
+    const auto replayResult = runCombatEvalGenSeed(seed, sims, asc, fixture, false, &replay, &start);
+    if (sample->sourceTraceIndex > source.trace.size())
+        throw std::runtime_error("vwin branch parity selftest: source trace index is invalid");
+    const std::vector<std::string> expected(
+        source.trace.begin() + static_cast<std::ptrdiff_t>(sample->sourceTraceIndex),
+        source.trace.end());
+    if (expected != replay.trace || sourceResult.finalOutcome != replayResult.finalOutcome
+        || sourceResult.finalFloor != replayResult.finalFloor || sourceResult.finalHp != replayResult.finalHp)
+        throw std::runtime_error("vwin branch parity selftest: chosen replay diverged from source suffix");
+    if (source.rawRows.size() != replay.rawRows.size())
+        throw std::runtime_error("vwin branch parity selftest: WIN_RAW victory count changed");
+    std::cout << "vwin branch parity: seed=" << seed << " decision=" << sample->decisionIdx
+              << " type=" << sample->type << " events=" << expected.size()
+              << " outcome=" << combatEvalGameOutcome(sourceResult.finalOutcome)
+              << " floor=" << sourceResult.finalFloor << " hp=" << sourceResult.finalHp << "\n";
+    return 0;
+}
+
+void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                        long long seedOffset, const std::string &teacherPath) {
+    constexpr int kPilotSeeds = 128;
+    constexpr long long kPilotStart = 13000000;
+    if (nSeeds != kPilotSeeds || sims != 10000 || asc != 0 || seedOffset != kPilotStart)
+        throw std::runtime_error("boss headroom #347: fixed cohort is 128 seeds from 13000000, exact 10k, Ascension 0");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
+    vwinRequireProductionPolicy(teacher);
+    const std::string statesPath = outPrefix + ".states.csv";
+    const std::string armsPath = outPrefix + ".arms.csv";
+    const std::string manifestPath = outPrefix + ".manifest.json";
+    for (const auto &path : {statesPath, armsPath, manifestPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("boss headroom #347: refusing to overwrite existing output " + path);
+
+    std::vector<VwinBossEntry> entries;
+    int completeSources = 0, validSources = 0;
+    for (int i = 0; i < nSeeds; ++i) {
+        VwinCollector capture;
+        capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
+        capture.captureBoss = true;
+        const auto source = runCombatEvalGenSeed(capture.sourceSeed, sims, asc, teacher,
+                                                  false, &capture);
+        if (source.trajectoryComplete) ++completeSources;
+        if (source.trajectoryValid) ++validSources;
+        for (auto &entry : capture.bossEntries) entries.push_back(std::move(entry));
+    }
+
+    std::vector<VwinBossEntry *> selected;
+    const int quotas[3] = {11, 11, 10};
+    nlohmann::json selection = nlohmann::json::array();
+    for (int act = 1; act <= 3; ++act) {
+        std::vector<VwinBossEntry *> inAct;
+        for (auto &entry : entries)
+            if (entry.act == act && entry.sourceTrajectoryValid && entry.labelValid
+                && entry.sourceWon >= 0 && entry.terminalHp >= 0 && entry.postAfterBattleHp >= 0)
+                inAct.push_back(&entry);
+        std::sort(inAct.begin(), inAct.end(), [](const auto *a, const auto *b) {
+            const auto ka = vwinSha256("boss-headroom-347-v1:" + std::to_string(a->pre->seed)
+                                      + ":" + std::to_string(a->fightIdx));
+            const auto kb = vwinSha256("boss-headroom-347-v1:" + std::to_string(b->pre->seed)
+                                      + ":" + std::to_string(b->fightIdx));
+            return ka == kb ? std::tie(a->pre->seed, a->fightIdx)
+                            < std::tie(b->pre->seed, b->fightIdx) : ka < kb;
+        });
+        const std::size_t take = std::min<std::size_t>(quotas[act - 1], inAct.size());
+        for (std::size_t i = 0; i < take; ++i) {
+            selected.push_back(inAct[i]);
+            selection.push_back({{"seed", inAct[i]->pre->seed}, {"fightIdx", inAct[i]->fightIdx},
+                                 {"act", act}, {"rank", i + 1},
+                                 {"selectionHash", vwinSha256("boss-headroom-347-v1:"
+                                     + std::to_string(inAct[i]->pre->seed) + ":"
+                                     + std::to_string(inAct[i]->fightIdx))}});
+        }
+    }
+
+    std::ofstream states(statesPath), arms(armsPath);
+    if (!states || !arms) throw std::runtime_error("boss headroom #347: cannot open outputs");
+    states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,sourceWon,sourceSignedOutcome,"
+              "sourceTerminalHp,sourcePostAfterBattleHp,sourceFirstActionBits,trajectoryValid\n";
+    arms << "stateId,sourceSeed,fightIdx,act,encounter,arm,budget,outcome,won,signedOutcome,"
+            "terminalHp,postAfterBattleHp,firstActionBits,firstDecisionAgreement,cpuSeconds,"
+            "simulations,decisions,valid,sourceReplayMatch,quarantineReason\n";
+    int sourceReplayMatches = 0, sourceReplayMismatches = 0, validStates = 0;
+    for (auto *entry : selected) {
+        const auto stateId = "s" + std::to_string(entry->pre->seed) + "-f"
+            + std::to_string(entry->fightIdx);
+        states << stateId << ',' << entry->pre->seed << ',' << entry->fightIdx << ','
+               << entry->act << ',' << entry->floor << ',' << entry->roomClass << ','
+               << csvQuote(entry->encounter) << ',' << entry->sourceWon << ','
+               << std::setprecision(17) << entry->signedOutcome << ',' << entry->terminalHp << ','
+               << entry->postAfterBattleHp << ',' << entry->firstActionBits << ','
+               << (entry->sourceTrajectoryValid ? 1 : 0) << '\n';
+        bool baselineMatches = false;
+        for (const auto &[armName, budget] : std::vector<std::pair<std::string, int>>{
+                 {"A", 10000}, {"B100", 100000}, {"B30", 30000}}) {
+            const auto result = vwinRunBossArm(*entry, budget);
+            const bool sourceMatch = armName == "A"
+                && result.valid && result.won == entry->sourceWon
+                && result.terminalHp == entry->terminalHp;
+            if (armName == "A") {
+                baselineMatches = sourceMatch;
+                if (sourceMatch) ++sourceReplayMatches;
+                else ++sourceReplayMismatches;
+            }
+            const bool firstAgreement = result.firstActionBits >= 0
+                && result.firstActionBits == entry->firstActionBits;
+            const bool valid = result.valid && (armName != "A" || sourceMatch)
+                && (armName == "A" || baselineMatches);
+            if (armName == "A" && valid) ++validStates;
+            std::string reason = result.quarantineReason;
+            if (armName == "A" && result.valid && !sourceMatch) reason = "baseline_replay_mismatch";
+            if (armName != "A" && !baselineMatches) reason = "baseline_state_invalid";
+            arms << stateId << ',' << entry->pre->seed << ',' << entry->fightIdx << ','
+                 << entry->act << ',' << csvQuote(entry->encounter) << ',' << armName << ','
+                 << budget << ',' << result.outcome << ',' << result.won << ','
+                 << std::setprecision(17) << result.signedOutcome << ',' << result.terminalHp << ','
+                 << result.postAfterBattleHp << ',' << result.firstActionBits << ','
+                 << (firstAgreement ? 1 : 0) << ',' << std::setprecision(9) << result.cpuSeconds
+                 << ',' << result.simulations << ',' << result.decisions << ',' << (valid ? 1 : 0)
+                 << ',' << (armName == "A" ? (sourceMatch ? 1 : 0) : -1) << ','
+                 << csvQuote(reason) << '\n';
+        }
+    }
+    states.close(); arms.close();
+    nlohmann::json manifest = {
+        {"schemaVersion", "boss_headroom_347_stage1_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"selection", {{"rule", "per_act_sha256_rank"},
+                        {"domain", "boss-headroom-347-v1:{seed}:{fightIdx}"},
+                        {"quotas", {11, 11, 10}}, {"selected", std::move(selection)}}},
+        {"arms", {{"A", 10000}, {"B100", 100000}, {"B30", 30000}}},
+        {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
+            {"candidateBossEntries", entries.size()}, {"selectedStates", selected.size()},
+            {"sourceReplayMatches", sourceReplayMatches},
+            {"sourceReplayMismatches", sourceReplayMismatches}, {"validStates", validStates}}},
+        {"outputs", {{"statesSha256", fileSha256(statesPath)},
+                     {"armsSha256", fileSha256(armsPath)}}}
+    };
+    std::ofstream manifestOut(manifestPath);
+    if (!manifestOut) throw std::runtime_error("boss headroom #347: cannot write manifest");
+    manifestOut << manifest.dump(2) << '\n';
+    std::cout << "boss headroom #347 teacher=" << teacher.id << " sourceValid=" << validSources
+              << '/' << nSeeds << " selected=" << selected.size() << " A-replay="
+              << sourceReplayMatches << '/' << sourceReplayMatches + sourceReplayMismatches
+              << " -> " << outPrefix << "\n";
+}
+
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath){trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("wholecombatgen: cannot open output");f<<"sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,parasiteAdded,persistentMutationSummary\n";long long rows=0;int completed=0;
     #pragma omp parallel for schedule(dynamic)
     for(int s=0;s<nSeeds;++s){const std::string generated=runWholeCombatGenSeed(seedOffset+s,sims,asc,teacher);

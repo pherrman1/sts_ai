@@ -260,6 +260,19 @@ void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
                           long long seedOffset, const std::string &teacherPath,
                           const std::string &runoutPath = {});
 
+// Current-policy v_win refresh collector. OUT_PREFIX produces .map.csv,
+// .win_raw.csv, .decisions.csv, .branches.csv, .combat.csv, .runout.csv and
+// .manifest.json sidecars. Branch sampling is K decisions per decision type.
+void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                    long long seedOffset, const std::string &teacherPath,
+                    int samplesPerType, int parityPercent = 100);
+
+// Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
+void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                        long long seedOffset, const std::string &teacherPath);
+int vwinRefreshSelfTest();
+int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);
+
 int combatTransitionFixture(const std::string &outfile,
                                    const std::string &manifestPath);
 

@@ -253,6 +253,100 @@ coverage reports remain outside Git; semantic-branch, E2/E2c and other
 historical corpora are auxiliary evidence and are not silently pooled into
 this battle-start corpus.
 
+#### `v_win` refresh and #347 boss-headroom collector
+
+`vwinrefreshgen` extends the same exact-10k native Silver teacher binding and
+`runFullRunOOC` continuation loop with outcome-blind semantic sibling capture.
+The producer requires Ascension 0, native floor/win models, the V4 token model,
+the five V4 strategic gates, the 1.0 strategic margin, keys off, and the other
+experimental action/policy overrides off. `loadWholeCombatTeacher` also
+requires the teacher's `ooc_policy` and loaded artifact hashes to match the
+effective runtime configuration. The V4 token artifact must match pinned
+SHA-256 `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`.
+
+Each source trajectory and each deferred sibling branch writes:
+
+- `MAP`: the 1,017-value `richStateHeader` at every map action, before the
+  selected action. The run-out row supplies the eventual `finalWon` label.
+- `WIN_RAW`: one victory-boundary row per won fight, captured through the
+  composed `g_onBattleExitRaw` observer before `regainControl`/`afterBattle`;
+  `postAfterBattleHp` is filled after the ordinary exit call returns. This is
+  evaluation/probe data and is not a training target.
+- `decisions`: decision type, complete option keys, chosen option and
+  enumeration support/completeness. MAP uses primitive actions; other OOC
+  choices use the semantic-action API. Compound selector primitives remain
+  part of their parent semantic action.
+- `branches`: one row per sampled sibling, with the chosen option retained and
+  at most five other options selected by a deterministic SHA-256 rank when a
+  decision has more than six choices. Branches start from detached
+  `GameContext`, `PathHistory`, copied agent/RNG and saved OOC thread-local
+  policy state, then continue to the end under the same policy chain.
+
+For every sampled chosen sibling the producer runs the same forced-action
+branch as the counterfactuals. `PARITY_PERCENT=100` checks every chosen replay
+on the A1 pilot; `PARITY_PERCENT=5` selects an outcome-independent 5% by the
+manifested seed/decision hash for main collection. Parity compares the source
+suffix and branch trace, including later semantic decision keys, recorded
+combat actions, fight outcomes and terminal/post-afterBattle HP, then checks
+the final run result. The old `combatevalgen` output path remains unchanged.
+The trace is an OOC/real-combat trajectory trace for this check; the separate
+`STS_OOC_MCTS_LEAF_TRACE` MCTS leaf-state probe is deferred until its #363 seam
+is available.
+
+Outputs are `<PREFIX>.map.csv`, `.win_raw.csv`, `.decisions.csv`,
+`.branches.csv`, `.combat.csv`, `.runout.csv`, and a hash-bound
+`.manifest.json`. The manifest binds producer/executable/teacher identities,
+effective OOC policy and artifacts, feature-header hash, source seed range,
+reservoir/cap/parity rules, the source-seed 70/15/15 split rule, row totals,
+chosen-replay parity and output hashes. Its `perType` summary reports decision,
+eligibility, support/completeness, candidate-option, sample and branch counts;
+branch CPU seconds are reported by decision type and for each branch. Branches
+inherit the source seed's split. Validate a completed bundle with:
+
+```text
+python3 tools/vwin_refresh_contract.py PREFIX.manifest.json
+```
+
+The validator checks each output hash/header, finite numeric fields, seed and
+branch joins, one run-out outcome per branch, sampled chosen-option presence,
+the six-option cap, the 70/15/15 split metadata, chosen-replay status, and one
+`WIN_RAW` row per victory in each valid trajectory.
+`vwinrefreshselftest` covers option-cap and two-source-seed reservoir
+determinism, copied agent/RNG and policy state, the rich-feature width and
+thread CPU clock. `vwinrefreshbranchselftest` is a single-seed, seed-guarded
+full-run chosen-branch replay check.
+
+The A1 command uses 128 sources from 13,000,000, K=1, exact 10k and 100% chosen
+replay checks. It is run only after the implementation review and frozen SHA:
+
+```text
+tools/seed_guard.sh build/linux-gcc-release/one_combat vwinrefreshgen 128 10000 0 PREFIX 13000000 TEACHER.json 1 100
+python3 tools/vwin_refresh_contract.py PREFIX.manifest.json
+```
+
+`bossheadroom347gen` uses the same fixed 128-source cohort. It retains valid
+boss-entry states by act (11/11/10, or all available below quota), ranked by
+`sha256("boss-headroom-347-v1:{seed}:{fightIdx}")`. Arm A replays exact 10k and
+must match the source outcome and terminal HP; only then are B100 (flat 100k)
+and B30 (flat 30k) valid paired comparisons. The mode writes source states,
+per-arm outcome/signed-outcome/HP/first-action/CPU/simulation/decision rows and
+a provenance manifest. `tools/analyze_boss_headroom_347.py` requires the
+adjacent hash-bound manifest and verifies the state/arm joins before analysis.
+It reports paired metrics and source-seed-clustered bootstrap intervals
+overall, by act, and by boss; applies the Stage-1 classification thresholds;
+and flags the authorized extension case.
+
+The analysis command is:
+
+```text
+python3 tools/analyze_boss_headroom_347.py PREFIX.arms.csv
+```
+
+No pilot or Stage-1 cohort is part of implementation verification. The default
+4,096-seed A2 collection still requires explicit authorization; no training,
+model export, leaf-runtime routing, Silver terminal pricing or gameplay/default
+promotion is performed by these producers.
+
 #### Fresh confirmation orchestration and offline analysis
 
 `tools/run_ooc_semantic_confirmation.py` is a deliberately fixed experiment

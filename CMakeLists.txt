@@ -312,6 +312,33 @@ set_tests_properties(combat_evaluator_semantic_branch_contract PROPERTIES LABELS
 add_test(NAME battle_start_runout_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_battle_start_runout_contract.py)
 set_tests_properties(battle_start_runout_contract PROPERTIES LABELS "core;research-repro")
+add_test(NAME vwin_refresh_producer_contract COMMAND $<TARGET_FILE:one_combat> vwinrefreshselftest)
+set_tests_properties(vwin_refresh_producer_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_branch_parity
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> vwinrefreshbranchselftest 4000598 100 0)
+set_tests_properties(vwin_refresh_branch_parity PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_validator_selftest
+    COMMAND python3 -m unittest tools.test_vwin_refresh_contract -q)
+set_tests_properties(vwin_refresh_validator_selftest PROPERTIES
+    LABELS "research-repro;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME boss_headroom_347_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
+set_tests_properties(boss_headroom_347_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_refresh_seed_guard_accepts_positive
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> vwinrefreshgen 128 10000 0 /tmp/vwin 13000000 teacher.json 1)
+add_test(NAME vwin_refresh_seed_guard_rejects_zero
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> vwinrefreshgen 0 10000 0 /tmp/vwin 13000000 teacher.json 1)
+set_tests_properties(vwin_refresh_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE)
+add_test(NAME vwin_refresh_rejects_negative_seed_start
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> vwinrefreshgen 1 10000 0 /tmp/vwin-invalid-offset -1 teacher.json 1)
+set_tests_properties(vwin_refresh_rejects_negative_seed_start PROPERTIES WILL_FAIL TRUE)
 add_test(NAME ooc_policy_parity
     COMMAND $<TARGET_FILE:one_combat> oocpolicyparity 4000598 100 0)
 set_tests_properties(ooc_policy_parity PROPERTIES

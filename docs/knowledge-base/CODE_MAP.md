@@ -50,7 +50,7 @@ before broad repository search.
 | --- | --- | --- | --- |
 | Strategic gen | `apps/one_combat/strategic_gen.cpp` | `runStrategicGenSeed`, `strategicGen`, `strategicMargGen`, `strategicGen2` — one rich row per legal OOC action | [training-and-inference.md](architecture/training-and-inference.md) |
 | Next-generation OOC pipeline contracts | `tools/ooc_pipeline_contract.py`, `tools/train_whole_combat_surrogate.py` | fail-closed teacher/corpus manifest, K/H planning, grouped whole-combat trainer | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
-| Combat gen | `apps/one_combat/combat_datasets.cpp`, `apps/one_combat/counterfactual_gen.cpp` | `datagen3` (`counterfactual_gen.cpp`, with `oocnextgen`, `pathcfgen`, `e2cgen`), `wholecombatgen` (one post-afterBattle reward-entry row/fight), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
+| Combat gen | `apps/one_combat/combat_datasets.cpp`, `apps/one_combat/counterfactual_gen.cpp` | `datagen3` (`counterfactual_gen.cpp`, with `oocnextgen`, `pathcfgen`, `e2cgen`), `wholecombatgen` (post-afterBattle combat rows), `combatevalgen` (full-run battle-start V_win/L), `vwinrefreshgen` (outcome-blind MAP siblings plus victory-boundary `WIN_RAW`), `bossheadroom347gen` (#347 paired exact-budget boss replays), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 
 ## Training and export
 
