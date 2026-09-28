@@ -9,11 +9,16 @@ turn ("obviously played" cards), and how much budget that costs.
 - `flat_*` / `adaptive_*`: `bestbench` seeds 0..7, asc 0, fair, 1 thread, flat
   1,000 simulations and adaptive 500/10,000. `flat_off_binary1.*` is the
   profile-off parity arm.
-- `analyze_plan.py` → `summary.txt`; `reorder.py` → `reorder.txt`.
+- `flat10k_*`: flat 10,000, seeds 0..7 in four 2-seed shards (ledger §368),
+  profiled with `diagnostic_card_fields.diff` (copy-insensitive card identity
+  per plan step). Results columns matched a run without the card fields.
+- `analyze_plan.py` → `summary*.txt`; `reorder.py` → `reorder*.txt`;
+  `fresh_roots.py` → `fresh_roots_flat10k.txt` (agreement split by reused vs
+  cap-restarted roots).
 - `manifest.json`: commands, binary/model/artifact hashes.
 
 Parity: profile-on and profile-off CSVs (all columns except wall time) are
 identical for the flat arm, and both profiled arms reproduced byte-identical
 results columns across the two diagnostic binaries.
 
-See [ledger §367](../../ledger-06.md) for results and interpretation.
+See ledger §367 and §368 in [ledger-06](../../ledger-06.md) for results and interpretation.

@@ -13483,3 +13483,62 @@ runtime support changed.
 - **Evidence:** [silver_turn_plan_stability_2026-09-28](evidence/silver_turn_plan_stability_2026-09-28/README.md).
 - **Knowledge impact:** combat-search tree-profile section documents the new
   fields; no baseline or default change.
+
+## §368 — Native Silver within-turn plan stability at flat 10,000 (2026-09-28)
+
+- **Question:** does the §367 picture hold at a flat 10,000-simulation
+  budget? Same descriptive design; no search or policy change.
+- **Configuration:** source `bb9e3e10ce53118e90239ccfdd8604b6a5fcffbc` plus a
+  diagnostic-only addition of copy-insensitive card identity (card id,
+  upgrade, target) to each `turn_plan` step, needed because state hashes
+  include card unique ids. `bestbench 10000`, `STS_SILVER_ADAPTIVE=0`, seeds
+  0..7 as four 2-seed shards (offsets 0/2/4/6) in parallel, asc 0, fair,
+  `OMP_NUM_THREADS=1`, clean `env -i`, via `tools/seed_guard.sh`; boss
+  multiplier at its default as in §367. Results columns were identical with
+  and without the card fields on all shards. Outcome: 6/8 won, avg floor
+  49.1 (descriptive only).
+- **Results** (4,011 decisions, 213 combats):
+
+  | | Flat 10,000 |
+  | --- | ---: |
+  | Simulations at 2nd+ decision of a turn | 75.4% |
+  | Next-step agreement, reused roots | 88.9% (n=1,814) |
+  | …planned share ≥0.6 | 99.2% (9 flips / 1,133) |
+  | …planned share ≥0.8 | 100% (0 / 857) |
+  | Simulations at reused share ≥0.8 next decisions | 17.7% of total |
+  | Turn's first plan held to End Turn/chance/terminal | 69.6% |
+  | In-turn deterministic steps whose next root restarted (node cap) | 380 / 2,319 (16.4%) |
+  | Agreement, restarted roots (copy-insensitive key) | 75.7% (n=329) |
+  | …planned share ≥0.8 | 80.2% (50 flips / 252) |
+  | …planned share ≥0.9 | 83.8% (36 flips / 222) |
+
+  The 380 restarts are decisions whose root hash equals the planned node's
+  but which inherited no visits. **Inference:** they are the reuse-cap path
+  (the retained subtree stayed at or above 32,768 nodes after compaction, so
+  `NativeSilverBackend` restarted from a fresh root); the maximum allocated
+  node count was 74,626 vs 36,810 at flat 1,000 and only 8 such cases occurred
+  in the §367 adaptive arm. The profile does not record the restart reason. For restarted roots with
+  planned share ≥0.8, the planned step had a median of ~29,000 edge visits
+  (minimum 18,847 among flips), and every one of the 50 fresh 10,000
+  searches that disagreed put ≥0.5 of its own visits on its different
+  choice. Flip kinds there: card→other card 42, card→End Turn 5, End
+  Turn→play 3. Reused-root flips: card→card 144, planned End Turn→play 55,
+  card→End Turn 3.
+- **Interpretation:** Reused-root agreement at 10,000 matches flat 1,000
+  (high-share planned steps are never reversed; a ≥0.8 commit rule would skip
+  ~18% of simulations). The restarted roots are an unplanned independent
+  check: a fresh search of equal state disagrees with a ≥0.8, ~29k-visit
+  planned step about one time in five, with its own majority. **Inference:**
+  reused-root agreement largely reflects retained-tree inertia (the next
+  search adds 10,000 visits to a branch that already has ~29,000), so it is
+  not evidence that such moves are objectively "obvious". A commit rule
+  would mostly reproduce what the reused search does anyway; its compute
+  saving is real, but reused-search agreement cannot show it is quality-
+  neutral. **Unverified:** which of the retained or fresh choice is better;
+  restarted roots are a selected subset (large trees), so the 20% rate is
+  not a population estimate. **Open question:** whether the node cap's
+  restarts at large budgets help (fresh re-evaluation) or hurt (lost work).
+- **Evidence:** [silver_turn_plan_stability_2026-09-28](evidence/silver_turn_plan_stability_2026-09-28/README.md)
+  (`flat10k_*`, `fresh_roots.py`, `fresh_roots_flat10k.txt`).
+- **Knowledge impact:** combat-search tree-profile section documents the
+  card-identity step fields; no baseline or default change.

@@ -1,0 +1,176 @@
+== flat10k_profile.jsonl.gz
+{
+ "rows": 4011,
+ "combats": 213,
+ "searched_decisions": 3813,
+ "singleton_decisions": 198,
+ "simulations": 55430000,
+ "plan_stop": {
+  "chance": 1338,
+  "end_turn": 2138,
+  "terminal": 331,
+  "unexpanded": 6
+ },
+ "turns": 958,
+ "searched_decisions_per_turn": {
+  "1": 85,
+  "2": 99,
+  "3": 211,
+  "4": 230,
+  "5": 163,
+  "6": 85,
+  "7": 49,
+  "8": 21,
+  "9": 12,
+  "10": 1,
+  "11": 1,
+  "12": 1
+ },
+ "sims_first_decision_of_turn": 13620000,
+ "sims_later_decisions_of_turn": 41810000,
+ "later_decision_share_of_sims": 0.7542846833844489,
+ "pair_sanity": {
+  "deterministic_step": 2319,
+  "root_hash_mismatch": 26,
+  "not_rerooted": 380
+ },
+ "next_step_pairs_searched": 1814,
+ "next_step_agreement": 0.8886438809261301,
+ "flip_kinds": {
+  "card->other_card": 144,
+  "planned_end->played": 55,
+  "planned_card->end": 3
+ },
+ "commit_curve": [
+  {
+   "min_share": 0.0,
+   "pairs": 1814,
+   "frac_of_pairs": 1.0,
+   "agreement": 0.8886438809261301,
+   "flips": 202,
+   "sims_skippable": 22560000,
+   "frac_total_sims": 0.40699981959227854
+  },
+  {
+   "min_share": 0.3,
+   "pairs": 1687,
+   "frac_of_pairs": 0.9299889746416758,
+   "agreement": 0.918790752815649,
+   "flips": 137,
+   "sims_skippable": 20630000,
+   "frac_total_sims": 0.37218112935233627
+  },
+  {
+   "min_share": 0.5,
+   "pairs": 1344,
+   "frac_of_pairs": 0.74090407938258,
+   "agreement": 0.9665178571428571,
+   "flips": 45,
+   "sims_skippable": 15900000,
+   "frac_total_sims": 0.28684827710626015
+  },
+  {
+   "min_share": 0.6,
+   "pairs": 1133,
+   "frac_of_pairs": 0.6245865490628445,
+   "agreement": 0.9920564872021183,
+   "flips": 9,
+   "sims_skippable": 13150000,
+   "frac_total_sims": 0.2372361537073787
+  },
+  {
+   "min_share": 0.7,
+   "pairs": 977,
+   "frac_of_pairs": 0.5385887541345094,
+   "agreement": 0.9979529170931423,
+   "flips": 2,
+   "sims_skippable": 11190000,
+   "frac_total_sims": 0.20187624030308496
+  },
+  {
+   "min_share": 0.8,
+   "pairs": 857,
+   "frac_of_pairs": 0.4724366041896362,
+   "agreement": 1.0,
+   "flips": 0,
+   "sims_skippable": 9790000,
+   "frac_total_sims": 0.17661915930001804
+  },
+  {
+   "min_share": 0.9,
+   "pairs": 667,
+   "frac_of_pairs": 0.3676957001102536,
+   "agreement": 1.0,
+   "flips": 0,
+   "sims_skippable": 7670000,
+   "frac_total_sims": 0.13837272235251669
+  },
+  {
+   "min_share": 0.95,
+   "pairs": 506,
+   "frac_of_pairs": 0.278941565600882,
+   "agreement": 1.0,
+   "flips": 0,
+   "sims_skippable": 5880000,
+   "frac_total_sims": 0.10607974021288111
+  }
+ ],
+ "agreement_by_share_decile": {
+  "0.0": [
+   2,
+   0.0
+  ],
+  "0.1": [
+   24,
+   0.417
+  ],
+  "0.2": [
+   101,
+   0.515
+  ],
+  "0.3": [
+   160,
+   0.637
+  ],
+  "0.4": [
+   183,
+   0.814
+  ],
+  "0.5": [
+   211,
+   0.829
+  ],
+  "0.6": [
+   156,
+   0.955
+  ],
+  "0.7": [
+   120,
+   0.983
+  ],
+  "0.8": [
+   190,
+   1.0
+  ],
+  "0.9": [
+   667,
+   1.0
+  ]
+ },
+ "turn_plan_outcome": {
+  "followed_to_chance_or_unvisited": 320,
+  "diverged_card": 120,
+  "plan_ended_terminal": 138,
+  "followed_to_end_turn": 209,
+  "state_mismatch": 130,
+  "diverged_end_turn": 41
+ },
+ "turn_plan_steps_matched_before_stop": {
+  "0": 416,
+  "1": 234,
+  "2": 189,
+  "3": 99,
+  "4": 17,
+  "5": 3
+ }
+}

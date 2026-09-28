@@ -25,41 +25,69 @@
         "STS_SILVER_ADAPTIVE": 1,
         "initial": 500,
         "total": 10000
+      },
+      "flat10k": {
+        "STS_SILVER_ADAPTIVE": 0,
+        "simulations": 10000,
+        "shards": "seed offsets 0,2,4,6 x 2 seeds, 4 concurrent processes"
       }
     },
     "ooc_policy": "existing bestbench native GBM policy"
   },
   "binaries": {
     "binary1_sha256": "be6b654470282aab777f4f7344fb77764a3bfaafc6a3c2fabd5828ec2c342e75 (diagnostic without step action bits; parity arms)",
-    "binary2_sha256": "1c261e720c17b7dd0abcdf9c822550705fad6308d4eef1078b82ea2dfe85f2b5 (committed diagnostic; profiled arms)"
+    "binary2_sha256": "1c261e720c17b7dd0abcdf9c822550705fad6308d4eef1078b82ea2dfe85f2b5 (committed diagnostic; profiled arms)",
+    "binary3_sha256": "4713b728cf4e957bf313c41f9fe87d56cdb474de708ed2c77ed06dd252af6016 (source bb9e3e1 + diagnostic_card_fields.diff; flat10k arm)"
   },
   "commands": [
     "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=7952f00... STS_SILVER_ADAPTIVE=0 STS_SILVER_TREE_PROFILE=flat_profile.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 8 0 0 flat_on.csv",
     "env -i ... STS_SILVER_ADAPTIVE=1 STS_SILVER_TREE_PROFILE=adaptive_profile.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 8 0 0 adaptive_on.csv",
     "env -i ... STS_SILVER_ADAPTIVE=0 bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 8 0 0 flat_off.csv  (binary1, parity)",
     "python3 analyze_plan.py flat_profile.jsonl.gz adaptive_profile.jsonl.gz > summary.txt",
-    "python3 reorder.py flat_profile.jsonl.gz adaptive_profile.jsonl.gz > reorder.txt"
+    "python3 reorder.py flat_profile.jsonl.gz adaptive_profile.jsonl.gz > reorder.txt",
+    "for s in 0 2 4 6: env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=bb9e3e1... STS_SILVER_ADAPTIVE=0 STS_SILVER_TREE_PROFILE=profile_$s.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 10000 2 0 $s flat10k_$s.csv",
+    "cat profile_{0,2,4,6}.jsonl | gzip > flat10k_profile.jsonl.gz",
+    "python3 analyze_plan.py flat10k_profile.jsonl.gz > summary_flat10k.txt; python3 reorder.py flat10k_profile.jsonl.gz > reorder_flat10k.txt; python3 fresh_roots.py flat10k_profile.jsonl.gz > fresh_roots_flat10k.txt"
   ],
   "model_sha256": {
     "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
     "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
   },
   "artifacts_sha256": {
-    "README.md": "954a8116772454f2faf930e2800c301a8211ddb8a76f2e910e6498690cbbb881",
     "adaptive_on.csv": "cb893fd850e544436674f6f4d6270f8fdca0df2e6c9bdc3a63b964aaf904131d",
     "adaptive_on.csv.meta.json": "e02fda858021bd0c33fec14d08734de8196ce5b1bf91044443d3cc9cd00ecff8",
     "adaptive_on.log": "9b8983394c06ae80d616a6148b360250f5cb99de5cede3ed1d25c248eaff8228",
     "adaptive_profile.jsonl.gz": "16fd891874ed0938c194e92328f730c6bbed49a2a6360c50c5f2555241d63e3b",
     "analyze_plan.py": "211cc8caed182d7ab5cdad3d6d42d69a30c91f5811374cbd11c069d07473caa2",
     "diagnostic.diff": "d684ac5b18bc8c9605ad9909f2d5cf8f6d80d6b9c65b591777e7281e2078bebd",
+    "diagnostic_card_fields.diff": "1f4c92283f97d20e32f7957ea8d5b0755d6968d395461f8d228b50086039dcb2",
+    "flat10k_0.csv": "0d359afe10a8564f7d1a2183d927610a4fac540dbbea5adb7d16356ca0c3da26",
+    "flat10k_0.csv.meta.json": "2e9919f9968176fbef4c68976834188b3d6309f4680965e6589e5c73e44b0290",
+    "flat10k_0.log": "4a227101f79b9051a0870a4849d469cff4be3e402ce9d1266afe75390ea57039",
+    "flat10k_2.csv": "bd598d7a9d5864ddc18d90e6a8ca0f5c2a36c74831dc8bc5c8cfb2aead55de2e",
+    "flat10k_2.csv.meta.json": "cf35ce49dfa72b465adf763df89ccabe2b38ef1a9c244136174fa0450dca6018",
+    "flat10k_2.log": "bbb531fe16e18eb4bd66d849469e2404ad65ced57071cd299763ba40f773d819",
+    "flat10k_4.csv": "ce5297c8aed96db6831115bad4bb9e1bdaa8f535028f33854c4550d2128e6f3d",
+    "flat10k_4.csv.meta.json": "17c6d386cf310ced4be64f52de9014235604d7869a99d60f6df8f191d294daac",
+    "flat10k_4.log": "bb779788ec5b437a47c22f79e5545832d9001c642382b05720f8700cae38b2a2",
+    "flat10k_6.csv": "7d6891af2b6bf8335a09de5bf47c7b8665194fd42b85b382e172fd1a579203da",
+    "flat10k_6.csv.meta.json": "7c16b9bdaedec09cd6dce59ab01ceec5ba54741792f6592a1a0f9a8b307da0c8",
+    "flat10k_6.log": "d78ab23c97e9970fcdd16d29389a77b6df1404e36043d14db8813a4df53edf30",
+    "flat10k_profile.jsonl.gz": "7abdb3d4d2e8f01ec852ec3de604a5738a9bdf4bf098ad8400ea789b050a1ac9",
     "flat_off_binary1.csv": "4606fa78eea5bdf2e2380647046cdf84e486a386a9408f4cd33c60828bba5a06",
     "flat_off_binary1.log": "8991160a294945260f11444eab809fc0e1edfdb04863f472df64028bd6093e62",
     "flat_on.csv": "d0cbab556d040a5089e034fd4e9d3fc520731a3fef561d8bed1be094f13b506f",
     "flat_on.csv.meta.json": "a5e6963d142c4fde3849e942eb940eed3013e3f87834c560f7abc5ac29e8b7d5",
     "flat_on.log": "9e097165e39ea751d6388a45f4ab6f6d76c76c9e501619ff33e710830fe9c441",
     "flat_profile.jsonl.gz": "b318859a4a099631738921a5062f8be534d4c59d11ee207e94bbbdee105a3be4",
+    "fresh_roots.py": "ba47ce04e90360d497c9468eef196d0a411822e41327ba052acd8b8a2bd7a126",
+    "fresh_roots_flat10k.txt": "51c9d7e360d0c444f66621191963a3cec428729572430eed0b440d39fec50a11",
     "reorder.py": "07176a0b780a7d9a412356d4e8c491140d2829335f62dde0ed8c049ad1ae0497",
     "reorder.txt": "a1a47b69a198f9d4338fd26d89cf4e7a488f52731470e9fbea4198b342158229",
-    "summary.txt": "d3c334feeb0aa39a0eb487737ddbb0aae95f7e44880114d9504a5841c94f434e"
-  }
+    "reorder_flat10k.txt": "41e5d7d4f319e9cb8b5c2205732faf232b3bfcbe066f38739650370e3dc85b3e",
+    "summary.txt": "d3c334feeb0aa39a0eb487737ddbb0aae95f7e44880114d9504a5841c94f434e",
+    "summary_flat10k.txt": "6d63062a6ed3e28b096ab8f1214f40a1e5bc8f2f8732e5b02b8148355afe54f5"
+  },
+  "flat10k_source_sha": "bb9e3e10ce53118e90239ccfdd8604b6a5fcffbc",
+  "flat10k_parity": "results columns identical between binary2 (bb9e3e1, no card fields) and binary3 runs on all four shards"
 }

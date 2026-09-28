@@ -1,0 +1,6 @@
+== flat10k_profile.jsonl.gz
+rerooted {'agree': 1612, 'flip': 202} {'0.6:agree': 1124, '0.6:flip': 9, '0.8:agree': 857, '0.9:agree': 667} sims_at_share>=0.8_frac 0.1766
+fresh {'agree': 249, 'flip': 80, 'incomparable': 1} {'0.6:agree': 222, '0.6:flip': 57, '0.8:agree': 202, '0.8:flip': 50, '0.9:agree': 186, '0.9:flip': 36} sims_at_share>=0.8_frac 0.1176
+fresh share>=0.8 agree: n=202 planned visits median=29305.5 min=12345
+fresh share>=0.8 flip: n=50 planned visits median=28687.0 min=18847
+fresh share>=0.8 flip kinds {'card->card': 42, 'fresh_top_share>=0.5': 50, 'play->end': 5, 'end->play': 3}

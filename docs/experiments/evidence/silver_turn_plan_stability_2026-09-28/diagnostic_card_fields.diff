@@ -1,0 +1,18 @@
+diff --git a/src/sim/search/NativeSilverBackend.cpp b/src/sim/search/NativeSilverBackend.cpp
+index 178b604..5f3d7d5 100644
+--- a/src/sim/search/NativeSilverBackend.cpp
++++ b/src/sim/search/NativeSilverBackend.cpp
+@@ -119,6 +119,13 @@ namespace sts::search {
+                 const auto &edge = cur->edges[best];
+                 json step = {{"action", edge.action.bits}, {"action_type", static_cast<int>(edge.action.getActionType())},
+                     {"visits", edge.visitCount}, {"total", total}, {"edges", cur->edges.size()}};
++                if (edge.action.getActionType() == ActionType::CARD) {
++                    // Copy-insensitive identity: hashes include card unique ids.
++                    const auto &card = cur->state->cards.hand[edge.action.getSourceIdx()];
++                    step["card"] = static_cast<int>(card.getId());
++                    step["upgraded"] = card.isUpgraded();
++                    step["target"] = card.requiresTarget() ? edge.action.getTargetIdx() : -1;
++                }
+                 if (edge.action.getActionType() == ActionType::END_TURN) {
+                     steps.push_back(step); stop = "end_turn"; return steps;
+                 }

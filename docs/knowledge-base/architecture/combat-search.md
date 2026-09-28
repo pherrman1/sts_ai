@@ -431,11 +431,13 @@ Each row also carries `root_hash` (`hashBattleState` of the search root) and
 decision, following the most-visited edge (the `bestAction` tie rule) through
 deterministic decision nodes. Each step records the action bits (in that
 node's indexing), action type, edge visits, the node's total edge visits, the
-edge count and, for a deterministic successor, its state hash.
+edge count, for a card play the card id, upgrade flag and target (`-1` when
+untargeted; state hashes include card unique ids, so this is the
+copy-insensitive identity) and, for a deterministic successor, its state hash.
 `turn_plan_stop` names where the line ends: `end_turn`, `chance`, `unvisited`,
 `unexpanded`, `terminal`, `turn_change` or `depth_bound` (64 steps). Comparing
 a row's plan with the next row's `root_hash` and first step measures
-within-turn plan stability (ledger §367). The fields are computed only when the
+within-turn plan stability (ledger §367, §368). The fields are computed only when the
 profile is enabled and never feed the search.
 
 Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
