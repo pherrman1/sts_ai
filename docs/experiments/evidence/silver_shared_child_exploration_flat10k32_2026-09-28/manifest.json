@@ -1,0 +1,39 @@
+{
+  "ledger": "\u00a7373",
+  "status": "pre-registered before execution",
+  "frozen_source_sha": "a1e9a1a10cae815218c3481bd19b52ce8daf5634",
+  "binary": "build/linux-gcc-release/one_combat",
+  "binary_sha256": "4a0da987acff564b6a51bc01b151e4c97a47c086561d223ab14daa85bdc81926",
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "hypothesis": "Transposition-aware exploration (STS_SILVER_SHARED_CHILD_EXPLORATION=1) does not reduce and may improve whole-run outcomes at an equal flat 10,000-simulation budget.",
+  "arms": {
+    "control": {
+      "STS_SILVER_ADAPTIVE": 0
+    },
+    "shared": {
+      "STS_SILVER_ADAPTIVE": 0,
+      "STS_SILVER_SHARED_CHILD_EXPLORATION": 1
+    }
+  },
+  "cohort": {
+    "seeds": "0..31 (32 paired seeds)",
+    "ascension": 0,
+    "fair": true,
+    "sims": 10000,
+    "boss_multiplier": "default",
+    "threads_per_process": 1,
+    "execution": "16 jobs (2 arms x 8 shards of 4 seeds), interleaved control/shared, xargs -P4 on 4 cores; no tree profile or scan"
+  },
+  "command": "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=a1e9a1a... STS_SILVER_ADAPTIVE=0 [STS_SILVER_SHARED_CHILD_EXPLORATION=1] bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 10000 4 0 <offset> <arm>_<offset>.csv",
+  "analysis": "merge shards per arm; python3 paired_analysis.py control.csv shared.csv (paired by seed, fixed-seed bootstrap)",
+  "decision_rule": {
+    "primary": "paired win-rate difference shared - control with the analyzer's 95% bootstrap interval",
+    "reject": "interval upper bound below 0, or paired mean floor difference interval entirely below 0",
+    "advance": "point estimate >= 0 with no interval entirely below 0 -> a larger frozen cohort (e.g. 128 paired seeds) before any default change",
+    "inconclusive": "otherwise; no default change either way",
+    "note": "32 seeds is a screen; it cannot qualify a default. Run time per seed is reported but trajectories differ between arms."
+  }
+}
