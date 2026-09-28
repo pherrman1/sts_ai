@@ -1,0 +1,37 @@
+{
+  "ledger": "\u00a7373",
+  "status": "pre-registered before execution and before any 32-seed outcome was inspected",
+  "authorization": "user-authorized 128-seed extension of the 32-seed screen, requested while the 32-seed cohort was running",
+  "frozen_source_sha": "a1e9a1a10cae815218c3481bd19b52ce8daf5634 (later commits change only docs/evidence)",
+  "binary": "build/linux-gcc-release/one_combat",
+  "binary_sha256": "4a0da987acff564b6a51bc01b151e4c97a47c086561d223ab14daa85bdc81926",
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "arms": {
+    "control": {
+      "STS_SILVER_ADAPTIVE": 0
+    },
+    "shared": {
+      "STS_SILVER_ADAPTIVE": 0,
+      "STS_SILVER_SHARED_CHILD_EXPLORATION": 1
+    }
+  },
+  "cohort": {
+    "seeds": "0..127 (128 paired seeds): 0..31 from the 32-seed screen plus new 32..127",
+    "ascension": 0,
+    "fair": true,
+    "sims": 10000,
+    "execution": "48 new jobs (2 arms x 24 shards of 4 seeds, offsets 32..124), interleaved, xargs -P4 on 4 cores, started automatically after the 32-seed jobs; no profile or scan"
+  },
+  "command": "same as silver_shared_child_exploration_flat10k32_2026-09-28/manifest.json with offsets 32,36,...,124",
+  "analysis": "merge all 32 shards per arm; python3 paired_analysis.py control.csv shared.csv",
+  "decision_rule": {
+    "primary": "paired win-rate difference shared - control, analyzer 95% bootstrap interval, on seeds 0..127",
+    "reject": "interval upper bound below 0, or paired mean floor difference interval entirely below 0",
+    "support": "interval lower bound above 0 -> candidate for a default change via ADR and a fresh confirmation cohort",
+    "neutral": "interval spans 0 -> no default change; option stays research-only",
+    "note": "the 32-seed screen result is reported separately but does not gate this extension"
+  }
+}
