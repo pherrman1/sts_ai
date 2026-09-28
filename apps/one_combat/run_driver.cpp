@@ -255,7 +255,8 @@ bool installRunForcedRelic(GameContext &gc, RelicId relic) {
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
                         bool e2cCapture) {
     if (one_combat::liveOocMctsEnabled()) {
-        if (sims != 10000 || !search::nativeSilverBackendInstalled()
+        if ((sims != 10000 && !one_combat::liveOocMctsSilverBudgetMismatchAllowed())
+            || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
             || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
@@ -294,7 +295,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             const Room battleRoom = gc.curRoom;
             const int battleAct = gc.act;
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
-            if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000)
+            if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000
+                && !one_combat::liveOocMctsSilverBudgetMismatchAllowed())
                 throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
             BattleContext bc{};
             // Silver initializes the battle itself so its observational

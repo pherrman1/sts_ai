@@ -165,6 +165,8 @@ struct LiveOocMctsMetrics {
 // Parse once after native policy/win loading. OFF never loads the combat model.
 void configureLiveOocMcts();
 bool liveOocMctsEnabled();
+// STS_OOC_MCTS_ALLOW_SILVER_BUDGET_MISMATCH=1: experimental non-10k real combat.
+bool liveOocMctsSilverBudgetMismatchAllowed();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Search snapshots die before the selected ID is resolved/executed on live gc.
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,

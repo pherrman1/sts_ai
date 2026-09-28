@@ -1138,6 +1138,7 @@ namespace one_combat {
 
 namespace {
 bool liveEnabled = false;
+bool liveSilverBudgetMismatch = false;
 std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
@@ -1363,6 +1364,7 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
+bool liveOocMctsSilverBudgetMismatchAllowed() { return liveSilverBudgetMismatch; }
 std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
     return splitMix64(seed ^ splitMix64(index));
 }
@@ -1381,7 +1383,18 @@ void configureLiveOocMcts() {
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
+    liveSilverBudgetMismatch = false;
     if (!liveEnabled) return;
+    // Experimental only: the combat-transition model was trained on 10k Silver
+    // outcomes, so any other real-combat budget is a teacher/actor mismatch.
+    if (const char *mismatch = std::getenv("STS_OOC_MCTS_ALLOW_SILVER_BUDGET_MISMATCH")) {
+        const std::string value(mismatch);
+        if (value != "0" && value != "1")
+            throw std::runtime_error("STS_OOC_MCTS_ALLOW_SILVER_BUDGET_MISMATCH must be 0 or 1");
+        liveSilverBudgetMismatch = value == "1";
+        if (liveSilverBudgetMismatch)
+            std::cout << "[EXPERIMENTAL live OOC MCTS: real-combat Silver budget may differ from the 10k CTM teacher]\n";
+    }
     if (const char *path = std::getenv("STS_OOC_MCTS_GRAPH_FILE")) liveGraphPath = path;
     if (const char *index = std::getenv("STS_OOC_MCTS_GRAPH_DECISION_INDEX")) {
         const std::string value(index);
