@@ -34,45 +34,66 @@ J map(const GameContext &gc) {
 }
 
 J details(const GameContext &gc) {
-    J out = {{"encounter", static_cast<int>(gc.info.encounter)},
-             {"event", static_cast<int>(gc.curEvent)}, {"eventData", gc.info.eventData},
-             {"phase", gc.info.phase}, {"selectScreenType", static_cast<int>(gc.info.selectScreenType)},
-             {"toSelectCount", gc.info.toSelectCount}, {"upgradeOne", gc.info.upgradeOne},
-             {"cleanUpIsRemoveCard", gc.info.cleanUpIsRemoveCard},
-             {"skillCardDeckIdx", gc.info.skillCardDeckIdx},
-             {"powerCardDeckIdx", gc.info.powerCardDeckIdx},
-             {"attackCardDeckIdx", gc.info.attackCardDeckIdx},
-             {"potionIdx", gc.info.potionIdx}, {"gold", gc.info.gold},
-             {"cardIdx", gc.info.cardIdx}};
-    J select = J::array();
-    for (const auto &v : gc.info.toSelectCards)
-        select.push_back({{"deckIndex", v.deckIdx}, {"card", card(v.card)}});
-    out["toSelectCards"] = std::move(select);
-    const auto &r = gc.info.rewardsContainer;
-    J rewards = {{"gold", J::array()}, {"cards", J::array()}, {"relics", J::array()},
-                 {"potions", J::array()}, {"emeraldKey", r.emeraldKey},
-                 {"sapphireKey", r.sapphireKey}};
-    for (int i = 0; i < r.goldRewardCount; ++i) rewards["gold"].push_back(r.gold[i]);
-    for (int i = 0; i < r.cardRewardCount; ++i) {
-        J group = J::array(); for (const auto &c : r.cardRewards[i]) group.push_back(card(c));
-        rewards["cards"].push_back(std::move(group));
+    // ScreenStateInfo retains data from earlier screens. Only fields imported
+    // from the currently visible screen can be compared with a fresh capture.
+    J out = J::object();
+    if (gc.screenState == ScreenState::CARD_SELECT) {
+        out["selectScreenType"] = static_cast<int>(gc.info.selectScreenType);
+        out["toSelectCount"] = gc.info.toSelectCount;
+        J select = J::array();
+        for (const auto &v : gc.info.toSelectCards)
+            select.push_back({{"deckIndex", v.deckIdx}, {"card", card(v.card)}});
+        out["toSelectCards"] = std::move(select);
     }
-    for (int i = 0; i < r.relicCount; ++i) rewards["relics"].push_back(static_cast<int>(r.relics[i]));
-    for (int i = 0; i < r.potionCount; ++i) rewards["potions"].push_back(static_cast<int>(r.potions[i]));
-    out["rewards"] = std::move(rewards);
-    J shop = {{"cards", J::array()}, {"relics", J::array()}, {"potions", J::array()},
-              {"removeCost", gc.info.shop.removeCost}};
-    for (int i = 0; i < 7; ++i) shop["cards"].push_back({{"card", card(gc.info.shop.cards[i])}, {"price", gc.info.shop.cardPrice(i)}});
-    for (int i = 0; i < 3; ++i) {
-        shop["relics"].push_back({{"id", static_cast<int>(gc.info.shop.relics[i])}, {"price", gc.info.shop.relicPrice(i)}});
-        shop["potions"].push_back({{"id", static_cast<int>(gc.info.shop.potions[i])}, {"price", gc.info.shop.potionPrice(i)}});
+    if (gc.screenState == ScreenState::REWARDS) {
+        const auto &r = gc.info.rewardsContainer;
+        J rewards = {{"gold", J::array()}, {"cards", J::array()}, {"relics", J::array()},
+                     {"potions", J::array()}, {"emeraldKey", r.emeraldKey},
+                     {"sapphireKey", r.sapphireKey}};
+        for (int i = 0; i < r.goldRewardCount; ++i) rewards["gold"].push_back(r.gold[i]);
+        for (int i = 0; i < r.cardRewardCount; ++i) {
+            J group = J::array(); for (const auto &c : r.cardRewards[i]) group.push_back(card(c));
+            rewards["cards"].push_back(std::move(group));
+        }
+        for (int i = 0; i < r.relicCount; ++i) rewards["relics"].push_back(static_cast<int>(r.relics[i]));
+        for (int i = 0; i < r.potionCount; ++i) rewards["potions"].push_back(static_cast<int>(r.potions[i]));
+        out["rewards"] = std::move(rewards);
     }
-    out["shop"] = std::move(shop);
-    J boss = J::array(); for (auto id : gc.info.bossRelics) boss.push_back(static_cast<int>(id));
-    out["bossRelics"] = std::move(boss);
-    J neow = J::array(); for (const auto &v : gc.info.neowRewards)
-        neow.push_back({{"bonus", static_cast<int>(v.r)}, {"drawback", static_cast<int>(v.d)}});
-    out["neow"] = std::move(neow);
+    if (gc.screenState == ScreenState::SHOP_ROOM) {
+        J shop = {{"cards", J::array()}, {"relics", J::array()}, {"potions", J::array()},
+                  {"removeCost", gc.info.shop.removeCost}};
+        for (int i = 0; i < 7; ++i) {
+            const int price = gc.info.shop.cardPrice(i);
+            shop["cards"].push_back({{"card", price < 0 ? J(nullptr) : card(gc.info.shop.cards[i])},
+                                      {"price", price}});
+        }
+        for (int i = 0; i < 3; ++i) {
+            const int relicPrice = gc.info.shop.relicPrice(i);
+            const int potionPrice = gc.info.shop.potionPrice(i);
+            shop["relics"].push_back({{"id", relicPrice < 0 ? J(nullptr) : J(static_cast<int>(gc.info.shop.relics[i]))},
+                                       {"price", relicPrice}});
+            shop["potions"].push_back({{"id", potionPrice < 0 ? J(nullptr) : J(static_cast<int>(gc.info.shop.potions[i]))},
+                                        {"price", potionPrice}});
+        }
+        out["shop"] = std::move(shop);
+    }
+    if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
+        J boss = J::array(); for (auto id : gc.info.bossRelics) boss.push_back(static_cast<int>(id));
+        out["bossRelics"] = std::move(boss);
+    }
+    if (gc.screenState == ScreenState::EVENT_SCREEN) {
+        // Other event fields in the live import are fixed placeholders, not
+        // observed public state.
+        out["event"] = static_cast<int>(gc.curEvent);
+        if (gc.curEvent == Event::NEOW) {
+            J neow = J::array();
+            for (const auto &v : gc.info.neowRewards) {
+                if (v.r == Neow::Bonus::INVALID) continue;
+                neow.push_back({{"bonus", static_cast<int>(v.r)}, {"drawback", static_cast<int>(v.d)}});
+            }
+            out["neow"] = std::move(neow);
+        }
+    }
     return out;
 }
 }
@@ -101,7 +122,6 @@ J canonicalOocState(const GameContext &gc, const PathHistory &path) {
             {"room", static_cast<int>(gc.curRoom)}, {"lastRoom", static_cast<int>(gc.lastRoom)},
             {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
             {"keys", {gc.blueKey, gc.greenKey, gc.redKey}},
-            {"potionChance", gc.potionChance}, {"cardRarityFactor", gc.cardRarityFactor},
             {"potionCapacity", gc.potionCapacity}, {"potions", std::move(potions)},
             {"deck", std::move(deck)}, {"relics", std::move(relics)}, {"map", map(gc)},
             {"pathVisits", path.roomVisits}, {"details", details(gc)}};

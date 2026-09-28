@@ -20,8 +20,13 @@ normalized pre/post state, the complete captured legal candidate set, the
 canonical selected identity, and the concrete MCP tool call.
 
 Combat identities use the existing Silver fingerprint. OOC identities use the
-provider's existing semanticKey; MAP retains its primitive x,y identity. An
-action without a native-replayable identity is recorded as
+provider's existing semanticKey; MAP retains its primitive x,y identity.
+The trace records the OOC policy in header provenance and each OOC decision;
+missing, unknown, or conflicting policy tags fail closed. MCTS retains its
+semantic target candidates, while V4 uses its current-screen primitive
+identities. Replay applies only the selected source primitive, leaving any
+following selector to its own recorded decision.
+An action without a native-replayable identity is recorded as
 UNSUPPORTED_BOUNDARY instead of being guessed.
 
 tools/differential_replay.py consumes a trace and a native JSONL adapter. The
@@ -31,8 +36,18 @@ legal identity set, unique selected-action resolution, and post-action state,
 stopping at the first difference. It reports STATE_DIVERGENCE,
 RNG_CONSUMPTION_DIVERGENCE, LEGAL_ACTION_SET_DIVERGENCE,
 RECORDED_ACTION_NOT_FOUND, RECORDED_ACTION_AMBIGUOUS,
-UNSUPPORTED_BOUNDARY, or RUN_COMPLETE_EQUIVALENT. A trace with no decision
-records fails with TRACE_OR_SCHEMA_ERROR (`no_decisions_captured`).
+UNSUPPORTED_BOUNDARY, or BOUNDED_PREFIX_EQUIVALENT. Replay requires one header,
+one closing summary, consistent trace identities, increasing decision indices,
+and a matching summary count and content hash. A trace with no decision records
+fails with TRACE_OR_SCHEMA_ERROR (`no_decisions_captured`). An errored or
+truncated capture cannot report equivalence; capture exceptions retain an
+explicit failed boundary, including failures after a command executes.
+
+Only a successfully bounded capture (`outcome=max_steps`) can return
+BOUNDED_PREFIX_EQUIVALENT. It does not claim complete-run parity. Terminal
+post-states currently have no qualified shared representation and are recorded
+as `UNSUPPORTED_BOUNDARY: terminal_state_unqualified`, instead of comparing raw
+MCP output with native canonical state. No full-run equivalent result is emitted.
 
 Hidden RNG is separate from public observations. --capture-hidden-rng records
 only an inspector-supplied debugRng object under the differential trace
@@ -40,6 +55,11 @@ record. tools/differential_rng.py verifies the installed vanilla
 Random.counter, RandomXS128.seed0/seed1, and getState(int) contract. No RNG
 values are imported into Silver, OOC observations, policy scoring, or native
 execution.
+
+Canonical OOC comparison excludes unobserved reward-pity counters, including
+importer placeholders. Details are restricted to the active screen, and sold
+shop slots use a common unavailable representation. This is a public-state
+projection, not equality of hidden counters or stale simulator storage.
 
 ## Verification
 
@@ -58,7 +78,7 @@ schema round-trip, hidden-RNG isolation, and vanilla-JAR preflight.
 numeric seed and ascension, resolves recorded semantic actions uniquely, and
 steps the current native simulator. Combat legal actions use native Silver's
 root enumeration without running search. OOC source identities share the live
-policy's canonical identity helper. A trace must start at the initial Neow
+policy's identity contract. A trace must start at the initial Neow
 boundary; replay does not reconstruct an arbitrary resumed run.
 
 Set `STS_DIFFERENTIAL_TRACE=1` in the advisor environment to emit canonical

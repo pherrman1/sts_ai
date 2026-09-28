@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 
@@ -83,43 +84,66 @@ struct Replay {
         return out;
     }
 
-    J oocLegal(std::map<std::string, std::uint32_t> *values = nullptr) {
-        const auto actions = v4CandidateActions(game);
-        std::map<std::uint32_t, std::string> identities;
+    J oocLegal(const std::string &policy, std::map<std::string, std::uint32_t> *values = nullptr) {
+        J out = J::array();
+        std::map<std::string, std::uint32_t> resolved;
+        const auto add = [&](const std::string &key, std::uint32_t bits) {
+            if (!resolved.emplace(key, bits).second)
+                throw std::runtime_error("UNSUPPORTED_BOUNDARY: duplicate OOC semantic identity");
+            out.push_back({{"semanticKey", key}});
+        };
         if (game.screenState == ScreenState::MAP_SCREEN) {
-            for (const auto &action : actions)
-                identities[action.bits] = "ooc-live:v1:map:x=" + std::to_string(action.getIdx1())
-                    + ":y=" + std::to_string(game.curMapNodeY + 1);
+            if (!v4DecisionSupported(game))
+                throw std::runtime_error("UNSUPPORTED_BOUNDARY: unsupported map decision");
+            for (const auto &action : v4CandidateActions(game))
+                add("ooc-live:v1:map:x=" + std::to_string(action.getIdx1())
+                    + ":y=" + std::to_string(game.curMapNodeY + 1), action.bits);
         } else {
             const auto semantic = search::enumerateOocSemanticPrimitiveBindings(game);
             if (!semantic.supported || !semantic.complete)
                 throw std::runtime_error("UNSUPPORTED_BOUNDARY: " + semantic.error);
-            for (const auto &binding : semantic.bindings) {
-                const auto identity = currentLiveOocIdentity(binding).first;
-                const auto [it, inserted] = identities.emplace(binding.primitiveBits, identity);
-                if (!inserted && it->second != identity)
-                    throw std::runtime_error("UNSUPPORTED_BOUNDARY: ambiguous OOC semantic mapping");
+            if (policy == "mcts_ctm") {
+                // Match OocGameContextModel: distinct compound targets remain
+                // separate candidates even when they share a source primitive;
+                // equivalent copies of a deck card share one MCTS choice.
+                std::set<std::string> choices;
+                for (const auto &binding : semantic.bindings) {
+                    if (!search::GameAction(binding.primitiveBits).isValidAction(game)) continue;
+                    if (!choices.insert(search::canonicalOocMctsChoiceKey(binding.semantic)).second)
+                        continue;
+                    add(search::canonicalOocSemanticActionKey(binding.semantic), binding.primitiveBits);
+                }
+            } else {
+                if (!v4DecisionSupported(game))
+                    throw std::runtime_error("UNSUPPORTED_BOUNDARY: unsupported V4 decision");
+                std::map<std::uint32_t, std::string> identities;
+                for (const auto &binding : semantic.bindings) {
+                    const auto identity = currentLiveOocIdentity(binding).first;
+                    const auto [it, inserted] = identities.emplace(binding.primitiveBits, identity);
+                    // V4 scores one source primitive and retains the canonical
+                    // first compound target, just as scoreLiveOocV4 does.
+                    if (!inserted && (binding.compoundSelector == CardSelectScreenType::INVALID
+                            || it->second.find(":current-screen") == std::string::npos))
+                        throw std::runtime_error("UNSUPPORTED_BOUNDARY: ambiguous OOC semantic mapping");
+                }
+                for (const auto &action : v4CandidateActions(game)) {
+                    const auto found = identities.find(action.bits);
+                    if (!action.isValidAction(game) || found == identities.end())
+                        throw std::runtime_error("UNSUPPORTED_BOUNDARY: incomplete OOC semantic mapping");
+                    add(found->second, action.bits);
+                }
             }
-        }
-        J out = J::array();
-        std::map<std::string, std::uint32_t> resolved;
-        for (const auto &action : actions) {
-            const auto found = identities.find(action.bits);
-            if (found == identities.end())
-                throw std::runtime_error("UNSUPPORTED_BOUNDARY: incomplete OOC semantic mapping");
-            if (!resolved.emplace(found->second, action.bits).second)
-                throw std::runtime_error("UNSUPPORTED_BOUNDARY: duplicate OOC semantic identity");
-            out.push_back({{"semanticKey", found->second}});
         }
         if (values) *values = std::move(resolved);
         return out;
     }
 
-    J legal(const std::string &boundary) {
-        return boundary == "combat" ? combatLegal() : oocLegal();
+    J legal(const std::string &boundary, const std::string &oocPolicy) {
+        return boundary == "combat" ? combatLegal() : oocLegal(oocPolicy);
     }
 
-    void execute(const std::string &boundary, const std::string &identity) {
+    void execute(const std::string &boundary, const std::string &identity,
+                 const std::string &oocPolicy) {
         if (boundary == "combat") {
             std::vector<silver_bridge::SemanticAction> actions;
             combatLegal(&actions);
@@ -142,12 +166,32 @@ struct Replay {
             return;
         }
         std::map<std::string, std::uint32_t> actions;
-        oocLegal(&actions);
+        oocLegal(oocPolicy, &actions);
         const auto found = actions.find(identity);
         if (found == actions.end()) throw std::runtime_error("RECORDED_ACTION_NOT_FOUND");
+        // Replay only the source click. The recorded selector is a separate
+        // decision, even when the MCTS identity describes a full transaction.
         search::GameAction(found->second).execute(game);
     }
 };
+
+std::string oocPolicyFrom(const J &header, const J &decision) {
+    const auto readPolicy = [](const J &object) -> std::string {
+        if (!object.contains("oocPolicy")) return {};
+        const auto &value = object.at("oocPolicy");
+        if (!value.is_string() || (value != "mcts_ctm" && value != "v4_q"))
+            throw std::runtime_error("TRACE_OR_SCHEMA_ERROR: invalid OOC policy");
+        return value.get<std::string>();
+    };
+    const auto headerPolicy = readPolicy(header.value("provenance", J::object()));
+    const auto decisionPolicy = readPolicy(decision);
+    if (!headerPolicy.empty() && !decisionPolicy.empty() && headerPolicy != decisionPolicy)
+        throw std::runtime_error("TRACE_OR_SCHEMA_ERROR: OOC policy disagrees with header");
+    const auto policy = decisionPolicy.empty() ? headerPolicy : decisionPolicy;
+    if (policy.empty())
+        throw std::runtime_error("TRACE_OR_SCHEMA_ERROR: missing OOC policy");
+    return policy;
+}
 
 std::uint64_t seedFrom(const J &header, const J &decision) {
     J value = decision.value("seed", J());
@@ -176,9 +220,10 @@ int runDifferentialReplayNative(std::istream &input, std::ostream &output) {
                 replay = std::make_unique<Replay>(seedFrom(header, row), ascension);
             }
             const auto boundary = row.at("boundary").get<std::string>();
+            const auto oocPolicy = boundary == "combat" ? std::string() : oocPolicyFrom(header, row);
             native = {{"state", replay->state()}, {"rng", replay->rng()},
-                      {"legalActions", replay->legal(boundary)}};
-            replay->execute(boundary, row.at("selectedAction").at("identity").get<std::string>());
+                      {"legalActions", replay->legal(boundary, oocPolicy)}};
+            replay->execute(boundary, row.at("selectedAction").at("identity").get<std::string>(), oocPolicy);
             native["after"] = replay->state();
             native["postRng"] = replay->rng();
             output << native.dump() << '\n';

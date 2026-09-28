@@ -213,6 +213,7 @@ class DifferentialTraceWriter:
             "liveObservation": row.get("live_observation"),
             "preRng": row.get("preRng"), "postRng": row.get("postRng"),
             "runtime": row.get("runtime_provenance"),
+            "oocPolicy": row.get("ooc_policy") or self.provenance.get("oocPolicy"),
             "provenance": self.provenance,
         })
 
@@ -240,4 +241,24 @@ def read_trace(path: Path) -> list[dict[str, Any]]:
             rows.append(row)
     if not rows or rows[0].get("record_type") != "header":
         raise DifferentialTraceError("trace has no header")
+    if rows[-1].get("record_type") != "summary":
+        raise DifferentialTraceError("trace has no closing summary")
+    trace_id = rows[0].get("traceId")
+    if not isinstance(trace_id, str) or not trace_id:
+        raise DifferentialTraceError("trace has no identity")
+    previous_index = -1
+    for row in rows[1:-1]:
+        if row.get("record_type") != "decision":
+            raise DifferentialTraceError("trace contains misplaced header or summary")
+        index = row.get("decisionIndex")
+        if type(index) is not int or index <= previous_index:
+            raise DifferentialTraceError("decision indices must be strictly increasing")
+        previous_index = index
+    if any(row.get("traceId") != trace_id for row in rows):
+        raise DifferentialTraceError("trace identity mismatch")
+    summary = rows[-1]
+    if type(summary.get("decisionCount")) is not int or summary["decisionCount"] != len(rows) - 2:
+        raise DifferentialTraceError("summary decision count mismatch")
+    if summary.get("traceSha256") != sha256_json(rows[:-1]):
+        raise DifferentialTraceError("summary trace hash mismatch")
     return rows

@@ -29,12 +29,12 @@ class DifferentialTraceTests(unittest.TestCase):
                 "post_action_state": {"hp": 75}, "differential_legal_actions": [combat("a")],
                 "selected_candidate": combat("a"), "executed_mcp_tool": "play_card",
                 "executed_mcp_arguments": {"card_index": 1}}, boundary="combat")
-            writer.write_summary({"outcome": "complete"})
+            writer.write_summary({"outcome": "max_steps"})
             rows = read_trace(path)
             self.assertEqual(rows[0]["schemaVersion"], 1)
             native = [{"state": {"hp": 80}, "legalActions": [combat("a")],
                        "after": {"hp": 75}}]
-            self.assertEqual(replay(path, native)["category"], "RUN_COMPLETE_EQUIVALENT")
+            self.assertEqual(replay(path, native)["category"], "BOUNDED_PREFIX_EQUIVALENT")
 
     def test_captured_neow_intro_reports_precise_unsupported_boundary(self):
         path = Path(__file__).parent / "fixtures/differential/neow-intro-unsupported.jsonl"
@@ -93,6 +93,7 @@ class DifferentialTraceTests(unittest.TestCase):
                            "schemaVersion": 1, "traceId": writer.run_id, "decisionIndex": 3,
                            "boundary": "ooc", "traceError": {
                                "category": "UNSUPPORTED_BOUNDARY", "reason": "selector_type:transform"}})
+            writer.write_summary({"outcome": "unsupported_boundary"})
             result = replay(path, [])
             self.assertEqual(result["category"], "UNSUPPORTED_BOUNDARY")
             self.assertEqual(result["reason"], "selector_type:transform")
@@ -105,6 +106,7 @@ class DifferentialTraceTests(unittest.TestCase):
                 "post_action_state": {"hp": 80}, "differential_legal_actions": [combat("a")],
                 "selected_candidate": combat("a"), "preRng": {"ai": [0, "1", "2"]},
                 "postRng": {"ai": [1, "3", "4"]}}, boundary="combat")
+            writer.write_summary({"outcome": "max_steps"})
             result = replay(path, [{"state": {"hp": 80}, "legalActions": [combat("a")],
                 "rng": {"ai": [0, "1", "2"]}, "after": {"hp": 80},
                 "postRng": {"ai": [1, "3", "5"]}}])

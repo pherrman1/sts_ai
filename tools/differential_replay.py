@@ -24,7 +24,10 @@ except ModuleNotFoundError:  # direct invocation: python tools/differential_repl
 
 
 def replay(trace: Path, native_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
-    rows = read_trace(trace)
+    try:
+        rows = read_trace(trace)
+    except (OSError, DifferentialTraceError) as error:
+        return {"category": "TRACE_OR_SCHEMA_ERROR", "reason": str(error)}
     decisions = [row for row in rows if row.get("record_type") == "decision"]
     if not decisions:
         return {"category": "TRACE_OR_SCHEMA_ERROR", "decisionCount": 0,
@@ -80,7 +83,14 @@ def replay(trace: Path, native_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
             return {"decisionIndex": decision.get("decisionIndex"), **after_result}
     if len(native_rows) != len(decisions):
         return {"category": "TRACE_OR_SCHEMA_ERROR", "reason": "native adapter returned extra rows"}
-    return {"category": "RUN_COMPLETE_EQUIVALENT", "decisionCount": len(decisions)}
+    outcome = rows[-1].get("outcome")
+    if outcome == "max_steps":
+        return {"category": "BOUNDED_PREFIX_EQUIVALENT", "decisionCount": len(decisions)}
+    if outcome in {"victory", "death", "run_complete"}:
+        # Terminal capture currently has no qualified cross-runtime schema.
+        return {"category": "UNSUPPORTED_BOUNDARY", "reason": "terminal_state_unqualified"}
+    return {"category": "TRACE_OR_SCHEMA_ERROR",
+            "reason": f"capture did not complete successfully: {outcome!r}"}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -108,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, DifferentialTraceError) as error:
         result = {"category": "TRACE_OR_SCHEMA_ERROR", "reason": str(error)}
     print(json.dumps(result, sort_keys=True))
-    return 0 if result["category"] == "RUN_COMPLETE_EQUIVALENT" else 2
+    return 0 if result["category"] == "BOUNDED_PREFIX_EQUIVALENT" else 2
 
 
 if __name__ == "__main__":

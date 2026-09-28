@@ -704,10 +704,12 @@ class DifferentialDriverTraceWriter(TraceWriter):
         if row.get("record_type") == "summary":
             self.differential.write_summary(row)
             return
-        if row.get("decision_source") == "run_control":
+        if row.get("decision_source") == "run_control" and not row.get("differential_error"):
             return
         boundary = "combat" if row.get("inspector_boundary") == "combat" else "ooc"
         try:
+            if row.get("differential_error") or row.get("differential_unsupported"):
+                raise DifferentialTraceError(row.get("differential_error") or row["differential_unsupported"])
             self.differential.write_decision(row, boundary=boundary)
         except DifferentialTraceError as error:
             # Preserve the exact captured row and stop native replay rather
@@ -716,10 +718,19 @@ class DifferentialDriverTraceWriter(TraceWriter):
                 "record_type": "decision", "schema": "sts_differential_trace",
                 "schemaVersion": 1, "traceId": self.differential.run_id,
                 "decisionIndex": row.get("step"), "boundary": boundary,
-                "traceError": {"category": "UNSUPPORTED_BOUNDARY",
+                "traceError": {"category": ("TRACE_OR_SCHEMA_ERROR" if row.get("differential_error")
+                                             else "UNSUPPORTED_BOUNDARY"),
                                "reason": row.get("differential_unsupported", str(error))},
                 "rawDriverRow": row,
             })
+
+    def write_failure(self, packet: Mapping[str, Any]) -> Path:
+        # Retain the boundary even if the MCP command succeeded but its
+        # post-action inspector read failed before the normal row was written.
+        decision = dict(_mapping(packet.get("decision")))
+        decision["differential_error"] = packet.get("reason", "capture_failed")
+        self.write(decision)
+        return super().write_failure(packet)
 
 
 class McpGameClient:
@@ -1168,6 +1179,7 @@ class Driver:
             if self.differential_trace:
                 row["runtime_provenance"] = snapshot.raw.get("runtime")
             evaluator = snapshot.silver_evaluator() if combat else snapshot.ooc_evaluator(self.ooc_policy)
+            row["ooc_policy"] = None if combat else evaluator.get("policy")
             prefix = "silver" if combat else "ooc_v4"
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
             row.update({"silver_evaluator" if combat else "ooc_evaluator": evaluator,
@@ -1285,6 +1297,13 @@ class Driver:
                     "post_action_identity": transition_identity(post, post_game_state),
                     "driver_step_micros": (time.monotonic() - started) * 1e6})
         if (self.differential_trace and row.get("decision_source") != "run_control"
+                and _is_terminal(post)):
+            row["differential_unsupported"] = "terminal_state_unqualified"
+            self.outcome = "unsupported_boundary"
+            self.last_screen, self.last_game = post, post_game_state
+            self.trace.write(row)
+            return False
+        if (self.differential_trace and row.get("decision_source") != "run_control"
                 and not _is_terminal(post)):
             post_combat = _is_combat(post)
             post_inspector_state = {**post_game_state, **post,
@@ -1395,6 +1414,7 @@ async def async_main(args: argparse.Namespace) -> int:
         trace_path,
         provenance={"driver": _git_identity(), "character": args.character,
                     "ascension": args.ascension, "seed": args.seed,
+                    "oocPolicy": "mcts_ctm" if args.ooc_policy in {"mcts", "mcts_ctm"} else "v4_q",
                     "captureHiddenRng": args.capture_hidden_rng})
              if args.differential_trace else TraceWriter(trace_path))
     inspector = InspectorReader(Path(args.inspector), timeout=args.inspector_timeout)

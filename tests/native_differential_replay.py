@@ -16,7 +16,7 @@ from tools.differential_trace import DifferentialTraceWriter
 def adapter(binary: Path, identity: str) -> dict:
     rows = [
         {"record_type": "header", "schema": "sts_differential_trace", "schemaVersion": 1,
-         "traceId": "native-self", "provenance": {"seed": "0", "ascension": 0}},
+         "traceId": "native-self", "provenance": {"seed": "0", "ascension": 0, "oocPolicy": "mcts_ctm"}},
         {"record_type": "decision", "schema": "sts_differential_trace", "schemaVersion": 1,
          "traceId": "native-self", "decisionIndex": 0, "seed": "0", "boundary": "ooc",
          "selectedAction": {"identity": identity}},
@@ -40,14 +40,15 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "native.jsonl"
         writer = DifferentialTraceWriter(path, run_id="native-self",
-                                         provenance={"seed": "0", "ascension": 0})
+                                         provenance={"seed": "0", "ascension": 0, "oocPolicy": "mcts_ctm"})
         writer.write_decision({"step": 0, "seed": "0",
             "pre_action_state": native["state"], "post_action_state": native["after"],
             "differential_legal_actions": native["legalActions"],
             "semantic_action_identity": identity, "selected_candidate": legal[0],
             "preRng": native["rng"], "postRng": native["postRng"]}, boundary="ooc")
+        writer.write_summary({"outcome": "max_steps"})
         result = replay(path, [native])
-        if result.get("category") != "RUN_COMPLETE_EQUIVALENT":
+        if result.get("category") != "BOUNDED_PREFIX_EQUIVALENT":
             raise AssertionError(result)
     print("native_differential_replay: one native OOC boundary replayed exactly")
     return 0
