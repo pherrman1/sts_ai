@@ -13649,3 +13649,36 @@ runtime support changed.
   (`summary.txt`, `analyze_por.py`, gzipped profiles, results, `manifest.json`).
 - **Knowledge impact:** environment-variable reference and combat-search
   tree-profile section document the scan; no baseline or default change.
+
+## §371 — Partial-order reduction Stage 0 at flat 10,000 (2026-09-28)
+
+- **Question:** does the §370 redundant-order share change at a flat
+  10,000-simulation budget?
+- **Configuration:** source `57dcca4143f305032646913a312f0a9a7ab9e9ec` (the §370 scan, unchanged binary SHA-256
+  `bd0283afbb49fdc6842958a9179302232ec1026f2aa237c04a78ca0a85e06aab`);
+  `bestbench 10000`, `STS_SILVER_ADAPTIVE=0`, `STS_SILVER_POR_SCAN=1`,
+  seeds 0..7 as four concurrent 2-seed shards, asc 0, fair,
+  `OMP_NUM_THREADS=1`, clean `env -i`, via `tools/seed_guard.sh`. Results
+  columns were identical to §368's flat 10,000 run.
+- **Results** (same metrics as §370):
+
+  | | Flat 1,000 (§370) | Adaptive (§370) | Flat 10,000 |
+  | --- | ---: | ---: | ---: |
+  | Turns | 921 | 897 | 958 |
+  | Pooled confirmed prunable visit share | 11.4% | 11.6% | 11.9% |
+  | Median / 75th percentile per turn | 8.3% / 14.2% | 7.2% / 15.2% | 7.0% / 15.5% |
+  | Pooled candidate share (upper bound) | 16.5% | 16.1% | 16.7% |
+  | Share of edges confirmed / candidate prunable | 8.9% / 21.7% | 7.2% / 19.9% | 6.7% / 19.2% |
+  | All reachable nodes, confirmed / candidate | 10.7% / 15.6% | 10.8% / 15.4% | 10.9% / 15.8% |
+  | Every searched decision, confirmed (pooled / median) | 9.4% / 4.1% | 8.7% / 1.8% | 8.4% / 1.2% |
+
+  By number of root moves the confirmed share is 10–14% from 3 to 8+ moves.
+- **Interpretation:** a tenfold budget leaves the redundant-order share
+  essentially unchanged (about 11–12% pooled, 7% median turn); more search
+  does not concentrate or dilute visits on non-canonical orders. The §370
+  conclusion stands. **Inference:** the opportunity is a stable property of
+  the trees rather than of budget.
+- **Evidence:** [silver_por_opportunity_2026-09-28](evidence/silver_por_opportunity_2026-09-28/)
+  (`flat10k_*`, `summary_flat10k.txt`).
+- **Knowledge impact:** none beyond this ledger entry; no code, baseline or
+  default change.

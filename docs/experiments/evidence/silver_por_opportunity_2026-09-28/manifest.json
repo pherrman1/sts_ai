@@ -25,13 +25,21 @@
       },
       "adaptive": {
         "STS_SILVER_ADAPTIVE": 1
+      },
+      "flat10k": {
+        "STS_SILVER_ADAPTIVE": 0,
+        "sims": 10000,
+        "shards": "offsets 0,2,4,6 x 2 seeds, concurrent",
+        "ledger": "\u00a7371",
+        "source_sha": "57dcca4143f305032646913a312f0a9a7ab9e9ec"
       }
     },
     "STS_SILVER_POR_SCAN": 1
   },
   "commands": [
     "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=<HEAD> STS_SILVER_POR_SCAN=1 STS_SILVER_ADAPTIVE={0,1} STS_SILVER_TREE_PROFILE={arm}_{off}.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 4 0 {0,4} {arm}_{off}.csv",
-    "python3 analyze_por.py 'flat=flat_[04].jsonl.gz' 'adaptive=adaptive_[04].jsonl.gz' > summary.txt"
+    "python3 analyze_por.py 'flat=flat_[04].jsonl.gz' 'adaptive=adaptive_[04].jsonl.gz' > summary.txt",
+    "flat10k: same env with STS_SILVER_ADAPTIVE=0, bestbench 10000 2 0 {0,2,4,6} flat10k_{off}.csv; python3 analyze_por.py 'flat10k=flat10k_[0246].jsonl.gz' > summary_flat10k.txt"
   ],
   "parity": "results columns identical to ledger \u00a7367 flat_on.csv and adaptive_on.csv for both arms",
   "model_sha256": {
@@ -48,6 +56,22 @@
     "adaptive_4.jsonl.gz": "60b7313090234b498dc02b091e0985a30354a1e63fe5377c3ae6fae162ce5c96",
     "adaptive_4.log": "a332f069ced158a24956883ecbe7be11cc6d12e2a582c7dfd968039907ae8f76",
     "analyze_por.py": "ace25fed1c6898bf5e17bb206a7b063e6c0cfb1933dc71591de6df4021c526e3",
+    "flat10k_0.csv": "5dc837468c372e07088328889c83fae5627591c435a4b02f1c415ceb747b291b",
+    "flat10k_0.csv.meta.json": "cdc0f4cbdb86bb1169cff9b790e0d5b42fe02accf78388886175e9b62a1f4655",
+    "flat10k_0.jsonl.gz": "18dd57925a4d7a1f738da25d53d99919be4b18a3c6e3eb0800c9d0e4b3f6a8bd",
+    "flat10k_0.log": "a222f60628b9557ad10227748c90f0949dcacda66b0372e444df0bfa09014cdd",
+    "flat10k_2.csv": "11ce11b40adb126bd40463e40cca9812760ee3fcfd324786596cf2d4c2537e68",
+    "flat10k_2.csv.meta.json": "fdb81e0a9d509e2132e182c64fda991e23f8e7b04235c5935eceb9792bebc0c0",
+    "flat10k_2.jsonl.gz": "451f6d0d9c4ed704166a271f79af9843b7fae2a461fb8cd3e0aa9fca9ce3cca6",
+    "flat10k_2.log": "487c893404f114e525ae42a3cd976696fed94a1208274d321edd888ee3f53127",
+    "flat10k_4.csv": "e0ec80dddce32284de6b666a0d277ac177892d6bdbc779d185e63026731e2d5f",
+    "flat10k_4.csv.meta.json": "f01eb9d0e67d449741053932079f944f47edc360217a2cdb4b4ea96fcb4888f3",
+    "flat10k_4.jsonl.gz": "98d981c79be25bc42471a09e30ed64739ccd6954e48340831011750d25697c37",
+    "flat10k_4.log": "7d244a8efbac5cd0053fe070e7fb47aabacd9bcdf2534b0e442d2d70162eaed7",
+    "flat10k_6.csv": "260dd4a80c67a628bcc5156dc51da71ff34ad6f4ae7faa0bfea21c0a66bcf383",
+    "flat10k_6.csv.meta.json": "c86b67f9883708a82e36d1b0aef63e0991f0aa51851f10b5d1eba6ed22197556",
+    "flat10k_6.jsonl.gz": "b1c6d28e3c0c60ea3f531ad967ff0fd5a9aeb7eb828dacb117fbe5eede9eeab7",
+    "flat10k_6.log": "4591d9ddeefee593be6388d0c7ecb747ee8a35e2712525c7f6fd7d7f91125d3a",
     "flat_0.csv": "2c1540c1e170cd2893774249b0131c7f00664b248773ddcd45b038ae004986fc",
     "flat_0.csv.meta.json": "57199a1be852f25632fa07606be7be7ec4d89a83dda84bafd0c8d62b0e942ced",
     "flat_0.jsonl.gz": "b0bac0e6fdcb7d120de2c52910c0340f7b00b4b000a059b81523ef37196d6c0d",
@@ -57,6 +81,8 @@
     "flat_4.jsonl.gz": "54e03c19880f1c60c7ebd37e0f0d0ace7ebcf65c31139545cf5b1642592bb522",
     "flat_4.log": "b72dd14356d9f25c1d088439a454c6af33e22e46f08539eaa141458f84a13bd6",
     "por_scan.diff": "e5e50a443532e0358b2fc20364951cfbf42b64f2b0224e1d3285cc65c07f10d1",
-    "summary.txt": "221946e6741e5136d163e74f8349e1c364bdd60cdf814dfbfa4912d8d0d8cfb0"
-  }
+    "summary.txt": "221946e6741e5136d163e74f8349e1c364bdd60cdf814dfbfa4912d8d0d8cfb0",
+    "summary_flat10k.txt": "071b0c3902eed61421f1d53af881c7bd8222da2a09c13bff02a40f4db0f41e3a"
+  },
+  "flat10k_parity": "results columns identical to ledger \u00a7368 flat10k_{0,2,4,6}.csv"
 }
