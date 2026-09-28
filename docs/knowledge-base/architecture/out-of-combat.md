@@ -523,19 +523,33 @@ for scope details, workload reconciliation and measured overhead limitations.
 
 The native shop step used by leaf continuations (`nativeFloorShopStep`) executes
 only the first item of the `nativeShopPlan` subset search and re-plans after
-each purchase, so a visit with k purchases runs k+1 plans. Plans are memoized
-per thread on the planner's exact inputs (feature row, filtered offer, remove
-cost, gold, model); `STS_NATIVE_SHOP_PLAN_CACHE=0` disables the memo and
-`ooc_shop_plan_cache` checks cached and uncached visits match. With live OOC
-MCTS on, each run emits `[native-shop-plan]` JSON to stderr: plan calls, cache
-hits, shop steps and exits, and re-plan calls (steps after a purchase in the
-same visit) with their cache hits. Counters are per thread and reset at each
-report; the re-plan attribution is approximate if a continuation stops
-mid-shop. On one A0 Act-3 run (seed 991019, 10,000 OOC MCTS and exact-10k
-Silver simulations, 2026-09-28) the memo hit only 109 of 27,916 plans (0.4%,
-no wall-time change, identical decisions), while 20,686 plans (74%) were
-re-plans after a purchase. **Inference:** sampled continuations rarely repeat
-an exact feature row, so only removing re-plans would cut shop-planner cost.
+each purchase, so a visit with k purchases runs k+1 plans. The opt-in
+`STS_NATIVE_SHOP_PLAN_ONCE=1` stores the rest of the plan with a signature of
+the state the purchase left (act, floor, gold, deck size after a pending
+removal, full offer and remove cost); the next shop step runs the stored item
+while the signature matches and re-plans otherwise. Shops with The Courier,
+which restocks bought slots, always re-plan. The flag also applies to real
+shop decisions that fall back to the same step (`nativeShopVPolicy`). Plan-once
+changes decisions when a
+purchase would change later choices (for example, re-planning after a removal
+can spend leftover gold), so it needs a paired A/B before any default change.
+`ooc_shop_plan` covers both modes, the Courier fallback and stale stored plans.
+With live OOC MCTS on, each run emits `[native-shop-plan]` JSON to stderr: plan
+calls, shop steps and exits, re-plan calls (plans on a step that continues the
+same visit after a purchase), plan reuses, and mismatches (a shop step whose
+state no longer matches the last purchase). In `bestbench` the V4 one-ply shop
+gate (`oocOnePlyShopPolicy`) runs before the native step, so a gate purchase
+between native steps invalidates the stored plan. Counters are per thread and
+reset at each report. On one A0 Act-3 run (seed 991019, 10,000 OOC MCTS and
+exact-10k Silver simulations, 2026-09-28), 20,686 of 27,916 native plans
+followed a purchase in the same shop, but only 11,423 continued a native
+purchase with no gate action in between. With plan-once the run made 17,093
+plans and 12,023 reuses, took 697 s against 729 s for the default in a
+concurrent pair, and made the same 144 real decisions (win, floor 51, 46 HP)
+although its searches differed (507,325 against 505,768 simulations). One seed
+is timing evidence only, not a gameplay-quality result.
+An exact per-thread memo of plans hit only 0.4% of calls with no wall-time
+change and was removed.
 
 With the V4 prior and uniform leaf policy, `legalActions()` assigns a sole
 candidate its exact normalized prior of 1.0 without running V4. For multiple

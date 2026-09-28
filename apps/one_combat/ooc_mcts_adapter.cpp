@@ -1901,10 +1901,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     if (liveEnabled) {
         const auto shop = takeNativeShopPlanStats();
         std::cerr << "[native-shop-plan] " << nlohmann::json{{"seed",seed},
-            {"planCalls",shop.planCalls},{"cacheHits",shop.cacheHits},
-            {"cacheClears",shop.cacheClears},{"shopSteps",shop.shopSteps},
+            {"planCalls",shop.planCalls},{"shopSteps",shop.shopSteps},
             {"shopExits",shop.shopExits},{"replanCalls",shop.replanCalls},
-            {"replanCacheHits",shop.replanCacheHits}}.dump() << '\n';
+            {"planReuses",shop.planReuses},{"planMismatches",shop.planMismatches}}.dump() << '\n';
     }
     if (liveTrace.empty()) return;
     std::lock_guard<std::mutex> lock(liveTraceMutex);

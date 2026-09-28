@@ -14,7 +14,7 @@ These control the default executing configuration; they are always parsed.
 |----------|--------|---------|------------|
 | `VPORT` | v_server TCP port | 5555 | `main` L9210 |
 | `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode) | `1` (ON) | `main` ~L9470 |
-| `STS_NATIVE_SHOP_PLAN_CACHE` | Per-thread exact memo of the native floor-tree shop planner (`nativeShopPlan`), keyed on its full inputs; `0` disables it for A/B timing. Plans are identical either way; other values are an error | `1` (ON) | `ooc_native_fallback.cpp` |
+| `STS_NATIVE_SHOP_PLAN_ONCE` | `1`: the native floor-tree shop step (`nativeFloorShopStep`) plans once per visit and runs the stored plan while the visit state still matches; shops with The Courier, or any other state change, re-plan. Changes decisions; opt-in for A/B. `0` re-plans after every purchase; other values are an error | `0` (off) | `ooc_native_fallback.cpp` |
 | `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt` | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
 | `STS_FAIR` | Accepted for compatibility; combat is always project-fair Silver. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_SEARCHER3` | Removed (ADR-0019). A non-zero value makes `one_combat` exit with an error; `0` is accepted | `0` | `main` |

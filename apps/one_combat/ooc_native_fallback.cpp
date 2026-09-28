@@ -8,7 +8,6 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
-#include <unordered_map>
 
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
@@ -45,69 +44,46 @@ int nativeFloorCardPick(sts::GameContext &gc, const PathHistory &path,
 }
 
 namespace {
-// Everything computeShopPlan reads: the feature row, the filtered offer, the
-// remove cost, gold, and the model identity. Equal keys give equal plans, so
-// the cache is exact; floats are keyed by bit pattern.
 struct ShopPlanItem { char kind; int slot, price, id; };
-struct ShopPlanKey {
-    std::vector<std::uint32_t> words;
-    std::size_t hash = 0;
-    bool operator==(const ShopPlanKey &o) const { return hash == o.hash && words == o.words; }
-};
-struct ShopPlanKeyHash {
-    std::size_t operator()(const ShopPlanKey &k) const { return k.hash; }
-};
-constexpr std::size_t kShopPlanCacheMaxEntries = 4096;
-thread_local std::unordered_map<ShopPlanKey, std::string, ShopPlanKeyHash> t_shopPlanCache;
-thread_local NativeShopPlanStats t_shopPlanStats;
-// Set after a shop step that bought something, so the next shop step is a
-// re-plan within the same visit. Approximate if a rollout stops mid-shop.
-thread_local bool t_shopReplanPending = false;
-std::atomic<int> g_shopPlanCacheOverride{-1};
 
-bool shopPlanCacheEnabled() {
-    const int forced = g_shopPlanCacheOverride.load(std::memory_order_relaxed);
+// The rest of a plan after a purchase, and the state that purchase should leave.
+// A later shop step continues the plan only while the state still matches.
+struct PendingShopPlan {
+    bool active = false;
+    std::vector<std::string> tokens;
+    std::vector<int> expected;
+};
+thread_local PendingShopPlan t_pendingShopPlan;
+thread_local NativeShopPlanStats t_shopPlanStats;
+std::atomic<int> g_shopPlanOnceOverride{-1};
+
+bool shopPlanOnceEnabled() {
+    const int forced = g_shopPlanOnceOverride.load(std::memory_order_relaxed);
     if (forced >= 0) return forced != 0;
     static const bool enabled = [] {
-        const char *value = std::getenv("STS_NATIVE_SHOP_PLAN_CACHE");
-        if (!value || std::strcmp(value, "1") == 0) return true;
-        if (std::strcmp(value, "0") == 0) return false;
-        throw std::runtime_error("STS_NATIVE_SHOP_PLAN_CACHE must be 0 or 1");
+        const char *value = std::getenv("STS_NATIVE_SHOP_PLAN_ONCE");
+        if (!value || std::strcmp(value, "0") == 0) return false;
+        if (std::strcmp(value, "1") == 0) return true;
+        throw std::runtime_error("STS_NATIVE_SHOP_PLAN_ONCE must be 0 or 1");
     }();
     return enabled;
 }
 
-ShopPlanKey shopPlanKey(const sts::GameContext &gc, const std::vector<float> &base,
-                        const std::vector<ShopPlanItem> &items, const CompactTreeNet &floor) {
-    ShopPlanKey key;
-    auto &w = key.words;
-    w.reserve(base.size() + items.size() * 4 + 12);
-    for (const auto address : {reinterpret_cast<std::uintptr_t>(&floor),
-                               reinterpret_cast<std::uintptr_t>(floor.nodes.data())}) {
-        const auto bits = static_cast<std::uint64_t>(address);
-        w.push_back(static_cast<std::uint32_t>(bits));
-        w.push_back(static_cast<std::uint32_t>(bits >> 32));
+// Identifies one shop visit between steps: floor, gold, deck size and the
+// whole offer. deckDelta accounts for a removal that finishes on the
+// card-select screen after the step returns.
+std::vector<int> shopVisitSignature(const sts::GameContext &gc, int deckDelta) {
+    const auto &sh = gc.info.shop;
+    std::vector<int> s = {gc.act, gc.floorNum, gc.gold, gc.deck.size() + deckDelta, sh.removeCost};
+    for (int i = 0; i < 7; ++i) {
+        s.push_back(sh.cardPrice(i));
+        s.push_back(static_cast<int>(sh.cards[i].getId()));
     }
-    w.push_back(static_cast<std::uint32_t>(floor.nodes.size()));
-    w.push_back(static_cast<std::uint32_t>(gc.gold));
-    w.push_back(static_cast<std::uint32_t>(gc.info.shop.removeCost));
-    w.push_back(static_cast<std::uint32_t>(base.size()));
-    for (const float f : base) {
-        std::uint32_t bits;
-        std::memcpy(&bits, &f, sizeof bits);
-        w.push_back(bits);
+    for (int i = 0; i < 3; ++i) {
+        s.push_back(sh.relicPrice(i));
+        s.push_back(static_cast<int>(sh.relics[i]));
     }
-    w.push_back(static_cast<std::uint32_t>(items.size()));
-    for (const auto &item : items) {
-        w.push_back(static_cast<std::uint32_t>(item.kind));
-        w.push_back(static_cast<std::uint32_t>(item.slot));
-        w.push_back(static_cast<std::uint32_t>(item.price));
-        w.push_back(static_cast<std::uint32_t>(item.id));
-    }
-    std::uint64_t h = 0xcbf29ce484222325ULL;
-    for (const std::uint32_t x : w) { h ^= x; h *= 0x100000001b3ULL; }
-    key.hash = static_cast<std::size_t>(h);
-    return key;
+    return s;
 }
 
 std::string computeShopPlan(const sts::GameContext &gc, const std::vector<float> &base,
@@ -161,8 +137,10 @@ std::string computeShopPlan(const sts::GameContext &gc, const std::vector<float>
     return out.str();
 }
 
-std::string cachedShopPlan(sts::GameContext &gc, const PathHistory &path,
-                           const CompactTreeNet &floor, bool &hit) {
+} // namespace
+
+std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
+                           const CompactTreeNet &floor) {
     requireModels(floor);
     using RT = sts::search::GameAction::RewardsActionType;
     const auto &sh = gc.info.shop;
@@ -176,29 +154,8 @@ std::string cachedShopPlan(sts::GameContext &gc, const PathHistory &path,
             items.push_back({'r', i, sh.relicPrice(i), static_cast<int>(sh.relics[i])});
     }
     if (items.size() > 16) items.resize(16);
-    hit = false;
     ++t_shopPlanStats.planCalls;
-    if (!shopPlanCacheEnabled()) return computeShopPlan(gc, base, items, floor);
-    auto key = shopPlanKey(gc, base, items, floor);
-    if (const auto found = t_shopPlanCache.find(key); found != t_shopPlanCache.end()) {
-        hit = true;
-        ++t_shopPlanStats.cacheHits;
-        return found->second;
-    }
-    auto plan = computeShopPlan(gc, base, items, floor);
-    if (t_shopPlanCache.size() >= kShopPlanCacheMaxEntries) {
-        t_shopPlanCache.clear();
-        ++t_shopPlanStats.cacheClears;
-    }
-    t_shopPlanCache.emplace(std::move(key), plan);
-    return plan;
-}
-} // namespace
-
-std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
-                           const CompactTreeNet &floor) {
-    bool hit = false;
-    return cachedShopPlan(gc, path, floor, hit);
+    return computeShopPlan(gc, base, items, floor);
 }
 
 NativeShopPlanStats takeNativeShopPlanStats() {
@@ -207,10 +164,9 @@ NativeShopPlanStats takeNativeShopPlanStats() {
     return stats;
 }
 
-void setNativeShopPlanCacheForTesting(int mode) {
-    g_shopPlanCacheOverride.store(mode, std::memory_order_relaxed);
-    t_shopPlanCache.clear();
-    t_shopReplanPending = false;
+void setNativeShopPlanOnceForTesting(int mode) {
+    g_shopPlanOnceOverride.store(mode, std::memory_order_relaxed);
+    t_pendingShopPlan = {};
 }
 
 int nativeFloorRemovePick(const sts::GameContext &gc, const PathHistory &path,
@@ -313,31 +269,41 @@ void nativeWinUpgradeSelectStep(sts::GameContext &gc, const PathHistory &path,
 void nativeFloorShopStep(sts::GameContext &gc, const PathHistory &path,
                          const CompactTreeNet &floor) {
     using RT = sts::search::GameAction::RewardsActionType;
-    const bool replan = t_shopReplanPending;
-    bool hit = false;
-    const std::string plan = cachedShopPlan(gc, path, floor, hit);
     ++t_shopPlanStats.shopSteps;
-    if (replan) {
-        ++t_shopPlanStats.replanCalls;
-        if (hit) ++t_shopPlanStats.replanCacheHits;
+    const bool sameVisit = t_pendingShopPlan.active
+        && t_pendingShopPlan.expected == shopVisitSignature(gc, 0);
+    // Another policy (such as the V4 one-ply shop gate) acted since the last
+    // purchase, or a continuation stopped mid-shop.
+    if (t_pendingShopPlan.active && !sameVisit) ++t_shopPlanStats.planMismatches;
+    // The Courier restocks bought slots, so its shops always re-plan.
+    const bool reuse = sameVisit && shopPlanOnceEnabled()
+        && !gc.hasRelic(sts::RelicId::THE_COURIER);
+    std::vector<std::string> tokens;
+    if (reuse) {
+        tokens = std::move(t_pendingShopPlan.tokens);
+        ++t_shopPlanStats.planReuses;
+    } else {
+        std::istringstream is(nativeShopPlan(gc, path, floor));
+        for (std::string token; is >> token;) tokens.push_back(token);
+        if (sameVisit) ++t_shopPlanStats.replanCalls;
     }
+    t_pendingShopPlan = {};
     const auto leave = [&] {
         ++t_shopPlanStats.shopExits;
-        t_shopReplanPending = false;
         sts::search::GameAction(RT::SKIP).execute(gc);
     };
-    std::istringstream is(plan);
-    std::string token;
-    if (!(is >> token) || token.empty()) { leave(); return; }
+    if (tokens.empty()) { leave(); return; }
+    const std::string token = tokens.front();
+    tokens.erase(tokens.begin());
     const int idx = token.size() > 1 ? std::atoi(token.c_str() + 1) : 0;
-    t_shopReplanPending = true;
     if (token[0] == 'c') sts::search::GameAction(RT::CARD, idx).execute(gc);
     else if (token[0] == 'r') {
         const sts::search::GameAction action(RT::RELIC, idx);
-        if (sts::search::isSupportedAutonomousOocAction(gc, action)) action.execute(gc);
-        else leave();
+        if (!sts::search::isSupportedAutonomousOocAction(gc, action)) { leave(); return; }
+        action.execute(gc);
     } else if (token[0] == 'x') sts::search::GameAction(RT::CARD_REMOVE).execute(gc);
-    else leave();
+    else { leave(); return; }
+    t_pendingShopPlan = {true, std::move(tokens), shopVisitSignature(gc, token[0] == 'x' ? -1 : 0)};
 }
 
 } // namespace one_combat
