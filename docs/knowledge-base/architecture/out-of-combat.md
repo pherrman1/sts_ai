@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-28 for final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -684,7 +684,21 @@ Rewards enumerate all available card, relic, gold, potion and key actions
 together, plus their distinct skip/leave choices. `CARD(group,5)` skips one
 card group; with Singing Bowl it is represented as `SINGING_BOWL` because the
 primitive grants the Bowl effect. `LEAVE_REWARDS` maps to reward `SKIP` and
-leaves the entire screen. Taking a Sapphire-paired relic consumes that key
+leaves the entire screen. Taking or skipping the final card group immediately
+invokes its saved continuation when every reward category is empty. A nested
+continuation can restore parent rewards; it is never replaced with a direct
+map transition. Other remaining rewards retain the explicit leave decision.
+The emptiness check includes relics and both keys rather than relying on
+`Rewards::getTotalCount()`, which omits relics.
+
+For a sole card group with no other rewards and no Singing Bowl, MCTS groups
+card-skip and leave into one search choice. Full semantic/wire identities and
+primitive enumeration remain distinct. Root filtering precedes grouping, so
+either captured alias can be the representative. The existing prior bridge
+averages the source logits for that group, and the live MCTS validator accepts
+an omitted alias only if it has the same search equivalence key and live action
+as the retained primitive. Singing Bowl, multiple groups and mixed rewards keep
+their distinct choices. Taking a Sapphire-paired relic consumes that key
 choice, and taking Sapphire consumes its paired relic. Treasure `OPEN_CHEST`
 ends at the revealed reward screen; it does not choose a generated reward.
 

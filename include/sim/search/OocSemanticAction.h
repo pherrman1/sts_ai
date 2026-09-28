@@ -174,7 +174,8 @@ CardSelectScreenType oocSemanticPrimitiveCompoundSelector(const GameContext &gc,
 std::string canonicalOocSemanticActionKey(const OocSemanticAction &action);
 // Search-only equivalence key for first-occurrence deck-card decisions.
 // The full canonical key remains the wire and execution identity.
-std::string canonicalOocMctsChoiceKey(OocSemanticAction action);
+// With state, also coalesce final-card skip/leave when there is no Bowl effect.
+std::string canonicalOocMctsChoiceKey(OocSemanticAction action, const GameContext *gc = nullptr);
 
 } // namespace sts::search
 #endif

@@ -583,17 +583,19 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
     return found;
 }
 void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentDeckCards) {
+                              bool allowEquivalentChoices) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
     std::set<std::string> retainedChoices;
+    std::set<std::uint32_t> omittedRewardAliases;
     std::map<std::uint32_t,std::string> choiceByPrimitive;
-    if (allowEquivalentDeckCards && state.projected.screenState == ScreenState::CARD_SELECT) {
+    if (allowEquivalentChoices && (state.projected.screenState == ScreenState::CARD_SELECT
+            || state.projected.screenState == ScreenState::REWARDS)) {
         const auto bindings=search::enumerateOocSemanticPrimitiveBindings(state.projected);
         require(bindings.supported && bindings.complete,"native/live semantic enumeration incomplete");
         for(const auto &binding:bindings.bindings) {
-            const auto key=search::canonicalOocMctsChoiceKey(binding.semantic);
+            const auto key=search::canonicalOocMctsChoiceKey(binding.semantic, &state.projected);
             require(choiceByPrimitive.emplace(binding.primitiveBits,key).second,
-                    "duplicate native selector primitive mapping");
+                    "duplicate native semantic primitive mapping");
             if(expected.count(binding.primitiveBits)) retainedChoices.insert(key);
         }
     }
@@ -610,6 +612,15 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
             const auto choice=choiceByPrimitive.find(bit);
             const bool equivalent=choice!=choiceByPrimitive.end()
                 && retainedChoices.count(choice->second);
+            if (equivalent && state.projected.screenState == ScreenState::REWARDS) {
+                require(omittedRewardAliases.insert(bit).second, "duplicate observed reward alias");
+                const auto representative = std::find_if(bits.begin(), bits.end(), [&](auto retained) {
+                    return choiceByPrimitive.at(retained) == choice->second;
+                });
+                require(representative != bits.end()
+                        && lowerLiveOocAction(state, *representative) == c.at("liveAction"),
+                        "equivalent reward primitives have different live actions");
+            }
             require(displayedPrismaticShard || equivalent,
                     "native/live candidate enumeration disagreement");
             continue;

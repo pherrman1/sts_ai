@@ -483,7 +483,18 @@ std::string canonicalOocSemanticActionKey(const OocSemanticAction &action) {
     return out.str();
 }
 
-std::string canonicalOocMctsChoiceKey(OocSemanticAction action) {
+std::string canonicalOocMctsChoiceKey(OocSemanticAction action, const GameContext *gc) {
+    if (gc && gc->screenState == ScreenState::REWARDS
+            && action.source == Source::REWARDS
+            && (action.effect == Effect::SKIP_CARD_REWARD || action.effect == Effect::LEAVE_REWARDS)
+            && !gc->hasRelic(RelicId::SINGING_BOWL)) {
+        const auto &r = gc->info.rewardsContainer;
+        if (r.cardRewardCount == 1 && r.goldRewardCount == 0 && r.relicCount == 0
+                && r.potionCount == 0 && !r.sapphireKey && !r.emeraldKey) {
+            action.effect = Effect::LEAVE_REWARDS;
+            action.target = OocNoTarget{};
+        }
+    }
     if (action.effect == Effect::UPGRADE_CARD || action.effect == Effect::REMOVE_CARD
             || action.effect == Effect::TRANSFORM_CARD
             || action.effect == Effect::TRANSFORM_UPGRADE_CARD) {
