@@ -26,6 +26,9 @@ except ModuleNotFoundError:  # direct invocation: python tools/differential_repl
 def replay(trace: Path, native_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
     rows = read_trace(trace)
     decisions = [row for row in rows if row.get("record_type") == "decision"]
+    if not decisions:
+        return {"category": "TRACE_OR_SCHEMA_ERROR", "decisionCount": 0,
+                "reason": "no_decisions_captured"}
     for index, decision in enumerate(decisions):
         trace_error = decision.get("traceError")
         if isinstance(trace_error, Mapping):

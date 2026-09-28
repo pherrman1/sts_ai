@@ -1226,7 +1226,7 @@ class Driver:
         row.update({"selected_candidate": action.id, "selected_candidate_trace": action.trace(),
                     "selected_mcp_tool": action.mcp_tool,
                     "selected_mcp_arguments": action.mcp_arguments})
-        if self.differential_trace:
+        if self.differential_trace and row.get("decision_source") != "run_control":
             row["semantic_action_identity"] = row.get("semantic_action_identity") or _differential_identity(
                 action, evaluator, _is_combat(screen))
             if row["semantic_action_identity"] is None:
@@ -1284,7 +1284,8 @@ class Driver:
                                           _compact({"screen": post, "game_state": post_game_state})),
                     "post_action_identity": transition_identity(post, post_game_state),
                     "driver_step_micros": (time.monotonic() - started) * 1e6})
-        if self.differential_trace and not _is_terminal(post):
+        if (self.differential_trace and row.get("decision_source") != "run_control"
+                and not _is_terminal(post)):
             post_combat = _is_combat(post)
             post_inspector_state = {**post_game_state, **post,
                                     "_expected_boundary": "combat" if post_combat else "ooc"}

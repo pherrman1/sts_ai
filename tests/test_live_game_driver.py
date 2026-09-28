@@ -750,6 +750,20 @@ class OocDriverTest(unittest.TestCase):
                     self.assertEqual(mutations[0][1], {"character": "IRONCLAD", "ascension": 3, "seed": "123"})
                 self.assertEqual(driver.summary()["outcome"], "max_steps")
 
+    def test_differential_run_control_needs_no_native_decision(self):
+        for command in ("start_game", "continue_game"):
+            with self.subTest(command=command), tempfile.TemporaryDirectory() as directory:
+                client = FakeClient({"screen_type": "MAIN_MENU", "ready_for_command": True}, [command])
+                driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                                TraceWriter(Path(directory) / "trace"), max_steps=1, differential_trace=True,
+                                new_run=command == "start_game", ascension=3, seed="123")
+                asyncio.run(driver.run())
+                mutations = [(tool, args) for tool, args in client.calls if tool == command]
+                self.assertEqual(len(mutations), 1)
+                if command == "start_game":
+                    self.assertEqual(mutations[0][1], {"character": "IRONCLAD", "ascension": 3, "seed": "123"})
+                self.assertEqual(driver.summary()["outcome"], "max_steps")
+
     def test_actual_shop_room_alias_and_enter_once_then_leave(self):
         with tempfile.TemporaryDirectory() as directory:
             room = {"screen_type": "SHOP_ROOM", "screen_name": "NONE", "room_type": "ShopRoom",

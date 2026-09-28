@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-21 against the differential trace implementation.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture.
 
 ## Purpose
 
@@ -14,7 +14,8 @@ resynchronizing random streams.
 
 tools/live_game_driver.py --differential-trace adapts the existing live
 driver. The ordinary Silver/OOC provider and deterministic fallback policy are
-unchanged. Run-control rows are excluded; each stable decision contains
+unchanged. Run-control actions execute without requiring a native decision identity or
+post-action canonical state. Their rows are excluded; each stable decision contains
 normalized pre/post state, the complete captured legal candidate set, the
 canonical selected identity, and the concrete MCP tool call.
 
@@ -30,7 +31,8 @@ legal identity set, unique selected-action resolution, and post-action state,
 stopping at the first difference. It reports STATE_DIVERGENCE,
 RNG_CONSUMPTION_DIVERGENCE, LEGAL_ACTION_SET_DIVERGENCE,
 RECORDED_ACTION_NOT_FOUND, RECORDED_ACTION_AMBIGUOUS,
-UNSUPPORTED_BOUNDARY, or RUN_COMPLETE_EQUIVALENT.
+UNSUPPORTED_BOUNDARY, or RUN_COMPLETE_EQUIVALENT. A trace with no decision
+records fails with TRACE_OR_SCHEMA_ERROR (`no_decisions_captured`).
 
 Hidden RNG is separate from public observations. --capture-hidden-rng records
 only an inspector-supplied debugRng object under the differential trace
@@ -70,6 +72,13 @@ The focused `native_differential_replay` check exercises native self-replay.
 It establishes adapter plumbing, not Java/native equivalence. Live capture
 must retain the first precise mismatch or unsupported boundary; do not change
 simulator semantics or resynchronize RNG to make the harness pass.
+
+The real Java fixture `tests/fixtures/differential/neow-intro-unsupported.jsonl`
+records seed 0 / A0 stopping at the initial Neow Talk page with
+`EVENT_PHASE_UNREPRESENTABLE:Neow:1`. Two native replays return the identical
+unsupported result. There is one captured boundary and zero compared supported
+decisions. This is evidence for precise failure reporting, not Java/native
+parity or a complete-run pass. The adjacent receipt records executable hashes.
 
 Knowledge impact: documents the native replay connection, opt-in comparison
 state, and separation between capture/replay plumbing and gameplay parity.

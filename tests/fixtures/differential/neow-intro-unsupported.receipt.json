@@ -1,0 +1,23 @@
+{
+  "purpose": "Live unsupported-boundary regression, not a completed parity run",
+  "sourceHead": "7268b455140ba7d72028429a3ac5292ac5ff7a5b",
+  "driverLocalChanges": "Skip native decision checks for run_control rows; regressions included in containing commit",
+  "runtimeId": "7268b455140b-183148cbc0c2",
+  "advisorSha256": "183148cbc0c247ca0b85ef80831386c20fdb347a965ddfd04968e6d491d14cb2",
+  "inspectorJarSha256": "36d29d1182aec5a60e447ee39e571bed6bba99c9314d4ce67a46e394468d570a",
+  "requestedSeed": "0",
+  "observedSeed": 0,
+  "ascension": 0,
+  "maxSteps": 4,
+  "executedSteps": 1,
+  "capturedBoundaries": 1,
+  "comparedSupportedDecisions": 0,
+  "nativeReplays": 2,
+  "nativeResultsIdentical": true,
+  "result": {
+    "category": "UNSUPPORTED_BOUNDARY",
+    "decisionIndex": 1,
+    "reason": "ooc_v4:EVENT_PHASE_UNREPRESENTABLE:Neow:1"
+  },
+  "traceSha256": "55f96ac0dd069104cabc4cb44a17a3e2f879a770e2230c31919df2490ca1ee8b"
+}

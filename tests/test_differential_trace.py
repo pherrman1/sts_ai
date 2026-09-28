@@ -36,6 +36,21 @@ class DifferentialTraceTests(unittest.TestCase):
                        "after": {"hp": 75}}]
             self.assertEqual(replay(path, native)["category"], "RUN_COMPLETE_EQUIVALENT")
 
+    def test_captured_neow_intro_reports_precise_unsupported_boundary(self):
+        path = Path(__file__).parent / "fixtures/differential/neow-intro-unsupported.jsonl"
+        self.assertEqual(replay(path, []), {
+            "category": "UNSUPPORTED_BOUNDARY", "decisionIndex": 1,
+            "reason": "ooc_v4:EVENT_PHASE_UNREPRESENTABLE:Neow:1"})
+
+    def test_empty_trace_cannot_pass_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "empty.jsonl"
+            writer = DifferentialTraceWriter(path, run_id="empty")
+            writer.write_summary({"outcome": "unsupported_boundary"})
+            self.assertEqual(replay(path, []), {
+                "category": "TRACE_OR_SCHEMA_ERROR", "decisionCount": 0,
+                "reason": "no_decisions_captured"})
+
     def test_precise_state_and_rng_diffs(self):
         self.assertEqual(field_diffs({"player": {"hp": 80}}, {"player": {"hp": 79}})[0].path,
                          "player.hp")
