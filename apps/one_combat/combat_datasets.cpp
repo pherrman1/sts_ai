@@ -1196,6 +1196,10 @@ void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
     writeTrainingProvenance(outfile, "combatevalgen", nSeeds, completed, nSeeds-completed, g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
 }
 
+static bool vwinTeacherNativeOocEnabled(const nlohmann::json &policy) {
+    return policy.value("native_ooc", false);
+}
+
 static void vwinRequireProductionPolicy(const WholeCombatTeacher &teacher) {
     constexpr const char *kPinnedV4TokenSha256 =
         "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c";
@@ -1241,7 +1245,7 @@ static void vwinRequireProductionPolicy(const WholeCombatTeacher &teacher) {
     const auto &policy = spec["ooc_policy"];
     const auto &flags = policy.at("flags");
     const auto &parameters = policy.at("parameters");
-    require(flags.value("native_ooc", false), "teacher native_ooc=true");
+    require(vwinTeacherNativeOocEnabled(policy), "teacher native_ooc=true");
     require(!flags.value("collect_keys", true), "teacher collect_keys=false");
     require(flags.value("ooc_strategic_rest", false)
             && flags.value("ooc_strategic_event", false)
@@ -1599,6 +1603,9 @@ int vwinRefreshSelfTest() {
     auto require = [](bool ok, const char *message) {
         if (!ok) throw std::runtime_error(std::string("vwin refresh selftest: ") + message);
     };
+    const auto effectivePolicy = effectiveOocPolicySpecification();
+    require(vwinTeacherNativeOocEnabled(effectivePolicy),
+            "teacher native_ooc binding reads the top-level policy field");
     std::vector<VwinOption> options;
     for (int i = 0; i < 12; ++i)
         options.push_back({"option:" + std::to_string(i), static_cast<std::uint32_t>(i),
