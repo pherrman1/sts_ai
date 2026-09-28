@@ -314,12 +314,20 @@ set_tests_properties(combat_evaluator_semantic_branch_contract PROPERTIES LABELS
 add_test(NAME battle_start_runout_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_battle_start_runout_contract.py)
 set_tests_properties(battle_start_runout_contract PROPERTIES LABELS "core;research-repro")
+add_test(NAME vwin_refresh_policy_export
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshpolicyspec ${CMAKE_CURRENT_BINARY_DIR}/vwin_policy_export.json)
+set_tests_properties(vwin_refresh_policy_export PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "vwin policy export: PASS")
 add_test(NAME vwin_refresh_producer_contract COMMAND $<TARGET_FILE:one_combat> vwinrefreshselftest)
 set_tests_properties(vwin_refresh_producer_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_compound_decision_contract
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshcompoundselftest)
 set_tests_properties(vwin_refresh_compound_decision_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_decision_sink_contract
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshdecisionsinkselftest)
+set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_card_reward_classification
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshrewardselftest)

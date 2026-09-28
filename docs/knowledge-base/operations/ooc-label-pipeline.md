@@ -290,6 +290,36 @@ Each source trajectory and each deferred sibling branch writes:
   `GameContext`, `PathHistory`, copied agent/RNG and saved OOC thread-local
   policy state, then continue to the end under the same policy chain.
 
+Revision 5 adds the optional `DECISION` capture sink for future screen-aware
+value-model work (#379). Set `STS_VWIN_DECISION_SINK=1` when collecting it;
+unset or `0` preserves all existing output files and sampling/replay indices.
+The sink writes `<PREFIX>.decision.csv` on source trajectories and branches
+at each non-map screen with more than one semantic option, including intermediate
+shop purchases, reward pickups, and the card selector inside a compound action.
+It records the unchanged rich state vector, public screen contents as JSON,
+all canonical semantic candidate keys plus the chosen key, and the trajectory's
+`finalWon` as `won`. It is capture-only; #334 training still uses MAP rows.
+
+The CSV prefix is
+`sourceSeed,branchId,deviationIdx,rowIdx,decisionIdx,act,floor,screen,teacherId`,
+followed by the 1,017 rich features and `screenContents,candidates,won`.
+`rowIdx` orders all captured screens within a trajectory. `decisionIdx` joins
+an existing sampling decision when present; `-1` identifies capture-only
+reward pickups or compound-selector screens. These extra states never consume
+sampling indices. `candidates` is a JSON object with `optionKeys`, `chosenKey`,
+`supported`, and `complete`. `screenContents` carries a matching screen tag,
+public offers/identifiers, and selector or inventory details; it contains no
+RNG state or concealed treasure reward. Unresolved or incomplete semantic
+capture fails closed.
+
+The optional `decisionSink` manifest section contains a per-trajectory capture
+log (including singleton screens omitted from the CSV), row counts by screen
+and source/branch, bytes per row, and a linear projection to 4,096 sources.
+The validator checks the capture log against the rows, joins sampling decisions
+to the existing decision log, and checks JSON/schema, candidate membership,
+trajectory labels, counts, hashes, and size reports. Review the measured size
+before A2; any subsampling rule must be selected and recorded before collection.
+
 For every sampled chosen sibling the producer runs the same forced-action
 branch as the counterfactuals. `PARITY_PERCENT=100` checks every chosen replay
 on the A1 pilot; `PARITY_PERCENT=5` selects an outcome-independent 5% by the
@@ -331,12 +361,27 @@ resolve, sample and replay the full semantic choice. The
 `vwin_refresh_rejects_vpath_override` contract test runs with `STS_VPATH=1` and
 requires the frozen-policy guard to reject it. `vwinrefreshbranchselftest` is a
 single-seed, seed-guarded full-run chosen-branch replay check.
+`vwinrefreshdecisionsinkselftest` captures two sequential shop purchases and
+leave, verifies reward pickup/card-choice capture and unchanged legacy outputs,
+and checks the schema. The compound test also checks the separate selector
+row and forced-branch reconstruction. Full two-seed generation compares all
+non-timing files with the sink off/on and again with it on:
+
+```text
+python3 tools/vwin_refresh_contract.py OFF.manifest.json --compare ON.manifest.json --allow-sink-toggle
+python3 tools/vwin_refresh_contract.py ON.manifest.json --compare REPEAT_ON.manifest.json
+```
+
+`one_combat vwinrefreshpolicyspec POLICY.json` exports the effective loaded
+OOC policy without generating trajectories. Use it for the teacher's
+`ooc_policy`, with that executable's hash and source SHA; the producer still
+checks all teacher fields and loaded artifacts before generation.
 
 The A1 command uses 128 sources from 13,000,000, K=1, exact 10k and 100% chosen
 replay checks. It is run only after the implementation review and frozen SHA:
 
 ```text
-tools/seed_guard.sh build/linux-gcc-release/one_combat vwinrefreshgen 128 10000 0 PREFIX 13000000 TEACHER.json 1 100
+STS_VWIN_DECISION_SINK=1 tools/seed_guard.sh build/linux-gcc-release/one_combat vwinrefreshgen 128 10000 0 PREFIX 13000000 TEACHER.json 1 100
 python3 tools/vwin_refresh_contract.py PREFIX.manifest.json
 ```
 

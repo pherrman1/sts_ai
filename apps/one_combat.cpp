@@ -3644,6 +3644,13 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "vwinrefreshpolicyspec") {
+        if (argc != 3) return 2;
+        try { return vwinRefreshPolicySpec(argv[2]); }
+        catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return 1;
+        }
     } else if (mode == "vwinrefreshselftest") {
         if (argc != 2) {
             std::cerr << "usage: one_combat vwinrefreshselftest\n";
@@ -3663,6 +3670,13 @@ int main(int argc, char **argv) {
         try {
             return vwinRefreshCompoundSelfTest();
         } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshdecisionsinkselftest") {
+        if (argc != 2) return 2;
+        try { return vwinRefreshDecisionSinkSelfTest(); }
+        catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 1;
         }

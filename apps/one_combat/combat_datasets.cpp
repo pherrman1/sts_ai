@@ -219,6 +219,12 @@ struct VwinOption {
     std::optional<search::OocSemanticAction> semantic;
 };
 
+struct VwinDecisionSnapshot {
+    std::string screen, screenContentsJson, features;
+    std::vector<std::string> candidateKeys;
+    bool supported = false, complete = false;
+};
+
 struct VwinSampledDecision {
     int decisionIdx = -1;
     int fightIdx = 0;
@@ -244,6 +250,13 @@ struct VwinRawRow {
     std::string roomClass, encounter, features;
     int actBoss = 0, preHp = 0, preMaxHp = 0, prePotions = 0, preGold = 0;
     int postAfterBattleHp = -1;
+};
+
+struct VwinDecisionSinkRow {
+    std::string branchId, screen, features, screenContentsJson, chosenKey;
+    int deviationIdx = 0, rowIdx = 0, decisionIdx = 0, act = 0, floor = 0;
+    std::vector<std::string> candidateKeys;
+    bool supported = false, complete = false;
 };
 
 struct VwinDecisionRow {
@@ -276,19 +289,31 @@ struct VwinPendingDecision {
     std::vector<std::uint32_t> observedPrimitiveBits;
 };
 
+struct VwinPendingSinkDecision {
+    std::size_t rowIndex = 0;
+    CardSelectScreenType selector = CardSelectScreenType::INVALID;
+    std::unique_ptr<GameContext> pre;
+    std::vector<VwinOption> options;
+    std::vector<std::uint32_t> observedPrimitiveBits;
+};
+
 struct VwinCollector {
     std::uint64_t sourceSeed = 0;
     int samplesPerType = 0;
     std::string branchId = "source";
     int deviationIdx = 0;
     bool captureRefresh = false, captureBoss = false, allowSampling = false;
-    int decisionIdx = 0, fightIdx = 0, mapRowIdx = 0, rawRowIdx = 0;
+    bool captureDecisionSink = false;
+    int decisionIdx = 0, fightIdx = 0, mapRowIdx = 0, rawRowIdx = 0, decisionSinkRowIdx = 0;
     std::map<std::string, int> eligibleByType;
     std::map<std::string, std::mt19937_64> reservoirRng;
     std::map<std::string, std::vector<VwinSampledDecision>> sampled;
     std::vector<VwinMapRow> mapRows;
     std::vector<VwinRawRow> rawRows;
     std::vector<VwinDecisionRow> decisions;
+    std::vector<VwinDecisionSinkRow> decisionSinkRows;
+    nlohmann::json decisionSinkLog = nlohmann::json::array();
+    std::optional<VwinPendingSinkDecision> pendingSinkAction;
     std::vector<VwinBossEntry> bossEntries;
     std::string combatRows;
     std::vector<std::string> trace;
@@ -370,6 +395,201 @@ static std::vector<VwinOption> vwinOptions(const GameContext &gc,
     for (const auto &action : enumeration.actions)
         result.push_back({vwinOptionKey(action), 0, false, action});
     return result;
+}
+
+static std::string vwinDecisionScreenName(const GameContext &gc) {
+    switch (gc.screenState) {
+        case ScreenState::EVENT_SCREEN: return "event";
+        case ScreenState::REWARDS: return "rewards";
+        case ScreenState::BOSS_RELIC_REWARDS: return "boss_relic";
+        case ScreenState::CARD_SELECT: return "selector";
+        case ScreenState::TREASURE_ROOM: return "treasure";
+        case ScreenState::REST_ROOM: return "rest";
+        case ScreenState::SHOP_ROOM: return "shop";
+        case ScreenState::MAP_SCREEN: return "map";
+        default: return "other";
+    }
+}
+
+static const char *vwinSelectorTypeName(CardSelectScreenType type) {
+    switch (type) {
+        case CardSelectScreenType::TRANSFORM: return "transform";
+        case CardSelectScreenType::TRANSFORM_UPGRADE: return "transform_upgrade";
+        case CardSelectScreenType::UPGRADE: return "upgrade";
+        case CardSelectScreenType::REMOVE: return "remove";
+        case CardSelectScreenType::DUPLICATE: return "duplicate";
+        case CardSelectScreenType::OBTAIN: return "obtain";
+        case CardSelectScreenType::BOTTLE: return "bottle";
+        case CardSelectScreenType::BONFIRE_SPIRITS: return "bonfire_spirits";
+        case CardSelectScreenType::INVALID: return "invalid";
+    }
+    return "invalid";
+}
+
+static nlohmann::json vwinCardContents(const Card &card) {
+    return {{"id", static_cast<int>(card.id)},
+            {"upgraded", card.isUpgraded()},
+            {"misc", card.misc}};
+}
+
+static nlohmann::json vwinDecisionScreenContents(
+        const GameContext &gc, const std::vector<VwinOption> &options) {
+    nlohmann::json contents = {
+        {"screen", vwinDecisionScreenName(gc)},
+        {"screenState", static_cast<int>(gc.screenState)},
+    };
+    auto availableOptions = [&] {
+        nlohmann::json result = nlohmann::json::array();
+        for (const auto &option : options) {
+            nlohmann::json item = {{"key", option.key}};
+            if (option.semantic) {
+                item["effect"] = static_cast<int>(option.semantic->effect);
+                item["source"] = static_cast<int>(option.semantic->source);
+            }
+            result.push_back(std::move(item));
+        }
+        return result;
+    };
+
+    switch (gc.screenState) {
+        case ScreenState::EVENT_SCREEN: {
+            contents["eventId"] = static_cast<int>(gc.curEvent);
+            contents["optionIds"] = nlohmann::json::array();
+            for (const auto &action : search::GameAction::getAllActionsInState(gc))
+                contents["optionIds"].push_back(action.getIdx1());
+            if (gc.curEvent == Event::NEOW) {
+                contents["neowOffers"] = nlohmann::json::array();
+                for (const auto &offer : gc.info.neowRewards)
+                    contents["neowOffers"].push_back({
+                        {"bonusId", static_cast<int>(offer.r)},
+                        {"drawbackId", static_cast<int>(offer.d)}
+                    });
+            }
+            break;
+        }
+        case ScreenState::REWARDS: {
+            const auto &rewards = gc.info.rewardsContainer;
+            contents["gold"] = nlohmann::json::array();
+            for (int i = 0; i < rewards.goldRewardCount; ++i)
+                contents["gold"].push_back(rewards.gold[i]);
+            contents["cardRewards"] = nlohmann::json::array();
+            for (int group = 0; group < rewards.cardRewardCount; ++group) {
+                nlohmann::json cards = nlohmann::json::array();
+                for (const auto &card : rewards.cardRewards[group])
+                    cards.push_back(vwinCardContents(card));
+                contents["cardRewards"].push_back({
+                    {"group", group}, {"cards", std::move(cards)}
+                });
+            }
+            contents["relics"] = nlohmann::json::array();
+            for (int i = 0; i < rewards.relicCount; ++i)
+                contents["relics"].push_back(static_cast<int>(rewards.relics[i]));
+            contents["potions"] = nlohmann::json::array();
+            for (int i = 0; i < rewards.potionCount; ++i)
+                contents["potions"].push_back(static_cast<int>(rewards.potions[i]));
+            contents["emeraldKey"] = rewards.emeraldKey;
+            contents["sapphireKey"] = rewards.sapphireKey;
+            break;
+        }
+        case ScreenState::BOSS_RELIC_REWARDS:
+            contents["relics"] = nlohmann::json::array();
+            for (const auto relic : gc.info.bossRelics) {
+                if (relic != RelicId::INVALID)
+                    contents["relics"].push_back(static_cast<int>(relic));
+            }
+            break;
+        case ScreenState::CARD_SELECT:
+            contents["selectorType"] = vwinSelectorTypeName(gc.info.selectScreenType);
+            contents["selectorTypeId"] = static_cast<int>(gc.info.selectScreenType);
+            contents["requiredPicks"] = gc.info.toSelectCount;
+            contents["completedPicks"] = gc.info.haveSelectedCards.size();
+            contents["cards"] = nlohmann::json::array();
+            for (const auto &card : gc.info.toSelectCards)
+                contents["cards"].push_back({
+                    {"deckIndex", card.deckIdx}, {"card", vwinCardContents(card.card)}
+                });
+            break;
+        case ScreenState::TREASURE_ROOM:
+            contents["chestSize"] = static_cast<int>(gc.info.chestSize);
+            contents["availableOptions"] = availableOptions();
+            break;
+        case ScreenState::REST_ROOM:
+            contents["availableOptions"] = availableOptions();
+            break;
+        case ScreenState::SHOP_ROOM: {
+            const auto &shop = gc.info.shop;
+            contents["cards"] = nlohmann::json::array();
+            for (int i = 0; i < 7; ++i) {
+                const int price = shop.cardPrice(i);
+                contents["cards"].push_back({
+                    {"slot", i},
+                    {"id", price < 0 ? nlohmann::json(nullptr)
+                                      : nlohmann::json(static_cast<int>(shop.cards[i].id))},
+                    {"price", price},
+                    {"card", price < 0 ? nlohmann::json(nullptr) : vwinCardContents(shop.cards[i])}
+                });
+            }
+            contents["relics"] = nlohmann::json::array();
+            for (int i = 0; i < 3; ++i) {
+                const int price = shop.relicPrice(i);
+                contents["relics"].push_back({
+                    {"slot", i},
+                    {"id", price < 0 ? nlohmann::json(nullptr)
+                                      : nlohmann::json(static_cast<int>(shop.relics[i]))},
+                    {"price", price}
+                });
+            }
+            contents["potionSlots"] = nlohmann::json::array();
+            for (int i = 0; i < 3; ++i) {
+                const int price = shop.potionPrice(i);
+                contents["potionSlots"].push_back({
+                    {"slot", i},
+                    {"id", price < 0 ? nlohmann::json(nullptr)
+                                      : nlohmann::json(static_cast<int>(shop.potions[i]))},
+                    {"price", price}
+                });
+            }
+            contents["removeCost"] = shop.removeCost;
+            contents["policyBuyableRelics"] = nlohmann::json::array();
+            for (const auto &option : options) {
+                if (!option.semantic
+                    || option.semantic->effect != search::OocSemanticEffect::BUY_RELIC)
+                    continue;
+                const auto *target = std::get_if<search::OocShopTarget>(&option.semantic->target);
+                const auto *relic = target ? std::get_if<RelicId>(&target->entity) : nullptr;
+                if (!target || !relic) continue;
+                contents["policyBuyableRelics"].push_back({
+                    {"id", static_cast<int>(*relic)}, {"price", target->expectedPrice},
+                    {"key", option.key}
+                });
+            }
+            contents["ownedPotionCapacity"] = gc.potionCapacity;
+            contents["ownedPotions"] = nlohmann::json::array();
+            for (int i = 0; i < gc.potionCapacity && i < static_cast<int>(gc.potions.size()); ++i)
+                contents["ownedPotions"].push_back(static_cast<int>(gc.potions[i]));
+            break;
+        }
+        default:
+            contents["availableOptions"] = availableOptions();
+            break;
+    }
+    return contents;
+}
+
+static std::optional<VwinDecisionSnapshot> vwinMakeDecisionSnapshot(
+        const GameContext &gc, const PathHistory &path,
+        const std::vector<VwinOption> &options, bool supported, bool complete) {
+    if (gc.screenState == ScreenState::MAP_SCREEN || options.size() < 2)
+        return std::nullopt;
+    VwinDecisionSnapshot snapshot;
+    snapshot.screen = vwinDecisionScreenName(gc);
+    snapshot.screenContentsJson = vwinDecisionScreenContents(gc, options).dump();
+    snapshot.features = richRow(gc, path);
+    snapshot.supported = supported;
+    snapshot.complete = complete;
+    for (const auto &option : options) snapshot.candidateKeys.push_back(option.key);
+    std::sort(snapshot.candidateKeys.begin(), snapshot.candidateKeys.end());
+    return snapshot;
 }
 
 static bool vwinIsCardRewardChoice(const VwinOption &option) {
@@ -587,9 +807,13 @@ static bool vwinPendingAwaitsSelector(const VwinPendingDecision &pending,
         && gc.info.selectScreenType == pending.selector;
 }
 
-static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
-                                     PathHistory &path,
-                                     search::ScumSearchAgent2 &agent) {
+static void vwinObserveDecisionScreen(VwinCollector &, const GameContext &,
+                                      const PathHistory &, std::uint32_t, int);
+static void vwinFinishDecisionSink(VwinCollector &, const GameContext *, bool = false);
+
+static void vwinObservePolicyStep(VwinCollector &capture, GameContext &gc,
+                                  PathHistory &path, search::ScumSearchAgent2 &agent,
+                                  const std::function<void()> &step) {
     auto finishPendingDecision = [&] {
         if (!capture.pendingAction) return;
         auto pending = std::move(*capture.pendingAction);
@@ -606,6 +830,7 @@ static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
             if (capture.pendingAction
                 && vwinPendingAwaitsSelector(*capture.pendingAction, gc)) {
                 capture.pendingAction->observedPrimitiveBits.push_back(bits);
+                vwinObserveDecisionScreen(capture, gc, path, bits, -1);
                 consumedCompoundSelector = true;
             }
             if (!consumedCompoundSelector) {
@@ -620,6 +845,8 @@ static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
                 const auto chosenKey = selector == CardSelectScreenType::INVALID
                     ? vwinResolveChosenKey(gc, bits, keys) : std::string{};
                 const auto decisionType = vwinDecisionType(gc, options, chosenKey, bits);
+                vwinObserveDecisionScreen(capture, gc, path, bits,
+                    decisionType.empty() ? -1 : capture.decisionIdx);
                 if (gc.screenState != ScreenState::REWARDS || decisionType == "CARD_REWARD") {
                     if (decisionType == "CARD_REWARD" && !chosenKey.empty()) {
                         auto cardOptions = vwinCardRewardGroupOptions(options, chosenKey);
@@ -663,12 +890,14 @@ static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
         if (previous) previous(bits, target);
     };
     try {
-        runFullRunOocPolicyStep(gc, agent, false, true);
+        step();
     } catch (...) {
         search::g_onGameActionExecute = std::move(previous);
         throw;
     }
     search::g_onGameActionExecute = std::move(previous);
+
+    vwinFinishDecisionSink(capture, &gc);
 
     // A source action that opened its compound selector is only half of the
     // semantic decision. Keep it pending across policy steps until the target
@@ -676,6 +905,12 @@ static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
     if (!capture.pendingAction
         || !vwinPendingAwaitsSelector(*capture.pendingAction, gc))
         finishPendingDecision();
+}
+
+static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
+                                     PathHistory &path, search::ScumSearchAgent2 &agent) {
+    vwinObservePolicyStep(capture, gc, path, agent,
+        [&] { runFullRunOocPolicyStep(gc, agent, false, true); });
 }
 
 static bool vwinSelectedDecision(const VwinCollector &capture, int decisionIdx) {
@@ -714,6 +949,11 @@ static std::string vwinDecisionHeader() {
         "chosenKey,supported,complete,sampled,candidateKeysJson,error";
 }
 
+static std::string vwinDecisionSinkHeader() {
+    return "sourceSeed,branchId,deviationIdx,rowIdx,decisionIdx,act,floor,screen,teacherId,"
+        + richStateHeader() + ",screenContents,candidates,won";
+}
+
 static std::string vwinBranchHeader() {
     return "sourceSeed,decisionIdx,type,optionKey,chosen,branchId,won,finalFloor,finalHp,valid";
 }
@@ -735,6 +975,88 @@ static std::string vwinResolveChosenKey(const GameContext &gc, std::uint32_t bit
             matches.insert(key);
     }
     return matches.size() == 1 ? *matches.begin() : std::string{};
+}
+
+static void vwinFinishDecisionSink(VwinCollector &capture, const GameContext *gc,
+                                   bool force) {
+    if (!capture.captureDecisionSink || !capture.pendingSinkAction) return;
+    const auto &waiting = *capture.pendingSinkAction;
+    if (!force && gc && gc->screenState == ScreenState::CARD_SELECT
+        && gc->info.selectScreenType == waiting.selector) return;
+    auto pending = std::move(*capture.pendingSinkAction);
+    capture.pendingSinkAction.reset();
+    auto &row = capture.decisionSinkRows.at(pending.rowIndex);
+    row.chosenKey = vwinResolveObservedCompoundKey(*pending.pre, pending.options,
+                                                   pending.observedPrimitiveBits);
+    if (row.chosenKey.empty())
+        throw std::runtime_error("vwin DECISION sink: unresolved compound chosen key");
+}
+
+static void vwinObserveDecisionScreen(VwinCollector &capture, const GameContext &gc,
+                                      const PathHistory &path, std::uint32_t bits,
+                                      int decisionIdx) {
+    if (!capture.captureDecisionSink) return;
+    vwinFinishDecisionSink(capture, &gc);
+    if (capture.pendingSinkAction)
+        capture.pendingSinkAction->observedPrimitiveBits.push_back(bits);
+    if (gc.screenState == ScreenState::MAP_SCREEN) return;
+    bool supported = false, complete = false;
+    std::string error;
+    const auto options = vwinOptions(gc, supported, complete, error);
+    if (!supported || !complete)
+        throw std::runtime_error("vwin DECISION sink: cannot enumerate screen: " + error);
+    const int rowIdx = options.size() > 1 ? capture.decisionSinkRowIdx : -1;
+    capture.decisionSinkLog.push_back({
+        {"rowIdx", rowIdx}, {"decisionIdx", decisionIdx},
+        {"screen", vwinDecisionScreenName(gc)}, {"optionCount", options.size()}
+    });
+    auto snapshot = vwinMakeDecisionSnapshot(gc, path, options, supported, complete);
+    if (!snapshot) return;
+    VwinDecisionSinkRow row;
+    row.branchId = capture.branchId;
+    row.deviationIdx = capture.deviationIdx;
+    row.rowIdx = capture.decisionSinkRowIdx++;
+    row.decisionIdx = decisionIdx;
+    row.act = gc.act;
+    row.floor = gc.floorNum;
+    row.screen = std::move(snapshot->screen);
+    row.features = std::move(snapshot->features);
+    row.screenContentsJson = std::move(snapshot->screenContentsJson);
+    row.candidateKeys = std::move(snapshot->candidateKeys);
+    row.supported = supported;
+    row.complete = complete;
+    const auto selector = search::oocSemanticPrimitiveCompoundSelector(gc, bits);
+    if (selector == CardSelectScreenType::INVALID) {
+        row.chosenKey = vwinResolveChosenKey(gc, bits, row.candidateKeys);
+        if (row.chosenKey.empty())
+            throw std::runtime_error("vwin DECISION sink: unresolved chosen key on " + row.screen);
+    } else {
+        if (capture.pendingSinkAction)
+            throw std::runtime_error("vwin DECISION sink: nested compound selector");
+        VwinPendingSinkDecision pending;
+        pending.rowIndex = capture.decisionSinkRows.size();
+        pending.selector = selector;
+        pending.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+        pending.options = options;
+        pending.observedPrimitiveBits.push_back(bits);
+        capture.pendingSinkAction = std::move(pending);
+    }
+    capture.decisionSinkRows.push_back(std::move(row));
+}
+
+// Semantic execution intentionally disables observers. Reconstruct its public
+// intermediate screens from the returned primitives on a detached state copy.
+// This never changes the real branch, its agent, policy state, or trace indices.
+static void vwinCaptureForcedDecision(VwinCollector &capture, GameContext before,
+                                      const PathHistory &path,
+                                      const std::vector<std::uint32_t> &bits,
+                                      int decisionIdx) {
+    for (std::size_t i = 0; i < bits.size(); ++i) {
+        vwinObserveDecisionScreen(capture, before, path, bits[i], i == 0 ? decisionIdx : -1);
+        search::GameAction(bits[i]).execute(before);
+        vwinFinishDecisionSink(capture, &before);
+    }
+    vwinFinishDecisionSink(capture, nullptr, true);
 }
 
 static std::uint64_t vwinThreadCpuNanos() {
@@ -835,6 +1157,10 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
                     if (!executed.ok || executed.executedPrimitiveBits.empty())
                         throw std::runtime_error("vwin refresh: branch semantic action failed: "
                                                  + executed.error);
+                    if (vwin->captureDecisionSink)
+                        vwinCaptureForcedDecision(*vwin,
+                            detachedCounterfactualCopy(*branch->decision->pre), path,
+                            executed.executedPrimitiveBits, branch->decision->decisionIdx);
                 } else {
                     throw std::runtime_error("vwin refresh: branch option has no executable action");
                 }
@@ -1010,6 +1336,7 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
         }
     }
     finishPendingDecision();
+    if (vwin) vwinFinishDecisionSink(*vwin, nullptr, true);
     search::g_onCombatDecision = nullptr;
     t_curPath = nullptr;
     const bool complete = gc.outcome != GameOutcome::UNDECIDED;
@@ -1300,8 +1627,9 @@ int vwinVPathPolicyGuardSelfTest() {
 }
 
 static void vwinWriteCollector(std::ostream &mapOut, std::ostream &rawOut,
-                               std::ostream &decisionOut, std::ostream &combatOut,
-                               std::uint64_t sourceSeed, const VwinCollector &capture,
+                               std::ostream &decisionOut, std::ostream *decisionSinkOut,
+                               std::ostream &combatOut, std::uint64_t sourceSeed,
+                               const VwinCollector &capture, int won,
                                const WholeCombatTeacher &teacher) {
     for (const auto &row : capture.mapRows)
         mapOut << sourceSeed << ',' << row.branchId << ',' << row.deviationIdx << ','
@@ -1324,6 +1652,19 @@ static void vwinWriteCollector(std::ostream &mapOut, std::ostream &rawOut,
                     << (row.complete ? 1 : 0) << ','
                     << (vwinSelectedDecision(capture, row.decisionIdx) ? 1 : 0) << ','
                     << csvQuote(keys.dump()) << ',' << csvQuote(row.error) << '\n';
+    }
+    if (decisionSinkOut) {
+        for (const auto &row : capture.decisionSinkRows) {
+            nlohmann::json candidates = {
+                {"optionKeys", row.candidateKeys}, {"chosenKey", row.chosenKey},
+                {"supported", row.supported}, {"complete", row.complete}
+            };
+            *decisionSinkOut << sourceSeed << ',' << row.branchId << ',' << row.deviationIdx
+                << ',' << row.rowIdx << ',' << row.decisionIdx << ',' << row.act << ','
+                << row.floor << ',' << csvQuote(row.screen) << ',' << csvQuote(teacher.id)
+                << ',' << row.features << ',' << csvQuote(row.screenContentsJson) << ','
+                << csvQuote(candidates.dump()) << ',' << won << '\n';
+        }
     }
     combatOut << capture.combatRows;
 }
@@ -1363,13 +1704,19 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
         || parityPercent < 0 || parityPercent > 100 || seedOffset < 0
         || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
         throw std::runtime_error("vwin refresh: requires N>0, exact 10k, Ascension 0, K>0, parity rate 0..100, and a nonnegative nonoverflowing seed range");
+    const char *decisionSinkEnv = std::getenv("STS_VWIN_DECISION_SINK");
+    const bool captureDecisionSink = decisionSinkEnv && std::string(decisionSinkEnv) == "1";
+    if (decisionSinkEnv && std::string(decisionSinkEnv) != "0"
+        && std::string(decisionSinkEnv) != "1")
+        throw std::runtime_error("vwin refresh: STS_VWIN_DECISION_SINK must be 0 or 1");
     trainingCampaignStart();
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
     vwinRequireProductionPolicy(teacher);
     search::g_richCombatFeatures = true;
-    const std::vector<std::string> suffixes = {
+    std::vector<std::string> suffixes = {
         ".map.csv", ".win_raw.csv", ".decisions.csv", ".branches.csv",
         ".combat.csv", ".runout.csv", ".manifest.json"};
+    if (captureDecisionSink) suffixes.push_back(".decision.csv");
     for (const auto &suffix : suffixes)
         if (std::filesystem::exists(outPrefix + suffix))
             throw std::runtime_error("vwin refresh: refusing to overwrite existing output "
@@ -1377,19 +1724,37 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
     std::ofstream mapOut(outPrefix + ".map.csv");
     std::ofstream rawOut(outPrefix + ".win_raw.csv");
     std::ofstream decisionOut(outPrefix + ".decisions.csv");
+    std::ofstream decisionSinkOut;
+    if (captureDecisionSink) decisionSinkOut.open(outPrefix + ".decision.csv");
     std::ofstream branchOut(outPrefix + ".branches.csv");
     std::ofstream combatOut(outPrefix + ".combat.csv");
     std::ofstream runoutOut(outPrefix + ".runout.csv");
-    if (!mapOut || !rawOut || !decisionOut || !branchOut || !combatOut || !runoutOut)
+    if (!mapOut || !rawOut || !decisionOut || (captureDecisionSink && !decisionSinkOut)
+        || !branchOut || !combatOut || !runoutOut)
         throw std::runtime_error("vwin refresh: cannot open one or more outputs");
     mapOut << vwinMapHeader() << '\n';
     rawOut << vwinRawHeader() << '\n';
     decisionOut << vwinDecisionHeader() << '\n';
+    if (captureDecisionSink) decisionSinkOut << vwinDecisionSinkHeader() << '\n';
     branchOut << vwinBranchHeader() << '\n';
     combatOut << vwinCombatHeader() << '\n';
     runoutOut << vwinRunoutHeader() << ",branchParity\n";
 
     nlohmann::json branchSummary = nlohmann::json::array();
+    nlohmann::json decisionTrajectories = nlohmann::json::array();
+    nlohmann::json decisionScreens = {{"source", nlohmann::json::object()},
+                                     {"branch", nlohmann::json::object()}};
+    auto recordDecisionSink = [&](const VwinCollector &capture) {
+        if (!captureDecisionSink) return;
+        decisionTrajectories.push_back({
+            {"sourceSeed", capture.sourceSeed}, {"branchId", capture.branchId},
+            {"deviationIdx", capture.deviationIdx}, {"rows", capture.decisionSinkRows.size()},
+            {"decisionLog", capture.decisionSinkLog}
+        });
+        auto &screens = decisionScreens[capture.branchId == "source" ? "source" : "branch"];
+        for (const auto &row : capture.decisionSinkRows)
+            screens[row.screen] = screens.value(row.screen, std::uint64_t{0}) + 1;
+    };
     struct VwinTypeSummary {
         std::uint64_t decisions = 0, unsupported = 0, incomplete = 0;
         std::uint64_t eligible = 0, candidateOptions = 0, sampled = 0, branches = 0;
@@ -1397,7 +1762,7 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
     };
     std::map<std::string, VwinTypeSummary> typeSummary;
     std::uint64_t sourceMapRows = 0, sourceRawRows = 0, branchMapRows = 0,
-                  branchRawRows = 0, decisionRows = 0, branchRows = 0;
+                  branchRawRows = 0, decisionRows = 0, decisionSinkRows = 0, branchRows = 0;
     int completedSources = 0, validSources = 0, parityChecks = 0, parityFailures = 0;
     for (int index = 0; index < nSeeds; ++index) {
         const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + index);
@@ -1408,6 +1773,7 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
         source.deviationIdx = 0;
         source.captureRefresh = true;
         source.allowSampling = true;
+        source.captureDecisionSink = captureDecisionSink;
         const auto generated = runCombatEvalGenSeed(seed, sims, asc, teacher, true, &source);
         for (const auto &decision : source.decisions) {
             if (decision.branchId != "source") continue;
@@ -1425,11 +1791,15 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
             }
             if (vwinSelectedDecision(source, decision.decisionIdx)) ++summary.sampled;
         }
-        vwinWriteCollector(mapOut, rawOut, decisionOut, combatOut, seed, source, teacher);
+        vwinWriteCollector(mapOut, rawOut, decisionOut,
+                           captureDecisionSink ? &decisionSinkOut : nullptr, combatOut,
+                           seed, source, combatEvalFinalWon(generated.finalOutcome), teacher);
         vwinWriteRunout(runoutOut, seed, source, generated, teacher, "NA");
         sourceMapRows += source.mapRows.size();
         sourceRawRows += source.rawRows.size();
         decisionRows += source.decisions.size();
+        decisionSinkRows += source.decisionSinkRows.size();
+        recordDecisionSink(source);
         if (generated.trajectoryComplete) ++completedSources;
         if (generated.trajectoryValid) ++validSources;
 
@@ -1445,6 +1815,7 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                 branch.deviationIdx = 1;
                 branch.captureRefresh = true;
                 branch.allowSampling = false;
+                branch.captureDecisionSink = captureDecisionSink;
                 const auto branchCpuStart = vwinThreadCpuNanos();
                 const auto branched = runCombatEvalGenSeed(seed, sims, asc, teacher, true,
                                                             &branch, &start);
@@ -1470,12 +1841,16 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     ++parityChecks;
                     if (!parity) ++parityFailures;
                 }
-                vwinWriteCollector(mapOut, rawOut, decisionOut, combatOut, seed, branch, teacher);
+                vwinWriteCollector(mapOut, rawOut, decisionOut,
+                                   captureDecisionSink ? &decisionSinkOut : nullptr, combatOut,
+                                   seed, branch, combatEvalFinalWon(branched.finalOutcome), teacher);
                 vwinWriteRunout(runoutOut, seed, branch, branched, teacher,
                     parityApplicable ? (parity ? "PASS" : "FAIL") : "NA");
                 branchMapRows += branch.mapRows.size();
                 branchRawRows += branch.rawRows.size();
                 decisionRows += branch.decisions.size();
+                decisionSinkRows += branch.decisionSinkRows.size();
+                recordDecisionSink(branch);
                 ++branchRows;
                 branchOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
                           << csvQuote(option.key) << ',' << (chosen ? 1 : 0) << ','
@@ -1493,14 +1868,18 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
             }
         }
         mapOut.flush(); rawOut.flush(); decisionOut.flush(); branchOut.flush();
+        if (captureDecisionSink) decisionSinkOut.flush();
         combatOut.flush(); runoutOut.flush();
     }
     mapOut.close(); rawOut.close(); decisionOut.close(); branchOut.close();
+    if (captureDecisionSink) decisionSinkOut.close();
     combatOut.close(); runoutOut.close();
     nlohmann::json outputHashes = nlohmann::json::object();
     for (const auto &suffix : {".map.csv", ".win_raw.csv", ".decisions.csv", ".branches.csv",
                                ".combat.csv", ".runout.csv"})
         outputHashes[std::string(suffix).substr(1)] = fileSha256(outPrefix + suffix);
+    if (captureDecisionSink)
+        outputHashes["decision.csv"] = fileSha256(outPrefix + ".decision.csv");
     nlohmann::json perType = nlohmann::json::object();
     for (const auto &[type, summary] : typeSummary) {
         perType[type] = {
@@ -1547,6 +1926,25 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
         {"outputs", outputHashes}, {"perType", std::move(perType)},
         {"branchRows", std::move(branchSummary)}
     };
+    if (captureDecisionSink) {
+        manifest["decisionSink"] = {
+            {"schema", "vwin_decision_334_v1"}, {"enabled", true},
+            {"rows", decisionSinkRows},
+            {"screenContentsEncoding", "canonical_json_public_state_v1"},
+            {"candidatesEncoding", "canonical_semantic_keys_with_chosen_v1"},
+            {"label", "trajectory_finalWon"},
+            {"decisionIdxJoin", "legacy_decisions_csv_or_minus_one_for_capture_only"},
+            {"trajectories", std::move(decisionTrajectories)},
+            {"byScreen", std::move(decisionScreens)},
+            {"bytes", std::filesystem::file_size(outPrefix + ".decision.csv")},
+            {"bytesPerRow", decisionSinkRows ? static_cast<double>(
+                std::filesystem::file_size(outPrefix + ".decision.csv")) / decisionSinkRows : 0.0},
+            {"projectedA2Bytes", static_cast<double>(
+                std::filesystem::file_size(outPrefix + ".decision.csv")) * 4096.0 / nSeeds},
+            {"projectionSourceSeeds", nSeeds}, {"projectionTargetSeeds", 4096}
+        };
+        manifest["integrity"]["decisionSinkRows"] = decisionSinkRows;
+    }
     std::ofstream manifestOut(outPrefix + ".manifest.json");
     if (!manifestOut) throw std::runtime_error("vwin refresh: cannot write manifest");
     manifestOut << manifest.dump(2) << '\n';
@@ -1605,6 +2003,15 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget) {
     result.postAfterBattleHp = gc.curHp;
     t_curPath = nullptr;
     return result;
+}
+
+int vwinRefreshPolicySpec(const std::string &outputPath) {
+    std::ofstream out(outputPath);
+    if (!out) throw std::runtime_error("vwin policy export: cannot open output");
+    out << effectiveOocPolicySpecification().dump(2) << '\n';
+    if (!out) throw std::runtime_error("vwin policy export: write failed");
+    std::cout << "vwin policy export: PASS\n";
+    return 0;
 }
 
 int vwinRefreshSelfTest() {
@@ -1721,6 +2128,111 @@ static std::string vwinCompoundStateFingerprint(const GameContext &gc) {
     for (const auto &card : gc.deck.cards)
         out << static_cast<int>(card.id) << '/' << card.misc << '/' << card.upgraded << ';';
     return out.str();
+}
+
+int vwinRefreshDecisionSinkSelfTest() {
+    auto require = [](bool value, const std::string &why) {
+        if (!value) throw std::runtime_error("vwin DECISION selftest: " + why);
+    };
+    using Action = search::GameAction;
+    using RewardAction = Action::RewardsActionType;
+    const WholeCombatTeacher teacher{"decision-sink-fixture", nlohmann::json::object()};
+    auto legacyOutput = [&](const VwinCollector &capture) {
+        std::ostringstream map, raw, decisions, combat;
+        vwinWriteCollector(map, raw, decisions, nullptr, combat, capture.sourceSeed,
+                           capture, 0, teacher);
+        return std::vector<std::string>{map.str(), raw.str(), decisions.str(), combat.str()};
+    };
+    auto run = [&](const GameContext &initial, const std::vector<Action> &actions, bool enabled) {
+        auto gc = detachedCounterfactualCopy(initial);
+        VwinCollector capture;
+        capture.sourceSeed = initial.seed;
+        capture.captureDecisionSink = enabled;
+        capture.allowSampling = true;
+        capture.samplesPerType = 1;
+        PathHistory path;
+        search::ScumSearchAgent2 agent;
+        for (const auto &action : actions)
+            vwinObservePolicyStep(capture, gc, path, agent, [&] { action.execute(gc); });
+        require(!capture.pendingSinkAction, "fixture resolves its compound decisions");
+        return capture;
+    };
+    GameContext shop(CharacterClass::IRONCLAD, 0x334005, 0);
+    shop.screenState = ScreenState::SHOP_ROOM;
+    shop.curRoom = Room::SHOP;
+    shop.gold = 500;
+    shop.regainControlAction = [](GameContext &gc) { gc.screenState = ScreenState::MAP_SCREEN; };
+    std::fill(std::begin(shop.info.shop.prices), std::end(shop.info.shop.prices), -1);
+    shop.info.shop.cards[0] = Card(CardId::BASH);
+    shop.info.shop.cardPrice(0) = 42;
+    shop.info.shop.cards[1] = Card(CardId::INFLAME);
+    shop.info.shop.cardPrice(1) = 61;
+    shop.info.shop.removeCost = 75;
+    const std::vector<Action> purchases{
+        Action(RewardAction::CARD, 0), Action(RewardAction::CARD, 1), Action(RewardAction::SKIP)};
+    const auto off = run(shop, purchases, false);
+    const auto on = run(shop, purchases, true);
+    require(off.decisionSinkRows.empty(), "sink defaults off");
+    require(on.decisionSinkRows.size() == 3, "two shop purchases plus leave produce three rows");
+    require(legacyOutput(off) == legacyOutput(on) && off.trace == on.trace,
+            "shop capture preserves every legacy output and replay trace");
+    for (int i = 0; i < 3; ++i) {
+        const auto &row = on.decisionSinkRows[i];
+        const auto contents = nlohmann::json::parse(row.screenContentsJson);
+        require(row.rowIdx == i && row.screen == "shop", "shop rows are ordered");
+        require(contents["cards"][0]["price"] == (i == 0 ? 42 : -1)
+                && contents["cards"][1]["price"] == (i < 2 ? 61 : -1)
+                && contents["removeCost"] == 75,
+                "each shop snapshot captures its own remaining inventory");
+        require(row.candidateKeys.size() > 1
+                && std::find(row.candidateKeys.begin(), row.candidateKeys.end(), row.chosenKey)
+                    != row.candidateKeys.end(), "chosen semantic key is in the full candidate set");
+    }
+    const auto &offSample = off.sampled.at("SHOP").front();
+    const auto &onSample = on.sampled.at("SHOP").front();
+    require(offSample.decisionIdx == onSample.decisionIdx
+            && offSample.chosenKey == onSample.chosenKey
+            && offSample.sourceTraceIndex == onSample.sourceTraceIndex,
+            "capture preserves reservoir selection and replay suffix indexing");
+
+    GameContext reward(CharacterClass::IRONCLAD, 0x334006, 0);
+    Rewards items;
+    items.addGold(35);
+    CardReward cards;
+    cards.push_back(Card(CardId::BASH));
+    cards.push_back(Card(CardId::INFLAME));
+    items.addCardReward(cards);
+    reward.openCombatRewardScreen(items);
+    reward.regainControlAction = [](GameContext &gc) { gc.screenState = ScreenState::MAP_SCREEN; };
+    const std::vector<Action> pickups{
+        Action(RewardAction::GOLD, 0), Action(RewardAction::CARD, 0, 0), Action(RewardAction::SKIP)};
+    const auto rewardsOff = run(reward, pickups, false);
+    const auto rewardsOn = run(reward, pickups, true);
+    require(rewardsOn.decisionSinkRows.size() == 2,
+            "rewards capture includes gold pickup and card choice, omits singleton leave");
+    require(rewardsOn.decisionSinkRows[0].decisionIdx == -1
+            && rewardsOn.decisionSinkRows[1].decisionIdx == 0,
+            "capture-only reward pickup does not consume a sampling decision index");
+    require(legacyOutput(rewardsOff) == legacyOutput(rewardsOn)
+            && rewardsOff.trace == rewardsOn.trace,
+            "reward capture preserves the card-reward log and sampling trace");
+    const auto before = nlohmann::json::parse(rewardsOn.decisionSinkRows[0].screenContentsJson);
+    const auto after = nlohmann::json::parse(rewardsOn.decisionSinkRows[1].screenContentsJson);
+    require(before["gold"].size() == 1 && after["gold"].empty()
+            && before["cardRewards"] == after["cardRewards"],
+            "reward snapshots contain exactly the still-unclaimed items");
+    std::ostringstream map, raw, decisions, decisionSink, combat;
+    vwinWriteCollector(map, raw, decisions, &decisionSink, combat, rewardsOn.sourceSeed,
+                       rewardsOn, 1, teacher);
+    const auto header = vwinDecisionSinkHeader();
+    require(std::count(header.begin(), header.end(), ',') + 1 == 1029,
+            "DECISION schema retains the unchanged 1017 rich features");
+    const auto sinkText = decisionSink.str();
+    require(std::count(sinkText.begin(), sinkText.end(), '\n') == 2,
+            "writer emits one row per captured decision");
+    std::cout << "vwin DECISION contract: sequential shop states, reward pickups, schema, "
+                 "unchanged sampling and legacy outputs passed\n";
+    return 0;
 }
 
 int vwinRefreshRewardTypeSelfTest() {
@@ -2003,6 +2515,7 @@ int vwinRefreshCompoundSelfTest() {
     stepCapture.sourceSeed = 13000000ULL;
     stepCapture.samplesPerType = 1;
     stepCapture.allowSampling = true;
+    stepCapture.captureDecisionSink = true;
     PathHistory stepPath;
     search::ScumSearchAgent2 stepAgent;
     stepAgent.rng = std::default_random_engine(998877);
@@ -2035,6 +2548,14 @@ int vwinRefreshCompoundSelfTest() {
     require(source.screenState == ScreenState::MAP_SCREEN
             && !stepCapture.pendingAction && observedSmithBits.size() == 2,
             "second real policy step selects the card and closes the compound decision");
+    require(stepCapture.decisionSinkRows.size() == 2
+            && stepCapture.decisionSinkRows[0].screen == "rest"
+            && stepCapture.decisionSinkRows[1].screen == "selector"
+            && stepCapture.decisionSinkRows[0].decisionIdx == 0
+            && stepCapture.decisionSinkRows[1].decisionIdx == -1
+            && !stepCapture.decisionSinkRows[0].chosenKey.empty()
+            && !stepCapture.decisionSinkRows[1].chosenKey.empty(),
+            "DECISION captures the source screen and its separate card-selector state");
     const auto &smithRow = stepCapture.decisions.front();
     require(!smithRow.chosenKey.empty()
             && stepCapture.eligibleByType[smithRow.type] == 1
@@ -2060,6 +2581,24 @@ int vwinRefreshCompoundSelfTest() {
         search::g_onGameActionExecute = std::move(previous);
         throw;
     }
+    VwinCollector forcedCapture;
+    forcedCapture.captureDecisionSink = true;
+    auto observer = std::move(search::g_onGameActionExecute);
+    search::g_onGameActionExecute = {};
+    try {
+        vwinCaptureForcedDecision(forcedCapture, detachedCounterfactualCopy(*smithSample.pre),
+                                  smithSample.path, smithExecution.executedPrimitiveBits,
+                                  smithSample.decisionIdx);
+    } catch (...) {
+        search::g_onGameActionExecute = std::move(observer);
+        throw;
+    }
+    search::g_onGameActionExecute = std::move(observer);
+    require(forcedCapture.decisionSinkRows.size() == 2
+            && forcedCapture.decisionSinkRows[0].chosenKey == stepCapture.decisionSinkRows[0].chosenKey
+            && forcedCapture.decisionSinkRows[1].chosenKey == stepCapture.decisionSinkRows[1].chosenKey
+            && forcedCapture.decisionSinkRows[1].features == stepCapture.decisionSinkRows[1].features,
+            "forced branch capture includes the same source and intermediate selector states");
     require(smithExecution.ok && smithExecution.executedPrimitiveBits == observedSmithBits
             && vwinCompoundStateFingerprint(smithReplay) == vwinCompoundStateFingerprint(source),
             "step-spanning Smith chosen branch replays the observed selector action");

@@ -7,10 +7,12 @@ import csv
 import hashlib
 import json
 import tempfile
+import shutil
 import unittest
 from pathlib import Path
 
-from tools.vwin_refresh_contract import ContractError, OUTPUTS, validate_bundle
+from tools.vwin_refresh_contract import (ContractError, OUTPUTS, validate_bundle,
+                                         DECISION_SINK_PREFIX, DECISION_SINK_TAIL, compare_bundles)
 
 
 FEATURES = [f"feature_{index}" for index in range(1017)]
@@ -63,7 +65,7 @@ def _make_bundle(directory: Path, option_keys: list[str] | None = None) -> Path:
         preGold=100, postAfterBattleHp=65)
     source_keys = json.dumps(option_keys, separators=(",", ":"))
     decisions = [_row(decision_header, sourceSeed=SEED, branchId="source", deviationIdx=0,
-        decisionIdx=0, type="MAP", act=1, floor=1, screen=1, optionCount=len(option_keys),
+        decisionIdx=0, type="MAP", act=1, floor=1, screen=5, optionCount=len(option_keys),
         chosenKey=option_keys[0], supported=1, complete=1, sampled=1,
         candidateKeysJson=source_keys, error="")]
     branches = []
@@ -80,7 +82,7 @@ def _make_bundle(directory: Path, option_keys: list[str] | None = None) -> Path:
             optionKey=option, chosen=int(chosen), branchId=branch_id, won=1, finalFloor=50,
             finalHp=65, valid=1))
         decisions.append(_row(decision_header, sourceSeed=SEED, branchId=branch_id,
-            deviationIdx=1, decisionIdx=0, type="MAP", act=1, floor=1, screen=1,
+            deviationIdx=1, decisionIdx=0, type="MAP", act=1, floor=1, screen=5,
             optionCount=len(option_keys), chosenKey=option, supported=1, complete=1,
             sampled=0, candidateKeysJson=source_keys, error=""))
         map_rows.append(_row(map_header, sourceSeed=SEED, branchId=branch_id,
@@ -141,6 +143,53 @@ def _make_bundle(directory: Path, option_keys: list[str] | None = None) -> Path:
     return manifest_path
 
 
+def _add_decision_sink(manifest_path: Path) -> None:
+    manifest = json.loads(manifest_path.read_text())
+    prefix = str(manifest_path)[:-len(".manifest.json")]
+    with Path(prefix + ".runout.csv").open(newline="") as stream:
+        runouts = list(csv.DictReader(stream))
+    with Path(prefix + ".decisions.csv").open(newline="") as stream:
+        reader = csv.DictReader(stream)
+        legacy_header, legacy = reader.fieldnames, list(reader)
+    keys = ["ooc:v1:effect=26:source=5:event=8:option=0",
+            "ooc:v1:effect=26:source=5:event=8:option=1"]
+    header = DECISION_SINK_PREFIX + FEATURES + DECISION_SINK_TAIL
+    sink_rows, trajectories = [], []
+    by_screen = {"source": {}, "branch": {}}
+    for run in runouts:
+        branch = run["branchId"]
+        legacy.append(_row(legacy_header, sourceSeed=SEED, branchId=branch,
+            deviationIdx=run["deviationIdx"], decisionIdx=1, type="EVENT", act=1, floor=2,
+            screen=1, optionCount=2, chosenKey=keys[0], supported=1, complete=1, sampled=0,
+            candidateKeysJson=json.dumps(keys), error=""))
+        sink_rows.append(_row(header, sourceSeed=SEED, branchId=branch,
+            deviationIdx=run["deviationIdx"], rowIdx=0, decisionIdx=1, act=1, floor=2,
+            screen="event", teacherId="teacher", won=run["finalWon"],
+            screenContents=json.dumps({"screen": "event", "screenState": 1,
+                                       "eventId": 8, "optionIds": [0, 1]}),
+            candidates=json.dumps({"optionKeys": keys, "chosenKey": keys[0],
+                                   "supported": True, "complete": True})))
+        trajectories.append({"sourceSeed": SEED, "branchId": branch,
+            "deviationIdx": int(run["deviationIdx"]), "rows": 1,
+            "decisionLog": [{"rowIdx": 0, "decisionIdx": 1, "screen": "event", "optionCount": 2},
+                            {"rowIdx": -1, "decisionIdx": -1, "screen": "rewards", "optionCount": 1}]})
+        kind = "source" if branch == "source" else "branch"
+        by_screen[kind]["event"] = by_screen[kind].get("event", 0) + 1
+    _write_csv(Path(prefix + ".decisions.csv"), legacy_header, legacy)
+    sink_path = Path(prefix + ".decision.csv")
+    _write_csv(sink_path, header, sink_rows)
+    size = sink_path.stat().st_size
+    manifest["decisionSink"] = {"schema": "vwin_decision_334_v1", "enabled": True,
+        "rows": len(sink_rows), "trajectories": trajectories, "byScreen": by_screen,
+        "bytes": size, "bytesPerRow": size / len(sink_rows), "projectedA2Bytes": size * 4096,
+        "projectionSourceSeeds": 1, "projectionTargetSeeds": 4096}
+    manifest["integrity"]["decisionRows"] = len(legacy)
+    manifest["integrity"]["decisionSinkRows"] = len(sink_rows)
+    for name in ("decisions.csv", "decision.csv"):
+        manifest["outputs"][name] = hashlib.sha256(Path(prefix + "." + name).read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest))
+
+
 class VwinRefreshContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
@@ -161,6 +210,112 @@ class VwinRefreshContractTests(unittest.TestCase):
         self.assertEqual(result["seeds"], 1)
         self.assertEqual(result["branches"], 2)
         self.assertEqual(result["sampled_decisions"], 1)
+
+    def _mutate_sink(self, change) -> None:
+        _add_decision_sink(self.manifest)
+        path = Path(str(self.manifest)[:-len(".manifest.json")] + ".decision.csv")
+        with path.open(newline="") as stream:
+            reader = csv.DictReader(stream)
+            header, rows = reader.fieldnames, list(reader)
+        change(rows)
+        _write_csv(path, header, rows)
+        self._rewrite_hash("decision.csv")
+
+    def test_decision_sink_valid(self) -> None:
+        _add_decision_sink(self.manifest)
+        result = validate_bundle(self.manifest)
+        self.assertEqual(result["decision_sink_rows"], 3)
+        self.assertEqual(result["decision_rows_by_screen"],
+                         {"source": {"event": 1}, "branch": {"event": 2}})
+        self.assertGreater(result["decision_projected_a2_bytes"], 0)
+
+    def test_decision_sink_json_rejected(self) -> None:
+        self._mutate_sink(lambda rows: rows[0].update(screenContents="{"))
+        with self.assertRaisesRegex(ContractError, "invalid JSON"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_screen_mismatch_rejected(self) -> None:
+        self._mutate_sink(lambda rows: rows[0].update(screenContents=json.dumps(
+            {"screen": "shop", "screenState": 8})))
+        with self.assertRaisesRegex(ContractError, "screen type"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_absent_chosen_rejected(self) -> None:
+        def change(rows):
+            candidates = json.loads(rows[0]["candidates"])
+            candidates["chosenKey"] = "absent"
+            rows[0]["candidates"] = json.dumps(candidates)
+        self._mutate_sink(change)
+        with self.assertRaisesRegex(ContractError, "chosen key is absent"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_singleton_rejected(self) -> None:
+        def change(rows):
+            candidates = json.loads(rows[0]["candidates"])
+            candidates["optionKeys"] = candidates["optionKeys"][:1]
+            rows[0]["candidates"] = json.dumps(candidates)
+        self._mutate_sink(change)
+        with self.assertRaisesRegex(ContractError, "more than one"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_missing_row_rejected(self) -> None:
+        self._mutate_sink(lambda rows: rows.pop())
+        with self.assertRaisesRegex(ContractError, "row counts do not match"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_outcome_mismatch_rejected(self) -> None:
+        self._mutate_sink(lambda rows: rows[0].update(won="0"))
+        with self.assertRaisesRegex(ContractError, "won disagrees"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_missing_legacy_join_rejected(self) -> None:
+        self._mutate_sink(lambda rows: rows[0].update(decisionIdx="99"))
+        with self.assertRaisesRegex(ContractError, "decision join"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_header_rejected(self) -> None:
+        _add_decision_sink(self.manifest)
+        path = Path(str(self.manifest)[:-len(".manifest.json")] + ".decision.csv")
+        path.write_text(path.read_text().replace("screenContents", "contents", 1))
+        self._rewrite_hash("decision.csv")
+        with self.assertRaisesRegex(ContractError, "header mismatch"):
+            validate_bundle(self.manifest)
+
+    def test_comparison_ignores_only_timing(self) -> None:
+        _add_decision_sink(self.manifest)
+        other_dir = self.directory / "repeat"
+        other_dir.mkdir()
+        for path in self.directory.glob("pilot.*"):
+            shutil.copyfile(path, other_dir / path.name)
+        second = other_dir / self.manifest.name
+        changed = json.loads(second.read_text())
+        changed["branchRows"] = [{"cpuSeconds": 2.0}]
+        second.write_text(json.dumps(changed))
+        original = json.loads(self.manifest.read_text())
+        original["branchRows"] = [{"cpuSeconds": 1.0}]
+        self.manifest.write_text(json.dumps(original))
+        self.assertIn("decision.csv", compare_bundles(self.manifest, second)["identical_non_timing_outputs"])
+        changed["producerGitSha"] = "d" * 40
+        second.write_text(json.dumps(changed))
+        with self.assertRaisesRegex(ContractError, "non-timing manifest differs"):
+            compare_bundles(self.manifest, second)
+
+    def test_comparison_accepts_sink_toggle_only_explicitly(self) -> None:
+        _add_decision_sink(self.manifest)
+        other_dir = self.directory / "without"
+        other_dir.mkdir()
+        for path in self.directory.glob("pilot.*"):
+            shutil.copyfile(path, other_dir / path.name)
+        second = other_dir / self.manifest.name
+        changed = json.loads(second.read_text())
+        changed.pop("decisionSink")
+        changed["outputs"].pop("decision.csv")
+        changed["integrity"].pop("decisionSinkRows")
+        second.write_text(json.dumps(changed))
+        result = compare_bundles(self.manifest, second, allow_sink_toggle=True)
+        self.assertEqual(len(result["identical_non_timing_outputs"]), 6)
+        with self.assertRaisesRegex(ContractError, "non-timing output differs"):
+            compare_bundles(self.manifest, second)
 
     def test_hash_mismatch_is_rejected(self) -> None:
         path = Path(str(self.manifest)[:-len(".manifest.json")] + OUTPUTS["map.csv"])

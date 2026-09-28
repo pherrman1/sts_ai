@@ -270,9 +270,11 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                         long long seedOffset, const std::string &teacherPath);
+int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();
 int vwinRefreshRewardTypeSelfTest();
+int vwinRefreshDecisionSinkSelfTest();
 int vwinRefreshFatalRunoutCountSelfTest(std::uint64_t seed, int sims);
 int vwinVPathPolicyGuardSelfTest();
 int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);

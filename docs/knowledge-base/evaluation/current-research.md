@@ -2130,7 +2130,11 @@ packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.m
 
 The opt-in `vwinrefreshgen` and `bossheadroom347gen` producers now encode the
 accepted exact-10k/V4 data contract, deferred semantic siblings, victory-boundary
-`WIN_RAW` capture, chosen-replay parity, and paired #347 boss-budget arms. The
+`WIN_RAW` capture, chosen-replay parity, and paired #347 boss-budget arms.
+Revision 5 adds opt-in `DECISION` rows with public screen contents and semantic
+candidates on source/branch trajectories, including sequential shop states and
+compound selectors, for later #379 work. These rows are not used to train #334.
+The
 bundle validator and Stage-1 paired-bootstrap analyzer are implemented and
 have local contract/self-tests. This is implementation status only: the A1
 128-seed pilot, #347 Stage-1 replays, A2 collection, model training, lookup-table
