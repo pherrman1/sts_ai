@@ -521,6 +521,22 @@ one-seed invocations. These are attribution diagnostics, not production timings.
 See the [two historical-seed profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 for scope details, workload reconciliation and measured overhead limitations.
 
+The native shop step used by leaf continuations (`nativeFloorShopStep`) executes
+only the first item of the `nativeShopPlan` subset search and re-plans after
+each purchase, so a visit with k purchases runs k+1 plans. Plans are memoized
+per thread on the planner's exact inputs (feature row, filtered offer, remove
+cost, gold, model); `STS_NATIVE_SHOP_PLAN_CACHE=0` disables the memo and
+`ooc_shop_plan_cache` checks cached and uncached visits match. With live OOC
+MCTS on, each run emits `[native-shop-plan]` JSON to stderr: plan calls, cache
+hits, shop steps and exits, and re-plan calls (steps after a purchase in the
+same visit) with their cache hits. Counters are per thread and reset at each
+report; the re-plan attribution is approximate if a continuation stops
+mid-shop. On one A0 Act-3 run (seed 991019, 10,000 OOC MCTS and exact-10k
+Silver simulations, 2026-09-28) the memo hit only 109 of 27,916 plans (0.4%,
+no wall-time change, identical decisions), while 20,686 plans (74%) were
+re-plans after a purchase. **Inference:** sampled continuations rarely repeat
+an exact feature row, so only removing re-plans would cut shop-planner cost.
+
 With the V4 prior and uniform leaf policy, `legalActions()` assigns a sole
 candidate its exact normalized prior of 1.0 without running V4. For multiple
 candidates, the policy head prepares its bias plus state dimensions 0–127 once

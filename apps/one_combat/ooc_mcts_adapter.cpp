@@ -1898,6 +1898,14 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
             {"fastSupportFailures",brewMetrics.fastSupportFailures},
             {"fallbackSupportFailures",brewMetrics.fallbackSupportFailures},
             {"standardBrewFallbackPreparations",brewMetrics.fallbackPreparations}}.dump() << '\n';
+    if (liveEnabled) {
+        const auto shop = takeNativeShopPlanStats();
+        std::cerr << "[native-shop-plan] " << nlohmann::json{{"seed",seed},
+            {"planCalls",shop.planCalls},{"cacheHits",shop.cacheHits},
+            {"cacheClears",shop.cacheClears},{"shopSteps",shop.shopSteps},
+            {"shopExits",shop.shopExits},{"replanCalls",shop.replanCalls},
+            {"replanCacheHits",shop.replanCacheHits}}.dump() << '\n';
+    }
     if (liveTrace.empty()) return;
     std::lock_guard<std::mutex> lock(liveTraceMutex);
     const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,earlyStopVisitGap20,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples,hybridPreparations,hybridFastPreparations,hybridFallbackPreparations,hybridFastSamples,hybridFallbackSamples,hybridFallbackRate,hybridUniqueBrewStates,hybridFastSupportFailures,hybridFallbackSupportFailures\n";

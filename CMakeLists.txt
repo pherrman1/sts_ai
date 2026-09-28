@@ -240,6 +240,15 @@ add_test(NAME one_combat_tree_parity COMMAND $<TARGET_FILE:one_combat_tree_test>
     ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt ${CMAKE_SOURCE_DIR}/models/v_rich_trees.txt
     ${CMAKE_SOURCE_DIR}/models/v_runwin_e2c_v2.txt)
 
+# Seed-free fixture shops: the native shop-plan cache must be exact.
+add_executable(ooc_shop_plan_cache_test apps/ooc_shop_plan_cache_test.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/compact_tree.cpp
+    apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ooc_shop_plan_cache_test PRIVATE include json/include apps)
+add_test(NAME ooc_shop_plan_cache COMMAND $<TARGET_FILE:ooc_shop_plan_cache_test>
+    ${CMAKE_SOURCE_DIR}/models/v_rich_trees.txt)
+set_tests_properties(ooc_shop_plan_cache PROPERTIES LABELS "core")
+
 add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
 target_include_directories(parity_test PUBLIC json/include)
