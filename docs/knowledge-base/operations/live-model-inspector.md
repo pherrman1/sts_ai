@@ -273,8 +273,11 @@ changes remain subject to the same readiness and observation checks.
 
 `--refresh-runtime` builds only `one_combat_advisor`, copies it and
 the tracked CTM/OOC model artifacts into a new release, validates their hashes,
-and atomically changes `current`. A running game is never silently restarted;
-when it is using another release, the helper prints both identities and
+and atomically changes `current`. The runtime helper uses the Release build
+preset (`linux-gcc-release-ccache`, with the build wrapper's matching fallback).
+The helper packages the executable from the preset actually selected by the
+wrapper. A running game is never silently restarted; when it is
+using another release, the helper prints both identities and
 requires the explicit `--restart-game` option. `--deploy-inspector` invokes the
 existing Java build and atomically installs its JAR. `--allow-missing-advisor`
 is only for MCP-only control. Background launch output is written to
