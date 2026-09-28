@@ -1,0 +1,14 @@
+{
+ "purpose": "Descriptive 3x3 sims grid: real-combat Silver sims x live OOC MCTS sims, whole-run Act-3 win rate",
+ "hypothesis": "Act-3 win rate increases with both Silver and OOC MCTS simulations; 32 seeds detects only large effects",
+ "decision_rule": "Descriptive only; no default change. Non-10k Silver cells carry a CTM teacher/actor mismatch (CTM trained on 10k Silver outcomes).",
+ "source_commit": "e814b65bbc23873e347e1c9d7abb44343c5a07fc",
+ "binary": "build/grid-release/one_combat",
+ "binary_sha256": "85d982e23ba0caa119d2fad5c8b06adc1cb42ea5a5be9c65aca3a3c761e10a5b",
+ "silver_sims": [1000, 10000, 100000],
+ "ooc_mcts_sims": [1000, 10000, 100000],
+ "seeds": "126700..126731 (32), paired across all cells, no replacements",
+ "ascension": 0, "act_horizon": 3, "regime": "project-fair native Silver, flat budget, exact root budgets, reuse cap 32768 allocated",
+ "ooc_stack": "STS_OOC_MCTS=1 default DeepSets+Brew fallback+active Lizard; V4 tok-net gate stack; settings as ledger-06 §366 Gate 2 except no forced relic and no model overrides",
+ "execution": "4-core cloud container, 4 parallel single-seed bestbench processes, OMP_NUM_THREADS=4"
+}
