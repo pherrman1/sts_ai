@@ -1,0 +1,1089 @@
+{
+  "checks": {
+    "activeLizardRequiredConditionPassed": false,
+    "allEightControlTreatmentOutcomesIdentical": true,
+    "allResultSidecarTraceAndLogsExist": true,
+    "allReturnCodesZero": true,
+    "runCount": 16,
+    "supportAndAccountingCountersZero": true,
+    "treatmentActiveFlagEnabledInAllPairs": true,
+    "treatmentLizardPreparationsZeroInAllPairs": true,
+    "treatmentLizardSamplesZeroInAllPairs": true
+  },
+  "decision": "FAIL_GATE2_ACTIVE_LIZARD_PATH_NOT_EXERCISED",
+  "executableSourceGitSha": "bcdb92e66043483681b2cd3259c97edbefed23cb",
+  "frozenManifestSha256": "bb0e964bb2b19af1f18559c51b3d1b094c9f5bb538e47d2bdc0c089c9d8900b3",
+  "frozenReviewedHead": "b2ece8c6fa1bf9b51c0891907634b654743cb29f",
+  "interpretation": "All 16 processes completed, but the STS_FORCE_RELIC run-start harness inserted LIZARD_TAIL with data=0. Native semantics mark a newly acquired active Tail with data=1, so both arms ran without active Tail and treatment telemetry remained zero. These runs cannot establish the correction integration condition or compare active-Lizard behavior.",
+  "oneCombatSha256": "63975e203b240f987a1b87fac8778fb25f434cfa5e23834bfda1cd5a7e6fc7ee",
+  "pairs": [
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991000_control.csv": {
+            "bytes": 108,
+            "sha256": "0194001e239d5bab0476d0ea6ae1083a763ffc67f288b373f44c4defd7aa78ca"
+          },
+          "seed991000_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "4ff9fea67603958dd1b618222aff80524d1798ae56ec8c9a205a5f114c49898b"
+          },
+          "seed991000_control.mcts-trace.csv": {
+            "bytes": 942,
+            "sha256": "02f43262b10df02b85b620c29006ea269771e2a62ea9a33407d7c83035a78d35"
+          },
+          "seed991000_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 31053,
+            "sha256": "6346cfdc8c819cf328007460de9bdeec95711f968cf23ad9cfa02e4e5e518f8c"
+          },
+          "seed991000_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "209eedfbd11fe2ea7a17f5a32c8fec365c43cdd9055b6ab3569c2b067947a4f4"
+          },
+          "seed991000_control.process.log": {
+            "bytes": 2574,
+            "sha256": "970741c79ca38e7842b1f82a578a746f96a1870de74f8c0dcd10572599bc8f31"
+          }
+        },
+        "deathCombat": 27,
+        "deathEncounter": 54,
+        "fightsLost": 1,
+        "floor": 50,
+        "hpEnd": 0,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 21092,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 76,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 154,
+        "realCombats": 27,
+        "returnCode": 0,
+        "runSeconds": 89.9622,
+        "seed": 991000,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991000,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 121255,
+        "unsupportedCombats": 0,
+        "won": 0
+      },
+      "seed": 991000,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991000_treatment.csv": {
+            "bytes": 108,
+            "sha256": "ed657b051ed42c65ae5a099095bbb6c3aca770825a871e91aeeb0f650084fa24"
+          },
+          "seed991000_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "43e95f25da097bd8d9f3d476c70abef468c10dde6c63f42dae3c08ccf365591b"
+          },
+          "seed991000_treatment.mcts-trace.csv": {
+            "bytes": 943,
+            "sha256": "8028ca50d299edfd4473cde68edf67e13edf1b1e306b85012bdb7a75018b7862"
+          },
+          "seed991000_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 31053,
+            "sha256": "6346cfdc8c819cf328007460de9bdeec95711f968cf23ad9cfa02e4e5e518f8c"
+          },
+          "seed991000_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "209eedfbd11fe2ea7a17f5a32c8fec365c43cdd9055b6ab3569c2b067947a4f4"
+          },
+          "seed991000_treatment.process.log": {
+            "bytes": 2572,
+            "sha256": "9e32c78b869e1de45980b057e802046a128dc496c8db888cfb1c02de0de0bd85"
+          }
+        },
+        "deathCombat": 27,
+        "deathEncounter": 54,
+        "fightsLost": 1,
+        "floor": 50,
+        "hpEnd": 0,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 21092,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 76,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 154,
+        "realCombats": 27,
+        "returnCode": 0,
+        "runSeconds": 89.5622,
+        "seed": 991000,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991000,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 121255,
+        "unsupportedCombats": 0,
+        "won": 0
+      }
+    },
+    {
+      "control": {
+        "act": 2,
+        "arm": "control",
+        "artifacts": {
+          "seed991001_control.csv": {
+            "bytes": 108,
+            "sha256": "90cb9de20bdf025d951100ec1e5cddc2ecc7cfaea3cc297a00fe47d467925018"
+          },
+          "seed991001_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "9df6be4119bd6126d80a688f465191d1e9c91fe8f2455ecefbaf7b31f54995d6"
+          },
+          "seed991001_control.mcts-trace.csv": {
+            "bytes": 926,
+            "sha256": "16f4dc86c2145da0398b3e9404d424ecaa4d7a41e8e4a6b25d77084c4b82461a"
+          },
+          "seed991001_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 12905,
+            "sha256": "2070f28bad1d475d238cd177f888c2190b58be165703cc7fd2c7ca9c94c7000b"
+          },
+          "seed991001_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "8dbc72002c956eb4b51d38355d1eddd8f3bad3c431877c6c79107b9bb1ac7f65"
+          },
+          "seed991001_control.process.log": {
+            "bytes": 2574,
+            "sha256": "a97ce4c88839d7c47355ca96a991d04048335430d5b36395b2362ca922c1bfc1"
+          }
+        },
+        "deathCombat": 12,
+        "deathEncounter": 35,
+        "fightsLost": 1,
+        "floor": 25,
+        "hpEnd": 0,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 7439,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 85,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 66,
+        "realCombats": 12,
+        "returnCode": 0,
+        "runSeconds": 30.6905,
+        "seed": 991001,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991001,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 51525,
+        "unsupportedCombats": 0,
+        "won": 0
+      },
+      "seed": 991001,
+      "treatment": {
+        "act": 2,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991001_treatment.csv": {
+            "bytes": 108,
+            "sha256": "b5b23c93f78e9cb49beb90a8789c48b3997a49f469688cf72d8d1b7ffab10c09"
+          },
+          "seed991001_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "a8bd9c0a5a2ea583c60918c3b573789a541706bdc80a33fb91ab6840b2399692"
+          },
+          "seed991001_treatment.mcts-trace.csv": {
+            "bytes": 926,
+            "sha256": "34a3e5f8a1e4a75c59577ab469a0df7780e5de769f0977f3e4a73bc0d7c53699"
+          },
+          "seed991001_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 12905,
+            "sha256": "2070f28bad1d475d238cd177f888c2190b58be165703cc7fd2c7ca9c94c7000b"
+          },
+          "seed991001_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "8dbc72002c956eb4b51d38355d1eddd8f3bad3c431877c6c79107b9bb1ac7f65"
+          },
+          "seed991001_treatment.process.log": {
+            "bytes": 2572,
+            "sha256": "fcd5ace4493a29bcfd9de90ea5158c337484d21d63613eae0d4f5f24f02d3767"
+          }
+        },
+        "deathCombat": 12,
+        "deathEncounter": 35,
+        "fightsLost": 1,
+        "floor": 25,
+        "hpEnd": 0,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 7439,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 85,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 66,
+        "realCombats": 12,
+        "returnCode": 0,
+        "runSeconds": 30.6828,
+        "seed": 991001,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991001,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 51525,
+        "unsupportedCombats": 0,
+        "won": 0
+      }
+    },
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991002_control.csv": {
+            "bytes": 110,
+            "sha256": "019b92287e97a845fcb51f1ba8a8e7191943f477972d4d58ff219e35a02c1be7"
+          },
+          "seed991002_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "c3760d04beda2da012a543e962cf4b691a976abca791c9836a7a6851f76a079d"
+          },
+          "seed991002_control.mcts-trace.csv": {
+            "bytes": 963,
+            "sha256": "cfb61b7691e40694bb883a0fbe11f06b8b38eed9da9fd7522e1613a68e7b6d93"
+          },
+          "seed991002_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 32704,
+            "sha256": "c0f124534f083becef7b731687910e7b6971f7fa1e8246780408b15eef0ebcb3"
+          },
+          "seed991002_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "268ad6b958ff4e4c5b48d582c0ccc6a6c7b19e82a083d4ff2031b26533239460"
+          },
+          "seed991002_control.process.log": {
+            "bytes": 2578,
+            "sha256": "6a860f087f68e56e273b25ad36f0a8da1a1cea6377fe70921f54284f42184906"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 65,
+        "hybridFallbackPreparations": 712,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 17926,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 132,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 161,
+        "realCombats": 26,
+        "returnCode": 0,
+        "runSeconds": 135.632,
+        "seed": 991002,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991002,
+          "standardBrewFallbackPreparations": 712
+        },
+        "transitionSamples": 128503,
+        "unsupportedCombats": 0,
+        "won": 1
+      },
+      "seed": 991002,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991002_treatment.csv": {
+            "bytes": 110,
+            "sha256": "47f54823e0e188a88367bd3481ee9e9308428008428e0671329d5ef058169b65"
+          },
+          "seed991002_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "88e0b4c1311b64ec9a9d628c9fd5aa6ee6e4c55b8d2075e1336b834e084b388b"
+          },
+          "seed991002_treatment.mcts-trace.csv": {
+            "bytes": 963,
+            "sha256": "25ce2e5d709a4eada99563596196b0dcdac59b432f8cba065b6b3b03de17226e"
+          },
+          "seed991002_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 32704,
+            "sha256": "c0f124534f083becef7b731687910e7b6971f7fa1e8246780408b15eef0ebcb3"
+          },
+          "seed991002_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "268ad6b958ff4e4c5b48d582c0ccc6a6c7b19e82a083d4ff2031b26533239460"
+          },
+          "seed991002_treatment.process.log": {
+            "bytes": 2576,
+            "sha256": "5e7b9b4c65c861c703595aa7b0d9c697d047f0da854d14cb426ab8202b768772"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 65,
+        "hybridFallbackPreparations": 712,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 17926,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 132,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 161,
+        "realCombats": 26,
+        "returnCode": 0,
+        "runSeconds": 134.996,
+        "seed": 991002,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991002,
+          "standardBrewFallbackPreparations": 712
+        },
+        "transitionSamples": 128503,
+        "unsupportedCombats": 0,
+        "won": 1
+      }
+    },
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991003_control.csv": {
+            "bytes": 109,
+            "sha256": "1b90ae5b0df3ffc8219252b293156b7fbc9ef981c848a34e56194f002ba06462"
+          },
+          "seed991003_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "04546f76de3c0968315fdc82de93f0bdc8776c98809237e067cbdabb03c1c121"
+          },
+          "seed991003_control.mcts-trace.csv": {
+            "bytes": 943,
+            "sha256": "d85d247aac8bddfa9b868c481dadd17d60ccc356077c3a7c6457ae03a2726b1f"
+          },
+          "seed991003_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 29469,
+            "sha256": "1702386be86b035c527753fdfb0cba0c2de36454cd3a10ffb5a20688c60a4698"
+          },
+          "seed991003_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "36a6a75960824e13737c6f9aeca8fcecdd8de7aa669e09a77ebe5950d69be25e"
+          },
+          "seed991003_control.process.log": {
+            "bytes": 2576,
+            "sha256": "de39db8e084792f1b319f54270a1e6157d64d87b9de0dd5e9c84351264ffebfb"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 43,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 19880,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 60,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 146,
+        "realCombats": 28,
+        "returnCode": 0,
+        "runSeconds": 119.835,
+        "seed": 991003,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991003,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 118003,
+        "unsupportedCombats": 0,
+        "won": 1
+      },
+      "seed": 991003,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991003_treatment.csv": {
+            "bytes": 109,
+            "sha256": "ed8543651dd66dd085d3f462347dd11fb02b1517c6a3f7a36d85deec0d57bb46"
+          },
+          "seed991003_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "1a05ef943bcf4696a9c610c434f907d23c09b37dd5942cfd074588a91168c973"
+          },
+          "seed991003_treatment.mcts-trace.csv": {
+            "bytes": 943,
+            "sha256": "1b3f86d059801958b9323b33a41dd1f1afde087a91be0b2173a1a58ad393cf09"
+          },
+          "seed991003_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 29469,
+            "sha256": "1702386be86b035c527753fdfb0cba0c2de36454cd3a10ffb5a20688c60a4698"
+          },
+          "seed991003_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "36a6a75960824e13737c6f9aeca8fcecdd8de7aa669e09a77ebe5950d69be25e"
+          },
+          "seed991003_treatment.process.log": {
+            "bytes": 2574,
+            "sha256": "d0eed0bb2a69b21f38ddeb6eb285ea4925fe17112859c0a5ab20b835628b4562"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 43,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 19880,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 60,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 146,
+        "realCombats": 28,
+        "returnCode": 0,
+        "runSeconds": 120.532,
+        "seed": 991003,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991003,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 118003,
+        "unsupportedCombats": 0,
+        "won": 1
+      }
+    },
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991004_control.csv": {
+            "bytes": 108,
+            "sha256": "ed5a632164255739e1b3e7be52ef0141bd4ace46282cd26b2e1be770f077c0b1"
+          },
+          "seed991004_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "fc49a1cf3ffc9a029997b9c29339a44755714a367b721473054dcf9acc2a93d6"
+          },
+          "seed991004_control.mcts-trace.csv": {
+            "bytes": 940,
+            "sha256": "bcb88a033abdbea953ded0599174d223bb18401d6e5355501751811540812249"
+          },
+          "seed991004_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 25646,
+            "sha256": "f84fc1c147cfba2de02869f5010534757c54c23fe316d70b2221ff9c065ba787"
+          },
+          "seed991004_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "fde2b9d613c445a841fb21deb7fc37cd86ed803b6bf3052abae7b0d9823611f6"
+          },
+          "seed991004_control.process.log": {
+            "bytes": 2574,
+            "sha256": "34e0aa0ccf78af6d3f5f8c21bcad84449e1431c91872e005ee2d8c8791c4d8fc"
+          }
+        },
+        "deathCombat": 24,
+        "deathEncounter": 50,
+        "fightsLost": 1,
+        "floor": 42,
+        "hpEnd": 0,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 16641,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 80,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 126,
+        "realCombats": 24,
+        "returnCode": 0,
+        "runSeconds": 68.8576,
+        "seed": 991004,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991004,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 99124,
+        "unsupportedCombats": 0,
+        "won": 0
+      },
+      "seed": 991004,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991004_treatment.csv": {
+            "bytes": 108,
+            "sha256": "1dacbbb654713b7262d965e8fa98333a4c4b39c34cc7f2c40dda32a695bf38cb"
+          },
+          "seed991004_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "c8dddc90878ce9209a5f66a1607ba8f730782de1555e31e3df95127f4c567c62"
+          },
+          "seed991004_treatment.mcts-trace.csv": {
+            "bytes": 940,
+            "sha256": "2144eb1e56ff692e9098e681634b97244f528c924997935259ba185a167f040e"
+          },
+          "seed991004_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 25646,
+            "sha256": "f84fc1c147cfba2de02869f5010534757c54c23fe316d70b2221ff9c065ba787"
+          },
+          "seed991004_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "fde2b9d613c445a841fb21deb7fc37cd86ed803b6bf3052abae7b0d9823611f6"
+          },
+          "seed991004_treatment.process.log": {
+            "bytes": 2572,
+            "sha256": "fe393134f91ab6e221226abfb4d934cf960c2e9155d301a85f67ab56c1f79c39"
+          }
+        },
+        "deathCombat": 24,
+        "deathEncounter": 50,
+        "fightsLost": 1,
+        "floor": 42,
+        "hpEnd": 0,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 16641,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 80,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 126,
+        "realCombats": 24,
+        "returnCode": 0,
+        "runSeconds": 68.8543,
+        "seed": 991004,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991004,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 99124,
+        "unsupportedCombats": 0,
+        "won": 0
+      }
+    },
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991005_control.csv": {
+            "bytes": 109,
+            "sha256": "43113a56fc8f98128bb9f381c408cb2cb578dbaf7e26aeeee74236d98e2b4f07"
+          },
+          "seed991005_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "ab916c93ce0617049a96423c7636963624886fec859219cfb220df21889fc111"
+          },
+          "seed991005_control.mcts-trace.csv": {
+            "bytes": 943,
+            "sha256": "71da090d19fe42afe19aad61e7b31e951c896e41cc3e09f72eb5c03dc028cb1c"
+          },
+          "seed991005_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 29382,
+            "sha256": "ea770edfd61c3ccf1b9ed6a1d9e86b9f6f72cf01448e1d845c3855cd8c23e5e6"
+          },
+          "seed991005_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "9372f6ca5f3fe998d4d4215b7c6a0170dcfa58065c5c5ef6756807bae59d81c5"
+          },
+          "seed991005_control.process.log": {
+            "bytes": 2574,
+            "sha256": "84e87b1a57d06845a8abea539d245c31d318a93e4a784e3555689863d3ed39e4"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 41,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 17731,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 87,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 147,
+        "realCombats": 23,
+        "returnCode": 0,
+        "runSeconds": 97.7338,
+        "seed": 991005,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991005,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 122748,
+        "unsupportedCombats": 0,
+        "won": 1
+      },
+      "seed": 991005,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991005_treatment.csv": {
+            "bytes": 109,
+            "sha256": "9dd1582f551653b99584ec5f0dc39db06e315d4717ea2dcf54b5612e02248a45"
+          },
+          "seed991005_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "58bea0067b6fc69cc25cda0639f34130f7bd3cac470c5e1d93b2cbc9dc0d32de"
+          },
+          "seed991005_treatment.mcts-trace.csv": {
+            "bytes": 942,
+            "sha256": "47404e01f4bf0b97d35b70a67c26f9b40c72cb70a33c6f4c98551b8d8a0ecf3a"
+          },
+          "seed991005_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 29382,
+            "sha256": "ea770edfd61c3ccf1b9ed6a1d9e86b9f6f72cf01448e1d845c3855cd8c23e5e6"
+          },
+          "seed991005_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "9372f6ca5f3fe998d4d4215b7c6a0170dcfa58065c5c5ef6756807bae59d81c5"
+          },
+          "seed991005_treatment.process.log": {
+            "bytes": 2572,
+            "sha256": "1dedc036312db578eb2626e0247c01806608f39d31ae800b185f3c121738fafa"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 41,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 17731,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 87,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 147,
+        "realCombats": 23,
+        "returnCode": 0,
+        "runSeconds": 86.5629,
+        "seed": 991005,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991005,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 122748,
+        "unsupportedCombats": 0,
+        "won": 1
+      }
+    },
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991006_control.csv": {
+            "bytes": 109,
+            "sha256": "630278b8f763a22720e7d022387dddeea518fbae99b79d55c430779d443ff2b5"
+          },
+          "seed991006_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "0c140a44c2a489061a8b3755ecb73f37d9e76119206ce1ff125fd2754e2556d1"
+          },
+          "seed991006_control.mcts-trace.csv": {
+            "bytes": 944,
+            "sha256": "36972ecbeab4e0aad8974c3cd36db2e363dd93766e824c88fa18bfe8bcfffa41"
+          },
+          "seed991006_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 32416,
+            "sha256": "33054de697f8a91adabcb3446b61011922f2a9f718eb69b8a6ef9258201cf725"
+          },
+          "seed991006_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "46503d63e8be9743c77d4069f4b47c8792aedda5ee912a9f5091878b14fd5fb7"
+          },
+          "seed991006_control.process.log": {
+            "bytes": 2576,
+            "sha256": "5281ddb86e73311c31e1fe501d1c9e2be0cba04c63f670b1cc314540335317f8"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 58,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 23254,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 92,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 160,
+        "realCombats": 28,
+        "returnCode": 0,
+        "runSeconds": 145.593,
+        "seed": 991006,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991006,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 137258,
+        "unsupportedCombats": 0,
+        "won": 1
+      },
+      "seed": 991006,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991006_treatment.csv": {
+            "bytes": 109,
+            "sha256": "f8e657fe9ba91b57643f426047efcc6754c1c2f5a137790e032c14b1c62ba804"
+          },
+          "seed991006_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "40170e12b9b7557e2b86aeb887fa2a8a7f081287a3046a2969ec917ad50fb96d"
+          },
+          "seed991006_treatment.mcts-trace.csv": {
+            "bytes": 944,
+            "sha256": "b86a41cadf7e3a5429a53c52eeb01ded55a82848c014b270075bae3d4c883630"
+          },
+          "seed991006_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 32416,
+            "sha256": "33054de697f8a91adabcb3446b61011922f2a9f718eb69b8a6ef9258201cf725"
+          },
+          "seed991006_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "46503d63e8be9743c77d4069f4b47c8792aedda5ee912a9f5091878b14fd5fb7"
+          },
+          "seed991006_treatment.process.log": {
+            "bytes": 2574,
+            "sha256": "9f6cf5cae8b70f9280aa9064c2c12a90a1b4abdfc3734101eec5e87d4a21b5b4"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 58,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 23254,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 92,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 160,
+        "realCombats": 28,
+        "returnCode": 0,
+        "runSeconds": 144.349,
+        "seed": 991006,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991006,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 137258,
+        "unsupportedCombats": 0,
+        "won": 1
+      }
+    },
+    {
+      "control": {
+        "act": 3,
+        "arm": "control",
+        "artifacts": {
+          "seed991007_control.csv": {
+            "bytes": 110,
+            "sha256": "d85111cd4bafb8166621b2b3a30e9bae8d8a83dc82a553901f11111dc131d8b1"
+          },
+          "seed991007_control.csv.meta.json": {
+            "bytes": 1267,
+            "sha256": "4410d5b11bd9252ce44ebc4257be33f386566783989de5ed01c8e558c94116e3"
+          },
+          "seed991007_control.mcts-trace.csv": {
+            "bytes": 943,
+            "sha256": "4ef063e6c36383af4594c163d18df0a20f25546d624bf9776a9d86ebb439b7f8"
+          },
+          "seed991007_control.mcts-trace.csv.actions.jsonl": {
+            "bytes": 32083,
+            "sha256": "f4ba38e1712cefaba6cccde68a2d04417581bc33503f4d5748f75534966a49c3"
+          },
+          "seed991007_control.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "5a706a1b7d48c4fe6ce20b85196124d0bfa8e1caab4fab52c0d158afed99fc82"
+          },
+          "seed991007_control.process.log": {
+            "bytes": 2574,
+            "sha256": "24b08965c805e1f4159256583b6e89634b104ab9b44ff9440a41d37e52373911"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 13,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 19216,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 111,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 158,
+        "realCombats": 28,
+        "returnCode": 0,
+        "runSeconds": 81.0163,
+        "seed": 991007,
+        "telemetry": {
+          "activeLizardEnabled": false,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991007,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 126752,
+        "unsupportedCombats": 0,
+        "won": 1
+      },
+      "seed": 991007,
+      "treatment": {
+        "act": 3,
+        "arm": "treatment",
+        "artifacts": {
+          "seed991007_treatment.csv": {
+            "bytes": 110,
+            "sha256": "ae9e43cda61c46771b53bd968241d6ac2f4776755e1630db11b0dff7a80794f9"
+          },
+          "seed991007_treatment.csv.meta.json": {
+            "bytes": 1269,
+            "sha256": "2eb93dd2c2dbe599adc9b01cacb6c8410c64b59011ce2351b1fcb294526893c2"
+          },
+          "seed991007_treatment.mcts-trace.csv": {
+            "bytes": 943,
+            "sha256": "0196c8589a751eee90b4c178e9fa72fa497fe9ac821ab5a884066d6b31a05d4f"
+          },
+          "seed991007_treatment.mcts-trace.csv.actions.jsonl": {
+            "bytes": 32083,
+            "sha256": "f4ba38e1712cefaba6cccde68a2d04417581bc33503f4d5748f75534966a49c3"
+          },
+          "seed991007_treatment.mcts-trace.csv.support.jsonl": {
+            "bytes": 85,
+            "sha256": "5a706a1b7d48c4fe6ce20b85196124d0bfa8e1caab4fab52c0d158afed99fc82"
+          },
+          "seed991007_treatment.process.log": {
+            "bytes": 2572,
+            "sha256": "559869d938c5647ed778e76d452c259d5c3a9a324b76408080776d1bcce0630c"
+          }
+        },
+        "deathCombat": -1,
+        "deathEncounter": -1,
+        "fightsLost": 0,
+        "floor": 51,
+        "hpEnd": 13,
+        "hybridFallbackPreparations": 0,
+        "hybridFallbackSupportFailures": 0,
+        "hybridFastPreparations": 19216,
+        "hybridFastSupportFailures": 0,
+        "maxHp": 111,
+        "mctsSupportAborts": 0,
+        "oocDecisions": 158,
+        "realCombats": 28,
+        "returnCode": 0,
+        "runSeconds": 80.4195,
+        "seed": 991007,
+        "telemetry": {
+          "activeLizardEnabled": true,
+          "fallbackSupportFailures": 0,
+          "fastSupportFailures": 0,
+          "lizardBoundaryExclusions": 0,
+          "lizardConsumedLosses": 0,
+          "lizardConsumedWins": 0,
+          "lizardOrdinaryWins": 0,
+          "lizardPreparations": 0,
+          "lizardSamples": 0,
+          "lizardSupportFailures": 0,
+          "seed": 991007,
+          "standardBrewFallbackPreparations": 0
+        },
+        "transitionSamples": 126752,
+        "unsupportedCombats": 0,
+        "won": 1
+      }
+    }
+  ],
+  "postRunHarnessFixOneCombatSha256": "3e8eb01c41ec7615d99b87003ae71fe5068430f083b270ea41c9a974af269b22",
+  "reportFiles": {
+    "executionStatus": "execution_status.jsonl",
+    "executionSummary": "execution_summary.json",
+    "frozenManifest": "gate2_frozen_manifest_final.json",
+    "guardOnlyResults": "guard_only_results.json",
+    "rawRuns": "runs/",
+    "teacherCompatibilityPreflight": "teacher_compat_preflight/"
+  },
+  "schema": "active_lizard_deepsets_gate2_canary_results_v1",
+  "startupPreflights": {
+    "attemptsBeforeFinalCohort": 32,
+    "correctedFinalEnvironmentReuseCapOverride": "unset",
+    "correctedFinalEnvironmentTelemetry": "0",
+    "gameplaySeedsConsumed": 0,
+    "groups": {
+      "reuse_cap_override_rejected": {
+        "allReturnCodesZero": false,
+        "resultArtifactsCreated": 0,
+        "returnCodes": [
+          2
+        ],
+        "runCount": 16,
+        "sidecarsCreated": 0
+      },
+      "telemetry_override_rejected": {
+        "allReturnCodesZero": false,
+        "resultArtifactsCreated": 0,
+        "returnCodes": [
+          2
+        ],
+        "runCount": 16,
+        "sidecarsCreated": 0
+      }
+    }
+  }
+}

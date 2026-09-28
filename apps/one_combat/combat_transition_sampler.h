@@ -34,6 +34,9 @@ public:
     virtual ~PreparedCombatTransition() = default;
     virtual const CombatRuntimeSupport &support() const = 0;
     virtual CombatRuntimeSample sample(std::mt19937_64 &) const = 0;
+    // The qualified Lizard wrapper has already selected a winning class. This
+    // path skips a second survival draw; other samplers fail closed by default.
+    virtual CombatRuntimeSample sampleConditionedVictory(std::mt19937_64 &) const { return {}; }
 };
 
 // Support is a pre-combat decision. Learned draws use only the planner RNG;

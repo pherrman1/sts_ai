@@ -13229,3 +13229,200 @@ correction. No runtime support or candidate parameters changed.
 Knowledge impact: current research records that the frozen mechanical-q,
 learned-r, T2 candidate passed its fresh native Stage-C qualification. No
 runtime support changed.
+
+## §365 — Active-Lizard correction in the DeepSets/Brew CTM stack: parity pass, integration canary invalid (2026-09-27)
+
+- **Question and baseline:** Can the freshly qualified active-Lizard correction
+  compose with the gameplay-qualified DeepSets plus standard-Attention Brew
+  fallback CTM stack? Task baseline was PR #330 merge
+  `812ce0235e67aa9832142f69c6c8fc89d6875372`; the fresh current-main checkout
+  began at `be84fd934131395e87858195d74c169146a36ccf`. Existing PR #330 and
+  PR #351 qualification cohorts were reused only as accepted evidence; neither
+  cohort was repeated.
+- **Gate 1:** The integration passed frozen 320-row Stage-C deterministic
+  native parity at `1e-4` tolerance with zero support/semantic mismatches.
+  Maximum absolute errors were `5.364418e-7` ordinary survival,
+  `3.576279e-7` reserve survival, `5.364418e-7` q, `3.884913e-7` r, and
+  `5.364418e-7` for class probabilities. Conditional T2 child identity passed
+  on all 320 rows. The existing 31-row DeepSets/Brew mechanism fixture passed
+  with 13 ordinary DeepSets and 18 standard Attention fallback routes. The
+  eight-row dispatch fixture passed ordinary DeepSets, Brew fallback, active
+  Lizard, later-position Lizard, spent Tail, Lizard+Brew fail-closed, Fairy,
+  and Mark of the Bloom routes. The reviewed integration implementation was
+  `bcdb92e66043483681b2cd3259c97edbefed23cb`.
+- **Post-merge Gate 1 revalidation:** before handoff, the branch was merged
+  with fetched current `origin/main` `31571bbd406f7bc0435d3010fc14cfee6897ff33`.
+  The focused Release build of `combat_transition_runtime_probe` and
+  `one_combat` passed. The rebuilt probe SHA-256 remained
+  `1ed808cfa04b9dbdddbae256d410f664b252690613e5d656253c526ee69ec692`; the
+  merged-source `one_combat` SHA-256 is
+  `8c4f87c4339690541dd7f0585ba235d9b419ae409e7dd0e8f63e80d9817cf845`. The
+  frozen parity verifier again passed all 320 rows, zero support/semantic
+  mismatches, all 320 conditional T2 child identity checks, and all eight
+  dispatch fixtures. The 31-row Brew/DeepSets mechanism fixture again passed
+  with output byte-identical to the original recorded fixture and unchanged
+  13 ordinary / 18 fallback routing counts. Focused CTest passed 5/5. The
+  machine-readable parity output is preserved as
+  `evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/post_merge_native_parity.json`.
+  The exact parity input is included in that packet as
+  `integration_candidate.native` (SHA-256
+  `40743022491de57d864dc911b3db1bd7bb7dceb9d60f2481c55145d66864aa25`) with
+  `status=integration_candidate`, `qualified=false`, `defaultChanged=false`,
+  and `defaultForOocMcts=false`; it is a non-production test input. The
+  historical Gate 2 manifest retains its original `/tmp` path, whose artifact
+  hash matches this tracked copy. No gameplay seeds were rerun.
+- **Revalidation after current main advanced:** current main
+  `56381780ff4382c85564b02a86d45325b4421021` added the Match and Keep policy.
+  It was merged at `1acb8c7d52b8cd82de5e20da9a96407c49129033`. The focused
+  Release build completed; `combat_transition_runtime_probe` SHA-256 remained
+  `1ed808cfa04b9dbdddbae256d410f664b252690613e5d656253c526ee69ec692` and
+  `one_combat` SHA-256 is
+  `ab397c4a4079102095cdc34a167686dd4913aa83553dd5f6c6d88c92ab0cac38`.
+  Gate 1 again passed 320/320 parity rows, zero support/semantic mismatches,
+  all T2 identity checks, and all dispatch fixtures using the tracked candidate.
+  The 31-row Brew fixture matched its saved rows and metrics byte-for-byte.
+  Focused CTest passed 6/6, including `match_and_keep` and the five
+  combat-transition/OOC tests. The forced-relic data=1 helper remains intact.
+  No gameplay seeds were run in this deterministic revalidation.
+- **Gate 2 plan and provenance:** The predeclared canary ran exactly eight
+  paired seeds `991000..991007`, Ascension 0, Act-3 horizon, project-fair
+  native Silver at 10,000 real-combat simulations, and 2,048 OOC MCTS
+  simulations. `STS_FORCE_RELIC=LIZARD_TAIL` was set in both arms; only
+  `STS_OOC_MCTS_ACTIVE_LIZARD` differed. The frozen final manifest SHA-256 is
+  `bb0e964bb2b19af1f18559c51b3d1b094c9f5bb538e47d2bdc0c089c9d8900b3`;
+  source SHA is `bcdb92e66043483681b2cd3259c97edbefed23cb`, executable SHA-256
+  `63975e203b240f987a1b87fac8778fb25f434cfa5e23834bfda1cd5a7e6fc7ee`.
+- **Result and classification:** All 16 whole-run processes returned zero and
+  produced result rows, sidecars, and traces. Every run had zero
+  `unsupportedCombats`, `mctsSupportAborts`, hybrid fast/fallback support
+  failures, and Lizard support failures. However, all eight treatment telemetry
+  rows also had zero Lizard preparations and samples. The cause was the forced
+  relic helper: it inserted every relic with `data=0`, whereas
+  `GameContext::obtainRelic` initializes a new active Tail with `data=1` and
+  battle setup uses that value as the active-relic flag. Therefore both arms
+  started without active Lizard, and this canary is
+  **`INVALID_TREATMENT_NOT_EXERCISED`** despite successful process completion.
+  Control and treatment outcomes matched on all eight pairs at 5/8 wins each;
+  these are descriptive only and do not compare the correction. See
+  [the complete result and raw-output bundle](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate2_failed_canary_2026-09-27/)
+  and [the report](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/README.md).
+- **Run history and correction:** Two stale-environment startup groups each
+  contained 16 invocations that exited with code 2 before `bestbench`: first
+  the removed `STS_SILVER_TELEMETRY=1`, then the removed
+  `STS_SILVER_REUSE_CAP=32768`. Neither group created a result or sidecar or
+  consumed a gameplay seed. The final manifest used telemetry `0` and left
+  the fixed native reuse cap override unset. After discovering the inactive
+  forced Tail, `installRunForcedRelic` was changed to initialize only Lizard
+  Tail with `data=1`; ordinary forced relics remain zero-initialized. The
+  active-Lizard CTest now verifies the forced relic's data and battle-start
+  flag, along with an ordinary Anchor control. The post-correction
+  `one_combat` SHA-256 is
+  `3e8eb01c41ec7615d99b87003ae71fe5068430f083b270ea41c9a974af269b22`.
+  Focused Release build succeeded and focused CTest passed 5/5. No gameplay
+  runs were repeated or extended.
+- **Decision:** Gate 1 passes; Gate 2 does not. Gate 3 was not run, the exact
+  candidate was included only as a non-production evidence input and was not
+  packaged as a production artifact; default selection did not change.
+  `STS_OOC_MCTS` remains off by default and the active-Lizard correction
+  remains opt-in. The eight fixed pairs are spent;
+  any new active-Tail canary needs a new frozen plan. This is not a win-rate
+  qualification, and the existing PR #330/#351 quality evidence is unchanged.
+- **Packaging guard and environment reference:** review found that the
+  re-export tool's `--production` option could mark an artifact qualified and
+  default without a valid integration canary. The option was removed; the tool
+  now emits only an `integration_candidate` with qualification/default flags
+  false. The environment-variable reference also documents the opt-in
+  `STS_OOC_MCTS_ACTIVE_LIZARD` switch, its `0`/`1` values, and its required Brew
+  fallback model.
+- **Knowledge impact:** updated the maintained environment reference with the
+  forced-Tail initialization semantics and active-Lizard opt-in; current
+  research records the invalid integration result and post-merge deterministic
+  revalidation. Baselines remain unchanged. No trained model, promoted artifact,
+  or default configuration changed.
+
+## §366 — Active-Lizard DeepSets/Brew integration: fresh canary and default plumbing (2026-09-27)
+
+- **Question and baseline:** Does the corrected active-Tail initializer allow
+  the qualified Lizard correction to run in the already-qualified DeepSets plus
+  standard-Attention Brew-fallback stack, and can that exact stack become the
+  default when OOC MCTS is explicitly enabled? The task baseline was PR #330
+  merge `812ce0235e67aa9832142f69c6c8fc89d6875372`. Before Gate 2 follow-up,
+  the implementation branch included current main through
+  `56381780ff4382c85564b02a86d45325b4421021` at merge commit
+  `1acb8c7d52b8cd82de5e20da9a96407c49129033`. PR #330 and PR #351 qualification
+  evidence was reused; neither quality cohort was repeated.
+- **Gate 2 follow-up:** The original `991000..991007` canary remains invalid
+  because the forced Tail was inserted spent. A fresh, disjoint cohort ran
+  exactly eight paired seeds `991008..991015`, control then treatment, A0,
+  Act-3 horizon, 10,000 project-fair native Silver combat simulations and
+  2,048 OOC MCTS simulations per run. All 16 runs completed and reached floor
+  51; both arms won 8/8, descriptive only. Treatment reported 120,708 Lizard
+  preparations and samples, 225 consumed wins, 30 consumed losses, and zero
+  Lizard support failures. The single treatment seed with support aborts had 41
+  `active_unqualified_lizard` reasons, 39 fast-path and 2 Brew-fallback support
+  failures, and 41 boundary exclusions. The frozen adapter route and reason
+  identify these as predeclared Fairy/Mark exact-path cases, including two
+  Brew-plus-boundary intersections; raw telemetry does not distinguish Fairy
+  from Mark of the Bloom. No eligible correction failure or other treatment
+  support reason was observed. Per-run accounting, result/sidecar/trace
+  validation, HP bounds, and state/RNG/numerical log scans passed. The frozen
+  result JSON SHA-256 is
+  `1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`; the
+  manifest pins source commit `5c818c0e30aa20fb178bfde19355c01852afef84`,
+  candidate artifact `40743022491de57d864dc911b3db1bd7bb7dceb9d60f2481c55145d66864aa25`,
+  and seeds/budgets. See the
+  [follow-up evidence packet](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate2_followup_canary_2026-09-27/).
+- **Gate 1 and production package:** Re-exported the exact DeepSets tensor
+  payload (`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`)
+  as `selfplay/models/combat_transition_deepsets_lizard_t2.native`; artifact
+  SHA-256 is `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`.
+  Packaging requires the exact hashed Gate 2 PASS report and verifies its
+  frozen inputs and raw evidence files. The runtime pins the production
+  artifact bytes and promotion provenance. On that artifact, deterministic
+  parity passed 320/320 rows, all conditional T2 child identity checks, and
+  all eight dispatch fixtures with zero support/semantic mismatches; maximum
+  probability error was `5.364418e-7` at `1e-4` tolerance. The 31-row
+  DeepSets/Brew fixture matched saved output and metrics byte for byte. Focused
+  Release build and six focused CTests passed. The production-artifact parity
+  report SHA-256 is
+  `7f6abc72c32605c6e0375eb31875902f80f33beafd8c9de0bbb907a7acf18a75`.
+- **Default behavior:** With `STS_OOC_MCTS=1` and
+  `STS_OOC_MCTS_COMBAT_MODEL` unset, the adapter selects the promoted DeepSets
+  artifact, pinned standard Attention Brew fallback, and active-Lizard
+  correction. Explicit combat/fallback paths remain usable. Setting
+  `STS_OOC_MCTS_ACTIVE_LIZARD=0` disables the correction as a diagnostic
+  rollback. OOC MCTS remains off unless explicitly enabled. Active Lizard plus
+  Entropic Brew, Fairy Potion, and Mark of the Bloom retain their declared
+  boundary behavior.
+- **Gate 3 default smokes:** The two frozen cases ran on implementation commit
+  `529c214562fd7eda4842f4386c05303c4d3d3d47`, executable SHA-256
+  `ebe2dcc09b0ca76867a12332f583e7529a58991033afeb7b7a00fb065a5e10fe`, with
+  combat-model, Brew-fallback, and active-Lizard override variables omitted.
+  Both guard-only preflights passed. Seeds 991016 (no forced relic) and 991017
+  (forced `LIZARD_TAIL`) produced complete result, sidecar, trace, and log
+  outputs at floor 51. Both startup lines and combat telemetry identified the
+  promoted model, standard Attention fallback, and active-Lizard correction.
+  The forced-Tail case reported 17,610 preparations and 17,608 samples; its two
+  support aborts were the existing `unsupported:smoke_bomb` model exclusion,
+  with zero fast/fallback support-failure counters.
+- **Smoke evidence limits:** The ordinary case's complete outputs and final
+  `BEST` summary were produced, but the post-run wrapper failed while parsing
+  the malformed auxiliary `[ooc-mcts-config]` line before saving that child
+  process exit code. The same line lacks the closing quote after `dispatchRule`
+  in both logs; the separate startup and combat-telemetry records are intact.
+  Review traced the malformed payload to this implementation's config emitter;
+  a follow-up correction closes the string and strengthens the seed-free
+  startup check to parse the emitted JSON and verify its dispatch and
+  active-Lizard fields. Seed 991016 was not repeated and the frozen results
+  remain unchanged, so its child exit code remains unknown. This does not alter
+  the verified effective stack values. The
+  frozen smoke manifest SHA-256 is
+  `e3778296788e8550f450d85df8dbf897e4886f009542061d5debcb028b67cf93`; the
+  machine results SHA-256 is
+  `a1a66cae7b5e13b8f936df7b72cea62e58c1ad96500e9c8d257adffca64ad4be`. See
+  the [Gate 3 smoke packet](evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate3_default_smokes_2026-09-27/README.md).
+- **Knowledge impact:** current baselines, current research, OOC architecture,
+  environment-variable reference, and this evidence packet now record the
+  enabled-OOC default and its boundaries. PR #330 and PR #351 remain the
+  scientific quality qualification; this section records the integration and
+  default-plumbing evidence only.

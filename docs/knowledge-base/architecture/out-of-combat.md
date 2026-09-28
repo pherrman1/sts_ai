@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -264,24 +264,44 @@ environment model** or a scientifically qualified full OOC planner.
 
 `STS_OOC_MCTS=1` intercepts each nonbattle decision immediately before the
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
-loaded native V4 policy and native win models plus a compatible
-`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. Startup also
-requires the effective Silver reuse cap to be 32,768; the experimental 131,072
-override is rejected. Real combat requires ordinary exact-10k Silver, allocated
-reuse, and adaptive-off, preserving the frozen teacher cap contract. The default
-is OFF and does not load a combat artifact or run MCTS. Both arms retain the
-same normal real combat branch and the same fallback OOC policy chain.
+loaded native V4 policy and native win models plus a compatible combat
+artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
+`selfplay/models/combat_transition_deepsets_lizard_t2.native` artifact and
+automatically pairs it with the pinned standard Attention Brew fallback. An
+explicit combat-model path overrides the automatic stack; explicit artifact
+failures are fatal. Startup also requires the effective Silver reuse cap to be
+32,768; the experimental 131,072 override is rejected. Real combat requires
+ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
+frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
+does not load a combat artifact or run MCTS. Both arms retain the same normal
+real combat branch and the same fallback OOC policy chain.
 
-An experimental fast combat-transition artifact may declare the Entropic Brew
-fallback contract. When that contract is present,
-`STS_OOC_MCTS_BREW_FALLBACK_MODEL` optionally supplies a separate current-standard
-V2 artifact. The adapter routes the whole transition to that artifact when
-Entropic Brew is present in the pre-combat inventory; it does not switch models
-based on generated outcomes. The fallback's actual SHA256 must equal the pinned
-current-standard artifact `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`;
-the runtime also checks source/cohort metadata. Missing or invalid required
-artifacts are fatal. The variable is unset by default, so this experimental
-hybrid is opt-in and does not alter the default OOC path.
+The promoted DeepSets artifact declares the Entropic Brew fallback contract.
+The adapter routes the whole transition to the standard Attention artifact
+when Entropic Brew is present in the pre-combat inventory; it does not switch
+models based on generated outcomes. The fallback's actual SHA256 must equal
+the pinned current-standard artifact
+`e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`; the
+runtime also checks source/cohort metadata. `STS_OOC_MCTS_BREW_FALLBACK_MODEL`
+overrides the automatic fallback path. Missing or invalid required artifacts
+are fatal.
+
+With the automatic model stack, the qualified active-Lizard correction is
+enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips
+active Lizard from the ordinary CTM children, applies the frozen mechanical-q,
+learned-r and T2 semantics, and restores Tail active or spent on the sampled
+post-state. The production artifact
+`selfplay/models/combat_transition_deepsets_lizard_t2.native` has artifact
+SHA-256 `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`
+and unchanged DeepSets tensor-payload SHA-256
+`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`.
+Its metadata is pinned to Gate 2 PASS report SHA-256
+`1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
+Active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom remain
+explicit boundaries that use the existing fail-closed or exact-path behavior.
+Explicit model paths keep the correction off unless
+`STS_OOC_MCTS_ACTIVE_LIZARD=1` is also set and a Brew fallback is available.
+The correction changes only OOC CTM handling; it does not enable OOC MCTS.
 
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
@@ -573,8 +593,29 @@ persisted semantic target identity.
 `enumerateOocSemanticActions` returns `supported`, `complete`, `error` and
 canonically ordered actions. Consumers must check completeness before treating
 the result as the complete legal action space. MAP, BATTLE and INVALID screens
-are unsupported; disabled Match and Keep and malformed selector states cannot
-be presented as complete supported decisions.
+are unsupported; Match and Keep and malformed selector states cannot be
+presented as complete supported decisions.
+
+A combat that starts with a Smoke Bomb is outside the qualified CTM support.
+The OOC model wraps its sampler (`maskInitialSmokeBomb`) so such a combat is
+valued as if the Smoke Bomb slot were empty (no escape) and the Smoke Bomb is
+returned unused afterwards; a potion generated into that slot is dropped. This
+Phase-0 approximation (#370) replaces the former whole-search abort. It is
+pessimistic where an escape would help; against bosses only slot occupancy
+differs, because escape is blocked there.
+
+Match and Keep is enabled in the simulator (shrine selection, and therefore
+event outcomes, changed for affected seeds). Each action is one click on one of
+12 slots; slot state is `info.toSelectCards[i].deckIdx` (-1 unseen, 1 seen face
+down, 2 face up this attempt, 0 matched), `info.eventData` counts the 5
+attempts, and a matched pair is added to the deck. Its clicks are not searched:
+`matchAndKeepPolicyStep` (`run_driver.cpp`) plays the fair fixed pattern in
+`sim/search/MatchAndKeepPolicy` for real runs and for OOC MCTS continuations.
+The pattern reads a slot's card only after that slot was flipped. Each seen
+card is valued by the active primary guide as a lone card reward
+(`oocHypotheticalCardTaken`): OOC MCTS when it is enabled, otherwise the
+ordinary V4/one-ply chain; inside a search only the chain is used, so no search
+nests inside another.
 
 A compound may combine a source option with one target only when its complete
 candidate set is public before the source click and that click reveals no new
