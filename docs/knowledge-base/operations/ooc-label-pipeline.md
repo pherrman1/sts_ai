@@ -284,6 +284,10 @@ Each source trajectory and each deferred sibling branch writes:
     `CARD_REWARD` covers only card take/skip and Singing Bowl skip choices, with
     siblings limited to the same card-reward group; gold, potion, relic, key, and
     leave actions do not enter this sampling pool.
+    Treasure open/leave decisions use a separate `TREASURE` pool, leaving
+    `OTHER_SELECTOR` for selectors outside rest/shop parent decisions. Every
+    map action is `MAP`, including the singleton row-14 boss link after a rest
+    site; singleton decisions are logged but do not enter the reservoir.
 - `branches`: one row per sampled sibling, with the chosen option retained and
   at most five other options selected by a deterministic SHA-256 rank when a
   decision has more than six choices. Branches start from detached
@@ -299,6 +303,11 @@ shop purchases, reward pickups, and the card selector inside a compound action.
 It records the unchanged rich state vector, public screen contents as JSON,
 all canonical semantic candidate keys plus the chosen key, and the trajectory's
 `finalWon` as `won`. It is capture-only; #334 training still uses MAP rows.
+
+The two decision files serve different purposes: `.decisions.csv` audits
+semantic decisions and reservoir eligibility; the optional `.decision.csv`
+stores screen-level value-model inputs, including capture-only steps that are
+absent from that sampling log.
 
 The CSV prefix is
 `sourceSeed,branchId,deviationIdx,rowIdx,decisionIdx,act,floor,screen,teacherId`,

@@ -364,10 +364,11 @@ static std::string vwinMapOptionKey(std::uint32_t bits) {
 }
 
 static std::string vwinScreenDecisionType(const GameContext &gc) {
-    if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) return "MAP";
+    if (gc.screenState == ScreenState::MAP_SCREEN) return "MAP";
     if (gc.screenState == ScreenState::EVENT_SCREEN)
         return gc.curEvent == Event::NEOW ? "NEOW" : "EVENT";
     if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) return "BOSS_RELIC";
+    if (gc.screenState == ScreenState::TREASURE_ROOM) return "TREASURE";
     if (gc.curRoom == Room::REST || gc.screenState == ScreenState::REST_ROOM) return "REST";
     if (gc.curRoom == Room::SHOP || gc.screenState == ScreenState::SHOP_ROOM) return "SHOP";
     if (gc.screenState == ScreenState::CARD_SELECT) {
@@ -2018,6 +2019,57 @@ int vwinRefreshSelfTest() {
     auto require = [](bool ok, const char *message) {
         if (!ok) throw std::runtime_error(std::string("vwin refresh selftest: ") + message);
     };
+    // Exercise the production decision log and reservoir, using real semantic
+    // options: treasure must not evict an unrelated selector at K=1.
+    VwinCollector typeCapture;
+    typeCapture.sourceSeed = 0x334006;
+    typeCapture.allowSampling = true;
+    typeCapture.samplesPerType = 1;
+    PathHistory typePath;
+    auto recordType = [&](const GameContext &gc) {
+        bool supported = false, complete = false;
+        std::string error;
+        const auto options = vwinOptions(gc, supported, complete, error);
+        require(supported && complete && !options.empty(), "type fixture enumerates options");
+        return vwinBeginDecision(typeCapture, gc, typePath, options,
+                                 vwinScreenDecisionType(gc), options.front().key,
+                                 supported, complete, error);
+    };
+    GameContext treasure(CharacterClass::IRONCLAD, typeCapture.sourceSeed, 0);
+    treasure.screenState = ScreenState::TREASURE_ROOM;
+    treasure.curRoom = Room::TREASURE;
+    const auto treasureRow = recordType(treasure);
+    GameContext selector(CharacterClass::IRONCLAD, typeCapture.sourceSeed, 0);
+    selector.curRoom = Room::EVENT;
+    selector.openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
+    const auto selectorRow = recordType(selector);
+    const bool treasureTypes = typeCapture.decisions[treasureRow].type == "TREASURE"
+        && typeCapture.decisions[treasureRow].candidateKeys.size() == 2
+        && typeCapture.decisions[selectorRow].type == "OTHER_SELECTOR"
+        && typeCapture.eligibleByType["TREASURE"] == 1
+        && typeCapture.eligibleByType["OTHER_SELECTOR"] == 1
+        && typeCapture.sampled["TREASURE"].size() == 1
+        && typeCapture.sampled["OTHER_SELECTOR"].size() == 1;
+    bool finalMapTypes = true;
+    for (int act = 1; act <= 3; ++act) {
+        GameContext bossMap(CharacterClass::IRONCLAD, typeCapture.sourceSeed, 0);
+        bossMap.act = act;
+        bossMap.screenState = ScreenState::MAP_SCREEN;
+        bossMap.curRoom = Room::REST;
+        bossMap.curMapNodeY = 14;
+        const auto row = recordType(bossMap);
+        finalMapTypes = finalMapTypes && typeCapture.decisions[row].type == "MAP"
+            && typeCapture.decisions[row].candidateKeys.size() == 1;
+    }
+    require(typeCapture.eligibleByType.count("REST") == 0
+                && typeCapture.eligibleByType.count("MAP") == 0,
+            "singleton boss links do not enter a sampling pool");
+    // Report both regressions if both labels are wrong.
+    std::string typeFailures;
+    if (!treasureTypes) typeFailures += "TREASURE and OTHER_SELECTOR must have separate K=1 pools; ";
+    if (!finalMapTypes) typeFailures += "row-14 boss links must be logged as MAP in all three acts; ";
+    require(typeFailures.empty(), typeFailures.c_str());
+
     const auto effectivePolicy = effectiveOocPolicySpecification();
     require(vwinTeacherNativeOocEnabled(effectivePolicy),
             "teacher native_ooc binding reads the top-level policy field");
@@ -2114,7 +2166,8 @@ int vwinRefreshSelfTest() {
     while (std::getline(featureHeader, feature, ',')) ++featureCount;
     require(featureCount == 1017, "rich state feature schema is 1,017 columns");
     require(vwinThreadCpuNanos() > 0, "thread CPU clock is available");
-    std::cout << "vwin refresh contract: deterministic option cap and per-seed reservoir helper, "
+    std::cout << "vwin refresh contract: treasure/selector sampling pools and final MAP labels, "
+                 "deterministic option cap and per-seed reservoir helper, "
                  "detached agent/policy snapshots, "
                  "1,017-feature header, and thread CPU clock passed\n";
     return 0;
