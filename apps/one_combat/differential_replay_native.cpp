@@ -84,7 +84,11 @@ struct Replay {
         return out;
     }
 
-    J oocLegal(const std::string &policy, std::map<std::string, std::uint32_t> *values = nullptr) {
+    J oocLegal(const std::string &policy, const std::string &selectionMode,
+               std::map<std::string, std::uint32_t> *values = nullptr) {
+        const bool retainedTarget = selectionMode == "retained_compound_target";
+        if (retainedTarget && game.screenState != ScreenState::CARD_SELECT)
+            throw std::runtime_error("UNSUPPORTED_BOUNDARY: retained compound target requires card selection");
         J out = J::array();
         std::map<std::string, std::uint32_t> resolved;
         const auto add = [&](const std::string &key, std::uint32_t bits) {
@@ -102,7 +106,12 @@ struct Replay {
             const auto semantic = search::enumerateOocSemanticPrimitiveBindings(game);
             if (!semantic.supported || !semantic.complete)
                 throw std::runtime_error("UNSUPPORTED_BOUNDARY: " + semantic.error);
-            if (policy == "mcts_ctm") {
+            if (retainedTarget) {
+                // retainedCompoundDecision exposes every physical selector
+                // binding, including equivalent deck copies, for either policy.
+                for (const auto &binding : semantic.bindings)
+                    add(search::canonicalOocSemanticActionKey(binding.semantic), binding.primitiveBits);
+            } else if (policy == "mcts_ctm") {
                 // Match OocGameContextModel: distinct compound targets remain
                 // separate candidates even when they share a source primitive;
                 // equivalent copies of a deck card share one MCTS choice.
@@ -138,12 +147,13 @@ struct Replay {
         return out;
     }
 
-    J legal(const std::string &boundary, const std::string &oocPolicy) {
-        return boundary == "combat" ? combatLegal() : oocLegal(oocPolicy);
+    J legal(const std::string &boundary, const std::string &oocPolicy,
+            const std::string &selectionMode) {
+        return boundary == "combat" ? combatLegal() : oocLegal(oocPolicy, selectionMode);
     }
 
     void execute(const std::string &boundary, const std::string &identity,
-                 const std::string &oocPolicy) {
+                 const std::string &oocPolicy, const std::string &selectionMode) {
         if (boundary == "combat") {
             std::vector<silver_bridge::SemanticAction> actions;
             combatLegal(&actions);
@@ -166,7 +176,7 @@ struct Replay {
             return;
         }
         std::map<std::string, std::uint32_t> actions;
-        oocLegal(oocPolicy, &actions);
+        oocLegal(oocPolicy, selectionMode, &actions);
         const auto found = actions.find(identity);
         if (found == actions.end()) throw std::runtime_error("RECORDED_ACTION_NOT_FOUND");
         // Replay only the source click. The recorded selector is a separate
@@ -191,6 +201,14 @@ std::string oocPolicyFrom(const J &header, const J &decision) {
     if (policy.empty())
         throw std::runtime_error("TRACE_OR_SCHEMA_ERROR: missing OOC policy");
     return policy;
+}
+
+std::string oocSelectionModeFrom(const J &decision) {
+    if (!decision.contains("oocSelectionMode")) return "policy";
+    const auto &mode = decision.at("oocSelectionMode");
+    if (!mode.is_string() || (mode != "policy" && mode != "retained_compound_target"))
+        throw std::runtime_error("TRACE_OR_SCHEMA_ERROR: invalid OOC selection mode");
+    return mode.get<std::string>();
 }
 
 std::uint64_t seedFrom(const J &header, const J &decision) {
@@ -221,9 +239,13 @@ int runDifferentialReplayNative(std::istream &input, std::ostream &output) {
             }
             const auto boundary = row.at("boundary").get<std::string>();
             const auto oocPolicy = boundary == "combat" ? std::string() : oocPolicyFrom(header, row);
+            const auto selectionMode = oocSelectionModeFrom(row);
+            if (boundary == "combat" && selectionMode != "policy")
+                throw std::runtime_error("TRACE_OR_SCHEMA_ERROR: retained compound target requires OOC selection");
             native = {{"state", replay->state()}, {"rng", replay->rng()},
-                      {"legalActions", replay->legal(boundary, oocPolicy)}};
-            replay->execute(boundary, row.at("selectedAction").at("identity").get<std::string>(), oocPolicy);
+                      {"legalActions", replay->legal(boundary, oocPolicy, selectionMode)}};
+            replay->execute(boundary, row.at("selectedAction").at("identity").get<std::string>(),
+                            oocPolicy, selectionMode);
             native["after"] = replay->state();
             native["postRng"] = replay->rng();
             output << native.dump() << '\n';

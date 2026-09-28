@@ -25,7 +25,10 @@ The trace records the OOC policy in header provenance and each OOC decision;
 missing, unknown, or conflicting policy tags fail closed. MCTS retains its
 semantic target candidates, while V4 uses its current-screen primitive
 identities. Replay applies only the selected source primitive, leaving any
-following selector to its own recorded decision.
+following selector to its own recorded decision. Each OOC decision also records
+whether it uses a fresh policy score or the advisor's retained compound target.
+Retained selectors enumerate all physical card occurrences; independently
+scored MCTS selectors group equivalent copies just as the provider does.
 An action without a native-replayable identity is recorded as
 UNSUPPORTED_BOUNDARY instead of being guessed.
 
@@ -57,7 +60,7 @@ values are imported into Silver, OOC observations, policy scoring, or native
 execution.
 
 Canonical OOC comparison excludes unobserved reward-pity counters, including
-importer placeholders. Details are restricted to the active screen, and sold
+importer placeholders, and room fields the public importer does not populate. Details are restricted to the active screen, and sold
 shop slots use a common unavailable representation. This is a public-state
 projection, not equality of hidden counters or stale simulator storage.
 

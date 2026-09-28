@@ -214,6 +214,7 @@ class DifferentialTraceWriter:
             "preRng": row.get("preRng"), "postRng": row.get("postRng"),
             "runtime": row.get("runtime_provenance"),
             "oocPolicy": row.get("ooc_policy") or self.provenance.get("oocPolicy"),
+            "oocSelectionMode": row.get("ooc_selection_mode", "policy"),
             "provenance": self.provenance,
         })
 

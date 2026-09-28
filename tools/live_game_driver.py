@@ -1180,6 +1180,10 @@ class Driver:
                 row["runtime_provenance"] = snapshot.raw.get("runtime")
             evaluator = snapshot.silver_evaluator() if combat else snapshot.ooc_evaluator(self.ooc_policy)
             row["ooc_policy"] = None if combat else evaluator.get("policy")
+            if not combat:
+                plan = _mapping(evaluator.get("compoundPlan"))
+                row["ooc_selection_mode"] = (plan.get("selectionMode")
+                    if plan.get("status") == "APPLIED" else "policy")
             prefix = "silver" if combat else "ooc_v4"
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
             row.update({"silver_evaluator" if combat else "ooc_evaluator": evaluator,

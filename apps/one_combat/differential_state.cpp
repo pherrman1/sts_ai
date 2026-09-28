@@ -119,7 +119,6 @@ J canonicalOocState(const GameContext &gc, const PathHistory &path) {
     return {{"schema", "sts_differential_ooc_v1"},
             {"character", static_cast<int>(gc.cc)}, {"ascension", gc.ascension},
             {"act", gc.act}, {"floor", gc.floorNum}, {"screen", static_cast<int>(gc.screenState)},
-            {"room", static_cast<int>(gc.curRoom)}, {"lastRoom", static_cast<int>(gc.lastRoom)},
             {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
             {"keys", {gc.blueKey, gc.greenKey, gc.redKey}},
             {"potionCapacity", gc.potionCapacity}, {"potions", std::move(potions)},
