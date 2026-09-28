@@ -108,7 +108,9 @@ search; the retained graph is kept, so the next decision can still reroot
 through it. `STS_SILVER_SEARCH_SINGLETON_ROOTS=1` and exact root budgets
 restore searching such roots. Other roots search a flat
 `simulationCountBase` (x `bossSimulationMultiplier` in boss fights unless
-`STS_SILVER_EXACT_ROOT_BUDGETS=1`) or, with `STS_SILVER_ADAPTIVE`, 10,000 for
+`STS_SILVER_EXACT_ROOT_BUDGETS=1`; with the research option
+`STS_SILVER_FLAT_TOPUP=1` a retained root searches only the part of that
+budget its inherited visits do not already cover) or, with `STS_SILVER_ADAPTIVE`, 10,000 for
 fresh roots and 500 for a retained root whose top-two visit-share gap reaches
 `STS_SILVER_ADAPTIVE_TOP_GAP`. Searched simulations are added to
 `ScumSearchAgent2::simulationCountTotal`, which is default-initialized to zero

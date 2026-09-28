@@ -1,5 +1,6 @@
 #include "sim/search/NativeSilverBackend.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstdlib>
 #include <memory>
@@ -34,6 +35,7 @@ namespace sts::search {
             bool adaptive = true;
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
+            bool flatTopUp = false;          // flat: search only up to the budget in total root visits
             double topGap = kDefaultTopGap;
             double escapePenalty = 0;
             double eliteEscapePenalty = 0;
@@ -327,8 +329,15 @@ namespace sts::search {
                             simulations = kAdaptiveTotal;
                         }
                     } else {
-                        searcher->search(flatBudget);
-                        simulations = flatBudget;
+                        // Top-up counts inherited root visits toward the flat budget.
+                        simulations = g_options.flatTopUp
+                            ? std::max<std::int64_t>(0, flatBudget - inheritedVisits) : flatBudget;
+                        if (simulations == 0) {
+                            std::int64_t rootEdgeVisits = 0;
+                            for (const auto &e : searcher->rootNode().edges) rootEdgeVisits += e.visitCount;
+                            if (rootEdgeVisits == 0) simulations = 1;   // no visited edge to choose from
+                        }
+                        if (simulations > 0) searcher->search(simulations);
                     }
                 } catch (const std::exception &e) {
                     if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
@@ -440,6 +449,11 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS")) {
             g_options.searchSingletonRoots = std::atoi(raw) != 0;
         }
+        if (const char *raw = std::getenv("STS_SILVER_FLAT_TOPUP")) {
+            g_options.flatTopUp = std::atoi(raw) != 0;
+            if (g_options.flatTopUp && g_options.adaptive)
+                throw std::runtime_error("STS_SILVER_FLAT_TOPUP requires a flat budget (STS_SILVER_ADAPTIVE=0)");
+        }
         if (const char *raw = std::getenv("STS_SILVER_ESCAPE_PENALTY"); raw && *raw) {
             // "<normal>,<elite>" in Silver score units (HP-equivalent).
             char *end = nullptr;
@@ -467,6 +481,10 @@ namespace sts::search {
 
     bool nativeSilverExactRootBudgets() {
         return g_options.exactRootBudgets;
+    }
+
+    bool nativeSilverFlatTopUp() {
+        return g_options.flatTopUp;
     }
 
     bool nativeSilverSearchesSingletonRoots() {

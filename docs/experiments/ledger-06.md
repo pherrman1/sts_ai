@@ -13542,3 +13542,57 @@ runtime support changed.
   (`flat10k_*`, `fresh_roots.py`, `fresh_roots_flat10k.txt`).
 - **Knowledge impact:** combat-search tree-profile section documents the
   card-identity step fields; no baseline or default change.
+
+## §369 — Native Silver flat top-up: inherited visits count toward the budget (2026-09-28)
+
+- **Question:** with flat 1,000 and root reuse, each searched root adds 1,000
+  new simulations on top of what it inherited. If a retained root instead
+  searches only `max(0, 1000 - inherited visits)`, how much faster is a run?
+  Timing screen; not a quality qualification.
+- **Change:** research option `STS_SILVER_FLAT_TOPUP=1` (flat only; rejected
+  with adaptive; default off). The boss multiplier still applies to the
+  budget. A retained root with no visited edge still gets one simulation
+  (one case occurred). Recorded as `silverFlatTopUp` in the bestbench sidecar;
+  registered in `one_combat`'s supported-option list.
+- **Configuration:** source `bb9e3e10ce53118e90239ccfdd8604b6a5fcffbc` plus the
+  option (`topup.diff`), binary SHA-256
+  `21f91c09253413d84ec31141e954d28f18e48ba825c043b2ff507330080c45b9`;
+  `bestbench 1000`, `STS_SILVER_ADAPTIVE=0`, seeds 0..7 as two 4-seed shards
+  per arm, asc 0, fair, `OMP_NUM_THREADS=1`, clean `env -i`, via
+  `tools/seed_guard.sh`. Timed runs: the four shards ran concurrently (equal
+  load on both arms), no profile. A second profiled pass counted decisions and
+  simulations. Its results columns matched the timed pass. The control
+  matched §367's flat arm.
+- **Results:**
+
+  | | Control (reuse, +1,000) | Top-up |
+  | --- | ---: | ---: |
+  | Won / avg floor | 4/8 / 47.9 | 3/8 / 45.4 |
+  | Decisions | 3,569 | 3,170 |
+  | Simulations | 4,943,000 | 2,998,302 |
+  | Simulations per decision | 1,385 | 946 (−32%) |
+  | Search time per decision | 14.58 ms | 9.47 ms (−35%) |
+  | Total seed seconds (8 runs) | 52.0 | 30.0 (−42%) |
+  | Time per simulation | 10.52 µs | 10.01 µs |
+  | Retained roots: mean inherited / mean new simulations | 993 / 1,451 | 649 / 853 (median 680) |
+  | Retained roots needing 0 new simulations | 0 | 47 |
+
+  Per-decision numbers include boss-multiplied decisions in both arms.
+  Trajectories diverge after the first differing decision, so total run
+  time also reflects different games (top-up seed 7 died on floor 33).
+  Per-seed end HP: seeds 1 and 6 fell by 24, seed 4 rose by 3, seed 7 lost;
+  the other four seeds reached the same result.
+- **Interpretation:** top-up cuts search cost per decision by about a third,
+  roughly in proportion to the simulations removed; the time per simulation
+  hardly changes. Reused roots arrive with about 650–1,000 visits, so top-up
+  mostly adds a few hundred. **Unverified:** the quality cost. Eight seeds
+  cannot separate 3/8 from 4/8, and the lower end-HP on three seeds is
+  consistent with less search but not evidence of it. A fair quality test
+  compares equal compute (for example top-up at ~1,450 against the control at
+  1,000) or top-up at 1,000 against control at ~680 per decision, with a
+  paired seed cohort sized under the benchmark protocol.
+- **Evidence:** [silver_flat_topup_2026-09-28](evidence/silver_flat_topup_2026-09-28/)
+  (`summary.txt`, `summarize.py`, results/sidecars/logs, gzipped profiles,
+  `topup.diff`, `manifest.json`).
+- **Knowledge impact:** environment-variable reference and combat-search
+  budget paragraph document the option; no baseline or default change.

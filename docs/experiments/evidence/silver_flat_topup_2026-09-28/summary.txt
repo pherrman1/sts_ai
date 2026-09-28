@@ -1,0 +1,10 @@
+== control: won 4/8  floors [50, 51, 50, 37, 51, 42, 51, 51]  hpEnd [0, 55, 0, 0, 68, 0, 56, 26]
+  total sec 52.0  decisions 3569  sims 4943000  sec/decision 14.58 ms  sims/decision 1385  us/sim 10.52
+  combats 203  searched 3441 (retained 2561, fresh 880)  zero-sim retained 0  one-sim 0
+  retained: mean inherited 993  mean new sims 1451  median 1000
+  per-seed sec {'0': 7.92, '1': 9.47, '2': 5.16, '3': 4.82, '4': 6.43, '5': 5.81, '6': 6.11, '7': 6.3}
+== topup: won 3/8  floors [50, 51, 50, 37, 51, 40, 51, 33]  hpEnd [0, 31, 0, 0, 71, 0, 32, 0]
+  total sec 30.0  decisions 3170  sims 2998302  sec/decision 9.47 ms  sims/decision 946  us/sim 10.01
+  combats 192  searched 3035 (retained 2285, fresh 750)  zero-sim retained 47  one-sim 1
+  retained: mean inherited 649  mean new sims 853  median 680
+  per-seed sec {'0': 4.5, '1': 5.55, '2': 4.65, '3': 3.02, '4': 4.2, '5': 3.04, '6': 2.31, '7': 2.74}

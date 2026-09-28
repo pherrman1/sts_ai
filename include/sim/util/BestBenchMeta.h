@@ -67,6 +67,7 @@ struct BenchConfigSidecar {
     bool silverExactRootBudgets = false;
     bool silverExactVisitLock = false;
     bool silverRhoRacing = false;
+    bool silverFlatTopUp = false;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -164,6 +165,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
     o << ",\"silverExactVisitLock\":" << (c.silverExactVisitLock ? "true" : "false");
     o << ",\"silverRhoRacing\":" << (c.silverRhoRacing ? "true" : "false");
+    o << ",\"silverFlatTopUp\":" << (c.silverFlatTopUp ? "true" : "false");
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

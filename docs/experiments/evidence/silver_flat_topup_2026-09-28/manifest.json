@@ -1,0 +1,72 @@
+{
+  "baseline_sha": "bb9e3e10ce53118e90239ccfdd8604b6a5fcffbc",
+  "ledger": "\u00a7369",
+  "kind": "timing screen; not a quality qualification",
+  "binary_sha256": "21f91c09253413d84ec31141e954d28f18e48ba825c043b2ff507330080c45b9",
+  "configuration": {
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shards": "offsets 0 and 4, 4 seeds each, all four shards concurrent",
+    "ascension": 0,
+    "OMP_NUM_THREADS": 1,
+    "fair": true,
+    "sims": 1000,
+    "STS_SILVER_ADAPTIVE": 0,
+    "arms": {
+      "control": {},
+      "topup": {
+        "STS_SILVER_FLAT_TOPUP": 1
+      }
+    }
+  },
+  "commands": [
+    "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=bb9e3e1... STS_SILVER_ADAPTIVE=0 [STS_SILVER_FLAT_TOPUP=1] bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 4 0 {0,4} {arm}_{off}.csv",
+    "same with STS_SILVER_TREE_PROFILE={arm}_prof_{off}.jsonl -> {arm}_p_{off}.csv (profiled pass)",
+    "python3 summarize.py > summary.txt"
+  ],
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "artifacts_sha256": {
+    "control_0.csv": "ff5700587ef5f1cfef018eb7a85850304f1b04c874928297ce8d546d3ae0fbdf",
+    "control_0.csv.meta.json": "a461c1b663b8095e49770f34ea6bb90efa4c1eefea5e6c540fb6b480064397a2",
+    "control_0.log": "14972b44d86d69c093fa8878a739356b187de6ef6f2dd4387265455738a79bd9",
+    "control_4.csv": "384f1c6547b2b580d78a0843dd94cc548edfbb917df67d7fecd8e2dfb8cbf7e6",
+    "control_4.csv.meta.json": "9ee0c9f351f44fd7289acd2aa3fb63d9f2f0aa4f6b06032d189d71ac501c9c5f",
+    "control_4.log": "08b514834fe1bacc04938c2cf52473a3a480eecba8ea2379b575e394affdce57",
+    "control_p_0.csv": "2608d853eb7fa11f0b4e204e55516fdbdf854c824f6f6c951d2b93250b5d2567",
+    "control_p_0.csv.meta.json": "b8d6fc6c92622aba3a5bfab1d732cef3e23b8d90433634041c105d82457379d7",
+    "control_p_0.log": "8c7ad341e0c22c3fac96674a0ae80dafd2eda319a1b9590ef8783926f1e97805",
+    "control_p_4.csv": "4797f11749e342af3925cb9c77eee5d44db74d95aa22aa6169f0edd76ba4bc80",
+    "control_p_4.csv.meta.json": "03ca087e6437e8103b8a27dc6861c90a1c9a779062e3554779f4582c7972b13e",
+    "control_p_4.log": "2865074e085391d3f0f211bce294825c84508ab8b44ca3baf469609eedb1b137",
+    "control_prof_0.jsonl.gz": "5c98c57f576c98b5c7acd3abbfb0f14f6fd9c7462aac9e0cc8ee5066070af6b9",
+    "control_prof_4.jsonl.gz": "4c3f5369cc2acffdfd98815422cf1da5c5f29efcb4d41093f74e19aeb5a1b1dc",
+    "summarize.py": "5e098556c4b242275e055868067f93bcaecf35d95ff374ddd54ed30adb15331b",
+    "summary.txt": "831d04a9c0926cd92970dc09064d3bced77e541f68b691e8f6f674998cebd1d5",
+    "topup.diff": "fa12c974537da444cd435b308fbbb3d2349ace941cbecc62d69ab4d21152daca",
+    "topup_0.csv": "7dc7ccff2844707d0ce6b059b15df418d8f99082486de5c3362a605bea0a68f4",
+    "topup_0.csv.meta.json": "eb45f3e2917c4c86a2ea3be86cf40c1fcc653b81a42cbc3f9c18baabf17467b4",
+    "topup_0.log": "4566c36973efa4ab57ec5193cd6047a5c657844aa611db063435f2d44e1d27be",
+    "topup_4.csv": "d35f7ec80d31b20a14a8fe7282350c0c7b9f93aa2a3c8b8c6cd02ac5e3281da7",
+    "topup_4.csv.meta.json": "4338a30480f7f39a7aaa2c33d6e4b5d1c89a7504801bbef64fdd5166753ad61e",
+    "topup_4.log": "636f2fa48878a5c45bff434b620d3a86eef41c1da2ad670a48601a27642a82b8",
+    "topup_p_0.csv": "3edda5547b646a3de75c74c9d3e29165c0a0a62706236dee4693904b319c822d",
+    "topup_p_0.csv.meta.json": "6f089f99e7792d3c1d10a77fe5ddc7f6ae052d7b91626a927ca39ec35bb9e161",
+    "topup_p_0.log": "46e6355429484e718e5c095c946bb8692957fe9f2010c4f2eb6ca8e04141df79",
+    "topup_p_4.csv": "f839f5128676a0b965d1c6aa15ccf41346fd63561c0a66a6e17496f5848247f2",
+    "topup_p_4.csv.meta.json": "33fbcdbabe517cd400fa35f53ef7e1998385163eba808155aa97a985c752c06b",
+    "topup_p_4.log": "09a3309a3c671f03077bdae22eceaa93e34da2981f84ff1aea871576c802a09b",
+    "topup_prof_0.jsonl.gz": "d3390f16f2fab202114d2056beca81a0ddef453568043828eb8b7ac3a69600c5",
+    "topup_prof_4.jsonl.gz": "6aa321a2e66a2eb59fdaae9710930059d14708950cb24086147b57199f7a6ed1"
+  }
+}

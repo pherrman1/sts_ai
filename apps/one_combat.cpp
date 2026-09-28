@@ -1266,6 +1266,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.silverExactRootBudgets = search::nativeSilverExactRootBudgets();
         meta.silverExactVisitLock = false;
         meta.silverRhoRacing = false;
+        meta.silverFlatTopUp = search::nativeSilverFlatTopUp();
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2786,6 +2787,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_SEARCH", ""}, {"STS_SILVER_ADAPTIVE", ""},
         {"STS_SILVER_ADAPTIVE_TOP_GAP", ""}, {"STS_SILVER_ADAPTIVE_RETAINED_ONLY", "1"},
         {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
+        {"STS_SILVER_FLAT_TOPUP", ""},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
@@ -3265,6 +3267,7 @@ int main(int argc, char **argv) {
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
+              << (search::nativeSilverFlatTopUp() ? "; flat top-up" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)

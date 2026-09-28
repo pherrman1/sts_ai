@@ -45,6 +45,7 @@ diagnostics.
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | Accepted only as `1` (adaptive Silver is always retained-only) | `1` | `main` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier) and one-action roots are searched; used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
 | `STS_SILVER_ESCAPE_PENALTY` | `<normal>,<elite>`: Silver score penalty (HP-equivalent) for a Smoke Bomb escape in normal and elite-trigger fights, capped at half the HP left; see combat-search.md | unset (`0,0`, escape scored as a win) | `NativeSilverBackend` |
+| `STS_SILVER_FLAT_TOPUP` | `1` (flat budget only; rejected with adaptive): a retained root searches only `max(0, budget - inherited root visits)` new simulations, so inherited visits count toward the flat budget; a root with no visited edge still gets one simulation. Recorded as `silverFlatTopUp` in the bestbench sidecar. Research option, see ledger §369 | off (every searched root adds the full budget) | `NativeSilverBackend` |
 | `STS_SILVER_SEARCH_SINGLETON_ROOTS` | `1`: search roots with one legal action instead of committing that action without search | off (one-action roots unsearched) | `NativeSilverBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |

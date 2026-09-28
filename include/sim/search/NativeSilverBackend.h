@@ -33,6 +33,9 @@ namespace sts::search {
     // without search.
     bool nativeSilverSearchesSingletonRoots();
     // Node count at which the retained graph is compacted on reroot.
+    // STS_SILVER_FLAT_TOPUP: a retained root searches only up to the flat budget
+    // in total root visits (inherited visits count toward it).
+    bool nativeSilverFlatTopUp();
     std::int64_t nativeSilverReuseCap();
 
     // Decisions and simulations of the current thread's latest combat.
