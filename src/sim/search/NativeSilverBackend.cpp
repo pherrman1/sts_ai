@@ -15,6 +15,7 @@
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
+#include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
@@ -97,6 +98,45 @@ namespace sts::search {
             return result;
         }
 
+        // Diagnostic: the searcher's intended line for the rest of this turn,
+        // following the most-visited edge (bestAction's tie rule) through
+        // deterministic decision nodes until End Turn, a chance node, an
+        // unvisited edge, a terminal state or a turn change.
+        nlohmann::json turnPlan(const SilverSearcher &searcher, std::string &stop) {
+            using nlohmann::json;
+            json steps = json::array();
+            const SilverSearcher::Node *cur = &searcher.rootNode();
+            const int turn = cur->state->turn;
+            stop = "depth_bound";
+            for (int guard = 0; guard < 64; ++guard) {
+                if (cur->edges.empty()) { stop = "unexpanded"; return steps; }
+                int best = 0;
+                std::int64_t total = 0;
+                for (int i = 0; i < static_cast<int>(cur->edges.size()); ++i) {
+                    total += cur->edges[i].visitCount;
+                    if (cur->edges[i].visitCount > cur->edges[best].visitCount) best = i;
+                }
+                const auto &edge = cur->edges[best];
+                json step = {{"action", edge.action.bits}, {"action_type", static_cast<int>(edge.action.getActionType())},
+                    {"visits", edge.visitCount}, {"total", total}, {"edges", cur->edges.size()}};
+                if (edge.action.getActionType() == ActionType::END_TURN) {
+                    steps.push_back(step); stop = "end_turn"; return steps;
+                }
+                if (edge.node == nullptr || edge.visitCount == 0) {
+                    steps.push_back(step); stop = "unvisited"; return steps;
+                }
+                if (edge.node->isRandomNode) {
+                    steps.push_back(step); stop = "chance"; return steps;
+                }
+                step["hash"] = std::to_string(hashBattleState(*edge.node->state));
+                steps.push_back(step);
+                if (edge.node->state->outcome != Outcome::UNDECIDED) { stop = "terminal"; return steps; }
+                if (edge.node->state->turn != turn) { stop = "turn_change"; return steps; }
+                cur = edge.node;
+            }
+            return steps;
+        }
+
         void writeTreeProfile(const GameContext &gc, const BattleContext &bc, int decision,
                               std::int64_t combatId, const SilverSearcher &searcher, const SilverTreeProfile &profile,
                               std::int64_t inherited, std::int64_t configured, bool skipped,
@@ -114,7 +154,7 @@ namespace sts::search {
             int enemyHp = 0;
             for (int i = 0; i < bc.monsters.monsterCount; ++i)
                 if (!bc.monsters.arr[i].isDeadOrEscaped()) enemyHp += bc.monsters.arr[i].curHp;
-            const json row = {
+            json row = {
                 {"schema", 1}, {"combat_id", combatId}, {"seed", std::to_string(gc.seed)}, {"act", gc.act},
                 {"floor", bc.floorNum}, {"room", roomStrings[static_cast<int>(gc.curRoom)]},
                 {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
@@ -129,6 +169,10 @@ namespace sts::search {
                 {"nonterminal_rollout_starts", profile.nonterminalRolloutStarts},
                 {"descent_aborts", profile.descentAborts}, {"endpoints", endpoints},
                 {"action", action}, {"error", error}};
+            std::string planStop;
+            row["root_hash"] = std::to_string(hashBattleState(searcher.rootSearchState()));
+            row["turn_plan"] = turnPlan(searcher, planStop);
+            row["turn_plan_stop"] = planStop;
             std::lock_guard<std::mutex> lock(g_treeProfileMutex);
             g_treeProfile << row.dump() << '\n';
             g_treeProfile.flush();

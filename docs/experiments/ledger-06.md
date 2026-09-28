@@ -13426,3 +13426,60 @@ runtime support changed.
   enabled-OOC default and its boundaries. PR #330 and PR #351 remain the
   scientific quality qualification; this section records the integration and
   default-plumbing evidence only.
+
+## §367 — Native Silver within-turn plan stability (2026-09-28)
+
+- **Question:** Silver searches every in-turn decision afresh (reusing the
+  retained graph). Human play suggests several cards per turn are "obviously
+  played". How often does the next search keep the move the previous decision
+  planned, and how much budget goes to the second and later decisions of a
+  turn? Descriptive only; no search or policy change was tested.
+- **Instrument:** `STS_SILVER_TREE_PROFILE` rows gained `root_hash`,
+  `turn_plan` and `turn_plan_stop` (the most-visited line through
+  deterministic nodes until End Turn/chance; see
+  [combat search](../knowledge-base/architecture/combat-search.md#silver-tree-profile)).
+  Diagnostic-only, computed only with the profile enabled.
+- **Configuration:** baseline `7952f0052378eed289509a6a75037db22fb3e7cd` plus
+  the diagnostic; `bestbench` seeds 0..7, asc 0, fair, `OMP_NUM_THREADS=1`,
+  clean `env -i` environment, via `tools/seed_guard.sh`. Arms: flat 1,000
+  (`STS_SILVER_ADAPTIVE=0`) and adaptive 500/10,000 (`STS_SILVER_ADAPTIVE=1`,
+  the whole-run default). Models `v_win_trees.txt` `fc52c14c…`,
+  `v_rich_trees.txt` `3a342046…`. Binary hashes in the manifest.
+- **Parity:** flat profile-on vs profile-off results columns identical on all
+  8 seeds; both profiled arms reproduced identical results columns across the
+  two diagnostic builds. Results: flat 4/8 won (avg floor 47.9), adaptive 6/8
+  (avg floor 49.1); these are not a comparison.
+- **Results** (3,569 flat / 3,657 adaptive decisions; "agreement" = the next
+  searched decision, rerooted on the planned node in the same turn, chooses
+  the step the previous decision planned):
+
+  | | Flat 1,000 | Adaptive |
+  | --- | ---: | ---: |
+  | Simulations at 2nd+ decision of a turn | 73.7% | 58.6% |
+  | Next-step agreement (all) | 79.3% (n=1,932) | 90.2% (n=1,975) |
+  | Agreement, planned step visit share ≥0.6 | 98.7% (10 flips / 770) | 99.5% (7 / 1,291) |
+  | Agreement, planned step visit share ≥0.8 | 100% (0 / 530) | 99.9% (1 / 966) |
+  | Simulations at share ≥0.8 next decisions | 16.9% of total | 2.5% of total |
+  | Simulations at share ≥0.6 next decisions | 23.5% | 4.4% |
+  | Turn's first plan held to End Turn/chance/terminal | 72.0% | 82.4% |
+  | Retained roots stopping at 500 | — | 62.0% (1,645 / 2,655) |
+
+  Agreement by planned share decile rises from ~0.4–0.55 below 0.3 to ≥0.94
+  above 0.6. Flips (flat / adaptive): planned card → other card 253 / 132,
+  planned End Turn → further play 133 / 54, planned card → End Turn 13 / 7.
+  Of card→card flips where both plans reached End Turn, 30/136 (flat) and
+  24/76 (adaptive) ended in the same state (pure reorders); the rest changed
+  the turn. Hash mismatches/not-rerooted exclusions were <1%.
+- **Interpretation:** High-share planned steps are essentially never reversed,
+  so under a flat budget a commit-plan rule (skip search when the retained
+  planned step has ≥0.8 share) would save ~17% of simulations. Under the
+  adaptive default those decisions already stop at 500, so the same rule saves
+  only ~2.5% (≤4.4% at 0.6). The remaining later-turn budget sits on steps
+  with <0.6 share, where the next search changes its mind 20–45% of the time.
+  **Inference:** plan contraction is not worth implementing for the adaptive
+  default; it is a candidate only for flat/low-budget uses. **Unverified:**
+  whether flips improve or worsen play; that needs a paired A/B.
+- **Limits:** 8 seeds, one ascension, correlated decisions; descriptive.
+- **Evidence:** [silver_turn_plan_stability_2026-09-28](evidence/silver_turn_plan_stability_2026-09-28/README.md).
+- **Knowledge impact:** combat-search tree-profile section documents the new
+  fields; no baseline or default change.

@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-25 for native-only Silver (ADR-0022), the native default
+Last verified: 2026-09-28 for the Silver tree-profile turn plan; 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
 ## Purpose
@@ -425,6 +425,18 @@ rollout before heuristic evaluation, so terminal **evaluated endpoints** do
 not imply terminal tree leaves. `nonterminal_rollout_starts` and `rollout_calls`
 make this distinction visible; cycle rollouts are counted separately. Exact
 histograms retain maxima and quantiles without dumping states or whole trees.
+
+Each row also carries `root_hash` (`hashBattleState` of the search root) and
+`turn_plan`: the searcher's intended line for the rest of the turn after the
+decision, following the most-visited edge (the `bestAction` tie rule) through
+deterministic decision nodes. Each step records the action bits (in that
+node's indexing), action type, edge visits, the node's total edge visits, the
+edge count and, for a deterministic successor, its state hash.
+`turn_plan_stop` names where the line ends: `end_turn`, `chance`, `unvisited`,
+`unexpanded`, `terminal`, `turn_change` or `depth_bound` (64 steps). Comparing
+a row's plan with the next row's `root_hash` and first step measures
+within-turn plan stability (ledger §367). The fields are computed only when the
+profile is enabled and never feed the search.
 
 Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
 SUMMARY.json` to validate all denominators and generate counts/shares and depth

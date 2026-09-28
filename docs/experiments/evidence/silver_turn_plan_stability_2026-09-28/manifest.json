@@ -1,0 +1,65 @@
+{
+  "baseline_sha": "7952f0052378eed289509a6a75037db22fb3e7cd",
+  "kind": "bounded descriptive diagnostic; not a quality or performance qualification",
+  "question": "How often does native Silver keep the within-turn plan it held at the previous decision, and how much budget goes to later decisions of a turn?",
+  "configuration": {
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "ascension": 0,
+    "OMP_NUM_THREADS": 1,
+    "fair": true,
+    "arms": {
+      "flat": {
+        "STS_SILVER_ADAPTIVE": 0,
+        "simulations": 1000
+      },
+      "adaptive": {
+        "STS_SILVER_ADAPTIVE": 1,
+        "initial": 500,
+        "total": 10000
+      }
+    },
+    "ooc_policy": "existing bestbench native GBM policy"
+  },
+  "binaries": {
+    "binary1_sha256": "be6b654470282aab777f4f7344fb77764a3bfaafc6a3c2fabd5828ec2c342e75 (diagnostic without step action bits; parity arms)",
+    "binary2_sha256": "1c261e720c17b7dd0abcdf9c822550705fad6308d4eef1078b82ea2dfe85f2b5 (committed diagnostic; profiled arms)"
+  },
+  "commands": [
+    "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=7952f00... STS_SILVER_ADAPTIVE=0 STS_SILVER_TREE_PROFILE=flat_profile.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 8 0 0 flat_on.csv",
+    "env -i ... STS_SILVER_ADAPTIVE=1 STS_SILVER_TREE_PROFILE=adaptive_profile.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 8 0 0 adaptive_on.csv",
+    "env -i ... STS_SILVER_ADAPTIVE=0 bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 8 0 0 flat_off.csv  (binary1, parity)",
+    "python3 analyze_plan.py flat_profile.jsonl.gz adaptive_profile.jsonl.gz > summary.txt",
+    "python3 reorder.py flat_profile.jsonl.gz adaptive_profile.jsonl.gz > reorder.txt"
+  ],
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "artifacts_sha256": {
+    "README.md": "954a8116772454f2faf930e2800c301a8211ddb8a76f2e910e6498690cbbb881",
+    "adaptive_on.csv": "cb893fd850e544436674f6f4d6270f8fdca0df2e6c9bdc3a63b964aaf904131d",
+    "adaptive_on.csv.meta.json": "e02fda858021bd0c33fec14d08734de8196ce5b1bf91044443d3cc9cd00ecff8",
+    "adaptive_on.log": "9b8983394c06ae80d616a6148b360250f5cb99de5cede3ed1d25c248eaff8228",
+    "adaptive_profile.jsonl.gz": "16fd891874ed0938c194e92328f730c6bbed49a2a6360c50c5f2555241d63e3b",
+    "analyze_plan.py": "211cc8caed182d7ab5cdad3d6d42d69a30c91f5811374cbd11c069d07473caa2",
+    "diagnostic.diff": "d684ac5b18bc8c9605ad9909f2d5cf8f6d80d6b9c65b591777e7281e2078bebd",
+    "flat_off_binary1.csv": "4606fa78eea5bdf2e2380647046cdf84e486a386a9408f4cd33c60828bba5a06",
+    "flat_off_binary1.log": "8991160a294945260f11444eab809fc0e1edfdb04863f472df64028bd6093e62",
+    "flat_on.csv": "d0cbab556d040a5089e034fd4e9d3fc520731a3fef561d8bed1be094f13b506f",
+    "flat_on.csv.meta.json": "a5e6963d142c4fde3849e942eb940eed3013e3f87834c560f7abc5ac29e8b7d5",
+    "flat_on.log": "9e097165e39ea751d6388a45f4ab6f6d76c76c9e501619ff33e710830fe9c441",
+    "flat_profile.jsonl.gz": "b318859a4a099631738921a5062f8be534d4c59d11ee207e94bbbdee105a3be4",
+    "reorder.py": "07176a0b780a7d9a412356d4e8c491140d2829335f62dde0ed8c049ad1ae0497",
+    "reorder.txt": "a1a47b69a198f9d4338fd26d89cf4e7a488f52731470e9fbea4198b342158229",
+    "summary.txt": "d3c334feeb0aa39a0eb487737ddbb0aae95f7e44880114d9504a5841c94f434e"
+  }
+}

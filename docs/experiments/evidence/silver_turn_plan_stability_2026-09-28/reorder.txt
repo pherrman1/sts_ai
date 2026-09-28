@@ -1,0 +1,2 @@
+flat_profile.jsonl.gz {'card->card|same_end_state': 30, 'card->end': 13, 'card->card|different_end_state': 106, 'card->card|plan_hits_chance_or_terminal': 117, 'planned_end->played': 133}
+adaptive_profile.jsonl.gz {'card->card|same_end_state': 24, 'card->card|plan_hits_chance_or_terminal': 56, 'card->card|different_end_state': 52, 'planned_end->played': 54, 'card->end': 7}
