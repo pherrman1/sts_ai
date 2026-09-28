@@ -1200,6 +1200,14 @@ static bool vwinTeacherNativeOocEnabled(const nlohmann::json &policy) {
     return policy.value("native_ooc", false);
 }
 
+static bool vwinTeacherFlagEnabled(const nlohmann::json &flags, const char *name) {
+    const auto it = flags.find(name);
+    if (it == flags.end()) return true;
+    if (it->is_boolean()) return it->get<bool>();
+    if (it->is_number_integer()) return it->get<int>() != 0;
+    return true;
+}
+
 static void vwinRequireProductionPolicy(const WholeCombatTeacher &teacher) {
     constexpr const char *kPinnedV4TokenSha256 =
         "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c";
@@ -1266,7 +1274,7 @@ static void vwinRequireProductionPolicy(const WholeCombatTeacher &teacher) {
             "card_nn", "card_action", "shop_win", "boss_v", "boss_draft",
             "act_fight_probe_draft", "act_fight_probe_predict", "act_fight_probe_encounter_nn",
             "act_fight_probe_gate_regret"})
-        require(!flags.value(flag, true), "teacher disables non-default intervention flag");
+        require(!vwinTeacherFlagEnabled(flags, flag), "teacher disables non-default intervention flag");
     const auto &artifacts = policy.at("model_artifacts");
     require(std::any_of(artifacts.begin(), artifacts.end(), [](const auto &artifact) {
         return artifact.value("role", std::string{}) == "ooc_strategic_tok";
@@ -1606,6 +1614,10 @@ int vwinRefreshSelfTest() {
     const auto effectivePolicy = effectiveOocPolicySpecification();
     require(vwinTeacherNativeOocEnabled(effectivePolicy),
             "teacher native_ooc binding reads the top-level policy field");
+    const auto &policyFlags = effectivePolicy.at("flags");
+    require(!vwinTeacherFlagEnabled(policyFlags, "path_v")
+            && !vwinTeacherFlagEnabled(policyFlags, "event_v"),
+            "teacher policy guard reads integer-valued path/event flags");
     std::vector<VwinOption> options;
     for (int i = 0; i < 12; ++i)
         options.push_back({"option:" + std::to_string(i), static_cast<std::uint32_t>(i),
