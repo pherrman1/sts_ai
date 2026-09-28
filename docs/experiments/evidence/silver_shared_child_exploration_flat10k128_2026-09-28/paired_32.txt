@@ -1,0 +1,12 @@
+=== Paired comparison (32 seeds) ===
+Metric                             A          B      Delta
+Win rate                       81.2%      71.9%      -9.4pp
+  Win diff 95% CI: [-21.9pp, +3.1pp]
+Avg floor                      49.4      50.2      +0.8
+  Floor diff 95% CI: [-0.2, +2.2]
+Avg HP end                     26.0      26.1      +0.1
+Avg sec/run                   88.03     90.98     +2.95
+  Discordant: 5/32 (16%)
+  Both win: 22, both lose: 5, A-only: 4, B-only: 1
+  A Wilson 95% CI: [64.7%, 91.1%]
+  B Wilson 95% CI: [54.6%, 84.4%]

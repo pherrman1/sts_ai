@@ -13728,3 +13728,47 @@ runtime support changed.
   (`summary.txt`, `compare.py`, profiles, results, `manifest.json`).
 - **Knowledge impact:** environment-variable reference and combat-search
   selection paragraph document the option; no baseline or default change.
+
+## §373 — Transposition-aware exploration at flat 10,000: 32- and 128-seed paired cohorts (2026-09-28)
+
+- **Question:** does `STS_SILVER_SHARED_CHILD_EXPLORATION=1` (§372) change
+  whole-run outcomes at an equal flat 10,000-simulation budget?
+- **Pre-registration:** the 32-seed screen and the user-authorized 128-seed
+  extension were each committed with frozen source
+  `a1e9a1a10cae815218c3481bd19b52ce8daf5634`, binary SHA-256
+  `4a0da987acff564b6a51bc01b151e4c97a47c086561d223ab14daa85bdc81926`, model
+  hashes, seeds and decision rules before any outcome was inspected; the
+  extension did not depend on the 32-seed result.
+- **Execution:** `bestbench 10000 4 0 <offset>`, `STS_SILVER_ADAPTIVE=0`, asc 0,
+  fair, `OMP_NUM_THREADS=1`, clean `env -i`, via `tools/seed_guard.sh`; 64 jobs
+  (2 arms × 32 shards of 4 seeds, interleaved) on 4 cores, no profile. All 64
+  jobs exited 0; sidecars confirm the arm flag in every shard; the binary hash
+  was unchanged after the run. The offset-32 result files also contain copies
+  of seeds 0..31 because an analysis file was written to that name before
+  phase 2; the merge asserts they are identical and drops them.
+- **Results** (`paired_analysis.py`, paired by seed, fixed-seed bootstrap):
+
+  | | Seeds 0..31 | Seeds 0..127 |
+  | --- | ---: | ---: |
+  | Control / shared win rate | 81.2% / 71.9% | 74.2% / 69.5% |
+  | Win difference (95% CI) | −9.4 pp [−21.9, +3.1] | −4.7 pp [−11.7, +2.3] |
+  | Floor difference (95% CI) | +0.8 [−0.2, +2.2] | −0.0 [−1.0, +1.1] |
+  | End HP control / shared | 26.0 / 26.1 | 27.8 / 27.5 |
+  | Seconds per run control / shared | 88.0 / 91.0 | 87.5 / 86.9 |
+  | Discordant seeds (control-only / shared-only wins) | 5 (4 / 1) | 24 (15 / 9) |
+
+- **Decision:** 32 seeds: inconclusive (no interval entirely below 0; win
+  estimate below 0). 128 seeds: **neutral** under the pre-registered rule
+  (win interval spans 0; floor interval spans 0). No default change; the
+  option remains a research option.
+- **Interpretation:** removing about a quarter of redundant-order visits
+  (§372) does not translate into a detectable whole-run gain at flat 10,000;
+  the point estimate leans negative (15 vs 9 discordant seeds) but is within
+  noise. **Inference:** the redundant visits are not a material bottleneck
+  for Silver's decision quality at this budget, consistent with §370's view
+  that they still refine the shared successor. **Unverified:** effects at
+  other budgets or in the adaptive default; a hard-combat replay would need
+  a native harness (the vendored `hard64` replay was removed by ADR-0022).
+- **Evidence:** [silver_shared_child_exploration_flat10k128_2026-09-28](evidence/silver_shared_child_exploration_flat10k128_2026-09-28/README.md).
+- **Knowledge impact:** environment-variable reference notes the neutral
+  result; no baseline or default change.
