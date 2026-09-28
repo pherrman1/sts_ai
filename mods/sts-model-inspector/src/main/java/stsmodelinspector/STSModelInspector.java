@@ -1982,6 +1982,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    static Integer guardianNativeThreshold(Integer threshold, Integer increase, Boolean isOpen) {
+        // Vanilla increments on Defensive Mode; native increments on Twin Slam.
+        // The remaining Mode Shift power is exported separately as a status.
+        if (threshold == null || increase == null || isOpen == null || increase != 10)
+            return null;
+        int nativeThreshold = threshold - (isOpen ? 0 : increase);
+        return nativeThreshold > 0 ? nativeThreshold : null;
+    }
+
     private static Integer readIntField(Object object, String... names) {
         if (object == null) return null;
         Class<?> type = object.getClass();
@@ -2119,9 +2128,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return dividerDamage == null ? 0 : dividerDamage;
         }
         if ("TheGuardian".equals(id)) {
-            for (AbstractPower power : monster.powers)
-                if ("Mode Shift".equals(power.ID)) return power.amount;
-            return null;
+            return guardianNativeThreshold(readIntField(monster, "dmgThreshold"),
+                    readIntField(monster, "dmgThresholdIncrease"),
+                    readBooleanField(monster, "isOpen"));
         }
         if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
         if ("SlaverBlue".equals(id)) return 0;

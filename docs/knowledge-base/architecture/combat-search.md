@@ -308,10 +308,12 @@ invocation details from
   (see Live advisor). Copies queued by a spent
   Double Tap, Duplication or Necronomicon are present only when the producer
   sends `pendingCardQueue`, which the mod does not emit yet (issue #328).
-- **Open question:** the mod emits the Guardian's `miscInfo` as the current
-  Mode Shift amount, while the engine's `miscInfo` is the shift threshold (30
-  at A0, +10 per cycle). Without the power (Defensive Mode) it omits
-  `miscInfo`, so the importer rejects the root.
+- The Guardian's `miscInfo` is its native shift threshold, separate from the
+  remaining Mode Shift power. The Java producer reads `dmgThreshold`,
+  `dmgThresholdIncrease` and `isOpen`: Java increments on entering Defensive
+  Mode, while native increments on Twin Slam, so the defensive projection
+  subtracts the increment (10). This also works without an earlier observation
+  of the fight. Missing fields or a non-vanilla increment remain unsupported.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 

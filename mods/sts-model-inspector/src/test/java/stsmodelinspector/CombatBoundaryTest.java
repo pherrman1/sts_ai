@@ -8,6 +8,28 @@ import com.google.gson.JsonObject;
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
     public static void main(String[] args) {
+        for (int initial : new int[]{30, 35, 40}) {
+            for (int cycle = 0; cycle < 3; ++cycle) {
+                int threshold = initial + 10 * cycle;
+                if (STSModelInspector.guardianNativeThreshold(threshold, 10, true) != threshold
+                        || STSModelInspector.guardianNativeThreshold(threshold + 10, 10, false) != threshold)
+                    throw new AssertionError("Guardian threshold/cycle projection");
+            }
+        }
+        if (STSModelInspector.guardianNativeThreshold(null, 10, true) != null
+                || STSModelInspector.guardianNativeThreshold(30, null, true) != null
+                || STSModelInspector.guardianNativeThreshold(30, 10, null) != null
+                || STSModelInspector.guardianNativeThreshold(30, 11, true) != null
+                || STSModelInspector.guardianNativeThreshold(10, 10, false) != null)
+            throw new AssertionError("Guardian missing or invalid fields accepted");
+        try {
+            Class<?> guardian = Class.forName("com.megacrit.cardcrawl.monsters.exordium.TheGuardian", false,
+                    CombatBoundaryTest.class.getClassLoader());
+            if (guardian.getDeclaredField("dmgThreshold").getType() != int.class
+                    || guardian.getDeclaredField("dmgThresholdIncrease").getType() != int.class
+                    || guardian.getDeclaredField("isOpen").getType() != boolean.class)
+                throw new AssertionError("Guardian JAR field types changed");
+        } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
         if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true)
                 || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true))
             throw new AssertionError("unknown selection must retain combat classification");

@@ -1240,7 +1240,45 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
     }));
 }
 }
+void verifyGuardianProducerThresholds() {
+    // Values are shaped by the verified Java fields, not copied from wire miscInfo.
+    for (int phase = 0; phase < 3; ++phase) {
+        GameContext game(CharacterClass::IRONCLAD, 0, 0);
+        game.floorNum = 16;
+        BattleContext battle;
+        battle.init(game, MonsterEncounter::THE_GUARDIAN);
+        auto &guardian = battle.monsters.arr[0];
+        const bool javaOpen = phase != 1;
+        const int javaThreshold = phase == 0 ? 30 : 40;
+        guardian.miscInfo = phase == 2 ? 40 : 30;
+        if (phase == 0) guardian.setStatus<MonsterStatus::MODE_SHIFT>(12);
+        else if (phase == 1) {
+            guardian.removeStatus<MonsterStatus::MODE_SHIFT>();
+            guardian.buff<MonsterStatus::SHARP_HIDE>(3);
+            guardian.setMove(MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
+        } else {
+            guardian.setStatus<MonsterStatus::MODE_SHIFT>(40);
+            guardian.setMove(MonsterMoveId::THE_GUARDIAN_WHIRLWIND);
+        }
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(battle);
+        auto expected = makeSilverBattleStateWire(battle, knowledge, makeSilverRunContext(game), 1);
+        normalizeFirstObservationIdentity(expected);
+        auto observation = nativeObservation(expected, "MONSTER", "THE_GUARDIAN");
+        observation["silverRoot"]["combat"]["monsters"][0]["miscInfo"] =
+            javaThreshold - (javaOpen ? 0 : 10);
+        one_combat::advisor::SilverImportContext context;
+        context.session = "guardian-producer";
+        const auto imported = one_combat::advisor::importSilverRoot(observation, context);
+        if (!imported.ok) throw std::runtime_error("Guardian producer import: " + imported.reason);
+        expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(expected, imported.wire))
+            throw std::runtime_error("Guardian producer threshold lost phase parity");
+    }
+}
+
 int main() {
+    verifyGuardianProducerThresholds();
     try {
         {
             GameContext game(CharacterClass::IRONCLAD, 0x71517u, 0);
