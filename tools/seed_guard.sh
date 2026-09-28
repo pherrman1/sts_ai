@@ -9,7 +9,10 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["e2cgen"]=2
   ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionlizardtargetcandidategen"]=2
   ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2
-  ["combatevalgen"]=2 ["ooccfaudit"]=2
+  ["combatevalgen"]=2 ["ooccfaudit"]=2 ["vwinrefreshgen"]=2
+  ["bossheadroom347gen"]=2
+  ["vwinrefreshbranchselftest"]=2
+  ["vwinrefreshfatalcountselftest"]=2
   ["oocnextgen"]=2
   ["pathcfgen"]=2
   ["strategicgen"]=2        ["strategicgen2"]=2

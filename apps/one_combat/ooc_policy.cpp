@@ -73,6 +73,10 @@ void configureVPathPolicyFromEnvironment() {
     }
 }
 
+bool vPathPolicyEnabled() {
+    return g_vPath != 0;
+}
+
 void configureRestVPolicyFromEnvironment() {
     if (const char *d = std::getenv("STS_REST_V_THRESH")) {
         g_restVThreshold = std::atof(d);
@@ -83,6 +87,25 @@ void configureRestVPolicyFromEnvironment() {
 void resetPathPolicyState() {
     t_pathActionUses = 0;
     t_pathAggr = 0.0;
+}
+
+OocPolicyThreadState captureOocPolicyThreadState() {
+    return {t_pathActionUses, t_pathAggr, t_tokCheckPending, t_shopV,
+            t_oocStrategicTraceRows, t_oocStrategicTraceDecision,
+            t_actFightProbeDecisionIdx, t_actFightProbeActionIdx,
+            t_actFightProbeFutureIdx};
+}
+
+void restoreOocPolicyThreadState(const OocPolicyThreadState &state) {
+    t_pathActionUses = state.pathActionUses;
+    t_pathAggr = state.pathAggr;
+    t_tokCheckPending = state.tokCheckPending;
+    t_shopV = state.shopV;
+    t_oocStrategicTraceRows = state.strategicTraceRows;
+    t_oocStrategicTraceDecision = state.strategicTraceDecision;
+    t_actFightProbeDecisionIdx = state.actFightProbeDecisionIdx;
+    t_actFightProbeActionIdx = state.actFightProbeActionIdx;
+    t_actFightProbeFutureIdx = state.actFightProbeFutureIdx;
 }
 
 bool oocActionNNPolicy(GameContext &gc) {

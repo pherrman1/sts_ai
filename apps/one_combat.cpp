@@ -3621,6 +3621,113 @@ int main(int argc, char **argv) {
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");
+    } else if (mode == "vwinrefreshgen") {
+        if (argc < 9 || argc > 10) {
+            std::cerr << "usage: one_combat vwinrefreshgen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json K [PARITY_PERCENT]\n";
+            return 2;
+        }
+        try {
+            vwinRefreshGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                           std::stoll(argv[6]), argv[7], std::stoi(argv[8]),
+                           argc > 9 ? std::stoi(argv[9]) : 100);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "bossheadroom347gen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat bossheadroom347gen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";
+            return 2;
+        }
+        try {
+            bossHeadroom347Gen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                               std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "vwinrefreshpolicyspec") {
+        if (argc != 3) return 2;
+        try { return vwinRefreshPolicySpec(argv[2]); }
+        catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshcompoundselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshcompoundselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshCompoundSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshdecisionsinkselftest") {
+        if (argc != 2) return 2;
+        try { return vwinRefreshDecisionSinkSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshrewardselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshrewardselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshRewardTypeSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshfatalcountselftest") {
+        if (argc < 3 || argc > 4) {
+            std::cerr << "usage: one_combat vwinrefreshfatalcountselftest SEED [SIMS]\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshFatalRunoutCountSelfTest(std::stoull(argv[2]),
+                argc > 3 ? std::stoi(argv[3]) : 100);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinvpathguardselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinvpathguardselftest\n";
+            return 2;
+        }
+        try {
+            return vwinVPathPolicyGuardSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshbranchselftest") {
+        if (argc < 3 || argc > 5) {
+            std::cerr << "usage: one_combat vwinrefreshbranchselftest SEED [SIMS] [ASC]\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshBranchParitySelfTest(std::stoull(argv[2]),
+                argc > 3 ? std::stoi(argv[3]) : 100, argc > 4 ? std::stoi(argv[4]) : 0);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     } else if (mode == "oocpolicyparity") {
         if (argc < 3 || argc > 5) {
             std::cerr << "usage: one_combat oocpolicyparity SEED [SIMS] [ASC]\n";
