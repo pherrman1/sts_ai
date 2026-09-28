@@ -29,34 +29,8 @@ LiveOocDecision unsupported(const std::string &reason) {
 // Compound semantic enumeration describes a completed transaction. A live
 // decision performs only its source action, with the selector scored afresh.
 // Its separate identity cannot accidentally be executed as that transaction.
-std::pair<std::string, std::string> currentIdentity(const OocSemanticPrimitiveBinding &binding) {
-    auto semantic = binding.semantic;
-    if (binding.compoundSelector == CardSelectScreenType::INVALID)
-        return {canonicalOocSemanticActionKey(semantic), oocSemanticActionPayloadJson(semantic)};
-    const auto sourceKey = canonicalOocSemanticActionKey(semantic);
-    const auto originalPayload = nlohmann::json::parse(oocSemanticActionPayloadJson(semantic));
-    if (const auto *transaction = std::get_if<OocTransactionTarget>(&semantic.target)) {
-        if (semantic.source == OocSemanticSource::SHOP_REMOVE)
-            semantic.target = OocShopTarget{OocNoTarget{}, transaction->expectedGoldCost, 0};
-        else
-            semantic.target = OocEventTarget{transaction->event, transaction->option};
-    } else {
-        semantic.target = OocNoTarget{};
-    }
-    auto payload = nlohmann::json::parse(oocSemanticActionPayloadJson(semantic));
-    payload["currentScreenOnly"] = true;
-    payload["selectorType"] = static_cast<int>(binding.compoundSelector);
-    // Keep the physical card target in the source identity even though the
-    // executable source primitive is intentionally screen-only.  The live
-    // protocol uses this retained target to resolve the following selector.
-    if (originalPayload.value("type", std::string()) == "transaction"
-            && originalPayload.contains("card"))
-        payload["compoundTarget"] = originalPayload.at("card");
-    const auto targetKey = originalPayload.contains("card")
-        ? ":target=" + originalPayload.at("card").dump() : std::string();
-    return {sourceKey + ":current-screen" + targetKey, payload.dump()};
-}
 } // namespace
+
 
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHistory &path,
                              const OocStrategicTokNet &model, bool rewardPityHistoryComplete) {
@@ -84,7 +58,7 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHist
         if (!semantic.complete)
             return unsupported("SEMANTIC_ENUMERATION_FAILURE: " + semantic.error);
         for (const auto &binding : semantic.bindings) {
-            auto identity = currentIdentity(binding);
+            auto identity = currentLiveOocIdentity(binding);
             const auto existing = identities.find(binding.primitiveBits);
             if (existing != identities.end()) {
                 // A compound source opens one selector and therefore has one

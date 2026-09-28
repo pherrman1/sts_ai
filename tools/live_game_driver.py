@@ -26,6 +26,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Mapping, Sequence
 
+try:
+    from tools.differential_trace import DifferentialTraceError, DifferentialTraceWriter, RNG_KEY
+except ModuleNotFoundError:  # direct invocation: python tools/live_game_driver.py
+    from differential_trace import DifferentialTraceError, DifferentialTraceWriter, RNG_KEY
+
 DEFAULT_MCP_URL = "http://127.0.0.1:8080/mcp"
 DEFAULT_INSPECTOR = Path.home() / ".cache" / "sts-model-inspector" / "latest.json"
 DEFAULT_TRACE_DIR = Path.home() / ".cache" / "sts-live-driver"
@@ -687,6 +692,47 @@ class TraceWriter:
         return path
 
 
+class DifferentialDriverTraceWriter(TraceWriter):
+    """Adapt the existing driver rows to the versioned differential JSONL schema."""
+
+    def __init__(self, path: Path, *, provenance: Mapping[str, Any] | None = None):
+        super().__init__(path)
+        self.differential = DifferentialTraceWriter(path, provenance=provenance)
+
+    def write(self, row: Mapping[str, Any]) -> None:
+        self.recent.append(self._sanitize(dict(row)))
+        if row.get("record_type") == "summary":
+            self.differential.write_summary(row)
+            return
+        if row.get("decision_source") == "run_control" and not row.get("differential_error"):
+            return
+        boundary = "combat" if row.get("inspector_boundary") == "combat" else "ooc"
+        try:
+            if row.get("differential_error") or row.get("differential_unsupported"):
+                raise DifferentialTraceError(row.get("differential_error") or row["differential_unsupported"])
+            self.differential.write_decision(row, boundary=boundary)
+        except DifferentialTraceError as error:
+            # Preserve the exact captured row and stop native replay rather
+            # than inventing an identity for an unsupported boundary.
+            self.differential._write({
+                "record_type": "decision", "schema": "sts_differential_trace",
+                "schemaVersion": 1, "traceId": self.differential.run_id,
+                "decisionIndex": row.get("step"), "boundary": boundary,
+                "traceError": {"category": ("TRACE_OR_SCHEMA_ERROR" if row.get("differential_error")
+                                             else "UNSUPPORTED_BOUNDARY"),
+                               "reason": row.get("differential_unsupported", str(error))},
+                "rawDriverRow": row,
+            })
+
+    def write_failure(self, packet: Mapping[str, Any]) -> Path:
+        # Retain the boundary even if the MCP command succeeded but its
+        # post-action inspector read failed before the normal row was written.
+        decision = dict(_mapping(packet.get("decision")))
+        decision["differential_error"] = packet.get("reason", "capture_failed")
+        self.write(decision)
+        return super().write_failure(packet)
+
+
 class McpGameClient:
     def __init__(self, session: Any):
         self.session = session
@@ -829,6 +875,50 @@ def _latency_summary(values: Sequence[float]) -> dict[str, Any]:
             "p50": percentile(.5), "p95": percentile(.95), "max": ordered[-1]}
 
 
+def _differential_identity(action: LegalAction, evaluator: Mapping[str, Any] | None,
+                           combat: bool) -> str | None:
+    """Extract the existing canonical provider identity without changing policy."""
+    if combat:
+        fingerprint = action.silver_fingerprint
+        return "silver:" + fingerprint if isinstance(fingerprint, str) and fingerprint else None
+    evaluator = evaluator or {}
+    selected = evaluator.get("selectedLiveAction")
+    for candidate in _list(evaluator.get("candidateSummaries")):
+        if isinstance(candidate, Mapping) and candidate.get("liveAction") == selected:
+            key = candidate.get("semanticKey")
+            if isinstance(key, str) and key:
+                return key
+    semantic = action.semantic
+    if semantic.get("kind") == "map" and isinstance(semantic.get("x"), int) and isinstance(semantic.get("y"), int):
+        return f"map:x={semantic['x']}:y={semantic['y']}"
+    key = semantic.get("semanticKey") or semantic.get("key")
+    return key if isinstance(key, str) and key else None
+
+
+def _differential_evaluator_contract(evaluator: Mapping[str, Any], combat: bool) -> tuple[Any, list[dict[str, str]], str]:
+    state = evaluator.get("differentialState")
+    if not isinstance(state, Mapping):
+        raise DriverError("advisor evaluator has no canonical differentialState")
+    if combat:
+        raw = evaluator.get("legalActions")
+        selected = evaluator.get("selectedAction")
+        if not isinstance(raw, list) or not raw or not all(isinstance(v, str) and v for v in raw):
+            raise DriverError("Silver evaluator has no complete canonical legal-action set")
+        if not isinstance(selected, str) or raw.count(selected) != 1:
+            raise DriverError("Silver selected action is absent or ambiguous in legalActions")
+        return state, [{"fingerprint": value} for value in raw], "silver:" + selected
+    summaries = evaluator.get("candidateSummaries")
+    selected = evaluator.get("selectedSemanticKey")
+    if not isinstance(summaries, list) or not summaries:
+        raise DriverError("OOC evaluator has no complete canonical candidate summaries")
+    keys = [item.get("semanticKey") for item in summaries if isinstance(item, Mapping)]
+    if len(keys) != len(summaries) or not all(isinstance(v, str) and v for v in keys):
+        raise DriverError("OOC evaluator contains a candidate without semantic identity")
+    if not isinstance(selected, str) or keys.count(selected) != 1 or len(keys) != len(set(keys)):
+        raise DriverError("OOC selected action is absent or ambiguous in canonical candidates")
+    return state, [{"semanticKey": value} for value in keys], selected
+
+
 def _git_identity() -> dict[str, str]:
     result = {}
     for key, ref in (("head", "HEAD"), ("baseline", "origin/main")):
@@ -848,6 +938,7 @@ class Driver:
                  ooc_policy: str = "mcts", max_steps: int | None = None,
                  new_run: bool = False, continue_run: bool = False, character: str | None = None,
                  ascension: int | None = None, seed: str | None = None,
+                 differential_trace: bool = False, capture_hidden_rng: bool = False,
                  poll_timeout: float = 8.0, poll_interval: float = 0.1,
                  startup_timeout: float = 45.0,
                  reproduction_command: str | None = None):
@@ -856,6 +947,8 @@ class Driver:
         self.strict_ooc, self.ooc_policy = strict_ooc, {"v4": "v4_q", "mcts": "mcts_ctm"}.get(ooc_policy, ooc_policy)
         self.new_run, self.continue_run, self.character = new_run, continue_run, character
         self.ascension, self.seed = ascension, seed
+        self.differential_trace = differential_trace
+        self.capture_hidden_rng = capture_hidden_rng
         self.poll_timeout, self.poll_interval = poll_timeout, poll_interval
         self.startup_timeout = startup_timeout
         self.reproduction_command = reproduction_command or "uv run --extra live-driver python tools/live_game_driver.py --continue-run --run-until-error"
@@ -1051,6 +1144,7 @@ class Driver:
             return False
         action = self.menu_action(screen, commands)
         snapshot = None
+        evaluator = None
         shop_entry_key = None
         candidates = [action] if action else build_legal_actions(screen, commands, game_state)
         if not candidates:
@@ -1062,8 +1156,12 @@ class Driver:
                 action = reveal
                 reveal_card = True
         row.update({"screen_type": screen.get("screen_type", screen.get("screenType")),
+                    "seed": self.seed, "act": game_state.get("act", screen.get("act")),
+                    "floor": game_state.get("floor", screen.get("floor")),
                     "state_identity": transition_identity(screen, game_state),
                     "legal_candidates": [candidate.trace() for candidate in candidates]})
+        if self.differential_trace:
+            row["pre_action_state"] = {"screen": screen, "game_state": game_state}
         if action:
             row["decision_source"] = "card_reward_reveal" if reveal_card else "run_control"
         else:
@@ -1078,11 +1176,30 @@ class Driver:
                         "inspector_boundary": _mapping(snapshot.raw.get("observation")).get("boundary"),
                         "inspector_wait_micros": (time.monotonic() - advisor_started) * 1e6,
                         "advisor_latency_micros": snapshot.response.get("latencyMicros")})
+            if self.differential_trace:
+                row["runtime_provenance"] = snapshot.raw.get("runtime")
             evaluator = snapshot.silver_evaluator() if combat else snapshot.ooc_evaluator(self.ooc_policy)
+            row["ooc_policy"] = None if combat else evaluator.get("policy")
+            if not combat:
+                plan = _mapping(evaluator.get("compoundPlan"))
+                row["ooc_selection_mode"] = (plan.get("selectionMode")
+                    if plan.get("status") == "APPLIED" else "policy")
             prefix = "silver" if combat else "ooc_v4"
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
             row.update({"silver_evaluator" if combat else "ooc_evaluator": evaluator,
                         f"{prefix}_status": status, "selectedLiveAction": evaluator.get("selectedLiveAction")})
+            if self.differential_trace and status == "OK":
+                row["live_observation"] = snapshot.raw.get("observation")
+                state, legal, identity = _differential_evaluator_contract(evaluator, combat)
+                row["pre_action_state"] = state
+                row["differential_legal_actions"] = legal
+                row["semantic_action_identity"] = identity
+            if self.capture_hidden_rng:
+                debug_rng = evaluator.get(RNG_KEY)
+                if debug_rng is None:
+                    debug_rng = snapshot.raw.get(RNG_KEY)
+                row["preRng"] = debug_rng if isinstance(debug_rng, Mapping) else {
+                    "available": False, "reason": "live inspector did not publish debugRng"}
             if status == "OK":
                 try:
                     action = (map_silver_action if combat else map_ooc_action)(evaluator.get("selectedLiveAction"), candidates)
@@ -1096,6 +1213,11 @@ class Driver:
                 reason = _text(evaluator.get("reason", evaluator.get("silverReason", "unknown")))
                 self.counters[f"{prefix}_unsupported"] += 1
                 self.unsupported[f"{prefix}:{reason}"] += 1
+                if self.differential_trace:
+                    row["differential_unsupported"] = f"{prefix}:{reason}"
+                    self.outcome = "unsupported_boundary"
+                    self.trace.write(row)
+                    return False
                 if (self.strict_silver if combat else self.strict_ooc):
                     raise DriverError(f"{prefix} explicitly unsupported: {reason}")
                 action, shop_entry_key = self.fallback_action(screen, game_state, candidates, snapshot)
@@ -1117,8 +1239,17 @@ class Driver:
                     and math.isfinite(scorer_latency) and scorer_latency >= 0):
                 self.latencies["ooc_scorer_micros"].append(scorer_latency)
             self.previous_inspector = (snapshot.session, snapshot.sequence)
-        row.update({"selected_candidate": action.id, "selected_mcp_tool": action.mcp_tool,
+        row.update({"selected_candidate": action.id, "selected_candidate_trace": action.trace(),
+                    "selected_mcp_tool": action.mcp_tool,
                     "selected_mcp_arguments": action.mcp_arguments})
+        if self.differential_trace and row.get("decision_source") != "run_control":
+            row["semantic_action_identity"] = row.get("semantic_action_identity") or _differential_identity(
+                action, evaluator, _is_combat(screen))
+            if row["semantic_action_identity"] is None:
+                row["differential_unsupported"] = "no_native_replayable_semantic_identity"
+                self.outcome = "unsupported_boundary"
+                self.trace.write(row)
+                return False
         cycle_state = transition_identity(screen, game_state)
         if snapshot is not None and screen.get("screen_type") in {"CARD_REWARD", "COMBAT_REWARD"}:
             ooc = _mapping(_mapping(snapshot.raw.get("observation")).get("ooc"))
@@ -1164,9 +1295,36 @@ class Driver:
         wait_started = time.monotonic()
         post, post_game_state = await self.wait_for_ready_advance(transition_identity(screen, game_state))
         row["post_action_wait_micros"] = (time.monotonic() - wait_started) * 1e6
-        row.update({"post_action_state": _compact({"screen": post, "game_state": post_game_state}),
+        row.update({"post_action_state": ({"screen": post, "game_state": post_game_state}
+                                          if self.differential_trace else
+                                          _compact({"screen": post, "game_state": post_game_state})),
                     "post_action_identity": transition_identity(post, post_game_state),
                     "driver_step_micros": (time.monotonic() - started) * 1e6})
+        if (self.differential_trace and row.get("decision_source") != "run_control"
+                and _is_terminal(post)):
+            row["differential_unsupported"] = "terminal_state_unqualified"
+            self.outcome = "unsupported_boundary"
+            self.last_screen, self.last_game = post, post_game_state
+            self.trace.write(row)
+            return False
+        if (self.differential_trace and row.get("decision_source") != "run_control"
+                and not _is_terminal(post)):
+            post_combat = _is_combat(post)
+            post_inspector_state = {**post_game_state, **post,
+                                    "_expected_boundary": "combat" if post_combat else "ooc"}
+            if post_combat and _list(post_game_state.get("monsters")):
+                post_inspector_state["monsters"] = post_game_state["monsters"]
+            post_snapshot = await self.inspector.read_for(post_inspector_state, self.previous_inspector)
+            post_evaluator = (post_snapshot.silver_evaluator() if post_combat
+                              else post_snapshot.ooc_evaluator(self.ooc_policy))
+            post_state = post_evaluator.get("differentialState")
+            if not isinstance(post_state, Mapping):
+                raise DriverError("post-action advisor evaluator has no canonical differentialState")
+            row["post_action_state"] = post_state
+            if self.capture_hidden_rng:
+                post_rng = post_snapshot.raw.get(RNG_KEY)
+                row["postRng"] = post_rng if isinstance(post_rng, Mapping) else {
+                    "available": False, "reason": "live inspector did not publish post-action debugRng"}
         self.latencies["driver_step_micros"].append(row["driver_step_micros"])
         self.last_screen, self.last_game = post, post_game_state
         self.trace.write(row)
@@ -1256,7 +1414,13 @@ def _reproduction_command(args: argparse.Namespace) -> str:
 
 async def async_main(args: argparse.Namespace) -> int:
     trace_path = Path(args.trace) if args.trace else _default_trace_path()
-    trace = TraceWriter(trace_path)
+    trace = (DifferentialDriverTraceWriter(
+        trace_path,
+        provenance={"driver": _git_identity(), "character": args.character,
+                    "ascension": args.ascension, "seed": args.seed,
+                    "oocPolicy": "mcts_ctm" if args.ooc_policy in {"mcts", "mcts_ctm"} else "v4_q",
+                    "captureHiddenRng": args.capture_hidden_rng})
+             if args.differential_trace else TraceWriter(trace_path))
     inspector = InspectorReader(Path(args.inspector), timeout=args.inspector_timeout)
     driver = None
     reproduction = _reproduction_command(args)
@@ -1267,6 +1431,8 @@ async def async_main(args: argparse.Namespace) -> int:
                             ooc_policy=args.ooc_policy, max_steps=args.max_steps,
                             new_run=args.new_run, continue_run=args.continue_run,
                             character=args.character, ascension=args.ascension, seed=args.seed,
+                            differential_trace=args.differential_trace,
+                            capture_hidden_rng=args.capture_hidden_rng,
                             startup_timeout=args.startup_timeout,
                             reproduction_command=reproduction)
             await driver.run()
@@ -1292,6 +1458,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--mcp-url", default=os.environ.get("STS_MCP_URL", DEFAULT_MCP_URL))
     parser.add_argument("--inspector", default=os.environ.get("STS_INSPECTOR_PATH", str(DEFAULT_INSPECTOR)))
     parser.add_argument("--trace", help="JSONL trace path (default: ~/.cache/sts-live-driver/)")
+    parser.add_argument("--differential-trace", action="store_true",
+                        help="write the versioned Java/native differential JSONL schema")
+    parser.add_argument("--capture-hidden-rng", action="store_true",
+                        help="debug-only RNG tuples; never included in public observations")
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--run-until-error", action="store_true", help="continue until terminal outcome or integration error")
     parser.add_argument("--dry-run", action="store_true")

@@ -2,6 +2,7 @@
 #include "live_ooc_importer.h"
 #include "live_ooc_state.h"
 #include "live_ooc_policy.h"
+#include "differential_state.h"
 #include "ooc_v4_encoding.h"
 #include "../ooc_strategic_tok_net.h"
 #include <fstream>
@@ -182,6 +183,9 @@ json oocResponse(const one_combat::advisor::Request &request,
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
     else {
+        if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
+            evaluator["differentialState"] = differential::canonicalOocState(
+            state.projected, state.path);
         // After choosing a boss relic, vanilla can expose the already-open
         // boss chest as a completed room with only the native Proceed button.
         // The simulator's TREASURE_ROOM action set describes the pre-open
@@ -524,6 +528,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     } else if (!matchingSession) {
         return unsupported("silver_missing_predecessor");
     }
+    if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
+        evaluator["differentialState"] = one_combat::differential::canonicalCombatState(imported.wire);
     const auto requestedSimulations = std::max<std::int64_t>(1000,
         request.observation.value("silverSearchBudget", static_cast<std::int64_t>(1000)));
     const auto rootIdentity = request.observation.value("silverRoot", json::object()).dump();

@@ -2,6 +2,7 @@
 // and focused search/model diagnostics.
 
 #include "one_combat/driver_shared.h"
+#include "one_combat/differential_replay_native.h"
 
 OocCheckpointNet g_oocCheckpointNet;
 OocStrategicNet g_oocStrategicNet;
@@ -2820,6 +2821,8 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "";
 
+    if (mode == "differentialreplay")
+        return one_combat::runDifferentialReplayNative(std::cin, std::cout);
     // ADR-0020: Silver is the only combat searcher. The native searchers and
     // their known-RNG regime were removed, so a request for them fails.
     if (const char *d = std::getenv("STS_SILVER_SEARCH"); d && std::atoi(d) == 0) {

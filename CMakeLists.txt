@@ -100,6 +100,8 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/differential_state.cpp
+    apps/one_combat/differential_replay_native.cpp
     apps/one_combat/run_trace.cpp
     apps/one_combat/semantic_pilot.cpp
     apps/one_combat/combat_datasets.cpp
@@ -126,6 +128,7 @@ add_executable(one_combat_advisor
 target_include_directories(one_combat_advisor PUBLIC json/include)
 target_sources(one_combat_advisor PRIVATE
     apps/one_combat/live_ooc_state.cpp
+    apps/one_combat/differential_state.cpp
     apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_features.cpp
@@ -202,7 +205,13 @@ add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_o
     ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt)
 set_tests_properties(live_ooc_protocol PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME live_game_driver COMMAND python3 -m unittest tests.test_live_game_driver)
+add_test(NAME differential_trace COMMAND python3 -m unittest tests.test_differential_trace)
+add_test(NAME native_differential_replay COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/native_differential_replay.py $<TARGET_FILE:one_combat>)
 set_tests_properties(live_game_driver PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+set_tests_properties(differential_trace PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+set_tests_properties(native_differential_replay PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/live_ooc_importer.cpp

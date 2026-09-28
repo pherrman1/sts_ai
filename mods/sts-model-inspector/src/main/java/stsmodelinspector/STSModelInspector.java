@@ -1330,7 +1330,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
                 deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
                 "combat".equals(boundary) ? combatEntryHash : "", ooc,
-                silverSearchBudget, sha256(raw), capturedNanos);
+                silverSearchBudget, sha256(raw), capturedNanos, DebugRngCapture.json());
     }
 
     private void observeRoomTransition() {
@@ -3051,8 +3051,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
                     .append("\",\"reason\":\"").append(Snapshot.escape(reason == null ? "" : reason))
                     .append("\",\"advisor\":");
-            return out.append(ready && !advisorResponseJson.isEmpty()
-                    ? advisorResponseJson : "null").append("}}").toString();
+            out.append(ready && !advisorResponseJson.isEmpty()
+                    ? advisorResponseJson : "null").append("}");
+            // Deliberately outside observation/observationHash and advisor
+            // request: hidden state is debug-only and cannot affect policy.
+            String debugRng = snapshot.debugRng;
+            if (!debugRng.isEmpty()) out.append(",\"debugRng\":").append(debugRng);
+            if (DebugRngCapture.enabled())
+                out.append(",\"runtime\":").append(DebugRngCapture.runtimeJson());
+            return out.append("}").toString();
         }
 
         private final class Publication {
@@ -3069,7 +3076,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
-        final String combat, ooc;
+        final String combat, ooc, debugRng;
         final String combatEntry, combatEntryHash;
         final String observationJson;
         final long sequence, capturedNanos;
@@ -3081,9 +3088,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
                  String deck, String candidates, String combat, String combatEntry,
                  String combatEntryHash, String ooc, long silverSearchBudget,
-                 String hash, long capturedNanos) {
+                 String hash, long capturedNanos, String debugRng) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
             this.capturedNanos = capturedNanos;
+            this.debugRng = debugRng;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
@@ -3096,7 +3104,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
                     floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
-                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos);
+                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos, debugRng);
         }
 
         String toJson() {

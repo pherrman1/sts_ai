@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include "run_features.h"
+#include "live_ooc_action_identity.h"
 #include "ooc_mcts_adapter.h"
 
 struct OocStrategicTokNet;
