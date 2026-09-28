@@ -1307,6 +1307,69 @@ int main() {
                 + " m1move=" + std::to_string(multiCanonical.monsters[1].moveHistory[0]) + "/"
                 + std::to_string(multiImported.wire.monsters[1].moveHistory[0]));
         {
+            // Final-HP capture: each simulation at the current root is one
+            // sample, root edges partition the root layer, extends accumulate,
+            // a new root restarts, and capturing never changes the search.
+            using Capture = sts::search::SilverOutcomeCapture;
+            const auto &wire = fixtures[1].wire;
+            const auto samples = [](const Capture::Layer &layer) {
+                std::int64_t sum = 0;
+                for (const auto n : layer.hpCounts) sum += n;
+                const auto deathBin = layer.hpCounts.empty() ? 0 : layer.hpCounts[0];
+                if (sum != layer.count || deathBin != layer.deaths || layer.unresolved < 0)
+                    throw std::runtime_error("final-HP layer counts are inconsistent");
+                return layer.count + layer.unresolved;
+            };
+            const auto partitions = [&](const one_combat::advisor::NativeSilverDecision &d,
+                                        std::int64_t expected) {
+                const auto &root = d.outcomes.root;
+                if (!d.accepted || samples(root) != expected
+                    || d.outcomes.edges.size() != d.rootActionSummaries.size()
+                    || d.rootHp != wire.player.curHp || d.rootMaxHp != wire.player.maxHp)
+                    throw std::runtime_error("final-HP root layer does not match the search");
+                std::int64_t edgeSamples = 0, deaths = 0, unresolved = 0;
+                std::vector<std::int64_t> hp(root.hpCounts.size(), 0);
+                for (const auto &edge : d.outcomes.edges) {
+                    edgeSamples += samples(edge);
+                    deaths += edge.deaths;
+                    unresolved += edge.unresolved;
+                    if (edge.hpCounts.size() > hp.size())
+                        throw std::runtime_error("final-HP edge exceeds the root axis");
+                    for (std::size_t i = 0; i < edge.hpCounts.size(); ++i) hp[i] += edge.hpCounts[i];
+                }
+                if (edgeSamples != expected || deaths != root.deaths
+                    || unresolved != root.unresolved || hp != root.hpCounts)
+                    throw std::runtime_error("final-HP root edges do not partition the root layer");
+            };
+            SilverSearchSession session;
+            const auto first = session.decide(wire, 96);
+            partitions(first, 96);
+            for (std::size_t i = 0; i < first.rootActionSummaries.size(); ++i)
+                if (samples(first.outcomes.edges[i]) != first.rootActionSummaries[i].edgeVisits)
+                    throw std::runtime_error("fresh-root edge samples differ from edge visits");
+            if (first.outcomes.root.count == 0)
+                throw std::runtime_error("final-HP capture recorded no resolved combat");
+            partitions(session.extend(32), 128);
+            const auto other = session.decide(fixtures[0].wire, 40);
+            if (!other.accepted || samples(other.outcomes.root) != 40)
+                throw std::runtime_error("a new root did not restart the final-HP capture");
+
+            SilverSearcher plain(battleContextFromWire(wire), searchContextFromWire(wire));
+            SilverSearcher captured(battleContextFromWire(wire), searchContextFromWire(wire));
+            Capture capture;
+            captured.outcomes = &capture;
+            plain.search(200);
+            captured.search(200);
+            const auto &a = plain.rootNode(), &b = captured.rootNode();
+            bool same = a.edges.size() == b.edges.size() && a.simulationCount == b.simulationCount
+                && a.evaluationSum == b.evaluationSum
+                && plain.bestAction().bits == captured.bestAction().bits;
+            for (std::size_t i = 0; same && i < a.edges.size(); ++i)
+                same = a.edges[i].visitCount == b.edges[i].visitCount;
+            if (!same || samples(capture.root) != 200)
+                throw std::runtime_error("final-HP capture changed the Silver search");
+        }
+        {
             // The Java v4 producer does not emit monsterTurnIdx at a stable
             // player decision. A missing field must retain the native player-
             // turn sentinel, not schedule monsters after the next card play.

@@ -40,13 +40,6 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.combatEntryRelicData("Omamori", -2, false) != -2
                 || STSModelInspector.combatEntryRelicData("Pen Nib", -2, true) != -2)
             throw new AssertionError("spent charge mapping is not exact and relic-specific");
-        String forecast = STSModelInspector.ctmResponseJson(
-                "{\"evaluators\":[{\"id\":\"silver_player_decision_v2\",\"status\":\"UNSUPPORTED\"},"
-                + "{\"id\":\"ctm_combat_entry_v2\",\"status\":\"OK\",\"deathProbability\":0.2}]}");
-        JsonObject ctm = new Gson().fromJson(forecast, JsonObject.class);
-        if (!"OK".equals(ctm.get("status").getAsString()) || ctm.get("deathProbability").getAsDouble() != 0.2
-                || !STSModelInspector.ctmResponseJson("{\"evaluators\":[]}").isEmpty())
-            throw new AssertionError("another evaluator contaminated CTM forecast status");
-        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 9 entry-relic and 2 CTM isolation checks passed");
+        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 12 entry-relic checks passed");
     }
 }

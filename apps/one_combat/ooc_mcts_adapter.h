@@ -116,7 +116,8 @@ private:
     void tracePrior(sts::search::OocStateId, Metadata &,
         const std::vector<sts::search::OocPlannerAction> &) const;
     double bossLeafValue(const GameContext &) const;
-    double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal);
+    double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
+                            sts::search::OocEndpoint &endpoint);
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
         const PreparedCombatTransition * = nullptr);
 public:
@@ -146,6 +147,7 @@ public:
     double evaluateLeaf(sts::search::OocStateId, std::mt19937_64 &) override;
     sts::search::OocLeafEvaluation evaluateLeafWithOutcome(sts::search::OocStateId, std::mt19937_64 &) override;
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
+    std::optional<sts::search::OocEndpoint> endpoint(sts::search::OocStateId) const override;
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);

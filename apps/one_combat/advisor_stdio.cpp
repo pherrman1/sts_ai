@@ -311,6 +311,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 const auto distributionJson = [](const sts::search::OocValueDistribution &d) {
                     return json{{"schema", "ooc_value_distribution_v1"}, {"bins", d.bins},
                         {"count", d.count}, {"mean", d.count ? json(d.sum / d.count) : json(nullptr)},
+                        {"sumSquares", d.sumSquares},
                         {"terminalDeaths", d.bins[0]}, {"terminalVictories", d.bins[21]},
                         {"normalization", "share_of_own_samples"}};
                 };
@@ -318,6 +319,27 @@ json oocResponse(const one_combat::advisor::Request &request,
                     ? "mean_backed_up_value_0_1" : "raw_v4_action_score";
                 if (decision.valueDistribution)
                     evaluator["valueDistribution"] = distributionJson(*decision.valueDistribution);
+                // One 0..axisMaxHp axis for the root and every candidate (index 0 = deaths).
+                std::size_t hpBins = static_cast<std::size_t>(std::max(decision.rootMaxHp, 0)) + 1;
+                if (decision.hpDistribution)
+                    hpBins = std::max({hpBins, decision.hpDistribution->hpCounts.size(),
+                        static_cast<std::size_t>(decision.hpDistribution->maxHp) + 1});
+                const auto hpJson = [&](const sts::search::OocHpDistribution &d) {
+                    auto counts = d.hpCounts;
+                    counts.resize(hpBins, 0);
+                    json floors = json::object();
+                    for (const auto &[floor, n] : d.floors)
+                        floors[std::to_string(floor - decision.rootFloor)] = n;
+                    return json{{"count", d.count}, {"deaths", d.deaths}, {"unresolved", d.unresolved},
+                        {"hpCounts", counts}, {"floorOffsets", floors}};
+                };
+                if (decision.hpDistribution)
+                    evaluator["endpointHpDistribution"] = {
+                        {"schema", "ooc_endpoint_hp_distribution_v1"},
+                        {"hpSemantics", "player_hp_where_each_simulation_was_evaluated"},
+                        {"currentHp", decision.rootHp}, {"maxHp", decision.rootMaxHp},
+                        {"rootFloor", decision.rootFloor}, {"axisMaxHp", hpBins - 1},
+                        {"root", hpJson(*decision.hpDistribution)}};
                 evaluator["candidateSummaries"] = json::array();
                 for (const auto &c : decision.candidates) {
                     json summary = {{"semanticKey", c.semanticKey},
@@ -325,6 +347,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                         {"visits", c.visits}, {"visitShare", c.visitShare}, {"prior", c.prior},
                         {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}};
                     if (c.valueDistribution) summary["valueDistribution"] = distributionJson(*c.valueDistribution);
+                    if (c.hpDistribution && decision.hpDistribution) summary["endpointHp"] = hpJson(*c.hpDistribution);
                     if (!c.followUpPreview.empty()) summary["followUpPreview"] = json::parse(c.followUpPreview);
                     evaluator["candidateSummaries"].push_back(std::move(summary));
                 }
@@ -450,6 +473,14 @@ json silverTreeSnapshotJson(const silver_bridge::SilverTreeSnapshot &snapshot) {
     return output;
 }
 
+json finalHpLayerJson(const sts::search::SilverOutcomeCapture::Layer &layer,
+                      std::size_t bins) {
+    auto counts = layer.hpCounts;
+    counts.resize(bins, 0);
+    return {{"count", layer.count}, {"deaths", layer.deaths},
+            {"unresolved", layer.unresolved}, {"hpCounts", counts}};
+}
+
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
@@ -536,6 +567,18 @@ json silverEvaluator(const one_combat::advisor::Request &request,
                      [](const auto *a, const auto *b) { return a->edgeVisits > b->edgeVisits; });
     std::int64_t totalVisits = 0;
     for (const auto *summary : ranked) totalVisits += summary->edgeVisits;
+    // Every layer shares one 0..axisMaxHp axis; victories can exceed the root
+    // max HP (e.g. Feed).
+    const std::size_t finalHpBins = std::max<std::size_t>(
+        static_cast<std::size_t>(std::max(decision.rootMaxHp, 0)) + 1,
+        decision.outcomes.root.hpCounts.size());
+    evaluator["finalHpDistribution"] = {
+        {"schema", "silver_final_hp_distribution_v1"},
+        {"scope", "simulations_since_root"},
+        {"hpSemantics", "player_hp_at_combat_end_before_post_combat_heals"},
+        {"currentHp", decision.rootHp}, {"maxHp", decision.rootMaxHp},
+        {"axisMaxHp", finalHpBins - 1},
+        {"root", finalHpLayerJson(decision.outcomes.root, finalHpBins)}};
     std::string rankingText;
     for (const auto *summary : ranked) {
         json item = {
@@ -546,6 +589,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
             {"edgeVisits", summary->edgeVisits}, {"selectionQValid", summary->selectionQValid},
             {"visitShare", totalVisits == 0 ? 0.0 : static_cast<double>(summary->edgeVisits) / totalVisits}};
         if (summary->selectionQValid) item["selectionQ"] = summary->selectionQ;
+        const auto edge = static_cast<std::size_t>(summary - decision.rootActionSummaries.data());
+        item["finalHp"] = finalHpLayerJson(decision.outcomes.edges.at(edge), finalHpBins);
         evaluator["rootActionSummaries"].push_back(std::move(item));
     }
     for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {

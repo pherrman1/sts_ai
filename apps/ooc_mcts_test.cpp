@@ -183,6 +183,36 @@ void tests() {
         for (std::size_t i=0; i<combined.size(); ++i) combined[i] += candidate.bins[i];
     }
     require(combined == mixedResult.rootValues->bins, "candidate bins conserve baseline bins");
+    // Endpoint HP: deaths in bin 0, others at the evaluated state's HP;
+    // candidates partition the root and reporting endpoints changes nothing.
+    struct EndpointToy : Toy {
+        std::optional<OocEndpoint> endpoint(OocStateId s) const override {
+            return OocEndpoint{static_cast<int>(10 + s), 20, static_cast<int>(s)};
+        }
+        OocLeafEvaluation evaluateLeafWithOutcome(OocStateId s, std::mt19937_64 &) override {
+            return {leafValue(s), false, endpoint(s)};
+        }
+    };
+    EndpointToy endpointModel;
+    static_cast<Toy &>(endpointModel) = mixed;
+    const auto endpointResult = OocMctsPlanner(distributionConfig).search(endpointModel, 0, 3);
+    const auto &rootHp = *endpointResult.rootHp;
+    require(!mixedResult.rootHp->count && mixedResult.rootHp->unresolved == 3,
+        "providers without endpoints report unresolved HP samples");
+    require(rootHp.count == 3 && rootHp.deaths == 1 && rootHp.unresolved == 0 && rootHp.maxHp == 20
+        && rootHp.hpCounts == std::vector<std::uint64_t>({1,0,0,0,0,0,0,0,0,0,0,0,1,1})
+        && rootHp.floors == std::map<int, std::uint64_t>({{1,1},{2,1},{3,1}}),
+        "endpoint HP records deaths at zero and evaluated states at their HP");
+    std::vector<std::uint64_t> hpColumns(rootHp.hpCounts.size());
+    for (std::size_t i = 0; i < endpointResult.rootActions.size(); ++i) {
+        const auto &action = endpointResult.rootActions[i];
+        const auto &candidate = endpointResult.actionHp.at(action.id);
+        require(candidate.count == action.visits && action.visits == mixedResult.rootActions[i].visits
+            && action.q == mixedResult.rootActions[i].q,
+            "endpoint capture partitions visits and leaves allocation unchanged");
+        for (std::size_t h = 0; h < candidate.hpCounts.size(); ++h) hpColumns[h] += candidate.hpCounts[h];
+    }
+    require(hpColumns == rootHp.hpCounts, "candidate HP samples conserve the root");
     OocValueDistribution edges; edges.record(0,0); edges.record(.05,0); edges.record(1,0);
     require(edges.bins[1] == 1 && edges.bins[2] == 1 && edges.bins[20] == 1
         && edges.bins[0] == 0 && edges.bins[21] == 0, "fixed model-value bucket boundaries");

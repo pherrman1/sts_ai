@@ -1022,25 +1022,42 @@ struct ImaginedScope {
 };
 #endif
 }
+namespace {
+sts::search::OocEndpoint endpointOf(const sts::GameContext &gc) {
+    return {gc.curHp, gc.maxHp, gc.floorNum};
+}
+}
+std::optional<sts::search::OocEndpoint> OocGameContextModel::endpoint(sts::search::OocStateId id) const {
+    return endpointOf(state(id));
+}
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     bool terminal = false;
-    return evaluateLeafImpl(id, rng, terminal);
+    sts::search::OocEndpoint endpoint;
+    return evaluateLeafImpl(id, rng, terminal, endpoint);
 }
 sts::search::OocLeafEvaluation OocGameContextModel::evaluateLeafWithOutcome(
         sts::search::OocStateId id, std::mt19937_64 &rng) {
     bool terminal = false;
-    const double value = evaluateLeafImpl(id, rng, terminal);
-    return {value, terminal};
+    sts::search::OocEndpoint endpoint;
+    const double value = evaluateLeafImpl(id, rng, terminal, endpoint);
+    return {value, terminal, endpoint};
 }
+// `endpoint` receives the player state that was actually evaluated: the node
+// itself, or the detached continuation where it stopped.
 double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
-        std::mt19937_64 &rng, bool &terminal) {
+        std::mt19937_64 &rng, bool &terminal, sts::search::OocEndpoint &endpoint) {
     terminal = terminalValue(id).has_value();
+    endpoint = endpointOf(state(id));
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
     if (options.stopAtMapCheckpoint && id != 0
             && state(id).screenState == sts::ScreenState::MAP_SCREEN)
         return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
+    struct EndpointOnExit {
+        const GameContext &gc; sts::search::OocEndpoint &out;
+        ~EndpointOnExit() { out = endpointOf(gc); }
+    } endpointOnExit{child.gc, endpoint};
     if (options.sampleNoncombat) {
         sampleNoncombatFuture(child.gc, rng);
         if (id == 0 && dependencies.sampleHiddenCounters)

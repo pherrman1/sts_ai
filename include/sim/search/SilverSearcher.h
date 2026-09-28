@@ -72,6 +72,26 @@ namespace sts::search {
         void record(const BattleContext &state, int treeDepth, int rolloutDepth);
     };
 
+    // Observational end-of-combat samples of newly executed simulations, at
+    // the root and per root edge. Caller-owned and default off; recording never
+    // changes selection, evaluation or any RNG draw. Retained visits inherited
+    // through a reroot are not included.
+    struct SilverOutcomeCapture {
+        struct Layer {
+            // Index = player HP when the simulated combat ended; index 0 holds
+            // deaths. Victory HP is before post-combat relic heals.
+            std::vector<std::int64_t> hpCounts;
+            std::int64_t count = 0;        // sum of hpCounts: victories + deaths
+            std::int64_t deaths = 0;
+            std::int64_t unresolved = 0;   // turn cap, engine stop or halted rollout
+            void record(const BattleContext &end);
+        };
+        Layer root;
+        std::vector<Layer> edges;   // indexed like the root node's edges
+        void reset() { root = {}; edges.clear(); }
+        void record(int rootEdge, const BattleContext &end);
+    };
+
     // Silver's combat search (MCTS over a transposition graph with chance nodes
     // and double progressive widening), ported from the Silver fork's
     // BattleSearcher to run directly on the main engine. Only the production
@@ -114,6 +134,7 @@ namespace sts::search {
         SilverEvalWeights evalWeights;
         SilverSearchStats stats;
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
+        SilverOutcomeCapture *outcomes = nullptr; // optional caller-owned samples; default off
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -168,6 +189,7 @@ namespace sts::search {
         std::size_t stateToNodeMask = 0;
         std::size_t stateToNodeUsed = 0;
         bool lastNodeWasCreated = false;
+        int currentRootEdge = -1;   // root edge of the simulation in progress
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
@@ -198,6 +220,7 @@ namespace sts::search {
         int wideningCap(int category, std::int64_t visits);
         Edge *selectChanceOutcome(Node &chance);
         double rolloutToEnd(BattleContext &state, int treeDepth);
+        void recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);

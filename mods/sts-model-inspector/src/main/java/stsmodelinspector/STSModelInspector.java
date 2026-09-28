@@ -77,6 +77,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final Color CYAN_DIM = new Color(0.0f, 0.62f, 0.68f, 1.0f);
     private static final Color MUTED = new Color(0.60f, 0.76f, 0.82f, 1.0f);
     private static final Color WARNING = new Color(1.0f, 0.67f, 0.20f, 1.0f);
+    private static final Color DEATH = new Color(0.86f, 0.24f, 0.24f, 1.0f);
     private static int trackedLastUnblockedDamage;
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
@@ -143,8 +144,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile long responseSequence = -1;
     private volatile String responseHash = "";
     private volatile String advisorResponseJson = "";
-    private volatile String ctmStatus = "";
-    private volatile String ctmReason = "";
     private volatile String silverStatus = "";
     private volatile String silverReason = "";
     private volatile String silverSelectedAction = "";
@@ -161,9 +160,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile long silverRootVisits;
     private long silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
     private String silverBudgetStateFingerprint = "";
-    private volatile double ctmDeath = 0.0;
-    private volatile int ctmHistogramMin = 1;
-    private volatile double[] ctmHistogram = new double[0];
+    private volatile CombatHpOverlay combatHpOverlay;
     private volatile OocOverlay oocOverlay;
     private OocOverlay.Choice hoveredOocChoice;
     private volatile PotionOverlay potionOverlay;
@@ -244,8 +241,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         liveEncounter = "";
         combatEntry = "";
         combatEntryHash = "";
-        ctmStatus = "";
-        ctmReason = "";
+        combatHpOverlay = null;
         silverStatus = "";
         silverReason = "";
         silverSelectedAction = "";
@@ -265,8 +261,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverInheritedVisits = 0;
         silverTotalSimulations = 0;
         silverRootVisits = 0;
-        ctmDeath = 0.0;
-        ctmHistogram = new double[0];
     }
 
     private STSModelInspector() {}
@@ -317,13 +311,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         responseSequence = -1;
         responseHash = "";
         advisorResponseJson = "";
-        if (!"combat".equals(snapshot.boundary)
-                || !snapshot.combatEntryHash.equals(combatEntryHash)) {
-            ctmStatus = "";
-            ctmReason = "";
-            ctmDeath = 0.0;
-            ctmHistogram = new double[0];
-        }
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
@@ -422,21 +409,36 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         drawCard(sb, leftX, cardBottom, leftWidth, cardHeight, scale);
         drawCard(sb, rightX, cardBottom, rightWidth, cardHeight, scale);
 
-        renderSmallText(sb, "Death chance", leftX + 14.0f * scale,
+        // Silver's end-of-combat samples at the current root, refreshed after
+        // every play; hovering a card or End Turn outlines that action's share.
+        CombatHpOverlay view = currentCombatHpOverlay();
+        String[] hoveredLabel = {""};
+        CombatHpOverlay.Layer hovered = view == null ? null : hoveredCombatLayer(view, hoveredLabel);
+        renderSmallText(sb, "Sampled deaths", leftX + 14.0f * scale,
                 cardTop - 13.0f * scale, Color.WHITE, 0.92f);
-        String death = "OK".equals(ctmStatus)
-                ? String.format(Locale.ROOT, "%.1f%%", 100.0 * ctmDeath) : "—";
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, death,
-                leftX + 14.0f * scale, cardTop - 38.0f * scale,
-                "OK".equals(ctmStatus) ? CYAN : WARNING);
-        renderSmallText(sb, "(this combat)", leftX + 14.0f * scale,
-                cardBottom + 17.0f * scale,
-                "OK".equals(ctmStatus) ? MUTED : WARNING, 0.82f);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
+                view == null ? "—" : view.root.deathLabel(),
+                leftX + 14.0f * scale, cardTop - 38.0f * scale, view == null ? WARNING : CYAN);
+        if (hovered != null) renderFittedText(sb, hoveredLabel[0] + "  " + hovered.deathLabel(),
+                leftX + 14.0f * scale, cardTop - 68.0f * scale, leftWidth - 28.0f * scale, WARNING, 0.72f);
+        String sampleNote = view != null
+                ? "of " + compactSimulations(view.root.count) + " search sims"
+                : "OK".equals(silverStatus) || silverStatus == null || silverStatus.isEmpty()
+                ? "searching…" : silverStatus.toLowerCase(Locale.ROOT);
+        renderFittedText(sb, sampleNote, leftX + 14.0f * scale, cardBottom + 21.0f * scale,
+                leftWidth - 28.0f * scale, view == null ? WARNING : MUTED, 0.72f);
 
-        renderSmallText(sb, "Surviving final HP", rightX + 14.0f * scale,
+        renderSmallText(sb, "HP at combat end", rightX + 14.0f * scale,
                 cardTop - 13.0f * scale, Color.WHITE, 0.92f);
-        renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
-                rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
+        if (view == null || view.root.count == 0) {
+            float textTop = cardBottom + cardHeight - 38.0f * scale;
+            renderFittedText(sb, view == null ? "Awaiting Silver search" : "No resolved simulations",
+                    rightX + 12.0f * scale, textTop, rightWidth - 24.0f * scale, WARNING, 0.78f);
+            if (view == null && silverReason != null && !silverReason.isEmpty()) renderFittedText(sb,
+                    silverReason.replace('_', ' '), rightX + 12.0f * scale, textTop - 24.0f * scale,
+                    rightWidth - 24.0f * scale, MUTED, 0.65f);
+        } else renderHpHistogram(sb, view.axis(), view.root, hovered, rightX + 12.0f * scale,
+                cardBottom + 14.0f * scale, rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
         renderSmallText(sb, silverBudgetSummary(), x + 16.0f * scale, bottom + 68.0f * scale,
                 CYAN_DIM, 0.70f);
@@ -748,51 +750,31 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 width - 16 * scale, MUTED, .65f);
     }
 
+    /**
+     * One rank badge under each combat potion icon: its best-ranked Silver use
+     * or discard action. Hovering the potion (or its open menu) shows that
+     * action's final-HP samples in the combat panel.
+     */
     private void renderPotionBadges(SpriteBatch sb, float scale) {
-        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null) return;
+        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null
+                || newest == null || !"combat".equals(newest.boundary)) return;
         com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
-        if (popup != null && popup.targetMode) return;
+        if (popup != null && !popup.isHidden) return;
         PotionOverlay view = potionOverlay;
-        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) view = null;
-        float width = 220 * scale;
-        float gap = 8 * scale;
-        float groupWidth = AbstractDungeon.player.potions.size() * (width + gap) - gap;
-        float firstX = AbstractDungeon.player.potions.isEmpty() ? 0 : Math.max(8 * scale,
-                Math.min(Math.max(540 * scale, AbstractDungeon.player.potions.get(0).hb.cX - width / 2),
-                        Settings.WIDTH - groupWidth - 8 * scale));
+        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) return;
+        float width = 96 * scale, height = 24 * scale;
         for (int slot = 0; slot < AbstractDungeon.player.potions.size(); ++slot) {
             com.megacrit.cardcrawl.potions.AbstractPotion potion = AbstractDungeon.player.potions.get(slot);
-            if (potion == null || "Potion Slot".equals(potion.ID)) continue;
-            try {
-                // Persistent columns identify the physical slot and stay readable
-                // even when several potions have ranked use/discard actions.
-                float x = firstX + slot * (width + gap);
-                float bottom = Settings.HEIGHT - 190 * scale;
-                if (popup != null && !popup.isHidden) {
-                    com.megacrit.cardcrawl.helpers.Hitbox menuBottom =
-                            (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot");
-                    bottom = Math.min(bottom, menuBottom.y - 74 * scale);
-                }
-                renderFittedText(sb, "P" + (slot + 1) + " · " + potion.name,
-                        x + 8 * scale, bottom + 52 * scale, width - 16 * scale, MUTED, .68f);
-                List<PotionOverlay.Entry> use = view == null ? Collections.emptyList() : view.forSlot(slot + 1, false);
-                List<PotionOverlay.Entry> discard = view == null ? Collections.emptyList() : view.forSlot(slot + 1, true);
-                if (!potion.canUse() || use.isEmpty()) {
-                    renderInlineBadge(sb, x, bottom, width, "Use · " + (potion.canUse() ? "not scored" : "unavailable"),
-                            false, false, scale);
-                    bottom -= 36 * scale;
-                } else for (PotionOverlay.Entry entry : use) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
-                    bottom -= 36 * scale;
-                }
-                if (!potion.canDiscard() || discard.isEmpty())
-                    renderInlineBadge(sb, x, bottom, width, "Discard · " + (potion.canDiscard() ? "not scored" : "unavailable"),
-                            false, false, scale);
-                else for (PotionOverlay.Entry entry : discard) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
-                    bottom -= 36 * scale;
-                }
-            } catch (ReflectiveOperationException | RuntimeException unavailable) { /* Hide unbound UI. */ }
+            if (potion == null || "Potion Slot".equals(potion.ID) || potion.hb == null) continue;
+            PotionOverlay.Entry entry = view.best(slot + 1);
+            if (entry == null) continue;
+            float x = Math.max(0, Math.min(Settings.WIDTH - width, potion.hb.cX - width / 2));
+            float bottom = potion.hb.y - height - 4 * scale;
+            drawRect(sb, x, bottom, width, height, PANEL_INNER);
+            drawBorder(sb, x, bottom, width, height, entry.selected ? WARNING : CARD_BORDER,
+                    (entry.selected ? 2 : 1) * scale);
+            renderFittedText(sb, entry.badge(), x + 6 * scale, bottom + height - 4 * scale,
+                    width - 12 * scale, entry.selected ? CYAN : Color.WHITE, .62f);
         }
     }
 
@@ -851,38 +833,70 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
     }
 
+    /**
+     * Two boxes like the combat panel. Left: the search's mean value (a model
+     * estimate, not a calibrated probability) and, on hover, the choice's gap to
+     * the recommended one with its search-noise error. Right: player HP where
+     * each simulation was evaluated, on a fixed 0..max HP axis.
+     */
     private void renderOocDistribution(SpriteBatch sb, OocOverlay view, OocOverlay.Choice hovered,
                                        float x, float top, float width, float scale) {
-        OocOverlay.Distribution[] layers = view.distributionLayers(hovered);
-        OocOverlay.Distribution baseline = layers[0], overlay = layers[1];
-        renderFittedText(sb, baseline.summary("All search samples"), x + 16 * scale, top,
-                width - 32 * scale, CYAN, .67f);
-        String detail = hovered == null ? "Hover a choice to compare its sampled values"
-                : overlay == null ? "No distribution for this choice" : overlay.summary(hovered.label);
-        renderFittedText(sb, detail, x + 16 * scale, top - 20 * scale, width - 32 * scale, WARNING, .65f);
-        float plotX = x + 20 * scale, plotBottom = top - 122 * scale;
-        float plotWidth = width - 40 * scale, plotHeight = 74 * scale, bar = plotWidth / 22;
-        // Both layers use a fixed 0..100% y axis and the same 22 buckets.
-        drawRect(sb, plotX, plotBottom, plotWidth, plotHeight, PANEL_INNER);
-        renderSmallText(sb, "100%", plotX, plotBottom + plotHeight + 13 * scale, MUTED, .52f);
-        for (int i = 0; i < 22; ++i) {
-            float bx = plotX + i * bar;
-            float baseHeight = (float)baseline.share(i) * plotHeight;
-            if (baseHeight > 0) drawRect(sb, bx + scale, plotBottom, bar - 2 * scale, baseHeight, CYAN_DIM);
-            if (overlay != null && overlay.count > 0) {
-                float overlayHeight = (float)overlay.share(i) * plotHeight;
-                if (overlayHeight > 0) drawBorder(sb, bx + scale, plotBottom, bar - 2 * scale,
-                        overlayHeight, WARNING, Math.min(1.5f * scale, overlayHeight));
-            }
+        float cardTop = top + 4 * scale, cardHeight = 150 * scale, cardBottom = cardTop - cardHeight;
+        float leftX = x + 14 * scale, leftWidth = 172 * scale;
+        float rightX = x + 198 * scale, rightWidth = width - 212 * scale;
+        drawCard(sb, leftX, cardBottom, leftWidth, cardHeight, scale);
+        drawCard(sb, rightX, cardBottom, rightWidth, cardHeight, scale);
+
+        OocOverlay.Distribution all = view.distribution;
+        renderSmallText(sb, "Win estimate", leftX + 14 * scale, cardTop - 13 * scale, Color.WHITE, .92f);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
+                all.mean == null ? "—" : String.format(Locale.ROOT, "%.3f", all.mean),
+                leftX + 14 * scale, cardTop - 38 * scale, CYAN);
+        renderFittedText(sb, "model value · n " + all.count, leftX + 14 * scale, cardTop - 66 * scale,
+                leftWidth - 28 * scale, MUTED, .66f);
+        OocOverlay.Choice best = null;
+        for (OocOverlay.Choice choice : view.choices) if (choice.selected) best = choice;
+        if (hovered != null) {
+            renderFittedText(sb, hovered.label, leftX + 14 * scale, cardTop - 92 * scale,
+                    leftWidth - 28 * scale, WARNING, .70f);
+            renderFittedText(sb, valueGap(hovered, best), leftX + 14 * scale, cardTop - 112 * scale,
+                    leftWidth - 28 * scale, WARNING, .70f);
+            renderFittedText(sb, String.format(Locale.ROOT, "N %d · visits %.0f%%", hovered.visits,
+                    100 * hovered.visitShare), leftX + 14 * scale, cardTop - 131 * scale,
+                    leftWidth - 28 * scale, MUTED, .62f);
+        } else renderFittedText(sb, "Hover a choice to compare", leftX + 14 * scale, cardTop - 92 * scale,
+                leftWidth - 28 * scale, MUTED, .64f);
+
+        renderSmallText(sb, view.hpHorizon.isEmpty() ? "HP ahead" : view.hpHorizon,
+                rightX + 14 * scale, cardTop - 13 * scale, Color.WHITE, .92f);
+        float textTop = cardTop - 44 * scale;
+        if (view.hpRoot == null || view.hpRoot.count == 0) {
+            renderFittedText(sb, view.hpRoot == null ? "No HP samples from this advisor" : "No resolved simulations",
+                    rightX + 12 * scale, textTop, rightWidth - 24 * scale, MUTED, .72f);
+        } else if (view.hpUnchanged() && (hovered == null || hovered.hp == null
+                || hovered.hp.count == 0 || hovered.hp.share(view.hpAxis.currentHp, view.hpAxis.currentHp) == 1.0)) {
+            renderFittedText(sb, "No HP change within the search horizon",
+                    rightX + 12 * scale, textTop, rightWidth - 24 * scale, MUTED, .72f);
+            renderFittedText(sb, "every sample stays at " + view.hpAxis.currentHp + " HP",
+                    rightX + 12 * scale, textTop - 22 * scale, rightWidth - 24 * scale, MUTED, .64f);
+        } else {
+            renderHpHistogram(sb, view.hpAxis, view.hpRoot, hovered == null ? null : hovered.hp,
+                    rightX + 12 * scale, cardBottom + 14 * scale, rightWidth - 24 * scale, cardHeight - 54 * scale, scale);
+            renderFittedText(sb, "Deaths " + view.hpRoot.deathLabel() + (hovered != null && hovered.hp != null
+                    ? "  ·  hover " + hovered.hp.deathLabel() : ""), rightX + 12 * scale, cardTop - 30 * scale,
+                    rightWidth - 90 * scale, MUTED, .60f);
         }
-        renderFittedText(sb, "Death | other evaluated values 0 → 1 | Victory",
-                plotX, plotBottom - 5 * scale, plotWidth, MUTED, .61f);
-        if (hovered != null) renderFittedText(sb,
-                String.format(Locale.ROOT, "Choice visits %.1f%% · prior %.1f%% · N %d",
-                        100 * hovered.visitShare, 100 * hovered.prior, hovered.visits),
-                plotX, plotBottom - 26 * scale, plotWidth, MUTED, .65f);
-        else renderSmallText(sb, "Shares of each set · terminal samples are not model probabilities",
-                plotX, plotBottom - 26 * scale, MUTED, .55f);
+    }
+
+    /** "best", or the gap to the recommended choice with ±1 standard error of the difference. */
+    private static String valueGap(OocOverlay.Choice hovered, OocOverlay.Choice best) {
+        if (hovered.distribution == null || hovered.distribution.mean == null) return "No samples";
+        if (best == null || best == hovered) return String.format(Locale.ROOT, "%.3f · recommended", hovered.q);
+        if (best.distribution == null || best.distribution.mean == null) return String.format(Locale.ROOT, "%.3f", hovered.q);
+        double gap = hovered.distribution.mean - best.distribution.mean;
+        double error = Math.hypot(hovered.distribution.standardError(), best.distribution.standardError());
+        if (!Double.isFinite(error)) return String.format(Locale.ROOT, "%+.3f vs #1", gap);
+        return String.format(Locale.ROOT, "%+.3f ± %.3f%s", gap, error, Math.abs(gap) < 2 * error ? "  ≈ tie" : "");
     }
 
     private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale, boolean drawBadges) {
@@ -1002,79 +1016,163 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return -1;
     }
 
-    private void renderHistogram(SpriteBatch sb, float x, float bottom, float width,
-                                 float height, float scale) {
-        if (ctmHistogram.length == 0) {
-            renderFittedText(sb, ctmStatus.isEmpty() ? "Awaiting forecast" : "Forecast unavailable",
-                    x, bottom + height - 12.0f * scale, width, WARNING, 0.78f);
-            if (!ctmStatus.isEmpty()) renderFittedText(sb,
-                    (ctmReason.isEmpty() ? ctmStatus : ctmReason).replace('_', ' '),
-                    x, bottom + height - 36.0f * scale, width, MUTED, 0.65f);
-            return;
-        }
-        int first = -1;
-        int last = -1;
-        for (int i = 0; i < ctmHistogram.length; ++i) {
-            if (ctmHistogram[i] > 0.000001) {
-                if (first < 0) first = i;
-                last = i;
+    private CombatHpOverlay currentCombatHpOverlay() {
+        Snapshot snapshot = newest;
+        CombatHpOverlay view = combatHpOverlay;
+        return snapshot != null && view != null && responseReady()
+                && view.matches(snapshot.session, snapshot.sequence, snapshot.hash) ? view : null;
+    }
+
+    /** The hovered hand card (narrowed to the targeted monster while aiming) or End Turn. */
+    private CombatHpOverlay.Layer hoveredCombatLayer(CombatHpOverlay view, String[] label) {
+        com.megacrit.cardcrawl.characters.AbstractPlayer player = AbstractDungeon.player;
+        if (player == null) return null;
+        CombatHpOverlay.Layer potion = hoveredPotionLayer(view, player, label);
+        if (potion != null) return potion;
+        Object dragged = optionalField(player, "hoveredCard");
+        AbstractCard card = dragged instanceof AbstractCard ? (AbstractCard) dragged : null;
+        if (card == null && player.hand != null)
+            for (AbstractCard candidate : player.hand.group)
+                if (candidate.hb != null && candidate.hb.hovered) { card = candidate; break; }
+        if (card != null) {
+            Object aimed = AbstractDungeon.getMonsters() == null ? null
+                    : optionalField(AbstractDungeon.getMonsters(), "hoveredMonster");
+            AbstractMonster monster = aimed instanceof AbstractMonster ? (AbstractMonster) aimed : null;
+            int target = liveTargetIndex(monster);
+            CombatHpOverlay.Layer layer = target > 0 ? view.forCard(String.valueOf(card.uuid), target) : null;
+            if (layer != null) {
+                label[0] = card.name + " → " + monster.name;
+                return layer;
             }
+            label[0] = card.name;
+            return view.forCard(String.valueOf(card.uuid), -1);
         }
-        if (first < 0) return;
-        final int span = last - first + 1;
-        final int buckets = Math.min(14, span);
-        double maximum = 0.0;
-        for (int bucket = 0; bucket < buckets; ++bucket) {
-            int begin = first + bucket * span / buckets;
-            int end = first + (bucket + 1) * span / buckets;
-            double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
-            maximum = Math.max(maximum, probability);
+        Object button = AbstractDungeon.overlayMenu == null ? null : AbstractDungeon.overlayMenu.endTurnButton;
+        Object hb = button == null ? null : optionalField(button, "hb");
+        if (hb instanceof com.megacrit.cardcrawl.helpers.Hitbox && ((com.megacrit.cardcrawl.helpers.Hitbox) hb).hovered) {
+            label[0] = "End Turn";
+            return view.forEndTurn();
         }
-        if (maximum <= 0.0) return;
-        float chartX = x + 8.0f * scale;
-        float chartWidth = width - 58.0f * scale;
-        float chartHeight = height - 5.0f * scale;
-        float chartBottom = bottom + 5.0f * scale;
-        float barWidth = chartWidth / buckets;
+        return null;
+    }
+
+    /** The open potion menu's slot (Discard when its lower button is hovered), else a hovered potion icon. */
+    private CombatHpOverlay.Layer hoveredPotionLayer(CombatHpOverlay view,
+            com.megacrit.cardcrawl.characters.AbstractPlayer player, String[] label) {
+        if (AbstractDungeon.topPanel == null || player.potions == null) return null;
+        com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
+        if (popup != null && !popup.isHidden) {
+            Object slotValue = optionalField(popup, "slot");
+            if (!(slotValue instanceof Integer)) return null;
+            int slot = (Integer) slotValue;
+            if (slot < 0 || slot >= player.potions.size() || player.potions.get(slot) == null) return null;
+            String name = player.potions.get(slot).name;
+            if (popup.targetMode) {
+                Object aimed = optionalField(popup, "hoveredMonster");
+                AbstractMonster monster = aimed instanceof AbstractMonster ? (AbstractMonster) aimed : null;
+                int target = liveTargetIndex(monster);
+                CombatHpOverlay.Layer layer = target > 0 ? view.forPotion(slot + 1, false, target) : null;
+                if (layer != null) {
+                    label[0] = name + " → " + monster.name;
+                    return layer;
+                }
+                label[0] = name;
+                return view.forPotion(slot + 1, false, -1);
+            }
+            Object discard = optionalField(popup, "hbBot");
+            if (discard instanceof com.megacrit.cardcrawl.helpers.Hitbox
+                    && ((com.megacrit.cardcrawl.helpers.Hitbox) discard).hovered) {
+                label[0] = "Discard " + name;
+                return view.forPotion(slot + 1, true, -1);
+            }
+            label[0] = name;
+            return view.forPotion(slot + 1, false, -1);
+        }
+        for (int slot = 0; slot < player.potions.size(); ++slot) {
+            com.megacrit.cardcrawl.potions.AbstractPotion potion = player.potions.get(slot);
+            if (potion == null || potion.hb == null || !potion.hb.hovered) continue;
+            label[0] = potion.name;
+            return view.forPotion(slot + 1, false, -1);
+        }
+        return null;
+    }
+
+    private static Object optionalField(Object object, String name) {
+        try { return InlineChoices.field(object, name); }
+        catch (ReflectiveOperationException | RuntimeException unavailable) { return null; }
+    }
+
+    /** 1-based index among living monsters, as Silver's live actions number targets; -1 if none. */
+    private static int liveTargetIndex(AbstractMonster target) {
+        if (target == null || target.isDeadOrEscaped() || AbstractDungeon.getMonsters() == null) return -1;
+        int index = 0;
+        for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
+            if (monster == null || monster.isDeadOrEscaped()) continue;
+            ++index;
+            if (monster == target) return index;
+        }
+        return -1;
+    }
+
+    /** Cyan root samples on a fixed 0..max HP axis, the hovered layer as an amber outline. */
+    private void renderHpHistogram(SpriteBatch sb, HpAxis view, CombatHpOverlay.Layer root,
+                                   CombatHpOverlay.Layer hovered, float x, float bottom, float width,
+                                   float height, float scale) {
+        final int buckets = view.buckets();
+        final double maximum = Math.max(1e-9, view.maxShare(buckets));
+        float statsWidth = 66.0f * scale;
+        float chartX = x + 4.0f * scale;
+        float chartWidth = width - statsWidth - 8.0f * scale;
+        float chartBottom = bottom + 14.0f * scale;
+        float chartHeight = height - 16.0f * scale;
+        float barWidth = chartWidth / (buckets + 1);
         sb.setColor(0.35f, 0.78f, 0.80f, 0.20f);
-        for (int tick = 1; tick <= 3; ++tick) {
-            float gridY = chartBottom + chartHeight * tick / 4.0f;
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, gridY,
-                    chartWidth, scale);
-        }
+        for (int tick = 1; tick <= 3; ++tick)
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, chartBottom + chartHeight * tick / 4.0f, chartWidth, scale);
         sb.setColor(CYAN_DIM);
         sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, chartBottom, chartWidth, scale);
-        for (int bucket = 0; bucket < buckets; ++bucket) {
-            int begin = first + bucket * span / buckets;
-            int end = first + (bucket + 1) * span / buckets;
-            double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
-            float barHeight = (float) (chartHeight * probability / maximum);
-            sb.setColor(bucket < buckets / 2 ? CYAN_DIM : CYAN);
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX + bucket * barWidth,
-                    chartBottom, Math.max(scale, barWidth - scale), barHeight);
+        for (int bucket = 0; bucket <= buckets; ++bucket) {
+            int[] range = view.bucketRange(bucket, buckets);
+            float bx = chartX + bucket * barWidth;
+            float baseHeight = (float) (chartHeight * root.share(range[0], range[1]) / maximum);
+            if (baseHeight > 0) drawRect(sb, bx + scale * 0.5f, chartBottom,
+                    Math.max(scale, barWidth - scale), baseHeight, bucket == 0 ? DEATH : CYAN_DIM);
+            if (hovered != null && hovered.count > 0) {
+                float overlayHeight = (float) (chartHeight * hovered.share(range[0], range[1]) / maximum);
+                if (overlayHeight > 0) drawBorder(sb, bx + scale * 0.5f, chartBottom,
+                        Math.max(scale, barWidth - scale), overlayHeight, WARNING,
+                        Math.min(1.5f * scale, overlayHeight));
+            }
         }
-        int firstHp = ctmHistogramMin + first;
-        int lastHp = ctmHistogramMin + last;
-        renderSmallText(sb, Integer.toString(firstHp), chartX,
-                bottom + 1.0f * scale, MUTED, 0.70f);
-        renderSmallText(sb, Integer.toString(lastHp), chartX + chartWidth - 12.0f * scale,
-                bottom + 1.0f * scale, MUTED, 0.70f);
-        double mean = 0.0;
-        double mass = 0.0;
-        for (int i = first; i <= last; ++i) {
-            mean += (ctmHistogramMin + i) * ctmHistogram[i];
-            mass += ctmHistogram[i];
+        // Current HP marker.
+        float markerX = chartX + barWidth + (float) (view.currentHp - 1) / Math.max(1, view.axisMaxHp)
+                * (chartWidth - barWidth);
+        sb.setColor(Color.WHITE);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, markerX, chartBottom, scale, chartHeight);
+        renderSmallText(sb, "0", chartX, chartBottom - 1.0f * scale, MUTED, 0.66f);
+        renderSmallText(sb, Integer.toString(view.axisMaxHp), chartX + chartWidth - 18.0f * scale,
+                chartBottom - 1.0f * scale, MUTED, 0.66f);
+        renderSmallText(sb, "now " + view.currentHp, Math.max(chartX + 16.0f * scale, Math.min(
+                markerX - 14.0f * scale, chartX + chartWidth - 70.0f * scale)),
+                chartBottom - 1.0f * scale, Color.WHITE, 0.66f);
+        // Expected final HP (deaths as 0) and its change from now: all, then hover.
+        float statsX = x + width - statsWidth;
+        renderFinalHpStats(sb, root, view.currentHp, statsX, bottom + height, statsWidth, CYAN, scale);
+        if (hovered != null)
+            renderFinalHpStats(sb, hovered, view.currentHp, statsX, bottom + height - 40.0f * scale,
+                    statsWidth, WARNING, scale);
+    }
+
+    private void renderFinalHpStats(SpriteBatch sb, CombatHpOverlay.Layer layer, int currentHp,
+                                    float x, float top, float width, Color color, float scale) {
+        if (layer.count == 0) {
+            renderFittedText(sb, "no samples", x, top, width, color, 0.66f);
+            return;
         }
-        if (mass > 0.0 && newest.maxHp > 0) {
-            renderSmallText(sb, "Mean", x + width - 42.0f * scale,
-                    bottom + height - 12.0f * scale, CYAN, 0.70f);
-            renderSmallText(sb, String.format(Locale.ROOT, "%.0f%%",
-                            100.0 * mean / mass / newest.maxHp),
-                    x + width - 42.0f * scale, bottom + height - 29.0f * scale,
-                    CYAN, 0.88f);
-        }
+        double mean = layer.meanHp();
+        renderFittedText(sb, String.format(Locale.ROOT, "≈%.0f HP", mean), x, top, width, color, 0.80f);
+        renderFittedText(sb, String.format(Locale.ROOT, "%+.0f exp.", mean - currentHp),
+                x, top - 17.0f * scale, width, color, 0.66f);
     }
 
     private void renderStatusPill(SpriteBatch sb, float x, float top, float scale) {
@@ -1779,15 +1877,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append(",\"bottleBinding\":").append(bottle).append('}');
         }
         return out.append(']').toString();
-    }
-
-    static String ctmResponseJson(String response) {
-        com.google.gson.JsonObject root = new com.google.gson.JsonParser().parse(response).getAsJsonObject();
-        if (root.has("evaluators")) for (com.google.gson.JsonElement item : root.getAsJsonArray("evaluators")) {
-            com.google.gson.JsonObject evaluator = item.getAsJsonObject();
-            if ("ctm_combat_entry_v2".equals(evaluator.get("id").getAsString())) return evaluator.toString();
-        }
-        return "";
     }
 
     static int combatEntryRelicData(String id, int counter, boolean usedUp) {
@@ -2714,11 +2803,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         Snapshot current = newest;
                         if (current != null && current.session.equals(responseSession)
                                 && seq == current.sequence && current.hash.equals(hash)) {
-                            ctmStatus = "";
-                            ctmReason = "";
-                            ctmDeath = 0.0;
-                            ctmHistogramMin = 1;
-                            ctmHistogram = new double[0];
                             silverStatus = "";
                             silverReason = "";
                             silverSelectedAction = "";
@@ -2739,18 +2823,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             responseHash = hash;
                             advisorResponseJson = line;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
-                            if ("MODEL_UNAVAILABLE".equals(status)
-                                    || "SCHEMA_MISMATCH".equals(status)) {
-                                ctmStatus = status.toLowerCase().replace('_', ' ');
-                                ctmReason = reason == null ? ctmStatus : reason;
-                            }
                             if ("ERROR".equals(status)) {
                                 advisorReason = (code == null ? "UNKNOWN" : code) +
                                         (message == null || message.isEmpty() ? "" : " - " + message);
-                                if ("combat".equals(current.boundary) && ctmStatus.isEmpty()) {
-                                    ctmStatus = code == null ? "error" : code.toLowerCase();
-                                    ctmReason = message == null ? advisorReason : message;
-                                }
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
@@ -2771,18 +2846,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 silverRootVisits = numberField(line, "rootVisits");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
-                            String ctm = ctmResponseJson(line);
-                            if (!ctm.isEmpty()) {
-                                String forecastStatus = field(ctm, "status");
-                                ctmStatus = "OK".equals(forecastStatus) ? "OK" :
-                                        forecastStatus == null ? "error" : forecastStatus.toLowerCase(Locale.ROOT);
-                                String forecastReason = field(ctm, "reason");
-                                ctmReason = forecastReason == null ? ctmStatus : forecastReason;
-                                if ("OK".equals(ctmStatus)) {
-                                    ctmDeath = doubleField(ctm, "deathProbability");
-                                    ctmHistogramMin = (int) numberField(ctm, "winningHpHistogramMin");
-                                    ctmHistogram = numberArrayField(ctm, "winningHpHistogram");
-                                }
+                            if ("combat".equals(current.boundary)) {
+                                try { combatHpOverlay = CombatHpOverlay.parse(line); }
+                                catch (RuntimeException invalidDisplay) { combatHpOverlay = null; }
                             }
                             try { potionOverlay = PotionOverlay.parse(line); }
                             catch (RuntimeException invalidDisplay) { potionOverlay = null; }
@@ -2834,36 +2900,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (start < 0) return false;
             start += needle.length();
             return json.startsWith("true", start);
-        }
-
-        private double[] numberArrayField(String json, String key) {
-            String needle = "\"" + key + "\":[";
-            int start = json.indexOf(needle);
-            if (start < 0) return new double[0];
-            start += needle.length();
-            int end = json.indexOf(']', start);
-            if (end < 0) return new double[0];
-            String values = json.substring(start, end).trim();
-            if (values.isEmpty()) return new double[0];
-            String[] parts = values.split(",");
-            double[] result = new double[parts.length];
-            try {
-                for (int i = 0; i < parts.length; ++i) result[i] = Double.parseDouble(parts[i]);
-                return result;
-            } catch (NumberFormatException error) {
-                return new double[0];
-            }
-        }
-
-        private double doubleField(String json, String key) {
-            String needle = "\"" + key + "\":";
-            int start = json.indexOf(needle);
-            if (start < 0) return 0.0;
-            start += needle.length();
-            int end = start;
-            while (end < json.length() && "0123456789+-.eE".indexOf(json.charAt(end)) >= 0) end++;
-            try { return Double.parseDouble(json.substring(start, end)); }
-            catch (Exception e) { return 0.0; }
         }
     }
 

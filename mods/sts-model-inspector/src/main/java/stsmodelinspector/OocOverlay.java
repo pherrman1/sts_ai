@@ -9,6 +9,7 @@ final class OocOverlay {
         private final long[] bins;
         final long count, deaths, victories;
         final Double mean;
+        final double sumSquares;   // NaN when the producer did not report it
         Distribution(JsonObject value) {
             if (!"ooc_value_distribution_v1".equals(text(value, "schema"))
                     || !"share_of_own_samples".equals(text(value, "normalization")))
@@ -26,6 +27,7 @@ final class OocOverlay {
             deaths = value.get("terminalDeaths").getAsLong();
             victories = value.get("terminalVictories").getAsLong();
             mean = value.get("mean").isJsonNull() ? null : value.get("mean").getAsDouble();
+            sumSquares = value.has("sumSquares") ? value.get("sumSquares").getAsDouble() : Double.NaN;
             if (value.get("count").getAsDouble() != count
                     || value.get("terminalDeaths").getAsDouble() != deaths
                     || value.get("terminalVictories").getAsDouble() != victories
@@ -34,6 +36,12 @@ final class OocOverlay {
                 throw new IllegalArgumentException("inconsistent value distribution");
         }
         long bin(int index) { return bins[index]; }
+        /** Standard error of the mean from the sample variance; NaN without two samples or sumSquares. */
+        double standardError() {
+            if (count < 2 || mean == null || !Double.isFinite(sumSquares)) return Double.NaN;
+            double variance = Math.max(0, (sumSquares - count * mean * mean) / (count - 1));
+            return Math.sqrt(variance / count);
+        }
         double share(int index) { return count == 0 ? 0 : (double)bins[index] / count; }
         String summary(String label) {
             return count == 0 ? label + ": no search samples"
@@ -53,14 +61,16 @@ final class OocOverlay {
         final JsonObject action;
         final JsonObject followUp;
         final String followUpUuid;
+        final CombatHpOverlay.Layer hp;   // endpoint HP samples, or null
         Choice(String key, String label, String kind, double q, long visits, double visitShare, double prior,
                int index, boolean selected, JsonObject action,
-               JsonObject followUp, String followUpUuid, String valueSemantics, Distribution distribution) {
+               JsonObject followUp, String followUpUuid, String valueSemantics, Distribution distribution,
+               CombatHpOverlay.Layer hp) {
             this.key = key; this.label = label; this.kind = kind;
             this.q = q; this.visits = visits; this.visitShare = visitShare; this.prior = prior;
             this.index = index; this.selected = selected; this.action = action;
             this.followUp = followUp; this.followUpUuid = followUpUuid;
-            this.valueSemantics = valueSemantics; this.distribution = distribution;
+            this.valueSemantics = valueSemantics; this.distribution = distribution; this.hp = hp;
         }
         String scoreLabel(int rank) {
             if ("forced_no_search".equals(valueSemantics)) return "#" + rank + " · Forced";
@@ -74,6 +84,10 @@ final class OocOverlay {
     final long sequence;
     final List<Choice> choices;
     final Distribution distribution;
+    // Player HP where each simulation was evaluated; null when not reported.
+    CombatHpOverlay.Layer hpRoot;
+    HpAxis hpAxis;
+    String hpHorizon = "";
     private OocOverlay(JsonObject response, String status, String reason, String policy,
                        String screen, List<Choice> choices, Distribution distribution) {
         session = text(response, "session"); hash = text(response, "observationHash");
@@ -130,6 +144,15 @@ final class OocOverlay {
                 || (!mcts && !forced && !"raw_v4_action_score".equals(semantics))))
             throw new IllegalArgumentException("unknown OOC value semantics");
         List<Choice> choices = new ArrayList<>();
+        JsonObject hpDistribution = "OK".equals(status) && evaluator.has("endpointHpDistribution")
+                ? evaluator.getAsJsonObject("endpointHpDistribution") : null;
+        int hpBins = 0;
+        if (hpDistribution != null) {
+            if (!"ooc_endpoint_hp_distribution_v1".equals(text(hpDistribution, "schema")))
+                throw new IllegalArgumentException("unknown endpoint HP semantics");
+            hpBins = hpDistribution.get("axisMaxHp").getAsInt() + 1;
+            if (hpBins < 2) throw new IllegalArgumentException("invalid endpoint HP axis");
+        }
         if ("OK".equals(status)) {
             String selected = text(evaluator, "selectedSemanticKey");
             Set<String> keys = new HashSet<>();
@@ -178,6 +201,9 @@ final class OocOverlay {
                     previewUuid = text(card, "uuid");
                     if (previewUuid.isEmpty()) throw new IllegalArgumentException("preview physical card missing");
                 }
+                CombatHpOverlay.Layer hp = hpBins > 0 && c.has("endpointHp")
+                        ? new CombatHpOverlay.Layer(c.getAsJsonObject("endpointHp"), hpBins) : null;
+                if (hpBins > 0 && hp == null) throw new IllegalArgumentException("missing candidate HP samples");
                 Distribution distribution = c.has("valueDistribution")
                         ? new Distribution(c.getAsJsonObject("valueDistribution")) : null;
                 if (mcts) {
@@ -188,7 +214,7 @@ final class OocOverlay {
                     backedUpSum += q * visits;
                 }
                 choices.add(new Choice(key, label(action, ooc), kind, q, visits, visitShare, prior,
-                        index, best, action, preview, previewUuid, semantics, distribution));
+                        index, best, action, preview, previewUuid, semantics, distribution, hp));
             }
             if (selectedCount != 1) throw new IllegalArgumentException("missing selected OOC choice");
             if (mcts) {
@@ -205,7 +231,37 @@ final class OocOverlay {
             }
             choices.sort(Comparator.comparingLong((Choice c) -> -c.visits).thenComparing(c -> c.key));
         }
-        return new OocOverlay(response, status, text(evaluator, "reason"), policy, screen, choices, baseline);
+        OocOverlay view = new OocOverlay(response, status, text(evaluator, "reason"), policy, screen, choices, baseline);
+        if (hpDistribution != null) attachHp(view, hpDistribution, hpBins);
+        return view;
+    }
+    private static void attachHp(OocOverlay view, JsonObject distribution, int bins) {
+        CombatHpOverlay.Layer root = new CombatHpOverlay.Layer(distribution.getAsJsonObject("root"), bins);
+        List<CombatHpOverlay.Layer> layers = new ArrayList<>();
+        layers.add(root);
+        List<CombatHpOverlay.Layer> candidates = new ArrayList<>();
+        for (Choice choice : view.choices) candidates.add(choice.hp);
+        CombatHpOverlay.Layer sum = CombatHpOverlay.Layer.sum(candidates, bins);
+        if (sum.count != root.count || sum.deaths != root.deaths || sum.unresolved != root.unresolved
+                || !Arrays.equals(sum.counts(), root.counts()))
+            throw new IllegalArgumentException("candidates do not partition the HP samples");
+        layers.addAll(candidates);
+        int currentHp = distribution.get("currentHp").getAsInt();
+        if (currentHp < 0 || currentHp >= bins) throw new IllegalArgumentException("invalid current HP");
+        int low = Integer.MAX_VALUE, high = Integer.MIN_VALUE;
+        for (Map.Entry<String, JsonElement> entry : distribution.getAsJsonObject("root")
+                .getAsJsonObject("floorOffsets").entrySet()) {
+            int offset = Integer.parseInt(entry.getKey());
+            low = Math.min(low, offset); high = Math.max(high, offset);
+        }
+        view.hpRoot = root;
+        view.hpAxis = new HpAxis(currentHp, distribution.get("maxHp").getAsInt(), bins - 1, layers);
+        view.hpHorizon = low > high ? "" : low == high ? "HP at floor +" + high : "HP at floor +" + low + "–" + high;
+    }
+    /** True when every resolved sample kept the current HP: nothing is at stake before the leaves. */
+    boolean hpUnchanged() {
+        return hpRoot != null && hpRoot.count > 0 && hpRoot.deaths == 0
+                && hpRoot.share(hpAxis.currentHp, hpAxis.currentHp) == 1.0;
     }
     // Baseline is immutable and always first. Hover never replaces its samples.
     Distribution[] distributionLayers(Choice hovered) {

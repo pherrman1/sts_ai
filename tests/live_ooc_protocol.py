@@ -225,6 +225,38 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertTrue(any(e["combatModelUsed"] and e["combatOutcome"] == "victory"
                             for e in tree["edges"] if e["kind"] == "particle"))
 
+    def test_endpoint_hp_samples_partition_the_search(self):
+        # HP where each simulation was evaluated: the map root reaches the next
+        # floor, a card reward stays on its floor at unchanged HP.
+        rows = self.run_rows([self.fixtures["map_multiple_children"],
+                              self.fixtures["card_reward_duplicate_take_skip"]])
+        offsets = []
+        for row in rows:
+            evaluator = row["evaluators"][0]
+            self.assertEqual(evaluator["status"], "OK", row)
+            dist = evaluator["endpointHpDistribution"]
+            self.assertEqual(dist["schema"], "ooc_endpoint_hp_distribution_v1")
+            bins = dist["axisMaxHp"] + 1
+            self.assertGreaterEqual(bins, dist["maxHp"] + 1)
+            root = dist["root"]
+            self.assertEqual(root["count"] + root["unresolved"],
+                             sum(c["visits"] for c in evaluator["candidateSummaries"]))
+            layers = [c["endpointHp"] for c in evaluator["candidateSummaries"]]
+            for layer in [root] + layers:
+                self.assertEqual(len(layer["hpCounts"]), bins)
+                self.assertEqual(sum(layer["hpCounts"]), layer["count"])
+                self.assertEqual(layer["hpCounts"][0], layer["deaths"])
+                self.assertEqual(sum(layer["floorOffsets"].values()), layer["count"])
+            for key in ("count", "deaths", "unresolved"):
+                self.assertEqual(sum(layer[key] for layer in layers), root[key])
+            self.assertEqual([sum(column) for column in zip(*(l["hpCounts"] for l in layers))],
+                             root["hpCounts"])
+            offsets.append(root["floorOffsets"])
+        self.assertEqual(set(offsets[0]), {"1"})
+        self.assertEqual(set(offsets[1]), {"0"})
+        card = rows[1]["evaluators"][0]["endpointHpDistribution"]
+        self.assertEqual(card["root"]["hpCounts"][card["currentHp"]], card["root"]["count"])
+
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])
         observation["ooc"]["publicState"]["seenRelicsComplete"] = False
