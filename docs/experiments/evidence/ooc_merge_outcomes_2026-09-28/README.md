@@ -1,7 +1,8 @@
 # OOC MCTS equivalent-outcome merging: paired gameplay comparison (#384)
 
-Status: **plan frozen before any cohort seed ran** (2026-09-28). Results are
-appended below as looks complete.
+Status: the sequential plan below was **stopped by the user after look 1**
+(time became available for a fixed cohort). The **current plan is the fixed
+128-seed cohort**, frozen before any of its seeds ran (2026-09-28).
 
 ## Question and arms
 
@@ -33,7 +34,21 @@ change whole-run play strength of opt-in OOC MCTS? Only that variable differs.
   default PUCT/widening/early stop, automatic CTM stack with active-Lizard
   correction, `OMP_NUM_THREADS=2` per arm, both arms concurrently.
 
-## Seeds, looks and decision rule
+## Current plan: fixed 128-seed cohort
+
+- Cohort: seeds `38410000..38410127` (fresh; disjoint from the stopped
+  sequential cohort and the canary). Each arm is one `run_arm.sh` invocation of
+  128 seeds; both arms run concurrently.
+- One analysis after all 128 pairs complete: two-sided 95% Student-t interval
+  on the paired treatment-minus-control difference of `score = floor + 10*won`
+  (`analyze.py <runs> --seed-lo 38410000 --looks 128`).
+- Verdict: interval above 0 = treatment better; below 0 = treatment worse;
+  otherwise inconclusive. Secondary (not decision-bearing): wins with exact
+  McNemar, mean floor, end HP, seconds per run.
+- No default change follows from this cohort alone.
+- The canary (below) is reused; it ran on the same frozen binary and runner.
+
+## Stopped sequential plan (historical)
 
 - Cohort: seeds `38400000..38400255` (fresh block), used strictly in order.
 - Looks at cumulative paired N = 8, 16, 32, 64, 128, 256. Each look adds the
@@ -55,5 +70,21 @@ change whole-run play strength of opt-in OOC MCTS? Only that variable differs.
 Analysis: [`analyze.py`](analyze.py) (pure Python; enforces seed membership).
 
 ## Results
+
+### Canary (seed 38401000, not cohort data)
+
+Both arms passed `tools/agent/check_benchmark_canary.py` (native Silver, 1 seed,
+10,000 sims, 2 threads, fair, executable SHA and binary hash as frozen); logs
+show `"mergeOutcomes":false` / `true`. Control lost on floor 50; treatment won.
+
+### Stopped sequential cohort, look 1 (N = 8, seeds 38400000..38400007)
+
+Treatment minus control `floor + 10*won`: mean -7.0, sd 10.7, 99.17%
+t-interval [-20.8, +6.8] (continue). Wins 6/8 control vs 4/8 treatment
+(discordant 0 treatment-only, 2 control-only, McNemar p = 0.50). The run was
+stopped during look 2 (control had completed 3 seeds, treatment 2); those
+partial rows are preserved but not analyzed.
+
+### Fixed 128-seed cohort
 
 (pending)

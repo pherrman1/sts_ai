@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Frozen #384 sequential paired analysis (pure Python, no NumPy).
+"""Frozen #384 paired analysis (pure Python, no NumPy).
 
 Primary metric per seed: score = floor + 10*won (the repository's historical
-paired gate weighting). Looks at cumulative N = 8, 16, 32, 64, 128, 256 paired
-seeds starting at 38400000. Each look uses a two-sided Student-t interval at
-Bonferroni-adjusted level 1 - 0.05/6 on the paired treatment-minus-control
-difference. Stop when the interval excludes 0 or at N = 256.
+paired gate weighting), paired treatment minus control. Each planned look uses
+a two-sided Student-t interval at Bonferroni-adjusted level 1 - 0.05/len(looks).
+
+Fixed cohort (current plan): --seed-lo 38410000 --looks 128 (one 95% look).
+Aborted sequential plan: --seed-lo 38400000 --looks 8,16,32,64,128,256.
 """
-import csv, glob, math, sys
+import argparse, csv, glob, math
 from pathlib import Path
 
-SEED_LO, LOOKS, ALPHA = 38400000, [8, 16, 32, 64, 128, 256], 0.05
+ALPHA = 0.05
 
 def betacf(a, b, x):
     qab, qap, qam = a + b, a + 1, a - 1
@@ -42,9 +43,9 @@ def t_quantile(p, df):
         lo, hi = (mid, hi) if t_cdf(mid, df) < p else (lo, mid)
     return (lo + hi) / 2
 
-def rows(arm, run_dir):
+def rows(arm, run_dir, seed_lo):
     out = {}
-    for path in sorted(glob.glob(f"{run_dir}/{arm}_*.csv")):
+    for path in sorted(glob.glob(f"{run_dir}/{arm}_{str(seed_lo)[:4]}*.csv")):
         if path.endswith(".mcts.csv"): continue
         for r in csv.DictReader(open(path)):
             s = int(r["seed"])
@@ -56,8 +57,8 @@ def mcnemar(b, c):
     n = b + c
     return 1.0 if n == 0 else min(1.0, 2 * sum(math.comb(n, k) for k in range(min(b, c) + 1)) / 2 ** n)
 
-def main(run_dir):
-    control, treatment = rows("control", run_dir), rows("treatment", run_dir)
+def main(run_dir, SEED_LO, LOOKS):
+    control, treatment = rows("control", run_dir, SEED_LO), rows("treatment", run_dir, SEED_LO)
     n = max((k for k in LOOKS if all(SEED_LO + i in control and SEED_LO + i in treatment for i in range(k))), default=0)
     if not n: raise SystemExit("no complete look yet")
     extra = (set(control) | set(treatment)) - {SEED_LO + i for i in range(max(LOOKS))}
@@ -87,4 +88,9 @@ def main(run_dir):
     print(verdict)
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("run_dir")
+    parser.add_argument("--seed-lo", type=int, required=True)
+    parser.add_argument("--looks", required=True, help="comma-separated cumulative paired N")
+    args = parser.parse_args()
+    main(args.run_dir, args.seed_lo, [int(x) for x in args.looks.split(",")])
