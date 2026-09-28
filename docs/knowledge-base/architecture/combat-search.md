@@ -442,6 +442,18 @@ a row's plan with the next row's `root_hash` and first step measures
 within-turn plan stability (ledger §367, §368). The fields are computed only when the
 profile is enabled and never feed the search.
 
+With `STS_SILVER_POR_SCAN=1` each row also carries `por`: a scan of the graph
+reachable from the root (`all`) and of its nodes in the root's turn
+(`root_turn`). At each `PLAYER_NORMAL` decision node S, for two deterministic
+moves a and b (copy-insensitive card identity, or potion and target) whose
+children X and Y are play states, the edge that plays the lower-ranked move
+second (rank from `Expert::getPlayOrdering`, then identity) is the one a
+canonical order would prune. It is *confirmed* when X --b--> and Y --a--> reach
+the same node (a diamond), and a *candidate* whenever that edge exists, whether
+or not the pair commutes. Each prunable edge counts once. Counts include
+unexpanded leaves in `decision_nodes`. Pruned-edge visits also refine the
+shared successor, so they bound the redundancy rather than measure waste.
+
 Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
 SUMMARY.json` to validate all denominators and generate counts/shares and depth
 quantiles by act, room, encounter, turn, decision, HP quarter, enemy HP in

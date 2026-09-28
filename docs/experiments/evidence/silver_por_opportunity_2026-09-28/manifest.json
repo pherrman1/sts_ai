@@ -1,0 +1,62 @@
+{
+  "baseline_sha": "46a5ebb2f6d1ebd38430183227e07170f348dd33",
+  "ledger": "\u00a7370",
+  "kind": "Stage 0 descriptive diagnostic; no search change",
+  "binary_sha256": "bd0283afbb49fdc6842958a9179302232ec1026f2aa237c04a78ca0a85e06aab",
+  "configuration": {
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shards": "offsets 0 and 4 per arm, 4 concurrent processes",
+    "ascension": 0,
+    "OMP_NUM_THREADS": 1,
+    "fair": true,
+    "arms": {
+      "flat": {
+        "STS_SILVER_ADAPTIVE": 0,
+        "sims": 1000
+      },
+      "adaptive": {
+        "STS_SILVER_ADAPTIVE": 1
+      }
+    },
+    "STS_SILVER_POR_SCAN": 1
+  },
+  "commands": [
+    "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=<HEAD> STS_SILVER_POR_SCAN=1 STS_SILVER_ADAPTIVE={0,1} STS_SILVER_TREE_PROFILE={arm}_{off}.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 4 0 {0,4} {arm}_{off}.csv",
+    "python3 analyze_por.py 'flat=flat_[04].jsonl.gz' 'adaptive=adaptive_[04].jsonl.gz' > summary.txt"
+  ],
+  "parity": "results columns identical to ledger \u00a7367 flat_on.csv and adaptive_on.csv for both arms",
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "artifacts_sha256": {
+    "adaptive_0.csv": "b98d3d6f15f940e7adf47bb6d25b8871461fb5f974c97c4eec859cc590b67df1",
+    "adaptive_0.csv.meta.json": "7e28198f85e95477d492135ce6f54c52e4f5f43306e245b19fd4e0b9479b9c32",
+    "adaptive_0.jsonl.gz": "5cbe886374065d263c224bbf3fc05e8c50cad4aaada6a7d7599ce806ab48839b",
+    "adaptive_0.log": "56123857eb3be3f16d0e7a7c799f5566d16908f5e6b766a2cbe1ef087d1ec827",
+    "adaptive_4.csv": "608738a75ab5451d6b1a1b895912454040ad25b1c0c141bdc9f4a64467f7cd02",
+    "adaptive_4.csv.meta.json": "a5eb776229e0cc1669ada7ae59e4c058c5b83f111aaff936fcbeab4ebd9e553b",
+    "adaptive_4.jsonl.gz": "60b7313090234b498dc02b091e0985a30354a1e63fe5377c3ae6fae162ce5c96",
+    "adaptive_4.log": "a332f069ced158a24956883ecbe7be11cc6d12e2a582c7dfd968039907ae8f76",
+    "analyze_por.py": "ace25fed1c6898bf5e17bb206a7b063e6c0cfb1933dc71591de6df4021c526e3",
+    "flat_0.csv": "2c1540c1e170cd2893774249b0131c7f00664b248773ddcd45b038ae004986fc",
+    "flat_0.csv.meta.json": "57199a1be852f25632fa07606be7be7ec4d89a83dda84bafd0c8d62b0e942ced",
+    "flat_0.jsonl.gz": "b0bac0e6fdcb7d120de2c52910c0340f7b00b4b000a059b81523ef37196d6c0d",
+    "flat_0.log": "8459b430e352d8bee222f28b02bbf76314f066e49cb68a4f21a89a1e3295e4b1",
+    "flat_4.csv": "f004604c3463341fc0d2dcaa83ef8dd2c3a59af9699ee80109bc321a5c6c09da",
+    "flat_4.csv.meta.json": "f6a342c7b0641bd53468199c9e43da55b18a6f60265a28030b4023801f584275",
+    "flat_4.jsonl.gz": "54e03c19880f1c60c7ebd37e0f0d0ace7ebcf65c31139545cf5b1642592bb522",
+    "flat_4.log": "b72dd14356d9f25c1d088439a454c6af33e22e46f08539eaa141458f84a13bd6",
+    "por_scan.diff": "e5e50a443532e0358b2fc20364951cfbf42b64f2b0224e1d3285cc65c07f10d1",
+    "summary.txt": "221946e6741e5136d163e74f8349e1c364bdd60cdf814dfbfa4912d8d0d8cfb0"
+  }
+}

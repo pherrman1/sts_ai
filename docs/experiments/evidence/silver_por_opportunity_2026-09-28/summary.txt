@@ -1,0 +1,21 @@
+== flat
+ first searched decision per turn, root-turn nodes: {"decisions": 921, "pooled_confirmed_visit_share": 0.1144, "pooled_candidate_visit_share": 0.1645, "median_confirmed_share": 0.0831, "p75_confirmed_share": 0.1418, "median_candidate_share": 0.1347, "edges_per_decision_node": 2.358, "after_confirmed_pruning": 2.149, "after_candidate_pruning": 1.846, "confirmed_edge_share": 0.0886, "candidate_edge_share": 0.2171}
+ first searched decision per turn, all reachable:   {"decisions": 921, "pooled_confirmed_visit_share": 0.1066, "pooled_candidate_visit_share": 0.1557, "median_confirmed_share": 0.0785, "p75_confirmed_share": 0.1347, "median_candidate_share": 0.1292, "edges_per_decision_node": 1.731, "after_confirmed_pruning": 1.639, "after_candidate_pruning": 1.485, "confirmed_edge_share": 0.0531, "candidate_edge_share": 0.1422}
+ every searched decision, root-turn nodes:           {"decisions": 3441, "pooled_confirmed_visit_share": 0.0942, "pooled_candidate_visit_share": 0.1248, "median_confirmed_share": 0.0413, "p75_confirmed_share": 0.1156, "median_candidate_share": 0.0742, "edges_per_decision_node": 2.25, "after_confirmed_pruning": 2.033, "after_candidate_pruning": 1.757, "confirmed_edge_share": 0.0967, "candidate_edge_share": 0.2191}
+  root_actions 2: n=2 confirmed=0.0 candidate=0.0
+  root_actions 3: n=16 confirmed=0.0788 candidate=0.0788
+  root_actions 4: n=58 confirmed=0.1322 candidate=0.1553
+  root_actions 5: n=105 confirmed=0.1161 candidate=0.1508
+  root_actions 6: n=144 confirmed=0.0971 candidate=0.1377
+  root_actions 7: n=207 confirmed=0.1206 candidate=0.164
+  root_actions 8+: n=389 confirmed=0.1189 candidate=0.1877
+== adaptive
+ first searched decision per turn, root-turn nodes: {"decisions": 897, "pooled_confirmed_visit_share": 0.1157, "pooled_candidate_visit_share": 0.1614, "median_confirmed_share": 0.0724, "p75_confirmed_share": 0.1524, "median_candidate_share": 0.1271, "edges_per_decision_node": 2.373, "after_confirmed_pruning": 2.202, "after_candidate_pruning": 1.902, "confirmed_edge_share": 0.0722, "candidate_edge_share": 0.1987}
+ first searched decision per turn, all reachable:   {"decisions": 897, "pooled_confirmed_visit_share": 0.108, "pooled_candidate_visit_share": 0.1544, "median_confirmed_share": 0.0726, "p75_confirmed_share": 0.1345, "median_candidate_share": 0.1258, "edges_per_decision_node": 1.811, "after_confirmed_pruning": 1.73, "after_candidate_pruning": 1.556, "confirmed_edge_share": 0.0447, "candidate_edge_share": 0.1408}
+ every searched decision, root-turn nodes:           {"decisions": 3506, "pooled_confirmed_visit_share": 0.0867, "pooled_candidate_visit_share": 0.1218, "median_confirmed_share": 0.018, "p75_confirmed_share": 0.091, "median_candidate_share": 0.0413, "edges_per_decision_node": 2.215, "after_confirmed_pruning": 2.05, "after_candidate_pruning": 1.784, "confirmed_edge_share": 0.0749, "candidate_edge_share": 0.1947}
+  root_actions 3: n=20 confirmed=0.096 candidate=0.1122
+  root_actions 4: n=70 confirmed=0.1297 candidate=0.1597
+  root_actions 5: n=87 confirmed=0.1125 candidate=0.1524
+  root_actions 6: n=118 confirmed=0.1226 candidate=0.1647
+  root_actions 7: n=186 confirmed=0.1132 candidate=0.154
+  root_actions 8+: n=416 confirmed=0.1142 candidate=0.1675

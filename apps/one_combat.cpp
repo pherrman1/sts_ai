@@ -2788,6 +2788,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_ADAPTIVE_TOP_GAP", ""}, {"STS_SILVER_ADAPTIVE_RETAINED_ONLY", "1"},
         {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
         {"STS_SILVER_FLAT_TOPUP", ""},
+        {"STS_SILVER_POR_SCAN", ""},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},

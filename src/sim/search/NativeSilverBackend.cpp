@@ -10,10 +10,14 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/ExpertKnowledge.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
 #include "sim/search/SearchStateHash.h"
@@ -146,6 +150,121 @@ namespace sts::search {
             return steps;
         }
 
+        // Partial-order-reduction opportunity (STS_SILVER_POR_SCAN, with the tree
+        // profile). A move's identity is copy-insensitive; its canonical rank
+        // orders commuting moves so only the rank-ascending order would be kept.
+        using MoveKey = std::tuple<int, int, int, int>;   // rank, kind/id, upgraded, target
+        bool g_porScan = false;
+
+        bool moveKey(const BattleContext &bc, const Action &a, MoveKey &key) {
+            if (a.getActionType() == ActionType::CARD) {
+                const auto &c = bc.cards.hand[a.getSourceIdx()];
+                key = {Expert::getPlayOrdering(c.getId()), static_cast<int>(c.getId()),
+                       c.isUpgraded(), c.requiresTarget() ? a.getTargetIdx() : -1};
+                return true;
+            }
+            if (a.getActionType() == ActionType::POTION) {
+                const auto p = bc.potions[a.getSourceIdx()];
+                key = {1 << 20, 1000 + static_cast<int>(p), 0, a.getTargetIdx()};
+                return true;
+            }
+            return false;
+        }
+
+        struct PorCounts {
+            std::int64_t decisionNodes = 0, edges = 0, edgeVisits = 0;
+            std::int64_t diamonds = 0, confirmedEdges = 0, confirmedVisits = 0;
+            std::int64_t candidateEdges = 0, candidateVisits = 0;
+            nlohmann::json json() const {
+                return {{"decision_nodes", decisionNodes}, {"edges", edges}, {"edge_visits", edgeVisits},
+                    {"diamonds", diamonds}, {"confirmed_pruned_edges", confirmedEdges},
+                    {"confirmed_pruned_visits", confirmedVisits}, {"candidate_pruned_edges", candidateEdges},
+                    {"candidate_pruned_visits", candidateVisits}};
+            }
+        };
+
+        // Scans the graph reachable from the root. For a decision node S with
+        // deterministic moves a, b (children X, Y), a diamond is X --b--> Z and
+        // Y --a--> Z to the same node Z; the edge playing the lower-ranked move
+        // second is the one a canonical order would prune ("confirmed"). A
+        // "candidate" is any edge in X whose move is a lower-ranked deterministic
+        // sibling of a at S, whether or not the pair commutes (upper bound).
+        // Each prunable edge counts once even when several paths reach it.
+        nlohmann::json scanPorOpportunity(const SilverSearcher &searcher) {
+            using Node = SilverSearcher::Node;
+            const Node *root = &searcher.rootNode();
+            const int rootTurn = root->state->turn;
+            std::vector<const Node *> order{root};
+            std::unordered_set<const Node *> seen{root};
+            for (std::size_t i = 0; i < order.size(); ++i) {
+                for (const auto &e : order[i]->edges) {
+                    if (e.node && seen.insert(e.node).second) order.push_back(e.node);
+                }
+            }
+            struct EdgeRef { const Node *node; int idx; bool operator==(const EdgeRef &o) const { return node == o.node && idx == o.idx; } };
+            struct EdgeHash { std::size_t operator()(const EdgeRef &r) const { return std::hash<const void *>()(r.node) * 31 + r.idx; } };
+            std::unordered_set<EdgeRef, EdgeHash> confirmed[2], candidate[2];   // [all, root turn]
+            PorCounts counts[2];
+            auto deterministicChild = [](const Node &n, int idx) -> const Node * {
+                const auto &e = n.edges[idx];
+                return e.node && !e.node->isRandomNode && e.visitCount > 0 ? e.node : nullptr;
+            };
+            for (const Node *n : order) {
+                if (n->isRandomNode || n->state->inputState != InputState::PLAYER_NORMAL
+                        || n->state->outcome != Outcome::UNDECIDED) continue;
+                const int scope = n->state->turn == rootTurn ? 2 : 1;
+                for (int sc = 0; sc < scope; ++sc) {
+                    ++counts[sc].decisionNodes;
+                    counts[sc].edges += static_cast<std::int64_t>(n->edges.size());
+                    for (const auto &e : n->edges) counts[sc].edgeVisits += e.visitCount;
+                }
+                // Deterministic keyed moves at S and their children.
+                std::vector<std::pair<MoveKey, const Node *>> moves;
+                for (int i = 0; i < static_cast<int>(n->edges.size()); ++i) {
+                    MoveKey k;
+                    const Node *child = deterministicChild(*n, i);
+                    if (child && child->state->inputState == InputState::PLAYER_NORMAL
+                            && moveKey(*n->state, n->edges[i].action, k)) moves.emplace_back(k, child);
+                }
+                for (const auto &[ka, x] : moves) {
+                    // Edges of X by move key.
+                    std::unordered_map<std::uint64_t, int> xEdges;
+                    auto pack = [](const MoveKey &k) {
+                        return (static_cast<std::uint64_t>(std::get<1>(k)) << 32)
+                             ^ (static_cast<std::uint64_t>(std::get<2>(k)) << 16)
+                             ^ static_cast<std::uint64_t>(std::get<3>(k) + 1);
+                    };
+                    for (int j = 0; j < static_cast<int>(x->edges.size()); ++j) {
+                        MoveKey k;
+                        if (moveKey(*x->state, x->edges[j].action, k)) xEdges[pack(k)] = j;
+                    }
+                    for (const auto &[kb, y] : moves) {
+                        if (!(kb < ka)) continue;      // X = after a; b ranks lower, so a-then-b is non-canonical
+                        const auto it = xEdges.find(pack(kb));
+                        if (it == xEdges.end()) continue;
+                        const EdgeRef pruned{x, it->second};
+                        const int v = x->edges[it->second].visitCount;
+                        for (int sc = 0; sc < scope; ++sc) {
+                            if (candidate[sc].insert(pruned).second) { ++counts[sc].candidateEdges; counts[sc].candidateVisits += v; }
+                        }
+                        const Node *z1 = deterministicChild(*x, it->second);
+                        if (!z1) continue;
+                        const Node *z2 = nullptr;
+                        for (int j = 0; j < static_cast<int>(y->edges.size()) && !z2; ++j) {
+                            MoveKey k;
+                            if (moveKey(*y->state, y->edges[j].action, k) && pack(k) == pack(ka)) z2 = deterministicChild(*y, j);
+                        }
+                        if (z1 != z2) continue;
+                        for (int sc = 0; sc < scope; ++sc) {
+                            ++counts[sc].diamonds;
+                            if (confirmed[sc].insert(pruned).second) { ++counts[sc].confirmedEdges; counts[sc].confirmedVisits += v; }
+                        }
+                    }
+                }
+            }
+            return {{"all", counts[0].json()}, {"root_turn", counts[1].json()}, {"reachable_nodes", order.size()}};
+        }
+
         void writeTreeProfile(const GameContext &gc, const BattleContext &bc, int decision,
                               std::int64_t combatId, const SilverSearcher &searcher, const SilverTreeProfile &profile,
                               std::int64_t inherited, std::int64_t configured, bool skipped,
@@ -182,6 +301,7 @@ namespace sts::search {
             row["root_hash"] = std::to_string(hashBattleState(searcher.rootSearchState()));
             row["turn_plan"] = turnPlan(searcher, planStop);
             row["turn_plan_stop"] = planStop;
+            if (g_porScan) row["por"] = scanPorOpportunity(searcher);
             std::lock_guard<std::mutex> lock(g_treeProfileMutex);
             g_treeProfile << row.dump() << '\n';
             g_treeProfile.flush();
@@ -448,6 +568,12 @@ namespace sts::search {
         }
         if (const char *raw = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS")) {
             g_options.searchSingletonRoots = std::atoi(raw) != 0;
+        }
+        g_porScan = false;
+        if (const char *raw = std::getenv("STS_SILVER_POR_SCAN")) {
+            g_porScan = std::atoi(raw) != 0;
+            if (g_porScan && !g_treeProfile.is_open())
+                throw std::runtime_error("STS_SILVER_POR_SCAN requires STS_SILVER_TREE_PROFILE");
         }
         if (const char *raw = std::getenv("STS_SILVER_FLAT_TOPUP")) {
             g_options.flatTopUp = std::atoi(raw) != 0;

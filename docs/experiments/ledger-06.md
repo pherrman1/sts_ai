@@ -13596,3 +13596,56 @@ runtime support changed.
   `topup.diff`, `manifest.json`).
 - **Knowledge impact:** environment-variable reference and combat-search
   budget paragraph document the option; no baseline or default change.
+
+## §370 — Partial-order reduction Stage 0: opportunity in native Silver trees (2026-09-28)
+
+- **Question:** Silver already merges transposed states, but each order of
+  two commuting moves keeps its own edges and visits. How much search goes
+  through orders a canonical ordering would prune? Stage 0 of the
+  partial-order-reduction plan; gate: stop if the redundant-order share is
+  under about 10% of visits.
+- **Instrument:** `STS_SILVER_POR_SCAN=1` adds a `por` object to tree-profile
+  rows (see
+  [combat search](../knowledge-base/architecture/combat-search.md#silver-tree-profile)).
+  *Confirmed* prunable edges close a diamond (both orders reach the same
+  node); *candidate* edges are every edge a canonical order would prune if all
+  such pairs commuted. Diagnostic only.
+- **Configuration:** source `46a5ebb2f6d1ebd38430183227e07170f348dd33` plus the
+  scan (`por_scan.diff`), binary SHA-256
+  `bd0283afbb49fdc6842958a9179302232ec1026f2aa237c04a78ca0a85e06aab`;
+  `bestbench 1000`, seeds 0..7 (two 4-seed shards per arm, concurrent), asc 0,
+  fair, `OMP_NUM_THREADS=1`, clean `env -i`, via `tools/seed_guard.sh`; flat
+  1,000 and adaptive arms. Results columns were identical to §367's flat and
+  adaptive runs.
+- **Results** (primary: the first searched decision of each turn, nodes in
+  that turn, so a retained tree is counted once per turn; shares are of all
+  edge visits in scope):
+
+  | | Flat 1,000 | Adaptive |
+  | --- | ---: | ---: |
+  | Turns | 921 | 897 |
+  | Pooled share of visits on confirmed prunable edges | 11.4% | 11.6% |
+  | Median / 75th percentile per turn | 8.3% / 14.2% | 7.2% / 15.2% |
+  | Pooled share on candidate prunable edges (upper bound) | 16.5% | 16.1% |
+  | Share of edges confirmed / candidate prunable | 8.9% / 21.7% | 7.2% / 19.9% |
+  | All reachable nodes, confirmed / candidate | 10.7% / 15.6% | 10.8% / 15.4% |
+  | Every searched decision, confirmed (pooled / median) | 9.4% / 4.1% | 8.7% / 1.8% |
+
+  By number of root moves, the confirmed share is 8–13% from 3 to 8+ moves,
+  with no strong trend; the candidate share rises to 17–19% at 8+ moves.
+- **Interpretation:** The pooled redundant-order share sits at the 10% gate;
+  the median turn is below it. It is an upper bound on the benefit, not
+  measured waste: visits through a non-canonical edge still descend into the
+  shared successor and refine its subtree, so pruning would mainly re-spread
+  selection at the intermediate node. The realistic gain is therefore below
+  ~11% of a turn's simulations, before subtracting the commutation-test cost
+  and the transposition sharing that path-keyed pruning (plan option A)
+  would give up. **Inference:** partial-order reduction offers at most a
+  modest efficiency gain in these trees; it does not meet a clear go
+  criterion. **Open question:** whether a cheaper intervention with no
+  correctness risk (for example selection at the intermediate node that
+  accounts for already-covered successors) could capture part of it.
+- **Evidence:** [silver_por_opportunity_2026-09-28](evidence/silver_por_opportunity_2026-09-28/)
+  (`summary.txt`, `analyze_por.py`, gzipped profiles, results, `manifest.json`).
+- **Knowledge impact:** environment-variable reference and combat-search
+  tree-profile section document the scan; no baseline or default change.
