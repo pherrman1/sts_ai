@@ -118,6 +118,91 @@ int main(int argc,char **argv){try{
     base.deck.bottleCard(base.deck.size()-1,CardType::ATTACK);
     base.deck.obtain(base,Card(CardId::STRIKE_RED,1));
     PathHistory path;path.roomVisits={1,2,3,4,5,6,1,1,0,0};
+    // Final-card skip and leave are one search choice, while the complete
+    // captured primitive mapping remains validated (including both aliases).
+    for (int variant = 0; variant < 4; ++variant) {
+        auto source = base;
+        source.screenState = ScreenState::REWARDS;
+        source.info.rewardsContainer.clear();
+        CardReward cards;
+        for (auto id : {CardId::SEVER_SOUL, CardId::ANGER, CardId::FLEX}) cards.push_back(Card(id));
+        source.info.rewardsContainer.addCardReward(cards);
+        if (variant == 1) source.relics.add({RelicId::SINGING_BOWL, 0});
+        if (variant == 2) source.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        if (variant == 3) source.info.rewardsContainer.addCardReward(cards);
+        auto wire = project(source, path, "final_card_boundary");
+        for (auto &choice : wire["ooc"]["liveChoices"]) {
+            const auto &native = choice["nativeAction"];
+            if (native["kind"] == "skip" || (native["kind"] == "card" && native["index"] == 5))
+                choice["liveAction"] = {{"kind", "skip"}};
+        }
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire, live).ok, "final-card fixture import");
+        OocAdapterOptions options;
+        options.uniformPrior = true;
+        options.checkpointLeaves = true;
+        options.stopAtMapCheckpoint = true;
+        const auto captured = advisor::liveOocPrimitiveBits(live);
+        options.rootPrimitiveBits = std::set<std::uint32_t>(captured.begin(), captured.end());
+        OocMctsDependencies deps;
+        deps.policyAvailable = [] { return true; };
+        deps.policyLogits = [](const GameContext &, const PathHistory &, const std::vector<A> &as) {
+            return std::vector<double>(as.size(), 0.0);
+        };
+        deps.leafValue = [](const GameContext &, const PathHistory &) { return 0.5; };
+        OocGameContextModel root(live.mctsRoot.state, live.mctsRoot.path, {}, options, deps);
+        const auto actions = root.legalActions(0);
+        check(actions.size() == captured.size() - (variant == 0 ? 1 : 0),
+              "reward aliases collapsed outside final plain card group");
+        std::vector<std::uint32_t> bits;
+        std::mt19937_64 rng(380);
+        for (const auto &action : actions) {
+            bits.push_back(root.candidate(0, action.id).primitive.bits);
+            if (variant == 0) {
+                const auto child = root.sampleSuccessor(0, action.id, rng);
+                check(root.state(child).screenState == ScreenState::MAP_SCREEN && root.isLeafBoundary(child),
+                      "final card successor must immediately reach map checkpoint");
+            }
+        }
+        advisor::validateLiveOocActionSet(live, bits, true);
+        if (variant == 0) {
+            check(actions.size() == 4, "three cards plus one skip expected");
+            search::OocMctsConfig config;
+            config.seed = 380;
+            config.maxDepth = 1;
+            const auto result = search::OocMctsPlanner(config).search(root, 0, 8);
+            check(!result.aborted && result.rootActions.size() == 4 && result.selectedAction,
+                  "final-card search must finish within one transition to the map boundary");
+            auto rejects = [&](const advisor::LiveOocStateV1 &state, const auto &candidateBits, bool aliases) {
+                bool rejected = false;
+                try { advisor::validateLiveOocActionSet(state, candidateBits, aliases); }
+                catch (const std::exception &) { rejected = true; }
+                check(rejected, "invalid reward mapping accepted");
+            };
+            rejects(live, bits, false);
+            auto missing = bits;
+            missing.erase(std::find_if(missing.begin(), missing.end(), [](auto b) {
+                const A a(b); return a.getRewardsActionType() == RT::CARD && a.getIdx2() != 5;
+            }));
+            rejects(live, missing, true);
+            auto mismatched = live;
+            for (auto &choice : mismatched.ooc["liveChoices"])
+                if (choice["nativeAction"]["kind"] == "skip") choice["liveAction"] = {{"kind", "proceed"}};
+            rejects(mismatched, bits, true);
+            auto duplicate = live;
+            for (const auto &choice : live.ooc["liveChoices"])
+                if (choice["nativeAction"]["kind"] == "skip") duplicate.ooc["liveChoices"].push_back(choice);
+            rejects(duplicate, bits, true);
+            for (const auto alias : {A(RT::CARD, 0, 5), A(RT::SKIP)}) {
+                auto restricted = options;
+                restricted.rootPrimitiveBits = std::set<std::uint32_t>{alias.bits};
+                OocGameContextModel one(live.mctsRoot.state, live.mctsRoot.path, {}, restricted, deps);
+                const auto choices = one.legalActions(0);
+                check(choices.size() == 1 && one.candidate(0, choices[0].id).primitive.bits == alias.bits,
+                      "root filtering must retain whichever skip alias is captured");
+            }
+        }
+    }
     {
         auto source = base;
         source.screenState = ScreenState::REWARDS;

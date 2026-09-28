@@ -338,6 +338,15 @@ void executeRewardsAction(GameContext &gc, const search::GameAction a) {
                 gc.obtainCard(r.cardRewards[a.getIdx1()][a.getIdx2()]);
             }
             r.removeCardReward(a.getIdx1());
+            // Completing the last card reward is one decision. Resume through
+            // the room callback: nested rewards may return to a parent screen.
+            if (gc.screenState == ScreenState::REWARDS && r.cardRewardCount == 0
+                    && r.goldRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0
+                    && !r.sapphireKey && !r.emeraldKey && gc.regainControlAction) {
+                // The callback may replace itself while restoring a parent.
+                const auto continuation = gc.regainControlAction;
+                continuation(gc);
+            }
             break;
 
         case search::GameAction::RewardsActionType::GOLD:

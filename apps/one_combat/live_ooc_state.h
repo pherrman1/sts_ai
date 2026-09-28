@@ -33,7 +33,7 @@ ImportResult importLiveOocStateV1(const nlohmann::json &observation, LiveOocStat
 // A schema/mapping error throws; it is never a policy UNSUPPORTED fallback.
 nlohmann::json lowerLiveOocAction(const LiveOocStateV1 &state, std::uint32_t primitiveBits);
 void validateLiveOocActionSet(const LiveOocStateV1 &state, const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentDeckCards = false);
+                              bool allowEquivalentChoices = false);
 std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardGoldLiveAction(const LiveOocStateV1 &state);
 } // namespace one_combat::advisor

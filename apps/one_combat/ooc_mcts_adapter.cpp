@@ -495,7 +495,7 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                             && !options.rootPrimitiveBits->count(binding.primitiveBits)) continue;
                     const auto key = sts::search::canonicalOocSemanticActionKey(binding.semantic);
                     if (!keys.insert(key).second) { value.candidates.clear(); break; }
-                    const auto choiceKey = sts::search::canonicalOocMctsChoiceKey(binding.semantic);
+                    const auto choiceKey = sts::search::canonicalOocMctsChoiceKey(binding.semantic, &gc);
                     groups[choiceKey].push_back(GameAction(binding.primitiveBits));
                     sources.insert(binding.primitiveBits);
                     if (!cardChoices.insert(choiceKey).second) continue;
@@ -505,7 +505,7 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 if (!value.candidates.empty())
                     for (const auto &candidate : value.candidates)
                         value.priorSourceGroups.push_back(groups.at(
-                            sts::search::canonicalOocMctsChoiceKey(*candidate.semantic)));
+                            sts::search::canonicalOocMctsChoiceKey(*candidate.semantic, &gc)));
                 if (v4DecisionSupported(gc)) {
                     std::set<std::uint32_t> qualified;
                     const auto primitives = v4CandidateActions(gc);
@@ -2250,7 +2250,7 @@ void oocMctsAdapterSelfTest() {
         std::vector<sts::search::OocSemanticPrimitiveBinding> representatives;
         std::set<std::string> choiceKeys;
         for (const auto &binding : bindings.bindings)
-            if (choiceKeys.insert(canonicalOocMctsChoiceKey(binding.semantic)).second)
+            if (choiceKeys.insert(canonicalOocMctsChoiceKey(binding.semantic, &canonical)).second)
                 representatives.push_back(binding);
         const bool map=canonical.screenState==ScreenState::MAP_SCREEN;
         const auto primitive=v4CandidateActions(canonical);
@@ -2318,11 +2318,11 @@ void oocMctsAdapterSelfTest() {
             std::map<std::string,std::vector<double>> grouped;
             for(const auto &binding:bindings.bindings)
                 if(GameAction(binding.primitiveBits).isValidAction(canonical))
-                    grouped[canonicalOocMctsChoiceKey(binding.semantic)].push_back(sourceLogits.at(binding.primitiveBits));
+                    grouped[canonicalOocMctsChoiceKey(binding.semantic, &canonical)].push_back(sourceLogits.at(binding.primitiveBits));
             std::vector<double> classLogits;
             if(map) for(auto action:primitive) classLogits.push_back(sourceLogits.at(action.bits));
             else for(const auto &binding:representatives) {
-                const auto &values=grouped.at(canonicalOocMctsChoiceKey(binding.semantic));
+                const auto &values=grouped.at(canonicalOocMctsChoiceKey(binding.semantic, &canonical));
                 classLogits.push_back(std::accumulate(values.begin(),values.end(),0.0)/values.size());
             }
             const auto weights=oocPolicyWeights(classLogits);
@@ -2388,10 +2388,10 @@ void oocMctsAdapterSelfTest() {
                     "trace candidate IDs, order and semantic metadata match production");
                 std::vector<std::uint32_t> expectedGroup;
                 if(!map) {
-                    const auto choiceKey=canonicalOocMctsChoiceKey(*candidate.semantic);
+                    const auto choiceKey=canonicalOocMctsChoiceKey(*candidate.semantic, &canonical);
                     for(const auto &binding:bindings.bindings)
                         if(GameAction(binding.primitiveBits).isValidAction(canonical)
-                            && canonicalOocMctsChoiceKey(binding.semantic)==choiceKey)
+                            && canonicalOocMctsChoiceKey(binding.semantic, &canonical)==choiceKey)
                             expectedGroup.push_back(binding.primitiveBits);
                 }
                 require(tracedCandidate.at("priorSourceGroup").get<std::vector<std::uint32_t>>()
@@ -2410,10 +2410,10 @@ void oocMctsAdapterSelfTest() {
                     if(seenSources.insert(action.bits).second) expectedSources.push_back(action.bits);
             } else {
                 for(const auto &representative:representatives) {
-                    const auto choiceKey=canonicalOocMctsChoiceKey(representative.semantic);
+                    const auto choiceKey=canonicalOocMctsChoiceKey(representative.semantic, &canonical);
                     for(const auto &binding:bindings.bindings)
                         if(GameAction(binding.primitiveBits).isValidAction(canonical)
-                            && canonicalOocMctsChoiceKey(binding.semantic)==choiceKey
+                            && canonicalOocMctsChoiceKey(binding.semantic, &canonical)==choiceKey
                             && seenSources.insert(binding.primitiveBits).second)
                             expectedSources.push_back(binding.primitiveBits);
                 }
@@ -2546,6 +2546,15 @@ void oocMctsAdapterSelfTest() {
             <<" event="<<int(canonical.curEvent)<<" selector="<<int(canonical.info.selectScreenType)
             <<" count="<<actual.size()<<" v4_qualified="<<qualified<<'\n';
     };
+    {
+        auto cardsOnly = detachedCopy(gc);
+        CardReward cards;
+        for (auto id : {CardId::SEVER_SOUL, CardId::ANGER, CardId::FLEX}) cards.push_back(Card(id));
+        cardsOnly.openCombatRewardScreen(Rewards(cards));
+        checkCandidates(cardsOnly);
+        cardsOnly.relics.add({RelicId::SINGING_BOWL, 0});
+        checkCandidates(cardsOnly);
+    }
     auto fixture=detachedCopy(gc);
     fixture.screenState=ScreenState::REST_ROOM;
     fixture.relics.add({RelicId::PEACE_PIPE,0});
@@ -3971,8 +3980,8 @@ void oocMctsAdapterSelfTest() {
         });
     if (!(goldAndCardHandled && goldAndCard.gold == goldAndCardBefore + 25
             && goldAndCard.info.rewardsContainer.goldRewardCount == 0
-            && goldAndCard.screenState == ScreenState::REWARDS && cardAdded
-            && remainingSemantic.supported && remainingSemantic.complete && !goldCandidateRemains
+            && goldAndCard.screenState == ScreenState::MAP_SCREEN && cardAdded
+            && goldAndCard.info.rewardsContainer.cardRewardCount == 0 && !goldCandidateRemains
             && goldAndCardMetrics.search.trivialRootBypasses == 1
             && goldAndCardMetrics.search.simulations == 0))
         throw std::runtime_error("live native gold plus card root: handled=" + std::to_string(goldAndCardHandled)
