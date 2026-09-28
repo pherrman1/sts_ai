@@ -2237,33 +2237,32 @@ int vwinRefreshDecisionSinkSelfTest() {
         require(!capture.pendingSinkAction, "fixture resolves its compound decisions");
         return capture;
     };
-    // Match and Keep is executable by the simulator but has no complete
-    // semantic enumeration on this baseline. Drive the real observer across
-    // that action and a subsequent supported screen, with capture off and on.
+    // Use a synthetic unsupported selector, independent of which real events
+    // the simulator currently implements. Exercise the production observer
+    // around a fixture policy step and then a real supported treasure action.
     auto unsupportedRun = [&](bool enabled) {
         GameContext gc(CharacterClass::IRONCLAD, 0x334007, 0);
         gc.curRoom = Room::EVENT;
-        gc.curEvent = Event::MATCH_AND_KEEP;
-        gc.screenState = ScreenState::EVENT_SCREEN;
-        gc.info.toSelectCards.clear();
-        gc.info.toSelectCards.push_back({Card(CardId::BASH), 0});
-        gc.info.toSelectCards.push_back({Card(CardId::INFLAME), 0});
-        gc.info.eventData = 1;
-        gc.regainControlAction = [](GameContext &next) {
-            next.screenState = ScreenState::TREASURE_ROOM;
-            next.curRoom = Room::TREASURE;
-        };
+        gc.screenState = ScreenState::CARD_SELECT;
+        gc.info.selectScreenType = CardSelectScreenType::INVALID;
+        gc.regainControlAction = [](GameContext &next) { next.screenState = ScreenState::MAP_SCREEN; };
+        const auto enumeration = search::enumerateOocSemanticActions(gc);
+        require(!enumeration.supported && !enumeration.complete && !enumeration.error.empty(),
+                "synthetic fixture must actually have unsupported selector semantics");
         VwinCollector capture;
         capture.sourceSeed = gc.seed;
         capture.captureDecisionSink = enabled;
         PathHistory path;
         search::ScumSearchAgent2 agent;
         vwinObservePolicyStep(capture, gc, path, agent, [&] {
-            search::g_onGameActionExecute(Action(0, 1).bits, &gc);
-            gc.chooseMatchAndKeepCards(0, 1);
+            search::g_onGameActionExecute(Action(0).bits, &gc);
+            // Only the synthetic policy step supplies this transition; no
+            // invalid action is executed against the simulator.
+            gc.screenState = ScreenState::TREASURE_ROOM;
+            gc.curRoom = Room::TREASURE;
         });
         require(gc.screenState == ScreenState::TREASURE_ROOM,
-                "unsupported event completes and reaches the next screen");
+                "unsupported fixture step completes and reaches the next screen");
         vwinObservePolicyStep(capture, gc, path, agent, [&] { Action(1).execute(gc); });
         return capture;
     };
