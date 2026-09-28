@@ -290,7 +290,7 @@ struct VwinPendingDecision {
 };
 
 struct VwinPendingSinkDecision {
-    std::size_t rowIndex = 0;
+    std::size_t rowIndex = 0, logIndex = 0;
     CardSelectScreenType selector = CardSelectScreenType::INVALID;
     std::unique_ptr<GameContext> pre;
     std::vector<VwinOption> options;
@@ -989,8 +989,21 @@ static void vwinFinishDecisionSink(VwinCollector &capture, const GameContext *gc
     auto &row = capture.decisionSinkRows.at(pending.rowIndex);
     row.chosenKey = vwinResolveObservedCompoundKey(*pending.pre, pending.options,
                                                    pending.observedPrimitiveBits);
-    if (row.chosenKey.empty())
-        throw std::runtime_error("vwin DECISION sink: unresolved compound chosen key");
+    if (row.chosenKey.empty()) {
+        auto &log = capture.decisionSinkLog.at(pending.logIndex);
+        log["rowIdx"] = -1;
+        log["error"] = "compound_selector_semantic_binding_unresolved";
+        // Selector rows may already follow the reserved parent row. Retain
+        // those valid captures, closing the gap in their independent indices.
+        capture.decisionSinkRows.erase(capture.decisionSinkRows.begin() + pending.rowIndex);
+        for (std::size_t i = pending.rowIndex; i < capture.decisionSinkRows.size(); ++i)
+            capture.decisionSinkRows[i].rowIdx = static_cast<int>(i);
+        for (auto &entry : capture.decisionSinkLog) {
+            const int idx = entry.at("rowIdx").get<int>();
+            if (idx > static_cast<int>(pending.rowIndex)) entry["rowIdx"] = idx - 1;
+        }
+        --capture.decisionSinkRowIdx;
+    }
 }
 
 static void vwinObserveDecisionScreen(VwinCollector &capture, const GameContext &gc,
@@ -1004,19 +1017,38 @@ static void vwinObserveDecisionScreen(VwinCollector &capture, const GameContext 
     bool supported = false, complete = false;
     std::string error;
     const auto options = vwinOptions(gc, supported, complete, error);
-    if (!supported || !complete)
-        throw std::runtime_error("vwin DECISION sink: cannot enumerate screen: " + error);
-    const int rowIdx = options.size() > 1 ? capture.decisionSinkRowIdx : -1;
+    const auto logIndex = capture.decisionSinkLog.size();
     capture.decisionSinkLog.push_back({
-        {"rowIdx", rowIdx}, {"decisionIdx", decisionIdx},
-        {"screen", vwinDecisionScreenName(gc)}, {"optionCount", options.size()}
+        {"rowIdx", -1}, {"decisionIdx", decisionIdx},
+        {"screen", vwinDecisionScreenName(gc)}, {"optionCount", options.size()},
+        {"supported", supported}, {"complete", complete},
+        {"error", supported && complete ? "" : "semantic_option_enumeration_unsupported_or_incomplete"},
+        {"enumerationError", error}
     });
+    // Partial enumerations cannot establish the real option count. Log their
+    // support/error status even when zero or one candidates were returned.
+    // Singleton screens need no chosen binding or feature snapshot.
+    if (options.size() < 2 || !supported || !complete) return;
+    const auto selector = search::oocSemanticPrimitiveCompoundSelector(gc, bits);
+    std::vector<std::string> keys;
+    for (const auto &option : options) keys.push_back(option.key);
+    const auto chosenKey = selector == CardSelectScreenType::INVALID
+        ? vwinResolveChosenKey(gc, bits, keys) : std::string{};
+    if (selector == CardSelectScreenType::INVALID && chosenKey.empty()) {
+        capture.decisionSinkLog[logIndex]["error"] = "chosen_primitive_binding_unresolved";
+        return;
+    }
+    if (selector != CardSelectScreenType::INVALID && capture.pendingSinkAction) {
+        capture.decisionSinkLog[logIndex]["error"] = "compound_selector_semantic_binding_unresolved";
+        return;
+    }
     auto snapshot = vwinMakeDecisionSnapshot(gc, path, options, supported, complete);
     if (!snapshot) return;
     VwinDecisionSinkRow row;
     row.branchId = capture.branchId;
     row.deviationIdx = capture.deviationIdx;
     row.rowIdx = capture.decisionSinkRowIdx++;
+    capture.decisionSinkLog[logIndex]["rowIdx"] = row.rowIdx;
     row.decisionIdx = decisionIdx;
     row.act = gc.act;
     row.floor = gc.floorNum;
@@ -1026,16 +1058,11 @@ static void vwinObserveDecisionScreen(VwinCollector &capture, const GameContext 
     row.candidateKeys = std::move(snapshot->candidateKeys);
     row.supported = supported;
     row.complete = complete;
-    const auto selector = search::oocSemanticPrimitiveCompoundSelector(gc, bits);
-    if (selector == CardSelectScreenType::INVALID) {
-        row.chosenKey = vwinResolveChosenKey(gc, bits, row.candidateKeys);
-        if (row.chosenKey.empty())
-            throw std::runtime_error("vwin DECISION sink: unresolved chosen key on " + row.screen);
-    } else {
-        if (capture.pendingSinkAction)
-            throw std::runtime_error("vwin DECISION sink: nested compound selector");
+    row.chosenKey = chosenKey;
+    if (selector != CardSelectScreenType::INVALID) {
         VwinPendingSinkDecision pending;
         pending.rowIndex = capture.decisionSinkRows.size();
+        pending.logIndex = logIndex;
         pending.selector = selector;
         pending.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
         pending.options = options;
@@ -2210,6 +2237,105 @@ int vwinRefreshDecisionSinkSelfTest() {
         require(!capture.pendingSinkAction, "fixture resolves its compound decisions");
         return capture;
     };
+    // Match and Keep is executable by the simulator but has no complete
+    // semantic enumeration on this baseline. Drive the real observer across
+    // that action and a subsequent supported screen, with capture off and on.
+    auto unsupportedRun = [&](bool enabled) {
+        GameContext gc(CharacterClass::IRONCLAD, 0x334007, 0);
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::MATCH_AND_KEEP;
+        gc.screenState = ScreenState::EVENT_SCREEN;
+        gc.info.toSelectCards.clear();
+        gc.info.toSelectCards.push_back({Card(CardId::BASH), 0});
+        gc.info.toSelectCards.push_back({Card(CardId::INFLAME), 0});
+        gc.info.eventData = 1;
+        gc.regainControlAction = [](GameContext &next) {
+            next.screenState = ScreenState::TREASURE_ROOM;
+            next.curRoom = Room::TREASURE;
+        };
+        VwinCollector capture;
+        capture.sourceSeed = gc.seed;
+        capture.captureDecisionSink = enabled;
+        PathHistory path;
+        search::ScumSearchAgent2 agent;
+        vwinObservePolicyStep(capture, gc, path, agent, [&] {
+            search::g_onGameActionExecute(Action(0, 1).bits, &gc);
+            gc.chooseMatchAndKeepCards(0, 1);
+        });
+        require(gc.screenState == ScreenState::TREASURE_ROOM,
+                "unsupported event completes and reaches the next screen");
+        vwinObservePolicyStep(capture, gc, path, agent, [&] { Action(1).execute(gc); });
+        return capture;
+    };
+    const auto unsupportedOff = unsupportedRun(false);
+    const auto unsupportedOn = unsupportedRun(true);
+    require(legacyOutput(unsupportedOff) == legacyOutput(unsupportedOn)
+            && unsupportedOff.trace == unsupportedOn.trace,
+            "unsupported screen preserves legacy errors and continuation with capture enabled");
+    require(unsupportedOn.decisionSinkRows.size() == 1
+            && unsupportedOn.decisionSinkRows.front().rowIdx == 0
+            && unsupportedOn.decisionSinkRows.front().screen == "treasure"
+            && unsupportedOn.decisionSinkLog[0]["rowIdx"] == -1
+            && unsupportedOn.decisionSinkLog[0]["supported"] == false
+            && !unsupportedOn.decisionSinkLog[0]["error"].get<std::string>().empty(),
+            "unsupported capture is logged and a later supported screen is captured");
+
+    VwinCollector skipped;
+    skipped.captureDecisionSink = true;
+    PathHistory skippedPath;
+    GameContext partial(CharacterClass::IRONCLAD, 0x334008, 0);
+    partial.screenState = ScreenState::BOSS_RELIC_REWARDS;
+    std::fill(std::begin(partial.info.bossRelics), std::end(partial.info.bossRelics), RelicId::INVALID);
+    vwinObserveDecisionScreen(skipped, partial, skippedPath, Action(3).bits, -1);
+    partial.info.bossRelics[0] = RelicId::BLACK_BLOOD;
+    vwinObserveDecisionScreen(skipped, partial, skippedPath, Action(3).bits, -1);
+    require(skipped.decisionSinkRows.empty()
+            && skipped.decisionSinkLog[0]["optionCount"] == 1
+            && skipped.decisionSinkLog[1]["optionCount"] == 2
+            && skipped.decisionSinkLog[0]["complete"] == false
+            && skipped.decisionSinkLog[1]["complete"] == false,
+            "partial enumerations with one or multiple candidates are logged without rows");
+    GameContext singleton(CharacterClass::IRONCLAD, 0x334009, 0);
+    singleton.openCombatRewardScreen(Rewards{});
+    vwinObserveDecisionScreen(skipped, singleton, skippedPath, Action(99).bits, -1);
+    require(skipped.decisionSinkLog.back()["optionCount"] == 1
+            && skipped.decisionSinkLog.back()["error"] == "",
+            "singleton returns before attempting a chosen-key match");
+    partial.screenState = ScreenState::TREASURE_ROOM;
+    partial.curRoom = Room::TREASURE;
+    vwinObserveDecisionScreen(skipped, partial, skippedPath, Action(99).bits, -1);
+    require(skipped.decisionSinkLog.back()["error"] == "chosen_primitive_binding_unresolved",
+            "unmatched primitive is a capture error, not an exception");
+    vwinObserveDecisionScreen(skipped, partial, skippedPath, Action(1).bits, -1);
+    require(skipped.decisionSinkRows.size() == 1 && skipped.decisionSinkRows[0].rowIdx == 0,
+            "skipped screens do not consume row indices");
+
+    GameContext smith(CharacterClass::IRONCLAD, 0x334010, 0);
+    smith.screenState = ScreenState::REST_ROOM;
+    smith.curRoom = Room::REST;
+    smith.regainControlAction = [](GameContext &gc) { gc.screenState = ScreenState::MAP_SCREEN; };
+    VwinCollector unresolved;
+    unresolved.captureDecisionSink = true;
+    vwinObserveDecisionScreen(unresolved, smith, skippedPath, Action(1).bits, -1);
+    Action(1).execute(smith);
+    vwinObserveDecisionScreen(unresolved, smith, skippedPath, Action(0).bits, -1);
+    require(unresolved.pendingSinkAction.has_value() && unresolved.decisionSinkRows.size() == 2,
+            "compound reserves a parent row before the valid selector row");
+    // Inject a missing/unmatchable observed target without executing an invalid action.
+    unresolved.pendingSinkAction->observedPrimitiveBits.back() = Action(99).bits;
+    Action(0).execute(smith);
+    vwinFinishDecisionSink(unresolved, &smith);
+    vwinObserveDecisionScreen(unresolved, partial, skippedPath, Action(1).bits, -1);
+    require(!unresolved.pendingSinkAction && unresolved.decisionSinkRows.size() == 2
+            && unresolved.decisionSinkRows[0].screen == "selector"
+            && unresolved.decisionSinkRows[0].rowIdx == 0
+            && unresolved.decisionSinkRows[1].rowIdx == 1
+            && unresolved.decisionSinkLog[0]["rowIdx"] == -1
+            && unresolved.decisionSinkLog[0]["error"] == "compound_selector_semantic_binding_unresolved"
+            && unresolved.decisionSinkLog[1]["rowIdx"] == 0
+            && unresolved.decisionSinkLog[2]["rowIdx"] == 1,
+            "unresolved compound preserves valid later rows and contiguous log joins");
+
     GameContext shop(CharacterClass::IRONCLAD, 0x334005, 0);
     shop.screenState = ScreenState::SHOP_ROOM;
     shop.curRoom = Room::SHOP;
@@ -2283,7 +2409,8 @@ int vwinRefreshDecisionSinkSelfTest() {
     const auto sinkText = decisionSink.str();
     require(std::count(sinkText.begin(), sinkText.end(), '\n') == 2,
             "writer emits one row per captured decision");
-    std::cout << "vwin DECISION contract: sequential shop states, reward pickups, schema, "
+    std::cout << "vwin DECISION contract: unsupported/incomplete/unmatched capture continuation, "
+                 "compound-error row joins, sequential shop states, reward pickups, schema, "
                  "unchanged sampling and legacy outputs passed\n";
     return 0;
 }

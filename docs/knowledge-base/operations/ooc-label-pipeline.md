@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -318,16 +318,28 @@ reward pickups or compound-selector screens. These extra states never consume
 sampling indices. `candidates` is a JSON object with `optionKeys`, `chosenKey`,
 `supported`, and `complete`. `screenContents` carries a matching screen tag,
 public offers/identifiers, and selector or inventory details; it contains no
-RNG state or concealed treasure reward. Unresolved or incomplete semantic
-capture fails closed.
+RNG state or concealed treasure reward. Unsupported/incomplete enumeration or
+an unresolved chosen key omits that capture row and records `rowIdx=-1`,
+`supported`, `complete`, and `error` in the manifest's per-trajectory capture
+log; `enumerationError` preserves the enumerator's diagnostic. Collection
+continues with the existing semantic sampling log and replay trace unchanged.
+Zero/singleton candidate sets return before chosen-key matching or feature
+capture; a partial enumeration is still recorded as an error, since its true
+option count is unknown. If a compound choice cannot resolve, its reserved
+row is removed and subsequent capture-row indices are compacted.
 
 The optional `decisionSink` manifest section contains a per-trajectory capture
 log (including singleton screens omitted from the CSV), row counts by screen
 and source/branch, bytes per row, and a linear projection to 4,096 sources.
 The validator checks the capture log against the rows, joins sampling decisions
 to the existing decision log, and checks JSON/schema, candidate membership,
-trajectory labels, counts, hashes, and size reports. Review the measured size
-before A2; any subsampling rule must be selected and recorded before collection.
+trajectory labels, counts, hashes, and size reports. Logged capture errors
+are counted separately by screen and source/branch in the validator's
+`decision_capture_errors` report. An error may not conceal a resolved decision
+in the sampling log; unexplained missing rows and invalid captured rows still
+fail validation. Older v1 capture logs without error fields remain readable.
+Review the measured size before A2; any subsampling rule must be selected and
+recorded before collection.
 
 For every sampled chosen sibling the producer runs the same forced-action
 branch as the counterfactuals. `PARITY_PERCENT=100` checks every chosen replay

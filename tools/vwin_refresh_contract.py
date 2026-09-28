@@ -116,6 +116,8 @@ def _validate_decision_sink(manifest: dict, rows: dict, runouts: dict,
         _fail("DECISION sink has no per-trajectory decision log")
     logged = {}
     expected_rows = {}
+    skipped_legacy = {}
+    capture_errors = {"source": Counter(), "branch": Counter()}
     for trajectory in logs:
         key = trajectory.get("sourceSeed"), trajectory.get("branchId")
         if key not in runouts or key in logged:
@@ -127,10 +129,36 @@ def _validate_decision_sink(manifest: dict, rows: dict, runouts: dict,
             _fail("DECISION log must be an array")
         count = 0
         for item in decisions:
-            if (not isinstance(item, dict) or item.get("screen") not in SCREEN_IDS
+            if (not isinstance(item, dict) or item.get("screen") not in {*SCREEN_IDS, "other"}
                     or type(item.get("optionCount")) is not int or item["optionCount"] < 0
                     or type(item.get("decisionIdx")) is not int or item["decisionIdx"] < -1):
                 _fail("DECISION log entry is malformed")
+            error = item.get("error", "")  # Older v1 bundles contain no capture errors.
+            if not isinstance(error, str):
+                _fail("DECISION log error must be a string")
+            if error:
+                if (item.get("rowIdx") != -1 or type(item.get("supported")) is not bool
+                        or type(item.get("complete")) is not bool):
+                    _fail("DECISION capture error must have support flags and no sink row")
+                if error == "semantic_option_enumeration_unsupported_or_incomplete":
+                    if item["supported"] and item["complete"]:
+                        _fail("DECISION enumeration error has complete support")
+                elif error in {"chosen_primitive_binding_unresolved",
+                               "compound_selector_semantic_binding_unresolved"}:
+                    if not item["supported"] or not item["complete"] or item["optionCount"] <= 1:
+                        _fail("DECISION chosen-binding error has invalid candidate status")
+                else:
+                    _fail("DECISION log has an unknown capture error")
+                capture_errors["source" if key[1] == "source" else "branch"][item["screen"]] += 1
+                if item["decisionIdx"] >= 0:
+                    legacy_key = key + (item["decisionIdx"],)
+                    if legacy_key in skipped_legacy:
+                        _fail("DECISION capture error has a duplicate legacy join")
+                    skipped_legacy[legacy_key] = item
+                continue
+            if (item["screen"] == "other" or item.get("supported", True) is not True
+                    or item.get("complete", True) is not True):
+                _fail("DECISION unsupported capture must log an error")
             if item["optionCount"] > 1:
                 if item.get("rowIdx") != count:
                     _fail("DECISION log rowIdx is not contiguous")
@@ -153,6 +181,15 @@ def _validate_decision_sink(manifest: dict, rows: dict, runouts: dict,
         legacy[key] = decision
         if int(decision["screen"]) != 5 and int(decision["optionCount"]) > 1:
             expected_legacy.add(key)
+    for key, log in skipped_legacy.items():
+        decision = legacy.get(key)
+        if (not decision or int(decision["screen"]) == 5
+                or (log["screen"] in SCREEN_IDS
+                    and int(decision["screen"]) != SCREEN_IDS[log["screen"]])):
+            _fail("DECISION capture error has a missing or mismatched legacy join")
+        if (decision["supported"] == "1" and decision["complete"] == "1"
+                and decision["chosenKey"] in json.loads(decision["candidateKeysJson"])):
+            _fail("DECISION capture error cannot omit a resolved legacy decision")
     seen = set()
     joined_legacy = set()
     screens = {"source": Counter(), "branch": Counter()}
@@ -220,7 +257,7 @@ def _validate_decision_sink(manifest: dict, rows: dict, runouts: dict,
         screens["source" if key[1] == "source" else "branch"][screen] += 1
     if seen != set(expected_rows):
         _fail("DECISION row counts do not match decision log")
-    if not expected_legacy.issubset(joined_legacy):
+    if not expected_legacy.issubset(joined_legacy | skipped_legacy.keys()):
         _fail("DECISION sink is missing a multi-option legacy decision")
     count = len(seen)
     if spec.get("rows") != count or manifest.get("integrity", {}).get("decisionSinkRows") != count:
@@ -241,6 +278,7 @@ def _validate_decision_sink(manifest: dict, rows: dict, runouts: dict,
                                 rel_tol=1e-6)):
         _fail("manifest DECISION A2 size projection mismatch")
     return {"decision_sink_rows": count, "decision_rows_by_screen": actual_screens,
+            "decision_capture_errors": {kind: dict(counts) for kind, counts in capture_errors.items()},
             "decision_bytes_per_row": expected_size, "decision_projected_a2_bytes": spec["projectedA2Bytes"]}
 
 

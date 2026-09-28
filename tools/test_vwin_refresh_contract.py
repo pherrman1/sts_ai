@@ -229,6 +229,83 @@ class VwinRefreshContractTests(unittest.TestCase):
                          {"source": {"event": 1}, "branch": {"event": 2}})
         self.assertGreater(result["decision_projected_a2_bytes"], 0)
 
+    def _add_capture_error(self, error: str, supported: bool, complete: bool,
+                           option_count: int) -> None:
+        _add_decision_sink(self.manifest)
+        manifest = json.loads(self.manifest.read_text())
+        trajectory = manifest["decisionSink"]["trajectories"][0]
+        trajectory["decisionLog"].append({
+            "rowIdx": -1, "decisionIdx": 2, "screen": "event", "optionCount": option_count,
+            "supported": supported, "complete": complete, "error": error})
+        path = Path(str(self.manifest)[:-len(".manifest.json")] + ".decisions.csv")
+        with path.open(newline="") as stream:
+            reader = csv.DictReader(stream)
+            header, rows = reader.fieldnames, list(reader)
+        rows.append(_row(header, sourceSeed=SEED, branchId=trajectory["branchId"],
+            deviationIdx=trajectory["deviationIdx"], decisionIdx=2, type="EVENT", act=1, floor=2,
+            screen=1, optionCount=option_count, chosenKey="", supported=int(supported),
+            complete=int(complete), sampled=0, error=error,
+            candidateKeysJson=json.dumps([f"ooc:v1:skip-fixture:{i}" for i in range(option_count)])))
+        _write_csv(path, header, rows)
+        manifest["integrity"]["decisionRows"] = len(rows)
+        self.manifest.write_text(json.dumps(manifest))
+        self._rewrite_hash("decisions.csv")
+
+    def test_decision_sink_capture_errors_are_reported(self) -> None:
+        for error, supported, complete, count in (
+            ("semantic_option_enumeration_unsupported_or_incomplete", False, False, 0),
+            ("semantic_option_enumeration_unsupported_or_incomplete", True, False, 1),
+            ("semantic_option_enumeration_unsupported_or_incomplete", True, False, 2),
+            ("chosen_primitive_binding_unresolved", True, True, 2),
+            ("compound_selector_semantic_binding_unresolved", True, True, 2),
+        ):
+            with self.subTest(error=error, count=count):
+                self.manifest = _make_bundle(self.directory)
+                self._add_capture_error(error, supported, complete, count)
+                result = validate_bundle(self.manifest)
+                self.assertEqual(result["decision_sink_rows"], 3)
+                self.assertEqual(result["decision_capture_errors"],
+                                 {"source": {"event": 1}, "branch": {}})
+
+    def test_decision_sink_capture_only_error(self) -> None:
+        _add_decision_sink(self.manifest)
+        manifest = json.loads(self.manifest.read_text())
+        manifest["decisionSink"]["trajectories"][0]["decisionLog"].append({
+            "rowIdx": -1, "decisionIdx": -1, "screen": "selector", "optionCount": 2,
+            "supported": True, "complete": True, "error": "chosen_primitive_binding_unresolved"})
+        self.manifest.write_text(json.dumps(manifest))
+        result = validate_bundle(self.manifest)
+        self.assertEqual(result["decision_capture_errors"]["source"], {"selector": 1})
+
+    def test_decision_sink_capture_error_cannot_hide_resolved_legacy(self) -> None:
+        self._add_capture_error("chosen_primitive_binding_unresolved", True, True, 2)
+        path = Path(str(self.manifest)[:-len(".manifest.json")] + ".decisions.csv")
+        with path.open(newline="") as stream:
+            reader = csv.DictReader(stream)
+            header, rows = reader.fieldnames, list(reader)
+        rows[-1]["chosenKey"] = json.loads(rows[-1]["candidateKeysJson"])[0]
+        _write_csv(path, header, rows)
+        self._rewrite_hash("decisions.csv")
+        with self.assertRaisesRegex(ContractError, "cannot omit a resolved legacy"):
+            validate_bundle(self.manifest)
+
+    def test_decision_sink_capture_error_contract_rejected(self) -> None:
+        for mutation, message in (
+            ({"rowIdx": 3}, "no sink row"),
+            ({"error": ""}, "rowIdx is not contiguous"),
+            ({"error": "invented"}, "unknown capture error"),
+            ({"decisionIdx": 99}, "missing or mismatched legacy join"),
+            ({"complete": False}, "invalid candidate status"),
+        ):
+            with self.subTest(mutation=mutation):
+                self.manifest = _make_bundle(self.directory)
+                self._add_capture_error("chosen_primitive_binding_unresolved", True, True, 2)
+                manifest = json.loads(self.manifest.read_text())
+                manifest["decisionSink"]["trajectories"][0]["decisionLog"][-1].update(mutation)
+                self.manifest.write_text(json.dumps(manifest))
+                with self.assertRaisesRegex(ContractError, message):
+                    validate_bundle(self.manifest)
+
     def test_decision_sink_json_rejected(self) -> None:
         self._mutate_sink(lambda rows: rows[0].update(screenContents="{"))
         with self.assertRaisesRegex(ContractError, "invalid JSON"):
