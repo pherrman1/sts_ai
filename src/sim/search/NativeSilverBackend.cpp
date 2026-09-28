@@ -40,6 +40,7 @@ namespace sts::search {
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
             bool flatTopUp = false;          // flat: search only up to the budget in total root visits
+            bool sharedChildExploration = false;
             double topGap = kDefaultTopGap;
             double escapePenalty = 0;
             double eliteEscapePenalty = 0;
@@ -421,6 +422,7 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    searcher->sharedChildExploration = g_options.sharedChildExploration;
                 }
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
@@ -569,6 +571,9 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS")) {
             g_options.searchSingletonRoots = std::atoi(raw) != 0;
         }
+        if (const char *raw = std::getenv("STS_SILVER_SHARED_CHILD_EXPLORATION")) {
+            g_options.sharedChildExploration = std::atoi(raw) != 0;
+        }
         g_porScan = false;
         if (const char *raw = std::getenv("STS_SILVER_POR_SCAN")) {
             g_porScan = std::atoi(raw) != 0;
@@ -607,6 +612,10 @@ namespace sts::search {
 
     bool nativeSilverExactRootBudgets() {
         return g_options.exactRootBudgets;
+    }
+
+    bool nativeSilverSharedChildExploration() {
+        return g_options.sharedChildExploration;
     }
 
     bool nativeSilverFlatTopUp() {

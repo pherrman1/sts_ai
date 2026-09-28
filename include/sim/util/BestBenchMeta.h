@@ -68,6 +68,7 @@ struct BenchConfigSidecar {
     bool silverExactVisitLock = false;
     bool silverRhoRacing = false;
     bool silverFlatTopUp = false;
+    bool silverSharedChildExploration = false;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -166,6 +167,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverExactVisitLock\":" << (c.silverExactVisitLock ? "true" : "false");
     o << ",\"silverRhoRacing\":" << (c.silverRhoRacing ? "true" : "false");
     o << ",\"silverFlatTopUp\":" << (c.silverFlatTopUp ? "true" : "false");
+    o << ",\"silverSharedChildExploration\":" << (c.silverSharedChildExploration ? "true" : "false");
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

@@ -111,6 +111,10 @@ namespace sts::search {
         double chanceWideningAlpha = 0.52389;
         double endTurnWideningC = 3.7028;
         double endTurnWideningAlpha = 0.52389;
+        // Research option: the exploration term of an edge to a shared
+        // deterministic child counts the child's visits from every path
+        // (max of edge and child visits), not only this edge's.
+        bool sharedChildExploration = false;
         SilverEvalWeights evalWeights;
         SilverSearchStats stats;
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off

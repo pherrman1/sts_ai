@@ -1,0 +1,85 @@
+{
+  "baseline_sha": "0b02809488da516512ed9f9c0bdbaf3a3b49b177",
+  "ledger": "\u00a7372",
+  "kind": "mechanism screen; outcomes descriptive only",
+  "binary_sha256": "4a0da987acff564b6a51bc01b151e4c97a47c086561d223ab14daa85bdc81926",
+  "configuration": {
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "ascension": 0,
+    "OMP_NUM_THREADS": 1,
+    "fair": true,
+    "sims": 1000,
+    "STS_SILVER_POR_SCAN": 1,
+    "batches": "per mode, 4 concurrent processes: control and shared x seed offsets 0 and 4",
+    "arms": {
+      "control": {},
+      "shared": {
+        "STS_SILVER_SHARED_CHILD_EXPLORATION": 1
+      }
+    },
+    "modes": {
+      "flat": {
+        "STS_SILVER_ADAPTIVE": 0
+      },
+      "adaptive": {
+        "STS_SILVER_ADAPTIVE": 1
+      }
+    }
+  },
+  "commands": [
+    "env -i HOME PATH OMP_NUM_THREADS=1 STS_EXECUTABLE_GIT_SHA=<baseline> STS_SILVER_POR_SCAN=1 [STS_SILVER_SHARED_CHILD_EXPLORATION=1] STS_SILVER_ADAPTIVE={0,1} STS_SILVER_TREE_PROFILE={mode}_{arm}_{off}.jsonl bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 1000 4 0 {0,4} {mode}_{arm}_{off}.csv",
+    "python3 compare.py > summary.txt"
+  ],
+  "parity": "control results columns identical to ledger \u00a7367 flat_on.csv and adaptive_on.csv",
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "artifacts_sha256": {
+    "adaptive_control_0.csv": "947b2cb0a7a8d2f4e35e3ae34c9fc31d7859f9085806c4ff86e07faa386bfff9",
+    "adaptive_control_0.csv.meta.json": "210c60099a61ea7369befbc9a229d3a0aadafb4574fb78d4165d402600a38abe",
+    "adaptive_control_0.jsonl.gz": "047b1866a960391df2741aabdb8222dac8241f50744c04d69eb0f0622a2eea2c",
+    "adaptive_control_0.log": "0bfb6916500678b9e08a01e16539591515c60dcb45dc64c5125c9c791b3782b3",
+    "adaptive_control_4.csv": "c62707ee77f7aff2c071ba2e6093a3b9c72a715e7f505f98647b1b67651e7bea",
+    "adaptive_control_4.csv.meta.json": "b030d8a796da264d63f9d44255df272331e5d408674b00f0f1a1597e290e9db6",
+    "adaptive_control_4.jsonl.gz": "249541c0b6d14dfe5f707fab97c16cedd805b1bf3dcacb30ce37513defa76bd5",
+    "adaptive_control_4.log": "402f75db8dd55b7c118f3411301959b2d93c0399fa8b4ac6df70a0d76b4e5e26",
+    "adaptive_shared_0.csv": "6fb81d8413be2f017ad5da9f0300cf346e879d6215fe9b35fdb45abd5f77b499",
+    "adaptive_shared_0.csv.meta.json": "bfff39c8c71deef10b8f372fbbe9bd37a9741f8f384c5b23da7d463c77dea3c2",
+    "adaptive_shared_0.jsonl.gz": "bab29b836f2086116398319646d2227d1b288d1c6e00c1a50278a8e30969ea9a",
+    "adaptive_shared_0.log": "80796cd4940100511d5718f61efa0d631048d04593f47dc861f35ce8a75c6ac4",
+    "adaptive_shared_4.csv": "172cafe31d60f26fe3c65fdcd0c5cfd2fe98bc1071961e94a6e4a9311f070b7d",
+    "adaptive_shared_4.csv.meta.json": "dab23ad9f887f9fbb16eceb73dac4c45f394039c51a6f299947c1af13dbdce41",
+    "adaptive_shared_4.jsonl.gz": "2a4c4d8493cc8033b4c6fbcb28e4f4fc15a3e96e9c9651ef3fa17bbfde8e0191",
+    "adaptive_shared_4.log": "7b0d4a1b102d605808b640ac6cb9f3eb171b0a58fc97b38a725757d86a0278de",
+    "analyze_por.py": "ace25fed1c6898bf5e17bb206a7b063e6c0cfb1933dc71591de6df4021c526e3",
+    "compare.py": "c2d10ed5db783af648790e731e635e13b082d7935ba29e59532daad4abb28381",
+    "flat_control_0.csv": "64931ca58799f4873608933b0795314d3da108ee10ba8719ffac20ba24dec308",
+    "flat_control_0.csv.meta.json": "9575fac3984f654f06ae6831501d810fa87ce6c10562ceaad218616d7712c35b",
+    "flat_control_0.jsonl.gz": "877b64b8963dd140e79399ea43795f7202a8c4369ba558180fd888db43845217",
+    "flat_control_0.log": "02f03a004bd69863f7f4c89280e12f38cbf359ef37cbd97b2ec3531fd4645763",
+    "flat_control_4.csv": "d1bd84ff61648342955149dc9753d8f12b8fec1cca4eb9b9006124c156285eb3",
+    "flat_control_4.csv.meta.json": "9ca7e5c133bd2472c3dff04a0c3448e71023a40ef69e9fa88f69d72b44a467d0",
+    "flat_control_4.jsonl.gz": "22dbcc649e913d594c4cfcc51c85e6c85f5e3447129383947f3206bb7a516c8e",
+    "flat_control_4.log": "c8eace703847ac26ab73b16970954058ed647fe96efeefc909bd75d81f7cd402",
+    "flat_shared_0.csv": "b2aa15f34c1fe0846e0a84ae98321c6ca4aa393f3e2ff633092bf61491d18dba",
+    "flat_shared_0.csv.meta.json": "8edca810757da6cf532f7bdab3e48a2f61040a60ab67cab8c982dafd3775f08d",
+    "flat_shared_0.jsonl.gz": "f1bd2f83b5c6765632c182acea4b8b48419d94f4f2e181ab96a5a1de9650309d",
+    "flat_shared_0.log": "242ef9744c8204b8b4f44f115804bbf8deb0fd99c24ea6451b16c80647288957",
+    "flat_shared_4.csv": "cb3cc4222c2fa469c577d8b01830a989e97c0932e15660763999a2262848d1ea",
+    "flat_shared_4.csv.meta.json": "a0f8dc74dd914be0659098ebd89e47408a0738a956ff034e7ec41ddf5ff3ad94",
+    "flat_shared_4.jsonl.gz": "191918b120c0719bc383b8babe8e1c8fe1cef6ebc74346b929904ffce0ec4d08",
+    "flat_shared_4.log": "02bec6388915402ea51676a86062ca28324e8422217e5be0d8d5cf51d60b9812",
+    "shared_child_exploration.diff": "d64c8b19695c6b085887df182078428634561233e2515fc37991af3bc340ff14",
+    "summary.txt": "300b96df590b885b1d70088b43ff18613822d053b32dcc56ce09caf2f8cc6449"
+  }
+}

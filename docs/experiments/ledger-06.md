@@ -13682,3 +13682,49 @@ runtime support changed.
   (`flat10k_*`, `summary_flat10k.txt`).
 - **Knowledge impact:** none beyond this ledger entry; no code, baseline or
   default change.
+
+## §372 — Transposition-aware exploration in native Silver: mechanism screen (2026-09-28)
+
+- **Question:** §370–§371 found about 11–12% of a turn's visits on edges a
+  canonical move order would prune. Without pruning, can selection stop
+  re-exploring successors already covered through the other order?
+- **Change:** research option `STS_SILVER_SHARED_CHILD_EXPLORATION=1`
+  (default off). In `SilverSearcher::evaluateEdge` the exploration term of an
+  edge to a deterministic child uses `max(edge visits, child visits)` instead
+  of the edge's own visits (transposition-aware UCB with node counts).
+  Values, chance nodes and the final most-visited-root-edge choice are
+  unchanged; every move stays reachable. Recorded as
+  `silverSharedChildExploration` in the bestbench sidecar.
+- **Configuration:** source `0b02809488da516512ed9f9c0bdbaf3a3b49b177` plus the option
+  (`shared_child_exploration.diff`), binary SHA-256
+  `4a0da987acff564b6a51bc01b151e4c97a47c086561d223ab14daa85bdc81926`;
+  `bestbench 1000`, seeds 0..7, asc 0, fair, `OMP_NUM_THREADS=1`, clean
+  `env -i`, via `tools/seed_guard.sh`, with `STS_SILVER_POR_SCAN=1` and the
+  tree profile in both arms. Per mode (flat 1,000; adaptive) the control and
+  treatment arms ran concurrently as 4-seed shards. Control results columns
+  were identical to §367.
+- **Results:**
+
+  | | Flat control | Flat shared | Adaptive control | Adaptive shared |
+  | --- | ---: | ---: | ---: | ---: |
+  | Confirmed prunable visit share (pooled, first decision per turn) | 11.4% | 8.8% | 11.6% | 8.8% |
+  | Median turn | 8.3% | 5.1% | 7.2% | 4.0% |
+  | Candidate share (upper bound) | 16.5% | 14.2% | 16.1% | 13.8% |
+  | Search time per decision | 17.45 ms | 17.39 ms | 63.1 ms | 62.8 ms |
+  | Time per simulation | 12.60 µs | 12.48 µs | 11.88 µs | 12.03 µs |
+  | Won / avg floor | 4/8 / 47.9 | 7/8 / 49.2 | 6/8 / 49.1 | 3/8 / 43.2 |
+
+  Times include the scan and profile in both arms.
+- **Interpretation:** the mechanism works as intended at no measurable
+  speed cost: it removes about a quarter of the redundant-order visits
+  pooled and roughly halves them in the median turn, while leaving values
+  and move availability intact. The outcome moves in opposite directions in
+  the two modes (+3 and −3 wins of 8), which is what noise at 8 seeds looks
+  like; this screen carries no quality evidence. **Unverified:** whether the
+  re-spread visits improve play. The next step is a frozen, paired
+  equal-simulation cohort under the benchmark protocol (for example the
+  128-seed paired form used in §348), which needs explicit authorization.
+- **Evidence:** [silver_shared_child_exploration_2026-09-28](evidence/silver_shared_child_exploration_2026-09-28/)
+  (`summary.txt`, `compare.py`, profiles, results, `manifest.json`).
+- **Knowledge impact:** environment-variable reference and combat-search
+  selection paragraph document the option; no baseline or default change.

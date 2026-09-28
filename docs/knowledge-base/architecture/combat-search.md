@@ -99,7 +99,11 @@ chosen root action to the live state by card identity
 copy). When no node matches exactly, `findNodeUpToEquivalentCopy` retries with
 the unique ids of one pair of search-equivalent cards exchanged, so playing a
 different physical copy than the one the search expanded (the root
-deduplicates equivalent copies) still reuses that branch (ADR-0023). The
+deduplicates equivalent copies) still reuses that branch (ADR-0023). Selection scores
+an edge by its child's shared value plus an exploration term from the edge's
+own visits; the research option `STS_SILVER_SHARED_CHILD_EXPLORATION=1` uses
+the larger of the edge and child visit counts for deterministic children
+instead, so transposed successors are not re-explored per path (ledger §372). The
 exchange is only a lookup: `equalForSearch` and the dedup table stay exact,
 and cards whose special data matters (Ritual Dagger, Genetic Algorithm) are
 never exchanged. A root with exactly one legal action

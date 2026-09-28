@@ -1,0 +1,5 @@
+seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec
+4,0,16,1,0,99,1,10,20,5.72671
+5,0,40,3,0,47,1,25,50,30.39
+6,1,51,3,31,80,0,-1,-1,26.8682
+7,1,51,3,27,92,0,-1,-1,34.5135

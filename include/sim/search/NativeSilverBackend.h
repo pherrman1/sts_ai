@@ -36,6 +36,8 @@ namespace sts::search {
     // STS_SILVER_FLAT_TOPUP: a retained root searches only up to the flat budget
     // in total root visits (inherited visits count toward it).
     bool nativeSilverFlatTopUp();
+    // STS_SILVER_SHARED_CHILD_EXPLORATION: transposition-aware exploration term.
+    bool nativeSilverSharedChildExploration();
     std::int64_t nativeSilverReuseCap();
 
     // Decisions and simulations of the current thread's latest combat.
