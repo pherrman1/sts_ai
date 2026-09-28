@@ -147,6 +147,92 @@ double bossLeafUtility(const CombatTransitionExpectation &estimate) {
     const double survival = 1.0 - estimate.death;
     return 0.75 * survival + 0.25 * survival * estimate.winningHpFraction;
 }
+// Phase-0 Smoke Bomb approximation (#370). The qualified CTM excludes combats
+// that start with a Smoke Bomb. Rather than abort the whole search, value such
+// a combat as if the Smoke Bomb slot were empty (no escape) and return the
+// Smoke Bomb unused afterwards; a potion the CTM generated into that slot is
+// dropped, since the occupied slot could not have held it. Against bosses the
+// Smoke Bomb cannot be used, so only slot occupancy differs there.
+class InitialSmokeBombMaskingSampler final : public CombatTransitionSampler {
+    std::shared_ptr<const CombatTransitionSampler> inner_;
+    static constexpr int kEmpty = static_cast<int>(sts::Potion::EMPTY_POTION_SLOT);
+    static constexpr int kSmoke = static_cast<int>(sts::Potion::SMOKE_BOMB);
+public:
+    struct Masked {
+        GameContext gc;
+        CombatPredictorInputV1 input;
+        std::vector<int> slots;
+    };
+    explicit InitialSmokeBombMaskingSampler(std::shared_ptr<const CombatTransitionSampler> inner)
+        : inner_(std::move(inner)) {}
+    static std::optional<Masked> mask(const GameContext &gc, const CombatPredictorInputV1 &input) {
+        if (gc.smokeBombUsed) return std::nullopt;
+        std::vector<int> slots;
+        for (int i = 0; i < static_cast<int>(gc.potions.size()); ++i)
+            if (gc.potions[i] == sts::Potion::SMOKE_BOMB) slots.push_back(i);
+        if (slots.empty()) return std::nullopt;
+        Masked masked{gc, input, slots};
+        for (int slot : slots) {
+            masked.gc.potions[slot] = sts::Potion::EMPTY_POTION_SLOT;
+            --masked.gc.potionCount;
+            for (auto &token : masked.input.potions)
+                if (token.slot == slot && token.potionId == kSmoke) token.potionId = kEmpty;
+            --masked.input.globals.potionCount;
+        }
+        return masked;
+    }
+    static CombatRuntimeSample restore(CombatRuntimeSample sample, const std::vector<int> &slots) {
+        if (sample.outcome != CombatRuntimeSample::Outcome::VICTORY
+                && sample.outcome != CombatRuntimeSample::Outcome::ESCAPE) return sample;
+        auto &post = sample.rawPost;
+        for (int slot : slots) post.potions.at(slot) = kSmoke;
+        post.potionCount = static_cast<int>(std::count_if(post.potions.begin(), post.potions.end(),
+            [](int p) { return p > kEmpty; }));
+        return sample;
+    }
+    std::unique_ptr<PreparedCombatTransition> prepare(const GameContext &gc,
+            const CombatPredictorInputV1 &input) const override {
+        auto masked = mask(gc, input);
+        if (!masked) return inner_->prepare(gc, input);
+        class Restoring final : public PreparedCombatTransition {
+            std::unique_ptr<PreparedCombatTransition> inner_;
+            std::vector<int> slots_;
+        public:
+            Restoring(std::unique_ptr<PreparedCombatTransition> inner, std::vector<int> slots)
+                : inner_(std::move(inner)), slots_(std::move(slots)) {}
+            const CombatRuntimeSupport &support() const override { return inner_->support(); }
+            CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
+                return restore(inner_->sample(rng), slots_);
+            }
+        };
+        return std::make_unique<Restoring>(inner_->prepare(masked->gc, masked->input), masked->slots);
+    }
+    CombatRuntimeSupport support(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        const auto masked = mask(gc, input);
+        return masked ? inner_->support(masked->gc, masked->input) : inner_->support(gc, input);
+    }
+    CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastSupport(input);
+    }
+    CombatTransitionExpectation forecastExpectation(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastExpectation(input);
+    }
+    CombatTransitionExpectation expectation(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        const auto masked = mask(gc, input);
+        return masked ? inner_->expectation(masked->gc, masked->input) : inner_->expectation(gc, input);
+    }
+    CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &input,
+            std::mt19937_64 &rng) const override {
+        const auto masked = mask(gc, input);
+        if (!masked) return inner_->sample(gc, input, rng);
+        return restore(inner_->sample(masked->gc, masked->input, rng), masked->slots);
+    }
+};
+std::shared_ptr<const CombatTransitionSampler> maskInitialSmokeBomb(
+        std::shared_ptr<const CombatTransitionSampler> sampler) {
+    if (!sampler) return sampler;
+    return std::make_shared<InitialSmokeBombMaskingSampler>(std::move(sampler));
+}
 void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) {
     const bool escape = sample.outcome == CombatRuntimeSample::Outcome::ESCAPE;
     if ((sample.outcome != CombatRuntimeSample::Outcome::VICTORY && !escape)
@@ -238,7 +324,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
 OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path,
     std::shared_ptr<const CombatTransitionSampler> sampler, OocAdapterOptions opts,
     OocMctsDependencies deps)
-    : combatSampler(std::move(sampler)), options(std::move(opts)),
+    : combatSampler(maskInitialSmokeBomb(std::move(sampler))), options(std::move(opts)),
       dependencies(std::move(deps)) {
     if (!std::isfinite(options.priorTemperature) || options.priorTemperature <= 0 || (options.leafCombats != 0 && options.leafCombats != 1 && options.leafCombats != 3))
         throw std::invalid_argument("OOC MCTS invalid adapter options");
@@ -3286,6 +3372,115 @@ void oocMctsAdapterSelfTest() {
         regainCalls=savedRegainCalls;
     }
     std::cout<<"smoke_escape_oracle native_origin=identical cleric=both raw_outcome=ESCAPE parity=exact\n";
+    {
+        // Phase-0 Smoke Bomb masking (#370): the CTM sees an empty slot, the
+        // Smoke Bomb returns unused, and a potion generated into its slot is
+        // dropped. States without a Smoke Bomb pass through unchanged.
+        struct RecordingSampler final : CombatTransitionSampler {
+            mutable std::vector<std::array<int,5>> seenPotions;
+            mutable std::vector<int> seenInputCounts;
+            CombatRuntimeSupport support(const GameContext &g,const CombatPredictorInputV1 &p) const override {
+                record(g,p);
+                for (auto potion : g.potions)
+                    if (potion==Potion::SMOKE_BOMB) return {false,"smoke_bomb"};
+                return {true,"supported"};
+            }
+            CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &p,
+                    std::mt19937_64 &) const override {
+                record(g,p);
+                CombatRuntimeSample result{CombatRuntimeSample::Outcome::VICTORY,
+                    captureCombatTransitionState(g)};
+                result.rawPost.potions[1]=static_cast<int>(Potion::FIRE_POTION); // generated
+                return result;
+            }
+            void record(const GameContext &g,const CombatPredictorInputV1 &p) const {
+                std::array<int,5> potions{};
+                for (int i=0;i<5;++i) potions[i]=static_cast<int>(g.potions[i]);
+                seenPotions.push_back(potions);
+                seenInputCounts.push_back(p.globals.potionCount);
+            }
+        };
+        auto recording=std::make_shared<RecordingSampler>();
+        const auto wrapped=maskInitialSmokeBomb(recording);
+        auto withSmoke=detachedCopy(gc);
+        withSmoke.potionCapacity=3;
+        withSmoke.potions={Potion::BLOCK_POTION,Potion::SMOKE_BOMB,Potion::EMPTY_POTION_SLOT,
+            Potion::EMPTY_POTION_SLOT,Potion::EMPTY_POTION_SLOT};
+        withSmoke.potionCount=2;
+        withSmoke.info.encounter=MonsterEncounter::CULTIST;
+        const auto input=captureCombatPredictorInput(withSmoke,MonsterEncounter::CULTIST,4.0);
+        require(wrapped->support(withSmoke,input).supported,"masked Smoke Bomb combat is supported");
+        std::mt19937_64 maskRng(5);
+        const auto sampled=wrapped->sample(withSmoke,input,maskRng);
+        require(recording->seenPotions.back()[1]==static_cast<int>(Potion::EMPTY_POTION_SLOT)
+            && recording->seenInputCounts.back()==1,"CTM sees the Smoke Bomb slot as empty");
+        require(sampled.outcome==CombatRuntimeSample::Outcome::VICTORY
+            && sampled.rawPost.potions[1]==static_cast<int>(Potion::SMOKE_BOMB)
+            && sampled.rawPost.potions[0]==static_cast<int>(Potion::BLOCK_POTION)
+            && sampled.rawPost.potionCount==2 && !sampled.rawPost.smokeBombUsed,
+            "Smoke Bomb returns unused and displaces a generated potion");
+        const auto prepared=wrapped->prepare(withSmoke,input);
+        require(prepared->support().supported
+            && prepared->sample(maskRng).rawPost.potions[1]==static_cast<int>(Potion::SMOKE_BOMB),
+            "prepared path masks and restores the Smoke Bomb");
+        auto noSmoke=detachedCopy(withSmoke);
+        noSmoke.potions[1]=Potion::EMPTY_POTION_SLOT; noSmoke.potionCount=1;
+        const auto plain=captureCombatPredictorInput(noSmoke,MonsterEncounter::CULTIST,4.0);
+        const auto passed=wrapped->sample(noSmoke,plain,maskRng);
+        require(passed.rawPost.potions[1]==static_cast<int>(Potion::FIRE_POTION),
+            "states without a Smoke Bomb pass through unchanged");
+        std::cout<<"smoke_bomb_mask masked=empty_slot restored=unused generated=dropped\n";
+    }
+    {
+        // Phase-0 masking (#370): the CTM sees an empty slot for an initial
+        // Smoke Bomb, and the Smoke Bomb returns unused after the combat.
+        struct RecordingSampler final : CombatTransitionSampler {
+            mutable std::vector<int> seenPotions;
+            mutable int seenCount = -1, calls = 0;
+            CombatRuntimeSupport support(const GameContext &g,const CombatPredictorInputV1 &) const override {
+                const bool smoke=std::any_of(g.potions.begin(),g.potions.end(),[](auto p){return p==Potion::SMOKE_BOMB;});
+                return {!smoke, smoke ? "smoke_bomb" : "supported"};
+            }
+            CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &in,
+                    std::mt19937_64 &) const override {
+                ++calls; seenCount=in.globals.potionCount; seenPotions.clear();
+                for (const auto &token : in.potions) seenPotions.push_back(token.potionId);
+                CombatRuntimeSample result;
+                result.outcome=CombatRuntimeSample::Outcome::VICTORY;
+                result.rawPost=captureCombatTransitionState(g);
+                result.rawPost.potions[1]=int(Potion::FIRE_POTION); // generated into the masked slot
+                result.rawPost.potionCount=2;
+                return result;
+            }
+        };
+        auto recorder=std::make_shared<RecordingSampler>();
+        const auto masked=maskInitialSmokeBomb(recorder);
+        auto held=detachedCopy(gc);
+        held.potions.fill(Potion::EMPTY_POTION_SLOT);
+        held.potions[0]=Potion::BLOCK_POTION; held.potions[1]=Potion::SMOKE_BOMB; held.potionCount=2;
+        held.info.encounter=MonsterEncounter::CULTIST;
+        const auto input=captureCombatPredictorInput(held,MonsterEncounter::CULTIST,4.0);
+        require(!recorder->support(held,input).supported && masked->support(held,input).supported,
+            "Smoke Bomb masking makes the combat supported");
+        std::mt19937_64 maskRng(5);
+        for (const auto &draw : {masked->sample(held,input,maskRng), masked->prepare(held,input)->sample(maskRng)}) {
+            require(recorder->seenCount==1 && recorder->seenPotions.at(1)==int(Potion::EMPTY_POTION_SLOT)
+                && recorder->seenPotions.at(0)==int(Potion::BLOCK_POTION),
+                "CTM sees the Smoke Bomb slot as empty");
+            require(draw.outcome==CombatRuntimeSample::Outcome::VICTORY
+                && draw.rawPost.potions[1]==int(Potion::SMOKE_BOMB) && draw.rawPost.potionCount==2
+                && !draw.rawPost.smokeBombUsed,
+                "Smoke Bomb returns unused and replaces a potion generated into its slot");
+        }
+        auto plain=detachedCopy(held); plain.potions[1]=Potion::EMPTY_POTION_SLOT; plain.potionCount=1;
+        const auto plainInput=captureCombatPredictorInput(plain,MonsterEncounter::CULTIST,4.0);
+        const auto passed=masked->sample(plain,plainInput,maskRng);
+        require(recorder->seenCount==1 && passed.rawPost.potions[1]==int(Potion::FIRE_POTION),
+            "states without a Smoke Bomb pass through unchanged");
+        auto used=detachedCopy(held); used.smokeBombUsed=true;
+        require(!masked->support(used,captureCombatPredictorInput(used,MonsterEncounter::CULTIST,4.0)).supported,
+            "pre-used Smoke Bomb state stays unsupported");
+    }
     fake->enabled=false; regainCalls=0;
     OocGameContextModel unsupportedCombat(combatRoot,path,fake);
     const auto unsupportedId=unsupportedCombat.sampleSuccessor(0,sourceId(unsupportedCombat,restAction.bits),rng);

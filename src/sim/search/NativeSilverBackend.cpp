@@ -34,6 +34,8 @@ namespace sts::search {
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
             double topGap = kDefaultTopGap;
+            double escapePenalty = 0;
+            double eliteEscapePenalty = 0;
         };
         Options g_options;
         std::string g_uselessTrace;
@@ -205,6 +207,7 @@ namespace sts::search {
             context.actBossRoom = gc.curRoom == Room::BOSS;
             context.omamoriCharged = gc.relics.has(RelicId::OMAMORI)
                 && gc.relics.getRelicValue(RelicId::OMAMORI) > 0;
+            context.eliteRewards = gc.isEliteTriggerCombat();
 
             const std::int64_t flatBudget = isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
@@ -243,6 +246,8 @@ namespace sts::search {
                     searcher->setRoot(root);
                 } else {
                     searcher = std::make_unique<SilverSearcher>(root, context);
+                    searcher->evalWeights.escapePenalty = g_options.escapePenalty;
+                    searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
                 }
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
@@ -383,6 +388,16 @@ namespace sts::search {
         }
         if (const char *raw = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS")) {
             g_options.searchSingletonRoots = std::atoi(raw) != 0;
+        }
+        if (const char *raw = std::getenv("STS_SILVER_ESCAPE_PENALTY"); raw && *raw) {
+            // "<normal>,<elite>" in Silver score units (HP-equivalent).
+            char *end = nullptr;
+            g_options.escapePenalty = std::strtod(raw, &end);
+            if (end == raw || *end != ',') throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
+            const char *elite = end + 1;
+            g_options.eliteEscapePenalty = std::strtod(elite, &end);
+            if (end == elite || *end != '\0' || g_options.escapePenalty < 0 || g_options.eliteEscapePenalty < 0)
+                throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
         }
         g_externalCombatBackend = runNativeSilverCombat;
     }

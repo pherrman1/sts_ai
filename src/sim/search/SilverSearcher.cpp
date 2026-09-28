@@ -722,6 +722,14 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);
+        if (bc.smokeBombUsed) {
+            // Forfeited rewards, capped at half the remaining HP: death also
+            // scores positively, so an uncapped penalty could make a low-HP
+            // escape look worse than dying. The cap keeps emergencies cheap.
+            const double penalty = context.eliteRewards ? evalWeights.eliteEscapePenalty
+                                                        : evalWeights.escapePenalty;
+            score -= std::min(penalty, 0.5 * bc.player.curHp);
+        }
         // An implanted Writhing Mass adds a Parasite unless a charged Omamori absorbs it.
         const auto &wm = bc.monsters.arr[0];
         if (wm.id == MonsterId::WRITHING_MASS && wm.miscInfo
