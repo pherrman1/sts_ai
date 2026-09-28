@@ -129,14 +129,22 @@ def _make_bundle(directory: Path, option_keys: list[str] | None = None) -> Path:
                   "domain": "vwin-refresh-334-v1:{seed}", "prefixBytes": 4,
                   "trainLt": 0.70, "validationLt": 0.85,
                   "branchesInheritSourceSeed": True},
-        "branchParity": {"percent": 5, "checks": 0, "failures": 0},
+        "branchParity": {"percent": 100, "checks": 1, "failures": 0,
+            "rule": "sha256_bucket_decision_v1",
+            "domain": "vwin-branch-parity-334-v1:{seed}:{decisionIdx}"},
+        "branchRows": [{"sourceSeed": SEED, "decisionIdx": 0, "type": "MAP",
+            "optionKey": row["optionKey"], "chosen": row["chosen"] == "1",
+            "branchId": row["branchId"], "trajectoryValid": True,
+            "chosenReplayParity": True if row["chosen"] == "1" else None,
+            "cpuSeconds": 1.0} for row in branches],
         "stateFeatures": {"schema": "rich_state_v1", "header": FEATURE_HEADER,
                           "headerSha256": feature_sha, "count": 1017},
         "outputs": hashes,
         "integrity": {"completedSources": 1, "validSources": 1,
             "sourceMapRows": 1, "sourceWinRawRows": 1,
             "branchMapRows": len(option_keys), "branchWinRawRows": len(option_keys),
-            "decisionRows": len(decisions), "branches": len(branches)},
+            "decisionRows": len(decisions), "branches": len(branches),
+            "chosenReplayChecks": 1, "chosenReplayFailures": 0},
     }
     manifest_path = Path(str(prefix) + ".manifest.json")
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -210,6 +218,133 @@ class VwinRefreshContractTests(unittest.TestCase):
         self.assertEqual(result["seeds"], 1)
         self.assertEqual(result["branches"], 2)
         self.assertEqual(result["sampled_decisions"], 1)
+
+    def _mutate_table(self, name, change):
+        path = Path(str(self.manifest)[:-len(".manifest.json")] + OUTPUTS[name])
+        with path.open(newline="") as stream:
+            reader = csv.DictReader(stream)
+            header, rows = reader.fieldnames, list(reader)
+        change(rows)
+        _write_csv(path, header, rows)
+        self._rewrite_hash(name)
+
+    def _mutate_manifest(self, change):
+        manifest = json.loads(self.manifest.read_text())
+        change(manifest)
+        self.manifest.write_text(json.dumps(manifest))
+
+    def test_required_replay_na_with_zero_checks_rejected(self):
+        self._mutate_table("runout.csv", lambda rows: rows[1].update(branchParity="NA"))
+        def change(m):
+            m["branchParity"]["checks"] = 0
+            m["integrity"]["chosenReplayChecks"] = 0
+            m["branchRows"][0]["chosenReplayParity"] = None
+        self._mutate_manifest(change)
+        with self.assertRaisesRegex(ContractError, "required chosen replay must be PASS"):
+            validate_bundle(self.manifest)
+
+    def test_replay_fail_with_zero_failures_rejected(self):
+        self._mutate_table("runout.csv", lambda rows: rows[1].update(branchParity="FAIL"))
+        self._mutate_table("branches.csv", lambda rows: rows[0].update(valid="0"))
+        self._mutate_manifest(lambda m: m["branchRows"][0].update(chosenReplayParity=False))
+        with self.assertRaisesRegex(ContractError, "failures disagrees"):
+            validate_bundle(self.manifest)
+        def reported_failures(m):
+            m["branchParity"]["failures"] = 1
+            m["integrity"]["chosenReplayFailures"] = 1
+        self._mutate_manifest(reported_failures)
+        with self.assertRaisesRegex(ContractError, "bundle contains FAIL"):
+            validate_bundle(self.manifest)
+
+    def test_replay_summary_contradictions_rejected(self):
+        cases = [
+            (lambda m: m["branchRows"][0].update(chosenReplayParity=False), "chosenReplayParity"),
+            (lambda m: m["branchRows"][1].update(chosenReplayParity=True), "chosenReplayParity"),
+            (lambda m: m["branchRows"].pop(), "one-to-one"),
+            (lambda m: m["branchRows"].append(m["branchRows"][0]), "duplicate identity"),
+            (lambda m: m["branchParity"].update(checks=0), "checks disagrees"),
+            (lambda m: m["integrity"].update(chosenReplayChecks=0), "chosenReplayChecks disagrees"),
+            (lambda m: m["integrity"].update(chosenReplayFailures=1), "chosenReplayFailures disagrees"),
+            (lambda m: m["branchParity"].update(domain="wrong"), "parity contract"),
+        ]
+        for change, message in cases:
+            with self.subTest(message=message):
+                self.manifest = _make_bundle(self.directory)
+                self._mutate_manifest(change)
+                with self.assertRaisesRegex(ContractError, message):
+                    validate_bundle(self.manifest)
+
+    def test_parity_hash_bucket_boundary(self):
+        bucket = int(hashlib.sha256(f"vwin-branch-parity-334-v1:{SEED}:0".encode()).hexdigest()[:8], 16) % 100
+        for percent in (0, bucket, bucket + 1, 100):
+            with self.subTest(percent=percent):
+                self.manifest = _make_bundle(self.directory)
+                required = bucket < percent
+                self._mutate_table("runout.csv", lambda rows: rows[1].update(
+                    branchParity="PASS" if required else "NA"))
+                def change(m):
+                    m["branchParity"].update(percent=percent, checks=int(required))
+                    m["integrity"]["chosenReplayChecks"] = int(required)
+                    m["branchRows"][0]["chosenReplayParity"] = True if required else None
+                self._mutate_manifest(change)
+                self.assertEqual(validate_bundle(self.manifest)["chosen_replay_checks"], int(required))
+
+    def test_inapplicable_branch_or_source_parity_rejected(self):
+        for index, message in ((0, "source branchParity"), (2, "inapplicable chosen replay")):
+            with self.subTest(index=index):
+                self.manifest = _make_bundle(self.directory)
+                self._mutate_table("runout.csv", lambda rows: rows[index].update(branchParity="PASS"))
+                with self.assertRaisesRegex(ContractError, message):
+                    validate_bundle(self.manifest)
+
+    def test_outcome_label_mapping_rejected(self):
+        for outcome, wrong in (("PLAYER_VICTORY", "0"), ("PLAYER_LOSS", "1"), ("UNDECIDED", "0")):
+            with self.subTest(outcome=outcome):
+                self.manifest = _make_bundle(self.directory)
+                self._mutate_table("runout.csv", lambda rows: rows[0].update(finalOutcome=outcome, finalWon=wrong))
+                with self.assertRaisesRegex(ContractError, "finalWon disagrees"):
+                    validate_bundle(self.manifest)
+
+    def test_source_totals_recomputed(self):
+        for field in ("completedSources", "validSources"):
+            with self.subTest(field=field):
+                self.manifest = _make_bundle(self.directory)
+                self._mutate_manifest(lambda m: m["integrity"].update({field: 999}))
+                with self.assertRaisesRegex(ContractError, "integrity." + field):
+                    validate_bundle(self.manifest)
+
+    def test_trajectory_flags_reconciled(self):
+        for change in ({"trajectoryComplete": "0"}, {"trajectoryValid": "0"},
+                       {"simulatorHealthFailures": "1"}, {"fatalFailure": "1"},
+                       {"finalOutcome": "UNDECIDED", "finalWon": "-1"}):
+            with self.subTest(change=change):
+                self.manifest = _make_bundle(self.directory)
+                self._mutate_table("runout.csv", lambda rows: rows[0].update(change))
+                with self.assertRaisesRegex(ContractError, "trajectory flags contradict"):
+                    validate_bundle(self.manifest)
+
+    def test_invalid_sources_exempt_replay_and_chosen_branch_validity(self):
+        for outcome, won, complete, fatal, health in (
+                ("UNDECIDED", "-1", "0", "0", "0"),
+                ("UNDECIDED", "-1", "0", "1", "1"),
+                ("PLAYER_LOSS", "0", "1", "0", "1")):
+            with self.subTest(outcome=outcome, fatal=fatal):
+                self.manifest = _make_bundle(self.directory)
+                def runouts(rows):
+                    rows[0].update(finalOutcome=outcome, finalWon=won, trajectoryComplete=complete,
+                                   trajectoryValid="0", fatalFailure=fatal, simulatorHealthFailures=health)
+                    rows[1]["branchParity"] = "NA"
+                self._mutate_table("runout.csv", runouts)
+                self._mutate_table("branches.csv", lambda rows: rows[0].update(valid="0"))
+                def change(m):
+                    m["branchParity"]["checks"] = 0
+                    m["integrity"].update(chosenReplayChecks=0, validSources=0, completedSources=int(complete))
+                    m["branchRows"][0]["chosenReplayParity"] = None
+                self._mutate_manifest(change)
+                self.assertEqual(validate_bundle(self.manifest)["valid_source_trajectories"], 0)
+                self._mutate_table("branches.csv", lambda rows: rows[0].update(valid="1"))
+                with self.assertRaisesRegex(ContractError, "branch valid disagrees"):
+                    validate_bundle(self.manifest)
 
     def _mutate_sink(self, change) -> None:
         _add_decision_sink(self.manifest)
@@ -366,10 +501,10 @@ class VwinRefreshContractTests(unittest.TestCase):
             shutil.copyfile(path, other_dir / path.name)
         second = other_dir / self.manifest.name
         changed = json.loads(second.read_text())
-        changed["branchRows"] = [{"cpuSeconds": 2.0}]
+        changed["branchRows"][0]["cpuSeconds"] = 2.0
         second.write_text(json.dumps(changed))
         original = json.loads(self.manifest.read_text())
-        original["branchRows"] = [{"cpuSeconds": 1.0}]
+        original["branchRows"][0]["cpuSeconds"] = 1.0
         self.manifest.write_text(json.dumps(original))
         self.assertIn("decision.csv", compare_bundles(self.manifest, second)["identical_non_timing_outputs"])
         changed["producerGitSha"] = "d" * 40

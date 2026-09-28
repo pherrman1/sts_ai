@@ -368,8 +368,14 @@ python3 tools/vwin_refresh_contract.py PREFIX.manifest.json
 
 The validator checks each output hash/header, finite numeric fields, seed and
 branch joins, one run-out outcome per branch, sampled chosen-option presence,
-the six-option cap, the 70/15/15 split metadata, chosen-replay status, and one
-`WIN_RAW` row per victory in each valid trajectory.
+the six-option cap, the 70/15/15 split metadata, and one `WIN_RAW` row per
+victory in each valid trajectory. It recomputes required chosen replays from
+the manifested percentage, SHA-256 seed/decision bucket and source validity;
+requires PASS for every selected replay; and reconciles runout statuses,
+`branchRows[].chosenReplayParity`, branch validity and both parity summaries.
+Runout `finalWon` must map victory/loss/unresolved to 1/0/-1. Completion and
+trajectory validity must agree with outcome, fatal failure and simulator-health
+fields; completed/valid source totals are recomputed from those runouts.
 `vwinrefreshselftest` covers option-cap determinism, per-seed reservoir-helper
 repeatability, copied agent/RNG and policy state, the rich-feature width and
 thread CPU clock. It does not rerun generated trajectories or compare their
@@ -414,6 +420,10 @@ and B30 (flat 30k) valid paired comparisons. The mode writes source states,
 per-arm outcome/signed-outcome/HP/first-action/CPU/simulation/decision rows and
 a provenance manifest. `tools/analyze_boss_headroom_347.py` requires the
 adjacent hash-bound manifest and verifies the state/arm joins before analysis.
+Both bundle loading and the analysis entry point require source-state rows,
+recompute A's outcome/terminal-HP match, and reject contradictory match flags.
+A valid B100 or B30 arm requires a matching valid A replay; quarantined A states
+are excluded from both paired analyses.
 It reports paired metrics and source-seed-clustered bootstrap intervals
 overall, by act, and by boss; applies the Stage-1 classification thresholds;
 and flags the authorized extension case.

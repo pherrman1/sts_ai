@@ -323,8 +323,10 @@ def validate_bundle(manifest_path: str | Path) -> dict[str, object]:
             or split.get("branchesInheritSourceSeed") is not True):
         _fail("manifest source-seed 70/15/15 split contract mismatch")
     parity = manifest.get("branchParity", {})
-    if (not isinstance(parity.get("percent"), int) or parity["percent"] < 0
-            or parity["percent"] > 100 or parity.get("failures") != 0):
+    if (type(parity.get("percent")) is not int or parity["percent"] < 0
+            or parity["percent"] > 100
+            or parity.get("rule") != "sha256_bucket_decision_v1"
+            or parity.get("domain") != "vwin-branch-parity-334-v1:{seed}:{decisionIdx}"):
         _fail("manifest chosen-replay parity contract is invalid or contains failures")
     prefix = str(manifest_path)
     if not prefix.endswith(".manifest.json"):
@@ -396,6 +398,23 @@ def validate_bundle(manifest_path: str | Path) -> dict[str, object]:
             _fail(f"runout.csv:{index}: duplicate branch outcome for {key}")
         if row["finalOutcome"] not in {"PLAYER_VICTORY", "PLAYER_LOSS", "UNDECIDED"}:
             _fail(f"runout.csv:{index}: unknown final outcome")
+        expected_won = {"PLAYER_VICTORY": "1", "PLAYER_LOSS": "0", "UNDECIDED": "-1"}[row["finalOutcome"]]
+        if row["finalWon"] != expected_won:
+            _fail(f"runout.csv:{index}: finalWon disagrees with finalOutcome")
+        for field in ("trajectoryComplete", "trajectoryValid", "fatalFailure"):
+            if row[field] not in {"0", "1"}:
+                _fail(f"runout.csv:{index}: {field} must be 0/1")
+        if not re.fullmatch(r"[0-9]+", row["simulatorHealthFailures"]):
+            _fail(f"runout.csv:{index}: simulatorHealthFailures must be a nonnegative integer")
+        complete = expected_won != "-1" and row["fatalFailure"] == "0"
+        valid = complete and int(row["simulatorHealthFailures"]) == 0
+        if (int(row["trajectoryComplete"]) != int(complete)
+                or int(row["trajectoryValid"]) != int(valid)):
+            _fail(f"runout.csv:{index}: trajectory flags contradict outcome/fatal/health fields")
+        if row["branchParity"] not in {"NA", "PASS", "FAIL"}:
+            _fail(f"runout.csv:{index}: invalid branchParity status")
+        if key[1] == "source" and row["branchParity"] != "NA":
+            _fail(f"runout.csv:{index}: source branchParity must be NA")
         runout_by_key[key] = row
     for seed in allowed_seeds:
         if (seed, "source") not in runout_by_key:
@@ -484,6 +503,62 @@ def validate_bundle(manifest_path: str | Path) -> dict[str, object]:
     if all_branch_keys != non_source_keys:
         _fail("runout branches and branch table do not join one-to-one")
 
+    # Recompute applicability using the producer's exact SHA-256 prefix bucket.
+    summaries = manifest.get("branchRows")
+    if not isinstance(summaries, list):
+        _fail("manifest branchRows is missing")
+    summary_by_key = {}
+    for summary in summaries:
+        if (not isinstance(summary, dict) or type(summary.get("sourceSeed")) is not int
+                or not isinstance(summary.get("branchId"), str)):
+            _fail("manifest branchRows has invalid identity")
+        key = summary["sourceSeed"], summary["branchId"]
+        if key in summary_by_key:
+            _fail("manifest branchRows has duplicate identity")
+        summary_by_key[key] = summary
+    if set(summary_by_key) != all_branch_keys:
+        _fail("manifest branchRows does not join one-to-one with branches.csv")
+    parity_checks = parity_failures = 0
+    for row in rows["branches.csv"]:
+        seed, decision_idx = int(row["sourceSeed"]), int(row["decisionIdx"])
+        key = seed, row["branchId"]
+        run, summary = runout_by_key[key], summary_by_key[key]
+        if row["chosen"] not in {"0", "1"} or row["valid"] not in {"0", "1"}:
+            _fail(f"{key}: branch chosen/valid must be 0/1")
+        chosen = row["chosen"] == "1"
+        source_valid = runout_by_key[(seed, "source")]["trajectoryValid"] == "1"
+        digest = hashlib.sha256(f"vwin-branch-parity-334-v1:{seed}:{decision_idx}".encode()).hexdigest()
+        required = chosen and source_valid and int(digest[:8], 16) % 100 < parity["percent"]
+        status = run["branchParity"]
+        if required and status not in {"PASS", "FAIL"}:
+            _fail(f"{key}: required chosen replay must be PASS (got {status})")
+        if not required and status != "NA":
+            _fail(f"{key}: inapplicable chosen replay must be NA")
+        expected_parity = None if not required else status == "PASS"
+        if ("chosenReplayParity" not in summary
+                or summary["chosenReplayParity"] is not expected_parity):
+            _fail(f"{key}: branchRows chosenReplayParity contradicts runout")
+        if (type(summary.get("decisionIdx")) is not int or summary["decisionIdx"] != decision_idx
+                or summary.get("type") != row["type"] or summary.get("optionKey") != row["optionKey"]
+                or summary.get("chosen") is not chosen
+                or summary.get("trajectoryValid") is not (run["trajectoryValid"] == "1")):
+            _fail(f"{key}: branchRows identity/validity disagrees with output")
+        expected_valid = (run["trajectoryValid"] == "1" and (not required or status == "PASS")
+                          and (not chosen or source_valid))
+        if int(row["valid"]) != int(expected_valid):
+            _fail(f"{key}: branch valid disagrees with trajectory/parity/source validity")
+        parity_checks += int(required)
+        parity_failures += int(status == "FAIL")
+    integrity = manifest.get("integrity", {})
+    for obj, field, actual in ((parity, "checks", parity_checks),
+                               (parity, "failures", parity_failures),
+                               (integrity, "chosenReplayChecks", parity_checks),
+                               (integrity, "chosenReplayFailures", parity_failures)):
+        if type(obj.get(field)) is not int or obj[field] != actual:
+            _fail(f"manifest {field} disagrees with recomputed chosen replay totals")
+    if parity_failures:
+        _fail("chosen replay must be PASS: bundle contains FAIL")
+
     win_field = "won"
     combat_win_counts: Counter[tuple[int, str]] = Counter()
     for row in rows["combat.csv"]:
@@ -505,13 +580,18 @@ def validate_bundle(manifest_path: str | Path) -> dict[str, object]:
                 _fail(f"{table}: rowIdx is not contiguous for {key}")
 
     integrity = manifest.get("integrity", {})
-    for field, actual in (("sourceMapRows", sum(r["branchId"] == "source" for r in rows["map.csv"])),
+    source_runs = [run for key, run in runout_by_key.items() if key[1] == "source"]
+    completed_sources = sum(run["trajectoryComplete"] == "1" for run in source_runs)
+    valid_sources = sum(run["trajectoryValid"] == "1" for run in source_runs)
+    for field, actual in (("completedSources", completed_sources),
+                          ("validSources", valid_sources),
+                          ("sourceMapRows", sum(r["branchId"] == "source" for r in rows["map.csv"])),
                           ("sourceWinRawRows", sum(r["branchId"] == "source" for r in rows["win_raw.csv"])),
                           ("branchMapRows", sum(r["branchId"] != "source" for r in rows["map.csv"])),
                           ("branchWinRawRows", sum(r["branchId"] != "source" for r in rows["win_raw.csv"])),
                           ("decisionRows", len(rows["decisions.csv"])),
                           ("branches", len(rows["branches.csv"]))):
-        if integrity.get(field) != actual:
+        if type(integrity.get(field)) is not int or integrity[field] != actual:
             _fail(f"manifest integrity.{field} does not match output rows")
     return {
         **sink_summary,
@@ -522,7 +602,10 @@ def validate_bundle(manifest_path: str | Path) -> dict[str, object]:
         "branch_win_raw_rows": integrity["branchWinRawRows"],
         "sampled_decisions": len(sampled_groups),
         "branches": len(rows["branches.csv"]),
-        "valid_source_trajectories": integrity.get("validSources"),
+        "completed_source_trajectories": completed_sources,
+        "valid_source_trajectories": valid_sources,
+        "chosen_replay_checks": parity_checks,
+        "chosen_replay_failures": parity_failures,
     }
 
 

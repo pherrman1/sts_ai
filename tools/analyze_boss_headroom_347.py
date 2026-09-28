@@ -118,7 +118,64 @@ def _arm_metrics(states: list[dict[str, Any]], arm: str, replicates: int,
     }
 
 
-def _load_and_validate_manifest(arms_path: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
+def _verified_baselines(rows: list[dict[str, str]],
+                        state_rows: list[dict[str, str]]) -> dict[str, bool]:
+    """Recompute replay admission from source states, never from a match flag alone."""
+    states = {}
+    for state in state_rows:
+        state_id = state.get("stateId")
+        if not state_id or state_id in states:
+            raise AnalysisError("empty or duplicate source stateId")
+        if state.get("trajectoryValid") != "1" or state.get("sourceWon") not in {"0", "1"}:
+            raise AnalysisError(f"{state_id}: source state must be valid and resolved")
+        try:
+            hp = int(state["sourceTerminalHp"])
+        except (KeyError, ValueError, TypeError) as exc:
+            raise AnalysisError(f"{state_id}: invalid source terminal HP") from exc
+        if hp < 0:
+            raise AnalysisError(f"{state_id}: negative source terminal HP")
+        states[state_id] = state
+    baselines = {}
+    seen = set()
+    for row in rows:
+        state_id, arm = row.get("stateId"), row.get("arm")
+        if state_id not in states:
+            raise AnalysisError("arm has no source state join")
+        state = states[state_id]
+        if any(row.get(field) != state.get(field)
+               for field in ("sourceSeed", "fightIdx", "act", "encounter")):
+            raise AnalysisError(f"{state_id}: source-state identity mismatch")
+        if arm not in ARMS or (state_id, arm) in seen:
+            raise AnalysisError(f"{state_id}: unsupported or duplicate arm")
+        seen.add((state_id, arm))
+        if row.get("valid") not in {"0", "1"}:
+            raise AnalysisError(f"{state_id}: arm valid must be 0/1")
+        outcome_won = {"PLAYER_VICTORY": "1", "PLAYER_LOSS": "0", "UNDECIDED": "-1"}
+        if row.get("outcome") not in outcome_won or row.get("won") != outcome_won[row["outcome"]]:
+            raise AnalysisError(f"{state_id}: arm outcome disagrees with won")
+        if arm == "A":
+            try:
+                terminal_hp = int(row["terminalHp"])
+            except (KeyError, ValueError, TypeError) as exc:
+                raise AnalysisError(f"{state_id}: invalid A terminal HP") from exc
+            matches = (row["valid"] == "1" and row["won"] == state["sourceWon"]
+                       and terminal_hp == int(state["sourceTerminalHp"]))
+            if row.get("sourceReplayMatch") != str(int(matches)):
+                raise AnalysisError(f"{state_id}: sourceReplayMatch contradicts A outcome/terminal HP/validity")
+            if row["valid"] == "1" and not matches:
+                raise AnalysisError(f"{state_id}: valid A does not match source outcome/terminal HP")
+            baselines[state_id] = matches
+        elif row.get("sourceReplayMatch") != "-1":
+            raise AnalysisError(f"{state_id}: non-A sourceReplayMatch must be -1")
+    if set(baselines) != set(states):
+        raise AnalysisError("each source state requires an A replay")
+    for row in rows:
+        if row["arm"] != "A" and row["valid"] == "1" and not baselines[row["stateId"]]:
+            raise AnalysisError(f"{row['stateId']}: valid B arm requires a matching valid A replay")
+    return baselines
+
+
+def _load_and_validate_manifest(arms_path: Path) -> tuple[dict[str, Any], list[dict[str, str]], list[dict[str, str]]]:
     if not arms_path.name.endswith(".arms.csv"):
         raise AnalysisError("arms file must end in .arms.csv so its manifest can be resolved")
     prefix = arms_path.name[:-len(".arms.csv")]
@@ -193,13 +250,16 @@ def _load_and_validate_manifest(arms_path: Path) -> tuple[dict[str, Any], list[d
     integrity = manifest.get("integrity", {})
     if integrity.get("selectedStates") != len(state_by_id):
         raise AnalysisError("manifest selected state count mismatch")
-    return manifest, rows
+    _verified_baselines(rows, state_rows)
+    return manifest, rows, state_rows
 
 
-def analyze_rows(rows: list[dict[str, str]], replicates: int = 2000,
+def analyze_rows(rows: list[dict[str, str]], state_rows: list[dict[str, str]],
+                 replicates: int = 2000,
                  bootstrap_seed: int = 347334) -> dict[str, Any]:
     if replicates < 100:
         raise AnalysisError("use at least 100 bootstrap replicates")
+    baselines = _verified_baselines(rows, state_rows)
     by_state: dict[str, dict[str, Any]] = {}
     for index, row in enumerate(rows, 2):
         arm = row.get("arm")
@@ -225,7 +285,7 @@ def analyze_rows(rows: list[dict[str, str]], replicates: int = 2000,
         if arm in state:
             raise AnalysisError(f"row {index}: duplicate {arm} row for {state_id}")
         valid = row.get("valid") == "1"
-        source_match = row.get("sourceReplayMatch") == "1"
+        source_match = baselines[state_id]
         def number(name: str) -> float:
             try:
                 value = float(row[name])
@@ -340,10 +400,22 @@ def _self_test() -> None:
             rows.append({"stateId": f"s{seed}", "sourceSeed": str(seed), "arm": arm,
                 "budget": str(budget), "fightIdx": "2", "act": "1", "encounter": "TEST_BOSS",
                 "won": str(won), "signedOutcome": str(won * 0.8 - (1-won)*0.4),
-                "terminalHp": "40", "postAfterBattleHp": "42", "firstDecisionAgreement": "1",
+                "outcome": "PLAYER_VICTORY" if won else "PLAYER_LOSS",
+                "terminalHp": "40" if won else "0", "postAfterBattleHp": "42" if won else "0", "firstDecisionAgreement": "1",
                 "cpuSeconds": "1.5", "simulations": str(budget), "decisions": "3",
                 "valid": "1", "sourceReplayMatch": "1" if arm == "A" else "-1"})
-    result = analyze_rows(rows, replicates=500, bootstrap_seed=1)
+    def source_states(arms):
+        return [{"stateId": row["stateId"], "sourceSeed": row["sourceSeed"],
+                 "fightIdx": row["fightIdx"], "act": row["act"], "floor": "16",
+                 "roomClass": "BOSS", "encounter": row["encounter"],
+                 "sourceWon": row["won"], "sourceSignedOutcome": row["signedOutcome"],
+                 "sourceTerminalHp": row["terminalHp"],
+                 "sourcePostAfterBattleHp": row["postAfterBattleHp"],
+                 "sourceFirstActionBits": "1", "trajectoryValid": "1"}
+                for row in arms if row["arm"] == "A"]
+
+    state_rows = source_states(rows)
+    result = analyze_rows(rows, state_rows, replicates=500, bootstrap_seed=1)
     if result["classification"] != "COMBAT_HEADROOM":
         raise AssertionError("positive paired smoke evidence was not classified as headroom")
     if result["primary"]["pairedStates"] != 4:
@@ -359,12 +431,7 @@ def _self_test() -> None:
         with states_path.open("w", newline="", encoding="utf-8") as stream:
             writer = csv.DictWriter(stream, fieldnames=STATES_HEADER)
             writer.writeheader()
-            for seed in (10, 11, 12, 13):
-                writer.writerow({"stateId": f"s{seed}", "sourceSeed": seed, "fightIdx": 2,
-                    "act": 1, "floor": 16, "roomClass": "BOSS", "encounter": "TEST_BOSS",
-                    "sourceWon": 0, "sourceSignedOutcome": -0.4, "sourceTerminalHp": 0,
-                    "sourcePostAfterBattleHp": 0, "sourceFirstActionBits": 1,
-                    "trajectoryValid": 1})
+            writer.writerows(state_rows)
         with arms_path.open("w", newline="", encoding="utf-8") as stream:
             writer = csv.DictWriter(stream, fieldnames=ARMS_HEADER)
             writer.writeheader()
@@ -378,9 +445,52 @@ def _self_test() -> None:
             "outputs": {"armsSha256": _sha256(arms_path),
                         "statesSha256": _sha256(states_path)}}
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-        _, loaded_rows = _load_and_validate_manifest(arms_path)
+        _, loaded_rows, loaded_states = _load_and_validate_manifest(arms_path)
         if len(loaded_rows) != len(rows):
             raise AssertionError("manifest-validated arm row count mismatch")
+        if analyze_rows(loaded_rows, loaded_states, replicates=500, bootstrap_seed=1) != result:
+            raise AssertionError("loaded analysis differs from direct joined analysis")
+
+        def reject(mutated, expected):
+            # Keep hashes correct so every rejection proves the semantic gate.
+            with arms_path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=ARMS_HEADER)
+                writer.writeheader()
+                writer.writerows({field: row.get(field, "") for field in ARMS_HEADER}
+                                 for row in mutated)
+            manifest["outputs"]["armsSha256"] = _sha256(arms_path)
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            for check in (lambda: _load_and_validate_manifest(arms_path),
+                          lambda: analyze_rows(mutated, state_rows, replicates=100)):
+                try:
+                    check()
+                except AnalysisError as exc:
+                    if expected not in str(exc):
+                        raise
+                else:
+                    raise AssertionError(f"did not reject {expected}")
+
+        for change in ({"terminalHp": "40"},
+                       {"won": "1", "outcome": "PLAYER_VICTORY"},
+                       {"sourceReplayMatch": "0"},
+                       {"valid": "0"}):
+            mutated = [dict(row) for row in rows]
+            mutated[0].update(change)
+            reject(mutated, "sourceReplayMatch contradicts")
+        for b_arm in ("B100", "B30"):
+            mutated = [dict(row) for row in rows]
+            mutated[0].update(valid="0", sourceReplayMatch="0", terminalHp="40")
+            for row in mutated[1:3]:
+                row["valid"] = "1" if row["arm"] == b_arm else "0"
+            reject(mutated, "valid B arm requires")
+        # A quarantined state excludes both B arms from every analysis group.
+        quarantined = [dict(row) for row in rows]
+        for row in quarantined[:3]:
+            row["valid"] = "0"
+        quarantined[0].update(sourceReplayMatch="0", terminalHp="40")
+        filtered = analyze_rows(quarantined, state_rows, replicates=100)
+        if filtered["primary"]["pairedStates"] != 3 or filtered["secondaryB30"]["pairedStates"] != 3:
+            raise AssertionError("invalid A admitted B pairs")
         with arms_path.open("a", encoding="utf-8") as stream:
             stream.write("tampered\n")
         try:
@@ -396,10 +506,11 @@ def _self_test() -> None:
             ambiguous_rows.append({"stateId": f"s{seed}", "sourceSeed": str(seed), "arm": arm,
                 "budget": str(budget), "fightIdx": "2", "act": "2", "encounter": "AMBIGUOUS_BOSS",
                 "won": str(won), "signedOutcome": str(won * 0.8 - (1-won)*0.4),
-                "terminalHp": "40", "postAfterBattleHp": "42", "firstDecisionAgreement": "1",
+                "outcome": "PLAYER_VICTORY" if won else "PLAYER_LOSS",
+                "terminalHp": "40" if won else "0", "postAfterBattleHp": "42" if won else "0", "firstDecisionAgreement": "1",
                 "cpuSeconds": "1.5", "simulations": str(budget), "decisions": "3",
                 "valid": "1", "sourceReplayMatch": "1" if arm == "A" else "-1"})
-    uncertain = analyze_rows(ambiguous_rows, replicates=500, bootstrap_seed=9)
+    uncertain = analyze_rows(ambiguous_rows, source_states(ambiguous_rows), replicates=500, bootstrap_seed=9)
     if (uncertain["classification"] != "NO_COMBAT_HEADROOM_AT_SMOKE_SCALE"
             or not uncertain["extensionToAllPilotBossStatesRecommended"]):
         raise AssertionError("uncertain +5pp-style result did not recommend extension")
@@ -419,8 +530,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if not args.arms_csv:
             parser.error("arms_csv is required unless --self-test is used")
-        _, rows = _load_and_validate_manifest(Path(args.arms_csv))
-        report = analyze_rows(rows, args.replicates, args.bootstrap_seed)
+        _, rows, states = _load_and_validate_manifest(Path(args.arms_csv))
+        report = analyze_rows(rows, states, args.replicates, args.bootstrap_seed)
     except (OSError, AnalysisError) as exc:
         print(f"boss headroom #347: FAIL: {exc}", file=sys.stderr)
         return 1
