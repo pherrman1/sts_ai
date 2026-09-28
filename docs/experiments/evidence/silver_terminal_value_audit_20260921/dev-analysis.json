@@ -1,0 +1,893 @@
+{
+  "ablations": {
+    "DEFAULT": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7424135497529993,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.757939308398024,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_ALIVE_PENALTY": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.744530698659139,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.7614678899082569,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_DEATH_SAVE": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7360621030345801,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.7529992942836979,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_DRAW": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7417078334509527,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.7572335920959774,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_ENERGY_WASTE": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": -0.5133605223565574,
+        "p500": -0.21158396271992008,
+        "p975": -0.017359938528280328,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": -1.1324232014699076,
+        "p500": -0.41766730498293203,
+        "p975": 0.08144952396468796,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.7381318638106191,
+        "pairwise_concordance": 0.7455830388692579,
+        "pairwise_pairs": 1415,
+        "top_leaf_agreement": 0.46875
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.9177682623422359,
+        "pairwise_concordance": 0.7703180212014135,
+        "pairwise_pairs": 1415,
+        "top_leaf_agreement": 0.5
+      }
+    },
+    "NO_GOLD": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7417078334509527,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.7586450247000706,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_MAX_HP": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7424135497529993,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.757939308398024,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_MONSTER_DAMAGE": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": -0.49864147482577015,
+        "p500": -0.2062872298549574,
+        "p975": -0.009222467343148466,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": -0.76531998051752,
+        "p500": -0.20594351723883375,
+        "p975": 0.1797030585031032,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.7283991959328562,
+        "pairwise_concordance": 0.7406360424028269,
+        "pairwise_pairs": 1415,
+        "top_leaf_agreement": 0.46875
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.6948421084474263,
+        "pairwise_concordance": 0.7625441696113074,
+        "pairwise_pairs": 1415,
+        "top_leaf_agreement": 0.5625
+      }
+    },
+    "NO_PARASITE": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.0,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7424135497529993,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.757939308398024,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      }
+    },
+    "NO_POTION_VALUE": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": -3.807001155493926,
+        "p500": -1.7442891271515004,
+        "p975": -0.31955300164741707,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": -3.5344214603282937,
+        "p500": -1.7467806627869304,
+        "p975": -0.4004993103447432,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 3.2435947835395256,
+        "pairwise_concordance": 0.7080656673804425,
+        "pairwise_pairs": 1401,
+        "top_leaf_agreement": 0.4375
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 3.196703762120767,
+        "pairwise_concordance": 0.7237687366167024,
+        "pairwise_pairs": 1401,
+        "top_leaf_agreement": 0.40625
+      }
+    },
+    "NO_SURVIVAL": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": -0.0316198880336529,
+        "p500": -0.008942998635780741,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": 0.0,
+        "p500": 0.08144952396468796,
+        "p975": 0.2780518231897968,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.522546370763853,
+        "pairwise_concordance": 0.7388849682427664,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.3889101478991404,
+        "pairwise_concordance": 0.7572335920959774,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625
+      }
+    },
+    "NO_WIN_TURN_PENALTY": {
+      "source_bootstrap_baseline_minus_ablation_teacher_a": {
+        "p025": -0.1105548507522871,
+        "p500": -0.034618185589100126,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "source_bootstrap_baseline_minus_ablation_teacher_b": {
+        "p025": -0.10303908124396655,
+        "p500": -0.032264762813767334,
+        "p975": 0.0,
+        "replicates": 1000
+      },
+      "teacher_a": {
+        "groups": 32,
+        "mean_teacher_regret": 1.5490239073094634,
+        "pairwise_concordance": 0.7436260623229461,
+        "pairwise_pairs": 1412,
+        "top_leaf_agreement": 0.5625
+      },
+      "teacher_b": {
+        "groups": 32,
+        "mean_teacher_regret": 1.5061780061394223,
+        "pairwise_concordance": 0.7592067988668555,
+        "pairwise_pairs": 1412,
+        "top_leaf_agreement": 0.53125
+      }
+    }
+  },
+  "baseline": {
+    "teacher_a": {
+      "groups": 32,
+      "mean_teacher_regret": 1.513323903420704,
+      "pairwise_concordance": 0.7424135497529993,
+      "pairwise_pairs": 1417,
+      "top_leaf_agreement": 0.5625
+    },
+    "teacher_b": {
+      "groups": 32,
+      "mean_teacher_regret": 1.4729049694877248,
+      "pairwise_concordance": 0.757939308398024,
+      "pairwise_pairs": 1417,
+      "top_leaf_agreement": 0.53125
+    }
+  },
+  "bootstrap_baseline_minus_candidate_teacher_a": {
+    "p025": -0.4689056094896955,
+    "p500": -0.17896778043214856,
+    "p975": 0.0,
+    "replicates": 1000
+  },
+  "bootstrap_baseline_minus_candidate_teacher_b": {
+    "p025": -0.8444110257246897,
+    "p500": -0.3218923834696219,
+    "p975": 0.0,
+    "replicates": 1000
+  },
+  "classification": "TERMINAL_REWEIGHT_HEADROOM_INSUFFICIENT",
+  "component_audit": [
+    {
+      "component": "victory_post_battle_healed_hp",
+      "correlation_with_teacher_a_residual": 0.2471956526165285,
+      "correlation_with_teacher_b_residual": 0.2522273018628105,
+      "mean_contribution": 19.437879554655872,
+      "nonzero_rate": 0.9757085020242915,
+      "p95_magnitude": 55.0,
+      "share_of_q32_variance": 0.2853301077290089,
+      "std": 16.988819806937983
+    },
+    {
+      "component": "death_save_hp_equivalent",
+      "correlation_with_teacher_a_residual": 0.24008053379731048,
+      "correlation_with_teacher_b_residual": 0.22698599448220055,
+      "mean_contribution": 2.976391700404858,
+      "nonzero_rate": 0.1659919028340081,
+      "p95_magnitude": 24.0,
+      "share_of_q32_variance": 0.05563659334980916,
+      "std": 7.501872433618514
+    },
+    {
+      "component": "win_bonus",
+      "correlation_with_teacher_a_residual": 0.16315480859843862,
+      "correlation_with_teacher_b_residual": 0.19108844356392052,
+      "mean_contribution": 36.64536943319838,
+      "nonzero_rate": 0.9757085020242915,
+      "p95_magnitude": 53.0,
+      "share_of_q32_variance": 0.28881258955988093,
+      "std": 17.092180484093205
+    },
+    {
+      "component": "potion_weight",
+      "correlation_with_teacher_a_residual": 0.03331049299963328,
+      "correlation_with_teacher_b_residual": 0.04651182328793223,
+      "mean_contribution": 7.20274544534413,
+      "nonzero_rate": 0.5546558704453441,
+      "p95_magnitude": 22.0,
+      "share_of_q32_variance": 0.05524964593591826,
+      "std": 7.475739498259828
+    },
+    {
+      "component": "victory_turn_penalty",
+      "correlation_with_teacher_a_residual": -0.29195428904417314,
+      "correlation_with_teacher_b_residual": -0.2912880483889696,
+      "mean_contribution": -2.1009109311740892,
+      "nonzero_rate": 0.9757085020242915,
+      "p95_magnitude": 4.8125,
+      "share_of_q32_variance": 0.001821138119804662,
+      "std": 1.3572531314817244
+    },
+    {
+      "component": "monster_damage_weight",
+      "correlation_with_teacher_a_residual": -0.14031753235421637,
+      "correlation_with_teacher_b_residual": -0.1685724465600498,
+      "mean_contribution": 8.361560020112437,
+      "nonzero_rate": 0.680161943319838,
+      "p95_magnitude": 24.010687500000003,
+      "share_of_q32_variance": 0.07108279686900001,
+      "std": 8.479527706601425
+    },
+    {
+      "component": "alive_weight",
+      "correlation_with_teacher_a_residual": 0.17692744341332745,
+      "correlation_with_teacher_b_residual": 0.2104058207120671,
+      "mean_contribution": -1.0934716599190282,
+      "nonzero_rate": 0.680161943319838,
+      "p95_magnitude": 3.1875,
+      "share_of_q32_variance": 0.0013976689483225068,
+      "std": 1.1890265937285005
+    },
+    {
+      "component": "energy_waste_weight",
+      "correlation_with_teacher_a_residual": 0.2811655959247924,
+      "correlation_with_teacher_b_residual": 0.37003909113591776,
+      "mean_contribution": -2.8729757085020244,
+      "nonzero_rate": 0.680161943319838,
+      "p95_magnitude": 7.875,
+      "share_of_q32_variance": 0.032162359665058864,
+      "std": 5.703787826327465
+    },
+    {
+      "component": "draw_weight",
+      "correlation_with_teacher_a_residual": -0.1273289913334934,
+      "correlation_with_teacher_b_residual": -0.15519403308436844,
+      "mean_contribution": 0.44282641700404857,
+      "nonzero_rate": 0.680161943319838,
+      "p95_magnitude": 1.340625,
+      "share_of_q32_variance": 0.00022730315592605732,
+      "std": 0.4795038986772436
+    },
+    {
+      "component": "turn_survival_weight",
+      "correlation_with_teacher_a_residual": -0.12719338562044985,
+      "correlation_with_teacher_b_residual": -0.151303816669031,
+      "mean_contribution": 3.0313132591093117,
+      "nonzero_rate": 0.680161943319838,
+      "p95_magnitude": 8.4375,
+      "share_of_q32_variance": 0.010529942817830516,
+      "std": 3.26364126919484
+    },
+    {
+      "component": "gold_weight",
+      "correlation_with_teacher_a_residual": 0.0687814481745982,
+      "correlation_with_teacher_b_residual": 0.06519796439198358,
+      "mean_contribution": 0.020242914979757085,
+      "nonzero_rate": 0.04048582995951417,
+      "p95_magnitude": 0.0,
+      "share_of_q32_variance": 1.2884228407684997e-05,
+      "std": 0.11416122424828522
+    },
+    {
+      "component": "max_hp_weight",
+      "correlation_with_teacher_a_residual": 0.03554464594920218,
+      "correlation_with_teacher_b_residual": 0.04169905531617188,
+      "mean_contribution": 0.04402834008097166,
+      "nonzero_rate": 0.044534412955465584,
+      "p95_magnitude": 0.0,
+      "share_of_q32_variance": 4.592520076553871e-05,
+      "std": 0.2155335795025826
+    },
+    {
+      "component": "parasite_penalty",
+      "correlation_with_teacher_a_residual": null,
+      "correlation_with_teacher_b_residual": null,
+      "mean_contribution": 0.0,
+      "nonzero_rate": 0.0,
+      "p95_magnitude": 0.0,
+      "share_of_q32_variance": 0.0,
+      "std": 0.0
+    }
+  ],
+  "cross_fitted_compatible": {
+    "dev_regret_reduction": -0.13070922918136033,
+    "folds": [
+      {
+        "fold": 0,
+        "held_out_sources": [
+          "12100001",
+          "12100012",
+          "12100025",
+          "12100037"
+        ],
+        "lambda": 100.0,
+        "solver_success": true,
+        "weights": {
+          "alive_weight": 3.3928106558309032,
+          "draw_weight": 0.23564133873398413,
+          "energy_waste_weight": 1.7816412381481834,
+          "gold_weight": 0.20902628926181696,
+          "max_hp_weight": 1.9870412057586975,
+          "monster_damage_weight": 37.00065388605377,
+          "parasite_penalty": 12.0,
+          "potion_weight": 11.06120838228398,
+          "turn_survival_weight": 1.5374330153249791,
+          "victory_turn_penalty": 0.38712581276905367,
+          "win_bonus": 52.99251291025551
+        }
+      },
+      {
+        "fold": 1,
+        "held_out_sources": [
+          "12100003",
+          "12100013",
+          "12100031",
+          "12100039"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_weight": 4.871243007890183,
+          "draw_weight": 0.005759680368240524,
+          "energy_waste_weight": 0.8376420400424524,
+          "gold_weight": 2.653665698203002e-57,
+          "max_hp_weight": 8.239564515185216e-35,
+          "monster_damage_weight": 30.72484286469721,
+          "parasite_penalty": 12.000000000000002,
+          "potion_weight": 14.184854647247828,
+          "turn_survival_weight": 2.2265884207501,
+          "victory_turn_penalty": 0.29403127684050323,
+          "win_bonus": 43.17158715089077
+        }
+      },
+      {
+        "fold": 2,
+        "held_out_sources": [
+          "12100007",
+          "12100017",
+          "12100034",
+          "12100041"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_weight": 3.5723331322433958,
+          "draw_weight": 1.4142555723879576e-11,
+          "energy_waste_weight": 0.7697609885449632,
+          "gold_weight": 9.305887089689107e-54,
+          "max_hp_weight": 3.3889541971319834e-22,
+          "monster_damage_weight": 29.499473554679156,
+          "parasite_penalty": 12.0,
+          "potion_weight": 10.71512161587221,
+          "turn_survival_weight": 2.0972500432299825,
+          "victory_turn_penalty": 1.5813609524887816e-20,
+          "win_bonus": 45.59531393949236
+        }
+      },
+      {
+        "fold": 3,
+        "held_out_sources": [
+          "12100008",
+          "12100018",
+          "12100035",
+          "12100052"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_weight": 3.670222911018189,
+          "draw_weight": 5.270135703637264e-21,
+          "energy_waste_weight": 0.7516820930980022,
+          "gold_weight": 0.24844094566690259,
+          "max_hp_weight": 2.379495486838601,
+          "monster_damage_weight": 29.36306084046779,
+          "parasite_penalty": 12.000000000000002,
+          "potion_weight": 14.378299574982975,
+          "turn_survival_weight": 2.7068028761690988,
+          "victory_turn_penalty": 1.6195251275314955e-24,
+          "win_bonus": 44.53148341996251
+        }
+      },
+      {
+        "fold": 4,
+        "held_out_sources": [
+          "12100009",
+          "12100021",
+          "12100036",
+          "12100053"
+        ],
+        "lambda": 100.0,
+        "solver_success": true,
+        "weights": {
+          "alive_weight": 3.3903252844481444,
+          "draw_weight": 0.23054740606974355,
+          "energy_waste_weight": 1.255605986636473,
+          "gold_weight": 0.20422230452019327,
+          "max_hp_weight": 1.9773911783109812,
+          "monster_damage_weight": 36.999069611205094,
+          "parasite_penalty": 11.999999999999998,
+          "potion_weight": 11.061176061101543,
+          "turn_survival_weight": 1.5294502837777884,
+          "victory_turn_penalty": 0.3805706392716952,
+          "win_bonus": 52.99459285000473
+        }
+      }
+    ],
+    "teacher_a": {
+      "groups": 32,
+      "mean_teacher_regret": 1.7111293043385516,
+      "pairwise_concordance": 0.7429178470254958,
+      "pairwise_pairs": 1412,
+      "top_leaf_agreement": 0.53125
+    },
+    "teacher_b": {
+      "groups": 32,
+      "mean_teacher_regret": 1.8224156103283176,
+      "pairwise_concordance": 0.759915014164306,
+      "pairwise_pairs": 1412,
+      "top_leaf_agreement": 0.5
+    }
+  },
+  "cross_outcome_ordering": {
+    "current": {
+      "losses_at_or_above_minimum_victory": 55,
+      "maximum_loss_value": 59.6965625,
+      "minimum_victory_value": 37.59476503759398,
+      "ordinary_loss": {
+        "count": 75,
+        "p05": 15.98965277777778,
+        "p50": 39.83700617283951,
+        "p95": 49.57471450617283
+      },
+      "victory": {
+        "count": 172,
+        "p05": 49.155169956140355,
+        "p50": 83.7,
+        "p95": 135.11875
+      }
+    },
+    "fitted_development_only": {
+      "losses_at_or_above_minimum_victory": 48,
+      "maximum_loss_value": 69.3895417501333,
+      "minimum_victory_value": 46.307657185007805,
+      "ordinary_loss": {
+        "count": 75,
+        "p05": 22.437952011133515,
+        "p50": 47.6163709966159,
+        "p95": 57.06855244577361
+      },
+      "victory": {
+        "count": 172,
+        "p05": 54.72709093431165,
+        "p50": 85.74140115955652,
+        "p95": 142.37813070829816
+      }
+    }
+  },
+  "current_reconstruction_max_abs_error": 2.842170943040401e-14,
+  "current_weights": {
+    "alive_weight": 3.4,
+    "draw_weight": 0.03,
+    "energy_waste_weight": 1.75,
+    "gold_weight": 0.25,
+    "max_hp_weight": 2.0,
+    "monster_damage_weight": 37.0,
+    "parasite_penalty": 12.0,
+    "potion_weight": 11.0,
+    "turn_survival_weight": 1.5,
+    "victory_turn_penalty": 0.4,
+    "win_bonus": 53.0
+  },
+  "fitted_compatible_development_only": {
+    "alive_weight": 1.7673094255909703,
+    "draw_weight": 4.8570203934198e-15,
+    "energy_waste_weight": 0.8508498727040281,
+    "gold_weight": 3.6734198463196485e-40,
+    "max_hp_weight": 2.977202392615532e-23,
+    "monster_damage_weight": 34.82947522356764,
+    "parasite_penalty": 12.0,
+    "potion_weight": 13.177089262180738,
+    "turn_survival_weight": 2.7119481204109186,
+    "victory_turn_penalty": 7.815718995231196e-19,
+    "win_bonus": 50.87323622337984
+  },
+  "gap_recovery_against_zero_regret_ceiling": {
+    "baseline_regret": 1.513323903420704,
+    "candidate_regret": 1.7111293043385516,
+    "fraction_of_zero_regret_gap_recovered": -0.13070922918136033,
+    "note": "Zero regret is an optimistic metric ceiling, not a true game-objective oracle."
+  },
+  "group_count": 32,
+  "interpretation": "Teacher A/B remain Silver-objective labels; this measures fixed SimpleAgent trajectory scoring only.",
+  "leaf_count": 247,
+  "rollout_count": 7904,
+  "schema": "silver_terminal_value_audit_v1",
+  "source_count": 20,
+  "status": "development_only",
+  "subgroup_diagnostics": {
+    "act": {
+      "available": false,
+      "reason": "source corpus omits this metadata"
+    },
+    "hp_band": {
+      "available": false,
+      "reason": "source corpus omits this metadata"
+    },
+    "source_rollout_length_band": {
+      "available": false,
+      "reason": "source corpus omits this metadata"
+    }
+  },
+  "untied_diagnostic": {
+    "cross_fitted_teacher_a": {
+      "groups": 32,
+      "mean_teacher_regret": 1.6166583580136384,
+      "pairwise_concordance": 0.7434628975265017,
+      "pairwise_pairs": 1415,
+      "top_leaf_agreement": 0.53125
+    },
+    "fitted_development_only": {
+      "alive_penalty": 4.376356627670014,
+      "death_save": 0.8722986462654667,
+      "draw": 1.924427976623706e-69,
+      "energy_waste": 1.1478905650222597,
+      "gold": 3.186231078682849e-77,
+      "loss_potion": 4.009222936193391e-71,
+      "max_hp": 1.0691186316388232e-70,
+      "monster_damage": 5e-324,
+      "parasite_penalty": 1.235266567163292e-05,
+      "survival": 5e-324,
+      "victory_hp": 0.8974214752898116,
+      "victory_potion": 10.662905120740062,
+      "victory_turn_penalty": 5e-324,
+      "win_bonus": 2.8193907409025365
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "held_out_sources": [
+          "12100001",
+          "12100012",
+          "12100025",
+          "12100037"
+        ],
+        "lambda": 1.0,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 0.9926075163012862,
+          "death_save": 0.8794363109412712,
+          "draw": 0.10599103046439676,
+          "energy_waste": 3.8756840716626337,
+          "gold": 5e-324,
+          "loss_potion": 0.8605324374567431,
+          "max_hp": 5e-324,
+          "monster_damage": 5e-324,
+          "parasite_penalty": 1.2207031250000043e-05,
+          "survival": 0.19546445865623893,
+          "victory_hp": 0.8065321905709547,
+          "victory_potion": 10.04431626686774,
+          "victory_turn_penalty": 0.08758937766222291,
+          "win_bonus": 0.9758378014882514
+        }
+      },
+      {
+        "fold": 1,
+        "held_out_sources": [
+          "12100003",
+          "12100013",
+          "12100031",
+          "12100039"
+        ],
+        "lambda": 0.1,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 11.589202125610235,
+          "death_save": 2.481253201989187,
+          "draw": 2.0416013727728044e-49,
+          "energy_waste": 0.7677100494350537,
+          "gold": 3.840594164192508e-56,
+          "loss_potion": 0.6150160356763267,
+          "max_hp": 5e-324,
+          "monster_damage": 3.7826321943796066,
+          "parasite_penalty": 2.6082153504038923e-05,
+          "survival": 0.9184701419681556,
+          "victory_hp": 1.0369664836428667,
+          "victory_potion": 13.814486684235916,
+          "victory_turn_penalty": 5.678128267233569e-50,
+          "win_bonus": 5.972675181070163
+        }
+      },
+      {
+        "fold": 2,
+        "held_out_sources": [
+          "12100007",
+          "12100017",
+          "12100034",
+          "12100041"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 19.919893034769995,
+          "death_save": 0.7987675486585779,
+          "draw": 0.1892555090196817,
+          "energy_waste": 0.7806501178862233,
+          "gold": 5.165739011238522e-47,
+          "loss_potion": 1.5606049200289798e-26,
+          "max_hp": 1.073884135098662e-35,
+          "monster_damage": 7.786481515130787,
+          "parasite_penalty": 0.00029053554237234915,
+          "survival": 1.5959136956246555e-43,
+          "victory_hp": 0.8308006890911999,
+          "victory_potion": 11.310568637566314,
+          "victory_turn_penalty": 1.0123486819615504,
+          "win_bonus": 18.44742721909923
+        }
+      },
+      {
+        "fold": 3,
+        "held_out_sources": [
+          "12100008",
+          "12100018",
+          "12100035",
+          "12100052"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 20.924005317347913,
+          "death_save": 0.6395445867330841,
+          "draw": 0.00030423629020345105,
+          "energy_waste": 0.7450725090574479,
+          "gold": 5.245356782870705e-45,
+          "loss_potion": 1.0269141938542746e-25,
+          "max_hp": 2.755159967977586,
+          "monster_damage": 9.509238928201082,
+          "parasite_penalty": 6.1574545467171955e-06,
+          "survival": 1.2444415974622456,
+          "victory_hp": 0.5526116602984414,
+          "victory_potion": 15.095729916781409,
+          "victory_turn_penalty": 2.5266449238343016,
+          "win_bonus": 30.747933876303644
+        }
+      },
+      {
+        "fold": 4,
+        "held_out_sources": [
+          "12100009",
+          "12100021",
+          "12100036",
+          "12100053"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 17.013305808898533,
+          "death_save": 0.6546720429548155,
+          "draw": 0.3558781905881602,
+          "energy_waste": 0.8527244926764636,
+          "gold": 1.2979997844396735e-27,
+          "loss_potion": 3.17618006592282e-21,
+          "max_hp": 2.617284937596918e-27,
+          "monster_damage": 10.610265131206766,
+          "parasite_penalty": 0.00012896047092520024,
+          "survival": 4.284125333922641e-21,
+          "victory_hp": 0.8097951385867368,
+          "victory_potion": 15.254146332277235,
+          "victory_turn_penalty": 0.029618873965986333,
+          "win_bonus": 21.603548258826343
+        }
+      }
+    ],
+    "selected_lambda_full_development": 1.0
+  }
+}

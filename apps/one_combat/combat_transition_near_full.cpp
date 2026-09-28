@@ -124,12 +124,14 @@ std::vector<std::vector<int>> daggerCandidates(const CombatTransitionPersistentS
 int daggerMinimum(const CombatTransitionPersistentState& pre,int encounter,bool upgrade,bool escaped,const std::vector<int>& amounts){int maximum=(encounter==int(E::AWAKENED_ONE)?4:cap(encounter))-int(escaped),total=0;size_t i=0;for(auto card:pre.deck)if(card.id==int(C::RITUAL_DAGGER)){
     require(i<amounts.size(),"Dagger candidate identity");std::vector<int> payouts=card.upgraded?std::vector<int>{5}:(upgrade?std::vector<int>{3,5}:std::vector<int>{3});int best=maximum+1;for(auto p:gains(maximum,payouts))if(p.second==amounts[i])best=std::min(best,p.first);require(best<=maximum,"Dagger native increment");total+=best;++i;}require(i==amounts.size(),"Dagger candidate count");return total;}
 }
-CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const NativeComposedDomain &domain,const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &pi,std::mt19937_64 &rng,float survival,const Vec &givenMaximum,const Vec &givenZ,const Vec &givenZp){
+CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const NativeComposedDomain &domain,const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &pi,std::mt19937_64 &rng,float survival,const Vec &givenMaximum,const Vec &givenZ,const Vec &givenZp,bool survivalAlreadyWon){
     auto uniform=[&](){return std::generate_canonical<double,53>(rng);};
     auto category=[&](const Vec &p){double u=uniform(),sum=0;int last=-1;for(size_t i=0;i<p.size();++i){require(std::isfinite(p[i])&&p[i]>=0,"near-full probability");sum+=p[i];if(p[i]>0)last=int(i);if(u<sum)return int(i);}require(last>=0&&std::abs(sum-1)<1e-6,"near-full probability total");return last;};
-    if(uniform()>=survival)return {CombatRuntimeSample::Outcome::DEATH,{}};
+    if(!survivalAlreadyWon && uniform()>=survival)return {CombatRuntimeSample::Outcome::DEATH,{}};
     auto maximumProb=givenMaximum.empty()?net.maxHp(pi):givenMaximum;auto z=givenZ.empty()?net.hpEncoding(pi):givenZ;auto zp=givenZp.empty()?net.potionEncoding(pi):givenZp;
-    auto post=pre;int d=category(maximumProb);post.maxHp+=domain.maxHpClasses.at(d);int h=category(net.signedHp(z,d,pre.curHp,post.maxHp));post.curHp+=domain.hpClasses.at(h);
+    auto post=pre;int d=category(maximumProb);post.maxHp+=domain.maxHpClasses.at(d);
+    int h=category(net.signedHp(z,d,pre.curHp,post.maxHp));
+    post.curHp+=domain.hpClasses.at(h);
     float fraction=float(post.curHp)/post.maxHp;int initialMask=0,originalBits=0;for(int slot=0;slot<5;++slot)if(pre.potions[slot]>1)originalBits|=1<<slot;
     std::vector<int> consumed;bool escaped=false,origin=false;sts::Random potionRng;bool sozu=has(pre,R::SOZU);
     for(;;){int action=category(net.potionInventory(zp,post.potions,pre.potionCapacity,d,fraction,boss(pi.globals.encounter))),mask=action&31;bool use=action>=32;initialMask|=mask&originalBits;std::vector<int> cleared;

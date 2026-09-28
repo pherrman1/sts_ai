@@ -1,0 +1,23 @@
+{
+  "decisions": 3726,
+  "verified_selected": 0,
+  "rate_per_real_decision": 0.0,
+  "seeds": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7"
+  ],
+  "reasons": {
+    "outside_last_defend_no_potions_class": 3499,
+    "not_concrete_quiet_root": 226,
+    "unqualified_relic": 1
+  },
+  "classification": {},
+  "examples": [],
+  "interpretation": "Only last-card Defend with no potions, powers or unqualified relics. The comparator is immediate End Turn at the same frozen concrete state/RNG. This is not a public-state pruning rule or a frequency estimate for all wasted block. Q uses heuristic units; a 1e-6 near-equality threshold is descriptive, not statistical significance. Unused-energy scoring and loop-guard headroom differences are recorded separately."
+}

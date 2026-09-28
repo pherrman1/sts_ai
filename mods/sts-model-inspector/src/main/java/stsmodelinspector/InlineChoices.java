@@ -20,6 +20,8 @@ final class InlineChoices {
         final String label;
         final float x, bottom, width;
         boolean visible = true;
+        boolean hovered;
+        Anchor source(Hitbox hitbox) { hovered = hitbox.hovered; return this; }
         Anchor(JsonObject action, String label, float x, float bottom, float width) {
             this.action = action; this.label = label;
             this.width = width;
@@ -49,7 +51,7 @@ final class InlineChoices {
                 List<?> buttons = choices("getValidRestRoomButtons");
                 for (int i = 0; i < buttons.size(); ++i) {
                     Hitbox hb = (Hitbox)field(buttons.get(i), "hb");
-                    result.add(new Anchor(action("choose", i + 1), "", hb.cX - 120 * s, hb.y - 42 * s, 240 * s));
+                    result.add(new Anchor(action("choose", i + 1), "", hb.cX - 120 * s, hb.y - 42 * s, 240 * s).source(hb));
                 }
             } else if ("map".equals(screen) && AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
                 if (Boolean.TRUE.equals(call("bossNodeAvailable"))) {
@@ -97,10 +99,10 @@ final class InlineChoices {
                     if (item instanceof AbstractCard) result.add(card(action, "Buy", (AbstractCard) item, 76));
                     else if (item instanceof StoreRelic) {
                         Hitbox hb = ((StoreRelic)item).relic.hb;
-                        result.add(below(action, "Buy", hb.cX, hb.y - 48 * s));
+                        result.add(below(action, "Buy", hb.cX, hb.y - 48 * s).source(hb));
                     } else if (item instanceof StorePotion) {
                         Hitbox hb = ((StorePotion)item).potion.hb;
-                        result.add(below(action, "Buy", hb.cX, hb.y - 48 * s));
+                        result.add(below(action, "Buy", hb.cX, hb.y - 48 * s).source(hb));
                     } else if (item instanceof String) {
                         float x = ((Number)field(AbstractDungeon.shopScreen, "purgeCardX")).floatValue();
                         float y = ((Number)field(AbstractDungeon.shopScreen, "purgeCardY")).floatValue();
@@ -111,8 +113,7 @@ final class InlineChoices {
                 }
                 Object button = AbstractDungeon.overlayMenu.cancelButton;
                 if (!Boolean.TRUE.equals(field(button, "isHidden")))
-                    result.add(below(action("cancel", 0), "Leave", ((Hitbox)field(button, "hb")).cX,
-                            ((Hitbox)field(button, "hb")).y - 40 * s));
+                    result.add(shopLeave((Hitbox)field(button, "hb")));
             }
         } catch (ReflectiveOperationException | RuntimeException unavailable) {
             // Never guess a choice binding after a mod/API changes. The caller
@@ -120,15 +121,18 @@ final class InlineChoices {
         }
         return result;
     }
+    static Anchor shopLeave(Hitbox hb) {
+        return below(action("cancel", 0), "Leave", hb.cX, hb.y - 40 * Settings.scale).source(hb);
+    }
     private static Anchor card(JsonObject action, String label, AbstractCard card, int gap) {
         return below(action, label, card.current_x,
-                card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - gap * Settings.scale);
+                card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - gap * Settings.scale).source(card.hb);
     }
     private static Anchor node(JsonObject action, Hitbox hb) {
         float s = Settings.scale;
         Anchor anchor = new Anchor(action, "", hb.cX - 60 * s, hb.y - 34 * s, 120 * s);
         anchor.visible = hb.cY > 80 * s && hb.cY < Settings.HEIGHT - 110 * s;
-        return anchor;
+        return anchor.source(hb);
     }
     private static Anchor below(JsonObject action, String label, float center, float bottom) {
         float width = 158 * Settings.scale;
@@ -141,7 +145,7 @@ final class InlineChoices {
         float gap = 10 * Settings.scale;
         float x = hb.x + hb.width + gap;
         if (x + width > Settings.WIDTH - gap) x = hb.x - width - gap;
-        return new Anchor(action, label, x, hb.cY - 16 * Settings.scale, width);
+        return new Anchor(action, label, x, hb.cY - 16 * Settings.scale, width).source(hb);
     }
     static Object field(Object object, String name) throws ReflectiveOperationException {
         for (Class<?> type = object.getClass(); type != null; type = type.getSuperclass()) {

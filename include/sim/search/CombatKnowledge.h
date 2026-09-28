@@ -1,6 +1,7 @@
-// Observational combat information state for the isolated Silver backend.
+// Observational combat information state for the Silver search: what the
+// player knows about draw-pile positions and hidden monster intents.
 // This metadata never participates in live simulator state, equality, RNG,
-// action execution, or existing Searcher2/Searcher3 behavior.
+// or action execution.
 #ifndef STS_COMBAT_KNOWLEDGE_H
 #define STS_COMBAT_KNOWLEDGE_H
 
@@ -9,6 +10,7 @@
 #include <vector>
 
 #include "combat/CardInstance.h"
+#include "combat/MonsterRollInputs.h"
 
 namespace sts {
     class BattleContext;
@@ -46,20 +48,7 @@ enum class CombatKnowledgeEventType : std::uint8_t {
 // the original monster-roll site.  Keeping this outside BattleContext lets a
 // converted Silver state defer the draw fairly without inspecting the live
 // materialized intent.
-struct HiddenIntentRollInputs {
-    std::int16_t curHp = 0;
-    std::int16_t maxHp = 0;
-    std::int16_t knightCurHp = 0;
-    std::int16_t knightMaxHp = 0;
-    std::int16_t monsterTurnNumber = 0;
-    std::int32_t miscInfo = 0;
-    std::int8_t aliveCount = 0;
-    std::int8_t monstersAlive = 0;
-    bool knightAlive = false;
-    bool playerConstricted = false;
-    bool asleep = false;
-    bool halfDead = false;
-};
+using HiddenIntentRollInputs = MonsterRollInputs;
 
 // Event payload intentionally contains only the card that gameplay exposed or
 // moved. It never carries a live draw-pile position or any RNG state.

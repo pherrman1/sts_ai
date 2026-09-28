@@ -31,6 +31,10 @@ final class DebugRngCapture {
         return out;
     }
 
+    static boolean enabled() {
+        return ENABLED || "1".equals(System.getenv("STS_DIFFERENTIAL_TRACE"));
+    }
+
     static String json() {
         if (!ENABLED) return "";
         try {

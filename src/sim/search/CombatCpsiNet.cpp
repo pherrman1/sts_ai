@@ -1,7 +1,7 @@
 //
 // CombatCpsiNet.cpp: native C++ inference for the no-peek pre-combat outcome
 // model C_psi (train_combat_cpsi.py, text export "combat_cpsi_v1").
-// Math helpers mirror CombatPVNet.cpp / CombatDistValueNet.cpp (float32,
+// Math helpers mirror CombatDistValueNet.cpp (float32,
 // layernorm eps 1e-5, single-head attention loops); the FFN uses the
 // erf-based GELU of nn.GELU() so the forward matches the torch checkpoint.
 //

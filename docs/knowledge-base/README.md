@@ -40,7 +40,7 @@ For evaluation and operation:
 2. [Benchmark protocol](evaluation/benchmark-protocol.md)
 3. [Java/native differential correctness](evaluation/differential-correctness.md)
 4. [Environment variables](operations/environment-variables.md)
-5. [Self-play loop](operations/selfplay-loop.md)
+5. [Self-play loop](operations/selfplay-loop.md) (removed; historical)
 6. [Agent context and workflow](operations/agent-context-and-workflow.md) —
    progressive-disclosure workflow, Git procedure, recording rules, and the
    `AGENTS.md` relocation audit.

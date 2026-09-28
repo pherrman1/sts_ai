@@ -1,0 +1,38 @@
+{
+  "matched": true,
+  "compared_columns": [
+    "seed",
+    "won",
+    "floor",
+    "act",
+    "hpEnd",
+    "maxHp",
+    "fightsLost",
+    "deathCombat",
+    "deathEncounter"
+  ],
+  "on": {
+    "seed": "0",
+    "won": "0",
+    "floor": "50",
+    "act": "3",
+    "hpEnd": "0",
+    "maxHp": "78",
+    "fightsLost": "1",
+    "deathCombat": "25",
+    "deathEncounter": "54",
+    "sec": "5.022"
+  },
+  "off": {
+    "seed": "0",
+    "won": "0",
+    "floor": "50",
+    "act": "3",
+    "hpEnd": "0",
+    "maxHp": "78",
+    "fightsLost": "1",
+    "deathCombat": "25",
+    "deathEncounter": "54",
+    "sec": "4.95109"
+  }
+}

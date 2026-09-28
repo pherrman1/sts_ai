@@ -5,6 +5,8 @@
 #include <iostream>
 #include <chrono>
 #include <cmath>
+#include <algorithm>
+#include <map>
 using namespace one_combat;
 using json=nlohmann::json;
 CombatPredictorInputV1 predictor(const json &j) {
@@ -25,8 +27,328 @@ CombatTransitionPersistentState persistent(const json &j) {
     for(const auto &c:j.at("deck"))s.deck.push_back({c.at("id"),c.at("misc"),c.at("upgraded")});
     for(int i=0;i<6;++i){auto &r=s.combatRng[i];auto v=j.at("combatRng")[i];r.counter=v.at("counter");r.seed0=v.at("seed0");r.seed1=v.at("seed1");}return s;
 }
+bool stateHasRelic(const CombatTransitionPersistentState &s,int id) {
+    return std::any_of(s.relics.begin(),s.relics.end(),[&](const auto &r){return r.id==id;});
+}
+int stateRelicData(const CombatTransitionPersistentState &s,int id) {
+    const auto it=std::find_if(s.relics.begin(),s.relics.end(),[&](const auto &r){return r.id==id;});
+    return it==s.relics.end()?-1:it->data;
+}
+bool tailBit(const CombatTransitionPersistentState &s) {
+    constexpr int id=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    return (s.relicBits.at(id/64)&(std::uint64_t{1}<<(id%64)))!=0;
+}
+CombatPredictorInputV1 stripTail(CombatPredictorInputV1 p) {
+    constexpr int id=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    p.relics.erase(std::remove_if(p.relics.begin(),p.relics.end(),[](const auto &r){return r.relicId==id;}),p.relics.end());
+    for(std::size_t i=0;i<p.relics.size();++i)p.relics[i].orderIndex=static_cast<int>(i);
+    return p;
+}
+CombatTransitionPersistentState stripTail(CombatTransitionPersistentState s) {
+    constexpr int id=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    s.relics.erase(std::remove_if(s.relics.begin(),s.relics.end(),[](const auto &r){return r.id==id;}),s.relics.end());
+    s.relicBits.at(id/64)&=~(std::uint64_t{1}<<(id%64));
+    return s;
+}
+bool rngContract(const CombatTransitionPersistentState &pre,
+    const CombatTransitionPersistentState &post,int encounter) {
+    const auto expected=replayNativeComposedMisc(pre.combatRng[2],encounter);
+    if(post.combatRng[2].counter!=expected.counter || post.combatRng[2].seed0!=expected.seed0 ||
+        post.combatRng[2].seed1!=expected.seed1)return false;
+    for(int i:{0,1,3,4,5})if(post.combatRng[i].counter!=pre.combatRng[i].counter ||
+        post.combatRng[i].seed0!=pre.combatRng[i].seed0 ||
+        post.combatRng[i].seed1!=pre.combatRng[i].seed1)return false;
+    return true;
+}
 int main(int argc,char **argv) {
     try {
+        if(argc==3 && std::string(argv[1])=="--require-standard-fallback") {
+            CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(argv[2]);
+            std::cout << "pinned standard fallback SHA256 PASS\n";
+            return 0;
+        }
+        if(argc==6 && std::string(argv[1])=="--lizard-parity") {
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],true);
+            NativeCombatTransitionSampler directSampler(argv[2]);
+            std::ifstream pairs(argv[4]),selectionFile(argv[5]);
+            if(!pairs || !selectionFile)throw std::runtime_error("Lizard parity input file");
+            const auto selection=json::parse(selectionFile);
+            std::map<std::pair<int,int>,json> targets;
+            for(const auto &target:selection.at("targets"))
+                targets.emplace(std::make_pair(target.at("sourceSeed").get<int>(),
+                    target.at("fightIdx").get<int>()),target);
+            std::string line;int rows=0;
+            constexpr int tailId=static_cast<int>(sts::RelicId::LIZARD_TAIL);
+            while(std::getline(pairs,line)) {
+                const auto pair=json::parse(line);const auto &active=pair.at("activeTail");
+                const int source=active.at("sourceSeed"),fight=active.at("fightIdx");
+                const auto targetIt=targets.find({source,fight});
+                if(targetIt==targets.end())throw std::runtime_error("Stage-C pair missing frozen selected target");
+                auto p=predictor(active.at("predictorInput"));
+                auto pre=persistent(active.at("transition").at("pre"));
+                if(!stateHasRelic(pre,tailId) || stateRelicData(pre,tailId)!=1)
+                    throw std::runtime_error("Stage-C active Tail state does not carry an active relic");
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const auto prediction=hybrid.activeLizardPrediction(gc,p);
+                if(!prediction.supported)
+                    throw std::runtime_error("Stage-C active Lizard unsupported: "+prediction.reason);
+                json branches=json::object();
+                for(int outcomeClass=0;outcomeClass<3;++outcomeClass) {
+                    const auto branchSeed=991000+std::uint64_t(rows)*3+outcomeClass;
+                    std::mt19937_64 rng(branchSeed);
+                    const auto result=hybrid.sampleActiveLizardClass(gc,p,rng,outcomeClass);
+                    if(outcomeClass==2) {
+                        if(result.outcome!=CombatRuntimeSample::Outcome::DEATH)
+                            throw std::runtime_error("forced consumed-loss class did not end in death");
+                        branches["consumedLoss"]={{"death",true}};
+                        continue;
+                    }
+                    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY)
+                        throw std::runtime_error("forced Lizard winning class did not produce a victory");
+                    const auto &post=result.rawPost;
+                    const bool consumed=outcomeClass==1;
+                    const bool tailState=stateHasRelic(post,tailId) &&
+                        stateRelicData(post,tailId)==(consumed?0:1) && tailBit(post) &&
+                        post.relicBits==pre.relicBits;
+                    const bool hpLegal=post.curHp>=1 && post.curHp<=post.maxHp;
+                    const int hpDelta=consumed?post.curHp-prediction.t2HeadInputHp:0;
+                    const bool t2HeadInput=prediction.t2HeadInputHp==p.globals.maxHp/2;
+                    const bool hpClassLegal=!consumed || (hpDelta>=-160 && hpDelta<=143);
+                    bool t2ConditionalIdentity=true;
+                    if(consumed) {
+                        auto directPre=stripTail(pre);
+                        auto directInput=stripTail(p);
+                        directPre.curHp=prediction.t2HeadInputHp;
+                        directInput.globals.curHp=prediction.t2HeadInputHp;
+                        auto directPrepared=directSampler.prepareState(directPre,directInput);
+                        if(!directPrepared->support().supported)
+                            throw std::runtime_error("direct frozen T2 conditional child became unsupported");
+                        std::mt19937_64 directRng(branchSeed);
+                        const auto direct=directPrepared->sampleConditionedVictory(directRng);
+                        const auto withoutTail=stripTail(post);
+                        t2ConditionalIdentity=direct.outcome==CombatRuntimeSample::Outcome::VICTORY &&
+                            directRng==rng && combatTransitionStateJson(direct.rawPost)==
+                                combatTransitionStateJson(withoutTail);
+                    }
+                    const bool correctRng=rngContract(pre,post,p.globals.encounter);
+                    const int activeCount=static_cast<int>(std::count_if(post.potions.begin(),post.potions.end(),
+                        [](int potion){return potion>1;}));
+                    const bool potionCount=activeCount==post.potionCount;
+                    if(!hpLegal || !correctRng || !potionCount || !tailState ||
+                        (consumed&&(!t2HeadInput||!hpClassLegal||!t2ConditionalIdentity)))
+                        throw std::runtime_error("forced Lizard branch violated HP/Tail/RNG/state invariants");
+                    branches[consumed?"consumedWin":"ordinaryWin"]={{"victory",true},
+                        {"tailPresent",stateHasRelic(post,tailId)},
+                        {"tailData",stateRelicData(post,tailId)},
+                        {"tailBit",tailBit(post)},
+                        {"relicBitsPreserved",post.relicBits==pre.relicBits},
+                        {"sampledMaxHp",consumed?post.maxHp:0},
+                        {"t2HeadInputHp",consumed?prediction.t2HeadInputHp:0},
+                        {"actualPostHp",consumed?post.curHp:0},
+                        {"hpDelta",hpDelta},{"t2HeadInputApplied",!consumed||t2HeadInput},
+                        {"t2ConditionalIdentity",t2ConditionalIdentity},
+                        {"hpClassLegal",hpClassLegal},
+                        {"hpLegal",hpLegal},{"rngContract",correctRng},{"potionCount",potionCount}};
+                }
+                std::cout<<json{{"sourceSeed",source},{"fightIdx",fight},
+                    {"prediction",{{"supported",prediction.supported},{"reason",prediction.reason},
+                        {"pOrdinaryWin",prediction.pOrdinaryWin},{"pReserveWin",prediction.pReserveWin},
+                        {"qTailConsumed",prediction.qTailConsumed},
+                        {"rWinGivenConsumed",prediction.rWinGivenConsumed},
+                        {"classProbabilities",prediction.classProbabilities},
+                        {"t2HeadInputHp",prediction.t2HeadInputHp}}},
+                    {"branches",branches}}.dump()<<'\n';
+                ++rows;
+            }
+            if(rows!=320 || static_cast<int>(targets.size())!=320)
+                throw std::runtime_error("Lizard parity must cover the frozen 320-row selection");
+            return 0;
+        }
+        if(argc==5 && std::string(argv[1])=="--lizard-dispatch") {
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],true);
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("Lizard dispatch fixture file");
+            std::string line;int rows=0;
+            while(std::getline(file,line)) {
+                const auto fixture=json::parse(line);auto p=predictor(fixture.at("predictorInput"));
+                auto pre=persistent(fixture.at("preState"));sts::GameContext gc;
+                applyCombatTransitionState(gc,pre);
+                const auto support=hybrid.support(gc,p),forecast=hybrid.forecastSupport(p);
+                const auto prepared=hybrid.prepare(gc,p);
+                if(prepared->support().supported!=support.supported ||
+                    prepared->support().reason!=support.reason)
+                    throw std::runtime_error("Lizard dispatch prepare/support mismatch: "+
+                        support.reason+" vs "+prepared->support().reason);
+                int outcome=-1;
+                if(support.supported) {
+                    std::mt19937_64 rng(771100+rows);
+                    outcome=static_cast<int>(prepared->sample(rng).outcome);
+                }
+                auto prediction=hybrid.activeLizardPrediction(gc,p);
+                std::cout<<json{{"name",fixture.at("name")},{"supported",support.supported},
+                    {"reason",support.reason},{"forecastSupported",forecast.supported},
+                    {"forecastReason",forecast.reason},{"preparedSupported",prepared->support().supported},
+                    {"predictionSupported",prediction.supported},{"predictionReason",prediction.reason},
+                    {"sampleOutcome",outcome}}.dump()<<'\n';
+                ++rows;
+            }
+            const auto metrics=hybrid.takeMetrics();
+            std::cerr<<json{{"dispatchFixtures",rows},{"preparations",metrics.preparations},
+                {"fastPreparations",metrics.fastPreparations},
+                {"fallbackPreparations",metrics.fallbackPreparations},
+                {"lizardPreparations",metrics.lizardPreparations},
+                {"lizardSamples",metrics.lizardSamples},
+                {"lizardBoundaryExclusions",metrics.lizardBoundaryExclusions},
+                {"lizardSupportFailures",metrics.lizardSupportFailures},
+                {"fastSupportFailures",metrics.fastSupportFailures},
+                {"fallbackSupportFailures",metrics.fallbackSupportFailures}}.dump()<<'\n';
+            return rows==8?0:1;
+        }
+        if(argc==6 && std::string(argv[1])=="--benchmark") {
+            NativeCombatTransitionSampler fast(argv[2]),standard(argv[3]);
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3]);
+            const int repetitions=std::stoi(argv[5]);if(repetitions<1)throw std::runtime_error("benchmark repetitions must be positive");
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("fixture file");
+            struct Samples {std::vector<double> prepare,sample;std::uint64_t inputs=0,encoderCalls=0;};
+            std::map<std::string,Samples> timings;
+            auto append=[&](const std::string &name,double prepare,double sample,int encoders) {
+                auto &values=timings[name];values.prepare.push_back(prepare);values.sample.push_back(sample);
+                ++values.inputs;values.encoderCalls+=encoders;
+            };
+            std::string line;int index=0;std::uint64_t brewInputs=0,ordinaryInputs=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));
+                auto pre=persistent(j.contains("pre")?j.at("pre"):j.at("transition").at("pre"));
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const bool brew=std::any_of(p.potions.begin(),p.potions.end(),[](const auto &x){return x.potionId==int(sts::Potion::ENTROPIC_BREW);});
+                if(brew)++brewInputs;else ++ordinaryInputs;
+                auto run=[&](const CombatTransitionSampler &sampler,const std::string &bucket,int encoders) {
+                    if(bucket.empty())return false;
+                    auto support=sampler.support(gc,p);if(!support.supported)return false;
+                    auto prepared=sampler.prepare(gc,p);if(!prepared->support().supported)throw std::runtime_error("benchmark prepare lost support");
+                    for(int warm=0;warm<10;++warm){std::mt19937_64 rng(776+warm);prepared->sample(rng);}
+                    double prepareTotal=0,sampleTotal=0;
+                    for(int rep=0;rep<repetitions;++rep) {
+                        auto start=std::chrono::steady_clock::now();auto each=sampler.prepare(gc,p);
+                        prepareTotal+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
+                        std::mt19937_64 rng(900000+index*repetitions+rep);start=std::chrono::steady_clock::now();
+                        each->sample(rng);sampleTotal+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
+                    }
+                    append(bucket,prepareTotal/repetitions,sampleTotal/repetitions,encoders);
+                    return true;
+                };
+                run(standard,"standard_all_supported",4);
+                if(brew) {
+                    run(standard,"standard_brew",4);
+                    run(hybrid,"hybrid_brew_fallback",4);
+                } else if(run(fast,"fast_deepsets",3)) {
+                    run(standard,"standard_ordinary_matched_fast",4);
+                    run(hybrid,"hybrid_fast",3);
+                }
+                ++index;
+            }
+            json results=json::object();for(auto &[name,values]:timings) {
+                auto prep=values.prepare,samples=values.sample;
+                std::sort(prep.begin(),prep.end());std::sort(samples.begin(),samples.end());
+                auto q=[](const std::vector<double> &v,double p){return v.empty()?0.0:v[std::size_t(p*double(v.size()-1))];};
+                results[name]={{"supportedInputStates",values.inputs},{"encoderCallsPerPreparation",values.inputs?double(values.encoderCalls)/values.inputs:0},
+                    {"preparationMedianUs",q(prep,.5)},{"preparationP25Us",q(prep,.25)},{"preparationP75Us",q(prep,.75)},
+                    {"preparedSampleMedianUs",q(samples,.5)},{"preparedSampleP25Us",q(samples,.25)},{"preparedSampleP75Us",q(samples,.75)}};
+            }
+            const auto metrics=hybrid.takeMetrics();
+            std::cout<<json{{"schema","combat_transition_hybrid_fixed_fixture_benchmark_v1"},
+                {"fixtureCount",index},{"ordinaryInputs",ordinaryInputs},{"brewInputs",brewInputs},
+                {"warmupsPerInput",10},{"repetitionsPerInput",repetitions},
+                {"dispatchFraction",index?double(brewInputs)/index:0.0},{"timings",results},
+                {"hybridMetrics",{{"preparations",metrics.preparations},
+                    {"fastPreparations",metrics.fastPreparations},{"fallbackPreparations",metrics.fallbackPreparations},
+                    {"fallbackRate",metrics.fallbackRate},{"uniqueBrewPredictorStates",metrics.uniqueBrewPredictorStates}}}}.dump(2)<<'\n';
+            return index?0:1;
+        }
+        if(argc==4 && std::string(argv[1])=="--potion-parity") {
+            NativeCombatTransitionSampler sampler(argv[2]);const auto &net=sampler.runtime();
+            std::ifstream file(argv[3]);if(!file)throw std::runtime_error("fixture file");
+            std::string line;int index=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));
+                auto z=net.potionEncoding(p);const int delta=j.value("delta",0);
+                const float fraction=j.value("fraction",.5f);auto probabilities=net.potion(z,p,delta,fraction);
+                json legal=json::array();for(float probability:probabilities)legal.push_back(probability>0);
+                std::cout<<json{{"index",index++},{"z",z},{"probabilities",probabilities},
+                    {"legal",legal},{"delta",delta},{"fraction",fraction},
+                    {"capacity",p.globals.potionCapacity},
+                    {"boss",sts::isBossEncounter(static_cast<sts::MonsterEncounter>(p.globals.encounter))}}.dump()<<'\n';
+            }
+            return index?0:1;
+        }
+        if(argc==5 && std::string(argv[1])=="--hybrid") {
+            NativeCombatTransitionSampler fast(argv[2]),standard(argv[3]);
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3]);
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("fixture file");
+            std::string line;int index=0,brews=0,ordinary=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));
+                auto pre=persistent(j.contains("pre")?j.at("pre"):j.at("transition").at("pre"));
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const bool brew=std::any_of(p.potions.begin(),p.potions.end(),[](const auto &x){return x.potionId==int(sts::Potion::ENTROPIC_BREW);});
+                auto &expected=brew?static_cast<const CombatTransitionSampler&>(standard):static_cast<const CombatTransitionSampler&>(fast);
+                auto expectedSupport=expected.support(gc,p),actualSupport=hybrid.support(gc,p);
+                if(expectedSupport.supported!=actualSupport.supported||expectedSupport.reason!=actualSupport.reason)
+                    throw std::runtime_error("hybrid support differs from selected child at fixture "+std::to_string(index));
+                auto forecast=expected.forecastSupport(p),hybridForecast=hybrid.forecastSupport(p);
+                if(forecast.supported!=hybridForecast.supported||forecast.reason!=hybridForecast.reason)
+                    throw std::runtime_error("hybrid forecast support differs from selected child");
+                auto expectedExpectation=expected.expectation(gc,p),actualExpectation=hybrid.expectation(gc,p);
+                if(expectedExpectation.supported!=actualExpectation.supported ||
+                    expectedExpectation.death!=actualExpectation.death ||
+                    expectedExpectation.winningHpFraction!=actualExpectation.winningHpFraction ||
+                    expectedExpectation.winningHpHistogram!=actualExpectation.winningHpHistogram)
+                    throw std::runtime_error("hybrid expectation differs from selected child");
+                auto expectedForecast=expected.forecastExpectation(p),actualForecast=hybrid.forecastExpectation(p);
+                if(expectedForecast.supported!=actualForecast.supported || expectedForecast.death!=actualForecast.death ||
+                    expectedForecast.winningHpFraction!=actualForecast.winningHpFraction ||
+                    expectedForecast.winningHpHistogram!=actualForecast.winningHpHistogram)
+                    throw std::runtime_error("hybrid forecast expectation differs from selected child");
+                std::mt19937_64 left(20260924+index),right=left;
+                auto expectedSample=expected.sample(gc,p,left),actualSample=hybrid.sample(gc,p,right);
+                if(expectedSample.outcome!=actualSample.outcome || left!=right ||
+                    combatTransitionStateJson(expectedSample.rawPost)!=combatTransitionStateJson(actualSample.rawPost))
+                    throw std::runtime_error("hybrid scalar sample/RNG/RAW differs from selected child");
+                auto expectedPrepared=expected.prepare(gc,p),actualPrepared=hybrid.prepare(gc,p);
+                if(expectedPrepared->support().supported!=actualPrepared->support().supported ||
+                    expectedPrepared->support().reason!=actualPrepared->support().reason)
+                    throw std::runtime_error("hybrid prepared support differs from selected child");
+                left.seed(80260924+index);right=left;
+                expectedSample=expectedPrepared->sample(left);actualSample=actualPrepared->sample(right);
+                if(expectedSample.outcome!=actualSample.outcome || left!=right ||
+                    combatTransitionStateJson(expectedSample.rawPost)!=combatTransitionStateJson(actualSample.rawPost))
+                    throw std::runtime_error("hybrid prepared sample/RNG/RAW differs from selected child");
+                if(brew) {
+                    ++brews;std::mt19937_64 directRng(99),before=directRng;
+                    auto blocked=fast.sample(gc,p,directRng);
+                    if(fast.support(gc,p).reason!="entropic_brew_requires_standard_ctm" ||
+                        fast.forecastSupport(p).reason!="entropic_brew_requires_standard_ctm" ||
+                        blocked.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED || directRng!=before)
+                        throw std::runtime_error("direct specialist Brew misuse did not fail closed without RNG");
+                } else ++ordinary;
+                std::cout<<json{{"index",index},{"brewFallback",brew},{"support",actualSupport.supported},
+                    {"reason",actualSupport.reason},{"scalarAndPreparedIdentity",true},
+                    {"completeRawAndRngIdentity",true}}.dump()<<'\n';
+                ++index;
+            }
+            const auto metrics=hybrid.takeMetrics();
+            if(metrics.preparations!=static_cast<std::uint64_t>(index) ||
+                metrics.fastPreparations!=static_cast<std::uint64_t>(ordinary) ||
+                metrics.fallbackPreparations!=static_cast<std::uint64_t>(brews) ||
+                metrics.fastSamples!=static_cast<std::uint64_t>(2*ordinary) ||
+                metrics.fallbackSamples!=static_cast<std::uint64_t>(2*brews))
+                throw std::runtime_error("hybrid metrics do not match fixture routes");
+            std::cerr<<json{{"fixtures",index},{"ordinary",ordinary},{"brew",brews},
+                {"preparations",metrics.preparations},{"fastPreparations",metrics.fastPreparations},
+                {"fallbackPreparations",metrics.fallbackPreparations},{"fastSamples",metrics.fastSamples},
+                {"fallbackSamples",metrics.fallbackSamples},{"fallbackRate",metrics.fallbackRate},
+                {"uniqueBrewPredictorStates",metrics.uniqueBrewPredictorStates}}.dump()<<'\n';
+            return index?0:1;
+        }
         if(argc!=3 && argc!=4)throw std::runtime_error("usage: combat_transition_runtime_probe MODEL FIXTURES [smoke-and-parity]");
         NativeCombatTransitionSampler sampler(argv[1]);const auto &net=sampler.runtime();
         std::mt19937_64 rng(20260914);
@@ -44,7 +366,7 @@ int main(int argc,char **argv) {
             if(supportOnly){out["index"]=fixtureIndex++;std::cout<<out.dump()<<'\n';continue;}
             if(full){
                 if(support.supported){int d=j.value("delta",0),ending=j.value("ending",pre.curHp),maximum=j.value("maximum",pre.maxHp),mask=j.value("mask",0);std::vector<int> consumed=j.value("consumed",std::vector<int>{}),dagger=j.value("dagger",std::vector<int>{});
-                    out["survival"]=net.survival(p);out["maxHp"]=net.maxHp(p);out["hp"]=net.signedHp(net.hpEncoding(p),d,pre.curHp,maximum);out["diagnostics"]=nearFullDiagnostics(net,pre,p,d,ending,maximum,mask,consumed,j.value("escaped",false),dagger);
+                    out["survival"]=net.survival(p);out["maxHp"]=net.maxHp(p);out["maxHpEncoding"]=net.maxHpEncoding(p);out["hp"]=net.signedHp(net.hpEncoding(p),d,pre.curHp,maximum);out["diagnostics"]=nearFullDiagnostics(net,pre,p,d,ending,maximum,mask,consumed,j.value("escaped",false),dagger);
                     auto prepared=sampler.prepare(gc,p);json samples=json::array();
                     for(int draw=0;draw<j.value("draws",128);++draw){std::mt19937_64 random(20260921+draw),cached=random,tape=random;json words=json::array();for(int k=0;k<256;++k)words.push_back(tape());auto sample=sampler.sample(gc,p,random),other=prepared->sample(cached);if(sample.outcome!=other.outcome||combatTransitionStateJson(sample.rawPost)!=combatTransitionStateJson(other.rawPost)||random!=cached)throw std::runtime_error("near-full prepared/reference parity");
                         auto count=std::mt19937_64(20260921+draw);int used=0;while(count!=random&&used<256){count();++used;}if(count!=random)throw std::runtime_error("parity draw tape exhausted");samples.push_back({{"outcome",int(sample.outcome)},{"rawPost",combatTransitionStateJson(sample.rawPost)},{"words",words},{"wordsUsed",used}});
@@ -78,8 +400,7 @@ int main(int argc,char **argv) {
                     {"victory",victories},{"death",deaths},{"fullPersistentStateEqual",true},{"plannerRngPostEqual",true},
                     {"supportEqual",true},{"preparationNs",preparationNs},{"referenceSampleNs",referenceNs/draws},
                     {"preparedSampleNs",preparedNs/draws},{"preparedAmortizedNs",(preparationNs+preparedNs)/draws},
-                    {"referenceEncoderCalls",support.supported?draws+3*victories:0},
-                    {"preparedEncoderCalls",support.supported?4:0}};
+                    {"referenceEncoderCalls",support.supported?draws+3*victories:0}};
             }
             if(support.supported) {
                 out["survival"]=net.survival(p);out["max_hp"]=net.maxHp(p);auto z=net.hpEncoding(p);out["hp_encoding"]=z;

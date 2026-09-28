@@ -6,29 +6,14 @@
 #define STS_LIGHTSPEED_ACTIONQUEUE_H
 
 #include "sts_common.h"
+#include "combat/Actions.h"
 
 #include <bitset>
-#include <functional>
+#include <array>
 #include <cassert>
 
 
 namespace sts {
-
-    class BattleContext;
-    typedef std::function<void (BattleContext &)> ActionFunction;
-
-    struct Action {
-        ActionFunction actFunc;
-        bool clearOnCombatVictory = true;
-        bool executeAfterCombatVictory = false;
-
-        Action() = default;
-        Action(ActionFunction a) : actFunc(std::move(a)) {}
-        Action(ActionFunction a, bool b) : actFunc(std::move(a)), clearOnCombatVictory(b) {}
-        Action(ActionFunction a, bool b, bool c)
-            : actFunc(std::move(a)), clearOnCombatVictory(b), executeAfterCombatVictory(c) {}
-    };
-
 
     // Simple deque
     template<int capacity>
@@ -41,7 +26,7 @@ namespace sts {
         std::bitset<capacity> postVictoryBits;
 
 #ifdef sts_action_queue_use_raw_array
-        ActionFunction arr[capacity];
+        Action arr[capacity];
         ActionQueue() = default;
         ActionQueue(const ActionQueue &rhs)
             : size(rhs.size), back(rhs.back), front(rhs.front), bits(rhs.bits),
@@ -55,7 +40,25 @@ namespace sts {
             }
         }
 #else
-        std::array<ActionFunction,capacity> arr;
+        std::array<Action,capacity> arr;
+
+        // Copies only the queued slots (at the same ring positions): a
+        // BattleContext is copied on every search step, and the queue is
+        // mostly empty. Slots outside the queue are never read.
+        ActionQueue() = default;
+        ActionQueue(const ActionQueue &rhs) { *this = rhs; }
+        ActionQueue &operator=(const ActionQueue &rhs) {
+            front = rhs.front;
+            back = rhs.back;
+            size = rhs.size;
+            bits = rhs.bits;
+            postVictoryBits = rhs.postVictoryBits;
+            for (int i = 0, cur = rhs.front; i < rhs.size; ++i, ++cur) {
+                if (cur >= capacity) cur = 0;
+                arr[cur] = rhs.arr[cur];
+            }
+            return *this;
+        }
 #endif
 
         void clear();
@@ -63,9 +66,23 @@ namespace sts {
         void pushBack(Action a);
         bool isEmpty();
         bool hasPostVictoryAction() const;
-        ActionFunction popPostVictoryAction();
-        ActionFunction popFront();
+        Action popPostVictoryAction();
+        Action popFront();
         [[nodiscard]] int getCapacity() const;
+
+        // Compares the queued actions in order (each carries its own victory
+        // flags); ring slots outside the queue are ignored.
+        bool operator==(const ActionQueue &rhs) const {
+            if (size != rhs.size) {
+                return false;
+            }
+            for (int i = 0; i < size; ++i) {
+                if (!(arr[(front + i) % capacity] == rhs.arr[(rhs.front + i) % capacity])) {
+                    return false;
+                }
+            }
+            return true;
+        }
     };
 
     template<int capacity>
@@ -89,7 +106,7 @@ namespace sts {
         }
         bits.set(front, a.clearOnCombatVictory);
         postVictoryBits.set(front, a.executeAfterCombatVictory);
-        arr[front] = std::move(a.actFunc);
+        arr[front] = a;
     }
 
     template<int capacity>
@@ -104,7 +121,7 @@ namespace sts {
         }
         bits.set(back, a.clearOnCombatVictory);
         postVictoryBits.set(back, a.executeAfterCombatVictory);
-        arr[back] = std::move(a.actFunc);
+        arr[back] = a;
         ++back;
         ++size;
     }
@@ -130,14 +147,14 @@ namespace sts {
     }
 
     template<int capacity>
-    ActionFunction ActionQueue<capacity>::popPostVictoryAction() {
+    Action ActionQueue<capacity>::popPostVictoryAction() {
         int cur = front;
         for (int i = 0; i < size; ++i) {
             if (cur >= capacity) {
                 cur = 0;
             }
             if (postVictoryBits[cur]) {
-                ActionFunction a = arr[cur];
+                Action a = arr[cur];
                 clear();
                 return a;
             }
@@ -147,11 +164,11 @@ namespace sts {
     }
 
     template<int capacity>
-    ActionFunction ActionQueue<capacity>::popFront() {
+    Action ActionQueue<capacity>::popFront() {
 #ifdef sts_asserts
         assert(size > 0 );
 #endif
-        ActionFunction a = arr[front];
+        Action a = arr[front];
         ++front;
         --size;
         if (front >= capacity) {

@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-09-12 for documentation routing and completion boundaries.
+Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-12 for documentation routing and completion boundaries.
 
 ## Purpose
 
@@ -75,11 +75,11 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 | --- | --- | --- |
 | Purpose and required reading | `AGENTS.md`, KB index, this page | Universal constraints retained; documentation reads are task-dependent, with discovery links preserved. |
 | Authoritative sources | `AGENTS.md` | Kept as the universal source hierarchy. |
-| Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
+| Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop (removed)](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
 | Agent workflow and tool routing | `AGENTS.md`; [ADR-0011](../../../decisions/0011-mcp-free-codex-skillopt-pilot.md); this page | Concise routing stays universal; operating limits are retained below. ADR-0010 and ADR-0008 remain historical records. |
 | Agent context and large-file navigation | This page | Retained below as focused-reading guidance. |
-| Build and focused checks | [build and debugging](build-and-debugging.md); this page | Commands, target graph, GCP details, and caveats remain on the build page. |
-| Build and focused checks / Automated agent verification limits | [build and debugging](build-and-debugging.md); `AGENTS.md`; [ADR-0006](../../../decisions/0006-automated-game-seed-limit.md); research skill | Commands, target graph, GCP details, guard rule, and sample guidance remain reachable. |
+| Build and focused checks | [build and debugging](build-and-debugging.md); this page | Commands, target graph, research preflight details, and caveats remain on the build page. |
+| Build and focused checks / Automated agent verification limits | [build and debugging](build-and-debugging.md); `AGENTS.md`; [ADR-0006](../../../decisions/0006-automated-game-seed-limit.md); research skill | Commands, target graph, research preflight details, guard rule, and sample guidance remain reachable. |
 | Modification workflow / Default completion: commit and push | This page | Retained below. |
 | Research experiment handoffs | [research-experiment skill](../../../.agents/skills/research-experiment/SKILL.md) | The skill is the progressive-disclosure procedure. |
 | Critical safety and correctness traps | [invariants](../behavior/invariants.md), [determinism/RNG](../behavior/determinism-and-rng.md), [benchmark protocol](../evaluation/benchmark-protocol.md), [self-play loop](selfplay-loop.md), [environment variables](environment-variables.md), [architecture overview](../architecture/overview.md) | Existing maintained pages hold the technical facts; the routing list below preserves every former trap. |
@@ -140,15 +140,11 @@ environment. Header-layout changes to `Node`, `Edge`, or searcher structures
 require every including translation unit to be rebuilt.
 
 Use the cheapest proving check. All game-seed commands must use
-`tools/seed_guard.sh`. Local automated execution is capped at 128 seeds:
-prefer 8–16 seeds for iterative smoke checks, at most 32 for ordinary focused
-validation, and at most 64 when a small statistical check is sufficient. Large
-research runs use the tracked
-[`tools/agent/gcp_benchmark.py`](../../../tools/agent/gcp_benchmark.py) path on
-`sts-test`; its explicit `--gcp-research` guard mode has no numeric ceiling.
-Agents may choose a justified GCP seed count without a separate approval step,
-but must state the scientific design and use the smallest informative sample.
-Long-run details are in [build and debugging](build-and-debugging.md).
+`tools/seed_guard.sh`. Use the smallest justified experiment. Larger local runs
+require explicit authorization; record frozen source/model/binary provenance, exact seed
+ranges/counts, budgets, and decision rules before execution. There is no fixed
+local numerical seed ceiling. See
+[build and debugging](build-and-debugging.md) for provenance preflight.
 
 ### Modification and Git procedure
 
@@ -263,8 +259,9 @@ the PR or commit only. Existing dated entries are retained unchanged.
 - `bestbench` provenance, producer/consumer headers, paired comparisons, and
   `runtrace` limits: [benchmark protocol](../evaluation/benchmark-protocol.md)
   and [build and debugging](build-and-debugging.md).
-- Native OOC/server distinction, exact server PID handling, self-play bootstrap,
-  and expensive append/resume-safe buffers: [self-play loop](selfplay-loop.md).
+- Native OOC/server distinction, exact server PID handling, and expensive
+  append/resume-safe buffers: [self-play loop](selfplay-loop.md) (the loop was
+  removed by ADR-0020; the buffer rules still apply to retained data).
 - Expert policy features and restrictions on new hand-authored objectives:
   [combat search](../architecture/combat-search.md).
 

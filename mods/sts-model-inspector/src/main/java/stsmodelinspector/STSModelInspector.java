@@ -12,6 +12,7 @@ import com.megacrit.cardcrawl.cards.DamageInfo;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
+import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.helpers.FontHelper;
@@ -23,6 +24,7 @@ import com.megacrit.cardcrawl.rooms.ShopRoom;
 import com.megacrit.cardcrawl.rooms.RestRoom;
 import com.megacrit.cardcrawl.rooms.TreasureRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
@@ -39,6 +41,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.ArrayList;
@@ -59,8 +63,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
     private static final long DEFAULT_SILVER_SEARCH_BUDGET = 1000L;
-    private static final float SILVER_BOOST_BUTTON_X = 238.0f;
+    private static final float SILVER_BOOST_BUTTON_X = 16.0f;
     private static final float SILVER_BOOST_BUTTON_WIDTH = 90.0f;
+    private static final float COMBAT_PANEL_HEIGHT = 288.0f;
+    private static final float SILVER_BOOST_BUTTON_BOTTOM = 12.0f;
+    private static final float GRAPH_BUTTON_WIDTH = 112.0f;
     private static final String TOGGLE = "stsmodelinspector.toggle";
     private static final Color PANEL_BACKGROUND = new Color(0.015f, 0.075f, 0.115f, 0.96f);
     private static final Color PANEL_INNER = new Color(0.02f, 0.12f, 0.18f, 0.94f);
@@ -158,8 +165,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
     private volatile OocOverlay oocOverlay;
+    private OocOverlay.Choice hoveredOocChoice;
     private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
+    private volatile boolean showAdvisorPanel = true;
+    private volatile boolean showActionRecommendations = true;
+    private volatile boolean showSelectedActionSummary = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
     private final LatestPublisher latestPublisher = new LatestPublisher();
@@ -168,6 +179,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private int lastNodeX = -1, lastNodeY = -1;
     private static String liveEncounter = "";
     private boolean toggleDown;
+    private volatile String graphStatus = "";
+    private volatile boolean graphExportRunning;
+    private float graphButtonX = Float.NaN;
+    private float graphButtonBottom = Float.NaN;
+    private long graphButtonLayoutSequence = -1;
 
     private void resetSilverBudget() {
         silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
@@ -274,6 +290,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
         handleSilverBoostClick();
+        handleGraphButtonClick();
 
         Snapshot snapshot = captureStableSnapshot();
         if (snapshot == null) {
@@ -316,9 +333,29 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
-        renderAdvisorPanel(sb);
-        renderPotionBadges(sb, Settings.scale);
+        float scale = Settings.scale;
+        hoveredOocChoice = null;
+        if (showAdvisorPanel) {
+            renderAdvisorPanel(sb);
+        } else {
+            renderStandaloneControls(sb, scale);
+            if (showActionRecommendations) {
+                if ("combat".equals(newest.boundary)) renderSilverActionBadges(sb, scale);
+                else renderInlineChoices(sb, currentOocOverlay(), scale);
+            }
+        }
+        if (showActionRecommendations) renderPotionBadges(sb, scale);
         sb.setColor(Color.WHITE);
+    }
+
+    private void renderStandaloneControls(SpriteBatch sb, float scale) {
+        graphButtonX = 24.0f * scale;
+        graphButtonBottom = 12.0f * scale;
+        graphButtonLayoutSequence = newest.sequence;
+        renderGraphButton(sb, graphButtonX, graphButtonBottom, scale);
+        if ("combat".equals(newest.boundary))
+            renderSilverBoostButton(sb, 24.0f * scale + (GRAPH_BUTTON_WIDTH + 8.0f) * scale,
+                    graphButtonBottom, scale);
     }
 
     private void renderAdvisorPanel(SpriteBatch sb) {
@@ -327,13 +364,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         float top = Settings.HEIGHT - 170.0f * scale;
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
-        if (!combat && renderInlineChoices(sb, overlay, scale)) {
+        boolean inlineOoc = showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale);
+        if (inlineOoc && (overlay == null || overlay.distribution == null)) {
+            graphButtonX = 24.0f * scale;
+            graphButtonBottom = 50.0f * scale;
+            graphButtonLayoutSequence = newest.sequence;
+            renderGraphButton(sb, graphButtonX, graphButtonBottom, scale);
             sb.setColor(Color.WHITE);
             return;
         }
         float width = (combat ? 500.0f : 420.0f) * scale;
-        int rows = overlay == null ? 0 : overlay.panelChoices().size();
-        float height = (combat ? 252.0f : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
+        int rows = overlay == null || inlineOoc ? 0 : overlay.panelChoices().size();
+        boolean histogram = !combat && overlay != null && overlay.distribution != null;
+        float height = (combat ? COMBAT_PANEL_HEIGHT : histogram ? 292.0f + 54.0f * rows
+                : rows == 0 ? 220.0f : 136.0f + 54.0f * rows) * scale;
         float bottom = top - height;
 
         // Use the game's existing white texture for the glass panels so the mod
@@ -350,16 +394,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderAdvisorIcon(sb, x + 16.0f * scale, top - 18.0f * scale, scale);
         renderHeaderText(sb, combat ? "STS Model Advisor" : "OOC Advisor", x + 70.0f * scale,
                 top - 14.0f * scale, Color.WHITE, 0.82f);
-        if (combat) renderSilverBoostButton(sb, x, top, scale);
         renderStatusPill(sb, x + width - 164.0f * scale, top - 12.0f * scale, scale);
         renderGearIcon(sb, x + width - 31.0f * scale, top - 27.0f * scale, scale);
 
         if ("combat".equals(newest.boundary)) {
             renderCombatPanel(sb, x, top, width, bottom, scale);
-            renderSilverActionBadges(sb, scale);
+            if (showActionRecommendations) renderSilverActionBadges(sb, scale);
         } else {
-            renderNonCombatPanel(sb, x, top, width, bottom, scale);
+            renderNonCombatPanel(sb, x, top, width, bottom, scale, inlineOoc);
         }
+        graphButtonX = x + (SILVER_BOOST_BUTTON_X + SILVER_BOOST_BUTTON_WIDTH + 10.0f) * scale;
+        graphButtonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        graphButtonLayoutSequence = newest.sequence;
+        renderGraphButton(sb, graphButtonX, graphButtonBottom, scale);
         sb.setColor(Color.WHITE);
     }
 
@@ -391,11 +438,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
                 rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
-        String silver = silverSummary();
         renderSmallText(sb, silverBudgetSummary(), x + 16.0f * scale, bottom + 68.0f * scale,
                 CYAN_DIM, 0.70f);
-        renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
-                "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
+        if (showSelectedActionSummary) {
+            String silver = showActionRecommendations ? silverSummary()
+                    : "Silver  ·  " + ("OK".equals(silverStatus) ? "ready" : silverStatus.toLowerCase(Locale.ROOT));
+            renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
+                    "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
+        }
+        renderSilverBoostButton(sb, x, bottom, scale);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
                 x + width - 78.0f * scale, bottom + 22.0f * scale, MUTED, 0.78f);
     }
@@ -438,17 +489,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + "  ·  total " + compactSimulations(silverTotalSimulations);
     }
 
-    private void renderSilverBoostButton(SpriteBatch sb, float x, float top, float scale) {
+    private void renderSilverBoostButton(SpriteBatch sb, float x, float bottom, float scale) {
         float buttonX = x + SILVER_BOOST_BUTTON_X * scale;
-        float buttonTop = top - 12.0f * scale;
+        float buttonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
         float buttonHeight = 30.0f * scale;
-        drawRect(sb, buttonX, buttonTop - buttonHeight,
+        drawRect(sb, buttonX, buttonBottom,
                 SILVER_BOOST_BUTTON_WIDTH * scale, buttonHeight, PANEL_INNER);
-        drawBorder(sb, buttonX, buttonTop - buttonHeight,
+        drawBorder(sb, buttonX, buttonBottom,
                 SILVER_BOOST_BUTTON_WIDTH * scale, buttonHeight, CYAN_DIM, scale);
         String increment = silverSearchBudget == DEFAULT_SILVER_SEARCH_BUDGET ? "+9k" : "+10k";
         renderSmallText(sb, "Silver " + increment, buttonX + 8.0f * scale,
-                buttonTop - 7.0f * scale, CYAN, 0.66f);
+                buttonBottom + 23.0f * scale, CYAN, 0.66f);
     }
 
     private void handleSilverBoostClick() {
@@ -460,10 +511,161 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         InputHelper.justClickedLeft = false;
     }
 
+    private void renderGraphButton(SpriteBatch sb, float x, float bottom, float scale) {
+        float buttonX = x;
+        float buttonBottom = bottom;
+        drawRect(sb, buttonX, buttonBottom, GRAPH_BUTTON_WIDTH * scale, 30.0f * scale, PANEL_INNER);
+        drawBorder(sb, buttonX, buttonBottom, GRAPH_BUTTON_WIDTH * scale, 30.0f * scale, CYAN_DIM, scale);
+        String label = graphExportRunning ? "Opening graph…" : graphStatus.isEmpty() ? "Open MCTS graph" : graphStatus;
+        renderSmallText(sb, label, buttonX + 7.0f * scale, buttonBottom + 23.0f * scale,
+                graphExportRunning ? MUTED : CYAN, 0.62f);
+    }
+
+    private void handleGraphButtonClick() {
+        if (!panelVisible || newest == null || graphButtonLayoutSequence != newest.sequence
+                || !InputHelper.justClickedLeft || !graphButtonHit()) return;
+        InputHelper.justClickedLeft = false;
+        if (graphExportRunning) return;
+        Snapshot snapshot = newest;
+        String pinnedSnapshotJson = graphSnapshotJson(snapshot.session, snapshot.sequence, snapshot.hash,
+                snapshot.observationJson, responseSequence, responseHash, advisorResponseJson,
+                advisorReason, snapshot.responseLatencyMicros);
+        if (pinnedSnapshotJson == null) {
+            graphStatus = "Waiting for ready response";
+            return;
+        }
+        final boolean combat = "combat".equals(snapshot.boundary);
+        graphExportRunning = true;
+        graphStatus = "";
+        Thread worker = new Thread(() -> exportAndOpenGraph(combat, pinnedSnapshotJson),
+                "sts-model-inspector-graph");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private boolean graphButtonHit() {
+        float scale = Settings.scale;
+        return !Float.isNaN(graphButtonX) && !Float.isNaN(graphButtonBottom)
+                && InputHelper.mX >= graphButtonX && InputHelper.mX <= graphButtonX + GRAPH_BUTTON_WIDTH * scale
+                && InputHelper.mY >= graphButtonBottom && InputHelper.mY <= graphButtonBottom + 30.0f * scale;
+    }
+
+    private void exportAndOpenGraph(boolean combat, String pinnedSnapshotJson) {
+        Path pinnedSnapshot = null;
+        try {
+            Properties properties = new Properties();
+            String configOverride = System.getenv("STS_MODEL_INSPECTOR_CONFIG");
+            Path config = configOverride == null || configOverride.trim().isEmpty()
+                    ? Paths.get(System.getProperty("user.home"), ".sts-model-inspector.properties")
+                    : Paths.get(configOverride.trim());
+            if (Files.isRegularFile(config)) try (BufferedReader reader = Files.newBufferedReader(config)) {
+                properties.load(reader);
+            }
+            String toolsDir = System.getenv("STS_MODEL_INSPECTOR_GRAPH_TOOLS");
+            if (toolsDir == null || toolsDir.trim().isEmpty()) toolsDir = properties.getProperty("graphToolsDir");
+            if (toolsDir == null || toolsDir.trim().isEmpty())
+                throw new IOException("set graphToolsDir in ~/.sts-model-inspector.properties");
+            Path tools = Paths.get(toolsDir.trim()).toAbsolutePath().normalize();
+            Path cacheDir = Paths.get(System.getProperty("user.home"), ".cache", "sts-model-inspector");
+            Path outputDir = cacheDir.resolve("graphs");
+            Files.createDirectories(outputDir);
+            pinnedSnapshot = Files.createTempFile(outputDir, ".graph-snapshot-", ".json");
+            Files.write(pinnedSnapshot, pinnedSnapshotJson.getBytes(StandardCharsets.UTF_8));
+            String graphType = combat ? "silver-mcts" : "ooc-mcts";
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS"));
+            String filename = graphType + "-" + timestamp + ".html";
+            Path output = outputDir.resolve(filename);
+            for (int collision = 2; Files.exists(output); collision++)
+                output = outputDir.resolve(graphType + "-" + timestamp + "-" + collision + ".html");
+            String python = properties.getProperty("python", "python3").trim();
+            List<String> command = new ArrayList<>();
+            command.add(python);
+            command.add(tools.resolve(combat ? "render_combat_decision.py" : "render_ooc_mcts.py").toString());
+            command.add("--snapshot"); command.add(pinnedSnapshot.toString());
+            command.add("--output"); command.add(output.toString());
+            command.add("--open");
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            StringBuilder result = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) result.append(line).append(' ');
+            }
+            int exit = process.waitFor();
+            if (exit != 0) throw new IOException(result.toString().trim().isEmpty()
+                    ? "renderer exited " + exit : result.toString().trim());
+            graphStatus = "Graph opened";
+        } catch (Exception error) {
+            graphStatus = "Graph unavailable";
+            System.err.println("STS Model Inspector graph export: " + error);
+        } finally {
+            if (pinnedSnapshot != null) try { Files.deleteIfExists(pinnedSnapshot); }
+            catch (IOException ignored) {}
+            graphExportRunning = false;
+        }
+    }
+
+    static String graphSnapshotJson(String session, long sequence, String hash,
+                                    String observationJson, long responseSequence,
+                                    String responseHash, String advisorResponseJson,
+                                    String responseReason,
+                                    long responseLatencyMicros) {
+        if (advisorResponseJson == null || advisorResponseJson.trim().isEmpty()) return null;
+        final com.google.gson.JsonObject advisorResponse;
+        try {
+            advisorResponse = new com.google.gson.JsonParser().parse(advisorResponseJson).getAsJsonObject();
+        } catch (RuntimeException invalidJson) {
+            return null;
+        }
+        String advisorKind = jsonStringProperty(advisorResponse, "kind");
+        String advisorSession = jsonStringProperty(advisorResponse, "session");
+        String advisorHash = jsonStringProperty(advisorResponse, "observationHash");
+        Long advisorSequence = jsonLongProperty(advisorResponse, "sequence");
+        String status = jsonStringProperty(advisorResponse, "status");
+        if (session == null || hash == null || observationJson == null
+                || sequence < 0 || responseSequence != sequence || !hash.equals(responseHash)
+                || !"analysis".equals(advisorKind)
+                || !session.equals(advisorSession)
+                || advisorSequence == null || sequence != advisorSequence
+                || !hash.equals(advisorHash))
+            return null;
+        String reason = responseReason == null ? "" : responseReason;
+        return "{\"protocol\":\"sts_model_inspector_latest_v1\",\"protocolVersion\":1"
+                + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
+                + ",\"observationHash\":\"" + Snapshot.escape(hash) + "\",\"observation\":"
+                + observationJson + ",\"response\":{\"status\":\""
+                + Snapshot.escape(status == null ? "ERROR" : status)
+                + "\",\"ready\":true,\"latencyMicros\":"
+                + (responseLatencyMicros < 0 ? "null" : Long.toString(responseLatencyMicros))
+                + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
+                + ",\"observationHash\":\"" + Snapshot.escape(hash) + "\",\"reason\":\""
+                + Snapshot.escape(reason) + "\",\"advisor\":" + advisorResponseJson + "}}";
+    }
+
+    private static String jsonStringProperty(com.google.gson.JsonObject object, String key) {
+        com.google.gson.JsonElement value = object.get(key);
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()
+                ? value.getAsString() : null;
+    }
+
+    private static Long jsonLongProperty(com.google.gson.JsonObject object, String key) {
+        com.google.gson.JsonElement value = object.get(key);
+        if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()) return null;
+        try { return value.getAsLong(); }
+        catch (NumberFormatException invalid) { return null; }
+    }
+
     private boolean silverBoostButtonHit() {
         float scale = Settings.scale;
-        float x = 24.0f * scale + SILVER_BOOST_BUTTON_X * scale;
-        float bottom = Settings.HEIGHT - 170.0f * scale - 42.0f * scale;
+        float x;
+        float bottom;
+        if (showAdvisorPanel) {
+            x = 24.0f * scale + SILVER_BOOST_BUTTON_X * scale;
+            bottom = Settings.HEIGHT - (170.0f + COMBAT_PANEL_HEIGHT) * scale
+                    + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        } else {
+            x = 24.0f * scale + (GRAPH_BUTTON_WIDTH + 8.0f + SILVER_BOOST_BUTTON_X) * scale;
+            bottom = 12.0f * scale + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        }
         return InputHelper.mX >= x && InputHelper.mX <= x + SILVER_BOOST_BUTTON_WIDTH * scale
                 && InputHelper.mY >= bottom && InputHelper.mY <= bottom + 30.0f * scale;
     }
@@ -506,14 +708,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             OocOverlay.Choice choice = view == null ? null : view.forAction(anchor.action);
             String prefix = anchor.label.isEmpty() ? "" : anchor.label + " · ";
             String label = choice == null ? prefix + (view == null ? "Waiting" : "Not scored")
-                    : prefix + String.format(Locale.ROOT, "#%d · Q %.3f", view.choices.indexOf(choice) + 1, choice.q);
+                    : prefix + choice.scoreLabel(view.choices.indexOf(choice) + 1);
             String detail = followUpText(choice);
+            if (choice != null && (anchor.hovered || mouseIn(anchor.x, anchor.bottom - (detail.isEmpty() ? 0 : 22 * scale),
+                    anchor.width, (detail.isEmpty() ? 32 : 54) * scale))) hoveredOocChoice = choice;
             renderInlineBadge(sb, anchor.x, anchor.bottom, anchor.width, label,
                     choice != null && choice.selected, choice != null, scale, detail);
         }
         String status = view == null ? "Waiting for advisor" : "OK".equals(view.status)
-                ? "V4 · amber = recommended" : "UNSUPPORTED".equals(view.status)
-                ? "V4 · no supported recommendation" : "Advisor unavailable";
+                ? "Amber = recommended" : "UNSUPPORTED".equals(view.status)
+                ? "No supported recommendation" : "Advisor unavailable";
         renderSmallText(sb, status + " · " + Keyboard.getKeyName(loadToggleKey()) + " hide",
                 24 * scale, 28 * scale, MUTED, .72f);
         return true;
@@ -528,7 +732,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (choice == null || choice.followUpUuid.isEmpty() || AbstractDungeon.player == null) return "";
         for (AbstractCard card : AbstractDungeon.player.masterDeck.group)
             if (choice.followUpUuid.equals(String.valueOf(card.uuid)))
-                return String.format(Locale.ROOT, "Next: %s · Q %.2f", card.name, choice.followUp.get("q").getAsDouble());
+                return String.format(Locale.ROOT, "Next: %s · V4 score %.2f", card.name, choice.followUp.get("q").getAsDouble());
         return "";
     }
 
@@ -592,45 +796,96 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
     }
 
+    private boolean mouseIn(float x, float bottom, float width, float height) {
+        return InputHelper.mX >= x && InputHelper.mX <= x + width
+                && InputHelper.mY >= bottom && InputHelper.mY <= bottom + height;
+    }
+
     private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
-                                      float bottom, float scale) {
+                                      float bottom, float scale, boolean inline) {
         OocOverlay view = currentOocOverlay();
         String subtitle = view == null ? "Waiting for current choices" :
-                ("v4_q".equals(view.policy) ? "V4" : view.policy.toUpperCase(Locale.ROOT))
-                + "  ·  " + capitalize(view.screen.replace('_', ' '));
-        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
-        if (view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
-            List<OocOverlay.Choice> panelChoices = view.panelChoices();
-            for (int row = 0; row < panelChoices.size(); ++row) {
-                OocOverlay.Choice choice = panelChoices.get(row);
-                int rank = view.choices.indexOf(choice);
-                float rowBottom = top - (122 + 44 * row) * scale;
-                drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 38 * scale, scale);
-                if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
-                        width - 28 * scale, 38 * scale, WARNING, 2 * scale);
-                renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + "  " + choice.label,
-                        x + 23 * scale, rowBottom + 26 * scale, width - 150 * scale,
-                        choice.selected ? CYAN : Color.WHITE, .78f);
-                renderSmallText(sb, String.format(Locale.ROOT, "Q %.3f", choice.q),
-                        x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
+                (!view.choices.isEmpty() && "forced_no_search".equals(view.choices.get(0).valueSemantics)
+                        ? "Forced choice" : "v4_q".equals(view.policy) ? "V4 action score" : "Mean search value")
+                + " · " + capitalize(view.screen.replace('_', ' '));
+        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .78f);
+        boolean histogram = view != null && view.distribution != null;
+        float listTop = top - (histogram ? 178 : 0) * scale;
+        if (view != null && showActionRecommendations && "OK".equals(view.status)) {
+            if (!inline) {
+                List<OocOverlay.Choice> panelChoices = view.panelChoices();
+                for (int row = 0; row < panelChoices.size(); ++row) {
+                    OocOverlay.Choice choice = panelChoices.get(row);
+                    int rank = view.choices.indexOf(choice);
+                    float rowBottom = listTop - (128 + 54 * row) * scale;
+                    if (mouseIn(x + 14 * scale, rowBottom, width - 28 * scale, 48 * scale))
+                        hoveredOocChoice = choice;
+                    drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 48 * scale, scale);
+                    if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
+                            width - 28 * scale, 48 * scale, WARNING, 2 * scale);
+                    renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + " " + choice.label,
+                            x + 23 * scale, rowBottom + 37 * scale, width - 160 * scale,
+                            choice.selected ? CYAN : Color.WHITE, .74f);
+                    String value = "forced_no_search".equals(choice.valueSemantics) ? "Forced"
+                            : "mean_backed_up_value_0_1".equals(choice.valueSemantics)
+                            ? choice.visits == 0 ? "No samples" : String.format(Locale.ROOT, "Mean %.3f", choice.q)
+                            : String.format(Locale.ROOT, "Score %.3f", choice.q);
+                    renderFittedText(sb, value, x + width - 133 * scale, rowBottom + 37 * scale,
+                            110 * scale, MUTED, .70f);
+                    if ("mean_backed_up_value_0_1".equals(choice.valueSemantics))
+                        renderSmallText(sb, String.format(Locale.ROOT, "N %d · visits %.1f%% · prior %.1f%%",
+                                choice.visits, 100 * choice.visitShare, 100 * choice.prior),
+                                x + 23 * scale, rowBottom + 17 * scale, MUTED, .65f);
+                }
             }
-            if ("card_reward".equals(view.screen))
-                renderSmallText(sb, "Scores below cards", x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
-            else if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
-                    x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
-            renderOocCardBadges(sb, view, scale);
-        } else {
-            renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
-                    "UNSUPPORTED".equals(view.status) ? "No supported recommendation" : "Advisor unavailable",
-                    x + 18 * scale, top - 105 * scale, WARNING, .86f);
-            String reason = view == null ? "Scores appear when the current response is ready." : view.reason.replace('_', ' ');
-            renderFittedText(sb, reason, x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
+            renderOocCardBadges(sb, view, scale, !inline);
+        } else if (!histogram) {
+            renderSmallText(sb, !showActionRecommendations ? "Recommendations hidden"
+                    : view == null ? "Waiting for advisor" : "No supported recommendation",
+                    x + 18 * scale, top - 105 * scale, MUTED, .82f);
+            if (view != null) renderFittedText(sb, view.reason.replace('_', ' '),
+                    x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
         }
+        if (histogram) renderOocDistribution(sb, view, hoveredOocChoice, x, top - 96 * scale, width, scale);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
                 x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
     }
 
-    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale) {
+    private void renderOocDistribution(SpriteBatch sb, OocOverlay view, OocOverlay.Choice hovered,
+                                       float x, float top, float width, float scale) {
+        OocOverlay.Distribution[] layers = view.distributionLayers(hovered);
+        OocOverlay.Distribution baseline = layers[0], overlay = layers[1];
+        renderFittedText(sb, baseline.summary("All search samples"), x + 16 * scale, top,
+                width - 32 * scale, CYAN, .67f);
+        String detail = hovered == null ? "Hover a choice to compare its sampled values"
+                : overlay == null ? "No distribution for this choice" : overlay.summary(hovered.label);
+        renderFittedText(sb, detail, x + 16 * scale, top - 20 * scale, width - 32 * scale, WARNING, .65f);
+        float plotX = x + 20 * scale, plotBottom = top - 122 * scale;
+        float plotWidth = width - 40 * scale, plotHeight = 74 * scale, bar = plotWidth / 22;
+        // Both layers use a fixed 0..100% y axis and the same 22 buckets.
+        drawRect(sb, plotX, plotBottom, plotWidth, plotHeight, PANEL_INNER);
+        renderSmallText(sb, "100%", plotX, plotBottom + plotHeight + 13 * scale, MUTED, .52f);
+        for (int i = 0; i < 22; ++i) {
+            float bx = plotX + i * bar;
+            float baseHeight = (float)baseline.share(i) * plotHeight;
+            if (baseHeight > 0) drawRect(sb, bx + scale, plotBottom, bar - 2 * scale, baseHeight, CYAN_DIM);
+            if (overlay != null && overlay.count > 0) {
+                float overlayHeight = (float)overlay.share(i) * plotHeight;
+                if (overlayHeight > 0) drawBorder(sb, bx + scale, plotBottom, bar - 2 * scale,
+                        overlayHeight, WARNING, Math.min(1.5f * scale, overlayHeight));
+            }
+        }
+        renderFittedText(sb, "Death | other evaluated values 0 → 1 | Victory",
+                plotX, plotBottom - 5 * scale, plotWidth, MUTED, .61f);
+        if (hovered != null) renderFittedText(sb,
+                String.format(Locale.ROOT, "Choice visits %.1f%% · prior %.1f%% · N %d",
+                        100 * hovered.visitShare, 100 * hovered.prior, hovered.visits),
+                plotX, plotBottom - 26 * scale, plotWidth, MUTED, .65f);
+        else renderSmallText(sb, "Shares of each set · terminal samples are not model probabilities",
+                plotX, plotBottom - 26 * scale, MUTED, .55f);
+    }
+
+    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale, boolean drawBadges) {
         if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.CARD_REWARD
                 || AbstractDungeon.cardRewardScreen == null) return;
         List<AbstractCard> cards = AbstractDungeon.cardRewardScreen.rewardGroup;
@@ -639,12 +894,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             OocOverlay.Choice choice = view.choices.get(rank);
             if (!"choose".equals(choice.kind) || choice.index < 1 || choice.index > cards.size()) continue;
             AbstractCard card = cards.get(choice.index - 1);
-            float width = 166 * scale;
+            if (card.hb.hovered) hoveredOocChoice = choice;
+            if (!drawBadges) continue;
+            float width = 206 * scale;
             float x = Math.max(0, Math.min(Settings.WIDTH - width, card.current_x - width / 2));
             float bottom = Math.max(95 * scale, card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - 48 * scale);
             drawRect(sb, x, bottom, width, 34 * scale, PANEL_INNER);
             drawBorder(sb, x, bottom, width, 34 * scale, choice.selected ? WARNING : CARD_BORDER, 2 * scale);
-            renderSmallText(sb, String.format(Locale.ROOT, "#%d  ·  Q %.3f", rank + 1, choice.q),
+            renderSmallText(sb, choice.scoreLabel(rank + 1),
                     x + 10 * scale, bottom + 24 * scale, choice.selected ? CYAN : Color.WHITE, .76f);
         }
     }
@@ -912,6 +1169,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || AbstractDungeon.currMapNode == null
                 || AbstractDungeon.getCurrRoom() == null) return null;
         AbstractRoom room = AbstractDungeon.getCurrRoom();
+        try {
+            LiveOocCapture.observeCombatRoom(room);
+        } catch (RuntimeException failure) {
+            // Observation never alters the game; a malformed metric or room
+            // leaves advisor history unsupported rather than breaking input.
+            LiveOocCapture.invalidateCombatRoomHistory();
+        }
         String boundary;
         String ooc = "";
         if (isCombatBoundary(room.phase, AbstractDungeon.screen,
@@ -968,7 +1232,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
                 deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
                 "combat".equals(boundary) ? combatEntryHash : "", ooc,
-                silverSearchBudget, sha256(raw), capturedNanos);
+                silverSearchBudget, sha256(raw), capturedNanos, DebugRngCapture.json());
     }
 
     private void observeRoomTransition() {
@@ -1037,7 +1301,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "NONE";
     }
 
-    private String encounterName(AbstractRoom room) {
+    static String encounterName(AbstractRoom room) {
         com.megacrit.cardcrawl.monsters.MonsterGroup group = room == null ? null : room.monsters;
         if (group == null) group = AbstractDungeon.getMonsters();
         if (group == null || group.monsters == null || group.monsters.isEmpty()) return "";
@@ -1150,7 +1414,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static boolean replacedLargeSlimeParent(String encounter,
                                                      AbstractMonster candidate,
                                                      List<AbstractMonster> monsters) {
-        if (!"LARGE_SLIME".equals(encounter) || candidate == null
+        if (!("LARGE_SLIME".equals(encounter) || "SLIME_BOSS".equals(encounter))
+                || candidate == null
                 || !("AcidSlime_L".equals(candidate.id)
                     || "SpikeSlime_L".equals(candidate.id))) return false;
         if (replacedMonsterParents.contains(candidate)) return true;
@@ -1167,6 +1432,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 replacedMonsterParents.add(candidate);
                 return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean replacedSlimeBossParent(String encounter,
+                                                    AbstractMonster candidate,
+                                                    List<AbstractMonster> monsters) {
+        if (!"SLIME_BOSS".equals(encounter) || candidate == null
+                || !"SlimeBoss".equals(candidate.id) || !candidate.isDeadOrEscaped()) return false;
+        for (AbstractMonster monster : monsters) {
+            if (monster == null || monster == candidate || monster.isDeadOrEscaped()) continue;
+            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) return true;
         }
         return false;
     }
@@ -1239,6 +1516,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         } else if ("SLIME_BOSS".equals(encounter)) {
             if ("SpikeSlime_L".equals(id)) return 0;
             if ("AcidSlime_L".equals(id)) return 2;
+            if ("SpikeSlime_M".equals(id)) return sameIdOrdinal < 2 ? sameIdOrdinal : -1;
+            if ("AcidSlime_M".equals(id)) return sameIdOrdinal < 2 ? 2 + sameIdOrdinal : -1;
         }
         return -1;
     }
@@ -1255,6 +1534,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             AbstractMonster monster = monsters.get(monsterIndex);
             if (monster == null) continue;
             if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
+            if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
             int sameIdOrdinal = seenMonsterIds.containsKey(monster.id)
                     ? seenMonsterIds.get(monster.id) : 0;
             seenMonsterIds.put(monster.id, sameIdOrdinal + 1);
@@ -1263,8 +1543,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     encounter, monster.id, sameIdOrdinal,
                     "GremlinLeader".equals(monster.id) ? -1 : nonLeaderOrdinal);
             if (!"GremlinLeader".equals(monster.id)) ++nonLeaderOrdinal;
-            emitted.put(monster, monsterSlot(monster,
-                    preferred >= 0 ? preferred : monsterIndex, usedMonsterSlots));
+            int slot;
+            if ("SLIME_BOSS".equals(encounter) && preferred >= 0) {
+                // Slime Boss and its large-child splits use a fixed native
+                // layout (0, 1, 2). Java leaves replaced parents in its
+                // monster list, so retain the native slot rather than the
+                // stale Java-object assignment from before the split.
+                slot = preferred;
+                monsterSlots.put(monster, slot);
+                usedMonsterSlots.add(slot);
+            } else {
+                slot = monsterSlot(monster, preferred >= 0 ? preferred : monsterIndex,
+                        usedMonsterSlots);
+            }
+            emitted.put(monster, slot);
         }
         return emitted;
     }
@@ -1399,6 +1691,46 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private String combatEntryJson(AbstractRoom room, String encounter) {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
+        String previous = lastRoomClass;
+        // A freshly started inspector can observe a saved run directly inside
+        // the act boss before observeRoomTransition has rebuilt its in-memory
+        // latch. The persisted metric path includes the boss sentinel, so use
+        // the last preceding non-boss room identity.
+        if (previous.isEmpty() && room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss
+                && CardCrawlGame.metricData != null
+                && CardCrawlGame.metricData.path_taken != null
+                && !CardCrawlGame.metricData.path_taken.isEmpty()) {
+            List<String> pathTaken = CardCrawlGame.metricData.path_taken;
+            for (int i = pathTaken.size() - 1; i >= 0 && previous.isEmpty(); --i) {
+                String candidate = metricRoomClass(pathTaken.get(i));
+                if (!"BOSS".equals(candidate)) previous = candidate;
+            }
+        }
+        if (previous.isEmpty() && room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss) {
+            List<MapRoomNode> parents = AbstractDungeon.currMapNode.getParents();
+            if (parents != null) {
+                for (MapRoomNode parent : parents) {
+                    if (parent != null && parent.taken && parent.room != null) {
+                        previous = roomClass(parent.room);
+                        break;
+                    }
+                }
+                if (previous.isEmpty() && parents.size() == 1 && parents.get(0) != null)
+                    previous = roomClass(parents.get(0).room);
+            }
+        }
+        if (previous.isEmpty() && room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss
+                && AbstractDungeon.pathX != null && AbstractDungeon.pathY != null
+                && AbstractDungeon.pathX.size() == AbstractDungeon.pathY.size()
+                && !AbstractDungeon.pathX.isEmpty()) {
+            int last = AbstractDungeon.pathX.size() - 1;
+            int x = AbstractDungeon.pathX.get(last), y = AbstractDungeon.pathY.get(last);
+            if (AbstractDungeon.map != null && y >= 0 && y < AbstractDungeon.map.size()) {
+                List<MapRoomNode> row = AbstractDungeon.map.get(y);
+                if (row != null && x >= 0 && x < row.size() && row.get(x) != null)
+                    previous = roomClass(row.get(x).room);
+            }
+        }
         boolean burningElite = room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite
                 && AbstractDungeon.currMapNode.hasEmeraldKey;
         StringBuilder out = new StringBuilder("{\"character\":\"")
@@ -1410,7 +1742,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"maxHp\":").append(AbstractDungeon.player.maxHealth)
                 .append(",\"gold\":").append(AbstractDungeon.player.gold)
                 .append(",\"roomClass\":\"").append(roomClass(room))
-                .append("\",\"previousRoomClass\":\"").append(lastRoomClass)
+                .append("\",\"previousRoomClass\":\"").append(previous)
                 .append("\",\"encounter\":\"").append(encounter)
                 .append("\",\"potionKeepValue\":4.0,\"isBurningElite\":")
                 .append(burningElite)
@@ -1419,6 +1751,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"relics\":").append(relicEntryJson())
                 .append(",\"potions\":").append(potionEntryJson()).append('}');
         return out.toString();
+    }
+
+    private static String metricRoomClass(String symbol) {
+        if (symbol == null || "N".equals(symbol)) return "NONE";
+        switch (symbol) {
+            case "$": return "SHOP";
+            case "R": return "REST";
+            case "?": return "EVENT";
+            case "E": return "ELITE";
+            case "M": return "MONSTER";
+            case "T": return "TREASURE";
+            case "B": return "BOSS";
+            default: return "";
+        }
     }
 
     private static String deckEntryJson() {
@@ -1445,9 +1791,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     static int combatEntryRelicData(String id, int counter, boolean usedUp) {
-        // Java's spent Neow's Lament uses -2; native CTM stores remaining
-        // charges in [0, 3]. Keep every other value exact and fail closed.
-        return "NeowsBlessing".equals(id) && usedUp && counter == -2 ? 0 : counter;
+        // A spent Neow's Lament or Omamori may report Java's -2 used-up
+        // sentinel; native CTM stores remaining charges (0 when spent).
+        // Keep every other value exact and fail closed.
+        final boolean spentCharges = "NeowsBlessing".equals(id) || "Omamori".equals(id);
+        return spentCharges && usedUp && counter == -2 ? 0 : counter;
     }
 
     private static String relicEntryJson() {
@@ -1861,6 +2209,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "";
     }
 
+    static String handSelectionTask(String reason, boolean anyNumber, boolean canPickZero, int count) {
+        String task = selectionTask(reason, anyNumber);
+        if (task.isEmpty() && anyNumber && canPickZero && count == 99) return "GAMBLE";
+        return task;
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
@@ -1921,8 +2275,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && AbstractDungeon.handCardSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
                     AbstractDungeon.handCardSelectScreen;
-            String task = selectionTask(screen.selectionReason, screen.upTo);
-            return selectionJson(task, screen.canPickZero, screen.upTo, screen.numCardsToSelect,
+            Boolean anyNumber = readBooleanField(screen, "anyNumber");
+            boolean canPickAnyNumber = anyNumber != null ? anyNumber : screen.upTo;
+            // DiscardAction(-1), used by Gambler's Brew and Gambling Chip,
+            // opens the hand selector with an empty selection reason and the
+            // vanilla sentinel amount 99.  That is the native GAMBLE task,
+            // not an unknown combat screen.
+            String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
+                    screen.canPickZero, screen.numCardsToSelect);
+            return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
         }
         return null;
@@ -2089,6 +2450,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             for (AbstractMonster monster : monsters) {
                 if (monster == null) continue;
                 if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
+                if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
                 if (!first) out.append(',');
                 first = false;
                 int slot = emittedSlots.containsKey(monster) ? emittedSlots.get(monster) : -1;
@@ -2231,6 +2593,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         ? Paths.get(System.getProperty("user.home"), ".sts-model-inspector.properties")
                         : Paths.get(configOverride.trim());
                 if (Files.isRegularFile(config)) try (BufferedReader r = Files.newBufferedReader(config)) { p.load(r); }
+                showAdvisorPanel = Boolean.parseBoolean(
+                        p.getProperty("showAdvisorPanel", "true").trim());
+                showActionRecommendations = Boolean.parseBoolean(
+                        p.getProperty("showActionRecommendations", "true").trim());
+                showSelectedActionSummary = Boolean.parseBoolean(
+                        p.getProperty("showSelectedActionSummary", "true").trim());
                 String executable = environmentFirst(p, "STS_MODEL_INSPECTOR_ADVISOR", "advisor");
                 if (executable == null) {
                     advisorStatus = "disconnected";
@@ -2244,6 +2612,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 String oocModel = environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel");
                 if (oocModel != null)
                     builder.environment().put("STS_LIVE_OOC_MODEL", oocModel);
+                String oocWinModel = environmentFirst(p, "STS_LIVE_OOC_WIN_MODEL", "oocWinModel");
+                if (oocWinModel != null)
+                    builder.environment().put("STS_LIVE_OOC_WIN_MODEL", oocWinModel);
+                String oocFloorModel = environmentFirst(p, "STS_LIVE_OOC_FLOOR_MODEL", "oocFloorModel");
+                if (oocFloorModel != null)
+                    builder.environment().put("STS_LIVE_OOC_FLOOR_MODEL", oocFloorModel);
+                if (Boolean.parseBoolean(p.getProperty("captureMctsGraphs", "false").trim())) {
+                    builder.environment().put("STS_SILVER_DEBUG_TREE", "1");
+                    builder.environment().put("STS_OOC_DEBUG_TREE", "1");
+                }
                 Process started = builder.redirectErrorStream(false).start();
                 process = started;
                 stopping = false;
@@ -2641,9 +3019,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     ? advisorResponseJson : "null").append("}");
             // Deliberately outside observation/observationHash and advisor
             // request: hidden state is debug-only and cannot affect policy.
-            String debugRng = DebugRngCapture.json();
+            String debugRng = snapshot.debugRng;
             if (!debugRng.isEmpty()) out.append(",\"debugRng\":").append(debugRng);
-            out.append(",\"runtime\":").append(DebugRngCapture.runtimeJson());
+            if (DebugRngCapture.enabled())
+                out.append(",\"runtime\":").append(DebugRngCapture.runtimeJson());
             return out.append("}").toString();
         }
 
@@ -2661,7 +3040,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
-        final String combat, ooc;
+        final String combat, ooc, debugRng;
         final String combatEntry, combatEntryHash;
         final String observationJson;
         final long sequence, capturedNanos;
@@ -2673,9 +3052,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
                  String deck, String candidates, String combat, String combatEntry,
                  String combatEntryHash, String ooc, long silverSearchBudget,
-                 String hash, long capturedNanos) {
+                 String hash, long capturedNanos, String debugRng) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
             this.capturedNanos = capturedNanos;
+            this.debugRng = debugRng;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
@@ -2688,7 +3068,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
                     floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
-                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos);
+                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos, debugRng);
         }
 
         String toJson() {

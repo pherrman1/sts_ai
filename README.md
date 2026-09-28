@@ -2,8 +2,9 @@
 
 StS AI is an experimental, inspectable Ironclad agent for *Slay the Spire*,
 built on gamerpuppy's `sts_lightspeed` C++ simulator. Combat decisions are made
-by native tree search; choices between combats combine C++ policy code, learned
-models, and experimental counterfactual evaluators.
+by the Silver chance-tree search, ported onto the simulator's own combat engine;
+choices between combats combine C++
+policy code, learned models, and experimental counterfactual evaluators.
 
 The project is outcome-driven: a hand-authored card tier or arbitrary
 deck-bloat rule is not the learning objective, and policy ideas are kept or
@@ -30,7 +31,8 @@ the runtime state/action boundaries and default-versus-opt-in search dispatch.
 The primary recorded project-fair reference is historical, not an exact
 reproduction of the current checkout: its raw artifact directory is absent and
 the experiment entry does not pin every model path and flag. Older, higher
-default-Searcher2 **known-RNG** results must not be compared as honest play.
+historical Searcher2 **known-RNG** results must not be compared as honest play.
+The current Silver whole-run reference is also in that table.
 The result, seed block, current tracked artifact identities, and experimental
 comparators live only in the
 [current-baselines table](docs/knowledge-base/evaluation/current-baselines.md).
@@ -39,7 +41,7 @@ Chronological evidence, including rejected ideas, remains in
 
 ## Quick start
 
-The configured build requires CMake, C++17, OpenMP, and populated `json/` and
+The configured build requires CMake, C++20, OpenMP, and populated `json/` and
 `pybind11/` source directories:
 
 ```bash
@@ -74,7 +76,7 @@ native PowerShell/MSVC has not been verified. See [build and debugging](docs/kno
 | `apps/one_combat.cpp` | Active research driver and benchmark/data-generation dispatcher. |
 | `bindings/` | Run-level `slaythespire` pybind11 API; it does not expose card-by-card combat actions. |
 | `train_*.py`, `export_*.py`, `v_server.py` | Training, export, and optional Python inference. |
-| `selfplay/` | Resumable generation/training/gating scripts and local snapshots. |
+| `selfplay/` | Tracked model artifacts (`models/`) and local buffers; the self-play loop was removed (ADR-0020). |
 | `docs/knowledge-base/` | Stable current architecture, operations, evaluation, and invariants. |
 | `EXPERIMENTS.md` | Chronological experimental evidence and decisions. |
 | `AGENTS.md` | Mandatory coding-agent operating contract. |
@@ -87,7 +89,7 @@ useful deeper pages are:
 - [out-of-combat policy](docs/knowledge-base/architecture/out-of-combat.md);
 - [training and inference](docs/knowledge-base/architecture/training-and-inference.md);
 - [benchmark protocol](docs/knowledge-base/evaluation/benchmark-protocol.md);
-- [self-play loop](docs/knowledge-base/operations/selfplay-loop.md);
+- [self-play loop](docs/knowledge-base/operations/selfplay-loop.md) (removed; historical);
 - [determinism and RNG](docs/knowledge-base/behavior/determinism-and-rng.md).
 
 Use `STS_FAIR=1` for project-fair claims, compare policies on paired common

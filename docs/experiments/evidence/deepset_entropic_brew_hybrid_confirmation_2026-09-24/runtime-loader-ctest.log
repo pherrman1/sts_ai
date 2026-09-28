@@ -1,0 +1,10 @@
+Test project /home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/build/linux-gcc-release
+    Start 135: combat_transition_runtime_loader
+1/1 Test #135: combat_transition_runtime_loader ...   Passed    0.09 sec
+
+100% tests passed out of 1
+
+Label Time Summary:
+integration    =   0.09 sec*proc (1 test)
+
+Total Test time (real) =   0.09 sec

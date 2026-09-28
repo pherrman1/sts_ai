@@ -24,7 +24,7 @@ void seedGuardedCombat(sts::BattleContext &bc) {
     for (int i = 0; i < 9; ++i) {
         sts::CardInstance c((i % 2) ? sts::CardId::DEFEND_RED : sts::CardId::STRIKE_RED);
         c.uniqueId = static_cast<std::int16_t>(101 + i);
-        bc.cards.drawPile.push_back(c);
+        bc.cards.drawPile.concreteCards().push_back(c);
     }
 }
 

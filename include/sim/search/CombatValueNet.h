@@ -143,44 +143,7 @@ namespace sts::search {
     };
 
     extern CombatValueNet g_combatVNet;   // loaded value model (if any)
-    extern bool g_useVNet;                // use V_combat as the MCTS leaf value
-
-    // Zero-mean ranking correction model (experimental, STS_VNET_RANK_CORR,
-    // standalone diagnostic arm — never a default). A small compact-tree model
-    // trained on group-centered leaf-value residuals; when loaded it
-    // is ADDED on top of the primary vnet/PVNet leaf value inside
-    // evaluateLeaf()/evaluateLeafState() to improve within-group action
-    // ranking without shifting the HP scale. Same CombatValueNet format and
-    // predict() interface, reusing all existing load/inference code.
-    extern CombatValueNet g_combatVNetRankCorr;
-    extern bool g_useVNetRankCorr;
-
-    // Residual VNet correction (STS_VNET_RESIDUAL=<path>, STS_VNET_RESIDUAL_BETA=<b>):
-    // loaded model is ADDED with weight beta on top of the primary VNet prediction.
-    // At beta=0, behavior is unchanged.  Same CombatValueNet format as primary.
-    extern CombatValueNet g_combatVNetResidual;
-    extern double g_vnetResidualBeta;
-    extern bool g_useVNetResidual;
-
-    extern CombatValueNet g_policyNet;    // loaded policy comparator (if any)
-    extern bool   g_usePolicyNet;         // use PUCT with the policy prior in selection
-    extern double g_cPuct;                // PUCT exploration constant
     extern bool   g_richCombatFeatures;   // fill the wide relic/card-location block (else narrow fast path)
-
-    // Hook fired inside CombatValueNet::predict() after every
-    // VNet inference. The BattleContext pointer is valid only for the duration
-    // of the callback; the callback must not mutate it. prediction is the raw
-    // model output (not alpha-blended). nullptr by default — when unset,
-    // predict() is byte-identical to pre-hook behavior.
-    // NOT thread_local: set once from main() and read by all worker threads.
-    // The handler must be thread-safe (the one_combat VNet query logger uses
-    // per-thread buffers with a shared mutex for file writes).
-    extern std::function<void(const BattleContext &, double)> g_onVNetQuery;
-
-    // Thread-local context set by search code before calling predict().
-    // Read by g_onVNetQuery handlers to group siblings by parent obsHash.
-    extern thread_local std::uint64_t g_vnetTraceParent;
-    extern thread_local int g_vnetTraceDepth;
 
 }
 

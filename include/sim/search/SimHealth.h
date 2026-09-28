@@ -12,8 +12,7 @@
 // Hard-failure reasons:
 //   UNDECIDED_BATTLE_EXIT - a battle-control loop exited while
 //                           bc.outcome == Outcome::UNDECIDED (an unresolved
-//                           combat silently leaving the loop; e.g. the
-//                           Searcher3 `!have` break).
+//                           combat silently leaving the loop).
 //   NO_LEGAL_PROGRESSION   - at a genuine agent decision boundary with
 //                           outcome == UNDECIDED, the CANONICAL live legal
 //                           action set is empty (the live state truly has no
@@ -23,9 +22,7 @@
 //                           outcome == UNDECIDED, at least one canonical live
 //                           legal action exists, but the search/root-selection
 //                           machinery failed to return an action that can be
-//                           committed (e.g. Searcher3 with g_s3Live=0 whose
-//                           most-visited stored edge is invalid on the live
-//                           state while other live actions remain legal).
+//                           committed while other live actions remain legal.
 //   INVALID_LIVE_ACTION    - an action actually about to be committed to the
 //                           live BattleContext is not legal on that exact
 //                           state (Action::isValidAction, the shared source of
@@ -58,7 +55,7 @@ enum class SimHealthFailure {
 };
 
 // Optional per-failure context. decisionIdx is the searcher decision index at
-// the failing decision (-1 when the path does not track one, e.g. Searcher2).
+// the failing decision (-1 when the path does not track one).
 struct SimHealthMeta {
     int decisionIdx = -1;
     std::uint32_t chosenActionBits = 0;

@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-09-20 against the current working tree.
+Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
 
 ## Purpose
 
@@ -88,8 +88,9 @@ See
   Buffer intercepts direct positive HP loss before Tungsten Rod; and Neow's
   Lament skips invalid reserved monster slots. The test records the affected
   path and old/new observable behavior for each correction.
-- A project-fair combat policy commits only one searched root action before
-  observing and searching again.
+- A project-fair combat policy commits at most one searched root action before
+  observing and searching again; when the live root has exactly one legal
+  action, it may commit that action without search.
 - Counterfactual `GameContext` map mutation requires detaching the shared map.
 
 ### Layout and model invariants
@@ -108,6 +109,9 @@ See
 - Model loading and branch use are observable preconditions for a benchmark.
 
 ### Evaluation and self-play invariants
+
+The self-play loop was removed (ADR-0020); its promotion rules below are
+historical.
 
 - Project-fair and known-RNG metrics are never merged into one baseline series.
 - Candidate comparisons use common seeds and align rows by seed.
@@ -151,25 +155,24 @@ Operational assumptions that are not enforced by types or tests:
 
 - No test automatically asserts schema order, native/server parity, or
   self-play arm ownership end to end. CTest runs parse/syntax checks, and the
-  `test` dispatcher gains targeted checks (observation identity, Searcher3 seed
-  contract, belief conditioning, draw-order application, conservative pruning,
-  card-select parity, battle-context round-trip, simulator-health empty-hand
-  detection; `small-test isbattleover`); the remaining invariants are
+  `test` dispatcher gains targeted checks (observation identity, card-select
+  parity, battle-context round-trip, simulator-health empty-hand detection;
+  `small-test isbattleover`); the
+  remaining invariants are
   review-enforced.
 - The simulator health monitor covers only its four hard invariants
   (UNDECIDED_BATTLE_EXIT, NO_LEGAL_PROGRESSION, ACTION_SELECTION_FAILED,
   INVALID_LIVE_ACTION); issue 87 GAMBLE/empty-hand and the same
-  EXHAUST_MANY/empty-hand class are caught, and the non-fair Searcher2
-  zero-action path is covered; deeper simulator invariants remain
+  EXHAUST_MANY/empty-hand class are caught; deeper simulator invariants remain
   review-enforced.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read;
   truncated files fail load and the net is not used (issue 08, closed).
 - `tools/verify/check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
   replay is not bit-identical across invocations and no automated guarantee
   exists.
-- The self-play meta arm now disables native OOC for meta gates
-  (`STS_NATIVE_OOC=0`), but candidate use is evidenced by env plus server port
-  liveness, not a per-decision query log.
+- (Historical) the removed self-play meta arm disabled native OOC for meta
+  gates (`STS_NATIVE_OOC=0`); candidate use was evidenced by env plus server
+  port liveness, not a per-decision query log.
 - `VALUE_MARGIN` is clamped unless `VALUE_MARGIN_LATENCY=1`; the checked-in
   `config.env` snapshot predates the latency gate.
 
@@ -190,7 +193,6 @@ Operational assumptions that are not enforced by types or tests:
 - `src/sim/search/GameAction.cpp::isValidAction`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
 - `src/sim/search/SimHealth.cpp::reportSimHealthFailure`
-- `include/sim/search/BattleScumSearcher3.h::Node`, `Edge`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`
 - `apps/one_combat.cpp::vFeatCsv`, `main`
 - `selfplay/loop.sh::gate_stats`, promotion block

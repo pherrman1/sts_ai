@@ -429,17 +429,51 @@ struct OocStrategicTokNet {
     // Value-owned and local to one immutable candidate set. Rebuild after any
     // state/path change or model reload; action/entity inputs remain per candidate.
     struct PreparedState { float values[NHIDDEN2]; };
+    struct PolicyPrefix { float values[POLHID]; };
     PreparedState prepareState(const float glob[NGLB], int nDk, const int dk[96][3],
                                int nRl, const int rl[64][2], int nPt, const int pt[8][2]) const {
         one_combat::OocProfileScope profile(one_combat::OocProfileBucket::V4StateNetwork,
             one_combat::OocProfileScope::hasParent());
         float zDeck[DECKDIM], zRel[RELDIM], zPot[POTDIM];
-        encodeDeck(nDk, dk, zDeck);
-        encodeRel(nRl, rl, zRel);
-        encodePot(nPt, pt, zPot);
+        {
+            one_combat::OocProfileScope part(one_combat::OocProfileBucket::V4EncodeDeck,
+                one_combat::OocProfileScope::hasParent());
+            encodeDeck(nDk, dk, zDeck);
+        }
+        {
+            one_combat::OocProfileScope part(one_combat::OocProfileBucket::V4EncodeRel,
+                one_combat::OocProfileScope::hasParent());
+            encodeRel(nRl, rl, zRel);
+        }
+        {
+            one_combat::OocProfileScope part(one_combat::OocProfileBucket::V4EncodePot,
+                one_combat::OocProfileScope::hasParent());
+            encodePot(nPt, pt, zPot);
+        }
         PreparedState state;
-        encodeState(glob, zDeck, zRel, zPot, state.values);
+        {
+            one_combat::OocProfileScope part(one_combat::OocProfileBucket::V4StateFusion,
+                one_combat::OocProfileScope::hasParent());
+            encodeState(glob, zDeck, zRel, zPot, state.values);
+        }
         return state;
+    }
+
+    // The first policy layer consumes z_state[0..127] followed by the
+    // candidate representation [128..183]. Prepare the state contribution
+    // once per immutable candidate set, preserving the original float-add
+    // order for every output unit.
+    PolicyPrefix preparePolicyPrefix(const PreparedState &state) const {
+        one_combat::OocProfileScope profile(one_combat::OocProfileBucket::PolicyPrepare,
+            one_combat::OocProfileScope::hasParent());
+        PolicyPrefix prefix;
+        for (int j = 0; j < POLHID; ++j) {
+            float sum = pol0b[j];
+            for (int i = 0; i < NHIDDEN2; ++i)
+                sum += pol0w[j][i] * state.values[i];
+            prefix.values[j] = sum;
+        }
+        return prefix;
     }
 
     // Shared policy/Q representation z = concat(z_state(128), b(16), a(16), s8(8), e(16)) = 184.
@@ -523,6 +557,25 @@ struct OocStrategicTokNet {
             float s = pol0b[j];
             for (int i = 0; i < POLIN; ++i) s += pol0w[j][i] * z[i];
             hh[j] = gelu(s);
+        }
+        float out = pol2b;
+        for (int i = 0; i < POLHID; ++i) out += pol2w[i] * hh[i];
+        return out;
+    }
+
+    float predictPolicyLogit(const PreparedState &state, const PolicyPrefix &prefix,
+                             std::uint32_t actionBits, const int cats[6], int actionType,
+                             int screen, const float entityType[4], int entityId,
+                             float goldGePrice) const {
+        float z[POLIN];
+        encodeStateAction(state, actionBits, cats, actionType, screen,
+                          entityType, entityId, goldGePrice, z);
+        float hh[POLHID];
+        for (int j = 0; j < POLHID; ++j) {
+            float sum = prefix.values[j];
+            for (int i = NHIDDEN2; i < POLIN; ++i)
+                sum += pol0w[j][i] * z[i];
+            hh[j] = gelu(sum);
         }
         float out = pol2b;
         for (int i = 0; i < POLHID; ++i) out += pol2w[i] * hh[i];

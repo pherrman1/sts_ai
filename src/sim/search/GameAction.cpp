@@ -47,13 +47,10 @@ std::ostream &search::GameAction::printDesc(std::ostream &os, const GameContext 
 }
 
 bool isValidMatchAndKeepEventAction(const GameContext &gc, const search::GameAction a) {
-//    const auto &m = matchAndKeepCardMap;
-//    const int idx1 = option / m.size();
-//    int idx2 = option % m.size();
-//    if (idx2 == idx1) {
-//        idx2 = idx1+1;
-//    }
-    return true;
+    // One click on a slot that is still on the table and not already face up.
+    const int slot = a.getIdx1();
+    return slot >= 0 && slot < 12
+        && ((search::GameAction::getValidEventSelectBits(gc) >> slot) & 0x1);
 }
 
 bool isValidDesignerInSpireEventAction(const GameContext &gc, const search::GameAction a) {
@@ -107,6 +104,9 @@ bool isValidRestAction(const GameContext &gc, const search::GameAction a) {
     if (a.getIdx1() < 0 || a.getIdx1() > 6) {
         return false;
     }
+    if (gc.restRoomResolved) {
+        return a.getIdx1() == 6;
+    }
     std::bitset<7> bits;
 
     if (!gc.relics.has(RelicId::COFFEE_DRIPPER)) {
@@ -117,7 +117,7 @@ bool isValidRestAction(const GameContext &gc, const search::GameAction a) {
         bits.set(1);
     }
 
-    if (!gc.hasKey(Key::RUBY_KEY)) {
+    if (gc.keysEnabled && !gc.hasKey(Key::RUBY_KEY)) {
         bits.set(2);
     }
 
@@ -561,6 +561,11 @@ std::vector<search::GameAction> getAllShopActions(const sts::GameContext &gc) {
 std::vector<search::GameAction> getAllRestActions(const sts::GameContext &gc) {
     std::vector<search::GameAction> actions;
 
+    if (gc.restRoomResolved) {
+        actions.emplace_back(6);
+        return actions;
+    }
+
     if (!gc.relics.has(RelicId::COFFEE_DRIPPER)) {
         actions.emplace_back(0);
     }
@@ -569,7 +574,7 @@ std::vector<search::GameAction> getAllRestActions(const sts::GameContext &gc) {
         actions.emplace_back(1);
     }
 
-    if (!gc.hasKey(Key::RUBY_KEY)) {
+    if (gc.keysEnabled && !gc.hasKey(Key::RUBY_KEY)) {
         actions.emplace_back(2);
     }
 
@@ -655,11 +660,7 @@ std::vector<search::GameAction> search::GameAction::getAllActionsInState(const s
     switch (gc.screenState) {
 
         case ScreenState::EVENT_SCREEN:
-            if (gc.curEvent == Event::MATCH_AND_KEEP) {
-                return {};
-            } else {
-                return getAllActionsInEventState(gc);
-            }
+            return getAllActionsInEventState(gc);
 
         case ScreenState::REWARDS:
             return getAllRewardActions(gc);
@@ -698,8 +699,17 @@ std::vector<search::GameAction> search::GameAction::getAllActionsInState(const s
 int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
     // given that game outcome is not undecided and screen state is event
     switch (gc.curEvent) {
-        case Event::MATCH_AND_KEEP:
-            return 0; // handle separately
+        case Event::MATCH_AND_KEEP: {
+            int bits = 0;
+            for (int i = 0; i < static_cast<int>(gc.info.toSelectCards.size()); ++i) {
+                const int state = gc.info.toSelectCards[i].deckIdx;
+                if (state != GameContext::MATCH_AND_KEEP_MATCHED
+                        && state != GameContext::MATCH_AND_KEEP_FACE_UP) {
+                    bits |= 1 << i;
+                }
+            }
+            return bits;
+        }
 
         case Event::LAB:
         case Event::WHEEL_OF_CHANGE:
@@ -734,7 +744,12 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
         case Event::WINDING_HALLS:
             return 0x7;
 
-        case Event::NEOW:
+        case Event::NEOW: {
+            int bits = 0;
+            for (int i = 0; i < static_cast<int>(gc.info.neowRewards.size()); ++i)
+                if (gc.info.neowRewards[i].r != Neow::Bonus::INVALID) bits |= 1 << i;
+            return bits;
+        }
         case Event::KNOWING_SKULL:
         case Event::THE_WOMAN_IN_BLUE:
             return 0xF;

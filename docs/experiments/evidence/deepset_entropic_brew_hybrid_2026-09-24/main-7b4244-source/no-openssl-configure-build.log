@@ -1,0 +1,14 @@
+-- OpenSSL Crypto not found; non-CTM targets remain available, CTM runtime targets require OpenSSL
+-- Using the multi-header code from /home/philippherrmann/.codex/worktrees/ea89/sts_lightspeed/json/include/
+-- pybind11 v3.1.0
+-- Configuring done (0.1s)
+-- Generating done (0.2s)
+-- Build files have been written to: /tmp/sts-no-openssl-config
+[ 13%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatDistValueNet.cpp.o
+[ 13%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatValueNet.cpp.o
+[  6%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatCpsiNet.cpp.o
+[ 93%] Built target sts_core_objects
+[ 93%] Linking CXX executable main
+lto-wrapper: warning: using serial compilation of 12 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target main

@@ -9,7 +9,7 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat,
+    _is_combat, card_reward_reveal_action,
 )
 
 
@@ -60,10 +60,11 @@ def inspector_file(directory, status="UNSUPPORTED", **fields):
 def ooc_inspector_file(directory, screen, status="UNSUPPORTED", **fields):
     path = Path(directory) / "latest.json"
     selected = fields.pop("selectedLiveAction", {"kind": "choose", "choiceIndex": 1})
-    evaluator = {"id": "live_ooc_decision_v1", "policy": "v4_q", "status": status,
+    evaluator = {"id": "live_ooc_decision_v1", "policy": "mcts_ctm", "status": status,
                  "reason": "fixture", "selectedSemanticKey": "choice:1",
                  "selectedLiveAction": selected, "latencyMicros": 12, "scorerLatencyMicros": 5,
-                 "candidateSummaries": [{"semanticKey": "choice:1", "q": 1.0, "liveAction": selected}], **fields}
+                 "candidateSummaries": [{"semanticKey": "choice:1", "q": 1.0, "visits": 1,
+                                          "visitShare": 1.0, "prior": 1.0, "liveAction": selected}], **fields}
     path.write_text(json.dumps({"session": "s", "sequence": 1, "observationHash": "h",
         "observation": {"boundary": "ooc", "ooc": {"schemaVersion": 1,
             "screen": {"CARD_REWARD": "card_reward", "MAP": "map", "SHOP_ROOM": "shop_room",
@@ -75,6 +76,32 @@ def ooc_inspector_file(directory, screen, status="UNSUPPORTED", **fields):
 
 
 class LiveGameDriverTest(unittest.TestCase):
+    def test_inspector_reader_waits_for_delayed_matching_response(self):
+        async def delayed_write(path):
+            await asyncio.sleep(0.02)
+            path.write_text(json.dumps({"session": "s", "sequence": 1, "observationHash": "h",
+                                        "observation": {"boundary": "combat", "combat": {
+                                            "hand": [{"uuid": "strike-1"}],
+                                            "monsters": [{"id": "Cultist", "hp": 20}]}},
+                                        "response": {"ready": True, "session": "s", "sequence": 1,
+                                                      "observationHash": "h", "advisor": {"evaluators": [
+                                                          {"id": "silver_player_decision_v2", "status": "UNSUPPORTED",
+                                                           "reason": "delayed-test"}]}}}))
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "latest.json"
+            async def exercise():
+                writer = asyncio.create_task(delayed_write(path))
+                snapshot = await InspectorReader(path, timeout=0.2, poll_interval=0.001).read_for(
+                    {"screen_type": "NONE", "room_phase": "COMBAT",
+                     "hand": [{"uuid": "strike-1"}],
+                     "monsters": [{"id": "Cultist", "current_hp": 20}]})
+                await writer
+                return snapshot
+
+            snapshot = asyncio.run(exercise())
+            self.assertEqual((snapshot.session, snapshot.sequence, snapshot.observation_hash), ("s", 1, "h"))
+
     def test_duplicate_cards_preserve_uuid_and_single_target(self):
         actions = [a for a in build_legal_actions(combat_screen(), ["play_card"])
                    if a.semantic.get("card_uuid", "").startswith("strike-")]
@@ -177,6 +204,17 @@ class LiveGameDriverTest(unittest.TestCase):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold"], "ready_for_command": True}
         actions = build_legal_actions(screen, ["proceed", "choose"])
         self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "choose")
+
+    def test_card_reveal_waits_for_parent_rewards(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        card_only = [candidate for candidate in candidates if candidate.mcp_arguments == {"choice_index": 3}]
+        self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
+                         {"choice_index": 3})
 
     def test_shop_leaves(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
@@ -446,6 +484,47 @@ class OocDriverTest(unittest.TestCase):
             actions = build_legal_actions(screen, ["choose", "proceed"])
             action, _ = driver.fallback_action(screen, {}, actions, snapshot)
             self.assertEqual(action.mcp_arguments, {"choice_index": 2})
+
+    def test_mixed_reward_unsupported_fallback_collects_gold_before_card(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
+                      "ready_for_command": True}
+            client = FakeClient(screen, ["choose"], game_state={"screen_state": {"rewards": [
+                {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}})
+            path = ooc_inspector_file(directory, screen, "UNSUPPORTED")
+            raw = json.loads(path.read_text())
+            ooc = raw["observation"]["ooc"]
+            ooc["screen"] = "combat_reward"
+            ooc["rewardOccurrences"] = [
+                {"index": 0, "type": "GOLD", "identity": "gold-1"},
+                {"index": 1, "type": "RELIC", "identity": "relic-1"},
+                {"index": 2, "type": "CARD", "identity": "card-1"}]
+            path.write_text(json.dumps(raw))
+            driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                            TraceWriter(Path(directory) / "trace"), max_steps=1)
+            asyncio.run(driver.run())
+            self.assertEqual([call for call in client.calls if call[0] == "choose"],
+                             [("choose", {"choice_index": 1})])
+
+    def test_mixed_key_reward_does_not_precede_card_reveal(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Emerald Key", "Card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD"}, {"reward_type": "EMERALD_KEY"}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
+                         {"choice_index": 3})
+
+    def test_stolen_gold_reward_precedes_card_reveal(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Stolen Gold", "Card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "STOLEN_GOLD"}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
+                         {"choice_index": 2})
 
     def test_strict_unsupported_failure_packet_no_mutation(self):
         with tempfile.TemporaryDirectory() as directory:

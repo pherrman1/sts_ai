@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-09-12 for documentation routing and completion boundaries.
+Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-12 for documentation routing and completion boundaries.
 
 ## Purpose and authority
 
@@ -14,8 +14,7 @@ in the same change:
 1. Executed code and executable behavior.
 2. Tests and reproducible benchmark artifacts, within their stated
    configuration.
-3. `CMakeLists.txt` for the target graph; `selfplay/loop.sh` for self-play and
-   gate mechanics.
+3. `CMakeLists.txt` for the target graph.
 4. `EXPERIMENTS.md` plus `docs/experiments/ledger-*.md` for chronological
    experiment evidence.
 5. `docs/knowledge-base/` for maintained current understanding.
@@ -86,10 +85,10 @@ routing.
   accepted change may share its worktree; use separate worktrees for
   independent branches or experiments.
 - Use the cheapest focused verification that proves the change. Every command
-  that drives game seeds must go through the repository seed-run guard. Local
-  automated execution is capped at 128 seeds. Large research sweeps run
-  through the designated GCP research path, which has no fixed seed ceiling;
-  agents choose the smallest sample justified by the experiment design. See
+  that drives game seeds must go through the repository seed-run guard. Seed-based
+  runs use the smallest justified experiment. Larger local runs require explicit
+  authorization, with frozen provenance, seed ranges/counts, budgets, and
+  decision rules recorded before execution; there is no fixed numerical ceiling. See
   [build-and-debugging.md](docs/knowledge-base/operations/build-and-debugging.md)
   and the [research-experiment skill](.agents/skills/research-experiment/SKILL.md).
 - GitHub Actions CI (`.github/workflows/ci.yml`) is the authoritative
@@ -149,7 +148,6 @@ scientific run.
 
 - [Build and debugging](docs/knowledge-base/operations/build-and-debugging.md)
 - [Benchmark protocol](docs/knowledge-base/evaluation/benchmark-protocol.md)
-- [Self-play loop](docs/knowledge-base/operations/selfplay-loop.md)
 - [Invariants](docs/knowledge-base/behavior/invariants.md) and
   [determinism/RNG](docs/knowledge-base/behavior/determinism-and-rng.md)
 - [Decision routing](decisions/README.md) and

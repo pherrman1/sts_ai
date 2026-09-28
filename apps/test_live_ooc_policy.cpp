@@ -9,6 +9,8 @@
 #include "ooc_test_state.h"
 #include "ooc_strategic_tok_net.h"
 #include "one_combat/live_ooc_policy.h"
+#include "one_combat/ooc_checkpoint_policy.h"
+#include "one_combat/ooc_mcts_adapter.h"
 #include "one_combat/ooc_v4_encoding.h"
 
 namespace {
@@ -24,6 +26,98 @@ int main(int argc, char **argv) {
         using namespace one_combat;
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        {
+            auto counterState = gc;
+            counterState.floorNum = 16;
+            std::mt19937_64 draws(97);
+            bool sawJuzuAboveOne = false;
+            const auto onLattice = [](float value, float start, float step) {
+                for (int i = 0; i <= 16; ++i) {
+                    if (value == start) return true;
+                    start += step;
+                }
+                return false;
+            };
+            for (int i = 0; i < 256; ++i) {
+                sampleLiveOocHiddenCounters(counterState, draws, 16);
+                require(onLattice(counterState.monsterChance, .1f, .1f)
+                        && onLattice(counterState.shopChance, .03f, .03f)
+                        && onLattice(counterState.treasureChance, .02f, .02f),
+                    "live room-chance prior left native increment lattice");
+                require(counterState.potionChance >= -40 && counterState.potionChance <= 60
+                        && counterState.potionChance % 10 == 0,
+                    "live potion prior left native reachable support");
+                require(counterState.cardRarityFactor >= -40 && counterState.cardRarityFactor <= 5,
+                    "live card-rarity prior left native reachable support");
+                sawJuzuAboveOne |= counterState.monsterChance > 1.0f;
+            }
+            require(sawJuzuAboveOne, "live monster prior excludes Juzu-reachable values");
+            sampleLiveOocHiddenCounters(counterState, draws, 0);
+            require(counterState.monsterChance == .1f
+                    && counterState.shopChance == .03f
+                    && counterState.treasureChance == .02f,
+                "zero public event rooms allowed impossible chance increments");
+            for (int i = 0; i < 32; ++i) {
+                sampleLiveOocHiddenCounters(counterState, draws, 2);
+                require(counterState.monsterChance <= .1f + .1f + .1f
+                        && counterState.shopChance <= .03f + .03f + .03f
+                        && counterState.treasureChance <= .02f + .02f + .02f,
+                    "live room chance exceeded observed event-room support");
+            }
+        }
+        {
+            auto fullBelt = gc;
+            fullBelt.screenState = ScreenState::REWARDS;
+            fullBelt.potionCount = fullBelt.potionCapacity;
+            fullBelt.info.rewardsContainer.clear();
+            fullBelt.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
+            CardReward cards;
+            cards.push_back(Card(CardId::BASH));
+            fullBelt.info.rewardsContainer.addCardReward(cards);
+            require(!collectFreeOocReward(fullBelt, false)
+                    && fullBelt.info.rewardsContainer.potionCount == 1
+                    && fullBelt.info.rewardsContainer.cardRewardCount == 1,
+                "full potion belt claimed an invalid reward or hid the card decision");
+        }
+        {
+            auto gold = gc;
+            gold.screenState = ScreenState::REWARDS;
+            gold.gold = 100;
+            gold.curHp = 40;
+            gold.info.eventData = 17;
+            gold.info.rewardsContainer.clear();
+            gold.info.rewardsContainer.addGold(20);
+            gold.info.rewardsContainer.addGold(30);
+            CardReward cards;
+            cards.push_back(Card(CardId::BASH));
+            gold.info.rewardsContainer.addCardReward(cards);
+            gold.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
+            require(collectForcedRewardGold(gold), "ordinary reward gold was not collected");
+            require(gold.gold == 150 && gold.info.rewardsContainer.goldRewardCount == 0
+                    && gold.info.rewardsContainer.cardRewardCount == 1
+                    && gold.info.rewardsContainer.potionCount == 1
+                    && gold.screenState == ScreenState::REWARDS && gold.info.eventData == 17,
+                "forced gold closure changed non-gold rewards or continued the room");
+
+            auto ectoplasm = gold;
+            ectoplasm.gold = 100;
+            ectoplasm.info.rewardsContainer.addGold(25);
+            ectoplasm.relics.add({RelicId::ECTOPLASM, 0});
+            require(collectForcedRewardGold(ectoplasm) && ectoplasm.gold == 100
+                    && ectoplasm.info.rewardsContainer.goldRewardCount == 0,
+                "Ectoplasm gold closure changed gold or left the reward");
+
+            auto idol = gc;
+            idol.screenState = ScreenState::REWARDS;
+            idol.curHp = idol.maxHp - 2;
+            idol.gold = 100;
+            idol.info.rewardsContainer.clear();
+            idol.info.rewardsContainer.addGold(25);
+            idol.relics.add({RelicId::BLOODY_IDOL, 0});
+            require(collectForcedRewardGold(idol) && idol.gold == 125
+                    && idol.curHp == idol.maxHp && idol.info.rewardsContainer.goldRewardCount == 0,
+                "Bloody Idol gold closure did not preserve native healing and cap behavior");
+        }
         gc.screenState = ScreenState::REST_ROOM;
         gc.curHp = 40;
         const PathHistory path{};
@@ -34,6 +128,44 @@ int main(int argc, char **argv) {
         require(missingModel.candidates.size() == v4CandidateActions(gc).size(),
                 "missing model did not retain current candidates for mapping validation");
         model->ok = true; // zero weights give exact ties for every action
+
+        auto forcedMap = gc;
+        forcedMap.screenState = ScreenState::MAP_SCREEN;
+        forcedMap.curEvent = Event::INVALID;
+        forcedMap.regainControlAction = [](GameContext &state) { state.screenState = ScreenState::MAP_SCREEN; };
+        for (auto &node : forcedMap.map->nodes[0]) node.room = Room::MONSTER;
+        bool keptEdge = false;
+        for (auto &node : forcedMap.map->nodes[0]) {
+            if (!keptEdge && node.edgeCount > 0) keptEdge = true;
+            else node.edgeCount = 0;
+        }
+        require(keptEdge, "forced live map fixture has no edge");
+        PathHistory forcedPath; forcedPath.update(forcedMap);
+        const auto forcedBefore = test::oocStateFingerprint(forcedMap);
+        struct NoCombatSample final : CombatTransitionSampler {
+            CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+                throw std::runtime_error("forced root requested CTM support");
+            }
+            CombatRuntimeSample sample(const GameContext &, const CombatPredictorInputV1 &,
+                                       std::mt19937_64 &) const override {
+                throw std::runtime_error("forced root sampled CTM");
+            }
+        };
+        CompactTreeNet unusedWin, unusedFloor;
+        unusedWin.ok = unusedFloor.ok = true;
+        LiveOocMctsPolicy forcedPolicy(*model, std::make_shared<NoCombatSample>(), &unusedWin, &unusedFloor);
+        const auto forcedDecision = forcedPolicy.score(forcedMap, forcedPath, 0);
+        require(forcedDecision.supported && forcedDecision.selectedIndex == 0
+            && forcedDecision.candidates.size() == 1
+            && forcedDecision.candidates[0].prior == 1.0
+            && forcedDecision.candidates[0].visitShare == 1.0
+            && forcedDecision.candidates[0].visits == 0
+            && forcedDecision.valueDistribution && forcedDecision.valueDistribution->count == 0
+            && forcedDecision.candidates[0].valueDistribution
+            && forcedDecision.candidates[0].valueDistribution->count == 0
+            && forcedBefore == test::oocStateFingerprint(forcedMap),
+            "live advisor returns sole map action without model sampling or mutation: "
+                + forcedDecision.reason + " candidates=" + std::to_string(forcedDecision.candidates.size()));
 
         GameContext shop = gc;
         shop.screenState = ScreenState::SHOP_ROOM;
@@ -79,7 +211,7 @@ int main(int argc, char **argv) {
         int callbacks = 0;
         g_onGameActionExecute = [&](std::uint32_t, const GameContext *) { ++callbacks; };
         LiveOocV4QPolicy provider(*model);
-        const auto decision = provider.score(gc, path);
+        const auto decision = provider.score(gc, path, 0);
         g_onGameActionExecute = {};
         require(decision.supported, "campfire score failed: " + decision.reason);
         require(before == test::oocStateFingerprint(gc) && callbacks == 0,
@@ -108,12 +240,12 @@ int main(int argc, char **argv) {
         wall.screenState = ScreenState::EVENT_SCREEN;
         wall.curEvent = Event::LIVING_WALL;
         const auto wallBefore = test::oocStateFingerprint(wall);
-        const auto wallDecision = provider.score(wall, path);
+        const auto wallDecision = provider.score(wall, path, 0);
         require(wallDecision.supported && wallBefore == test::oocStateFingerprint(wall),
                 "Living Wall preview changed native state");
         auto selector = wall;
         selector.openCardSelectScreen(CardSelectScreenType::UPGRADE, 1);
-        const auto selectorDecision = provider.score(selector, path);
+        const auto selectorDecision = provider.score(selector, path, 0);
         require(selectorDecision.supported, "direct upgrade selector unavailable");
         const auto &selectorBest = selectorDecision.candidates.at(selectorDecision.selectedIndex);
         const int expectedDeckIndex = selector.info.toSelectCards[GameAction(selectorBest.primitiveBits).getIdx1()].deckIdx;
@@ -134,6 +266,10 @@ int main(int argc, char **argv) {
                         && !preview.contains("q") && !preview.contains("card"),
                         "remove/transform preview invented a scored target");
         }
+        model->q2b = 200;
+        const auto rawUtility = scoreLiveOocV4(gc, path, *model);
+        require(rawUtility.supported && rawUtility.candidates.front().q > 100,
+                "raw finite V4 utility is not clamped to probability or percentage units");
         model->q2b = std::numeric_limits<float>::infinity();
         require(scoreLiveOocV4(gc, path, *model).reason == "NONFINITE_Q", "infinite Q accepted");
         model->q2b = std::numeric_limits<float>::quiet_NaN();
@@ -186,6 +322,68 @@ int main(int argc, char **argv) {
                 int(gc.screenState), entity, entityId, goldGePrice);
             require(candidate.q == expected, "prepared scorer differs from direct V4 Q");
         }
+        GameContext pending(CharacterClass::IRONCLAD, 991, 0);
+        pending.openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
+        pending.regainControlAction = [](GameContext &state) {
+            state.screenState = ScreenState::MAP_SCREEN;
+            state.regainControlAction = nullptr;
+        };
+        bool leafSawMap = false;
+        OocMctsDependencies deps;
+        deps.policyAvailable = [] { return true; };
+        deps.policyLogits = [](const GameContext &, const PathHistory &,
+                               const std::vector<GameAction> &actions) {
+            return std::vector<double>(actions.size(), 0.0);
+        };
+        deps.leafValue = [&](const GameContext &state, const PathHistory &) {
+            leafSawMap = state.screenState == ScreenState::MAP_SCREEN;
+            return 0.25;
+        };
+        int mapContinuationCalls = 0;
+        deps.continuationStep = [&](GameContext &state, PathHistory &, std::mt19937_64 &) {
+            if (state.screenState == ScreenState::MAP_SCREEN) {
+                ++mapContinuationCalls;
+                throw OocSearchUnsupported("MAP checkpoint was expanded");
+            }
+            const auto semantic = enumerateOocSemanticPrimitiveBindings(state);
+            if (!semantic.supported || !semantic.complete || semantic.bindings.empty())
+                throw OocSearchUnsupported("test continuation enumeration");
+            GameAction(semantic.bindings.front().primitiveBits).execute(state);
+        };
+        OocAdapterOptions checkpoint;checkpoint.checkpointLeaves=true;
+        checkpoint.stopAtMapCheckpoint=true;
+        for (const auto outcome : {GameOutcome::PLAYER_LOSS, GameOutcome::PLAYER_VICTORY}) {
+            auto terminalDeps = deps;
+            terminalDeps.continuationStep = [outcome](GameContext &state, PathHistory &, std::mt19937_64 &rng) {
+                (void)rng(); state.outcome = outcome;
+            };
+            OocGameContextModel terminalLeaf(pending, path, {}, checkpoint, terminalDeps);
+            OocGameContextModel scalarLeaf(pending, path, {}, checkpoint, terminalDeps);
+            std::mt19937_64 annotatedRng(17), scalarRng(17);
+            const auto sample = terminalLeaf.evaluateLeafWithOutcome(0, annotatedRng);
+            const double scalar = scalarLeaf.evaluateLeaf(0, scalarRng);
+            require(sample.terminal && sample.value == scalar && annotatedRng == scalarRng
+                    && sample.value == (outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0),
+                    "detached continuation endpoint or exact scalar/RNG parity lost");
+        }
+        auto zeroDeps = deps;
+        zeroDeps.leafValue = [](const GameContext &, const PathHistory &) { return 0.; };
+        OocGameContextModel zeroLeaf(pending, path, {}, checkpoint, zeroDeps);
+        std::mt19937_64 zeroRng(17);
+        const auto zeroSample = zeroLeaf.evaluateLeafWithOutcome(0, zeroRng);
+        require(!zeroSample.terminal && zeroSample.value == 0,
+                "nonterminal MAP model zero must not become terminal death");
+        OocGameContextModel checkpointModel(pending, path, {}, checkpoint, std::move(deps));
+        std::mt19937_64 checkpointRng(17);
+        require(checkpointModel.evaluateLeaf(0, checkpointRng) == 0.25 && leafSawMap
+                && checkpointModel.continuationMetrics().projectionSteps > 0,
+                "advisor checkpoint leaf evaluated an unresolved selector");
+        OocMctsConfig checkpointConfig;
+        checkpointConfig.seed = 19;
+        checkpointConfig.maxDepth = 32;
+        const auto checkpointSearch = OocMctsPlanner(checkpointConfig).search(checkpointModel, 0, 64);
+        require(checkpointSearch.metrics.simulations == 64 && mapContinuationCalls == 0,
+                "downstream MAP checkpoint was revisited and expanded");
         std::cout << "live OOC policy contract PASS\n";
         return 0;
     } catch (const std::exception &error) {

@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
+Last verified: 2026-09-25 for the vendored-Silver removal (ADR-0022); 2026-09-24 for the Searcher2/3 removals; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -116,7 +116,7 @@ The reviewed exact-SHA fit is recorded in the
 Protocol and native counter table:
 [potion decoder evidence](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
-Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
+Representative current producers are `datagen3`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row
 per LEGAL action at each OOC decision with screen/action metadata, structured
 candidate fields, a `chosen` flag, and terminal run labels
@@ -185,6 +185,9 @@ captures the first `g_onCombatDecision` callback and labels the row after
 `GameContext`, not the earlier RAW persistent-transfer hook. Its teacher
 JSON is checked against the checkout, executable, exact ordinary Silver 10k
 configuration, environment, and loaded-artifact hashes before CSV creation.
+Teachers declare `combat_backend: native_silver`; vendored `silver_uct`
+teachers are rejected (ADR-0022), so earlier corpora stay readable but cannot
+be regenerated with their original teacher.
 
 Representative model families:
 
@@ -209,39 +212,15 @@ closed DeepSets MCTS-leaf experiment, and `train_value_combat_mlp.py` was an
 unlaunched flat sparse-MLP trainer with an invalid validation target. Their
 historical evidence remains in the experiment ledger and decision log. This
 does not retire `combat_deepsets_v1` or `combat_mlp_sparse_v1` runtime support:
-`train_combat_deepsets.py` and `train_value_combat_nn.py`, respectively, remain
-the tracked producers for those formats.
+`train_combat_deepsets.py` remains the tracked producer for
+`combat_deepsets_v1`; the `combat_mlp_sparse_v1` producer
+(`train_value_combat_nn.py`) was removed in the post-ADR-0020 tidy-up.
 
-**Per-encounter specialization (experimental, gate pending, 2026-08-09):**
-two independent arms feed the same runtime dispatch map
-(`CombatValueNet::encounterModels`, keyed by `MonsterEncounter` enum int):
-
-- `train_value_combat_per_encounter.py` continues the pooled XGBoost model on
-  each boss's own rows (`xgb.train(..., xgb_model=pooled_bst,
-  num_boost_round=N, early_stopping_rounds=10)`; same feature columns as the
-  pooled model's `feature_names`, fight-group split, critical-state weights and
-  QuantileDMatrix recipe as the pooled trainer). Exports compact-tree text as
-  `<ENUM_NAME>.txt` plus the pooled baseline as `_pooled.txt` and a
-  per-encounter validation CSV for `vnettest --encounter`. `PER_ENC_CONSERVATIVE=1`
-  switches to the tail-encounter recipe (15 rounds, `reg_alpha`/`gamma`
-  bumped) for sparse encounters. `export_combat_model.py --per-encounter <dir>`
-  converts a directory of per-encounter `.json` models to `.txt` without
-  retraining.
-- `train_value_combat_meta.py` implements Reptile meta-learning for a small
-  dense MLP (NFEAT→128→64→1, **ReLU** — the native `combat_mlp_v1` C++ path is
-  ReLU, so the plan's "GELU" wording is deliberately not followed to keep
-  inference parity) targeting tail encounters with sparse rows. Outer loop:
-  sample B encounters, K inner SGD steps per encounter from a clone of the
-  meta weights, then θ ← θ + ε·(θ′_e − θ)/B. Offline adaptation produces
-  per-encounter weight deltas vs the base weights (no online gradient descent
-  at inference). Exports `combat_mlp_meta_v1`: the base MLP in the dense
-  `combat_mlp_v1` layout (`x_mean`/`x_invstd`, raw weights — the C++ dense
-  path normalizes at predict time, so the trainer applies the identical
-  standardization with no clipping) followed by
-  `n_encounter_deltas` / per-encounter `dw1..db3` blocks. The C++ loader
-  reconstructs adapted weights as base + delta and stores them as
-  self-contained per-encounter `CombatValueNet` instances (~940KB per adapted
-  encounter).
+**Per-encounter specialization (removed producers):** the runtime still
+dispatches `CombatValueNet::encounterModels` (keyed by `MonsterEncounter`) and
+`vnettest --encounter` still checks it, but the per-encounter XGBoost and
+Reptile meta-learning trainers were removed after Searcher2, their only
+consumer (ADR-0020). Their evidence remains in the experiment ledger.
 
 The canonical combat-value trainer (`train_value_combat.py`) selects its
 label with `VCOMBAT_TARGET`:
@@ -269,155 +248,23 @@ variants of the canonical recipe: they changed
 depth/eta/rounds/objective/capacity (9×150 trees) as well as the label; see
 EXPERIMENTS.md §134 audit. The historical implementations remain available in
 Git history.
-- combat policy/joint: `train_policy.py`, `train_policy_entity.py`,
-  `train_combat_pvnet.py::PolicyValueNet`.
+- combat joint policy/value: `train_combat_pvnet.py::PolicyValueNet` (training
+  only; the native `CombatPVNet` runtime was removed after ADR-0020).
 
 Runtime interfaces and their default/experimental status are summarized in
 [evaluation/current-baselines.md](../evaluation/current-baselines.md).
 
 ## Important data flow
 
-### Silver leaf teacher comparison
+### Retired Silver research pipelines
 
-`silver_leaf_features` reads only manifest-selected rows from the preserved
-`silver_leaf_corpus_v1` JSONL and projects each stored leaf `BattleStateWire`
-through the live Silver adapter into the canonical rich CombatValueNet feature
-vector. `tools/train_silver_leaf_models.py` then joins those features to
-existing valid 10k-A and 25k-A relabel rows. Every sibling group with a 25k-B
-row is reserved as test-only before the remaining complete groups are split
-deterministically into train and validation. Both XGBoost arms share the exact
-feature columns, rows, split, uniform weighting, recipe, and evaluation; only
-the A-replicate target budget differs. The output is an offline model/teacher
-comparison and does not establish gameplay improvement.
-
-The selected M10 booster from that comparison is deployed experimentally as
-`models/silver_leaf_m10_10k.txt`. The export retains rounds 0 through 500
-(`best_iteration + 1`) from the exact preserved XGBoost artifact and uses the
-ordinary `CombatValueNet` compact-tree loader; it does not add XGBoost to the
-runtime. `tools/analyze_silver_leaf_deployment.py` compares M10 and the current
-combat VNet on the untouched 25k-B groups and writes strict native-parity rows.
-The model remains default-off behind `STS_SILVER_VNET_LEAF_MODEL` plus
-`STS_SILVER_VNET_LEAF_DIRECT`; its small gameplay gate does not authorize
-promotion.
-
-### Silver parent-action policy experiment
-
-`silver_parent_policy_features` restores each complete valid 25k-A parent from
-the preserved `BattleStateWire`, enumerates the pinned Silver root actions
-without running a simulation, lowers each semantic identity through the live
-bridge, and emits `combatPolicyFeatureNames` /
-`combatExtractPolicyFeatures` rows. Teacher, restored, and emitted fingerprint
-sets must match exactly; duplicate, missing, extra, incompatible, or partially
-labelled action sets fail closed.
-
-`tools/train_silver_parent_policy.py` reserves every parent with an independent
-25k-B row before splitting or matrix construction. It trains one deterministic
-XGBoost squared-error model on
-`Q_25kA(s,a) - mean_b Q_25kA(s,b)`, retaining raw corrected Q and visits only
-as diagnostics. The untouched 25k-B parents compare the model with the exact
-current Silver root-edge ordering and the 1k-A, 10k-A, and 25k-A teachers. This
-pipeline is offline-only and does not install scores into Silver selection.
-
-### Silver forced-action target audit
-
-`silver_forced_action_audit` is a diagnostic-only target-validity boundary. It
-consumes 32 exact root snapshots selected as two deterministic hash-ranked
-roots from each of 16 source gameplay seeds, enumerates every legal semantic
-action, and records one frozen 10k Teacher-A search plus two disjoint
-forced-action estimators. L uses eight independently rematerialized action
-executions with 5k continuation simulations; J uses eight different executions
-with 10k continuations. Every sibling shares the replicate RNG identity for
-common-random-number pairing, while each replicate rematerializes and executes
-the root action afresh. Consequently an immediate stochastic action outcome is
-resampled rather than frozen before its continuation.
-
-The `silver_forced_action_target_v2` rows retain each original-root-corrected
-raw value, semantic
-action, stochastic classification, immediate RNG-counter transition,
-continuation RNG identity and budget, root/snapshot hashes, utility definition,
-evaluator configuration, executable/Silver SHAs, and Teacher-A Q/visit data.
-Snapshot-producer and audit-evaluator Git SHAs are recorded separately and may
-differ; this permits a frozen root population to survive a diagnostic-only
-evaluator repair without silently recollecting different gameplay states.
-The immediate action and continuation deliberately share one Silver RNG stream;
-the row records the common identity plus the pre-action and continuation-start
-counters rather than claiming two independent streams. A separate historical-
-regression mode evaluates known harmful roots without adding them to primary
-population statistics.
-If a forced action terminates combat immediately, its exact terminal utility is
-recorded with `terminal_after_action=true` and zero continuation simulations.
-For both terminal and nonterminal actions, gold/max-HP changes caused before
-the fresh continuation root are translated back to the original root and
-applied only in proportion to victorious outcomes. Rows retain the raw
-victory count, full victory-baseline correction, and applied correction;
-nonterminal replicates must consume their complete 5k or 10k budget.
-`tools/analyze_silver_forced_action_audit.py` derives root-centered continuous
-advantages and pairwise margins and evaluates L only against untouched J. Its
-primary confidence interval and ranking interval resample source gameplay
-seeds, not roots. The classification is fail closed unless independent-J
-regret and pairwise ranking improve, no new high-regret tail appears, maximum
-regret does not worsen, and roots containing stochastic actions do not regress
-on average in either selector regret or stochastic-involving pairwise ranking.
-Deterministic-only pairwise results are reported separately. A population with
-no stochastic roots or no independently ordered stochastic-involving pairs is
-classified `FORCED_ACTION_TARGET_DETERMINISTIC_ONLY`; it cannot authorize a
-global ranker or prior. This experiment does not train a model, create a policy prior,
-modify live Silver selection, or authorize gameplay.
-
-### Phase-A policy/value cost diagnostic
-
-`apps/silver_policy_value_phase_a.cpp` is a bounded, diagnostic-only contract
-probe for a prospective `PLAYER_NORMAL` policy-plus-value input. It consumes
-an existing `silver_leaf_corpus_v1`, redacts interpreter/provenance fields (and
-latent intent details when intents are hidden), restores the visible wire
-through the live adapter, and emits separate parent-policy and actual
-`PLAYER_NORMAL` rollout-leaf value records. Parent-policy records enumerate
-exact pinned-Silver legal actions with semantic identities; leaf-value records
-label that same leaf and never substitute a parent or first-child utility. The
-canonical policy layout is 1,788 features total: 1,766 state features plus 22
-action features. The prospective shared model input appends the exact isolated
-Silver root reference scalars (effective gold and max HP), giving a 1,768-wide
-state input. The output enumerates known projection omissions explicitly; it is
-not a claim that the canonical vector is a lossless representation of every
-visible wire field.
-
-The optional teacher label is the existing Silver terminal utility from
-`BattleSearcher::evaluateEndState`, including its current root-relative
-reference context and weights. The original root snapshot remains available as
-teacher-only provenance, while the two derived root scalars are part of the
-model-visible input. The executable benchmarks actual supported
-`PLAYER_NORMAL` leaves with a fixed-weight native CPU model: `1768 -> 64 ->
-64`, `64 -> 1`, and `[64,22] -> 32 -> 1`, encoding state once and scoring all
-legal siblings. It also measures full-search rollout calls and wall time by
-input state in the same guarded source run, so the break-even estimate uses the
-actual supported leaf denominator rather than a corpus-only proxy.
-The clean baseline must have corpus/VNet observers unset, and the candidate
-timing must include the live-to-Silver conversion or explicitly target a
-future direct-Silver extractor. The corrected 2026-09-16 measurement included
-that conversion and found the candidate slower than clean Silver rollouts at
-both 100-simulation and 1k operating points; the earlier observer-contaminated
-feasibility estimate is withdrawn. Neither corpus conversion nor benchmarking
-changes training, gameplay, model loading, search selection, or utility
-semantics. Any cost classification is a hardware/configuration-specific
-feasibility diagnostic, not runtime qualification.
-
-The bounded stage follow-up on the same fixture measured 1.242 microseconds for
-live conversion, 40.944 microseconds for feature/vector preparation, 72.158
-microseconds for the shared encoder plus value head, and 4.212 microseconds for
-action scoring. Because the neural stage alone is about 24.2 times the clean
-rollout mean, a Silver-native compact representation is not a viable
-conversion-only remedy for this exact model boundary. See the linked Phase-A
-evidence packet for the raw receipt and provenance.
-
-A parity-preserving sparse first-layer screen then reduced the fixed model-plus-
-action computation from 78.019 to 6.377 microseconds per call by transposing
-the weights and skipping zero state inputs (mean 39 nonzero inputs). Maximum
-absolute parity errors were below `5e-10`, but 6.377 microseconds is still
-about 2.14 clean rollout-equivalents. The per-leaf throughput path is therefore
-closed at **`PV_SPARSE_NOT_FEASIBLE_PER_LEAF`**; do not add adapter/native-state
-optimization without a new hypothesis. Root-only learned guidance is a
-separate architectural direction. See the
-[sparse evaluator evidence](../../experiments/evidence/silver_sparse_evaluator_2026-09-17.md).
+The Silver leaf-teacher comparison (`silver_leaf_features`,
+`train_silver_leaf_models.py`), the parent-action policy experiment, the
+forced-action target audit and the Phase-A policy/value cost diagnostic all
+read the vendored Silver model's wire corpora and were removed with it
+([ADR-0022](../../../decisions/0022-remove-vendored-silver.md)). Their results
+remain in the experiment ledger; reproducing them needs a binary built before
+that ADR.
 
 ### Combat schema
 
@@ -435,15 +282,12 @@ flags, card properties, target HP, and `Expert` play/obtain values. The
 historical v1 schema is in Git history, but its composite-RNG provenance
 statement is not current truth.
 
-`ScumSearchAgent2` exposes thread-local `g_onCombatDecision`,
-`g_onSearchComplete`, and `g_onSearchComplete3` hooks
-(`include/sim/search/ScumSearchAgent2.h`). `fairgen` forces the project-fair
-Searcher3 regime itself (`search::g_fairPlay` and `search::g_useSearcher3` are
-set in its dispatch branch and a message is printed), so its Searcher3 policy
-rows are produced even without `STS_FAIR=1 STS_SEARCHER3=1`; the env vars still
-gate other modes. `fightgen` installs Searcher2 hooks and omits Searcher3 policy
-rows if Searcher3 is forced (`apps/one_combat.cpp::fairGen`,
-`runFairGenSeed`, fight-generation callbacks).
+`ScumSearchAgent2` exposes the thread-local `g_onCombatDecision` hook
+(`include/sim/search/ScumSearchAgent2.h`); the Silver backend calls it at each
+live decision. The Searcher3 `fairgen` producer (ADR-0019) and the Searcher2
+`combatgen`/`fightgen`/`policygen`/`distgen`/`datagen`/`datagen2`/`causalgen`
+producers (ADR-0020) were removed; their existing CSVs remain readable by the
+offline training scripts.
 
 ### Run/OOC schema
 
@@ -455,17 +299,10 @@ their specific producer; consumers must use headers, not old comments.
 
 ### Grouping and leakage
 
-`tools/train_particle_leaf_probe.py` is an offline-only paired analysis. It
-keeps all variants of a source leaf together and uses a fixed seed-level split;
-its visible control and positional first-10-card treatment consume identical
-rows and targets. The treatment uses sparse positional one-hot features and
-does not alter the 1,766-feature native combat schema.
-
 Correlated samples remain together:
 
 - run values split by seed (`train_winrate.py::GroupShuffleSplit`);
 - combat value splits by fight (`train_value_combat.py::group`);
-- policy splits by complete decision group (`train_policy.py::group`);
 - OOC checkpoint training splits `(seed, decisionIdx)` groups
   (`train_ooc_checkpoint.py::groups`).
 
@@ -481,7 +318,7 @@ PVNet, and policy models are selected with `STS_VNET`, `STS_DIST_VNET`,
 parsed after the STS_VNET region) additionally loads the zero-mean ranking-
 correction model into `search::g_combatVNetRankCorr` /
 `search::g_useVNetRankCorr`; a missing/invalid path only warns. `STS_VNET_PER_ENCOUNTER=<dir>` (parsed after the
-STS_VNET / fair-S3 default block) calls
+STS_VNET block) calls
 `CombatValueNet::loadEncounterModels(dir)`: per-encounter compact-tree files
 named `<ENUM_NAME>.txt` load into `encounterModels`, `<dir>/_pooled.txt` (when
 present) replaces the base fallback, and `predict(bc)` dispatches to
@@ -494,11 +331,8 @@ per-encounter validation CSV (in-file delta first, then the
 `STS_VNET_PER_ENCOUNTER` dir). Optional server models are selected through
 `v_server.py` environment variables. Current tracked artifact hashes are listed
 only in [current baselines](../evaluation/current-baselines.md).
-The distributional model is consumed only by Searcher3; the PV model adds
-policy-head priors to default Searcher2 since 2026-08-05 (value leaf is
-Searcher3-only). A successful startup load is not evidence of use under
-default Searcher2 for DistVNet; PVNet policy priors ARE used under Searcher2
-unless STS_PVNET_VALUE_ONLY=1.
+`one_combat` no longer loads the V_combat, compact policy, PVNet or DistVNet
+models for play (ADR-0020); only the parity tools use these libraries.
 
 ## Invariants and assumptions
 
@@ -523,17 +357,10 @@ unless STS_PVNET_VALUE_ONLY=1.
   non-finite native prediction (MLP whose finite tokens overflow float in the
   hidden layer), a float-overflow feature, and out-of-tolerance evidence all
   exit nonzero while clean parity evidence exits 0.
-- CombatPVNet native inference must match the trainer's fixed 14-token layout
-  (GLOBAL, scalar, 4 zone bags, relic, potion, encounter, 5 monster slots;
-  empty zones, absent relics/potions, and dead monsters are zero tokens) and
-  GELU transformer FFN; verified by the `pvnetparity` mode
-  (`apps/one_combat.cpp`) against `combat_pvnet_parity.py` (~1e-6 across
-  encoder, policy head, and value heads). `CombatPVNet::load` rejects
-  `entityDim > 256` and `numHeads` that do not divide `entityDim`.
 - A successful benchmark requires observable load messages and evidence the
   selected branch used the model.
-- File suffix can select serializer behavior; self-play training temporaries
-  must preserve the intended XGBoost format (`EXPERIMENTS.md` entry 49).
+- File suffix can select serializer behavior; training temporaries must
+  preserve the intended XGBoost format (`EXPERIMENTS.md` entry 49).
 - Combat policy inputs currently include hand-authored Expert features.
 - Per-encounter specialization (2026-08-09, experimental): each per-encounter
   tree model holds a full copy of the pooled tree set (~2000 trees), so 10
@@ -573,13 +400,10 @@ unless STS_PVNET_VALUE_ONLY=1.
   resolves the binary via `STS_PARITY_BIN` or `build/parity_test`, but it does
   not yet load weights into the trained model; real trained-model parity is
   unexercised.
-- Searcher3 composite seeding is implemented with explicit per-decision
-  `agentSeed`/`decisionIndex` constructor parameters
-  (`BattleScumSearcher3::BattleScumSearcher3`); datasets produced before the
-  2026-08-02 fix used default-zero values.
-- The `fairgen` mode forces the fair Searcher3 regime itself now; datasets
-  recorded before that fix may have been produced without it, so historical
-  provenance must be read from the recorded invocation artifacts.
+- Historical `fairgen` (Searcher3) datasets produced before the 2026-08-02
+  seeding fix used default-zero per-decision seeds, and some predate the mode
+  forcing the fair regime; read their provenance from the recorded invocation
+  artifacts.
 - `v_server.py` documents the implemented 1,017-value `RAW` layout with
   `apps/one_combat.cpp::vFeatCsv` as the schema owner.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read
@@ -639,12 +463,15 @@ unless STS_PVNET_VALUE_ONLY=1.
 - `train_strategic_tok.py` (V4 token-state, Phase A round 5) trains the
   `strategic_tok_net.py::Net` architecture from `strategicgen2` Tier-B CSVs.
   Architecture and training contract: `docs/knowledge-base/architecture/ooc-strategic-v4.md`.
-  The state block is 482 raw float16 columns per row (50 globals, 96 deck slots
-  ×3, 64 relic slots ×2, 8 potion slots ×2), written once to a group-ordered
-  `OUT_tok_state.bin` (fingerprinted; reused on match). Global mean/inv are
-  computed from train rows only and applied per batch. On CUDA, the entire
-  state is uploaded to GPU VRAM once (~2.9 GB for 3.06M rows) and rows are
-  gathered on-device; falls back to CPU mmap on OOM. `torch.compile`
+  It preserves raw CSV row IDs while sorting labels by `(seed, decIdx)`, then
+  scatters each streamed raw-order state chunk through `raw_to_grouped` into a
+  group-ordered `OUT_tok_state.bin`. The `raw-to-grouped-v2` layout version is
+  part of the cache fingerprint, so earlier caches without that mapping cannot
+  be reused. TRAIN-only normalization selects rows through the same mapping.
+  The state block is 474 float16 columns per row (42 globals, 96 deck slots
+  ×3, 64 relic slots ×2, 8 potion slots ×2). On CUDA, the entire state is
+  uploaded to GPU VRAM once (~2.9 GB for 3.06M rows) and rows are gathered
+  on-device; falls back to CPU mmap on OOM. `torch.compile`
   (mode="default", Triton fusion) is enabled by default on CUDA
   (`STRAT_TOK_COMPILE=1`), giving ~2.15× speedup over eager
   (2026-08-03 decision log).
@@ -679,14 +506,9 @@ ordinary policy CE/Q error reports.
 
 ### Deployment VNet query distribution diagnostics
 
-`STS_VNET_QUERY_LOG=<csv>` (configured by `apps/one_combat/vnet_query_log.cpp`)
-records canonical combat feature rows at deployed VNet queries with a
-`vnetPred` column. `tools/vnet_distribution_shift.py` compares this deployment sample
-against a seed-disjoint sample of `combatgen` rows: use
-`--deploy-vnet-col vnetPred` (the default), `--vnet-col` for a training-side
-prediction column when available, and `--label-col endHp` for combatgen labels.
-The script's `--self-test` exercises the prediction-column and skip paths
-without requiring XGBoost.
+The `STS_VNET_QUERY_LOG` producer was removed with Searcher2 (ADR-0020).
+`tools/vnet_distribution_shift.py` still compares existing deployment and
+`combatgen` CSVs.
 
 ## Open questions
 
@@ -706,13 +528,12 @@ without requiring XGBoost.
 
 ## Relevant code
 
-- `apps/one_combat.cpp::main` (`carddump` dispatch), `fairGen`, `fightGen`, `strategicGen`,
+- `apps/one_combat.cpp::main` (`carddump` dispatch), `strategicGen`,
   `strategicGen2`, `vFeatCsv`
 - `include/sim/search/ScumSearchAgent2.h` data-generation hooks
-- `include/sim/search/BattleScumSearcher3.h::S3LeafDiagnostic`, `g_onS3LeafQuery`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`,
   `combatExtractFeatures`, `combatFillActionFeatures`
-- `train_winrate.py`, `train_value_combat.py`, `train_policy.py`
+- `train_winrate.py`, `train_value_combat.py`
 - `train_combat_pvnet.py::PolicyValueNet`
 - `train_ooc_checkpoint.py`; `export_ooc_checkpoint.py`
 - `train_strategic.py`; `export_strategic.py`; `apps/ooc_strategic_net.h`

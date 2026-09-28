@@ -157,7 +157,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
 
 const std::map<std::string, sts::MonsterStatus> kMonsterStatuses = {
     {"Artifact", sts::MonsterStatus::ARTIFACT}, {"ArtifactPower", sts::MonsterStatus::ARTIFACT}, {"Strength", sts::MonsterStatus::STRENGTH}, {"StrengthPower", sts::MonsterStatus::STRENGTH},
-    {"Vulnerable", sts::MonsterStatus::VULNERABLE}, {"VulnerablePower", sts::MonsterStatus::VULNERABLE}, {"Weak", sts::MonsterStatus::WEAK}, {"WeakPower", sts::MonsterStatus::WEAK},
+    {"Vulnerable", sts::MonsterStatus::VULNERABLE}, {"VulnerablePower", sts::MonsterStatus::VULNERABLE}, {"Weak", sts::MonsterStatus::WEAK}, {"WeakPower", sts::MonsterStatus::WEAK}, {"Weakened", sts::MonsterStatus::WEAK},
     {"Poison", sts::MonsterStatus::POISON}, {"PoisonPower", sts::MonsterStatus::POISON}, {"Metallicize", sts::MonsterStatus::METALLICIZE}, {"MetallicizePower", sts::MonsterStatus::METALLICIZE},
     {"Plated Armor", sts::MonsterStatus::PLATED_ARMOR}, {"PlatedArmorPower", sts::MonsterStatus::PLATED_ARMOR}, {"Regeneration", sts::MonsterStatus::REGEN},
     {"Regen", sts::MonsterStatus::REGEN}, {"Angry", sts::MonsterStatus::ANGRY},
@@ -221,9 +221,11 @@ const std::vector<LiveEncounterSupportEntry> &encounterSupportManifest() {
     return manifest;
 }
 const std::vector<LiveEncounterExclusionEntry> &encounterExclusionManifest() {
-    // FOUR_BYRDS is a valid vanilla event formation, but the pinned native
-    // simulator has no MonsterEncounter/slot layout for it.  Keep it explicit
-    // instead of allowing encounter detection to fall through as unknown.
+    // FOUR_BYRDS: Java defines a "4 Byrds" encounter, but no normal act pool
+    // or event generates it (Act 2 uses "3 Byrds" and "Chosen and Byrds"), so
+    // it is not expected in standard runs. The pinned native simulator has no
+    // MonsterEncounter/slot layout for it. Keep it explicit instead of
+    // allowing encounter detection to fall through as unknown.
     static const std::vector<LiveEncounterExclusionEntry> exclusions = {
         {"FOUR_BYRDS", "native simulator has no FOUR_BYRDS encounter or faithful four-slot layout"},
     };

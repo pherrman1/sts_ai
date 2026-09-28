@@ -10,29 +10,19 @@
 #include "combat/BattleContext.h"
 #include "differential_state.h"
 #include "ooc_v4_encoding.h"
+#include "live_ooc_action_identity.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverSemanticAction.h"
+#include "sim/search/SilverWireState.h"
 
 namespace one_combat {
 namespace {
 using J = nlohmann::json;
 using namespace sts;
-
-std::string currentOocIdentity(const search::OocSemanticPrimitiveBinding &binding) {
-    auto semantic = binding.semantic;
-    if (binding.compoundSelector == CardSelectScreenType::INVALID)
-        return search::canonicalOocSemanticActionKey(semantic);
-    if (const auto *transaction = std::get_if<search::OocTransactionTarget>(&semantic.target)) {
-        if (semantic.source == search::OocSemanticSource::SHOP_REMOVE)
-            semantic.target = search::OocShopTarget{search::OocNoTarget{}, transaction->expectedGoldCost, 0};
-        else semantic.target = search::OocEventTarget{transaction->event, transaction->option};
-    } else semantic.target = search::OocNoTarget{};
-    return search::canonicalOocSemanticActionKey(semantic) + ":current-screen";
-}
 
 struct Replay {
     GameContext game;
@@ -79,10 +69,16 @@ struct Replay {
     J rng() const { return differential::gameRng(game, battle.get()); }
 
     J combatLegal(std::vector<silver_bridge::SemanticAction> *values = nullptr) {
-        auto legal = silver_bridge::enumerateSilverLegalActions(combatWire());
+        const auto wire = combatWire();
+        auto root = search::battleContextFromWire(wire);
+        search::SilverSearcher searcher(root, search::searchContextFromWire(wire));
+        searcher.prepareRootActions();
+        std::vector<silver_bridge::SemanticAction> legal;
+        for (const auto &edge : searcher.rootNode().edges)
+            legal.push_back(search::semanticFromSearchAction(root, edge.action));
         J out = J::array();
         for (const auto &action : legal)
-            out.push_back({{"fingerprint", silver_bridge::semanticActionFingerprint(action)}});
+            out.push_back({{"fingerprint", search::semanticFingerprint(action)}});
         if (values) *values = std::move(legal);
         return out;
     }
@@ -99,7 +95,7 @@ struct Replay {
             if (!semantic.supported || !semantic.complete)
                 throw std::runtime_error("UNSUPPORTED_BOUNDARY: " + semantic.error);
             for (const auto &binding : semantic.bindings) {
-                const auto identity = currentOocIdentity(binding);
+                const auto identity = currentLiveOocIdentity(binding).first;
                 const auto [it, inserted] = identities.emplace(binding.primitiveBits, identity);
                 if (!inserted && it->second != identity)
                     throw std::runtime_error("UNSUPPORTED_BOUNDARY: ambiguous OOC semantic mapping");
@@ -130,7 +126,7 @@ struct Replay {
             const auto expected = identity.rfind("silver:", 0) == 0 ? identity.substr(7) : identity;
             const silver_bridge::SemanticAction *selected = nullptr;
             for (const auto &action : actions) {
-                if (silver_bridge::semanticActionFingerprint(action) != expected) continue;
+                if (search::semanticFingerprint(action) != expected) continue;
                 if (selected) throw std::runtime_error("RECORDED_ACTION_AMBIGUOUS");
                 selected = &action;
             }

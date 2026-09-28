@@ -1,4 +1,4 @@
-// Semantic-action lowering at the isolated Silver / live sts_ai boundary.
+// Lowers an index-free Silver semantic action to a live search::Action.
 #include "sim/search/SilverSemanticAction.h"
 
 #include <algorithm>
@@ -81,8 +81,9 @@ SemanticActionResolution resolveSilverSemanticAction(
         const bool requiresTarget = live.cards.hand[idx].requiresTarget();
         if (semantic.target < (requiresTarget ? 0 : -1) || semantic.target >= 5)
             return {false, {}, "semantic card target is missing or out of range"};
-        return finalise(live, Action(ActionType::CARD, idx,
-                                    semantic.target == -1 ? 0 : semantic.target));
+        if (!requiresTarget)
+            return finalise(live, Action(ActionType::CARD, idx));
+        return finalise(live, Action(ActionType::CARD, idx, semantic.target));
     }
     case SAT::POTION: {
         if (semantic.potionSlot < 0 || semantic.potionSlot >= live.potionCapacity)

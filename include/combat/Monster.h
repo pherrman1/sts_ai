@@ -15,6 +15,7 @@
 #include "constants/MonsterStatusEffects.h"
 #include "constants/MonsterIds.h"
 #include "constants/MonsterMoves.h"
+#include "combat/MonsterRollInputs.h"
 
 
 namespace sts {
@@ -82,8 +83,20 @@ namespace sts {
         // awakened one isPhase2
         int miscInfo = 0;
 
+        // Runic Dome search only (BattleContext::intentsHidden): rolls whose
+        // result the player cannot see yet are deferred until the move is used
+        // or queried. pendingRollInputs holds the public roll-time inputs;
+        // pendingDirectMoveChoice is Looter (1) / Mugger (2) choosing their next
+        // move directly after a Mug.
+        std::uint8_t pendingMoveRolls = 0;
+        MonsterRollInputs pendingRollInputs;
+        std::uint8_t pendingDirectMoveChoice = 0;
+
         Monster() = default;
         Monster(const Monster& rhs) = default;
+
+        // Every field is compared; add new state fields as members so this stays complete.
+        bool operator==(const Monster &rhs) const = default;
 
         void setRandomHp(Random &hpRng, bool higherHp);
         void initHp(Random &hpRng, int ascension);
@@ -152,7 +165,13 @@ namespace sts {
         void rollMove(BattleContext &bc);
 
         // todo make monsterData const as well and move logic to move actions
-        [[nodiscard]] MMID getMoveForRoll(BattleContext &bc, int &monsterData, int roll) const;
+        [[nodiscard]] MMID getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int &monsterData, int roll) const;
+        [[nodiscard]] MonsterRollInputs captureRollInputs(const BattleContext &bc) const;
+        void rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in);
+        void materializePendingMove(BattleContext &bc);  // evaluates deferred rolls; no-op when none
+        void cancelPendingMove();                        // a forced move override discards them
+        // The Guardian's Mode Shift trigger without its 20 block (the caller queues it).
+        void enterGuardianDefensiveMode();
 
         [[nodiscard]] int calculateDamageToPlayer(const BattleContext &bc, int baseDamage) const;
         void attackPlayerHelper(BattleContext &bc, int baseDamage, int times=1);

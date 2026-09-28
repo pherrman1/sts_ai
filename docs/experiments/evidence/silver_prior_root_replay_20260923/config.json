@@ -1,0 +1,134 @@
+{
+  "analysis": {
+    "bootstrap_replicates": 10000,
+    "bootstrap_unit": "source_seed",
+    "judge": "corresponding selected VALIDATION raw J only after replay seal",
+    "regret": "max_a Q_J(a) - Q_J(selected action)",
+    "replicate_aggregation": "mean within root and arm",
+    "runtime_gate": false
+  },
+  "arms": {
+    "A_UCT": {
+      "prior": null,
+      "selection": "ordinary root UCT"
+    },
+    "M_LEARNED": {
+      "prior": "softmax(model logits; no additional temperature)",
+      "selection": "root PUCT"
+    },
+    "O_ORACLE_L": {
+      "prior": "softmax(L values / frozen tau)",
+      "selection": "root PUCT"
+    },
+    "U_UNIFORM": {
+      "prior": "uniform",
+      "selection": "root PUCT"
+    }
+  },
+  "artifacts": {
+    "analysis_sha256": "acd0be299057cb93786329a5a54194704e0fe78a36701a00e64737b6628334b8",
+    "executable_sha256": "ecabfb8e470927616e0576923ea4aaf99e87240e147b9d160e947cd576c09d64",
+    "preparation_seal_sha256": "3b83d56cc39b1c379d979d52f4038b77fd8d9ef3b0574cb440cb39fc3e583347",
+    "prior_summary_sha256": "7515ac78c476ba5dcab86591f9ee77502193efb45264b61eb25acb4abd51f210",
+    "priors_sha256": "67ad785b6160e2264884ce4c142d0b4f3c701d9ab76651cad7e272566db8899d",
+    "replay_seal_sha256": "37ad6163528f9e287d02033a2af273bdb1b8938bf5fcfd4c2b546832f1184559",
+    "replay_sha256": "1f55730f0b04a67a463852cae6ddfe37eadaa0918064cb586dc9b840302934fa",
+    "roots_sha256": "c9b26024b92b4a44136e0b365940b818a52accedfe030adbedbe50b0bbcec111"
+  },
+  "baseline_git_sha": "293c0704f0921688a6dc7066800b3bfcb1801bc5",
+  "classification_role": "development/mechanism screen; VALIDATION was used for model selection",
+  "commands": [
+    {
+      "command": "cmake --preset linux-gcc-debug && cmake --build --preset linux-gcc-debug-build --target silver-prior-root-replay",
+      "outcome": "passed; one pre-existing Silver SimpleAgent return-path warning during first full build"
+    },
+    {
+      "command": "python3 -m unittest tests.test_silver_prior_root_screen -v",
+      "outcome": "12 tests passed"
+    },
+    {
+      "command": "python3 -m py_compile tools/silver_prior_root_screen.py tests/test_silver_prior_root_screen.py",
+      "outcome": "passed"
+    },
+    {
+      "command": "ctest --test-dir build/linux-gcc-debug -R ^silver_prior_root_screen$ --output-on-failure",
+      "outcome": "1/1 passed"
+    },
+    {
+      "command": "python3 tools/silver_prior_root_screen.py prepare --corpus /home/philippherrmann/Documents/sts/silver-prior-v1-corpus-v2 --checkpoint /home/philippherrmann/Documents/sts/silver-prior-model-v1/stage-a-863d7d5e/T2.pt --output-dir /tmp/silver-prior-root-screen-20260923-v2/prepared",
+      "outcome": "sealed 64 roots / 64 source seeds; raw_J_opened=false"
+    },
+    {
+      "command": "python3 tools/silver_prior_root_screen.py replay --executable build/linux-gcc-debug/silver_prior_root_replay --prepared-dir /tmp/silver-prior-root-screen-20260923-v2/prepared --output /tmp/silver-prior-root-screen-20260923-v2/replay.jsonl",
+      "outcome": "sealed exactly 1024 rows; checked all L teacher identity seeds for collision"
+    },
+    {
+      "command": "python3 tools/silver_prior_root_screen.py judge --corpus /home/philippherrmann/Documents/sts/silver-prior-v1-corpus-v2 --prepared-dir /tmp/silver-prior-root-screen-20260923-v2/prepared --replay /tmp/silver-prior-root-screen-20260923-v2/replay.jsonl --output /tmp/silver-prior-root-screen-20260923-v2/replay-analysis-bound.json",
+      "outcome": "passed; verified replay rows against prepared priors and executable SHA, opened only the matching 64 VALIDATION J records, and checked all J teacher identity seeds for collision"
+    },
+    {
+      "command": "cmake --preset linux-gcc-debug-ccache && cmake --build --preset linux-gcc-debug-ccache-build --target silver-prior-root-replay",
+      "outcome": "configure passed; ccache build blocked by read-only cache path; successful non-ccache debug build followed"
+    },
+    {
+      "command": "Full CI / GitHub Actions",
+      "outcome": "not run"
+    }
+  ],
+  "dataset": {
+    "binding_sha256": "7febae9df90e427ad5db631a2004ff4c4cdd579346d22d25b3e1f4532af96e17",
+    "corpus_path": "/home/philippherrmann/Documents/sts/silver-prior-v1-corpus-v2",
+    "population": "64 judge_selected VALIDATION roots, one unique source seed each, no replacements",
+    "release_sha256": "b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419",
+    "selection_sha256": "ed91b3bb4c6983be3701333320f1e6c12f7332e3e371ac24b857a76a47d3b5ed",
+    "vocabulary_sha256": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46"
+  },
+  "experiment_date": "2026-09-23",
+  "experiment_identity": "silver-prior-root-screen-v1/20260922",
+  "forbidden_scope": {
+    "default_search_changed": false,
+    "gameplay_run": false,
+    "live_silver_changed": false,
+    "locked_test_raw_artifacts_opened": false,
+    "locked_test_roots_labels_counts_used": false,
+    "native_cpp_model_inference": false,
+    "training_or_temperature_change": false
+  },
+  "implementation": {
+    "cmake_source_sha256": "f22dfe9fbcc45737b5ed2c18e214dffc09fa665f3dd841ed05eda45b91c6a008",
+    "code_map_source_sha256": "cb54bb2a208472ca17c5c1b74ff0c10d4d4b50a2b9ff9d76ebcd41df2e7cea12",
+    "cpp_source_sha256": "8b7774e29a31916235dfd568fd5111a107188433195b5ff00769e20da70ea5d4",
+    "python_source_sha256": "9c6dea69343dfb3d7f50128742b754046265f3f3c391eea6154f4dc0040b89a1",
+    "replay_executable_sha256": "ecabfb8e470927616e0576923ea4aaf99e87240e147b9d160e947cd576c09d64",
+    "test_source_sha256": "1bd192052484a2ff84e514ab3a09142bed2e2c1d59e78700e83b0cf1244f603b"
+  },
+  "model": {
+    "architecture": "SilverPriorNetV1",
+    "arm": "T2",
+    "checkpoint_sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+    "seed": 20260922,
+    "tau": 1.179975000005129
+  },
+  "question": "Does the frozen T2 prior improve low-budget Silver root search over uniform PUCT and ordinary root UCT, with L-target oracle as a mechanism diagnostic?",
+  "schema": "silver_prior_root_screen_config_v1",
+  "search": {
+    "chance_handling": "unchanged",
+    "expected_rows": 1024,
+    "fresh_tree_each_replay": true,
+    "internal_decisions": "ordinary UCT",
+    "replicates_per_root": 4,
+    "rollout_evaluator": "unchanged",
+    "root_action_order": "native Silver order in every arm",
+    "root_puct_c": 2.5,
+    "same_search_seed_across_arms": true,
+    "simulations_per_root": 32
+  },
+  "verification": {
+    "ctest_registered": "silver_prior_root_screen; direct unittest equivalent passed",
+    "full_ci": "not run; draft PR review boundary not yet reached",
+    "gameplay_tests": "not run; offline root replay only",
+    "native_build": "cmake --preset linux-gcc-debug && cmake --build --preset linux-gcc-debug-build --target silver-prior-root-replay; passed",
+    "python_compile": "python3 -m py_compile tools/silver_prior_root_screen.py tests/test_silver_prior_root_screen.py; passed",
+    "python_tests": "python3 -m unittest tests.test_silver_prior_root_screen -v; 12 passed"
+  }
+}

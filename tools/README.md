@@ -25,14 +25,11 @@ adjusted to preserve repo-root CWD after the move.
 | `run/` | Experiment orchestration shell scripts (ablation sweeps, gates, data generation loops) |
 | `verify/` | Regression self-tests, deterministic-replay checks, parity validation |
 
-The designated GCP benchmark workflow is centralized in
-`tools/agent/gcp_benchmark.py`. It uses the existing user's gcloud
-authentication and `gcloud compute ssh`; it does not store credentials or
-manage arbitrary cloud resources. Its designated-target-only `copy-to`,
-`copy-from`, and `job-status` commands keep artifact transfer and detached-run
-inspection on the same pinned project/zone/instance/user/root contract.
-Decision-bearing multi-arm runs should use its strict JSON manifest interface;
-`tools/agent/research_run_manifest.example.json` is the maintained template.
+Seed commands use `tools/seed_guard.sh` for positive-count validation, without
+an execution-host requirement or general numerical ceiling. Larger local runs
+require explicit authorization and frozen provenance, seed ranges/counts,
+budgets, and decision rules. See the
+[research preflight](../docs/knowledge-base/operations/build-and-debugging.md#decision-bearing-research-run-preflight).
 
 `tools/agent/worktree.py` is the supported linked-worktree lifecycle entry
 point. Its read-only `preflight` reports app-managed/external Git metadata
@@ -41,11 +38,6 @@ and verify the pinned `json`/`pybind11` dependencies; `remove` refuses dirty
 state and removes the clean checkout without globally deinitializing shared
 submodule configuration. Prefer it to raw `git worktree add`/`remove` on
 Windows.
-`manifest-check` validates common seeds/configuration, required environment
-variables, telemetry expectations, unique output paths, and frozen hashes;
-`exact-sha-preflight` verifies the remote checkout, CMake source binding,
-executable, and artifacts; `run-manifest` launches one arm and refuses to
-overwrite an existing result, sidecar, or log.
 
 `tools/agent/build.py` is the environment-aware entry point for checked-in
 Linux CMake presets. It invokes CMake directly when available and otherwise,
@@ -74,7 +66,7 @@ retain their existing locations and invocation conventions.
 ## Active vs reproducibility-only
 
 Scripts under `tools/run/` include both current experiment harnesses (used
-in ongoing Searcher3 and strategic-policy research) and historical data
+in ongoing strategic-policy research) and historical data
 generation loops (`datagen_loop.sh`, `datagen2_loop.sh`) retained for
 reproducibility. See `docs/knowledge-base/evaluation/current-research.md`
 for the active set.
@@ -91,13 +83,10 @@ import refactors:
   trainers, root exporters, and `tools/` scripts. Moving one would break the
   others.
 
-- **PVNet eval cluster:** `combat_pvnet_parity.py`, `eval_combat_pvnet.py` —
-  the evaluator imports the shared parity module.
-
-- **Self-play active scripts:** `train_value_combat.py`, `train_winrate.py`,
-  `train_rest_cf.py`, `train_policy.py`, `train_card_cf.py`,
-  `v_server.py`, `paired_analysis.py` — invoked by `selfplay/loop.sh` and
-  related scripts; call-site changes risk breaking the loop state machine.
+- **Former self-play scripts:** `train_value_combat.py`, `train_winrate.py`,
+  `train_rest_cf.py`, `train_card_cf.py`, `v_server.py`
+  and `paired_analysis.py` were driven by the self-play loop, which ADR-0020
+  removed. They remain usable standalone.
 
 - **Cross-imported modules:** `train_deckset.py`, `train_combat_deepsets.py`,
   `train_combat_dist.py`, `export_combat_model.py` — imported by both root

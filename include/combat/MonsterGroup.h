@@ -23,6 +23,9 @@ namespace sts {
         std::bitset<5> extraRollMoveOnTurn;
         std::bitset<5> skipTurn;
 
+        // Compares the first monsterCount slots; later slots are unused.
+        bool operator==(const MonsterGroup &rhs) const;
+
         [[nodiscard]] bool areMonstersBasicallyDead() const;
         [[nodiscard]] bool anyHalfDead() const;
         [[nodiscard]] int getAliveCount() const;

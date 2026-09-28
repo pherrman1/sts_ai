@@ -1,6 +1,18 @@
 # Current research status
 
-Last verified: 2026-09-20 for the tactical-prefix Silver oracle headroom screen
+Last verified: 2026-09-27 for the active-Lizard fresh native Stage-C
+qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
+promotion, and default-stack plumbing; 2026-09-26 for the current-main
+teacher-transfer gate, frozen Stage-C plan and checkpoint recovery, and the
+closed OOC MCTS reroot-opportunity measurement;
+2026-09-25 for the OOC contextual semantic-prior offline qualification,
+the `v_win` terminal-pricing post-review additions,
+the corrected Silver rollout-cost protocol and default-off status, and correction
+review of the merged DeepSets Brew-fallback quality-confirmation preparation;
+2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
+2026-09-23 for the frozen Silver prior online gameplay screen;
+2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
+2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
 gate and frozen
@@ -17,6 +29,44 @@ and fresh64 fixed10000 live MCTS gate;
 audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
+
+**Vendored Silver removed (2026-09-25, [ADR-0022](../../../decisions/0022-remove-vendored-silver.md)).**
+Every Silver research line below that ran in the vendored model — forced-action
+targets, rollout variance, first-action and tactical-prefix selectors,
+learned prefixes, Phase-A policy/value, budget/reuse-cap, visit-lock/rho
+stopping, root mechanism, internal-node FPU, the learned root prior, and the
+§349 rollout scratch piles — is closed: its tools were removed and its results
+are history. Reopening one means porting it to native Silver first. OOC research
+contracts now bind native Silver teachers.
+
+## OOC MCTS tree reuse / rerooting (#339) — closed after measurement
+
+**Closed (2026-09-26, §361).** On the representative 2-seed OOC 2048 workload:
+- Full-state (RNG-counter) identity never matches the previous search's tree.
+- Public-state identity matches 58% of searched decisions, but only within
+  noncombat stretches.
+- Rerooting to the single matched particle keeps a median of 30 visits, 0.90%
+  of searched simulations. Direct selected-branch rerooting is not implemented.
+
+Merging publicly identical particles (upper bound 26.6%) would be a separate,
+semantics-changing proposal; it is an open question.
+[Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
+
+## OOC MCTS contextual deck-prior offline qualification
+
+The newly trained 3,200-parameter contextual deck block is
+**`CONTEXTUAL_SEMANTIC_PRIOR_PASS`** against PR #329's saved authoritative
+prior trace. On 6,317 unique prior-covered non-singleton inputs, top semantic
+action agreement was 98.89%, median TV 0.000109, and p90 TV 0.018815. The
+historical source-policy gate also passed at 97.95% agreement, median TV
+0.003128, and p90 TV 0.034804. All broad-screen guards passed; SHOP agreement
+was 97.70% with median/p90 TV 0.002183/0.016985. The missing old student
+checkpoint was not recreated; this is a new seed-0, 30-epoch representation
+student frozen outside the worktree. This qualifies offline fidelity only. No
+native contextual inference, MCTS/gameplay smoke, policy-strength test, or
+default change was made. A separate native implementation and parity/runtime
+task is the next step. See [ledger §356](../../experiments/ledger-06.md) and
+the [evidence packet](../../experiments/evidence/ooc_contextual_semantic_prior_2026-09-25/README.md).
 
 ## OOC 20% gap-stop quality gate
 
@@ -70,9 +120,27 @@ not considered cleared.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
+## Merged DeepSets CTM Brew-fallback quality confirmation
+
+The independent 512-pair gameplay confirmation is **`OOC_HYBRID_QUALITY_CONFIRMED`**.
+The frozen local paired run completed on 2026-09-25: C won 277/512 and H won
+292/512; H minus C was +2.9297 pp with paired bootstrap 95% CI
+[-1.7578, +7.6172] pp, passing the preregistered -5.0 pp non-inferiority margin.
+This does not establish superiority or change the opt-in default. The former
+GCP blocker describes preparation only; no server restoration or resume is
+needed. Frozen preparation manifests remain historical evidence. See
+[the completed evidence packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
+
 ## Purpose
 
-The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+The [latest OOC CPU profile and exact V4-prior optimizations](../../experiments/evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md)
+profile fixed seed12002032 with V4 prior and uniform leaf policy. A singleton
+prior fast path and state-prefix policy-head reuse preserve the fixed-work
+trace; the singleton change reduced mean MCTS thread CPU by 7.9% against the
+prefix-only build, with modest/noisy whole-process CPU movement. The separate
+prefix-only comparison reduced mean MCTS thread CPU by 10.6% and whole-run
+wall by 6.0%. This is one-seed runtime evidence, not gameplay-quality evidence
+or a production benchmark. The [previous OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 reuses only historical seeds12002032/12002033, with exact workload reproduction
 and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
 for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
@@ -253,6 +321,20 @@ held-out contract. See [ledger §327](../../experiments/ledger-06.md), the
 [original experiment §326](../../experiments/ledger-06.md), and the
 [corrected learned-scorer evidence packet](../../experiments/evidence/silver_learned_prefix_scorer_20260920/README.md).
 
+## Silver learned-prefix scale validation (#260)
+
+The local 80-source external validation is **`FLAT_MLP_GENERALIZATION_FAILED`**.
+On the preregistered locked 40-source cohort, recovered-oracle fractions were
+negative for all three fits: TRAIN20 `-98.76%`, TRAIN40 `-106.19%`, and TRAIN60
+`-108.21%`. This is not a case where adding more training seeds repaired the
+frozen MLP: all five TRAIN60 initialization diagnostics were negative. The
+selected locked corpus had complete baseline32, Teacher-A/B, and prefix
+coverage for **525/525 leaves**, with exact 40 locked source seeds represented.
+This is bounded offline evidence only; it authorizes no native integration,
+gameplay qualification, model retraining, search change, or default promotion.
+See [ledger §329](../../experiments/ledger-06.md) and the
+[scale-validation evidence packet](../../experiments/evidence/silver_prefix_scorer_scale_20260920/README.md).
+
 ## Silver policy/value Phase-A cost diagnostic
 
 The corrected clean-baseline result is **`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**:
@@ -335,6 +417,82 @@ establish universal safety, or claim action equivalence. No expensive shadow
 10k searches were collected. See [ledger §280](../../experiments/ledger-06.md),
 [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
+
+### Vendored singleton-root search bypass (2026-09-24)
+
+**Removed with the vendored model (ADR-0022, 2026-09-25) and carried over to
+native Silver** ([§354](../../experiments/ledger-06.md)): native one-action
+roots are committed without search by default; the paired 128-seed check
+showed no detectable gameplay difference (86/128 vs 82/128, +3.1 pp, 95% CI
+[−1.7, +8.0]) and 6.5% less time per run. The record below is history.
+
+Since ADR-0021, plain `one_combat` uses native Silver by default. This bypass
+is in the vendored `SilverLiveBackend` and applies when that backend is
+selected, such as with `STS_NATIVE_SILVER=0` or a vendored-only
+`STS_SILVER_*` option. For a validated singleton edge surface, the vendored
+live backend commits the sole legal root action without running Silver search.
+This applies to forced `END_TURN` and one-option selections. If a retained
+root's edge surface does not match the sole live semantic action, ordinary
+live play discards that predecessor and retries the full-budget search from
+the live observation; it accepts the retry only if it selects that same sole
+live action. Hard-combat and root-mechanism capture modes remain fail-closed on
+a surface mismatch.
+Full-budget per-root and checkpoint diagnostic modes continue to search for
+complete observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
+records 510 one-action roots among 13,945 decisions; all 510 still ran 10,000
+simulations. The user-provided breakdown is 489 forced `END_TURN` and 21
+one-option selections, with 471 of 502 continuing forced roots followed by a
+next decision that started from scratch. The user reports this as 6.3% of
+Silver compute. The supplied 64-fight, exact-10k comparison reports 59/64 wins
+in each arm, no paired flips, treatment ending HP +0.3, 4.6% fewer simulations
+and 6.7% lower wall time. This report predates the retained-session correction
+that preserves `previousBest` across zero-search singleton roots; it is
+pre-correction descriptive evidence and does not confirm the corrected
+implementation. That 64-fight raw packet and candidate/baseline SHAs were not
+available in this checkout, so the breakdown and comparison results were not
+independently verified here. The tracked 32-run packet's measurements remain
+historical results from before the bypass.
+
+A first post-correction exact-10k replay compared main at `01f6f164` with the
+corrected implementation at `2da8eed6` on the frozen `hard64-holdout` cohort.
+All 64 cases were attempted, but case `12100109/21` failed with the same
+deterministic-state mismatch in both arms, leaving 63 valid pairs. Both arms
+won 57/63 with no outcome flips; treatment skipped 62 searches, used 3.19%
+fewer simulations, and had 2.99% lower summed per-case replay wall time. Mean
+ending HP changed by +0.16 and action traces matched on 60/63 valid pairs.
+This is a bounded replay result, not a complete valid N64 confirmation or a
+live-game quality claim. See the
+[post-correction hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25/README.md).
+
+A follow-up exact-10k replay after merging newer main compared current main
+`46684659` with the merged treatment at `be47b2a1` on the same frozen cohort.
+All 64 cases were attempted; the same deterministic-state mismatch failed in
+both arms, leaving 63 valid pairs. Both arms won 57/63 with no outcome flips;
+treatment skipped 62 searches, used 3.185% fewer simulations, and had 3.371%
+lower summed per-case replay wall time. Mean ending HP changed by +0.159 and
+action traces matched on 60/63 valid pairs. These are bounded descriptive
+results, not equivalence or default-promotion evidence. See the
+[current-main hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md).
+Main then advanced to `8ed346ea`; rebuilding the replay target from that head
+and from merged treatment commit `4b1b27f6` produced the same control and
+treatment binary hashes used for these rows. No more seeded replays were collected after
+the local 128 arm-case allowance was used. The packet preserves the original
+run SHAs and the later byte-identity check. After main advanced to `03ae0297`,
+Release rebuilds at that main head and merged treatment `b0393b03` again
+matched the recorded control and treatment hashes. Main later advanced to
+`18232bf0`; its rebuilt replay binary and the treatment at `b6242a65` differ
+from the binaries used in the N63 run. Source review found the unsorted-rollout
+option default-off and disabled for the recorded replay, with the remaining
+changes limited to diagnostic timing defaults and an isolated simple-rollout
+probe. No new hard64 screen was run; the N63 outcomes and simulation counts
+remain historical results for their recorded binaries, and the 3.371% wall-time
+result is not reverified on the newer harness. Main later advanced through PR
+#322 to `856b3f8f` and PR #323 to `f8fa4a3f`. Release replay rebuilds at `f8fa4a3f`
+and the merged treatment tree remained byte-identical to the `18232bf0` control
+and treatment hashes (`f0367213…` and `ba4ef57d…`). PR #322 changes `one_combat`
+backend dispatch and PR #323 adds documentation; neither changes the replay
+binary. No new hard64 screen was needed, and the N63 observations remain tied
+to their recorded binaries.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
@@ -651,10 +809,13 @@ full-corpus misc post states, including 413,799/413,799 supported states, withou
 using post counters. The 97,154 supported misc changes rule out literal
 copy-through, but do not require learned RNG state or a new support gate.
 
-The four other streams are recreated on every battle entry. The normal
-controller has no reachable same-floor combat chain: Colosseum is disabled
-and unimplemented, event callbacks end at rewards/map, and A20's second boss
-increments floor. There are zero same-floor pairs among 485,031 consecutive
+The four other streams are recreated on every battle entry. At the time of
+this evidence the normal controller had no reachable same-floor combat chain:
+Colosseum was disabled and unimplemented, event callbacks ended at rewards/map,
+and A20's second boss increments floor. Colosseum is now enabled and its Nob
+fight continues the slaver fight's streams (see
+[RNG ownership](../behavior/determinism-and-rng.md)); that chain is not
+covered by this evidence. There are zero same-floor pairs among 485,031 consecutive
 source-ordered corpus fights. Intervening OOC reads of card-random/shuffle
 also occur after their floor/boss-treasure reset. No support change is needed;
 no runtime adapter, model training or multi-fight qualification ran.
@@ -741,10 +902,213 @@ fraction and potion mask into later factors; relics reuse the HP encoder state.
 Native reconstruction copies supported fields, derives potion count, shares
 trajectory residues and emits exact inherited potion/misc OOC continuation
 RNG. It does not emit the four recreated battle-local RAW RNG streams.
-Nondeterministic active Lizard Tail fails closed. Models remain frozen; the
-potion support predicate now excludes actual
-generation routes (explicit Alchemize and Entropic Brew), allowing harmless
-off-color cards. No production dispatch change is implied by this correction.
+Nondeterministic active Lizard Tail fails closed. The targeted 111-source
+qualification attempted only the existing Lizard head after supported
+non-Lizard composition exposure passed its existing gates. The fixed head-only
+fit was rejected against the TRAIN-only prior (+0.50675 nat TEST NLL gap,
+source-bootstrap 95% CI [+0.37380, +0.61081]); the production guard and frozen
+artifacts remain unchanged. No runtime integration or live support smoke was
+run. The potion support predicate also excludes actual generation routes
+(explicit Alchemize and Entropic Brew), allowing harmless off-color cards.
+See the [active Lizard evidence packet](../../experiments/evidence/active_lizard_ctm_2026-09-23/README.md).
+
+A separate 32-pair rescue pilot found two no-Tail deaths; both active-Tail
+treatments won, but one retained Tail, consistent with the relic changing the
+policy trajectory. Ordinary CTM mean death probability was `0.05704` versus
+`0.0625` observed deaths; Tail consumption was `0.03125` of pairs. This is too
+small to calibrate a rescue head, and the single Tail-consumed win cannot assess
+conditional post-combat heads. It does not alter the prior qualification
+rejection or runtime guard. See the [paired pilot packet](../../experiments/evidence/lizard_tail_rescue_pilot_2026-09-23/README.md)
+and [ledger §344](../../experiments/ledger-06.md).
+
+A follow-up risk-targeted cohort paired 128 unique fights. The ordinary arm died
+27 times; active Tail won 22 of those, consuming Tail in 14 and retaining it in
+8. Tail was consumed in 32/128 pairs overall. Silver's first action changed in
+59/128 pairs and its full committed-action trace in 122/128, so Tail-aware
+policy adaptation is frequent. On 71 retained-Tail pairs where both arms won,
+the conditional post-head score deltas did not meet the preregistered material
+shift threshold, but the intervals do not establish equivalence and relic
+subgroups remain small. This supports testing small survival/consumption
+corrections that account for policy adaptation; it does not qualify reuse of
+existing heads, a Tail model, or runtime support. See the [targeted cohort
+evidence packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md)
+and [ledger §345](../../experiments/ledger-06.md). The prior Lizard-head
+qualification rejection and production fail-closed guard remain unchanged.
+
+A same-cohort minimal three-state diagnostic found a promising fixed
+`T2` revive-HP conditioning input for consumed-Tail wins: HP NLL improved by
+`1.084` nat on 22 supported rows, while its CRPS interval crossed zero. `T1`
+was not retained because it showed clear paired degradation in three sparse
+relic constraint groups. Source-grouped q/r calibration slightly improved
+three-class NLL/Brier over the coherent mechanical reserve baseline, but both
+paired intervals included zero. Six Fairy Potion rows remained exact-boundary
+fallbacks, and the five `LOSS_CONSUMED` examples leave rescue prediction
+data-limited. The offline 32-draw diagnostic had zero impossible or invalid
+Tail-state transitions on 98 supported sources; 30 sources used existing
+support/native fallbacks. Classification is
+`LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`; no production support or model
+qualification changed. See the [Phase A-C packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic),
+[analysis JSON](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json),
+and [ledger §346](../../experiments/ledger-06.md).
+
+The fixed-B1 candidate-pool extension reused 475 unique paired fights from the
+same 2,700-row pool after dropping 35 repeated source/fight keys, with repeated
+sources kept together for five-fold CV and source bootstrap. The 35 overlapping
+replays are exact combat-observation duplicates; only their `targetRiskBand`
+selection metadata differs. There are 13 `LOSS_CONSUMED` examples total (eight
+new), short of the 20-additional target.
+
+The broad, post-boundary descriptive comparison covers 451 rows from 124
+sources and scores q/r NLL `0.3544` / Brier `0.1994` against B1 `1.9122` /
+`0.2158`. On the prospective runtime domain—`full_support_reasons()` after
+removing Lizard Tail from both pre-state and predictor input, plus Fairy/Bloom
+exact-boundary exclusions—24 additional unsupported rows are excluded. The
+remaining 427 rows from 124 sources contain 12 `LOSS_CONSUMED` examples; q/r
+scores NLL `0.3427` / Brier `0.1932` against B1 `1.9890` / `0.2096`, with
+source-bootstrap intervals favoring q/r. The 1,611 remaining supported and
+coherent candidate rows held only `1.4045` summed fixed-B1 loss mass, so no more
+trajectories were generated. The 34 new `WIN_CONSUMED` observations remain
+confirmation data for frozen T2; a future T0-vs-T2 analysis can score them
+without retuning. This remains promising but data-limited evidence, not
+qualification, and the production `active_unqualified_lizard` guard is
+unchanged. See the [B1-ranked extension
+packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension),
+[prospective-domain analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json),
+[broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
+and [ledger §347](../../experiments/ledger-06.md).
+
+A follow-up keeps the PR #326 learned `r` and T2 rule frozen while setting
+`q = 1 - pOrdinaryWin`. On the exact archived 128-row vendored cohort, the
+mechanical-q candidate improved pooled three-class NLL and Brier against B1,
+with exact q parity and support on all rows; the 9 `LOSS_CONSUMED` labels from
+9 sources remain below the qualification floor. This archived post-hoc screen
+is development evidence only. The first native-Silver transfer attempt
+replayed the campaign and failed to reach an archived fight index after the
+native outcomes changed the later trajectory. That is a harness failure, not
+a teacher-transfer result; it produced no native pair rows or scores. The
+corrected plan directly restores the 119 exact non-burning PR #326 persistent
+snapshots and excludes only the nine burning-elite targets whose archived
+states lack `burningEliteBuff`. PR #331 made native Silver update
+`simulationCountTotal`; merged PR #332 default-initializes that counter to
+zero. Retry 4 saved 116 pairs, then stalled on three Event-room snapshots
+because the direct snapshot lacked `curEvent` and the event-option callback:
+the generic `afterBattle()` callback recursively called `regainControl()`. A
+neutral post-capture return-to-map continuation fixed the collector. Retry 5
+reran all 119 exact non-burning snapshots with the then-current native teacher
+pinned to `0eed6993999386737d87f040e38fb241623b5cf3` and one executable; all 119
+rows had exact support and mechanical-q parity. Its predeclared analyzer
+decision was `PROCEED_TO_FRESH_NATIVE_QUALIFICATION`; this is historical
+transfer evidence, not qualification. Current main is
+`6bae3a67c63d1f724908e2ee87b27d51e32d30a0`. PR #327 changed native Silver's
+equivalent-copy reroot behavior, which the frozen exact-root-budget setting
+does not disable; PR #362 changed `SilverWireState` and `SilverConversion` to
+preserve pending card queues at card-selection roots and settle Guardian Mode
+Shift before replay. Retry 6 then reran the exact same 119 states against
+current native Silver (baseline `6bae3a67c63d1f724908e2ee87b27d51e32d30a0`):
+119/119 exact snapshots, support, and mechanical-q parity; 80
+`WIN_RETAINED`, 30 `WIN_CONSUMED`, and 9 `LOSS_CONSUMED`. The frozen transfer
+analysis passed the proceed gate with no clear candidate, learned-r, or T2
+regression. Its 19/119 vendored/native label disagreements remain descriptive;
+teacher rows are not pooled. Stage B permits the fresh run, but does not
+qualify the candidate. The frozen fresh 320-source assignment remains disjoint
+from 367 prior Lizard sources. Following ADR-0024, the user authorized its
+local execution. The original scientific plan freezes the candidate,
+assignment, selection rules, and gates in
+`stage_c_preoutcome_plan.json` (SHA-256
+`54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c`). The
+collector uses eight independent source processes with one OpenMP thread each;
+completed sources are saved with per-seed manifests and checksums for resume.
+The first candidate attempt completed eight source shards but failed when its
+write-once artifact helper refused to replace the mutable progress index. All
+eight data/manifest/provenance/log sets validated against the then-frozen
+producer; no target selection/scoring, pair collection, or qualification
+analysis ran. Afterward, main advanced to `212aa25485bc6e8f0a5a91eb35edc7485056cb5a`
+through PR #366. Its OOC MCTS observer is opt-in, and
+`STS_OOC_MCTS_REUSE_TRACE` is unset in the frozen teacher config; Stage B retry
+6 remains the proceed diagnostic. The merged PR source was clean-built at
+producer commit `45ff412f2f48ee4ff8b14325b8e317688a3a2880`, executable
+SHA-256 `8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea`,
+and teacher-manifest SHA-256
+`c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. The
+older eight shards are preserved but excluded so all Stage-C rows share that
+one producer and executable hash. The corrected current-main plan
+`stage_c_preoutcome_plan_retry2_current_main_indexfix.json` (SHA-256
+`2c4d5eb54ee0277573ddef9e21359852ac965cbd0a5a9df9496086432f2a3ee2`)
+records the base advance and supersedes the earlier execution amendment without
+changing the candidate, assignment, selection rule, worker topology, or gates.
+Its attempt record is
+`stage_c_candidate_collection_attempt2_main_advance.json` (SHA-256
+`58024b987d90783e6b5fc633cc0b110e71f302f9eb0b273111fc8b8cbc3c9972`). The
+current-main Stage-C run completed with one producer commit and executable:
+320/320 source candidate shards, 6,509 candidate rows, 4,674
+prospective-support eligible states, and 320 outcome-blind selected targets
+(288 HARD288 plus 32 BROAD32). The selected-target file SHA-256 is
+`68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493`. The
+separate frozen pair plan SHA-256 is
+`dc1084ea262769500f7fd37852cfd237ecc89cd4e74267c54adc0929d4dabd07`; the
+current-main native-Silver teacher manifest is
+`c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8`. Pair
+collection completed all 320 exact-10k fair native-Silver pairs using eight
+subprocesses with one OpenMP thread each. All 320 rows passed execution,
+support, and mechanical-q checks. Labels were 195 `WIN_RETAINED`, 105
+`WIN_CONSUMED`, and 20 `LOSS_CONSUMED` from 20 distinct sources; all 125
+consumed rows were B1-scoreable.
+
+The frozen analyzer classified the candidate
+`ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED`. Candidate-minus-B1
+pooled three-class NLL was `-12.99026` (source-bootstrap 95% CI
+`[-23.75822,-4.36279]`) and multiclass Brier was `-0.05266` (CI
+`[-0.07482,-0.03239]`). Learned-r NLL and Brier deltas on 125 consumed rows
+were `-1.85084` (CI `[-3.26182,-0.71950]`) and `-0.11904` (CI
+`[-0.16692,-0.07162]`). T2-minus-T0 on 105 supported consumed wins was
+`-1.06154` HP NLL (CI `[-1.47307,-0.67843]`), `-3.18088` HP CRPS (CI
+`[-4.85606,-1.51303]`), and `-2.84107` expected-HP absolute error (CI
+`[-4.77866,-1.02229]`). The rare-event floor, exact-support, q-parity,
+primary, learned-r, and T2 gates passed; no clear HARD288 or BROAD32
+degradation was detected. The 32 BROAD32 outcomes were all retained wins and
+therefore contain no consumed-tail rows. Stage C is offline qualification
+only and did not itself integrate runtime support. The subsequent DeepSets plus
+standard-Attention Brew integration added the qualified correction and passed
+deterministic parity, including after the branch was re-synced with current
+main. The original eight-pair whole-run canary was invalid because the forced
+Tail was inserted spent; its treatment did not exercise the correction. The
+disjoint follow-up cohort `991008..991015` passed the predeclared Gate 2
+integration checks after the forced-Tail initializer was corrected. All 16 runs
+completed; treatment had 120,708 Lizard preparations and samples with zero
+Lizard support failures. A single treatment seed recorded 41
+`active_unqualified_lizard` aborts on the predeclared Fairy/Mark exact-path
+boundaries; those matched the 41 boundary exclusions, with no abort from an
+eligible correction state. Both arms won 8/8, which is descriptive only.
+
+After Gate 2, the exact qualified DeepSets payload was packaged as
+`selfplay/models/combat_transition_deepsets_lizard_t2.native`. Its tensor
+payload remains SHA-256
+`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`; package
+metadata is pinned to the Gate 2 PASS result hash. With `STS_OOC_MCTS=1` and
+the combat model unset, the default stack is DeepSets, the standard Attention
+Brew fallback, and the active-Lizard correction. `STS_OOC_MCTS` itself remains
+off by default. Active Lizard + Entropic Brew, Fairy Potion, and Mark of the
+Bloom remain excluded or exact-path boundaries. The original invalid cohort
+remains preserved separately from the successful follow-up.
+
+Two no-model-override Gate 3 smokes on frozen implementation
+`529c214562fd7eda4842f4386c05303c4d3d3d47` reported the automatic stack in the
+startup line and combat telemetry. The ordinary case had no forced relic; the
+forced-Tail case recorded 17,610 Lizard preparations and 17,608 samples. It
+also recorded two existing `unsupported:smoke_bomb` exclusions, with no fast or
+Brew-fallback support counter failures. The auxiliary `[ooc-mcts-config]` line
+is malformed JSON, although its text shows the expected model/fallback/active
+fields. The ordinary case produced complete outputs and its final `BEST`
+summary, but the wrapper did not save its subprocess exit code after failing
+while parsing that line; the seed was not repeated. See the
+[Gate 3 smoke packet](../../experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/gate3_default_smokes_2026-09-27/README.md).
+
+After current main advanced with the Match and Keep policy, the merged branch
+again passed frozen Gate 1 parity, the 31-row Brew fixture, and focused
+combat-transition/OOC tests. See [ledger §364](../../experiments/ledger-06.md)
+for Stage C, [ledger §365](../../experiments/ledger-06.md) for the original
+integration attempt, [ledger §366](../../experiments/ledger-06.md) for the
+follow-up/default, and the [mechanical-q evidence packet](../../experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
@@ -953,14 +1317,71 @@ NLL changes were +2.7248%, +4.9113% and +3.0868%, while recursive Brew
 regressed **+19.1859%**, an obvious slice regression. Legal probability was
 exactly zero and normalization remained within tolerance.
 
-The Stage-A teacher-forced gate therefore stopped the planned 32-draw
-ancestral stage. This rejects only the exact frozen DeepSets representation
-plus current potion-decoder recipe. It does not justify fine-tuning DeepSets,
-reinterpret the Attention result, claim intrinsic information absence, or
-qualify potion sharing for runtime. No TEST, export, C++, gameplay, OOC MCTS
-or default-promotion work occurred. See
-[ledger-06 §289](../../experiments/ledger-06.md) and the
-[DeepSets potion screen evidence](../../experiments/evidence/deepset_potion_screen_2026-09-16.md).
+The follow-up that jointly trained a potion-specific DeepSets encoder and
+trajectory decoder is a **narrow miss**. The warm-start arm reached validation
+trajectory NLL `0.487162724` (`-3.8754%` versus the dedicated Attention
+reference), improving on the frozen substitution result, while scratch reached
+`0.498382425` (`-1.6616%`). The existing teacher-forced gate still rejects both
+arms because recursive Brew regressed `+13.3126%` for warm start and
+`+33.4429%` for scratch (12 validation rows); warm-start Brew also regressed
+`+7.0897%`, while Smoke improved `-16.5479%` and trajectory-special regressed
+`+3.1766%`. The run retained zero TEST encoding/inference rows; no TEST scoring,
+export, native parity, latency, gameplay, OOC MCTS, or default promotion
+occurred. The loader reads the prepared cache as a whole, but TEST examples did
+not enter encoding, evaluation, selection, or debugging. This result supports
+only a bounded next experiment after inspecting the recursive-Brew validation
+cases. A review hypothesis is that the encoder's `z` retains initial potion
+inventory information at recursive DAG nodes while the decoder's separate
+current-inventory input changes; this is unverified and should be tested before
+choosing an architecture change. It does not qualify the model or establish
+the cause of the remaining slice gap. See
+[ledger-06 §338](../../experiments/ledger-06.md) and the
+[potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
+
+### Potion-pooled-blind DeepSets follow-up
+
+The paired warm-start follow-up is **`POTION_DEEPSET_POTION_BLIND_REJECTED`**.
+The control reproduced PR #298 W closely (validation NLL `0.486931329` versus
+`0.487162724`). P zeroed only the pooled potion identity/slot block before the
+same trunk; global inputs, including `potionCount` and `potionCapacity`, stayed
+unchanged as specified. P retained strong overall validation trajectory NLL
+`0.489927014` (`-3.3299%` versus Attention), improved no-change Brier and kept
+illegal probability exactly zero. The existing teacher-forced gate still
+rejects P: recursive-Brew NLL was `3.026048` versus Attention `2.412967`
+(`+25.4078%`) and control C `2.985346` (`+0.040702` nat paired mean). P
+improved on 5 of the 12 cases and worsened on 7, so no consistent case-level
+fix appeared. This weakens the hypothesis that the pooled potion block alone
+causes the recursive-Brew regression; it does not isolate the remaining global
+potion-count/capacity signal or establish another cause. The raw receipt records
+zero TEST encoding/scoring/teacher-metric rows. No ancestral stage, TEST use,
+export, native parity, runtime change, or gameplay qualification was run.
+See [ledger-06 §339](../../experiments/ledger-06.md), the
+[experiment report](../../experiments/evidence/deepset_potion_blind_2026-09-23.md),
+and its [raw receipt](../../experiments/evidence/deepset_potion_blind_2026-09-23.json).
+
+### Experimental DeepSets CTM with Entropic Brew fallback
+
+An opt-in hybrid implementation now uses the PR #298 W potion-aware specialist
+for predictor-visible pre-combat inputs without Entropic Brew and dispatches
+the whole transition to the current standard Attention CTM whenever Brew is
+present. Specialist parity and hybrid/direct-child state/RNG identity passed on
+the frozen 31-row fixture set. On the same 10 non-Brew fixture rows supported
+by fast DeepSets, median preparation was 3.715 ms standard and 0.491 ms fast
+(7.57x). In the subsequent canonical 64-pair OOC engineering screen at frozen
+source `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`, standard won 40 and hybrid
+39; paired win delta was `-1.56 pp` (95% CI `[-14.06,+10.94] pp`), an
+**inconclusive** quality estimate. Across 1,135,061 OOC hybrid preparations,
+4,219 used Brew fallback (`0.372%`) in this 64-seed cohort. Observed mean
+bestbench elapsed time was lower (641.4 vs 439.7 s/seed), as was mean MCTS CPU
+(139.35 vs 94.85 s/seed); this is
+runtime evidence under changed search trajectories, not a matched-work causal
+estimate. The observed 64-pair difference was small, but its uncertainty still
+includes a sizable win-rate regression. The screen is not equivalence evidence
+or a default-promotion gate. The specialist
+remains offline-rejected; the hybrid remains unqualified and opt-in only. A
+separate larger confirmation is warranted before any promotion. See
+[ledger-06 §342](../../experiments/ledger-06.md) and the
+[mechanism/timing/paired OOC packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 ### Qualified DeepSets representation for survival prediction
 
@@ -1166,8 +1587,9 @@ Native reconstruction shares turn/attack/card/shuffle residues across related
 relics; partial labels intersect modular constraints. Certified victories:
 TRAIN 224,715 / 17,718 sources; HOLDOUT 25,398 / 1,979 sources. Full relic-vector
 mode exact is 0.805667113 versus native+copy-through 0.792700213; these are
-secondary metrics. No eligible active Lizard Tail exists, so its stochastic
-head is unqualified and the offline adapter fails closed on that support.
+secondary metrics. This pre-existing relic corpus has no eligible active Lizard
+Tail rows; the later targeted cohort also failed the Lizard-head proper-score
+gate, so that head remains unqualified and the offline adapter fails closed.
 Inserter has no corpus tokens; its source-derived reconstruction shares the
 qualified turn residue but has no relic-specific empirical score.
 
@@ -1398,6 +1820,41 @@ The experiment-only runtime flag, fixture executable, and searcher hook were
 removed before merging the evidence; no B implementation or opt-in runtime
 path remains.
 
+The separate §349 rollout-cost candidate tested an early energy rejection (A)
+and rollout-only unsorted unknown piles (B). A preserved deterministic outputs
+but had no speed gain and was reverted. The original instrumented fixed-work
+screen measured about 11% lower B CPU, but its reported 35/59-versus-40/59
+action comparison was invalid: control's 1k search was a prefix of its same-seed
+10k teacher, while B mapped the same RNG values to different cards. Those
+counts are withdrawn as a quality result, not evidence of a B regression.
+
+The planned independent-teacher DEV follow-up is complete under the disclosed
+execution seed transform. An evidence audit found that its helper used
+`teacher/NN` and `arm/NN` hash path components, while the committed protocol
+specified `teacher-NN/NN` and `arm-NN/NN`; no durable pre-run amendment was
+retained. All identities remain deterministic and pairwise distinct per root,
+but exact preregistration fidelity is unresolved (details are in the follow-up
+packet). B remains explicitly default-off. On 52 roots with teacher-majority
+consensus, matched fixed-work first-action agreement was 54.3% control versus
+58.7% B, a paired
+mean of `+4.3 pp` with a root-cluster 95% interval of `[-1.4,+10.1] pp`. The
+non-negative mean triggered a conditional 1,000-control/1,100-B
+equal-time-equivalent screen, which measured 54.3% versus 61.5% (`+7.2 pp`,
+95% interval `[+1.0,+13.5] pp`). Four uninstrumented 1k CPU pairs measured
+mean user CPU of `0.740 s` control versus `0.675 s` B (`-8.8%`), with B lower
+in all four pairs. These are DEV first-action and local CPU signals; no
+complete-combat gameplay, holdout, or default qualification was run. A separate
+instrumented profile estimated `getIncomingDamage` at 2.6% inclusive, so no
+fragile cache was implemented. Chance duplicate counters were exposed by
+category, but exact support exhaustion was not established. B remains
+experimental and is not qualified for promotion. See [ledger-06 §349](../../experiments/ledger-06.md),
+the [corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
+the [follow-up results and raw evidence](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/README.md),
+and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
+The native Silver analogue (draw pile only) was rejected at its profile
+gate: removable rollout-only sort work is about 2% of native search CPU
+([ledger-06 §350](../../experiments/ledger-06.md)).
+
 ### Whole-Act OOC evaluator
 
 The corrected evaluator passed its serial/parallel and worker-coverage canary,
@@ -1432,6 +1889,8 @@ scaling experiment").
 
 ### Searcher3 belief filtering and rejuvenation
 
+Closed: Searcher3 was removed (ADR-0019).
+
 Exact real-observation filtering is semantically promising but remains opt-in;
 persistent transfer is not in the executable, and single-child AI_RNG
 rejuvenation stayed mixed/inconclusive with possible downside tail risk. A new
@@ -1442,6 +1901,8 @@ promotion or broader rejuvenation work. See the
 confirmation").
 
 ### Searcher3 particle count
+
+Closed: Searcher3 was removed (ADR-0019).
 
 128 particles remains directionally promising but unconfirmed; 64 remains the
 default. The next justified action is a full-block confirmation on the current
@@ -1480,6 +1941,20 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 Earlier lower root exploration, Sequential Halving, progressive unpruning,
 hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
 produced no stable promotable advantage; ordinary c=25 remains the default.
+
+The complete frozen internal-node finite FPU screen is **`INTERNAL_FPU_INCONCLUSIVE`**.
+At the preregistered root metric, 1k CONTROL agreed with 10k CONTROL in 45/64
+cases while 1k FPU agreed in 39/64; among 22 1k CONTROL/FPU disagreements, FPU
+moved toward the 10k CONTROL reference 6 times and away 12 times. Full 1k and
+10k `hard64-dev` cohorts were accepted 64/64 per arm, but whole-combat
+nodes/wall/simulation totals are trajectory-confounded after root divergence.
+The fixed FPU formulation remains unchanged and is not a production default;
+park this particular formulation pending a new hypothesis. Do not tune,
+promote, spend holdout budget, or run gameplay qualification from this result.
+See
+[ledger-06 §332](../../experiments/ledger-06.md) and the
+[complete internal-FPU evidence packet](../../experiments/evidence/silver_internal_fpu_20260921/README.md).
+
 The later six-arm root-mechanism replay was a **single-source-seed offline
 signal**, not a multi-seed confirmation: informative Teacher-A visit PUCT
 beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`, 95% CI
@@ -1515,6 +1990,57 @@ recollected roots or interpret the primary pass as that regression.  See
 [ledger-06 §321](../../experiments/ledger-06.md) and the
 [forced-action evidence](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
+The frozen `SilverPriorNetV1` T2/seed-20260922 candidate passed its one-time
+LOCKED_TEST expected-regret gates: on 1,494 held-out L roots the model-minus-
+uniform delta was `-3.23423` (95% source-seed CI `[-3.53464,-2.93676]`), and on
+64 preselected J roots it was `-2.89553` (`[-3.58717,-2.26012]`). The L target
+itself improved locked-J regret over uniform by `4.11938` points; the student
+recovered 70.29% of that soft-prior headroom. This is frozen offline
+generalization evidence, not gameplay qualification or default promotion.
+LOCKED_TEST is consumed and must not be used for tuning; the evaluator command
+is now disabled for every output path. A bounded root-replay mechanism screen
+then evaluated the frozen T2 prior on 64 preselected VALIDATION roots. The
+L-target oracle beat uniform PUCT (`-0.26776`, 95% source-seed CI
+`[-0.56135,-0.07144]`), while learned-minus-uniform crossed zero
+(`-0.03390`, `[-0.11794,0.03651]`) and learned-minus-ordinary-UCT also
+crossed zero (`+0.05916`, `[-0.28676,0.37000]`). Its predeclared
+classification is **`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`**: root PUCT
+has usable headroom on this development population, but the learned prior did
+not capture it. Stop the deployment line based on this mechanism screen. A
+separately requested downstream whole-run gameplay diagnostic was subsequently
+allowed; that authorization does not revise this screen or establish
+deployment. VALIDATION was used for model selection, so this is a mechanism
+screen rather than fresh generalization evidence. No gameplay or default
+search changed by the offline experiment. See the [root-replay packet](../../experiments/evidence/silver_prior_root_replay_20260923/README.md),
+the [ledger-06 result](../../experiments/ledger-06.md), and the
+[locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
+
+The separate pre-review gameplay integration smoke used two explicitly
+reserved, non-scientific seeds. The corrected parser sums every combat record:
+all four runs completed; treatment telemetry recorded 901 prior evaluations
+and 901 root-PUCT decisions total with zero surface failures, while control
+made no model calls. Treatment mean inference latency was 6.679 ms/call and
+6.930 ms/call on the respective seeds. The legacy logs lack raw per-call
+samples, so exact pooled median/p95 are unavailable. Their CSV metadata reports
+executable SHA `1dc14cef9f5b6602fe84bd2a266347757245d78c`, not the then-current
+candidate `fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`; this is working-tree
+integration evidence, not candidate-SHA evidence. The user's 5 ms waiver
+allowed the bounded smoke to complete. This confirms runtime execution and
+retained reroot operation only.
+The subsequent user-authorized full-run online screen completed the frozen 32
+paired seeds `24100000..24100031` at reviewed source
+`57a824349fd99c917cf22d67e929a8630f001a9d`, exact binary/model hashes, and
+fixed project-fair A0 / 1,000-simulation settings. CONTROL won 21/32 and LEARNED
+15/32; the paired table was 1 learned-only, 7 control-only, 14 both-win, and 10
+both-lose. The `-6` net discordant count yields the preregistered
+**`ONLINE_LEARNED_PRIOR_UNFAVORABLE`** classification; paired win-rate delta is
+`-18.75 pp` (95% bootstrap CI `[-34.375,-3.125] pp`), exact two-sided p is
+`0.0703`. Treat this as the bounded screen's classification, not conventional
+statistical significance or broad model invalidity. It does not qualify or
+promote a default. The offline `LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`
+result remains unchanged. See the [complete online packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md)
+and [ledger result](../../experiments/ledger-06.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled
@@ -1530,6 +2056,136 @@ and [ledger-06 §157–§158 and §166](../../experiments/ledger-06.md).
 K-rollout, one-turn bootstrap, policy-filtered rollout, and related variants
 were null or negative. Reopen only with a new premise; see the
 [leaf-evaluation synthesis](../research/combat-search/leaf-evaluation.md).
+
+### Silver terminal/value audit
+
+The bounded 20-source development audit following PR #260 is
+**`TERMINAL_REWEIGHT_HEADROOM_INSUFFICIENT`**. It replayed 247 preserved
+leaves with 32 paired SimpleAgent continuations each and added an exact raw
+`SilverTerminalValueFeatures` decomposition of the current terminal utility.
+The constrained compatible reweight worsened cross-fitted Teacher-A regret
+from `1.51332` to `1.71113`; the untied diagnostic also failed to improve
+regret (`1.61666`) after corrected nested source-grouped lambda selection.
+Teacher B worsened for the compatible arm, and the corrected
+source-clustered baseline-minus-candidate interval was `[-0.46891, 0.00000]`.
+Against an optimistic zero-regret ceiling, the compatible arm recovered
+`-13.07%` of the baseline gap; its development-only fit also left 48/75
+ordinary-loss leaves at or above the minimum victory value. The preserved
+corpus omits act, HP-band, and source-rollout-length metadata, so those
+subgroup diagnostics remain unavailable rather than inferred.
+This measures fixed rollout trajectories against the existing Silver objective;
+it is not a claim that Teacher A/B are the true game objective.
+
+The result is not a 100-source development qualification or an external
+holdout: the committed #260 expansion/locked prefix rows do not include
+replayable leaf wires, so they were not silently reused as terminal-feature
+data. No fresh holdout, hard64 replay, live gameplay, production override, or
+default promotion is authorized by this result. The current next target is
+continuation trajectory/policy quality. See [ledger-06 §330](../../experiments/ledger-06.md)
+and the [terminal/value audit packet](../../experiments/evidence/silver_terminal_value_audit_20260921/README.md).
+
+### `v_win` terminal-pricing audit
+
+The tracked compact win model is **`VWIN_W1_NEEDS_SMOOTHING`** under the
+pre-registered W1 input-readiness thresholds. In 128 project-fair Silver
+E2c-v2 seeds, 63.77% of RAW HP sweeps were monotone (95% seed-bootstrap CI
+60.18–67.35%), below the 95% requirement; median longest flat run was 5 HP,
+within the 10-HP limit. HP slope and held-potion value were positive with
+intervals above zero in all three acts. This does not establish gameplay
+quality or runtime suitability, and no lookup table or runtime change was
+made.
+
+The first collection process left 93 row-bearing seeds without final
+aggregate health/quarantine counters; the remaining 35 seeds have complete
+sidecar accounting. E2c emits rows only for runs passing `trainingRunValid`,
+which rejects unresolved runs and simulator-health failures; each of the 93
+represented seeds passed that predicate. The missing sidecar still prevents reconstruction of attempted/completed
+counts or any unrepresented quarantines, and the interruption cause is unknown. Telemetry
+`prior_model_loaded=0` measures the optional Silver learned root prior, which
+was off by default, not the separate compact policy trees. Compact-policy load
+status is **Unverified** from retained logs. A separate 600-row Python/native
+parity gate passed exactly. Calibration was weakly powered and underpredicted
+the cohort's observed run-win rate; zeroing the hidden-future fields passed the
+rank-correlation threshold but can be out-of-distribution.
+
+The pre-collection inventory found vrich and the named rest/path/card
+counterfactual files absent from the checked local checkout/worktrees. The
+ledger-referenced E2c GCP path is not mounted on this host; current remote
+existence and historical dataset byte sizes are unverified. Under the
+specified zero-hidden-future sensitivity, per-act HP slopes were
+0.000675/0.002274/0.002355 probability per HP and held-potion equivalents
+were 15.59/13.55/4.45 HP; those fair-regime values are OOD-prone. The packet
+contains the artifact inventory and interval table.
+
+W1-relevant interpretation: only a monotonically smoothed HP curve remains a
+candidate `v_win` input, and only for non-act-boss victories. Silver's native
+evaluator prices A0 act-boss wins after healing HP to max; the boss
+`s_HP_span` median POST/RAW ratio is 0.7833, so the win-tree slope shifts about
+22% across that boundary. Near realized HP, 14.5–21.6% of rows by room type
+have a drop above 0.005 within ±20 HP, and the 95th-percentile largest drops
+are 15–29 HP-equivalents. Gold is a possible secondary input, but its corrected
+mean/median is only 0.23/0.10, 0.06/0.03, and 0.04/0.00 HP-equivalents per gold
+across Acts 1–3. Held-potion mean/median values are 4.5/1.5, 4.3/1.7, and
+4.8/0.6; max-HP-only values are 0.61/0.31, −0.06/0, and −0.48/0. Potion-type
+and max-HP prices are not usable terminal prices. RAW-row AUC is 0.708 and
+first-row-per-seed AUC is 0.638; with 128 seeds discrimination is weak, and
+the model underpredicts cohort run-win rate.
+
+The fair-regime rank-correlation gate does not validate price levels; act-level
+potion HP-equivalents change by factors 2.31, 2.01, and 0.66 from recorded to
+zeroed hidden fields. In Q4, the `curHp` coefficient interval excludes zero
+(`−3.36e−4` per HP), about 17% of the mean `s_HP=0.00195`, so RAW-to-POST HP
+pricing differs across states although the formal gate passed through low
+`R²`.
+
+For A4, the adjacent-floor, same-act drop proxy classified all 147 unmatched
+full-belt rows with known drops as potion drops, with no classified unmatched
+residual. RAW belt capacity was full in 15.3% of matched rows and 95.3% of
+unmatched rows. One matched full-belt drop is explained by Potion Belt (`r159`)
+increasing capacity before the potion choice; 216 unmatched rows remain
+unclassified. The belt was full in 759/3,069 RAW rows (24.7%); among 301
+full-belt rows with classifiable adjacent-floor status, 148 (49.2%) had a
+potion drop. The run policy takes a potion only when a slot is available and
+has no discard/swap path. This supports the conditional behavior in the current
+full-run reward chain:
+when capacity remains full through the potion decision, the dropped potion is
+not claimed or swapped. E2c `captureE2cPost` returns while
+gold, relic, or potion rewards are pending, so an unclaimed potion also blocks
+POST capture. The proxy-confirmed minimum is 147/3,069 = 4.79% (4.8%) of RAW
+fights. If all 199 unmatched full-belt rows with unknown proxy status also
+represent forfeited drops, the code-path upper count is 346/3,069 = 11.27%
+(11.3%). This is conditional, not an estimated rate; 17 unmatched
+space-available rows show that other causes of missing POST exist, so the exact
+cohort forfeiture rate remains unknown.
+
+The current tracked 1,060-tree artifact contains counter-value splits on
+multiple relic fields, contrary to the zero-split statement in historical
+ledger §§109–110. The current enum maps r116 to Neow's Lament and r131 to
+Thread and Needle. The historical run's exact model artifact is not
+provenance-bound, so its result is not rewritten. See [ledger
+§353](../../experiments/ledger-06.md) and the [complete evidence
+packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.md).
+
+### `v_win` refresh implementation status (#334)
+
+The opt-in `vwinrefreshgen` and `bossheadroom347gen` producers now encode the
+accepted exact-10k/V4 data contract, deferred semantic siblings, victory-boundary
+`WIN_RAW` capture, chosen-replay parity, and paired #347 boss-budget arms.
+Revision 5 adds opt-in `DECISION` rows with public screen contents and semantic
+candidates on source/branch trajectories, including sequential shop states and
+compound selectors, for later #379 work. These rows are not used to train #334.
+The
+bundle validator and Stage-1 paired-bootstrap analyzer are implemented and
+have local contract/self-tests. This is implementation status only: the A1
+128-seed pilot, #347 Stage-1 replays, A2 collection, model training, lookup-table
+fidelity, MCTS leaf coverage/timing, and any gameplay or default-promotion gate
+have not been run. No result from the tracked model's §353 audit is changed by
+these producers.
+
+The opt-in MCTS leaf-state trace remains outside this implementation until the
+open #363 adapter/profile seam is available. No inference should be made from
+the new OOC branch/action trace about leaf-state coverage or in-context
+`v_win` latency. See the [collector and validation contract](../operations/ooc-label-pipeline.md#v_win-refresh-and-347-boss-headroom-collector).
 
 ## Routing / evidence
 

@@ -483,6 +483,21 @@ std::string canonicalOocSemanticActionKey(const OocSemanticAction &action) {
     return out.str();
 }
 
+std::string canonicalOocMctsChoiceKey(OocSemanticAction action) {
+    if (action.effect == Effect::UPGRADE_CARD || action.effect == Effect::REMOVE_CARD
+            || action.effect == Effect::TRANSFORM_CARD
+            || action.effect == Effect::TRANSFORM_UPGRADE_CARD) {
+        if (auto *card = std::get_if<OocCardTarget>(&action.target))
+            card->occurrence = 0;
+        else if (auto *transaction = std::get_if<OocTransactionTarget>(&action.target))
+            transaction->card.occurrence = 0;
+        else if (auto *selector = std::get_if<OocSelectorTarget>(&action.target))
+            if (auto *card = std::get_if<OocCardTarget>(&selector->card))
+                card->occurrence = 0;
+    }
+    return canonicalOocSemanticActionKey(action);
+}
+
 std::string oocSemanticActionPayloadJson(const OocSemanticAction &action) {
     using J = nlohmann::json;
     auto card = [](const Card &c) -> J { return {{"id", (int)c.id}, {"misc", c.misc}, {"upgraded", c.upgraded}}; };

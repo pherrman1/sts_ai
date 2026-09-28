@@ -1,7 +1,7 @@
 # ADR-0003: Searcher2 is default and Searcher3 is an opt-in particle searcher
 
 Date: 2026-08-13
-Status: accepted
+Status: superseded by [ADR-0018](0018-silver-default-combat-backend.md)
 
 ## Context
 

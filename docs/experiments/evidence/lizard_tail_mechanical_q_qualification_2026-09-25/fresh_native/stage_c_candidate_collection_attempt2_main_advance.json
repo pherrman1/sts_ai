@@ -1,0 +1,44 @@
+{
+  "candidateAndGatesUnchanged": true,
+  "candidateScoringOrSelectionRun": false,
+  "candidateShardSeedsGeneratedUnderSupersededProducer": [
+    4202000,
+    4202001,
+    4202002,
+    4202003,
+    4202004,
+    4202005,
+    4202006,
+    4202007
+  ],
+  "candidateShardSeedsReused": [],
+  "currentExecutableSha256": "8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea",
+  "currentMainAfterAdvanceSha": "212aa25485bc6e8f0a5a91eb35edc7485056cb5a",
+  "currentMainBeforeAdvanceSha": "6bae3a67c63d1f724908e2ee87b27d51e32d30a0",
+  "interveningCommits": [
+    "f330b7dc",
+    "b110a7a6",
+    "cf03bd35",
+    "212aa254"
+  ],
+  "interveningRelevantChange": {
+    "assessment": "The observer path is inactive when this variable is unset; the exact-10k native Silver search configuration is unchanged.",
+    "enableVariable": "STS_OOC_MCTS_REUSE_TRACE",
+    "feature": "opt-in OOC MCTS reroot-opportunity observer",
+    "frozenTeacherConfig": "unset",
+    "path": "apps/one_combat/ooc_mcts_adapter.cpp"
+  },
+  "pairGenerationRun": false,
+  "phase": "candidates",
+  "planSha256": "52c331382131309ff5ee74c111d9ce962ad84f394884f1c040535fcae5536769",
+  "qualificationAnalysisRun": false,
+  "reason": "Keep every Stage-C candidate row on the exact current-main merged producer and a single executable hash. Preserve the earlier eight old-producer shards as diagnostic scratch but do not mix or reuse them.",
+  "schema": "active_lizard_stage_c_attempt_record_v1",
+  "sourceAssignmentUnchanged": true,
+  "status": "SUPERSEDED_BY_CURRENT_MAIN_ADVANCE",
+  "supersededAttemptRecordPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_candidate_collection_attempt1_index_failure.json",
+  "supersededAttemptRecordSha256": "6c252d3a656d768ed5aef6ee3b27bcbd8b8d2a2c00e6a3fe8858b2e5e6c51dcb",
+  "supersededExecutableSha256": "038d69a177b07baf8efc10a523b47b655bddc7a2d3f27eef74707ab4b02cbe6a",
+  "supersededPlanPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_preoutcome_plan_retry1_indexfix.json",
+  "supersededProducerGitSha": "9ca24419bc8799e45aaa5df4b937ab9c11920ab4"
+}

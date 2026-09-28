@@ -1,6 +1,10 @@
 # Simulator health monitor
 
-Last verified: 2026-08-22 against the current working tree.
+> **Status (2026-09-24):** combat runs only through Silver (ADR-0020). The
+> Searcher2 invariant sites and regressions below are historical; the
+> `takeAction` backstop and the canonical classification helpers remain.
+
+Last verified: 2026-09-24 for the Searcher2/3 removals; 2026-08-22 against the current working tree.
 
 ## Purpose
 
@@ -41,8 +45,7 @@ locations"):
 - `ACTION_SELECTION_FAILED` — at a genuine agent decision boundary with
   `outcome == UNDECIDED`, at least one canonical live legal action exists, but
   the search/root-selection machinery failed to return an action that can be
-  committed (e.g. Searcher3 with `g_s3Live=0` whose most-visited stored edge is
-  invalid on the live state while other live actions remain legal).
+  committed while other live actions remain legal.
 - `INVALID_LIVE_ACTION` — an action **actually about to be committed** to the
   live `BattleContext` is not legal on that exact state, checked with
   `Action::isValidAction` (the shared source of truth) in
@@ -86,7 +89,7 @@ avoided.
    a `sim_bug_*.txt` metadata sidecar (reason, seed, floor, encounter, turn,
    decision index, player HP, outcome, input state, card-select task/pickCount,
    hand/draw/discard/exhaust sizes, chosen-action bits, all six RNG counters,
-   searcher type, fair mode, particle count). The `<seq>` suffix is a
+   searcher type, fair mode). The `<seq>` suffix is a
    per-process atomic counter, so parallel benchmark threads never collide on
    filenames. An `ACTION_SELECTION_FAILED` capture contains the exact
    pre-recovery unresolved `BattleContext`.
@@ -105,19 +108,6 @@ avoided.
   `UNDECIDED_BATTLE_EXIT` deliberately does not fire after a stall conversion.
 - `hasLegalProgressionAction` is only meaningful at genuine agent decision
   states (`PLAYER_NORMAL` / `CARD_SELECT`); other input states return false.
-- Fair Searcher2 root emptiness is equivalent to zero canonical live legal
-  actions: `BattleScumSearcher2::step()` enumerates the root on a determinized
-  copy whose visible state (the only thing `Action::isValidAction` reads) is
-  identical to the live state, and the fair-mode validity filter keeps only
-  live-valid edges. The canonical check is applied uniformly anyway.
-- In the deterministic non-fair Searcher2 path, an empty persistent tree root
-  at an unresolved decision likewise mirrors zero live legal actions, so
-  `ACTION_SELECTION_FAILED` is expected-unreachable there (the site is
-  defensive). A zero-progress `stepThroughSolution` (consumed empty cached
-  solution line) with legal actions present is now also classified immediately
-  as `ACTION_SELECTION_FAILED` — a stale `bestOutcomePlayerHp > 0` from a
-  previous search can outlive the cached action list, and silent retry is
-  neither safe nor guaranteed to resolve on the next iteration.
 - A HARD failure implies the run's combat is broken (the row `won=0,
   deathCombat=-1` is the run-level symptom); the health monitor only flags the
   combat-level cause.
@@ -126,21 +116,16 @@ avoided.
 
 | Reason | File/function | Condition tested |
 | --- | --- | --- |
-| `NO_LEGAL_PROGRESSION` | `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair` (S3 branch) | `s3PickRootAction` returns `!have` while `UNDECIDED` and `classifySelectionFailure(bc) == NO_LEGAL_PROGRESSION` (canonical live set empty) |
-| `ACTION_SELECTION_FAILED` | `playoutBattleFair` (S3 branch) | `s3PickRootAction` returns `!have` while `UNDECIDED` and `classifySelectionFailure(bc) == ACTION_SELECTION_FAILED` (legal live actions exist; e.g. `g_s3Live=0` stale most-visited edge) |
-| `NO_LEGAL_PROGRESSION` | `playoutBattleFair` (S2 branch) | empty root edge list (`!have`) while `UNDECIDED`, classified via canonical check (root emptiness ⟺ zero live legal actions) |
+| `NO_LEGAL_PROGRESSION` | `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair` (S2) | empty root edge list (`!have`) while `UNDECIDED`, classified via canonical check (root emptiness ⟺ zero live legal actions) |
 | `ACTION_SELECTION_FAILED` | `playoutBattleFair` (S2 branch) | chosen (most-visited) root action `!best.isValidAction(bc)` (nothing committed) while legal live actions exist |
-| `NO_LEGAL_PROGRESSION` | `src/sim/search/ScumSearchAgent2.cpp::playoutBattle` (non-fair S3 branch) | `s3PickRootAction` returns `!have` while `UNDECIDED`, classified via canonical check |
-| `ACTION_SELECTION_FAILED` | `playoutBattle` (non-fair S3 branch) | same `!have` condition with legal live actions present |
 | `NO_LEGAL_PROGRESSION` | `playoutBattle` (non-fair S2 branch) | tree-stepping committed zero actions while `UNDECIDED` and the canonical live set is empty (immediate diagnosis; no 1000-decision stall cycle) |
 | `ACTION_SELECTION_FAILED` | `playoutBattle` (non-fair S2 branch) | tree-stepping committed zero actions while `UNDECIDED` and canonical live actions exist — covers both `stepThroughSearchTree` no-oping on an empty root (defensive, expected-unreachable) and `stepThroughSolution` exhausting a cached solution line with a stale positive `bestOutcomePlayerHp` |
-| `UNDECIDED_BATTLE_EXIT` | `playoutBattleFair` (S3 and S2 branches) and `playoutBattle` (S3 and S2 branches) | `bc.outcome == Outcome::UNDECIDED` immediately after the battle `while` loop exits |
+| `UNDECIDED_BATTLE_EXIT` | `playoutBattleFair` and `playoutBattle` (S2) | `bc.outcome == Outcome::UNDECIDED` immediately after the battle `while` loop exits |
 | `INVALID_LIVE_ACTION` | `ScumSearchAgent2::takeAction(BattleContext&, Action)` | `bc.outcome == UNDECIDED && !a.isValidAction(bc)` immediately before `a.execute(bc)` |
 
-The S3 paths already validate at pick time (`s3PickRootAction` only returns
-`have=true` for live-valid actions under both `g_s3Live` branches), so the
-`takeAction` check is the cheap unified backstop rather than a duplicate
-validation system.
+The `takeAction` check is the cheap unified backstop rather than a duplicate
+validation system. The Searcher3 rows of this table were removed with
+Searcher3 (ADR-0019).
 
 ## How to enable capture
 
@@ -171,10 +156,6 @@ verifier) or `sts::deserializeBattleContext`.
 - Serialization skips transient execution queues (by design of the fightrep
   format); captures are only meaningful at player-decision states, which is
   exactly where the monitor fires.
-- `ACTION_SELECTION_FAILED` integration coverage in the S3 paths is verified by
-  unit-testing the classification contract (`hasLegalProgressionAction` /
-  `classifySelectionFailure`) rather than by a stochastic end-to-end fixture;
-  the S3 `!have` wiring is the same call the unit tests exercise.
 
 ## Historical issue 87 validation case
 
@@ -227,10 +208,9 @@ Technique/Secret Weapon card selection. Searcher3 root expansion can use a
 hidden particle draw order, while these actions encode raw draw-pile indices;
 the live legal index can therefore be absent from the root edges. The fair and
 non-fair Searcher3 paths now reconcile these sensitive roots against the live
-canonical action enumeration before picking an action. The focused
-`s3_drawpile_reuse_boundary` regression covers a swapped live draw order for
-Secret Technique, Secret Weapon, and Seek. The historical production dataset
-is not regenerated.
+canonical action enumeration before picking an action. Searcher3 and its part
+of that regression were later removed (ADR-0019). The historical production
+dataset is not regenerated.
 
 ## 2026-08-31 fair Searcher2 draw-pile-index correction
 
@@ -242,10 +222,10 @@ card-selection roots, each Searcher2 edge records the behavior-relevant card
 identity seen when that edge is created. Live commitment aggregates visits for
 equivalent copies and maps the best semantic identity onto a canonical live
 index; a live-only semantic action remains eligible with zero visits. Other
-roots retain ordinary most-visited selection. The shared
-`s3_drawpile_reuse_boundary` regression covers eligible-card permutations for
+roots retain ordinary most-visited selection. The
+`s2_drawpile_index_boundary` regression covers eligible-card permutations for
 all three tasks, equivalent duplicates, a live-only fallback, and the ordinary
-root guard, in addition to the Searcher3 reuse boundary.
+root guard.
 
 ## Relevant code
 

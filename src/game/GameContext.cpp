@@ -229,11 +229,8 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
 //        std::cout << getRelicName(r) << " " << s.relic_counters[i] << '\n';
 
         // todo lizard tail, and others
-        switch (r) {
-            default:
-                RelicInstance relic {r, s.relic_counters[i]};
-                relics.add(relic);
-        }
+        RelicInstance relic {r, s.relic_counters[i]};
+        relics.add(relic);
     }
 }
 
@@ -862,6 +859,10 @@ void GameContext::setupEvent() { // todo necronomicon event
             openCardSelectScreen(CardSelectScreenType::BONFIRE_SPIRITS, 1);
             break;
 
+        case Event::COLOSSEUM:
+            info.eventData = 0;
+            break;
+
         case Event::CURSED_TOME:
             info.eventData = 0;
             break;
@@ -1115,6 +1116,15 @@ void GameContext::enterAct3VictoryRoom() {
     }
 }
 
+bool GameContext::isEliteTriggerCombat() const {
+    if (curRoom == Room::ELITE) {
+        return true;
+    }
+    return curRoom == Room::EVENT
+        && (curEvent == Event::DEAD_ADVENTURER
+            || info.encounter == MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+}
+
 void GameContext::enterBattle(MonsterEncounter encounter) {
     screenState = ScreenState::BATTLE;
     info.encounter = encounter;
@@ -1312,6 +1322,12 @@ bool GameContext::obtainRelic(RelicId r) {
 
     switch (r) {
 
+        case RelicId::LIZARD_TAIL: {
+            // A newly acquired Tail is active until its first native revival.
+            relicData = 1;
+            break;
+        }
+
         case RelicId::ASTROLABE: {
             info.toSelectCards.clear();
             deck.addMatchingToSelectList(info.toSelectCards, [](auto c){ return c.canTransform();});
@@ -1368,6 +1384,16 @@ bool GameContext::obtainRelic(RelicId r) {
             break;
         }
 
+        case RelicId::DOLLYS_MIRROR: {
+            // Java opens the whole master deck; an empty deck has nothing to copy.
+            if (deck.size() == 0) {
+                break;
+            }
+            openCardSelectScreen(CardSelectScreenType::DUPLICATE, 1);
+            opensScreen = true;
+            break;
+        }
+
         case RelicId::EMPTY_CAGE: {
             openCardSelectScreen(CardSelectScreenType::REMOVE, 2);
             opensScreen = true;
@@ -1397,6 +1423,17 @@ bool GameContext::obtainRelic(RelicId r) {
 
         case RelicId::OMAMORI: {
             relicData = 2;
+            break;
+        }
+
+        case RelicId::ORRERY: {
+            // Java adds five ordinary card rewards for the current room.
+            Rewards reward;
+            for (int i = 0; i < 5; ++i) {
+                reward.addCardReward(createCardReward(curRoom));
+            }
+            openCombatRewardScreen(reward);
+            opensScreen = true;
             break;
         }
 
@@ -2410,22 +2447,36 @@ void GameContext::chooseBossRelic(int idx) {
 }
 
 
-void GameContext::chooseMatchAndKeepCards(int idx1, int idx2) {
-    if (idx1 < 0 || idx1 >= 12 || info.toSelectCards[idx1].card.id == CardId::INVALID
-        || idx2 == idx1 || idx2 < 0 || idx2 >= 12 || info.toSelectCards[idx2].card.id == CardId::INVALID
-            ) {
-        assert(false);}
+void GameContext::chooseMatchAndKeepSlot(int idx) {
+    // Java flips one card per click; the second click of an attempt is chosen
+    // after the first card is visible. info.eventData is attempts remaining.
+    if (idx < 0 || idx >= static_cast<int>(info.toSelectCards.size())
+        || info.toSelectCards[idx].deckIdx == MATCH_AND_KEEP_MATCHED
+        || info.toSelectCards[idx].deckIdx == MATCH_AND_KEEP_FACE_UP) {
+        assert(false);
+        return;
+    }
 
-    auto &s1 = info.toSelectCards[idx1].card;
-    auto &s2 = info.toSelectCards[idx2].card;
+    int faceUp = -1;
+    for (int i = 0; i < static_cast<int>(info.toSelectCards.size()); ++i) {
+        if (info.toSelectCards[i].deckIdx == MATCH_AND_KEEP_FACE_UP) {
+            faceUp = i;
+        }
+    }
+    if (faceUp < 0) {
+        info.toSelectCards[idx].deckIdx = MATCH_AND_KEEP_FACE_UP;
+        return;
+    }
 
-    if (s1.id == s2.id) {
-        deck.obtain(*this, s1, 1);
-        info.toSelectCards[idx1].deckIdx = 0;
-        info.toSelectCards[idx2].deckIdx = 0;
+    auto &first = info.toSelectCards[faceUp];
+    auto &second = info.toSelectCards[idx];
+    if (first.card.id == second.card.id) {
+        deck.obtain(*this, first.card, 1);
+        first.deckIdx = MATCH_AND_KEEP_MATCHED;
+        second.deckIdx = MATCH_AND_KEEP_MATCHED;
     } else {
-        info.toSelectCards[idx1].deckIdx = 1;
-        info.toSelectCards[idx2].deckIdx = 1;
+        first.deckIdx = MATCH_AND_KEEP_SEEN;
+        second.deckIdx = MATCH_AND_KEEP_SEEN;
     }
 
     if (--info.eventData == 0) {
@@ -2433,6 +2484,11 @@ void GameContext::chooseMatchAndKeepCards(int idx1, int idx2) {
         info.eventData = 0;
         regainControl();
     }
+}
+
+void GameContext::chooseMatchAndKeepCards(int idx1, int idx2) {
+    chooseMatchAndKeepSlot(idx1);
+    chooseMatchAndKeepSlot(idx2);
 }
 
 void GameContext::chooseTreasureRoomOption(bool openChest) {
@@ -2561,9 +2617,50 @@ void GameContext::chooseEventOption(int idx) {
             break;
         }
 
-        case Event::COLOSSEUM: // todo
-            regainControl();
+        case Event::COLOSSEUM: {
+            if (info.eventData == 0) {
+                // [Fight]: Java clears the room rewards and sets rewardAllowed
+                // false, then reopens the event after the slaver fight.
+                info.eventData = 1;
+                regainControlAction = [](GameContext &gc) {
+                    gc.screenState = ScreenState::EVENT_SCREEN;
+                    gc.regainControlAction = returnToMapAction;
+                };
+                enterBattle(MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+
+            } else if (idx == 0) { // [Cowardice]
+                regainControlAction = returnToMapAction;
+                regainControl();
+
+            } else if (idx == 1) { // [Victory]
+                // Java adds the rare and uncommon relics when the fight is
+                // chosen; potion and card rewards are rolled after combat.
+                // The fight is an elite for combat relics, but Black Star
+                // adds nothing: the reward is always these two relics.
+                const RelicId rareRelic = returnRandomRelic(RelicTier::RARE);
+                const RelicId uncommonRelic = returnRandomRelic(RelicTier::UNCOMMON);
+                int goldAmt = 100;
+                if (hasRelic(RelicId::GOLDEN_IDOL)) {
+                    goldAmt += std::round(static_cast<float>(goldAmt) * 0.25f);
+                }
+                info.eventData = 2;
+                regainControlAction = [=](GameContext &gc) {
+                    Rewards reward;
+                    reward.addGold(goldAmt);
+                    reward.addRelic(rareRelic);
+                    reward.addRelic(uncommonRelic);
+                    gc.addPotionRewards(reward);
+                    reward.addCardReward(gc.createCardReward(Room::EVENT));
+                    gc.openCombatRewardScreen(reward);
+                    gc.regainControlAction = returnToMapAction;
+                };
+                enterBattle(MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+
+            } else {
+                assert(false);
+            }
             break;
+        }
 
         case Event::CURSED_TOME: {
             int &phase = info.eventData;
@@ -2631,6 +2728,10 @@ void GameContext::chooseEventOption(int idx) {
                         reward.addGold(goldAmt);
                         if (addRelic) {
                             reward.addRelic(combatRewardRelic);
+                        }
+                        // eliteTrigger: Black Star applies to this fight.
+                        if (gc.hasRelic(RelicId::BLACK_STAR)) {
+                            reward.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
                         }
                         reward.addCardReward(gc.createCardReward(Room::EVENT));
                         gc.addPotionRewards(reward);
@@ -3020,8 +3121,7 @@ void GameContext::chooseEventOption(int idx) {
         }
 
         case Event::MATCH_AND_KEEP:
-            // handled elsewhere
-            assert(false);
+            chooseMatchAndKeepSlot(idx);
             break;
 
         case Event::MINDBLOOM: {
@@ -3387,17 +3487,20 @@ void GameContext::chooseEventOption(int idx) {
             Potion pArr[3];
             switch (idx) {
                 case 0: {
+                    loseGold(20);
                     pArr[0] = getRandomPotion(potionRng, cc);
                     openCombatRewardScreen(Rewards(pArr, 1));
                     break;
                 }
                 case 1: {
+                    loseGold(30);
                     pArr[0] = getRandomPotion(potionRng, cc);
                     pArr[1] = getRandomPotion(potionRng, cc);
                     openCombatRewardScreen(Rewards(pArr, 2));
                     break;
                 }
                 case 2: {
+                    loseGold(40);
                     pArr[0] = getRandomPotion(potionRng, cc);
                     pArr[1] = getRandomPotion(potionRng, cc);
                     pArr[2] = getRandomPotion(potionRng, cc);

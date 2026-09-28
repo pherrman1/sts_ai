@@ -49,6 +49,11 @@ def validate_teacher(teacher: dict) -> None:
     missing = [k for k in TEACHER_REQUIRED if not teacher.get(k)]
     if missing:
         raise ValueError("combat teacher is under-specified; missing: " + ", ".join(missing))
+    if teacher["combat_backend"] == "silver_uct":
+        raise ValueError("combat_teacher.combat_backend silver_uct (vendored Silver) was retired "
+                         "with the vendored model (ADR-0022); freeze a native_silver teacher")
+    if teacher["combat_backend"] != "native_silver":
+        raise ValueError("combat_teacher.combat_backend must be 'native_silver'")
     if len(str(teacher["git_sha"])) != 40:
         raise ValueError("combat_teacher.git_sha must be a full 40-character SHA")
     if len(str(teacher["executable_sha256"])) != 64:
@@ -69,7 +74,7 @@ def validate_teacher(teacher: dict) -> None:
     required_env = {"STS_FAIR": "1", "STS_SEARCHER3": "0", "STS_SILVER_SEARCH": "1",
                     "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
                     "STS_SILVER_REUSE_CAP_MODE": "allocated", "STS_SILVER_ADAPTIVE": "0",
-                    "STS_SILVER_VNET_LEAF_DIRECT": "0", "STS_SILVER_TELEMETRY": "1"}
+                    "STS_SILVER_VNET_LEAF_DIRECT": "0"}
     environment = teacher.get("environment")
     if not isinstance(environment, dict):
         raise ValueError("combat_teacher.environment must be an object")

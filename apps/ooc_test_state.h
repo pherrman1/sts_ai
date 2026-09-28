@@ -130,7 +130,7 @@ inline std::string oocStateFingerprint(const GameContext &g) {
         for (const auto &row : g.map->nodes) w.sequence(row);
     }
     w.values(g.act, g.ascension, g.floorNum, g.cc, g.curHp, g.maxHp, g.gold,
-             g.potionCount, g.potionCapacity);
+             g.potionCount, g.potionCapacity, g.wingBootsCharges);
     w.sequence(g.potions);
     w.sequence(g.relics.relics);
     w.values(g.relics.relicBits0, g.relics.relicBits1, g.relics.relicBits2);

@@ -50,13 +50,26 @@ The trace test replays a native self-fixture and covers precise state diffs,
 RNG-only diagnostics, missing and ambiguous identities, legal-set mismatch,
 schema round-trip, hidden-RNG isolation, and vanilla-JAR preflight.
 
-## Known limitation
+## Native replay and current boundary
 
-The JSONL adapter is the native replay seam; the full one_combat seed
-constructor/stepper is not yet connected to this first instrumentation slice.
-Until that adapter is supplied by a native replay executable, a real live
-trace cannot be claimed equivalent to the simulator. This is an explicit
-implementation gap, not simulator-correctness evidence.
+`one_combat differentialreplay` now constructs an Ironclad run from the trace's
+numeric seed and ascension, resolves recorded semantic actions uniquely, and
+steps the current native simulator. Combat legal actions use native Silver's
+root enumeration without running search. OOC source identities share the live
+policy's canonical identity helper. A trace must start at the initial Neow
+boundary; replay does not reconstruct an arbitrary resumed run.
 
-Knowledge impact: this page documents the new debug schema and current replay
-boundary; no gameplay or policy behavior changed.
+Set `STS_DIFFERENTIAL_TRACE=1` in the advisor environment to emit canonical
+comparison states. It is off by default. Set `STS_DIFFERENTIAL_DEBUG_RNG=1` in
+the game's environment when requesting hidden-RNG diagnostics. RNG tuples are
+captured on the game thread with the immutable observation and retained when
+its asynchronous advisor response arrives; they never enter the public
+observation, its hash, or the advisor request.
+
+The focused `native_differential_replay` check exercises native self-replay.
+It establishes adapter plumbing, not Java/native equivalence. Live capture
+must retain the first precise mismatch or unsupported boundary; do not change
+simulator semantics or resynchronize RNG to make the harness pass.
+
+Knowledge impact: documents the native replay connection, opt-in comparison
+state, and separation between capture/replay plumbing and gameplay parity.

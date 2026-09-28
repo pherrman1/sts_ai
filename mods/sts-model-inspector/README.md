@@ -24,6 +24,26 @@ overrides the future-facing `oocModel` property. `STS_MODEL_INSPECTOR_CONFIG`
 selects a properties file instead of `~/.sts-model-inspector.properties`. F8
 toggles the panel.
 
+The graph button at the lower-left exports the current Silver combat tree or
+OOC MCTS tree to `~/.cache/sts-model-inspector/graphs/` and opens it in the
+default browser. Set `graphToolsDir` in `~/.sts-model-inspector.properties` to
+the repository's absolute `tools` directory (the one containing
+`render_combat_decision.py` and `render_ooc_mcts.py`). `python` optionally
+selects the Python executable; it defaults to `python3`. The same settings can
+be provided through `STS_MODEL_INSPECTOR_GRAPH_TOOLS` and
+`STS_MODEL_INSPECTOR_CONFIG`. Set `captureMctsGraphs=true` in that properties
+file to enable live Silver and OOC tree capture for graph export. Each export
+uses a timestamped HTML filename so earlier graphs are preserved. A graph is
+exported only when the response for the clicked observation is ready and
+contains the captured tree; export uses that pinned response instead of
+rereading the asynchronously updated latest snapshot. Set
+`showActionRecommendations=false` to hide score and selected-action
+overlays while keeping the diagnostic panel and graph button available. Set
+`showAdvisorPanel=false` to hide the top-left panel while keeping the action
+overlays and standalone graph and Silver controls available. Set
+`showSelectedActionSummary=false` to hide only the selected Silver card/action
+line inside the panel.
+
 Event/Neow, map, rest, card selector, and shop recommendations attach to the
 actual choices instead of a separate upper-left list. Reward cards keep their
 score badges, with an extra badge beside Skip. Smith and Living Wall Upgrade
@@ -112,11 +132,14 @@ the ordinary 15-row map do not increment the native path counters.
 Screen-specific `details` contains card/reward groups, fixed shop slots and
 prices, selector deck indices, event identity/phase, or boss relic offers.
 `liveChoices` binds each exact native candidate descriptor to one current MCP
-command. An unopened combat card-reward icon produces `CARD_GROUP_NOT_REVEALED`:
+command. The live driver collects claimable gold, relic, and potion rewards
+first, then opens an unopened combat card-reward icon as a reversible
+navigation step before asking OOC to score the visible card group. Keys remain
+normal OOC choices under the default continuation policy.
+Direct inspector captures of an unopened icon still produce `CARD_GROUP_NOT_REVEALED`:
 its already-generated Java `RewardItem.cards` contents are never serialized.
-The deterministic unsupported fallback may open the visible occurrence, after
-which a new card-reward observation scores the now-visible offers. Smith similarly opens the
-selector before its target is scored. Display strings in `mcpState` and
+The driver therefore scores the card choice on the next card-reward
+observation. Smith similarly opens the selector before its target is scored. Display strings in `mcpState` and
 `mcpLabel` detect stale observations only; lowering uses occurrence indices and
 physical card/node identities.
 
@@ -137,7 +160,11 @@ spent=0, matching `GameContext::obtainRelic` and shop spending. Known native
 persistent counters (Happy Flower, Incense Burner, Ink Bottle, Inserter,
 Nunchaku, Pen Nib, Sundial, Neow's Lament, Omamori, Girya, and Tiny Chest) copy
 exactly. Nonpositive counters retain the identical V4 clamped token value.
-Active Lizard Tail, Matryoshka, Wing Boots, and N'loth's Hungry Face are explicit
+Wing Boots keeps its historical native relic data value of zero while its
+  public `liveCounter` is carried separately. Direct MAP roots with active
+  charges remain explicitly unsupported because the frozen value models do not
+  encode remaining charges. Active
+Lizard Tail, Matryoshka, and N'loth's Hungry Face are explicit
 `RELIC_NATIVE_STATE_UNREPRESENTABLE` boundaries because native fresh-run
 initialization differs from vanilla. Other unqualified positive counters
 produce `RELIC_NATIVE_COUNTER_UNQUALIFIED`, preserving their actual values.

@@ -1,0 +1,2585 @@
+{
+  "analysisProtocol": {
+    "b1NegativeReserveDifferenceScoringEpsilon": 1e-06,
+    "bootstrapReplicates": 5000,
+    "bootstrapSeed": 20260925,
+    "bootstrapUnit": "sourceSeed; all rows from a sampled source remain together",
+    "calibration": "10 equal-width bins",
+    "teacherBoundary": "Native transfer metrics use only native rows; archived vendored rows are joined by exact source/state for descriptive agreement tables only. No cross-teacher pooling or bootstrap is performed."
+  },
+  "b1Coherence": {
+    "counts": {
+      "coherent": 320
+    },
+    "float32ScoringEpsilon": 1e-06,
+    "negativeRawDifferences": []
+  },
+  "candidate": {
+    "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+    "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "frozenCtmComponentHashes": {
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "qMode": "mechanical_b1",
+    "rArtifactSha256": "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9",
+    "rMode": "frozen_learned_r",
+    "rModelSha256": "fbf29bf742e3c40b18a358386509a74ced54e97a2a7e760ff988de5c14a335a8",
+    "rPredictorAstSha256": "ffb5307c7e3e8d9b8c781c296bb3effe11e8d130ca32b6ea72bdbe825dfaace3",
+    "silverTeacher": {
+      "identity": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77",
+      "manifestSha256": "b42ae41c1c2792be62d1340e7d21aa3ec22af27696c670e459d9a32b38483c84",
+      "provenance": {
+        "combat_backend": "silver_uct",
+        "environment": {
+          "STS_EXECUTABLE_GIT_SHA": "f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf",
+          "STS_FAIR": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_TELEMETRY": "1",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0"
+        },
+        "executable_sha256": "d0a1c66faa931498660811a7406fbc6be93d63c5e7ef4f6f24c910e4f57c2872",
+        "git_sha": "f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf",
+        "model_artifacts": [
+          {
+            "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/models/policy_trees_c.txt",
+            "role": "policy",
+            "sha256": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+          },
+          {
+            "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/models/v_rich_trees.txt",
+            "role": "floor",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/models/v_win_trees.txt",
+            "role": "win",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ],
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "adaptive": false,
+          "belief": "not_applicable_silver_private_chance_search",
+          "chance_widening_alpha": 0.52389,
+          "chance_widening_c": 3.7028,
+          "direct_learned_leaf": false,
+          "end_turn_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "learned_visit_puct": false,
+          "particles": "not_applicable_silver_private_chance_search",
+          "pruning": false,
+          "reuse_cap": 32768,
+          "reuse_cap_mode": "allocated",
+          "sequential_halving": false,
+          "simulation_budgets": [
+            10000
+          ]
+        },
+        "source_policy": {
+          "ascension": 0,
+          "card_skip_threshold": -0.5,
+          "collect_keys": false,
+          "map_routing": "heuristic",
+          "native_ooc": true,
+          "opt_in_gates": false,
+          "policy_chain": "runFullRunOOC",
+          "restV": false,
+          "schema_version": "runFullRunOOC_policy_v1",
+          "shopV": true
+        },
+        "teacher_id": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+      },
+      "provenanceSha256": "bac1b979f0606f42f97bd1661734e755920b73dc0c1a03bd7a12ab18e95a2672"
+    },
+    "t2Rule": "T2_revive: curHp = floor(maxHP/2) for WIN_CONSUMED conditional CTM heads",
+    "treatment": "T2_revive"
+  },
+  "claimBoundary": "No runtime support was integrated; production remains active_unqualified_lizard.",
+  "classification": "ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED",
+  "executionValidity": {
+    "T2ZeroUnscoredOrDomainInvalidRows": true,
+    "allConsumedRowsB1Scoreable": true,
+    "allPrimaryRowsB1Scoreable": true,
+    "expectedRows": 320,
+    "invalidReasons": [],
+    "mechanicalQParityEveryRow": true,
+    "supportRows": 320,
+    "valid": true
+  },
+  "finalClassification": "ACTIVE_LIZARD_MECHANICAL_Q_LEARNED_R_T2_NATIVE_QUALIFIED",
+  "gates": {
+    "T2": true,
+    "broadClearDegradation": false,
+    "exactSupportEveryPair": true,
+    "hardClearDegradation": false,
+    "learnedR": true,
+    "primaryThreeClass": true,
+    "qParityEveryScoreableRow": true,
+    "rareEventFloor": true
+  },
+  "input": {
+    "baselineGitSha": "dd8d3c80e26c11ab32d3faee2ae4c168ab7b0001",
+    "nativeTeacherFileSha256": "c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8",
+    "pairJsonlSha256": "d60bf8004234abf6549997ab4cff12da6650cc50d4f42b2d6bceb6a07f5cdf73",
+    "pairManifestSha256": "c0269eb57ce3fe4eeb2890e7d58f06a2b778f62da43fb9345612e42aa69bc78b",
+    "pairProducerExecutableSha256": "8965131f93e6d56544c8a127ce7308decc66b8ef61ff511845d2760f88aa35ea",
+    "pairProducerGitSha": "45ff412f2f48ee4ff8b14325b8e317688a3a2880",
+    "pairSeedSpec": {
+      "count": 320,
+      "start": 4202000
+    },
+    "sourceAssignment": {
+      "baselineGitSha": "dd8d3c80e26c11ab32d3faee2ae4c168ab7b0001",
+      "broad32Salt": "active-lizard-mechanical-q-native-fresh-broad32-sha256-2026-09-25-v1",
+      "broad32Selection": {
+        "algorithm": "sha256",
+        "direction": "lexicographically smallest hexadecimal digest",
+        "eligibility": "prospective-support eligible combats only",
+        "preimage": "sourceSeed:fightIdx:fixedSalt"
+      },
+      "cohorts": {
+        "BROAD32": [
+          4202288,
+          4202289,
+          4202290,
+          4202291,
+          4202292,
+          4202293,
+          4202294,
+          4202295,
+          4202296,
+          4202297,
+          4202298,
+          4202299,
+          4202300,
+          4202301,
+          4202302,
+          4202303,
+          4202304,
+          4202305,
+          4202306,
+          4202307,
+          4202308,
+          4202309,
+          4202310,
+          4202311,
+          4202312,
+          4202313,
+          4202314,
+          4202315,
+          4202316,
+          4202317,
+          4202318,
+          4202319
+        ],
+        "HARD288": [
+          4202000,
+          4202001,
+          4202002,
+          4202003,
+          4202004,
+          4202005,
+          4202006,
+          4202007,
+          4202008,
+          4202009,
+          4202010,
+          4202011,
+          4202012,
+          4202013,
+          4202014,
+          4202015,
+          4202016,
+          4202017,
+          4202018,
+          4202019,
+          4202020,
+          4202021,
+          4202022,
+          4202023,
+          4202024,
+          4202025,
+          4202026,
+          4202027,
+          4202028,
+          4202029,
+          4202030,
+          4202031,
+          4202032,
+          4202033,
+          4202034,
+          4202035,
+          4202036,
+          4202037,
+          4202038,
+          4202039,
+          4202040,
+          4202041,
+          4202042,
+          4202043,
+          4202044,
+          4202045,
+          4202046,
+          4202047,
+          4202048,
+          4202049,
+          4202050,
+          4202051,
+          4202052,
+          4202053,
+          4202054,
+          4202055,
+          4202056,
+          4202057,
+          4202058,
+          4202059,
+          4202060,
+          4202061,
+          4202062,
+          4202063,
+          4202064,
+          4202065,
+          4202066,
+          4202067,
+          4202068,
+          4202069,
+          4202070,
+          4202071,
+          4202072,
+          4202073,
+          4202074,
+          4202075,
+          4202076,
+          4202077,
+          4202078,
+          4202079,
+          4202080,
+          4202081,
+          4202082,
+          4202083,
+          4202084,
+          4202085,
+          4202086,
+          4202087,
+          4202088,
+          4202089,
+          4202090,
+          4202091,
+          4202092,
+          4202093,
+          4202094,
+          4202095,
+          4202096,
+          4202097,
+          4202098,
+          4202099,
+          4202100,
+          4202101,
+          4202102,
+          4202103,
+          4202104,
+          4202105,
+          4202106,
+          4202107,
+          4202108,
+          4202109,
+          4202110,
+          4202111,
+          4202112,
+          4202113,
+          4202114,
+          4202115,
+          4202116,
+          4202117,
+          4202118,
+          4202119,
+          4202120,
+          4202121,
+          4202122,
+          4202123,
+          4202124,
+          4202125,
+          4202126,
+          4202127,
+          4202128,
+          4202129,
+          4202130,
+          4202131,
+          4202132,
+          4202133,
+          4202134,
+          4202135,
+          4202136,
+          4202137,
+          4202138,
+          4202139,
+          4202140,
+          4202141,
+          4202142,
+          4202143,
+          4202144,
+          4202145,
+          4202146,
+          4202147,
+          4202148,
+          4202149,
+          4202150,
+          4202151,
+          4202152,
+          4202153,
+          4202154,
+          4202155,
+          4202156,
+          4202157,
+          4202158,
+          4202159,
+          4202160,
+          4202161,
+          4202162,
+          4202163,
+          4202164,
+          4202165,
+          4202166,
+          4202167,
+          4202168,
+          4202169,
+          4202170,
+          4202171,
+          4202172,
+          4202173,
+          4202174,
+          4202175,
+          4202176,
+          4202177,
+          4202178,
+          4202179,
+          4202180,
+          4202181,
+          4202182,
+          4202183,
+          4202184,
+          4202185,
+          4202186,
+          4202187,
+          4202188,
+          4202189,
+          4202190,
+          4202191,
+          4202192,
+          4202193,
+          4202194,
+          4202195,
+          4202196,
+          4202197,
+          4202198,
+          4202199,
+          4202200,
+          4202201,
+          4202202,
+          4202203,
+          4202204,
+          4202205,
+          4202206,
+          4202207,
+          4202208,
+          4202209,
+          4202210,
+          4202211,
+          4202212,
+          4202213,
+          4202214,
+          4202215,
+          4202216,
+          4202217,
+          4202218,
+          4202219,
+          4202220,
+          4202221,
+          4202222,
+          4202223,
+          4202224,
+          4202225,
+          4202226,
+          4202227,
+          4202228,
+          4202229,
+          4202230,
+          4202231,
+          4202232,
+          4202233,
+          4202234,
+          4202235,
+          4202236,
+          4202237,
+          4202238,
+          4202239,
+          4202240,
+          4202241,
+          4202242,
+          4202243,
+          4202244,
+          4202245,
+          4202246,
+          4202247,
+          4202248,
+          4202249,
+          4202250,
+          4202251,
+          4202252,
+          4202253,
+          4202254,
+          4202255,
+          4202256,
+          4202257,
+          4202258,
+          4202259,
+          4202260,
+          4202261,
+          4202262,
+          4202263,
+          4202264,
+          4202265,
+          4202266,
+          4202267,
+          4202268,
+          4202269,
+          4202270,
+          4202271,
+          4202272,
+          4202273,
+          4202274,
+          4202275,
+          4202276,
+          4202277,
+          4202278,
+          4202279,
+          4202280,
+          4202281,
+          4202282,
+          4202283,
+          4202284,
+          4202285,
+          4202286,
+          4202287
+        ]
+      },
+      "freshnessAudit": {
+        "auditResult": "FRESH_320_SOURCE_BLOCK",
+        "candidateBlockIntersection": [],
+        "previousLizardSourceIntervals": [
+          [
+            4200100,
+            4200210
+          ],
+          [
+            4200300,
+            4200427
+          ],
+          [
+            4201000,
+            4201127
+          ]
+        ],
+        "previousUniqueSourceSeeds": 367,
+        "searched": "all docs/experiments/evidence/*lizard* JSON/JSONL sourceSeed rows and seedSpec/sourceSeeds, plus exact seven-digit seed mentions in docs/experiments/ledger-06.md and docs/knowledge-base/evaluation/current-research.md"
+      },
+      "mechanicalRiskRule": "HARD288 selects one prospective-support combat per source maximizing (1-pOrdinaryWin)*(1-r), with ascending fightIdx exact tie-break",
+      "outcomeBlindSelection": true,
+      "partitionRule": "ascending sourceSeed: first 288 HARD288, final 32 BROAD32",
+      "recordedBeforeCandidateOrPairCollection": true,
+      "schema": "active_lizard_mechanical_q_source_assignment_v1",
+      "sourceSeedRange": {
+        "count": 320,
+        "endInclusive": 4202319,
+        "start": 4202000
+      },
+      "stage": "C",
+      "teacherRequirement": "current native_silver, exact-10k fair teacher; Stage C only"
+    },
+    "sourceAssignmentCohorts": {
+      "BROAD32": [
+        4202288,
+        4202289,
+        4202290,
+        4202291,
+        4202292,
+        4202293,
+        4202294,
+        4202295,
+        4202296,
+        4202297,
+        4202298,
+        4202299,
+        4202300,
+        4202301,
+        4202302,
+        4202303,
+        4202304,
+        4202305,
+        4202306,
+        4202307,
+        4202308,
+        4202309,
+        4202310,
+        4202311,
+        4202312,
+        4202313,
+        4202314,
+        4202315,
+        4202316,
+        4202317,
+        4202318,
+        4202319
+      ],
+      "HARD288": [
+        4202000,
+        4202001,
+        4202002,
+        4202003,
+        4202004,
+        4202005,
+        4202006,
+        4202007,
+        4202008,
+        4202009,
+        4202010,
+        4202011,
+        4202012,
+        4202013,
+        4202014,
+        4202015,
+        4202016,
+        4202017,
+        4202018,
+        4202019,
+        4202020,
+        4202021,
+        4202022,
+        4202023,
+        4202024,
+        4202025,
+        4202026,
+        4202027,
+        4202028,
+        4202029,
+        4202030,
+        4202031,
+        4202032,
+        4202033,
+        4202034,
+        4202035,
+        4202036,
+        4202037,
+        4202038,
+        4202039,
+        4202040,
+        4202041,
+        4202042,
+        4202043,
+        4202044,
+        4202045,
+        4202046,
+        4202047,
+        4202048,
+        4202049,
+        4202050,
+        4202051,
+        4202052,
+        4202053,
+        4202054,
+        4202055,
+        4202056,
+        4202057,
+        4202058,
+        4202059,
+        4202060,
+        4202061,
+        4202062,
+        4202063,
+        4202064,
+        4202065,
+        4202066,
+        4202067,
+        4202068,
+        4202069,
+        4202070,
+        4202071,
+        4202072,
+        4202073,
+        4202074,
+        4202075,
+        4202076,
+        4202077,
+        4202078,
+        4202079,
+        4202080,
+        4202081,
+        4202082,
+        4202083,
+        4202084,
+        4202085,
+        4202086,
+        4202087,
+        4202088,
+        4202089,
+        4202090,
+        4202091,
+        4202092,
+        4202093,
+        4202094,
+        4202095,
+        4202096,
+        4202097,
+        4202098,
+        4202099,
+        4202100,
+        4202101,
+        4202102,
+        4202103,
+        4202104,
+        4202105,
+        4202106,
+        4202107,
+        4202108,
+        4202109,
+        4202110,
+        4202111,
+        4202112,
+        4202113,
+        4202114,
+        4202115,
+        4202116,
+        4202117,
+        4202118,
+        4202119,
+        4202120,
+        4202121,
+        4202122,
+        4202123,
+        4202124,
+        4202125,
+        4202126,
+        4202127,
+        4202128,
+        4202129,
+        4202130,
+        4202131,
+        4202132,
+        4202133,
+        4202134,
+        4202135,
+        4202136,
+        4202137,
+        4202138,
+        4202139,
+        4202140,
+        4202141,
+        4202142,
+        4202143,
+        4202144,
+        4202145,
+        4202146,
+        4202147,
+        4202148,
+        4202149,
+        4202150,
+        4202151,
+        4202152,
+        4202153,
+        4202154,
+        4202155,
+        4202156,
+        4202157,
+        4202158,
+        4202159,
+        4202160,
+        4202161,
+        4202162,
+        4202163,
+        4202164,
+        4202165,
+        4202166,
+        4202167,
+        4202168,
+        4202169,
+        4202170,
+        4202171,
+        4202172,
+        4202173,
+        4202174,
+        4202175,
+        4202176,
+        4202177,
+        4202178,
+        4202179,
+        4202180,
+        4202181,
+        4202182,
+        4202183,
+        4202184,
+        4202185,
+        4202186,
+        4202187,
+        4202188,
+        4202189,
+        4202190,
+        4202191,
+        4202192,
+        4202193,
+        4202194,
+        4202195,
+        4202196,
+        4202197,
+        4202198,
+        4202199,
+        4202200,
+        4202201,
+        4202202,
+        4202203,
+        4202204,
+        4202205,
+        4202206,
+        4202207,
+        4202208,
+        4202209,
+        4202210,
+        4202211,
+        4202212,
+        4202213,
+        4202214,
+        4202215,
+        4202216,
+        4202217,
+        4202218,
+        4202219,
+        4202220,
+        4202221,
+        4202222,
+        4202223,
+        4202224,
+        4202225,
+        4202226,
+        4202227,
+        4202228,
+        4202229,
+        4202230,
+        4202231,
+        4202232,
+        4202233,
+        4202234,
+        4202235,
+        4202236,
+        4202237,
+        4202238,
+        4202239,
+        4202240,
+        4202241,
+        4202242,
+        4202243,
+        4202244,
+        4202245,
+        4202246,
+        4202247,
+        4202248,
+        4202249,
+        4202250,
+        4202251,
+        4202252,
+        4202253,
+        4202254,
+        4202255,
+        4202256,
+        4202257,
+        4202258,
+        4202259,
+        4202260,
+        4202261,
+        4202262,
+        4202263,
+        4202264,
+        4202265,
+        4202266,
+        4202267,
+        4202268,
+        4202269,
+        4202270,
+        4202271,
+        4202272,
+        4202273,
+        4202274,
+        4202275,
+        4202276,
+        4202277,
+        4202278,
+        4202279,
+        4202280,
+        4202281,
+        4202282,
+        4202283,
+        4202284,
+        4202285,
+        4202286,
+        4202287
+      ]
+    },
+    "sourceAssignmentSha256": "752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a",
+    "targetSelectionSha256": "68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493",
+    "teacherId": "silver-ordinary-fair-exact10k-native-45ff412f-stagec-8proc-omp1",
+    "teacherManifestSha256": "c271a3edc7adb8237ca1e6a8611c7e97be1ba2efadd6d5179fa80dcad476dbc8"
+  },
+  "nativeTeacherTransferAgreement": null,
+  "nativeTeacherTransferAssessment": null,
+  "pairedArmOutcomeCounts": {
+    "activeTail": {
+      "LOSS": 20,
+      "WIN": 300
+    },
+    "noTail": {
+      "LOSS": 123,
+      "WIN": 197
+    }
+  },
+  "primaryCandidateVsB1ByCohort": {
+    "BROAD32": {
+      "baseline": {
+        "confusionActualRowsPredictedColumns": [
+          [
+            32,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "modeAccuracy": 1.0,
+        "multiclassBrier": 0.0038845852705129413,
+        "perClass": {
+          "LOSS_CONSUMED": {
+            "count": 0,
+            "meanPredictedProbability": 0.0024127382785081863,
+            "observedRate": 0.0
+          },
+          "WIN_CONSUMED": {
+            "count": 0,
+            "meanPredictedProbability": 0.014882445335388184,
+            "observedRate": 0.0
+          },
+          "WIN_RETAINED": {
+            "count": 32,
+            "meanPredictedProbability": 0.9827048163861036,
+            "observedRate": 1.0
+          }
+        },
+        "rows": 32,
+        "threeClassNll": 0.018388761977729796
+      },
+      "candidate": {
+        "confusionActualRowsPredictedColumns": [
+          [
+            32,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "modeAccuracy": 1.0,
+        "multiclassBrier": 0.0037664081447352045,
+        "perClass": {
+          "LOSS_CONSUMED": {
+            "count": 0,
+            "meanPredictedProbability": 0.0008357386599155559,
+            "observedRate": 0.0
+          },
+          "WIN_CONSUMED": {
+            "count": 0,
+            "meanPredictedProbability": 0.016459444953980815,
+            "observedRate": 0.0
+          },
+          "WIN_RETAINED": {
+            "count": 32,
+            "meanPredictedProbability": 0.9827048163861036,
+            "observedRate": 1.0
+          }
+        },
+        "rows": 32,
+        "threeClassNll": 0.018388761977729796
+      },
+      "multiclassBrier": {
+        "meanCandidateMinusB1": -0.00011817712577773704,
+        "sourceBootstrap95CI": [
+          -0.0003178616344530674,
+          3.186537899599019e-05
+        ]
+      },
+      "rows": 32,
+      "threeClassNll": {
+        "meanCandidateMinusB1": 0.0,
+        "sourceBootstrap95CI": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "HARD288": {
+      "baseline": {
+        "confusionActualRowsPredictedColumns": [
+          [
+            130,
+            19,
+            14
+          ],
+          [
+            36,
+            46,
+            23
+          ],
+          [
+            2,
+            4,
+            14
+          ]
+        ],
+        "modeAccuracy": 0.6597222222222222,
+        "multiclassBrier": 0.4844955648064816,
+        "perClass": {
+          "LOSS_CONSUMED": {
+            "count": 20,
+            "meanPredictedProbability": 0.21018707299501532,
+            "observedRate": 0.06944444444444445
+          },
+          "WIN_CONSUMED": {
+            "count": 105,
+            "meanPredictedProbability": 0.23454263347796062,
+            "observedRate": 0.3645833333333333
+          },
+          "WIN_RETAINED": {
+            "count": 163,
+            "meanPredictedProbability": 0.5552702935270241,
+            "observedRate": 0.5659722222222222
+          }
+        },
+        "rows": 288,
+        "threeClassNll": 15.160224864379833
+      },
+      "candidate": {
+        "confusionActualRowsPredictedColumns": [
+          [
+            126,
+            30,
+            7
+          ],
+          [
+            34,
+            61,
+            10
+          ],
+          [
+            4,
+            8,
+            8
+          ]
+        ],
+        "modeAccuracy": 0.6770833333333334,
+        "multiclassBrier": 0.42600158989117204,
+        "perClass": {
+          "LOSS_CONSUMED": {
+            "count": 20,
+            "meanPredictedProbability": 0.11167754409329501,
+            "observedRate": 0.06944444444444445
+          },
+          "WIN_CONSUMED": {
+            "count": 105,
+            "meanPredictedProbability": 0.33305216237968094,
+            "observedRate": 0.3645833333333333
+          },
+          "WIN_RETAINED": {
+            "count": 163,
+            "meanPredictedProbability": 0.5552702935270241,
+            "observedRate": 0.5659722222222222
+          }
+        },
+        "rows": 288,
+        "threeClassNll": 0.7265981765913168
+      },
+      "multiclassBrier": {
+        "meanCandidateMinusB1": -0.058493974915309596,
+        "sourceBootstrap95CI": [
+          -0.08258813851417648,
+          -0.035948312223299375
+        ]
+      },
+      "rows": 288,
+      "threeClassNll": {
+        "meanCandidateMinusB1": -14.433626687788514,
+        "sourceBootstrap95CI": [
+          -26.402231825504632,
+          -4.843706653752358
+        ]
+      }
+    },
+    "POOLED": {
+      "baseline": {
+        "confusionActualRowsPredictedColumns": [
+          [
+            162,
+            19,
+            14
+          ],
+          [
+            36,
+            46,
+            23
+          ],
+          [
+            2,
+            4,
+            14
+          ]
+        ],
+        "modeAccuracy": 0.69375,
+        "multiclassBrier": 0.43643446685288473,
+        "perClass": {
+          "LOSS_CONSUMED": {
+            "count": 20,
+            "meanPredictedProbability": 0.1894096395233646,
+            "observedRate": 0.0625
+          },
+          "WIN_CONSUMED": {
+            "count": 105,
+            "meanPredictedProbability": 0.21257661466370337,
+            "observedRate": 0.328125
+          },
+          "WIN_RETAINED": {
+            "count": 195,
+            "meanPredictedProbability": 0.598013745812932,
+            "observedRate": 0.609375
+          }
+        },
+        "rows": 320,
+        "threeClassNll": 13.646041254139623
+      },
+      "candidate": {
+        "confusionActualRowsPredictedColumns": [
+          [
+            158,
+            30,
+            7
+          ],
+          [
+            34,
+            61,
+            10
+          ],
+          [
+            4,
+            8,
+            8
+          ]
+        ],
+        "modeAccuracy": 0.709375,
+        "multiclassBrier": 0.3837780717165284,
+        "perClass": {
+          "LOSS_CONSUMED": {
+            "count": 20,
+            "meanPredictedProbability": 0.10059336354995704,
+            "observedRate": 0.0625
+          },
+          "WIN_CONSUMED": {
+            "count": 105,
+            "meanPredictedProbability": 0.3013928906371109,
+            "observedRate": 0.328125
+          },
+          "WIN_RETAINED": {
+            "count": 195,
+            "meanPredictedProbability": 0.598013745812932,
+            "observedRate": 0.609375
+          }
+        },
+        "rows": 320,
+        "threeClassNll": 0.655777235129958
+      },
+      "multiclassBrier": {
+        "meanCandidateMinusB1": -0.052656395136356414,
+        "sourceBootstrap95CI": [
+          -0.07481945096152766,
+          -0.03239017697203364
+        ]
+      },
+      "rows": 320,
+      "threeClassNll": {
+        "meanCandidateMinusB1": -12.990264019009663,
+        "sourceBootstrap95CI": [
+          -23.758217569419376,
+          -4.3627866121649435
+        ]
+      }
+    }
+  },
+  "purpose": "fresh_qualification",
+  "qParityAndCalibrationByCohort": {
+    "BROAD32": {
+      "b1": {
+        "brier": 0.001972796258853937,
+        "meanPredicted": 0.01729518361389637,
+        "nll": 0.018388761977729796,
+        "observedRate": 0.0,
+        "rows": 32
+      },
+      "calibration": {
+        "bins": [
+          {
+            "lower": 0.0,
+            "meanPredicted": 0.0076721787452697756,
+            "observedRate": 0.0,
+            "rows": 30,
+            "upper": 0.1
+          },
+          {
+            "lower": 0.1,
+            "meanPredicted": 0.1616402566432953,
+            "observedRate": 0.0,
+            "rows": 2,
+            "upper": 0.2
+          }
+        ],
+        "calibrationInTheLargePredictedMinusObserved": 0.01729518361389637,
+        "expectedCalibrationErrorEqualWidth": 0.01729518361389637,
+        "meanPredicted": 0.01729518361389637,
+        "observedRate": 0.0,
+        "rows": 32
+      },
+      "candidate": {
+        "brier": 0.001972796258853937,
+        "meanPredicted": 0.01729518361389637,
+        "nll": 0.018388761977729796,
+        "observedRate": 0.0,
+        "rows": 32
+      },
+      "comparison": {
+        "baseline": {
+          "brier": 0.001972796258853937,
+          "meanPredicted": 0.01729518361389637,
+          "nll": 0.018388761977729796,
+          "observedRate": 0.0,
+          "rows": 32
+        },
+        "brier": {
+          "meanCandidateMinusB1": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "candidate": {
+          "brier": 0.001972796258853937,
+          "meanPredicted": 0.01729518361389637,
+          "nll": 0.018388761977729796,
+          "observedRate": 0.0,
+          "rows": 32
+        },
+        "nll": {
+          "meanCandidateMinusB1": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "rows": 32
+      },
+      "exactParityRows": 32,
+      "rows": 32
+    },
+    "HARD288": {
+      "b1": {
+        "brier": 0.17903558577113252,
+        "meanPredicted": 0.44472970647297594,
+        "nll": 0.5524576196090144,
+        "observedRate": 0.4340277777777778,
+        "rows": 288
+      },
+      "calibration": {
+        "bins": [
+          {
+            "lower": 0.0,
+            "meanPredicted": 0.02288306373007157,
+            "observedRate": 0.058823529411764705,
+            "rows": 68,
+            "upper": 0.1
+          },
+          {
+            "lower": 0.1,
+            "meanPredicted": 0.14824106792608896,
+            "observedRate": 0.375,
+            "rows": 24,
+            "upper": 0.2
+          },
+          {
+            "lower": 0.2,
+            "meanPredicted": 0.2540402098705894,
+            "observedRate": 0.21052631578947367,
+            "rows": 19,
+            "upper": 0.3
+          },
+          {
+            "lower": 0.3,
+            "meanPredicted": 0.34381732940673826,
+            "observedRate": 0.32,
+            "rows": 25,
+            "upper": 0.4
+          },
+          {
+            "lower": 0.4,
+            "meanPredicted": 0.4495066851377487,
+            "observedRate": 0.35,
+            "rows": 20,
+            "upper": 0.5
+          },
+          {
+            "lower": 0.5,
+            "meanPredicted": 0.5555092543363571,
+            "observedRate": 0.5416666666666666,
+            "rows": 24,
+            "upper": 0.6
+          },
+          {
+            "lower": 0.6,
+            "meanPredicted": 0.6510411029060682,
+            "observedRate": 0.7083333333333334,
+            "rows": 24,
+            "upper": 0.7
+          },
+          {
+            "lower": 0.7,
+            "meanPredicted": 0.7489571070129221,
+            "observedRate": 0.6818181818181818,
+            "rows": 22,
+            "upper": 0.8
+          },
+          {
+            "lower": 0.8,
+            "meanPredicted": 0.8456019221339375,
+            "observedRate": 0.6875,
+            "rows": 32,
+            "upper": 0.9
+          },
+          {
+            "lower": 0.9,
+            "meanPredicted": 0.9354154712830981,
+            "observedRate": 0.8666666666666667,
+            "rows": 30,
+            "upper": 1.0
+          }
+        ],
+        "calibrationInTheLargePredictedMinusObserved": 0.010701928695198148,
+        "expectedCalibrationErrorEqualWidth": 0.0750156756839715,
+        "meanPredicted": 0.44472970647297594,
+        "observedRate": 0.4340277777777778,
+        "rows": 288
+      },
+      "candidate": {
+        "brier": 0.17903558577113252,
+        "meanPredicted": 0.44472970647297594,
+        "nll": 0.5524576196090144,
+        "observedRate": 0.4340277777777778,
+        "rows": 288
+      },
+      "comparison": {
+        "baseline": {
+          "brier": 0.17903558577113252,
+          "meanPredicted": 0.44472970647297594,
+          "nll": 0.5524576196090144,
+          "observedRate": 0.4340277777777778,
+          "rows": 288
+        },
+        "brier": {
+          "meanCandidateMinusB1": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "candidate": {
+          "brier": 0.17903558577113252,
+          "meanPredicted": 0.44472970647297594,
+          "nll": 0.5524576196090144,
+          "observedRate": 0.4340277777777778,
+          "rows": 288
+        },
+        "nll": {
+          "meanCandidateMinusB1": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "rows": 288
+      },
+      "exactParityRows": 288,
+      "rows": 288
+    },
+    "POOLED": {
+      "b1": {
+        "brier": 0.16132930681990465,
+        "meanPredicted": 0.40198625418706796,
+        "nll": 0.499050733845886,
+        "observedRate": 0.390625,
+        "rows": 320
+      },
+      "calibration": {
+        "bins": [
+          {
+            "lower": 0.0,
+            "meanPredicted": 0.018226670367377146,
+            "observedRate": 0.04081632653061224,
+            "rows": 98,
+            "upper": 0.1
+          },
+          {
+            "lower": 0.1,
+            "meanPredicted": 0.14927177475048944,
+            "observedRate": 0.34615384615384615,
+            "rows": 26,
+            "upper": 0.2
+          },
+          {
+            "lower": 0.2,
+            "meanPredicted": 0.2540402098705894,
+            "observedRate": 0.21052631578947367,
+            "rows": 19,
+            "upper": 0.3
+          },
+          {
+            "lower": 0.3,
+            "meanPredicted": 0.34381732940673826,
+            "observedRate": 0.32,
+            "rows": 25,
+            "upper": 0.4
+          },
+          {
+            "lower": 0.4,
+            "meanPredicted": 0.4495066851377487,
+            "observedRate": 0.35,
+            "rows": 20,
+            "upper": 0.5
+          },
+          {
+            "lower": 0.5,
+            "meanPredicted": 0.5555092543363571,
+            "observedRate": 0.5416666666666666,
+            "rows": 24,
+            "upper": 0.6
+          },
+          {
+            "lower": 0.6,
+            "meanPredicted": 0.6510411029060682,
+            "observedRate": 0.7083333333333334,
+            "rows": 24,
+            "upper": 0.7
+          },
+          {
+            "lower": 0.7,
+            "meanPredicted": 0.7489571070129221,
+            "observedRate": 0.6818181818181818,
+            "rows": 22,
+            "upper": 0.8
+          },
+          {
+            "lower": 0.8,
+            "meanPredicted": 0.8456019221339375,
+            "observedRate": 0.6875,
+            "rows": 32,
+            "upper": 0.9
+          },
+          {
+            "lower": 0.9,
+            "meanPredicted": 0.9354154712830981,
+            "observedRate": 0.8666666666666667,
+            "rows": 30,
+            "upper": 1.0
+          }
+        ],
+        "calibrationInTheLargePredictedMinusObserved": 0.01136125418706796,
+        "expectedCalibrationErrorEqualWidth": 0.06578458975418472,
+        "meanPredicted": 0.40198625418706796,
+        "observedRate": 0.390625,
+        "rows": 320
+      },
+      "candidate": {
+        "brier": 0.16132930681990465,
+        "meanPredicted": 0.40198625418706796,
+        "nll": 0.499050733845886,
+        "observedRate": 0.390625,
+        "rows": 320
+      },
+      "comparison": {
+        "baseline": {
+          "brier": 0.16132930681990465,
+          "meanPredicted": 0.40198625418706796,
+          "nll": 0.499050733845886,
+          "observedRate": 0.390625,
+          "rows": 320
+        },
+        "brier": {
+          "meanCandidateMinusB1": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "candidate": {
+          "brier": 0.16132930681990465,
+          "meanPredicted": 0.40198625418706796,
+          "nll": 0.499050733845886,
+          "observedRate": 0.390625,
+          "rows": 320
+        },
+        "nll": {
+          "meanCandidateMinusB1": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "rows": 320
+      },
+      "exactParityRows": 320,
+      "rows": 320
+    }
+  },
+  "rConditionalMetricsByCohort": {
+    "BROAD32": {
+      "allConsumedRowsB1Scoreable": true,
+      "b1": null,
+      "b1ScoreableConsumedRows": 0,
+      "calibration": {
+        "bins": [],
+        "meanPredicted": null,
+        "observedRate": null,
+        "rows": 0
+      },
+      "candidate": {
+        "brier": null,
+        "meanPredicted": null,
+        "nll": null,
+        "observedRate": null,
+        "rows": 0
+      },
+      "comparisonOnB1ScoreableConsumedRows": {
+        "brier": null,
+        "nll": null,
+        "rows": 0
+      },
+      "consumedRows": 0
+    },
+    "HARD288": {
+      "allConsumedRowsB1Scoreable": true,
+      "b1": {
+        "brier": 0.24162290698809624,
+        "meanPredicted": 0.5673001534724819,
+        "nll": 2.2520632479842253,
+        "observedRate": 0.84,
+        "rows": 125
+      },
+      "b1ScoreableConsumedRows": 125,
+      "calibration": {
+        "bins": [
+          {
+            "lower": 0.2,
+            "meanPredicted": 0.2572720273750218,
+            "observedRate": 0.16666666666666666,
+            "rows": 6,
+            "upper": 0.3
+          },
+          {
+            "lower": 0.3,
+            "meanPredicted": 0.3452479687168641,
+            "observedRate": 0.8571428571428571,
+            "rows": 7,
+            "upper": 0.4
+          },
+          {
+            "lower": 0.4,
+            "meanPredicted": 0.44950094639595095,
+            "observedRate": 0.6,
+            "rows": 5,
+            "upper": 0.5
+          },
+          {
+            "lower": 0.5,
+            "meanPredicted": 0.547752033375826,
+            "observedRate": 0.7,
+            "rows": 10,
+            "upper": 0.6
+          },
+          {
+            "lower": 0.6,
+            "meanPredicted": 0.6502591955984338,
+            "observedRate": 0.625,
+            "rows": 8,
+            "upper": 0.7
+          },
+          {
+            "lower": 0.7,
+            "meanPredicted": 0.7646960663316318,
+            "observedRate": 1.0,
+            "rows": 10,
+            "upper": 0.8
+          },
+          {
+            "lower": 0.8,
+            "meanPredicted": 0.8630218590856787,
+            "observedRate": 0.9259259259259259,
+            "rows": 27,
+            "upper": 0.9
+          },
+          {
+            "lower": 0.9,
+            "meanPredicted": 0.9395055619108509,
+            "observedRate": 0.9230769230769231,
+            "rows": 52,
+            "upper": 1.0
+          }
+        ],
+        "calibrationInTheLargePredictedMinusObserved": -0.06647754676969952,
+        "expectedCalibrationErrorEqualWidth": 0.0920774659441291,
+        "meanPredicted": 0.7735224532303004,
+        "observedRate": 0.84,
+        "rows": 125
+      },
+      "candidate": {
+        "brier": 0.12258537792533715,
+        "meanPredicted": 0.7735224532303004,
+        "nll": 0.40121984328722465,
+        "observedRate": 0.84,
+        "rows": 125
+      },
+      "comparisonOnB1ScoreableConsumedRows": {
+        "baseline": {
+          "brier": 0.24162290698809624,
+          "meanPredicted": 0.5673001534724819,
+          "nll": 2.2520632479842253,
+          "observedRate": 0.84,
+          "rows": 125
+        },
+        "brier": {
+          "meanCandidateMinusB1": -0.11903752906275908,
+          "sourceBootstrap95CI": [
+            -0.1678144688545734,
+            -0.07192002668977152
+          ]
+        },
+        "candidate": {
+          "brier": 0.12258537792533715,
+          "meanPredicted": 0.7735224532303004,
+          "nll": 0.40121984328722465,
+          "observedRate": 0.84,
+          "rows": 125
+        },
+        "nll": {
+          "meanCandidateMinusB1": -1.850843404697,
+          "sourceBootstrap95CI": [
+            -3.2408582369424255,
+            -0.7163800838495095
+          ]
+        },
+        "rows": 125
+      },
+      "consumedRows": 125
+    },
+    "POOLED": {
+      "allConsumedRowsB1Scoreable": true,
+      "b1": {
+        "brier": 0.24162290698809624,
+        "meanPredicted": 0.5673001534724819,
+        "nll": 2.2520632479842253,
+        "observedRate": 0.84,
+        "rows": 125
+      },
+      "b1ScoreableConsumedRows": 125,
+      "calibration": {
+        "bins": [
+          {
+            "lower": 0.2,
+            "meanPredicted": 0.2572720273750218,
+            "observedRate": 0.16666666666666666,
+            "rows": 6,
+            "upper": 0.3
+          },
+          {
+            "lower": 0.3,
+            "meanPredicted": 0.3452479687168641,
+            "observedRate": 0.8571428571428571,
+            "rows": 7,
+            "upper": 0.4
+          },
+          {
+            "lower": 0.4,
+            "meanPredicted": 0.44950094639595095,
+            "observedRate": 0.6,
+            "rows": 5,
+            "upper": 0.5
+          },
+          {
+            "lower": 0.5,
+            "meanPredicted": 0.547752033375826,
+            "observedRate": 0.7,
+            "rows": 10,
+            "upper": 0.6
+          },
+          {
+            "lower": 0.6,
+            "meanPredicted": 0.6502591955984338,
+            "observedRate": 0.625,
+            "rows": 8,
+            "upper": 0.7
+          },
+          {
+            "lower": 0.7,
+            "meanPredicted": 0.7646960663316318,
+            "observedRate": 1.0,
+            "rows": 10,
+            "upper": 0.8
+          },
+          {
+            "lower": 0.8,
+            "meanPredicted": 0.8630218590856787,
+            "observedRate": 0.9259259259259259,
+            "rows": 27,
+            "upper": 0.9
+          },
+          {
+            "lower": 0.9,
+            "meanPredicted": 0.9395055619108509,
+            "observedRate": 0.9230769230769231,
+            "rows": 52,
+            "upper": 1.0
+          }
+        ],
+        "calibrationInTheLargePredictedMinusObserved": -0.06647754676969952,
+        "expectedCalibrationErrorEqualWidth": 0.0920774659441291,
+        "meanPredicted": 0.7735224532303004,
+        "observedRate": 0.84,
+        "rows": 125
+      },
+      "candidate": {
+        "brier": 0.12258537792533715,
+        "meanPredicted": 0.7735224532303004,
+        "nll": 0.40121984328722465,
+        "observedRate": 0.84,
+        "rows": 125
+      },
+      "comparisonOnB1ScoreableConsumedRows": {
+        "baseline": {
+          "brier": 0.24162290698809624,
+          "meanPredicted": 0.5673001534724819,
+          "nll": 2.2520632479842253,
+          "observedRate": 0.84,
+          "rows": 125
+        },
+        "brier": {
+          "meanCandidateMinusB1": -0.11903752906275908,
+          "sourceBootstrap95CI": [
+            -0.16692106300922405,
+            -0.07161892505980691
+          ]
+        },
+        "candidate": {
+          "brier": 0.12258537792533715,
+          "meanPredicted": 0.7735224532303004,
+          "nll": 0.40121984328722465,
+          "observedRate": 0.84,
+          "rows": 125
+        },
+        "nll": {
+          "meanCandidateMinusB1": -1.850843404697,
+          "sourceBootstrap95CI": [
+            -3.261816544132261,
+            -0.7195040671802397
+          ]
+        },
+        "rows": 125
+      },
+      "consumedRows": 125
+    }
+  },
+  "rareEventFloor": {
+    "observedConsumedRows": 125,
+    "observedDistinctLossSources": 20,
+    "observedLossConsumed": 20,
+    "passed": true,
+    "requiredConsumedRows": 20,
+    "requiredDistinctLossSources": 10,
+    "requiredLossConsumed": 20
+  },
+  "retainedWinT0ByCohort": {
+    "BROAD32": {
+      "T0HeadsOnPairedNoTailBothWins": {
+        "candidateWinRows": 32,
+        "meanMetrics": {
+          "expectedHpAbsError": 7.703417265564317,
+          "hpCrps": 6.039081910250846,
+          "hpNll": 3.417979290021257,
+          "maxHpNll": 0.022084667824509296,
+          "potionMaskNll": 0.747102135623423,
+          "relic:attacks": 2.1649631643354277,
+          "relic:cards": 2.3105364244728364,
+          "relic:turns": 1.0170052349067524
+        },
+        "scoredRowsByMetric": {
+          "expectedHpAbsError": 32,
+          "hpCrps": 32,
+          "hpNll": 32,
+          "maxHpNll": 32,
+          "potionMaskNll": 32,
+          "relic:attacks": 4,
+          "relic:cards": 1,
+          "relic:turns": 2
+        },
+        "unscoredReasons": {}
+      },
+      "T0HeadsOnRetainedWins": {
+        "candidateWinRows": 32,
+        "meanMetrics": {
+          "expectedHpAbsError": 9.21796302972215,
+          "hpCrps": 7.178018101658294,
+          "hpNll": 3.7030147862602916,
+          "maxHpNll": 0.022084667824509296,
+          "potionMaskNll": 0.7691521891657136,
+          "relic:attacks": 2.230420349712618,
+          "relic:cards": 1.9951894211286159,
+          "relic:turns": 1.245014568430348
+        },
+        "scoredRowsByMetric": {
+          "expectedHpAbsError": 32,
+          "hpCrps": 32,
+          "hpNll": 32,
+          "maxHpNll": 32,
+          "potionMaskNll": 32,
+          "relic:attacks": 4,
+          "relic:cards": 1,
+          "relic:turns": 2
+        },
+        "unscoredReasons": {}
+      },
+      "commonSourceRowsForComparison": 32,
+      "diagnostics": {
+        "cardsRelicWarningReproduces": false,
+        "potionSignalClear": false
+      },
+      "pairedNoTailBothWinRows": 32,
+      "pairedSourceBootstrapRetainedMinusNoTail": {
+        "expectedHpAbsError": {
+          "meanRetainedMinusNoTail": 1.5145457641578304,
+          "pairs": 32,
+          "sourceBootstrap95CI": [
+            -0.12505480819751397,
+            3.244601253892155
+          ]
+        },
+        "hpCrps": {
+          "meanRetainedMinusNoTail": 1.1389361914074478,
+          "pairs": 32,
+          "sourceBootstrap95CI": [
+            -0.27344273731571594,
+            2.7035907500393614
+          ]
+        },
+        "hpNll": {
+          "meanRetainedMinusNoTail": 0.2850354962390349,
+          "pairs": 32,
+          "sourceBootstrap95CI": [
+            0.043316254365513916,
+            0.5533781544597136
+          ]
+        },
+        "maxHpNll": {
+          "meanRetainedMinusNoTail": 0.0,
+          "pairs": 32,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "potionMaskNll": {
+          "meanRetainedMinusNoTail": 0.02205005354229054,
+          "pairs": 32,
+          "sourceBootstrap95CI": [
+            -0.11196751728631363,
+            0.16963067362766643
+          ]
+        }
+      },
+      "supportedRelicGroups": {
+        "attacks": {
+          "meanRetainedMinusNoTail": 0.06545718537719009,
+          "pairs": 4,
+          "sourceBootstrap95CI": [
+            -0.10135633604394667,
+            0.29772789217551693
+          ]
+        },
+        "cards": {
+          "meanRetainedMinusNoTail": -0.3153470033442205,
+          "pairs": 1,
+          "sourceBootstrap95CI": [
+            -0.3153470033442205,
+            -0.3153470033442205
+          ]
+        },
+        "turns": {
+          "meanRetainedMinusNoTail": 0.22800933352359565,
+          "pairs": 2,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.4560186670471913
+          ]
+        }
+      },
+      "winRetainedRows": 32
+    },
+    "HARD288": {
+      "T0HeadsOnPairedNoTailBothWins": {
+        "candidateWinRows": 163,
+        "meanMetrics": {
+          "expectedHpAbsError": 13.593736958173022,
+          "hpCrps": 9.867876264046778,
+          "hpNll": 4.226512839281292,
+          "maxHpNll": 0.07459770692626318,
+          "potionMaskNll": 0.9213779493397127,
+          "relic:attacks": 2.266014957633569,
+          "relic:cards": 2.4104127616979754,
+          "relic:shuffles": 1.0450735871236403,
+          "relic:turns": 1.2902554226680643
+        },
+        "scoredRowsByMetric": {
+          "expectedHpAbsError": 163,
+          "hpCrps": 163,
+          "hpNll": 163,
+          "maxHpNll": 163,
+          "potionMaskNll": 163,
+          "relic:attacks": 33,
+          "relic:cards": 12,
+          "relic:shuffles": 12,
+          "relic:turns": 19
+        },
+        "unscoredReasons": {}
+      },
+      "T0HeadsOnRetainedWins": {
+        "candidateWinRows": 163,
+        "meanMetrics": {
+          "expectedHpAbsError": 13.633950682997853,
+          "hpCrps": 9.970211938540917,
+          "hpNll": 4.218895897227191,
+          "maxHpNll": 0.11441679587421247,
+          "potionMaskNll": 1.0751287763776824,
+          "relic:attacks": 2.3337581207160496,
+          "relic:cards": 2.296997030870249,
+          "relic:shuffles": 1.1005640623674033,
+          "relic:turns": 1.2856600202892938
+        },
+        "scoredRowsByMetric": {
+          "expectedHpAbsError": 163,
+          "hpCrps": 163,
+          "hpNll": 163,
+          "maxHpNll": 163,
+          "potionMaskNll": 163,
+          "relic:attacks": 30,
+          "relic:cards": 9,
+          "relic:shuffles": 10,
+          "relic:turns": 20
+        },
+        "unscoredReasons": {}
+      },
+      "commonSourceRowsForComparison": 141,
+      "diagnostics": {
+        "cardsRelicWarningReproduces": false,
+        "potionSignalClear": true
+      },
+      "pairedNoTailBothWinRows": 163,
+      "pairedSourceBootstrapRetainedMinusNoTail": {
+        "expectedHpAbsError": {
+          "meanRetainedMinusNoTail": 0.43981368625741324,
+          "pairs": 141,
+          "sourceBootstrap95CI": [
+            -1.2499710977334297,
+            2.147296057829409
+          ]
+        },
+        "hpCrps": {
+          "meanRetainedMinusNoTail": 0.3308489323124442,
+          "pairs": 141,
+          "sourceBootstrap95CI": [
+            -0.8897655210987829,
+            1.5458526631538179
+          ]
+        },
+        "hpNll": {
+          "meanRetainedMinusNoTail": 0.0016681249180390363,
+          "pairs": 141,
+          "sourceBootstrap95CI": [
+            -0.13644021397041192,
+            0.1416967152703371
+          ]
+        },
+        "maxHpNll": {
+          "meanRetainedMinusNoTail": 0.044337850518764745,
+          "pairs": 141,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.10908627508726147
+          ]
+        },
+        "potionMaskNll": {
+          "meanRetainedMinusNoTail": 0.17481275877604066,
+          "pairs": 141,
+          "sourceBootstrap95CI": [
+            0.0678782582007817,
+            0.2919782939037451
+          ]
+        }
+      },
+      "supportedRelicGroups": {
+        "attacks": {
+          "meanRetainedMinusNoTail": 0.0949670734456562,
+          "pairs": 24,
+          "sourceBootstrap95CI": [
+            -0.016737383398479744,
+            0.2018210410493141
+          ]
+        },
+        "cards": {
+          "meanRetainedMinusNoTail": -0.13673327244535857,
+          "pairs": 9,
+          "sourceBootstrap95CI": [
+            -0.2308215559205184,
+            -0.046262171504677804
+          ]
+        },
+        "shuffles": {
+          "meanRetainedMinusNoTail": 0.13703041968832746,
+          "pairs": 9,
+          "sourceBootstrap95CI": [
+            0.0190222830587806,
+            0.2696316512246167
+          ]
+        },
+        "turns": {
+          "meanRetainedMinusNoTail": 0.016744308942371038,
+          "pairs": 17,
+          "sourceBootstrap95CI": [
+            -0.07329939290808894,
+            0.12692030346863012
+          ]
+        }
+      },
+      "winRetainedRows": 163
+    },
+    "POOLED": {
+      "T0HeadsOnPairedNoTailBothWins": {
+        "candidateWinRows": 195,
+        "meanMetrics": {
+          "expectedHpAbsError": 12.627120393232104,
+          "hpCrps": 9.239561293167446,
+          "hpNll": 4.093830410684774,
+          "maxHpNll": 0.06598018256084717,
+          "potionMaskNll": 0.8927788414478087,
+          "relic:attacks": 2.2550904394391758,
+          "relic:cards": 2.4027299665268105,
+          "relic:shuffles": 1.0450735871236403,
+          "relic:turns": 1.2642315952622252
+        },
+        "scoredRowsByMetric": {
+          "expectedHpAbsError": 195,
+          "hpCrps": 195,
+          "hpNll": 195,
+          "maxHpNll": 195,
+          "potionMaskNll": 195,
+          "relic:attacks": 37,
+          "relic:cards": 13,
+          "relic:shuffles": 12,
+          "relic:turns": 21
+        },
+        "unscoredReasons": {}
+      },
+      "T0HeadsOnRetainedWins": {
+        "candidateWinRows": 195,
+        "meanMetrics": {
+          "expectedHpAbsError": 12.909275786050047,
+          "hpCrps": 9.512005770437101,
+          "hpNll": 4.134238484145444,
+          "maxHpNll": 0.0992648569122099,
+          "potionMaskNll": 1.0249172338608465,
+          "relic:attacks": 2.3216007358921167,
+          "relic:cards": 2.2668162698960854,
+          "relic:shuffles": 1.1005640623674033,
+          "relic:turns": 1.2819649792112078
+        },
+        "scoredRowsByMetric": {
+          "expectedHpAbsError": 195,
+          "hpCrps": 195,
+          "hpNll": 195,
+          "maxHpNll": 195,
+          "potionMaskNll": 195,
+          "relic:attacks": 34,
+          "relic:cards": 10,
+          "relic:shuffles": 10,
+          "relic:turns": 22
+        },
+        "unscoredReasons": {}
+      },
+      "commonSourceRowsForComparison": 173,
+      "diagnostics": {
+        "cardsRelicWarningReproduces": false,
+        "potionSignalClear": true
+      },
+      "pairedNoTailBothWinRows": 195,
+      "pairedSourceBootstrapRetainedMinusNoTail": {
+        "expectedHpAbsError": {
+          "meanRetainedMinusNoTail": 0.6386080590482419,
+          "pairs": 173,
+          "sourceBootstrap95CI": [
+            -0.7456284072001642,
+            2.1378651835636457
+          ]
+        },
+        "hpCrps": {
+          "meanRetainedMinusNoTail": 0.48032172012192476,
+          "pairs": 173,
+          "sourceBootstrap95CI": [
+            -0.5451224805290917,
+            1.5387530309188981
+          ]
+        },
+        "hpNll": {
+          "meanRetainedMinusNoTail": 0.05408289880400359,
+          "pairs": 173,
+          "sourceBootstrap95CI": [
+            -0.06682338669185664,
+            0.17667208279363678
+          ]
+        },
+        "maxHpNll": {
+          "meanRetainedMinusNoTail": 0.036136629613559706,
+          "pairs": 173,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.08318210611314833
+          ]
+        },
+        "potionMaskNll": {
+          "meanRetainedMinusNoTail": 0.14655607341488455,
+          "pairs": 173,
+          "sourceBootstrap95CI": [
+            0.05315932640022719,
+            0.24205347402722788
+          ]
+        }
+      },
+      "supportedRelicGroups": {
+        "attacks": {
+          "meanRetainedMinusNoTail": 0.09075137515016106,
+          "pairs": 28,
+          "sourceBootstrap95CI": [
+            -0.005899100886954989,
+            0.19048478666094107
+          ]
+        },
+        "cards": {
+          "meanRetainedMinusNoTail": -0.15459464553524477,
+          "pairs": 10,
+          "sourceBootstrap95CI": [
+            -0.24389864346939263,
+            -0.06479186263222002
+          ]
+        },
+        "shuffles": {
+          "meanRetainedMinusNoTail": 0.13703041968832746,
+          "pairs": 9,
+          "sourceBootstrap95CI": [
+            0.0190222830587806,
+            0.2696316512246167
+          ]
+        },
+        "turns": {
+          "meanRetainedMinusNoTail": 0.03898273258249994,
+          "pairs": 19,
+          "sourceBootstrap95CI": [
+            -0.054589635438279736,
+            0.14798910283150765
+          ]
+        }
+      },
+      "winRetainedRows": 195
+    }
+  },
+  "schema": "active_lizard_mechanical_q_frozen_r_analysis_v1",
+  "screenDecision": "CLASSIFICATION_COMPLETE",
+  "supportAudit": {
+    "exactSupportRows": 320,
+    "failureCounts": {},
+    "rows": 320,
+    "supportAndBoundaryFailureRows": 0
+  },
+  "t2ByCohort": {
+    "BROAD32": {
+      "T0": {
+        "candidateRows": 0,
+        "metrics": {
+          "expectedHpAbsError": null,
+          "hpCrps": null,
+          "hpNll": null,
+          "maxHpNll": null,
+          "potionMaskNll": null
+        },
+        "supportedRelicGroupConstraintNll": {
+          "attacks": {
+            "meanNll": null,
+            "rows": 0
+          },
+          "cards": {
+            "meanNll": null,
+            "rows": 0
+          },
+          "shuffles": {
+            "meanNll": null,
+            "rows": 0
+          },
+          "turns": {
+            "meanNll": null,
+            "rows": 0
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {}
+      },
+      "T2": {
+        "candidateRows": 0,
+        "metrics": {
+          "expectedHpAbsError": null,
+          "hpCrps": null,
+          "hpNll": null,
+          "maxHpNll": null,
+          "potionMaskNll": null
+        },
+        "supportedRelicGroupConstraintNll": {
+          "attacks": {
+            "meanNll": null,
+            "rows": 0
+          },
+          "cards": {
+            "meanNll": null,
+            "rows": 0
+          },
+          "shuffles": {
+            "meanNll": null,
+            "rows": 0
+          },
+          "turns": {
+            "meanNll": null,
+            "rows": 0
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {}
+      },
+      "T2ScoredRowsByMetric": {
+        "expectedHpAbsError": 0,
+        "hpCrps": 0,
+        "hpNll": 0,
+        "maxHpNll": 0,
+        "potionMaskNll": 0
+      },
+      "commonSupportedConsumedWinSources": 0,
+      "gate": {
+        "atLeast20SupportedConsumedWinRows": false,
+        "expectedHpMaeNoClearDegradation": false,
+        "hpCrpsCiStrictlyBelowZero": false,
+        "hpNllCiStrictlyBelowZero": false,
+        "noClearDownstreamDegradation": true,
+        "zeroT2UnscoredOrDomainInvalidRows": true
+      },
+      "pairedSourceBootstrapT2MinusT0": {
+        "expectedHpAbsError": {
+          "meanTreatmentMinusT0": null,
+          "pairs": 0,
+          "sourceBootstrap95CI": null
+        },
+        "hpCrps": {
+          "meanTreatmentMinusT0": null,
+          "pairs": 0,
+          "sourceBootstrap95CI": null
+        },
+        "hpNll": {
+          "meanTreatmentMinusT0": null,
+          "pairs": 0,
+          "sourceBootstrap95CI": null
+        },
+        "maxHpNll": {
+          "meanTreatmentMinusT0": null,
+          "pairs": 0,
+          "sourceBootstrap95CI": null
+        },
+        "potionMaskNll": {
+          "meanTreatmentMinusT0": null,
+          "pairs": 0,
+          "sourceBootstrap95CI": null
+        },
+        "supportedRelicGroupConstraintNllByGroup": {}
+      }
+    },
+    "HARD288": {
+      "T0": {
+        "candidateRows": 105,
+        "metrics": {
+          "expectedHpAbsError": 14.784094468918441,
+          "hpCrps": 11.589931918673075,
+          "hpNll": 5.070259275386935,
+          "maxHpNll": 0.03891013059679939,
+          "potionMaskNll": 0.5864471323457291
+        },
+        "supportedRelicGroupConstraintNll": {
+          "attacks": {
+            "meanNll": 2.3198678349802826,
+            "rows": 28
+          },
+          "cards": {
+            "meanNll": 2.2700823239747763,
+            "rows": 8
+          },
+          "shuffles": {
+            "meanNll": 1.2008733277389871,
+            "rows": 5
+          },
+          "turns": {
+            "meanNll": 1.2144695495562727,
+            "rows": 15
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {}
+      },
+      "T2": {
+        "candidateRows": 105,
+        "metrics": {
+          "expectedHpAbsError": 11.943028510301952,
+          "hpCrps": 8.409054106431839,
+          "hpNll": 4.0087159409817685,
+          "maxHpNll": 0.03876533487736778,
+          "potionMaskNll": 0.5619362096311972
+        },
+        "supportedRelicGroupConstraintNll": {
+          "attacks": {
+            "meanNll": 2.299864775274167,
+            "rows": 28
+          },
+          "cards": {
+            "meanNll": 2.3254364447462814,
+            "rows": 8
+          },
+          "shuffles": {
+            "meanNll": 1.0874556213791193,
+            "rows": 5
+          },
+          "turns": {
+            "meanNll": 1.2020643880640245,
+            "rows": 15
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {}
+      },
+      "T2ScoredRowsByMetric": {
+        "expectedHpAbsError": 105,
+        "hpCrps": 105,
+        "hpNll": 105,
+        "maxHpNll": 105,
+        "potionMaskNll": 105
+      },
+      "commonSupportedConsumedWinSources": 105,
+      "gate": {
+        "atLeast20SupportedConsumedWinRows": true,
+        "expectedHpMaeNoClearDegradation": true,
+        "hpCrpsCiStrictlyBelowZero": true,
+        "hpNllCiStrictlyBelowZero": true,
+        "noClearDownstreamDegradation": true,
+        "zeroT2UnscoredOrDomainInvalidRows": true
+      },
+      "pairedSourceBootstrapT2MinusT0": {
+        "expectedHpAbsError": {
+          "meanTreatmentMinusT0": -2.841065958616489,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -4.778660691978497,
+            -1.022292010366641
+          ]
+        },
+        "hpCrps": {
+          "meanTreatmentMinusT0": -3.1808778122412384,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -4.856059135983147,
+            -1.5130339059511473
+          ]
+        },
+        "hpNll": {
+          "meanTreatmentMinusT0": -1.0615433344051668,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -1.4730722165149701,
+            -0.6784250788424593
+          ]
+        },
+        "maxHpNll": {
+          "meanTreatmentMinusT0": -0.00014479571943160484,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -0.001438993486400392,
+            0.0010125091816430357
+          ]
+        },
+        "potionMaskNll": {
+          "meanTreatmentMinusT0": -0.0245109227145319,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -0.060324167131507955,
+            0.010659409839036432
+          ]
+        },
+        "supportedRelicGroupConstraintNllByGroup": {
+          "attacks": {
+            "meanTreatmentMinusT0": -0.020003059706115673,
+            "pairs": 28,
+            "sourceBootstrap95CI": [
+              -0.09682727756158123,
+              0.05749008198209267
+            ]
+          },
+          "cards": {
+            "meanTreatmentMinusT0": 0.05535412077150548,
+            "pairs": 8,
+            "sourceBootstrap95CI": [
+              -0.020835974038583224,
+              0.1404615573789658
+            ]
+          },
+          "shuffles": {
+            "meanTreatmentMinusT0": -0.1134177063598677,
+            "pairs": 5,
+            "sourceBootstrap95CI": [
+              -0.4416243284475678,
+              0.21478891572783243
+            ]
+          },
+          "turns": {
+            "meanTreatmentMinusT0": -0.01240516149224824,
+            "pairs": 15,
+            "sourceBootstrap95CI": [
+              -0.07612086159066685,
+              0.05943332864520792
+            ]
+          }
+        }
+      }
+    },
+    "POOLED": {
+      "T0": {
+        "candidateRows": 105,
+        "metrics": {
+          "expectedHpAbsError": 14.784094468918441,
+          "hpCrps": 11.589931918673075,
+          "hpNll": 5.070259275386935,
+          "maxHpNll": 0.03891013059679939,
+          "potionMaskNll": 0.5864471323457291
+        },
+        "supportedRelicGroupConstraintNll": {
+          "attacks": {
+            "meanNll": 2.3198678349802826,
+            "rows": 28
+          },
+          "cards": {
+            "meanNll": 2.2700823239747763,
+            "rows": 8
+          },
+          "shuffles": {
+            "meanNll": 1.2008733277389871,
+            "rows": 5
+          },
+          "turns": {
+            "meanNll": 1.2144695495562727,
+            "rows": 15
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {}
+      },
+      "T2": {
+        "candidateRows": 105,
+        "metrics": {
+          "expectedHpAbsError": 11.943028510301952,
+          "hpCrps": 8.409054106431839,
+          "hpNll": 4.0087159409817685,
+          "maxHpNll": 0.03876533487736778,
+          "potionMaskNll": 0.5619362096311972
+        },
+        "supportedRelicGroupConstraintNll": {
+          "attacks": {
+            "meanNll": 2.299864775274167,
+            "rows": 28
+          },
+          "cards": {
+            "meanNll": 2.3254364447462814,
+            "rows": 8
+          },
+          "shuffles": {
+            "meanNll": 1.0874556213791193,
+            "rows": 5
+          },
+          "turns": {
+            "meanNll": 1.2020643880640245,
+            "rows": 15
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {}
+      },
+      "T2ScoredRowsByMetric": {
+        "expectedHpAbsError": 105,
+        "hpCrps": 105,
+        "hpNll": 105,
+        "maxHpNll": 105,
+        "potionMaskNll": 105
+      },
+      "commonSupportedConsumedWinSources": 105,
+      "gate": {
+        "atLeast20SupportedConsumedWinRows": true,
+        "expectedHpMaeNoClearDegradation": true,
+        "hpCrpsCiStrictlyBelowZero": true,
+        "hpNllCiStrictlyBelowZero": true,
+        "noClearDownstreamDegradation": true,
+        "zeroT2UnscoredOrDomainInvalidRows": true
+      },
+      "pairedSourceBootstrapT2MinusT0": {
+        "expectedHpAbsError": {
+          "meanTreatmentMinusT0": -2.841065958616489,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -4.778660691978497,
+            -1.022292010366641
+          ]
+        },
+        "hpCrps": {
+          "meanTreatmentMinusT0": -3.1808778122412384,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -4.856059135983147,
+            -1.5130339059511473
+          ]
+        },
+        "hpNll": {
+          "meanTreatmentMinusT0": -1.0615433344051668,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -1.4730722165149701,
+            -0.6784250788424593
+          ]
+        },
+        "maxHpNll": {
+          "meanTreatmentMinusT0": -0.00014479571943160484,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -0.001438993486400392,
+            0.0010125091816430357
+          ]
+        },
+        "potionMaskNll": {
+          "meanTreatmentMinusT0": -0.0245109227145319,
+          "pairs": 105,
+          "sourceBootstrap95CI": [
+            -0.060324167131507955,
+            0.010659409839036432
+          ]
+        },
+        "supportedRelicGroupConstraintNllByGroup": {
+          "attacks": {
+            "meanTreatmentMinusT0": -0.020003059706115673,
+            "pairs": 28,
+            "sourceBootstrap95CI": [
+              -0.09682727756158123,
+              0.05749008198209267
+            ]
+          },
+          "cards": {
+            "meanTreatmentMinusT0": 0.05535412077150548,
+            "pairs": 8,
+            "sourceBootstrap95CI": [
+              -0.020835974038583224,
+              0.1404615573789658
+            ]
+          },
+          "shuffles": {
+            "meanTreatmentMinusT0": -0.1134177063598677,
+            "pairs": 5,
+            "sourceBootstrap95CI": [
+              -0.4416243284475678,
+              0.21478891572783243
+            ]
+          },
+          "turns": {
+            "meanTreatmentMinusT0": -0.01240516149224824,
+            "pairs": 15,
+            "sourceBootstrap95CI": [
+              -0.07612086159066685,
+              0.05943332864520792
+            ]
+          }
+        }
+      }
+    }
+  },
+  "threeClassCountsByCohort": {
+    "BROAD32": {
+      "LOSS_CONSUMED": 0,
+      "WIN_CONSUMED": 0,
+      "WIN_RETAINED": 32
+    },
+    "HARD288": {
+      "LOSS_CONSUMED": 20,
+      "WIN_CONSUMED": 105,
+      "WIN_RETAINED": 163
+    },
+    "POOLED": {
+      "LOSS_CONSUMED": 20,
+      "WIN_CONSUMED": 105,
+      "WIN_RETAINED": 195
+    }
+  }
+}

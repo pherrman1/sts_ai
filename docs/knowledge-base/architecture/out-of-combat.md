@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -33,11 +33,17 @@ never by value. Providers may explicitly mark a transition deterministic; after
 its first sample the core reuses that single child instead of widening it. Action Q is the Monte Carlo mean of sampled trajectory values.
 
 Depth counts action transitions (root zero); exact terminals precede model-defined
-leaf boundaries, which precede the depth horizon,
+leaf boundaries, which precede the technical depth safety guard,
 and newly expanded downstream nonterminal leaves use the injected evaluator.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
-`cPuct=1.5`, `k=2`, `alpha=0.5`, depth 32. Priors normalize with uniform zero-mass
+`cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
+non-boundary state at `depth >= maxDepth` aborts the entire root with
+`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`; partial action statistics
+are discarded. The cap-hit state is never evaluated as a normal leaf.
+`maxDepthReached` includes the offending depth for diagnosis. Live accounting
+records this under `continuationLimitAborts`/`continuation_reasons`, without
+inventing an unsupported combat. Priors normalize with uniform zero-mass
 fallback. Before PUCT, every legal action receives one visit, choosing the
 highest-prior unvisited action and then ascending ID. Zero individual priors
 cannot suppress actions; cPuct=0 visits all actions once, then exploits Q.
@@ -58,7 +64,8 @@ selection never uses this shortcut. Generic planner configuration requires
 `allowUnqualifiedRootStop=true` permits stopping without that guarantee.
 Live OOC MCTS enables this policy by default; `STS_OOC_MCTS_EARLY_STOP=0`
 restores the guarantee requirement. A singleton locks after its first completed
-simulation, rather than bypassing an unqualified root before sampling.
+simulation for direct planner callers; the live adapter bypasses a validated
+singleton root before search.
 
 This is an intentional fallback-policy tradeoff: a later support or continuation
 abort would invalidate the full-budget winner, but early stopping can skip that
@@ -68,7 +75,7 @@ zero aborts do not qualify that contract. Metrics count locked-root stops and
 saved simulations separately. See [ADR-0014](../../../decisions/0014-live-ooc-visit-lock-stopping.md).
 
 `OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
-locked-root stopping and the qualified sole-root bypass.
+locked-root stopping and the sole-root bypass.
 
 `STS_OOC_MCTS_CHECKPOINT_TRACE=<fresh.jsonl>` instead preserves the live policy
 and runs a separate discarded full-budget shadow search from the same root,
@@ -87,7 +94,7 @@ checkpoints, not at every intervening simulation. No rule is deployed by this
 diagnostic. `tools/analyze_ooc_root_checkpoints.py` implements the offline report.
 
 The root-lock observer suppresses
-locked-root stopping and the qualified sole-root bypass. It records the first
+locked-root stopping and the sole-root bypass. It records the first
 strict visit lock (including a zero-remaining-budget lock), its action and
 remaining simulation budget, and wall time from that completed simulation to
 search completion/abort. No extra sampling draws are consumed. Mean-Q roots
@@ -102,6 +109,18 @@ Even zero observed aborts or matching locked/final actions cannot prove the
 provider guarantee. The Smoke-excluded V2 artifact and remaining continuation
 abort paths do not qualify the provider guarantee; live stopping uses the explicit
 unqualified policy instead.
+
+Each live search builds a fresh tree; there is no reroot or tree reuse across
+real decisions. Live `STS_OOC_MCTS_REUSE_TRACE=<fresh.jsonl>` measures the
+opportunity without changing search. Full-state identity never matches, because
+sampling redraws the unrevealed encounter suffix and so advances `monsterRng`
+counters in every stored particle. Public-state identity matches often within
+noncombat stretches, never across a real combat. Even then the matched outcome
+is split across many independent sibling particles, since sampled mode can add
+a particle on every chance visit. Rerooting to one particle therefore retains
+little work (§361: 0.90% of searched simulations on the representative
+workload). Merging publicly identical particles would change search semantics
+and is an open question.
 
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
@@ -140,10 +159,30 @@ the tree to primitive V4 candidates. BATTLE remains a boundary and exact run
 loss/victory retain precedence. MAP alone keeps its existing primitive V4
 candidate contract (including missing-map and row-14 boundaries).
 
+Before semantic OOC enumeration, detached reward states deterministically
+collect every ordinary gold reward through the normal `GameAction::GOLD`
+execution path. This gold-only normalization is applied at the root and after
+each hypothetical successor; it leaves the REWARDS screen and all non-gold
+choices intact, so `TAKE_GOLD` remains available to semantic execution and
+diagnostics but is not an MCTS candidate. The simulator's live OOC policy also
+applies the closure to its real `GameContext` before search, keeping subsequent
+semantic action resolution on the same state. The live advisor emits one
+captured gold choice as a single-action pass-through and re-observes before
+scoring any remaining reward decision. Multiple captured gold choices are
+handled one observation at a time, including when their native primitive bits
+coincide. If the capture marks an unopened card group as
+`CARD_GROUP_NOT_REVEALED`, the importer still validates the complete schema and
+gold-to-live mappings before allowing that gold pass-through; after the gold is
+gone, the unsupported card-group boundary is returned unchanged. Ectoplasm and
+Bloody Idol therefore retain their normal acquisition semantics.
+
 V4 remains a primitive-trained source-level prior. When the state's unique
 semantic source primitives exactly match the complete, duplicate-free V4
 candidate set, each source is scored once with the existing policy head and
 temperature. Its raw prior weight is divided equally among its semantic children.
+For duplicate physical UPGRADE positions, coverage still checks the full
+physical set; their logits are averaged within each retained semantic card
+class before applying temperature, so extra copies do not increase its prior.
 One-to-one actions retain the original prior. Unqualified source coverage,
 including REMOVE/TRANSFORM selector roots, yields uniform priors across the
 entire sibling set; explicit `STS_OOC_MCTS_PRIOR=uniform` does the same.
@@ -225,30 +264,73 @@ environment model** or a scientifically qualified full OOC planner.
 
 `STS_OOC_MCTS=1` intercepts each nonbattle decision immediately before the
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
-loaded native V4 policy and native win models plus a compatible
-`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. Startup also
-requires the effective Silver reuse cap to be 32,768; the experimental 131,072
-override is rejected. Real combat requires ordinary exact-10k Silver, allocated
-reuse, and adaptive-off, preserving the frozen teacher cap contract. The default
-is OFF and does not load a combat artifact or run MCTS. Both arms retain the
-same normal real combat branch and the same fallback OOC policy chain.
+loaded native V4 policy and native win models plus a compatible combat
+artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
+`selfplay/models/combat_transition_deepsets_lizard_t2.native` artifact and
+automatically pairs it with the pinned standard Attention Brew fallback. An
+explicit combat-model path overrides the automatic stack; explicit artifact
+failures are fatal. Startup also requires the effective Silver reuse cap to be
+32,768; the experimental 131,072 override is rejected. Real combat requires
+ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
+frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
+does not load a combat artifact or run MCTS. Both arms retain the same normal
+real combat branch and the same fallback OOC policy chain.
+
+The promoted DeepSets artifact declares the Entropic Brew fallback contract.
+The adapter routes the whole transition to the standard Attention artifact
+when Entropic Brew is present in the pre-combat inventory; it does not switch
+models based on generated outcomes. The fallback's actual SHA256 must equal
+the pinned current-standard artifact
+`e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`; the
+runtime also checks source/cohort metadata. `STS_OOC_MCTS_BREW_FALLBACK_MODEL`
+overrides the automatic fallback path. Missing or invalid required artifacts
+are fatal.
+
+With the automatic model stack, the qualified active-Lizard correction is
+enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips
+active Lizard from the ordinary CTM children, applies the frozen mechanical-q,
+learned-r and T2 semantics, and restores Tail active or spent on the sampled
+post-state. The production artifact
+`selfplay/models/combat_transition_deepsets_lizard_t2.native` has artifact
+SHA-256 `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`
+and unchanged DeepSets tensor-payload SHA-256
+`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`.
+Its metadata is pinned to Gate 2 PASS report SHA-256
+`1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
+Active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom remain
+explicit boundaries that use the existing fail-closed or exact-path behavior.
+Explicit model paths keep the correction off unless
+`STS_OOC_MCTS_ACTIVE_LIZARD=1` is also set and a Brew fallback is available.
+The correction changes only OOC CTM handling; it does not enable OOC MCTS.
 
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
+For a native simulator graph, set `STS_OOC_MCTS_GRAPH_FILE` to a fresh JSON path
+and `STS_OOC_MCTS_GRAPH_DECISION_INDEX` to the zero-based nonbattle decision
+index (default 1). The selected search captures up to 4,096 tree nodes after
+search, labels them from the native `GameContext` and model action keys,
+and writes seed, search seed, root state, candidates, selected action, and
+truncation status. Captured game actions carry human-readable map destinations
+or semantic reward choices; state summaries carry floor, room, screen, map
+position, HP, and gold. Particle edges mark each combat transition sampled by
+the CTM with its encounter and sampled outcome. CTM work inside leaf evaluation
+does not create a retained edge. Render with `tools/render_ooc_mcts.py --snapshot JSON
+--output HTML`. This is an opt-in diagnostic of the ordinary simulator search;
+the graph's loss nodes are sampled terminal outcomes, not independently played
+games, and their stored HP can retain its precombat value.
 Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
 explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
 simulator RNG. Terminal/boundary roots and whole-root support aborts return no
 action; completed supported searches must return a legal adapter candidate ID.
-A root with one valid, unique candidate may return that candidate without
-constructing a tree only under the explicit `searchGuaranteedNonAborting()`
-contract. `OocGameContextModel` explicitly returns false: separate combat-support
-qualification must exclude every intentional abort path before this can change.
-An unqualified sole root must complete at least one simulation; an abort reached
-before its lock retains whole-root fallback, whose ordered
-policy can consume `ScumSearchAgent2::rng` even for a singleton candidate set.
-Qualified bypasses report `trivialRootBypasses` with zero simulations/attempts/
-combat draws; the current live model is ineligible. Snapshots are discarded before
+A root with one valid, unique semantic candidate returns that current action
+without constructing a tree, even though `OocGameContextModel` cannot guarantee
+hypothetical continuation support. A later unsupported real decision is handled
+at that later root. The bypass reports `trivialRootBypasses` with zero
+simulations, attempts, transitions, leaf evaluations, or combat draws. Explicit
+root-lock observation and root checkpoints still request search. Roots with
+multiple candidates retain whole-root search and abort/fallback behavior.
+Snapshots are discarded before
 `oocMctsPolicyStep` resolves the retained canonical key against fresh complete
 semantic candidates, requires exactly one match, and executes transactionally.
 Stale/missing/ambiguous identities execute nothing. An active live action
@@ -305,6 +387,29 @@ restocks, room generation and post-combat rewards. Semantic identity remains
 the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
+The live advisor additionally sets `stopAtMapCheckpoint`: every downstream MAP
+state is a true planner leaf, including after the first visit. This prevents a
+revisited MAP particle from sampling a room with unreconstructed
+event/shop/treasure chance history. Live imports remove currently visible shop,
+combat-reward and boss-relic offers from the reconstructed relic pools.
+The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM;
+`OocGameContextModel` uses the same neutral value if a custom host omits the
+callback. This matches the native simulator default and the frozen model's
+constant training feature. A zero value causes unsupported predictions from
+this model.
+Pity-sensitive event branches whose reward generation depends on private
+counter history remain unsupported, including Library, Mushrooms and
+Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture
+`E[sigmoid(margin)]` over the native reachable ranges
+(`potionChance=-40..100` in steps of 10 and `cardRarityFactor=-40..5`) rather
+than applying the link to an expected margin or conditioning on 0/5. The
+direct V4 scoring fails closed for real live captures because Java does not
+expose an exact pity history. Live MCTS uses an equal public prior instead of a
+fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
+pity reconstruction. Hypothetical room-chance and pity counters are sampled
+from explicit reachable-state priors before a transition; this is a qualified
+belief particle, not an exact joint posterior.
+
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
 when a particular action has a deterministic public effect. Native leaf
@@ -313,13 +418,35 @@ features receive sampled hidden queues rather than the real future queue.
 offline/native parity seam; live startup always enables sampling and reports
 `noncombatOutcomes=sampled`. There is no live known-RNG override.
 
+The live root conditions that sampled support on public metric history before
+search: current-act normal/elite consumption from completed combat floors,
+acquired or lost relics, observed events, and paid shop removals. A `?` floor
+that became a hallway combat is counted from `metricData.damage_taken`, not from
+the retained map symbol. Private Java potion/card-rarity counters are not
+copied. Historical relic offers that were seen and skipped are not present in
+vanilla metrics; the live root therefore fails closed for treasure, Shovel,
+Courier-restock, and random-relic event branches unless a complete
+`seenRelics` history is supplied.
+Live MAP roots are searchable with the explicit room-chance belief prior.
+Non-root MAP states remain hard checkpoint leaves, so a search never chooses a
+hypothetical room after reaching the checkpoint.
+
 Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
 searched semantic transitions (primitive transitions on MAP), excluding
 policy-chain steps used only to project leaves. Sampling removes the concrete
 future-stream leak; it is not a proof of an exact joint hidden-state posterior,
 a belief-tree policy, or stronger gameplay quality. Remaining-pool membership
 and historical counters are conditioned on native state; chance particles and
-leaf policies are still the existing planner approximation.
+leaf policies are still the existing planner approximation. Live checkpoint
+continuation preserves the simulator's reward-collection order and uses the
+same V4 Q/margin contract for actions it can qualify. The standalone live
+advisor cannot call `runFullRunOocPolicyStep(gc, agent, false, true)` directly
+because that driver is coupled to simulator-global heuristic fallback
+objects. The live continuation now shares the fixed free-reward prefix and
+uses the simulator `ScumSearchAgent2` fallback when the V4 margin gate does
+not fire; it never substitutes an ungated policy-logit argmax. Full
+simulator/live checkpoint parity remains an explicit seam to extract before
+claiming complete policy equivalence.
 
 The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
 ranges/enums fail startup; OFF does not parse or apply search overrides. Native
@@ -336,7 +463,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `CPUCT` |1.5|finite nonnegative PUCT exploration multiplier|
 | `WIDEN_K` |2|finite positive chance-particle width coefficient|
 | `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
-| `MAX_DEPTH` |32|integer1..32 searched action transitions|
+| `MAX_DEPTH` |512|integer1..512; fail-closed technical safety cap, not a value horizon|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
@@ -349,6 +476,9 @@ with `ceil(k*N^alpha)`; action candidates are fully expanded, so this substrate
 is not double progressive widening. Root-Q selection changes only the final
 choice, not tree allocation. Leaf projection steps do not count toward tree
 `MAX_DEPTH`. None of these knobs changes real Silver's budget or parameters.
+Historical depth-8/16/32 parameter-screen receipts and the frozen
+`tools/ooc_mcts_parameter_search.py` design describe the old value-bearing
+horizon and must be replayed on their recorded source SHA, not this runtime.
 The boss leaf is evaluated through one shared helper from both ordinary
 `leafValue()` and the live resolved-checkpoint branch. It uses no planner or
 gameplay RNG, never calls `v_win`, and fails the simulation/root closed if any
@@ -364,6 +494,20 @@ variation tests; this does not establish policy quality or full belief-model qua
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested.
 
+`STS_OOC_MCTS_PRIOR_TRACE=<jsonl path>` is a separate, strictly opt-in capture
+of the authoritative current `OocGameContextModel` prior. It appends one
+schema-versioned row per state on that state's first `legalActions()` prior
+build, including root and hypothetical search states. Prior-covered
+non-singleton rows retain the exact `buildTokStatePure` token values, each
+distinct `strategicCands`/`tokEntity` source input and native source logit, the
+ordered semantic candidates and their unchanged `priorSourceGroups`, grouped
+candidate logits, raw planner weights and normalized diagnostic prior.
+Singleton, uncovered and explicitly uniform rows stay compact and do not
+force skipped policy inference. The trace checks source coverage, grouped-logit
+reconstruction, candidate order, finite values and exact raw planner weights
+before writing. It does not create a second search or change search RNG,
+candidate ordering or returned priors; use a fresh path for each capture.
+
 `STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
 the full-run trace boundary. Defaults remain off. Thread-local CPU scopes
 record calls, inclusive CPU and exclusive CPU after subtracting timed children;
@@ -376,6 +520,16 @@ not per-seed CPU in a multi-seed process; use external process CPU timing for
 one-seed invocations. These are attribution diagnostics, not production timings.
 See the [two historical-seed profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 for scope details, workload reconciliation and measured overhead limitations.
+
+With the V4 prior and uniform leaf policy, `legalActions()` assigns a sole
+candidate its exact normalized prior of 1.0 without running V4. For multiple
+candidates, the policy head prepares its bias plus state dimensions 0–127 once
+per immutable candidate set, then accumulates candidate dimensions 128–183 in
+the original order. The Q head and candidate encoding are unchanged. Exact
+parity and bounded performance evidence are recorded in the
+[2026-09-24 V4-prior profile](../../experiments/evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md).
+The evidence supports this behavior-preserving optimization only; it does not
+change the live OOC MCTS default or establish gameplay-quality improvement.
 
 The CSV trace records
 decision/ownership/fallback
@@ -439,8 +593,29 @@ persisted semantic target identity.
 `enumerateOocSemanticActions` returns `supported`, `complete`, `error` and
 canonically ordered actions. Consumers must check completeness before treating
 the result as the complete legal action space. MAP, BATTLE and INVALID screens
-are unsupported; disabled Match and Keep and malformed selector states cannot
-be presented as complete supported decisions.
+are unsupported; Match and Keep and malformed selector states cannot be
+presented as complete supported decisions.
+
+A combat that starts with a Smoke Bomb is outside the qualified CTM support.
+The OOC model wraps its sampler (`maskInitialSmokeBomb`) so such a combat is
+valued as if the Smoke Bomb slot were empty (no escape) and the Smoke Bomb is
+returned unused afterwards; a potion generated into that slot is dropped. This
+Phase-0 approximation (#370) replaces the former whole-search abort. It is
+pessimistic where an escape would help; against bosses only slot occupancy
+differs, because escape is blocked there.
+
+Match and Keep is enabled in the simulator (shrine selection, and therefore
+event outcomes, changed for affected seeds). Each action is one click on one of
+12 slots; slot state is `info.toSelectCards[i].deckIdx` (-1 unseen, 1 seen face
+down, 2 face up this attempt, 0 matched), `info.eventData` counts the 5
+attempts, and a matched pair is added to the deck. Its clicks are not searched:
+`matchAndKeepPolicyStep` (`run_driver.cpp`) plays the fair fixed pattern in
+`sim/search/MatchAndKeepPolicy` for real runs and for OOC MCTS continuations.
+The pattern reads a slot's card only after that slot was flipped. Each seen
+card is valued by the active primary guide as a lone card reward
+(`oocHypotheticalCardTaken`): OOC MCTS when it is enabled, otherwise the
+ordinary V4/one-ply chain; inside a search only the chain is used, so no search
+nests inside another.
 
 A compound may combine a source option with one target only when its complete
 candidate set is public before the source click and that click reveals no new
@@ -490,6 +665,20 @@ option 1 is first an event choice, then two transform picks. Library Read is
 first an event choice without generated IDs, then TAKE_CARD actions for the
 revealed OBTAIN candidates. Wheel and other random event choices likewise
 contain no predicted outcome.
+
+For remove, upgrade, transform and transform-upgrade choices, the OOC MCTS
+adapter searches one representative of each equivalent deck card. It retains
+the first available physical occurrence and its full semantic key for live
+execution. The shared semantic enumerator still exposes every occurrence.
+This is search-level semantic/stochastic equivalence, not byte-for-byte
+`GameContext` identity: removing different identical occurrences may leave a
+different master-deck order. OOC futures are re-determinized and treat these
+copies as effectively permutation-invariant.
+Multi-card selectors re-enumerate after each pick, so a second copy remains
+available on the next decision without searching equivalent branches now.
+The live advisor checks that every omitted selector position matches the
+retained choice's search equivalence key while preserving the full physical
+action-set check before scoring.
 
 Rewards enumerate all available card, relic, gold, potion and key actions
 together, plus their distinct skip/leave choices. `CARD(group,5)` skips one
@@ -574,7 +763,7 @@ shared across sibling actions for the same rollout/encounter occurrence. The
 mode writes the requested CSV plus `.json` and `.report.txt` summaries and
 has a deterministic `--self-test` canary. Run seed-driven commands through
 `tools/seed_guard.sh`; this mode has one source seed, so its rollout count is
-not mistaken for a multi-seed sweep by the local 128-seed guard.
+not mistaken for a multi-seed sweep by the seed-count validator.
 
 `GameContext` owns run RNG streams, deck, relics, potions, map, resources,
 act/floor, and the active `ScreenState`
@@ -654,7 +843,7 @@ reproducible. Round 6 (`§76`) added the remaining screens:
 (`oocOnePlyTreasurePolicy`), `STS_OOC_STRATEGIC_BOSS_RELIC=1`
 (`oocOnePlyBossRelicPolicy`) — all default **off**. The Q
 head is trained on Tier-B one-ply counterfactual labels (`strategicgen2`;
-`apps/one_combat.cpp::runStrategicGenSeed2`). No model is deployed by default:
+`apps/one_combat/strategic_gen.cpp::runStrategicGenSeed2`). No model is deployed by default:
 the one-ply branches are opt-in only
 (`apps/ooc_strategic_net.h::OocStrategicNet`;
 `apps/one_combat/ooc_policy.cpp::oocOnePlyCardRewardPolicy`,
@@ -857,6 +1046,23 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    screen.
 2. `runFullRunOOC` evaluates opt-in action networks/evaluators first, then map,
    rewards, shop, rest, boss-relic/Neow, and finally the base policy.
+   `collectFreeOocReward` in `apps/one_combat/ooc_checkpoint_policy.cpp`
+   takes a potion only when `potionCount < potionCapacity`; the subsequent
+   full-run REWARDS handlers in `apps/one_combat/run_driver.cpp` do not discard
+   or swap a carried potion to create space. A Potion Belt reward collected
+   earlier in that chain can add two slots before the potion decision. In the
+   3,069-fight `v_win` audit, 147 unmatched full-belt drops were classified
+   by the adjacent-floor proxy (4.79%, or 4.8% of RAW fights); 199 more
+   unmatched full-belt rows had unknown proxy status. If all 199 represent
+   forfeited drops, the code-path upper count is 346/3,069 (11.27%, or 11.3%).
+   This is a conditional upper bound, not an estimated rate: 17 unmatched
+   space-available rows show that missing POST capture has other causes.
+   Capacity was full in 95.3% of unmatched RAW rows versus 15.3% of matched
+   rows; one matched full-belt drop was explained by a new Potion Belt. The
+   belt was full in 759/3,069 RAW rows (24.7%); among 301 full-belt rows with
+   classifiable adjacent-floor status, 148 (49.2%) had a potion drop. The run
+   policy takes a potion only when capacity is available and has no discard or
+   swap path. The exact cohort forfeiture rate is unknown.
    When `STS_COLLECT_KEYS=1` (default off), every REWARDS handler takes the
    emerald (burning elite) / sapphire (chest) key via `RT::KEY` right after
    gold/relic/potion, and every act-3+ rest room takes the ruby key (RECALL,
@@ -927,7 +1133,7 @@ flowchart LR
 - `runtrace` is not a wrapper around `runFullRunOOC`: it prints a diagnostic
   header, skips server-only draft logging when no server is reachable, but still
   omits some fallthrough policy layers and its event/treasure scores are
-  diagnostic (`apps/one_combat.cpp::runTraceRun`, `tr_logDraft`).
+  diagnostic (`apps/one_combat/run_trace.cpp::runTraceRun`, `tr_logDraft`).
 - Model-driven pathing with the old forward-map-blind win model was a recorded
   regression; heuristic pathing remains the operating baseline.
 - Python cannot issue card-by-card combat actions.
@@ -967,3 +1173,64 @@ flowchart LR
 - `docs/knowledge-base/evaluation/current-research.md` — current research routing
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`
+
+
+### Real-run floor and decision profile
+
+Set `STS_RUN_PROFILE=/path/to/fresh.jsonl` for default-off observational
+profiling in `runFullRunOOC`. An empty/unset path creates no output and performs
+no floor clock reads or branching-histogram updates. Rows are serialized across
+workers and write failures are explicit. This does not enable OOC MCTS, change
+its budgets/model/RNG, or force full-budget execution. Unlike the older
+`STS_OOC_MCTS_CHECKPOINT_TRACE` shadow diagnostic, it records checkpoints inside
+the existing search with no second search. It preserves singleton bypasses and
+all configured early stopping. If both diagnostics are explicitly enabled,
+the older shadow still runs and its extra work is included in floor totals.
+
+A floor interval starts when the real driver first observes `(act, floor)` and
+ends when it first observes the next pair, or when the run stops/aborts. All
+screens on the same floor share one row. Map-choice/entry work is charged to
+the floor being left. Metadata names the floor being measured, including room,
+coordinates and all observed combat encounters. Outcomes distinguish advancing,
+death, victory, requested act-stop victory and abort. Fallbacks/support aborts
+are separate counts, not floor outcomes. Exceptions emit a partial floor row
+with the error; completed-component counters on that row do not account for
+unfinished work and must not be treated as a complete profile.
+
+Floor rows report wall and thread CPU time, real-combat lifecycle time,
+combat decisions/simulations, and differences of the existing run-level OOC
+search/transition/particle/leaf/CTM counters. Real-combat timing includes state
+conversion and backend overhead, not just Silver tree search. OOC time includes
+search preparation and result construction. Component times are nested inside
+floor totals; do not add totals and components. I/O and profile overhead can
+remain in floor totals, so this is not an isolated speed benchmark. Final floor
+emission and post-run reporting are outside the sum of floor intervals.
+
+Each actual OOC search records root actions (prior, visits, mean Q), selected
+semantic key, execution/fallback status, configured/completed simulations,
+exact expanded-node legal-action histogram, sampling work and depth. The
+histogram counts each expansion, including repeated sampled decision states;
+terminal/semantic boundary states do not expand and are excluded. Histograms
+sum to the existing coarse expansion census. Singleton roots have zero
+expansions/simulations. Root checkpoints at 128/256/512/1024/2048/4096 appear
+only when reached. A support-aborted search retains partial expansion and
+checkpoint evidence but has no final action statistics.
+
+`python3 tools/analyze_run_profile.py PROFILE.jsonl --output SUMMARY.json`
+validates floor/decision counts, execution/fallback/abort statuses, and search
+work. Floor records explicitly count `unprofiled_disabled` calls and
+`unprofiled_observer` early returns: neither emits a search row, and only the
+latter contributes to fallbacks. Older schema-1 records default these counters
+to zero; an old profile with such unrecorded early returns cannot be certified
+and is rejected. Partial abort floors remain unqualified. The analyzer reports
+exact branching shares, slow
+floors by wall/CPU, room mean/median cost, top-5/top-10 CPU share, and root
+stability cross-tabs. It derives visit/Q gaps, prior entropy and a strict visit
+winner lock using `leader_visits - runner_up_visits > remaining_budget`.
+That mathematical visit lock is not a guarantee against later support failure.
+
+`b_stable_observed` is the earliest recorded checkpoint after which the winner
+never changes through the **observed** final search. `b_stable_full_budget` is
+null for early-stopped, singleton, boundary or aborted searches. Full-budget
+cross-tabs use only uncensored searches and can be selection-biased. Neither
+statistic qualifies an adaptive stopping policy on independent future searches.

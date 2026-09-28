@@ -19,6 +19,7 @@
 #include "combat/CardSelectInfo.h"
 #include "combat/InputState.h"
 #include "combat/CardInstance.h"
+#include "combat/CardQueue.h"
 #include "live_silver_mapping.h"
 
 namespace one_combat::advisor {
@@ -582,7 +583,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.loopCount = combat.value("loopCount", 0);
     wire.energyWasted = combat.value("energyWasted", 0);
     wire.cardsDrawn = combat.value("cardsDrawn", 0);
-    wire.monsterTurnIdx = combat.value("monsterTurnIdx", 0);
+    // Java omits this native-only field at a stable player decision. Silver's
+    // player-turn sentinel is 6; zero would immediately execute monsters after
+    // any card action and manufacture chance branches before End Turn.
+    wire.monsterTurnIdx = combat.value("monsterTurnIdx", 6);
     wire.endTurnQueued = combat.value("endTurnQueued", false);
     wire.turnHasEnded = combat.value("turnHasEnded", false);
     wire.skipMonsterTurn = combat.value("skipMonsterTurn", false);
@@ -707,8 +711,18 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         return out;
     };
-    wire.hand = indexCards(hand); wire.limbo = indexCards(limbo);
+    wire.hand = indexCards(hand);
+    wire.limbo.assign(10, silver_bridge::CardWire{});
+    for (auto &card : wire.limbo) card.uniqueId = -1;
+    const auto indexedLimbo = indexCards(limbo);
+    if (indexedLimbo.size() > wire.limbo.size()) return unsupported("silver_unmapped_limbo");
+    std::copy(indexedLimbo.begin(), indexedLimbo.end(), wire.limbo.begin());
     wire.stasisCards.fill(silver_bridge::CardWire{});
+    for (auto &card : wire.stasisCards) {
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
+    }
     const auto indexedStasis = indexCards(stasis);
     for (std::size_t i = 0; i < indexedStasis.size() && i < stasisSlots.size(); ++i)
         wire.stasisCards[stasisSlots[i]] = indexedStasis[i];
@@ -1020,34 +1034,55 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
     }
 
+    // Parses one vanilla CardQueueItem projection; an empty string means ok.
+    const auto parseQueueItem = [&](const json &item, silver_bridge::CardQueueItemWire &out) -> std::string {
+        out.card.uniqueId = -1;
+        CardRecord queueCard;
+        if (item.contains("card") && item.at("card").is_null()) {
+            // Vanilla end-turn autoplay items have no card object.  The
+            // remaining public queue flags still belong in the retained
+            // native CardQueueItem.
+        } else if (item.contains("card") && parseGenericCard(item.at("card"), queueCard)) {
+            if (isOffColorIroncladCard(queueCard.wire)) return "silver_off_color_card";
+            auto id = context.cardIds.find(queueCard.uuid);
+            if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
+            queueCard.wire.uniqueId = id->second; out.card = queueCard.wire;
+        } else if (item.contains("card")) return "silver_played_card";
+        out.target = item.value("target", 0);
+        out.isEndTurn = item.value("isEndTurn", false);
+        out.triggerOnUse = item.value("triggerOnUse", true);
+        out.ignoreEnergyTotal = item.value("ignoreEnergyTotal", false);
+        out.energyOnUse = item.value("energyOnUse", 0);
+        out.freeToPlay = item.value("freeToPlay", false);
+        out.randomTarget = item.value("randomTarget", false);
+        out.autoplay = item.value("autoplay", false);
+        out.regretCardCount = item.value("regretCardCount", 0);
+        out.purgeOnUse = item.value("purgeOnUse", false);
+        out.exhaustOnUse = item.value("exhaustOnUse", false);
+        return {};
+    };
     wire.curCardQueueItem.card.uniqueId = -1;
     const auto queueIt = combat.find("curCardQueueItem");
     if (decision > 0 && (queueIt == combat.end() || !queueIt->is_object()
         || !queueIt->contains("card") || queueIt->at("card").is_null()))
         return unsupported("silver_card_queue_item");
     if (queueIt != combat.end() && queueIt->is_object()) {
-        CardRecord queueCard;
-        if (queueIt->contains("card") && queueIt->at("card").is_null()) {
-            // Vanilla end-turn autoplay items have no card object.  The
-            // remaining public queue flags still belong in the retained
-            // native CardQueueItem.
-        } else if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
-            if (isOffColorIroncladCard(queueCard.wire)) return unsupported("silver_off_color_card");
-            auto id = context.cardIds.find(queueCard.uuid);
-            if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
-            queueCard.wire.uniqueId = id->second; wire.curCardQueueItem.card = queueCard.wire;
-        } else if (queueIt->contains("card")) return unsupported("silver_played_card");
-        wire.curCardQueueItem.target = queueIt->value("target", 0);
-        wire.curCardQueueItem.isEndTurn = queueIt->value("isEndTurn", false);
-        wire.curCardQueueItem.triggerOnUse = queueIt->value("triggerOnUse", true);
-        wire.curCardQueueItem.ignoreEnergyTotal = queueIt->value("ignoreEnergyTotal", false);
-        wire.curCardQueueItem.energyOnUse = queueIt->value("energyOnUse", 0);
-        wire.curCardQueueItem.freeToPlay = queueIt->value("freeToPlay", false);
-        wire.curCardQueueItem.randomTarget = queueIt->value("randomTarget", false);
-        wire.curCardQueueItem.autoplay = queueIt->value("autoplay", false);
-        wire.curCardQueueItem.regretCardCount = queueIt->value("regretCardCount", 0);
-        wire.curCardQueueItem.purgeOnUse = queueIt->value("purgeOnUse", false);
-        wire.curCardQueueItem.exhaustOnUse = queueIt->value("exhaustOnUse", false);
+        if (const auto reason = parseQueueItem(*queueIt, wire.curCardQueueItem); !reason.empty())
+            return unsupported(reason);
+    }
+    // Optional: the vanilla card queue still pending at a selection (Double
+    // Tap, Duplication or Necronomicon copies), front first. Without it the
+    // search root rebuilds the queue by replaying the interrupted card.
+    if (const auto pendingIt = combat.find("pendingCardQueue"); pendingIt != combat.end() && !pendingIt->is_null()) {
+        if (!pendingIt->is_array() || pendingIt->size() > static_cast<std::size_t>(sts::CardQueue::capacity))
+            return unsupported("silver_card_queue_item");
+        for (const auto &item : *pendingIt) {
+            if (!item.is_object()) return unsupported("silver_card_queue_item");
+            silver_bridge::CardQueueItemWire parsed;
+            if (const auto reason = parseQueueItem(item, parsed); !reason.empty()) return unsupported(reason);
+            wire.pendingCardQueue.push_back(parsed);
+        }
+        wire.pendingCardQueueObserved = true;
     }
     wire.potionCount = std::count_if(wire.potions.begin(), wire.potions.end(), [](auto id) {
         return id != static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT);
@@ -1148,12 +1183,31 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         if (!action.discardPotion && !targetFields(result)) return nullptr;
         return result;
     }
+    case SemanticActionType::MULTI_CARD_SELECT: {
+        // MCPTheSpire exposes a hand selector as repeated choose calls plus a
+        // final Proceed. Silver has already searched the complete private
+        // transaction; lower only the next still-unselected member of that
+        // final subset, or Proceed when the subset is complete.
+        nlohmann::json combat = observation.contains("combat") && observation["combat"].is_object()
+            ? observation["combat"]
+            : observation.value("silverRoot", nlohmann::json::object())
+                  .value("combat", nlohmann::json::object());
+        const auto hand = combat.value("hand", nlohmann::json::array());
+        const auto cardSelect = combat.value("cardSelect", nlohmann::json::object());
+        const int selectedBits = cardSelect.value("selectedBits", 0);
+        for (const auto &selected : action.selectedCards) {
+            const auto uuid = uuidForId(selected.uniqueId);
+            if (uuid.empty()) return nullptr;
+            for (std::size_t i = 0; i < hand.size(); ++i) {
+                if (!hand[i].is_object() || hand[i].value("uuid", std::string()) != uuid) continue;
+                if ((selectedBits & (1 << static_cast<int>(i))) == 0)
+                    return {{"kind", "choose"}, {"choiceIndex", static_cast<int>(i) + 1}};
+                break;
+            }
+        }
+        return {{"kind", "proceed"}};
+    }
     case SemanticActionType::SINGLE_CARD_SELECT:
-    case SemanticActionType::MULTI_CARD_SELECT:
-        // MCPTheSpire exposes these screens through its choice surface, not
-        // the indexed select_cards call. Until that exact lowering is wired,
-        // make the advisor fail closed so the driver uses deterministic
-        // fallback instead of emitting an unexecutable Silver OK action.
         return nullptr;
     case SemanticActionType::INVALID:
         return nullptr;

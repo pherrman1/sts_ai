@@ -18,7 +18,9 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverWireJson.h"
+#include "sim/search/SilverWireState.h"
 #include "sim/search/Action.h"
+#include "one_combat/native_silver_advisor.h"
 
 using nlohmann::json;
 using namespace sts;
@@ -27,14 +29,57 @@ using silver_bridge::BattleStateWire;
 using silver_bridge::CardWire;
 using silver_bridge::CardQueueItemWire;
 using silver_bridge::MonsterWire;
-using silver_bridge::SilverRootActionSummary;
-using silver_bridge::SilverSearchConfig;
-using silver_bridge::SilverRerootFallbackReason;
-using silver_bridge::convertedStatesEqualForSearch;
-using silver_bridge::runSilverDecision;
-using silver_bridge::semanticActionFingerprint;
 
 namespace {
+// The native Silver search the advisor runs, under the names this test used
+// for the retired vendored session (ADR-0022).
+struct SilverSearchConfig {
+    std::int64_t simulationsPerDecision = 1000;
+    bool collectRootActionSummaries = false;
+    bool collectDecisionDiagnostics = false;
+    bool adaptiveEnabled = false;
+    bool exactVisitLockEnabled = false;
+    bool rhoRacingEnabled = false;
+};
+using SilverRootActionSummary = one_combat::advisor::NativeSilverRootSummary;
+using SilverSearchSession = one_combat::advisor::NativeSilverAdvisorSession;
+struct SilverDecisionResult {
+    bool accepted = false;
+    silver_bridge::SemanticAction action;
+    std::vector<SilverRootActionSummary> rootActionSummaries;
+    one_combat::advisor::NativeSilverDecision diagnostic;
+};
+std::shared_ptr<SilverSearchSession> makeSilverSearchSession() {
+    return std::make_shared<SilverSearchSession>();
+}
+SilverDecisionResult runSilverDecision(SilverSearchSession &session, const BattleStateWire &wire,
+                                       const SilverSearchConfig &config) {
+    auto decision = session.decide(wire, config.simulationsPerDecision);
+    SilverDecisionResult out;
+    out.accepted = decision.accepted;
+    out.action = decision.action;
+    out.rootActionSummaries = decision.rootActionSummaries;
+    out.diagnostic = std::move(decision);
+    return out;
+}
+SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const SilverSearchConfig &config) {
+    SilverSearchSession session;
+    return runSilverDecision(session, wire, config);
+}
+std::vector<silver_bridge::SemanticAction> enumerateSilverLegalActions(const BattleStateWire &wire) {
+    SilverSearchSession session;
+    return session.decide(wire, 1).legalActions;
+}
+bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWire &b) {
+    try {
+        return battleContextFromWire(a).equalForSearch(battleContextFromWire(b));
+    } catch (const std::exception &) {
+        return false;
+    }
+}
+std::string semanticActionFingerprint(const silver_bridge::SemanticAction &action) {
+    return semanticFingerprint(action);
+}
 struct Fixture { const char *name; int move; const char *room; BattleStateWire wire; json observation; };
 json observation(const BattleStateWire &, const char *, int, const char *,
                  int = 0, json = json::array());
@@ -348,6 +393,11 @@ void normalizeFirstObservationIdentity(BattleStateWire &wire) {
     wire.limbo.assign(10, CardWire{});
     for (auto &card : wire.limbo) card.uniqueId = -1;
     wire.stasisCards.fill(CardWire{});
+    for (auto &card : wire.stasisCards) {
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
+    }
 }
 void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
     int nextId = 0;
@@ -358,11 +408,15 @@ void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
     assign(wire.discardPile.unknown);
     assign(wire.exhaustPile.unknown);
     assign(wire.hand);
-    wire.limbo.clear();
+    wire.limbo.assign(10, CardWire{});
+    for (auto &card : wire.limbo) card.uniqueId = -1;
     const auto stasisCards = wire.stasisCards;
     wire.stasisCards.fill(CardWire{});
     for (std::size_t i = 0; i < wire.stasisCards.size(); ++i) {
         auto &card = wire.stasisCards[i];
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
         if (stasisCards[i].id != static_cast<std::int16_t>(CardId::INVALID))
             card = stasisCards[i];
         if (card.id != static_cast<std::int16_t>(CardId::INVALID))
@@ -370,6 +424,22 @@ void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
     }
     wire.nextUniqueCardId = nextId;
     wire.observedGeneration = 1;
+}
+void assertAbsentLimboAndStasisLayout(const BattleStateWire &wire, const char *source) {
+    if (wire.limbo.size() != 10)
+        throw std::runtime_error(std::string(source) + " limbo does not have ten native slots");
+    for (std::size_t i = 0; i < wire.limbo.size(); ++i) {
+        const auto &card = wire.limbo[i];
+        if (card.id == static_cast<std::int16_t>(CardId::INVALID)
+            && (card.uniqueId != -1 || card.cost != 0 || card.costForTurn != 0))
+            throw std::runtime_error(std::string(source) + " absent limbo slot is not default-constructed");
+    }
+    for (std::size_t i = 0; i < wire.stasisCards.size(); ++i) {
+        const auto &card = wire.stasisCards[i];
+        if (card.id == static_cast<std::int16_t>(CardId::INVALID)
+            && (card.uniqueId != -1 || card.cost != 1 || card.costForTurn != 1))
+            throw std::runtime_error(std::string(source) + " absent stasis slot has the wrong sentinel");
+    }
 }
 void resolveMonsterTransition(BattleContext &live, int monsterIdx) {
     if (monsterIdx < 0 || monsterIdx >= live.monsters.monsterCount)
@@ -398,6 +468,7 @@ void assertDynamicParity(const char *name, BattleContext &live, CombatKnowledgeS
     if (!imported.ok)
         throw std::runtime_error(std::string(name) + " Java-like observation rejected: "
             + imported.reason);
+    assertAbsentLimboAndStasisLayout(imported.wire, name);
     auto canonical = wire;
     canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
     if (!convertedStatesEqualForSearch(canonical, imported.wire))
@@ -1077,6 +1148,7 @@ void verifyEncounterManifestAndNativeSweep() {
                 + " renderedCount=" + std::to_string(rendered["silverRoot"]["combat"]["monsters"].size())
                 + " slots=" + rendered["silverRoot"]["combat"]["monsters"].dump());
         }
+        assertAbsentLimboAndStasisLayout(imported.wire, entry.enumName);
         auto canonical = normalized;
         canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(canonical, imported.wire)) {
@@ -1170,6 +1242,46 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 }
 int main() {
     try {
+        {
+            GameContext game(CharacterClass::IRONCLAD, 0x71517u, 0);
+            game.act = 1;
+            game.floorNum = 1;
+            BattleContext live;
+            live.init(game, MonsterEncounter::CULTIST);
+            CombatKnowledgeState knowledge;
+            knowledge.initializeFromLiveBattle(live);
+            live.potions[0] = Potion::GAMBLERS_BREW;
+            live.potionCount = 1;
+            sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(live);
+            if (live.inputState != InputState::CARD_SELECT
+                || live.cardSelectInfo.cardSelectTask != CardSelectTask::GAMBLE
+                || live.actionQueue.size != 0 || live.cardQueue.size != 0)
+                throw std::runtime_error("live Gambler's Brew did not settle at quiescent selection");
+            auto wire = makeSilverBattleStateWire(live, knowledge,
+                makeSilverRunContext(game), 0x71517u);
+            if (!wire.valid || !wire.historicalQueueItemAtSource
+                || battleContextFromWire(wire).actionQueue.size != 0)
+                throw std::runtime_error("quiescent live GAMBLE lost queue-item provenance");
+            // A selection interrupting a card play: the playing card is in no
+            // pile and its OnAfterCardUsed is queued. The search root restores it.
+            live.cardSelectInfo.cardSelectTask = CardSelectTask::HEADBUTT;
+            live.curCardQueueItem.card = CardInstance(CardId::HEADBUTT);
+            live.curCardQueueItem.card.uniqueId = 999;
+            live.actionQueue.pushBack(Actions::OnAfterCardUsed());
+            wire = makeSilverBattleStateWire(live, knowledge,
+                makeSilverRunContext(game), 0x71517u);
+            if (!wire.valid || wire.historicalQueueItemAtSource
+                || battleContextFromWire(wire).actionQueue.size != 1)
+                throw std::runtime_error("pending live Headbutt lost its OnAfterCardUsed in the search root");
+            live.actionQueue.clear();
+            wire = makeSilverBattleStateWire(live, knowledge,
+                makeSilverRunContext(game), 0x71517u);
+            if (!wire.valid || !wire.historicalQueueItemAtSource)
+                throw std::runtime_error("settled live selection did not preserve provenance");
+            const auto serialized = json(wire).get<BattleStateWire>();
+            if (serialized.historicalQueueItemAtSource)
+                throw std::runtime_error("legacy JSON manufactured queue-item provenance");
+        }
         verifyRuntimeMoveBoundary();
         verifyEncounterManifestAndNativeSweep();
         verifyDynamicTransitionCorpus();
@@ -1194,6 +1306,37 @@ int main() {
                 + std::to_string(multiImported.wire.monsters[0].moveHistory[0])
                 + " m1move=" + std::to_string(multiCanonical.monsters[1].moveHistory[0]) + "/"
                 + std::to_string(multiImported.wire.monsters[1].moveHistory[0]));
+        {
+            // The Java v4 producer does not emit monsterTurnIdx at a stable
+            // player decision. A missing field must retain the native player-
+            // turn sentinel, not schedule monsters after the next card play.
+            auto producerShaped = multi.observation;
+            producerShaped["silverRoot"]["combat"].erase("monsterTurnIdx");
+            const auto imported = one_combat::advisor::importSilverRoot(producerShaped);
+            if (!imported.ok || imported.wire.monsterTurnIdx != multi.wire.monsterTurnIdx)
+                throw std::runtime_error("missing producer monsterTurnIdx changed player-turn phase");
+            auto session = makeSilverSearchSession();
+            SilverSearchConfig config;
+            config.simulationsPerDecision = 64;
+            config.adaptiveEnabled = false;
+            const auto decision = runSilverDecision(*session, imported.wire, config);
+            const auto tree = session->snapshot(256);
+            if (!decision.accepted || !tree.accepted)
+                throw std::runtime_error("producer-shaped root search failed");
+            bool sawCard = false;
+            for (const auto &edge : tree.edges) {
+                if (edge.parentId != tree.rootId || !edge.hasAction
+                    || edge.action.type != silver_bridge::SemanticActionType::CARD) continue;
+                sawCard = true;
+                const auto child = std::find_if(tree.nodes.begin(), tree.nodes.end(),
+                    [&](const auto &node) { return node.id == edge.childId; });
+                if (child == tree.nodes.end() || child->isChanceNode || !child->hasState
+                    || child->state.player.curHp != imported.wire.player.curHp
+                    || child->state.monsterTurnIdx != imported.wire.monsterTurnIdx)
+                    throw std::runtime_error("card play scheduled a monster turn at player boundary");
+            }
+            if (!sawCard) throw std::runtime_error("producer-shaped search explored no root card");
+        }
         {
             // Render an actual targeted card successor through the public v4
             // fields.  Do not copy native status bits or infer the target from
@@ -1284,6 +1427,12 @@ int main() {
                 || imported.wire.drawPileBloodCardCount != canonical.drawPileBloodCardCount
                 || imported.wire.discardPileBloodCardCount != canonical.discardPileBloodCardCount)
                 throw std::runtime_error(std::string("first-root fields failed: ") + f.name);
+            // The public observation cannot prove that its omitted queues
+            // were empty. Compare search under the same conservative policy.
+            if (!canonical.historicalQueueItemAtSource
+                || imported.wire.historicalQueueItemAtSource)
+                throw std::runtime_error("live queue provenance boundary changed");
+            canonical.historicalQueueItemAtSource = imported.wire.historicalQueueItemAtSource;
             auto a = runSilverDecision(canonical, config);
             auto b = runSilverDecision(imported.wire, config);
             if (!a.accepted || !b.accepted
@@ -1507,6 +1656,25 @@ int main() {
         if (!convertedStatesEqualForSearch(v4ContinuationCanonical,
                                            v4ContinuationImported.wire))
             throw std::runtime_error("v4 continuation search-state parity failed");
+        // An observed pending card queue (a Double Tap copy of the played
+        // card) is imported item by item with the played card's identity.
+        {
+            auto withQueue = v4Continuation;
+            auto copy = producerQueueJson(v4Successor.wire.curCardQueueItem);
+            copy["purgeOnUse"] = true;
+            copy["autoplay"] = true;
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array({copy});
+            const auto queued = one_combat::advisor::importSilverRoot(withQueue);
+            if (!queued.ok || !queued.wire.pendingCardQueueObserved || queued.wire.pendingCardQueue.size() != 1
+                || !queued.wire.pendingCardQueue[0].purgeOnUse || !queued.wire.pendingCardQueue[0].autoplay
+                || queued.wire.pendingCardQueue[0].card.uniqueId != queued.wire.curCardQueueItem.card.uniqueId)
+                throw std::runtime_error("pending card queue was not imported");
+            if (v4ContinuationImported.wire.pendingCardQueueObserved)
+                throw std::runtime_error("absent pending card queue was treated as observed");
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = 5;
+            if (one_combat::advisor::importSilverRoot(withQueue).reason != "silver_card_queue_item")
+                throw std::runtime_error("malformed pending card queue was accepted");
+        }
         auto missingV4Queue = v4Continuation;
         missingV4Queue["silverRoot"]["combat"].erase("curCardQueueItem");
         if (one_combat::advisor::importSilverRoot(missingV4Queue).reason
@@ -1527,13 +1695,13 @@ int main() {
         appendCards(CardId::STRIKE_RED, 2);
         appendCards(CardId::DEFEND_RED, 2);
         appendCards(CardId::BASH, 1);
-        auto dedupActions = silver_bridge::enumerateSilverLegalActions(dedupWire);
+        auto dedupActions = enumerateSilverLegalActions(dedupWire);
         if (cardActionCount(dedupActions, CardId::STRIKE_RED) != 1
             || cardActionCount(dedupActions, CardId::DEFEND_RED) != 1
             || cardActionCount(dedupActions, CardId::BASH) != 1)
             throw std::runtime_error("live root did not collapse equivalent starter card actions");
         dedupWire.hand[1].retain = true;
-        auto distinctActions = silver_bridge::enumerateSilverLegalActions(dedupWire);
+        auto distinctActions = enumerateSilverLegalActions(dedupWire);
         if (cardActionCount(distinctActions, CardId::STRIKE_RED) != 2)
             throw std::runtime_error("relevant card-state difference was incorrectly deduplicated");
         auto unsupported = successorFixture(fixtures[0], CardId::DEFEND_RED).observation;
@@ -1564,13 +1732,13 @@ int main() {
 
         const Fixture *rerootRoot = nullptr;
         one_combat::advisor::SilverRootImportResult rerootImported;
-        silver_bridge::SilverDecisionResult rerootFirst;
-        std::shared_ptr<silver_bridge::SilverSearchSession> rerootSession;
+        SilverDecisionResult rerootFirst;
+        std::shared_ptr<SilverSearchSession> rerootSession;
         for (const auto &candidate : fixtures) {
             const auto entry = candidate.observation.value("combatEntryHash", "entry-v4");
             auto imported = one_combat::advisor::importSilverRoot(
                 genericObservation(candidate, entry.c_str()));
-            auto session = silver_bridge::makeSilverSearchSession();
+            auto session = makeSilverSearchSession();
             auto decision = runSilverDecision(*session, imported.wire, config);
             if (decision.accepted && decision.action.type == silver_bridge::SemanticActionType::CARD
                 && (decision.action.card.id == static_cast<std::int16_t>(CardId::STRIKE_RED)
@@ -1591,14 +1759,14 @@ int main() {
             || exactDecision.diagnostic.fallback || exactDecision.diagnostic.inheritedVisits <= 0)
             throw std::runtime_error("exact representative did not exact-reroot with inherited visits");
 
-        auto disagreementSession = silver_bridge::makeSilverSearchSession();
+        auto disagreementSession = makeSilverSearchSession();
         const auto disagreementFirst = runSilverDecision(*disagreementSession, rerootImported.wire, config);
         auto otherAction = disagreementFirst.action;
         const auto otherCard = disagreementFirst.action.card.id
                 == static_cast<std::int16_t>(CardId::STRIKE_RED)
             ? CardId::DEFEND_RED : CardId::STRIKE_RED;
         bool foundOther = false;
-        for (const auto &action : silver_bridge::enumerateSilverLegalActions(rerootImported.wire)) {
+        for (const auto &action : enumerateSilverLegalActions(rerootImported.wire)) {
             if (action.type == silver_bridge::SemanticActionType::CARD
                 && action.card.id == static_cast<std::int16_t>(otherCard)) {
                 otherAction = action;
@@ -1612,14 +1780,13 @@ int main() {
         const auto disagreementDecision = runSilverDecision(
             *disagreementSession, disagreementImported.wire, config);
         if (!disagreementDecision.accepted || !disagreementDecision.diagnostic.exactReroot
-            || disagreementDecision.diagnostic.equivalentCopyReroot
             || disagreementDecision.diagnostic.fallback
-            || disagreementDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::NONE
+            || disagreementDecision.diagnostic.fallbackReason != "none"
             || disagreementDecision.diagnostic.inheritedVisits <= 0
             || disagreementDecision.rootActionSummaries.empty())
             throw std::runtime_error("different listed action did not reuse its retained branch");
 
-        auto otherEquivalentSession = silver_bridge::makeSilverSearchSession();
+        auto otherEquivalentSession = makeSilverSearchSession();
         const auto otherEquivalentFirst = runSilverDecision(
             *otherEquivalentSession, rerootImported.wire, config);
         const auto otherEquivalentSuccessor = successorForSemantic(*rerootRoot, otherAction, true);
@@ -1627,16 +1794,18 @@ int main() {
             otherEquivalentSuccessor.observation);
         const auto otherEquivalentDecision = runSilverDecision(
             *otherEquivalentSession, otherEquivalentImported.wire, config);
+        // A different physical copy of an equivalent card reuses the retained
+        // branch through findNodeUpToEquivalentCopy.
         if (!otherEquivalentFirst.accepted || !otherEquivalentDecision.accepted
             || otherEquivalentDecision.diagnostic.exactReroot
             || !otherEquivalentDecision.diagnostic.equivalentCopyReroot
             || otherEquivalentDecision.diagnostic.fallback
-            || otherEquivalentDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::NONE
+            || otherEquivalentDecision.diagnostic.fallbackReason != "none"
             || otherEquivalentDecision.diagnostic.inheritedVisits <= 0)
             throw std::runtime_error(
                 "different listed action's equivalent copy did not reuse its retained branch");
 
-        auto equivalentSession = silver_bridge::makeSilverSearchSession();
+        auto equivalentSession = makeSilverSearchSession();
         const auto equivalentFirst = runSilverDecision(*equivalentSession, rerootImported.wire, config);
         const auto equivalentSuccessor = successorForSemantic(*rerootRoot, equivalentFirst.action, true);
         const auto equivalentImported = one_combat::advisor::importSilverRoot(equivalentSuccessor.observation);
@@ -1646,19 +1815,23 @@ int main() {
         if (!equivalentDecision.accepted || equivalentDecision.diagnostic.exactReroot
             || !equivalentDecision.diagnostic.equivalentCopyReroot
             || equivalentDecision.diagnostic.fallback
-            || equivalentDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::NONE
+            || equivalentDecision.diagnostic.fallbackReason != "none"
             || equivalentDecision.diagnostic.inheritedVisits <= 0
             || equivalentDecision.rootActionSummaries.empty())
             throw std::runtime_error("equivalent physical copy did not reuse the retained root: exact="
                 + std::to_string(equivalentDecision.diagnostic.exactReroot)
-                + " equivalent=" + std::to_string(equivalentDecision.diagnostic.equivalentCopyReroot)
                 + " fallback=" + std::to_string(equivalentDecision.diagnostic.fallback)
-                + " reason=" + silver_bridge::silverRerootFallbackReasonName(
-                    equivalentDecision.diagnostic.fallbackReason)
-                + " inherited=" + std::to_string(equivalentDecision.diagnostic.inheritedVisits)
-                + " miss=" + equivalentDecision.rerootMissDiagnostic);
+                + " reason=" + equivalentDecision.diagnostic.fallbackReason
+                + " inherited=" + std::to_string(equivalentDecision.diagnostic.inheritedVisits));
+        // The retained root names the other copy; actions must name live hand cards.
+        for (const auto &summary : equivalentDecision.rootActionSummaries) {
+            if (summary.action.type != silver_bridge::SemanticActionType::CARD) continue;
+            const bool inHand = std::any_of(equivalentImported.wire.hand.begin(), equivalentImported.wire.hand.end(),
+                [&](const CardWire &card) { return card.uniqueId == summary.action.card.uniqueId; });
+            if (!inHand) throw std::runtime_error("equivalent-copy reroot lowered a card that is not in the live hand");
+        }
 
-        auto changedStateSession = silver_bridge::makeSilverSearchSession();
+        auto changedStateSession = makeSilverSearchSession();
         const auto changedStateFirst = runSilverDecision(*changedStateSession, rerootImported.wire, config);
         auto changedStateWire = equivalentImported.wire;
         if (changedStateWire.hand.empty()) throw std::runtime_error("changed-state fixture has no hand");
@@ -1668,8 +1841,7 @@ int main() {
             || changedStateDecision.diagnostic.exactReroot
             || changedStateDecision.diagnostic.equivalentCopyReroot
             || !changedStateDecision.diagnostic.fallback
-            || changedStateDecision.diagnostic.fallbackReason
-                != SilverRerootFallbackReason::CANDIDATE_MISSING
+            || changedStateDecision.diagnostic.fallbackReason != "candidate_missing"
             || changedStateDecision.diagnostic.inheritedVisits != 0)
             throw std::runtime_error("non-equivalent card state incorrectly reused the retained root");
         auto hand = fixtures[0].observation;
@@ -1842,6 +2014,14 @@ int main() {
             || !(powerImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::VULNERABLE))))
             throw std::runtime_error("monster Vulnerable amount/activation parity failed");
+        auto weakenedAlias = general;
+        weakenedAlias["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Weakened"}, {"amount", 1}, {"justApplied", true}}});
+        const auto weakenedMonsterImported = one_combat::advisor::importSilverRoot(weakenedAlias);
+        if (!weakenedMonsterImported.ok || weakenedMonsterImported.wire.monsters[0].weak != 1
+            || !(weakenedMonsterImported.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::WEAK))))
+            throw std::runtime_error("monster Weakened alias/activation parity failed");
         const char *booleanPowerNames[] = {"Minion", "Asleep", "Regrow", "Stasis", "PainfulStabs"};
         const MonsterStatus booleanPowerStatuses[] = {
             MonsterStatus::MINION, MonsterStatus::ASLEEP, MonsterStatus::REGROW,
@@ -1901,6 +2081,7 @@ int main() {
                 + std::to_string(eyeImported.ok) + " reason=" + eyeImported.reason
                 + " full=" + std::to_string(eyeImported.wire.fullDrawOrderObserved)
                 + " size=" + std::to_string(eyeImported.wire.drawPile.knownTop.size()));
+        assertAbsentLimboAndStasisLayout(eyeImported.wire, "Frozen Eye");
         auto stasis = general;
         stasis["silverRoot"]["encounter"] = "AUTOMATON";
         stasis["silverRoot"]["combat"]["monsters"][0]["id"] = "BronzeOrb";

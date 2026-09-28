@@ -1,4 +1,4 @@
-// Explicit live-observation to isolated-Silver conversion helpers.
+// Live combat state -> Silver search view (see SilverConversion.h).
 #include "sim/search/SilverConversion.h"
 
 #include <algorithm>
@@ -123,12 +123,14 @@ SilverDrawPileObservation makeSilverDrawPileObservation(
     return out;
 }
 
-silver::CardPile makeSilverCardPile(const BattleContext &live,
-                                   const CombatKnowledgeState &knowledge) {
+CardPile makeSilverCardPile(const BattleContext &live, const CombatKnowledgeState &knowledge) {
     const SilverDrawPileObservation view = makeSilverDrawPileObservation(live, knowledge);
-    silver::CardPile pile;
-    pile.assignInformationState(view.knownBottom, view.unknown, view.knownTop,
-                                view.fullOrderObserved);
+    CardPile pile;
+    if (view.fullOrderObserved) {
+        pile.assignConcrete(view.knownTop);
+    } else {
+        pile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
+    }
     return pile;
 }
 
@@ -187,6 +189,11 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.ascension = live.ascension;
     out.outcome = static_cast<int>(live.outcome);
     out.inputState = static_cast<int>(live.inputState);
+    out.historicalQueueItemAtSource =
+        (live.inputState == InputState::PLAYER_NORMAL || live.inputState == InputState::CARD_SELECT)
+        && live.outcome == Outcome::UNDECIDED && !live.isBattleOver()
+        && !live.endTurnQueued && !live.turnHasEnded
+        && live.actionQueue.size == 0 && live.cardQueue.size == 0;
     out.monsterTurnIdx = live.monsterTurnIdx;
     out.endTurnQueued = live.endTurnQueued;
     out.turnHasEnded = live.turnHasEnded;
@@ -255,7 +262,7 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
             // Looter/Mugger sample their next move directly inside takeTurn,
             // rather than through rollMove. At a post-turn Runic root the
             // live concrete result is hidden, so carry only the public rule
-            // into the isolated model's deferred direct-choice state.
+            // into the search state's deferred direct-choice state.
             if (knowledge.hasUnrepresentableHiddenIntent[i]) {
                 const auto publicMove = knowledge.publicMonsterMoveHistory[i][0];
                 if (m.id == MonsterId::LOOTER
@@ -305,6 +312,13 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.cardSelect.setCostToZero = true;
     out.cardSelect.selectedBits = 0;
     out.curCardQueueItem = toWire(live.curCardQueueItem);
+    if (live.inputState == InputState::CARD_SELECT) {
+        out.pendingCardQueueObserved = true;
+        const auto &queue = live.cardQueue;
+        for (int i = 0; i < queue.size; ++i) {
+            out.pendingCardQueue.push_back(toWire(queue.arr[(queue.frontIdx + i) % CardQueue::capacity]));
+        }
+    }
     return conversion;
 }
 

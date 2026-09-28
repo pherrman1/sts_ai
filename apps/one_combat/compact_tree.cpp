@@ -6,6 +6,8 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <map>
+#include <set>
 #include <unordered_set>
 
 namespace one_combat {
@@ -89,6 +91,191 @@ double CompactTreeNet::predict(const std::vector<float> &raw) const {
         m += tr[i].thr;
     }
     const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
+    return logistic ? std::max(0.0, std::min(1.0, out)) : out;
+}
+
+double CompactTreeNet::predictMarginalized(
+        const std::vector<float> &raw,
+        const std::vector<MarginalFeature> &features) const {
+    if (!ok || raw.empty()) return std::numeric_limits<double>::quiet_NaN();
+
+    // The deployed win model is logistic.  Its public-belief value is
+    // E[sigmoid(margin)], not sigmoid(E[margin]); the link function is
+    // nonlinear.  Enumerate the (small, discrete) pity prior here so the
+    // returned value is mathematically the same mixture as the hidden-state
+    // particles represented by the caller.
+    if (logistic) {
+        std::vector<float> particle = raw;
+        struct Group { int representative; std::size_t count; };
+        std::unordered_map<int, std::size_t> slotByRaw;
+        std::vector<std::vector<Group>> groups;
+        groups.reserve(features.size());
+        for (const auto &feature : features) {
+            if (feature.rawIndex < 0 || feature.rawIndex >= static_cast<int>(raw.size())
+                    || feature.step <= 0 || feature.low > feature.high)
+                return std::numeric_limits<double>::quiet_NaN();
+            if (!slotByRaw.emplace(feature.rawIndex, slotByRaw.size()).second)
+                return std::numeric_limits<double>::quiet_NaN();
+            std::map<std::vector<unsigned char>, Group> bySplits;
+            for (int value = feature.low; value <= feature.high; value += feature.step) {
+                std::vector<unsigned char> signature;
+                for (const auto &node : nodes)
+                    if (node.feat == feature.rawIndex)
+                        signature.push_back(static_cast<unsigned char>(value < node.thr));
+                auto [it, inserted] = bySplits.emplace(std::move(signature), Group{value, 0});
+                ++it->second.count;
+                if (value > feature.high - feature.step) break;
+            }
+            std::vector<Group> collapsed;
+            for (const auto &[signature, group] : bySplits) collapsed.push_back(group);
+            groups.push_back(std::move(collapsed));
+        }
+        std::vector<std::size_t> stride(groups.size(), 1);
+        std::size_t cells = 1;
+        for (std::size_t i = groups.size(); i-- > 0;) {
+            stride[i] = cells;
+            cells *= groups[i].size();
+        }
+        if (cells == 0) return std::numeric_limits<double>::quiet_NaN();
+        std::vector<double> margins(cells, baseMargin);
+        const auto treeValue = [&](std::size_t treeIndex) {
+            const Node *tree = nodes.data() + roots[treeIndex];
+            const int size = static_cast<int>(roots[treeIndex + 1] - roots[treeIndex]);
+            int node = 0, steps = 0;
+            while (tree[node].feat >= 0 && ++steps <= size)
+                node = particle[tree[node].feat] < tree[node].thr ? tree[node].yes : tree[node].no;
+            if (steps > size) return std::numeric_limits<double>::quiet_NaN();
+            return static_cast<double>(tree[node].thr);
+        };
+        for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
+            std::set<std::size_t> relevant;
+            for (std::size_t n = roots[t]; n < roots[t + 1]; ++n) {
+                const int feature = nodes[n].feat;
+                const auto it = slotByRaw.find(feature);
+                if (it != slotByRaw.end()) relevant.insert(it->second);
+            }
+            if (relevant.empty()) {
+                const double contribution = treeValue(t);
+                if (!std::isfinite(contribution)) return contribution;
+                for (auto &margin : margins) margin += contribution;
+            } else if (relevant.size() == 1) {
+                const auto slot = *relevant.begin();
+                const auto feature = features[slot];
+                for (std::size_t group = 0; group < groups[slot].size(); ++group) {
+                    particle[feature.rawIndex] = static_cast<float>(groups[slot][group].representative);
+                    const double contribution = treeValue(t);
+                    if (!std::isfinite(contribution)) return contribution;
+                    for (std::size_t cell = 0; cell < cells; ++cell)
+                        if ((cell / stride[slot]) % groups[slot].size() == group)
+                            margins[cell] += contribution;
+                }
+            } else {
+                // The deployed model currently has only a small number of
+                // trees that split on both hidden features. Keep the exact
+                // two-dimensional table path explicit and reject a future
+                // higher-dimensional marginalization rather than silently
+                // changing its probability semantics.
+                if (relevant.size() != 2)
+                    return std::numeric_limits<double>::quiet_NaN();
+                const auto first = *relevant.begin();
+                const auto second = *std::next(relevant.begin());
+                for (std::size_t a = 0; a < groups[first].size(); ++a)
+                    for (std::size_t b = 0; b < groups[second].size(); ++b) {
+                        particle[features[first].rawIndex] = static_cast<float>(groups[first][a].representative);
+                        particle[features[second].rawIndex] = static_cast<float>(groups[second][b].representative);
+                        const double contribution = treeValue(t);
+                        if (!std::isfinite(contribution)) return contribution;
+                        for (std::size_t cell = 0; cell < cells; ++cell) {
+                            if ((cell / stride[first]) % groups[first].size() == a
+                                    && (cell / stride[second]) % groups[second].size() == b)
+                                margins[cell] += contribution;
+                        }
+                    }
+            }
+        }
+        double total = 0.0;
+        std::size_t totalWeight = 0;
+        for (std::size_t cell = 0; cell < cells; ++cell) {
+            std::size_t remainder = cell;
+            std::size_t weight = 1;
+            for (std::size_t i = 0; i < groups.size(); ++i) {
+                const std::size_t group = (remainder / stride[i]) % groups[i].size();
+                weight *= groups[i][group].count;
+            }
+            const double probability = 1.0 / (1.0 + std::exp(-margins[cell]));
+            total += probability * static_cast<double>(weight);
+            totalWeight += weight;
+        }
+        if (totalWeight == 0)
+            return std::numeric_limits<double>::quiet_NaN();
+        return total / static_cast<double>(totalWeight);
+    }
+
+    std::unordered_map<int, std::size_t> slotByRaw;
+    for (const auto &feature : features) {
+        if (feature.rawIndex < 0 || feature.rawIndex >= static_cast<int>(raw.size())
+                || feature.step <= 0 || feature.low > feature.high)
+            return std::numeric_limits<double>::quiet_NaN();
+        if (!slotByRaw.emplace(feature.rawIndex, slotByRaw.size()).second)
+            return std::numeric_limits<double>::quiet_NaN();
+    }
+
+    double margin = baseMargin;
+    for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
+        const Node *tree = nodes.data() + roots[t];
+        const int size = static_cast<int>(roots[t + 1] - roots[t]);
+        std::vector<int> lower;
+        std::vector<int> upper;
+        lower.reserve(features.size());
+        upper.reserve(features.size());
+        for (const auto &feature : features) {
+            lower.push_back(feature.low);
+            upper.push_back(feature.high);
+        }
+        std::function<double(int)> expected = [&](int index) -> double {
+            if (index < 0 || index >= size) return std::numeric_limits<double>::quiet_NaN();
+            const Node &node = tree[index];
+            if (node.feat < 0) return node.thr;
+            if (node.feat < 0 || node.feat >= static_cast<int>(raw.size()))
+                return std::numeric_limits<double>::quiet_NaN();
+            // load() resolves each node's selected-feature index through sel,
+            // so the stored node feature is already a raw-vector index just
+            // like predict()'s lookup.
+            const auto it = slotByRaw.find(node.feat);
+            if (it == slotByRaw.end()) {
+                const int child = raw[node.feat] < node.thr ? node.yes : node.no;
+                return expected(child);
+            }
+            const std::size_t slot = it->second;
+            const auto &prior = features[slot];
+            int total = 0, left = 0;
+            for (int value = lower[slot]; value <= upper[slot]; value += prior.step) {
+                ++total;
+                if (static_cast<float>(value) < node.thr) ++left;
+                if (value > upper[slot] - prior.step) break;
+            }
+            if (total <= 0) return std::numeric_limits<double>::quiet_NaN();
+            if (left == 0) return expected(node.no);
+            if (left == total) return expected(node.yes);
+            const double pLeft = static_cast<double>(left) / total;
+            const int oldLower = lower[slot], oldUpper = upper[slot];
+            lower[slot] = oldLower;
+            upper[slot] = oldLower + (left - 1) * prior.step;
+            const double yes = expected(node.yes);
+            lower[slot] = oldLower + left * prior.step;
+            upper[slot] = oldUpper;
+            const double no = expected(node.no);
+            lower[slot] = oldLower;
+            upper[slot] = oldUpper;
+            if (!std::isfinite(yes) || !std::isfinite(no))
+                return std::numeric_limits<double>::quiet_NaN();
+            return pLeft * yes + (1.0 - pLeft) * no;
+        };
+        const double contribution = expected(0);
+        if (!std::isfinite(contribution)) return contribution;
+        margin += contribution;
+    }
+    const double out = logistic ? 1.0 / (1.0 + std::exp(-margin)) : margin;
     return logistic ? std::max(0.0, std::min(1.0, out)) : out;
 }
 

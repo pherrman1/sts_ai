@@ -8,6 +8,8 @@
 #include "combat/BattleContext.h"
 
 
+#include <algorithm>
+
 using namespace sts;
 
 bool MonsterGroup::areMonstersBasicallyDead() const {
@@ -665,3 +667,11 @@ namespace sts {
 
 }
 
+
+bool MonsterGroup::operator==(const MonsterGroup &rhs) const {
+    if (monstersAlive != rhs.monstersAlive || monsterCount != rhs.monsterCount
+            || extraRollMoveOnTurn != rhs.extraRollMoveOnTurn || skipTurn != rhs.skipTurn) {
+        return false;
+    }
+    return std::equal(arr.begin(), arr.begin() + monsterCount, rhs.arr.begin());
+}

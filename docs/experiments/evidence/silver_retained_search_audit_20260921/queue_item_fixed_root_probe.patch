@@ -1,0 +1,70 @@
+--- a/apps/silver_search_optimization_test.cpp
++++ b/apps/silver_search_optimization_test.cpp
+@@ -1596,0 +1597,65 @@
++void queueItemRootAudit(sts::GameContext &gc, const sts::BattleContext &original) {
++    auto makeRoot = [](const sts::BattleContext &source, sts::CardId lastCard,
++                       std::int16_t uid, int energyOnUse, bool exhaustOnUse) {
++        auto root = source;
++        root.inputState = sts::InputState::PLAYER_NORMAL;
++        root.outcome = sts::Outcome::UNDECIDED;
++        root.isBattleOver = false;
++        root.endTurnQueued = false;
++        root.turnHasEnded = false;
++        root.actionQueue.clear();
++        root.cardQueue.clear();
++        root.curCardQueueItem = sts::CardQueueItem{};
++        root.curCardQueueItem.card = sts::CardInstance(lastCard);
++        root.curCardQueueItem.card.setUniqueId(uid);
++        root.curCardQueueItem.target = 0;
++        root.curCardQueueItem.energyOnUse = energyOnUse;
++        root.curCardQueueItem.exhaustOnUse = exhaustOnUse;
++        return root;
++    };
++
++    const auto rootA = makeRoot(original, sts::CardId::BASH, 701, 2, false);
++    const auto rootB = makeRoot(original, sts::CardId::DRAMATIC_ENTRANCE, 702, 0, true);
++    require(!rootA.equalForSearch(rootB), "queue audit roots must differ under current exact equality");
++
++    Search searchA(rootA), searchB(rootB);
++    for (int i = 0; i < 128; ++i) {
++        searchA.step();
++        searchB.step();
++        require(searchA.getBestAction() == searchB.getBestAction(),
++                "queue-only root variation changed the best action");
++        equalStats(searchA.stats, searchB.stats);
++        const auto &edgesA = searchA.getRootEdges();
++        const auto &edgesB = searchB.getRootEdges();
++        require(edgesA.size() == edgesB.size(), "queue-only root variation changed action count");
++        for (std::size_t j = 0; j < edgesA.size(); ++j) {
++            require(edgesA[j].action == edgesB[j].action
++                        && edgesA[j].visitCount == edgesB[j].visitCount,
++                    "queue-only root variation changed root edge statistics");
++            if (edgesA[j].node && edgesB[j].node
++                    && !edgesA[j].node->isRandomNode && !edgesB[j].node->isRandomNode) {
++                auto normalizedA = *edgesA[j].node->state;
++                normalizedA.curCardQueueItem = edgesB[j].node->state->curCardQueueItem;
++                require(normalizedA.equalForSearch(*edgesB[j].node->state),
++                        "queue-only root variation changed a deterministic successor");
++            }
++        }
++    }
++
++    auto potionA = rootA;
++    auto potionB = rootB;
++    installPotions(potionA, {sts::Potion::ATTACK_POTION});
++    installPotions(potionB, {sts::Potion::ATTACK_POTION});
++    const auto potionAction = potionActions(potionA, sts::Potion::ATTACK_POTION).front();
++    potionAction.execute(potionA);
++    potionAction.execute(potionB);
++    potionA.executeActions();
++    potionB.executeActions();
++    require(potionA.inputState == sts::InputState::CARD_SELECT
++                && potionB.inputState == sts::InputState::CARD_SELECT
++                && potionA.curCardQueueItem != potionB.curCardQueueItem,
++            "potion-to-selection must preserve the stale queue-item distinction");
++    std::cout << "queue_item_root_audit steps=128 best_action_parity=PASS"
++              << " potion_card_select_queue_difference=OBSERVED\n";
++}
++
+@@ -1640,0 +1706 @@
++        queueItemRootAudit(gc, bc);

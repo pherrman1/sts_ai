@@ -115,6 +115,10 @@ Hyperparameters (tree depth, learning rate, subsampling, regularization) were tu
 
 ## Hidden information: particle sampling
 
+> **Historical:** this section describes Searcher3, which was removed
+> ([ADR-0019](../decisions/0019-remove-searcher3.md)). Current whole-run combat
+> uses Silver ([ADR-0018](../decisions/0018-silver-default-combat-backend.md)).
+
 The AI does not know the draw pile order. In the fair-play Searcher3 setup, it
 handles this by running MCTS across **64 different shuffled draw orders**
 (particles) simultaneously. This is IS-MCTS (Information Set MCTS). Actions

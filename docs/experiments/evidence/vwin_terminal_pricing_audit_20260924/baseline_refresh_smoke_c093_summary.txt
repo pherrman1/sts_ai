@@ -1,0 +1,22 @@
+Command:
+env STS_SILVER_SEARCH=1 STS_SILVER_ADAPTIVE=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_REUSE_MAX_SEARCHES=32768 STS_SILVER_TELEMETRY=1 STS_FAIR=1 STS_EXECUTABLE_GIT_SHA=c0937d8a3756b4849ab22c1dc8caf6badeda445f OMP_NUM_THREADS=4 tools/seed_guard.sh build/linux-gcc-release/one_combat e2cgen 2 1000 0 build/vwin_pricing/e2c_silver_smoke_2.csv 3109000
+
+Relevant startup output:
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[fair-play / determinized MCTS ON]
+[isolated Silver combat backend ON: local Silver RNG/chance search; reuse-cap=allocated cap=32768]
+[policy PUCT ON: models/policy_trees_c.txt, 100 trees]
+e2cgen    seeds 3109000..3109001  sims 1000  asc 0  [append]  threads 4  -> build/vwin_pricing/e2c_silver_smoke_2.csv
+
+Terminal output:
+2/2 runs, 0 rows, 65s (32.47s/run)
+wrote 0 E2c rows from 2 runs in 64.9s
+training integrity: requested=2 completed=2 invalid/quarantined=0 branches=0 health_failures=0 rows=0 output=build/vwin_pricing/e2c_silver_smoke_2.csv
+e2c accounting room=MONSTER eligible=0 raw=0 post=0 pairs=0 raw_only=0 post_only=0
+e2c accounting room=ELITE eligible=0 raw=0 post=0 pairs=0 raw_only=0 post_only=0
+e2c accounting room=BOSS eligible=0 raw=0 post=0 pairs=0 raw_only=0 post_only=0
+
+The full per-combat Silver telemetry was emitted by the process but omitted here;
+its relevant final counts and startup banners are retained above.

@@ -5,30 +5,82 @@ import java.util.*;
 
 /** Immutable display data from one identity-matched response; never controls the game. */
 final class OocOverlay {
+    static final class Distribution {
+        private final long[] bins;
+        final long count, deaths, victories;
+        final Double mean;
+        Distribution(JsonObject value) {
+            if (!"ooc_value_distribution_v1".equals(text(value, "schema"))
+                    || !"share_of_own_samples".equals(text(value, "normalization")))
+                throw new IllegalArgumentException("unknown value distribution semantics");
+            JsonArray input = value.getAsJsonArray("bins");
+            if (input.size() != 22) throw new IllegalArgumentException("wrong distribution buckets");
+            bins = new long[22]; long sum = 0;
+            for (int i = 0; i < bins.length; ++i) {
+                bins[i] = input.get(i).getAsLong();
+                if (bins[i] < 0 || input.get(i).getAsDouble() != bins[i])
+                    throw new IllegalArgumentException("invalid distribution count");
+                sum = Math.addExact(sum, bins[i]);
+            }
+            count = value.get("count").getAsLong();
+            deaths = value.get("terminalDeaths").getAsLong();
+            victories = value.get("terminalVictories").getAsLong();
+            mean = value.get("mean").isJsonNull() ? null : value.get("mean").getAsDouble();
+            if (value.get("count").getAsDouble() != count
+                    || value.get("terminalDeaths").getAsDouble() != deaths
+                    || value.get("terminalVictories").getAsDouble() != victories
+                    || sum != count || deaths != bins[0] || victories != bins[21]
+                    || (count == 0 ? mean != null : mean == null || !Double.isFinite(mean) || mean < 0 || mean > 1))
+                throw new IllegalArgumentException("inconsistent value distribution");
+        }
+        long bin(int index) { return bins[index]; }
+        double share(int index) { return count == 0 ? 0 : (double)bins[index] / count; }
+        String summary(String label) {
+            return count == 0 ? label + ": no search samples"
+                    : String.format(Locale.ROOT, "%s · n %d · mean %.3f · sampled death %.1f%%",
+                                    label, count, mean, 100.0 * deaths / count);
+        }
+    }
     static final class Choice {
         final String key, label, kind;
         final double q;
+        final String valueSemantics;
+        final Distribution distribution;
+        final long visits;
+        final double visitShare, prior;
         final int index;
         final boolean selected;
         final JsonObject action;
         final JsonObject followUp;
         final String followUpUuid;
-        Choice(String key, String label, String kind, double q, int index, boolean selected, JsonObject action,
-               JsonObject followUp, String followUpUuid) {
+        Choice(String key, String label, String kind, double q, long visits, double visitShare, double prior,
+               int index, boolean selected, JsonObject action,
+               JsonObject followUp, String followUpUuid, String valueSemantics, Distribution distribution) {
             this.key = key; this.label = label; this.kind = kind;
-            this.q = q; this.index = index; this.selected = selected; this.action = action;
+            this.q = q; this.visits = visits; this.visitShare = visitShare; this.prior = prior;
+            this.index = index; this.selected = selected; this.action = action;
             this.followUp = followUp; this.followUpUuid = followUpUuid;
+            this.valueSemantics = valueSemantics; this.distribution = distribution;
+        }
+        String scoreLabel(int rank) {
+            if ("forced_no_search".equals(valueSemantics)) return "#" + rank + " · Forced";
+            if ("mean_backed_up_value_0_1".equals(valueSemantics))
+                return visits == 0 ? "#" + rank + " · No samples"
+                    : String.format(Locale.ROOT, "#%d · Mean %.3f · N %d", rank, q, visits);
+            return String.format(Locale.ROOT, "#%d · V4 score %.3f", rank, q);
         }
     }
     final String session, hash, status, reason, policy, screen;
     final long sequence;
     final List<Choice> choices;
+    final Distribution distribution;
     private OocOverlay(JsonObject response, String status, String reason, String policy,
-                       String screen, List<Choice> choices) {
+                       String screen, List<Choice> choices, Distribution distribution) {
         session = text(response, "session"); hash = text(response, "observationHash");
         sequence = response.get("sequence").getAsLong();
         this.status = status; this.reason = reason; this.policy = policy; this.screen = screen;
         this.choices = Collections.unmodifiableList(choices);
+        this.distribution = distribution;
     }
     boolean matches(String session, long sequence, String hash) {
         return this.session.equals(session) && this.sequence == sequence && this.hash.equals(hash);
@@ -64,22 +116,49 @@ final class OocOverlay {
             }
         }
         if ("ERROR".equals(text(response, "status")) || evaluator == null)
-            return new OocOverlay(response, "ERROR", text(response, "message"), "", screen, new ArrayList<Choice>());
+            return new OocOverlay(response, "ERROR", text(response, "message"), "", screen, new ArrayList<Choice>(), null);
         String status = text(evaluator, "status"), policy = text(evaluator, "policy");
+        String semantics = text(evaluator, "valueSemantics");
+        boolean forced = "forced_no_search".equals(semantics);
+        boolean mcts = "mcts_ctm".equals(policy) && !forced;
+        // Legacy V4 responses are still a raw score; MCTS distributions require
+        // the explicit producer contract, so unknown scores cannot look like risk.
+        if (semantics.isEmpty() && "v4_q".equals(policy)) semantics = "raw_v4_action_score";
+        Distribution baseline = evaluator.has("valueDistribution")
+                ? new Distribution(evaluator.getAsJsonObject("valueDistribution")) : null;
+        if ("OK".equals(status) && ((mcts && (!"mean_backed_up_value_0_1".equals(semantics) || baseline == null))
+                || (!mcts && !forced && !"raw_v4_action_score".equals(semantics))))
+            throw new IllegalArgumentException("unknown OOC value semantics");
         List<Choice> choices = new ArrayList<>();
         if ("OK".equals(status)) {
             String selected = text(evaluator, "selectedSemanticKey");
             Set<String> keys = new HashSet<>();
             int selectedCount = 0;
+            long totalVisits = 0;
+            double totalShare = 0.0;
+            long selectedVisits = -1;
+            long maximumVisits = 0;
+            long[] combinedBins = new long[22];
+            double backedUpSum = 0;
             for (JsonElement e : evaluator.getAsJsonArray("candidateSummaries")) {
                 JsonObject c = e.getAsJsonObject(), action = c.getAsJsonObject("liveAction");
                 String key = text(c, "semanticKey"), kind = text(action, "kind");
                 double q = c.get("q").getAsDouble();
-                if (!Double.isFinite(q) || key.isEmpty() || !keys.add(key))
+                boolean hasMctsStats = c.has("visits") && c.has("visitShare") && c.has("prior");
+                long visits = hasMctsStats ? c.get("visits").getAsLong() : 0;
+                double visitShare = hasMctsStats ? c.get("visitShare").getAsDouble() : 0.0;
+                double prior = hasMctsStats ? c.get("prior").getAsDouble() : 0.0;
+                if (("mcts_ctm".equals(policy) && !hasMctsStats) || !Double.isFinite(q) || visits < 0 || !Double.isFinite(visitShare)
+                        || visitShare < 0 || visitShare > 1.0 || !Double.isFinite(prior) || prior < 0
+                        || key.isEmpty() || !keys.add(key))
                     throw new IllegalArgumentException("invalid OOC ranking");
+                totalVisits += visits;
+                totalShare += visitShare;
+                maximumVisits = Math.max(maximumVisits, visits);
                 boolean best = key.equals(selected);
                 if (best) {
                     ++selectedCount;
+                    selectedVisits = visits;
                     if (!action.equals(evaluator.get("selectedLiveAction")))
                         throw new IllegalArgumentException("selected OOC action mismatch");
                 }
@@ -99,12 +178,38 @@ final class OocOverlay {
                     previewUuid = text(card, "uuid");
                     if (previewUuid.isEmpty()) throw new IllegalArgumentException("preview physical card missing");
                 }
-                choices.add(new Choice(key, label(action, ooc), kind, q, index, best, action, preview, previewUuid));
+                Distribution distribution = c.has("valueDistribution")
+                        ? new Distribution(c.getAsJsonObject("valueDistribution")) : null;
+                if (mcts) {
+                    if (q < 0 || q > 1 || distribution == null || distribution.count != visits
+                            || (visits > 0 && Math.abs(distribution.mean - q) > 1e-9))
+                        throw new IllegalArgumentException("candidate mean/distribution mismatch");
+                    for (int bin = 0; bin < 22; ++bin) combinedBins[bin] += distribution.bin(bin);
+                    backedUpSum += q * visits;
+                }
+                choices.add(new Choice(key, label(action, ooc), kind, q, visits, visitShare, prior,
+                        index, best, action, preview, previewUuid, semantics, distribution));
             }
             if (selectedCount != 1) throw new IllegalArgumentException("missing selected OOC choice");
-            choices.sort(Comparator.comparingDouble((Choice c) -> -c.q).thenComparing(c -> c.key));
+            if (mcts) {
+                if (Math.abs(totalShare - 1.0) > 1e-6 || selectedVisits != maximumVisits
+                        || baseline.count != totalVisits
+                        || (totalVisits == 0 && choices.size() != 1)
+                        || (totalVisits > 0 && Math.abs(baseline.mean - backedUpSum / totalVisits) > 1e-9))
+                    throw new IllegalArgumentException("invalid OOC visit distribution");
+                for (int bin = 0; bin < 22; ++bin) if (combinedBins[bin] != baseline.bin(bin))
+                    throw new IllegalArgumentException("root/candidate distribution mismatch");
+                for (Choice choice : choices) if (totalVisits > 0
+                        && Math.abs(choice.visitShare - (double)choice.visits / totalVisits) > 1e-6)
+                    throw new IllegalArgumentException("candidate visit share mismatch");
+            }
+            choices.sort(Comparator.comparingLong((Choice c) -> -c.visits).thenComparing(c -> c.key));
         }
-        return new OocOverlay(response, status, text(evaluator, "reason"), policy, screen, choices);
+        return new OocOverlay(response, status, text(evaluator, "reason"), policy, screen, choices, baseline);
+    }
+    // Baseline is immutable and always first. Hover never replaces its samples.
+    Distribution[] distributionLayers(Choice hovered) {
+        return new Distribution[]{distribution, hovered == null ? null : hovered.distribution};
     }
     private static String label(JsonObject action, JsonObject ooc) {
         String kind = text(action, "kind");
