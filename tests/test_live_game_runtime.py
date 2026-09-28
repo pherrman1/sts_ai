@@ -159,8 +159,20 @@ class LiveGameRuntimeTest(unittest.TestCase):
         wrapper_output = ("ccache_fallback=linux-gcc-release build_preset=linux-gcc-build "
                           "configure_forced=false reason=test\nbuild_route=native root=test\n")
         with mock.patch("tools.live_game_runtime.run"), \
-             mock.patch("tools.live_game_runtime.run_output", return_value=wrapper_output):
+             mock.patch("tools.live_game_runtime.run_output", return_value=wrapper_output) as build:
             self.assertEqual(self.manager.build_advisor(), fallback)
+        command = build.call_args.args[0]
+        self.assertEqual(command[command.index("--configure-preset") + 1], "linux-gcc-release-ccache")
+        self.assertEqual(command[command.index("--build-preset") + 1], "linux-gcc-release-ccache-build")
+
+    def test_build_advisor_packages_requested_release_without_fallback(self):
+        requested = self.repo / "build/linux-gcc-release-ccache/one_combat_advisor"
+        requested.parent.mkdir(parents=True)
+        requested.write_text("release")
+        requested.chmod(requested.stat().st_mode | stat.S_IXUSR)
+        with mock.patch("tools.live_game_runtime.run"), \
+             mock.patch("tools.live_game_runtime.run_output", return_value="build_route=native\n"):
+            self.assertEqual(self.manager.build_advisor(), requested)
 
     def test_allow_missing_advisor_does_not_require_or_record_runtime(self):
         base = Path(self.temp.name)
