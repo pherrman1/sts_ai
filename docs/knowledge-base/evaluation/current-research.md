@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-27 for the active-Lizard fresh native Stage-C
+Last verified: 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
 teacher-transfer gate, frozen Stage-C plan and checkpoint recovery, and the
@@ -51,6 +52,17 @@ contracts now bind native Silver teachers.
 Merging publicly identical particles (upper bound 26.6%) would be a separate,
 semantics-changing proposal; it is an open question.
 [Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
+
+## OOC MCTS equivalent-outcome merging (#384) — opt-in, inconclusive
+
+**Measured (2026-09-28, §367).** Pooling search-equivalent sampled particles
+(`STS_OOC_MCTS_MERGE_OUTCOMES=1`) removes the 49-55% duplicate decision nodes
+and deepens trees from 4 to 11-15 levels at the same budget. A paired
+128-seed cohort (`38410000..38410127`) found no detectable play-strength
+change: `floor + 10*won` -0.25, 95% [-2.46, +1.96]; wins 86 vs 83; about 13%
+slower. Default stays off. Open question: whether it matters once #379
+replaces the playout leaf.
+[Evidence](../../experiments/evidence/ooc_merge_outcomes_2026-09-28/README.md).
 
 ## OOC MCTS contextual deck-prior offline qualification
 

@@ -85,6 +85,44 @@ t-interval [-20.8, +6.8] (continue). Wins 6/8 control vs 4/8 treatment
 stopped during look 2 (control had completed 3 seeds, treatment 2); those
 partial rows are preserved but not analyzed.
 
-### Fixed 128-seed cohort
+### Fixed 128-seed cohort (seeds 38410000..38410127) — inconclusive
 
-(pending)
+Both arms completed all 128 seeds (exit 0; no `bestbench-seed-failure`); logs
+show `"mergeOutcomes":false` (control) and `true` (treatment). Started
+2026-09-28 21:11 UTC; control finished 00:19, treatment 00:41 UTC.
+
+| Metric | Control (off) | Treatment (on) | Treatment - control |
+|---|---|---|---|
+| **`floor + 10*won`** (primary) | | | mean **-0.25**, sd 12.65, 95% t-interval **[-2.46, +1.96]** |
+| Wins | 86/128 (67.2%) | 83/128 (64.8%) | -2.3 pp; discordant 16 treatment-only / 19 control-only, exact McNemar p = 0.74 |
+| Mean floor | 47.47 | 47.45 | -0.02 |
+| Mean end HP | 24.7 | 24.2 | -0.5 |
+| Mean seconds per run | 174.9 | 197.2 | +12.7% |
+
+Verdict under the frozen rule: **inconclusive** (the interval contains 0).
+
+MCTS trace totals (`*.mcts.csv`, descriptive):
+
+| | Control | Treatment |
+|---|---|---|
+| Nonbattle decisions / MCTS-owned / fallback | 15,042 / 14,655 / 387 | 15,086 / 14,709 / 377 |
+| Simulations | 14,761,785 | 14,778,954 |
+| Transition samples / distinct particles | 14,246,809 / 14,246,809 | 20,882,469 / 13,332,063 (36.2% pooled) |
+| Max searched depth | 4 | 15 |
+| Support aborts | 34 | 26 |
+| MCTS CPU per simulation | 0.99 ms | 1.18 ms (+19%) |
+
+Interpretation: pooling works mechanically (deeper trees, same simulation
+budget, the same fallback rate) but produced no detectable change in play
+strength at this sample size. Descriptive paired 95% t-intervals (not
+decision-bearing): win rate -2.3 pp [-11.5, +6.8] pp, final floor -0.02
+[-1.58, +1.54]. A win-rate effect of a few points in either direction is not
+ruled out.
+**Inference:** with priors, `v_win` leaves and the playout continuation
+unchanged, the extra depth mostly re-orders shop/reward sequences that the
+leaf evaluator already scores similarly. **Open question:** whether pooling
+matters more once #379 replaces the playout with a screen-aware leaf.
+
+Raw evidence: `cohort128/`, `sequential_stopped/`, `canary/` (logs and action
+traces gzipped), checksums in `manifest.sha256`. Reproduce the verdict with
+`python3 analyze.py cohort128 --seed-lo 38410000 --looks 128`.

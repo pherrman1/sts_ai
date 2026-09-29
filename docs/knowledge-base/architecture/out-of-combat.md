@@ -432,8 +432,10 @@ duplicate visible states from the trees (about 50% of decision nodes without
 it), raised the maximum searched depth from 4 to 11-12, and cost about 30%
 more MCTS CPU per simulation. The sibling states it still keeps apart differed
 in visible state in all but a handful of event cases
-([#384](https://github.com/pherrman1/sts_ai/issues/384)). This is search-structure
-evidence only; no gameplay comparison exists, and the option stays off.
+([#384](https://github.com/pherrman1/sts_ai/issues/384)). A paired 128-seed
+gameplay comparison (§367) was inconclusive: `floor + 10*won` difference
+-0.25, 95% interval [-2.46, +1.96], wins 86 vs 83, about 13% more time per
+run. The option stays off.
 
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
