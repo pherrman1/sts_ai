@@ -138,6 +138,8 @@ void restoreOocPolicyThreadState(const OocPolicyThreadState &state);
 
 using ::richFeatureVec;
 
+// True only while executing the multi-action card-reward fallback invocation.
+bool inCardRewardFallback();
 void serverCardRewardPolicy(GameContext &);
 bool restWinPolicy(GameContext &);
 void upgradeSelectWinPolicy(GameContext &);

@@ -342,6 +342,10 @@ add_test(NAME vwin_refresh_decision_sink_contract
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshdecisionsinkselftest)
 set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_reward_continuation
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshcontinuationselftest)
+set_tests_properties(vwin_refresh_reward_continuation PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_card_reward_classification
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshrewardselftest)
 set_tests_properties(vwin_refresh_card_reward_classification PROPERTIES
