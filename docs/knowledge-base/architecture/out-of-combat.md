@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-28 for final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -35,6 +35,13 @@ its first sample the core reuses that single child instead of widening it. Actio
 Depth counts action transitions (root zero); exact terminals precede model-defined
 leaf boundaries, which precede the technical depth safety guard,
 and newly expanded downstream nonterminal leaves use the injected evaluator.
+With `OocMctsConfig::mergeEquivalentOutcomes`, a newly sampled successor whose
+provider `outcomeEquivalenceKey` equals an earlier particle's key in the same
+chance node reuses that particle's decision node. The particle list still gets
+one entry per sample, so uniform reuse stays frequency-weighted and the widening
+schedule counts samples, not distinct nodes. Providers without keys, or with the
+option off (default), keep independent particles. Merged nodes are captured once
+in tree snapshots; `mergedOutcomes` counts pooled samples.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
 `cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
@@ -410,6 +417,26 @@ pity reconstruction. Hypothetical room-chance and pity counters are sampled
 from explicit reachable-state priors before a transition; this is a qualified
 belief particle, not an exact joint posterior.
 
+`OocGameContextModel::outcomeEquivalenceKey` (`outcomeEquivalenceParts`) exists
+only with sampled futures; exact-replay providers return none. It omits exactly
+what `sampleNoncombatFuture` re-draws before the next transition or leaf
+continuation: the run seed, all RNG streams (counters only position a re-seeded
+stream), pool order, unseen normal/elite queue entries, the A20 second Act-3
+boss, hidden chest gold/tier and unsearched Dead Adventurer order. It keeps
+everything copied forward: visible player, deck, relic, potion, map, screen and
+path state, and hidden room/potion/rarity counters and pool membership. Live
+root particles therefore do not merge when they draw different counter beliefs.
+`STS_OOC_MCTS_MERGE_OUTCOMES=1` enables pooling. On two historical seeds at
+2048 simulations it pooled about 35% of sampled successors, removed all
+duplicate visible states from the trees (about 50% of decision nodes without
+it), raised the maximum searched depth from 4 to 11-12, and cost about 30%
+more MCTS CPU per simulation. The sibling states it still keeps apart differed
+in visible state in all but a handful of event cases
+([#384](https://github.com/pherrman1/sts_ai/issues/384)). A paired 128-seed
+gameplay comparison (§367) was inconclusive: `floor + 10*won` difference
+-0.25, 95% interval [-2.46, +1.96], wins 86 vs 83, about 13% more time per
+run. The option stays off.
+
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
 when a particular action has a deterministic public effect. Native leaf
@@ -468,6 +495,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
+| `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
 for unsupported/nonunique selectors; all transitions keep the same combat

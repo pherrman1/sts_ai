@@ -119,6 +119,96 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     }
 }
 
+// Search-equivalence of two sampled successors of one chance node (#384).
+// Omits exactly what sampleNoncombatFuture re-draws before every later
+// transition and leaf continuation: the run seed, every RNG stream (a counter
+// only positions a re-seeded stream), pool order, unseen monster/elite queue
+// entries, the A20 second Act-3 boss, hidden chest gold/tier and unsearched
+// Dead Adventurer reward order. Everything copied forward is kept, including
+// hidden room/potion/rarity counters. Separate parts let a diagnostic
+// attribute a split to one component.
+enum OutcomePart { HIDDEN, SCREEN, PLAYER, DECK, RELICS, POTIONS, MAP, PATH, OUTCOME_PARTS };
+std::array<std::string, OUTCOME_PARTS> outcomeEquivalenceParts(const GameContext &g, const PathHistory &path) {
+    std::array<std::string, OUTCOME_PARTS> parts;
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.values(g.monsterChance, g.shopChance, g.treasureChance, g.potionChance, g.cardRarityFactor);
+        const auto members = [&](auto pool) { std::sort(pool.begin(), pool.end()); w.sequence(pool); };
+        members(g.eventList); members(g.shrineList); members(g.specialOneTimeEventList);
+        members(g.commonRelicPool); members(g.uncommonRelicPool); members(g.rareRelicPool);
+        members(g.shopRelicPool); members(g.bossRelicPool); members(g.colorlessCardPool);
+        const auto seen = [&](const auto &list, int offset) {
+            const int n = std::clamp<int>(offset, 0, list.size());
+            w.value(offset);
+            for (int i = 0; i < n; ++i) w.value(list[i]);
+        };
+        seen(g.monsterList, g.monsterListOffset);
+        seen(g.eliteMonsterList, g.eliteMonsterListOffset);
+        if (!(g.act == 3 && g.ascension >= 20)) w.value(g.secondBoss);
+        parts[HIDDEN] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        auto info = g.info;
+        if (g.screenState == sts::ScreenState::TREASURE_ROOM) {
+            info.haveGold = false;
+            info.tier = sts::RelicTier::COMMON;
+        }
+        if (g.screenState == sts::ScreenState::EVENT_SCREEN && g.curEvent == sts::Event::DEAD_ADVENTURER
+                && info.phase >= 0 && info.phase <= int(info.rewards.size()))
+            std::sort(info.rewards.begin() + info.phase, info.rewards.end());
+        w.values(g.outcome, g.screenState, info, g.lastRoom, g.curEvent, g.curRoom, g.boss,
+                 static_cast<bool>(g.regainControlAction), g.restRoomResolved);
+        parts[SCREEN] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.values(g.noteForYourselfCard, g.skipBattles, g.act, g.ascension, g.floorNum, g.cc,
+                 g.curHp, g.maxHp, g.gold, g.wingBootsCharges, g.shopRemoveCount, g.speedrunPace,
+                 g.curMapNodeX, g.curMapNodeY, g.blueKey, g.greenKey, g.redKey, g.keysEnabled,
+                 g.smokeBombUsed);
+        parts[PLAYER] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.sequence(g.deck.cards);
+        w.sequence(g.deck.bottleIdxs);
+        parts[DECK] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.sequence(g.relics.relics);
+        parts[RELICS] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.values(g.potionCount, g.potionCapacity);
+        w.sequence(g.potions);
+        parts[POTIONS] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.value(static_cast<bool>(g.map));
+        if (g.map) {
+            w.values(g.map->burningEliteX, g.map->burningEliteY, g.map->burningEliteBuff);
+            for (const auto &row : g.map->nodes) w.sequence(row);
+        }
+        parts[MAP] = w.finish();
+    }
+    {
+        sts::test::ooc_state_detail::Writer w;
+        w.sequence(path.roomVisits);
+        w.value(path.lastNodeKey);
+        parts[PATH] = w.finish();
+    }
+    return parts;
+}
+std::uint64_t outcomeEquivalenceKeyOf(const GameContext &g, const PathHistory &path) {
+    std::string joined;
+    for (const auto &part : outcomeEquivalenceParts(g, path)) { joined += part; joined += '|'; }
+    return std::hash<std::string>{}(joined);
+}
+
 void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
                                      int priorEventRooms) {
     // Only '?' room transitions change these room chances. Bound increments
@@ -931,6 +1021,11 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     OocProfileScope inference(OocProfileBucket::LeafValue);
     return dependencies.leafValue(state(id), states.at(id).path);
 }
+std::optional<std::uint64_t> OocGameContextModel::outcomeEquivalenceKey(sts::search::OocStateId id) const {
+    // Without sampled futures a successor's concrete RNG is its future.
+    if (!options.sampleNoncombat) return std::nullopt;
+    return outcomeEquivalenceKeyOf(state(id), pathHistory(id));
+}
 bool OocGameContextModel::isDeterministicTransition(sts::search::OocStateId id,
     sts::search::OocActionId action) const {
     if (options.sampleNoncombat) return false;
@@ -1181,6 +1276,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
     else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
     else if (key == "STS_OOC_MCTS_GAP_STOP_20") config.stopAt512VisitGap20 = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_MERGE_OUTCOMES") config.mergeEquivalentOutcomes = choice("0", "1");
     else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
     else if (key == "STS_OOC_MCTS_TEMPERATURE") { const double x = number(); if (x <= 0) invalid(); opts.priorTemperature = x; }
     else if (key == "STS_OOC_MCTS_CPUCT") { const double x = number(); if (x < 0) invalid(); config.cPuct = x; }
@@ -1194,7 +1290,7 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_EARLY_STOP", "STS_OOC_MCTS_GAP_STOP_20", "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
-    "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY"
+    "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -1483,6 +1579,7 @@ void configureLiveOocMcts() {
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
+        << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
@@ -1494,6 +1591,7 @@ void configureLiveOocMcts() {
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
+        << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
@@ -3016,14 +3114,20 @@ void oocMctsAdapterSelfTest() {
         source.info.bossRelics[1]=RelicId::COFFEE_DRIPPER; source.info.bossRelics[2]=RelicId::FUSION_HAMMER;
         // Select Pandora explicitly; canonical relic ordering need not put it first.
         OocGameContextModel pandora(source,path,{},sampled); std::set<std::string> pandoraOutcomes;
+        std::set<std::uint64_t> pandoraKeys;
         std::mt19937_64 pandoraDraws(819);
         for(auto action:pandora.legalActions(0)) {
             const auto &c=pandora.candidate(0,action.id);
             if(c.semantic->effect!=OocSemanticEffect::TAKE_BOSS_RELIC
                 || std::get<OocRelicTarget>(c.semantic->target).relic!=RelicId::PANDORAS_BOX) continue;
-            for(int n=0;n<16;++n) pandoraOutcomes.insert(visible(pandora.state(pandora.sampleSuccessor(0,action.id,pandoraDraws))));
+            for(int n=0;n<16;++n) {
+                const auto child=pandora.sampleSuccessor(0,action.id,pandoraDraws);
+                pandoraOutcomes.insert(visible(pandora.state(child)));
+                pandoraKeys.insert(*pandora.outcomeEquivalenceKey(child));
+            }
         }
         require(pandoraOutcomes.size()>1,"Pandora random transformations resampled");
+        require(pandoraKeys.size()==pandoraOutcomes.size(),"distinct visible outcomes never share an equivalence key");
         source=detachedCopy(gc); source.screenState=ScreenState::REST_ROOM; source.relics.add({RelicId::SHOVEL,0});
         varied(source,OocSemanticEffect::DIG,OocSemanticSource::CAMPFIRE);
         source=detachedCopy(gc); source.screenState=ScreenState::SHOP_ROOM; source.gold=999;
@@ -3038,6 +3142,10 @@ void oocMctsAdapterSelfTest() {
         const auto first=upgrades.sampleSuccessor(0,upgrade,draws);
         const auto second=upgrades.sampleSuccessor(0,upgrade,draws);
         require(visible(upgrades.state(first))==visible(upgrades.state(second)),"deterministic public upgrade preserved");
+        require(upgrades.outcomeEquivalenceKey(first) && upgrades.outcomeEquivalenceKey(first)==upgrades.outcomeEquivalenceKey(second),
+            "re-sampled futures of one public upgrade are search-equivalent");
+        OocGameContextModel exactUpgrades(source,path);
+        require(!exactUpgrades.outcomeEquivalenceKey(0),"exact-replay futures are never merged");
         // Same planner draws, different true seed/stream states/hidden order:
         // both hypothetical futures must be exactly the same.
         source=detachedCopy(gc); source.setupTreasureRoom();
@@ -3053,6 +3161,15 @@ void oocMctsAdapterSelfTest() {
         std::reverse(altered.eliteMonsterList.begin(),altered.eliteMonsterList.end());
         std::reverse(altered.colorlessCardPool.begin(),altered.colorlessCardPool.end());
         altered.info.haveGold=!altered.info.haveGold; altered.info.tier=RelicTier::RARE;
+        require(outcomeEquivalenceKeyOf(source,path)==outcomeEquivalenceKeyOf(altered,path),
+            "equivalence key omits everything the future sampler re-draws");
+        {
+            auto richer=detachedCopy(source); ++richer.gold;
+            auto counters=detachedCopy(source); counters.potionChance+=10;
+            require(outcomeEquivalenceKeyOf(source,path)!=outcomeEquivalenceKeyOf(richer,path)
+                && outcomeEquivalenceKeyOf(source,path)!=outcomeEquivalenceKeyOf(counters,path),
+                "equivalence key keeps visible state and copied hidden counters");
+        }
         std::mt19937_64 left(19),right(19);
         sampleNoncombatFuture(source,left); sampleNoncombatFuture(altered,right);
         require(test::oocStateFingerprint(source)==test::oocStateFingerprint(altered),
