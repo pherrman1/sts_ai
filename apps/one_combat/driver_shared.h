@@ -274,6 +274,7 @@ int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();
 int vwinRefreshRewardTypeSelfTest();
+int vwinRefreshContinuationSelfTest();
 int vwinRefreshDecisionSinkSelfTest();
 int vwinRefreshFatalRunoutCountSelfTest(std::uint64_t seed, int sims);
 int vwinVPathPolicyGuardSelfTest();
