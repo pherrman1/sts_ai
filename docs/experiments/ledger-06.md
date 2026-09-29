@@ -13460,3 +13460,54 @@ runtime support changed.
   result), `evaluation/current-research.md` (§361 open question answered),
   `operations/environment-variables.md`.
 
+
+## §368 — Silver x OOC MCTS simulation grid, 32 paired seeds (2026-09-29)
+
+- **Question:** How does Act-3 win rate respond to the real-combat Silver
+  budget and the live OOC MCTS budget, jointly? User-requested descriptive
+  grid; no default change was proposed.
+- **Implementation and provenance:** source `e814b65bbc23873e347e1c9d7abb44343c5a07fc`
+  (base `12b3e5a`) adds the experimental
+  `STS_OOC_MCTS_ALLOW_SILVER_BUDGET_MISMATCH=1` override. It relaxes only the
+  exact-10k real-combat equality under OOC MCTS; the reuse cap 32768, exact
+  root budgets and adaptive-off stay enforced. Release GCC, executable
+  SHA-256 `85d982e23ba0caa119d2fad5c8b06adc1cb42ea5a5be9c65aca3a3c761e10a5b`.
+  A0, project-fair native Silver with a flat budget, Act-3 stop, keys skipped,
+  automatic OOC CTM stack, and V4 token gate stack. OOC MCTS settings match
+  §366 Gate 2 except that no relic was forced and no models were overridden.
+  Seeds `126700..126731` (32) were paired across all cells. Execution used a
+  4-core cloud container with 4 parallel single-seed `bestbench` processes;
+  all 192 runs exited 0.
+- **Scope change:** the planned OOC MCTS 100k level (~2 h/run here) was
+  dropped mid-run at the user's request. One completed 1k/100k run (seed
+  126700, loss at floor 28) and four runs killed with rc 143 are archived in
+  `dropped/` and excluded.
+- **Confound:** the combat-transition model was trained on 10k-Silver
+  outcomes. The 1k and 100k Silver rows therefore plan OOC decisions with a
+  combat model that is miscalibrated for the actual combat strength.
+
+| Silver | OOC MCTS | Wins/32 | Win % (Wilson 95%) | Mean floor | s/run |
+|---|---|---|---|---|---|
+| 1k | 1k | 15 | 46.9 [30.9, 63.6] | 44.91 | 117 |
+| 1k | 10k | 15 | 46.9 [30.9, 63.6] | 42.69 | 810 |
+| 10k | 1k | 20 | 62.5 [45.3, 77.1] | 47.44 | 214 |
+| 10k | 10k | 21 | 65.6 [48.3, 79.6] | 45.72 | 1130 |
+| 100k | 1k | 21 | 65.6 [48.3, 79.6] | 47.09 | 1251 |
+| 100k | 10k | 22 | 68.8 [51.4, 82.0] | 46.34 | 2416 |
+
+- **Paired differences** (win pp with paired t 95% CI, discordant seeds):
+  - Silver 1k→10k: +15.6 [−7.0, +38.3] (+9/−4) at OOC 1k; +18.8 [−0.5, +38.0]
+    (+8/−2) at OOC 10k.
+  - Silver 10k→100k: +3.1 at both OOC levels, with CIs spanning about ±20 pp.
+  - OOC MCTS 1k→10k: +0.0, +3.1 and +3.1 pp at Silver 1k/10k/100k. Mean floor
+    was lower in all three pairs (−2.22, −1.72, −0.75), none significant.
+  - The per-pair list is in `paired.txt`.
+- **Interpretation (Inference, underpowered):** the only consistent signal is
+  Silver 1k→10k (about +16 to +19 pp in both OOC columns). It is borderline at
+  32 seeds. Beyond 10k, neither Silver 100k nor OOC MCTS 10k shows a
+  detectable gain, while costing 5.8× and 5.3× the per-run time respectively.
+  This cohort cannot rule out effects of ±15–20 pp.
+- **Evidence:** [packet](evidence/ooc_silver_sims_grid_2026-09-28/README.md).
+- **Knowledge impact:** environment-variable reference and OOC architecture
+  document the override; current research records the grid. No baseline or
+  default change.

@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-09-29 for the Silver x OOC MCTS sims grid (§368); 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -52,6 +52,16 @@ contracts now bind native Silver teachers.
 Merging publicly identical particles (upper bound 26.6%) would be a separate,
 semantics-changing proposal; it is an open question.
 [Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
+
+## Silver x OOC MCTS simulation grid — descriptive, underpowered
+
+**Measured (2026-09-29, §368).** On 32 paired seeds (`126700..126731`) we ran
+Silver {1k, 10k, 100k} x OOC MCTS {1k, 10k}. Win rates were 47/47%, 63/66%
+and 66/69%. Only Silver 1k→10k shows a consistent gain (+16 to +19 pp,
+borderline). Silver 100k and OOC MCTS 10k show no detectable gain at 5-6x the
+cost. Non-10k Silver rows use the experimental budget-mismatch override, so
+the CTM is miscalibrated there. The OOC 100k level was dropped as too slow.
+[Evidence](../../experiments/evidence/ooc_silver_sims_grid_2026-09-28/README.md).
 
 ## OOC MCTS equivalent-outcome merging (#384) — opt-in, inconclusive
 

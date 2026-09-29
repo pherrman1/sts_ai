@@ -1,4 +1,4 @@
-# Silver x OOC MCTS simulation grid (in progress)
+# Silver x OOC MCTS simulation grid (ledger-06 §368)
 
 Descriptive grid: real-combat Silver sims {1k, 10k, 100k} x live OOC MCTS
 sims {1k, 10k} (the planned 100k OOC level was dropped on 2026-09-29 as too
@@ -14,4 +14,7 @@ Non-10k Silver cells run OOC MCTS with a combat-transition model trained on
 - `run_grid.sh` runs `jobs.txt` with 4 workers and skips completed runs.
 - `summarize.py` aggregates `runs/*.csv` into `summary.json` (Wilson 95% CIs).
 
-Status: partial. Per-run CSVs are committed as cells complete.
+- `paired.py` prints paired per-seed differences (`paired.txt`).
+
+Status: complete, 192/192 runs exited 0. Results and interpretation are in
+ledger-06 §368.
