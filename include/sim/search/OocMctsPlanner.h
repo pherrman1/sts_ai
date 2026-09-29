@@ -54,6 +54,10 @@ public:
     virtual bool isDeterministicTransition(OocStateId, OocActionId) const { return false; }
     // Observation of a stored (e.g. terminal) state; must not draw randomness.
     virtual std::optional<OocEndpoint> endpoint(OocStateId) const { return std::nullopt; }
+    // Optional search-equivalence key of a sampled successor. Two successors of
+    // one chance node with equal keys must have the same future distribution
+    // (the provider re-samples everything the key omits). Empty never merges.
+    virtual std::optional<std::uint64_t> outcomeEquivalenceKey(OocStateId) const { return std::nullopt; }
 };
 struct OocMctsConfig {
     double cPuct = 1.5;
@@ -76,6 +80,10 @@ struct OocMctsConfig {
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
     bool captureValueDistribution = false; // root-only observational aggregates
+    // Pool a sampled successor into an earlier particle of the same chance node
+    // when the provider reports an equal outcomeEquivalenceKey. The particle list
+    // keeps one entry per sample, so reuse stays frequency-weighted.
+    bool mergeEquivalentOutcomes = false;
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;
@@ -117,6 +125,8 @@ struct OocMctsMetrics {
     std::uint64_t expandedNodes2Actions = 0, expandedNodes3PlusActions = 0;
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
+    // Sampled successors pooled into an existing equivalent particle.
+    std::uint64_t mergedOutcomes = 0;
     std::uint32_t maxDepthReached = 0;
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;

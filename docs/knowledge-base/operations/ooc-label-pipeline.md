@@ -341,6 +341,18 @@ fail validation. Older v1 capture logs without error fields remain readable.
 Review the measured size before A2; any subsampling rule must be selected and
 recorded before collection.
 
+Semantic branches also resume the source policy layer's intra-call continuation.
+A card decision observed inside `serverCardRewardPolicy` carries a
+`CARD_REWARD_FALLBACK_DRAIN` continuation on its sampled decision; actions
+handled by V4 carry `NONE`. After forcing any sibling, remaining card rewards
+are drained directly through the same fallback under the decision observer,
+before re-entering the outer policy chain. This applies equally to chosen and
+untaken siblings and retains intermediate decision/sink rows. The scoped
+fallback marker is restored under nesting and exceptions; it is not general
+`OocPolicyThreadState`. Normal source fallback gameplay is unchanged.
+`vwin_refresh_reward_continuation` exercises a real V4 two-group tie, the
+incorrect fresh-entry alternative, all three siblings, and marker lifetime.
+
 For every sampled chosen sibling the producer runs the same forced-action
 branch as the counterfactuals. `PARITY_PERCENT=100` checks every chosen replay
 on the A1 pilot; `PARITY_PERCENT=5` selects an outcome-independent 5% by the

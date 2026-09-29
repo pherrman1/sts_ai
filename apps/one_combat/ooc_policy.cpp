@@ -891,7 +891,18 @@ static std::vector<int> upgradeableIds(GameContext &gc) {
     return ids;
 }
 
+namespace {
+thread_local unsigned cardRewardFallbackDepth = 0;
+struct CardRewardFallbackScope {
+    CardRewardFallbackScope() { ++cardRewardFallbackDepth; }
+    ~CardRewardFallbackScope() { --cardRewardFallbackDepth; }
+};
+}
+
+bool inCardRewardFallback() { return cardRewardFallbackDepth != 0; }
+
 void serverCardRewardPolicy(GameContext &gc) {
+    const CardRewardFallbackScope scope;
     using RT = search::GameAction::RewardsActionType;
     auto &r = gc.info.rewardsContainer;
     while (r.cardRewardCount > 0) {

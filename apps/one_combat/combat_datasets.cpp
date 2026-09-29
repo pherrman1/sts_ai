@@ -5,6 +5,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
+#include "ooc_strategic_tok_net.h"
 
 #include <iomanip>
 #include <openssl/evp.h>
@@ -225,7 +226,10 @@ struct VwinDecisionSnapshot {
     bool supported = false, complete = false;
 };
 
+enum class VwinContinuation { NONE, CARD_REWARD_FALLBACK_DRAIN };
+
 struct VwinSampledDecision {
+    VwinContinuation continuation = VwinContinuation::NONE;
     int decisionIdx = -1;
     int fightIdx = 0;
     std::string type;
@@ -705,6 +709,9 @@ static void vwinMaybeSampleDecision(VwinCollector &capture, std::size_t rowIndex
     sample.decisionIdx = row.decisionIdx;
     sample.fightIdx = capture.fightIdx;
     sample.type = row.type;
+    // Capture the live call site, before its fallback invocation unwinds.
+    if (row.type == "CARD_REWARD" && one_combat::inCardRewardFallback())
+        sample.continuation = VwinContinuation::CARD_REWARD_FALLBACK_DRAIN;
     sample.chosenKey = chosenKey;
     sample.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(pre));
     sample.path = path;
@@ -912,6 +919,18 @@ static void vwinRefreshRunPolicyStep(VwinCollector &capture, GameContext &gc,
                                      PathHistory &path, search::ScumSearchAgent2 &agent) {
     vwinObservePolicyStep(capture, gc, path, agent,
         [&] { runFullRunOocPolicyStep(gc, agent, false, true); });
+}
+
+static void vwinResumeContinuation(const VwinSampledDecision &decision,
+                                   VwinCollector &capture, GameContext &gc,
+                                   PathHistory &path, search::ScumSearchAgent2 &agent) {
+    if (decision.continuation == VwinContinuation::CARD_REWARD_FALLBACK_DRAIN
+        && gc.screenState == ScreenState::REWARDS
+        && gc.info.rewardsContainer.cardRewardCount > 0) {
+        // Every sibling resumes the sampled invocation before another V4 gate.
+        vwinObservePolicyStep(capture, gc, path, agent,
+            [&] { one_combat::serverCardRewardPolicy(gc); });
+    }
 }
 
 static bool vwinSelectedDecision(const VwinCollector &capture, int decisionIdx) {
@@ -1201,6 +1220,9 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
                 throw std::runtime_error("vwin refresh: health failure during forced branch action");
         }
     }
+
+    if (branch && vwin)
+        vwinResumeContinuation(*branch->decision, *vwin, gc, path, agent);
 
     auto finishPendingDecision = [&] {
         if (!vwin || !vwin->pendingAction) return;
@@ -2486,6 +2508,151 @@ int vwinRefreshRewardTypeSelfTest() {
             "Singing Bowl alternatives remain limited to that card group");
 
     std::cout << "vwin reward type contract: card take/skip sampled by group; pickups skipped\n";
+    return 0;
+}
+
+int vwinRefreshContinuationSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("vwin continuation selftest: " + message);
+    };
+    struct FixtureGuard {
+        std::unique_ptr<OocStrategicTokNet> tok = std::make_unique<OocStrategicTokNet>(g_oocStrategicTokNet);
+        WinNet floor = g_floorNet;
+        bool native = g_nativeOoc, cardWin = g_cardWin, cardNN = g_cardNN,
+             cardAction = g_cardAction, regret = g_oocStrategicGateRegret;
+        int bossV = g_bossV;
+        double threshold = g_cardSkipThresh, margin = g_oocStrategicMarginCard;
+        std::string trace = g_oocStrategicTracePath;
+        const PathHistory *path = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        decltype(search::g_onGameActionExecute) observer = search::g_onGameActionExecute;
+        ~FixtureGuard() {
+            g_oocStrategicTokNet = *tok; g_floorNet = floor;
+            g_nativeOoc = native; g_cardWin = cardWin; g_cardNN = cardNN;
+            g_cardAction = cardAction; g_bossV = bossV;
+            g_cardSkipThresh = threshold; g_oocStrategicMarginCard = margin;
+            g_oocStrategicGateRegret = regret; g_oocStrategicTracePath = trace;
+            t_curPath = path; one_combat::restoreOocPolicyThreadState(policy);
+            search::g_onGameActionExecute = observer;
+        }
+    } guard;
+    g_oocStrategicTokNet = *std::make_unique<OocStrategicTokNet>();
+    auto &net = g_oocStrategicTokNet;
+    net.ok = true;
+    // Real V4 inference: Iron Wave alone scores > 1. Both groups contain it,
+    // so V4 ties and falls through with two groups, but acts with one group.
+    net.eCard[static_cast<int>(CardId::IRON_WAVE)][0] = 4.0f;
+    net.ent0w[0][0] = 1.0f;
+    net.ent3w[0][0] = 1.0f;
+    net.q0w[0][OocStrategicTokNet::POLIN - OocStrategicTokNet::ENTOUT] = 1.0f;
+    net.q2w[0] = 1.0f;
+    g_floorNet = WinNet{};
+    g_floorNet.ok = true; // Constant floor value: fallback takes candidate zero.
+    g_nativeOoc = true;
+    g_cardWin = g_cardNN = g_cardAction = false;
+    g_bossV = 0;
+    g_cardSkipThresh = -0.5;
+    g_oocStrategicMarginCard = 1.0;
+    g_oocStrategicGateRegret = false;
+    g_oocStrategicTracePath.clear();
+    one_combat::restoreOocPolicyThreadState(OocPolicyThreadState{});
+    search::g_onGameActionExecute = {};
+
+    GameContext source(CharacterClass::IRONCLAD, 0x334041, 0);
+    Rewards rewards;
+    for (auto first : {CardId::COMBUST, CardId::SHRUG_IT_OFF}) {
+        CardReward group;
+        group.push_back(Card(first));
+        group.push_back(Card(CardId::IRON_WAVE));
+        rewards.addCardReward(group);
+    }
+    source.openCombatRewardScreen(rewards);
+    PathHistory path;
+    t_curPath = &path;
+    search::ScumSearchAgent2 agent;
+    VwinCollector capture;
+    capture.sourceSeed = source.seed;
+    capture.samplesPerType = 2;
+    capture.allowSampling = capture.captureDecisionSink = true;
+    require(!one_combat::inCardRewardFallback(), "marker starts clear");
+    vwinObservePolicyStep(capture, source, path, agent, [&] {
+        require(!one_combat::oocOnePlyCardRewardPolicy(source, agent), "V4 declines the two-group tie");
+        one_combat::serverCardRewardPolicy(source);
+    });
+    require(!one_combat::inCardRewardFallback(), "normal return restores marker");
+    require(capture.decisions.size() == 2 && capture.decisionSinkRows.size() == 2,
+            "both intermediate decisions and sink states are captured");
+    auto &samples = capture.sampled.at("CARD_REWARD");
+    require(samples.size() == 2 && std::all_of(samples.begin(), samples.end(), [](const auto &s) {
+        return s.continuation == VwinContinuation::CARD_REWARD_FALLBACK_DRAIN;
+    }), "every actual fallback action records its continuation");
+    const auto &sample = samples.front();
+    require(sample.options.size() == 3, "both cards and skip retained");
+    int checked = 0;
+    for (const auto &option : sample.options) {
+        auto branch = detachedCounterfactualCopy(*sample.pre);
+        PathHistory branchPath = sample.path;
+        t_curPath = &branchPath;
+        auto branchAgent = sample.agentAfter;
+        one_combat::restoreOocPolicyThreadState(sample.policyAfter);
+        auto forced = search::executeOocSemanticAction(branch, *option.semantic);
+        require(forced.ok, "each retained candidate executes");
+        VwinCollector replay;
+        replay.captureDecisionSink = true;
+        replay.decisionIdx = sample.decisionIdx + 1;
+        vwinCaptureForcedDecision(replay, detachedCounterfactualCopy(*sample.pre),
+                                  branchPath, forced.executedPrimitiveBits, sample.decisionIdx);
+        if (option.key == sample.chosenKey) {
+            auto broken = detachedCounterfactualCopy(branch);
+            VwinCollector fresh;
+            fresh.allowSampling = fresh.captureDecisionSink = true;
+            fresh.samplesPerType = 1;
+            vwinObservePolicyStep(fresh, broken, branchPath, branchAgent, [&] {
+                require(one_combat::oocOnePlyCardRewardPolicy(broken, branchAgent),
+                        "broken fresh V4 entry handles group two");
+            });
+            require(fresh.decisions.size() == 1
+                    && fresh.decisions.front().chosenKey != capture.decisions[1].chosenKey,
+                    "old replay picks a different second card");
+            require(fresh.sampled.at("CARD_REWARD").front().continuation == VwinContinuation::NONE,
+                    "actual V4-handled action has no fallback continuation");
+        }
+        vwinResumeContinuation(sample, replay, branch, branchPath, branchAgent);
+        require(branch.info.rewardsContainer.cardRewardCount == 0
+                && replay.decisions.size() == 1
+                && replay.decisions.front().chosenKey == capture.decisions[1].chosenKey,
+                "chosen and untaken siblings resume the fallback second choice");
+        require(replay.decisionSinkRows.size() == 2
+                && replay.decisionSinkRows[1].decisionIdx == sample.decisionIdx + 1,
+                "forced and intermediate sibling sink rows remain present");
+        if (option.key == sample.chosenKey) {
+            require(vwinCompoundStateFingerprint(branch) == vwinCompoundStateFingerprint(source)
+                    && replay.decisionSinkRows[1].features == capture.decisionSinkRows[1].features,
+                    "chosen replay matches source result and intermediate state");
+        }
+        ++checked;
+    }
+    require(checked == 3, "no sibling skipped");
+    // The marker is scoped even when an action callback nests another drain
+    // and throws before the outer action executes.
+    auto throwing = detachedCounterfactualCopy(*sample.pre);
+    search::g_onGameActionExecute = [&](std::uint32_t, const GameContext *target) {
+        if (target != &throwing) return;
+        require(one_combat::inCardRewardFallback(), "outer fallback marker is active");
+        auto nested = detachedCounterfactualCopy(source); // Already drained.
+        one_combat::serverCardRewardPolicy(nested);
+        require(one_combat::inCardRewardFallback(), "nested return preserves outer marker");
+        throw std::runtime_error("fixture interruption");
+    };
+    bool interrupted = false;
+    try { one_combat::serverCardRewardPolicy(throwing); }
+    catch (const std::runtime_error &e) {
+        if (std::string(e.what()) != "fixture interruption") throw;
+        interrupted = true;
+    }
+    require(interrupted && !one_combat::inCardRewardFallback(), "exception restores marker");
+    std::cout << "vwin continuation: PASS; real V4 tie/fresh-entry divergence, fallback chosen + "
+                 "2 untaken siblings, intermediate rows, nesting and exceptions\n";
     return 0;
 }
 

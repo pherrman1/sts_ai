@@ -3685,6 +3685,13 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 1;
         }
+    } else if (mode == "vwinrefreshcontinuationselftest") {
+        if (argc != 2) return 2;
+        try { return vwinRefreshContinuationSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     } else if (mode == "vwinrefreshrewardselftest") {
         if (argc != 2) {
             std::cerr << "usage: one_combat vwinrefreshrewardselftest\n";

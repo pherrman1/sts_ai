@@ -13426,3 +13426,37 @@ runtime support changed.
   enabled-OOC default and its boundaries. PR #330 and PR #351 remain the
   scientific quality qualification; this section records the integration and
   default-plumbing evidence only.
+
+## §367 — OOC MCTS equivalent-outcome merging: search structure and paired gameplay (2026-09-28)
+
+- **Question:** With sampled futures, every OOC MCTS chance particle was its own
+  decision node even when it matched a sibling's visible state. Does pooling
+  search-equivalent particles (`STS_OOC_MCTS_MERGE_OUTCOMES=1`, #384, PR #386)
+  change play strength? Answers the open question left by §361.
+- **Implementation and provenance:** source `6ed6c943397c058610855f3d29d513bdf9f37a97`
+  (base `795c4e7`), Release GCC 13.3, frozen executable SHA-256
+  `a7450100fee8b937ed9efb4f39824e11c92f9a975f48393af4015ad9a957380a`; models
+  and full environment in the evidence packet. A0, project-fair, Act-3 stop,
+  exact-10k native Silver, 2,048 OOC MCTS simulations, automatic CTM stack.
+- **Search structure (seeds 12002032/12002033, temporary diagnostic):** without
+  pooling 49-55% of decision nodes duplicated a sibling's visible state (shop,
+  rest 100% and rewards 93% of multi-particle chance nodes were visibly
+  deterministic); with pooling 0%, about 35% of samples pooled, maximum depth
+  4 -> 11-12. Remaining distinct siblings differed visibly except 11 event pairs.
+- **Paired gameplay:** plan frozen before seeds ran. A sequential design
+  (38400000.., Bonferroni looks) was stopped by the user after look 1 (N = 8,
+  interval [-20.8, +6.8], continue) in favor of a fixed cohort. Fixed cohort
+  `38410000..38410127`, 128 pairs, 95% t-interval on `floor + 10*won`:
+  mean **-0.25**, **[-2.46, +1.96]** — **inconclusive**. Wins 86 vs 83
+  (McNemar p = 0.74; descriptive paired win-rate 95% interval [-11.5, +6.8] pp); mean floor 47.47 vs 47.45; +12.7% seconds per run,
+  +19% MCTS CPU per simulation; 36.2% of transition samples pooled; max depth
+  4 -> 15; fallback decisions 387 vs 377.
+- **Decision:** keep the option opt-in (default off). No default change.
+- **Evidence:** [packet](evidence/ooc_merge_outcomes_2026-09-28/README.md).
+- **ELI5:** The search stopped counting identical-looking futures separately
+  and so looked three times deeper for the same effort, but on 128 paired runs
+  it neither won nor lost more often; it only ran about 13% slower.
+- **Knowledge impact:** `architecture/out-of-combat.md` (merge semantics and
+  result), `evaluation/current-research.md` (§361 open question answered),
+  `operations/environment-variables.md`.
+
