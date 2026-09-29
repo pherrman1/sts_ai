@@ -272,7 +272,10 @@ explicit combat-model path overrides the automatic stack; explicit artifact
 failures are fatal. Startup also requires the effective Silver reuse cap to be
 32,768; the experimental 131,072 override is rejected. Real combat requires
 ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
-frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
+frozen teacher cap contract. The experimental
+`STS_OOC_MCTS_ALLOW_SILVER_BUDGET_MISMATCH=1` override relaxes only the
+exact-10k equality for sims-grid studies; it is off by default and knowingly
+breaks the 10k teacher/actor match. `STS_OOC_MCTS` itself remains OFF by default and
 does not load a combat artifact or run MCTS. Both arms retain the same normal
 real combat branch and the same fallback OOC policy chain.
 
