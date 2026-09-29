@@ -1,7 +1,8 @@
 # Silver x OOC MCTS simulation grid (in progress)
 
-Descriptive 3x3 grid: real-combat Silver sims {1k, 10k, 100k} x live OOC MCTS
-sims {1k, 10k, 100k}, seeds 126700..126731 (32, paired), A0, Act-3 horizon.
+Descriptive grid: real-combat Silver sims {1k, 10k, 100k} x live OOC MCTS
+sims {1k, 10k} (the planned 100k OOC level was dropped on 2026-09-29 as too
+slow, ~2 h/run on 4 cores; see `dropped/` and `manifest.json`), seeds 126700..126731 (32, paired), A0, Act-3 horizon.
 Frozen settings and provenance are in `manifest.json`; source commit
 `e814b65`, which adds the experimental
 `STS_OOC_MCTS_ALLOW_SILVER_BUDGET_MISMATCH=1` override.

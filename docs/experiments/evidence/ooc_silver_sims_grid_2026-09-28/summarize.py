@@ -15,7 +15,7 @@ S = [1000, 10000, 100000]
 out = []
 print(f"{'silver':>7} {'ooc':>7} {'n':>3} {'wins':>4} {'win%':>6} {'95% CI':>15} {'floor':>6} {'s/run':>8}")
 for s in S:
-    for o in S:
+    for o in [1000, 10000]:
         rs = [v for (a,b,_),v in rows.items() if a==s and b==o]
         n = len(rs); k = sum(int(v['won']) for v in rs)
         if n == 0:

@@ -5,10 +5,20 @@
  "source_commit": "e814b65bbc23873e347e1c9d7abb44343c5a07fc",
  "binary": "build/grid-release/one_combat",
  "binary_sha256": "85d982e23ba0caa119d2fad5c8b06adc1cb42ea5a5be9c65aca3a3c761e10a5b",
- "silver_sims": [1000, 10000, 100000],
- "ooc_mcts_sims": [1000, 10000, 100000],
+ "silver_sims": [
+  1000,
+  10000,
+  100000
+ ],
+ "ooc_mcts_sims": [
+  1000,
+  10000
+ ],
  "seeds": "126700..126731 (32), paired across all cells, no replacements",
- "ascension": 0, "act_horizon": 3, "regime": "project-fair native Silver, flat budget, exact root budgets, reuse cap 32768 allocated",
- "ooc_stack": "STS_OOC_MCTS=1 default DeepSets+Brew fallback+active Lizard; V4 tok-net gate stack; settings as ledger-06 §366 Gate 2 except no forced relic and no model overrides",
- "execution": "4-core cloud container, 4 parallel single-seed bestbench processes, OMP_NUM_THREADS=4"
+ "ascension": 0,
+ "act_horizon": 3,
+ "regime": "project-fair native Silver, flat budget, exact root budgets, reuse cap 32768 allocated",
+ "ooc_stack": "STS_OOC_MCTS=1 default DeepSets+Brew fallback+active Lizard; V4 tok-net gate stack; settings as ledger-06 \u00a7366 Gate 2 except no forced relic and no model overrides",
+ "execution": "4-core cloud container, 4 parallel single-seed bestbench processes, OMP_NUM_THREADS=4",
+ "scope_change": "2026-09-29 07:1x UTC, user request: OOC MCTS 100k cells dropped as too slow (~2 h/run). The only completed 1k/100k run (seed 126700, loss at floor 28, 2553 s) and the four in-flight runs killed with rc 143 are in dropped/ and excluded."
 }
