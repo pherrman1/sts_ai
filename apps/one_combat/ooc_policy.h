@@ -2,6 +2,7 @@
 #define STS_ONE_COMBAT_OOC_POLICY_H
 
 #include <cstdint>
+#include <map>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -59,6 +60,16 @@ extern bool g_restWin;
 extern thread_local const one_combat::PathHistory *t_curPath;
 extern thread_local one_combat::PathHistory t_emptyPath;
 
+// Per event instance preferences computed by the active guide. Deferred
+// branches must restore these along with the rest of the policy state.
+struct MatchAndKeepWantCache {
+    std::uint64_t seed = 0;
+    int act = -1;
+    int floor = -1;
+    std::map<std::pair<int, bool>, bool> want;
+};
+extern thread_local MatchAndKeepWantCache t_matchAndKeepWant;
+
 // State that affects the ordered OOC policy chain and therefore must travel
 // with detached counterfactual branches. t_curPath is deliberately excluded:
 // callers bind it to the branch's own PathHistory after restoring this value.
@@ -72,6 +83,7 @@ struct OocPolicyThreadState {
     int actFightProbeDecisionIdx = 0;
     int actFightProbeActionIdx = 0;
     int actFightProbeFutureIdx = 0;
+    MatchAndKeepWantCache matchAndKeepWant;
 };
 
 // Cross-module run configuration/state. These remain driver-owned because the

@@ -128,16 +128,7 @@ void runFloorProfileSelfTest() {
 
 thread_local bool t_oocHypotheticalStep = false;
 
-namespace {
-// Per event instance cache of "would the active guide take this card".
-struct MatchAndKeepWantCache {
-    std::uint64_t seed = 0;
-    int act = -1;
-    int floor = -1;
-    std::map<std::pair<int, bool>, bool> want;
-};
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
-} // namespace
 
 bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                             const one_combat::PathHistory &path, std::uint64_t runSeed,
