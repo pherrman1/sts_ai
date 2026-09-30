@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -352,6 +352,15 @@ fallback marker is restored under nesting and exceptions; it is not general
 `OocPolicyThreadState`. Normal source fallback gameplay is unchanged.
 `vwin_refresh_reward_continuation` exercises a real V4 two-group tie, the
 incorrect fresh-entry alternative, all three siblings, and marker lifetime.
+
+`OocPolicyThreadState` also captures the complete Match and Keep preference
+cache: seed, act, floor, and `(cardId, upgraded) -> want` entries. Restoring a
+sampled branch restores that cache by value before sibling execution, so an
+earlier sibling cannot supply preferences computed from another deck or path.
+The ordinary seed/act/floor lazy invalidation and within-event preference reuse
+are unchanged. `vwin_refresh_match_and_keep_isolation` uses actual hypothetical
+card valuation to exercise opposite sibling preferences, nested snapshot
+restoration, and multiple clicks in the same event.
 
 For every sampled chosen sibling the producer runs the same forced-action
 branch as the counterfactuals. `PARITY_PERCENT=100` checks every chosen replay

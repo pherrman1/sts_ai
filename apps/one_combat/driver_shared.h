@@ -275,6 +275,7 @@ int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();
 int vwinRefreshRewardTypeSelfTest();
 int vwinRefreshContinuationSelfTest();
+int vwinRefreshMatchAndKeepSelfTest();
 int vwinRefreshDecisionSinkSelfTest();
 int vwinRefreshFatalRunoutCountSelfTest(std::uint64_t seed, int sims);
 int vwinVPathPolicyGuardSelfTest();

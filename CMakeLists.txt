@@ -342,6 +342,10 @@ add_test(NAME vwin_refresh_decision_sink_contract
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshdecisionsinkselftest)
 set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_match_and_keep_isolation
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshmatchkeepselftest)
+set_tests_properties(vwin_refresh_match_and_keep_isolation PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_reward_continuation
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshcontinuationselftest)
 set_tests_properties(vwin_refresh_reward_continuation PROPERTIES

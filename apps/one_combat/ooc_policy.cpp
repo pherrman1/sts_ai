@@ -93,7 +93,7 @@ OocPolicyThreadState captureOocPolicyThreadState() {
     return {t_pathActionUses, t_pathAggr, t_tokCheckPending, t_shopV,
             t_oocStrategicTraceRows, t_oocStrategicTraceDecision,
             t_actFightProbeDecisionIdx, t_actFightProbeActionIdx,
-            t_actFightProbeFutureIdx};
+            t_actFightProbeFutureIdx, t_matchAndKeepWant};
 }
 
 void restoreOocPolicyThreadState(const OocPolicyThreadState &state) {
@@ -106,6 +106,7 @@ void restoreOocPolicyThreadState(const OocPolicyThreadState &state) {
     t_actFightProbeDecisionIdx = state.actFightProbeDecisionIdx;
     t_actFightProbeActionIdx = state.actFightProbeActionIdx;
     t_actFightProbeFutureIdx = state.actFightProbeFutureIdx;
+    t_matchAndKeepWant = state.matchAndKeepWant;
 }
 
 bool oocActionNNPolicy(GameContext &gc) {

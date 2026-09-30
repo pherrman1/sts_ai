@@ -2511,6 +2511,111 @@ int vwinRefreshRewardTypeSelfTest() {
     return 0;
 }
 
+int vwinRefreshMatchAndKeepSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("vwin Match and Keep selftest: " + message);
+    };
+    struct FixtureGuard {
+        WinNet floor = g_floorNet;
+        bool tok = g_oocStrategicTokNet.ok, native = g_nativeOoc, cardWin = g_cardWin,
+             cardNN = g_cardNN, cardAction = g_cardAction, actionNN = g_oocActionNN;
+        int bossV = g_bossV;
+        double skip = g_cardSkipThresh;
+        const PathHistory *path = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        decltype(search::g_onGameActionExecute) observer = search::g_onGameActionExecute;
+        ~FixtureGuard() {
+            g_floorNet = floor; g_oocStrategicTokNet.ok = tok; g_nativeOoc = native;
+            g_cardWin = cardWin; g_cardNN = cardNN; g_cardAction = cardAction;
+            g_oocActionNN = actionNN; g_bossV = bossV; g_cardSkipThresh = skip;
+            t_curPath = path; one_combat::restoreOocPolicyThreadState(policy);
+            search::g_onGameActionExecute = observer;
+        }
+    } guard;
+    g_oocStrategicTokNet.ok = false;
+    g_nativeOoc = true;
+    g_cardWin = g_cardNN = g_cardAction = g_oocActionNN = false;
+    g_bossV = 0;
+    g_cardSkipThresh = 0.5;
+    search::g_onGameActionExecute = {};
+    // Real fallback evaluation wants the first Fiend Fire, but not a duplicate.
+    g_floorNet = WinNet{};
+    g_floorNet.ok = true;
+    g_floorNet.logistic = false;
+    const int ff = richIdxMap().at("d" + std::to_string(int(CardId::FIEND_FIRE)));
+    g_floorNet.nodes = {{ff, 0.5f, 1, 2}, {-1, 1.0f, 0, 0},
+                       {ff, 1.5f, 3, 4}, {-1, 2.0f, 0, 0}, {-1, 0.0f, 0, 0}};
+    g_floorNet.roots = {0, g_floorNet.nodes.size()};
+    one_combat::restoreOocPolicyThreadState(OocPolicyThreadState{});
+    const auto sampled = one_combat::captureOocPolicyThreadState();
+    GameContext source(CharacterClass::IRONCLAD, 0x334115, 0);
+    source.act = 3; source.floorNum = 42;
+    source.curRoom = Room::EVENT; source.curEvent = Event::MATCH_AND_KEEP;
+    source.screenState = ScreenState::EVENT_SCREEN;
+    source.info.eventData = 5;
+    source.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    source.info.toSelectCards.clear();
+    for (int i = 0; i < 12; ++i) {
+        source.info.toSelectCards.push_back({Card(i < 2 ? CardId::FIEND_FIRE : CardId::BASH),
+            i < 4 ? GameContext::MATCH_AND_KEEP_SEEN : GameContext::MATCH_AND_KEEP_UNSEEN});
+    }
+    PathHistory path;
+    t_curPath = &path;
+    search::ScumSearchAgent2 agent;
+    auto step = [&](GameContext &gc) { runFullRunOocPolicyStep(gc, agent, false, false); };
+    const auto key = std::make_pair(int(CardId::FIEND_FIRE), false);
+    auto siblingA = detachedCounterfactualCopy(source);
+    siblingA.obtainCard(Card(CardId::FIEND_FIRE));
+    step(siblingA);
+    require(siblingA.info.toSelectCards[4].deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP,
+            "altered sibling rejects the known Fiend Fire pair and explores slot four");
+    one_combat::restoreOocPolicyThreadState(sampled);
+    auto siblingB = detachedCounterfactualCopy(source);
+    step(siblingB);
+    require(siblingB.info.toSelectCards[0].deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP,
+            "restored sibling must accept Fiend Fire instead of inheriting sibling A's rejection");
+    const auto midEvent = one_combat::captureOocPolicyThreadState();
+    require(midEvent.matchAndKeepWant.seed == source.seed
+            && midEvent.matchAndKeepWant.act == 3 && midEvent.matchAndKeepWant.floor == 42
+            && midEvent.matchAndKeepWant.want.at(key), "event identity and preference are captured");
+    require(sampled.matchAndKeepWant.want.empty(), "captured map is an independent value copy");
+    require(t_curPath == &path && !t_oocHypotheticalStep,
+            "real hypothetical card valuation restores path and policy-call marker");
+
+    // A nested branch changes the cache, then restores the populated outer snapshot.
+    one_combat::restoreOocPolicyThreadState(sampled);
+    auto nested = detachedCounterfactualCopy(source);
+    nested.obtainCard(Card(CardId::FIEND_FIRE));
+    step(nested);
+    require(!one_combat::captureOocPolicyThreadState().matchAndKeepWant.want.at(key),
+            "nested altered branch really computed the opposite preference");
+    one_combat::restoreOocPolicyThreadState(midEvent);
+    const auto restored = one_combat::captureOocPolicyThreadState().matchAndKeepWant;
+    require(restored.seed == midEvent.matchAndKeepWant.seed
+            && restored.act == midEvent.matchAndKeepWant.act
+            && restored.floor == midEvent.matchAndKeepWant.floor
+            && restored.want == midEvent.matchAndKeepWant.want,
+            "nested restore preserves the complete populated cache");
+    // Even if the deck changes, the original preference must persist within the
+    // same event. Clearing/revaluing on every click would reject this second pick.
+    siblingB.obtainCard(Card(CardId::FIEND_FIRE));
+    const int before = siblingB.deck.size();
+    step(siblingB);
+    require(siblingB.deck.size() == before + 1
+            && siblingB.info.toSelectCards[1].deckIdx == GameContext::MATCH_AND_KEEP_MATCHED,
+            "same-event second click reuses the cached preference");
+    auto nextEvent = detachedCounterfactualCopy(source);
+    ++nextEvent.floorNum;
+    nextEvent.obtainCard(Card(CardId::FIEND_FIRE));
+    step(nextEvent);
+    require(nextEvent.info.toSelectCards[4].deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP
+            && !one_combat::captureOocPolicyThreadState().matchAndKeepWant.want.at(key),
+            "different event identity retains ordinary lazy invalidation");
+    std::cout << "vwin Match and Keep: PASS; sibling isolation, populated snapshot, "
+                 "nested restore, hypothetical scope, same-event reuse and lazy invalidation\n";
+    return 0;
+}
+
 int vwinRefreshContinuationSelfTest() {
     auto require = [](bool ok, const std::string &message) {
         if (!ok) throw std::runtime_error("vwin continuation selftest: " + message);
