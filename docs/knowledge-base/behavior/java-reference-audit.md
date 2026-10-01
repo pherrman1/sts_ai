@@ -105,16 +105,72 @@ Uppercut, Whirlwind, and Wild Strike were checked. Their constructor
 `baseDamage`/`baseBlock`/`baseMagicNumber` values and `upgrade()` deltas match
 the `useCard` literals. This covers constants only, not effect ordering.
 
-### A0 impact
+### A0 impact (Act 1)
 
-Four fixes change A0 behavior:
+Four Act 1 fixes change A0 behavior:
 - the Red Slaver Stab threshold and its Entangle flag (Act 1 `RED_SLAVER`
   encounter and the Act 2 Slavers elite);
 - the Lagavulin natural wake;
 - the Hexaghost Inferno Burns.
 
-A0 benchmark values recorded before these fixes used the old behavior. Whether
-that changed any recorded result is **Unverified**; nothing was rerun.
+A0 benchmark values recorded before these fixes, and before the A0 fixes in
+the Act 2 audit below, used the old behavior. Whether that changed any recorded
+result is **Unverified**; nothing was rerun.
+
+## Act 2 audit
+
+Scope: for every `monsters.city` class, `getMove`, `takeTurn` (including
+private move helpers), the constructors (HP ranges, damage and power
+constants, `monsterHpRng` use), and `usePreBattleAction`.
+
+### Mismatches, all fixed
+
+All are covered by `monster_ai_java_parity`.
+
+| Mechanic | Java reference | Native before the fix | Reach |
+|---|---|---|---|
+| Mystic heal decision | heals when the summed missing HP of all living monsters exceeds 15 (20 at A17), unless both of its last two moves were Heal | compared its own and the Centurion's missing HP separately against 16 (21), with no repeat guard | A0+ |
+| Centurion Defend target | `GainBlockRandomMonsterAction`: a random other living monster (one `aiRng` draw), or itself when none | added block to the Mystic only if it was alive, with no `aiRng` draw | A0+ |
+| Shelled Parasite re-roll | after Fell on a roll below 20, `getMove` recurses with a fresh roll of 20–99 | tested `roll < 60 \|\| reroll < 60`, so it always took the Double Strike branch | A0+ |
+| Gremlin Leader re-roll | with one gremlin after a Stab, `getMove` recurses on 0–80, and 80 recurses again | treated a second roll of 80 as Encourage, with one fewer `aiRng` draw | A0+ |
+| Gremlin Leader Encourage block | 6, or 10 at A18 | 10 from A3 | A3–17 |
+| Champ Gloat | Strength `strAmt`: 2, 3 from A4, 4 at A19 | 3/4/5 | A0+ |
+| Collector Buff block | 15, 18 from A9, 23 at A19 | 18 from A4 | A4–8 |
+| Collector Mega Debuff | Weak, Vulnerable and Frail 3 each, 5 at A19 | always 3 | A19 |
+| Book of Stabbing single stab | at A18, also increments the stab count | the increment came after `return`, so it never ran | A18+ |
+| Snake Plant Spores at A17 | no Spores if either of the last two moves was Spores | blocked only after two Spores in a row | A17+ |
+| Romeo Cross Slash | at A17, repeats once before Agonizing Slash | always went to Agonizing Slash | A17+ |
+| Bronze Automaton cycle | at A19, the Boost after Hyper Beam does not advance the Flail/Boost count, so Hyper Beam comes every sixth turn | the toggle advanced, so Hyper Beam came two turns early | A19 |
+| Torch Head HP roll | the constructor draws a discarded `monsterHpRng` value in 38–40 before `setHp` | one draw, which shifts `monsterHpRng` alignment for every later spawn | A0+ (RNG alignment only) |
+| HP ranges | Bear 38–42 (A0); Centurion 78–83 (A7) | Bear 38–52; Centurion 76–83 | Bear A0–6; Centurion A7+ |
+
+### Parity, by inspection
+
+- **Move selection (`getMove`):** Byrd (first move and the flying and grounded
+  trees), Centurion move selection, Chosen (both ascension branches), Snecko,
+  Spheric Guardian, Taskmaster, Bronze Orb (Stasis is recorded at roll time in
+  Java and at turn time natively; equivalent), Champ, Collector, Torch Head,
+  Mugger, the bandits, and the Gremlin Leader's gremlin count and pool.
+- **Monster turns (`takeTurn`) and constants:** Byrd (Headbutt sets Fly
+  without a roll; Stunned rolls into Headbutt), Book of Stabbing, Chosen,
+  Mystic Buff and Heal, Shelled Parasite (Stunned sets Fell and then rolls in
+  both), Snake Plant, Snecko, Spheric Guardian, Taskmaster, Bear, Pointy,
+  Mugger (its `playSfx` draws `aiRng.random(2)` on Mug and Lunge, while the
+  Looter's uses `MathUtils`), Bronze Automaton and Bronze Orb constants, the
+  Champ's other moves, and the Collector's spawns.
+- **Pre-battle powers:** Painful Stabs, Artifact 3 (Automaton), Flight 3/4,
+  Thievery 15/20, Malleable, Plated Armor 14 with 14 block, and Spheric
+  Guardian's Barricade, Artifact 3 and 40 block.
+- **HP:** all other Act 2 ranges match `MonsterIds.h`.
+
+### Live-import finding (not fixed here)
+
+`STSModelInspector.bronzeAutomatonMiscInfo` returns 1 whenever the last two
+Java moves are Boost and Flail in either order. Native `lastBoostWasFlail` is 0
+at the first Boost after a Flail, so live search would expect Hyper Beam a
+cycle early. The flag is 1 exactly when Java's `numTurns` is 3 or 4 and the
+current move is Flail or Boost. **Confirmed by inspection** of both sides; not
+reproduced live.
 
 ## Ambiguous or not yet inspected
 
@@ -132,10 +188,12 @@ that changed any recorded result is **Unverified**; nothing was rerun.
 
 ## Recommendation
 
-The Act 1 audit found seven defects: four in `getMove` and three in
-`takeTurn`. Four of them affect A0. The yield justifies continuing with
-`getMove` and `takeTurn` for the Act 2 and Act 3 monsters. Prioritize:
-- the Gremlin Leader escape path above;
-- ascension-gated branches, which the A0 research loop does not exercise.
+Acts 1 and 2 yielded 21 simulator defects, 11 of which reach A0, plus one
+live-import mapping defect. Static auditing remains high-yield, so continue
+with:
+- Act 3 (`monsters.beyond`) and the Act 4 and ending monsters;
+- the Gremlin Wizard and Shield Gremlin escape gap listed above;
+- the Automaton inspector mapping.
 
-Every confirmed mismatch still needs a focused test before it is fixed.
+Ascension-gated branches remain the densest source of defects. Every confirmed
+mismatch still needs a focused test before it is fixed.
