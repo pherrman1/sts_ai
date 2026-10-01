@@ -103,5 +103,8 @@ unsupported result. There is one captured boundary and zero compared supported
 decisions. This is evidence for precise failure reporting, not Java/native
 parity or a complete-run pass. The adjacent receipt records executable hashes.
 
+For localizing a divergence against the pinned game bytecode, see the
+[STS1 Java reference audit](../behavior/java-reference-audit.md).
+
 Knowledge impact: documents the native replay connection, opt-in comparison
 state, and separation between capture/replay plumbing and gameplay parity.
