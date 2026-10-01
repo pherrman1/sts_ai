@@ -1843,6 +1843,20 @@ int testMonsterAiJavaParity() {
             return fail("Centurion Defend did not fall back to blocking itself");
         }
     }
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        Monster &mystic = bc.monsters.arr[1];
+        const int blockBefore = mystic.block;
+        const auto counterBefore = bc.aiRng.counter;
+        centurion.moveHistory[0] = MMID::CENTURION_DEFEND;
+        centurion.takeTurn(bc);
+        drain(bc);
+        // One draw picks the block target, one rolls the next move.
+        if (mystic.block != blockBefore + 15 || bc.aiRng.counter != counterBefore + 2) {
+            return fail("Centurion Defend did not pick its target with aiRng");
+        }
+    }
 
     // Book of Stabbing at A18 counts a single stab toward the multi-stab.
     for (const int asc : {0, 18}) {
@@ -1898,6 +1912,7 @@ int testMonsterAiJavaParity() {
             Random r(s);
             if (r.random(20, 99) >= 60) seed = s;
         }
+        if (seed == 0) return fail("no Shelled Parasite test seed");
         BattleContext bc = battle(MonsterEncounter::SHELL_PARASITE);
         Monster &m = bc.monsters.arr[0];
         m.moveHistory[0] = MMID::SHELLED_PARASITE_FELL;
@@ -2011,6 +2026,7 @@ int testMonsterAiJavaParity() {
             const int v = r.random(0, 69);
             if (v >= 40) seed = s;
         }
+        if (seed == 0) return fail("no Writhing Mass test seed");
         BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
         Monster &m = bc.monsters.arr[0];
         m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
@@ -2038,6 +2054,23 @@ int testMonsterAiJavaParity() {
     if (roll(0, MonsterEncounter::NEMESIS, MonsterId::NEMESIS,
              MMID::NEMESIS_ATTACK, MMID::NEMESIS_SCYTHE, 0, 10) != MMID::NEMESIS_SCYTHE) {
         return fail("Nemesis Scythe was blocked two moves after the last Scythe");
+    }
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.randomBoolean()) seed = s;
+        }
+        if (seed == 0) return fail("no Nemesis test seed");
+        BattleContext bc = battle(MonsterEncounter::NEMESIS);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::NEMESIS_DEBUFF;
+        m.moveHistory[1] = MMID::NEMESIS_SCYTHE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::NEMESIS_SCYTHE) {
+            return fail("Nemesis high-roll Scythe was blocked two moves after the last Scythe");
+        }
     }
 
     // Nemesis Debuff adds 3 Burns below A18.
@@ -2087,6 +2120,9 @@ int testMonsterAiJavaParity() {
         m.takeTurn(bc);
         drain(bc);
         if (hpBefore - bc.player.curHp != 16) return fail("Darkling Chomp did not hit 8 twice");
+        m.moveHistory[0] = MMID::DARKLING_CHOMP;
+        const auto intent = m.getMoveBaseDamage(bc);
+        if (intent.damage != 8 || intent.attackCount != 2) return fail("Darkling Chomp intent is not 8x2");
     }
     {
         BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS, 2);
@@ -2132,6 +2168,17 @@ int testMonsterAiJavaParity() {
         drain(bc);
         if (bc.aiRng.counter != counterBefore + 1 || !donu.lastMove(MMID::DONU_BEAM)) {
             return fail("Donu did not roll at the end of its turn");
+        }
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA);
+        Monster &deca = bc.monsters.arr[0];
+        for (const MMID move : {MMID::DECA_BEAM, MMID::DECA_SQUARE_OF_PROTECTION}) {
+            deca.moveHistory[0] = move;
+            const auto counterBefore = bc.aiRng.counter;
+            deca.takeTurn(bc);
+            drain(bc);
+            if (bc.aiRng.counter != counterBefore + 1) return fail("Deca did not roll at the end of its turn");
         }
     }
 
