@@ -59,7 +59,9 @@ For correctness:
 2. [Invariants](behavior/invariants.md)
 3. [Simulator health monitor](behavior/simulator-health-monitor.md)
 4. [Combat potion-generation support](behavior/combat-potion-generation.md)
-5. [Glossary](glossary.md)
+5. [STS1 Java reference audit](behavior/java-reference-audit.md) — pinned
+   `desktop-1.0.jar`, Java-to-native navigation, and audit results.
+6. [Glossary](glossary.md)
 
 For decisions and open questions:
 

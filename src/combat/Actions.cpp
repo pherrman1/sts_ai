@@ -376,6 +376,10 @@ Action Actions::ApotheosisAction() {
     return makeAction(ActData_ApotheosisAction{});
 }
 
+Action Actions::HexaghostBurnIncrease() {
+    return makeAction(ActData_HexaghostBurnIncrease{});
+}
+
 Action Actions::DropkickAction(int targetIdx) {
     // assume bc.curCard is the card being used
     return makeAction(ActData_DropkickAction{targetIdx});
@@ -679,8 +683,9 @@ void ActData_MakeTempCardInDrawPile::operator()(BattleContext &bc) const {
         for (int i = 0; i < amount; ++i) {
             if (shuffleInto) {
                 bc.cards.createTempCardShuffledIntoDrawPile(bc.cardRandomRng, c);
+            } else {
+                bc.cards.createTempCardOnDrawPileTop(c);
             }
-            // todo else
         }
     }
 
@@ -1330,6 +1335,25 @@ void ActData_ToolboxAction::operator()(BattleContext &bc) const {
 void ActData_DualityAction::operator()(BattleContext &bc) const {
         bc.player.buff<PS::DEXTERITY>(1);
         bc.player.debuff<PS::LOSE_DEXTERITY>(1);
+    }
+
+void ActData_HexaghostBurnIncrease::operator()(BattleContext &bc) const {
+        // Inferno upgrades every Burn in the discard and draw piles (not the
+        // hand), then adds three upgraded Burns to the discard pile.
+        for (auto &c : bc.cards.discardPile) {
+            if (c.getId() == CardId::BURN && !c.isUpgraded()) {
+                c.upgrade();
+            }
+        }
+        bc.cards.drawPile.mutateAll([](CardInstance &c) {
+            if (c.getId() == CardId::BURN && !c.isUpgraded()) {
+                c.upgrade();
+            }
+        });
+        CardInstance burn(CardId::BURN, true);
+        for (int i = 0; i < 3; ++i) {
+            bc.cards.createTempCardInDiscard(burn);
+        }
     }
 
 void ActData_ApotheosisAction::operator()(BattleContext &bc) const {

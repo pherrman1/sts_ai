@@ -30,6 +30,27 @@ public final class CombatBoundaryTest {
                     || guardian.getDeclaredField("isOpen").getType() != boolean.class)
                 throw new AssertionError("Guardian JAR field types changed");
         } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
+        // Bronze Automaton cycle: intent move byte, vanilla numTurns, native lastBoostWasFlail.
+        int[][] automaton = {
+                {1, 1, 0}, {5, 2, 0}, {1, 3, 1}, {5, 4, 1}, // Flail, Boost, Flail, Boost
+                {2, 0, 0}, {3, 0, 0}, {4, 0, 0},            // Hyper Beam, Stunned, Spawn Orbs
+                {5, 0, 0},                                  // A19 Boost after Hyper Beam
+        };
+        for (int[] row : automaton) {
+            Integer flag = STSModelInspector.bronzeAutomatonNativeFlag(row[0], row[1]);
+            if (flag == null || flag != row[2])
+                throw new AssertionError("Automaton flag for move " + row[0] + " numTurns " + row[1]);
+        }
+        if (STSModelInspector.bronzeAutomatonNativeFlag(5, null) != null
+                || STSModelInspector.bronzeAutomatonNativeFlag(null, 2) != null
+                || STSModelInspector.bronzeAutomatonNativeFlag(5, 5) != null)
+            throw new AssertionError("Automaton missing or invalid numTurns accepted");
+        try {
+            Class<?> automatonClass = Class.forName("com.megacrit.cardcrawl.monsters.city.BronzeAutomaton", false,
+                    CombatBoundaryTest.class.getClassLoader());
+            if (automatonClass.getDeclaredField("numTurns").getType() != int.class)
+                throw new AssertionError("BronzeAutomaton numTurns field type changed");
+        } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
         if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true)
                 || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true))
             throw new AssertionError("unknown selection must retain combat classification");

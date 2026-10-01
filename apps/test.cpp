@@ -1659,6 +1659,559 @@ int testSimulatorRelicFidelity() {
     return 0;
 }
 
+// Act 1 monster behavior audited against the pinned STS1 V2.3.4 reference
+// (#348): each case reproduces a move roll or monster turn where the simulator differed.
+int testMonsterAiJavaParity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "monster_ai_java_parity FAIL: " << msg << '\n';
+        return 1;
+    };
+    auto roll = [](int ascension, MonsterEncounter encounter, MonsterId id,
+                   MMID last, MMID beforeLast, int miscInfo, int r) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, ascension);
+        gc.curRoom = Room::MONSTER;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        Monster &m = bc.monsters.arr[0];
+        m.id = id;
+        m.miscInfo = miscInfo;
+        m.moveHistory[0] = last;
+        m.moveHistory[1] = beforeLast;
+        int monsterData = miscInfo;
+        return m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, r);
+    };
+
+    // Red Slaver repeats Stab after Entangle only on a roll of at least 55.
+    for (const int asc : {0, 20}) {
+        if (roll(asc, MonsterEncounter::RED_SLAVER, MonsterId::RED_SLAVER,
+                 MMID::RED_SLAVER_STAB, MMID::RED_SLAVER_SCRAPE, 1, 52) != MMID::RED_SLAVER_SCRAPE) {
+            return fail("Red Slaver stabbed on a roll below 55");
+        }
+    }
+
+    // A17 slavers never repeat Scrape/Rake; below A17 only a third repeat is blocked.
+    const struct { MonsterEncounter enc; MonsterId id; MMID repeat; MMID other; int misc; } slavers[] {
+        {MonsterEncounter::RED_SLAVER, MonsterId::RED_SLAVER, MMID::RED_SLAVER_SCRAPE, MMID::RED_SLAVER_STAB, 1},
+        {MonsterEncounter::BLUE_SLAVER, MonsterId::BLUE_SLAVER, MMID::BLUE_SLAVER_RAKE, MMID::BLUE_SLAVER_STAB, 0},
+    };
+    for (const auto &s : slavers) {
+        if (roll(17, s.enc, s.id, s.repeat, s.other, s.misc, 10) != s.other) {
+            return fail("A17 slaver repeated its debuff attack");
+        }
+        if (roll(16, s.enc, s.id, s.repeat, s.other, s.misc, 10) != s.repeat) {
+            return fail("A16 slaver did not repeat its debuff attack once");
+        }
+    }
+
+    // A18 Gremlin Nob: Skull Bash whenever neither of the last two moves was one.
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_BELLOW, MMID::INVALID, 0, 50) != MMID::GREMLIN_NOB_SKULL_BASH) {
+        return fail("A18 Nob did not Skull Bash after Bellow");
+    }
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_RUSH, MMID::GREMLIN_NOB_SKULL_BASH, 0, 50) != MMID::GREMLIN_NOB_RUSH) {
+        return fail("A18 Nob Skull Bashed with one in its last two moves");
+    }
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_RUSH, MMID::GREMLIN_NOB_RUSH, 0, 50) != MMID::GREMLIN_NOB_SKULL_BASH) {
+        return fail("A18 Nob did not Skull Bash after two Rushes");
+    }
+
+    // A17 Acid Slime (L) never uses Corrosive Spit three times in a row.
+    for (int r = 0; r < 40; ++r) {
+        if (roll(17, MonsterEncounter::LARGE_SLIME, MonsterId::ACID_SLIME_L,
+                 MMID::ACID_SLIME_L_CORROSIVE_SPIT, MMID::ACID_SLIME_L_CORROSIVE_SPIT, 0, r)
+                == MMID::ACID_SLIME_L_CORROSIVE_SPIT) {
+            return fail("A17 Acid Slime (L) used Corrosive Spit three times in a row");
+        }
+    }
+
+    // Monster turns (takeTurn) checked against the same reference.
+    auto battle = [](MonsterEncounter encounter, int ascension = 0) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, ascension);
+        gc.curRoom = Room::MONSTER;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        return bc;
+    };
+    auto drain = [](BattleContext &bc) {
+        while (!bc.actionQueue.isEmpty()) {
+            bc.actionQueue.popFront()(bc);
+        }
+    };
+
+    // Entangle marks the Red Slaver so it never entangles again.
+    {
+        BattleContext bc = battle(MonsterEncounter::RED_SLAVER);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::RED_SLAVER_ENTANGLE;
+        m.miscInfo = 0;
+        m.takeTurn(bc);
+        drain(bc);
+        m.moveHistory[0] = MMID::RED_SLAVER_STAB;
+        m.moveHistory[1] = MMID::RED_SLAVER_ENTANGLE;
+        int monsterData = m.miscInfo;
+        if (m.miscInfo != 1
+                || m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::RED_SLAVER_STAB) {
+            return fail("Red Slaver did not record its Entangle");
+        }
+    }
+
+    // Lagavulin waking on its third sleeping turn loses Metallicize.
+    {
+        BattleContext bc = battle(MonsterEncounter::LAGAVULIN);
+        Monster &m = bc.monsters.arr[0];
+        if (!m.hasStatus<MS::ASLEEP>() || m.getStatus<MS::METALLICIZE>() != 8) {
+            return fail("Lagavulin did not start asleep with Metallicize 8");
+        }
+        bc.turn = 2;
+        m.moveHistory[0] = MMID::LAGAVULIN_SLEEP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.hasStatus<MS::ASLEEP>() || m.getStatus<MS::METALLICIZE>() != 0
+                || !m.lastMove(MMID::LAGAVULIN_ATTACK)) {
+            return fail("Lagavulin kept its sleeping Metallicize after waking");
+        }
+    }
+
+    // Hexaghost Inferno upgrades Burns in the draw and discard piles (not the
+    // hand) and adds three upgraded Burns to the discard pile.
+    {
+        BattleContext bc = battle(MonsterEncounter::HEXAGHOST);
+        Monster &m = bc.monsters.arr[0];
+        bc.cards.drawPile.addToTop(CardInstance(CardId::BURN));
+        bc.cards.discardPile.clear();
+        bc.cards.discardPile.push_back(CardInstance(CardId::BURN));
+        bc.cards.hand[bc.cards.cardsInHand++] = CardInstance(CardId::BURN);
+        m.moveHistory[0] = MMID::HEXAGHOST_INFERNO;
+        m.takeTurn(bc);
+        drain(bc);
+        int discardBurns = 0;
+        for (const auto &c : bc.cards.discardPile) {
+            if (c.getId() != CardId::BURN) continue;
+            ++discardBurns;
+            if (!c.isUpgraded()) return fail("Inferno left a discard-pile Burn unupgraded");
+        }
+        for (const auto &c : bc.cards.drawPile) {
+            if (c.getId() == CardId::BURN && !c.isUpgraded()) {
+                return fail("Inferno left a draw-pile Burn unupgraded");
+            }
+        }
+        if (discardBurns != 4) return fail("Inferno did not add three Burns to the discard pile");
+        if (bc.cards.hand[bc.cards.cardsInHand - 1].isUpgraded()) {
+            return fail("Inferno upgraded a Burn in hand");
+        }
+    }
+
+    // ---- Act 2 (monsters.city) ----
+
+    // Mystic heals on the summed missing HP of living monsters (> 15 at A0),
+    // but not after healing on each of its last two moves.
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        Monster &mystic = bc.monsters.arr[1];
+        centurion.curHp = centurion.maxHp - 10;
+        mystic.curHp = mystic.maxHp - 10;
+        int monsterData = 0;
+        mystic.moveHistory[0] = MMID::MYSTIC_BUFF;
+        mystic.moveHistory[1] = MMID::MYSTIC_ATTACK_DEBUFF;
+        if (mystic.getMoveForRoll(bc, mystic.captureRollInputs(bc), monsterData, 10) != MMID::MYSTIC_HEAL) {
+            return fail("Mystic did not heal on 20 combined missing HP");
+        }
+        mystic.moveHistory[0] = MMID::MYSTIC_HEAL;
+        mystic.moveHistory[1] = MMID::MYSTIC_HEAL;
+        if (mystic.getMoveForRoll(bc, mystic.captureRollInputs(bc), monsterData, 10) == MMID::MYSTIC_HEAL) {
+            return fail("Mystic healed three times in a row");
+        }
+    }
+
+    // Centurion Defend gives a random other monster block, or itself if none.
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        bc.monsters.arr[1].curHp = 0;
+        bc.monsters.monstersAlive = 1;
+        const int blockBefore = centurion.block;
+        centurion.moveHistory[0] = MMID::CENTURION_DEFEND;
+        centurion.takeTurn(bc);
+        drain(bc);
+        if (centurion.block != blockBefore + 15) {
+            return fail("Centurion Defend did not fall back to blocking itself");
+        }
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        Monster &mystic = bc.monsters.arr[1];
+        const int blockBefore = mystic.block;
+        const auto counterBefore = bc.aiRng.counter;
+        centurion.moveHistory[0] = MMID::CENTURION_DEFEND;
+        centurion.takeTurn(bc);
+        drain(bc);
+        // One draw picks the block target, one rolls the next move.
+        if (mystic.block != blockBefore + 15 || bc.aiRng.counter != counterBefore + 2) {
+            return fail("Centurion Defend did not pick its target with aiRng");
+        }
+    }
+
+    // Book of Stabbing at A18 counts a single stab toward the multi-stab.
+    for (const int asc : {0, 18}) {
+        BattleContext bc = battle(MonsterEncounter::BOOK_OF_STABBING, asc);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::BOOK_OF_STABBING_MULTI_STAB;
+        m.moveHistory[1] = MMID::BOOK_OF_STABBING_MULTI_STAB;
+        int stabCount = 2;
+        const auto move = m.getMoveForRoll(bc, m.captureRollInputs(bc), stabCount, 50);
+        if (move != MMID::BOOK_OF_STABBING_SINGLE_STAB || stabCount != (asc >= 18 ? 3 : 2)) {
+            return fail("Book of Stabbing single stab miscounted at A" + std::to_string(asc));
+        }
+    }
+
+    // Gremlin Leader with one gremlin after a Stab re-rolls 0..80, and 80 rolls again.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 100000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.random(0, 80) == 80 && r.random(0, 80) < 50) seed = s;
+        }
+        if (seed == 0) return fail("no Gremlin Leader test seed");
+        BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER);
+        Monster &leader = bc.monsters.arr[3];
+        bc.monsters.arr[2].curHp = 0;
+        leader.moveHistory[0] = MMID::GREMLIN_LEADER_STAB;
+        leader.moveHistory[1] = MMID::GREMLIN_LEADER_ENCOURAGE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (leader.getMoveForRoll(bc, leader.captureRollInputs(bc), monsterData, 90) != MMID::GREMLIN_LEADER_RALLY
+                || bc.aiRng.counter != 2) {
+            return fail("Gremlin Leader did not re-roll a nested 80");
+        }
+    }
+
+    // Gremlin Leader Encourage gives minions 6 block below A18.
+    {
+        BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER, 3);
+        Monster &leader = bc.monsters.arr[3];
+        const int blockBefore = bc.monsters.arr[1].block;
+        leader.moveHistory[0] = MMID::GREMLIN_LEADER_ENCOURAGE;
+        leader.takeTurn(bc);
+        drain(bc);
+        if (bc.monsters.arr[1].block != blockBefore + 6) {
+            return fail("A3 Gremlin Leader Encourage did not give 6 block");
+        }
+    }
+
+    // Shelled Parasite: the re-roll after Fell decides the rest of the choice.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.random(20, 99) >= 60) seed = s;
+        }
+        if (seed == 0) return fail("no Shelled Parasite test seed");
+        BattleContext bc = battle(MonsterEncounter::SHELL_PARASITE);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::SHELLED_PARASITE_FELL;
+        m.moveHistory[1] = MMID::SHELLED_PARASITE_DOUBLE_STRIKE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 10) != MMID::SHELLED_PARASITE_SUCK) {
+            return fail("Shelled Parasite ignored its re-roll after Fell");
+        }
+    }
+
+    // A17 Snake Plant never Spores with Spores in either of its last two moves.
+    if (roll(17, MonsterEncounter::SNAKE_PLANT, MonsterId::SNAKE_PLANT,
+             MMID::SNAKE_PLANT_CHOMP, MMID::SNAKE_PLANT_ENFEEBLING_SPORES, 0, 80) != MMID::SNAKE_PLANT_CHOMP) {
+        return fail("A17 Snake Plant used Spores one move after Spores");
+    }
+
+    // A19 Bronze Automaton: the Boost after Hyper Beam does not advance the cycle.
+    {
+        BattleContext bc = battle(MonsterEncounter::AUTOMATON, 19);
+        Monster &m = bc.monsters.arr[1];
+        m.moveHistory[0] = MMID::BRONZE_AUTOMATON_BOOST;
+        m.moveHistory[1] = MMID::BRONZE_AUTOMATON_HYPER_BEAM;
+        m.miscInfo = 0;
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::BRONZE_AUTOMATON_FLAIL) || m.miscInfo != 0) {
+            return fail("A19 Automaton counted its post-Hyper Beam Boost");
+        }
+    }
+
+    // Champ Gloat gains 2 Strength at A0.
+    {
+        BattleContext bc = battle(MonsterEncounter::CHAMP);
+        Monster &m = bc.monsters.arr[0];
+        const int strengthBefore = m.strength;
+        m.moveHistory[0] = MMID::THE_CHAMP_GLOAT;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.strength != strengthBefore + 2) return fail("Champ Gloat Strength is not 2 at A0");
+    }
+
+    // Collector Buff block is 15 below A9; Mega Debuff applies 5 at A19.
+    {
+        BattleContext bc = battle(MonsterEncounter::COLLECTOR, 4);
+        Monster &m = bc.monsters.arr[2];
+        const int blockBefore = m.block;
+        m.moveHistory[0] = MMID::THE_COLLECTOR_BUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.block != blockBefore + 15) return fail("A4 Collector Buff block is not 15");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::COLLECTOR, 19);
+        Monster &m = bc.monsters.arr[2];
+        m.moveHistory[0] = MMID::THE_COLLECTOR_MEGA_DEBUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        if (bc.player.getStatus<PS::WEAK>() != 5 || bc.player.getStatus<PS::FRAIL>() != 5) {
+            return fail("A19 Collector Mega Debuff is not 5");
+        }
+    }
+
+    // A17 Romeo repeats Cross Slash once before Agonizing Slash.
+    {
+        BattleContext bc = battle(MonsterEncounter::MASKED_BANDITS_EVENT, 17);
+        Monster &m = bc.monsters.arr[1];
+        m.moveHistory[0] = MMID::ROMEO_CROSS_SLASH;
+        m.moveHistory[1] = MMID::ROMEO_AGONIZING_SLASH;
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::ROMEO_CROSS_SLASH)) return fail("A17 Romeo did not repeat Cross Slash");
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::ROMEO_AGONIZING_SLASH)) return fail("A17 Romeo used Cross Slash three times");
+    }
+
+    // Torch Head consumes a discarded HP roll before its real one.
+    {
+        Random actual(7), expected(7);
+        Monster m;
+        m.id = MonsterId::TORCH_HEAD;
+        m.initHp(actual, 0);
+        expected.random(38, 40);
+        const int hp = expected.random(38, 40);
+        if (m.curHp != hp || actual.counter != expected.counter) {
+            return fail("Torch Head HP did not discard the constructor roll");
+        }
+    }
+
+    // HP ranges.
+    if (monsterHpRange[static_cast<int>(MonsterId::BEAR)][0][1] != 42
+            || monsterHpRange[static_cast<int>(MonsterId::CENTURION)][1][0] != 78) {
+        return fail("Bear or Centurion HP range differs from the game");
+    }
+
+    // ---- Act 3 (monsters.beyond) ----
+
+    // Spire Growth falls through to Constrict after two Quick Tackles.
+    if (roll(0, MonsterEncounter::SPIRE_GROWTH, MonsterId::SPIRE_GROWTH,
+             MMID::SPIRE_GROWTH_QUICK_TACKLE, MMID::SPIRE_GROWTH_QUICK_TACKLE, 0, 30)
+            != MMID::SPIRE_GROWTH_CONSTRICT) {
+        return fail("Spire Growth did not Constrict after two Quick Tackles");
+    }
+
+    // Writhing Mass after Flail on a high roll re-rolls 0..69.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            const int v = r.random(0, 69);
+            if (v >= 40) seed = s;
+        }
+        if (seed == 0) return fail("no Writhing Mass test seed");
+        BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
+        m.moveHistory[1] = MMID::WRITHING_MASS_WITHER;
+        m.miscInfo = 1;
+        bc.aiRng = Random(seed);
+        int monsterData = 1;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::WRITHING_MASS_MULTI_STRIKE) {
+            return fail("Writhing Mass did not re-roll after Flail");
+        }
+    }
+
+    // Writhing Mass Flail block equals its damage (15 at A0).
+    {
+        BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
+        Monster &m = bc.monsters.arr[0];
+        const int blockBefore = m.block;
+        m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.block != blockBefore + 15) return fail("Writhing Mass Flail block is not 15 at A0");
+    }
+
+    // Nemesis may Scythe again once a different move came in between.
+    if (roll(0, MonsterEncounter::NEMESIS, MonsterId::NEMESIS,
+             MMID::NEMESIS_ATTACK, MMID::NEMESIS_SCYTHE, 0, 10) != MMID::NEMESIS_SCYTHE) {
+        return fail("Nemesis Scythe was blocked two moves after the last Scythe");
+    }
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.randomBoolean()) seed = s;
+        }
+        if (seed == 0) return fail("no Nemesis test seed");
+        BattleContext bc = battle(MonsterEncounter::NEMESIS);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::NEMESIS_DEBUFF;
+        m.moveHistory[1] = MMID::NEMESIS_SCYTHE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::NEMESIS_SCYTHE) {
+            return fail("Nemesis high-roll Scythe was blocked two moves after the last Scythe");
+        }
+    }
+
+    // Nemesis Debuff adds 3 Burns below A18.
+    {
+        BattleContext bc = battle(MonsterEncounter::NEMESIS, 3);
+        Monster &m = bc.monsters.arr[0];
+        bc.cards.discardPile.clear();
+        m.moveHistory[0] = MMID::NEMESIS_DEBUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        int burns = 0;
+        for (const auto &c : bc.cards.discardPile) burns += c.getId() == CardId::BURN;
+        if (burns != 3) return fail("A3 Nemesis Debuff did not add 3 Burns");
+    }
+
+    // Reptomancer can summon with three daggers alive; at A18 it fills the one free slot.
+    {
+        for (const int asc : {0, 18}) {
+            BattleContext bc = battle(MonsterEncounter::REPTOMANCER, asc);
+            Monster &repto = bc.monsters.arr[2];
+            bc.monsters.arr[0] = Monster();
+            bc.monsters.arr[0].construct(bc, MonsterId::DAGGER, 0);
+            ++bc.monsters.monstersAlive;
+            repto.moveHistory[0] = MMID::REPTOMANCER_SNAKE_STRIKE;
+            repto.moveHistory[1] = MMID::REPTOMANCER_BIG_BITE;
+            int monsterData = 0;
+            if (repto.getMoveForRoll(bc, repto.captureRollInputs(bc), monsterData, 50) != MMID::REPTOMANCER_SUMMON) {
+                return fail("Reptomancer did not summon with three daggers alive");
+            }
+            repto.moveHistory[0] = MMID::REPTOMANCER_SUMMON;
+            repto.takeTurn(bc);
+            drain(bc);
+            if (bc.monsters.monstersAlive != 5 || bc.monsters.arr[3].id != MonsterId::DAGGER
+                    || !bc.monsters.arr[3].isAlive()) {
+                return fail("Reptomancer did not fill the last free dagger slot");
+            }
+        }
+    }
+
+    // Darkling Chomp hits twice; Nip hits for its rolled damage.
+    {
+        BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS);
+        Monster &m = bc.monsters.arr[0];
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.moveHistory[0] = MMID::DARKLING_CHOMP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != 16) return fail("Darkling Chomp did not hit 8 twice");
+        m.moveHistory[0] = MMID::DARKLING_CHOMP;
+        const auto intent = m.getMoveBaseDamage(bc);
+        if (intent.damage != 8 || intent.attackCount != 2) return fail("Darkling Chomp intent is not 8x2");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS, 2);
+        Monster &m = bc.monsters.arr[0];
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.moveHistory[0] = MMID::DARKLING_NIP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != m.miscInfo || m.miscInfo < 9 || m.miscInfo > 13) {
+            return fail("A2 Darkling Nip did not hit for its rolled damage");
+        }
+    }
+
+    // A18 Giant Head counts down one turn sooner.
+    {
+        BattleContext bc = battle(MonsterEncounter::GIANT_HEAD, 18);
+        Monster &m = bc.monsters.arr[0];
+        bc.turn = 2;
+        m.moveHistory[0] = MMID::GIANT_HEAD_COUNT;
+        m.moveHistory[1] = MMID::GIANT_HEAD_GLARE;
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 10) != MMID::GIANT_HEAD_IT_IS_TIME) {
+            return fail("A18 Giant Head did not start It Is Time on turn 4");
+        }
+        bc.turn = 3;
+        m.moveHistory[0] = MMID::GIANT_HEAD_IT_IS_TIME;
+        if (m.getMoveBaseDamage(bc).damage != 40) return fail("A18 Giant Head first It Is Time is not 40");
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != 40) return fail("A18 Giant Head first It Is Time did not hit for 40");
+    }
+
+    // Deca and Donu end each turn with a move roll (one aiRng draw).
+    {
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA);
+        Monster &donu = bc.monsters.arr[1];
+        donu.moveHistory[0] = MMID::DONU_CIRCLE_OF_POWER;
+        const auto counterBefore = bc.aiRng.counter;
+        donu.takeTurn(bc);
+        drain(bc);
+        if (bc.aiRng.counter != counterBefore + 1 || !donu.lastMove(MMID::DONU_BEAM)) {
+            return fail("Donu did not roll at the end of its turn");
+        }
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA);
+        Monster &deca = bc.monsters.arr[0];
+        for (const MMID move : {MMID::DECA_BEAM, MMID::DECA_SQUARE_OF_PROTECTION}) {
+            deca.moveHistory[0] = move;
+            const auto counterBefore = bc.aiRng.counter;
+            deca.takeTurn(bc);
+            drain(bc);
+            if (bc.aiRng.counter != counterBefore + 1) return fail("Deca did not roll at the end of its turn");
+        }
+    }
+
+    // Awakened One A9 HP is exactly 320; Jaw Worm Horde Bellow block is 6 at A0.
+    if (monsterHpRange[static_cast<int>(MonsterId::AWAKENED_ONE)][1][0] != 320) {
+        return fail("Awakened One A9 HP range differs from the game");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::JAW_WORM_HORDE);
+        if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
+    }
+
+    // ---- Act 4 (monsters.ending) ----
+
+    // A18 Spire Spear Burn Strike puts two Burns on top of the draw pile.
+    {
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 18);
+        Monster &spear = bc.monsters.arr[1];
+        const int drawBefore = bc.cards.drawPile.size();
+        spear.moveHistory[0] = MMID::SPIRE_SPEAR_BURN_STRIKE;
+        spear.takeTurn(bc);
+        drain(bc);
+        const auto &pile = bc.cards.drawPile;
+        if (pile.size() != drawBefore + 2 || pile[pile.size() - 1].getId() != CardId::BURN
+                || pile[pile.size() - 2].getId() != CardId::BURN) {
+            return fail("A18 Spire Spear did not put two Burns on top of the draw pile");
+        }
+    }
+
+    std::cout << "monster_ai_java_parity PASS\n";
+    return 0;
+}
+
 // Silver escape valuation (#370): a Smoke Bomb escape forfeits rewards.
 int testSilverEscapePenalty() {
     auto fail = [&](const std::string &msg) {
@@ -4410,6 +4963,8 @@ int main(int argc, const char* argv[]) {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {
         return testSimulatorRelicFidelity();
+    } else if (command == "monster_ai_java_parity") {
+        return testMonsterAiJavaParity();
     } else if (command == "relic_reward_sapphire") {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
