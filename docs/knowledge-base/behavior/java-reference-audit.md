@@ -172,6 +172,54 @@ cycle early. The flag is 1 exactly when Java's `numTurns` is 3 or 4 and the
 current move is Flail or Boost. **Confirmed by inspection** of both sides; not
 reproduced live.
 
+## Act 3 audit
+
+Scope: the same as Act 2, for every `monsters.beyond` class, plus the
+hard-mode Jaw Worm used by the Act 3 Jaw Worm Horde.
+
+### Mismatches, all fixed
+
+All are covered by `monster_ai_java_parity`.
+
+| Mechanic | Java reference | Native before the fix | Reach |
+|---|---|---|---|
+| Spire Growth Constrict | after two Quick Tackles on a roll below 50, falls through to Constrict when the player is not Constricted | went to Smash | A0+ |
+| Writhing Mass re-roll | after Flail on a roll of 70 or more, `getMove` recurses on 0–69 | returned Wither, with no `aiRng` draw | A0+ |
+| Writhing Mass Flail block | equals the Flail damage (15, 16 at A2) | 16, 18 at A2 | A0+ |
+| Nemesis Scythe | `scytheCooldown` is 2 on use and drops by 1 per roll, so Scythe is blocked only on the move right after a Scythe | blocked when Scythe was either of the last two moves | A0+ |
+| Nemesis Debuff | 3 Burns, 5 at A18 | 5 from A3 | A3–17 |
+| Reptomancer Summon | allowed while at most three other monsters live; fills only the free dagger slots (one at A18 with three daggers alive) | at most two daggers, and the summon helper assumed it could always place every dagger | A0+ |
+| Darkling Chomp | two hits of 8 (9 at A2) | one hit, in both `takeTurn` and the intent-damage table | A0+ |
+| Darkling Nip | the rolled `nipDmg` (7–11, or 9–13 at A2) | added another 2 at A2+ | A2+ |
+| Giant Head at A18 | pre-battle lowers `count` by one, so It Is Time starts on turn 4 and its damage ramps one turn sooner | ignored A18 | A18+ |
+| Deca and Donu | every turn ends with `RollMoveAction`, one `aiRng` draw | no draw | A0+ (`aiRng` alignment only) |
+| Awakened One HP | 320 at A9 | 300–320 | A9+ |
+| Jaw Worm Horde | hard-mode Bellow pre-battle: block 6 (9 at A17), Strength 3/4/5 | block 5 at A0–1 | A0–1 |
+
+### Parity, by inspection
+
+- **Move selection (`getMove`):** Orb Walker; the Exploder, Repulsor and
+  Spiker shapes; the Maw (Nom hits `(turn+1)/2`, because `turnCount` starts at
+  1); Darkling (the odd-slot Chomp restriction and both re-rolls); the Writhing
+  Mass's other branches; Giant Head below A18; Reptomancer's re-rolls; Dagger;
+  Time Eater (Haste and both re-rolls); Awakened One in both phases; Transient;
+  and the first moves of Deca and Donu.
+- **Turns and constants:** Orb Walker Laser (one Burn into the draw pile and
+  one into the discard pile), Exploder, Repulsor, Spiker, Darkling Harden and
+  Reincarnate, Spire Growth, Transient, Writhing Mass Strike, Multi-Strike and
+  Wither, Giant Head, Reptomancer, Dagger, Time Eater, Awakened One, and Deca
+  and Donu.
+- **Pre-battle powers:** Orb Walker Strength Up 3/5, Spiker Thorns 3/4/7,
+  Transient Fading 5/6 and Shifting, Awakened One (Regenerate, Curiosity, and
+  Strength 2 at A4), Deca and Donu Artifact 2/3, Time Warp, Giant Head Slow, and
+  Writhing Mass Reactive and Malleable.
+- **HP and `monsterHpRng` use:** every other Act 3 range. The discarded rolls
+  of Orb Walker and Reptomancer, the single roll of Dagger, and the Darkling Nip
+  roll all match.
+- **Nemesis Intangible (Inference):** Java applies Intangible 1 using its
+  "just applied" end-of-round rule; native applies 2 and decrements every
+  round. Both last through the player's next turn.
+
 ## Ambiguous or not yet inspected
 
 - The Gremlin Wizard and Shield Gremlin native turns do not check
@@ -188,12 +236,14 @@ reproduced live.
 
 ## Recommendation
 
-Acts 1 and 2 yielded 21 simulator defects, 11 of which reach A0, plus one
+Acts 1–3 yielded 33 simulator defects, 19 of which reach A0, plus one
 live-import mapping defect. Static auditing remains high-yield, so continue
 with:
-- Act 3 (`monsters.beyond`) and the Act 4 and ending monsters;
+- Act 4 (the Corrupt Heart, Spire Shield and Spire Spear);
 - the Gremlin Wizard and Shield Gremlin escape gap listed above;
 - the Automaton inspector mapping.
 
-Ascension-gated branches remain the densest source of defects. Every confirmed
-mismatch still needs a focused test before it is fixed.
+Then use dynamic differential captures for ordering-sensitive interactions
+that bytecode reading cannot settle. Ascension-gated branches remain the
+densest source of defects. Every confirmed mismatch still needs a focused test
+before it is fixed.
