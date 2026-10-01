@@ -3637,6 +3637,23 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "vwinrefreshcrashdiag") {
+        // Diagnostic-only: one source seed, production vwinrefreshgen semantics,
+        // stop after MAX_BRANCHES sibling branches; flushed phase markers.
+        if (argc != 8) {
+            std::cerr << "usage: one_combat vwinrefreshcrashdiag N_SEEDS OUT_PREFIX SEED TEACHER.json MAX_BRANCHES MARKERS.log\n";
+            return 2;
+        }
+        try {
+            if (std::stoi(argv[2]) != 1) throw std::runtime_error("vwinrefreshcrashdiag: N_SEEDS must be 1");
+            const int maxBranches = std::stoi(argv[6]);
+            if (maxBranches < 1) throw std::runtime_error("vwinrefreshcrashdiag: MAX_BRANCHES must be positive");
+            vwinRefreshGen(1, 10000, 0, argv[3], std::stoll(argv[4]), argv[5], 1, 100,
+                           maxBranches, argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "bossheadroom347gen") {
         if (argc != 8) {
             std::cerr << "usage: one_combat bossheadroom347gen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";

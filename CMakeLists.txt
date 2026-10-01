@@ -416,6 +416,8 @@ add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge
 add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
 add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)
+add_test(NAME violence_large_draw_pile COMMAND $<TARGET_FILE:unit-test> violence_large_draw_pile)
+add_test(NAME stasis_large_pile COMMAND $<TARGET_FILE:unit-test> stasis_large_pile)
 add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
 add_test(NAME silver_wire_state COMMAND $<TARGET_FILE:unit-test> silver_wire_state)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
@@ -573,7 +575,9 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_selection_failure battle_equality card_pile card_pile_engine silver_searcher silver_wire_state
+    simhealth_selection_failure battle_equality card_pile card_pile_engine violence_large_draw_pile
+    stasis_large_pile
+    silver_searcher silver_wire_state
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
     e2c_observer_scope combat_knowledge silver_semantic_action runic_dome_lifecycle
