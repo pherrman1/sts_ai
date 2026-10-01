@@ -33,6 +33,7 @@ struct LiveOocCandidateScore {
 // semantic identities; primitive bits are diagnostics and never live commands.
 struct LiveOocDecision {
     bool supported = false;
+    bool trivialRootBypass = false;
     std::string reason;
     std::string policy;
     std::vector<LiveOocCandidateScore> candidates;

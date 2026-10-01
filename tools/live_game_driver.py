@@ -646,6 +646,20 @@ class InspectorSnapshot:
                 raise DriverError("OOC OK evaluator has no candidate summaries")
             keys = []
             require_mcts_stats = policy == "mcts_ctm"
+            singleton_no_search = require_mcts_stats and _mapping(evaluator.get("model")).get("selection") == "sole_legal_action"
+            if singleton_no_search:
+                model = _mapping(evaluator.get("model"))
+                candidate = _mapping(summaries[0])
+                if (evaluator.get("mode") != "native_pass_through" or len(summaries) != 1
+                        or evaluator.get("valueSemantics") != "forced_no_search"
+                        or model.get("selection") != "sole_legal_action"
+                        or type(model.get("simulations")) is not int or model["simulations"] != 0
+                        or type(candidate.get("visits")) is not int or candidate["visits"] != 0
+                        or candidate.get("visitShare") != 0 or candidate.get("q") != 0
+                        or candidate.get("prior") != 1
+                        or "valueDistribution" in evaluator or "endpointHpDistribution" in evaluator
+                        or "valueDistribution" in candidate or "endpointHp" in candidate):
+                    raise DriverError("malformed OOC sole-action no-search contract")
             total_visits = 0
             total_share = 0.0
             for candidate in summaries:
@@ -674,7 +688,7 @@ class InspectorSnapshot:
                 max_visits = max(candidate["visits"] for candidate in summaries)
                 if selected["visits"] != max_visits:
                     raise DriverError("OOC selected candidate is not the visit winner")
-            if require_mcts_stats and (total_visits <= 0 or abs(total_share - 1.0) > 1e-6):
+            if require_mcts_stats and not singleton_no_search and (total_visits <= 0 or abs(total_share - 1.0) > 1e-6):
                 raise DriverError("OOC MCTS root visits/shares do not form a complete root distribution")
             if selected.get("liveAction") != evaluator.get("selectedLiveAction"):
                 raise DriverError("OOC selected action disagrees with candidate summary")

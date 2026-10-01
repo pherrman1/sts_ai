@@ -520,7 +520,15 @@ json oocResponse(const one_combat::advisor::Request &request,
                         {"terminalDeaths", d.bins[0]}, {"terminalVictories", d.bins[21]},
                         {"normalization", "share_of_own_samples"}};
                 };
-                evaluator["valueSemantics"] = decision.policy == "mcts_ctm"
+                if (decision.trivialRootBypass) {
+                    if (decision.policy != "mcts_ctm" || decision.candidates.size() != 1
+                            || decision.selectedIndex != 0 || decision.candidates[0].visits != 0
+                            || decision.candidates[0].visitShare != 0 || decision.valueDistribution
+                            || decision.hpDistribution)
+                        throw std::invalid_argument("invalid sole-root no-search result");
+                    evaluator["mode"] = "native_pass_through";
+                }
+                evaluator["valueSemantics"] = decision.trivialRootBypass ? "forced_no_search" : decision.policy == "mcts_ctm"
                     ? "mean_backed_up_value_0_1" : "raw_v4_action_score";
                 if (decision.valueDistribution)
                     evaluator["valueDistribution"] = distributionJson(*decision.valueDistribution);
@@ -579,8 +587,9 @@ json oocResponse(const one_combat::advisor::Request &request,
                 if (policy.name() == std::string("mcts_ctm")) {
                     evaluator["model"] = {{"kind", "ooc_mcts_ctm"},
                                            {"prior", "ooc_strategic_tok_v4"},
-                                           {"leaf", "v_win_compact_tree"}, {"simulations", 512},
-                                           {"selection", "visits_then_q"}, {"identity", identity}};
+                                           {"leaf", "v_win_compact_tree"}, {"simulations", decision.trivialRootBypass ? 0 : 512},
+                                           {"selection", decision.trivialRootBypass ? "sole_legal_action" : "visits_then_q"}, {"identity", identity}};
+                    if (decision.trivialRootBypass) evaluator["model"]["configuredSimulations"] = 512;
                 } else {
                     evaluator["model"] = {{"kind", "ooc_v4_q"}, {"identity", identity}};
                 }

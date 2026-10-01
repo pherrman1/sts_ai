@@ -641,6 +641,31 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(second_evaluator["status"], "UNSUPPORTED", second)
         self.assertEqual(second_evaluator["reason"], "CARD_GROUP_NOT_REVEALED")
 
+    def test_empty_rewards_singleton_is_explicit_no_search(self):
+        observation = copy.deepcopy(self.fixtures["rewards_without_cards"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "combat_reward"
+        ooc["details"] = dict(gold=[], cardRewards=[], relics=[], potions=[], emeraldKey=False, sapphireKey=False)
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="skip", index=0, group=0), liveAction=dict(kind="proceed"))]
+        response, = self.run_rows([observation], policy="mcts")
+        self.assertIn("evaluators", response, response)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["mode"], "native_pass_through")
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        self.assertEqual(evaluator["model"]["simulations"], 0)
+        self.assertEqual(evaluator["model"]["configuredSimulations"], 512)
+        self.assertEqual(evaluator["model"]["selection"], "sole_legal_action")
+        self.assertNotIn("valueDistribution", evaluator)
+        self.assertNotIn("endpointHpDistribution", evaluator)
+        candidate, = evaluator["candidateSummaries"]
+        self.assertEqual(candidate["visits"], 0)
+        self.assertEqual(candidate["visitShare"], 0)
+        self.assertNotIn("valueDistribution", candidate)
+        self.assertNotIn("endpointHp", candidate)
+        self.assertEqual(candidate["liveAction"], dict(kind="proceed"))
+        self.assertEqual(evaluator["selectedLiveAction"], candidate["liveAction"])
+
     def test_hidden_card_group_collects_free_potion_without_model(self):
         obs = copy.deepcopy(self.fixtures["rewards_without_cards"])
         ooc = obs["ooc"]

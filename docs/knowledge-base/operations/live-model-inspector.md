@@ -794,6 +794,12 @@ field distinguishes three cases:
   percentages nor accumulated MCTS values. No clamping is applied.
 - Native pass-through choices: `forced_no_search`. Their placeholder Q is
   not an evaluation; the UI says **Forced**.
+- A validated MCTS root with one legal action reports
+  `forced_no_search` and `model.selection=sole_legal_action`: zero actual
+  simulations, visits and sample share, with its configured budget recorded
+  separately. It carries no value
+  or HP sample distributions. The driver accepts this explicit singleton
+  contract; searched roots still require a complete visit distribution.
 
 The live MCTS provider enables observational `captureValueDistribution`.
 `ooc_value_distribution_v1` retains fixed-size aggregates at the root and
@@ -1050,11 +1056,12 @@ move only when its concrete `takeTurn` executes. It survives the later battle
 callback and includes epoch/generation in the observation. Raw queued intent,
 private move history and live RNG are omitted.
 
-The supported slice is a single ordinary Act-1 Jaw Worm or Cultist with a
-checked safe card/relic/potion/power domain. Unknown lifecycle, replacements,
-intermediate hidden rerolls, direct overrides, missing initial history,
-intent queries such as Spot Weakness and generators remain fail-closed. Save
-resume during an unobserved combat does not manufacture earlier provenance.
+The supported roster and public knowledge contract are listed in the combat
+import section above, including stable audited groups, Spot Weakness predicates
+and small Acid Slime's deterministic known-next proof. Unknown lifecycle,
+replacements, unaudited rerolls or overrides, missing initial history and
+unqualified generators remain fail-closed. Save resume during an unobserved
+combat does not manufacture earlier provenance.
 Native fixtures check deferred-roll public-input/history parity, including
 roll-time HP that differs from current HP. These fixed fixtures do not qualify
 all encounters or establish live whole-fight/gameplay quality.

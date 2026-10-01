@@ -491,6 +491,41 @@ class LiveGameDriverTest(unittest.TestCase):
 
 
 class OocDriverTest(unittest.TestCase):
+    def test_empty_rewards_sole_action_has_no_search_samples(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": [], "can_proceed": True,
+                  "room_phase": "COMPLETE", "ready_for_command": True}
+        for defect in (None, "marker", "multiple", "visits", "budget", "distribution", "action", "semantics", "share"):
+            with self.subTest(defect=defect), tempfile.TemporaryDirectory() as directory:
+                action = {"kind": "proceed"}
+                candidate = {"semanticKey": "sole:proceed", "q": 0, "visits": 0,
+                             "visitShare": 0, "prior": 1, "liveAction": action}
+                path = ooc_inspector_file(directory, screen, "OK", selectedSemanticKey="sole:proceed",
+                    selectedLiveAction=action, candidateSummaries=[candidate], mode="native_pass_through",
+                    valueSemantics="forced_no_search", model={"selection": "sole_legal_action", "simulations": 0,
+                                                               "configuredSimulations": 512})
+                raw = json.loads(path.read_text())
+                raw["observation"]["ooc"]["screen"] = "combat_reward"
+                evaluator = raw["response"]["advisor"]["evaluators"][0]
+                if defect == "marker": evaluator["model"].pop("selection")
+                elif defect == "multiple": evaluator["candidateSummaries"].append({**candidate, "semanticKey": "other"})
+                elif defect == "visits": evaluator["candidateSummaries"][0]["visits"] = 1
+                elif defect == "budget": evaluator["model"]["simulations"] = 512
+                elif defect == "distribution": evaluator["valueDistribution"] = {"count": 0}
+                elif defect == "action": evaluator["selectedLiveAction"] = {"kind": "skip"}
+                elif defect == "semantics": evaluator["valueSemantics"] = "mean_backed_up_value_0_1"
+                elif defect == "share": evaluator["candidateSummaries"][0]["visitShare"] = 1
+                path.write_text(json.dumps(raw))
+                if defect is not None:
+                    with self.assertRaises(DriverError): InspectorSnapshot.load(path).ooc_evaluator("mcts_ctm")
+                    continue
+                client = FakeClient(screen, ["proceed"])
+                driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                                TraceWriter(Path(directory) / "trace"), max_steps=1)
+                driver.strict_ooc = True
+                asyncio.run(driver.run())
+                self.assertEqual([call for call in client.calls if call[0] == "proceed"], [("proceed", {})])
+                self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+
     def test_startup_waits_for_menu_without_fixed_delay_or_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             menu = {"screen_type": "MAIN_MENU", "in_game": False, "ready_for_command": False}

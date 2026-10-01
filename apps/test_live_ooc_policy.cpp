@@ -325,17 +325,24 @@ int main(int argc, char **argv) {
         unusedWin.ok = unusedFloor.ok = true;
         LiveOocMctsPolicy forcedPolicy(*model, std::make_shared<NoCombatSample>(), &unusedWin, &unusedFloor);
         const auto forcedDecision = forcedPolicy.score(forcedMap, forcedPath, 0);
-        require(forcedDecision.supported && forcedDecision.selectedIndex == 0
+        require(forcedDecision.supported && forcedDecision.trivialRootBypass && forcedDecision.selectedIndex == 0
             && forcedDecision.candidates.size() == 1
             && forcedDecision.candidates[0].prior == 1.0
-            && forcedDecision.candidates[0].visitShare == 1.0
+            && forcedDecision.candidates[0].visitShare == 0.0
             && forcedDecision.candidates[0].visits == 0
-            && forcedDecision.valueDistribution && forcedDecision.valueDistribution->count == 0
-            && forcedDecision.candidates[0].valueDistribution
-            && forcedDecision.candidates[0].valueDistribution->count == 0
+            && !forcedDecision.valueDistribution && !forcedDecision.hpDistribution
+            && !forcedDecision.candidates[0].valueDistribution && !forcedDecision.candidates[0].hpDistribution
             && forcedBefore == test::oocStateFingerprint(forcedMap),
             "live advisor returns sole map action without model sampling or mutation: "
                 + forcedDecision.reason + " candidates=" + std::to_string(forcedDecision.candidates.size()));
+        auto emptyRewards = forcedMap;
+        emptyRewards.screenState = ScreenState::REWARDS;
+        emptyRewards.info.rewardsContainer.clear();
+        const auto emptyDecision = forcedPolicy.score(emptyRewards, forcedPath, 0);
+        require(emptyDecision.supported && emptyDecision.trivialRootBypass
+                && emptyDecision.candidates.size() == 1 && emptyDecision.candidates[0].visits == 0
+                && emptyDecision.candidates[0].visitShare == 0 && !emptyDecision.valueDistribution,
+                "empty rewards must return an explicit unsearched sole action");
 
         GameContext shop = gc;
         shop.screenState = ScreenState::SHOP_ROOM;
