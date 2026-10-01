@@ -2594,6 +2594,120 @@ static int testViolenceLargeDrawPile() {
     return 0;
 }
 
+// Bronze Orb Stasis picks one card of the highest rarity present from the draw
+// pile (or the discard pile when the draw pile is empty). Like Violence, the
+// candidate list must not have the old 64-entry fixed capacity.
+static std::string stasisDigest(const std::vector<CardId> &pile, bool fromDiscard,
+                                int *expectedPick = nullptr) {
+    GameContext gc(CharacterClass::IRONCLAD, 13001491, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    bc.cards.drawPile.clear();
+    bc.cards.discardPile.clear();
+    std::vector<CardInstance> cards;
+    std::int16_t uid = 2000;
+    for (const CardId id : pile) {
+        CardInstance c(id);
+        c.uniqueId = uid++;
+        cards.push_back(c);
+    }
+    if (fromDiscard) {
+        for (const auto &c : cards) bc.cards.discardPile.push_back(c);
+    } else {
+        bc.cards.drawPile.assignConcrete(cards);
+    }
+    if (expectedPick) {
+        // Single-id target sets keep source order under the stable sort, so
+        // the pick is the k-th target card for k drawn from a copied RNG.
+        Random rng = bc.cardRandomRng;
+        const CardRarity target = getCardRarity(pile[*expectedPick]);
+        int targets = 0;
+        for (const CardId id : pile) targets += getCardRarity(id) == target;
+        int k = rng.random(targets - 1);
+        for (int i = 0; i < static_cast<int>(pile.size()); ++i) {
+            if (getCardRarity(pile[i]) == target && k-- == 0) { *expectedPick = i; break; }
+        }
+    }
+    bc.monsters.arr[0].stasisAction(bc);
+    const CardInstance taken = bc.cards.stasisCards[0];
+    std::ostringstream o;
+    o << "taken=" << taken.uniqueId << ':' << static_cast<int>(taken.id);
+    // The remaining pile must be the original order minus the taken card.
+    std::vector<std::int16_t> remaining;
+    if (fromDiscard) for (const auto &c : bc.cards.discardPile) remaining.push_back(c.uniqueId);
+    else for (const auto &c : bc.cards.drawPile) remaining.push_back(c.uniqueId);
+    std::int16_t expectedUid = 2000;
+    for (const auto id : remaining) {
+        if (expectedUid == taken.uniqueId) ++expectedUid;
+        if (id != expectedUid++) return "pile-order-changed";
+    }
+    o << ";left=" << remaining.size() << ";card=" << bc.cardRandomRng.counter;
+    return o.str();
+}
+
+static int testStasisLargePile() {
+    using C = CardId;
+    std::vector<C> mixed;  // rares of several ids among uncommons/commons/basics
+    const C rares[] = {C::BLUDGEON, C::IMPERVIOUS, C::OFFERING, C::DEMON_FORM, C::REAPER};
+    const C uncommons[] = {C::CARNAGE, C::UPPERCUT, C::WHIRLWIND, C::SHOCKWAVE};
+    const C commons[] = {C::CLEAVE, C::IRON_WAVE, C::ANGER, C::POMMEL_STRIKE};
+    for (int i = 0; i < 40; ++i)
+        mixed.push_back(i % 8 == 3 ? rares[i % 5] : i % 3 == 0 ? uncommons[i % 4]
+                        : i % 3 == 1 ? commons[i % 4] : C::STRIKE_RED);
+    std::vector<C> uncommonTop;  // no rares: uncommons of several ids
+    for (int i = 0; i < 50; ++i) uncommonTop.push_back(i % 2 ? uncommons[i % 4] : commons[i % 4]);
+    std::vector<C> common64;     // exactly the old capacity of commons
+    for (int i = 0; i < 64; ++i) common64.push_back(commons[i % 4]);
+    std::vector<C> basics(20, C::STRIKE_RED);  // no C/U/R: uniform random index
+    std::vector<C> discardMix(uncommonTop.begin(), uncommonTop.begin() + 30);
+
+    // Golden digests captured from the pre-fix fixed_list implementation.
+    const std::tuple<const std::vector<C> *, bool, const char *> golden[] = {
+        {&mixed, false, "taken=2003:107;left=39;card=1"},
+        {&uncommonTop, false, "taken=2047:300;left=49;card=1"},
+        {&common64, false, "taken=2013:198;left=63;card=1"},
+        {&basics, false, "taken=2011:321;left=19;card=1"},
+        {&discardMix, true, "taken=2017:349;left=29;card=1"},
+    };
+    bool goldenOk = true;
+    for (const auto &[pile, discard, expected] : golden) {
+        const std::string d = stasisDigest(*pile, discard);
+        if (d != expected) {
+            std::cout << "stasis_large_pile: FAIL golden " << d << '\n';
+            goldenOk = false;
+        }
+    }
+    if (!goldenOk) return 1;
+    // More than 64 cards of the selected rarity: safe, and the pick matches
+    // an independent computation of the same rule.
+    for (const int targets : {65, 66, 100, 200}) {
+        for (const bool discard : {false, true}) {
+            std::vector<C> pile;  // `targets` rares with 10 commons interleaved
+            int commonsLeft = 10;
+            for (int i = 0; i < targets + 10; ++i) {
+                const bool common = commonsLeft > 0 && i % 7 == 5;
+                commonsLeft -= common;
+                pile.push_back(common ? C::CLEAVE : C::DEMON_FORM);
+            }
+            int first = -1;
+            for (int i = 0; i < static_cast<int>(pile.size()); ++i)
+                if (pile[i] == C::DEMON_FORM) { first = i; break; }
+            int pick = first;
+            const std::string d = stasisDigest(pile, discard, &pick);
+            const std::string want = "taken=" + std::to_string(2000 + pick) + ':'
+                + std::to_string(static_cast<int>(C::DEMON_FORM)) + ";left="
+                + std::to_string(pile.size() - 1) + ';';
+            if (d.rfind(want, 0) != 0) {
+                std::cout << "stasis_large_pile: FAIL targets=" << targets << " discard="
+                          << discard << ' ' << d << " want " << want << '\n';
+                return 1;
+            }
+        }
+    }
+    std::cout << "stasis_large_pile: PASS\n";
+    return 0;
+}
+
 static BattleContext playerNormalFixture(std::uint64_t seed, int energy) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -4346,6 +4460,8 @@ int main(int argc, const char* argv[]) {
         return silverProfile(sims, stride);
     } else if (command == "violence_large_draw_pile") {
         return testViolenceLargeDrawPile();
+    } else if (command == "stasis_large_pile") {
+        return testStasisLargePile();
     } else if (command == "card_pile") {
         return testCardPile();
     } else if (command == "battle_equality") {

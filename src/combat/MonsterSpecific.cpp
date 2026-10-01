@@ -7,6 +7,7 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include <vector>
 
 using namespace sts;
 
@@ -3473,7 +3474,10 @@ int stasisHelper(Random &rng, ForwardIt begin, ForwardIt end) {
         return rng.random(groupSize-1);
     }
 
-    fixed_list<StasisPair, CardManager::MAX_GROUP_SIZE> idxList;
+    // The draw and discard piles are unbounded, so the candidate list must not
+    // have a fixed capacity.
+    std::vector<StasisPair> idxList;
+    idxList.reserve(cardRarityCounts[static_cast<int>(targetRarity)]);
 
     int i = 0;
     for (auto it = begin; it != end; ++it) {
@@ -3486,7 +3490,7 @@ int stasisHelper(Random &rng, ForwardIt begin, ForwardIt end) {
 
     std::stable_sort(idxList.begin(), idxList.end(), [](auto p1, auto p2) { return p1.idOrder < p2.idOrder; } );
 
-    const auto idxListSelectIdx = rng.random(idxList.size()-1);
+    const auto idxListSelectIdx = rng.random(static_cast<int>(idxList.size())-1);
     return idxList[idxListSelectIdx].groupIdx;
 }
 
