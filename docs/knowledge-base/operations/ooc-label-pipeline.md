@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-01 for the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-01 for mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -419,6 +419,88 @@ non-timing files with the sink off/on and again with it on:
 python3 tools/vwin_refresh_contract.py OFF.manifest.json --compare ON.manifest.json --allow-sink-toggle
 python3 tools/vwin_refresh_contract.py ON.manifest.json --compare REPEAT_ON.manifest.json
 ```
+
+### Mixed-producer v_win refresh corpus
+
+`tools/vwin_refresh_corpus.py` validates a read-only index of existing producer
+bundles. It calls the unchanged `validate_bundle()` for every component, then
+requires complete, valid source trajectories and an exact, globally unique
+source-seed cohort. It never generates data, concatenates tables, rewrites
+bundles or presents multiple producers as one. An incomplete full cohort must
+fail; validating an explicitly declared subset establishes only that subset.
+
+The `vwin_refresh_corpus_v1` JSON index has exactly four fields:
+
+- `schemaVersion`: `"vwin_refresh_corpus_v1"`.
+- `sourceSeeds`: a nonempty array of distinct, nonnegative integer source seeds
+  (expand any intended range explicitly).
+- `allowedProducers`: a nonempty array of objects with `producerGitSha`,
+  `producerExecutableSha256`, `teacherManifestSha256`, `teacherId` and
+  `teacherManifest` (path to the original, hash-bound teacher JSON). These four
+  identity fields form one allowed tuple, preventing arbitrary recombination.
+- `components`: a nonempty array of `{ "manifest": "old/seed.manifest.json",
+  "sha256": "<manifest SHA-256>" }` objects.
+
+All index paths resolve relative to the index file; absolute paths also work.
+Each table is found beside its own component manifest using the existing bundle
+suffix contract. The producer's recorded `teacherPath` is retained as historical
+provenance, while the index's hash-checked `teacherManifest` path locates the
+teacher. Thus an evidence directory can move without editing old manifests.
+
+The teacher file must equal the embedded `combatTeacher`, and `policy` must
+equal its `ooc_policy`. The existing OOC teacher validator enforces native Silver
+and exact10k search configuration; the corpus also requires project-fair RNG
+and binds teacher ID, Git SHA, executable SHA and
+`environment.STS_EXECUTABLE_GIT_SHA` to the explicitly allowed identity.
+Only after those checks are the four teacher binding fields removed for
+semantic comparison. These are the exact differences observed between the old
+and repaired #334 recovery freezes. All other teacher fields, including full
+environment, model paths/hashes and OOC flags/parameters, must match, even in
+allowed producers with no components yet. No wildcard normalization is exposed.
+
+Component comparison retains feature schema/header/hash, split, sampling/K/cap,
+parity rule/rate, Ascension, DECISION configuration/label/encoding/join semantics,
+all table headers (including the combat target suffix) and unknown manifest
+metadata. Only producer/teacher identity/path fields, output hashes and known
+per-bundle observations (`integrity`, `perType`, `branchRows`, seed start/count,
+parity checks/failures and DECISION row/size/trajectory measurements) are excluded.
+The existing bundle schema defines MAP labels through runout `finalWon` and
+keeps `WIN_RAW` diagnostic-only; the corpus introduces no new training targets.
+Missing sampling, teacher or policy specifications fail closed.
+
+```python
+from tools.vwin_refresh_corpus import validate_corpus
+
+corpus = validate_corpus("evidence/corpus.json")
+for table in corpus.tables("map.csv"):
+    # Carry this component alongside any loaded rows and branch identifiers.
+    source_manifest = table.component.manifest_path
+    producer = table.component.producer
+    csv_path, csv_sha256 = table.path, table.sha256
+```
+
+`corpus.manifests()` enumerates resolved manifest paths; `corpus.components`
+retains manifest hashes, original producer identities, teacher paths/hashes,
+source seeds and table hashes. `tables()` yields existing paths with their
+component attached and skips an optional table absent from the corpus. Keep
+artifacts immutable during consumption: validation is a snapshot, not a file
+lock. Revalidate after changing any input.
+
+```text
+python3 tools/vwin_refresh_corpus.py evidence/corpus.json
+python3 -m unittest tools.test_vwin_refresh_corpus tools.test_vwin_refresh_contract -q
+```
+
+Synthetic tests cover mixed identities, different directories, relocation,
+cohort failures, strict component rejection, provenance hashes, semantic
+mismatches and the limited teacher-binding normalization. CTest registers
+`vwin_refresh_corpus_selftest` as `core;tooling`. This API does not modify frozen
+external analysis/training scripts; those consumers must explicitly adopt it
+and retain component provenance. Passing this validator establishes artifact
+integrity and compatibility, not gameplay quality, salvage safety or permission
+to continue generation.
+
+### Producer diagnostics and generation
 
 `vwinrefreshcrashdiag 1 OUT_PREFIX SEED TEACHER.json MAX_BRANCHES MARKERS.log`
 is a diagnostic-only, seed-guarded variant of `vwinrefreshgen` for one source
