@@ -220,6 +220,39 @@ All are covered by `monster_ai_java_parity`.
   "just applied" end-of-round rule; native applies 2 and decrements every
   round. Both last through the player's next turn.
 
+## Act 4 audit
+
+Scope: the same as Act 2, for every `monsters.ending` class (Corrupt Heart,
+Spire Shield, Spire Spear).
+
+### Mismatch, fixed
+
+Covered by `monster_ai_java_parity`.
+
+| Mechanic | Java reference | Native before the fix | Reach |
+|---|---|---|---|
+| Spire Spear Burn Strike at A18 | 2 Burns on top of the draw pile: `MakeTempCardInDrawPileAction` with `randomSpot` and `toBottom` false calls `addToTop` | added no Burns: `Actions::MakeTempCardInDrawPile` with `shuffleInto=false` was an unimplemented `todo` | A18+ |
+
+That action branch is now implemented by
+`CardManager::createTempCardOnDrawPileTop`. The Spire Spear was its only
+caller.
+
+### Parity, by inspection
+
+- **Corrupt Heart:** Debilitate first. Then, every three moves, a random Blood
+  Shots or Echo, the other one, and Buff, with the same `aiRng` draws.
+  Constants: Debilitate (2/2/2 and five status cards), Buff (clears negative
+  Strength, +2, then Artifact 2, Beat of Death, Painful Stabs, Strength 10,
+  Strength 50), Blood Shots 2×12/15, Echo 40/45, Invincible 300/200, Beat of
+  Death 1/2, and HP.
+- **Spire Shield:** the `moveCount % 3` cycle matches the native
+  `lastMoveBefore` transitions. Constants: Bash with Strength −1 (the
+  orb/Focus branch cannot trigger without orbs), Fortify 30, Smash 34/38 with
+  99 block at A18, Surrounded, Artifact 1/2, and HP.
+- **Spire Spear:** the same cycle with Burn Strike first. Constants: Burn
+  Strike 2×5/6, Piercer +2 Strength to all monsters, Skewer 3/4×10, Artifact
+  1/2, and HP.
+
 ## Ambiguous or not yet inspected
 
 - The Gremlin Wizard and Shield Gremlin native turns do not check
@@ -236,14 +269,17 @@ All are covered by `monster_ai_java_parity`.
 
 ## Recommendation
 
-Acts 1–3 yielded 33 simulator defects, 19 of which reach A0, plus one
-live-import mapping defect. Static auditing remains high-yield, so continue
-with:
-- Act 4 (the Corrupt Heart, Spire Shield and Spire Spear);
-- the Gremlin Wizard and Shield Gremlin escape gap listed above;
-- the Automaton inspector mapping.
+The monster audit of Acts 1–4 is complete. It found 34 simulator defects, 19 of
+which reach A0, plus one live-import mapping defect. Every simulator defect has
+a focused test in `monster_ai_java_parity`.
 
-Then use dynamic differential captures for ordering-sensitive interactions
-that bytecode reading cannot settle. Ascension-gated branches remain the
-densest source of defects. Every confirmed mismatch still needs a focused test
-before it is fixed.
+Remaining static targets:
+- the Gremlin Wizard and Shield Gremlin escape gap;
+- the Automaton inspector mapping;
+- the Inference rows above.
+
+Beyond monster AI and constants, invest in dynamic differential captures
+([differential correctness](../evaluation/differential-correctness.md)) for
+ordering-sensitive interactions such as action-queue order, powers, and relic
+triggers, which bytecode reading cannot settle cheaply. Consider a static
+audit of event and relic behavior only if differential captures point there.
