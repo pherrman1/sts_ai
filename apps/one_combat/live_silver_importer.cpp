@@ -566,6 +566,128 @@ SilverRootImportResult importSilverRootLegacy(const json &observation) {
     return result;
 }
 
+// Audited public-history slice: single ordinary act-one Cultist/Jaw Worm.
+// This deliberately excludes intent queries and generators whose search
+// continuations could query Spot Weakness or create an unaudited card.
+std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStateWire &wire) {
+    const auto found=combat.find("runicDomeKnowledge");
+    if(found==combat.end() || !found->is_object()) return "silver_runic_dome_missing_history";
+    const auto &k=*found;
+    const auto integer=[&](const char *name, std::int64_t lo, std::int64_t hi) {
+        return k.contains(name) && k.at(name).is_number_integer() && k.at(name)>=lo && k.at(name)<=hi;
+    };
+    if(!integer("schemaVersion",1,1) || !k.contains("complete") || !k.at("complete").is_boolean())
+        return "silver_runic_dome_history_schema";
+    if(!k.at("complete").get<bool>()) return "silver_runic_dome_incomplete_history";
+    if(!integer("epoch",1,9007199254740991LL) || !integer("completedTurns",0,9999)
+            || !integer("generation",1,19999) || !integer("slot",0,0) || !integer("pendingMoveRolls",1,1)
+            || !integer("rollHp",1,999) || !integer("rollMaxHp",1,999)
+            || !k.contains("monsterId") || !k.at("monsterId").is_string()
+            || !k.contains("executedMoves") || !k.at("executedMoves").is_array())
+        return "silver_runic_dome_history_schema";
+    const int completed=k.at("completedTurns").get<int>();
+    const auto &moves=k.at("executedMoves");
+    const auto monsterId=k.at("monsterId").get<std::string>();
+    const bool jaw=monsterId=="JawWorm", cultist=monsterId=="Cultist";
+    if(wire.act!=1 || wire.monsterCount!=1 || wire.monstersAlive!=1 || !(jaw || cultist)
+            || wire.monsters[0].idx!=0 || wire.monsters[0].halfDead || wire.monsters[0].isEscapingB
+            || wire.monsters[0].id!=static_cast<int>(jaw?sts::MonsterId::JAW_WORM:sts::MonsterId::CULTIST)
+            || wire.encounter!=static_cast<int>(jaw?sts::MonsterEncounter::JAW_WORM:sts::MonsterEncounter::CULTIST))
+        return "silver_runic_dome_encounter_domain";
+    if(completed!=wire.turn || k.at("generation")!=2*completed+1
+            || moves.size()!=static_cast<std::size_t>(std::min(completed,2))
+            || k.at("rollHp")>k.at("rollMaxHp") || k.at("rollHp")<wire.monsters[0].curHp
+            || k.at("rollMaxHp")!=wire.monsters[0].maxHp)
+        return "silver_runic_dome_history_gap";
+    auto &m=wire.monsters[0];
+    m.moveHistory.fill(static_cast<std::int16_t>(sts::MonsterMoveId::INVALID));
+    for(std::size_t i=0;i<moves.size();++i) {
+        if(!moves[i].is_number_integer() || moves[i]<1 || moves[i]>3)
+            return "silver_runic_dome_history_schema";
+        const int move=moves[i].get<int>();
+        const int execution=completed-static_cast<int>(moves.size())+static_cast<int>(i);
+        if((execution==0 && move!=(jaw?1:3)) || (cultist && execution>0 && move!=1))
+            return "silver_runic_dome_history_gap";
+        const auto native=live_silver::monsterMove(monsterId,move);
+        if(!native) return "silver_runic_dome_history_schema";
+        m.moveHistory[moves.size()-1-i]=static_cast<std::int16_t>(*native);
+    }
+    // A consumed potion can leave a generator power after its source card
+    // vanished. Check typed native state as well as the public power names.
+    const auto &player=wire.player;
+    const int metallicize=static_cast<int>(PlayerStatus::METALLICIZE);
+    const std::uint64_t allowed0=metallicize<64 ? (1ULL << (metallicize%64)) : 0;
+    const std::uint32_t allowed1=metallicize>=64 ? (1U << (metallicize%64)) : 0;
+    if((player.statusBits0 & ~allowed0) || (player.statusBits1 & ~allowed1) || player.justAppliedBits
+            || player.orbSlots || player.stance || player.focus || player.combustHpLoss
+            || player.devaFormEnergyPerTurn || player.echoFormCardsDoubled || player.panacheCounter
+            || std::any_of(player.bombs.begin(),player.bombs.end(),[](auto value){return value!=0;}))
+        return "silver_runic_dome_player_power_domain";
+    for(const auto &[status,amount]:player.statusMap)
+        if(status!=metallicize) return "silver_runic_dome_player_power_domain";
+    for(const auto &power:combat.value("playerPowers",json::array())) {
+        const auto id=power.value("id",std::string());
+        if(id!="Strength" && id!="Dexterity" && id!="Artifact" && id!="Metallicize")
+            return "silver_runic_dome_player_power_domain";
+    }
+    std::uint64_t monsterAllowed=(1ULL<<static_cast<int>(sts::MonsterStatus::ARTIFACT))
+        | (1ULL<<static_cast<int>(sts::MonsterStatus::STRENGTH))
+        | (1ULL<<static_cast<int>(sts::MonsterStatus::WEAK))
+        | (1ULL<<static_cast<int>(sts::MonsterStatus::VULNERABLE)) | (1ULL<<62) | (1ULL<<63);
+    if(cultist) monsterAllowed|=(1ULL<<static_cast<int>(sts::MonsterStatus::RITUAL)) | (1ULL<<61);
+    if((m.statusBits & ~monsterAllowed) || m.uniquePower1 || (jaw && m.uniquePower0))
+        return "silver_runic_dome_monster_power_domain";
+    for(std::size_t i=1;i<m.smallPowers.size();++i)
+        if(m.smallPowers[i]) return "silver_runic_dome_monster_power_domain";
+    const auto cardAllowed=[](std::int16_t raw) {
+        switch(static_cast<sts::CardId>(raw)) {
+            case sts::CardId::INVALID: case sts::CardId::STRIKE_RED: case sts::CardId::DEFEND_RED:
+            case sts::CardId::BASH: case sts::CardId::ANGER: case sts::CardId::CLEAVE:
+            case sts::CardId::CLOTHESLINE: case sts::CardId::HEADBUTT: case sts::CardId::IRON_WAVE:
+            case sts::CardId::POMMEL_STRIKE: case sts::CardId::SHRUG_IT_OFF: case sts::CardId::THUNDERCLAP:
+            case sts::CardId::TWIN_STRIKE: case sts::CardId::PERFECTED_STRIKE: case sts::CardId::SWORD_BOOMERANG:
+            case sts::CardId::HEAVY_BLADE: case sts::CardId::BODY_SLAM: case sts::CardId::INFLAME:
+            case sts::CardId::METALLICIZE: case sts::CardId::WOUND: return true;
+            default:return false;
+        }
+    };
+    for(const auto *cards:{&wire.hand,&wire.drawPile.knownTop,&wire.drawPile.knownBottom,&wire.drawPile.unknown,
+                          &wire.discardPile.unknown,&wire.exhaustPile.unknown,&wire.limbo})
+        for(const auto &c:*cards) if(!cardAllowed(c.id)) return "silver_runic_dome_card_domain";
+    if(!cardAllowed(wire.curCardQueueItem.card.id)) return "silver_runic_dome_card_domain";
+    for(const auto &c:wire.pendingCardQueue) if(!cardAllowed(c.card.id)) return "silver_runic_dome_card_domain";
+    for(const auto &c:wire.cardSelect.cards) if(!cardAllowed(c)) return "silver_runic_dome_card_domain";
+    bool owned=false;
+    for(const auto &relic:combat.at("relics")) {
+        sts::RelicId id;
+        if(!parseEnumId(relic,"id",id)) return "silver_runic_dome_relic_domain";
+        switch(id) {
+            case sts::RelicId::RUNIC_DOME: owned=true; break;
+            case sts::RelicId::BURNING_BLOOD: case sts::RelicId::VAJRA: case sts::RelicId::ANCHOR:
+            case sts::RelicId::BAG_OF_PREPARATION: case sts::RelicId::ORICHALCUM: break;
+            default:return "silver_runic_dome_relic_domain";
+        }
+    }
+    if(!owned) return "silver_runic_dome_relic_domain";
+    for(const auto raw:wire.potions) {
+        switch(static_cast<sts::Potion>(raw)) {
+            case sts::Potion::EMPTY_POTION_SLOT: case sts::Potion::FIRE_POTION: case sts::Potion::BLOCK_POTION:
+            case sts::Potion::STRENGTH_POTION: case sts::Potion::DEXTERITY_POTION: case sts::Potion::WEAK_POTION:
+            case sts::Potion::FEAR_POTION: case sts::Potion::EXPLOSIVE_POTION: case sts::Potion::ENERGY_POTION: break;
+            default:return "silver_runic_dome_potion_domain";
+        }
+    }
+    m.miscInfo=0; m.pendingMoveRolls=1; m.pendingDirectMoveChoice=0;
+    auto &inputs=m.pendingRollInputs;
+    inputs.curHp=k.at("rollHp").get<int>(); inputs.maxHp=k.at("rollMaxHp").get<int>();
+    inputs.knightCurHp=inputs.curHp; inputs.knightMaxHp=inputs.maxHp; inputs.knightAlive=true;
+    inputs.monsterTurnNumber=std::max(1,completed); inputs.miscInfo=0;
+    inputs.aliveCount=1; inputs.monstersAlive=1;
+    inputs.playerConstricted=false; inputs.asleep=false; inputs.halfDead=false;
+    wire.intentsHidden=true;
+    return {};
+}
+
 SilverRootImportResult importSilverRootGeneric(const json &observation,
                                                SilverImportContext &context) {
     SilverRootImportResult result;
@@ -585,6 +707,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (combatIt == root.end() || !combatIt->is_object()) return unsupported("silver_combat_missing");
     const auto &combat = *combatIt;
     if (hasForbiddenRngField(combat)) return unsupported("silver_rng_field");
+    if (combat.contains("pendingCardQueueError"))
+        return unsupported("silver_pending_card_queue_unrepresentable");
     const auto selectionIt = combat.find("cardSelect");
     const bool cardSelect = selectionIt != combat.end() && selectionIt->is_object();
     // A stable combat selection is still combat when its action has no native
@@ -641,7 +765,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         return unsupported("silver_unmapped_group_state");
 
     bool runicDome = combat.value("runicDome", false);
-    if (runicDome) return unsupported("silver_hidden_information_required");
+
     const bool frozenEye = combat.value("frozenEye", false);
     const auto getPlayer = [&]() -> const json * {
         const auto it = combat.find("player");
@@ -987,6 +1111,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             if (m.miscInfo == 1)
                 m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::MINION_LEADER);
         }
+        if (runicDome) {
+            for(const char *hidden:{"nextMove","moveHistory","previousMove","intent","intentDamage","uniquePower0","uniquePower1"})
+                if(item.contains(hidden)) return unsupported("silver_runic_dome_hidden_field");
+            if(m.miscInfo!=0) return unsupported("silver_runic_dome_hidden_field");
+        } else {
         int nextMove = item.value("nextMove", 0);
         // Java exposes its history oldest-to-newest as move bytes.  Native
         // Monster stores current-to-previous MonsterMoveId values.  Translate
@@ -1013,6 +1142,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 m.moveHistory[1] = static_cast<std::int16_t>(*oldMove);
             }
         } else if (m.curHp > 0 && !item.value("dead", false)) return unsupported("silver_unmapped_move");
+        }
         if (item.contains("powers")) {
             if (!item.at("powers").is_array()) return unsupported("silver_unmapped_monster_power");
             for (const auto &power : item.at("powers")) {
@@ -1236,8 +1366,26 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             return unsupported("silver_card_queue_item");
         for (const auto &item : *pendingIt) {
             if (!item.is_object()) return unsupported("silver_card_queue_item");
+            // Observed pending items replace replayed work, so incomplete or
+            // coerced flags must never silently become defaults.
+            for (const char *flag : {"isEndTurn", "triggerOnUse", "ignoreEnergyTotal", "freeToPlay",
+                                    "randomTarget", "autoplay", "purgeOnUse", "exhaustOnUse"})
+                if (!item.contains(flag) || !item.at(flag).is_boolean())
+                    return unsupported("silver_card_queue_item");
+            for (const char *value : {"target", "energyOnUse", "regretCardCount"})
+                if (!item.contains(value) || !item.at(value).is_number_integer())
+                    return unsupported("silver_card_queue_item");
+            if (!item.contains("card") || item.at("target") < 0 || item.at("target") > 4
+                    || item.at("energyOnUse") < 0 || item.at("energyOnUse") > 999
+                    || item.at("regretCardCount") < 0 || item.at("regretCardCount") > 10
+                    || item.at("isEndTurn").get<bool>() != item.at("card").is_null())
+                return unsupported("silver_card_queue_item");
             silver_bridge::CardQueueItemWire parsed;
             if (const auto reason = parseQueueItem(item, parsed); !reason.empty()) return unsupported(reason);
+            if (!parsed.isEndTurn && !parsed.randomTarget
+                    && sts::CardInstance(static_cast<sts::CardId>(parsed.card.id), parsed.card.upgraded).requiresTarget()
+                    && (parsed.target >= wire.monsterCount || wire.monsters[parsed.target].idx < 0))
+                return unsupported("silver_card_queue_item");
             wire.pendingCardQueue.push_back(parsed);
         }
         wire.pendingCardQueueObserved = true;
@@ -1301,6 +1449,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     });
     wire.version = silver_bridge::BattleStateWire::kVersion; wire.valid = true;
     wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = false;
+    if(runicDome) {
+        if(const auto reason=importBoundedRunicDome(combat,wire); !reason.empty()) return unsupported(reason);
+    }
     wire.isolatedSearchSeed = fnv1a(entry + ":silver-live-v2");
     wire.observedGeneration = observation.value("sequence", 0ULL);
     return (result.ok = true, result);

@@ -12,13 +12,18 @@ java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.LiveOocCaptur
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.LiveEventCaptureTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.MatchGameCaptureTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.QuestionRoomHistoryTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PublicHistoryRecoveryTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.QuestionRoomObserverTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.RelicOfferRecorderTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.OocOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatBoundaryTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PendingCardQueueCaptureTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.RunicDomeTrackerTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PotionOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatHpOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.TargetLabelsTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.SilverBudgetTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.AdvisorConfigTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.GraphExportSnapshotTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.MapOverlayTest \
   "$root/../../tests/fixtures/live_combat_boundaries/fresh-a0.jsonl.gz"

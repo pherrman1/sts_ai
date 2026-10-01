@@ -33,9 +33,9 @@ final class LiveOocCapture {
     static final SeenRelicOffers seenRelicOffers = new SeenRelicOffers();
     static final CombatClassHistory combatClassHistory = new CombatClassHistory();
 
-    // A seed alone does not identify a saved run. Only an identity-checked
-    // BaseMod checkpoint may restore this ledger; legacy TSVs are preserved
-    // on disk but are never used to qualify a different save or rollback.
+    // A seed alone does not identify a saved run. Restore an identity-checked
+    // checkpoint or a complete joined public metric history; legacy TSVs are
+    // never used to qualify a different save or rollback.
     static final class CombatClassHistory {
         private Object player, lastGroup;
         private long seed;
@@ -159,6 +159,20 @@ final class LiveOocCapture {
             for (Map<String,Object> entry : entries) copy.add(new LinkedHashMap<>(entry));
             return copy;
         }
+        boolean recoverLegacy(Object currentPlayer, long currentSeed, int currentAct, int floor,
+                QuestionRoomHistory path, List<?> metrics, List<Integer> completedFloors) {
+            if (complete || !RelicOfferRecorder.canRecoverLegacyCombat()) return false;
+            List<Map<String,Object>> recovered=PublicHistoryRecovery.combats(path,metrics,currentAct,floor);
+            if(recovered==null) return false;
+            // Observations made since attaching must agree with the migration.
+            // In particular, do not discard a currently pending combat.
+            for(Map<String,Object> observed:entries) if(!recovered.contains(observed)) return false;
+            RelicOfferRecorder.SaveData checkpoint=new RelicOfferRecorder.SaveData();
+            checkpoint.combatAct=currentAct;checkpoint.combatComplete=true;checkpoint.combatEntries=recovered;
+            if(!restoreCheckpoint(currentPlayer,currentSeed,currentAct,floor,checkpoint,completedFloors)) return false;
+            RelicOfferRecorder.finishLegacyCombatRecovery();
+            return true;
+        }
     }
 
     static void observeCombatRoom(AbstractRoom room) {
@@ -193,7 +207,10 @@ final class LiveOocCapture {
                 room.event == null ? null : room.event.getClass().getSimpleName());
     }
 
-    static void invalidateCombatRoomHistory() { combatClassHistory.invalidate(); }
+    static void invalidateCombatRoomHistory() {
+        combatClassHistory.invalidate();
+        RelicOfferRecorder.finishLegacyCombatRecovery();
+    }
 
     // Public offers qualify only from fresh observation or an exact save
     // checkpoint. Legacy saves cannot recover previously unobserved offers.
@@ -481,6 +498,18 @@ final class LiveOocCapture {
                 CardCrawlGame.metricData == null ? null : CardCrawlGame.metricData.path_per_floor,
                 AbstractDungeon.actNum, AbstractDungeon.floorNum,
                 QuestionRoomHistory.roomOutcome(AbstractDungeon.getCurrRoom().getClass().getSimpleName()));
+        if (questions.complete && CardCrawlGame.metricData != null) {
+            combatClassHistory.recoverLegacy(AbstractDungeon.player, Settings.seed,
+                    AbstractDungeon.actNum, AbstractDungeon.floorNum, questions,
+                    CardCrawlGame.metricData.damage_taken, currentActCombatFloors);
+            p.put("combatHistory", combatClassHistory.snapshot());
+            p.put("combatHistoryComplete", combatClassHistory.completeFor(currentActCombatFloors));
+            PublicHistoryRecovery.annotateJuzu(questions.outcomes,
+                    CardCrawlGame.metricData.relics_obtained, CardCrawlGame.metricData.event_choices,
+                    AbstractDungeon.player.hasRelic("Juzu Bracelet"), AbstractDungeon.floorNum);
+            QuestionRoomObserver.annotate(AbstractDungeon.player,Settings.seed,
+                    AbstractDungeon.floorNum,questions.outcomes);
+        }
         p.put("questionOutcomes", questions.outcomes);
         p.put("questionHistoryComplete", exact && questions.complete
                 && questions.outcomes.size() == actVisits[2]);
@@ -510,6 +539,8 @@ final class LiveOocCapture {
         for (AbstractRelic relic : AbstractDungeon.player.relics)
             if (!acquiredRelics.contains(relic.relicId)) acquiredRelics.add(relic.relicId);
         p.put("acquiredRelics", acquiredRelics);
+        p.put("knownRelicOffers", PublicHistoryRecovery.bossOffers(CardCrawlGame.metricData == null
+                ? null : CardCrawlGame.metricData.boss_relics));
         // Vanilla metrics omit offered-but-skipped relics. The in-session
         // observer fills these only after a fresh-run boundary has been seen.
         p.put("seenRelics", new ArrayList<String>());

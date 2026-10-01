@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "live_ooc_state.h"
 
 #include <algorithm>
@@ -13,6 +14,7 @@
 #include "sim/search/OocSemanticAction.h"
 
 namespace one_combat::advisor {
+
 namespace {
 using J = nlohmann::json;
 using namespace sts;
@@ -359,6 +361,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.potionCapacity = source.projected.potionCapacity;
     root.potions = source.projected.potions;
     root.relics = source.projected.relics;
+    root.wingBootsCharges = source.projected.wingBootsCharges;
     root.deck = source.projected.deck;
     root.blueKey = source.projected.blueKey;
     root.greenKey = source.projected.greenKey;
@@ -400,7 +403,10 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         0, 1000, "current-act event visits");
     const bool questionHistoryComplete = publicState.contains("questionHistoryComplete")
         ? boolean(publicState, "questionHistoryComplete") : false;
-    bool questionEventObserved=false;
+    bool juzuWasOwned=root.relics.has(RelicId::JUZU_BRACELET);
+    for (const auto &relic : array(publicState, "acquiredRelics", 181))
+        juzuWasOwned |= id<RelicId>(relic,RelicId::INVALID)==RelicId::JUZU_BRACELET;
+    bool questionMonsterChanceAmbiguous=false;
     if(questionHistoryComplete) {
         const auto &outcomes=array(publicState,"questionOutcomes",100);
         require(outcomes.size()==static_cast<std::size_t>(eventVisits),
@@ -420,11 +426,24 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
             else if(name=="TREASURE")outcome=Room::TREASURE;
             else if(name=="EVENT")outcome=Room::EVENT;
             require(outcome!=Room::INVALID,"unknown public question outcome");
-            questionEventObserved|=outcome==Room::EVENT;
+            const bool ownershipKnown=entry.contains("juzuOwnedAtEntry");
+            const bool juzuAtEntry=ownershipKnown?boolean(entry,"juzuOwnedAtEntry"):juzuWasOwned;
+            require(!(ownershipKnown && juzuAtEntry && !juzuWasOwned),
+                    "Juzu ownership absent from public relic history");
+            require(!(outcome==Room::MONSTER && ownershipKnown && juzuAtEntry),
+                    "monster question outcome contradicts Juzu ownership");
+            const bool conversionKnown=entry.contains("juzuConverted");
+            const bool converted=conversionKnown?boolean(entry,"juzuConverted"):false;
+            require(!conversionKnown || ownershipKnown,"Juzu conversion lacks observed ownership");
+            require(!converted || (juzuAtEntry && outcome==Room::EVENT),
+                    "Juzu conversion contradicts public room state");
+            if(outcome==Room::MONSTER || converted) questionMonsterChanceAmbiguous=false;
+            else if(outcome==Room::EVENT && juzuAtEntry && !conversionKnown) questionMonsterChanceAmbiguous=true;
             // Match GameContext::getEventRoomOutcomeHelper, including
             // repeated float additions. Tiny Chest's forced TREASURE takes
-            // these same branches; Juzu's ambiguous EVENT is rejected below.
-            root.monsterChance=outcome==Room::MONSTER?0.1f:root.monsterChance+0.1f;
+            // these same branches. An ambiguous Juzu EVENT stays unqualified
+            // until a later observed MONSTER resets its only unknown counter.
+            root.monsterChance=(outcome==Room::MONSTER || converted)?0.1f:root.monsterChance+0.1f;
             root.shopChance=outcome==Room::SHOP?0.03f:root.shopChance+0.03f;
             root.treasureChance=outcome==Room::TREASURE?0.02f:root.treasureChance+0.02f;
             if(floor==root.floorNum)root.curRoom=outcome;
@@ -505,12 +524,16 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
                           &root.shopRelicPool, &root.bossRelicPool})
             pool->erase(std::remove(pool->begin(), pool->end(), relic), pool->end());
     };
-    bool juzuWasOwned=root.relics.has(RelicId::JUZU_BRACELET);
     for (const auto &relic : array(publicState, "acquiredRelics", 181)) {
         const auto relicId=id<RelicId>(relic,RelicId::INVALID);
-        juzuWasOwned|=relicId==RelicId::JUZU_BRACELET;
         eraseRelic(relicId);
     }
+    // Vanilla persists selected and unselected boss offers independently of
+    // our complete observer checkpoint. These exact exclusions do not qualify
+    // missing ordinary/shop offers or widen random-relic branch support.
+    if(publicState.contains("knownRelicOffers"))
+        for(const auto &relic:array(publicState,"knownRelicOffers",181))
+            eraseRelic(id<RelicId>(relic,RelicId::INVALID));
     const bool seenRelicsComplete = boolean(publicState, "seenRelicsComplete");
     require(array(publicState, "seenRelics", 181).size() <= 181,
         "seen relic history too large");
@@ -589,12 +612,13 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     result.state = std::move(root);
     result.path = source.path;
     result.currentActEventVisits = eventVisits;
-    result.questionHistoryComplete=questionHistoryComplete && !(juzuWasOwned && questionEventObserved);
+    result.questionHistoryComplete=questionHistoryComplete && !questionMonsterChanceAmbiguous;
+    result.mapHistoryComplete=result.questionHistoryComplete && seenRelicsComplete;
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
     // relic branches still require complete public offer history.
     if (source.projected.screenState == ScreenState::MAP_SCREEN
-            && source.projected.wingBootsCharges > 0) {
+            && source.projected.wingBootsCharges > 0 && !liveOocWingBootsEnabled()) {
         result.supported = false;
         result.reason = "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active";
     } else if (!combatHistoryComplete) {
@@ -603,10 +627,11 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     } else if (!questionHistoryComplete && eventVisits > 0) {
         result.supported = false;
         result.reason = "PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED";
-    } else if(juzuWasOwned && questionEventObserved) {
+    } else if(questionMonsterChanceAmbiguous) {
         // A Juzu-converted monster resets monsterChance, whereas a genuine
         // event increments it. Public resolved symbols cannot distinguish
-        // these cases, including a Juzu relic later given away to N'loth.
+        // these cases while Juzu was owned; later known monster resets can
+        // make the currently relevant counter exact again.
         result.supported=false;
         result.reason="PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED:Juzu_Bracelet";
     } else if (canDrawUnseenRelic) {
@@ -634,7 +659,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             // the frozen value models do not encode remaining charges.
             const bool boundedWinged = reason
                     == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
-                && (screenName != "map" || (o.contains("details") && o.at("details").is_object()
+                && (liveOocWingBootsEnabled() || screenName != "map" || (o.contains("details") && o.at("details").is_object()
                     && o.at("details").value("mechanicalTransition",std::string())=="boss_map"));
             // A normal combat reward can expose gold alongside an unopened
             // card group. Defer this one support boundary until the complete
@@ -704,7 +729,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             if (r == RelicId::WING_BOOTS) {
                 require(v.contains("liveCounter"), "Wing Boots liveCounter missing");
                 g.relics.add({r, 0});
-                g.wingBootsCharges = std::max(0, integer(v,"liveCounter",0,3));
+                const int counter=integer(v,"liveCounter",-2,3);
+                require(counter!=-1,"unqualified Wing Boots counter");
+                g.wingBootsCharges = std::max(0,counter);
             } else {
                 g.relics.add({r, modelData});
             }

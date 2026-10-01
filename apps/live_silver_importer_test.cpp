@@ -92,6 +92,7 @@ void setProducerV4CardObservation(json &, const BattleStateWire &);
 const char *cardId(CardId id) {
     switch (id) {
     case CardId::BASH: return "Bash";
+    case CardId::HEADBUTT: return "Headbutt";
     case CardId::DEFEND_RED: return "Defend_R";
     case CardId::STRIKE_RED: return "Strike_R";
     default: return "";
@@ -1330,6 +1331,89 @@ int main() {
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
             fixture(MonsterEncounter::GREMLIN_NOB, "Gremlin Nob", 3, "ELITE", 0xB003u)};
         {
+            const auto domeObservation=[&](int which,int completed) {
+                auto obs=genericObservation(fixtures[which],which==0?"dome-cultist":"dome-jaw");
+                auto &root=obs["silverRoot"]; auto &combat=root["combat"];
+                root["playerTurn"]=completed+1; combat["turn"]=completed+1; combat["runicDome"]=true;
+                combat["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+                auto &monster=combat["monsters"][0];
+                monster.erase("nextMove");monster.erase("moveHistory");
+                monster["hp"]=monster["maxHp"].get<int>()-3; // damage after the roll
+                json moves=json::array();
+                if(completed>0) moves.push_back(which==0?3:1);
+                if(completed>1) moves.push_back(which==0?1:2);
+                combat["runicDomeKnowledge"]={{"schemaVersion",1},{"epoch",1},{"generation",2*completed+1},
+                    {"complete",true},{"monsterId",which==0?"Cultist":"JawWorm"},{"slot",0},
+                    {"completedTurns",completed},{"executedMoves",moves},{"pendingMoveRolls",1},
+                    {"rollHp",monster["maxHp"]},{"rollMaxHp",monster["maxHp"]}};
+                return obs;
+            };
+            for(int which=0;which<2;++which) for(int completed=0;completed<3;++completed) {
+                auto obs=domeObservation(which,completed);
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("bounded Dome import: "+imported.reason);
+                auto root=battleContextFromWire(imported.wire);
+                if(!root.intentsHidden || root.monsters.arr[0].pendingMoveRolls!=1
+                        || root.monsters.arr[0].pendingRollInputs.curHp!=root.monsters.arr[0].maxHp
+                        || root.monsters.arr[0].curHp==root.monsters.arr[0].pendingRollInputs.curHp)
+                    throw std::runtime_error("Dome lost deferred roll-time public state");
+                auto reference=root;
+                reference.monsters.arr[0].pendingMoveRolls=0;
+                reference.monsters.arr[0].rollMoveFromInputs(reference,root.monsters.arr[0].pendingRollInputs);
+                root.monsters.arr[0].materializePendingMove(root);
+                if(!std::equal(std::begin(root.monsters.arr[0].moveHistory),std::end(root.monsters.arr[0].moveHistory),
+                               std::begin(reference.monsters.arr[0].moveHistory))
+                        || root.aiRng!=reference.aiRng)
+                    throw std::runtime_error("Dome deferred materialization differs from native public-input transition");
+                if(completed==0 && root.monsters.arr[0].moveHistory[0]
+                        !=(which==0?MonsterMoveId::CULTIST_INCANTATION:MonsterMoveId::JAW_WORM_CHOMP))
+                    throw std::runtime_error("Dome initial public rule differs from vanilla");
+                const auto legal=enumerateSilverLegalActions(imported.wire);
+                if(legal.empty()) throw std::runtime_error("Dome imported root has no legal actions");
+            }
+            const auto expectDomeReject=[&](json obs,const char *reason) {
+                const auto result=one_combat::advisor::importSilverRoot(obs);
+                if(result.ok || result.reason!=reason)
+                    throw std::runtime_error(std::string("Dome rejection mismatch expected ")+reason+" got "+result.reason);
+            };
+            auto bad=domeObservation(1,1); bad["silverRoot"]["combat"].erase("runicDomeKnowledge");
+            expectDomeReject(bad,"silver_runic_dome_missing_history");
+            for(const auto &field:{"nextMove","moveHistory","intentDamage","uniquePower0"}) {
+                bad=domeObservation(1,1);bad["silverRoot"]["combat"]["monsters"][0][field]=1;
+                expectDomeReject(bad,"silver_runic_dome_hidden_field");
+            }
+            for(auto mutation:{json{{"schemaVersion",2}},json{{"epoch",0}},json{{"generation","3"}},
+                               json{{"pendingMoveRolls",2}},json{{"rollHp",0}}}) {
+                bad=domeObservation(1,1);bad["silverRoot"]["combat"]["runicDomeKnowledge"].update(mutation);
+                expectDomeReject(bad,"silver_runic_dome_history_schema");
+            }
+            for(auto mutation:{json{{"completedTurns",0}},json{{"generation",1}},json{{"executedMoves",json::array({2})}}}) {
+                bad=domeObservation(1,1);bad["silverRoot"]["combat"]["runicDomeKnowledge"].update(mutation);
+                expectDomeReject(bad,"silver_runic_dome_history_gap");
+            }
+            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["runicDomeKnowledge"]["complete"]=false;
+            expectDomeReject(bad,"silver_runic_dome_incomplete_history");
+            bad=domeObservation(1,1);bad["silverRoot"]["act"]=2;
+            expectDomeReject(bad,"silver_runic_dome_encounter_domain");
+            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["hand"][0]["id"]="Spot Weakness";
+            expectDomeReject(bad,"silver_runic_dome_card_domain");
+            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["relics"].push_back({{"id","Dead Branch"},{"counter",0},{"usedUp",false}});
+            expectDomeReject(bad,"silver_runic_dome_relic_domain");
+            for(const char *power:{"Magnetism","Mayhem"}) {
+                bad=domeObservation(1,1);
+                bad["silverRoot"]["combat"]["playerPowers"].push_back({{"id",power},{"amount",1}});
+                expectDomeReject(bad,"silver_runic_dome_player_power_domain");
+            }
+            bad=domeObservation(1,1);
+            bad["silverRoot"]["combat"]["statusBits0"]=1ULL<<static_cast<int>(PlayerStatus::MAGNETISM);
+            expectDomeReject(bad,"silver_runic_dome_player_power_domain");
+            bad=domeObservation(1,1);
+            bad["silverRoot"]["combat"]["monsters"][0]["powers"].push_back({{"id","Ritual"},{"amount",3},{"justApplied",false}});
+            expectDomeReject(bad,"silver_runic_dome_monster_power_domain");
+            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["potions"][0]["id"]="SkillPotion";
+            expectDomeReject(bad,"silver_runic_dome_potion_domain");
+        }
+        {
             auto capped = battleContextFromWire(fixtures[0].wire);
             capped.player.block = 998;
             capped.player.buff<PlayerStatus::JUGGERNAUT>(5);
@@ -2230,6 +2314,59 @@ int main() {
                     throw std::runtime_error(std::string("card identity changed: ") + cardId(card));
             }
         }
+        {
+            // Real native Double Tap interruption, translated through the
+            // same queue/card JSON shape emitted by the Java observer.
+            GameContext game(CharacterClass::IRONCLAD, 11, 0);
+            game.act=1; game.floorNum=1;
+            BattleContext live; live.init(game, MonsterEncounter::JAW_WORM);
+            for (int played=0;played<2;++played) {
+                int idx=0;
+                while (idx<live.cards.cardsInHand && live.cards.hand[idx].id!=CardId::DEFEND_RED
+                        && live.cards.hand[idx].id!=CardId::STRIKE_RED) ++idx;
+                if (idx==live.cards.cardsInHand) throw std::runtime_error("pending-copy fixture lacks starter card");
+                sts::search::Action(sts::search::ActionType::CARD,idx,0).execute(live);
+            }
+            CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=900;
+            live.cards.moveToHand(headbutt); live.player.buff<PlayerStatus::DOUBLE_TAP>(1);
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardQueue.size!=1)
+                throw std::runtime_error("pending-copy fixture did not interrupt Headbutt");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71517u);
+            auto observation=nativeObservation(expected,"MonsterRoom","observed-headbutt-copy");
+            setProducerV4CardObservation(observation,expected);
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"cards",pileJson(expected.discardPile.unknown)},
+                {"pickCount",1},{"canPickZero",false},{"canPickAnyNumber",false}};
+            combat["pendingCardQueue"]=json::array();
+            for(const auto &item:expected.pendingCardQueue) combat["pendingCardQueue"].push_back(producerQueueJson(item));
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(!imported.ok) throw std::runtime_error("producer Headbutt copy import: "+imported.reason);
+            normalizeDynamicObservationIdentity(expected);
+            expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+            expected.pendingCardQueue[0].card.uniqueId=expected.curCardQueueItem.card.uniqueId;
+            expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+            expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+            // HEADBUTT indexes the discard pile, not this Discovery-only
+            // cache. Java's offered-card IDs populate it in the wire, while
+            // the native fixture leaves it stale; align that inert metadata.
+            expected.cardSelect.cards=imported.wire.cardSelect.cards;
+            auto actual=battleContextFromWire(imported.wire);
+            auto reference=battleContextFromWire(expected);
+            if(actual.cardQueue!=reference.cardQueue || actual.actionQueue.size!=reference.actionQueue.size)
+                throw std::runtime_error("producer Headbutt pending queue reconstruction mismatch");
+            // First selection resumes the pending copy, opening Headbutt's
+            // second selection; both physical continuations must agree.
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(actual); pick.execute(reference);
+            if(!actual.equalForSearch(reference)) {
+                const auto context=searchContextFromWire(imported.wire);
+                std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                        json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                throw std::runtime_error("producer Headbutt copied-play continuation parity failed");
+            }
+        }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");
         const auto v4ContinuationImported = one_combat::advisor::importSilverRoot(v4Continuation);
@@ -2260,6 +2397,51 @@ int main() {
                 throw std::runtime_error("pending card queue was not imported");
             if (v4ContinuationImported.wire.pendingCardQueueObserved)
                 throw std::runtime_error("absent pending card queue was treated as observed");
+            auto generated = copy;
+            generated["card"]["uuid"] = "generated-copy-not-in-any-pile";
+            generated["energyOnUse"] = 2;
+            generated["freeToPlay"] = true;
+            generated["ignoreEnergyTotal"] = true;
+            generated["exhaustOnUse"] = true;
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array({generated, copy});
+            const auto ordered = one_combat::advisor::importSilverRoot(withQueue);
+            if (!ordered.ok || ordered.wire.pendingCardQueue.size()!=2
+                    || ordered.wire.pendingCardQueue[0].card.uniqueId == ordered.wire.curCardQueueItem.card.uniqueId
+                    || ordered.wire.pendingCardQueue[1].card.uniqueId != ordered.wire.curCardQueueItem.card.uniqueId)
+                throw std::runtime_error("generated/same-instance pending queue identity or order lost");
+            auto restored = battleContextFromWire(ordered.wire);
+            if (restored.cardQueue.size!=2 || !restored.cardQueue.front().exhaustOnUse
+                    || !restored.cardQueue.front().ignoreEnergyTotal || !restored.cardQueue.front().freeToPlay
+                    || restored.cardQueue.front().energyOnUse!=2
+                    || restored.cardQueue.front().card.uniqueId != ordered.wire.pendingCardQueue[0].card.uniqueId)
+                throw std::runtime_error("producer pending queue flags lost in native reconstruction");
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array();
+            const auto empty = one_combat::advisor::importSilverRoot(withQueue);
+            if (!empty.ok || !empty.wire.pendingCardQueueObserved || !empty.wire.pendingCardQueue.empty())
+                throw std::runtime_error("observed empty queue lost completeness");
+            for (const char *field : {"isEndTurn", "triggerOnUse", "ignoreEnergyTotal", "freeToPlay", "randomTarget",
+                                     "autoplay", "purgeOnUse", "exhaustOnUse", "target", "energyOnUse", "regretCardCount", "card"}) {
+                auto malformed = copy; malformed.erase(field);
+                withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array({malformed});
+                if (one_combat::advisor::importSilverRoot(withQueue).reason != "silver_card_queue_item")
+                    throw std::runtime_error(std::string("missing pending queue field accepted: ")+field);
+            }
+            for (auto malformed : {json{{"target",5}}, json{{"target",4}}, json{{"target",-1}}, json{{"energyOnUse",-1}},
+                                   json{{"autoplay","true"}}, json{{"energyOnUse",1.5}}, json{{"isEndTurn",true}}}) {
+                auto bad = copy; bad.update(malformed);
+                withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array({bad});
+                if (one_combat::advisor::importSilverRoot(withQueue).reason != "silver_card_queue_item")
+                    throw std::runtime_error("invalid pending queue flag/range accepted");
+            }
+            withQueue["silverRoot"]["combat"]["pendingCardQueue"] = json::array();
+            for (int i=0;i<=sts::CardQueue::capacity;++i)
+                withQueue["silverRoot"]["combat"]["pendingCardQueue"].push_back(copy);
+            if (one_combat::advisor::importSilverRoot(withQueue).reason != "silver_card_queue_item")
+                throw std::runtime_error("pending queue overflow accepted");
+            auto failedCapture = v4Continuation;
+            failedCapture["silverRoot"]["combat"]["pendingCardQueueError"] = "queue_not_settled";
+            if (one_combat::advisor::importSilverRoot(failedCapture).reason != "silver_pending_card_queue_unrepresentable")
+                throw std::runtime_error("failed pending queue capture fell back to replay");
             withQueue["silverRoot"]["combat"]["pendingCardQueue"] = 5;
             if (one_combat::advisor::importSilverRoot(withQueue).reason != "silver_card_queue_item")
                 throw std::runtime_error("malformed pending card queue was accepted");

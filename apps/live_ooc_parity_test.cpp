@@ -1019,6 +1019,48 @@ int main(int argc,char **argv){try{
                 && !ambiguous.mctsRoot.questionHistoryComplete
                 && ambiguous.mctsRoot.reason=="PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED:Juzu_Bracelet",
                 "formerly owned Juzu fabricated the hidden monster reset");
+        auto timed=juzu;
+        for(auto &entry:timed["ooc"]["publicState"]["questionOutcomes"])
+            entry["juzuOwnedAtEntry"]=false;
+        advisor::LiveOocStateV1 exact;
+        check(advisor::importLiveOocStateV1(timed,exact).ok && exact.mctsRoot.supported
+                && exact.mctsRoot.questionHistoryComplete && exact.mctsRoot.mapHistoryComplete
+                && exact.mctsRoot.state.monsterChance==live.mctsRoot.state.monsterChance,
+                "Juzu acquired after public events contaminated prior room chances");
+        timed["ooc"]["publicState"]["questionOutcomes"][0]["juzuOwnedAtEntry"]=true;
+        check(advisor::importLiveOocStateV1(timed,exact).ok && !exact.mctsRoot.supported,
+                "later loss of Juzu erased an unresolved prior conversion");
+        timed["ooc"]["publicState"]["questionOutcomes"][3]["outcome"]="MONSTER";
+        check(advisor::importLiveOocStateV1(timed,exact).ok && exact.mctsRoot.supported
+                && exact.mctsRoot.questionHistoryComplete && exact.mctsRoot.state.monsterChance==0.1f,
+                "known monster reset failed to recover exact current room chances");
+        timed["ooc"]["publicState"]["questionOutcomes"][3]["juzuOwnedAtEntry"]=true;
+        check(!advisor::importLiveOocStateV1(timed,exact).ok,
+                "Juzu-owned MONSTER contradiction accepted");
+        timed=juzu;timed["ooc"]["publicState"]["questionOutcomes"][0]["juzuOwnedAtEntry"]="false";
+        check(!advisor::importLiveOocStateV1(timed,exact).ok,"string Juzu ownership accepted");
+        auto observed=juzu;
+        for(auto &entry:observed["ooc"]["publicState"]["questionOutcomes"]) {
+            entry["juzuOwnedAtEntry"]=true;entry["juzuConverted"]=false;
+        }
+        check(advisor::importLiveOocStateV1(observed,exact).ok && exact.mctsRoot.supported
+                && exact.mctsRoot.state.monsterChance==live.mctsRoot.state.monsterChance,
+                "observed no-flash Juzu events were treated as unknown conversions");
+        observed["ooc"]["publicState"]["questionOutcomes"][3]["juzuConverted"]=true;
+        check(advisor::importLiveOocStateV1(observed,exact).ok && exact.mctsRoot.supported
+                && exact.mctsRoot.state.monsterChance==0.1f,
+                "observed Juzu flash did not reset monster chance");
+        observed["ooc"]["publicState"]["questionOutcomes"][0].erase("juzuConverted");
+        check(advisor::importLiveOocStateV1(observed,exact).ok && exact.mctsRoot.supported,
+                "later observed Juzu conversion failed to clear earlier ambiguity");
+        for(int malformed=0;malformed<4;++malformed) {
+            auto invalid=observed;auto &entry=invalid["ooc"]["publicState"]["questionOutcomes"][3];
+            if(malformed==0)entry.erase("juzuOwnedAtEntry");
+            if(malformed==1)entry["juzuOwnedAtEntry"]=false;
+            if(malformed==2)entry["outcome"]="SHOP";
+            if(malformed==3)entry["juzuConverted"]="true";
+            check(!advisor::importLiveOocStateV1(invalid,exact).ok,"malformed observed Juzu conversion accepted");
+        }
         const auto rejects=[&](J invalid) {
             advisor::LiveOocStateV1 rejected;
             check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"malformed question history accepted");
@@ -1027,6 +1069,28 @@ int main(int argc,char **argv){try{
         invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"][1]["floor"]=2;rejects(invalid);
         invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"][3]["floor"]=8;rejects(invalid);
         invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"][0]["outcome"]="BOSS";rejects(invalid);
+    }
+    {
+        auto source=base;source.screenState=ScreenState::REST_ROOM;
+        source.relics.remove(RelicId::SHOVEL);
+        auto wire=project(source,path,"known_boss_offers_do_not_qualify_global_history");
+        auto &p=wire["ooc"]["publicState"];
+        p["seenRelicsComplete"]=false;
+        p["knownRelicOffers"]=J::array({J(RelicId::RUNIC_DOME),J(RelicId::BLACK_STAR)});
+        advisor::LiveOocStateV1 recovered;
+        check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
+                && !recovered.mctsRoot.mapHistoryComplete,"boss subset promoted missing global offers");
+        for(auto relic:{RelicId::RUNIC_DOME,RelicId::BLACK_STAR})
+            check(std::find(recovered.mctsRoot.state.bossRelicPool.begin(),
+                    recovered.mctsRoot.state.bossRelicPool.end(),relic)
+                    ==recovered.mctsRoot.state.bossRelicPool.end(),"saved unselected boss offer remained eligible");
+        source.screenState=ScreenState::MAP_SCREEN;
+        wire=project(source,path,"known_boss_offers_keep_map_guard");
+        wire["ooc"]["publicState"]["seenRelicsComplete"]=false;
+        wire["ooc"]["publicState"]["knownRelicOffers"]=J::array({J(RelicId::RUNIC_DOME),J(RelicId::BLACK_STAR)});
+        check(advisor::importLiveOocStateV1(wire,recovered).ok && !recovered.mctsRoot.supported
+                && recovered.mctsRoot.reason=="PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
+                "known boss subset bypassed missing shop stock gate");
     }
     {
         auto source = base;
@@ -1066,6 +1130,74 @@ int main(int argc,char **argv){try{
         check(imported.ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active",
               "active Wing Boots MAP roots must fail closed");
+    }
+    {
+        auto source=base;source.screenState=ScreenState::MAP_SCREEN;
+        source.curMapNodeX=1;source.curMapNodeY=0;
+        source.map=std::make_shared<Map>();
+        for(int y=0;y<15;++y)for(int x=0;x<7;++x) {
+            auto &n=source.map->nodes[y][x];n.x=x;n.y=y;n.room=Room::REST;
+        }
+        source.map->getNode(1,0).addEdge(2);
+        source.map->getNode(2,1).addEdge(2);source.map->getNode(5,1).addEdge(2);
+        source.relics.add({RelicId::WING_BOOTS,0});source.wingBootsCharges=1;
+        auto wire=project(source,path,"opt_in_winged_map");
+        auto &p=wire["ooc"]["publicState"];
+        for(auto &r:p["relics"])if(r["id"]==J(RelicId::WING_BOOTS))r["liveCounter"]=1;
+        p["questionHistoryComplete"]=true;p["questionOutcomes"]=J::array();
+        auto &choices=wire["ooc"]["liveChoices"];
+        std::reverse(choices.begin(),choices.end());
+        for(int i=0;i<int(choices.size());++i)choices[i]["liveAction"]["choiceIndex"]=i+1;
+        setenv("STS_LIVE_OOC_WING_BOOTS","1",1);
+        advisor::LiveOocStateV1 live;
+        const auto imported=advisor::importLiveOocStateV1(wire,live);
+        check(imported.ok && live.mctsRoot.supported && live.mctsRoot.state.wingBootsCharges==1,
+                "opt-in Wing Boots root did not import");
+        const auto actions=v4CandidateActions(live.mctsRoot.state);
+        check(actions.size()==2 && live.mctsRoot.state.mapMoveCost(5)==1,
+                "opt-in Wing Boots candidate set lost jump");
+        auto jump=live.mctsRoot.state;A(5).execute(jump);
+        check(jump.wingBootsCharges==0 && jump.curMapNodeX==5 && jump.curMapNodeY==1,
+                "imported Wing Boots jump did not consume final charge");
+        std::vector<std::uint32_t> bits;for(const auto &a:actions)bits.push_back(a.bits);
+        advisor::validateLiveOocActionSet(live,bits);
+        check(advisor::lowerLiveOocAction(live,A(5).bits).at("choiceIndex")==1,
+                "jump column was confused with reordered MCP occurrence");
+        for(int mutation=0;mutation<3;++mutation) {
+            auto invalid=wire;
+            if(mutation==0)invalid["ooc"]["liveChoices"].erase(0);
+            else if(mutation==1)invalid["ooc"]["liveChoices"].push_back(choices[0]);
+            else {auto extra=choices[0];extra["nativeAction"]["index"]=4;extra["liveAction"]["choiceIndex"]=3;
+                invalid["ooc"]["liveChoices"].push_back(extra);}
+            advisor::LiveOocStateV1 rejected;bool failed=false;
+            try {const auto status=advisor::importLiveOocStateV1(invalid,rejected);
+                if(!status.ok)failed=true;else advisor::validateLiveOocActionSet(rejected,bits);
+            }catch(const std::exception&){failed=true;}
+            check(failed,"incomplete/duplicate/extra jump mapping accepted");
+        }
+        unsetenv("STS_LIVE_OOC_WING_BOOTS");
+        if(output)output<<wire.dump()<<'\n';
+    }
+    {
+        auto source=base;source.screenState=ScreenState::REWARDS;
+        for(bool question:{false,true})for(bool seen:{false,true}) {
+            auto wire=project(source,path,"map_history_prerequisites");
+            auto &p=wire["ooc"]["publicState"];
+            p["questionHistoryComplete"]=question;p["questionOutcomes"]=J::array();p["seenRelicsComplete"]=seen;
+            advisor::LiveOocStateV1 live;
+            check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.supported
+                    && live.mctsRoot.mapHistoryComplete==(question&&seen),"downstream map requires both histories");
+            p["relics"].push_back({{"id",J(RelicId::WING_BOOTS)},{"data",0},{"liveCounter",2}});
+            check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.state.wingBootsCharges==2,
+                    "transition root lost public Wing Boots charges");
+            p["relics"].back()["liveCounter"]=-2;
+            check(advisor::importLiveOocStateV1(wire,live).ok && live.projected.wingBootsCharges==0
+                    && live.mctsRoot.state.wingBootsCharges==0,"spent Wing Boots sentinel rejected");
+            for(int invalid:{-3,-1,4}) {
+                p["relics"].back()["liveCounter"]=invalid;
+                check(!advisor::importLiveOocStateV1(wire,live).ok,"invalid Wing Boots counter accepted");
+            }
+        }
     }
     {
         auto source = base;

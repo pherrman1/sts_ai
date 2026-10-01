@@ -38,6 +38,9 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
     private static int observedFloor = -1;
     private static int revealedShopFloor = -1;
     private static boolean unseenShop;
+    // Only an absent/older combat field may be migrated from metrics. A
+    // malformed or explicitly incomplete checkpoint is never silently healed.
+    private static boolean legacyCombatRecoveryAllowed = true;
 
     public static final class SaveData {
         Integer version;
@@ -49,6 +52,8 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
         Integer combatAct;
         Boolean combatComplete;
         List<Map<String,Object>> combatEntries;
+        Integer questionVersion;
+        List<Map<String,Object>> questionEntries;
     }
 
     public static void initialize() {
@@ -59,9 +64,11 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
     @Override public void receivePreStartGame() {
         LiveOocCapture.seenRelicOffers.clear();
         LiveOocCapture.combatClassHistory.clear();
+        QuestionRoomObserver.clear();
         pending = null; loading = false;
         observedRoom = null; observedFloor = -1; unseenShop = false;
         revealedShopFloor = -1;
+        legacyCombatRecoveryAllowed = true;
     }
 
     @Override public void onLoad(SaveData data) {
@@ -73,7 +80,11 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
     @Override public void onLoadRaw(JsonElement raw) {
         // BaseMod's default Gson adapter coerces strings/fractions into some
         // primitive fields. Reject malformed checkpoints before that adapter.
-        onLoad(decodeCheckpoint(raw));
+        SaveData decoded = decodeCheckpoint(raw);
+        onLoad(decoded);
+        legacyCombatRecoveryAllowed = raw == null || raw.isJsonNull()
+                || (decoded != null && decoded.combatAct == null
+                    && decoded.combatComplete == null && decoded.combatEntries == null);
     }
 
     static SaveData decodeCheckpoint(JsonElement raw) {
@@ -108,7 +119,16 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
                 // -1 is an explicitly unobserved ledger, never a qualified act.
                 if (actValue < -1 || actValue > 4 || (complete.getAsBoolean() && actValue < 1)) return null;
             }
-            return new Gson().fromJson(value, SaveData.class);
+            if(value.has("questionVersion") || value.has("questionEntries")) {
+                JsonElement version=value.get("questionVersion"), entries=value.get("questionEntries");
+                if(version==null || !version.isJsonPrimitive() || !version.getAsJsonPrimitive().isNumber()
+                        || version.getAsBigDecimal().toBigIntegerExact().intValueExact()!=1
+                        || entries==null || !entries.isJsonArray() || entries.getAsJsonArray().size()>51)return null;
+            }
+            SaveData decoded=new Gson().fromJson(value, SaveData.class);
+            if(decoded.questionVersion!=null && !new QuestionRoomObserver.Ledger().restore(
+                    new Object(),0,decoded.floor,decoded.questionEntries))return null;
+            return decoded;
         } catch (RuntimeException invalid) { return null; }
     }
 
@@ -130,6 +150,8 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
         data.combatAct = LiveOocCapture.combatClassHistory.act();
         data.combatComplete = LiveOocCapture.combatClassHistory.complete();
         data.combatEntries = LiveOocCapture.combatClassHistory.snapshot();
+        data.questionVersion=1;
+        data.questionEntries=QuestionRoomObserver.ledger.snapshot();
         return data;
     }
 
@@ -172,13 +194,20 @@ public final class RelicOfferRecorder implements CustomSavable<RelicOfferRecorde
     static void restorePending(Object player, long seed, int floor, String character,
             int ascension, int act, List<Integer> completed) {
         if (!loading) return;
+        if (pending != null && !matches(pending, seed, floor, character, ascension))
+            legacyCombatRecoveryAllowed = false;
         boolean restored = LiveOocCapture.seenRelicOffers.restore(player, seed,
                 floor, pending, character, ascension);
         if (restored && pending.currentShopRevealed) revealedShopFloor = floor;
         if (matches(pending, seed, floor, character, ascension) && completed != null)
             LiveOocCapture.combatClassHistory.restoreCheckpoint(player, seed, act, floor, pending, completed);
+        if(matches(pending,seed,floor,character,ascension) && Integer.valueOf(1).equals(pending.questionVersion))
+            QuestionRoomObserver.ledger.restore(player,seed,floor,pending.questionEntries);
         pending = null; loading = false;
     }
+
+    static boolean canRecoverLegacyCombat() { return legacyCombatRecoveryAllowed; }
+    static void finishLegacyCombatRecovery() { legacyCombatRecoveryAllowed = false; }
 
     @Override public void receivePostUpdate() { observe(); }
 

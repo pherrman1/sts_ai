@@ -23,8 +23,13 @@ class LiveOocProtocol(unittest.TestCase):
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
     def run_rows(self, observations, model=True, policy=None, floor_model=True,
-                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None, differential=False):
+                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None, differential=False, wing_boots=False):
         env = os.environ.copy()
+        env.pop("STS_LIVE_OOC_WING_BOOTS", None)
+        env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
+        env.pop("STS_CTM_ACTIVE_LIZARD", None)
+        if wing_boots:
+            env["STS_LIVE_OOC_WING_BOOTS"] = "1"
         env.pop("STS_CTM_MODEL", None)
         env.pop("STS_LIVE_OOC_MODEL", None)
         env.pop("STS_OOC_DEBUG_TREE", None)
@@ -507,6 +512,32 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(evaluator["status"], "OK", response)
         offsets = evaluator["endpointHpDistribution"]["root"]["floorOffsets"]
         self.assertTrue(any(int(offset) > 0 for offset in offsets), offsets)
+
+    def test_non_map_roots_preserve_downstream_support_boundaries(self):
+        rows=[]
+        for wing in (False,True):
+            observation=copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
+            public=observation["ooc"]["publicState"]
+            public.update(questionHistoryComplete=True,questionOutcomes=[],seenRelicsComplete=wing)
+            if wing:
+                public["relics"].append(dict(id="WingedGreaves",data=0,liveCounter=2))
+            rows.append(observation)
+        for response in self.run_rows(rows,label="downstream support gates"):
+            evaluator=response["evaluators"][0]
+            self.assertEqual(evaluator["status"],"OK",response)
+            self.assertEqual(set(evaluator["endpointHpDistribution"]["root"]["floorOffsets"]),{"0"})
+
+    def test_wing_boots_explicit_mechanics_gate_and_mapping(self):
+        observation=self.fixtures["opt_in_winged_map"]
+        for policy in (None,"v4"):
+            guarded, = self.run_rows([observation],policy=policy)
+            self.assertEqual(guarded["evaluators"][0]["reason"],
+                             "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active")
+        enabled, = self.run_rows([observation],policy="v4",wing_boots=True)
+        evaluator=enabled["evaluators"][0]
+        self.assertEqual(evaluator["status"],"OK",enabled)
+        self.assertEqual({c["liveAction"]["choiceIndex"] for c in evaluator["candidateSummaries"]},{1,2})
+        self.assertIn("wingBoots=experimental_exact",json.dumps(enabled))
 
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])

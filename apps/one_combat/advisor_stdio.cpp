@@ -213,6 +213,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 policy.setRootPrimitiveBits(targets);
                 policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
                 policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
                 policy.setSearchSeed(stableHash(differential::canonicalOocState(
                     state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"));
                 policy.setTreeCapture(false,0);
@@ -254,6 +255,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 std::map<std::tuple<int,int,bool>,bool> wants;
                 policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
                 policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
                 policy.setTreeCapture(false,0);
                 const auto want=[&](const sts::Card &card) {
                     const auto key=std::make_tuple(static_cast<int>(card.id),static_cast<int>(card.misc),card.isUpgraded());
@@ -407,6 +409,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
             policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
             policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+            policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
             const char *treeEnv = std::getenv("STS_OOC_DEBUG_TREE");
             policy.setTreeCapture(request.observation.value("oocDebugTree", false)
                 || (treeEnv && std::string(treeEnv) == "1"), oocTreeNodeCap());
@@ -466,6 +469,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                     && decision.reason != "OOC_WIN_MODEL_UNAVAILABLE"
                     && decision.reason != "OOC_FLOOR_MODEL_UNAVAILABLE"
                     && decision.reason != "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"
+                    && decision.reason != "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
                     && decision.reason.rfind("COMPOUND_TARGET_UNAVAILABLE:", 0) != 0
                     && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0
                     && decision.reason.rfind("OOC_MCTS_", 0) != 0)
@@ -865,7 +869,8 @@ int main() {
         std::cout.rdbuf(stdoutBuffer);
         if (loaded) oocFloorIdentity = modelIdentity(path);
     }
-    std::shared_ptr<one_combat::NativeCombatTransitionSampler> ctm;
+    std::shared_ptr<one_combat::CombatTransitionSampler> ctm;
+    json ctmStack = nullptr;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
     std::string ctmIdentity = "unavailable";
     std::string cachedEntryHash;
@@ -880,12 +885,46 @@ int main() {
     one_combat::advisor::SilverImportContext silverImportContext;
     std::string silverRootIdentity;
     std::int64_t silverSimulations = 0;
-    if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
+    if (const char *path = std::getenv("STS_CTM_MODEL"); path) {
         try {
-            ctm = std::make_shared<one_combat::NativeCombatTransitionSampler>(path);
+            if (!*path) throw std::invalid_argument("STS_CTM_MODEL cannot be empty");
+            auto primary = std::make_shared<one_combat::NativeCombatTransitionSampler>(path);
+            const char *fallbackOverride = std::getenv("STS_CTM_BREW_FALLBACK_MODEL");
+            const char *lizardOverride = std::getenv("STS_CTM_ACTIVE_LIZARD");
+            if (fallbackOverride && !*fallbackOverride)
+                throw std::invalid_argument("STS_CTM_BREW_FALLBACK_MODEL cannot be empty");
+            const auto &metadata = primary->runtime().metadata();
+            const bool productionLizard = primary->runtime().hasActiveLizardCorrection()
+                && metadata.value("defaultForOocMcts", false)
+                && metadata.at("activeLizardCorrection").value("qualified", false)
+                && metadata.at("activeLizardCorrection").value("status", std::string())
+                    == "production_default_when_ooc_enabled";
+            // The loader also accepts frozen integration candidates. Their
+            // correction requires an explicit opt-in, never implicit promotion.
+            bool activeLizard = productionLizard;
+            if (lizardOverride) {
+                if (std::string(lizardOverride) == "0") activeLizard = false;
+                else if (std::string(lizardOverride) == "1") activeLizard = true;
+                else throw std::invalid_argument("STS_CTM_ACTIVE_LIZARD must be 0 or 1");
+            }
+            const bool hybrid = primary->runtime().requiresEntropicBrewFallback();
+            if (!hybrid && (fallbackOverride || activeLizard))
+                throw std::invalid_argument("CTM fallback/Lizard correction requires a qualified fast artifact");
+            ctmStack = {{"kind", hybrid ? "deepsets_brew" : "single"},
+                        {"primary", modelIdentity(path)}, {"activeLizard", activeLizard},
+                        {"lizardProductionQualified", productionLizard}};
+            if (hybrid) {
+                const std::string fallback = fallbackOverride ? fallbackOverride :
+                    (std::filesystem::path(path).parent_path() /
+                        "combat_transition_near_full_except_smoke_v2.native").string();
+                ctm = std::make_shared<one_combat::EntropicBrewFallbackCombatTransitionSampler>(
+                    path, fallback, activeLizard);
+                ctmStack["brewFallback"] = modelIdentity(fallback);
+            } else ctm = std::move(primary);
+            ctmIdentity = ctmStack.dump();
             ctmStatus = "OK";
-            ctmIdentity = modelIdentity(path);
         } catch (const std::exception &e) {
+            ctm.reset(); ctmStack = nullptr;
             ctmStatus = "SCHEMA_MISMATCH"; ctmReason = e.what();
         }
     }
@@ -903,6 +942,9 @@ int main() {
             if (wire.value("kind", std::string()) == "hello" &&
                 wire.value("protocol", std::string()) == one_combat::advisor::kProtocol) {
                 response = one_combat::advisor::helloResponse();
+                response["ctmStatus"] = ctmStatus;
+                response["ctmStack"] = ctmStack;
+                if (!ctmReason.empty()) response["ctmReason"] = ctmReason;
             } else {
                 one_combat::advisor::Request request;
                 const auto validation = one_combat::advisor::parseRequest(wire, request);
@@ -956,7 +998,8 @@ int main() {
                                     const auto support = ctm->forecastSupport(input);
                                     evaluator = {{"id", "ctm_combat_entry_v2"},
                                         {"scope", "combat_entry"}, {"combatEntryHash", entryHash},
-                                        {"potionKeepValue", input.globals.potionKeepValue}};
+                                        {"potionKeepValue", input.globals.potionKeepValue},
+                                        {"modelIdentity", ctmIdentity}, {"ctmStack", ctmStack}};
                                     if (!support.supported) {
                                         evaluator["status"] = "UNSUPPORTED";
                                         evaluator["reason"] = support.reason;
@@ -978,13 +1021,15 @@ int main() {
                                     {"session", request.session}, {"sequence", request.sequence},
                                     {"observationHash", request.observationHash},
                                     {"evaluators", json::array({evaluator, silver})},
-                                    {"model", "combat_transition_near_full_except_smoke_v2"},
+                                    {"model", ctmIdentity}, {"ctmStack", ctmStack},
                                     {"modelStatus", ctmStatus}};
                             }
                         }
                     } else if (request.observation.value("boundary", std::string()) == "ooc") {
                         response = oocResponse(request, *oocPolicy, oocIdentity + ":ctm=" + ctmIdentity
-                                                + ":win=" + oocWinIdentity + ":floor=" + oocFloorIdentity,
+                                                + ":win=" + oocWinIdentity + ":floor=" + oocFloorIdentity
+                                                + (one_combat::advisor::liveOocWingBootsEnabled()
+                                                    ? ":wingBoots=experimental_exact" : ":wingBoots=guarded"),
                                                 pendingCompound);
                     } else {
                         one_combat::advisor::PublicOocState imported;

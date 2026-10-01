@@ -286,6 +286,8 @@ namespace sts {
 
         // room setup
         void transitionToAct(int act);
+        // -1 invalid, 0 ordinary edge, 1 charged Wing Boots jump.
+        int mapMoveCost(int mapNodeX) const;
         void transitionToMapNode(int mapNodeX);
         void setupEvent();
         void setupTreasureRoom();

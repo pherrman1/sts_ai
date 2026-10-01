@@ -51,6 +51,7 @@ public:
     virtual void setRootPrimitiveBits(const std::vector<std::uint32_t> &) {}
     virtual void setRewardPityHistoryComplete(bool) {}
     virtual void setQuestionHistoryComplete(bool) {}
+    virtual void setMapHistoryComplete(bool) {}
     virtual void setTreeCapture(bool, std::size_t) {}
     virtual LiveOocDecision score(const sts::GameContext &, const PathHistory &, int currentActEventVisits) const = 0;
 };
@@ -82,6 +83,7 @@ public:
     void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
     void setRewardPityHistoryComplete(bool value) override { rewardPityHistoryComplete_ = value; }
     void setQuestionHistoryComplete(bool value) override { questionHistoryComplete_ = value; }
+    void setMapHistoryComplete(bool value) override { mapHistoryComplete_ = value; }
     void setTreeCapture(bool enabled, std::size_t cap) override { captureTree_ = enabled; treeNodeCap_ = cap; }
     LiveOocDecision score(const sts::GameContext &, const PathHistory &, int) const override;
 private:
@@ -94,6 +96,7 @@ private:
     mutable bool hasRootPrimitiveBits_ = false;
     bool rewardPityHistoryComplete_ = true;
     bool questionHistoryComplete_ = false;
+    bool mapHistoryComplete_ = false;
     bool captureTree_ = false;
     std::size_t treeNodeCap_ = 4096;
 };

@@ -9,6 +9,9 @@ import java.util.Map;
 /** Reconstruct only publicly resolved rooms from vanilla's persisted metrics. */
 final class QuestionRoomHistory {
     final List<Map<String,Object>> outcomes = new ArrayList<>();
+    // Absolute floor alignment, including boss-chest placeholders. Used only
+    // after complete validates both persisted paths against the current room.
+    final List<String> rooms = new ArrayList<>();
     boolean complete;
 
     static QuestionRoomHistory capture(List<String> original, List<String> resolved,
@@ -22,6 +25,7 @@ final class QuestionRoomHistory {
         for (int i=0; i<floor; ++i) {
             int visitedFloor = i+1;
             String outcome = i < resolved.size() ? symbol(resolved.get(i)) : currentOutcome;
+            result.rooms.add(outcome);
             if (visitedFloor == floor && !outcome.equals(currentOutcome)) return result;
             // Vanilla records the boss chest as null in path_per_floor and
             // omits it from path_taken. Never drop arbitrary missing entries.

@@ -636,8 +636,9 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
     return mutableMetadata(id);
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
-    if (options.stopAtMapCheckpoint
-            && id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+    if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
+            && (options.stopAtMapCheckpoint || (options.stopAtActiveWingBootsMap
+                && state(id).hasRelic(sts::RelicId::WING_BOOTS) && state(id).wingBootsCharges > 0)))
         return true;
     return metadata(id).boundary;
 }
@@ -1146,8 +1147,9 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     terminal = terminalValue(id).has_value();
     endpoint = endpointOf(state(id));
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
-    if (options.stopAtMapCheckpoint && id != 0
-            && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+    if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
+            && (options.stopAtMapCheckpoint || (options.stopAtActiveWingBootsMap
+                && state(id).hasRelic(sts::RelicId::WING_BOOTS) && state(id).wingBootsCharges > 0)))
         return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
@@ -1179,7 +1181,10 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
-        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN && additionalCombats >= options.leafCombats) {
+        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN
+                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint
+                    || (options.stopAtActiveWingBootsMap && child.gc.hasRelic(sts::RelicId::WING_BOOTS)
+                        && child.gc.wingBootsCharges > 0))) {
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);

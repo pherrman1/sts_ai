@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "ooc_test_state.h"
+#include "game/SaveFile.h"
 #include "ooc_strategic_tok_net.h"
 #include "one_combat/live_ooc_policy.h"
 #include "one_combat/ooc_checkpoint_policy.h"
@@ -27,6 +28,72 @@ int main(int argc, char **argv) {
         using namespace one_combat;
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        {
+            auto route = gc;
+            route.map = std::make_shared<Map>();
+            for (int y=0;y<15;++y) for(int x=0;x<7;++x) {
+                auto &node=route.map->nodes[y][x];node.x=x;node.y=y;node.room=Room::REST;
+            }
+            route.curMapNodeX=1;route.curMapNodeY=0;route.screenState=ScreenState::MAP_SCREEN;
+            route.map->getNode(1,0).addEdge(2);
+            route.map->getNode(2,1).addEdge(2);
+            route.map->getNode(5,1).addEdge(2);
+            route.map->getNode(2,2).addEdge(2);
+            route.map->getNode(5,2).addEdge(2);
+            for(int charges=0;charges<=3;++charges) {
+                auto state=route;state.relics.add({RelicId::WING_BOOTS,0});state.wingBootsCharges=charges;
+                const auto actions=GameAction::getAllActionsInState(state);
+                require(actions.size()==(charges ? 2u : 1u) && actions[0].getIdx1()==2,
+                        "Wing Boots changed ordinary order or candidate set");
+                require(state.mapMoveCost(2)==0 && state.mapMoveCost(5)==(charges?1:-1)
+                        && state.mapMoveCost(4)==-1 && state.mapMoveCost(7)==-1,
+                        "Wing Boots reachability/cost mismatch");
+                auto ordinary=state;GameAction(2).execute(ordinary);
+                require(ordinary.wingBootsCharges==charges,"ordinary edge spent charge");
+                if(charges) {
+                    auto jump=state;GameAction(5).execute(jump);
+                    require(jump.wingBootsCharges==charges-1 && state.wingBootsCharges==charges
+                            && jump.curMapNodeX==5 && jump.curMapNodeY==1 && jump.screenState==ScreenState::REST_ROOM,
+                            "jump failed to spend exactly once or mutated source copy");
+                    require(jump.eventRng.counter==ordinary.eventRng.counter
+                            && jump.miscRng.counter==ordinary.miscRng.counter
+                            && jump.relicRng.counter==ordinary.relicRng.counter,
+                            "jump eligibility spent RNG");
+                    require(jump.mapMoveCost(5)==(charges>1?1:-1),"final charge did not exhaust");
+                }
+            }
+            route.wingBootsCharges=3;
+            require(route.mapMoveCost(5)==-1,"stale charge allowed unowned relic jump");
+            route.obtainRelic(RelicId::WING_BOOTS);
+            require(route.wingBootsCharges==3 && route.relics.getRelicValue(RelicId::WING_BOOTS)==0,
+                    "native Wing Boots acquisition or frozen feature changed");
+            route.relics.remove(RelicId::WING_BOOTS);
+            require(route.mapMoveCost(5)==-1,"removed Wing Boots retained usable charges");
+            route.wingBootsCharges=0;route.obtainRelic(RelicId::WING_BOOTS);
+            require(route.wingBootsCharges==3,"reacquired Wing Boots did not reset charges");
+            auto gifted=route;gifted.curEvent=Event::NLOTH;gifted.screenState=ScreenState::EVENT_SCREEN;
+            for(int i=0;i<int(gifted.relics.relics.size());++i)
+                if(gifted.relics.relics[i].id==RelicId::WING_BOOTS)gifted.info.relicIdx0=i;
+            gifted.regainControlAction=[](GameContext &g){g.screenState=ScreenState::MAP_SCREEN;};
+            GameAction(0).execute(gifted);
+            require(!gifted.hasRelic(RelicId::WING_BOOTS) && gifted.wingBootsCharges==0,
+                    "N'loth removal left charge state behind");
+            route.curMapNodeY=-1;
+            require(route.mapMoveCost(1)==0 && route.mapMoveCost(5)==-1,"first row used jump");
+            route.curMapNodeY=14;
+            require(route.mapMoveCost(0)==0 && route.mapMoveCost(5)==-1,"boss step used jump");
+            for(int counter:{-2,0,1,2,3}) {
+                SaveFile save;save.relics={RelicId::WING_BOOTS};save.relic_counters={counter};
+                GameContext loaded;loaded.initRelicsFromSave(save);
+                require(loaded.wingBootsCharges==std::max(0,counter)
+                        && loaded.relics.getRelicValue(RelicId::WING_BOOTS)==0,"save Wing Boots counter mismatch");
+            }
+            for(int counter:{-3,-1,4}) {
+                SaveFile save;save.relics={RelicId::WING_BOOTS};save.relic_counters={counter};
+                bool rejected=false;try {GameContext loaded;loaded.initRelicsFromSave(save);}catch(const std::invalid_argument&){rejected=true;}
+                require(rejected,"malformed Wing Boots save counter accepted");
+            }
+        }
         {
             auto upgraded = gc;
             upgraded.deck = Deck{};
@@ -449,7 +516,7 @@ int main(int argc, char **argv) {
         const auto zeroSample = zeroLeaf.evaluateLeafWithOutcome(0, zeroRng);
         require(!zeroSample.terminal && zeroSample.value == 0,
                 "nonterminal MAP model zero must not become terminal death");
-        OocGameContextModel checkpointModel(pending, path, {}, checkpoint, std::move(deps));
+        OocGameContextModel checkpointModel(pending, path, {}, checkpoint, deps);
         std::mt19937_64 checkpointRng(17);
         require(checkpointModel.evaluateLeaf(0, checkpointRng) == 0.25 && leafSawMap
                 && checkpointModel.continuationMetrics().projectionSteps > 0,
@@ -499,6 +566,27 @@ int main(int argc, char **argv) {
                     && a.monsterChance==b.monsterChance && a.shopChance==b.shopChance
                     && a.treasureChance==b.treasureChance && rootCounterSamples==1,
                     "downstream route diverged or resampled qualified room counters");
+        }
+        {
+            for (bool acquiredLater : {false,true}) {
+                auto source=pending;
+                if (!acquiredLater) { source.relics.add({RelicId::WING_BOOTS,0});source.wingBootsCharges=2; }
+                else source.regainControlAction=[](GameContext &g) {
+                    g.relics.add({RelicId::WING_BOOTS,0});g.wingBootsCharges=3;g.screenState=ScreenState::MAP_SCREEN;
+                };
+                auto guarded=checkpoint;guarded.stopAtMapCheckpoint=false;guarded.stopAtActiveWingBootsMap=true;
+                auto guardedDeps=deps;
+                OocGameContextModel model(source,path,{},guarded,guardedDeps);
+                std::mt19937_64 rng(29);
+                const auto child=model.sampleSuccessor(0,model.legalActions(0).front().id,rng);
+                require(model.state(child).screenState==ScreenState::MAP_SCREEN && model.isLeafBoundary(child),
+                        "active Wing Boots escaped downstream map guard");
+                require(model.evaluateLeaf(child,rng)==.25,"guarded map leaf failed");
+                guarded.leafCombats=1;
+                OocGameContextModel detached(source,path,{},guarded,guardedDeps);
+                require(detached.evaluateLeaf(0,rng)==.25 && mapContinuationCalls==0,
+                        "detached continuation bypassed charged map boundary");
+            }
         }
         std::cout << "live OOC policy contract PASS\n";
         return 0;

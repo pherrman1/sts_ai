@@ -116,7 +116,7 @@ J canonicalOocState(const GameContext &gc, const PathHistory &path) {
     for (const auto &r : gc.relics.relics)
         relics.push_back({{"id", static_cast<int>(r.id)}, {"data", r.data}});
     J potions = J::array(); for (auto p : gc.potions) potions.push_back(static_cast<int>(p));
-    return {{"schema", "sts_differential_ooc_v1"},
+    J result = {{"schema", "sts_differential_ooc_v1"},
             {"character", static_cast<int>(gc.cc)}, {"ascension", gc.ascension},
             {"act", gc.act}, {"floor", gc.floorNum}, {"screen", static_cast<int>(gc.screenState)},
             {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
@@ -124,6 +124,9 @@ J canonicalOocState(const GameContext &gc, const PathHistory &path) {
             {"potionCapacity", gc.potionCapacity}, {"potions", std::move(potions)},
             {"deck", std::move(deck)}, {"relics", std::move(relics)}, {"map", map(gc)},
             {"pathVisits", path.roomVisits}, {"details", details(gc)}};
+    // Preserve byte-identical identities/seeds for states without the relic.
+    if (gc.hasRelic(RelicId::WING_BOOTS)) result["wingBootsCharges"] = gc.wingBootsCharges;
+    return result;
 }
 
 J gameRng(const GameContext &gc, const BattleContext *battle) {

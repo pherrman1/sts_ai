@@ -105,6 +105,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean present;
         String cardJson;
         AbstractCard physicalCard;
+        CardQueueItem physicalItem;
         int target;
         int energyOnUse;
         boolean isEndTurn;
@@ -121,6 +122,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             present = false;
             cardJson = null;
             physicalCard = null;
+            physicalItem = null;
             target = 0;
             energyOnUse = 0;
             isEndTurn = false;
@@ -236,6 +238,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostBattle(AbstractRoom room) {
+        RunicDomeCapture.clear();
         resetSilverBudget();
         monsterSlots.clear();
         replacedMonsterParents.clear();
@@ -1986,6 +1989,36 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + ",\"exhaustOnUse\":" + item.exhaustOnUse + "}";
     }
 
+    private static PendingCardQueueCapture.Result pendingCardQueue(IdentityHashMap<AbstractMonster,Integer> slots) {
+        List<PendingCardQueueCapture.Item> snapshot = new ArrayList<>();
+        for (CardQueueItem item : AbstractDungeon.actionManager.cardQueue) {
+            if (item == null) { snapshot.add(null); continue; }
+            PendingCardQueueCapture.Item observed = new PendingCardQueueCapture.Item();
+            observed.identity = item;
+            observed.vanilla = item.getClass() == CardQueueItem.class;
+            observed.hasMonster = item.monster != null;
+            observed.target = item.monster == null ? null : slots.get(item.monster);
+            observed.endTurnAutoPlay = item.isEndTurnAutoPlay;
+            observed.energyOnUse = item.energyOnUse;
+            observed.ignoreEnergyTotal = item.ignoreEnergyTotal;
+            observed.randomTarget = item.randomTarget;
+            observed.autoplay = item.autoplayCard;
+            if (item.card != null) {
+                AbstractCard card = item.card;
+                observed.cardJson = cardJson(card);
+                observed.uuid = card.uuid == null ? null : card.uuid.toString();
+                observed.requiresTarget = card.target == AbstractCard.CardTarget.ENEMY
+                        || card.target == AbstractCard.CardTarget.SELF_AND_ENEMY;
+                observed.triggerOnUse = !card.dontTriggerOnUseCard;
+                observed.freeToPlay = card.freeToPlayOnce;
+                observed.purgeOnUse = card.purgeOnUse;
+                observed.exhaustOnUse = card.exhaust || card.exhaustOnUseOnce || card.exhaustOnFire;
+            }
+            snapshot.add(observed);
+        }
+        return PendingCardQueueCapture.capture(snapshot, trackedLastCardQueueItem.physicalItem);
+    }
+
     private static boolean isPlayerDecisionPoint() {
         if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.NONE
                 || AbstractDungeon.actionManager == null) return false;
@@ -2032,6 +2065,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
         trackedLastCardQueueItem.present = true;
         trackedLastCardQueueItem.physicalCard = item.card;
+        trackedLastCardQueueItem.physicalItem = item;
         trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
         Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
         if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
@@ -2816,6 +2850,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append(",\"cardSelect\":").append(selection == null ? "false" : selection)
                 .append(",\"resolving\":false")
                 .append(",\"runicDome\":").append(hasRunicDome())
+                .append(hasRunicDome() ? ",\"runicDomeKnowledge\":" + RunicDomeCapture.snapshot() : "")
                 .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
                 // At this stable player boundary vanilla has completed all
                 // monster-turn bookkeeping. Make the known zero explicit so
@@ -2914,9 +2949,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     out.append('}');
                 }
                 out.append(']');
-                Integer miscInfo = monsterMiscInfo(monster);
+                // A post-roll private counter can disclose a hidden intent.
+                // The audited Dome encounters have invariant native misc=0;
+                // every other encounter is rejected by the knowledge payload.
+                Integer miscInfo = runicDome ? 0 : monsterMiscInfo(monster);
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
-                Integer uniquePower0 = monsterUniquePower0(monster);
+                Integer uniquePower0 = runicDome ? null : monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
@@ -2926,7 +2964,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('}');
             }
         }
-        out.append("],\"curCardQueueItem\":").append(cardQueueItemJson())
+        out.append(']');
+        if (selection != null) {
+            PendingCardQueueCapture.Result pending = pendingCardQueue(emittedSlots);
+            if (pending.error != null) out.append(",\"pendingCardQueueError\":\"")
+                    .append(escapeJson(pending.error)).append('"');
+            else out.append(",\"pendingCardQueue\":").append(pending.json);
+        }
+        out.append(",\"curCardQueueItem\":").append(cardQueueItemJson())
                 .append(",\"lastCard\":");
         AbstractCard lastCard = AbstractDungeon.actionManager.lastCard;
         if (decisionOrdinal > 0 && trackedLastCardQueueItem.present
@@ -2975,6 +3020,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    static String ctmPrimaryModel(Properties properties, String environmentValue) {
+        // Presence is intentional even for an empty/whitespace override: let
+        // the native loader report the invalid artifact instead of substituting.
+        if (environmentValue != null) return environmentValue;
+        String value = properties.getProperty("ctmModel");
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
     private static int loadToggleKey() {
@@ -3030,7 +3083,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     return;
                 }
                 ProcessBuilder builder = new ProcessBuilder(executable);
-                String ctmModel = environmentFirst(p, "STS_CTM_MODEL", "ctmModel");
+                String ctmModel = ctmPrimaryModel(p, System.getenv("STS_CTM_MODEL"));
                 if (ctmModel != null)
                     builder.environment().put("STS_CTM_MODEL", ctmModel);
                 String oocModel = environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel");

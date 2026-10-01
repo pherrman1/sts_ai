@@ -117,8 +117,9 @@ oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
-`moveHistory`, `intent`, and `intentDamage`; the root remains rejected because
-the public producer does not expose enough pre-roll state for a fair import.
+`moveHistory`, `intent`, and `intentDamage`. A bounded public-history observer
+qualifies single Act-1 Jaw Worm/Cultist encounters within an explicit safe
+card/relic/potion/power domain. Other Dome states remain unsupported.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
 the bounded reflection helper can read it and are rejected when it cannot.
 The producer maps vanilla `RitualPower.skipFirst` to this field because that
@@ -162,9 +163,14 @@ observation is too late to retain that public item. At a card selection the
 importer also accepts an optional `combat.pendingCardQueue` array: vanilla's
 `GameActionManager.cardQueue` still pending at that point (not the item being
 played), front first, with items in the `curCardQueueItem` shape. A malformed array fails as
-`silver_card_queue_item`. The producer does not emit it yet. Without it, copies
-queued by a spent Double Tap, Duplication or Necronomicon are missing from the
-search root (issue #328). Boolean monster powers are
+`silver_card_queue_item`. The Java producer now emits this array at selectors,
+including an observed empty array, and retains same-UUID generated copies in
+front-first order. It verifies that the processed physical queue item has
+already been removed; unknown subclasses, unsettled queues, invalid targets,
+capacity overflow and unqualified end-turn/no-trigger payloads fail closed.
+A producer-shaped Double Tap/Headbutt fixture checks the copied continuation.
+Arbitrary pending action-queue continuations still require their own contracts;
+this change is the card-queue producer slice of issue #328. Boolean monster powers are
 presence states at the importer boundary, so a negative or sentinel Java amount
 still sets the status bit before numeric amount validation. The stable slot
 registry keeps ordinary Large Slime split children at native slots 0/1; the
@@ -292,7 +298,19 @@ changes remain subject to the same readiness and observation checks.
 
 `--refresh-runtime` builds only `one_combat_advisor`, copies it and
 the tracked CTM/OOC model artifacts into a new release, validates their hashes,
-and atomically changes `current`. The runtime helper uses the Release build
+and atomically changes `current`. New releases package both the qualified
+`combat_transition_deepsets_lizard_t2.native` primary and standard Brew
+fallback, pin both hashes and the correction setting in the manifest, and
+select that manifest's primary at launch. Legacy single-model manifests and
+explicit standard-primary overrides remain supported. `STS_CTM_BREW_FALLBACK_MODEL`
+and strict `STS_CTM_ACTIVE_LIZARD=0|1` override the qualified stack; advisor
+hello/forecast and OOC responses identify the loaded artifacts and setting.
+Only validated production qualification enables Lizard correction automatically;
+integration-candidate metadata requires explicit opt-in. An explicitly empty
+or whitespace model override reaches the native loader unchanged and fails,
+rather than being replaced by Java properties.
+Launch overrides that differ from the installed manifest no longer count as a
+matching active runtime. The runtime helper uses the Release build
 preset (`linux-gcc-release-ccache`, with the build wrapper's matching fallback).
 The helper packages the executable from the preset actually selected by the
 wrapper. A running game is never silently restarted; when it is
@@ -353,7 +371,7 @@ The inspector launches the stable advisor configured in
 
 ```properties
 advisor=<XDG data>/sts-ai/live-runtime/current/one_combat_advisor
-ctmModel=<XDG data>/sts-ai/live-runtime/current/models/combat_transition_near_full_except_smoke_v2.native
+ctmModel=<XDG data>/sts-ai/live-runtime/current/models/combat_transition_deepsets_lizard_t2.native
 oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.native
 ```
 
@@ -580,9 +598,13 @@ class distinguishes a `?` floor that became a hallway fight from a fixed event
 fight on the same map symbol: only the former advances the normal encounter
 queue. The combat-class ledger is checked against completed public combat
 floors without indexing `path_taken` by absolute floor. Wing Boots' public
-charge counter is copied into the native root only to identify the explicit
-active-MAP unsupported boundary; the frozen simulator/value-model integration
-does not enable Wing Boots map expansion here. Missing or
+charge counter is copied into the native root separately from frozen model
+relic features. Charged MAP decisions remain unsupported by default;
+`STS_LIVE_OOC_WING_BOOTS=1` enables experimental exact ordinary Act 1–3
+movement and includes that setting in the OOC evaluator identity. Native
+jump legality, charge consumption, acquire/save entry, reordered MCP choice
+mapping and exhausted `-2` import have fixed-fixture coverage. Live execution
+and policy quality with these extra choices remain unqualified. Missing or
 contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
 after fifteen public map-room entries for that act and a matching public boss
 combat floor; other unknown path symbols remain unsupported. Public metric
@@ -591,7 +613,11 @@ encounter consumption, relic-pool membership, one-time/event membership, and
 shop-removal cost. Currently visible shop, combat-reward, and boss-relic offers
 are also removed from every reconstructed relic pool because native generation
 consumes a relic when it is offered, not when it is acquired. Historical
-seen-but-skipped offers are absent from vanilla metrics. An uninterrupted
+shop and reward offers skipped earlier are absent from vanilla metrics.
+Validated historical boss `picked`/`not_picked` metrics contribute known
+exclusions without marking that global history complete. Legacy normal/elite
+encounter history can be recovered only from canonical encounter identities
+joined to validated resolved public path floors. An uninterrupted
 fresh-run observer accumulates them from each public screen; random-relic
 branches and direct MAP search fail closed with
 `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
@@ -601,9 +627,14 @@ allowed to complete the current floor. Missing, contradictory or shifted
 history fails closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`.
 Native import replays the observed outcomes using native float increments and
 resets; qualified root particles preserve these exact room probabilities.
-An EVENT outcome while Juzu Bracelet was ever owned remains ambiguous because
-a replaced monster roll has a different reset, so that history stays
-unsupported. Tiny Chest's resolved treasure outcome is representable.
+Public acquisition/loss chronology can prove whether Juzu was owned at each
+room entry; a later known monster reset also removes earlier counter ambiguity.
+For new ordinary transitions, a scoped observer records Juzu's public flash
+inside the room roll and persists true/false/unknown conversion provenance.
+A known conversion resets the monster chance; an observed non-conversion
+uses the normal increment. Legacy Juzu EVENT outcomes without that evidence
+remain ambiguous until a later known reset, rather than becoming guessed
+non-conversions. Tiny Chest's resolved treasure outcome is representable.
 Event capture uses source-specific phase tables, public displayed costs and
 exact enabled option slots. This includes Shining Light, Ghosts, Winding Halls,
 and the remaining vanilla Act 1–3 and shrine decision pages. Dead Adventurer
@@ -787,8 +818,9 @@ event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
 group after parent reward collection; their concealed card identities are not
 serialized or scored. Wing Boots is imported with a separate public charge
-  counter, while direct MAP roots with active charges fail closed because the
-  frozen value models do not encode remaining charges. Lizard Tail maps its
+  counter, with charged direct and downstream MAP decisions gated behind the
+  explicit experimental setting above. Frozen value inputs omit remaining
+  charges; enabling mechanics does not establish value calibration. Lizard Tail maps its
   unused/used state to native 1/0; Matryoshka and N'loth's Hungry Face preserve
   remaining charges with Java used-up sentinels mapped to zero. Maw Bank has an explicit
 source-derived active/spent conversion, and a spent Neow's Lament or
@@ -848,8 +880,12 @@ Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
 tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
 claiming an exact hidden chest state.
 These limits must not be presented as whole-game equivalence.
-Representable relic counters do not expand the frozen CTM/model support gates;
-active Lizard Tail remains subject to their existing qualification boundary.
+Representable relic counters do not expand the frozen CTM/model support gates.
+The advisor now uses the existing qualified DeepSets/Lizard sampler with the
+standard Entropic Brew fallback. Active Tail follows that wrapper's qualified
+support contract; Fairy/Tail+Brew and other excluded combinations still fail
+closed. This integration reuses qualified artifacts; it is not new gameplay
+quality evidence.
 
 ### Full-run driver and failure packets
 
@@ -963,23 +999,28 @@ native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt, Exhume,
 Warcry, Gambler's Brew, Liquid Memories, and Hologram. The mapping remains
 deliberately bounded: an unrecognized selection prompt, an unavailable runtime
 tracker, or an option list larger than the native representation is rejected.
-The ordinary player limbo pile is serialized. The remaining common combat
-exclusion is live Runic Dome. Native `Monster::rollMove` and
-`CombatKnowledgeState` already represent hidden rolls using public prior move
+The ordinary player limbo pile is serialized. Native `Monster::rollMove` and
+`CombatKnowledgeState` represent hidden rolls using public executed-move
 history, `pendingMoveRolls`, `pendingDirectMoveChoice`, and roll-time
-`pendingRollInputs`; `apps/runic_dome_lifecycle_test.cpp` checks this native
-lifecycle. The Java producer has no equivalent observer initialized before
-monster pre-battle rolls, no record of executed public moves and deterministic
-overrides, and no persistent provenance for Writhing Mass reroll chains or
-Looter/Mugger direct choices. Current HP cannot replace roll-time HP, and raw
-`nextMove`, private move history, or live RNG would expose hidden information.
-Supporting this boundary requires that public-history observer, capture across
-monster creation/turns/overrides, and native/Java lifecycle parity fixtures;
-removing the importer guard alone cannot provide a fair belief state. Other
-unsupported queue metadata remains outside the supported boundary. CTM and Silver results remain separate evaluators, and
-neither path controls gameplay or establishes policy-quality evidence. Any
-future public-state expansion must add a native parity fixture and an explicit
-public-information contract before promotion.
+`pendingRollInputs`. The Java Dome observer now starts at `MonsterGroup.init`
+before initial rolls, captures public HP at roll entry, and records an audited
+move only when its concrete `takeTurn` executes. It survives the later battle
+callback and includes epoch/generation in the observation. Raw queued intent,
+private move history and live RNG are omitted.
+
+The supported slice is a single ordinary Act-1 Jaw Worm or Cultist with a
+checked safe card/relic/potion/power domain. Unknown lifecycle, replacements,
+intermediate hidden rerolls, direct overrides, missing initial history,
+intent queries such as Spot Weakness and generators remain fail-closed. Save
+resume during an unobserved combat does not manufacture earlier provenance.
+Native fixtures check deferred-roll public-input/history parity, including
+roll-time HP that differs from current HP. These fixed fixtures do not qualify
+all encounters or establish live whole-fight/gameplay quality.
+
+General action-queue metadata remains outside the supported boundary. CTM and
+Silver results remain separate evaluators, and neither path controls gameplay
+or establishes policy-quality evidence. Further public-state support requires
+its native parity fixture and explicit public-information contract.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
 player-visible combat gate, protocol-v4 producer/importer contract, explicit

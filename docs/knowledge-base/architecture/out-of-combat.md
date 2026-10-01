@@ -462,8 +462,16 @@ Courier-restock, and random-relic event branches unless a complete
 `seenRelics` history is supplied.
 Live MAP roots use reconstructed public room chances when history is qualified,
 and the explicit room-chance belief prior otherwise within its existing gate.
-Non-root MAP states remain hard checkpoint leaves, so a search never chooses a
-hypothetical room after reaching the checkpoint.
+Non-root MAP states expand only when both question-room and relic-offer
+histories qualify future transitions. Otherwise they remain hard checkpoint
+leaves. Active Wing Boots also stops map expansion by default, including
+hypothetical acquisition after the root. `STS_LIVE_OOC_WING_BOOTS=1` enables
+experimental ordinary Act 1–3 charged movement: an existing next-row jump
+costs one charge, ordinary edges cost none, and exhaustion becomes zero.
+Native obtain/save entry reconstructs charges separately from frozen relic
+features. The added candidate set and transitions have fixture coverage;
+frozen-model quality and live execution remain unqualified. No model features
+or weights change with this flag.
 
 Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
 searched semantic transitions (primitive transitions on MAP), excluding

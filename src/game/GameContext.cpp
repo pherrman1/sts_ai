@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
 
 #include "constants/RelicPools.h"
 #include "constants/CardPools.h"
@@ -229,7 +230,14 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
 //        std::cout << getRelicName(r) << " " << s.relic_counters[i] << '\n';
 
         // todo lizard tail, and others
-        RelicInstance relic {r, s.relic_counters[i]};
+        int data = s.relic_counters.at(i);
+        if (r == RelicId::WING_BOOTS) {
+            if (data < -2 || data == -1 || data > 3)
+                throw std::invalid_argument("invalid Wing Boots save counter");
+            wingBootsCharges = std::max(0, data);
+            data = 0; // Frozen OOC encoders keep mechanics in the separate field.
+        }
+        RelicInstance relic {r, data};
         relics.add(relic);
     }
 }
@@ -749,7 +757,24 @@ void GameContext::transitionToAct(int targetAct) {
     screenState = ScreenState::MAP_SCREEN;
 }
 
+int GameContext::mapMoveCost(int mapNodeX) const {
+    if (mapNodeX < 0 || mapNodeX > 6 || !map) return -1;
+    if (curMapNodeY == 14) return mapNodeX == 0 ? 0 : -1;
+    if (curMapNodeY == -1) return map->getNode(mapNodeX, 0).edgeCount > 0 ? 0 : -1;
+    if (curMapNodeY < 0 || curMapNodeY > 13 || curMapNodeX < 0 || curMapNodeX > 6) return -1;
+    const auto &current = getCurMapNode();
+    for (int i = 0; i < current.edgeCount; ++i)
+        if (current.edges[i] == mapNodeX) return 0;
+    if (act >= 1 && act <= 3 && current.edgeCount > 0
+            && hasRelic(RelicId::WING_BOOTS) && wingBootsCharges > 0 && wingBootsCharges <= 3
+            && map->getNode(mapNodeX, curMapNodeY + 1).edgeCount > 0) return 1;
+    return -1;
+}
+
 void GameContext::transitionToMapNode(int mapNodeX) {
+    // Scripted room setup also uses this function. Only a verified jump costs
+    // a charge; action validation rejects unreachable player destinations.
+    if (mapMoveCost(mapNodeX) == 1) --wingBootsCharges;
     lastRoom = curRoom;
     curMapNodeX = mapNodeX;
     ++floorNum;
@@ -1324,6 +1349,10 @@ bool GameContext::obtainRelic(RelicId r) {
     bool opensScreen = false;
 
     switch (r) {
+
+        case RelicId::WING_BOOTS:
+            wingBootsCharges = 3;
+            break;
 
         case RelicId::LIZARD_TAIL: {
             // A newly acquired Tail is active until its first native revival.
@@ -3254,12 +3283,14 @@ void GameContext::chooseEventOption(int idx) {
         case Event::NLOTH: {
             switch (idx) {
                 case 0:
+                    if (relics.relics[info.relicIdx0].id == RelicId::WING_BOOTS) wingBootsCharges = 0;
                     relics.remove(relics.relics[info.relicIdx0].id); // maybe add a removeAtIdx method?
                     obtainRelic(RelicId::NLOTHS_GIFT);
                     regainControl();
                     break;
 
                 case 1:
+                    if (relics.relics[info.relicIdx1].id == RelicId::WING_BOOTS) wingBootsCharges = 0;
                     relics.remove(relics.relics[info.relicIdx1].id); // maybe add a removeAtIdx method?
                     obtainRelic(RelicId::NLOTHS_GIFT);
                     regainControl();

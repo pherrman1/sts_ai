@@ -157,26 +157,7 @@ bool isValidEventScreenAction(const GameContext &gc, const search::GameAction a)
 }
 
 bool isValidMapAction(const GameContext &gc, const search::GameAction a) {
-    const auto select = a.getIdx1();
-    if (select > 6) {
-        return false;
-    }
-
-    if (gc.curMapNodeY == 14) {
-        return select == 0;
-    }
-
-    if (gc.curMapNodeY == -1) {
-        return gc.map->getNode(select, 0).edgeCount > 0;
-    }
-
-    const auto &curNode = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
-    for (int i = 0; i < curNode.edgeCount; ++i) {
-        if (curNode.edges[i] == select) {
-            return true;
-        }
-    }
-    return false;
+    return gc.mapMoveCost(a.getIdx1()) >= 0;
 }
 
 bool isValidRewardsAction(const GameContext &gc, const search::GameAction a) {
@@ -641,24 +622,17 @@ std::vector<search::GameAction> getAllRewardActions(const sts::GameContext &gc) 
 
 std::vector<search::GameAction> getAllMapActions(const sts::GameContext &gc) {
     std::vector<search::GameAction> actions;
-
-    if (gc.curMapNodeY == 14) {
-        actions.emplace_back(0);
-
-    } else if (gc.curMapNodeY == -1) {
-        for (const auto &node : gc.map->nodes[0]) {
-            if (node.edgeCount > 0) {
-                actions.emplace_back(node.x);
-            }
-        }
-
+    // Preserve the existing ordinary-edge order; append only new jump choices.
+    if (gc.curMapNodeY >= 0 && gc.curMapNodeY < 14 && gc.map
+            && gc.curMapNodeX >= 0 && gc.curMapNodeX <= 6) {
+        const auto &node = gc.getCurMapNode();
+        for (int i = 0; i < node.edgeCount; ++i) actions.emplace_back(node.edges[i]);
+        for (int x = 0; x < 7; ++x)
+            if (gc.mapMoveCost(x) == 1) actions.emplace_back(x);
     } else {
-        auto node = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
-        for (int i = 0; i < node.edgeCount; ++i) {
-            actions.emplace_back(node.edges[i]);
-        }
+        for (int x = 0; x < 7; ++x)
+            if (gc.mapMoveCost(x) == 0) actions.emplace_back(x);
     }
-
     return actions;
 }
 
