@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-01 for mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -419,6 +419,72 @@ non-timing files with the sink off/on and again with it on:
 python3 tools/vwin_refresh_contract.py OFF.manifest.json --compare ON.manifest.json --allow-sink-toggle
 python3 tools/vwin_refresh_contract.py ON.manifest.json --compare REPEAT_ON.manifest.json
 ```
+
+### A3 offline model training and evaluation
+
+`python3 -m tools.vwin_refresh_model` provides four separate stages for #334.
+Use the system/repository Python with NumPy, XGBoost and PyTorch installed; the
+CPU synthetic tests do not require CUDA. The implementation is offline-only,
+does not replace a tracked model, and does not establish gameplay quality.
+
+1. `preflight INDEX --output NEW_REPORT.json` enters through
+   `validate_corpus()` and verifies the frozen index identity and exact
+   358/77/77 source split. It checks every MAP/runout label join and the B0
+   feature-name contract, and computes variance only on TRAIN MAP rows.
+   It produces no model predictions. Strict validation necessarily reads all
+   component tables, including TEST metadata/labels; TEST prediction access
+   remains closed.
+2. `tune INDEX --output NEW_RUN --authorize-full-training [--threads N]`
+   performs the later, separately authorized full TRAIN/VALIDATION execution.
+   X1/X2 share the 12-recipe CPU-hist grid and selected input features; X2
+   constrains only `curHp`. M1 uses TRAIN normalization, the 64/32 GELU network,
+   12 recipes, seed-0 tuning and selected-recipe retrains at seeds 0/1/2. The
+   lowest validation NLL selects every checkpoint. X1's half-TRAIN check uses
+   the lowest hash-ranked half of source seeds under
+   `vwin-refresh-334-half-train-v1:{seed}` with unchanged selected parameters
+   and early stopping. No TEST feature matrix is loaded.
+3. `freeze RUN` binds the selected checkpoints, B0 copy, normalization,
+   preflight, validation reports, corpus identity and tooling file hashes in
+   an exclusive `freeze.json`. All candidates must use the same TRAIN mask.
+4. `open-test RUN --confirm OPEN_REAL_TEST_ONCE` verifies the freeze and
+   corpus again, then consumes an exclusive `test-opened.json` latch before
+   reading TEST feature matrices. All four arms use identical metrics,
+   source-cluster bootstrap (2,000 replicates), resources and sibling joins.
+   A failed evaluation leaves the latch consumed. Recovery requires a
+   separately reviewed decision; the CLI never automatically reopens TEST.
+
+The compact implementation separates CLI/custody (`vwin_refresh_model.py`),
+component-preserving dataset access (`vwin_refresh_dataset.py`), model families
+(`vwin_refresh_training.py`) and pure metrics/probes
+(`vwin_refresh_evaluation.py`). It writes no numerical cache. Run directories
+must be new and must remain local; do not commit datasets or checkpoints.
+Preflight binds all component manifests, feature header, split/counts,
+TRAIN-selected ordered names/mask, label checks and tooling identity.
+
+B0 uses its serialized feature names. `native_parity()` optionally feeds up to
+64 supplied canonical-rich-order rows through an existing `one_combat
+winnettest` executable and checks name-aligned Python predictions at 1e-4.
+It neither builds C++ nor drives game seeds. Native parity is a separate check
+and is not implied by Python tests.
+
+Resource probes retain the terminal-pricing audit conventions: integer HP
+sweeps over 1..maxHp, monotonicity tolerance 0.005, flat steps below 1e-6 in the
+first ceil(0.6*maxHp) HP, clamped +/-5 local HP slope with denominator 10,
+coherent held-potion removal, bounded +/-25 gold, and Feed-like/max-HP-only
+changes. WIN_RAW act-boss probes replace HP with `postAfterBattleHp`.
+Missing acts/insufficient independent seeds cannot pass the resource gate.
+Pre-boss MAP breakdowns derive from recorded act/mapY and the exact native
+transition rule: Acts 1-3 at mapY=14 enter the boss at Y=15
+(`GameContext::transitionToMapNode`); Act 4 at mapY=2 has the sole boss successor
+at Y=3 (`Map::act4Map`). No floor-distance heuristic is used. Sibling scores
+join explicit source/branch IDs and take minimum recorded `rowIdx`, counting
+branches with no MAP state.
+
+The later offline verdict requires a strictly negative MAP NLL delta CI and
+MAP resource qualification; candidates within 0.003 NLL are tied pending
+native/in-context speed work. WIN_RAW resource qualification is reported
+separately. Neither verdict grants terminal-pricing readiness or promotion.
+The tooling PR and synthetic tests are not a full experiment result.
 
 ### Mixed-producer v_win refresh corpus
 
