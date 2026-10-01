@@ -2012,7 +2012,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
 
             if (asc17) {
                 if (roll < 40) {
-                    if (lastTwoMoves(MMID::ACID_SLIME_M_CORROSIVE_SPIT)) {
+                    if (lastTwoMoves(MMID::ACID_SLIME_L_CORROSIVE_SPIT)) {
                         if (bc.aiRng.randomBoolean(0.6F)) {
                             return (MMID::ACID_SLIME_L_TACKLE);
                         } else {
@@ -2078,8 +2078,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             if (roll >= 40 && !lastTwoMoves(MMID::BLUE_SLAVER_STAB)) {
                 return (MMID::BLUE_SLAVER_STAB);
 
-            } else if ( !lastTwoMoves(MMID::BLUE_SLAVER_RAKE) ||
-                (asc17 && !lastMove(MMID::BLUE_SLAVER_RAKE)) ) {
+            } else if (asc17 ? !lastMove(MMID::BLUE_SLAVER_RAKE) : !lastTwoMoves(MMID::BLUE_SLAVER_RAKE)) {
                 return (MMID::BLUE_SLAVER_RAKE);
 
             } else {
@@ -2439,12 +2438,11 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             }
 
             if (asc18) {
-                if (!lastTwoMoves(MMID::GREMLIN_NOB_SKULL_BASH)) {
-                    return (MMID::GREMLIN_NOB_RUSH);
-                    break;
+                if (!lastMove(MMID::GREMLIN_NOB_SKULL_BASH) && !lastMoveBefore(MMID::GREMLIN_NOB_SKULL_BASH)) {
+                    return (MMID::GREMLIN_NOB_SKULL_BASH);
                 }
 
-                if (lastTwoMoves(MMID(MMID::GREMLIN_NOB_RUSH))) {
+                if (lastTwoMoves(MMID::GREMLIN_NOB_RUSH)) {
                     return (MMID::GREMLIN_NOB_SKULL_BASH);
 
                 } else {
@@ -2811,10 +2809,10 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             } else if (roll >= 75 && !usedEntangle) {
                 return (MMID::RED_SLAVER_ENTANGLE);
 
-            } else if (roll >= 50 && usedEntangle && !lastTwoMoves(MMID::RED_SLAVER_STAB)) {
+            } else if (roll >= 55 && usedEntangle && !lastTwoMoves(MMID::RED_SLAVER_STAB)) {
                 return (MMID::RED_SLAVER_STAB);
 
-            } else if (!lastTwoMoves(MMID::RED_SLAVER_SCRAPE) || (asc17 && !lastMove(MMID::RED_SLAVER_SCRAPE))) {
+            } else if (asc17 ? !lastMove(MMID::RED_SLAVER_SCRAPE) : !lastTwoMoves(MMID::RED_SLAVER_SCRAPE)) {
                 return (MMID::RED_SLAVER_SCRAPE);
 
             } else {

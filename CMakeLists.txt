@@ -312,6 +312,8 @@ add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simu
 add_test(NAME simulator_relic_fidelity COMMAND $<TARGET_FILE:unit-test> simulator_relic_fidelity)
 set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
 set_tests_properties(simulator_relic_fidelity PROPERTIES LABELS "core")
+add_test(NAME monster_ai_java_parity COMMAND $<TARGET_FILE:unit-test> monster_ai_java_parity)
+set_tests_properties(monster_ai_java_parity PROPERTIES LABELS "core")
 add_test(NAME match_and_keep COMMAND $<TARGET_FILE:unit-test> match_and_keep)
 set_tests_properties(match_and_keep PROPERTIES LABELS "core")
 add_test(NAME silver_escape_penalty COMMAND $<TARGET_FILE:unit-test> silver_escape_penalty)

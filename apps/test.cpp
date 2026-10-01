@@ -1659,6 +1659,77 @@ int testSimulatorRelicFidelity() {
     return 0;
 }
 
+// Act 1 monster move rolls audited against the pinned STS1 V2.3.4 reference
+// (#348): each case fixes a move history and roll where the simulator differed.
+int testMonsterAiJavaParity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "monster_ai_java_parity FAIL: " << msg << '\n';
+        return 1;
+    };
+    auto roll = [](int ascension, MonsterEncounter encounter, MonsterId id,
+                   MMID last, MMID beforeLast, int miscInfo, int r) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, ascension);
+        gc.curRoom = Room::MONSTER;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        Monster &m = bc.monsters.arr[0];
+        m.id = id;
+        m.miscInfo = miscInfo;
+        m.moveHistory[0] = last;
+        m.moveHistory[1] = beforeLast;
+        int monsterData = miscInfo;
+        return m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, r);
+    };
+
+    // Red Slaver repeats Stab after Entangle only on a roll of at least 55.
+    for (const int asc : {0, 20}) {
+        if (roll(asc, MonsterEncounter::RED_SLAVER, MonsterId::RED_SLAVER,
+                 MMID::RED_SLAVER_STAB, MMID::RED_SLAVER_SCRAPE, 1, 52) != MMID::RED_SLAVER_SCRAPE) {
+            return fail("Red Slaver stabbed on a roll below 55");
+        }
+    }
+
+    // A17 slavers never repeat Scrape/Rake; below A17 only a third repeat is blocked.
+    const struct { MonsterEncounter enc; MonsterId id; MMID repeat; MMID other; int misc; } slavers[] {
+        {MonsterEncounter::RED_SLAVER, MonsterId::RED_SLAVER, MMID::RED_SLAVER_SCRAPE, MMID::RED_SLAVER_STAB, 1},
+        {MonsterEncounter::BLUE_SLAVER, MonsterId::BLUE_SLAVER, MMID::BLUE_SLAVER_RAKE, MMID::BLUE_SLAVER_STAB, 0},
+    };
+    for (const auto &s : slavers) {
+        if (roll(17, s.enc, s.id, s.repeat, s.other, s.misc, 10) != s.other) {
+            return fail("A17 slaver repeated its debuff attack");
+        }
+        if (roll(16, s.enc, s.id, s.repeat, s.other, s.misc, 10) != s.repeat) {
+            return fail("A16 slaver did not repeat its debuff attack once");
+        }
+    }
+
+    // A18 Gremlin Nob: Skull Bash whenever neither of the last two moves was one.
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_BELLOW, MMID::INVALID, 0, 50) != MMID::GREMLIN_NOB_SKULL_BASH) {
+        return fail("A18 Nob did not Skull Bash after Bellow");
+    }
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_RUSH, MMID::GREMLIN_NOB_SKULL_BASH, 0, 50) != MMID::GREMLIN_NOB_RUSH) {
+        return fail("A18 Nob Skull Bashed with one in its last two moves");
+    }
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_RUSH, MMID::GREMLIN_NOB_RUSH, 0, 50) != MMID::GREMLIN_NOB_SKULL_BASH) {
+        return fail("A18 Nob did not Skull Bash after two Rushes");
+    }
+
+    // A17 Acid Slime (L) never uses Corrosive Spit three times in a row.
+    for (int r = 0; r < 40; ++r) {
+        if (roll(17, MonsterEncounter::LARGE_SLIME, MonsterId::ACID_SLIME_L,
+                 MMID::ACID_SLIME_L_CORROSIVE_SPIT, MMID::ACID_SLIME_L_CORROSIVE_SPIT, 0, r)
+                == MMID::ACID_SLIME_L_CORROSIVE_SPIT) {
+            return fail("A17 Acid Slime (L) used Corrosive Spit three times in a row");
+        }
+    }
+
+    std::cout << "monster_ai_java_parity PASS\n";
+    return 0;
+}
+
 // Silver escape valuation (#370): a Smoke Bomb escape forfeits rewards.
 int testSilverEscapePenalty() {
     auto fail = [&](const std::string &msg) {
@@ -4410,6 +4481,8 @@ int main(int argc, const char* argv[]) {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {
         return testSimulatorRelicFidelity();
+    } else if (command == "monster_ai_java_parity") {
+        return testMonsterAiJavaParity();
     } else if (command == "relic_reward_sapphire") {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
