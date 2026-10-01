@@ -13,6 +13,9 @@ struct LiveOocStateV1 {
     sts::GameContext projected{};
     PathHistory path;
     nlohmann::json ooc;
+    // Verified one-button Java dialogue transitions have no native policy
+    // choice. Never evaluate or execute the projected event for these states.
+    bool mechanicalEventTransition = false;
     // Java does not expose the private reward pity counters. Synthetic parity
     // fixtures may opt in when they provide an exact public reconstruction;
     // real live captures remain false and must not use a fabricated midpoint.

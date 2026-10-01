@@ -2017,6 +2017,153 @@ int main() {
         if (generalImported.wire.extraRollMoveOnTurn != 0
             || generalImported.wire.skipMonsterTurnBits != 0)
             throw std::runtime_error("explicit stable-boundary group state was not preserved");
+        // Literal vanilla POWER_IDs, independently verified with javap.
+        // The older native-name corpus alone cannot catch spelling gaps.
+        const std::pair<const char *, PlayerStatus> rawPlayerPowers[] = {
+            {"Flame Barrier", PlayerStatus::FLAME_BARRIER},
+            {"Double Tap", PlayerStatus::DOUBLE_TAP}, {"Brutality", PlayerStatus::BRUTALITY},
+            {"Constricted", PlayerStatus::CONSTRICTED},
+            {"Next Turn Block", PlayerStatus::NEXT_TURN_BLOCK},
+            {"DexLoss", PlayerStatus::LOSE_DEXTERITY}, {"Regeneration", PlayerStatus::REGEN},
+            {"Ritual", PlayerStatus::RITUAL}, {"Magnetism", PlayerStatus::MAGNETISM},
+            {"Mayhem", PlayerStatus::MAYHEM}, {"Sadistic", PlayerStatus::SADISTIC},
+            {"IntangiblePlayer", PlayerStatus::INTANGIBLE},
+            {"Double Damage", PlayerStatus::DOUBLE_DAMAGE}};
+        for (const auto &[name, status] : rawPlayerPowers) {
+            auto raw = general;
+            raw["silverRoot"]["combat"]["playerPowers"] = json::array({
+                json{{"id", name}, {"amount", 2}, {"justApplied", true}}});
+            const auto imported = one_combat::advisor::importSilverRoot(raw);
+            const auto expected = std::make_pair(static_cast<std::int16_t>(status), std::int16_t{2});
+            if (!imported.ok || std::find(imported.wire.player.statusMap.begin(),
+                    imported.wire.player.statusMap.end(), expected) == imported.wire.player.statusMap.end())
+                throw std::runtime_error(std::string("raw player power failed: ") + name + ": " + imported.reason);
+            if (status == PlayerStatus::INTANGIBLE || status == PlayerStatus::DOUBLE_DAMAGE) {
+                if (!(imported.wire.player.justAppliedBits & (1U << static_cast<int>(status))))
+                    throw std::runtime_error("raw timed player power lost justApplied");
+                raw["silverRoot"]["combat"]["playerPowers"][0].erase("justApplied");
+                if (one_combat::advisor::importSilverRoot(raw).reason != "silver_unmapped_player_power")
+                    throw std::runtime_error("raw timed player power bypassed lifetime qualification");
+            }
+        }
+        auto confusion = general;
+        confusion["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Confusion"}, {"amount", -1}}});
+        const auto confused = one_combat::advisor::importSilverRoot(confusion);
+        if (!confused.ok || !(confused.wire.player.statusBits0
+                & (1ULL << static_cast<int>(PlayerStatus::CONFUSED))))
+            throw std::runtime_error("raw Confusion presence was not imported");
+        for (const int baseEnergy : {3, 4}) {
+            auto berserk = general;
+            auto &combat = berserk["silverRoot"]["combat"];
+            combat["energyPerTurn"] = baseEnergy;
+            combat["playerPowers"] = json::array({json{{"id", "Berserk"}, {"amount", 2}}});
+            const auto imported = one_combat::advisor::importSilverRoot(berserk);
+            if (!imported.ok || imported.wire.player.energyPerTurn != baseEnergy + 2
+                || imported.wire.player.energy != generalImported.wire.player.energy)
+                throw std::runtime_error("Berserk did not add only to future turn energy");
+            for (const int invalid : {-1, 0, 128}) {
+                combat["playerPowers"][0]["amount"] = invalid;
+                if (one_combat::advisor::importSilverRoot(berserk).reason != "silver_unmapped_player_power")
+                    throw std::runtime_error("invalid Berserk amount accepted");
+            }
+            combat["playerPowers"][0]["amount"] = 1;
+            combat.erase("energyPerTurn");
+            if (one_combat::advisor::importSilverRoot(berserk).reason != "silver_unmapped_player_power")
+                throw std::runtime_error("Berserk accepted without captured base turn energy");
+        }
+        for (const json invalidEnergy : {json(-1), json(128), json(4294967300LL), json("4")}) {
+            auto invalid = general;
+            invalid["silverRoot"]["combat"]["energyPerTurn"] = invalidEnergy;
+            if (one_combat::advisor::importSilverRoot(invalid).reason != "silver_unmapped_player_power")
+                throw std::runtime_error("invalid turn energy was narrowed or accepted");
+        }
+        const std::pair<const char *, MonsterStatus> rawMonsterPowers[] = {
+            {"Shackled", MonsterStatus::SHACKLED},
+            {"Generic Strength Up Power", MonsterStatus::GENERIC_STRENGTH_UP},
+            {"Regenerate", MonsterStatus::REGEN},
+            {"Painful Stabs", MonsterStatus::PAINFUL_STABS}, {"Life Link", MonsterStatus::REGROW}};
+        for (const auto &[name, status] : rawMonsterPowers) {
+            auto raw = general;
+            const int amount = sts::isBooleanPower(status) ? -1 : 2;
+            raw["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+                json{{"id", name}, {"amount", amount}}});
+            const auto imported = one_combat::advisor::importSilverRoot(raw);
+            if (!imported.ok || !(imported.wire.monsters[0].statusBits & (1ULL << static_cast<int>(status))))
+                throw std::runtime_error(std::string("raw monster power failed: ") + name + ": " + imported.reason);
+            if (status == MonsterStatus::SHACKLED && imported.wire.monsters[0].smallPowers[10] != amount)
+                throw std::runtime_error("Shackled lost temporary strength restoration");
+            if (status == MonsterStatus::REGEN && imported.wire.monsters[0].smallPowers[9] != amount)
+                throw std::runtime_error("Regenerate lost healing amount");
+        }
+        auto awakened = general;
+        awakened["silverRoot"]["encounter"] = "AWAKENED_ONE";
+        auto &awakenedMonster = awakened["silverRoot"]["combat"]["monsters"][0];
+        awakenedMonster["id"] = "AwakenedOne";
+        awakenedMonster["miscInfo"] = 0;
+        awakenedMonster["moveHistory"] = json::array({1});
+        awakenedMonster["powers"] = json::array({json{{"id", "Unawakened"}, {"amount", -1}}});
+        const auto unawakened = one_combat::advisor::importSilverRoot(awakened);
+        if (!unawakened.ok || unawakened.wire.monsters[0].miscInfo != 0
+                || unawakened.wire.monsters[0].statusBits != 0)
+            throw std::runtime_error("Unawakened did not preserve native phase without adding a status");
+        awakenedMonster["miscInfo"] = 1;
+        if (one_combat::advisor::importSilverRoot(awakened).reason != "silver_unmapped_monster_power")
+            throw std::runtime_error("Unawakened accepted in phase two");
+        awakenedMonster["powers"] = json::array();
+        awakenedMonster["moveHistory"] = json::array({5});
+        const auto phaseTwo = one_combat::advisor::importSilverRoot(awakened);
+        if (!phaseTwo.ok || !(phaseTwo.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::MINION_LEADER))))
+            throw std::runtime_error("Awakened phase two lost native leader victory rule");
+        auto withCultist = phaseTwo.wire;
+        withCultist.monsters[1] = generalImported.wire.monsters[0];
+        withCultist.monsters[1].idx = 1;
+        withCultist.monsterCount = withCultist.monstersAlive = 2;
+        auto phaseTwoBattle = battleContextFromWire(withCultist);
+        phaseTwoBattle.monsters.arr[0].die(phaseTwoBattle);
+        if (phaseTwoBattle.outcome != Outcome::PLAYER_VICTORY)
+            throw std::runtime_error("Awakened phase two death did not end combat with a Cultist alive");
+        awakenedMonster["halfDead"] = true;
+        if (one_combat::advisor::importSilverRoot(awakened).reason != "silver_unmapped_monster_state")
+            throw std::runtime_error("Awakened phase two accepted contradictory half-dead state");
+        awakenedMonster["halfDead"] = false;
+        awakenedMonster["moveHistory"] = json::array({1});
+        awakenedMonster["powers"] = json::array({json{{"id", "Unawakened"}, {"amount", -1}}});
+        awakenedMonster["miscInfo"] = 0;
+        awakenedMonster["id"] = "Cultist";
+        if (one_combat::advisor::importSilverRoot(awakened).reason != "silver_unmapped_monster_power")
+            throw std::runtime_error("Unawakened accepted on the wrong monster");
+        for (const int turnsLeft : {3, 2, 1}) {
+            auto explosive = general;
+            explosive["silverRoot"]["encounter"] = "THREE_SHAPES";
+            auto &monster = explosive["silverRoot"]["combat"]["monsters"][0];
+            monster["id"] = "Exploder";
+            monster["miscInfo"] = 0;
+            monster["moveHistory"] = turnsLeft == 3 ? json::array({1})
+                : turnsLeft == 2 ? json::array({1, 1}) : json::array({1, 2});
+            monster["powers"] = json::array({json{{"id", "Explosive"}, {"amount", turnsLeft}}});
+            const auto imported = one_combat::advisor::importSilverRoot(explosive);
+            if (!imported.ok || imported.wire.monsters[0].statusBits != 0)
+                throw std::runtime_error("Explosive countdown failed to match native moves: " + imported.reason);
+            monster["powers"][0]["amount"] = turnsLeft + 1;
+            if (one_combat::advisor::importSilverRoot(explosive).reason != "silver_unmapped_monster_power")
+                throw std::runtime_error("contradictory Explosive countdown accepted");
+        }
+        auto compulsive = general;
+        compulsive["silverRoot"]["encounter"] = "WRITHING_MASS";
+        auto &writhing = compulsive["silverRoot"]["combat"]["monsters"][0];
+        writhing["id"] = "WrithingMass";
+        writhing["miscInfo"] = 0;
+        writhing["moveHistory"] = json::array({javaMoveByte("WrithingMass", MonsterMoveId::WRITHING_MASS_FLAIL)});
+        writhing["powers"] = json::array({json{{"id", "Compulsive"}, {"amount", -1}}});
+        const auto reactive = one_combat::advisor::importSilverRoot(compulsive);
+        if (!reactive.ok || reactive.wire.monsters[0].uniquePower1 != 0
+                || !(reactive.wire.monsters[0].statusBits & (1ULL << static_cast<int>(MonsterStatus::REACTIVE))))
+            throw std::runtime_error("Compulsive marker did not map to resolved native reactive state: " + reactive.reason);
+        writhing["uniquePower1"] = 1;
+        if (one_combat::advisor::importSilverRoot(compulsive).reason != "silver_unmapped_monster_power")
+            throw std::runtime_error("Compulsive accepted with an unresolved native roll");
         auto ritualPower = general;
         ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Ritual"}, {"amount", 3}, {"justApplied", false}}});

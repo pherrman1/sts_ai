@@ -183,6 +183,41 @@ json oocResponse(const one_combat::advisor::Request &request,
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
     else {
+        if (state.mechanicalEventTransition) {
+            // Java dialogue is not a native event choice. The importer has
+            // checked the exact event phase and sole enabled option before
+            // permitting this action; never score a fabricated reward page.
+            const auto &liveAction = state.ooc.at("liveChoices").at(0).at("liveAction");
+            const auto transition = state.ooc.at("details").at("mechanicalTransition").get<std::string>();
+            const std::string key = "ooc-live:v1:mechanical:" + transition;
+            pending = PendingCompoundPlan{};
+            evaluator["status"] = "OK";
+            evaluator["mode"] = "native_pass_through";
+            evaluator["valueSemantics"] = "forced_no_search";
+            evaluator["selectedSemanticKey"] = key;
+            evaluator["selectedLabel"] = "continue";
+            evaluator["selectedLiveAction"] = liveAction;
+            evaluator["candidateSummaries"] = json::array({json{
+                {"semanticKey", key}, {"semanticPayload", json{{"type", "pass_through"},
+                    {"transition", transition}}}, {"label", "continue"},
+                {"q", 0.0}, {"visits", 1}, {"visitShare", 1.0}, {"prior", 1.0},
+                {"liveAction", liveAction}}});
+            if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1") {
+                // The simulator omits these dialogue boundaries; there is
+                // no equivalent canonical state or intro RNG transition.
+                evaluator["status"] = "UNSUPPORTED";
+                evaluator["reason"] = "DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE";
+                evaluator.erase("selectedSemanticKey");
+                evaluator.erase("selectedLiveAction");
+                evaluator.erase("candidateSummaries");
+            }
+            evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - started).count();
+            return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+                    {"kind", "analysis"}, {"status", evaluator.at("status")}, {"session", request.session},
+                    {"sequence", request.sequence}, {"observationHash", request.observationHash},
+                    {"evaluators", json::array({evaluator})}};
+        }
         if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
             evaluator["differentialState"] = differential::canonicalOocState(
             state.projected, state.path);

@@ -765,7 +765,15 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     p.characterClass = static_cast<std::int16_t>(sts::CharacterClass::IRONCLAD);
     p.curHp = root.value("hp", valueInt("curHp", 0)); p.maxHp = root.value("maxHp", valueInt("maxHp", 0));
     p.gold = root.value("gold", valueInt("gold", 0)); p.energy = valueInt("energy", 0);
-    p.energyPerTurn = static_cast<std::int8_t>(valueInt("energyPerTurn", 3));
+    const json *turnEnergy = player != nullptr && player->contains("energyPerTurn")
+        ? &player->at("energyPerTurn")
+        : combat.contains("energyPerTurn") ? &combat.at("energyPerTurn") : nullptr;
+    if (turnEnergy && !turnEnergy->is_number_integer())
+        return unsupported("silver_unmapped_player_power");
+    const auto baseEnergyPerTurn = turnEnergy ? turnEnergy->get<std::int64_t>() : 3;
+    if (baseEnergyPerTurn < 0 || baseEnergyPerTurn > 127)
+        return unsupported("silver_unmapped_player_power");
+    p.energyPerTurn = static_cast<std::int8_t>(baseEnergyPerTurn);
     p.cardDrawPerTurn = static_cast<std::int8_t>(valueInt("cardDrawPerTurn", 5));
     p.block = valueInt("block", 0); p.stance = static_cast<std::int16_t>(valueInt("stance", 0));
     p.lastTargetedMonster = static_cast<std::int8_t>(valueInt("lastTargetedMonster", 1));
@@ -802,6 +810,15 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || !power.contains("amount") || !power.at("amount").is_number_integer())
                 return unsupported("silver_unmapped_player_power");
             const auto powerId = power.at("id").get<std::string>();
+            // Vanilla keeps Berserk outside EnergyManager.energyMaster;
+            // native combat folds it into the permanent turn-energy scalar.
+            if (powerId == "Berserk") {
+                const auto amount = power.at("amount").get<std::int64_t>();
+                if (turnEnergy == nullptr || amount <= 0 || amount > 127 - p.energyPerTurn)
+                    return unsupported("silver_unmapped_player_power");
+                p.energyPerTurn = static_cast<std::int8_t>(p.energyPerTurn + amount);
+                continue;
+            }
             auto mapped = live_silver::playerStatus(powerId);
             // The vanilla power ID is suffixed with a process-local counter
             // (TheBomb0, TheBomb1, ...), so its mapping cannot be a plain
@@ -812,23 +829,19 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // These fields are not derivable from a generic Java power ID and
             // amount.  Accept them only when the producer has serialized the
             // native bookkeeping explicitly.
-            const bool needsCombust = powerId == "Combust";
-            const bool needsEcho = powerId == "Echo Form" || powerId == "EchoFormPower";
-            const bool needsPanache = powerId == "Panache";
-            const bool needsDeva = powerId == "Deva Form" || powerId == "DevaFormPower";
-            const bool needsPellets = powerId == "Orange Pellets" || powerId == "OrangePelletsPower";
+            const bool needsCombust = *mapped == PlayerStatus::COMBUST;
+            const bool needsEcho = *mapped == PlayerStatus::ECHO_FORM;
+            const bool needsPanache = *mapped == PlayerStatus::PANACHE;
+            const bool needsDeva = *mapped == PlayerStatus::DEVA;
             const bool needsBomb = *mapped == PlayerStatus::THE_BOMB;
-            const bool needsJustApplied = powerId == "Double Damage" || powerId == "DoubleDamagePower"
-                || powerId == "Draw Reduction" || powerId == "DrawReductionPower"
-                || powerId == "Frail" || powerId == "FrailPower"
-                || powerId == "Intangible" || powerId == "IntangiblePlayerPower"
-                || powerId == "Vulnerable" || powerId == "VulnerablePower"
-                || powerId == "Weak" || powerId == "WeakPower" || powerId == "Weakened";
+            const bool needsJustApplied = *mapped == PlayerStatus::DOUBLE_DAMAGE
+                || *mapped == PlayerStatus::DRAW_REDUCTION || *mapped == PlayerStatus::FRAIL
+                || *mapped == PlayerStatus::INTANGIBLE || *mapped == PlayerStatus::VULNERABLE
+                || *mapped == PlayerStatus::WEAK;
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
                 || (needsPanache && !combat.contains("panacheCounter"))
                 || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
-                || (needsPellets && !combat.contains("orangePelletsCardTypesPlayed"))
                 || (needsBomb && (!power.contains("bombDamage")
                     || !power.at("bombDamage").is_number_integer()
                     || power.value("amount", 0) < 1 || power.value("amount", 0) > 3))
@@ -929,6 +942,15 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             return unsupported("silver_unmapped_monster_state");
         m.statusBits = item.value("statusBits", 0ULL); m.strength = item.value("strength", 0);
         m.vulnerable = item.value("vulnerable", 0); m.weak = item.value("weak", 0);
+        if (*id == sts::MonsterId::AWAKENED_ONE) {
+            if (m.miscInfo < 0 || m.miscInfo > 1 || (m.halfDead && m.miscInfo != 0))
+                return unsupported("silver_unmapped_monster_state");
+            // Java's phase-two death escapes surviving Cultists. Native
+            // rebirth encodes that victory rule as MINION_LEADER; it has no
+            // corresponding vanilla power object to serialize.
+            if (m.miscInfo == 1)
+                m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::MINION_LEADER);
+        }
         int nextMove = item.value("nextMove", 0);
         // Java exposes its history oldest-to-newest as move bytes.  Native
         // Monster stores current-to-previous MonsterMoveId values.  Translate
@@ -962,13 +984,41 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     || !power.contains("amount") || !power.at("amount").is_number_integer())
                     return unsupported("silver_unmapped_monster_power");
                 const auto powerId = power.at("id").get<std::string>();
-                if ((powerId == "Vulnerable" || powerId == "VulnerablePower"
-                        || powerId == "Weak" || powerId == "WeakPower"
-                        || powerId == "Ritual")
+                // Vanilla markers whose mechanics are already represented
+                // by native monster phase/move state, not status bits.
+                if (powerId == "Unawakened") {
+                    if (*id != sts::MonsterId::AWAKENED_ONE || m.miscInfo != 0
+                        || power.value("amount", 0) != -1)
+                        return unsupported("silver_unmapped_monster_power");
+                    continue;
+                }
+                if (powerId == "Explosive") {
+                    const auto move = static_cast<sts::MonsterMoveId>(m.moveHistory[0]);
+                    const auto previous = static_cast<sts::MonsterMoveId>(m.moveHistory[1]);
+                    const int turnsLeft = move == sts::MonsterMoveId::EXPLODER_EXPLODE ? 1
+                        : move == sts::MonsterMoveId::EXPLODER_SLAM
+                            ? (previous == sts::MonsterMoveId::EXPLODER_SLAM ? 2 : 3) : 0;
+                    if (*id != sts::MonsterId::EXPLODER || turnsLeft == 0
+                        || power.value("amount", 0) != turnsLeft)
+                        return unsupported("silver_unmapped_monster_power");
+                    continue;
+                }
+                const auto mapped = live_silver::monsterStatus(powerId);
+                if (!mapped) return unsupported("silver_unmapped_monster_power");
+                if ((*mapped == sts::MonsterStatus::VULNERABLE
+                        || *mapped == sts::MonsterStatus::WEAK || *mapped == sts::MonsterStatus::RITUAL)
                     && (!power.contains("justApplied") || !power.at("justApplied").is_boolean()))
                     return unsupported("silver_unmapped_monster_power");
-                const auto mapped = live_silver::monsterStatus(power.at("id").get<std::string>());
-                if (!mapped) return unsupported("silver_unmapped_monster_power");
+                if (powerId == "Compulsive") {
+                    // ReactivePower is a boolean Java marker (amount=-1).
+                    // Native's scalar counts queued reactive rolls, and is
+                    // reset to zero after those actions resolve.
+                    if (*id != sts::MonsterId::WRITHING_MASS || power.value("amount", 0) != -1
+                        || m.uniquePower1 != 0)
+                        return unsupported("silver_unmapped_monster_power");
+                    setMonsterPower(m, *mapped, 0, false);
+                    continue;
+                }
                 if (!setMonsterPower(m, *mapped, power.value("amount", 1),
                                      power.value("justApplied", false)))
                     return unsupported("silver_unmapped_monster_power");

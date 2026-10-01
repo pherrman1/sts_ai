@@ -18,6 +18,70 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        java.util.List<Object> goopOptions = java.util.Arrays.asList(
+                obj("index",0,"disabled",false), obj("index",1,"disabled",false));
+        for (int[] values : new int[][]{{11,75,0,0}, {11,75,17,17}, {11,75,45,100}}) {
+            Map<String,Object> captured = obj("details",obj(),"unsupportedReason","phase");
+            LiveOocCapture.captureGoopPuddle(captured,"INTRO",goopOptions,values[0],values[1],values[2],values[3]);
+            if (captured.containsKey("unsupportedReason")
+                    || !Integer.valueOf(values[2]).equals(((Map<?,?>)captured.get("details")).get("goldLoss")))
+                throw new AssertionError("public Goop loss was not preserved");
+        }
+        for (int[] values : new int[][]{{10,75,20,100}, {11,80,20,100}, {11,75,-1,100}, {11,75,21,20}}) {
+            Map<String,Object> rejected = obj("details",obj(),"unsupportedReason","phase");
+            LiveOocCapture.captureGoopPuddle(rejected,"INTRO",goopOptions,values[0],values[1],values[2],values[3]);
+            if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("invalid Goop parameters accepted");
+        }
+        Map<String,Object> goopOutro = obj("details",obj(),"unsupportedReason","phase");
+        LiveOocCapture.captureGoopPuddle(goopOutro,"RESULT",goopOptions,11,75,20,100);
+        if (!goopOutro.containsKey("unsupportedReason")) throw new AssertionError("Goop outro imported as initial choice");
+        java.util.List<Object> oneOption = java.util.Arrays.asList(obj("index", 0, "disabled", false));
+        LiveOocCapture.captureGoopPuddle(goopOutro,"RESULT",oneOption,11,75,20,0);
+        if (goopOutro.containsKey("unsupportedReason")
+                || !"event_leave".equals(((Map<?,?>)goopOutro.get("details")).get("mechanicalTransition")))
+            throw new AssertionError("Goop Leave transition not captured after paying gold loss");
+        for (String phase : new String[]{"0", "1", "99"}) {
+            Map<String,Object> captured = obj("details", obj(), "unsupportedReason", "phase");
+            LiveOocCapture.captureNeowTransition(captured, phase, oneOption);
+            if (captured.containsKey("unsupportedReason")
+                    || !("99".equals(phase) ? "event_leave" : "neow_intro").equals(
+                            ((Map<?,?>)captured.get("details")).get("mechanicalTransition")))
+                throw new AssertionError("verified Neow transition not captured: " + phase);
+        }
+        for (String phase : new String[]{"2", "3", "10", "999", "UNKNOWN"}) {
+            Map<String,Object> rejected = obj("details", obj(), "unsupportedReason", "phase");
+            LiveOocCapture.captureNeowTransition(rejected, phase, oneOption);
+            if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("unverified Neow transition accepted");
+        }
+        for (java.util.List<Object> options : java.util.Arrays.<java.util.List<Object>>asList(
+                java.util.Collections.<Object>emptyList(),
+                java.util.Arrays.asList(obj("index", 1, "disabled", false)),
+                java.util.Arrays.asList(obj("index", 0, "disabled", true)),
+                java.util.Arrays.asList(obj("index", 0, "disabled", false), obj("index", 1, "disabled", false)))) {
+            Map<String,Object> rejected = obj("details", obj(), "unsupportedReason", "phase");
+            LiveOocCapture.captureNeowTransition(rejected, "1", options);
+            if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("ambiguous Neow transition accepted");
+        }
+        String[][] ownerSelectors = {{"Astrolabe", "transform_upgrade", ""},
+                {"DollysMirror", "duplicate", ""}, {"Bottled Flame", "bottle", "attack"},
+                {"Bottled Lightning", "bottle", "skill"}, {"Bottled Tornado", "bottle", "power"}};
+        for (String[] row : ownerSelectors) {
+            Map<String,Object> type = LiveOocCapture.selectorType(false, false, false,
+                    java.util.Arrays.asList(row[0]), false, false);
+            if (!row[1].equals(type.get("type")) || !row[2].equals(type.getOrDefault("bottleType", "")))
+                throw new AssertionError("wrong owned selector: " + row[0]);
+            if (!"other".equals(LiveOocCapture.selectorType(true, false, false,
+                    java.util.Arrays.asList(row[0]), false, false).get("type")))
+                throw new AssertionError("contradictory owned selector accepted");
+        }
+        java.util.List<String> noOwners = java.util.Collections.emptyList();
+        if (!"bonfire".equals(LiveOocCapture.selectorType(false,true,false,noOwners,true,false).get("type"))
+                || !"duplicate".equals(LiveOocCapture.selectorType(false,false,false,noOwners,false,true).get("type"))
+                || !"remove".equals(LiveOocCapture.selectorType(false,true,false,noOwners,false,false).get("type"))
+                || !"other".equals(LiveOocCapture.selectorType(false,false,false,
+                        java.util.Arrays.asList("Astrolabe","DollysMirror"),false,false).get("type"))
+                || !"other".equals(LiveOocCapture.selectorType(false,false,false,noOwners,false,false).get("type")))
+            throw new AssertionError("selector owner qualification mismatch");
         for (int count : new int[]{2,4}) {
             java.util.List<Object> offers = new java.util.ArrayList<>();
             java.util.List<Object> options = new java.util.ArrayList<>();
@@ -67,11 +131,16 @@ public final class LiveOocCaptureTest {
         check("NeowsBlessing", 3, false, 3, null);
         check("NeowsBlessing", -1, true, -1, null);
         check("Burning Blood", -1, false, -1, null);
-        check("Lizard Tail", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
+        check("Lizard Tail", -1, false, 1, null);
         check("Lizard Tail", -2, true, 0, null);
-        check("Matryoshka", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Matryoshka:active");
+        check("Lizard Tail", -2, false, 0, null);
+        check("Matryoshka", 2, false, 2, null);
+        check("Matryoshka", 1, false, 1, null);
         check("WingedGreaves", 3, false, 0, null);
-        check("NlothsMask", 1, false, 1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:active");
+        check("NlothsMask", 1, false, 1, null);
+        check("NlothsMask", -2, false, 0, null);
+        check("NlothsMask", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:counter");
+        check("Matryoshka", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Matryoshka:counter");
         check("Matryoshka", -2, true, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
         if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
@@ -226,6 +295,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: Neow two/four-offer projection, 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: Neow offers/transitions, Goop public choices/Leave, selector ownership, relic counters, map/path, integrity, reward and combat history checks passed");
     }
 }

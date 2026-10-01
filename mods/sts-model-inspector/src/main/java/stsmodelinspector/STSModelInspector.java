@@ -2071,6 +2071,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    static Integer awakenedNativePhase(Boolean form1, boolean halfDead) {
+        // Vanilla flips form1 in damage(), before the rebirth move executes.
+        // Native remains in phase zero through the half-dead interval.
+        return form1 == null ? null : (form1 || halfDead ? 0 : 1);
+    }
+
     static Integer guardianNativeThreshold(Integer threshold, Integer increase, Boolean isOpen) {
         // Vanilla increments on Defensive Mode; native increments on Twin Slam.
         // The remaining Mode Shift power is exported separately as a status.
@@ -2246,7 +2252,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if ("AwakenedOne".equals(id)) {
             Boolean form1 = readBooleanField(monster, "form1");
-            return form1 == null ? null : (form1 ? 0 : 1);
+            return awakenedNativePhase(form1, monster.halfDead);
         }
         if ("WrithingMass".equals(id)) {
             Boolean used = readBooleanField(monster, "usedMegaDebuff");
@@ -2313,6 +2319,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return task;
     }
 
+    // These vanilla action classes own the selection until its cards are
+    // returned. Their identity is independent of localized prompt text.
+    // null means no qualified override; empty means a known unsupported shape.
+    static String actionSelectionTask(String actionClass, boolean hand, boolean anyNumber, int count) {
+        if ("com.megacrit.cardcrawl.actions.common.PutOnDeckAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "WARCRY" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ForethoughtAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "FORETHOUGHT" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.SkillFromDeckToHandAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "SECRET_TECHNIQUE" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.AttackFromDeckToHandAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "SECRET_WEAPON" : "";
+        return null;
+    }
+
+    private static String currentActionSelectionTask(boolean hand, boolean anyNumber, int count) {
+        Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+        return actionSelectionTask(action == null ? "" : action.getClass().getName(), hand, anyNumber, count);
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
@@ -2364,8 +2390,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
                     AbstractDungeon.gridSelectScreen;
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
-            String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
-            if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            String task = currentActionSelectionTask(false, screen.anyNumber, amount == null ? -1 : amount);
+            if (task == null) {
+                task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+                if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            }
             return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
         }
@@ -2379,7 +2408,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // opens the hand selector with an empty selection reason and the
             // vanilla sentinel amount 99.  That is the native GAMBLE task,
             // not an unknown combat screen.
-            String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
+            String task = currentActionSelectionTask(true, canPickAnyNumber, screen.numCardsToSelect);
+            if (task == null) task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
@@ -2421,6 +2451,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(EnergyPanel.totalCount)
+                // energyMaster includes base/relic energy. Berserk remains a
+                // separate power and is folded into native turn energy there.
+                .append(",\"energyPerTurn\":").append(AbstractDungeon.player.energy.energyMaster)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
                 .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
                 .append(",\"attacksPlayedThisTurn\":").append(attacksPlayed)
@@ -2455,6 +2488,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // can read the actual field; the importer remains fail-closed if
             // a required power does not expose it.
             Boolean justApplied = readBooleanField(power, "justApplied");
+            // Vanilla IntangiblePlayerPower always expires at end of round
+            // and has no justApplied field; native uses a false expiry bit.
+            if ("IntangiblePlayer".equals(powerId)) justApplied = false;
             if (justApplied != null) out.append(",\"justApplied\":").append(justApplied);
             if (powerId.startsWith("TheBomb")) {
                 Integer damage = readIntField(power, "damage");
@@ -2473,7 +2509,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if ("Panache".equals(power.ID)) {
                 Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
                 if (value != null) out.append(",\"panacheCounter\":").append(value);
-            } else if ("Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
+            } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
             } else if ("Orange Pellets".equals(power.ID) || "OrangePelletsPower".equals(power.ID)) {

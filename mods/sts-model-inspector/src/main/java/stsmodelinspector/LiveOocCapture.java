@@ -565,15 +565,16 @@ final class LiveOocCapture {
             return usedUp ? 0 : 1;
         }
         if ("Lizard Tail".equals(id)) {
-            // Native fresh-run initialization currently differs from Java.
-            // Do not silently choose between the raw-save and fresh-run forms.
-            if (!usedUp) unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
-            return usedUp ? 0 : counter;
+            // Java uses usedUp/-2; native obtainRelic and revival use 1/0.
+            return usedUp || counter == -2 ? 0 : 1;
         }
         if ("Matryoshka".equals(id) || "NlothsMask".equals(id)) {
-            if (counter > 0)
-                unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:" + id + ":active");
-            return usedUp ? 0 : counter;
+            // Both games decrement the remaining chest charges. Vanilla's
+            // setCounter(-2) marks the exhausted relic instead of retaining 0.
+            int max = "Matryoshka".equals(id) ? 2 : 1;
+            if (!usedUp && counter != -2 && (counter < 0 || counter > max))
+                unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:" + id + ":counter");
+            return usedUp || counter == -2 ? 0 : counter;
         }
         if (counter > 0 && !PERSISTENT_RELIC_COUNTERS.contains(id))
             unsupported(state, "RELIC_NATIVE_COUNTER_UNQUALIFIED:" + id);
@@ -705,27 +706,80 @@ final class LiveOocCapture {
             return;
         }
         List<?> offered = list(call(CHOICES, "getGridScreenCards"));
-        List<Integer> indices = new ArrayList<>(), selected = new ArrayList<>();
+        List<Integer> selected = new ArrayList<>();
+        List<Object> selectionCards = new ArrayList<>();
         for (int i = 0; i < offered.size(); ++i) {
             AbstractCard c = (AbstractCard) offered.get(i);
+            // MCP retains selected cards as toggle choices. The native
+            // continuation chooses only the remaining picks, so preserve the
+            // physical MCP index while assigning a dense native option index.
+            if (AbstractDungeon.gridSelectScreen.selectedCards.contains(c)) continue;
             int index = AbstractDungeon.player.masterDeck.group.indexOf(c);
             if (index < 0) throw new IllegalArgumentException("selector card not in master deck");
-            indices.add(index);
-            Map<String,Object> choice = add(cs, labels, i, "option", i, 0);
+            Map<String,Object> choice = add(cs, labels, i, "option", selectionCards.size(), 0);
             choice.put("deckIndex", index); choice.put("uuid", String.valueOf(c.uuid));
+            selectionCards.add(object("deckIndex", index, "card", card(c)));
         }
-        for (AbstractCard c : AbstractDungeon.gridSelectScreen.selectedCards)
-            selected.add(AbstractDungeon.player.masterDeck.group.indexOf(c));
+        List<Object> selectedCards = new ArrayList<>();
+        for (AbstractCard c : AbstractDungeon.gridSelectScreen.selectedCards) {
+            int index = AbstractDungeon.player.masterDeck.group.indexOf(c);
+            if (index < 0 || selected.contains(index))
+                throw new IllegalArgumentException("selected card not uniquely in master deck");
+            selected.add(index);
+            selectedCards.add(object("deckIndex", index, "card", card(c)));
+        }
         boolean confirm = AbstractDungeon.gridSelectScreen.confirmScreenUp;
-        List<Object> selectionCards = new ArrayList<>();
-        for (int i = 0; i < offered.size(); ++i)
-            selectionCards.add(object("deckIndex", indices.get(i), "card", card((AbstractCard)offered.get(i))));
-        out.put("details", object("type", upgrade ? "upgrade" : AbstractDungeon.gridSelectScreen.forPurge ? "remove"
-                        : AbstractDungeon.gridSelectScreen.forTransform ? "transform" : "other",
+        Map<String,Object> selectorType = selectorType();
+        out.put("details", object("type", selectorType.get("type"),
+                "bottleType", selectorType.getOrDefault("bottleType", ""),
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
-                "selectedDeckIndices", selected, "confirm", confirm));
+                "selectedCards", selectedCards, "selectedDeckIndices", selected, "confirm", confirm));
         if (confirm) out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
+    }
+
+    private static Map<String,Object> selectorType() throws ReflectiveOperationException {
+        List<String> owners = new ArrayList<>();
+        for (AbstractRelic relic : AbstractDungeon.player.relics) {
+            String id = relic.relicId;
+            if (Arrays.asList("Bottled Flame", "Bottled Lightning", "Bottled Tornado", "DollysMirror").contains(id)
+                    && Boolean.FALSE.equals(field(relic, "cardSelected"))) owners.add(id);
+            if ("Astrolabe".equals(id) && Boolean.FALSE.equals(field(relic, "cardsSelected"))) owners.add(id);
+        }
+        Object event = AbstractDungeon.getCurrRoom().event;
+        String eventClass = event == null ? "" : event.getClass().getSimpleName();
+        boolean bonfire = "Bonfire".equals(eventClass)
+                && "CHOOSE".equals(String.valueOf(field(event, "screen")))
+                && Boolean.TRUE.equals(field(event, "cardSelect"));
+        boolean duplicator = "Duplicator".equals(eventClass)
+                && Integer.valueOf(2).equals(field(event, "screenNum"));
+        return selectorType(AbstractDungeon.gridSelectScreen.forUpgrade,
+                AbstractDungeon.gridSelectScreen.forPurge, AbstractDungeon.gridSelectScreen.forTransform,
+                owners, bonfire, duplicator);
+    }
+
+    // Identify the owning vanilla continuation, never localized prompt text.
+    // Astrolabe opens an unflagged grid; Bonfire sets forPurge despite having
+    // a distinct reward continuation. Relic waiting flags take precedence.
+    static Map<String,Object> selectorType(boolean upgrade, boolean purge, boolean transform,
+            List<String> owners, boolean bonfire, boolean duplicator) {
+        if (owners.size() > 1) return object("type", "other");
+        if (owners.size() == 1) {
+            if (upgrade || purge || transform) return object("type", "other");
+            switch (owners.get(0)) {
+                case "Astrolabe": return object("type", "transform_upgrade");
+                case "DollysMirror": return object("type", "duplicate");
+                case "Bottled Flame": return object("type", "bottle", "bottleType", "attack");
+                case "Bottled Lightning": return object("type", "bottle", "bottleType", "skill");
+                case "Bottled Tornado": return object("type", "bottle", "bottleType", "power");
+                default: return object("type", "other");
+            }
+        }
+        if (bonfire) return object("type", !upgrade && purge && !transform ? "bonfire" : "other");
+        if (duplicator && !upgrade && !purge && !transform) return object("type", "duplicate");
+        if ((upgrade ? 1 : 0) + (purge ? 1 : 0) + (transform ? 1 : 0) > 1)
+            return object("type", "other");
+        return object("type", upgrade ? "upgrade" : purge ? "remove" : transform ? "transform" : "other");
     }
     private static void boss(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels) {
         out.put("screen", "boss_relic");
@@ -789,6 +843,12 @@ final class LiveOocCapture {
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
         if (!simpleInitialEventSupported(simple) || !initial)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
+        if ("GoopPuddle".equals(simple)) {
+            captureGoopPuddle(out, String.valueOf(phase), options,
+                    ((Number)field(event, "damage")).intValue(),
+                    ((Number)field(event, "gold")).intValue(),
+                    ((Number)field(event, "goldLoss")).intValue(), AbstractDungeon.player.gold);
+        }
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();
             Object rs = optionalField(event, "rewards");
@@ -796,7 +856,42 @@ final class LiveOocCapture {
                 offers.add(object("type", String.valueOf(field(reward, "type")), "drawback", String.valueOf(field(reward, "drawback"))));
             e.put("neowRewards", offers);
             captureNeowOffers(out, offers, String.valueOf(phase), options);
+            captureNeowTransition(out, String.valueOf(phase), options);
         }
+    }
+
+    // GoopPuddle's randomized loss is printed in the visible second option.
+    // Capture that amount; never regenerate it from a synthetic RNG state.
+    static void captureGoopPuddle(Map<String,Object> out, String phase, List<Object> options,
+            int damage, int gold, int goldLoss, int playerGold) {
+        if ("RESULT".equals(phase)) {
+            captureMechanicalTransition(out, options, "event_leave");
+            return;
+        }
+        if (!"INTRO".equals(phase) || damage != 11 || gold != 75
+                || goldLoss < 0 || goldLoss > playerGold || options.size() != 2) return;
+        for (int i = 0; i < options.size(); ++i)
+            if (!Integer.valueOf(i).equals(map(options.get(i)).get("index"))
+                    || !Boolean.FALSE.equals(map(options.get(i)).get("disabled"))) return;
+        map(out.get("details")).put("goldLoss", goldLoss);
+        out.remove("unsupportedReason");
+    }
+
+    // Verified NeowEvent.buttonEffect: 0/1 reveal offers, 99 opens the map.
+    // Phase 2 has a real choice; daily/endless phases are deliberately absent.
+    static void captureNeowTransition(Map<String,Object> out, String phase, List<Object> options) {
+        if (!("0".equals(phase) || "1".equals(phase) || "99".equals(phase))) return;
+        captureMechanicalTransition(out, options, "99".equals(phase) ? "event_leave" : "neow_intro");
+    }
+
+    private static void captureMechanicalTransition(Map<String,Object> out,
+            List<Object> options, String transition) {
+        if (options.size() != 1) return;
+        Map<String,Object> option = map(options.get(0));
+        if (!Integer.valueOf(0).equals(option.get("index"))
+                || !Boolean.FALSE.equals(option.get("disabled"))) return;
+        map(out.get("details")).put("mechanicalTransition", transition);
+        out.remove("unsupportedReason");
     }
 
     // Both normal and early-death rewards use phase 3. Qualify the complete

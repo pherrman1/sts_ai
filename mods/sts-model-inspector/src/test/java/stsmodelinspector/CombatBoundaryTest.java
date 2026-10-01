@@ -8,6 +8,28 @@ import com.google.gson.JsonObject;
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
     public static void main(String[] args) {
+        if (STSModelInspector.awakenedNativePhase(null, false) != null
+                || STSModelInspector.awakenedNativePhase(true, false) != 0
+                || STSModelInspector.awakenedNativePhase(false, true) != 0
+                || STSModelInspector.awakenedNativePhase(false, false) != 1)
+            throw new AssertionError("Awakened One rebirth phase projection");
+        String[][] selections = {
+            {"common.PutOnDeckAction", "WARCRY"}, {"unique.ForethoughtAction", "FORETHOUGHT"},
+            {"unique.SkillFromDeckToHandAction", "SECRET_TECHNIQUE"},
+            {"unique.AttackFromDeckToHandAction", "SECRET_WEAPON"}};
+        for (int i = 0; i < selections.length; ++i) {
+            String name = "com.megacrit.cardcrawl.actions." + selections[i][0];
+            boolean hand = i < 2;
+            if (!selections[i][1].equals(STSModelInspector.actionSelectionTask(name, hand, false, 1))
+                    || !"".equals(STSModelInspector.actionSelectionTask(name, !hand, false, 1))
+                    || !"".equals(STSModelInspector.actionSelectionTask(name, hand, true, 1))
+                    || !"".equals(STSModelInspector.actionSelectionTask(name, hand, false, 2)))
+                throw new AssertionError("action-owned selection mismatch: " + name);
+            try { Class.forName(name, false, CombatBoundaryTest.class.getClassLoader()); }
+            catch (ClassNotFoundException error) { throw new AssertionError(error); }
+        }
+        if (STSModelInspector.actionSelectionTask("unknown.Action", true, false, 1) != null)
+            throw new AssertionError("unknown action was guessed");
         for (int initial : new int[]{30, 35, 40}) {
             for (int cycle = 0; cycle < 3; ++cycle) {
                 int threshold = initial + 10 * cycle;

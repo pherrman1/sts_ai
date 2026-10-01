@@ -57,10 +57,19 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         case ScreenState::MAP_SCREEN:screen="map";break;
         case ScreenState::TREASURE_ROOM:screen="treasure";break;
         case ScreenState::BOSS_RELIC_REWARDS:screen="boss_relic";d["relics"]=J::array();for(auto r:g.info.bossRelics)d["relics"].push_back(J(r));break;
-        case ScreenState::CARD_SELECT:screen="selector";d={{"type",g.info.selectScreenType==CardSelectScreenType::UPGRADE?"upgrade":
-            g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":"remove"},
-            {"requiredPicks",g.info.toSelectCount},{"completedPicks",g.info.haveSelectedCards.size()},{"cards",J::array()}};
-            for(const auto &c:g.info.toSelectCards)d["cards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});break;
+        case ScreenState::CARD_SELECT:{screen="selector";
+            const char *types[]={"invalid","transform","transform_upgrade","upgrade","remove",
+                "duplicate","obtain","bottle","bonfire"};
+            d={{"type",types[static_cast<int>(g.info.selectScreenType)]},
+                {"requiredPicks",g.info.toSelectCount},{"completedPicks",g.info.haveSelectedCards.size()},
+                {"cards",J::array()},{"selectedCards",J::array()}};
+            for(const auto &c:g.info.toSelectCards)d["cards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});
+            for(const auto &c:g.info.haveSelectedCards)d["selectedCards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});
+            if(g.info.selectScreenType==CardSelectScreenType::BOTTLE) {
+                const char *types[]={"attack","skill","power"};
+                d["bottleType"]=types[static_cast<int>(g.info.toSelectCards[0].card.getType())];
+            }
+            break;}
         case ScreenState::SHOP_ROOM:{screen="shop";const auto &s=g.info.shop;
             d={{"cards",J::array()},{"relics",J::array()},{"potions",J::array()},{"removeCost",s.removeCost}};
             for(int i=0;i<7;++i)d["cards"].push_back({{"card",s.cardPrice(i)<0?J():cardWire(s.cards[i])},{"price",s.cardPrice(i)}});
@@ -71,6 +80,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"upgradeOne",i.upgradeOne},{"cleanUpIsRemoveCard",i.cleanUpIsRemoveCard},{"skillCardDeckIdx",i.skillCardDeckIdx},
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
                 {"gold",i.gold},{"cardIdx",i.cardIdx}};
+            if(g.curEvent==Event::WORLD_OF_GOOP)d["goldLoss"]=i.goldLoss;
             if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}break;}
         default:throw std::runtime_error("fixture screen missing");
     }
@@ -327,6 +337,38 @@ int main(int argc,char **argv){try{
             check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"invalid Neow count accepted");
         }
     }
+    for(const std::string phase:{"0","1","99","RESULT"}) {
+        const bool goop=phase=="RESULT";
+        auto source=base;source.screenState=ScreenState::EVENT_SCREEN;
+        source.curEvent=goop?Event::WORLD_OF_GOOP:Event::NEOW;
+        auto wire=project(source,path,"mechanical_neow");
+        wire["ooc"]["details"].erase("neow");
+        wire["ooc"]["details"].erase("goldLoss");
+        wire["ooc"]["details"]["mechanicalTransition"]=goop || phase=="99"?"event_leave":"neow_intro";
+        wire["ooc"]["event"]={{"id",goop?"World of Goop":"Neow"},{"phase",phase},
+            {"options",J::array({{{"index",0},{"disabled",false}}})}};
+        wire["ooc"]["liveChoices"]=J::array({{
+            {"nativeAction",{{"kind","option"},{"index",0},{"group",0}}},
+            {"liveAction",{{"kind","choose"},{"choiceIndex",1}}}}});
+        advisor::LiveOocStateV1 live;
+        const auto imported=advisor::importLiveOocStateV1(wire,live);
+        check(imported.ok && live.mechanicalEventTransition && !live.mctsRoot.supported,
+                "Neow mechanical transition import: "+imported.message);
+        check(advisor::lowerLiveOocAction(live,A(0).bits)==wire["ooc"]["liveChoices"][0]["liveAction"],
+                "Neow mechanical click lowering changed");
+        const auto rejects=[&](J invalid) {
+            advisor::LiveOocStateV1 rejected;
+            check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"unqualified mechanical transition accepted");
+        };
+        auto invalid=wire;invalid["ooc"]["event"]["phase"]="2";rejects(invalid);
+        invalid=wire;invalid["ooc"]["event"]["phase"]="3";rejects(invalid);
+        invalid=wire;invalid["ooc"]["event"]["id"]="Big Fish";rejects(invalid);
+        invalid=wire;invalid["ooc"]["details"]["mechanicalTransition"]="other";rejects(invalid);
+        invalid=wire;invalid["ooc"]["event"]["options"][0]["disabled"]=true;rejects(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"].push_back(invalid["ooc"]["liveChoices"][0]);rejects(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"][0]["liveAction"]["choiceIndex"]=2;rejects(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"][0]["nativeAction"]["index"]=1;rejects(invalid);
+    }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);
@@ -350,9 +392,21 @@ int main(int argc,char **argv){try{
     g=base;g.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);add("upgrade_duplicate_physical_cards",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("remove_selector",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);add("transform_selector",g);
+    g=base;g.openCardSelectScreen(CardSelectScreenType::DUPLICATE,1);add("duplicate_selector",g);
+    g=base;g.openCardSelectScreen(CardSelectScreenType::BONFIRE_SPIRITS,1);add("bonfire_selector",g);
+    g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,2);
+    add("empty_cage_first_selector",g);g.chooseSelectCardScreenOption(0);add("empty_cage_last_selector",g);
+    g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM_UPGRADE,3);
+    add("astrolabe_first_selector",g);g.chooseSelectCardScreenOption(0);
+    add("astrolabe_second_selector",g);g.chooseSelectCardScreenOption(0);add("astrolabe_last_selector",g);
+    for(const auto bottle:{RelicId::BOTTLED_FLAME,RelicId::BOTTLED_LIGHTNING,RelicId::BOTTLED_TORNADO}) {
+        g=base;g.deck.removeBottle(CardType::ATTACK);g.deck.obtain(g,Card(CardId::INFLAME));
+        g.obtainRelic(bottle);add("bottle_selector_"+std::to_string(static_cast<int>(bottle)),g);
+    }
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
+    g.curEvent=Event::WORLD_OF_GOOP;g.info.goldLoss=33;add("event_world_of_goop",g);
     g.curEvent=Event::THE_LIBRARY;add("unsupported_library_reward_pity",g);
     g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
     g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
@@ -389,6 +443,24 @@ int main(int argc,char **argv){try{
             continue;
         }
         check(result.ok,name+": "+result.message);
+        if(source.curEvent==Event::WORLD_OF_GOOP) {
+            check(live.projected.info.goldLoss==33 && live.mctsRoot.state.info.goldLoss==33,
+                    "World of Goop must preserve visible gold loss");
+            for(int option:{0,1}) {
+                auto expected=source,actual=live.mctsRoot.state;
+                expected.regainControlAction=[](GameContext &gc){gc.screenState=ScreenState::MAP_SCREEN;};
+                expected.chooseEventOption(option);actual.chooseEventOption(option);
+                check(expected.gold==actual.gold && expected.curHp==actual.curHp
+                        && expected.screenState==actual.screenState,"World of Goop transition mismatch");
+            }
+            const auto rejects=[&](J invalid) {
+                advisor::LiveOocStateV1 rejected;
+                check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"invalid World of Goop gold loss accepted");
+            };
+            auto invalid=wire;invalid["ooc"]["details"].erase("goldLoss");rejects(invalid);
+            invalid=wire;invalid["ooc"]["details"]["goldLoss"]=source.gold+1;rejects(invalid);
+            invalid=wire;invalid["ooc"]["details"]["goldLoss"]=-1;rejects(invalid);
+        }
         if(name=="neow") {
             check(v4CandidateActions(live.projected).size()==4,"ordinary Neow must retain four offers");
             for(int i=0;i<4;++i) {
@@ -440,7 +512,8 @@ int main(int argc,char **argv){try{
         auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
         const bool v4Unsupported = name.rfind("unsupported_",0)==0
-            || name=="rewards_without_cards" || name=="remove_selector" || name=="transform_selector";
+            || name=="rewards_without_cards" || (source.screenState==ScreenState::CARD_SELECT
+                && source.info.selectScreenType!=CardSelectScreenType::UPGRADE);
         if(v4Unsupported)check(!qa.supported,name+" must be outside direct V4 support");else check(qa.supported,name+": "+qa.reason);
         check(qa.selectedIndex==qb.selectedIndex&&qa.candidates.size()==qb.candidates.size(),name+" argmax");
         std::vector<std::uint32_t> bits;
@@ -449,6 +522,45 @@ int main(int argc,char **argv){try{
             check(a.followUpPreview==b.followUpPreview,name+" follow-up preview parity");
             check(std::abs(a.q-b.q)<=1e-6,name+" Q parity");bits.push_back(a.primitiveBits);}
         if(qa.supported)advisor::validateLiveOocActionSet(live,bits);
+        if(source.screenState==ScreenState::CARD_SELECT) {
+            check(live.projected.info.toSelectCount==source.info.toSelectCount
+                    && live.projected.info.haveSelectedCards.size()==source.info.haveSelectedCards.size(),
+                    name+" selector progress lost");
+            // Import must preserve both current choices and the eventual
+            // deck mutation. Give the native and imported fixture identical
+            // hypothetical transform streams; no live RNG is imported.
+            auto expected=source,actual=live.mctsRoot.state;
+            expected.regainControlAction=[](GameContext &gc){gc.screenState=ScreenState::MAP_SCREEN;};
+            expected.cardRng=actual.cardRng=Random(900);
+            expected.miscRng=actual.miscRng=Random(901);
+            while(expected.screenState==ScreenState::CARD_SELECT) {
+                const auto before=search::enumerateOocSemanticPrimitiveBindings(actual);
+                check(before.supported && before.complete,name+" imported selector enumeration incomplete");
+                expected.chooseSelectCardScreenOption(0);actual.chooseSelectCardScreenOption(0);
+            }
+            check(expected.screenState==actual.screenState && expected.deck.size()==actual.deck.size()
+                    && expected.deck.bottleIdxs==actual.deck.bottleIdxs
+                    && expected.maxHp==actual.maxHp && expected.curHp==actual.curHp,
+                    name+" selector completion state differs");
+            for(int i=0;i<expected.deck.size();++i)
+                check(expected.deck.cards[i]==actual.deck.cards[i],name+" selector completion deck differs");
+            const auto rejects=[&](J invalid) {
+                advisor::LiveOocStateV1 rejected;
+                check(!advisor::importLiveOocStateV1(invalid,rejected).ok,
+                        name+" malformed selector accepted");
+            };
+            auto invalid=wire;invalid["ooc"]["details"]["cards"].push_back(invalid["ooc"]["details"]["cards"][0]);rejects(invalid);
+            invalid=wire;invalid["ooc"]["details"]["completedPicks"]=source.info.toSelectCount;rejects(invalid);
+            if(!source.info.haveSelectedCards.empty()) {
+                invalid=wire;invalid["ooc"]["details"].erase("selectedCards");rejects(invalid);
+                invalid=wire;invalid["ooc"]["details"]["cards"][0]=invalid["ooc"]["details"]["selectedCards"][0];rejects(invalid);
+                invalid=wire;invalid["ooc"]["details"]["selectedCards"][0]["card"]["misc"]=123;rejects(invalid);
+            }
+            if(source.info.selectScreenType==CardSelectScreenType::BOTTLE) {
+                invalid=wire;invalid["ooc"]["details"]["bottleType"]="curse";rejects(invalid);
+                invalid=wire;invalid["ooc"]["details"]["bottleType"]=source.info.toSelectCards[0].card.getType()==CardType::ATTACK?"skill":"attack";rejects(invalid);
+            }
+        }
         if(output)output<<wire.dump()<<'\n';
         std::cout<<name<<" parity=PASS status="<<(qa.supported?"OK":"UNSUPPORTED")<<" candidates="<<qa.candidates.size()<<'\n';++passed;
     }

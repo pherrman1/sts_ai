@@ -23,12 +23,15 @@ class LiveOocProtocol(unittest.TestCase):
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
     def run_rows(self, observations, model=True, policy=None, floor_model=True,
-                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None):
+                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None, differential=False):
         env = os.environ.copy()
         env.pop("STS_CTM_MODEL", None)
         env.pop("STS_LIVE_OOC_MODEL", None)
         env.pop("STS_OOC_DEBUG_TREE", None)
         env.pop("STS_OOC_DEBUG_TREE_NODE_CAP", None)
+        env.pop("STS_DIFFERENTIAL_TRACE", None)
+        if differential:
+            env["STS_DIFFERENTIAL_TRACE"] = "1"
         if debug_tree:
             env["STS_OOC_DEBUG_TREE"] = "1"
         if tree_cap is not None:
@@ -90,6 +93,64 @@ class LiveOocProtocol(unittest.TestCase):
                                   policy="v4")
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
         self.assertEqual(response["evaluators"][0]["reason"], "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED")
+
+    def test_neow_dialogue_is_forced_without_model_or_reward_history(self):
+        observations = []
+        for phase, transition in (("0", "neow_intro"), ("1", "neow_intro"), ("99", "event_leave")):
+            observation = copy.deepcopy(self.fixtures["neow"])
+            ooc = observation["ooc"]
+            ooc["screen"] = "event"
+            ooc["publicState"]["rewardPityHistoryComplete"] = False
+            ooc["event"] = dict(id="Neow", phase=phase, options=[dict(index=0, disabled=False)])
+            ooc["details"].pop("neow", None)
+            ooc["details"]["mechanicalTransition"] = transition
+            ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=0, group=0),
+                                       liveAction=dict(kind="choose", choiceIndex=1))]
+            observations.append(observation)
+        for policy in ("v4", "mcts"):
+            for response in self.run_rows(observations, model=False, policy=policy):
+                evaluator, = response["evaluators"]
+                self.assertEqual(evaluator["status"], "OK", response)
+                self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+                self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+                self.assertEqual(len(evaluator["candidateSummaries"]), 1)
+        for response in self.run_rows(observations, model=False, differential=True):
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "UNSUPPORTED")
+            self.assertEqual(evaluator["reason"], "DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE")
+            self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_neow_dialogue_rejects_phase_and_mapping_mismatch(self):
+        observation = copy.deepcopy(self.fixtures["neow"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "event"
+        ooc["event"] = dict(id="Neow", phase="3", options=[dict(index=0, disabled=False)])
+        ooc["details"]["mechanicalTransition"] = "neow_intro"
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=0, group=0),
+                                   liveAction=dict(kind="choose", choiceIndex=1))]
+        variants = [copy.deepcopy(observation)]
+        ooc["event"]["phase"] = "1"
+        for field, value in (("event", dict(id="Big Fish", phase="1", options=[dict(index=0, disabled=False)])),
+                             ("liveChoices", [])):
+            variant = copy.deepcopy(observation)
+            variant["ooc"][field] = value
+            variants.append(variant)
+        for response in self.run_rows(variants, model=False):
+            self.assertEqual(response["status"], "ERROR", response)
+
+    def test_world_of_goop_result_is_forced_without_initial_gold_loss(self):
+        observation = copy.deepcopy(self.fixtures["event_world_of_goop"])
+        ooc = observation["ooc"]
+        ooc["event"] = dict(id="World of Goop", phase="RESULT", options=[dict(index=0, disabled=False)])
+        ooc["details"].pop("goldLoss", None)
+        ooc["details"]["mechanicalTransition"] = "event_leave"
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=0, group=0),
+                                   liveAction=dict(kind="choose", choiceIndex=1))]
+        response, = self.run_rows([observation], model=False)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
 
     def test_event_fights_fail_closed_without_public_reward_pity_history(self):
         rows = self.run_rows([self.fixtures["unsupported_mushrooms_reward_pity"],

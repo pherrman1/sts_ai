@@ -476,6 +476,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
             return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
         const auto &d=o.at("details"); require(d.is_object(),"details must be an object");
+        require(!d.contains("mechanicalTransition") || g.screenState==ScreenState::EVENT_SCREEN,
+                "mechanical event transition on non-event screen");
         if(g.screenState==ScreenState::REWARDS) {
             auto &r=g.info.rewardsContainer;
             for(const auto &v:array(d,"gold",2)) r.addGold(integerValue(v,0,1000000,"gold reward"));
@@ -505,15 +507,43 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             if(kind=="upgrade")g.info.selectScreenType=CardSelectScreenType::UPGRADE;
             else if(kind=="remove")g.info.selectScreenType=CardSelectScreenType::REMOVE;
             else if(kind=="transform")g.info.selectScreenType=CardSelectScreenType::TRANSFORM;
+            else if(kind=="transform_upgrade")g.info.selectScreenType=CardSelectScreenType::TRANSFORM_UPGRADE;
+            else if(kind=="duplicate")g.info.selectScreenType=CardSelectScreenType::DUPLICATE;
+            else if(kind=="bottle")g.info.selectScreenType=CardSelectScreenType::BOTTLE;
+            else if(kind=="bonfire")g.info.selectScreenType=CardSelectScreenType::BONFIRE_SPIRITS;
             else return {false,"UNSUPPORTED","selector_type:"+kind};
             g.info.toSelectCount=integer(d,"requiredPicks",1,3);
-            for(const auto &v:array(d,"cards",96)) {
+            CardType bottleType=CardType::INVALID;
+            if(kind=="bottle") {
+                const auto type=string(d,"bottleType");
+                if(type=="attack")bottleType=CardType::ATTACK;
+                else if(type=="skill")bottleType=CardType::SKILL;
+                else if(type=="power")bottleType=CardType::POWER;
+                else require(false,"unknown bottle selector card type");
+                require(g.info.toSelectCount==1,"bottle selector requires one pick");
+            }
+            std::set<int> targets;
+            const auto selectedCard=[&](const J &v) {
                 const auto idx=integer(v,"deckIndex",0,g.deck.size()-1);
                 const auto c=card(v.at("card"));require(c==g.deck.cards[idx],"selector card does not match deck");
-                for(const auto &prev:g.info.toSelectCards)require(prev.deckIdx!=idx,"duplicate physical selector target");
-                g.info.toSelectCards.push_back(SelectScreenCard(c,idx));
+                require(targets.insert(idx).second,"duplicate physical selector target");
+                if(kind=="bottle")
+                    require(c.getType()==bottleType && !g.deck.isCardBottled(idx),
+                            "ineligible bottle selector target");
+                return SelectScreenCard(c,idx);
+            };
+            const int completed=integer(d,"completedPicks",0,3);
+            require(completed<g.info.toSelectCount,"selector has no remaining picks");
+            if(completed>0 || d.contains("selectedCards")) {
+                const auto &selected=array(d,"selectedCards",3);
+                require(selected.size()==static_cast<std::size_t>(completed),
+                        "selector completed-pick count mismatch");
+                for(const auto &v:selected)g.info.haveSelectedCards.push_back(selectedCard(v));
             }
-            require(integer(d,"completedPicks",0,3)==0,"partially selected grid unsupported");
+            for(const auto &v:array(d,"cards",96))
+                g.info.toSelectCards.push_back(selectedCard(v));
+            require(g.info.toSelectCards.size()>=g.info.toSelectCount-completed,
+                    "selector has fewer targets than remaining picks");
         } else if(g.screenState==ScreenState::EVENT_SCREEN) {
             const auto event=string(d,"event");
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
@@ -526,7 +556,34 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.info.attackCardDeckIdx=integer(d,"attackCardDeckIdx",-1,g.deck.size()-1);
             g.info.potionIdx=integer(d,"potionIdx",-1,4);g.info.gold=integer(d,"gold",-1,1000000);
             g.info.cardIdx=integer(d,"cardIdx",-1,g.deck.size()-1);
-            if(g.curEvent==Event::NEOW) {
+            if(g.curEvent==Event::WORLD_OF_GOOP && !d.contains("mechanicalTransition"))
+                g.info.goldLoss=integer(d,"goldLoss",0,g.gold);
+            if(d.contains("mechanicalTransition")) {
+                const auto transition=string(d,"mechanicalTransition");
+                const auto &eventCapture=o.at("event");
+                const auto phase=string(eventCapture,"phase");
+                const auto capturedId=string(eventCapture,"id");
+                const bool neow=g.curEvent==Event::NEOW && capturedId=="Neow"
+                        && ((transition=="neow_intro" && (phase=="0" || phase=="1"))
+                            || (transition=="event_leave" && phase=="99"));
+                const bool goop=g.curEvent==Event::WORLD_OF_GOOP && capturedId=="World of Goop"
+                        && transition=="event_leave" && phase=="RESULT";
+                require(neow || goop,"unqualified mechanical event transition");
+                const auto &options=array(eventCapture,"options",1);
+                require(options.size()==1 && integer(options.at(0),"index",0,0)==0
+                        && !boolean(options.at(0),"disabled"),
+                        "mechanical event requires sole enabled slot zero");
+                const auto &choices=array(o,"liveChoices",1);
+                require(choices.size()==1,"mechanical event requires one live choice");
+                const auto &native=choices.at(0).at("nativeAction");
+                require(string(native,"kind")=="option" && integer(native,"index",0,0)==0
+                        && integer(native,"group",0,0)==0,
+                        "mechanical event native choice mismatch");
+                const auto &hint=choices.at(0).at("liveAction");
+                require(string(hint,"kind")=="choose" && integer(hint,"choiceIndex",1,1)==1,
+                        "mechanical event live choice mismatch");
+                next.mechanicalEventTransition=true;
+            } else if(g.curEvent==Event::NEOW) {
                 const auto &ns=array(d,"neow",4);
                 require(ns.size()==2 || ns.size()==4,"two or four Neow offers required");
                 g.info.neowRewards.fill({Neow::Bonus::INVALID,Neow::Drawback::INVALID});
@@ -568,7 +625,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         }
         if (unqualifiedUpgradeHistory)
             return {false,"UNSUPPORTED","SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"};
-        next.mctsRoot = makeMctsRoot(next);
+        if(next.mechanicalEventTransition) {
+            next.mctsRoot.supported=false;
+            next.mctsRoot.reason="MECHANICAL_EVENT_TRANSITION_ONLY";
+        } else next.mctsRoot = makeMctsRoot(next);
         out=std::move(next);
         return {true,{},{}};
     } catch(const std::exception &e) {

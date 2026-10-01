@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-01 for the issue #368 power-ID, selector, relic and Neow-dialogue projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -126,6 +126,24 @@ power uses a different turn-local member name; `SlaverBlue` has stable native
 `miscInfo` zero and is emitted explicitly as zero. The player-side
 `Weakened` ID is an alias of native `Weak` and follows the same
 `justApplied` requirement.
+Raw vanilla power IDs are accepted alongside the legacy class-name aliases,
+including Flame Barrier, Double Tap, Brutality, Confusion, Constricted,
+Next Turn Block, DexLoss, Regeneration, Ritual, Magnetism, Mayhem and Sadistic.
+Monster aliases include Shackled, Generic Strength Up Power, Painful Stabs,
+Regenerate and Compulsive. The latter is a Java boolean marker; at a resolved
+Writhing Mass boundary it maps to native zero pending reactive rolls.
+Unawakened and Explosive are validated against monster identity and phase/move
+state rather than invented status bits. Awakened One remains in native phase
+zero while half-dead and gains the native minion-leader victory rule after
+rebirth, so surviving Cultists do not delay victory after its final death.
+Combat capture includes
+`energyPerTurn` from Java `energyMaster`; the importer adds Berserk's power
+amount to this base/relic energy for native future turns. IntangiblePlayer
+has an explicit false native expiry bit because vanilla always decrements it
+at end of round and has no `justApplied` member. These mappings were checked
+against `desktop-1.0.jar` SHA-256
+`cfad868ac8d65a88e71a0bf096fb09f78811e553effe0787c5309a655e081673` and native
+regression fixtures; they do not establish live whole-fight parity.
 Special bookkeeping for Combust, Echo Form, Panache, Deva Form, Orange
 Pellets, used-up relics, and Necronomicon is serialized when its runtime field
 is accessible; otherwise the importer rejects that state. Monster `miscInfo`
@@ -512,6 +530,12 @@ read-only screen and choice converters. The observation contains:
   No random offers are synthesized. Native fresh-run generation remains four
   offers. These paths have Java projection and native import/transition/search
   fixture coverage; this does not assert a new live-game qualification streak.
+  Neow phases 0/1 (intro) and 99 (leave) are accepted only with the sole enabled
+  slot-zero button and matching live choice. They return a forced
+  `native_pass_through` action without model scoring. Differential trace mode
+  rejects them with `DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE`, because
+  the native simulator starts at the offer page and has no matching dialogue
+  transition; this change does not qualify Neow trace replay.
 - `liveChoices`: occurrence-bound native action identities and single-command
   structured MCP hints. Duplicate labels are never action identity.
 - `mcpState`: the exact current MCP screen conversion used by the driver to
@@ -560,10 +584,15 @@ resolved `?`-room outcome ledger is not yet persisted in the live producer;
 therefore any current-act history containing event-room visits fails closed
 with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`, and no uniform historical
 room sampler is used. Events whose native `StateInfo` fields are not captured
-(`ShiningLight`, `Ghosts`, `WindingHalls`, and `WorldOfGoop`) are unsupported.
-Unopened treasure is likewise unsupported until `setupTreasureRoom()` state
-(`chestSize`, `haveGold`, and `tier`) is imported; a Java chest class alone is
-not sufficient. The
+(`ShiningLight`, `Ghosts`, and `WindingHalls`) are unsupported.
+World of Goop's initial `GoopPuddle.INTRO` screen projects the displayed gold
+loss into native `StateInfo.goldLoss`; its fixed damage/gold reward are
+validated against the native effect. Its `RESULT` page uses the same strict
+one-button forced transition and differential-trace rejection as Neow.
+Unopened treasure remains unsupported. Its Java `goldReward` and
+`relicReward` fields describe hidden pre-rolls; exposing them as public search
+information would violate the live fair-information contract. Chest support
+needs a qualified sampled-state representation. The
 private Java `potionChance` and `cardRarityFactor` counters are
 not captured. Roots such as Library, Mushrooms and Mysterious Sphere whose pre-MAP
 continuation can generate potion or card rewards fail closed with
@@ -709,8 +738,9 @@ groups expose only their occurrence/type and require the driver to open the
 group after parent reward collection; their concealed card identities are not
 serialized or scored. Wing Boots is imported with a separate public charge
   counter, while direct MAP roots with active charges fail closed because the
-  frozen value models do not encode remaining charges; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
-where live/native counter initialization differs. Maw Bank has an explicit
+  frozen value models do not encode remaining charges. Lizard Tail maps its
+  unused/used state to native 1/0; Matryoshka and N'loth's Hungry Face preserve
+  remaining charges with Java used-up sentinels mapped to zero. Maw Bank has an explicit
 source-derived active/spent conversion, and a spent Neow's Lament or
 Omamori reporting Java's used-up -2 is native 0 remaining charges in both the
 OOC capture and the combat-entry payload, because the CTM rejects negative
@@ -720,7 +750,17 @@ are unsupported. A deck containing upgraded Searing Blow returns
 `SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot
 reconstruct the native history-dependent upgradeable count. Confirmation-only
 screens and unsupported dialogue phases are explicitly accounted fallbacks.
+OOC selector capture identifies bottle relics, Dolly's Mirror and Astrolabe
+from their pending-selection fields, and Duplicator/Bonfire from their event
+phase. Astrolabe maps to transform-and-upgrade, and Bonfire retains its
+sacrifice/reward continuation. Native import restores completed physical picks
+for Empty Cage/Astrolabe and only offers remaining cards, preserving each
+card's MCP choice index. This does not add confirmation-only or Note For
+Yourself support. Removal, bottle, duplicate and Bonfire selectors may still
+fall outside direct V4 scoring; their native semantic/MCTS support is separate.
 These limits must not be presented as whole-game equivalence.
+Representable relic counters do not expand the frozen CTM/model support gates;
+active Lizard Tail remains subject to their existing qualification boundary.
 
 ### Full-run driver and failure packets
 
@@ -753,6 +793,10 @@ combat and returns Silver `UNSUPPORTED` with `silver_unmapped_selection_task`,
 allowing the normal deterministic combat fallback. Hand selections project the
 screen's actual `canPickZero` value. The driver still stops on any genuine
 boundary mismatch instead of reinterpreting OOC output as a Silver result.
+Warcry, base Forethought, Secret Technique and Secret Weapon derive their
+selection task from the active vanilla action class, with exact screen/count
+checks, before the legacy prompt-text fallback. Upgraded Forethought's
+multi-pick continuation remains unsupported by the native action.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
