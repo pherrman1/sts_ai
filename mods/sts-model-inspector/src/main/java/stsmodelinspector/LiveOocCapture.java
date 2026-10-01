@@ -61,7 +61,13 @@ final class LiveOocCapture {
                 Number number = (Number)entry.get("floor");
                 int f = number.intValue();
                 Object kind = entry.get("kind"), encounter = entry.get("encounter");
-                if (number.doubleValue() != f || f <= previous || f > floor
+                boolean sameFloorColosseum = f == previous && !entries.isEmpty()
+                        && colosseumPair(currentAct, entries.get(entries.size()-1), String.valueOf(kind), String.valueOf(encounter));
+                boolean colosseumEncounter = "COLOSSEUM_EVENT_SLAVERS".equals(encounter)
+                        || "COLOSSEUM_EVENT_NOBS".equals(encounter);
+                if ((colosseumEncounter && (currentAct != 2 || !"FIXED_EVENT".equals(kind)))
+                        || ("COLOSSEUM_EVENT_NOBS".equals(encounter) && !sameFloorColosseum)
+                        || number.doubleValue() != f || f < previous || (f == previous && !sameFloorColosseum) || f > floor
                         || !Arrays.asList("NORMAL_QUEUE", "ELITE_QUEUE", "FIXED_EVENT", "BOSS").contains(kind)
                         || !(encounter instanceof String)
                         || (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
@@ -87,6 +93,16 @@ final class LiveOocCapture {
         void observe(Object currentPlayer, long currentSeed, int currentAct, int floor,
                 boolean noPriorActCombat, boolean inCombat, Object group, String kind,
                 String encounter) {
+            observe(currentPlayer,currentSeed,currentAct,floor,noPriorActCombat,inCombat,group,kind,encounter,null);
+        }
+        private static boolean colosseumPair(int act, Map<String,Object> first, String kind, String encounter) {
+            return act == 2 && "FIXED_EVENT".equals(first.get("kind")) && "FIXED_EVENT".equals(kind)
+                    && "COLOSSEUM_EVENT_SLAVERS".equals(first.get("encounter"))
+                    && "COLOSSEUM_EVENT_NOBS".equals(encounter);
+        }
+        void observe(Object currentPlayer, long currentSeed, int currentAct, int floor,
+                boolean noPriorActCombat, boolean inCombat, Object group, String kind,
+                String encounter, String eventClass) {
             if (player != currentPlayer || seed != currentSeed || act != currentAct
                     || floor < lastFloor) {
                 player = currentPlayer; seed = currentSeed; act = currentAct;
@@ -100,11 +116,29 @@ final class LiveOocCapture {
             }
             if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
                     && (encounter == null || encounter.isEmpty())) { complete = false; return; }
+            boolean existingQualifiedFight = complete && !entries.isEmpty()
+                    && Integer.valueOf(floor).equals(entries.get(entries.size()-1).get("floor"))
+                    && kind.equals(entries.get(entries.size()-1).get("kind"))
+                    && encounter != null && encounter.equals(entries.get(entries.size()-1).get("encounter"));
+            // A bound checkpoint can already prove the current fight even if
+            // save reconstruction has not recreated its event object yet.
+            // Starting a new Colosseum fight still requires its actual owner.
+            if (("COLOSSEUM_EVENT_SLAVERS".equals(encounter) || "COLOSSEUM_EVENT_NOBS".equals(encounter))
+                    && (currentAct != 2 || !"FIXED_EVENT".equals(kind)
+                        || (!"Colosseum".equals(eventClass) && !existingQualifiedFight))) {
+                complete = false; return;
+            }
+            if ("COLOSSEUM_EVENT_NOBS".equals(encounter) && (entries.isEmpty()
+                    || !Integer.valueOf(floor).equals(entries.get(entries.size()-1).get("floor")))) {
+                complete = false; return;
+            }
             if (group != lastGroup) {
                 if (!entries.isEmpty()
                         && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
                     Map<String,Object> previous = entries.get(entries.size() - 1);
-                    if (!kind.equals(previous.get("kind"))
+                    if ("Colosseum".equals(eventClass) && colosseumPair(currentAct,previous,kind,encounter))
+                        entries.add(object("floor",floor,"kind",kind,"encounter",encounter));
+                    else if (!kind.equals(previous.get("kind"))
                             || !String.valueOf(previous.get("encounter")).equals(encounter)) complete = false;
                 } else entries.add(object("floor", floor, "kind", kind,
                         "encounter", encounter == null ? "" : encounter));
@@ -155,7 +189,8 @@ final class LiveOocCapture {
         }
         combatClassHistory.observe(AbstractDungeon.player, Settings.seed, act, floor,
                 noPriorActCombat, inCombat, inCombat ? AbstractDungeon.getMonsters() : null, kind,
-                inCombat ? STSModelInspector.encounterName(room) : "");
+                inCombat ? STSModelInspector.encounterName(room) : "",
+                room.event == null ? null : room.event.getClass().getSimpleName());
     }
 
     static void invalidateCombatRoomHistory() { combatClassHistory.invalidate(); }

@@ -46,7 +46,54 @@ public final class RelicOfferRecorderTest {
         require(!LiveOocCapture.seenRelicOffers.complete()
                 && !LiveOocCapture.combatClassHistory.complete(), "malformed save retained qualified history: " + label);
     }
+    private static void colosseumCheckpoints() {
+        LiveOocCapture.CombatClassHistory history = new LiveOocCapture.CombatClassHistory();
+        Object first = new Object(), second = new Object();
+        history.observe(PLAYER,12345,2,25,true,true,first,"FIXED_EVENT","COLOSSEUM_EVENT_SLAVERS","Colosseum");
+        history.observe(PLAYER,12345,2,25,false,false,null,null,"","Colosseum");
+        require(history.completeFor(Arrays.asList(25)),"Colosseum first victory lost history");
+        for(int stage=0;stage<3;++stage) {
+            if(stage==1) {
+                history.observe(PLAYER,12345,2,25,false,true,second,"FIXED_EVENT","COLOSSEUM_EVENT_NOBS","Colosseum");
+                history.observe(PLAYER,12345,2,25,false,true,second,"FIXED_EVENT","COLOSSEUM_EVENT_NOBS","Colosseum");
+            }
+            RelicOfferRecorder.SaveData saved=checkpoint();saved.floor=25;saved.combatAct=2;saved.combatEntries=history.snapshot();
+            List<Integer> metrics=stage==2?Arrays.asList(25,25):Arrays.asList(25);
+            new RelicOfferRecorder().onLoadRaw(JSON.toJsonTree(saved));
+            RelicOfferRecorder.restorePending(PLAYER,12345,25,"IRONCLAD",0,2,metrics);
+            LiveOocCapture.CombatClassHistory restored=LiveOocCapture.combatClassHistory;
+            require(restored.complete() && restored.snapshot().size()==(stage==0?1:2),"Colosseum save phase "+stage);
+            require(restored.completeFor(metrics)==(stage!=1),"pending second fight claimed completed metric");
+            restored.observe(PLAYER,12345,2,25,false,true,new Object(),"FIXED_EVENT",
+                    stage==0?"COLOSSEUM_EVENT_SLAVERS":"COLOSSEUM_EVENT_NOBS",null);
+            require(restored.complete(),"bound current fight lost on group/event reconstruction");
+            restored.observe(PLAYER,12345,2,25,false,true,new Object(),"FIXED_EVENT","COLOSSEUM_EVENT_NOBS","Colosseum");
+            require(restored.completeFor(Arrays.asList(25,25)) && restored.snapshot().size()==2,
+                    "Colosseum reload repeated or lost second fight "+stage);
+        }
+        for(int defect=0;defect<6;++defect) {
+            RelicOfferRecorder.SaveData saved=checkpoint();saved.floor=25;saved.combatAct=defect==3?1:2;
+            saved.combatEntries=new ArrayList<>(Arrays.asList(combat(25,"FIXED_EVENT","COLOSSEUM_EVENT_SLAVERS"),
+                    combat(25,"FIXED_EVENT","COLOSSEUM_EVENT_NOBS")));
+            if(defect==0)Collections.reverse(saved.combatEntries);
+            if(defect==1)saved.combatEntries.get(0).put("encounter","MUSHROOMS_EVENT");
+            if(defect==2)saved.combatEntries.get(1).put("kind","ELITE_QUEUE");
+            if(defect==4)saved.combatEntries.add(combat(25,"FIXED_EVENT","COLOSSEUM_EVENT_NOBS"));
+            if(defect==5)saved.combatEntries.remove(0);
+            List<Integer> metrics=new ArrayList<>(Collections.nCopies(saved.combatEntries.size(),25));
+            new RelicOfferRecorder().onLoadRaw(JSON.toJsonTree(saved));
+            RelicOfferRecorder.restorePending(PLAYER,12345,25,"IRONCLAD",0,saved.combatAct,metrics);
+            require(!LiveOocCapture.combatClassHistory.complete(),"malformed same-floor history accepted "+defect);
+        }
+        for(String owner:Arrays.asList("OtherEvent",null)) {
+            history=new LiveOocCapture.CombatClassHistory();
+            history.observe(PLAYER,12345,2,25,true,true,new Object(),"FIXED_EVENT","COLOSSEUM_EVENT_SLAVERS",owner);
+            history.observe(PLAYER,12345,2,25,false,true,new Object(),"FIXED_EVENT","COLOSSEUM_EVENT_NOBS",owner);
+            require(!history.complete(),"unverified event source qualified Colosseum sequence");
+        }
+    }
     public static void main(String[] args) {
+        colosseumCheckpoints();
         load(checkpoint());
         require(LiveOocCapture.seenRelicOffers.complete()
                 && LiveOocCapture.seenRelicOffers.snapshot().equals(Arrays.asList("Anchor","Vajra")),

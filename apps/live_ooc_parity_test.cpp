@@ -1090,6 +1090,31 @@ int main(int argc,char **argv){try{
                 && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
             "random relic event must fail closed without seen relic history");
     }
+    {
+        auto source=base;source.act=2;source.floorNum=23;source.screenState=ScreenState::REWARDS;
+        auto wire=project(source,path,"colosseum_two_combat_history");auto &p=wire["ooc"]["publicState"];
+        p["combatFloors"]=J::array({20,22,22});
+        p["combatHistory"]=J::array({{{"floor",20},{"kind","NORMAL_QUEUE"},{"encounter","CHOSEN"}},
+            {{"floor",22},{"kind","FIXED_EVENT"},{"encounter","COLOSSEUM_EVENT_SLAVERS"}},
+            {{"floor",22},{"kind","FIXED_EVENT"},{"encounter","COLOSSEUM_EVENT_NOBS"}}});
+        advisor::LiveOocStateV1 imported;const auto result=advisor::importLiveOocStateV1(wire,imported);
+        check(result.ok && imported.mctsRoot.supported,"Colosseum same-floor history: "+result.message);
+        check(imported.mctsRoot.state.monsterListOffset==1 && imported.mctsRoot.state.eliteMonsterListOffset==0,
+                "both Colosseum combats must preserve encounter queue offsets");
+        for(int defect=0;defect<8;++defect) {
+            auto bad=wire;auto &history=bad["ooc"]["publicState"]["combatHistory"];
+            if(defect==0)history[2]["kind"]="NORMAL_QUEUE";
+            if(defect==1)history[2]["encounter"]="COLOSSEUM_EVENT_SLAVERS";
+            if(defect==2)history[1]["encounter"]="GREMLIN_NOB";
+            if(defect==3)bad["ooc"]["publicState"]["combatFloors"]=J::array({20,22});
+            if(defect==4) {history.push_back(history[2]);bad["ooc"]["publicState"]["combatFloors"].push_back(22);}
+            if(defect==5) {history=J::array({history[2]});bad["ooc"]["publicState"]["combatFloors"]=J::array({22});}
+            if(defect==6)bad["ooc"]["publicState"]["act"]=1;
+            if(defect==7)history[1]["kind"]="NORMAL_QUEUE";
+            advisor::LiveOocStateV1 rejected;check(!advisor::importLiveOocStateV1(bad,rejected).ok,"forged same-floor combat history accepted");
+        }
+        if(output)output<<wire.dump()<<'\n';++passed;
+    }
     for(const auto type:{CardSelectScreenType::UPGRADE,CardSelectScreenType::REMOVE,CardSelectScreenType::TRANSFORM,CardSelectScreenType::BONFIRE_SPIRITS}) {
         auto source=base;source.openCardSelectScreen(type,1);
         auto preview=project(source,path,"selector_preview_"+std::to_string(static_cast<int>(type)));

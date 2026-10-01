@@ -497,13 +497,16 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(card["root"]["hpCounts"][card["currentHp"]], card["root"]["count"])
 
     def test_qualified_question_history_expands_downstream_map(self):
-        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        observation = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
         observation["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])
+        # Taking/skipping the final reward reaches a same-floor MAP. The old
+        # hard leaf evaluated every sample there (offset zero); qualified
+        # history must permit the planner to enter a subsequent room.
         response, = self.run_rows([observation], label="qualified downstream map")
         evaluator = response["evaluators"][0]
         self.assertEqual(evaluator["status"], "OK", response)
         offsets = evaluator["endpointHpDistribution"]["root"]["floorOffsets"]
-        self.assertTrue(any(int(offset) > 1 for offset in offsets), offsets)
+        self.assertTrue(any(int(offset) > 0 for offset in offsets), offsets)
 
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])

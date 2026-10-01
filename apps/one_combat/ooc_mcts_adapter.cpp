@@ -917,8 +917,8 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     if (!options.sampleNoncombat && edge.deterministic) return *edge.deterministic;
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
     // A live MAP root is searchable.  The hidden room outcome must be sampled
-    // before transitionToMapNode consumes monster/shop/treasure chances; a
-    // downstream MAP checkpoint is still evaluated as a leaf.
+    // before transitionToMapNode consumes monster/shop/treasure chances.
+    // Qualified successors retain their updated room counters.
     if (options.sampleNoncombat) {
         sampleNoncombatFuture(child.gc, rng);
         if (id == 0 && dependencies.sampleHiddenCounters)

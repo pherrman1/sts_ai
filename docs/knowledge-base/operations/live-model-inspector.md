@@ -522,6 +522,10 @@ read-only screen and choice converters. The observation contains:
   reconstruction restores the consumed native queue prefix rather than only
   its length. Restoration validates the checkpoint against `damage_taken` and
   rejects unknown identities, conflicting floors and incomplete history.
+  Colosseum's ordered Slavers-then-Nobs fights are the sole qualified
+  same-floor pair in Act 2; both are fixed event fights and consume neither
+  encounter queue. Capture and save restoration preserve both entries and
+  validate them against the two completed-combat metric records.
   The old seed/act TSV sidecar is not a restoration authority: repeated seeds
   and checkpoint rollback can leave stale entries in that file. Missing or
   contradictory history still fails closed with
@@ -815,7 +819,10 @@ sacrifice/reward continuation. Native import restores completed physical picks
 for Empty Cage/Astrolabe and only offers remaining cards, preserving each
 card's MCP choice index. Note For Yourself captures its public stored card and
 subsequent removal grid; its direct acquisition preserves Omamori charges and
-applies the actual relic hooks. Removal, bottle, duplicate and Bonfire selectors may still
+applies the actual relic hooks. An off-color stored card can be legitimate
+without Prismatic Shard, but subsequent combat still requires broader
+Silver/CTM card support and qualification; OOC capture does not establish it.
+Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
 When a full belt blocks a visible potion reward or affordable shop potion,
 MCTS enumerates each held-slot discard using public potion identity and duplicate

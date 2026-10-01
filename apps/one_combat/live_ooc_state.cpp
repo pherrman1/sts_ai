@@ -438,6 +438,29 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         const auto &entry = combatHistory.at(i);
         const int floor = integer(entry, "floor", 1, 1000);
         const auto kind = string(entry, "kind");
+        require(floor>actStartFloor && floor<=root.floorNum,"combat history outside current act");
+        const auto encounterName=entry.contains("encounter")?string(entry,"encounter"):std::string();
+        if(encounterName=="COLOSSEUM_EVENT_SLAVERS" || encounterName=="COLOSSEUM_EVENT_NOBS") {
+            require(root.act==2 && kind=="FIXED_EVENT","Colosseum combat requires Act 2 fixed event");
+            if(encounterName=="COLOSSEUM_EVENT_NOBS") {
+                require(i>0,"Colosseum Nobs requires its preceding Slaver fight");
+                const auto &previous=combatHistory.at(i-1);
+                require(integer(previous,"floor",actStartFloor+1,root.floorNum)==floor
+                        && string(previous,"kind")=="FIXED_EVENT"
+                        && string(previous,"encounter")=="COLOSSEUM_EVENT_SLAVERS",
+                        "Colosseum Nobs requires same-floor Slaver fight");
+            }
+        }
+        if(i>0) {
+            const auto &previous=combatHistory.at(i-1);
+            const int previousFloor=integer(previous,"floor",actStartFloor+1,root.floorNum);
+            require(floor>=previousFloor,"combat history must follow floor order");
+            if(floor==previousFloor)require(root.act==2 && kind=="FIXED_EVENT"
+                    && string(previous,"kind")=="FIXED_EVENT"
+                    && string(previous,"encounter")=="COLOSSEUM_EVENT_SLAVERS"
+                    && string(entry,"encounter")=="COLOSSEUM_EVENT_NOBS",
+                    "unqualified same-floor combat sequence");
+        }
         require(kind == "NORMAL_QUEUE" || kind == "ELITE_QUEUE" || kind == "FIXED_EVENT"
                 || kind == "BOSS", "unknown public combat class");
         if (combatHistoryComplete)
