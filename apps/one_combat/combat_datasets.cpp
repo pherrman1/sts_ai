@@ -7,6 +7,7 @@
 #include "one_combat/combat_predictor_input.h"
 #include "ooc_strategic_tok_net.h"
 
+#include <cstdio>
 #include <iomanip>
 #include <openssl/evp.h>
 #include <set>
@@ -1749,7 +1750,20 @@ static std::vector<VwinSampledDecision *> vwinSamplesInSourceOrder(VwinCollector
 
 void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     long long seedOffset, const std::string &teacherPath,
-                    int samplesPerType, int parityPercent) {
+                    int samplesPerType, int parityPercent,
+                    int diagMaxBranches, const std::string &diagMarkerPath) {
+    // Diagnostic-only crash localisation (vwinrefreshcrashdiag). Production
+    // vwinrefreshgen passes no marker path and no branch limit.
+    std::FILE *diagMarkers = nullptr;
+    if (!diagMarkerPath.empty()) {
+        diagMarkers = std::fopen(diagMarkerPath.c_str(), "a");
+        if (!diagMarkers) throw std::runtime_error("vwin refresh: cannot open diagnostic marker log");
+    }
+    auto marker = [&](const std::string &branchId, const char *phase) {
+        if (!diagMarkers) return;
+        std::fprintf(diagMarkers, "%s %s\n", branchId.c_str(), phase);
+        std::fflush(diagMarkers);
+    };
     if (nSeeds < 1 || sims != 10000 || asc != 0 || samplesPerType < 1
         || parityPercent < 0 || parityPercent > 100 || seedOffset < 0
         || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
@@ -1824,7 +1838,9 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
         source.captureRefresh = true;
         source.allowSampling = true;
         source.captureDecisionSink = captureDecisionSink;
+        marker("source", "before_runCombatEvalGenSeed");
         const auto generated = runCombatEvalGenSeed(seed, sims, asc, teacher, true, &source);
+        marker("source", "after_runCombatEvalGenSeed");
         for (const auto &decision : source.decisions) {
             if (decision.branchId != "source") continue;
             auto &summary = typeSummary[decision.type];
@@ -1852,9 +1868,15 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
         recordDecisionSink(source);
         if (generated.trajectoryComplete) ++completedSources;
         if (generated.trajectoryValid) ++validSources;
+        marker("source", "source_bookkeeping_done");
 
+        bool diagStop = false;
         for (auto *sample : vwinSamplesInSourceOrder(source)) {
+            if (diagStop) break;
             for (const auto &option : sample->options) {
+                if (diagStop) break;
+                std::string diagBranchId;
+                {  // branch-local scope: the destroyed marker follows its destructors
                 const bool chosen = option.key == sample->chosenKey;
                 const std::string branchId = "s" + std::to_string(seed) + "-d"
                     + std::to_string(sample->decisionIdx) + "-" + vwinSha256(option.key).substr(0, 12);
@@ -1866,9 +1888,12 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                 branch.captureRefresh = true;
                 branch.allowSampling = false;
                 branch.captureDecisionSink = captureDecisionSink;
+                diagBranchId = branchId;
+                marker(branchId, "before_runCombatEvalGenSeed");
                 const auto branchCpuStart = vwinThreadCpuNanos();
                 const auto branched = runCombatEvalGenSeed(seed, sims, asc, teacher, true,
                                                             &branch, &start);
+                marker(branchId, "after_runCombatEvalGenSeed");
                 const double branchCpuSeconds = static_cast<double>(
                     vwinThreadCpuNanos() - branchCpuStart) / 1.0e9;
                 auto &summary = typeSummary[sample->type];
@@ -1891,11 +1916,16 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     ++parityChecks;
                     if (!parity) ++parityFailures;
                 }
+                marker(branchId, "before_vwinWriteCollector");
                 vwinWriteCollector(mapOut, rawOut, decisionOut,
                                    captureDecisionSink ? &decisionSinkOut : nullptr, combatOut,
                                    seed, branch, combatEvalFinalWon(branched.finalOutcome), teacher);
+                marker(branchId, "after_vwinWriteCollector");
+                marker(branchId, "before_vwinWriteRunout");
                 vwinWriteRunout(runoutOut, seed, branch, branched, teacher,
                     parityApplicable ? (parity ? "PASS" : "FAIL") : "NA");
+                marker(branchId, "after_vwinWriteRunout");
+                marker(branchId, "before_branch_summary");
                 branchMapRows += branch.mapRows.size();
                 branchRawRows += branch.rawRows.size();
                 decisionRows += branch.decisions.size();
@@ -1915,12 +1945,26 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     {"trajectoryValid", branched.trajectoryValid},
                     {"chosenReplayParity", parityApplicable ? nlohmann::json(parity)
                                                              : nlohmann::json(nullptr)}});
+                marker(branchId, "after_branch_summary");
+                marker(branchId, "end_of_branch_iteration");
+                }
+                marker(diagBranchId, "branch_locals_destroyed");
+                if (diagMaxBranches > 0 && branchRows >= static_cast<std::uint64_t>(diagMaxBranches))
+                    diagStop = true;
             }
         }
         mapOut.flush(); rawOut.flush(); decisionOut.flush(); branchOut.flush();
         if (captureDecisionSink) decisionSinkOut.flush();
         combatOut.flush(); runoutOut.flush();
+        if (diagStop) {
+            marker("diag", "branch_limit_reached_stop");
+            std::fclose(diagMarkers);
+            std::cout << "vwin refresh crash diagnostic: stopped after " << branchRows
+                      << " branches (no manifest written)\n";
+            return;
+        }
     }
+    if (diagMarkers) std::fclose(diagMarkers);
     mapOut.close(); rawOut.close(); decisionOut.close(); branchOut.close();
     if (captureDecisionSink) decisionSinkOut.close();
     combatOut.close(); runoutOut.close();

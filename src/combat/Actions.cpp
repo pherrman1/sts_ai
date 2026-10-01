@@ -9,6 +9,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 using namespace sts;
 
@@ -972,7 +973,10 @@ void ActData_TransmutationAction::operator()(BattleContext &bc) const {
     }
 
 void ActData_ViolenceAction::operator()(BattleContext &bc) const {
-        fixed_list<int,CardManager::MAX_GROUP_SIZE> attackIdxList;
+        // The draw pile is unbounded (search rollouts can grow it past 64
+        // attacks), so the index list must not have a fixed capacity.
+        std::vector<int> attackIdxList;
+        attackIdxList.reserve(bc.cards.drawPile.size());
         for (int i = 0; i < bc.cards.drawPile.size(); ++i) {
             const auto &c = bc.cards.drawPile[i];
             if (c.getType() == CardType::ATTACK) {
@@ -980,8 +984,8 @@ void ActData_ViolenceAction::operator()(BattleContext &bc) const {
                 if (attackIdxList.empty()) {
                     attackIdxList.push_back(i);
                 } else {
-                    const auto randomIdx = bc.cardRandomRng.random(attackIdxList.size() - 1);
-                    attackIdxList.insert(randomIdx, i);
+                    const auto randomIdx = bc.cardRandomRng.random(static_cast<int>(attackIdxList.size()) - 1);
+                    attackIdxList.insert(attackIdxList.begin() + randomIdx, i);
                 }
             }
         }
@@ -994,7 +998,7 @@ void ActData_ViolenceAction::operator()(BattleContext &bc) const {
         // hack to do this faster: the attackList is just pushed forward by i so we skip removing from bottom
         int i = 0;
         for (; i < count; ++i) {
-            if (attackIdxList.size()-i <= 0) {
+            if (static_cast<int>(attackIdxList.size())-i <= 0) {
                 return;
             }
 

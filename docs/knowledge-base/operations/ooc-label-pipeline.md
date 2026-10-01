@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-01 for the Violence draw-pile overflow fix and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -419,6 +419,28 @@ non-timing files with the sink off/on and again with it on:
 python3 tools/vwin_refresh_contract.py OFF.manifest.json --compare ON.manifest.json --allow-sink-toggle
 python3 tools/vwin_refresh_contract.py ON.manifest.json --compare REPEAT_ON.manifest.json
 ```
+
+`vwinrefreshcrashdiag 1 OUT_PREFIX SEED TEACHER.json MAX_BRANCHES MARKERS.log`
+is a diagnostic-only, seed-guarded variant of `vwinrefreshgen` for one source
+seed: it keeps the production teacher/policy guard, exact 10k, K=1, the
+six-option cap and branch order, stops after `MAX_BRANCHES` sibling branches,
+writes no manifest, and appends flushed `<branchId> <phase>` markers around
+`runCombatEvalGenSeed`, the collector/runout writers, branch bookkeeping and
+branch-local destruction. Production `vwinrefreshgen` writes no markers.
+
+`ActData_ViolenceAction` (Violence) used a 64-entry stack `fixed_list` for draw
+pile attack indices, while `CardPile` is unbounded; a native Silver rollout that
+grew the draw pile past 64 attacks overflowed it (A2a seed 13001491, Golden Idol
+branch `s13001491-d6-e4060641b190`). The list is now a `std::vector`, with
+unchanged RNG use and card choice (`unit-test violence_large_draw_pile` pins
+pre-fix digests). In the pre-fix GCC 13 `-O3 -flto` release frame the 65th
+entry lands in an unused 4-byte slot below the stack canary (same result as an
+unbounded list) and any 66th entry overwrites the canary, so pre-fix producers
+fail-stop rather than silently change a trajectory. That boundary is a
+property of the compiled frame: verify it on a frozen binary before relying on
+it. The Bronze Orb Stasis helper (`MonsterSpecific.cpp`) has the same 64-entry
+pattern over one rarity of the draw/discard pile; it is not known to have
+triggered.
 
 `one_combat vwinrefreshpolicyspec POLICY.json` exports the effective loaded
 OOC policy without generating trajectories. Use it for the teacher's

@@ -2517,6 +2517,83 @@ static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool 
     return bc;
 }
 
+// Violence scans the whole draw pile for attacks. The draw pile is unbounded,
+// so the attack index list must not have the old 64-entry fixed capacity
+// (#334 seed 13001491 stack overflow inside a native Silver rollout).
+static std::string violenceDrawPileDigest(int attackCount, int skillCount) {
+    GameContext gc(CharacterClass::IRONCLAD, 13001491, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    bc.cards.cardsInHand = 0;
+    bc.cards.drawPile.clear();
+    std::int16_t uid = 1000;
+    int attacksLeft = attackCount, skillsLeft = skillCount;
+    while (attacksLeft + skillsLeft > 0) {
+        // Interleave skills so attack indices are not contiguous.
+        const bool attack = attacksLeft > 0 && (skillsLeft == 0 || uid % 3 != 2);
+        --(attack ? attacksLeft : skillsLeft);
+        CardInstance c(attack ? CardId::STRIKE_RED : CardId::DEFEND_RED);
+        c.uniqueId = uid++;
+        bc.cards.drawPile.concreteCards().push_back(c);
+    }
+    const int before = bc.cards.drawPile.size();
+    const Action violence = Actions::ViolenceAction(3);
+    violence(bc);
+    std::ostringstream o;
+    o << "hand=" << bc.cards.cardsInHand << ':';
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        if (bc.cards.hand[i].getType() != CardType::ATTACK) return "non-attack-in-hand";
+        o << bc.cards.hand[i].uniqueId << ',';
+    }
+    // The remaining draw pile must be the original order minus the drawn cards.
+    std::int16_t expectedUid = 1000;
+    for (const auto &c : bc.cards.drawPile) {
+        auto drawn = [&](std::int16_t id) {
+            for (int i = 0; i < bc.cards.cardsInHand; ++i)
+                if (bc.cards.hand[i].uniqueId == id) return true;
+            return false;
+        };
+        while (drawn(expectedUid)) ++expectedUid;
+        if (c.uniqueId != expectedUid++) return "draw-pile-order-changed";
+    }
+    o << ";draw=" << before << '>' << bc.cards.drawPile.size() << ";discard=" << bc.cards.discardPile.size()
+      << ";card=" << bc.cardRandomRng.counter << ";shuffle=" << bc.shuffleRng.counter;
+    return o.str();
+}
+
+static int testViolenceLargeDrawPile() {
+    // Golden digests captured from the pre-fix fixed_list implementation (65
+    // survived in the release layout); card choice and RNG use must not change.
+    const std::pair<int, const char *> golden[] = {
+        {40, "hand=3:1027,1056,1042,;draw=60>57;discard=0;card=39;shuffle=4"},
+        {64, "hand=3:1002,1044,1024,;draw=74>71;discard=0;card=63;shuffle=4"},
+        {65, "hand=3:1015,1006,1033,;draw=75>72;discard=0;card=64;shuffle=4"},
+    };
+    for (const auto &[attacks, expected] : golden) {
+        const std::string d = violenceDrawPileDigest(attacks, attacks == 40 ? 20 : 10);
+        if (d != expected) {
+            std::cout << "violence_large_draw_pile: FAIL golden attacks=" << attacks << ' ' << d << '\n';
+            return 1;
+        }
+    }
+    for (const int attacks : {66, 70, 128, 200}) {
+        const std::string d = violenceDrawPileDigest(attacks, 10);
+        const std::string expected = "hand=3:";
+        if (d.rfind(expected, 0) != 0) {
+            std::cout << "violence_large_draw_pile: FAIL attacks=" << attacks << ' ' << d << '\n';
+            return 1;
+        }
+        const auto drawPos = d.find(";draw=" + std::to_string(attacks + 10) + '>'
+                                    + std::to_string(attacks + 7) + ';');
+        if (drawPos == std::string::npos) {
+            std::cout << "violence_large_draw_pile: FAIL draw count attacks=" << attacks << ' ' << d << '\n';
+            return 1;
+        }
+    }
+    std::cout << "violence_large_draw_pile: PASS\n";
+    return 0;
+}
+
 static BattleContext playerNormalFixture(std::uint64_t seed, int energy) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -4267,6 +4344,8 @@ int main(int argc, const char* argv[]) {
         const std::int64_t sims = argc > 2 ? std::stoll(argv[2]) : 2000;
         const int stride = argc > 3 ? std::max(1, std::stoi(argv[3])) : 1;
         return silverProfile(sims, stride);
+    } else if (command == "violence_large_draw_pile") {
+        return testViolenceLargeDrawPile();
     } else if (command == "card_pile") {
         return testCardPile();
     } else if (command == "battle_equality") {

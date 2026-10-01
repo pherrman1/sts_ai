@@ -265,7 +265,8 @@ void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
 // .manifest.json sidecars. Branch sampling is K decisions per decision type.
 void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     long long seedOffset, const std::string &teacherPath,
-                    int samplesPerType, int parityPercent = 100);
+                    int samplesPerType, int parityPercent = 100,
+                    int diagMaxBranches = -1, const std::string &diagMarkerPath = {});
 
 // Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
