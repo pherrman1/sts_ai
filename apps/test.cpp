@@ -1659,6 +1659,45 @@ int testSimulatorRelicFidelity() {
     return 0;
 }
 
+// Ironclad card properties and effects audited against the pinned STS1 V2.3.4
+// reference: each case is a card where the simulator differed.
+int testIroncladCardJavaParity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "ironclad_card_java_parity FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // Costs: Rage is 0; Infernal Blade is 1, 0 when upgraded.
+    if (CardInstance(CardId::RAGE).cost != 0 || CardInstance(CardId::RAGE, true).cost != 0) {
+        return fail("Rage does not cost 0");
+    }
+    if (CardInstance(CardId::INFERNAL_BLADE).cost != 1 || CardInstance(CardId::INFERNAL_BLADE, true).cost != 0) {
+        return fail("Infernal Blade cost is not 1/0");
+    }
+
+    // Seeing Red exhausts when played.
+    if (!CardInstance(CardId::SEEING_RED).doesExhaust() || !CardInstance(CardId::SEEING_RED, true).doesExhaust()) {
+        return fail("Seeing Red does not exhaust");
+    }
+
+    // Disarm+ removes 3 Strength.
+    {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DISARM, 1), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        const int strengthBefore = bc.monsters.arr[0].strength;
+        simulatorCorrectnessPlay(bc, 0, 0);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        if (bc.monsters.arr[0].strength != strengthBefore - 3) return fail("Disarm+ did not remove 3 Strength");
+    }
+
+    std::cout << "ironclad_card_java_parity PASS\n";
+    return 0;
+}
+
 // Act 1 monster behavior audited against the pinned STS1 V2.3.4 reference
 // (#348): each case reproduces a move roll or monster turn where the simulator differed.
 int testMonsterAiJavaParity() {
@@ -4963,6 +5002,8 @@ int main(int argc, const char* argv[]) {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {
         return testSimulatorRelicFidelity();
+    } else if (command == "ironclad_card_java_parity") {
+        return testIroncladCardJavaParity();
     } else if (command == "monster_ai_java_parity") {
         return testMonsterAiJavaParity();
     } else if (command == "relic_reward_sapphire") {
