@@ -163,14 +163,18 @@ All are covered by `monster_ai_java_parity`.
   Guardian's Barricade, Artifact 3 and 40 block.
 - **HP:** all other Act 2 ranges match `MonsterIds.h`.
 
-### Live-import finding (not fixed here)
+### Live-import finding (fixed)
 
-`STSModelInspector.bronzeAutomatonMiscInfo` returns 1 whenever the last two
-Java moves are Boost and Flail in either order. Native `lastBoostWasFlail` is 0
-at the first Boost after a Flail, so live search would expect Hyper Beam a
-cycle early. The flag is 1 exactly when Java's `numTurns` is 3 or 4 and the
-current move is Flail or Boost. **Confirmed by inspection** of both sides; not
-reproduced live.
+`STSModelInspector.bronzeAutomatonMiscInfo` used to return 1 whenever the last
+two Java moves were Boost and Flail in either order. The native
+`lastBoostWasFlail` is 0 at the first Boost after a Flail, so live search
+expected Hyper Beam a cycle early.
+
+The mapping now uses `bronzeAutomatonNativeFlag(nextMove, numTurns)`: 1 exactly
+when the intent is Flail or Boost and Java's `numTurns` is 3 or 4. It fails
+closed if `numTurns` is missing or outside 0–4. `CombatBoundaryTest` checks the
+whole cycle, including the A19 post-Hyper Beam Boost, and the JAR's `numTurns`
+field type.
 
 ## Act 3 audit
 
@@ -280,12 +284,10 @@ caller.
 ## Recommendation
 
 The monster audit of Acts 1–4 is complete. It found 34 simulator defects, 19 of
-which reach A0, plus one live-import mapping defect. Every simulator defect has
+which reach A0, plus one live-import mapping defect (since fixed). Every simulator defect has
 a focused test in `monster_ai_java_parity`.
 
-Remaining static targets:
-- the Automaton inspector mapping;
-- the Inference rows above.
+The remaining static targets are the Inference rows above.
 
 Beyond monster AI and constants, invest in dynamic differential captures
 ([differential correctness](../evaluation/differential-correctness.md)) for

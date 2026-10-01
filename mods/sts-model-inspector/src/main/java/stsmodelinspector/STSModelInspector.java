@@ -2174,22 +2174,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
-    private static int bronzeAutomatonMiscInfo(AbstractMonster monster) {
-        Object raw = readObjectField(monster, "moveHistory");
-        if (!(raw instanceof List<?>)) return 0;
-        List<?> history = (List<?>) raw;
-        if (history.size() < 2) return 0;
-        Object current = history.get(history.size() - 1);
-        Object previous = history.get(history.size() - 2);
-        if (!(current instanceof Number) || !(previous instanceof Number)) return 0;
-        int currentByte = ((Number) current).intValue();
-        int previousByte = ((Number) previous).intValue();
-        // Native Silver's miscInfo is lastBoostWasFlail.  It is not a hidden
-        // Java field, but the public move history determines it exactly at a
-        // stable decision boundary: Boost->Flail and Flail->Boost are the two
-        // states in which the native toggle is true.
-        return (currentByte == 1 && previousByte == 5)
-                || (currentByte == 5 && previousByte == 1) ? 1 : 0;
+    static Integer bronzeAutomatonNativeFlag(Integer nextMove, Integer numTurns) {
+        // Native Silver's miscInfo is lastBoostWasFlail. Vanilla numTurns
+        // counts Flail(1)/Boost(5) intents since the last Hyper Beam: 1..4,
+        // and 0 for the A19 Boost right after Hyper Beam. The native toggle is
+        // set from the second Flail (3) through the second Boost (4). Two moves
+        // of history cannot tell the first Boost from the second.
+        if (nextMove == null || numTurns == null || numTurns < 0 || numTurns > 4) return null;
+        boolean flailOrBoost = nextMove == 1 || nextMove == 5;
+        return flailOrBoost && numTurns >= 3 ? 1 : 0;
+    }
+
+    private static Integer bronzeAutomatonMiscInfo(AbstractMonster monster) {
+        return bronzeAutomatonNativeFlag((int) monster.nextMove, readIntField(monster, "numTurns"));
     }
 
     private static Integer monsterUniquePower0(AbstractMonster monster) {
