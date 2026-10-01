@@ -3,6 +3,37 @@ package stsmodelinspector;
 import java.util.*;
 
 public final class RunicDomeTrackerTest {
+    private static void applyConstructorPatch(javassist.CtBehavior constructor,Class<?> patchClass) throws Exception {
+        javassist.CtClass patch=constructor.getDeclaringClass().getClassPool().get(patchClass.getName());
+        com.evacipated.cardcrawl.modthespire.lib.SpirePatch annotation=
+                (com.evacipated.cardcrawl.modthespire.lib.SpirePatch)patch.getAnnotation(com.evacipated.cardcrawl.modthespire.lib.SpirePatch.class);
+        if(!com.evacipated.cardcrawl.modthespire.lib.SpirePatch.CONSTRUCTOR.equals(annotation.method()))
+            throw new AssertionError("expected constructor patch "+patchClass.getName());
+        int applied=0;
+        for(javassist.CtMethod method:patch.getDeclaredMethods()) {
+            com.evacipated.cardcrawl.modthespire.patcher.PatchInfo info;
+            if(method.hasAnnotation(com.evacipated.cardcrawl.modthespire.lib.SpirePostfixPatch.class))
+                info=new com.evacipated.cardcrawl.modthespire.patcher.PostfixPatchInfo(constructor,method);
+            else if(method.hasAnnotation(com.evacipated.cardcrawl.modthespire.lib.SpireRawPatch.class))
+                info=new com.evacipated.cardcrawl.modthespire.patcher.RawPatchInfo(constructor,patchClass.getDeclaredMethod(method.getName(),javassist.CtBehavior.class));
+            else continue;
+            info.setSpirePatch(annotation).doPatch();++applied;
+        }
+        if(applied!=1)throw new AssertionError("constructor patch coverage drift "+patchClass.getName());
+    }
+    private static void rejectLegacySpawnBinding(javassist.ClassPool pool) throws Exception {
+        javassist.CtClass spawn=pool.get("com.megacrit.cardcrawl.actions.common.SpawnMonsterAction");
+        javassist.CtConstructor constructor=spawn.getDeclaredConstructor(new javassist.CtClass[]{pool.get("com.megacrit.cardcrawl.monsters.AbstractMonster"),javassist.CtClass.booleanType,javassist.CtClass.intType});
+        javassist.CtClass legacy=pool.makeClass("stsmodelinspector.LegacySpawnConstructorPatch");
+        javassist.CtMethod postfix=javassist.CtNewMethod.make("public static void postfix(com.megacrit.cardcrawl.monsters.AbstractMonster m) {}",legacy);
+        legacy.addMethod(postfix);
+        try {
+            new com.evacipated.cardcrawl.modthespire.patcher.PostfixPatchInfo(constructor,postfix).doPatch();
+            throw new AssertionError("ModTheSpire accepted the broken receiver-less Spawn postfix");
+        } catch(com.evacipated.cardcrawl.modthespire.patcher.PatchingException expected) {
+            if(!expected.toString().contains("postfix(com.megacrit.cardcrawl.actions.common.SpawnMonsterAction)"))throw expected;
+        } finally { spawn.detach();legacy.detach(); }
+    }
     private static void complete(Map<String,Object> snapshot) {
         if(!Boolean.TRUE.equals(snapshot.get("complete"))) throw new AssertionError(snapshot);
     }
@@ -332,6 +363,9 @@ public final class RunicDomeTrackerTest {
         if(!thornsState.get("totalRolls").equals(2) || !thornsState.get("pendingMoveRolls").equals(0)) throw new AssertionError("in-flight death roll not cancelled");
         javassist.ClassPool pool=new javassist.ClassPool(true);
         pool.appendClassPath(new javassist.LoaderClassPath(RunicDomeTrackerTest.class.getClassLoader()));
+        // Use the installed ModTheSpire patcher, including its receiver binding.
+        // LVT-name checks and direct raw hooks alone missed the startup failure.
+        rejectLegacySpawnBinding(pool);
         javassist.CtClass action=pool.get("com.megacrit.cardcrawl.actions.unique.SpotWeaknessAction");
         RunicDomeTrackerPatch.SpotResult.raw(action.getDeclaredMethod("update"));
         if(action.toBytecode().length==0) throw new AssertionError("Spot instrumentation missing");
@@ -497,13 +531,20 @@ public final class RunicDomeTrackerTest {
             javassist.CtClass type=pool.get(name);RunicDomeTrackerPatch.instrumentSpawnInit(type.getDeclaredMethod("update"));
             if(name.endsWith("SpawnMonsterAction")) {
                 javassist.CtConstructor ctor=type.getDeclaredConstructor(new javassist.CtClass[]{pool.get("com.megacrit.cardcrawl.monsters.AbstractMonster"),javassist.CtClass.booleanType,javassist.CtClass.intType});
-                javassist.bytecode.LocalVariableAttribute vars=(javassist.bytecode.LocalVariableAttribute)ctor.getMethodInfo().getCodeAttribute().getAttribute(javassist.bytecode.LocalVariableAttribute.tag);
-                boolean namedMonster=false;for(int j=0;j<vars.tableLength();++j)if(vars.index(j)==1 && vars.variableName(j).equals("m"))namedMonster=true;
-                if(!namedMonster)throw new AssertionError("Spawn constructor patch argument binding drift");
+                applyConstructorPatch(ctor,RunicDomeTrackerPatch.SpawnConstructed.class);
+                final int[] calls={0};ctor.instrument(new javassist.expr.ExprEditor(){
+                    @Override public void edit(javassist.expr.MethodCall call) throws javassist.CannotCompileException {
+                        if(call.getClassName().equals(RunicDomeTrackerPatch.SpawnConstructed.class.getName()) && call.getMethodName().equals("postfix")) {
+                            if(!call.getSignature().equals("(Lcom/megacrit/cardcrawl/actions/common/SpawnMonsterAction;Lcom/megacrit/cardcrawl/monsters/AbstractMonster;)V"))
+                                throw new javassist.CannotCompileException("Spawn constructor receiver/monster binding drift");
+                            ++calls[0];
+                        }
+                    }
+                });if(calls[0]!=1)throw new AssertionError("Spawn constructor postfix missing");
             }
             if(name.endsWith("SummonGremlinAction")) {
                 if(!type.getDeclaredField("m").getType().getName().equals("com.megacrit.cardcrawl.monsters.AbstractMonster"))throw new AssertionError("Gremlin birth field binding drift");
-                RunicDomeTrackerPatch.GremlinConstructed.raw(type.getDeclaredConstructors()[0]);
+                applyConstructorPatch(type.getDeclaredConstructors()[0],RunicDomeTrackerPatch.GremlinConstructed.class);
             }
             type.toBytecode();type.detach();
         }
@@ -514,7 +555,7 @@ public final class RunicDomeTrackerTest {
         if(!namedInfo)throw new AssertionError("Player.damage patch argument binding drift");
         playerDamageType.detach();
         javassist.CtClass torchType=pool.get("com.megacrit.cardcrawl.monsters.city.TorchHead");
-        RunicDomeTrackerPatch.TorchConstructor.raw(torchType.getDeclaredConstructors()[0]);torchType.toBytecode();torchType.detach();
+        applyConstructorPatch(torchType.getDeclaredConstructors()[0],RunicDomeTrackerPatch.TorchConstructor.class);torchType.toBytecode();torchType.detach();
         System.out.println("RunicDomeTrackerTest PASS");
     }
 }

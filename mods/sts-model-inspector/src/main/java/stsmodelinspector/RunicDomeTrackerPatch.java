@@ -443,7 +443,8 @@ public final class RunicDomeTrackerPatch {
     }
     @SpirePatch(clz=com.megacrit.cardcrawl.actions.common.SpawnMonsterAction.class,method=SpirePatch.CONSTRUCTOR,paramtypez={AbstractMonster.class,boolean.class,int.class})
     public static class SpawnConstructed {
-        @SpirePostfixPatch public static void postfix(AbstractMonster m){registeredBirth(m);}
+        // SpirePatch binds positionally: the receiver precedes constructor arguments.
+        @SpirePostfixPatch public static void postfix(com.megacrit.cardcrawl.actions.common.SpawnMonsterAction __instance,AbstractMonster m){registeredBirth(m);}
     }
     @SpirePatch(clz=com.megacrit.cardcrawl.actions.common.SpawnMonsterAction.class,method="update")
     public static class SpawnInit {
