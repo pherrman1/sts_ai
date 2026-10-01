@@ -13,6 +13,7 @@
 #include "ooc_strategic_tok_net.h"
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/GameAction.h"
+#include "sim/search/MatchAndKeepPolicy.h"
 
 using namespace sts;
 using namespace one_combat;
@@ -21,6 +22,26 @@ using A = search::GameAction;
 using RT = A::RewardsActionType;
 static void check(bool b,const std::string &why){if(!b)throw std::runtime_error(why);}
 static J cardWire(const Card &c){return {{"id",J(c.id)},{"upgraded",c.isUpgraded()},{"misc",c.misc}};}
+static std::string eventPageForFixture(const GameContext &g) {
+    switch(g.curEvent) {
+        case Event::THE_CLERIC:case Event::PLEADING_VAGRANT:case Event::AUGMENTER:
+        case Event::FORGOTTEN_ALTAR:case Event::GHOSTS:case Event::SCRAP_OOZE:case Event::VAMPIRES:
+        case Event::THE_MOAI_HEAD:case Event::NLOTH:case Event::HYPNOTIZING_COLORED_MUSHROOMS:return "0";
+        case Event::GOLDEN_IDOL:return g.info.phase==1?"1":"0";
+        case Event::SHINING_LIGHT:case Event::WING_STATUE:case Event::OLD_BEGGAR:case Event::MASKED_BANDITS:
+        case Event::MINDBLOOM:case Event::TOMB_OF_LORD_RED_MASK:case Event::GOLDEN_SHRINE:
+        case Event::THE_SSSSSERPENT:case Event::DEAD_ADVENTURER:case Event::WE_MEET_AGAIN:
+        case Event::MYSTERIOUS_SPHERE:return "INTRO";
+        case Event::THE_NEST:case Event::WINDING_HALLS:return "1";
+        case Event::FACE_TRADER:case Event::DESIGNER_IN_SPIRE:return "MAIN";
+        case Event::FALLING:return "CHOICE";case Event::KNOWING_SKULL:return "ASK";
+        case Event::SENSORY_STONE:return "INTRO_2";case Event::NOTE_FOR_YOURSELF:return "CHOOSE";
+        case Event::THE_JOUST:return "EXPLANATION";
+        case Event::COLOSSEUM:return g.info.eventData==0?"FIGHT":"POST_COMBAT";
+        case Event::CURSED_TOME:return std::array<std::string,5>{"INTRO","PAGE_1","PAGE_2","PAGE_3","LAST_PAGE"}[g.info.eventData];
+        default:return "";
+    }
+}
 // Independent native fixture projection: no serialization of native internal
 // memory, RNG states, pools, encounters, callbacks or future outcomes.
 static J project(const GameContext &g,const PathHistory &path,const std::string &name) {
@@ -118,6 +139,12 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         }
         o["liveChoices"].push_back({{"nativeAction",native},{"liveAction",liveAction}});
     }
+    for(const auto &binding:sts::search::enumerateOocSemanticPrimitiveBindings(g).bindings) {
+        const auto a=A(binding.primitiveBits);
+        if(a.isPotionDiscard()) o["liveChoices"].push_back({
+            {"nativeAction",{{"kind","discard_potion"},{"index",a.getIdx1()},{"group",0}}},
+            {"liveAction",{{"kind","discard_potion"},{"potionSlot",a.getIdx1()+1}}}});
+    }
     if (g.screenState == ScreenState::SHOP_ROOM) {
         const auto &s = g.info.shop;
         for (int i = 0; i < 3; ++i) {
@@ -135,6 +162,44 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         o["event"]={{"id",J(g.curEvent)},{"phase",g.curEvent==Event::ANCIENT_WRITING?"INTRO":"0"},
             {"options",options}};
     }
+    if(g.screenState==ScreenState::EVENT_SCREEN && !eventPageForFixture(g).empty()) {
+        auto &details=o["details"];
+        details["eventContract"]="vanilla_v1";
+        for(const auto &[key,value]:{std::pair{"hpAmount0",g.info.hpAmount0},std::pair{"hpAmount1",g.info.hpAmount1},
+                std::pair{"hpAmount2",g.info.hpAmount2},std::pair{"relicIdx0",g.info.relicIdx0},std::pair{"relicIdx1",g.info.relicIdx1}})
+            details[key]=value;
+        if(g.curEvent==Event::FACE_TRADER)details["gold"]=g.ascension>=15?50:75;
+        if(g.curEvent==Event::KNOWING_SKULL)details["leaveCost"]=6;
+        if(g.curEvent==Event::SCRAP_OOZE)details["relicObtainChance"]=25+10*g.info.eventData;
+        if(g.curEvent==Event::NOTE_FOR_YOURSELF)details["noteForYourselfCard"]=cardWire(g.noteForYourselfCard);
+        if(g.curEvent==Event::DEAD_ADVENTURER) {
+            details["encounterChance"]=g.info.phase*25+(g.ascension>=15?35:25);
+            details["publicEnemy"]=g.info.encounter==MonsterEncounter::THREE_SENTRIES?0:
+                g.info.encounter==MonsterEncounter::GREMLIN_NOB?1:2;
+            details["earnedGold"]=std::find(g.info.rewards.begin(),g.info.rewards.begin()+g.info.phase,0)!=g.info.rewards.begin()+g.info.phase;
+            details["earnedRelic"]=std::find(g.info.rewards.begin(),g.info.rewards.begin()+g.info.phase,2)!=g.info.rewards.begin()+g.info.phase;
+        }
+        std::vector<std::pair<int,J>> mapped;
+        for(const auto &choice:o["liveChoices"]) {
+            const int native=choice["nativeAction"]["index"].get<int>();int slot=native;
+            if(g.curEvent==Event::GOLDEN_IDOL && eventPageForFixture(g)=="1")slot-=2;
+            if(g.curEvent==Event::VAMPIRES)slot=native==1?0:native==0?1:g.hasRelic(RelicId::BLOOD_VIAL)?2:1;
+            if(g.curEvent==Event::MINDBLOOM && native==3)slot=2;
+            if(g.curEvent==Event::TOMB_OF_LORD_RED_MASK && g.hasRelic(RelicId::RED_MASK) && native==2)slot=1;
+            if(g.curEvent==Event::FALLING && native==3)slot=0;
+            if(g.curEvent==Event::DESIGNER_IN_SPIRE)slot=native<2?0:native<4?1:native-2;
+            if(g.curEvent==Event::CURSED_TOME && g.info.eventData>0)slot=native-g.info.eventData-1;
+            if(g.curEvent==Event::KNOWING_SKULL)slot=std::array<int,4>{1,2,0,3}[native];
+            mapped.push_back({slot,choice});
+        }
+        std::sort(mapped.begin(),mapped.end(),[](const auto &a,const auto &b){return a.first<b.first;});
+        o["liveChoices"]=J::array();J options=J::array();
+        for(auto &[slot,choice]:mapped) {
+            choice["liveAction"]={{"kind","choose"},{"choiceIndex",o["liveChoices"].size()+1}};
+            o["liveChoices"].push_back(choice);options.push_back({{"index",slot},{"disabled",false}});
+        }
+        o["event"]={{"id",J(g.curEvent)},{"phase",eventPageForFixture(g)},{"options",options}};
+    }
     if(g.screenState==ScreenState::CARD_SELECT && g.info.selectScreenType==CardSelectScreenType::OBTAIN) {
         J labels=J::array();
         for(int i=0;i<20;++i) {
@@ -143,6 +208,10 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         }
         o["mcpState"]={{"screen_type","GRID"},{"ready_for_command",true},
             {"can_cancel",false},{"can_proceed",false},{"choice_list",labels}};
+    }
+    if(name=="designer_remove_upgrade") {
+        o["details"]["afterSelect"]="designer_upgrade";o["details"]["event"]="Designer";
+        o["details"]["eventPhase"]="DONE";o["details"]["eventOption"]="REMOVE_AND_UPGRADE";
     }
     return {{"boundary","ooc"},{"ooc",o},{"fixture",name}};
 }
@@ -463,7 +532,7 @@ int main(int argc,char **argv){try{
                 {"isJustForConfirming",true},{"confirmScreenUp",false},{"confirm",true}};
         o["mcpState"]={{"screen_type",boss?"MAP":"GRID"},{"ready_for_command",true},
             {"can_proceed",!boss},{"can_cancel",false},{"choice_list",boss?J::array({"Boss"}):J::array()}};
-        const J hint=boss?J{{"kind","choose"},{"choiceIndex",1}}:J{{"kind","confirm"}};
+        const J hint=boss?J{{"kind","choose"},{"choiceIndex",1}}:J{{"kind","proceed"}};
         o["liveChoices"]=J::array({{{"nativeAction",{{"kind","option"},{"index",0},{"group",0}}},{"liveAction",hint}}});
         // Neither history nor a value model is necessary for the sole click.
         o["publicState"]["combatHistoryComplete"]=false;
@@ -482,7 +551,7 @@ int main(int argc,char **argv){try{
         auto invalid=wire;invalid["ooc"]["mcpState"]["can_cancel"]=true;rejects(invalid);
         invalid=wire;invalid["ooc"]["mcpState"]["ready_for_command"]=false;rejects(invalid);
         invalid=wire;invalid["ooc"]["liveChoices"].push_back(invalid["ooc"]["liveChoices"][0]);rejects(invalid);
-        invalid=wire;invalid["ooc"]["liveChoices"][0]["liveAction"]={{"kind","proceed"}};rejects(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"][0]["liveAction"]={{"kind",boss?"proceed":"confirm"}};rejects(invalid);
         if(boss) {
             invalid=wire;invalid["ooc"]["publicState"]["map"]["y"]=13;rejects(invalid);
             invalid=wire;invalid["ooc"]["publicState"]["act"]=4;rejects(invalid);
@@ -559,8 +628,65 @@ int main(int argc,char **argv){try{
     g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=static_cast<int>(g.maxHp*(g.ascension>=15?0.2f:0.33f)+0.5f);
     add("event_library",g);
     { auto grid=g;grid.chooseEventOption(0);add("library_obtain_selector",grid); }
-    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
-    g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
+    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("event_mushrooms",g);
+    g.curEvent=Event::MYSTERIOUS_SPHERE;add("event_sphere",g);
+    for(const auto event:{Event::THE_CLERIC,Event::PLEADING_VAGRANT,Event::AUGMENTER,
+            Event::FORGOTTEN_ALTAR,Event::GHOSTS,Event::GOLDEN_IDOL,Event::SCRAP_OOZE,
+            Event::VAMPIRES,Event::THE_MOAI_HEAD,Event::SHINING_LIGHT,Event::WING_STATUE,
+            Event::OLD_BEGGAR,Event::MASKED_BANDITS,Event::MINDBLOOM,Event::TOMB_OF_LORD_RED_MASK,
+            Event::GOLDEN_SHRINE,Event::THE_SSSSSERPENT,Event::DEAD_ADVENTURER,Event::THE_NEST,
+            Event::WINDING_HALLS,Event::FACE_TRADER,Event::DESIGNER_IN_SPIRE,Event::FALLING,
+            Event::KNOWING_SKULL,Event::SENSORY_STONE,Event::NOTE_FOR_YOURSELF,Event::THE_JOUST,
+            Event::COLOSSEUM,Event::CURSED_TOME,Event::WE_MEET_AGAIN}) {
+        g=base;g.curEvent=event;g.setupEvent();
+        if(event==Event::SCRAP_OOZE)g.info.hpAmount0=g.ascension>=15?5:3;
+        if(event==Event::NOTE_FOR_YOURSELF)g.noteForYourselfCard=Card(CardId::BASH);
+        add("vanilla_event_"+std::to_string(static_cast<int>(event)),g);
+    }
+    {
+        auto curses=base;curses.obtainRelic(RelicId::OMAMORI);curses.obtainRelic(RelicId::DARKSTONE_PERIAPT);
+        const int size=curses.deck.size(),hp=curses.maxHp;
+        curses.deck.obtain(curses,Card(CardId::REGRET));
+        check(curses.deck.size()==size && curses.maxHp==hp,"Omamori must suppress Darkstone on intercepted curse");
+        curses.deck.obtain(curses,Card(CardId::REGRET),3);
+        check(curses.deck.size()==size+2 && curses.maxHp==hp+12
+                && curses.relics.getRelicValueRef(RelicId::OMAMORI)==0,
+                "Darkstone must trigger only for actually obtained curses in a batch");
+    }
+    {
+        auto zeroDamage=base;zeroDamage.obtainRelic(RelicId::TUNGSTEN_ROD);
+        zeroDamage.regainControlAction=[](GameContext &gc){gc.screenState=ScreenState::MAP_SCREEN;};
+        zeroDamage.maxHp=2;zeroDamage.curHp=1;zeroDamage.curEvent=Event::SHINING_LIGHT;zeroDamage.setupEvent();
+        check(zeroDamage.info.hpAmount0==0,"low maximum HP Shining Light rounds damage to zero");
+        zeroDamage.chooseEventOption(0);check(zeroDamage.curHp==1,"zero event damage must not heal with Tungsten");
+        zeroDamage.playerLoseHp(0);zeroDamage.playerLoseHp(1);
+        check(zeroDamage.curHp==1,"zero or fully reduced HP loss must not heal");
+    }
+    for(int phase=1;phase<=4;++phase) {
+        g=base;g.curEvent=Event::CURSED_TOME;g.setupEvent();g.info.eventData=phase;
+        add("cursed_tome_stage_"+std::to_string(phase),g);
+    }
+    for(int phase=0;phase<3;++phase) {
+        g=base;g.curEvent=Event::DEAD_ADVENTURER;g.setupEvent();g.info.phase=phase;g.info.rewards={0,1,2};
+        g.info.encounter=std::array<MonsterEncounter,3>{MonsterEncounter::THREE_SENTRIES,MonsterEncounter::GREMLIN_NOB,MonsterEncounter::LAGAVULIN_EVENT}[phase];
+        add("dead_adventurer_public_"+std::to_string(phase),g);
+    }
+    g=base;g.curEvent=Event::COLOSSEUM;g.setupEvent();g.info.eventData=1;add("colosseum_post_combat",g);
+    g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::BASH));g.obtainRelic(RelicId::BOTTLED_FLAME);
+    g.regainControlAction=[](GameContext &gc){gc.screenState=ScreenState::MAP_SCREEN;};
+    g.chooseSelectCardScreenOption(0);g.curEvent=Event::FALLING;g.setupEvent();
+    check(g.info.attackCardDeckIdx==-1 && A::getValidEventSelectBits(g)==8,"Falling must exclude bottled cards");
+    add("falling_only_bottled",g);
+    g=base;g.curEvent=Event::NLOTH;g.obtainRelic(RelicId::VAJRA);g.setupEvent();add("event_nloth",g);
+    g=base;g.curEvent=Event::NOTE_FOR_YOURSELF;g.noteForYourselfCard=Card(CardId::REGRET);
+    g.obtainRelic(RelicId::OMAMORI);g.obtainRelic(RelicId::DARKSTONE_PERIAPT);g.obtainRelic(RelicId::CERAMIC_FISH);
+    g.setupEvent();add("note_stored_curse",g);
+    g=base;g.gold=0;g.curEvent=Event::THE_CLERIC;g.setupEvent();g.info.hpAmount0=0;add("cleric_no_gold",g);
+    g=base;g.curEvent=Event::SHINING_LIGHT;for(int i=0;i<g.deck.size();++i)if(g.deck.cards[i].canUpgrade())g.deck.upgrade(i);g.setupEvent();add("shining_no_targets",g);
+    g=base;g.curEvent=Event::GOLDEN_IDOL;g.obtainRelic(RelicId::GOLDEN_IDOL);g.setupEvent();
+    add("golden_idol_already_owned",g);g.chooseEventOption(0);add("golden_idol_trap",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::DESIGNER_IN_SPIRE;
+    g.chooseEventOption(4);add("designer_remove_upgrade",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
     g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::BASH));g.screenState=ScreenState::EVENT_SCREEN;
     g.curEvent=Event::AUGMENTER;add("thin_deck_augmenter",g);
@@ -572,27 +698,52 @@ int main(int argc,char **argv){try{
     g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::SEARING_BLOW));g.screenState=ScreenState::REST_ROOM;
     add("unupgraded_searing_blow",g);
     g.deck.upgrade(0);
-    check(g.deck.upgradeableCount==0 && g.deck.cards[0].canUpgrade(),"Searing Blow native history fixture");
-    auto recomputed=g;recomputed.deck.upgradeableCount=1;
-    const auto nativeSmith=v4CandidateActions(g),recomputedSmith=v4CandidateActions(recomputed);
-    check(nativeSmith.size()+1==recomputedSmith.size(),"Searing Blow history must change campfire candidates");
-    add("unsupported_searing_blow_upgrade_history",g);
+    check(g.deck.upgradeableCount==1 && g.deck.cards[0].canUpgrade(),"Searing Blow remains eligible after upgrade");
+    add("upgraded_searing_blow",g);
     int passed=0;
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
-        if(name=="unsupported_searing_blow_upgrade_history"
-                || name=="unsupported_mushrooms_reward_pity"
-                || name=="unsupported_sphere_reward_pity") {
-            const std::string expected = name=="unsupported_searing_blow_upgrade_history"
-                ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"
-                : "NATIVE_EVENT_TRANSITION_UNQUALIFIED";
-            check(!result.ok && result.code=="UNSUPPORTED"
-                && result.message==expected,name+" must fail closed before scoring");
-            if(output)output<<wire.dump()<<'\n';
-            std::cout<<name<<" parity=BOUNDARY_CONFIRMED status=UNSUPPORTED candidates=0\n";++passed;
-            continue;
-        }
         check(result.ok,name+": "+result.message);
+        if(wire["ooc"]["details"].contains("eventContract")) {
+            for(int defect=0;defect<3;++defect) {
+                auto bad=wire;
+                if(defect==0)bad["ooc"]["event"]["phase"]="FORGED";
+                if(defect==1)bad["ooc"]["details"].erase("eventContract");
+                if(defect==2)bad["ooc"]["liveChoices"][0]["nativeAction"]["index"]=7;
+                advisor::LiveOocStateV1 rejected;
+                check(!advisor::importLiveOocStateV1(bad,rejected).ok,name+" malformed event accepted");
+            }
+        }
+        if(name=="event_mushrooms" || name=="event_sphere") {
+            auto outcome=live.mctsRoot.state;outcome.chooseEventOption(1);
+            check(outcome.gold==source.gold,name+" leave must not grant gold");
+            if(name=="event_mushrooms")check(outcome.deck.size()==source.deck.size()+1
+                    && outcome.deck.cards.back().id==CardId::PARASITE
+                    && outcome.curHp==std::min(source.maxHp,source.curHp+source.maxHp/4),
+                    "Mushrooms leave must heal then obtain Parasite");
+        }
+        if(source.curEvent==Event::DESIGNER_IN_SPIRE && source.screenState==ScreenState::EVENT_SCREEN) {
+            auto upgraded=live.mctsRoot.state;upgraded.chooseEventOption(1);
+            check(upgraded.gold==std::max(0,source.gold-(source.ascension>=15?50:40)),"Designer random upgrades must charge adjustment cost");
+            if(source.deck.getTransformableCount(2)>=2) {
+                auto transformed=live.mctsRoot.state;transformed.chooseEventOption(3);
+                check(transformed.screenState==ScreenState::CARD_SELECT
+                        && transformed.info.selectScreenType==CardSelectScreenType::TRANSFORM
+                        && transformed.info.toSelectCount==2,"Designer transforms must await two public choices");
+            }
+        }
+        if(name=="golden_idol_already_owned") {
+            auto outcome=live.mctsRoot.state;outcome.chooseEventOption(0);
+            check(outcome.hasRelic(RelicId::CIRCLET) && outcome.info.phase==1
+                    && A::getValidEventSelectBits(outcome)==0b11100,"owned Golden Idol must offer Circlet then trap choices");
+        }
+        if(name=="note_stored_curse") {
+            auto outcome=live.mctsRoot.state;outcome.chooseEventOption(0);
+            check(outcome.deck.size()==source.deck.size()+1 && outcome.deck.cards.back().id==CardId::REGRET
+                    && outcome.relics.getRelicValueRef(RelicId::OMAMORI)==2
+                    && outcome.maxHp==source.maxHp+6 && outcome.gold==source.gold+9,
+                    "Note stored curse must invoke relic hooks without Omamori interception");
+        }
         if(name=="event_library") {
             auto healed=live.mctsRoot.state;healed.chooseEventOption(1);
             check(healed.curHp==std::min(source.maxHp,source.curHp+source.info.hpAmount0),"Library public heal transition");
@@ -629,14 +780,20 @@ int main(int argc,char **argv){try{
             check(eggCard.upgraded && eggLive.mctsRoot.state.deck.cards.back()==eggCard,
                     "Library Egg preview/obtain mismatch");
             for(const auto id:{CardId::BRUTALITY,CardId::COMBUST,CardId::SEARING_BLOW}) {
-                auto unsupported=source;
-                if(id==CardId::SEARING_BLOW)unsupported.relics.add({RelicId::MOLTEN_EGG,0});
-                unsupported.info.toSelectCards[0]=SelectScreenCard(unsupported.previewObtainCard(Card(id)),-1);
-                advisor::LiveOocStateV1 rejected;
-                const auto result=advisor::importLiveOocStateV1(project(unsupported,path,"library_unqualified"),rejected);
-                check(!result.ok && result.code=="UNSUPPORTED" && result.message==(id==CardId::SEARING_BLOW
-                        ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED":"LIBRARY_NATIVE_CARD_COLOR_UNQUALIFIED"),
-                        "Valid vanilla Library offer must report explicit unsupported boundary");
+                auto supported=source;
+                if(id==CardId::SEARING_BLOW)supported.relics.add({RelicId::MOLTEN_EGG,0});
+                for(int i=1;i<static_cast<int>(supported.info.toSelectCards.size());++i)
+                    if(supported.info.toSelectCards[i].card.id==id)
+                        std::swap(supported.info.toSelectCards[0],supported.info.toSelectCards[i]);
+                supported.info.toSelectCards[0]=SelectScreenCard(Card(id),-1);
+                for(auto &offer:supported.info.toSelectCards)
+                    offer.card=supported.previewObtainCard(Card(offer.card.id));
+                advisor::LiveOocStateV1 imported;
+                const auto valid=advisor::importLiveOocStateV1(project(supported,path,"library_red_offer"),imported);
+                check(valid.ok,"Valid red Library offer rejected: "+valid.message);
+                const auto offered=imported.mctsRoot.state.info.toSelectCards[0].card;
+                imported.mctsRoot.state.chooseSelectCardScreenOption(0);
+                check(imported.mctsRoot.state.deck.cards.back()==offered,"Library offer changed during obtain");
             }
             for(int defect=0;defect<5;++defect) {
                 auto bad=wire;
@@ -752,7 +909,7 @@ int main(int argc,char **argv){try{
             // deck mutation. Give the native and imported fixture identical
             // hypothetical transform streams; no live RNG is imported.
             auto expected=source,actual=live.mctsRoot.state;
-            expected.regainControlAction=[](GameContext &gc){gc.screenState=ScreenState::MAP_SCREEN;};
+            if(name!="designer_remove_upgrade")expected.regainControlAction=[](GameContext &gc){gc.screenState=ScreenState::MAP_SCREEN;};
             expected.cardRng=actual.cardRng=Random(900);
             expected.miscRng=actual.miscRng=Random(901);
             while(expected.screenState==ScreenState::CARD_SELECT) {
@@ -932,6 +1089,81 @@ int main(int argc,char **argv){try{
         check(result.ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
             "random relic event must fail closed without seen relic history");
+    }
+    for(const auto type:{CardSelectScreenType::UPGRADE,CardSelectScreenType::REMOVE,CardSelectScreenType::TRANSFORM,CardSelectScreenType::BONFIRE_SPIRITS}) {
+        auto source=base;source.openCardSelectScreen(type,1);
+        auto preview=project(source,path,"selector_preview_"+std::to_string(static_cast<int>(type)));
+        auto &o=preview["ooc"];auto &d=o["details"];
+        d["selectorPreview"]=true;d["previewDeckIndex"]=source.info.toSelectCards[0].deckIdx;
+        d["confirmScreenUp"]=true;d["isJustForConfirming"]=false;d["confirm"]=true;
+        o["mcpState"]={{"screen_type","GRID"},{"ready_for_command",true},{"can_cancel",true},{"can_proceed",true},{"choice_list",J::array()}};
+        o["liveChoices"]=J::array();
+        for(int i=0;i<2;++i)o["liveChoices"].push_back({{"nativeAction",{{"kind","option"},{"index",i},{"group",0}}},
+            {"liveAction",{{"kind",i==0?"proceed":"cancel"}}}});
+        advisor::LiveOocStateV1 imported;const auto result=advisor::importLiveOocStateV1(preview,imported);
+        check(result.ok && imported.selectorPreview,"selector preview import: "+result.message);
+        check(imported.selectorPreviewDeckIndex==source.info.toSelectCards[0].deckIdx
+                && imported.projected.info.toSelectCards.size()==source.info.toSelectCards.size(),"selector preview original targets");
+        for(int defect=0;defect<5;++defect) {
+            auto bad=preview;
+            if(defect==0)bad["ooc"]["details"]["cards"].erase(0);
+            if(defect==1)bad["ooc"]["details"]["completedPicks"]=1;
+            if(defect==2)bad["ooc"]["liveChoices"][1]["liveAction"]["kind"]="proceed";
+            if(defect==3)bad["ooc"]["mcpState"]["can_cancel"]=false;
+            if(defect==4)bad["ooc"]["liveChoices"][0]["liveAction"]["kind"]="confirm";
+            advisor::LiveOocStateV1 rejected;check(!advisor::importLiveOocStateV1(bad,rejected).ok,"malformed selector preview accepted");
+        }
+        if(output)output<<preview.dump()<<'\n';++passed;
+    }
+    for(int variant=0;variant<3;++variant) {
+        auto match=project(base,path,"match_public_"+std::to_string(variant));auto &o=match["ooc"];
+        auto &d=o["details"];d["event"]=J(Event::MATCH_AND_KEEP);d.erase("neow");
+        d["eventContract"]="vanilla_v1";d["eventData"]=5;d["publicMemoryComplete"]=true;d["board"]=J::array();
+        o["event"]={{"id",J(Event::MATCH_AND_KEEP)},{"phase","PLAY"},{"options",J::array()}};
+        o["liveChoices"]=J::array();
+        for(int slot=0;slot<12;++slot) {
+            const bool known=variant>0 && slot<2,face=variant==2 && slot==0;
+            const auto uuid="match-"+std::to_string(slot);
+            J entry={{"slot",slot},{"uuid",uuid},{"state",face?"face_up":known?"seen":"unseen"}};
+            if(known)entry["card"]=cardWire(Card(CardId::BASH));d["board"].push_back(entry);
+            if(face)continue;
+            o["event"]["options"].push_back({{"index",slot},{"disabled",false}});
+            o["liveChoices"].push_back({{"uuid",uuid},{"nativeAction",{{"kind","option"},{"index",slot},{"group",0}}},
+                {"liveAction",{{"kind","choose"},{"choiceIndex",o["liveChoices"].size()+1}}}});
+        }
+        advisor::LiveOocStateV1 imported;const auto result=advisor::importLiveOocStateV1(match,imported);
+        check(result.ok && imported.matchAndKeep,"public Match and Keep import: "+result.message);
+        const int chosen=search::chooseMatchAndKeepSlot(imported.projected,[](const Card &){return true;});
+        check(chosen==(variant==2?1:0),"public Match and Keep slot decision");
+        for(int defect=0;defect<4;++defect) {
+            auto bad=match;
+            if(defect==0)bad["ooc"]["details"]["board"][11]["card"]=cardWire(Card(CardId::BASH));
+            if(defect==1)bad["ooc"]["details"]["board"][11]["uuid"]="match-0";
+            if(defect==2)bad["ooc"]["liveChoices"][0]["uuid"]="mismatch";
+            if(defect==3)bad["ooc"]["event"]["phase"]="COMPLETE";
+            advisor::LiveOocStateV1 rejected;check(!advisor::importLiveOocStateV1(bad,rejected).ok,"malformed Match and Keep accepted");
+        }
+        if(output)output<<match.dump()<<'\n';++passed;
+    }
+    {
+        auto source=base;source.screenState=ScreenState::REWARDS;
+        source.info.rewardsContainer.clear();source.info.rewardsContainer.addPotion(Potion::FRUIT_JUICE);
+        source.potionCount=source.potionCapacity;
+        for(int i=0;i<source.potionCapacity;++i)source.potions[i]=Potion::FIRE_POTION;
+        auto full=project(source,path,"full_belt_potion_reward");
+        advisor::LiveOocStateV1 live;const auto imported=advisor::importLiveOocStateV1(full,live);
+        check(imported.ok,"full belt import: "+imported.message);
+        std::vector<std::uint32_t> bits;
+        for(const auto &binding:sts::search::enumerateOocSemanticPrimitiveBindings(live.mctsRoot.state).bindings)
+            bits.push_back(binding.primitiveBits);
+        advisor::validateLiveOocActionSet(live,bits);
+        for(int slot=0;slot<source.potionCapacity;++slot)
+            check(advisor::lowerLiveOocAction(live,0xc0000000u|static_cast<unsigned>(slot))
+                ==J({{"kind","discard_potion"},{"potionSlot",slot+1}}),"discard slot lower mismatch");
+        auto invalid=full;invalid["ooc"]["liveChoices"].back()["liveAction"]["potionSlot"]=1;
+        advisor::LiveOocStateV1 rejected;
+        check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"discard slot mismatch accepted");
+        if(output)output<<full.dump()<<'\n';++passed;
     }
     auto wire=project(base,path,"malformed"); // base is Neow
     const auto reject=[&](J w){advisor::LiveOocStateV1 live;check(!advisor::importLiveOocStateV1(w,live).ok,"malformed accepted");};

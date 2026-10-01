@@ -27,8 +27,21 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MonsterWire, idx, id, curHp, maxHp, block, is
     halfDead, escapeNext, moveHistory, statusBits, smallPowers, strength, vulnerable, weak,
     uniquePower0, uniquePower1, miscInfo, pendingMoveRolls, pendingDirectMoveChoice,
     pendingRollInputs)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardSelectWire, cards, canPickZero, canPickAnyNumber,
-                                   pickCount, data0, setCostToZero, selectedBits, task)
+inline void to_json(nlohmann::json &j, const CardSelectWire &s) {
+    j = {{"cards", s.cards}, {"canPickZero", s.canPickZero}, {"canPickAnyNumber", s.canPickAnyNumber},
+         {"pickCount", s.pickCount}, {"data0", s.data0}, {"setCostToZero", s.setCostToZero},
+         {"selectedBits", s.selectedBits}, {"task", s.task}, {"drawAfter", s.drawAfter}, {"drawsAfter", s.drawsAfter}, {"blocksAfter", s.blocksAfter}, {"damageAllBeforeBlocks", s.damageAllBeforeBlocks}};
+}
+inline void from_json(const nlohmann::json &j, CardSelectWire &s) {
+    j.at("cards").get_to(s.cards); j.at("canPickZero").get_to(s.canPickZero);
+    j.at("canPickAnyNumber").get_to(s.canPickAnyNumber); j.at("pickCount").get_to(s.pickCount);
+    j.at("data0").get_to(s.data0); j.at("setCostToZero").get_to(s.setCostToZero);
+    j.at("selectedBits").get_to(s.selectedBits); j.at("task").get_to(s.task);
+    s.drawsAfter = j.value("drawsAfter", std::vector<int>{});
+    s.damageAllBeforeBlocks = j.value("damageAllBeforeBlocks", 0);
+    s.blocksAfter = j.value("blocksAfter", std::vector<int>{});
+    s.drawAfter = j.value("drawAfter", 0); // Older snapshots have no suspended Toolbox draw.
+}
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardQueueItemWire, card, target, isEndTurn, triggerOnUse,
     ignoreEnergyTotal, energyOnUse, freeToPlay, randomTarget, autoplay, regretCardCount,
     purgeOnUse, exhaustOnUse)

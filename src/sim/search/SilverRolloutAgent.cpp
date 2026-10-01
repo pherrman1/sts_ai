@@ -587,8 +587,12 @@ search::Action search::SilverRolloutAgent::chooseBattleCardSelect(const BattleCo
                              [](const CardInstance &c) { return c.getId() != CardId::EXHUME; });
             break;
 
-        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::FORETHOUGHT:
+            if (bc.cardSelectInfo.canPickAnyNumber) return search::Action(search::ActionType::MULTI_CARD_SELECT, 0);
+            addSelectOptions(actions, cards.hand, cards.cardsInHand, anyCard);
+            break;
+
+        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::WARCRY:
         case CardSelectTask::NIGHTMARE:
         case CardSelectTask::RECYCLE:

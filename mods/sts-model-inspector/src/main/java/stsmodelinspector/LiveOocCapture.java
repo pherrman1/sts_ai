@@ -460,7 +460,10 @@ final class LiveOocCapture {
             for (Object raw : CardCrawlGame.metricData.event_choices) {
                 Map<String,Object> event = map(raw);
                 Object name = event.get("event_name");
-                if (name != null && !priorEvents.contains(String.valueOf(name))) priorEvents.add(String.valueOf(name));
+                if (name != null) {
+                    String eventId=canonicalEventId(String.valueOf(name));
+                    if (!priorEvents.contains(eventId)) priorEvents.add(eventId);
+                }
                 for (String key : Arrays.asList("relics_obtained", "relics_lost")) {
                     Object values = event.get(key);
                     if (values instanceof List) for (Object relic : (List<?>)values)
@@ -482,12 +485,15 @@ final class LiveOocCapture {
 
     static String canonicalEventId(String liveId) {
         // The native save mapping spells Neow differently from the Java class.
-        return "NEOW".equals(liveId) ? "Neow" : liveId;
+        if ("NEOW".equals(liveId)) return "Neow";
+        if ("Match and Keep!".equals(liveId)) return "Match and Keep";
+        if ("SensoryStone".equals(liveId)) return "Sensory Stone";
+        return liveId;
     }
 
     static boolean simpleInitialEventSupported(String simple) {
-        return Arrays.asList("BigFish", "GoldenShrine",
-                "LivingWall", "LiarsGame", "Mushrooms", "TheLibrary",
+        return Arrays.asList("BigFish", "GoldShrine",
+                "LivingWall", "Sssserpent", "Mushrooms", "TheLibrary",
                 "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
                 "WomanInBlue").contains(simple);
@@ -569,7 +575,7 @@ final class LiveOocCapture {
         return false;
     }
 
-    private static Map<String,Object> card(AbstractCard c) throws ReflectiveOperationException {
+    static Map<String,Object> card(AbstractCard c) throws ReflectiveOperationException {
         int binding = c.inBottleFlame ? 0 : c.inBottleLightning ? 1 : c.inBottleTornado ? 2 : -1;
         return object("id", c.cardID, "upgraded", c.upgraded, "misc", "Searing Blow".equals(c.cardID) ? c.timesUpgraded : c.misc,
                 "bottleBinding", binding, "uuid", String.valueOf(c.uuid));
@@ -641,7 +647,23 @@ final class LiveOocCapture {
                 add(cs, labels, i, "key", 0, 0);
             } else out.put("unsupportedReason", "REWARD_TYPE_UNREPRESENTABLE:" + kind);
         }
+        addPotionDiscards(cs,!list(r.get("potions")).isEmpty());
         button(cs, "proceed", "skip", 0, 0);
+    }
+    private static void addPotionDiscards(List<Map<String,Object>> choices,boolean refillAvailable) {
+        List<String> held=new ArrayList<>();
+        for(com.megacrit.cardcrawl.potions.AbstractPotion potion:AbstractDungeon.player.potions)
+            held.add(potion==null?null:potion.ID);
+        capturePotionDiscards(choices,held,AbstractDungeon.player.potionSlots,refillAvailable,
+                AbstractDungeon.player.hasRelic("Sozu"));
+    }
+    static void capturePotionDiscards(List<Map<String,Object>> choices,List<String> held,int capacity,
+            boolean refillAvailable,boolean sozu) {
+        if(!refillAvailable||sozu||capacity<1||capacity>5||held.size()<capacity)return;
+        for(int i=0;i<capacity;++i)
+            if(held.get(i)==null||held.get(i).isEmpty()||"Potion Slot".equals(held.get(i)))return;
+        for(int i=0;i<capacity;++i)choices.add(object("nativeAction",object("kind","discard_potion","index",i,"group",0),
+                "liveAction",object("kind","discard_potion","potionSlot",i+1)));
     }
     private static void rest(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
@@ -681,6 +703,22 @@ final class LiveOocCapture {
             if (captureSelectorConfirmation(out, cs, labels,
                     AbstractDungeon.gridSelectScreen.isJustForConfirming,
                     AbstractDungeon.gridSelectScreen.confirmScreenUp)) return;
+            if (AbstractDungeon.gridSelectScreen.confirmScreenUp && !AbstractDungeon.gridSelectScreen.isJustForConfirming) {
+                List<Object> targets = new ArrayList<>();
+                for (Object raw : list(call(CHOICES, "getGridScreenCards"))) {
+                    AbstractCard c = (AbstractCard) raw;
+                    targets.add(object("deckIndex", AbstractDungeon.player.masterDeck.group.indexOf(c),
+                            "uuid", String.valueOf(c.uuid), "card", card(c)));
+                }
+                Object hovered = field(AbstractDungeon.gridSelectScreen, "hoveredCard");
+                int preview = AbstractDungeon.player.masterDeck.group.indexOf(hovered);
+                if (captureSelectorPreview(out, cs, labels, targets, String.valueOf(selectorType().get("type")),
+                        preview, ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
+                        AbstractDungeon.gridSelectScreen.selectedCards.size())) {
+                    captureSelectorContinuation(out);
+                    return;
+                }
+            }
             out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
             out.put("details", object("type", upgrade ? "upgrade" : "other", "confirm", true));
             return;
@@ -729,7 +767,47 @@ final class LiveOocCapture {
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedCards", selectedCards, "selectedDeckIndices", selected, "confirm", confirm));
+        captureSelectorContinuation(out);
         if (confirm) out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
+    }
+
+    private static void captureSelectorContinuation(Map<String,Object> out) throws ReflectiveOperationException {
+        Object event=AbstractDungeon.getCurrRoom().event;
+        if(event!=null && "Designer".equals(event.getClass().getSimpleName())
+                && "DONE".equals(LiveEventCapture.phase(event))
+                && "REMOVE_AND_UPGRADE".equals(String.valueOf(field(event,"option")))) {
+            map(out.get("details")).put("afterSelect","designer_upgrade");
+            map(out.get("details")).put("event","Designer");
+            map(out.get("details")).put("eventPhase","DONE");
+            map(out.get("details")).put("eventOption","REMOVE_AND_UPGRADE");
+        }
+    }
+
+    static boolean captureSelectorPreview(Map<String,Object> out, List<Map<String,Object>> choices,
+            List<?> labels, List<Object> cards, String type, int previewDeckIndex, int required, int completed) {
+        if (!Arrays.asList("upgrade", "remove", "transform", "bonfire").contains(type)
+                || required != 1 || completed != 0 || cards.isEmpty() || !labels.isEmpty()
+                || previewDeckIndex < 0) return false;
+        Map<String,Object> state = map(out.get("mcpState"));
+        Object rawChoices = state.get("choice_list");
+        if (!"GRID".equals(state.get("screen_type")) || !Boolean.TRUE.equals(state.get("ready_for_command"))
+                || !Boolean.TRUE.equals(state.get("can_proceed")) || !Boolean.TRUE.equals(state.get("can_cancel"))
+                || (rawChoices != null && (!(rawChoices instanceof List) || !list(rawChoices).isEmpty()))) return false;
+        java.util.Set<Object> indices = new java.util.HashSet<>(), uuids = new java.util.HashSet<>();
+        for (Object raw : cards) {
+            Map<String,Object> entry = map(raw);
+            if (!(entry.get("deckIndex") instanceof Integer) || (Integer)entry.get("deckIndex") < 0
+                    || !indices.add(entry.get("deckIndex")) || !(entry.get("uuid") instanceof String)
+                    || ((String)entry.get("uuid")).isEmpty() || !uuids.add(entry.get("uuid"))
+                    || !(entry.get("card") instanceof Map)) return false;
+        }
+        if (!indices.contains(previewDeckIndex)) return false;
+        out.put("details", object("type", type, "selectorPreview", true, "previewDeckIndex", previewDeckIndex,
+                "requiredPicks", 1, "completedPicks", 0, "selectedCards", new ArrayList<>(), "cards", cards,
+                "confirmScreenUp", true, "isJustForConfirming", false, "confirm", true));
+        button(choices, "proceed", "option", 0, 0); button(choices, "cancel", "option", 1, 0);
+        out.remove("unsupportedReason");
+        return true;
     }
 
     static boolean captureLibrarySelector(Map<String,Object> out, List<Map<String,Object>> choices,
@@ -785,7 +863,7 @@ final class LiveOocCapture {
                 || !soleMcpContinuation(out, "GRID", true, 0)) return false;
         out.put("details", object("type", "confirmation", "mechanicalTransition", "selector_confirm",
                 "isJustForConfirming", true, "confirmScreenUp", false, "confirm", true));
-        button(choices, "confirm", "option", 0, 0);
+        button(choices, "proceed", "option", 0, 0);
         return true;
     }
 
@@ -803,6 +881,12 @@ final class LiveOocCapture {
                 && "COMPLETE".equals(String.valueOf(field(event, "screen")))) owners.add("BackToBasics");
         if ("TheLibrary".equals(eventClass) && Integer.valueOf(1).equals(field(event, "screenNum"))
                 && Boolean.TRUE.equals(field(event, "pickCard"))) owners.add("TheLibrary");
+        if ("NoteForYourself".equals(eventClass) && "COMPLETE".equals(LiveEventCapture.phase(event))
+                && Boolean.TRUE.equals(field(event,"cardSelect"))) owners.add("NoteForYourself");
+        if ("DrugDealer".equals(eventClass) && "1".equals(LiveEventCapture.phase(event))
+                && Boolean.FALSE.equals(field(event,"cardsSelected"))) owners.add("DrugDealer");
+        if ("Designer".equals(eventClass) && "DONE".equals(LiveEventCapture.phase(event))
+                && "TRANSFORM".equals(String.valueOf(field(event,"option")))) owners.add("DesignerTransform");
         boolean bonfire = "Bonfire".equals(eventClass)
                 && "CHOOSE".equals(String.valueOf(field(event, "screen")))
                 && Boolean.TRUE.equals(field(event, "cardSelect"));
@@ -826,6 +910,8 @@ final class LiveOocCapture {
                 case "DollysMirror": return object("type", "duplicate");
                 case "BackToBasics": return object("type", "remove");
                 case "TheLibrary": return object("type", "obtain");
+                case "NoteForYourself": return object("type", "remove");
+                case "DrugDealer": case "DesignerTransform": return object("type", "transform");
                 case "Bottled Flame": return object("type", "bottle", "bottleType", "attack");
                 case "Bottled Lightning": return object("type", "bottle", "bottleType", "skill");
                 case "Bottled Tornado": return object("type", "bottle", "bottleType", "power");
@@ -859,9 +945,22 @@ final class LiveOocCapture {
             captureOpenedTreasure(out, cs,
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         } else {
+            if (captureBossChestReveal(out, cs, labels, chest.getClass().getSimpleName(), AbstractDungeon.actNum)) return;
             captureUnopenedTreasure(out, cs, labels, chest.getClass().getSimpleName(),
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         }
+    }
+    static boolean captureBossChestReveal(Map<String,Object> out, List<Map<String,Object>> choices,
+            List<?> labels, String chestType, int act) {
+        // BossChest.open calls only CursedKey (a no-op for boss=true) and
+        // explicitly excludes Matryoshka. Revealing preserves the later Skip;
+        // this is an informational policy, not a claim that Proceed is absent.
+        if (!"BossChest".equals(chestType) || act < 1 || act > 3 || labels.size()!=1
+                || !soleMcpContinuation(out,"CHEST",true,1)) return false;
+        out.put("details",object("chestType","BossChest","opened",false,
+                "mechanicalTransition","boss_chest_reveal"));
+        add(choices,labels,0,"option",0,0);button(choices,"proceed","option",1,0);
+        out.remove("unsupportedReason");return true;
     }
     static void captureUnopenedTreasure(Map<String,Object> out, List<Map<String,Object>> choices,
             List<?> labels, String chestType, boolean canProceed) {
@@ -886,8 +985,7 @@ final class LiveOocCapture {
         Object event = AbstractDungeon.getCurrRoom().event;
         String simple = event.getClass().getSimpleName();
         String id = canonicalEventId("NeowEvent".equals(simple) ? "NEOW" : String.valueOf(field(event, "ID")));
-        Object phase = optionalField(event, "screen");
-        if (phase == null) phase = optionalField(event, "screenNum");
+        Object phase = LiveEventCapture.phase(event);
         List<?> active = list(call(CHOICES, "getActiveEventButtons"));
         List<?> all = list(call(CHOICES, "getEventButtons"));
         List<Object> options = new ArrayList<>();
@@ -897,12 +995,23 @@ final class LiveOocCapture {
             options.add(object("index", index, "disabled", false));
             add(cs, labels, i, "option", index, 0);
         }
+        if ("GremlinWheelGame".equals(simple) && active.isEmpty() && labels.size()==1
+                && "INTRO".equals(phase) && Boolean.TRUE.equals(field(event,"startSpin"))
+                && Boolean.FALSE.equals(field(event,"buttonPressed"))
+                && Float.valueOf(0f).equals(field(event,"bounceTimer"))) {
+            // MCP's special Spin click sets buttonPressed; no dialog button
+            // exists, and the already rolled result remains private.
+            phase="SPIN_READY";
+            options.add(object("index",0,"disabled",false));add(cs,labels,0,"option",0,0);
+        }
         Map<String,Object> e = object("id", id, "phase", String.valueOf(phase), "options", options, "eventData", 0);
         out.put("event", e);
         out.put("details", object("event", id, "eventData", 0, "phase", 0,
                 "upgradeOne", false, "cleanUpIsRemoveCard", false,
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
                 "potionIdx", -1, "gold", -1, "cardIdx", -1));
+        if("SPIN_READY".equals(phase))map(out.get("details")).putAll(object(
+                "startSpin",true,"buttonPressed",false,"bounceTimer",0));
         // Only initial phases with native one-to-one option indices qualify.
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
         if (!simpleInitialEventSupported(simple) || !initial)
@@ -930,6 +1039,8 @@ final class LiveOocCapture {
             captureNeowOffers(out, offers, String.valueOf(phase), options);
             captureNeowTransition(out, String.valueOf(phase), options);
         }
+        LiveEventCapture.capture(out, event, options, cs);
+        MatchGameCapture.capture(out,event,cs,labels);
     }
 
     // Installed vanilla buttonEffect implementations use these exact phases
@@ -1047,6 +1158,10 @@ final class LiveOocCapture {
             else if (item instanceof String && shop.purgeAvailable) add(cs, labels, i, "remove", 0, 0);
             else throw new IllegalArgumentException("unknown shop choice type");
         }
+        boolean affordablePotion=false;
+        for(int i=0;i<3;++i)if(prices[10+i]>=0&&prices[10+i]<=AbstractDungeon.player.gold)
+            affordablePotion=true;
+        addPotionDiscards(cs,affordablePotion);
         button(cs, "cancel", "skip", 0, 0);
     }
     // ShopScreen is reused between rooms, so the owning run/player and node

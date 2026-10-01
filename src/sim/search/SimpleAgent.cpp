@@ -447,6 +447,10 @@ void setupCardOptionsHelper(std::vector<std::pair<search::Action,CardInstance>> 
 
 
 void search::SimpleAgent::stepBattleCardSelect(BattleContext &bc) {
+    if (bc.cardSelectInfo.cardSelectTask == CardSelectTask::FORETHOUGHT && bc.cardSelectInfo.canPickAnyNumber) {
+        takeAction(bc, search::Action(search::ActionType::MULTI_CARD_SELECT, 0));
+        return;
+    }
 
     std::vector<std::pair<search::Action,CardInstance>> actions;
     switch (bc.cardSelectInfo.cardSelectTask) {

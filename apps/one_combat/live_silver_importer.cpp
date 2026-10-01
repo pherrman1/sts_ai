@@ -16,6 +16,7 @@
 #include "constants/MonsterMoves.h"
 #include "constants/SaveFileMappings.h"
 #include "constants/Potions.h"
+#include "constants/PlayerStatusEffects.h"
 #include "combat/CardSelectInfo.h"
 #include "combat/InputState.h"
 #include "combat/CardInstance.h"
@@ -41,10 +42,14 @@ std::optional<silver_bridge::CardSource> liveSingleSelectionSource(sts::CardSele
     return std::nullopt;
 }
 
-bool liveSingleChoices(const json &selection, std::map<std::string, int> &choices) {
-    if (selection.value("pickCount", 0) != 1 || selection.value("canPickZero", true)
-        || selection.value("canPickAnyNumber", true) || selection.value("selectedBits", -1) != 0)
-        return false;
+bool liveSingleChoices(const json &selection, std::map<std::string, int> &choices, bool multiForethought = false) {
+    if (selection.value("selectedBits", -1) != 0) return false;
+    if (multiForethought) {
+        if (selection.value("pickCount", 0) != 99 || !selection.value("canPickZero", false)
+            || !selection.value("canPickAnyNumber", false) || selection.value("selectedCount", -1) != 0
+            || selection.value("actionClass", std::string()) != "com.megacrit.cardcrawl.actions.unique.ForethoughtAction") return false;
+    } else if (selection.value("pickCount", 0) != 1 || selection.value("canPickZero", true)
+        || selection.value("canPickAnyNumber", true)) return false;
     const auto list = selection.value("liveChoices", json::array());
     if (!list.is_array() || list.empty()) return false;
     for (std::size_t i = 0; i < list.size(); ++i) {
@@ -1102,12 +1107,41 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         wire.cardSelect.pickCount = selectionIt->value("pickCount", 0);
         wire.cardSelect.data0 = selectionIt->value("data0", 0);
         wire.cardSelect.setCostToZero = selectionIt->value("setCostToZero", true);
+        wire.cardSelect.drawAfter = selectionIt->value("drawAfter", 0);
+        for (const auto *field : {"drawsAfter", "blocksAfter"}) {
+            const auto amounts = selectionIt->find(field);
+            if (amounts != selectionIt->end() && (!amounts->is_array() || amounts->size() > 128
+                    || std::any_of(amounts->begin(), amounts->end(), [](const auto &n) { return !n.is_number_integer(); })))
+                return unsupported("silver_card_reward_pending_actions");
+        }
+        wire.cardSelect.damageAllBeforeBlocks = selectionIt->value("damageAllBeforeBlocks", 0);
+        wire.cardSelect.drawsAfter = selectionIt->value("drawsAfter", std::vector<int>{});
+        wire.cardSelect.blocksAfter = selectionIt->value("blocksAfter", std::vector<int>{});
+        const auto continuation = selectionIt->value("continuation", std::string());
+        if (((wire.cardSelect.damageAllBeforeBlocks != 0 || !wire.cardSelect.drawsAfter.empty() || !wire.cardSelect.blocksAfter.empty())
+                && selectionIt->value("origin", std::string()) != "CARD_REWARD")
+            || (wire.cardSelect.damageAllBeforeBlocks != 0 && (wire.cardSelect.damageAllBeforeBlocks != 52
+                || *task != sts::CardSelectTask::CODEX || continuation != "codex_end_turn"))
+            || wire.cardSelect.drawsAfter.size() + wire.cardSelect.blocksAfter.size() + (wire.cardSelect.damageAllBeforeBlocks > 0) > 128
+            || (!wire.cardSelect.drawsAfter.empty() && (wire.cardSelect.drawAfter != 0
+                || *task != sts::CardSelectTask::DISCOVERY || continuation != "toolbox_draw"))
+            || (!wire.cardSelect.blocksAfter.empty() && (*task != sts::CardSelectTask::CODEX || continuation != "codex_end_turn"))
+            || std::any_of(wire.cardSelect.drawsAfter.begin(), wire.cardSelect.drawsAfter.end(), [](int n) { return n < 1 || n > 10; })
+            || std::any_of(wire.cardSelect.blocksAfter.begin(), wire.cardSelect.blocksAfter.end(), [](int n) { return n < 0 || n > 999; }))
+            return unsupported("silver_card_reward_pending_actions");
+        if (wire.cardSelect.drawAfter < 0 || wire.cardSelect.drawAfter > 10
+            || (wire.cardSelect.drawAfter > 0 && (*task != sts::CardSelectTask::DISCOVERY
+                || selectionIt->value("origin", std::string()) != "CARD_REWARD"
+                || selectionIt->value("continuation", std::string()) != "toolbox_draw"
+                || wire.cardSelect.setCostToZero || wire.cardSelect.canPickZero || wire.cardSelect.data0 != 1)))
+            return unsupported("silver_card_reward_pending_actions");
         wire.cardSelect.selectedBits = selectionIt->value("selectedBits", 0);
         const auto origin = selectionIt->value("origin", std::string());
         if (origin == "GRID" || origin == "HAND_SELECT") {
             const auto source = liveSingleSelectionSource(*task, origin);
             std::map<std::string, int> choices;
-            if (!source || !liveSingleChoices(*selectionIt, choices))
+            const bool multiForethought = *task == sts::CardSelectTask::FORETHOUGHT && wire.cardSelect.canPickAnyNumber;
+            if (!source || !liveSingleChoices(*selectionIt, choices, multiForethought))
                 return unsupported("silver_selection_live_choices");
             std::vector<CardRecord> candidates;
             if (*source == silver_bridge::CardSource::HAND) candidates = hand;
@@ -1120,6 +1154,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 expected.insert(card.uuid);
             }
             if (expected.size() != choices.size()) return unsupported("silver_selection_live_choices");
+            if (multiForethought) for (std::size_t i = 0; i < hand.size(); ++i) {
+                const auto found = choices.find(hand[i].uuid);
+                if (found == choices.end() || found->second != static_cast<int>(i) + 1)
+                    return unsupported("silver_selection_live_choices");
+            }
             for (const auto &[uuid, index] : choices)
                 if (!expected.count(uuid)) return unsupported("silver_selection_live_choices");
         }
@@ -1130,8 +1169,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             return unsupported("silver_card_reward_option_state");
         if (*task == sts::CardSelectTask::DISCOVERY
             && (wire.cardSelect.data0 < 1 || wire.cardSelect.data0 > 2
-                || wire.cardSelect.canPickZero || wire.cardSelect.canPickAnyNumber
-                || wire.cardSelect.pickCount != 1 || !wire.cardSelect.setCostToZero
+                || wire.cardSelect.canPickAnyNumber
+                || wire.cardSelect.pickCount != 1
                 || wire.cardSelect.selectedBits != 0))
             return unsupported("silver_card_reward_selection_state");
         std::set<sts::CardId> offeredIds;
@@ -1205,9 +1244,31 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     }
     if (cardSelect && selectionIt->value("origin", std::string()) == "CARD_REWARD") {
         const auto continuation = selectionIt->value("continuation", std::string());
-        if (wire.cardSelect.task != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
-            || (continuation != "none" && continuation != "discovery_card")
+        const bool codex = continuation == "codex_end_turn" && wire.cardSelect.task == static_cast<std::int16_t>(sts::CardSelectTask::CODEX);
+        if ((!codex && wire.cardSelect.task != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY))
+            || (!codex && continuation != "none" && continuation != "discovery_card" && continuation != "toolbox_draw")
             || wire.endTurnQueued || wire.turnHasEnded || !wire.pendingCardQueue.empty())
+            return unsupported("silver_card_reward_pending_actions");
+        if (codex) {
+            constexpr int relic = static_cast<int>(sts::RelicId::NILRYS_CODEX);
+            const bool hasCodex = relic < 64 ? (wire.player.relicBits0 & (1ULL << (relic % 64)))
+                                            : (wire.player.relicBits1 & (1ULL << (relic % 64)));
+            if (!hasCodex || !wire.cardSelect.canPickZero || wire.cardSelect.canPickAnyNumber || wire.cardSelect.pickCount != 1
+                || wire.cardSelect.selectedBits != 0 || wire.cardSelect.setCostToZero || wire.cardSelect.drawAfter != 0
+                || !wire.cardSelect.drawsAfter.empty() || wire.player.orbSlots != 0 || wire.player.stance != static_cast<int>(Stance::NEUTRAL))
+                return unsupported("silver_card_reward_end_turn_continuation");
+            if (wire.cardSelect.damageAllBeforeBlocks > 0) {
+                const auto hasRelicBit = [&](sts::RelicId id) {
+                    const int n = static_cast<int>(id);
+                    return n < 64 ? bool(wire.player.relicBits0 & (1ULL << n)) : bool(wire.player.relicBits1 & (1ULL << (n-64)));
+                };
+                if (!hasRelicBit(sts::RelicId::STONE_CALENDAR))
+                    return unsupported("silver_card_reward_damage_continuation");
+            }
+            wire.endTurnQueued = true;
+        }
+        if (continuation == "toolbox_draw" && ((wire.cardSelect.drawAfter < 1 && wire.cardSelect.drawsAfter.empty())
+                || wire.cardSelect.setCostToZero || wire.cardSelect.canPickZero || wire.cardSelect.data0 != 1))
             return unsupported("silver_card_reward_pending_actions");
         const auto uniqueId = wire.curCardQueueItem.card.uniqueId;
         const auto inPile = [uniqueId](const auto &pile) {
@@ -1345,6 +1406,27 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
                   .value("combat", nlohmann::json::object());
         const auto hand = combat.value("hand", nlohmann::json::array());
         const auto cardSelect = combat.value("cardSelect", nlohmann::json::object());
+        if (cardSelect.value("task", std::string()) == "FORETHOUGHT"
+            && cardSelect.value("origin", std::string()) == "HAND_SELECT") {
+            std::map<std::string, int> choices;
+            if (action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::FORETHOUGHT)
+                || action.source != silver_bridge::CardSource::HAND || !liveSingleChoices(cardSelect, choices, true)
+                || !hand.is_array() || hand.size() != choices.size()) return nullptr;
+            for (std::size_t i = 0; i < hand.size(); ++i) {
+                if (!hand[i].is_object()) return nullptr;
+                const auto found = choices.find(hand[i].value("uuid", std::string()));
+                if (found == choices.end() || found->second != static_cast<int>(i) + 1) return nullptr;
+            }
+            std::map<int, std::string> selected;
+            for (const auto &card : action.selectedCards) {
+                const auto uuid = uuidForId(card.uniqueId);
+                const auto found = choices.find(uuid);
+                if (found == choices.end() || !selected.emplace(found->second, uuid).second) return nullptr;
+            }
+            json uuids = json::array();
+            for (const auto &[index, uuid] : selected) uuids.push_back(uuid);
+            return {{"kind", "card_select"}, {"cardUuids", uuids}};
+        }
         const int selectedBits = cardSelect.value("selectedBits", 0);
         for (const auto &selected : action.selectedCards) {
             const auto uuid = uuidForId(selected.uniqueId);
@@ -1374,10 +1456,12 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
                 : json{{"kind", "choose"}, {"choiceIndex", found->second}};
         }
         if (!select.is_object() || select.value("origin", std::string()) != "CARD_REWARD"
-            || select.value("task", std::string()) != "DISCOVERY"
-            || action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
-            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION || action.skipCardSelect)
+            || !task || (*task != sts::CardSelectTask::DISCOVERY && *task != sts::CardSelectTask::CODEX)
+            || action.cardSelectTask != static_cast<std::int16_t>(*task)
+            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION)
             return nullptr;
+        if (action.skipCardSelect)
+            return select.value("canPickZero", false) ? json{{"kind", "skip"}} : json(nullptr);
         const auto cards = select.value("cards", json::array());
         if (!cards.is_array() || cards.size() != 3) return nullptr;
         int selected = -1;

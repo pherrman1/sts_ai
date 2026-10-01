@@ -11,6 +11,7 @@
 
 #include "combat/Actions.h"
 #include "combat/BattleContext.h"
+#include "combat/BattleContextBinary.h"
 #include "constants/Cards.h"
 #include "constants/MonsterMoves.h"
 #include "game/GameContext.h"
@@ -19,6 +20,7 @@
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
+#include "sim/search/SilverSemanticAction.h"
 #include "sim/search/Action.h"
 #include "one_combat/native_silver_advisor.h"
 
@@ -1327,6 +1329,24 @@ int main() {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
             fixture(MonsterEncounter::GREMLIN_NOB, "Gremlin Nob", 3, "ELITE", 0xB003u)};
+        {
+            auto capped = battleContextFromWire(fixtures[0].wire);
+            capped.player.block = 998;
+            capped.player.buff<PlayerStatus::JUGGERNAUT>(5);
+            capped.monsters.arr[0].curHp = capped.monsters.arr[0].maxHp = 200;
+            capped.player.gainBlock(capped, 3);
+            capped.player.gainBlock(capped, 4);
+            if (capped.player.block != 999 || capped.actionQueue.size != 2)
+                throw std::runtime_error("block cap changed positive-gain Juggernaut triggers");
+            capped.player.gainBlock(capped, 0);
+            capped.player.gainBlock(capped, -1);
+            if (capped.actionQueue.size != 2 || capped.player.block != 999)
+                throw std::runtime_error("nonpositive block gain triggered Juggernaut");
+            capped.inputState = InputState::EXECUTING_ACTIONS;
+            capped.executeActions();
+            if (capped.monsters.arr[0].curHp != 190 || capped.player.block != 999)
+                throw std::runtime_error("capped block gains lost per-action Juggernaut damage");
+        }
         const auto multi = multiFixture();
         auto multiImported = one_combat::advisor::importSilverRoot(multi.observation);
         if (!multiImported.ok) throw std::runtime_error("multi-enemy import failed: " + multiImported.reason);
@@ -1757,12 +1777,297 @@ int main() {
             if (!one_combat::advisor::selectedLiveAction(absent, context, selection).is_null())
                 throw std::runtime_error("missing physical selection identity was lowered");
         }
+        for (int mask : {0, 1, 5, 7}) {
+            auto observation = genericObservation(fixtures[0], "upgraded-forethought-transaction");
+            auto &combat = observation["silverRoot"]["combat"];
+            auto prototype = combat["hand"][0];
+            combat["hand"] = json::array();
+            json choices = json::array();
+            for (int i = 0; i < 3; ++i) {
+                auto card = prototype; card["uuid"] = "forethought-card-" + std::to_string(i);
+                card["id"] = i == 0 ? "Strike_R" : i == 1 ? "Defend_R" : "Anger";
+                card["cost"] = card["costForTurn"] = i == 2 ? 0 : 1;
+                combat["hand"].push_back(card);
+                choices.push_back(json{{"uuid", card["uuid"]}, {"choiceIndex", i + 1}});
+            }
+            auto played = prototype; played["id"] = "Forethought"; played["uuid"] = "interrupted-forethought";
+            played["upgraded"] = true; played["cost"] = played["costForTurn"] = 0;
+            CardQueueItemWire queue;
+            combat["curCardQueueItem"] = producerQueueJson(queue);
+            combat["curCardQueueItem"]["card"] = played;
+            combat["cardSelect"] = json{{"task", "FORETHOUGHT"}, {"origin", "HAND_SELECT"},
+                {"canPickAnyNumber", true}, {"canPickZero", true}, {"pickCount", 99}, {"selectedBits", 0},
+                {"selectedCount", 0}, {"actionClass", "com.megacrit.cardcrawl.actions.unique.ForethoughtAction"},
+                {"cards", json::array()}, {"liveChoices", choices}};
+            one_combat::advisor::SilverImportContext context;
+            const auto imported = one_combat::advisor::importSilverRoot(observation, context);
+            if (!imported.ok) throw std::runtime_error("upgraded Forethought import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            const auto beforeDraw = selected.cards.drawPile.size();
+            const auto actions = sts::search::Action::enumerateCardSelectActions(selected);
+            if (std::any_of(actions.begin(), actions.end(), [](const auto &a) {
+                    return a.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT;
+                })) throw std::runtime_error("upgraded Forethought exposed scalar choices");
+            const sts::search::Action action(sts::search::ActionType::MULTI_CARD_SELECT, mask);
+            if (!action.isValidAction(selected)) throw std::runtime_error("upgraded Forethought subset rejected");
+            const auto semantic = sts::search::semanticFromSearchAction(selected, action);
+            const auto lowered = one_combat::advisor::selectedLiveAction(semantic, context, observation);
+            json expected = json::array();
+            for (int i = 0; i < 3; ++i) if (mask & (1 << i)) expected.push_back("forethought-card-" + std::to_string(i));
+            if (lowered.value("kind", "") != "card_select" || lowered.at("cardUuids") != expected)
+                throw std::runtime_error("Forethought atomic physical-card plan mismatch");
+            const auto resolved = resolveSilverSemanticAction(selected, semantic);
+            if (!resolved.ok) throw std::runtime_error("Forethought semantic subset did not resolve");
+            if (mask == 5) {
+                auto manual = selected;
+                fixed_list<int,10> reverse; reverse.push_back(2); reverse.push_back(0);
+                manual.chooseForethoughtCards(reverse);
+                if (manual.cards.cardsInHand != 1
+                        || manual.cards.hand[0].uniqueId != selected.cards.hand[1].uniqueId
+                        || manual.cards.drawPile[0].uniqueId != selected.cards.hand[2].uniqueId
+                        || manual.cards.drawPile[1].uniqueId != selected.cards.hand[0].uniqueId)
+                    throw std::runtime_error("unordered manual Forethought selection changed identity/order");
+                for (int invalid : {-1, 0, 3}) {
+                    auto rejected = selected;
+                    fixed_list<int,10> indices; indices.push_back(0); indices.push_back(invalid);
+                    bool threw = false;
+                    try { rejected.chooseForethoughtCards(indices); }
+                    catch (const std::invalid_argument &) { threw = true; }
+                    if (!threw || rejected.cards.cardsInHand != selected.cards.cardsInHand
+                            || rejected.cards.drawPile.size() != selected.cards.drawPile.size())
+                        throw std::runtime_error("malformed manual Forethought mutated cards");
+                }
+            }
+            resolved.action.execute(selected);
+            if (selected.cards.cardsInHand != 3 - static_cast<int>(expected.size())
+                || selected.cards.drawPile.size() != beforeDraw + expected.size()
+                || selected.inputState != InputState::PLAYER_NORMAL)
+                throw std::runtime_error("Forethought subset/card conservation failure");
+            int bottom = 0;
+            for (int i = 2; i >= 0; --i) if (mask & (1 << i)) {
+                const auto &card = selected.cards.drawPile[bottom++];
+                if (card.uniqueId != context.cardIds.at("forethought-card-" + std::to_string(i))
+                    || card.freeToPlayOnce != (i != 2))
+                    throw std::runtime_error("Forethought lost bottom order or cost-dependent free flag");
+            }
+            if (std::none_of(selected.cards.discardPile.begin(), selected.cards.discardPile.end(), [](const auto &card) {
+                    return card.id == CardId::FORETHOUGHT;
+                })) throw std::runtime_error("Forethought interrupted-card cleanup missing");
+            auto native = battleContextFromWire(fixtures[0].wire);
+            native.cards.cardsInHand = 1;
+            Actions::ForethoughtAction(true)(native);
+            if (native.inputState != InputState::CARD_SELECT || !native.cardSelectInfo.canPickAnyNumber
+                || !native.cardSelectInfo.canPickZero || native.cards.cardsInHand != 1)
+                throw std::runtime_error("upgraded Forethought auto-selected the sole hand card");
+        }
         const auto offerSelection = [](int copies, const char *continuation) {
             return json{{"task", "DISCOVERY"}, {"origin", "CARD_REWARD"},
                 {"continuation", continuation}, {"cards", json::array({"Anger", "Shrug It Off", "Flash of Steel"})},
                 {"data0", copies}, {"pickCount", 1}, {"canPickZero", false},
                 {"canPickAnyNumber", false}, {"setCostToZero", true}, {"selectedBits", 0}};
         };
+        for (int copies : {1, 2}) {
+            auto offer = genericObservation(fixtures[0], "typed-potion-skip");
+            auto &selection = offer["silverRoot"]["combat"]["cardSelect"];
+            selection = offerSelection(copies, "none");
+            selection["canPickZero"] = true;
+            one_combat::advisor::SilverImportContext context;
+            auto imported = one_combat::advisor::importSilverRoot(offer, context);
+            if (!imported.ok) throw std::runtime_error("typed potion skip import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            const int nextId = selected.cards.nextUniqueCardId;
+            const int handCount = selected.cards.cardsInHand;
+            const auto actions = sts::search::Action::enumerateCardSelectActions(selected);
+            if (actions.size() != 4) throw std::runtime_error("typed potion Skip action missing");
+            const auto semantic = sts::search::semanticFromSearchAction(selected, actions[3]);
+            if (!semantic.skipCardSelect || one_combat::advisor::selectedLiveAction(semantic, context, offer)
+                    .value("kind", "") != "skip") throw std::runtime_error("typed potion skip lowering failed");
+            const auto resolved = resolveSilverSemanticAction(selected, semantic);
+            if (!resolved.ok) throw std::runtime_error("typed potion Skip semantic roundtrip failed");
+            resolved.action.execute(selected);
+            if (selected.cards.cardsInHand != handCount || selected.cards.nextUniqueCardId != nextId
+                || selected.inputState != InputState::PLAYER_NORMAL)
+                throw std::runtime_error("typed potion Skip generated a card or failed to resume");
+            selection["canPickZero"] = false;
+            if (!one_combat::advisor::selectedLiveAction(semantic, context, offer).is_null())
+                throw std::runtime_error("non-skippable reward accepted Skip");
+        }
+        {
+            auto offer = genericObservation(fixtures[0], "normal-cost-toolbox-offer");
+            auto &selection = offer["silverRoot"]["combat"]["cardSelect"];
+            selection = offerSelection(1, "none");
+            selection["setCostToZero"] = false;
+            auto imported = one_combat::advisor::importSilverRoot(offer);
+            if (!imported.ok) throw std::runtime_error("normal-cost offer import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            if (wireFromSearchState(selected, searchContextFromWire(imported.wire)).cardSelect.setCostToZero)
+                throw std::runtime_error("normal-cost offer flag lost in native roundtrip");
+            const int originalCount = selected.cards.cardsInHand;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(selected);
+            if (selected.cards.hand[originalCount].id != CardId::SHRUG_IT_OFF
+                    || selected.cards.hand[originalCount].costForTurn != 1)
+                throw std::runtime_error("Toolbox card incorrectly made free");
+        }
+        {
+            auto offer = genericObservation(fixtures[0], "toolbox-before-opening-draw");
+            auto &combat = offer["silverRoot"]["combat"];
+            auto prototype = combat["hand"][0];
+            combat["hand"] = json::array();
+            json draw = json::array();
+            for (int i = 0; i < 7; ++i) {
+                auto card = prototype; card["uuid"] = "opening-draw-" + std::to_string(i);
+                draw.push_back(card);
+            }
+            combat["draw"] = json{{"unknown", draw}};
+            combat["cardSelect"] = offerSelection(1, "toolbox_draw");
+            combat["cardSelect"]["setCostToZero"] = false;
+            combat["cardSelect"]["drawAfter"] = 5;
+            auto bagOffer = offer;
+            bagOffer["silverRoot"]["combat"]["cardSelect"].erase("drawAfter");
+            bagOffer["silverRoot"]["combat"]["cardSelect"]["drawsAfter"] = json::array({5, 2});
+            const auto bagImported = one_combat::advisor::importSilverRoot(bagOffer);
+            if (!bagImported.ok) throw std::runtime_error("Toolbox Bag import: " + bagImported.reason);
+            for (int defect = 0; defect < 3; ++defect) {
+                auto bad = bagOffer;
+                auto &selection = bad["silverRoot"]["combat"]["cardSelect"];
+                if (defect == 0) selection["drawsAfter"] = json::array({5, 2.5});
+                if (defect == 1) selection["drawAfter"] = 5;
+                if (defect == 2) selection["origin"] = "HAND_SELECT";
+                if (one_combat::advisor::importSilverRoot(bad).ok)
+                    throw std::runtime_error("malformed ordered Toolbox continuation accepted");
+            }
+            auto bag = battleContextFromWire(bagImported.wire);
+            const auto bagWire = wireFromSearchState(bag, searchContextFromWire(bagImported.wire));
+            if (bagWire.cardSelect.drawsAfter != std::vector<int>({5, 2}))
+                throw std::runtime_error("Toolbox separate draw actions lost in wire");
+            bag.cards.drawPile.assignConcrete(std::vector<CardInstance>(bag.cards.drawPile.begin(), bag.cards.drawPile.end()));
+            const auto bagBytes = serializeBattleContext(bag);
+            const auto bagRestored = deserializeBattleContext(bagBytes.data(), bagBytes.size());
+            if (bagRestored.cardSelectInfo.drawsAfter != std::vector<int>({5, 2}))
+                throw std::runtime_error("Toolbox separate draws lost in binary snapshot");
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(bag);
+            if (bag.cards.cardsInHand != 8 || !bag.cards.drawPile.empty()
+                    || bag.cards.hand[0].id != CardId::SHRUG_IT_OFF || bag.cards.hand[0].costForTurn != 1
+                    || !bag.cardSelectInfo.drawsAfter.empty())
+                throw std::runtime_error("Toolbox Bag did not execute both ordered draws");
+            const auto imported = one_combat::advisor::importSilverRoot(offer);
+            if (!imported.ok) throw std::runtime_error("Toolbox opening draw import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            const auto roundtrip = wireFromSearchState(selected, searchContextFromWire(imported.wire));
+            if (roundtrip.cardSelect.drawAfter != 5) throw std::runtime_error("Toolbox pending draw lost");
+            json selectionWire = roundtrip.cardSelect;
+            if (selectionWire.get<silver_bridge::CardSelectWire>().drawAfter != 5)
+                throw std::runtime_error("Toolbox pending draw JSON roundtrip failed");
+            selectionWire.erase("drawAfter");
+            if (selectionWire.get<silver_bridge::CardSelectWire>().drawAfter != 0)
+                throw std::runtime_error("legacy card-select wire did not default absent continuation");
+            // Binary snapshots intentionally require a concrete sampled order.
+            // This fixture's seven cards are identical except physical UUID;
+            // fixing that order preserves the draw behavior being tested.
+            selected.cards.drawPile.assignConcrete(std::vector<CardInstance>(selected.cards.drawPile.begin(), selected.cards.drawPile.end()));
+            const auto binary = serializeBattleContext(selected);
+            auto restored = deserializeBattleContext(binary.data(), binary.size());
+            if (binary.at(8) != 2 || restored.cardSelectInfo.setCostToZero
+                    || restored.cardSelectInfo.drawAfter != 5)
+                throw std::runtime_error("Toolbox binary continuation roundtrip failed");
+            // Build the exact v1 layout by dropping the appended v2
+            // group-6 fields and adjusting its length/header, not by merely
+            // changing the version on a v2 payload.
+            auto legacy = binary;
+            const auto read32 = [&](std::size_t offset) {
+                std::uint32_t value = 0;
+                for (int i = 0; i < 4; ++i) value |= std::uint32_t(legacy.at(offset+i)) << (8*i);
+                return value;
+            };
+            const auto write32 = [&](std::size_t offset, std::uint32_t value) {
+                for (int i = 0; i < 4; ++i) legacy.at(offset+i) = (value >> (8*i)) & 255;
+            };
+            std::size_t group = 16;
+            while (legacy.at(group) != 6) group += 5 + read32(group+1);
+            const auto oldSize = read32(group+1);
+            legacy.erase(legacy.begin()+group+5+oldSize-17, legacy.begin()+group+5+oldSize);
+            write32(group+1, oldSize-17); write32(8, 1); write32(12, legacy.size());
+            const auto legacyRestored = deserializeBattleContext(legacy.data(), legacy.size());
+            if (legacyRestored.inputState != selected.inputState
+                    || legacyRestored.cardSelectInfo.cards != selected.cardSelectInfo.cards
+                    || !legacyRestored.cardSelectInfo.setCostToZero || legacyRestored.cardSelectInfo.drawAfter != 0)
+                throw std::runtime_error("legacy binary offer defaults failed");
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(restored);
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(selected);
+            if (restored.cards.cardsInHand != selected.cards.cardsInHand
+                    || restored.cards.drawPile.size() != selected.cards.drawPile.size()
+                    || restored.cards.hand[0].id != selected.cards.hand[0].id
+                    || restored.cards.hand[0].costForTurn != selected.cards.hand[0].costForTurn
+                    || restored.inputState != selected.inputState || restored.cardSelectInfo.drawAfter != 0)
+                throw std::runtime_error("Toolbox binary restore changed selection behavior");
+            if (selected.cards.cardsInHand != 6 || selected.cards.drawPile.size() != 2
+                || selected.cards.hand[0].id != CardId::SHRUG_IT_OFF || selected.cards.hand[0].costForTurn != 1
+                || selected.cardSelectInfo.drawAfter != 0 || selected.inputState != InputState::PLAYER_NORMAL)
+                throw std::runtime_error("Toolbox did not create normal-cost card before opening draw");
+        }
+        for (int choice : {1, 3}) {
+            auto offer = genericObservation(fixtures[1], "codex-end-turn-offer");
+            auto &combat = offer["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id", "Nilry's Codex"}, {"counter", -1}, {"usedUp", false}});
+            combat["cardSelect"] = offerSelection(1, "codex_end_turn");
+            combat["cardSelect"]["task"] = "CODEX";
+            combat["cardSelect"]["canPickZero"] = true;
+            combat["cardSelect"]["setCostToZero"] = false;
+            combat["cardSelect"]["data0"] = 0;
+            one_combat::advisor::SilverImportContext context;
+            const auto imported = one_combat::advisor::importSilverRoot(offer, context);
+            if (!imported.ok || !imported.wire.endTurnQueued)
+                throw std::runtime_error("Codex continuation import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            const int nextId = selected.cards.nextUniqueCardId;
+            auto poweredOffer = offer;
+            auto &poweredCombat = poweredOffer["silverRoot"]["combat"];
+            poweredCombat["relics"].push_back(json{{"id", "StoneCalendar"}, {"counter", 7}, {"usedUp", false}});
+            poweredCombat["cardSelect"]["blocksAfter"] = json::array({3, 4});
+            poweredCombat["cardSelect"]["damageAllBeforeBlocks"] = 52;
+            const auto poweredImport = one_combat::advisor::importSilverRoot(poweredOffer);
+            if (!poweredImport.ok) throw std::runtime_error("Codex block/Calendar continuation import: " + poweredImport.reason);
+            auto powered = battleContextFromWire(poweredImport.wire);
+            powered.monsters.arr[0].curHp = powered.monsters.arr[0].maxHp = 200;
+            powered.player.block = 0;
+            auto withoutBlocks = powered; withoutBlocks.cardSelectInfo.blocksAfter.clear();
+            auto lethal = powered; lethal.monsters.arr[0].curHp = 30;
+            const int lethalTurn = lethal.turn;
+            auto oracle = powered;
+            oracle.cardSelectInfo.blocksAfter.clear(); oracle.cardSelectInfo.damageAllBeforeBlocks = 0;
+            oracle.addToBot(Actions::DamageAllEnemy(52));
+            oracle.addToBot(Actions::GainBlock(3)); oracle.addToBot(Actions::GainBlock(4));
+            const sts::search::Action action(sts::search::ActionType::SINGLE_CARD_SELECT, choice);
+            action.execute(powered); action.execute(oracle); action.execute(withoutBlocks); action.execute(lethal);
+            if (lethal.outcome != Outcome::PLAYER_VICTORY || lethal.turn != lethalTurn)
+                throw std::runtime_error("lethal Codex Calendar continuation advanced another turn");
+            if (powered.player.curHp != withoutBlocks.player.curHp + 7)
+                throw std::runtime_error("Codex self blocks did not prevent the pending monster attack damage");
+            if (powered.monsters.arr[0].curHp != 148 || powered.monsters.arr[0].curHp != oracle.monsters.arr[0].curHp
+                    || powered.player.curHp != oracle.player.curHp || powered.player.block != oracle.player.block
+                    || powered.turn != oracle.turn || !powered.cardSelectInfo.blocksAfter.empty()
+                    || powered.cardSelectInfo.damageAllBeforeBlocks != 0)
+                throw std::runtime_error("Codex pending damage/block sequence duplicated or omitted");
+            const auto semantic = sts::search::semanticFromSearchAction(selected, action);
+            const auto lowered = one_combat::advisor::selectedLiveAction(semantic, context, offer);
+            if (lowered.value("kind", "") != (choice == 3 ? "skip" : "choose"))
+                throw std::runtime_error("Codex choice/Skip lowering failed");
+            action.execute(selected);
+            if (selected.turn != imported.wire.turn + 1 || selected.inputState != InputState::PLAYER_NORMAL
+                || selected.cards.nextUniqueCardId != nextId + (choice == 3 ? 0 : 1)
+                || selected.endTurnQueued || selected.turnHasEnded)
+                throw std::runtime_error("Codex did not resume exactly one end-turn/monster cycle");
+            auto invalid = offer;
+            invalid["silverRoot"]["combat"]["cardSelect"]["canPickZero"] = false;
+            if (one_combat::advisor::importSilverRoot(invalid).ok)
+                throw std::runtime_error("unqualified Codex continuation accepted");
+        }
+        for (const auto &cardName : {"Brutality", "Combust"}) {
+            auto observation = genericObservation(fixtures[0], "ironclad-persistent-power-card");
+            observation["silverRoot"]["combat"]["hand"][0]["id"] = cardName;
+            const auto imported = one_combat::advisor::importSilverRoot(observation);
+            if (!imported.ok) throw std::runtime_error("Ironclad power card rejected: " + imported.reason);
+        }
         for (int copies : {1, 2}) {
             for (int handSize : {7, 9, 10}) {
                 auto offer = genericObservation(fixtures[0], "colorless-potion-offer");

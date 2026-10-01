@@ -886,10 +886,11 @@ void GameContext::setupEvent() { // todo necronomicon event
             info.hpAmount0 = std::max(1, fractionMaxHp(.10f, FLOOR));
             break;
 
-        case Event::FALLING: { // todo test and CANNOT BE BOTTLED
+        case Event::FALLING: {
             int counts[8] {0};
-            for (const auto &c : deck.cards) {
-                int t = static_cast<int>(c.getType());
+            for (int i=0;i<deck.size();++i) {
+                if(deck.isCardBottled(i))continue;
+                int t = static_cast<int>(deck.cards[i].getType());
                 if (t >= 0 && t < 8) ++counts[t];
             }
 
@@ -906,6 +907,7 @@ void GameContext::setupEvent() { // todo necronomicon event
             info.powerCardDeckIdx = -1;
 
             for (int i = 0; i < deck.cards.size(); ++i) {
+                if(deck.isCardBottled(i))continue;
                 switch (deck.cards[i].getType()) {
                     case CardType::ATTACK:
                         if (attackCount++ == attacksIdx) {
@@ -941,8 +943,9 @@ void GameContext::setupEvent() { // todo necronomicon event
             break;
 
         case Event::GOLDEN_IDOL:
+            info.phase = 0;
             info.hpAmount0 = fractionMaxHp(unfavorable ? 0.35f : 0.25f);
-            info.hpAmount1 = fractionMaxHp(unfavorable ? 0.10f : 0.08f);
+            info.hpAmount1 = std::max(1, fractionMaxHp(unfavorable ? 0.10f : 0.08f));
             break;
 
         case Event::KNOWING_SKULL:
@@ -1605,19 +1608,19 @@ RelicId GameContext::returnRandomScreenlessRelic(RelicTier tier, bool shopRoom) 
 Card GameContext::previewObtainCard(Card card) {
     switch (card.getType()) {
         case CardType::ATTACK:
-            if (hasRelic(RelicId::MOLTEN_EGG)) {
+            if (hasRelic(RelicId::MOLTEN_EGG) && !card.isUpgraded()) {
                 card.upgrade();
             }
             break;
 
         case CardType::SKILL:
-            if (hasRelic(RelicId::TOXIC_EGG)) {
+            if (hasRelic(RelicId::TOXIC_EGG) && !card.isUpgraded()) {
                 card.upgrade();
             }
             break;
 
         case CardType::POWER:
-            if (hasRelic(RelicId::FROZEN_EGG)) {
+            if (hasRelic(RelicId::FROZEN_EGG) && !card.isUpgraded()) {
                 card.upgrade();
             }
             break;
@@ -2150,6 +2153,7 @@ Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
 }
 
 void GameContext::damagePlayer(int amount) {
+    if (amount <= 0) return;
 #ifdef sts_asserts
     assert(amount > 0);
 #endif
@@ -2160,12 +2164,13 @@ void GameContext::damagePlayer(int amount) {
 }
 
 void GameContext::playerLoseHp(int amount) {
+    if (amount <= 0) return;
 #ifdef sts_asserts
     assert(amount > 0);
 #endif
 
     if (hasRelic(RelicId::TUNGSTEN_ROD)) {
-        amount -= 1;
+        amount = std::max(0,amount - 1);
     }
     curHp -= amount;
 
@@ -2773,6 +2778,7 @@ void GameContext::chooseEventOption(int idx) {
                     break;
 
                 case 1:
+                    loseGold(unfavorable ? 50 : 40);
                     deck.upgradeRandomCards(miscRng, 2);
                     regainControl();
                     break;
@@ -2784,8 +2790,8 @@ void GameContext::chooseEventOption(int idx) {
 
                 case 3:
                     loseGold(unfavorable ? 75 : 60);
-                    deck.transformRandomCards(miscRng, 2); // TODO
-                    regainControl();
+                    info.transformRng = MISC_RNG;
+                    openCardSelectScreen(CardSelectScreenType::TRANSFORM, 2);
                     break;
 
                 case 4:
@@ -2899,7 +2905,8 @@ void GameContext::chooseEventOption(int idx) {
             switch (idx) {
                 case 0:
                     // Warn!! replace might go around future obtainRelic logic
-                    relics.replaceRelic(RelicId::GOLDEN_IDOL, RelicId::BLOODY_IDOL);
+                    relics.remove(RelicId::GOLDEN_IDOL);
+                    obtainRelic(hasRelic(RelicId::BLOODY_IDOL)?RelicId::CIRCLET:RelicId::BLOODY_IDOL);
                     regainControl();
                     break;
 
@@ -2957,7 +2964,8 @@ void GameContext::chooseEventOption(int idx) {
         case Event::GOLDEN_IDOL: {
             switch (idx) {
                 case 0:
-                    obtainRelic(RelicId::GOLDEN_IDOL);
+                    obtainRelic(hasRelic(RelicId::GOLDEN_IDOL)?RelicId::CIRCLET:RelicId::GOLDEN_IDOL);
+                    info.phase = 1;
                     break;
 
                 case 1:
@@ -3107,7 +3115,8 @@ void GameContext::chooseEventOption(int idx) {
                 regainControlAction = [goldAmt](auto &gc) {
                     Rewards reward;
                     reward.addGold(goldAmt);
-                    reward.addRelic(RelicId::RED_MASK);
+                    reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
+                    gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));
                     gc.openCombatRewardScreen(reward);
                     gc.regainControlAction = returnToMapAction;
@@ -3193,7 +3202,10 @@ void GameContext::chooseEventOption(int idx) {
                 enterBattle(MonsterEncounter::MUSHROOMS_EVENT);
 
             } else if (idx == 1) {
-                obtainGold(unfavorable ? 50 : 99);
+                // Vanilla heals before the Parasite acquisition (which may
+                // itself trigger Darkstone Periapt or be blocked by Omamori).
+                playerHeal(fractionMaxHp(0.25f));
+                deck.obtain(*this, CardId::PARASITE);
                 regainControl();
 
             } else {
@@ -3214,7 +3226,6 @@ void GameContext::chooseEventOption(int idx) {
                 enterBattle(MonsterEncounter::MYSTERIOUS_SPHERE_EVENT);
 
             } else if (idx == 1) {
-                obtainGold(unfavorable ? 50 : 99);
                 regainControl();
 
             } else {
@@ -3266,7 +3277,13 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::NOTE_FOR_YOURSELF:
             if (idx == 0) {
+                // This event directly invokes relic hooks and adds the stored
+                // card, bypassing ShowCardAndObtainEffect's Omamori interception.
+                const bool omamori=hasRelic(RelicId::OMAMORI);
+                const int charges=omamori?relics.getRelicValueRef(RelicId::OMAMORI):0;
+                if(omamori)relics.getRelicValueRef(RelicId::OMAMORI)=0;
                 deck.obtain(*this, noteForYourselfCard);
+                if(omamori)relics.getRelicValueRef(RelicId::OMAMORI)=charges;
                 openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
             } else if (idx == 1) {
                 regainControl();
@@ -3290,7 +3307,7 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::SCRAP_OOZE:
             if (idx == 0) {
-                damagePlayer(unfavorable ? 5 : 3);
+                damagePlayer((unfavorable ? 5 : 3) + info.eventData);
                 const int roll = miscRng.random(99);
                 const int relicChance = info.eventData*10 + 25;
                 if (roll >= 99 - relicChance) {
@@ -3441,6 +3458,7 @@ void GameContext::chooseEventOption(int idx) {
                 if (result || unfavorable) {
                     deck.obtain(*this, CardId::WRITHE);
                 }
+                obtainRelic(returnRandomScreenlessRelic(returnRandomRelicTier(relicRng, act)));
                 regainControl();
 
             } else if (idx == 1) {

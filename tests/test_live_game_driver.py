@@ -9,7 +9,7 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action,
+    _is_combat, card_reward_reveal_action, forethought_transaction,
 )
 
 
@@ -123,6 +123,65 @@ class LiveGameDriverTest(unittest.TestCase):
         ], "monsters": [{"name": "Cultist", "current_hp": 10}]}
         self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, ["use_potion"])], [{"potion_slot": 2}])
         self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, ["discard_potion"])], [{"potion_slot": 1}])
+
+    def test_discard_targeted_potion_never_requires_a_monster(self):
+        for monsters in ([], [{"id": "Cultist", "current_hp": 20}]):
+            screen = {"screen_type": "COMBAT_REWARD", "potions": [
+                {"id": "Fire Potion", "can_discard": True, "requires_target": True}],
+                "monsters": monsters}
+            actions = build_legal_actions(screen, ["discard_potion"])
+            self.assertEqual([a.mcp_arguments for a in actions], [{"potion_slot": 1}])
+
+    def test_forethought_transaction_preserves_uuid_order_and_stops_on_drift(self):
+        for selected in ([], ["a", "c"], ["a", "b", "c"]):
+            for drift in (False, True):
+                if not selected and drift:
+                    continue
+                with self.subTest(selected=selected, drift=drift), tempfile.TemporaryDirectory() as directory:
+                    cards = [{"uuid": uuid, "id": "Strike_R"} for uuid in ("a", "b", "c")]
+                    screen = dict(screen_type="HAND_SELECT", room_phase="COMBAT", ready_for_command=True,
+                                  can_proceed=True, hand=list(cards), choice_list=["Strike"]*3,
+                                  screen_state=dict(hand=list(cards), selected=[], max_cards=99, can_pick_zero=True))
+                    observation = dict(combat=dict(hand=cards, cardSelect=dict(
+                        task="FORETHOUGHT", origin="HAND_SELECT", canPickAnyNumber=True, canPickZero=True,
+                        pickCount=99, selectedCount=0, selectedBits=0,
+                        actionClass="com.megacrit.cardcrawl.actions.unique.ForethoughtAction",
+                        liveChoices=[dict(uuid=c["uuid"], choiceIndex=i+1) for i,c in enumerate(cards)])))
+                    action = forethought_transaction(dict(kind="card_select",cardUuids=selected), observation, screen)
+                    class SelectingClient(FakeClient):
+                        async def call(self, tool, arguments=None):
+                            if tool == "choose":
+                                self.calls.append((tool, arguments))
+                                current = self.states[0]
+                                index = arguments["choice_index"]-1
+                                card = current["hand"].pop(index)
+                                current["screen_state"]["hand"] = list(current["hand"])
+                                current["screen_state"]["selected"].insert(0,card)
+                                current["choice_list"].pop(index)
+                                if drift:
+                                    current["screen_state"]["selected"][0] = {"uuid": "unexpected"}
+                                return {"success": True}
+                            return await super().call(tool,arguments)
+                    client = SelectingClient(screen,["choose","confirm","select_cards"])
+                    driver = Driver(client,InspectorReader(inspector_file(directory)),TraceWriter(Path(directory)/"trace"))
+                    async def exercise():
+                        # A ready snapshot is owned by the caller, not the MCP response object.
+                        import copy
+                        first = copy.deepcopy(screen)
+                        return await driver.execute_forethought_transaction(action,first,
+                            {"tools":["choose","confirm"]},{})
+                    if drift:
+                        with self.assertRaises(IntegrationFailure):
+                            asyncio.run(exercise())
+                        self.assertFalse(any(tool=="confirm" for tool,_ in client.calls))
+                    else:
+                        asyncio.run(exercise())
+                        calls=[(tool,args) for tool,args in client.calls if tool in {"choose","confirm","select_cards"}]
+                        expected=[("choose",{"choice_index": "abc".index(uuid)+1}) for uuid in reversed(selected)]
+                        self.assertEqual(calls,expected+[("confirm",{})])
+                    for bad in (["c","a"],["a","a"],["absent"]):
+                        with self.assertRaises(IntegrationFailure):
+                            forethought_transaction(dict(kind="card_select",cardUuids=bad),observation,screen)
 
     def test_start_game_requires_character_and_none_is_not_combat(self):
         with self.assertRaises(CandidateEnumerationError):
@@ -566,18 +625,19 @@ class OocDriverTest(unittest.TestCase):
                 self.assertEqual(packet["summary"]["outcome"], "error")
                 self.assertIsNotNone(packet["inspector_snapshot"])
 
-    def test_in_combat_card_reward_consumes_explicit_ooc_boundary(self):
+    def test_in_combat_card_reward_consumes_silver_boundary(self):
         with tempfile.TemporaryDirectory() as directory:
-            screen = {**self.screen(), "room_phase": "COMBAT"}
-            self.assertFalse(_is_combat(screen))
+            screen = {**self.screen(), "room_phase": "COMBAT",
+                      "session": "s", "sequence": 1, "observationHash": "h"}
+            self.assertTrue(_is_combat(screen))
             for kind in ("NONE", "GRID", "HAND_SELECT"):
                 self.assertTrue(_is_combat({**screen, "screen_type": kind}))
             client = FakeClient(screen, ["choose"])
-            path = ooc_inspector_file(directory, screen, "UNSUPPORTED", reason="CARD_REWARD_SKIP_UNAVAILABLE")
+            path = inspector_file(directory, "UNSUPPORTED", reason="silver_unmapped_selection_task")
             driver = Driver(client, InspectorReader(path), TraceWriter(Path(directory) / "trace"), max_steps=1)
             asyncio.run(driver.run())
-            self.assertEqual(driver.counters["silver_unsupported"], 0)
-            self.assertEqual(driver.counters["ooc_v4_unsupported"], 1)
+            self.assertEqual(driver.counters["silver_unsupported"], 1)
+            self.assertEqual(driver.counters["ooc_v4_unsupported"], 0)
             self.assertEqual([(t, a) for t, a in client.calls if t == "choose"],
                              [("choose", {"choice_index": 1})])
 

@@ -394,11 +394,12 @@ restocks, room generation and post-combat rewards. Semantic identity remains
 the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
-The live advisor additionally sets `stopAtMapCheckpoint`: every downstream MAP
-state is a true planner leaf, including after the first visit. Public question
-history can now reconstruct the room probabilities, but the additional live
-search horizon has not been qualified and remains bounded here. Live imports remove currently visible shop,
-combat-reward and boss-relic offers from the reconstructed relic pools.
+The live advisor sets `stopAtMapCheckpoint` only when public question history
+cannot reconstruct native room chances. Qualified histories allow downstream
+MAP choices and use normal native chance updates; root hidden-counter sampling
+never reinitializes a downstream room's inherited probabilities. Live imports
+remove currently visible shop, combat-reward and boss-relic offers from the
+reconstructed relic pools.
 The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM;
 `OocGameContextModel` uses the same neutral value if a custom host omits the
 callback. This matches the native simulator default and the frozen model's
@@ -406,8 +407,9 @@ constant training feature. A zero value causes unsupported predictions from
 this model.
 Library uses its displayed heal amount and the existing MCTS reward-pity
 prior for Read; its revealed cards become a qualified public OBTAIN selector.
-Mushrooms and Mysterious Sphere remain unsupported because their native leave
-transitions differ from installed vanilla, independently of reward pity.
+Mushrooms and Mysterious Sphere use the same hidden reward prior; their native
+leave effects now match vanilla (Parasite plus healing, and no reward,
+respectively).
 The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
 (`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather
@@ -734,6 +736,13 @@ as the retained primitive. Singing Bowl, multiple groups and mixed rewards keep
 their distinct choices. Taking a Sapphire-paired relic consumes that key
 choice, and taking Sapphire consumes its paired relic. Treasure `OPEN_CHEST`
 ends at the revealed reward screen; it does not choose a generated reward.
+
+`DISCARD_POTION` is append-only effect 29. It identifies a held potion and its
+duplicate occurrence, and is offered only for a full belt with a visible refill
+or affordable shop potion, without Sozu. It leaves the current screen/rewards
+unchanged. Taking the refill is a separate subsequent decision. The frozen V4
+primitive set omits discard, so MCTS uses the existing uniform-prior fallback
+when this extends the candidate set. This is no model-schema migration.
 
 Reward-origin relic acquisition preserves its remaining reward container and
 leave continuation. A bottle or other selector returns to those rewards; a
@@ -1109,7 +1118,10 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    belt was full in 759/3,069 RAW rows (24.7%); among 301 full-belt rows with
    classifiable adjacent-floor status, 148 (49.2%) had a potion drop. The run
    policy takes a potion only when capacity is available and has no discard or
-   swap path. The exact cohort forfeiture rate is unknown.
+   swap path. The exact cohort forfeiture rate is unknown. This historical
+   full-run collection behavior is separate from the live semantic MCTS path,
+   which now exposes `DISCARD_POTION` when a visible reward or affordable shop
+   potion can refill a full belt (see the live inspector contract).
    When `STS_COLLECT_KEYS=1` (default off), every REWARDS handler takes the
    emerald (burning elite) / sapphire (chest) key via `RT::KEY` right after
    gold/relic/potion, and every act-3+ rest room takes the ruby key (RECALL,

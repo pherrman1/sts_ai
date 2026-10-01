@@ -12,6 +12,7 @@
 #include "one_combat/ooc_checkpoint_policy.h"
 #include "one_combat/ooc_mcts_adapter.h"
 #include "one_combat/ooc_v4_encoding.h"
+#include "sim/search/OocSemanticAction.h"
 
 namespace {
 void require(bool condition, const std::string &message) {
@@ -26,6 +27,62 @@ int main(int argc, char **argv) {
         using namespace one_combat;
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        {
+            auto upgraded = gc;
+            upgraded.deck = Deck{};
+            upgraded.deck.obtain(upgraded, Card(CardId::SEARING_BLOW));
+            for (int i=0;i<5;++i) {
+                upgraded.deck.upgrade(0);
+                require(upgraded.deck.upgradeableCount==1 && upgraded.deck.cards[0].canUpgrade(),
+                        "repeated Searing Blow upgrades lost upgrade eligibility");
+            }
+            upgraded.deck.upgradeRandomCards(upgraded.miscRng, 1);
+            require(upgraded.deck.upgradeableCount==1,"random Searing Blow upgrade lost eligibility");
+            upgraded.deck.remove(upgraded,0);
+            require(upgraded.deck.upgradeableCount==0,"Searing Blow removal left an invalid count");
+            upgraded.relics.add({RelicId::MOLTEN_EGG,0});
+            const auto preview=upgraded.previewObtainCard(Card(CardId::SEARING_BLOW));
+            require(preview.isUpgraded() && upgraded.previewObtainCard(preview)==preview,
+                    "Egg preview upgraded a previously upgraded Searing Blow");
+            upgraded.deck.obtain(upgraded,preview);
+            require(upgraded.deck.cards[0]==preview && upgraded.deck.upgradeableCount==1,
+                    "Egg acquisition repeated the preview upgrade");
+            upgraded.deck.obtain(upgraded,Card(CardId::BASH));
+            require(upgraded.deck.upgradeableCount==1,"Egg-upgraded ordinary card stayed eligible");
+            upgraded.deck.upgrade(1);
+            require(upgraded.deck.upgradeableCount==1,"repeated ordinary upgrade corrupted cached count");
+        }
+        {
+            auto replacement=gc;
+            replacement.screenState=ScreenState::REWARDS;
+            replacement.info.rewardsContainer.clear();
+            replacement.info.rewardsContainer.addPotion(Potion::FRUIT_JUICE);
+            replacement.potionCount=replacement.potionCapacity;
+            for(int slot=0;slot<replacement.potionCapacity;++slot) replacement.potions[slot]=Potion::FIRE_POTION;
+            const auto choices=enumerateOocSemanticActions(replacement);
+            require(choices.supported && choices.complete,"full belt replacement enumeration failed");
+            int discards=0;
+            for(const auto &choice:choices.actions) if(choice.effect==OocSemanticEffect::DISCARD_POTION) {
+                ++discards;
+                auto next=replacement;
+                const auto result=executeOocSemanticAction(next,choice);
+                require(result.ok && next.potionCount==replacement.potionCount-1
+                    && next.screenState==ScreenState::REWARDS && next.info.rewardsContainer.potionCount==1,
+                    "discard potion fell through into a reward or left the screen");
+                const auto following=enumerateOocSemanticActions(next);
+                auto take=std::find_if(following.actions.begin(),following.actions.end(),[](const auto &a) {
+                    return a.effect==OocSemanticEffect::TAKE_POTION;
+                });
+                require(take!=following.actions.end() && executeOocSemanticAction(next,*take).ok
+                    && next.potionCount==replacement.potionCount,"replacement potion not claimable");
+            }
+            require(discards==replacement.potionCapacity,"duplicate potion slots lost semantic identity");
+            replacement.relics.add({RelicId::SOZU,0});
+            const auto blocked=enumerateOocSemanticActions(replacement);
+            require(std::none_of(blocked.actions.begin(),blocked.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::DISCARD_POTION;
+            }),"Sozu offered a discard for an unclaimable replacement");
+        }
         {
             auto counterState = gc;
             counterState.floorNum = 16;
@@ -403,6 +460,46 @@ int main(int argc, char **argv) {
         const auto checkpointSearch = OocMctsPlanner(checkpointConfig).search(checkpointModel, 0, 64);
         require(checkpointSearch.metrics.simulations == 64 && mapContinuationCalls == 0,
                 "downstream MAP checkpoint was revisited and expanded");
+        {
+            // Same qualified public counters, same native downstream route and
+            // sampled RNG. Only the obsolete MAP hard leaf differs.
+            auto route=pending;
+            route.curMapNodeX=-1;route.curMapNodeY=-1;
+            route.monsterChance=.3f;route.shopChance=.09f;route.treasureChance=.06f;
+            auto map=std::make_shared<Map>(*route.map);
+            for(auto &node:map->nodes[0]) if(node.edgeCount>0) node.room=Room::REST;
+            route.map=map;
+            OocMctsDependencies parityDeps;
+            parityDeps.policyAvailable=[] {return true;};
+            parityDeps.policyLogits=[](const GameContext &,const PathHistory &,const std::vector<GameAction> &actions) {
+                return std::vector<double>(actions.size(),0.0);
+            };
+            parityDeps.leafValue=[](const GameContext &,const PathHistory &) { return .25; };
+            int rootCounterSamples=0;
+            parityDeps.sampleHiddenCounters=[&](GameContext &state,std::mt19937_64 &rng) {
+                ++rootCounterSamples;
+                sampleLiveOocHiddenCounters(state,rng,2,true);
+            };
+            auto expanded=checkpoint;expanded.stopAtMapCheckpoint=false;expanded.sampleNoncombat=true;
+            OocGameContextModel liveRoute(route,path,{},expanded,parityDeps);
+            std::mt19937_64 liveRng(23);
+            const auto click=liveRoute.legalActions(0).front().id;
+            const auto liveMap=liveRoute.sampleSuccessor(0,click,liveRng);
+            require(!liveRoute.isLeafBoundary(liveMap),
+                    "qualified downstream MAP remained a hard leaf");
+            const auto choices=liveRoute.legalActions(liveMap);
+            require(!choices.empty(),"qualified downstream MAP lost route choices");
+            auto oracle=liveRoute.state(liveMap);
+            liveRoute.candidate(liveMap,choices.front().id).primitive.execute(oracle);
+            const auto liveRoom=liveRoute.sampleSuccessor(liveMap,choices.front().id,liveRng);
+            const auto &a=liveRoute.state(liveRoom),&b=oracle;
+            require(a.screenState==ScreenState::REST_ROOM && a.screenState==b.screenState
+                    && a.floorNum==b.floorNum && a.curMapNodeX==b.curMapNodeX
+                    && a.monsterChance==.3f && a.shopChance==.09f && a.treasureChance==.06f
+                    && a.monsterChance==b.monsterChance && a.shopChance==b.shopChance
+                    && a.treasureChance==b.treasureChance && rootCounterSamples==1,
+                    "downstream route diverged or resampled qualified room counters");
+        }
         std::cout << "live OOC policy contract PASS\n";
         return 0;
     } catch (const std::exception &error) {

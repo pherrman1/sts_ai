@@ -935,6 +935,7 @@ void ActData_PutRandomCardsInDrawPile::operator()(BattleContext &bc) const {
 void ActData_DiscoveryAction::operator()(BattleContext &bc) const {
         bc.haveUsedDiscoveryAction = true;
         bc.openDiscoveryScreen(sts::generateDiscoveryCards(bc.cardRandomRng, bc.player.cc, type), amount);
+        bc.cardSelectInfo.canPickZero = type == CardType::ATTACK || type == CardType::SKILL || type == CardType::POWER;
     }
 
 void ActData_InfernalBladeAction::operator()(BattleContext &bc) const {
@@ -1131,28 +1132,14 @@ void ActData_ExhumeAction::operator()(BattleContext &bc) const {
     }
 
 void ActData_ForethoughtAction::operator()(BattleContext &bc) const {
-        if (bc.cards.cardsInHand == 0) {
+        if (bc.cards.cardsInHand == 0) return;
+        if (!upgraded && bc.cards.cardsInHand == 1) {
+            bc.chooseForethoughtCard(0);
             return;
         }
-
-        // todo implement Upgraded version
-//        //
-//        if (upgraded) {
-//            bc.cardSelectInfo.cardSelectTask = CardSelectTask::FORETHOUGHT;
-//            bc.cardSelectInfo.canPickAnyNumber = true;
-//            bc.inputState = InputState::CARD_SELECT;
-//
-//        } else {
-        if (bc.cards.cardsInHand == 1) {
-            bc.chooseForethoughtCard(0);
-        } else {
-            bc.cardSelectInfo.cardSelectTask = CardSelectTask::FORETHOUGHT;
-            bc.cardSelectInfo.canPickAnyNumber = false;
-            bc.inputState = InputState::CARD_SELECT;
-        }
-//        }
-
-
+        bc.openSimpleCardSelectScreen(CardSelectTask::FORETHOUGHT, upgraded ? 99 : 1);
+        bc.cardSelectInfo.canPickAnyNumber = upgraded;
+        bc.cardSelectInfo.canPickZero = upgraded;
     }
 
 void ActData_HeadbuttAction::operator()(BattleContext &bc) const {
@@ -1300,6 +1287,13 @@ void ActData_UpgradeRandomCardAction::operator()(BattleContext &bc) const {
 void ActData_CodexAction::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::CODEX;
+        bc.cardSelectInfo.canPickZero = true;
+        bc.cardSelectInfo.canPickAnyNumber = false;
+        bc.cardSelectInfo.pickCount = 1;
+        bc.cardSelectInfo.data0 = 0;
+        bc.cardSelectInfo.setCostToZero = false;
+        bc.cardSelectInfo.drawAfter = 0;
+        bc.cardSelectInfo.drawsAfter.clear(); bc.cardSelectInfo.blocksAfter.clear(); bc.cardSelectInfo.damageAllBeforeBlocks = 0;
         bc.cardSelectInfo.codexCards() =
                 generateDiscoveryCards(bc.cardRandomRng, CharacterClass::IRONCLAD, CardType::INVALID);
     }
@@ -1319,6 +1313,12 @@ void ActData_ToolboxAction::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::DISCOVERY;
         bc.cardSelectInfo.discovery_CopyCount() = 1;
+        bc.cardSelectInfo.pickCount = 1;
+        bc.cardSelectInfo.canPickZero = false;
+        bc.cardSelectInfo.canPickAnyNumber = false;
+        bc.cardSelectInfo.setCostToZero = false;
+        bc.cardSelectInfo.drawAfter = 0;
+        bc.cardSelectInfo.drawsAfter.clear(); bc.cardSelectInfo.blocksAfter.clear(); bc.cardSelectInfo.damageAllBeforeBlocks = 0;
         bc.cardSelectInfo.discovery_Cards() =
                 generateDiscoveryCards(bc.cardRandomRng, bc.player.cc, CardType::STATUS); // status is mapped to colorless
     }

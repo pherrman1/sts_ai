@@ -26,8 +26,8 @@ struct OocContinuationMetrics {
 };
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
-    // Live-advisor searches evaluate a downstream MAP state without expanding
-    // it.  The public observation cannot reconstruct native room-chance state.
+    // Histories without qualified room-chance counters stop at downstream MAP
+    // checkpoints. Qualified public histories use the native search horizon.
     bool stopAtMapCheckpoint = false;
     bool uniformPrior = false;
     double priorTemperature = 1.0;

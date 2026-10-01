@@ -328,7 +328,7 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
                     continue
                 semantic = {"kind": "potion", "potion_slot": index + 1, "discard": tool == "discard_potion"}
                 args = {"potion_slot": index + 1}
-                requires_target = potion.get("requires_target", potion.get("requiresTarget", potion.get("has_target", False)))
+                requires_target = tool == "use_potion" and potion.get("requires_target", potion.get("requiresTarget", potion.get("has_target", False)))
                 for target in (targets if requires_target else [None]):
                     target_args = {**args, **({"target_index": target} if target is not None else {})}
                     target_semantic = {**semantic, **({"target_index": target} if target is not None else {})}
@@ -347,6 +347,10 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
             if character is not None and _text(character):
                 _append(actions, tool, {"character": character}, "Start game", {"kind": tool, "character": character})
         elif tool == "select_cards":
+            # MCP mutates hand indices in ascending order. HAND_SELECT batches
+            # are executed only by the verified UUID transaction below.
+            if screen.get("screen_type") == "HAND_SELECT":
+                continue
             options = screen.get("selection_options", screen.get("select_options", game_state.get("selection_options")))
             selection = _first_mapping(screen.get("selection"), game_state.get("selection"))
             selection_cards = _list(selection.get("cards", hand))
@@ -396,6 +400,44 @@ def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     return bool(selected)
 
 
+def forethought_transaction(selected: Any, observation: Mapping[str, Any], screen: Mapping[str, Any]) -> LegalAction:
+    combat = _mapping(observation.get("combat", _mapping(observation.get("silverRoot")).get("combat")))
+    selection = _mapping(combat.get("cardSelect"))
+    if (not isinstance(selected, Mapping) or set(selected) != {"kind", "cardUuids"}
+            or selected.get("kind") != "card_select"
+            or selection.get("task") != "FORETHOUGHT" or selection.get("origin") != "HAND_SELECT"
+            or selection.get("actionClass") != "com.megacrit.cardcrawl.actions.unique.ForethoughtAction"
+            or selection.get("canPickAnyNumber") is not True or selection.get("canPickZero") is not True
+            or type(selection.get("selectedCount")) is not int or selection["selectedCount"] != 0
+            or selection.get("selectedBits") != 0 or selection.get("pickCount") != 99
+            or screen.get("screen_type") != "HAND_SELECT"):
+        raise IntegrationFailure("unqualified Forethought multi-selection transaction")
+    hand = [_card_uuid(_mapping(card)) for card in _list(combat.get("hand"))]
+    choices = _list(selection.get("liveChoices"))
+    wanted = selected.get("cardUuids")
+    if (not hand or any(not uuid for uuid in hand) or len(set(hand)) != len(hand)
+            or choices != [{"uuid": uuid, "choiceIndex": i+1} for i, uuid in enumerate(hand)]
+            or not isinstance(wanted, list) or any(not isinstance(uuid, str) for uuid in wanted)
+            or len(set(wanted)) != len(wanted) or any(uuid not in hand for uuid in wanted)
+            or wanted != [uuid for uuid in hand if uuid in wanted]):
+        raise IntegrationFailure("Forethought selected UUIDs do not match the ordered physical hand")
+    validate_forethought_screen(screen, hand, [])
+    return LegalAction("forethought-transaction", "Select Forethought cards and confirm",
+                       "select_cards_transaction", {"card_uuids": wanted},
+                       {"kind": "card_select", "card_uuids": wanted, "original_hand": hand})
+
+
+def validate_forethought_screen(screen: Mapping[str, Any], remaining: list[str], selected: list[str]) -> None:
+    state = _mapping(screen.get("screen_state"))
+    uuids = lambda cards: [_card_uuid(_mapping(card)) for card in _list(cards)]
+    if (screen.get("screen_type") != "HAND_SELECT" or not _is_combat(screen)
+            or state.get("max_cards") != 99 or state.get("can_pick_zero") is not True
+            or uuids(state.get("hand")) != remaining or uuids(state.get("selected")) != selected
+            or uuids(screen.get("hand")) != remaining
+            or len(_list(screen.get("choice_list"))) != len(remaining)):
+        raise IntegrationFailure("Forethought hand or selected cards changed during transaction")
+
+
 def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalAction]) -> LegalAction:
     """Map Silver's structured live action to exactly one MCP candidate."""
     if not isinstance(selected_live_action, Mapping):
@@ -412,6 +454,7 @@ def map_ooc_action(selected: Any, candidates: Sequence[LegalAction]) -> LegalAct
         raise IntegrationFailure("OOC response has no structured selectedLiveAction")
     kind = selected.get("kind")
     allowed = {"choose": {"kind", "choiceIndex"}, "map": {"kind", "x", "y"},
+               "discard_potion": {"kind", "potionSlot"},
                **{name: {"kind"} for name in ("skip", "proceed", "cancel", "confirm")}}
     if not isinstance(kind, str) or kind not in allowed or set(selected) != allowed[kind]:
         raise IntegrationFailure(f"malformed OOC selectedLiveAction: {selected!r}")
@@ -420,6 +463,12 @@ def map_ooc_action(selected: Any, candidates: Sequence[LegalAction]) -> LegalAct
         if type(index) is not int or index < 1:
             raise IntegrationFailure("OOC choiceIndex must be a positive integer")
         matches = [a for a in candidates if a.mcp_tool == "choose" and a.mcp_arguments == {"choice_index": index}]
+    elif kind == "discard_potion":
+        slot = selected["potionSlot"]
+        if type(slot) is not int or not 1 <= slot <= 5:
+            raise IntegrationFailure("OOC potionSlot must be a valid one-based slot")
+        matches = [a for a in candidates if a.mcp_tool == "discard_potion"
+                   and a.mcp_arguments == {"potion_slot": slot}]
     elif kind == "map":
         if any(type(selected[key]) is not int for key in ("x", "y")):
             raise IntegrationFailure("OOC map coordinates must be integers")
@@ -783,11 +832,8 @@ async def connected_mcp(url: str) -> AsyncIterator[McpGameClient]:
 def _is_combat(screen: Mapping[str, Any]) -> bool:
     phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
     screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
-    # Potion/discovery choices reuse CARD_REWARD during combat. The inspector
-    # routes this modal through OOC with an explicit unsupported boundary;
-    # GRID/HAND_SELECT remain Silver combat selection boundaries.
-    if screen_type == "CARD_REWARD":
-        return False
+    # Discovery/potion offers reuse CARD_REWARD inside combat. Room phase
+    # keeps them aligned with the inspector's Silver boundary.
     return phase == "COMBAT" or (not phase and screen_type == "COMBAT")
 
 
@@ -1120,6 +1166,37 @@ class Driver:
             raise IntegrationFailure("SHOP_ROOM navigation does not match the single merchant entry/proceed surface")
         return matches[0], room if entering else None
 
+    async def execute_forethought_transaction(self, action: LegalAction, screen: Mapping[str, Any],
+                                              commands: Mapping[str, Any], game: Mapping[str, Any]) -> Mapping[str, Any]:
+        original = action.semantic["original_hand"]
+        wanted = action.mcp_arguments["card_uuids"]
+        remaining = list(original)
+        selected: list[str] = []
+        calls = []
+        self.context["transaction_calls"] = calls
+        for uuid in reversed(wanted):
+            validate_forethought_screen(screen, remaining, selected)
+            if "choose" not in _tool_names(commands):
+                raise DriverError("Forethought choose command is no longer advertised")
+            index = remaining.index(uuid)
+            before = transition_identity(screen, game)
+            arguments = {"choice_index": index + 1}
+            result = await self.client.call("choose", arguments)
+            calls.append({"tool": "choose", "arguments": arguments, "result": result})
+            if _mapping(result).get("success") is False or _mapping(result).get("error"):
+                raise DriverError("Forethought selection failed; transaction stopped")
+            remaining.pop(index)
+            selected.insert(0, uuid)
+            await self.wait_for_ready_advance(before)
+            screen, commands, game = await self.read_ready_snapshot()
+        validate_forethought_screen(screen, remaining, selected)
+        confirm = next((tool for tool in ("confirm", "proceed") if tool in _tool_names(commands)), None)
+        if confirm is None or screen.get("can_proceed") is not True:
+            raise DriverError("Forethought confirmation is not advertised")
+        result = await self.client.call(confirm, {})
+        calls.append({"tool": confirm, "arguments": {}, "result": result})
+        return result
+
     async def step(self, step: int) -> bool:
         started = time.monotonic()
         self.context = {"step": step, "timestamp": datetime.now(timezone.utc).isoformat()}
@@ -1202,7 +1279,11 @@ class Driver:
                     "available": False, "reason": "live inspector did not publish debugRng"}
             if status == "OK":
                 try:
-                    action = (map_silver_action if combat else map_ooc_action)(evaluator.get("selectedLiveAction"), candidates)
+                    selected = evaluator.get("selectedLiveAction")
+                    if combat and _mapping(selected).get("kind") == "card_select" and screen.get("screen_type") == "HAND_SELECT":
+                        action = forethought_transaction(selected, _mapping(snapshot.raw.get("observation")), screen)
+                    else:
+                        action = (map_silver_action if combat else map_ooc_action)(selected, candidates)
                 except IntegrationFailure as error:
                     self.counters["mapping_failures"] += 1
                     row.update({"mapping_candidates": error.matches, "mapping_match_count": len(error.matches)})
@@ -1272,12 +1353,15 @@ class Driver:
             row["observed_state"] = {"screen": screen, "game_state": game_state}
             row["pre_action_state"] = {"screen": current_screen, "game_state": current_game}
             raise DriverError("MCP state changed while awaiting the advisor; no action executed")
-        if action.mcp_tool not in _tool_names(current_commands):
+        if action.mcp_tool != "select_cards_transaction" and action.mcp_tool not in _tool_names(current_commands):
             raise DriverError("selected MCP command is no longer advertised; no action executed")
         call_started = time.monotonic()
         row.update({"executed_mcp_tool": action.mcp_tool,
                     "executed_mcp_arguments": action.mcp_arguments})
-        row["mcp_result"] = await self.client.call(action.mcp_tool, action.mcp_arguments)
+        if action.mcp_tool == "select_cards_transaction":
+            row["mcp_result"] = await self.execute_forethought_transaction(action, current_screen, current_commands, current_game)
+        else:
+            row["mcp_result"] = await self.client.call(action.mcp_tool, action.mcp_arguments)
         row["mcp_action_micros"] = (time.monotonic() - call_started) * 1e6
         if _mapping(row["mcp_result"]).get("success") is False or _mapping(row["mcp_result"]).get("error"):
             raise DriverError(f"MCP action failed: {row['mcp_result']!r}")

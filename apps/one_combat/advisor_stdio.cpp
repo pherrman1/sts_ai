@@ -1,3 +1,4 @@
+#include "sim/search/MatchAndKeepPolicy.h"
 #include "advisor_protocol.h"
 #include "live_ooc_importer.h"
 #include "live_ooc_state.h"
@@ -182,8 +183,17 @@ json oocResponse(const one_combat::advisor::Request &request,
     if (!imported.ok && imported.code != "UNSUPPORTED")
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
+    else if (std::string(policy.name()) != "mcts_ctm"
+             && std::any_of(state.ooc.at("liveChoices").begin(),state.ooc.at("liveChoices").end(),
+                 [](const json &choice) { return choice.at("nativeAction").value("kind",std::string())=="discard_potion"; }))
+        evaluator["reason"] = "POTION_REPLACEMENT_REQUIRES_MCTS";
     else if (state.hiddenTreasureContents && std::string(policy.name()) != "mcts_ctm")
         evaluator["reason"] = "PUBLIC_TREASURE_CONTENTS_UNQUALIFIED";
+    else if (state.hiddenEventState && std::string(policy.name()) != "mcts_ctm")
+        evaluator["reason"] = "PUBLIC_EVENT_STATE_UNQUALIFIED";
+    else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
+             state.hiddenEventState && flag && std::string(flag) == "1")
+        evaluator["reason"] = "DIFFERENTIAL_HIDDEN_EVENT_UNREPRESENTABLE";
     else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
              state.hiddenTreasureContents && flag && std::string(flag) == "1")
         evaluator["reason"] = "DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE";
@@ -191,22 +201,126 @@ json oocResponse(const one_combat::advisor::Request &request,
              state.hiddenEventRewardPity && flag && std::string(flag) == "1")
         evaluator["reason"] = "DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE";
     else {
+        if (state.selectorPreview) {
+            pending=PendingCompoundPlan{};
+            try {
+                if(const char *flag=std::getenv("STS_DIFFERENTIAL_TRACE");flag && std::string(flag)=="1")
+                    throw std::runtime_error("DIFFERENTIAL_SELECTOR_PREVIEW_UNREPRESENTABLE");
+                if(std::string(policy.name())=="mcts_ctm" && !state.mctsRoot.supported)
+                    throw std::runtime_error(state.mctsRoot.reason);
+                std::vector<std::uint32_t> targets;
+                for(const auto &action:v4CandidateActions(state.mctsRoot.state)) targets.push_back(action.bits);
+                policy.setRootPrimitiveBits(targets);
+                policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+                policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                policy.setSearchSeed(stableHash(differential::canonicalOocState(
+                    state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"));
+                policy.setTreeCapture(false,0);
+                const auto decision=policy.score(state.mctsRoot.state,state.mctsRoot.path,state.mctsRoot.currentActEventVisits);
+                if(!decision.supported || decision.selectedIndex<0
+                        || decision.selectedIndex>=static_cast<int>(decision.candidates.size()))
+                    throw std::runtime_error(decision.reason.empty()?"SELECTOR_PREVIEW_VALUE_UNAVAILABLE":decision.reason);
+                const auto &candidate=decision.candidates[decision.selectedIndex];
+                const auto index=sts::search::GameAction(candidate.primitiveBits).getIdx1();
+                if(index<0 || index>=static_cast<int>(state.mctsRoot.state.info.toSelectCards.size()))
+                    throw std::runtime_error("SELECTOR_PREVIEW_TARGET_UNREPRESENTABLE");
+                const bool confirm=state.mctsRoot.state.info.toSelectCards[index].deckIdx==state.selectorPreviewDeckIndex;
+                const auto action=state.ooc.at("liveChoices").at(confirm?0:1).at("liveAction");
+                const std::string key=confirm?"ooc-live:v1:preview:confirm":"ooc-live:v1:preview:cancel";
+                evaluator["status"]="OK";
+                evaluator["mode"]="selector_preview_policy";
+                evaluator["valueSemantics"]="native_selector_value";
+                evaluator["selectedSemanticKey"]=key;
+                evaluator["selectedLabel"]=confirm?"Confirm selected card":"Return to card selection";
+                evaluator["selectedLiveAction"]=action;
+                evaluator["candidateSummaries"]=json::array({json{
+                    {"semanticKey",key},{"semanticPayload",{{"type","selector_preview"},{"confirm",confirm}}},
+                    {"label",evaluator["selectedLabel"]},{"q",candidate.q},{"visits",candidate.visits},
+                    {"visitShare",1.0},{"prior",1.0},{"liveAction",action}}});
+            } catch(const std::exception &error) {evaluator["reason"]=error.what();}
+            policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
+            evaluator["latencyMicros"]=std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now()-started).count();
+            return {{"protocol",advisor::kProtocol},{"protocolVersion",advisor::kProtocolVersion},
+                {"kind","analysis"},{"status",evaluator.at("status")},{"session",request.session},
+                {"sequence",request.sequence},{"observationHash",request.observationHash},
+                {"evaluators",json::array({evaluator})}};
+        }
+        if (state.matchAndKeep) {
+            pending=PendingCompoundPlan{};
+            try {
+                if(const char *flag=std::getenv("STS_DIFFERENTIAL_TRACE");flag && std::string(flag)=="1")
+                    throw std::runtime_error("DIFFERENTIAL_PUBLIC_MATCH_KEEP_UNREPRESENTABLE");
+                std::map<std::tuple<int,int,bool>,bool> wants;
+                policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+                policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                policy.setTreeCapture(false,0);
+                const auto want=[&](const sts::Card &card) {
+                    const auto key=std::make_tuple(static_cast<int>(card.id),static_cast<int>(card.misc),card.isUpgraded());
+                    if(wants.count(key)) return wants.at(key);
+                    if(!state.mctsRoot.supported) throw std::runtime_error(state.mctsRoot.reason);
+                    auto offer=state.mctsRoot.state;
+                    offer.screenState=sts::ScreenState::REWARDS;
+                    offer.info.rewardsContainer=sts::Rewards();
+                    sts::CardReward cards; cards.push_back(card);
+                    offer.info.rewardsContainer.addCardReward(cards);
+                    offer.regainControlAction=[](sts::GameContext &g) {
+                        g.screenState=sts::ScreenState::MAP_SCREEN;g.regainControlAction=nullptr;
+                    };
+                    std::vector<std::uint32_t> bits;
+                    for(const auto &action:v4CandidateActions(offer)) bits.push_back(action.bits);
+                    policy.setRootPrimitiveBits(bits);
+                    policy.setSearchSeed(stableHash(request.observationHash+":match-keep:"+std::to_string(static_cast<int>(card.id))));
+                    const auto decision=policy.score(offer,state.mctsRoot.path,state.mctsRoot.currentActEventVisits);
+                    if(!decision.supported || decision.selectedIndex<0
+                            || decision.selectedIndex>=static_cast<int>(decision.candidates.size()))
+                        throw std::runtime_error(decision.reason.empty()?"MATCH_KEEP_CARD_VALUE_UNAVAILABLE":decision.reason);
+                    const auto before=offer.deck.size();
+                    sts::search::GameAction(decision.candidates[decision.selectedIndex].primitiveBits).execute(offer);
+                    const bool take=offer.deck.size()>before;
+                    wants.emplace(key,take);
+                    return take;
+                };
+                const int slot=sts::search::chooseMatchAndKeepSlot(state.projected,want);
+                const auto action=advisor::lowerLiveOocAction(state,sts::search::GameAction(slot).bits);
+                const std::string key="ooc-live:v1:match-keep:slot:"+std::to_string(slot);
+                evaluator["status"]="OK";
+                evaluator["mode"]="public_memory_policy";
+                evaluator["valueSemantics"]="public_card_preferences";
+                evaluator["selectedSemanticKey"]=key;
+                evaluator["selectedLabel"]="Reveal remembered board slot "+std::to_string(slot+1);
+                evaluator["selectedLiveAction"]=action;
+                evaluator["candidateSummaries"]=json::array({json{
+                    {"semanticKey",key},{"semanticPayload",{{"type","match_keep_slot"},{"slot",slot}}},
+                    {"label",evaluator["selectedLabel"]},{"q",0.0},{"visits",1},{"visitShare",1.0},{"prior",1.0},
+                    {"liveAction",action}}});
+            } catch(const std::exception &error) { evaluator["reason"]=error.what(); }
+            policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
+            evaluator["latencyMicros"]=std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now()-started).count();
+            return {{"protocol",advisor::kProtocol},{"protocolVersion",advisor::kProtocolVersion},
+                {"kind","analysis"},{"status",evaluator.at("status")},{"session",request.session},
+                {"sequence",request.sequence},{"observationHash",request.observationHash},
+                {"evaluators",json::array({evaluator})}};
+        }
         if (state.mechanicalEventTransition || state.forcedOocTransition) {
-            // The importer checked the exact public boundary and sole
-            // continuation. No model or native search is needed for this click.
+            // The importer checked the exact public boundary: either a sole
+            // continuation or the boss chest's informational Open action.
+            // No model or native search is needed for this click.
             const auto &liveAction = state.ooc.at("liveChoices").at(0).at("liveAction");
             const auto transition = state.ooc.at("details").at("mechanicalTransition").get<std::string>();
-            const std::string key = "ooc-live:v1:mechanical:" + transition;
+            const bool reveal = transition == "boss_chest_reveal";
+            const std::string key = (reveal ? "ooc-live:v1:reveal:" : "ooc-live:v1:mechanical:") + transition;
             pending = PendingCompoundPlan{};
             evaluator["status"] = "OK";
             evaluator["mode"] = "native_pass_through";
-            evaluator["valueSemantics"] = "forced_no_search";
+            evaluator["valueSemantics"] = reveal ? "public_reveal_no_search" : "forced_no_search";
             evaluator["selectedSemanticKey"] = key;
-            evaluator["selectedLabel"] = "continue";
+            evaluator["selectedLabel"] = reveal ? "Open boss chest" : "continue";
             evaluator["selectedLiveAction"] = liveAction;
             evaluator["candidateSummaries"] = json::array({json{
                 {"semanticKey", key}, {"semanticPayload", json{{"type", "pass_through"},
-                    {"transition", transition}}}, {"label", "continue"},
+                    {"transition", transition}}}, {"label", evaluator["selectedLabel"]},
                 {"q", 0.0}, {"visits", 1}, {"visitShare", 1.0}, {"prior", 1.0},
                 {"liveAction", liveAction}}});
             if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1") {
@@ -323,7 +437,9 @@ json oocResponse(const one_combat::advisor::Request &request,
             appliedTarget = pending.card;
         } else {
             if (pending.active) pending = PendingCompoundPlan{};
-            policy.setSearchSeed(stableHash(request.observationHash + ":live-ooc-mcts"));
+            policy.setSearchSeed(stableHash(state.projected.screenState==sts::ScreenState::CARD_SELECT
+                ? differential::canonicalOocState(state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"
+                : request.observationHash + ":live-ooc-mcts"));
             const auto scoreStarted = std::chrono::steady_clock::now();
             decision = policy.score(state.mctsRoot.state, state.mctsRoot.path,
                                     state.mctsRoot.currentActEventVisits);
@@ -542,7 +658,6 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     // Reset before importing so a new protocol session cannot inherit the
     // previous session's UUID registry when the combat hash happens to repeat.
     importContext.reset(request.session, entryIdentity);
-    const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
     json evaluator = {{"id", "silver_player_decision_v2"},
                       {"scope", "combat_player_decision"}, {"engine", "native_silver"},
                       {"simulations", 1000}, {"adaptiveEnabled", false},
@@ -560,6 +675,43 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         evaluator["reason"] = reason;
         return evaluator;
     };
+    const auto combat = request.observation.contains("combat")
+        ? request.observation.at("combat")
+        : request.observation.value("silverRoot", json::object()).value("combat", json::object());
+    const auto selection = combat.value("cardSelect", json::object());
+    if (selection.contains("mechanicalTransition")) {
+        evaluator["mode"] = "native_pass_through";
+        const auto task = selection.value("task", std::string());
+        const auto owner = selection.value("actionClass", std::string());
+        const bool knownOwner = (task == "WARCRY" && owner == "com.megacrit.cardcrawl.actions.common.PutOnDeckAction")
+            || (task == "FORETHOUGHT" && owner == "com.megacrit.cardcrawl.actions.unique.ForethoughtAction");
+        const auto integerIs = [&](const char *key, int expected) {
+            return selection.contains(key) && selection.at(key).is_number_integer()
+                && selection.at(key).get<int>() == expected;
+        };
+        if (selection.value("mechanicalTransition", std::string()) != "single_select_confirm"
+            || selection.value("origin", std::string()) != "HAND_SELECT" || !knownOwner
+            || !integerIs("pickCount", 1) || !integerIs("selectedCount", 1)
+            || !integerIs("liveChoiceCount", 0)
+            || !selection.contains("canProceed") || selection.at("canProceed") != true
+            || !selection.contains("canCancel") || selection.at("canCancel") != false
+            || !selection.contains("selectedUuid") || !selection.at("selectedUuid").is_string()
+            || selection.at("selectedUuid").get<std::string>().empty())
+            return unsupported("silver_unqualified_selection_confirmation");
+        if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
+            return unsupported("DIFFERENTIAL_COMBAT_CONFIRMATION_UNREPRESENTABLE");
+        // Java has moved the selected card into a temporary UI group. Only
+        // Proceed remains. Keep the prior native session for the next stable
+        // combat root; this UI click neither searches nor fabricates a state.
+        evaluator["status"] = "OK";
+        evaluator["mode"] = "native_pass_through";
+        evaluator["valueSemantics"] = "forced_no_search";
+        evaluator["simulations"] = 0;
+        evaluator["selectedLabel"] = "confirm selected card";
+        evaluator["selectedLiveAction"] = {{"kind", "proceed"}};
+        return evaluator;
+    }
+    const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
     if (!imported.ok) return unsupported(imported.reason);
     const auto entry = request.observation.value("combatEntryHash", std::string());
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
@@ -769,7 +921,13 @@ int main() {
                                                             silverImportContext,
                                                             silverRootIdentity,
                                                             silverSimulations);
-                        if (!ctm) {
+                        if (silver.value("mode", std::string()) == "native_pass_through") {
+                            response = {{"protocol", one_combat::advisor::kProtocol},
+                                {"protocolVersion", one_combat::advisor::kProtocolVersion},
+                                {"kind", "analysis"}, {"status", silver.at("status")}, {"session", request.session},
+                                {"sequence", request.sequence}, {"observationHash", request.observationHash},
+                                {"evaluators", json::array({silver})}};
+                        } else if (!ctm) {
                             if (!request.observation.contains("combatEntry")) {
                                 response = one_combat::advisor::unsupportedResponse(
                                     request, "model unavailable");

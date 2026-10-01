@@ -478,7 +478,7 @@ std::string graphActionLabel(const OocGameContextModel &model, const sts::search
         "Collect gold", "Take potion", "Take key", "Skip card reward", "Use Singing Bowl",
         "Leave rewards", "Open chest", "Leave treasure", "Rest", "Take Ruby Key",
         "Lift", "Dig", "Leave campfire", "Buy card", "Buy relic", "Buy potion",
-        "Leave shop", "Choose event option", "Take boss relic", "Skip boss relic"
+        "Leave shop", "Choose event option", "Take boss relic", "Skip boss relic", "Discard potion"
     };
     const auto effect = static_cast<unsigned>(action.semantic->effect);
     std::string label = effect < std::size(effects) ? effects[effect] : "OOC action";

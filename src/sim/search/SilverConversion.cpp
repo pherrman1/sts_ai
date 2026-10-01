@@ -307,9 +307,12 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.cardSelect.canPickZero = select.canPickZero; out.cardSelect.canPickAnyNumber = select.canPickAnyNumber;
     out.cardSelect.pickCount = select.pickCount; out.cardSelect.data0 = select.data0;
     out.cardSelect.task = static_cast<std::int16_t>(select.cardSelectTask);
-    // The live simulator has atomic multi-select actions and no mutable
-    // selected-bit state at a decision boundary; Discovery has its legacy true default.
-    out.cardSelect.setCostToZero = true;
+    // Atomic native multi-select actions have no partially selected cards.
+    out.cardSelect.setCostToZero = select.setCostToZero;
+    out.cardSelect.drawAfter = select.drawAfter;
+    out.cardSelect.drawsAfter = select.drawsAfter;
+    out.cardSelect.blocksAfter = select.blocksAfter;
+    out.cardSelect.damageAllBeforeBlocks = select.damageAllBeforeBlocks;
     out.cardSelect.selectedBits = 0;
     out.curCardQueueItem = toWire(live.curCardQueueItem);
     if (live.inputState == InputState::CARD_SELECT) {

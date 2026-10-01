@@ -7,8 +7,11 @@ import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None):
+    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None, differential=False):
         env = os.environ.copy()
+        env.pop("STS_DIFFERENTIAL_TRACE", None)
+        if differential:
+            env["STS_DIFFERENTIAL_TRACE"] = "1"
         if model is not None:
             env["STS_CTM_MODEL"] = str(model)
         else:
@@ -26,6 +29,33 @@ class AdvisorProtocolTest(unittest.TestCase):
             capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
+
+    def test_completed_single_selection_is_exact_model_free_confirmation(self):
+        for task, owner in (("WARCRY", "common.PutOnDeckAction"), ("FORETHOUGHT", "unique.ForethoughtAction")):
+            select = dict(mechanicalTransition="single_select_confirm", origin="HAND_SELECT",
+                          task=task, actionClass="com.megacrit.cardcrawl.actions." + owner,
+                          pickCount=1, selectedCount=1, liveChoiceCount=0,
+                          canProceed=True, canCancel=False, selectedUuid="selected-card")
+            def request(value):
+                return json.dumps(dict(protocol="sts_model_inspector_v1",kind="observation",
+                    session="confirm",sequence=1,observationHash="confirm",
+                    observation=dict(boundary="combat",combat=dict(cardSelect=value))))
+            response, = self.run_advisor([request(select)])
+            evaluator = response["evaluators"][0]
+            self.assertEqual(response["status"], "OK", response)
+            self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
+            self.assertEqual(evaluator["simulations"], 0)
+            self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+            for key, bad in (("origin","GRID"),("task","UNKNOWN"),("actionClass","unknown"),
+                             ("pickCount",2),("selectedCount",0),("liveChoiceCount",1),
+                             ("canProceed",False),("canCancel",True),("selectedUuid","")):
+                with self.subTest(task=task, key=key):
+                    response, = self.run_advisor([request({**select,key:bad})])
+                    self.assertEqual(response["evaluators"][0]["reason"],
+                                     "silver_unqualified_selection_confirmation")
+            response, = self.run_advisor([request(select)], differential=True)
+            self.assertEqual(response["evaluators"][0]["reason"],
+                             "DIFFERENTIAL_COMBAT_CONFIRMATION_UNREPRESENTABLE")
 
     def test_handshake_and_fail_closed_observation(self):
         rows = self.run_advisor([

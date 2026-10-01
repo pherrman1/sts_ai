@@ -26,6 +26,13 @@ struct LiveOocStateV1 {
     // sample the existing public belief; a differential trace cannot equate
     // this root with the live game's hidden counter.
     bool hiddenEventRewardPity = false;
+    // Public event progress qualifies a posterior, but does not reveal the
+    // pre-shuffled unseen Dead Adventurer reward order.
+    bool hiddenEventState = false;
+    // The public memory policy must never simulate unknown board identities.
+    bool matchAndKeep = false;
+    bool selectorPreview = false;
+    int selectorPreviewDeckIndex = -1;
     // Java does not expose the private reward pity counters. Synthetic parity
     // fixtures may opt in when they provide an exact public reconstruction;
     // real live captures remain false and must not use a fabricated midpoint.

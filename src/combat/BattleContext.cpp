@@ -6,6 +6,8 @@
 #include "game/GameContext.h"
 #include "game/Game.h"
 
+#include <stdexcept>
+
 using namespace sts;
 
 thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_onBattleExitPersistent;
@@ -2976,6 +2978,9 @@ void BattleContext::openDiscoveryScreen(std::array<CardId, 3> discoveryCards, in
     cardSelectInfo.canPickZero = false;
     cardSelectInfo.cards = discoveryCards;
     cardSelectInfo.discovery_CopyCount() = copyCount;
+    cardSelectInfo.setCostToZero = true;
+    cardSelectInfo.drawAfter = 0;
+    cardSelectInfo.drawsAfter.clear(); cardSelectInfo.blocksAfter.clear(); cardSelectInfo.damageAllBeforeBlocks = 0;
 }
 
 void BattleContext::openSimpleCardSelectScreen(CardSelectTask task, int count) {
@@ -3020,6 +3025,11 @@ void BattleContext::chooseArmamentsCard(int handIdx) {
 }
 
 void BattleContext::chooseCodexCard(CardId id) {
+    if (cardSelectInfo.damageAllBeforeBlocks > 0) addToBot(Actions::DamageAllEnemy(cardSelectInfo.damageAllBeforeBlocks));
+    cardSelectInfo.damageAllBeforeBlocks = 0;
+    for (int amount : cardSelectInfo.blocksAfter) addToBot(Actions::GainBlock(amount));
+    cardSelectInfo.blocksAfter.clear();
+    if (id == CardId::INVALID) return;
     CardInstance c(id);
     c.uniqueId = static_cast<std::int16_t>(cards.nextUniqueCardId++);
     cards.notifyAddCardToCombat(c);
@@ -3087,8 +3097,13 @@ void BattleContext::chooseDiscardToHandCard(int discardIdx, bool forZeroCost) {
 
 void BattleContext::chooseDiscoveryCard(CardId id) {
     const auto discoveryAmount = cardSelectInfo.data0;
+    const int drawAfter = cardSelectInfo.drawAfter;
+    cardSelectInfo.drawAfter = 0;
+    if (drawAfter > 0) addToBot(Actions::DrawCards(drawAfter));
+    for (int amount : cardSelectInfo.drawsAfter) addToBot(Actions::DrawCards(amount));
+    cardSelectInfo.drawsAfter.clear();
     CardInstance c(id);
-    c.setCostForTurn(0);
+    if (cardSelectInfo.setCostToZero) c.setCostForTurn(0);
 
     for (int i = 0; i < discoveryAmount; ++i) {
         if (cards.cardsInHand + 1 <= CardManager::MAX_HAND_SIZE) {
@@ -3126,6 +3141,26 @@ void BattleContext::chooseForethoughtCard(int handIdx) {
 
     cards.moveToDrawPileBottom(cards.hand[handIdx]);
     cards.removeFromHandAtIdx(handIdx);
+}
+
+void BattleContext::chooseForethoughtCards(const fixed_list<int,10> &idxs) {
+    // Atomic native subsets use original hand order. The live adapter clicks
+    // descending indices: Java addToTop produces this same selected-card order.
+    auto ordered = idxs;
+    std::sort(ordered.begin(), ordered.end());
+    for (int i = 0; i < ordered.size(); ++i) {
+        if (ordered[i] < 0 || ordered[i] >= cards.cardsInHand
+                || (i > 0 && ordered[i] == ordered[i-1]))
+            throw std::invalid_argument("Forethought requires distinct valid hand indices");
+    }
+    fixed_list<CardInstance,10> selected;
+    for (int idx : ordered) {
+        auto card = cards.hand[idx];
+        if (card.cost > 0) card.freeToPlayOnce = true;
+        selected.push_back(card);
+    }
+    for (int i = static_cast<int>(ordered.size()) - 1; i >= 0; --i) cards.removeFromHandAtIdx(ordered[i]);
+    for (const auto &card : selected) cards.moveToDrawPileBottom(card);
 }
 
 void BattleContext::chooseHeadbuttCard(int discardIdx) {

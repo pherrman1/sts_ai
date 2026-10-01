@@ -61,9 +61,14 @@ the supplied RNG, and reshuffles defer their randomness to draw time.
 does so yet. Engine code mutates the pile only through `CardPile` operations
 (`addToTop`, `addToBottom`, `shuffleIn`, `drawTop`, `removeAt`, `mutateAt`,
 `mutateAll`, `absorbUnordered`, `reshuffleSelf`); `concreteCards()` is for
-battle setup, importers and tests. `BattleContextBinary` format v1 serializes
+battle setup, importers and tests. `BattleContextBinary` format v2 serializes
 concrete piles only and throws on an information-set pile
-(`test card_pile`, `test card_pile_engine`).
+(`test card_pile`, `test card_pile_engine`). Version 2 preserves card-offer
+cost, ordered draw/block continuations, and the preceding Stone Calendar
+damage field; its reader accepts v1 snapshots with the historical zero-cost
+and empty-continuation defaults. The binary format still
+omits transient queues and end-turn flags, so it does not represent arbitrary
+interrupted continuations.
 
 The retained E2c RAW/POST capture contract is isolated in
 `apps/one_combat/e2c_capture.{h,cpp}`. The module owns capture state, row

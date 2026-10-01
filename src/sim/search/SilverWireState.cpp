@@ -381,6 +381,11 @@ namespace sts::search {
 
         auto &select = out.cardSelectInfo;
         for (std::size_t i = 0; i < select.cards.size(); ++i) select.cards[i] = static_cast<CardId>(in.cardSelect.cards[i]);
+        select.setCostToZero = in.cardSelect.setCostToZero;
+        select.drawAfter = in.cardSelect.drawAfter;
+        select.drawsAfter = in.cardSelect.drawsAfter;
+        select.blocksAfter = in.cardSelect.blocksAfter;
+        select.damageAllBeforeBlocks = in.cardSelect.damageAllBeforeBlocks;
         select.canPickZero = in.cardSelect.canPickZero;
         select.canPickAnyNumber = in.cardSelect.canPickAnyNumber;
         select.pickCount = in.cardSelect.pickCount;
@@ -538,7 +543,11 @@ namespace sts::search {
         out.cardSelect.pickCount = select.pickCount;
         out.cardSelect.data0 = select.data0;
         out.cardSelect.task = static_cast<std::int16_t>(select.cardSelectTask);
-        out.cardSelect.setCostToZero = true;
+        out.cardSelect.setCostToZero = select.setCostToZero;
+        out.cardSelect.drawAfter = select.drawAfter;
+    out.cardSelect.drawsAfter = select.drawsAfter;
+    out.cardSelect.blocksAfter = select.blocksAfter;
+    out.cardSelect.damageAllBeforeBlocks = select.damageAllBeforeBlocks;
         out.cardSelect.selectedBits = 0;
 
         out.curCardQueueItem = toWire(state.curCardQueueItem);
@@ -600,7 +609,7 @@ namespace sts::search {
                 out.cardSelectTask = static_cast<std::int16_t>(task);
                 if (task == CardSelectTask::CODEX || task == CardSelectTask::DISCOVERY) {
                     out.source = CardSource::CARD_SELECT_OPTION;
-                    if (task == CardSelectTask::CODEX && idx == 3) {
+                    if (idx == 3 && (task == CardSelectTask::CODEX || state.cardSelectInfo.canPickZero)) {
                         out.skipCardSelect = true;
                         return out;
                     }

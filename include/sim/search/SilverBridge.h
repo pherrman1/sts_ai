@@ -6,6 +6,7 @@
 #define STS_SILVER_BRIDGE_H
 
 #include <array>
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -107,10 +108,12 @@ struct CardSelectWire {
     std::array<std::int16_t, 3> cards {};
     bool canPickZero = false, canPickAnyNumber = false;
     int pickCount = 0, data0 = 0;
-    // Current live input state has no sequential-selection memory and no
-    // discovery setCost flag. Its semantics are zero selections and the live
-    // discovery default (`true`); fields remain explicit for bridge audit.
+    // Discovery-style offers differ in temporary cost (Toolbox preserves it).
+    // drawAfter is a qualified suspended opening draw, not a hidden pile order.
     bool setCostToZero = true;
+    std::vector<int> drawsAfter, blocksAfter;
+    int damageAllBeforeBlocks = 0;
+    int drawAfter = 0;
     int selectedBits = 0;
     std::int16_t task = 0;
 };

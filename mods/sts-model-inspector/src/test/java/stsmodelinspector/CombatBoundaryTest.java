@@ -71,6 +71,13 @@ public final class CombatBoundaryTest {
         if (!single.getAsJsonArray("liveChoices").get(0).getAsJsonObject().get("uuid").getAsString().equals("physical-c")
                 || single.getAsJsonArray("liveChoices").get(2).getAsJsonObject().get("choiceIndex").getAsInt() != 3)
             throw new AssertionError("physical selector occurrence order changed");
+        JsonObject forethought = new Gson().fromJson(STSModelInspector.singleSelectionJson(
+                "FORETHOUGHT", "HAND_SELECT", true, true, 99, 0, uuids, 3), JsonObject.class);
+        if (!forethought.get("canPickAnyNumber").getAsBoolean() || !forethought.get("canPickZero").getAsBoolean()
+                || !forethought.get("actionClass").getAsString().endsWith(".ForethoughtAction")
+                || !"FORETHOUGHT".equals(STSModelInspector.actionSelectionTask(
+                    "com.megacrit.cardcrawl.actions.unique.ForethoughtAction", true, true, 99)))
+            throw new AssertionError("upgraded Forethought initial transaction missing");
         String[] badSingles = {
             STSModelInspector.singleSelectionJson("WARCRY", "HAND_SELECT", false, false, 1, 0, uuids, 2),
             STSModelInspector.singleSelectionJson("WARCRY", "HAND_SELECT", false, false, 1, 1, uuids, 3),
@@ -97,12 +104,56 @@ public final class CombatBoundaryTest {
                     || offer.getAsJsonArray("cards").size() != 3)
                 throw new AssertionError("Discovery copies/offer semantics lost");
         }
+        JsonObject typedPotion = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                discovery, 2, true, "none", offers, true), JsonObject.class);
+        JsonObject toolbox = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless", 1, false, "none", offers, true), JsonObject.class);
+        if (!typedPotion.get("canPickZero").getAsBoolean() || toolbox.get("setCostToZero").getAsBoolean())
+            throw new AssertionError("typed potion skip or Toolbox normal cost lost");
+        java.util.List<String> openingDraw = java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.common.DrawCardAction",
+                "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction");
+        if (STSModelInspector.toolboxDrawAfter(openingDraw, 5, true) != 5
+                || STSModelInspector.toolboxDrawAfter(openingDraw, 5, false) != -1
+                || STSModelInspector.toolboxDrawAfter(openingDraw, null, true) != -1
+                || STSModelInspector.toolboxDrawAfter(openingDraw.subList(0, 1), 5, true) != -1)
+            throw new AssertionError("Toolbox remaining action queue was guessed");
+        java.util.List<String> bagDraws = java.util.Arrays.asList(openingDraw.get(0), openingDraw.get(1),
+                "com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction", openingDraw.get(0));
+        if (!java.util.Arrays.asList(5, 2).equals(STSModelInspector.toolboxDrawsAfter(bagDraws, java.util.Arrays.asList(5, 2), true))
+                || STSModelInspector.toolboxDrawsAfter(bagDraws, java.util.Arrays.asList(7), true) != null
+                || STSModelInspector.toolboxDrawsAfter(bagDraws, java.util.Arrays.asList(5, 2), false) != null
+                || STSModelInspector.toolboxDrawsAfter(java.util.Arrays.asList(openingDraw.get(0),
+                    "unknown.Action", openingDraw.get(1)), java.util.Arrays.asList(5), true) != null)
+            throw new AssertionError("Toolbox ordered Bag of Preparation draws were guessed or combined");
+        java.util.List<String> endTurnQueue = java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.defect.TriggerEndOfTurnOrbsAction");
+        JsonObject codex = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                "com.megacrit.cardcrawl.actions.unique.CodexAction", 0, true, "codex_end_turn", offers, true), JsonObject.class);
+        if (!"CODEX".equals(codex.get("task").getAsString()) || !codex.get("canPickZero").getAsBoolean()
+                || !STSModelInspector.codexEndTurnContinuation(endTurnQueue, true, true, true)
+                || STSModelInspector.codexEndTurnContinuation(endTurnQueue, false, true, true)
+                || STSModelInspector.codexEndTurnContinuation(endTurnQueue, true, false, true)
+                || STSModelInspector.codexEndTurnContinuation(endTurnQueue, true, true, false)
+                || STSModelInspector.codexEndTurnContinuation(java.util.Collections.<String>emptyList(), true, true, true))
+            throw new AssertionError("Codex exact end-turn continuation lost or guessed");
+        String owner = "com.megacrit.cardcrawl.actions.common.PutOnDeckAction";
+        String confirmation = STSModelInspector.completedSingleSelectionJson("WARCRY", owner, 1,
+                java.util.Arrays.asList("selected-card"), 0, true, false);
+        if (confirmation == null || !new Gson().fromJson(confirmation, JsonObject.class)
+                .get("mechanicalTransition").getAsString().equals("single_select_confirm")
+                || STSModelInspector.completedSingleSelectionJson("WARCRY", owner, 1,
+                    java.util.Arrays.asList("selected-card"), 1, true, false) != null
+                || STSModelInspector.completedSingleSelectionJson("WARCRY", owner, 1,
+                    java.util.Arrays.asList("selected-card"), 0, true, true) != null
+                || STSModelInspector.completedSingleSelectionJson("WARCRY", owner, 1,
+                    java.util.Arrays.asList("selected-card"), 0, false, false) != null)
+            throw new AssertionError("single HAND confirmation was guessed");
         JsonObject cardOffer = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
                 discovery, 1, false, "discovery_card", offers, true), JsonObject.class);
         if (!"discovery_card".equals(cardOffer.get("continuation").getAsString()))
             throw new AssertionError("Discovery cleanup continuation lost");
         String[] rejected = {
-            STSModelInspector.cardRewardSelectionJson(discovery, 1, true, "none", offers, true),
             STSModelInspector.cardRewardSelectionJson(discovery, 1, null, "none", offers, true),
             STSModelInspector.cardRewardSelectionJson(discovery, 0, false, "none", offers, true),
             STSModelInspector.cardRewardSelectionJson(discovery, 3, false, "none", offers, true),
@@ -117,7 +168,7 @@ public final class CombatBoundaryTest {
             STSModelInspector.cardRewardSelectionJson("com.megacrit.cardcrawl.actions.unique.CodexAction",
                     1, true, "unsupported", offers, true),
             STSModelInspector.cardRewardSelectionJson("com.megacrit.cardcrawl.actions.utility.ChooseOneColorless",
-                    1, false, "none", offers, true)};
+                    2, false, "none", offers, true)};
         for (String serialized : rejected) {
             JsonObject offer = new Gson().fromJson(serialized, JsonObject.class);
             if (!offer.has("unsupportedReason") || !offer.get("task").getAsString().isEmpty())

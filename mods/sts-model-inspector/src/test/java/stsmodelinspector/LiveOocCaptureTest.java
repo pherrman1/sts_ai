@@ -18,6 +18,57 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        if (!"Match and Keep".equals(LiveOocCapture.canonicalEventId("Match and Keep!"))
+                || !"Sensory Stone".equals(LiveOocCapture.canonicalEventId("SensoryStone")))
+            throw new AssertionError("Match canonical ID");
+        for(int defect=-1;defect<5;++defect) {
+            Map<String,Object> state=obj("screen_type","CHEST","ready_for_command",defect!=0,
+                    "can_cancel",defect==1,"can_proceed",defect!=2,"choice_list",java.util.Arrays.asList("open"));
+            Map<String,Object> out=obj("mcpState",state);
+            java.util.List<Map<String,Object>> choices=new java.util.ArrayList<>();
+            boolean accepted=LiveOocCapture.captureBossChestReveal(out,choices,java.util.Arrays.asList("open"),
+                    defect==3?"SmallChest":"BossChest",defect==4?4:2);
+            if(accepted!=(defect==-1))throw new AssertionError("boss reveal qualification "+defect);
+            if(accepted && (choices.size()!=2 || !"proceed".equals(((Map<?,?>)choices.get(1).get("liveAction")).get("kind"))
+                    || !"boss_chest_reveal".equals(((Map<?,?>)out.get("details")).get("mechanicalTransition"))))
+                throw new AssertionError("boss reveal hides real skip choice");
+        }
+        for (int defect=-1; defect<9; ++defect) {
+            Map<String,Object> state=obj("screen_type","GRID","ready_for_command",defect!=0,
+                    "can_cancel",defect!=1,"can_proceed",defect!=2);
+            java.util.List<Object> targets=new java.util.ArrayList<>();
+            targets.add(obj("deckIndex",2,"uuid","physical-2","card",obj("id","Strike_R")));
+            targets.add(defect==3?targets.get(0):obj("deckIndex",4,"uuid","physical-4","card",obj("id","Bash")));
+            Map<String,Object> out=obj("mcpState",state);
+            java.util.List<Map<String,Object>> choices=new java.util.ArrayList<>();
+            boolean accepted=LiveOocCapture.captureSelectorPreview(out,choices,
+                    defect==4?java.util.Arrays.asList("unexpected"):java.util.Collections.emptyList(),targets,
+                    defect==5?"duplicate":"upgrade",defect==6?3:4,defect==7?2:1,defect==8?1:0);
+            if(accepted!=(defect==-1))throw new AssertionError("preview qualification "+defect);
+            if(accepted && (choices.size()!=2 || !"proceed".equals(((Map<?,?>)choices.get(0).get("liveAction")).get("kind"))
+                    || !"cancel".equals(((Map<?,?>)choices.get(1).get("liveAction")).get("kind"))
+                    || !Integer.valueOf(4).equals(((Map<?,?>)out.get("details")).get("previewDeckIndex"))))
+                throw new AssertionError("preview mutation identity/buttons");
+            if(!accepted&&!choices.isEmpty())throw new AssertionError("partial preview choices");
+        }
+        {
+            Map<String,Object> out=obj("mcpState",obj("screen_type","GRID","ready_for_command",true,
+                    "can_cancel",true,"can_proceed",true));
+            if(!LiveOocCapture.captureSelectorPreview(out,new java.util.ArrayList<Map<String,Object>>(),
+                    java.util.Collections.emptyList(),java.util.Arrays.<Object>asList(obj("deckIndex",0,
+                    "uuid","offering","card",obj("id","Bash"))),"bonfire",0,1,0))
+                throw new AssertionError("Bonfire purge preview loses sacrifice semantics");
+        }
+        for(int variant=0;variant<5;++variant) {
+            java.util.List<Map<String,Object>> discards=new java.util.ArrayList<>();
+            LiveOocCapture.capturePotionDiscards(discards,java.util.Arrays.asList("Fire Potion",
+                    variant==1?"Potion Slot":"Block Potion","Potion Slot"),variant==4?3:2,
+                    variant!=2,variant==3);
+            if(discards.size()!=(variant==0?2:0))throw new AssertionError("potion discard gate "+variant);
+            if(variant==0 && (!Integer.valueOf(1).equals(((Map<?,?>)discards.get(1).get("nativeAction")).get("index"))
+                    || !Integer.valueOf(2).equals(((Map<?,?>)discards.get(1).get("liveAction")).get("potionSlot"))))
+                throw new AssertionError("potion discard physical slot mapping");
+        }
         java.util.List<Object> libraryCards=new java.util.ArrayList<>();
         java.util.List<String> libraryLabels=new java.util.ArrayList<>();
         for(int i=0;i<20;++i) {
@@ -107,6 +158,8 @@ public final class LiveOocCaptureTest {
             if (!ok || choices.size()!=1 || !(boss?"boss_map":"selector_confirm").equals(
                     ((Map<?,?>)captured.get("details")).get("mechanicalTransition")))
                 throw new AssertionError("sole public continuation missing");
+            if (!boss && !"proceed".equals(((Map<?,?>)choices.get(0).get("liveAction")).get("kind")))
+                throw new AssertionError("confirmation did not use advertised Proceed command");
             choices.clear();mcp.put("can_cancel",true);
             ok = boss ? LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0)
                     : LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,true,false);

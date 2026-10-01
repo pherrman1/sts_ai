@@ -235,8 +235,9 @@ distribution instead (see *Combat final-HP samples*). Card and potion target lab
 use live monster names, with indices only to distinguish duplicate names. Native
 Silver slots and compact live potion targets resolve separately. Silver root summaries include
 an additive `liveAction` binding for this display; unsupported lowering is
-`null`. OOC inventory potion actions remain outside the current MCTS semantic
-support boundary and show no badge. Freshness and unsupported/error suppression apply to potion scores
+`null`. OOC full-belt replacement discards have native MCTS action bindings,
+but the combat potion badge renderer does not display OOC scores. Freshness
+and unsupported/error suppression apply to potion scores
 as well. The overlay is presentation-only and does not change policy
 or driver decisions. Combat-entry projection translates only the spent
 Neow's Lament sentinel (`counter=-2`, `usedUp=true`) to native zero remaining
@@ -554,11 +555,13 @@ read-only screen and choice converters. The observation contains:
 - `captureError`: an unexpected capture or identity failure. This always stops
   the driver, including when an unsupported reason is also present.
 
-Combat rewards with a full potion inventory are fail-closed at this boundary:
-the native OOC candidate set and the inspector omit the potion-take candidate,
-leaving other rewards and `proceed` available. The current MCP reward surface
-does not expose the vanilla discard-potion command, so this is not discard
-support or a claim of whole-game reward equivalence.
+When a visible potion reward or affordable shop potion can refill a full belt,
+the native OOC candidate set and inspector expose each held potion as a
+`DISCARD_POTION` candidate. The driver lowers the selected physical slot to
+MCP `discard_potion`; a fresh observation then permits taking the replacement.
+Sozu excludes these candidates. Direct V4 reports
+`POTION_REPLACEMENT_REQUIRES_MCTS`, because its frozen candidate set cannot
+score the additional action; MCTS uses its uniform-prior fallback.
 
 The live driver opens an unrevealed card reward only after all claimable
 non-card rewards in that combat reward have been collected. This preserves the
@@ -597,8 +600,14 @@ resets; qualified root particles preserve these exact room probabilities.
 An EVENT outcome while Juzu Bracelet was ever owned remains ambiguous because
 a replaced monster roll has a different reset, so that history stays
 unsupported. Tiny Chest's resolved treasure outcome is representable.
-Events whose native `StateInfo` fields are not captured
-(`ShiningLight`, `Ghosts`, and `WindingHalls`) are unsupported.
+Event capture uses source-specific phase tables, public displayed costs and
+exact enabled option slots. This includes Shining Light, Ghosts, Winding Halls,
+and the remaining vanilla Act 1–3 and shrine decision pages. Dead Adventurer
+captures the public encounter and consumed reward categories; MCTS shuffles
+only the unrevealed remainder. Direct V4 and differential replay reject that
+hidden event state. Verified dialogue/result pages use their exact sole
+continuation without a model. Unknown phases and contradictory public fields
+remain explicit unsupported boundaries.
 Ominous Forge (`AccursedBlacksmith`, initial phase 0) and Ancient Writing
 (`BackToBasics.INTRO`) qualify their exact enabled option slots. Forge's
 phase 2 and Writing's COMPLETE page have a verified sole Leave click; the
@@ -616,15 +625,17 @@ MCTS uses the existing hypothetical reward-pity prior for Read. Its visible
 20-card grid imports an OBTAIN selector, preserving offer order and UUIDs,
 requiring distinct class reward cards and exact Egg-preview upgrades, and
 checking the non-cancelable one-pick continuation. Its completed Read/Sleep
-page is a forced Leave. Native color-table mismatches for Brutality/Combust
-and upgraded Searing Blow remain explicit unsupported selector boundaries.
+page is a forced Leave. Brutality and Combust already have red native metadata
+and import normally. Searing Blow retains upgrade eligibility after repeated
+upgrades; Egg preview/acquisition never upgrades an already upgraded card twice.
 Direct V4 still rejects unknown pity; differential tracing rejects Library's
 unknown-pity initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
-Mushrooms and Mysterious Sphere remain unsupported with
-`NATIVE_EVENT_TRANSITION_UNQUALIFIED`: native option 1 gives 99/50 gold in
-both events, while installed vanilla applies Parasite plus healing for
-Mushrooms and simply leaves Sphere. Sampling private counters cannot repair
-those simulator transitions. The v_win leaf marginalizes the hidden counters
+Mushrooms and Mysterious Sphere use the same reward-pity prior for combat
+rewards. Their native leave effects match installed vanilla: Mushrooms heals
+and adds Parasite; Sphere leaves without granting gold. Event repairs also
+preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
+Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
+The v_win leaf marginalizes the hidden counters
 features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
 native lattice (`potionChance` -40 through 60), never applying the link to an
 expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
@@ -652,8 +663,10 @@ standalone advisor. The runtime packages both tracked compact-tree models;
 absence of either is explicit unsupported, not a heuristic substitution.
 Other qualified screens use `ScumSearchAgent2` as in the simulator. A
 complete-history synthetic MAP fixture now returns 512-simulation scored
-paths. Every downstream MAP state is a hard planner leaf before expansion.
-The lattice-valid hidden-counter prior is still broad rather than an exact
+paths. Qualified question-room history permits downstream MAP expansion;
+otherwise MAP remains a hard planner leaf. Root hidden-counter sampling
+preserves reconstructed public room chances, and successors update them through
+normal native transitions. The lattice-valid reward-pity prior remains broad rather than an exact
 public-history posterior, so this test is not a general belief-equivalence
 claim.
 
@@ -723,12 +736,14 @@ per root and per candidate, the player HP of the state each simulation was
 actually evaluated at (the node, or where its detached continuation stopped),
 with explicit terminal deaths at index 0, on one shared `0..axisMaxHp` axis.
 `floorOffsets` counts endpoints by floor relative to the root. Providers
-without endpoints report `unresolved` samples. In the live configuration
-(`stopAtMapCheckpoint`, zero leaf combats) every simulation ends at the next
-map: measured on the CI fixtures, a map root's endpoints are all floor +1 and
-card-reward, event and rest roots stay on floor +0, so a card reward's HP is
-constant. The capture changes no draws, visits, values or selection
-(`ooc_mcts` and `live_ooc_protocol` check this).
+without endpoints report `unresolved` samples. Qualified public question-room
+histories allow downstream MAP expansion using native transitions and the
+inherited room-chance counters. Histories without that qualification retain
+`stopAtMapCheckpoint`; zero leaf combats still bounds detached continuation.
+Endpoint floor/HP distributions therefore depend on the actual expanded tree,
+not a universal next-map assumption. The capture itself changes no draws,
+visits, values or selection.
+
 
 The persistent upper-left MCTS panel shows two boxes, like combat. **Win
 estimate** shows the root mean search value (a model estimate, not a
@@ -777,12 +792,18 @@ Omamori reporting Java's used-up -2 is native 0 remaining charges in both the
 OOC capture and the combat-entry payload, because the CTM rejects negative
 charge data; other
 unqualified positive counters
-are unsupported. A deck containing upgraded Searing Blow returns
-`SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot
-reconstruct the native history-dependent upgradeable count. A GRID result screen
+are unsupported. Upgraded Searing Blow is supported: native deck bookkeeping
+preserves its repeated-upgrade eligibility, so the public deck reconstructs the
+cached count without acquisition history. A GRID result screen
 is a forced confirmation only when `isJustForConfirming` is true, MCP exposes
 Continue with no choices or Cancel, and `confirmScreenUp` is false. Upgrade
-preview screens still offer Cancel and remain unsupported. Acts 1–3 MAP roots
+preview screens retain both Confirm and Cancel. For a verified single-card
+upgrade/remove/transform/Bonfire preview, the policy scores the original complete
+target set: it confirms when the chosen target is hovered, otherwise returns
+to the grid. Ordinary selection and preview use the same native-state search
+seed, preventing re-scoring noise from causing repeated cancellation. The MCP
+command is `proceed` even when the visible button says Confirm. Missing alternatives or multi-pick previews remain unsupported.
+Acts 1–3 MAP roots
 at row 14 with exactly one boss choice use the same forced-action path;
 Act 4 does not. These paths bypass models and history-dependent search,
 including active Wing Boots at the forced boss step. Differential tracing
@@ -792,12 +813,30 @@ from their pending-selection fields, and Duplicator/Bonfire from their event
 phase. Astrolabe maps to transform-and-upgrade, and Bonfire retains its
 sacrifice/reward continuation. Native import restores completed physical picks
 for Empty Cage/Astrolabe and only offers remaining cards, preserving each
-card's MCP choice index. Note For Yourself remains unsupported. Removal, bottle, duplicate and Bonfire selectors may still
+card's MCP choice index. Note For Yourself captures its public stored card and
+subsequent removal grid; its direct acquisition preserves Omamori charges and
+applies the actual relic hooks. Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
+When a full belt blocks a visible potion reward or affordable shop potion,
+MCTS enumerates each held-slot discard using public potion identity and duplicate
+occurrence. Sozu prevents these replacement actions. The driver requires the
+advertised `discard_potion` command and slot permission; discarding never takes
+a monster target. The next observation scores the actual refill separately.
+These new actions use a uniform prior where the frozen V4 action set has no
+matching source; direct V4 reports `POTION_REPLACEMENT_REQUIRES_MCTS`.
+Match and Keep captures physical board slots and a run/event-local memory of
+revealed cards. Unseen cards have no identity in the payload. The existing
+native memory policy chooses a slot, valuing known cards as hypothetical lone
+rewards through the active policy. Initial exploration requires no model;
+unqualified history/model dependencies stop card-value decisions. Hidden board
+transitions remain outside differential replay.
 Unopened Small/Medium/Large chests capture only visible size. MCTS samples
 hidden gold and relic tier together using the existing native correlated
 prior; capture never reads either hidden setup field. Both Open and Leave
-must be available in MCP. Unopened boss/unknown chests remain unsupported.
+must be available in MCP. A verified unopened BossChest uses an explicit
+public-reveal action: Open reveals the offers while retaining the later Skip
+decision. This is an informational policy step, not a claim that Proceed is
+unavailable. Unknown chest classes remain unsupported.
 Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
 tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
 claiming an exact hidden chest state.
@@ -834,9 +873,11 @@ restored through native interrupted-card replay, preserving exhaust/discard
 cleanup and physical card identity; unrelated queued actions are rejected.
 A standalone potion offer clears historical current-card bookkeeping so an
 already-completed card cannot replay. Typed Attack/Skill/Power Potion offers
-remain unsupported because their Skip continuation is unrepresented. Toolbox's
-normal-cost copy and Nilry's Codex's end-turn continuation also remain explicit
-Silver unsupported boundaries; they are never scored as deck rewards.
+include their exact Skip action. Toolbox preserves normal card costs and ordered opening draws, including
+Bag of Preparation. Nilry's Codex resumes verified queued self-block actions
+and Stone Calendar's literal damage before ending the turn after choosing or
+skipping; lethal damage terminates combat without another turn. Extra
+unrepresented queued relic/power actions remain unsupported; these popups never become deck rewards.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains
@@ -849,12 +890,15 @@ selection task from the active vanilla action class, with exact screen/count
 checks, before the legacy prompt-text fallback. These four single-pick tasks
 capture the physical card UUIDs in MCP's actual displayed order. Import checks
 that the set matches eligible native cards, and lowering resolves that UUID
-to its captured choice index, including duplicate card names. Partial or
-multi-pick selections, missing/duplicate UUIDs and mismatched choice counts
-remain unsupported. After an initial HAND pick, vanilla still requires
-Proceed; the completed selection uses the existing deterministic fallback,
-and strict Silver stops at that boundary. Upgraded Forethought's multi-pick
-continuation remains unsupported by the native action.
+to its captured choice index, including duplicate card names. Completed single
+HAND picks emit a verified model-free Proceed, retaining the native predecessor
+session for the next stable combat root. Upgraded Forethought emits the whole
+ordered UUID subset, including the empty subset. The driver clicks descending
+physical indices, validates remaining and selected UUIDs after every click,
+then confirms. This avoids the installed MCP bulk command's ascending-index
+mutation bug. A partial transaction, unknown owner, missing/duplicate UUID, or
+changed hand stops before any further click. Differential replay excludes UI
+confirmations without an equivalent native state.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
@@ -913,9 +957,19 @@ Warcry, Gambler's Brew, Liquid Memories, and Hologram. The mapping remains
 deliberately bounded: an unrecognized selection prompt, an unavailable runtime
 tracker, or an option list larger than the native representation is rejected.
 The ordinary player limbo pile is serialized. The remaining common combat
-exclusion is live Runic Dome because exact public pre-roll reconstruction has
-not been proven. Other unsupported queue metadata remains outside the
-supported boundary. CTM and Silver results remain separate evaluators, and
+exclusion is live Runic Dome. Native `Monster::rollMove` and
+`CombatKnowledgeState` already represent hidden rolls using public prior move
+history, `pendingMoveRolls`, `pendingDirectMoveChoice`, and roll-time
+`pendingRollInputs`; `apps/runic_dome_lifecycle_test.cpp` checks this native
+lifecycle. The Java producer has no equivalent observer initialized before
+monster pre-battle rolls, no record of executed public moves and deterministic
+overrides, and no persistent provenance for Writhing Mass reroll chains or
+Looter/Mugger direct choices. Current HP cannot replace roll-time HP, and raw
+`nextMove`, private move history, or live RNG would expose hidden information.
+Supporting this boundary requires that public-history observer, capture across
+monster creation/turns/overrides, and native/Java lifecycle parity fixtures;
+removing the importer guard alone cannot provide a fair belief state. Other
+unsupported queue metadata remains outside the supported boundary. CTM and Silver results remain separate evaluators, and
 neither path controls gameplay or establishes policy-quality evidence. Any
 future public-state expansion must add a native parity fixture and an explicit
 public-information contract before promotion.

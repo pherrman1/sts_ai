@@ -15,7 +15,7 @@
 //
 // Layout (all integers little-endian):
 //   [8]  magic  "STSBC\0\0\0\0"
-//   [4]  version (1)
+//   [4]  version (2; reader also accepts version 1)
 //   [4]  total buffer size in bytes
 //   then field groups, each:
 //     [1] group id
@@ -126,7 +126,7 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
     // header: magic + version + total size (patched at the end)
     const char magic[8] = {'S', 'T', 'S', 'B', 'C', 0, 0, 0};
     out.insert(out.end(), magic, magic + 8);
-    putU32(out, 1);                    // version
+    putU32(out, 2);                    // version
     const std::size_t sizePos = out.size();
     putU32(out, 0);                    // total size placeholder
 
@@ -251,9 +251,9 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
         for (int i = 0; i < c.cardsInHand; ++i) serializeCardInstance(g, c.hand[i]);
         // limbo is transient (end-of-turn discard scratch); not serialized.
         for (const auto &sc : c.stasisCards) serializeCardInstance(g, sc);
-        // Format v1 stores concrete pile orders only.
+        // Binary snapshots store concrete pile orders only.
         if (!c.drawPile.isConcrete()) {
-            throw std::logic_error("serializeBattleContext: information-set draw pile is not supported by format v1");
+            throw std::logic_error("serializeBattleContext: information-set draw pile is not supported by the binary snapshot format");
         }
         auto putPile = [&](const auto &pile) {
             putI32(g, (std::int32_t)pile.size());
@@ -299,6 +299,13 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
         putI32(g, bc.floorNum);
         putI32(g, (std::int32_t)bc.encounter);
         putU64(g, bc.seed);
+        putBool(g, csi.setCostToZero);
+        putI32(g, csi.drawAfter);
+        putI32(g, csi.damageAllBeforeBlocks);
+        for (const auto *amounts : {&csi.drawsAfter, &csi.blocksAfter}) {
+            putU32(g, amounts->size());
+            for (int amount : *amounts) putI32(g, amount);
+        }
         putU8(out, 6); putU32(out, (std::uint32_t)g.size());
         out.insert(out.end(), g.begin(), g.end());
     }
@@ -327,7 +334,7 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
         return bc;
     r.pos = 8;
     std::uint32_t version = 0;
-    if (!r.u32(version) || version != 1) return bc;
+    if (!r.u32(version) || (version != 1 && version != 2)) return bc;
     std::uint32_t total = 0;
     if (!r.u32(total) || (std::size_t)total != size) return bc;
 
@@ -518,6 +525,26 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
                     || !r.boolean(cpz) || !r.boolean(can) || !r.i32(pick) || !r.i32(data0)
                     || !r.i32(task) || !r.i32(turn) || !r.i32(floor) || !r.i32(encounter)
                     || !r.u64(seed)) { ok = false; break; }
+                // Version 1 predates explicit offer cost/draw continuation.
+                bool setCostToZero = true;
+                std::int32_t drawAfter = 0;
+                if (version >= 2 && (r.pos + 5 > gend || !r.boolean(setCostToZero)
+                        || !r.i32(drawAfter))) { ok = false; break; }
+                if (version >= 2) {
+                    if (r.pos + 4 > gend || !r.i32(bc.cardSelectInfo.damageAllBeforeBlocks)) { ok = false; break; }
+                    for (auto *amounts : {&bc.cardSelectInfo.drawsAfter, &bc.cardSelectInfo.blocksAfter}) {
+                        std::uint32_t count;
+                        if (r.pos + 4 > gend || !r.u32(count) || count > 128 || r.pos + count*4 > gend) { ok = false; break; }
+                        for (std::uint32_t i = 0; i < count; ++i) {
+                            std::int32_t amount;
+                            if (!r.i32(amount)) { ok = false; break; }
+                            amounts->push_back(amount);
+                        }
+                    }
+                    if (!ok) break;
+                }
+                bc.cardSelectInfo.setCostToZero = setCostToZero;
+                bc.cardSelectInfo.drawAfter = drawAfter;
                 bc.ascension = asc;
                 bc.outcome = (Outcome)outcome;
                 bc.inputState = (InputState)inputState;

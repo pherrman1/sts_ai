@@ -467,6 +467,7 @@ void search::GameAction::execute(GameContext &gc) const {
         } else {
             gc.drinkPotionAtIdx(getIdx1());
         }
+        return;
     }
 
     switch (gc.screenState) {
@@ -738,7 +739,6 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
         case Event::NOTE_FOR_YOURSELF:
         case Event::SCRAP_OOZE:
         case Event::SECRET_PORTAL:
-        case Event::SHINING_LIGHT:
         case Event::THE_JOUST:
         case Event::THE_LIBRARY:
         case Event::THE_MAUSOLEUM:
@@ -860,7 +860,7 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
             }
 
         case Event::GOLDEN_IDOL:
-            if (!gc.relics.has(sts::RelicId::GOLDEN_IDOL)) { // map these to different selections
+            if (gc.info.phase == 0) { // initial offer precedes the trap
                 return 0b11;
             } else { // phase 2
                 return 0b11100;
@@ -896,11 +896,11 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
             }
 
         case Event::THE_CLERIC:
-            if (gc.gold >= (gc.ascension >= 15 ? 75 : 50)) {
-                return 0x7;
-            } else {
-                return 0b101;
-            }
+            return 0b100 | (gc.gold >= 35 ? 1 : 0)
+                | (gc.gold >= (gc.ascension >= 15 ? 75 : 50) ? 2 : 0);
+
+        case Event::SHINING_LIGHT:
+            return gc.deck.getUpgradeableCount() > 0 ? 0b11 : 0b10;
 
         case Event::THE_MOAI_HEAD:
             if (gc.hasRelic(sts::RelicId::GOLDEN_IDOL)) {

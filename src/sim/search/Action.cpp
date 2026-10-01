@@ -149,7 +149,7 @@ bool isValidSingleCardSelectAction(const BattleContext &bc, const search::Action
             return a.getSelectIdx() >= 0 && a.getSelectIdx() < 4;
 
         case CardSelectTask::DISCOVERY:
-            return a.getSelectIdx() >= 0 && a.getSelectIdx() < 3;
+            return a.getSelectIdx() >= 0 && a.getSelectIdx() < (bc.cardSelectInfo.canPickZero ? 4 : 3);
 
         case CardSelectTask::HOLOGRAM:
         case CardSelectTask::LIQUID_MEMORIES_POTION:
@@ -163,8 +163,10 @@ bool isValidSingleCardSelectAction(const BattleContext &bc, const search::Action
             }
             return bc.cards.exhaustPile[a.getSelectIdx()].id != sts::CardId::EXHUME;
 
-        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::FORETHOUGHT:
+            return !bc.cardSelectInfo.canPickAnyNumber && a.getSelectIdx() >= 0 && a.getSelectIdx() < bc.cards.cardsInHand;
+
+        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::NIGHTMARE:
         case CardSelectTask::RECYCLE:
         case CardSelectTask::SETUP:
@@ -228,6 +230,9 @@ bool isValidMultiCardSelectAction(const BattleContext &bc, const search::Action 
             return true;
         }
 
+        case sts::CardSelectTask::FORETHOUGHT:
+            if (!bc.cardSelectInfo.canPickAnyNumber) return false;
+            [[fallthrough]];
         case sts::CardSelectTask::GAMBLE: {
             const auto selected = a.getSelectedIdxs();
             for (auto x : selected) {
@@ -360,13 +365,11 @@ void executeSingleCardSelectActionHelper(BattleContext &bc, search::Action a) {
             break;
 
         case CardSelectTask::CODEX:
-            if (idx != 3) { // idx 3 means skip
-                bc.chooseCodexCard(bc.cardSelectInfo.codexCards()[idx]);
-            }
+            bc.chooseCodexCard(idx == 3 ? CardId::INVALID : bc.cardSelectInfo.codexCards()[idx]);
             break;
 
         case CardSelectTask::DISCOVERY:
-            bc.chooseDiscoveryCard(bc.cardSelectInfo.discovery_Cards()[idx]);
+            if (idx != 3) bc.chooseDiscoveryCard(bc.cardSelectInfo.discovery_Cards()[idx]);
             break;
 
         case CardSelectTask::DUAL_WIELD:
@@ -427,6 +430,10 @@ void executeMultiCardSelectActionHelper(BattleContext &bc, search::Action a) {
 
         case sts::CardSelectTask::EXHAUST_MANY:
             bc.chooseExhaustCards(a.getSelectedIdxs());
+            break;
+
+        case sts::CardSelectTask::FORETHOUGHT:
+            bc.chooseForethoughtCards(a.getSelectedIdxs());
             break;
 
         case sts::CardSelectTask::GAMBLE:
@@ -565,7 +572,8 @@ static void pushMultiSelectActions(std::vector<search::Action> &actions,
             for (int idx : a.getSelectedIdxs()) {
                 key.push_back(cardIdentityKey(bc.cards.hand[idx]));
             }
-            std::sort(key.begin(), key.end());
+            if (bc.cardSelectInfo.cardSelectTask != CardSelectTask::FORETHOUGHT)
+                std::sort(key.begin(), key.end());
             if (!seenKeys.insert(std::move(key)).second) return;
         }
         actions.push_back({a});
@@ -610,7 +618,7 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
             break;
 
         case CardSelectTask::DISCOVERY:
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < (bc.cardSelectInfo.canPickZero ? 4 : 3); ++i) {
                 actions.push_back({Action(search::ActionType::SINGLE_CARD_SELECT, i)});
             }
             break;
@@ -627,8 +635,12 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
                                    [](const auto &c) { return c.getId() != CardId::EXHUME; });
             break;
 
-        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::FORETHOUGHT:
+            if (bc.cardSelectInfo.canPickAnyNumber) pushMultiSelectActions(actions, bc, false);
+            else setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
+            break;
+
+        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::NIGHTMARE:
         case CardSelectTask::RECYCLE:
         case CardSelectTask::SETUP:

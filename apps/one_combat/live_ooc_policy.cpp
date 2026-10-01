@@ -206,7 +206,9 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     OocAdapterOptions options;
     options.sampleNoncombat = true;
     options.checkpointLeaves = true;
-    options.stopAtMapCheckpoint = true;
+    // Qualified public question-room history reconstructs the native chance
+    // counters; successors update those counters through normal transitions.
+    options.stopAtMapCheckpoint = !questionHistoryComplete_;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     const int observedEventRooms = currentActEventVisits;

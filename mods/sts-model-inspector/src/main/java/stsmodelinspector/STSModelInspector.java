@@ -2332,7 +2332,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if ("com.megacrit.cardcrawl.actions.common.PutOnDeckAction".equals(actionClass))
             return hand && !anyNumber && count == 1 ? "WARCRY" : "";
         if ("com.megacrit.cardcrawl.actions.unique.ForethoughtAction".equals(actionClass))
-            return hand && !anyNumber && count == 1 ? "FORETHOUGHT" : "";
+            return hand && ((!anyNumber && count == 1) || (anyNumber && count == 99)) ? "FORETHOUGHT" : "";
         if ("com.megacrit.cardcrawl.actions.unique.SkillFromDeckToHandAction".equals(actionClass))
             return !hand && !anyNumber && count == 1 ? "SECRET_TECHNIQUE" : "";
         if ("com.megacrit.cardcrawl.actions.unique.AttackFromDeckToHandAction".equals(actionClass))
@@ -2372,20 +2372,37 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean hand = "HAND_SELECT".equals(origin);
         boolean qualified = hand ? "WARCRY".equals(task) || "FORETHOUGHT".equals(task)
                 : "GRID".equals(origin) && ("SECRET_TECHNIQUE".equals(task) || "SECRET_WEAPON".equals(task));
-        if (!qualified || canPickZero || anyNumber || count != 1 || selectedCount != 0
+        boolean multiForethought = hand && "FORETHOUGHT".equals(task) && canPickZero && anyNumber && count == 99;
+        if (!qualified || (!multiForethought && (canPickZero || anyNumber || count != 1)) || selectedCount != 0
                 || uuids == null || uuids.isEmpty() || uuids.size() != liveChoiceCount
                 || uuids.contains(null) || uuids.contains("")
                 || new java.util.HashSet<String>(uuids).size() != uuids.size())
             return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_live_choices\"}";
-        String base = selectionJson(task, false, false, 1, null);
+        String base = selectionJson(task, canPickZero, anyNumber, count, null);
         StringBuilder out = new StringBuilder(base.substring(0, base.length() - 1));
-        out.append(",\"origin\":\"").append(origin).append("\",\"liveChoices\":[");
+        out.append(",\"origin\":\"").append(origin).append("\",\"selectedCount\":0");
+        if (multiForethought) out.append(",\"actionClass\":\"com.megacrit.cardcrawl.actions.unique.ForethoughtAction\"");
+        out.append(",\"liveChoices\":[");
         for (int i = 0; i < uuids.size(); ++i) {
             if (i != 0) out.append(',');
             out.append("{\"uuid\":\"").append(escapeJson(uuids.get(i)))
                     .append("\",\"choiceIndex\":").append(i + 1).append('}');
         }
         return out.append("]}").toString();
+    }
+
+    static String completedSingleSelectionJson(String task, String actionClass, int pickCount,
+                                                List<String> selected, int choiceCount,
+                                                boolean canProceed, boolean canCancel) {
+        if (!("WARCRY".equals(task) || "FORETHOUGHT".equals(task))
+                || !task.equals(actionSelectionTask(actionClass, true, false, pickCount))
+                || pickCount != 1 || selected == null || selected.size() != 1
+                || selected.get(0) == null || selected.get(0).isEmpty()
+                || choiceCount != 0 || !canProceed || canCancel) return null;
+        return "{\"task\":\"" + task + "\",\"origin\":\"HAND_SELECT\","
+                + "\"mechanicalTransition\":\"single_select_confirm\",\"actionClass\":\"" + escapeJson(actionClass)
+                + "\",\"pickCount\":1,\"selectedCount\":1,\"selectedUuid\":\"" + escapeJson(selected.get(0))
+                + "\",\"liveChoiceCount\":0,\"canProceed\":true,\"canCancel\":false}";
     }
 
     private static String liveSingleSelectionJson(String task, boolean hand, boolean canPickZero,
@@ -2401,6 +2418,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     : choices.getMethod("getGridScreenCards").invoke(null);
             if (labels instanceof List && cards instanceof List) {
                 choiceCount = ((List<?>) labels).size();
+                if (hand && !canPickZero && !anyNumber && selectedCount == 1) {
+                    List<String> selected = new ArrayList<>();
+                    for (AbstractCard card : AbstractDungeon.handCardSelectScreen.selectedCards.group)
+                        selected.add(card.uuid == null ? null : card.uuid.toString());
+                    Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+                    String confirmation = completedSingleSelectionJson(task, action == null ? "" : action.getClass().getName(),
+                            count, selected, choiceCount,
+                            Boolean.TRUE.equals(choices.getMethod("isConfirmButtonAvailable").invoke(null)),
+                            Boolean.TRUE.equals(choices.getMethod("isCancelButtonAvailable").invoke(null)));
+                    if (confirmation != null) return confirmation;
+                }
                 for (Object value : (List<?>) cards) {
                     if (!(value instanceof AbstractCard)) { uuids.add(null); continue; }
                     AbstractCard card = (AbstractCard) value;
@@ -2441,17 +2469,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     static String cardRewardSelectionJson(String actionClass, Integer copies, Boolean skippable,
                                           String continuation, List<String> cards, boolean plainCards) {
         String reason = "";
-        if ("com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass))
+        boolean codex = "com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass);
+        if (codex && (!"codex_end_turn".equals(continuation) || !Boolean.TRUE.equals(skippable)))
             reason = "silver_card_reward_end_turn_continuation";
-        else if ("com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass))
-            reason = "silver_card_reward_toolbox_cost";
-        else if (!"com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass))
+        else if (!codex && !"com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass)
+                && !"com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass))
             reason = "silver_card_reward_unknown_action";
-        else if (skippable == null || skippable)
-            reason = "silver_card_reward_skip_unrepresentable";
-        else if (copies == null || copies < 1 || copies > 2)
+        else if (skippable == null)
+            reason = "silver_card_reward_skip_unobserved";
+        else if (!codex && (copies == null || copies < 1 || copies > 2))
             reason = "silver_card_reward_copy_count";
-        else if (!"none".equals(continuation) && !"discovery_card".equals(continuation))
+        else if (!codex && !"none".equals(continuation) && !"discovery_card".equals(continuation)
+                && !("toolbox_draw".equals(continuation)
+                    && "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)))
             reason = "silver_card_reward_pending_actions";
         else if (!plainCards || cards == null || cards.size() != 3
                 || new java.util.HashSet<String>(cards).size() != 3 || cards.contains(null)
@@ -2459,10 +2489,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             reason = "silver_card_reward_option_state";
         if (!reason.isEmpty())
             return "{\"task\":\"\",\"origin\":\"CARD_REWARD\",\"unsupportedReason\":\"" + reason + "\"}";
-        StringBuilder out = new StringBuilder("{\"task\":\"DISCOVERY\",\"origin\":\"CARD_REWARD\","
-                + "\"canPickZero\":false,\"canPickAnyNumber\":false,\"pickCount\":1,"
-                + "\"setCostToZero\":true,\"selectedBits\":0,\"data0\":");
-        out.append(copies).append(",\"continuation\":\"").append(continuation).append("\",\"cards\":[");
+        boolean toolbox = "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass);
+        if (toolbox && (copies != 1 || skippable))
+            return "{\"task\":\"\",\"unsupportedReason\":\"silver_card_reward_option_state\"}";
+        StringBuilder out = new StringBuilder("{\"task\":\"" + (codex ? "CODEX" : "DISCOVERY") + "\",\"origin\":\"CARD_REWARD\","
+                + "\"canPickZero\":" + skippable + ",\"canPickAnyNumber\":false,\"pickCount\":1,"
+                + "\"setCostToZero\":" + (!toolbox && !codex) + ",\"selectedBits\":0,\"data0\":");
+        out.append(codex ? 0 : copies).append(",\"continuation\":\"").append(continuation).append("\",\"cards\":[");
         for (int i = 0; i < cards.size(); ++i) {
             if (i != 0) out.append(',');
             out.append('"').append(escapeJson(cards.get(i))).append('"');
@@ -2500,6 +2533,91 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "discovery_card";
     }
 
+    static int toolboxDrawAfter(List<String> classes, Integer amount, boolean ordinaryDraw) {
+        return classes != null && classes.equals(java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.common.DrawCardAction",
+                "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction"))
+                && ordinaryDraw && amount != null && amount >= 1 && amount <= 10 ? amount : -1;
+    }
+
+    static List<Integer> toolboxDrawsAfter(List<String> classes, List<Integer> amounts, boolean ordinaryDraws) {
+        if (classes == null || amounts == null || !ordinaryDraws || classes.size() > 128) return null;
+        List<Integer> result = new ArrayList<>();
+        int enables = 0;
+        for (String name : classes) {
+            if ("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                if (result.size() >= amounts.size()) return null;
+                Integer amount = amounts.get(result.size());
+                if (amount == null || amount < 1 || amount > 10) return null;
+                result.add(amount);
+            } else if ("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) ++enables;
+            else if (!"com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) return null;
+        }
+        return enables == 1 && !result.isEmpty() && result.size() == amounts.size() ? result : null;
+    }
+    private static List<Integer> toolboxDrawsAfter() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
+                || !actions.monsterQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()) return null;
+        List<String> classes = new ArrayList<>(); List<Integer> amounts = new ArrayList<>();
+        boolean ordinary = true;
+        for (Object action : actions.actions) {
+            String name = action.getClass().getName(); classes.add(name);
+            if ("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                amounts.add(readIntField(action, "amount"));
+                ordinary &= Boolean.FALSE.equals(readBooleanField(action, "shuffleCheck"))
+                        && Boolean.TRUE.equals(readBooleanField(action, "clearDrawHistory"))
+                        && readObjectField(action, "followUpAction") == null;
+            }
+        }
+        return toolboxDrawsAfter(classes, amounts, ordinary);
+    }
+
+    static boolean codexEndTurnContinuation(List<String> classes, boolean endTurnQueued,
+                                            boolean queuesEmpty, boolean noOrbs) {
+        return endTurnQueued && queuesEmpty && noOrbs && classes != null && classes.equals(java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.defect.TriggerEndOfTurnOrbsAction"));
+    }
+
+    private static boolean stoneCalendarDamage(Object action) {
+        Object values = readObjectField(action, "damage");
+        if (!hasRelic("StoneCalendar") || !(values instanceof int[])
+                || readObjectField(action, "source") != null
+                || !Boolean.TRUE.equals(readBooleanField(action, "firstFrame"))
+                || !Boolean.FALSE.equals(readBooleanField(action, "utilizeBaseDamage"))
+                || !"THORNS".equals(String.valueOf(readObjectField(action, "damageType")))) return false;
+        int[] damage = (int[]) values;
+        if (damage.length != AbstractDungeon.getMonsters().monsters.size()) return false;
+        for (int amount : damage) if (amount != 52) return false;
+        return true;
+    }
+
+    private static boolean codexEndTurnContinuation() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null) return false;
+        List<String> classes = new ArrayList<>();
+        boolean damageSeen = false, blockSeen = false;
+        for (Object action : actions.actions) {
+            String name = action.getClass().getName();
+            if ("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
+                if (damageSeen || blockSeen || !classes.isEmpty() || !stoneCalendarDamage(action)) return false;
+                damageSeen = true;
+            } else if ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
+                blockSeen = true;
+                Integer amount = readIntField(action, "amount");
+                if (readObjectField(action, "target") != AbstractDungeon.player
+                        || (readObjectField(action, "source") != null && readObjectField(action, "source") != AbstractDungeon.player)
+                        || amount == null || amount < 0 || amount > 999 || !classes.isEmpty()) return false;
+            } else if (!"com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) classes.add(name);
+        }
+        return actions.actions.size() <= 128 && hasRelic("Nilry's Codex") && codexEndTurnContinuation(classes,
+                AbstractDungeon.player.endTurnQueued && !AbstractDungeon.player.isEndingTurn,
+                !actions.turnHasEnded && !actions.monsterAttacksQueued && actions.preTurnActions.isEmpty()
+                    && actions.cardQueue.isEmpty() && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
+                AbstractDungeon.player.maxOrbs == 0 && AbstractDungeon.player.orbs.isEmpty());
+    }
+
     private static String combatCardRewardJson() {
         com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
         Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
@@ -2513,9 +2631,41 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             plain &= !card.upgraded && card.timesUpgraded == 0 && card.misc == 0
                     && card.costForTurn == card.cost && !card.freeToPlayOnce && !card.retain;
         }
-        return cardRewardSelectionJson(action == null ? "" : action.getClass().getName(),
-                readIntField(action, "amount"), readBooleanField(screen, "skippable"),
-                cardRewardContinuation(), ids, plain);
+        Boolean skippable = readBooleanField(screen, "skippable");
+        if (Boolean.TRUE.equals(skippable)) {
+            try {
+                if (!Boolean.TRUE.equals(Class.forName("mcpthespire.ChoiceScreenUtils")
+                        .getMethod("isCancelButtonAvailable").invoke(null))) skippable = null;
+            } catch (ReflectiveOperationException | LinkageError error) { skippable = null; }
+        }
+        String actionClass = action == null ? "" : action.getClass().getName();
+        String continuation = cardRewardContinuation();
+        List<Integer> drawsAfter = null;
+        List<Integer> blocksAfter = new ArrayList<>();
+        int damageAllBeforeBlocks = 0;
+        if ("com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass) && codexEndTurnContinuation()) {
+            continuation = "codex_end_turn";
+            for (Object pending : AbstractDungeon.actionManager.actions) {
+                if ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(pending.getClass().getName()))
+                    blocksAfter.add(readIntField(pending, "amount"));
+                else if ("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(pending.getClass().getName()))
+                    damageAllBeforeBlocks = 52;
+            }
+        }
+        if ("com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)
+                && "unsupported".equals(continuation)) {
+            drawsAfter = toolboxDrawsAfter();
+            if (drawsAfter != null) continuation = "toolbox_draw";
+        }
+        String selection = cardRewardSelectionJson(actionClass, readIntField(action, "amount"),
+                skippable, continuation, ids, plain);
+        if (drawsAfter != null && "toolbox_draw".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"drawsAfter\":" + drawsAfter + "}";
+        if (!blocksAfter.isEmpty() && "codex_end_turn".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"blocksAfter\":" + blocksAfter + "}";
+        if (damageAllBeforeBlocks > 0 && "codex_end_turn".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"damageAllBeforeBlocks\":" + damageAllBeforeBlocks + "}";
+        return selection;
     }
 
     private static String cardSelectionJson() {

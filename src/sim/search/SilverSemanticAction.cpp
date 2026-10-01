@@ -107,8 +107,9 @@ SemanticActionResolution resolveSilverSemanticAction(
             return {false, {}, "live card-select task does not match semantic action"};
         }
         if (semantic.skipCardSelect) {
-            if (live.cardSelectInfo.cardSelectTask != CardSelectTask::CODEX)
-                return {false, {}, "semantic skip is only valid for CODEX"};
+            if (live.cardSelectInfo.cardSelectTask != CardSelectTask::CODEX
+                && !(live.cardSelectInfo.cardSelectTask == CardSelectTask::DISCOVERY && live.cardSelectInfo.canPickZero))
+                return {false, {}, "semantic skip is unavailable for this selection"};
             return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, 3));
         }
         std::string error;

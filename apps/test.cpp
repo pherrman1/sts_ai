@@ -3583,12 +3583,28 @@ int testDesignerInSpireOptions() {
     gc.deck.obtain(gc, CardId::STRIKE_RED, 3);
     gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
 
-    // Option 3: pay 75 gold, transform 2 cards, regain control immediately.
+    // Option 3: pay 75 gold, then choose two distinct public transform targets.
+    const auto beforeTransform=gc.deck.cards;
     gc.chooseEventOption(3);
     check(gc.gold == 425, "option 3: expected gold 425, got " + std::to_string(gc.gold));
     check(gc.curHp == 80, "option 3: expected hp 80, got " + std::to_string(gc.curHp));
-    check(gc.screenState == ScreenState::MAP_SCREEN,
-          "option 3: expected MAP_SCREEN (regain control), got " + std::to_string((int)gc.screenState));
+    check(gc.screenState == ScreenState::CARD_SELECT
+            && gc.info.selectScreenType == CardSelectScreenType::TRANSFORM
+            && gc.info.toSelectCount == 2 && gc.info.haveSelectedCards.empty(),
+          "option 3: expected an unselected two-card transform grid");
+    check(gc.deck.cards.size() == beforeTransform.size() && std::equal(gc.deck.cards.begin(),gc.deck.cards.end(),beforeTransform.begin()), "option 3: deck changed before target selection");
+    if(gc.screenState == ScreenState::CARD_SELECT && gc.info.toSelectCards.size() >= 2) {
+        const int firstTarget=gc.info.toSelectCards[0].deckIdx;
+        gc.chooseSelectCardScreenOption(0);
+        check(gc.screenState == ScreenState::CARD_SELECT && gc.info.haveSelectedCards.size() == 1,
+              "option 3: first selection must leave one pick outstanding");
+        check(gc.deck.cards.size() == beforeTransform.size() && std::equal(gc.deck.cards.begin(),gc.deck.cards.end(),beforeTransform.begin()), "option 3: deck changed before both targets were selected");
+        check(gc.info.toSelectCards[0].deckIdx != firstTarget, "option 3: selected target remained available");
+        gc.chooseSelectCardScreenOption(0);
+        check(gc.screenState == ScreenState::MAP_SCREEN && gc.deck.cards.size() == beforeTransform.size(),
+              "option 3: completed transforms must preserve deck size and return to map");
+        check(gc.gold == 425 && gc.curHp == 80, "option 3: selection charged extra gold or HP");
+    } else check(false, "option 3: insufficient selectable transform targets");
 
     // Option 4: pay 110 gold, open a REMOVE card select (control not regained).
     gc.gold = 500;
