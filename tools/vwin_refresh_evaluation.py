@@ -257,15 +257,19 @@ def sibling_ranking(map_metadata, predictions, branches, reps=2000, seed=0):
     predictions = np.asarray(predictions, dtype=float)
     if predictions.shape != (len(map_metadata),) or not np.all(np.isfinite(predictions)):
         raise ValueError('aligned finite MAP scores required')
-    first, seen_rows = {}, set()
+    first, first_positive, seen_rows = {}, {}, set()
     for row, score in zip(map_metadata, predictions):
         key = int(row['sourceSeed']), row['branchId']
         ordinal = int(row['rowIdx'])
+        if ordinal < 0 or str(row['rowIdx']) != str(ordinal):
+            raise ValueError('malformed MAP rowIdx')
         if (*key, ordinal) in seen_rows:
             raise ValueError('duplicate MAP row identity')
         seen_rows.add((*key, ordinal))
         if key not in first or ordinal < first[key][0]:
             first[key] = ordinal, float(score)
+        if ordinal > 0 and (key not in first_positive or ordinal < first_positive[key][0]):
+            first_positive[key] = ordinal, float(score)
     decisions, seen_branches, types = defaultdict(list), set(), set()
     missing, missing_by_type = 0, defaultdict(int)
     for branch in branches:
@@ -277,12 +281,14 @@ def sibling_ranking(map_metadata, predictions, branches, reps=2000, seed=0):
         types.add(typ)
         if str(branch['valid']) != '1' or str(branch['won']) not in ('0', '1'):
             raise ValueError('invalid branch outcome')
-        if key not in first:
+        # MAP row 0 is captured before the forced branch option executes.
+        selected = first_positive if typ == 'MAP' else first
+        if key not in selected:
             missing += 1
             missing_by_type[typ] += 1
             continue
         decision = key[0], int(branch['decisionIdx']), typ
-        decisions[decision].append((first[key][1], int(branch['won'])))
+        decisions[decision].append((selected[key][1], int(branch['won'])))
     credits = {typ: [] for typ in types}
     pooled = []
     for (source, _, typ), options in decisions.items():
@@ -296,7 +302,8 @@ def sibling_ranking(map_metadata, predictions, branches, reps=2000, seed=0):
         return cluster_mean([p[0] for p in pairs], [p[1] for p in pairs], reps, seed)
     return {'pooled': summary(pooled), 'by_decision_type': {k: summary(v) for k, v in sorted(credits.items())},
             'branches_without_map': missing, 'branches_without_map_by_type': dict(missing_by_type),
-            'total_branches': len(seen_branches), 'join': 'sourceSeed/branchId; minimum recorded rowIdx'}
+            'total_branches': len(seen_branches), 'join': 'sourceSeed/branchId; minimum recorded rowIdx > 0 for MAP branches '
+                    '(skip pre-decision rowIdx=0); minimum recorded rowIdx for non-MAP branches'}
 
 
 def offline_verdict(arms):

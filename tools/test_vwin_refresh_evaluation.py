@@ -108,6 +108,56 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(result['branches_without_map_by_type'], {'rest':1})
         self.assertEqual(result['pooled']['source_seeds'], 1)
 
+    def test_map_skips_common_predecision_score(self):
+        rows = [dict(sourceSeed=1, branchId=k, rowIdx=i)
+                for k in ('winner', 'loser') for i in (0, 1, 2)]
+        branches = [dict(sourceSeed=1, decisionIdx=8, type='MAP',
+                         branchId=k, won=w, valid=1)
+                    for k, w in [('winner', 1), ('loser', 0)]]
+        result = sibling_ranking(rows, [.5, .9, .1, .5, .2, .8], branches)
+        self.assertEqual(result['pooled']['mean'], 1.)
+        self.assertEqual(result['pooled']['n'], 1)
+        # The old minimum-row rule scored the identical row-0 values.
+        old = sibling_ranking(rows, [.5, .9, .1, .5, .2, .8],
+                              [dict(b, type='REST') for b in branches])
+        self.assertEqual(old['pooled']['mean'], .5)
+
+    def test_map_without_postoption_map_is_missing(self):
+        rows = [dict(sourceSeed=1, branchId='a', rowIdx=0),
+                dict(sourceSeed=1, branchId='b', rowIdx=1)]
+        branches = [dict(sourceSeed=1, decisionIdx=8, type='MAP',
+                         branchId=k, won=w, valid=1)
+                    for k, w in [('a', 1), ('b', 0)]]
+        result = sibling_ranking(rows, [.9, .2], branches)
+        self.assertEqual(result['branches_without_map'], 1)
+        self.assertEqual(result['branches_without_map_by_type'], {'MAP': 1})
+        self.assertEqual(result['pooled']['n'], 0)
+
+    def test_nonmap_uses_row_zero(self):
+        for typ in ('CARD_REWARD', 'REST'):
+            with self.subTest(typ=typ):
+                rows = [dict(sourceSeed=1, branchId=k, rowIdx=i)
+                        for k in ('a', 'b') for i in (0, 1)]
+                branches = [dict(sourceSeed=1, decisionIdx=8, type=typ,
+                                 branchId=k, won=w, valid=1)
+                            for k, w in [('a', 1), ('b', 0)]]
+                result = sibling_ranking(rows, [.9, .1, .2, .8], branches)
+                self.assertEqual(result['pooled']['mean'], 1.)
+
+    def test_sibling_duplicate_and_malformed_protection(self):
+        row = dict(sourceSeed=1, branchId='a', rowIdx=0)
+        branch = dict(sourceSeed=1, branchId='a', decisionIdx=1,
+                      type='MAP', won=1, valid=1)
+        with self.assertRaisesRegex(ValueError, 'duplicate MAP'):
+            sibling_ranking([row, row], [.5, .5], [branch])
+        with self.assertRaisesRegex(ValueError, 'duplicate branch'):
+            sibling_ranking([row], [.5], [branch, branch])
+        for ordinal in (-1, 'bad', 1.5):
+            with self.subTest(ordinal=ordinal), self.assertRaises(ValueError):
+                sibling_ranking([dict(row, rowIdx=ordinal)], [.5], [branch])
+        with self.assertRaisesRegex(ValueError, 'invalid branch outcome'):
+            sibling_ranking([row], [.5], [dict(branch, won=2)])
+
     def test_offline_ties_and_separate_raw_gate(self):
         arms = {name:dict(nll=nll,nll_delta_ci95=[-.03,-.01],map_resource_gate=True,win_raw_resource_gate=False)
                 for name,nll in [('X1',.4),('X2',.402),('M1',.5)]}

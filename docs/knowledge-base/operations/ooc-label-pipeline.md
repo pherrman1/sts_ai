@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -463,6 +463,17 @@ does not replace a tracked model, and does not establish gameplay quality.
    source-cluster bootstrap (2,000 replicates), resources and sibling joins.
    A failed evaluation leaves the latch consumed. Recovery requires a
    separately reviewed decision; the CLI never automatically reopens TEST.
+
+Sibling ranking joins `(sourceSeed, branchId)` and scores the first recorded MAP
+state after the branch option executes. For `type=MAP`, the producer records
+`rowIdx=0` before executing the option, so the evaluator uses the minimum
+recorded `rowIdx > 0`. For other decision types it uses the minimum recorded
+`rowIdx`, including zero. A branch without an eligible MAP row contributes to
+`branches_without_map` and its per-type count, not a ranking pair. Duplicate
+row/branch identities and malformed row indices fail closed. Ranking credits
+are 1/0 for correct/incorrect outcome ordering and 0.5 for a predicted tie;
+95% intervals resample whole source seeds. Native B0 parity fixtures explicitly
+use LF line endings for the existing `winnettest` parser.
 
 `qualify-validation RUN` can execute qualification for saved checkpoints when
 no successful resource artifact exists. A failed attempt writes a separate

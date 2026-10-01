@@ -13460,3 +13460,63 @@ runtime support changed.
   result), `evaluation/current-research.md` (§361 open question answered),
   `operations/environment-variables.md`.
 
+
+## §368 — #334 A3 VALIDATION sibling-ranking correction (2026-10-02)
+
+**Scope:** offline diagnostics on the frozen TRAIN/VALIDATION experiment at
+`/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a3-trainval-20261001-50713b83/`.
+Baseline: `50713b83ed972b87d16c86593cfc2820dd6807d5` (PR #392).
+No gameplay seeds, training, collection, C++ build, or TEST evaluation ran.
+
+**Invalidated result:** the old MAP accuracy 0.500 with CI [0.500, 0.500]
+for every arm scored the common pre-decision `rowIdx=0`. The producer captures
+it before executing the forced MAP option. The corrected evaluator uses the
+minimum recorded `rowIdx > 0` for MAP branches, retaining minimum `rowIdx`
+for other types. No producer or frozen data changed.
+
+**Provenance:** the frozen corpus index SHA-256 is
+`ca4b6e2bbcb29d10f83bd90944b991dd7f19eebdf5e19029e7ffac5a049cd87f`. Only 77 VALIDATION components were opened for
+MAP and branch table access (68,903 MAP rows; 2,577 branches). Component
+manifests and opened tables were hash-verified. The four saved checkpoints
+and all 43 frozen files were verified unchanged before/after. Every non-MAP
+ranking summary reproduced the original frozen summary exactly.
+
+**Corrected VALIDATION accuracy [source-cluster 95% CI]:** 2,000 bootstrap
+replicates, seed 0; pair-weighted credits, whole-source resampling. Missing
+post-option MAP branches: **0 for every type and arm**.
+
+| Decision type | Discordant pairs | Sources | B0 | X1 | X2 | M1 |
+| --- | ---: | ---: | --- | --- | --- | --- |
+| BOSS_RELIC | 121 | 36 | 0.6612 [0.5593, 0.7581] | 0.5455 [0.4160, 0.6653] | 0.6736 [0.5702, 0.7689] | 0.5041 [0.3934, 0.6051] |
+| CARD_REWARD | 70 | 25 | 0.4000 [0.2571, 0.5556] | 0.5071 [0.3730, 0.6370] | 0.4786 [0.3380, 0.6232] | 0.4857 [0.3514, 0.6176] |
+| EVENT | 42 | 16 | 0.6667 [0.5000, 0.8163] | 0.7143 [0.5323, 0.8750] | 0.7500 [0.5833, 0.8929] | 0.6429 [0.4473, 0.8298] |
+| MAP | 23 | 17 | 0.5217 [0.3500, 0.7045] | 0.5000 [0.3269, 0.6944] | 0.4565 [0.2917, 0.6500] | 0.3913 [0.2273, 0.5714] |
+| NEOW | 140 | 41 | 0.6571 [0.5352, 0.7660] | 0.5964 [0.4928, 0.6958] | 0.5607 [0.4593, 0.6619] | 0.5071 [0.4130, 0.6030] |
+| OTHER_SELECTOR | 102 | 16 | 0.6225 [0.4505, 0.7710] | 0.6520 [0.4615, 0.8194] | 0.5931 [0.3944, 0.7745] | 0.6961 [0.5163, 0.8348] |
+| REST | 184 | 29 | 0.4429 [0.3481, 0.5389] | 0.4457 [0.3402, 0.5511] | 0.4783 [0.3822, 0.5824] | 0.4402 [0.3268, 0.5604] |
+| SHOP | 181 | 31 | 0.5912 [0.4583, 0.7169] | 0.6022 [0.4711, 0.7188] | 0.6105 [0.5082, 0.7083] | 0.5801 [0.4573, 0.6919] |
+| TREASURE | 7 | 7 | 0.5714 [0.1429, 0.8571] | 0.3571 [0.0714, 0.7143] | 0.5000 [0.1429, 0.8571] | 0.7143 [0.4250, 1.0000] |
+
+**SPARSE_RANKING_SIGNAL = YES:** MAP (23 pairs) and TREASURE (7 pairs)
+remain below 30 valid discordant pairs. The corrected MAP intervals provide
+limited precision; this is no TEST verdict or model-promotion evidence.
+
+**Native B0 parity:** PASS on the first 64 VALIDATION MAP rows after the
+LF-only fixture correction; maximum absolute error
+`5.734090424702742e-09` < `1e-4`. Existing executable SHA-256
+`8175c9dc91aa5029e47b3e74f511128b3af575382ae52bf1f7fea811d464b1f6`; frozen B0 SHA-256
+`fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`. No native parser/model changes or rebuild.
+
+**Unchanged evidence:** X1 half TRAIN NLL `0.47293937`, full TRAIN NLL
+`0.44453298`, delta `+0.02840638536`; `DATA_SCALE_SIGNAL` remains valid.
+`REAL_TEST_OPENED=false`; no TEST latch exists. Smoke/frozen TEST status is
+unchanged. The frozen tooling identity still binds the original source;
+this correction does not authorize opening TEST with changed tooling.
+
+**Evidence:** `/tmp/vwin-ranking-review-20261002/` contains the bounded
+recomputation script, full-precision ranking/provenance JSON, before/after
+frozen hashes and verification logs. `ranking.json` SHA-256:
+`1a49609b20195b86ad5bb9ab6accaf67511ad2da2ba399eda14099ed5d3b9826`.
+
+**Knowledge impact:** maintained A3 ranking/parity semantics in
+`operations/ooc-label-pipeline.md`; this ledger corrects scientific evidence.
