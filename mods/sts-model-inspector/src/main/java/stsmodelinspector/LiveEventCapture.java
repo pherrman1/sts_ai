@@ -43,7 +43,7 @@ final class LiveEventCapture {
         phases(LEAVES,"2","GoldenIdolEvent","Nest","WindingHalls","Duplicator");
         phases(LEAVES,"COMPLETE","ShiningLight","GoldShrine","UpgradeShrine","PurificationShrine","Transmogrifier","Bonfire","TheJoust","NoteForYourself","Lab","WeMeetAgain","KnowingSkull");
         phases(LEAVES,"RESULT","BigFish","LivingWall","TheMausoleum","TombRedMask","FaceTrader","Falling","WomanInBlue");
-        phases(LEAVES,"LEAVE","Beggar","MindBloom","Colosseum","SecretPortal");
+        phases(LEAVES,"LEAVE","Beggar","MindBloom","Colosseum","SecretPortal","SensoryStone");
         phases(LEAVES,"END","MaskedBandits","CursedTome","MysteriousSphere");
         phases(LEAVES,"MAP","GoldenWing");
         phases(LEAVES,"DISAGREE|COMPLETE","Sssserpent");

@@ -8,6 +8,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <tuple>
 
 #include "combat/Actions.h"
 #include "combat/BattleContext.h"
@@ -22,6 +23,7 @@
 #include "sim/search/SilverWireState.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/Action.h"
+#include "sim/search/SilverRolloutAgent.h"
 #include "one_combat/native_silver_advisor.h"
 
 using nlohmann::json;
@@ -1205,6 +1207,12 @@ json producerQueueJson(const CardQueueItemWire &queue) {
         out["card"] = cardJson(queue.card);
     return out;
 }
+json producerCleanupJson(const json &queue) {
+    return json{{"kind","USE_CARD"},{"uuid",queue.at("card").at("uuid")},
+        {"actionClass","com.megacrit.cardcrawl.actions.utility.UseCardAction"},
+        {"unstarted",true},{"returnToHand",false},{"reboundCard",false},{"triggerOnUse",true},
+        {"exhaustOnUse",queue.at("exhaustOnUse")},{"purgeOnUse",queue.at("purgeOnUse")},{"autoplay",queue.at("autoplay")}};
+}
 void setProducerV4CardObservation(json &observationJson, const BattleStateWire &wire) {
     auto &root = observationJson["silverRoot"];
     auto &combat = root["combat"];
@@ -1520,6 +1528,327 @@ int main() {
                     if(!dead.ok || dead.wire.monsters[0].pendingMoveRolls) throw std::runtime_error("small Acid dead slot: "+dead.reason);
                 }
             }
+            // Public stun overrides cancel the former hidden roll. Byrd's
+            // headbutt directly selects Fly; Shelled's stun instead inserts
+            // Fell into history BEFORE another hidden roll.
+            for(const std::string id:{"Byrd","Shelled Parasite"}) for(int phase=0;phase<3;++phase) {
+                if(id=="Shelled Parasite" && phase==2) continue;
+                std::vector<int> history=phase==0?std::vector<int>{}:phase==1?std::vector<int>{4}:std::vector<int>{4,5};
+                auto obs=groupDome({id},{history});obs["silverRoot"]["act"]=2;
+                auto &k=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                k["schemaVersion"]=3;k["totalRolls"]=phase?2:1;
+                k["knownTransitions"]=(phase==2 || (id=="Shelled Parasite" && phase==1))?2:1;
+                k["generation"]=phase+k["totalRolls"].get<int>()+k["knownTransitions"].get<int>();
+                k["pendingMoveRolls"]=phase==1?1:0;
+                k["knownNextMove"]=phase==1?json(nullptr):json{{"kind",phase==0?"public_stun_override":"byrd_headbutt_fly"},{"move",phase==0?4:2}};
+                k["knownRollPredecessor"]=id=="Shelled Parasite" && phase==1?json("shelled_stun_fell"):json(nullptr);
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome public stun lifecycle "+id+": "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);const auto rng=bc.aiRng;
+                auto &m=bc.monsters.arr[0];m.materializePendingMove(bc);
+                if(phase!=1 && (bc.aiRng!=rng || m.moveHistory[0]!=(phase==0?(id=="Byrd"?MMID::BYRD_STUNNED:MMID::SHELLED_PARASITE_STUNNED):MMID::BYRD_FLY)))
+                    throw std::runtime_error("Dome public override consumed RNG or lost move");
+                if(phase==1 && id=="Byrd" && m.moveHistory[0]!=MMID::BYRD_HEADBUTT)
+                    throw std::runtime_error("Byrd post-stun must roll Headbutt");
+                if(phase==1 && id=="Shelled Parasite" && m.moveHistory[1]!=MMID::SHELLED_PARASITE_FELL)
+                    throw std::runtime_error("Shelled post-stun predecessor lost");
+                auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("knownRollPredecessor");
+                if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("missing public predecessor proof accepted");
+            }
+            {
+                auto obs=groupDome({"Exploder","Repulsor"},{{1,2},{1,1}});
+                obs["silverRoot"]["act"]=3;obs["silverRoot"]["playerTurn"]=4;obs["silverRoot"]["combat"]["turn"]=4;
+                auto &c=obs["silverRoot"]["combat"];
+                for(auto &k:c["runicDomeKnowledge"]["monsters"]) {k["completedTurns"]=3;k["generation"]=7;}
+                c["monsters"][0]["hp"]=0;c["monsters"][0]["powers"].push_back({{"id","Explosive"},{"amount",1}});
+                c["runicDomeKnowledge"]["monsters"][0]["pendingMoveRolls"]=0;
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingMoveRolls) throw std::runtime_error("dead Exploder retained public countdown: "+imported.reason);
+            }
+            for(int phase=0;phase<9;++phase) {
+                const int publicMoves[]={6,2,7,5,1,3,4,5};
+                std::vector<int> history;for(int i=std::max(0,phase-2);i<phase;++i) history.push_back(publicMoves[i]);
+                auto obs=groupDome({"TheGuardian"},{history});obs["silverRoot"]["encounter"]="THE_GUARDIAN";
+                auto &c=obs["silverRoot"]["combat"];c["turn"]=phase+1;obs["silverRoot"]["playerTurn"]=phase+1;
+                auto &k=c["runicDomeKnowledge"]["monsters"][0];k["schemaVersion"]=3;k["completedTurns"]=phase;
+                k["totalRolls"]=1;k["knownTransitions"]=phase+(phase>=4?1:0);k["generation"]=phase+1+k["knownTransitions"].get<int>();
+                k["publicMisc"]=phase>=7?40:30;k["pendingMoveRolls"]=phase?0:1;k["knownRollPredecessor"]=nullptr;
+                const int next[]={0,3,7,4,5,6,2,5};
+                const int target=phase==4?1:phase?next[publicMoves[phase-1]]:6;
+                k["knownNextMove"]=phase?json{{"kind",phase==4?"guardian_defensive_override":"guardian_public_cycle"},{"move",target}}:json(nullptr);
+                if(phase<4 || phase>=7) c["monsters"][0]["powers"].push_back({{"id","Mode Shift"},{"amount",phase>=7?40:30}});
+                if(phase==5 || phase==6) c["monsters"][0]["powers"].push_back({{"id","Sharp Hide"},{"amount",3}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome Guardian public phase: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);const auto rng=bc.aiRng;
+                bc.monsters.arr[0].materializePendingMove(bc);
+                if(javaMoveByte("TheGuardian",bc.monsters.arr[0].moveHistory[0])!=target || (phase && bc.aiRng!=rng))
+                    throw std::runtime_error("Guardian phase consumed RNG or changed move");
+                if(phase==4) {
+                    c["monsters"][0]["powers"].push_back({{"id","Mode Shift"},{"amount",1}});
+                    if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("Guardian contradictory forced defense accepted");
+                }
+            }
+            for(int completed=0;completed<=17;++completed) {
+                const int cycle[]={4,2,4,3,2,4,6};
+                const auto executed=[&](int i){return i==0?5:i==1?1:cycle[(i-2)%7];};
+                std::vector<int> history;for(int i=std::max(0,completed-2);i<completed;++i) history.push_back(executed(i));
+                auto obs=groupDome({"Hexaghost"},{history});obs["silverRoot"]["encounter"]="HEXAGHOST";
+                auto &c=obs["silverRoot"]["combat"];c["turn"]=completed+1;obs["silverRoot"]["playerTurn"]=completed+1;
+                auto &k=c["runicDomeKnowledge"]["monsters"][0];k["schemaVersion"]=3;k["completedTurns"]=completed;
+                k["totalRolls"]=std::max(1,completed);k["knownTransitions"]=completed?1+(completed-1)/7:0;
+                k["generation"]=completed+k["totalRolls"].get<int>()+k["knownTransitions"].get<int>();
+                k["publicMisc"]=completed?4:0;k["pendingMoveRolls"]=completed==1?0:1;
+                k["knownNextMove"]=completed==1?json{{"kind","hexaghost_activate"},{"move",1}}:json(nullptr);
+                const bool inferno=completed>=2 && (completed-2)%7==6;
+                k["knownRollPredecessor"]=inferno?json("hexaghost_inferno_predecessor"):json(nullptr);
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome Hex public phase: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);const auto rng=bc.aiRng;
+                bc.monsters.arr[0].materializePendingMove(bc);
+                if(javaMoveByte("Hexaghost",bc.monsters.arr[0].moveHistory[0])!=executed(completed)
+                        || (completed==1 && bc.aiRng!=rng)
+                        || bc.monsters.arr[0].uniquePower0!=(completed==1?6:completed>=2?(completed-2)%7:0))
+                    throw std::runtime_error("Hex public cycle/RNG/orb count parity");
+                if(completed==0) {
+                    const auto before=bc.aiRng;bc.player.curHp=47;bc.monsters.arr[0].takeTurn(bc);
+                    if(bc.aiRng!=before || bc.monsters.arr[0].miscInfo!=4 || bc.monsters.arr[0].uniquePower0!=6)
+                        throw std::runtime_error("Hex Activate public HP or phantom RNG draw");
+                }
+                if(inferno) {
+                    auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["knownRollPredecessor"]=nullptr;
+                    if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("Hex missing extra setter accepted");
+                }
+                if(completed==8) {
+                    bc.cards.drawPile.assignConcrete({CardInstance(CardId::BURN),CardInstance(CardId::STRIKE_RED)});
+                    bc.cards.discardPile.clear();bc.cards.discardPile.push_back(CardInstance(CardId::BURN));
+                    bc.cards.exhaustPile.clear();bc.cards.exhaustPile.push_back(CardInstance(CardId::BURN));
+                    bc.cards.cardsInHand=1;bc.cards.hand[0]=CardInstance(CardId::BURN);
+                    const auto before=bc.aiRng;Actions::BurnIncreaseAction()(bc);
+                    if(!bc.cards.drawPile[0].isUpgraded() || bc.cards.drawPile[1].isUpgraded()
+                            || bc.cards.discardPile.size()!=4 || bc.cards.hand[0].isUpgraded()
+                            || bc.cards.exhaustPile[0].isUpgraded() || bc.aiRng!=before)
+                        throw std::runtime_error("Hex Inferno BurnIncrease pile semantics");
+                    for(const auto &card:bc.cards.discardPile) if(card.getId()!=CardId::BURN || !card.isUpgraded())
+                        throw std::runtime_error("Hex Inferno did not add exactly three upgraded Burns");
+                }
+            }
+            // Lagavulin public natural wake and awake/event override.
+            for(int mode=0;mode<3;++mode) for(int phase=0;phase<6;++phase) {
+                const std::vector<int> sequence=mode==0?std::vector<int>{5,5,5,3,3,1}:mode==1?std::vector<int>{4,3,3,1,3,3}:std::vector<int>{1,3,3,1,3,3};
+                std::vector<int> history(sequence.begin()+std::max(0,phase-2),sequence.begin()+phase);
+                auto obs=groupDome({"Lagavulin"},{history});obs["silverRoot"]["encounter"]=mode==2?"LAGAVULIN_EVENT":"LAGAVULIN";
+                auto &c=obs["silverRoot"]["combat"];c["turn"]=phase+1;obs["silverRoot"]["playerTurn"]=phase+1;
+                auto &k=c["runicDomeKnowledge"]["monsters"][0];k["schemaVersion"]=3;k["completedTurns"]=phase;
+                const bool known=mode==0?phase==3:phase==0;
+                k["totalRolls"]=mode==0?phase+1-(phase>=3?1:0):phase+1;k["knownTransitions"]=mode==0?std::min(phase,3):1;
+                k["generation"]=phase+k["totalRolls"].get<int>()+k["knownTransitions"].get<int>();
+                k["pendingMoveRolls"]=known?0:1;k["publicAsleep"]=mode==0 && phase<3;k["publicSleepTurns"]=mode==0?std::min(phase,3):0;
+                k["knownNextMove"]=known?json{{"kind",mode==0?"lagavulin_natural_wake":mode==1?"public_stun_override":"lagavulin_awake_event"},{"move",mode==0?3:mode==1?4:1}}:json(nullptr);
+                k["knownRollPredecessor"]=mode==0 && phase>0 && phase<3?json("lagavulin_sleep_predecessor"):json(nullptr);
+                if(mode==0 && phase<3) c["monsters"][0]["powers"].push_back({{"id","Metallicize"},{"amount",8}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);if(!imported.ok) throw std::runtime_error("Dome Lagavulin public phase: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);const auto rng=bc.aiRng;auto &m=bc.monsters.arr[0];m.materializePendingMove(bc);
+                const auto target=sequence[phase]==1?MMID::LAGAVULIN_SIPHON_SOUL:sequence[phase]==3?MMID::LAGAVULIN_ATTACK:MMID::LAGAVULIN_SLEEP;
+                if(m.moveHistory[0]!=target || (known && bc.aiRng!=rng)) throw std::runtime_error("Laga deferred phase/RNG mismatch");
+                if(mode==0 && phase==2) {const auto before=bc.aiRng;m.takeTurn(bc);
+                    if(bc.aiRng!=before || m.hasStatus<MS::ASLEEP>() || m.hasStatus<MS::METALLICIZE>() || m.moveHistory[0]!=MMID::LAGAVULIN_ATTACK)
+                        throw std::runtime_error("Laga natural third wake must not roll");}
+            }
+            for(const std::string id:{"Looter","Mugger"}) for(bool lunge:{false,true}) {
+                const std::vector<int> sequence=lunge?std::vector<int>{1,1,4,2,3}:std::vector<int>{1,1,2,3};
+                for(int completed=0;completed<=static_cast<int>(sequence.size());++completed) {
+                    std::vector<int> history(sequence.begin()+std::max(0,completed-2),sequence.begin()+completed);
+                    auto obs=groupDome({id,"JawWorm"},{history,history});obs["silverRoot"]["act"]=1;
+                    auto &c=obs["silverRoot"]["combat"];c["turn"]=completed+1;obs["silverRoot"]["playerTurn"]=completed+1;
+                    // Companion keeps the combat alive after the public escape.
+                    auto &companion=c["runicDomeKnowledge"]["monsters"][1];companion["completedTurns"]=completed;companion["generation"]=2*completed+1;
+                    companion["executedMoves"]=completed==0?json::array():completed==1?json::array({1}):json::array({1,1});
+                    auto &k=c["runicDomeKnowledge"]["monsters"][0];k["schemaVersion"]=3;k["completedTurns"]=completed;k["totalRolls"]=1;
+                    k["directChoices"]=completed>=2?1:0;k["knownTransitions"]=completed-(completed>=2?1:0);k["generation"]=2*completed+1;
+                    const bool escaped=completed==static_cast<int>(sequence.size()),direct=completed==2;
+                    k["pendingDirectMoveChoice"]=direct?1:0;k["pendingMoveRolls"]=completed?0:1;k["knownRollPredecessor"]=nullptr;
+                    k["knownNextMove"]=completed && !direct && !escaped?json{{"kind","thief_public_cycle"},{"move",sequence[completed]}}:json(nullptr);
+                    k["publicMisc"]=completed==0?0:completed==1?15:22;
+                    c["monsters"][0]["powers"].push_back({{"id","Thievery"},{"amount",15}});c["monsters"][0]["escaping"]=escaped;
+                    if(direct) k["pendingAttackPredicates"]=json::array({json::array({1,lunge})});
+                    auto imported=one_combat::advisor::importSilverRoot(obs);if(!imported.ok) throw std::runtime_error("Dome thief public phase: "+imported.reason);
+                    if(completed && !(imported.wire.miscBits & 1U)) throw std::runtime_error("thief public stolen-gold flag lost");
+                    auto bc=battleContextFromWire(imported.wire);auto &m=bc.monsters.arr[0];const auto rng=bc.aiRng;
+                    if(direct) {
+                        auto policyState=bc;policyState.monsters.monsterCount=1;policyState.monsters.monstersAlive=1;
+                        SilverRolloutAgent policy(false,0,1);
+                        if(policy.getIncomingDamage(policyState)!=5) throw std::runtime_error("direct-only hidden intent used stale MUG damage");
+                        policy.materializeHiddenIntents(policyState);
+                        if(policyState.monsters.arr[0].pendingDirectMoveChoice || policyState.monsters.arr[0].isAttacking()!=lunge
+                                || (!lunge && policy.getIncomingDamage(policyState)!=0)) throw std::runtime_error("rollout boundary ignored direct Spot evidence");
+                    }
+                    m.materializePendingMove(bc);
+                    if(!escaped && javaMoveByte(id.c_str(),m.moveHistory[0])!=sequence[completed]) throw std::runtime_error("thief isolated choice/known successor mismatch");
+                    if(completed && !direct && bc.aiRng!=rng) throw std::runtime_error("known thief successor consumed RNG");
+                    if(escaped && (bc.monsters.monstersAlive!=1 || m.pendingDirectMoveChoice || m.pendingMoveRolls)) throw std::runtime_error("escaped thief retained latent intent");
+                }
+            }
+            for(int deathTurn:{0,2}) for(int phase=0;phase<4;++phase) {
+                const int completed=deathTurn+phase;
+                std::vector<int> bossHistory;for(int i=0;i<deathTurn;++i) bossHistory.push_back(i==0?1:2);
+                for(int i=0;i<phase;++i) bossHistory.push_back(i==0?3:i==1?5:6);
+                if(bossHistory.size()>2) bossHistory.erase(bossHistory.begin(),bossHistory.end()-2);
+                std::vector<int> cultistHistory;for(int i=std::max(0,completed-2);i<completed;++i) cultistHistory.push_back(i==0?3:1);
+                auto obs=groupDome({"Cultist","Cultist","AwakenedOne"},{cultistHistory,cultistHistory,bossHistory});
+                obs["silverRoot"]["act"]=3;obs["silverRoot"]["encounter"]="AWAKENED_ONE";obs["silverRoot"]["playerTurn"]=completed+1;
+                auto &c=obs["silverRoot"]["combat"];c["turn"]=completed+1;
+                for(auto &row:c["runicDomeKnowledge"]["monsters"]) {row["completedTurns"]=completed;row["generation"]=2*completed+1;}
+                auto &m=c["monsters"][2];m["hp"]=phase?300:0;m["maxHp"]=300;m["halfDead"]=phase==0;
+                auto &k=c["runicDomeKnowledge"]["monsters"][2];k["schemaVersion"]=3;k["totalRolls"]=completed+1;k["knownTransitions"]=2;
+                k["generation"]=2*completed+3;k["publicMisc"]=phase?1:0;k["rollHp"]=300;k["rollMaxHp"]=300;
+                k["pendingMoveRolls"]=phase?1:0;k["knownRollPredecessor"]=nullptr;
+                k["knownNextMove"]=phase?json(nullptr):json{{"kind","awakened_public_rebirth"},{"move",3}};
+                auto imported=one_combat::advisor::importSilverRoot(obs);if(!imported.ok) throw std::runtime_error("Dome Awakened public phase: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);auto &boss=bc.monsters.arr[2];boss.materializePendingMove(bc);
+                if(phase==0) {
+                    if(!boss.halfDead || boss.moveHistory[0]!=MMID::AWAKENED_ONE_REBIRTH || boss.moveHistory[1]!=MMID::AWAKENED_ONE_REBIRTH)
+                        throw std::runtime_error("Awakened duplicate known Rebirth lost");
+                    auto expected=bc.aiRng;expected.random(99);boss.takeTurn(bc);
+                    while(!bc.actionQueue.isEmpty()) {auto action=bc.actionQueue.popFront();action(bc);}
+                    boss.materializePendingMove(bc);
+                    if(boss.halfDead || boss.curHp!=300 || boss.miscInfo!=1 || boss.moveHistory[0]!=MMID::AWAKENED_ONE_DARK_ECHO || bc.aiRng!=expected)
+                        throw std::runtime_error("Awakened rebirth/Echo deferred draw parity");
+                    auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][2]["knownTransitions"]=1;
+                    bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][2]["generation"]=2*completed+2;
+                    if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("missing duplicate Rebirth proof accepted");
+                } else if(!boss.hasStatus<MS::MINION_LEADER>() || (phase==1 && boss.moveHistory[0]!=MMID::AWAKENED_ONE_DARK_ECHO)
+                        || (phase>1 && boss.moveHistory[0]!=MMID::AWAKENED_ONE_SLUDGE && boss.moveHistory[0]!=MMID::AWAKENED_ONE_TACKLE))
+                    throw std::runtime_error("Awakened public second-form semantics lost");
+            }
+            // Ordinary Act 2/3 lifecycles: no queued byte is supplied. Import
+            // exactly public execution history, then compare deferred sampling
+            // to the native transition from those same public roll-time inputs.
+            for(const auto &[name,history]:std::vector<std::pair<std::string,std::vector<int>>>{
+                    {"Chosen",{5,4}},{"SnakePlant",{1,2}},{"Snecko",{1,2}},
+                    {"SphericGuardian",{2,4}},{"Exploder",{1,1}},{"Repulsor",{2,1}},
+                    {"Maw",{2,5}},{"Nemesis",{2,4}},{"Orb Walker",{1,2}},
+                    {"GiantHead",{1,3}},{"Spiker",{2,1}},{"Serpent",{2,1}},
+                    {"SlaverBoss",{2,2}},{"GremlinFat",{2,2}},{"BookOfStabbing",{1,2}},{"TimeEater",{2,3}}}) {
+                for(int completed=0;completed<=2;++completed) {
+                    std::vector<int> executed(history.begin(),history.begin()+completed);
+                    auto obs=groupDome({name},{executed});obs["silverRoot"]["act"]=3;
+                    auto &k=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                    k["playerConstricted"]=true;
+                    k["publicMisc"]=name=="Spiker"?std::count(executed.begin(),executed.end(),2)
+                        :name=="BookOfStabbing"?1+std::count(executed.begin(),executed.end(),1):0;
+                    if(name=="Exploder") obs["silverRoot"]["combat"]["monsters"][0]["powers"].push_back({{"id","Explosive"},{"amount",3-completed}});
+                    const auto imported=one_combat::advisor::importSilverRoot(obs);
+                    if(!imported.ok) throw std::runtime_error("expanded Dome import "+name+": "+imported.reason);
+                    auto actual=battleContextFromWire(imported.wire), reference=actual;
+                    auto &m=actual.monsters.arr[0];auto &r=reference.monsters.arr[0];
+                    r.pendingMoveRolls=0;r.rollMoveFromInputs(reference,m.pendingRollInputs);m.materializePendingMove(actual);
+                    if(!std::equal(std::begin(m.moveHistory),std::end(m.moveHistory),std::begin(r.moveHistory))
+                            || m.miscInfo!=r.miscInfo || actual.aiRng!=reference.aiRng)
+                        throw std::runtime_error("expanded Dome future transition "+name);
+                }
+            }
+            for(const auto &ids:std::vector<std::vector<std::string>>{{"Centurion","Healer"},{"Deca","Donu"}}) {
+                const bool bosses=ids[0]=="Deca";
+                auto obs=groupDome(ids,bosses?std::vector<std::vector<int>>{{0},{2}}:std::vector<std::vector<int>>{{1},{3}});
+                obs["silverRoot"]["act"]=bosses?3:2;
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("expanded Dome pair "+ids[0]+": "+imported.reason);
+                auto actual=battleContextFromWire(imported.wire);
+                for(int slot=0;slot<2;++slot) actual.monsters.arr[slot].materializePendingMove(actual);
+                if(bosses && (actual.monsters.arr[0].moveHistory[0]!=MMID::DECA_SQUARE_OF_PROTECTION
+                        || actual.monsters.arr[1].moveHistory[0]!=MMID::DONU_BEAM))
+                    throw std::runtime_error("Donu/Deca deferred alternation");
+            }
+            for(const auto &[name,history,next,misc]:std::vector<std::tuple<std::string,std::vector<int>,int,int>>{
+                    {"GremlinThief",{1,1},1,0},{"GremlinWarrior",{1,1},1,0},{"GremlinWizard",{2,2},2,2},
+                    {"GremlinTsundere",{1,1},2,0},{"BanditBear",{2,3},1,0},{"BanditLeader",{2,3},1,0},
+                    {"BanditChild",{1,1},1,0},{"Transient",{1,1},1,0}}) {
+                auto obs=groupDome({name},{history});obs["silverRoot"]["act"]=2;
+                auto &k=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                k["publicMisc"]=misc;k["pendingMoveRolls"]=0;
+                k["knownNextMove"]={{"kind","public_deterministic_transition_v1"},{"move",next}};
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome known public transition "+name+": "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);const auto rng=bc.aiRng;
+                bc.monsters.arr[0].materializePendingMove(bc);
+                if(bc.aiRng!=rng || bc.monsters.arr[0].moveHistory[0]!=*one_combat::advisor::live_silver::monsterMove(name,next))
+                    throw std::runtime_error("known deterministic move sampled hidden RNG "+name);
+                k["knownNextMove"]["move"]=next==1?2:1;
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("false deterministic proof accepted "+name);
+            }
+            {
+                auto obs=groupDome({"WrithingMass"},{{1}});
+                auto &k=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                k["schemaVersion"]=2;k["totalRolls"]=4;k["generation"]=5;k["pendingMoveRolls"]=3;
+                k["pendingRollInputs"]=json::array();
+                for(int hp:{35,32,30}) k["pendingRollInputs"].push_back({{"rollHp",hp},{"rollMaxHp",40},
+                    {"firstHp",hp},{"firstMaxHp",40},{"firstAlive",true},{"aliveCount",1},{"playerConstricted",false}});
+                k["pendingAttackPredicates"]=json::array({json::array({1,true}),json::array({2,false}),json::array({3,true})});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingRollInputHistory.size()!=3)
+                    throw std::runtime_error("reactive Dome chain import: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);bc.monsters.arr[0].materializePendingMove(bc);
+                if(!bc.monsters.arr[0].isAttacking() || bc.monsters.arr[0].pendingMoveRolls)
+                    throw std::runtime_error("reactive Dome public predicates not conditioned");
+                k["pendingRollInputs"].erase(k["pendingRollInputs"].begin());
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("compressed reactive roll history accepted");
+            }
+            {
+                auto obs=groupDome({"Champ"},{{2,7}});obs["silverRoot"]["act"]=2;
+                obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["publicMisc"]=5;
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].miscInfo!=5) throw std::runtime_error("Champ public phase: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);bc.monsters.arr[0].materializePendingMove(bc);
+                if(bc.monsters.arr[0].moveHistory[0]!=MMID::THE_CHAMP_EXECUTE) throw std::runtime_error("Champ executed Anger phase lost");
+                obs=groupDome({"SlaverBoss","GremlinNob"},{{2},{3}});obs["silverRoot"]["act"]=2;
+                obs["silverRoot"]["encounter"]="COLOSSEUM_EVENT_NOBS";
+                if(!one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("source-qualified Colosseum Nob rejected");
+                obs=groupDome({"JawWorm","JawWorm","JawWorm"},{{},{},{}});
+                obs["silverRoot"]["act"]=3;obs["silverRoot"]["encounter"]="JAW_WORM_HORDE";
+                imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("public hard Jaw horde: "+imported.reason);
+                bc=battleContextFromWire(imported.wire);
+                for(int slot=0;slot<3;++slot) {
+                    auto &jaw=bc.monsters.arr[slot];int misc=0;
+                    if(jaw.getMoveForRoll(bc,jaw.pendingRollInputs,misc,99)!=MMID::JAW_WORM_BELLOW)
+                        throw std::runtime_error("hard Jaw incorrectly forced ordinary opening");
+                }
+                auto mad=battleContextFromWire(fixtures[1].wire);mad.monsters.arr[0].id=MonsterId::MAD_GREMLIN;
+                mad.monsters.arr[0].moveHistory[0]=MMID::MAD_GREMLIN_SCRATCH;
+                const auto rng=mad.aiRng;mad.monsters.arr[0].takeTurn(mad);
+                while(!mad.actionQueue.isEmpty()) {auto action=mad.actionQueue.popFront();action(mad);}
+                if(mad.aiRng!=rng) throw std::runtime_error("Mad Gremlin consumed phantom roll");
+            }
+            // Independent vanilla-table expectations, including paths ordinary
+            // native simulation previously bypassed with direct setMove.
+            {
+                auto bc=battleContextFromWire(fixtures[1].wire);auto &m=bc.monsters.arr[0];
+                const auto expect=[&](MonsterId id,MonsterMoveId last,MonsterMoveId before,int roll,MonsterMoveId wanted,int turn=1,int asc=0) {
+                    m.id=id;m.moveHistory[0]=last;m.moveHistory[1]=before;bc.ascension=asc;
+                    auto in=m.captureRollInputs(bc);in.monsterTurnNumber=turn;in.curHp=30;in.maxHp=40;
+                    in.knightCurHp=30;in.knightMaxHp=40;in.knightAlive=true;int data=0;
+                    if(m.getMoveForRoll(bc,in,data,roll)!=wanted) throw std::runtime_error("expanded vanilla-table boundary "+std::to_string(static_cast<int>(id)));
+                };
+                expect(MonsterId::MYSTIC,MMID::MYSTIC_BUFF,MMID::INVALID,0,MMID::MYSTIC_HEAL);
+                expect(MonsterId::MYSTIC,MMID::MYSTIC_HEAL,MMID::MYSTIC_HEAL,0,MMID::MYSTIC_BUFF);
+                expect(MonsterId::SNAKE_PLANT,MMID::SNAKE_PLANT_CHOMP,MMID::SNAKE_PLANT_ENFEEBLING_SPORES,65,MMID::SNAKE_PLANT_CHOMP,1,17);
+                expect(MonsterId::SPHERIC_GUARDIAN,MMID::SPHERIC_GUARDIAN_ACTIVATE,MMID::INVALID,99,MMID::SPHERIC_GUARDIAN_ATTACK_DEBUFF);
+                expect(MonsterId::SPHERIC_GUARDIAN,MMID::SPHERIC_GUARDIAN_ATTACK_DEBUFF,MMID::SPHERIC_GUARDIAN_ACTIVATE,0,MMID::SPHERIC_GUARDIAN_SLAM);
+                expect(MonsterId::SPHERIC_GUARDIAN,MMID::SPHERIC_GUARDIAN_SLAM,MMID::SPHERIC_GUARDIAN_ATTACK_DEBUFF,0,MMID::SPHERIC_GUARDIAN_HARDEN);
+                expect(MonsterId::EXPLODER,MMID::EXPLODER_SLAM,MMID::INVALID,0,MMID::EXPLODER_SLAM);
+                expect(MonsterId::EXPLODER,MMID::EXPLODER_SLAM,MMID::EXPLODER_SLAM,99,MMID::EXPLODER_EXPLODE);
+                expect(MonsterId::THE_MAW,MMID::THE_MAW_NOM,MMID::THE_MAW_ROAR,0,MMID::THE_MAW_DROOL);
+                expect(MonsterId::GIANT_HEAD,MMID::GIANT_HEAD_COUNT,MMID::GIANT_HEAD_GLARE,0,MMID::GIANT_HEAD_GLARE,3);
+                expect(MonsterId::GIANT_HEAD,MMID::GIANT_HEAD_COUNT,MMID::GIANT_HEAD_GLARE,0,MMID::GIANT_HEAD_IT_IS_TIME,4);
+                expect(MonsterId::GIANT_HEAD,MMID::GIANT_HEAD_COUNT,MMID::GIANT_HEAD_GLARE,0,MMID::GIANT_HEAD_IT_IS_TIME,3,18);
+                for(auto id:{MonsterId::DONU,MonsterId::DECA}) {
+                    m.id=id;m.moveHistory[0]=id==MonsterId::DONU?MMID::DONU_CIRCLE_OF_POWER:MMID::DECA_SQUARE_OF_PROTECTION;
+                    bc.actionQueue.clear();const auto before=bc.aiRng;auto expected=before;expected.random(99);
+                    m.takeTurn(bc);while(!bc.actionQueue.isEmpty()) { auto action=bc.actionQueue.popFront();action(bc); }
+                    if(bc.aiRng!=expected) throw std::runtime_error("Donu/Deca missing vanilla trailing roll");
+                }
+            }
             // Vanilla bytecode boundaries: SlaverRed uses 55 (not 50),
             // asc17 forbids consecutive debuffs, Nob asc18 checks either of
             // the previous two moves for Bash (not two consecutive Bashes).
@@ -1594,23 +1923,26 @@ int main() {
             expectDomeReject(bad,"silver_runic_dome_incomplete_history");
             bad=domeObservation(1,1);bad["silverRoot"]["act"]=2;
             expectDomeReject(bad,"silver_runic_dome_encounter_domain");
-            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["hand"][0]["id"]="Discovery";
-            expectDomeReject(bad,"silver_runic_dome_card_domain");
-            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["relics"].push_back({{"id","Dead Branch"},{"counter",0},{"usedUp",false}});
-            expectDomeReject(bad,"silver_runic_dome_relic_domain");
-            for(const char *power:{"Magnetism","Mayhem"}) {
-                bad=domeObservation(1,1);
-                bad["silverRoot"]["combat"]["playerPowers"].push_back({{"id",power},{"amount",1}});
-                expectDomeReject(bad,"silver_runic_dome_player_power_domain");
-            }
-            bad=domeObservation(1,1);
-            bad["silverRoot"]["combat"]["statusBits0"]=1ULL<<static_cast<int>(PlayerStatus::MAGNETISM);
-            expectDomeReject(bad,"silver_runic_dome_player_power_domain");
+            // Normal Ironclad/colorless generators and their public powers
+            // use the generic support contract, including generated Spot.
+            auto generated=groupDome({"JawWorm"},{{1}});
+            auto &gc=generated["silverRoot"]["combat"];
+            gc["hand"][0]["id"]="Spot Weakness";
+            gc["relics"].push_back({{"id","Dead Branch"},{"counter",0},{"usedUp",false}});
+            gc["playerPowers"].push_back({{"id","Magnetism"},{"amount",1}});
+            gc["playerPowers"].push_back({{"id","Mayhem"},{"amount",1}});
+            gc["potions"][0]["id"]="SkillPotion";
+            gc["runicDomeKnowledge"]["monsters"][0]["pendingAttackPredicates"]=json::array({json::array({1,true})});
+            const auto generatedImport=one_combat::advisor::importSilverRoot(generated);
+            if(!generatedImport.ok) throw std::runtime_error("Dome generated Spot generic support: "+generatedImport.reason);
+            auto generatedBc=battleContextFromWire(generatedImport.wire);generatedBc.monsters.arr[0].materializePendingMove(generatedBc);
+            if(!generatedBc.monsters.arr[0].isAttacking()) throw std::runtime_error("generated Spot public predicate lost");
+            bad=generated;bad["silverRoot"]["combat"]["hand"][0]["id"]="Go for the Eyes";
+            expectDomeReject(bad,"silver_off_color_card");
             bad=domeObservation(1,1);
             bad["silverRoot"]["combat"]["monsters"][0]["powers"].push_back({{"id","Ritual"},{"amount",3},{"justApplied",false}});
             expectDomeReject(bad,"silver_runic_dome_monster_power_domain");
-            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["potions"][0]["id"]="SkillPotion";
-            expectDomeReject(bad,"silver_runic_dome_potion_domain");
+
         }
         {
             auto capped = battleContextFromWire(fixtures[0].wire);
@@ -2005,10 +2337,10 @@ int main() {
         if (!nativeSelectionImported.ok
             || !convertedStatesEqualForSearch(nativeSelectionExpected, nativeSelectionImported.wire))
             throw std::runtime_error("optional native selection parity failed");
-        for (const auto &task : {"WARCRY", "FORETHOUGHT", "SECRET_TECHNIQUE", "SECRET_WEAPON"}) {
+        for (const auto &task : {"WARCRY", "FORETHOUGHT", "EXHAUST_ONE", "HEADBUTT", "ARMAMENTS", "DUAL_WIELD", "EXHUME", "SECRET_TECHNIQUE", "SECRET_WEAPON"}) {
             auto selection = genericObservation(fixtures[0], "single-live-selection");
             auto &combat = selection["silverRoot"]["combat"];
-            const bool handSource = std::string(task) == "WARCRY" || std::string(task) == "FORETHOUGHT";
+            const bool handSource = std::string(task) == "WARCRY" || std::string(task) == "FORETHOUGHT" || std::string(task) == "EXHAUST_ONE" || std::string(task) == "ARMAMENTS" || std::string(task) == "DUAL_WIELD";
             auto prototype = combat["hand"][0];
             json candidates = json::array();
             for (int i = 0; i < 3; ++i) {
@@ -2018,6 +2350,8 @@ int main() {
                 candidates.push_back(card);
             }
             if (handSource) combat["hand"] = candidates;
+            else if (std::string(task) == "EXHUME") combat["exhaust"] = json{{"unknown", candidates}};
+            else if (std::string(task) == "HEADBUTT") combat["discard"] = json{{"unknown", candidates}};
             else combat["draw"] = json{{"unknown", candidates}};
             json choices = json::array();
             // Duplicate names remain distinct physical occurrences. Display
@@ -2027,6 +2361,26 @@ int main() {
             combat["cardSelect"] = json{{"task", task}, {"origin", handSource ? "HAND_SELECT" : "GRID"},
                 {"cards", json::array()}, {"pickCount", 1}, {"canPickZero", false},
                 {"canPickAnyNumber", false}, {"selectedBits", 0}, {"liveChoices", choices}};
+            if(std::string(task)=="ARMAMENTS" || std::string(task)=="EXHUME" || std::string(task)=="DUAL_WIELD") {
+                const bool armaments=std::string(task)=="ARMAMENTS",dualWield=std::string(task)=="DUAL_WIELD";
+                auto held=prototype;held["uuid"]="held-card";held["id"]=armaments || dualWield?"Defend_R":"Exhume";
+                held["upgraded"]=armaments;
+                combat["cardSelect"]["heldCards"]=json::array({held});
+                combat["cardSelect"]["upgradeVariant"]=false;
+                combat["cardSelect"]["actionClass"]=armaments?"com.megacrit.cardcrawl.actions.unique.ArmamentsAction":dualWield?"com.megacrit.cardcrawl.actions.unique.DualWieldAction":"com.megacrit.cardcrawl.actions.unique.ExhumeAction";
+                if(dualWield) combat["cardSelect"]["data0"]=2;
+            }
+            const std::map<std::string,std::string> sourceIds={{"WARCRY","Warcry"},{"FORETHOUGHT","Forethought"},
+                {"EXHAUST_ONE","Burning Pact"},{"HEADBUTT","Headbutt"},{"ARMAMENTS","Armaments"},{"DUAL_WIELD","Dual Wield"},
+                {"EXHUME","Exhume"},{"SECRET_TECHNIQUE","Secret Technique"},{"SECRET_WEAPON","Secret Weapon"}};
+            auto source=prototype;source["id"]=sourceIds.at(task);source["uuid"]="interrupted-source";
+            source["cost"]=source["costForTurn"]=1;
+            CardQueueItemWire cleanup;cleanup.triggerOnUse=true;
+            cleanup.exhaustOnUse=std::string(task)=="EXHUME" || std::string(task)=="WARCRY";
+            combat["curCardQueueItem"]=producerQueueJson(cleanup);combat["curCardQueueItem"]["card"]=source;
+            combat["pendingCardQueue"]=json::array();
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"])});
+            combat["cardSelect"]["continuation"]="source_card_actions";
             one_combat::advisor::SilverImportContext context;
             const auto imported = one_combat::advisor::importSilverRoot(selection, context);
             if (!imported.ok) throw std::runtime_error("single selector import: " + imported.reason);
@@ -2043,6 +2397,22 @@ int main() {
             actions[0].execute(selected);
             if (selected.inputState != InputState::PLAYER_NORMAL)
                 throw std::runtime_error("single selector failed to resume combat");
+            const auto &cleanupPile=cleanup.exhaustOnUse?selected.cards.exhaustPile:selected.cards.discardPile;
+            if(std::count_if(cleanupPile.begin(),cleanupPile.end(),[&](const auto &card) {
+                    return card.uniqueId==context.cardIds.at("interrupted-source");})!=1)
+                throw std::runtime_error("typed single selector did not clean up its exact physical source once");
+            if(std::string(task)=="ARMAMENTS" && (selected.cards.cardsInHand!=4
+                    || selected.cards.hand[3].uniqueId!=context.cardIds.at("held-card")
+                    || !selected.cards.hand[2].isUpgraded()))
+                throw std::runtime_error("Armaments omitted held cards or changed Java return order");
+            if(std::string(task)=="DUAL_WIELD" && (selected.cards.cardsInHand!=6
+                    || selected.cards.hand[2].uniqueId!=context.cardIds.at("held-card")
+                    || selected.cards.hand[3].uniqueId==semantic.card.uniqueId
+                    || selected.cards.hand[4].uniqueId==selected.cards.hand[3].uniqueId))
+                throw std::runtime_error("Dual Wield failed vanilla held-card/copy identity semantics");
+            if(std::string(task)=="EXHUME" && std::none_of(selected.cards.exhaustPile.begin(),selected.cards.exhaustPile.end(),
+                    [&](const auto &card){return card.uniqueId==context.cardIds.at("held-card");}))
+                throw std::runtime_error("Exhume lost temporarily excluded Exhume card");
             for (int corruption = 0; corruption < 5; ++corruption) {
                 auto invalid = selection;
                 auto &bad = invalid["silverRoot"]["combat"]["cardSelect"];
@@ -2059,6 +2429,166 @@ int main() {
             absent.card.uniqueId = -1;
             if (!one_combat::advisor::selectedLiveAction(absent, context, selection).is_null())
                 throw std::runtime_error("missing physical selection identity was lowered");
+        }
+        for(bool corruption:{false,true}) for(int relicTail:{0,1,2}) {
+            // Vanilla Burning Pact queues ExhaustAction, DrawCardAction(2),
+            // then the unstarted UseCardAction. Cleanup must follow that draw.
+            auto observation=genericObservation(fixtures[0],"burning-pact-public-action-tail");
+            auto &combat=observation["silverRoot"]["combat"];
+            auto source=combat["hand"][0];source["id"]="Burning Pact";source["uuid"]="played-pact";
+            source["cost"]=source["costForTurn"]=1;
+            CardQueueItemWire queue;queue.triggerOnUse=true;queue.exhaustOnUse=corruption;
+            if(corruption)combat["playerPowers"]=json::array({json{{"id","Corruption"},{"amount",1}}});
+            combat["curCardQueueItem"]=producerQueueJson(queue);combat["curCardQueueItem"]["card"]=source;
+            combat["pendingCardQueue"]=json::array();
+            json choices=json::array();
+            for(const auto &card:combat["hand"]) choices.push_back(json{{"uuid",card.at("uuid")},{"choiceIndex",choices.size()+1}});
+            combat["cardSelect"]={{"task","EXHAUST_ONE"},{"origin","HAND_SELECT"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"liveChoices",choices},
+                {"continuation","source_card_actions"}};
+            combat["pendingActionQueue"]=json::array({json{{"kind","DRAW"},{"amount",2}}});
+            if(relicTail==1)combat["pendingActionQueue"].push_back(json{{"kind","BUFF_PLAYER"},{"power","Pen Nib"},{"amount",1},{"sourceMonster",false}});
+            if(relicTail==2) {
+                combat["playerPowers"].push_back(json{{"id","Pen Nib"},{"amount",1}});
+                combat["playerPowers"].push_back(json{{"id","Weakened"},{"amount",2},{"justApplied",false}});
+                combat["playerPowers"].push_back(json{{"id","Frail"},{"amount",2},{"justApplied",false}});
+                combat["playerPowers"].push_back(json{{"id","Strength"},{"amount",-2}});
+                combat["playerPowers"].push_back(json{{"id","Dexterity"},{"amount",2}});
+                combat["pendingActionQueue"].push_back(json{{"kind","REMOVE_PEN_NIB"}});
+                combat["pendingActionQueue"].push_back(json{{"kind","REMOVE_PLAYER_DEBUFFS"}});
+            }
+            combat["pendingActionQueue"].push_back(producerCleanupJson(combat["curCardQueueItem"]));
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("Burning Pact typed tail import: "+imported.reason);
+            auto selected=battleContextFromWire(json(imported.wire).get<silver_bridge::BattleStateWire>());
+            if(json(wireFromSearchState(selected,searchContextFromWire(imported.wire)).pendingActionQueue)!=json(imported.wire.pendingActionQueue))
+                throw std::runtime_error("source relic tail lost typed queue through JSON/native roundtrip");
+            const int handBefore=selected.cards.cardsInHand,drawBefore=selected.cards.drawPile.size();
+            const int cardBefore=selected.player.cardsPlayedThisTurn;
+            const int exhausted=selected.cards.hand[0].uniqueId;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,0).execute(selected);
+            if(selected.inputState!=InputState::PLAYER_NORMAL || selected.cards.cardsInHand!=handBefore+1
+                    || selected.cards.drawPile.size()!=drawBefore-2 || selected.player.cardsPlayedThisTurn!=cardBefore
+                    || std::count_if(selected.cards.exhaustPile.begin(),selected.cards.exhaustPile.end(),[&](const auto &c){return c.uniqueId==exhausted;})!=1
+                    || std::count_if((corruption?selected.cards.exhaustPile:selected.cards.discardPile).begin(),
+                        (corruption?selected.cards.exhaustPile:selected.cards.discardPile).end(),
+                        [&](const auto &c){return c.uniqueId==context.cardIds.at("played-pact");})!=1)
+                throw std::runtime_error("Burning Pact tail repeated card use, lost draw, or lost cleanup");
+            if(relicTail==1 && !selected.player.hasStatus<PlayerStatus::PEN_NIB>())
+                throw std::runtime_error("pending Pen Nib application missing");
+            if(relicTail==2 && (selected.player.hasStatus<PlayerStatus::PEN_NIB>() || selected.player.hasStatus<PlayerStatus::WEAK>()
+                    || selected.player.hasStatus<PlayerStatus::FRAIL>() || selected.player.strength!=0 || selected.player.dexterity!=2))
+                throw std::runtime_error("pending Pen Nib removal / Pellets cleanse lost typed effects or removed buff");
+            for(int defect=0;defect<8;++defect) {
+                auto bad=observation;auto &c=bad["silverRoot"]["combat"];
+                if(defect==0)c["pendingActionQueue"].back()["uuid"]="wrong-physical-card";
+                if(defect==1)c["pendingActionQueue"].back()["unstarted"]=false;
+                if(defect==2)c["pendingActionQueue"].back()["purgeOnUse"]=true;
+                if(defect==3)c["pendingActionQueue"].push_back(c["pendingActionQueue"].back());
+                if(defect==4)c.erase("pendingCardQueue");
+                if(defect==5)c["curCardQueueItem"]["card"]["id"]="Anger";
+                if(defect==6)c["cardSelect"]["origin"]="UNKNOWN";
+                if(defect==7)c["pendingActionQueue"].erase(c["pendingActionQueue"].end()-1);
+                if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("unqualified source cleanup accepted");
+            }
+        }
+        for (int count : {1,2}) for (int handCount : {8,9,10}) {
+            auto observation=genericObservation(fixtures[0],"liquid-memories-ordered-choice");
+            auto &combat=observation["silverRoot"]["combat"];
+            const auto prototype=combat["hand"][0];
+            combat["hand"]=json::array();
+            for(int i=0;i<handCount;++i) {auto c=prototype;c["uuid"]="liquid-hand-"+std::to_string(i);combat["hand"].push_back(c);}
+            json discard=json::array(), choices=json::array();
+            for(int i=0;i<3;++i) {auto c=prototype;c["uuid"]="liquid-discard-"+std::to_string(i);discard.push_back(c);}
+            for(int i:{2,0,1}) choices.push_back(json{{"uuid",discard[i]["uuid"]},{"choiceIndex",choices.size()+1}});
+            combat["discard"]=json{{"unknown",discard}};
+            combat["cardSelect"]=json{{"task","LIQUID_MEMORIES_POTION"},{"origin","GRID"},
+                {"actionClass","com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction"},
+                {"pickCount",count},{"selectedCount",0},{"selectedBits",0},{"canPickZero",false},
+                {"canPickAnyNumber",false},{"optional",false},{"newCost",0},{"setCostToZero",true},
+                {"continuation","none"},{"liveChoices",choices},{"cards",json::array()}};
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("Liquid Memories import: "+imported.reason);
+            auto root=battleContextFromWire(imported.wire);
+            const auto actions=sts::search::Action::enumerateCardSelectActions(root);
+            if(actions.size()!=static_cast<std::size_t>(count==1?3:6)) throw std::runtime_error("Liquid pair enumeration lost order");
+            for(const auto &action:actions) {
+                if(!action.isValidAction(root)) throw std::runtime_error("invalid Liquid pair enumerated");
+                const auto semantic=sts::search::semanticFromSearchAction(root,action);
+                const auto lowered=one_combat::advisor::selectedLiveAction(semantic,context,observation);
+                if(count==2 && (lowered.value("kind","")!="grid_card_select" || lowered.at("cardUuids").size()!=2))
+                    throw std::runtime_error("Liquid pair not lowered atomically");
+                if(count==1 && lowered.value("kind","")!="choose") throw std::runtime_error("Liquid single not lowered");
+                const auto resolved=resolveSilverSemanticAction(root,semantic);
+                if(!resolved.ok || resolved.action!=action) throw std::runtime_error("Liquid pair semantic roundtrip failed");
+                auto selected=root;
+                resolved.action.execute(selected);
+                const int moved=std::min(count,10-handCount);
+                if(selected.cards.cardsInHand!=handCount+moved || selected.cards.discardPile.size()!=3-moved)
+                    throw std::runtime_error("Liquid capacity changed discard cards");
+                if(moved>0 && (selected.cards.hand[handCount].uniqueId!=root.cards.discardPile[action.getSelectIdx()].uniqueId
+                        || selected.cards.hand[handCount].costForTurn!=0)) throw std::runtime_error("Liquid first card/order/cost mismatch");
+                if(moved>1 && (selected.cards.hand[handCount+1].uniqueId!=root.cards.discardPile[action.getTargetIdx()-1].uniqueId
+                        || selected.cards.hand[handCount+1].costForTurn!=0)) throw std::runtime_error("Liquid second card/order/cost mismatch");
+                if(handCount==10) for(const auto &card:selected.cards.discardPile)
+                    if(card.costForTurn!=prototype["costForTurn"].get<int>()) throw std::runtime_error("Liquid modified overflow card cost");
+            }
+            auto automatic=root;automatic.cards.discardPile.resize(count);automatic.cards.cardsInHand=8;
+            Actions::BetterDiscardPileToHandAction(count,CardSelectTask::LIQUID_MEMORIES_POTION)(automatic);
+            if(automatic.cards.cardsInHand!=8+count || !automatic.cards.discardPile.empty())
+                throw std::runtime_error("Liquid all-discard branch omitted Sacred Bark second card");
+            for(int bad=0;bad<5;++bad) {auto invalid=observation;auto &selection=invalid["silverRoot"]["combat"]["cardSelect"];
+                if(bad==0)selection["newCost"]=1;if(bad==1)selection["optional"]=true;
+                if(bad==2)selection["selectedCount"]=1;if(bad==3)selection["pickCount"]=3;
+                if(bad==4) {selection["liveChoices"]=json::array({choices[0]});
+                    invalid["silverRoot"]["combat"]["discard"]=json{{"unknown",json::array({discard[2]})}};}
+                if(one_combat::advisor::importSilverRoot(invalid).ok)throw std::runtime_error("Liquid unsupported variant accepted");}
+        }
+        for (const auto &task : {"GAMBLE", "EXHAUST_MANY"}) for (int mask : {0, 1, 5, 7}) {
+            auto observation = genericObservation(fixtures[0], "multi-hand-transaction");
+            auto &combat = observation["silverRoot"]["combat"];
+            const auto prototype = combat["hand"][0];
+            combat["hand"] = json::array();
+            json choices = json::array();
+            for (int i=0;i<3;++i) {
+                auto card=prototype;card["id"]="Strike_R";card["uuid"]="multi-"+std::to_string(i);
+                combat["hand"].push_back(card);
+                choices.push_back(json{{"uuid",card["uuid"]},{"choiceIndex",i+1}});
+            }
+            const bool gamble=std::string(task)=="GAMBLE";
+            combat["cardSelect"]=json{{"task",task},{"origin","HAND_SELECT"},{"pickCount",gamble?99:3},
+                {"canPickZero",true},{"canPickAnyNumber",true},{"selectedBits",0},{"selectedCount",0},
+                {"liveChoices",choices},{"continuation","none"},{"cards",json::array()},
+                {"actionClass",gamble?"com.megacrit.cardcrawl.actions.unique.GamblingChipAction":"com.megacrit.cardcrawl.actions.common.ExhaustAction"}};
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok) throw std::runtime_error("multi hand import: "+imported.reason);
+            auto selected=battleContextFromWire(imported.wire);
+            const sts::search::Action action(sts::search::ActionType::MULTI_CARD_SELECT,mask);
+            if(!action.isValidAction(selected)) throw std::runtime_error("multi hand subset rejected");
+            const auto semantic=sts::search::semanticFromSearchAction(selected,action);
+            const auto lowered=one_combat::advisor::selectedLiveAction(semantic,context,observation);
+            json expected=json::array();
+            for(int i=0;i<3;++i) if(mask&(1<<i)) expected.push_back("multi-"+std::to_string(i));
+            if(lowered.value("kind","")!="card_select" || lowered.at("cardUuids")!=expected)
+                throw std::runtime_error("multi hand physical transaction mismatch");
+            const auto oldDiscardCount=selected.player.cardsDiscardedThisTurn;
+            const auto oldPile=gamble?selected.cards.discardPile.size():selected.cards.exhaustPile.size();
+            action.execute(selected);
+            const auto &pile=gamble?selected.cards.discardPile:selected.cards.exhaustPile;
+            if(pile.size()!=oldPile+expected.size() || selected.inputState!=InputState::PLAYER_NORMAL)
+                throw std::runtime_error("multi hand did not resolve selected cards");
+            for(std::size_t i=0;i<expected.size();++i)
+                if(pile[oldPile+i].uniqueId!=context.cardIds.at(expected[i].get<std::string>()))
+                    throw std::runtime_error("multi hand changed selected trigger order");
+            if(gamble && selected.player.cardsDiscardedThisTurn != oldDiscardCount + expected.size())
+                throw std::runtime_error("Gamble did not count each manual discard");
+            if(selected.cards.cardsInHand!=(gamble?3:3-static_cast<int>(expected.size())))
+                throw std::runtime_error("multi hand draw/exhaust count mismatch");
+            auto bad=observation;bad["silverRoot"]["combat"]["cardSelect"]["continuation"]="unknown";
+            if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("multi hand ignored pending continuation");
         }
         for (int mask : {0, 1, 5, 7}) {
             auto observation = genericObservation(fixtures[0], "upgraded-forethought-transaction");
@@ -2190,6 +2720,74 @@ int main() {
             if (selected.cards.hand[originalCount].id != CardId::SHRUG_IT_OFF
                     || selected.cards.hand[originalCount].costForTurn != 1)
                 throw std::runtime_error("Toolbox card incorrectly made free");
+        }
+        {
+            auto native=battleContextFromWire(fixtures[0].wire);
+            native.player.buff<PlayerStatus::INTANGIBLE>(1);
+            if(native.player.wasJustApplied<PlayerStatus::INTANGIBLE>())throw std::runtime_error("vanilla Intangible gained nonexistent justApplied metadata");
+            native.player.applyAtEndOfRoundPowers();
+            if(native.player.hasStatus<PlayerStatus::INTANGIBLE>())throw std::runtime_error("Intangible failed vanilla end-round expiration");
+        }
+        {
+            auto offer=genericObservation(fixtures[0],"toolbox-status-and-mark-of-pain-tail");auto &combat=offer["silverRoot"]["combat"];
+            combat["cardSelect"]=offerSelection(1,"toolbox_actions");combat["cardSelect"]["setCostToZero"]=false;
+            combat["pendingActionQueue"]=json::array({json{{"kind","SHUFFLE_WOUNDS"},{"amount",2}},
+                json{{"kind","DEBUFF_ALL_ENEMY"},{"power","Weakened"},{"amount",1},{"sourceMonster",false}},
+                json{{"kind","DEBUFF_ALL_ENEMY"},{"power","Vulnerable"},{"amount",1},{"sourceMonster",false}},
+                json{{"kind","DRAW"},{"amount",1}},json{{"kind","DEBUFF_PLAYER"},{"power","Weakened"},{"amount",1},{"sourceMonster",false}}});
+            combat["monsters"][0]["powers"].push_back(json{{"id","Artifact"},{"amount",1}});
+            const auto imported=one_combat::advisor::importSilverRoot(offer);
+            if(!imported.ok)throw std::runtime_error("typed startup powers import: "+imported.reason);
+            auto selected=battleContextFromWire(imported.wire);
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,1).execute(selected);
+            const auto &monster=selected.monsters.arr[0];
+            if(monster.getStatus<MonsterStatus::ARTIFACT>()!=0 || monster.hasStatus<MonsterStatus::WEAK>()
+                    || monster.getStatus<MonsterStatus::VULNERABLE>()!=1 || selected.player.getStatus<PlayerStatus::WEAK>()!=1
+                    || selected.player.wasJustApplied<PlayerStatus::WEAK>())throw std::runtime_error("typed starter debuff order/artifact mismatch");
+            int wounds=0;for(int n=0;n<selected.cards.cardsInHand;++n)wounds+=selected.cards.hand[n].id==CardId::WOUND;
+            for(const auto &card:selected.cards.drawPile)wounds+=card.id==CardId::WOUND;
+            if(wounds!=2)throw std::runtime_error("Mark of Pain did not create two fair shuffled Wounds");
+            auto invalid=offer;invalid["silverRoot"]["combat"]["pendingActionQueue"][0]["amount"]=3;
+            if(one_combat::advisor::importSilverRoot(invalid).ok)throw std::runtime_error("unqualified Wound count accepted");
+        }
+        for(int subset:{0,1}) {
+            auto offer=genericObservation(fixtures[0],"toolbox-typed-relic-tail");auto &combat=offer["silverRoot"]["combat"];
+            const auto prototype=combat["hand"][0];combat["hand"]=json::array();json draw=json::array();
+            for(int i=0;i<7;++i){auto c=prototype;c["uuid"]="typed-draw-"+std::to_string(i);draw.push_back(c);}
+            combat["draw"]=json{{"unknown",draw}};
+            combat["cardSelect"]=offerSelection(1,"toolbox_actions");combat["cardSelect"]["setCostToZero"]=false;
+            combat["pendingActionQueue"]=json::array({json{{"kind","DRAW"},{"amount",5}},json{{"kind","GAMBLE"}},
+                json{{"kind","DRAW"},{"amount",2}},json{{"kind","UPGRADE_RANDOM"}},json{{"kind","GAIN_BLOCK"},{"amount",10}},
+                json{{"kind","GAIN_ENERGY"},{"amount",1}},json{{"kind","BUFF_PLAYER"},{"power","Strength"},{"amount",2},{"sourceMonster",false}},
+                json{{"kind","BUFF_PLAYER"},{"power","Artifact"},{"amount",1},{"sourceMonster",false}},
+                json{{"kind","DEBUFF_PLAYER"},{"power","Flex"},{"amount",2},{"sourceMonster",false}},
+                json{{"kind","DAMAGE_ALL"},{"amount",3}},json{{"kind","DAMAGE_RANDOM"},{"amount",3}}});
+            const auto imported=one_combat::advisor::importSilverRoot(offer);
+            if(!imported.ok)throw std::runtime_error("typed Toolbox tail import: "+imported.reason);
+            auto native=battleContextFromWire(imported.wire);const auto beforeEnergy=native.player.energy,beforeHp=native.monsters.arr[0].curHp;
+            const auto beforeStrength=native.player.strength,beforeBlock=native.player.block;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,1).execute(native);
+            if(native.inputState!=InputState::CARD_SELECT || native.cardSelectInfo.cardSelectTask!=CardSelectTask::GAMBLE
+                    || native.cards.cardsInHand!=6 || native.player.strength!=beforeStrength)
+                throw std::runtime_error("typed tail failed to pause at Gambling Chip in queue order");
+            const auto wire=wireFromSearchState(native,searchContextFromWire(imported.wire));
+            if(!wire.pendingActionQueueObserved || wire.pendingActionQueue.size()!=9)
+                throw std::runtime_error("typed queue lost after first selection");
+            auto restored=battleContextFromWire(json(wire).get<silver_bridge::BattleStateWire>());
+            sts::search::Action(sts::search::ActionType::MULTI_CARD_SELECT,subset).execute(restored);
+            if(restored.inputState!=InputState::PLAYER_NORMAL || restored.cards.cardsInHand!=8
+                    || restored.player.energy!=beforeEnergy+1 || restored.player.strength!=beforeStrength+2
+                    || restored.player.block!=beforeBlock+10 || restored.player.artifact!=0
+                    || restored.player.hasStatus<PlayerStatus::LOSE_STRENGTH>() || restored.monsters.arr[0].curHp!=beforeHp-6)
+                throw std::runtime_error("typed relic tail lost ordered effects after Gambling Chip");
+            int upgraded=0;for(int n=0;n<restored.cards.cardsInHand;++n)upgraded+=restored.cards.hand[n].isUpgraded();
+            if(upgraded!=1)throw std::runtime_error("Warped Tongs pending random upgrade not applied once");
+            for(int defect=0;defect<4;++defect){auto bad=offer;auto &c=bad["silverRoot"]["combat"];
+                if(defect==0)c["pendingActionQueue"][0]["kind"]="ROLL_PRIVATE_MOVE";
+                if(defect==1)c["pendingActionQueue"][0]["amount"]=1.5;
+                if(defect==2)c["pendingActionQueue"][6]["power"]="Echo Form";
+                if(defect==3)c["cardSelect"]["drawsAfter"]=json::array({5});
+                if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("unsupported or duplicated typed continuation accepted");}
         }
         {
             auto offer = genericObservation(fixtures[0], "toolbox-before-opening-draw");
@@ -2401,7 +2999,42 @@ int main() {
             bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"][0]["card"]["id"]="Regret";reject(bad);
             bad=offer;bad["silverRoot"]["combat"]["hand"].erase(0);reject(bad);
             bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"].push_back(combat["pendingCardQueue"][0]);reject(bad);
-            bad=offer;bad["silverRoot"]["combat"]["relics"].push_back({{"id","Unceasing Top"},{"counter",0},{"usedUp",false}});reject(bad);
+            bad=offer;bad["silverRoot"]["combat"]["relics"].push_back({{"id","Unceasing Top"},{"counter",0},{"usedUp",false}});
+            if (!one_combat::advisor::importSilverRoot(bad).ok)
+                throw std::runtime_error("Codex end-turn barrier failed to qualify Unceasing Top");
+        }
+        for (bool top : {false, true}) for (bool artifact : {false, true}) for (int choice : {1, 3}) {
+            auto offer=genericObservation(fixtures[0],"codex-queued-curses");
+            auto &combat=offer["silverRoot"]["combat"];
+            combat["relics"].push_back({{"id","Nilry's Codex"},{"counter",-1},{"usedUp",false}});
+            if(top)combat["relics"].push_back({{"id","Unceasing Top"},{"counter",0},{"usedUp",false}});
+            combat["cardSelect"]=offerSelection(1,"codex_end_turn");
+            combat["cardSelect"]["task"]="CODEX";combat["cardSelect"]["canPickZero"]=true;
+            combat["cardSelect"]["setCostToZero"]=false;combat["cardSelect"]["data0"]=0;
+            auto prototype=combat["hand"][0];combat["hand"]=json::array();combat["pendingCardQueue"]=json::array();
+            for(const std::string id:{"Doubt","Shame","Regret"}) {
+                auto card=prototype;card["id"]=id;card["uuid"]="end-"+id;
+                card["cost"]=-2;card["costForTurn"]=-2;card["upgraded"]=false;
+                card["freeToPlayOnce"]=false;card["retain"]=false;combat["hand"].push_back(card);
+                combat["pendingCardQueue"].push_back({{"card",card},{"target",0},{"energyOnUse",0},
+                    {"isEndTurn",false},{"triggerOnUse",false},{"ignoreEnergyTotal",false},{"freeToPlay",false},
+                    {"randomTarget",false},{"autoplay",false},{"regretCardCount",id=="Regret"?7:0},
+                    {"purgeOnUse",false},{"exhaustOnUse",false},{"endTurnAutoPlay",true},{"noTriggerOwner","codex_end_turn"}});
+            }
+            const auto imported=one_combat::advisor::importSilverRoot(offer);
+            if(!imported.ok)throw std::runtime_error("Codex curse/Top import: "+imported.reason);
+            auto state=battleContextFromWire(imported.wire);
+            state.player.curHp=state.player.maxHp=80;state.player.block=20;
+            if(artifact)state.player.buff<PlayerStatus::ARTIFACT>(2);
+            const int turn=state.turn;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,choice).execute(state);
+            if(state.player.curHp!=73 || state.turn!=turn+1 || state.cards.cardsInHand!=5
+                || state.player.getStatus<PlayerStatus::WEAK>()!=(artifact?0:1)
+                || state.player.getStatus<PlayerStatus::FRAIL>()!=(artifact?0:1)
+                || state.player.getStatus<PlayerStatus::ARTIFACT>()!=0 || !state.cardQueue.isEmpty())
+                throw std::runtime_error("Codex curse debuff/Artifact/stored-Regret/Top continuation mismatch");
+            auto bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"][2]["regretCardCount"]=11;
+            if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("invalid captured Regret amount accepted");
         }
         for (const auto &cardName : {"Brutality", "Combust"}) {
             auto observation = genericObservation(fixtures[0], "ironclad-persistent-power-card");
@@ -2479,7 +3112,7 @@ int main() {
             if (selected.player.strength != 2 || selected.inputState != InputState::PLAYER_NORMAL)
                 throw std::runtime_error("standalone offer replayed a completed historical power");
         }
-        for (bool upgraded : {false, true}) {
+        for (bool upgraded : {false, true}) for(bool exactTail:{false,true}) {
             auto discovery = genericObservation(fixtures[0], "discovery-card-continuation");
             auto &root = discovery["silverRoot"];
             auto &combat = root["combat"];
@@ -2498,6 +3131,11 @@ int main() {
             combat["curCardQueueItem"] = producerQueueJson(queue);
             combat["curCardQueueItem"]["card"] = card;
             combat["cardSelect"] = offerSelection(1, "discovery_card");
+            if(exactTail) {
+                combat["cardSelect"]["continuation"]="source_card_actions";
+                combat["pendingCardQueue"]=json::array();
+                combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"])});
+            }
             one_combat::advisor::SilverImportContext context;
             const auto imported = one_combat::advisor::importSilverRoot(discovery, context);
             if (!imported.ok) throw std::runtime_error("Discovery cleanup import: " + imported.reason);
@@ -2598,6 +3236,13 @@ int main() {
                 {"pickCount",1},{"canPickZero",false},{"canPickAnyNumber",false}};
             combat["pendingCardQueue"]=json::array();
             for(const auto &item:expected.pendingCardQueue) combat["pendingCardQueue"].push_back(producerQueueJson(item));
+            combat["cardSelect"]["origin"]="GRID";combat["cardSelect"]["selectedBits"]=0;
+            combat["cardSelect"]["continuation"]="source_card_actions";
+            combat["cardSelect"]["liveChoices"]=json::array();
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"])});
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("producer Headbutt copy import: "+imported.reason);
             normalizeDynamicObservationIdentity(expected);
@@ -2623,6 +3268,32 @@ int main() {
                                         json(wireFromSearchState(actual,context))).dump(2) << '\n';
                 throw std::runtime_error("producer Headbutt copied-play continuation parity failed");
             }
+            // Reimport the copied selector itself: Java's purge copy shares
+            // the original UUID, which has already reached the discard pile.
+            const auto copiedWire=wireFromSearchState(actual,searchContextFromWire(imported.wire));
+            auto second=nativeObservation(copiedWire,"MonsterRoom","copied-headbutt-selector");
+            setProducerV4CardObservation(second,copiedWire);
+            auto &secondCombat=second["silverRoot"]["combat"];
+            secondCombat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"liveChoices",json::array()}};
+            for(const auto &card:secondCombat["discard"])
+                secondCombat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",secondCombat["cardSelect"]["liveChoices"].size()+1}});
+            secondCombat["pendingCardQueue"]=json::array();
+            secondCombat["pendingActionQueue"]=json::array({producerCleanupJson(secondCombat["curCardQueueItem"])});
+            const auto secondImported=one_combat::advisor::importSilverRoot(second);
+            if(!secondImported.ok)throw std::runtime_error("copied source selector reimport: "+secondImported.reason);
+            auto resumed=battleContextFromWire(secondImported.wire);
+            if(!resumed.curCardQueueItem.purgeOnUse || !resumed.curCardQueueItem.autoplay)
+                throw std::runtime_error("copied cleanup lost purge/autoplay owner flags");
+            pick.execute(resumed);
+            if(resumed.inputState!=InputState::PLAYER_NORMAL)
+                throw std::runtime_error("copied source selection did not finish");
+            int originals=0;
+            for(const auto &card:resumed.cards.discardPile)originals+=card.id==CardId::HEADBUTT;
+            for(const auto &card:resumed.cards.drawPile)originals+=card.id==CardId::HEADBUTT;
+            if(originals!=1)throw std::runtime_error("copied source cleanup duplicated or removed original Headbutt");
         }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");

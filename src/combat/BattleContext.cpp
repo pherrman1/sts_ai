@@ -3087,6 +3087,8 @@ void BattleContext::chooseDualWieldCard(int handIdx) {
 }
 
 void BattleContext::chooseDiscardToHandCard(int discardIdx, bool forZeroCost) {
+    // Liquid Memories leaves excess selections in discard with their costs intact.
+    if (forZeroCost && cards.cardsInHand >= CardManager::MAX_HAND_SIZE) return;
     CardInstance c = cards.discardPile[discardIdx];
     cards.removeFromDiscard(discardIdx);
     if (forZeroCost) {
@@ -3193,34 +3195,33 @@ void BattleContext::chooseDrawToHandCards(const int *idxs, int cardCount) {
 }
 
 void BattleContext::chooseExhaustCards(const fixed_list<int, 10> &idxs) {
-    if (idxs.empty()) {
-        return;
+    auto indices = idxs;
+    std::sort(indices.begin(), indices.end());
+    std::vector<CardInstance> selected;
+    for (int index : indices) {
+        if (index < 0 || index >= cards.cardsInHand || (!selected.empty() && index == indices[selected.size()-1])) return;
+        selected.push_back(cards.hand[index]);
     }
-    auto listCopy = idxs;
-    std::sort(listCopy.begin(), listCopy.end(), [](auto a, auto b) { return b < a; });
-
-    // assume idxs is sorted in descending order
-    for (const auto handIdx : listCopy) {
-        auto c = cards.hand[handIdx];
-        cards.removeFromHandAtIdx(handIdx);
-        triggerAndMoveToExhaustPile(c);
-    }
+    // The live hand selector removes all selected cards before resolving the
+    // action. Its selected group then resolves in original hand order.
+    for (int i = indices.size()-1; i >= 0; --i) cards.removeFromHandAtIdx(indices[i]);
+    for (auto &card : selected) triggerAndMoveToExhaustPile(card);
 }
 
 void BattleContext::chooseGambleCards(const fixed_list<int, 10> &idxs) {
-    if (idxs.empty()) {
-        return;
+    auto indices = idxs;
+    std::sort(indices.begin(), indices.end());
+    std::vector<CardInstance> selected;
+    for (int index : indices) {
+        if (index < 0 || index >= cards.cardsInHand || (!selected.empty() && index == indices[selected.size()-1])) return;
+        selected.push_back(cards.hand[index]);
     }
-    auto listCopy = idxs;
-    std::sort(listCopy.begin(), listCopy.end(), [](auto a, auto b) { return b < a; });
-
-    // assume idxs is sorted in descending order
-    addToTop( Actions::DrawCards(listCopy.size()) );
-    for (const auto handIdx : listCopy) {
-        auto c = cards.hand[handIdx];
-        cards.removeFromHandAtIdx(handIdx);
-        cards.moveToDiscardPile(c);
-        onManualDiscard(c);
+    for (int i = indices.size()-1; i >= 0; --i) cards.removeFromHandAtIdx(indices[i]);
+    if (!selected.empty()) addToTop(Actions::DrawCards(selected.size()));
+    for (auto &card : selected) {
+        cards.moveToDiscardPile(card);
+        ++player.cardsDiscardedThisTurn;
+        onManualDiscard(card);
     }
 }
 

@@ -340,8 +340,6 @@ final class LiveOocCapture {
                     out.put("screen", type.toLowerCase(java.util.Locale.ROOT));
                     out.put("unsupportedReason", "NATIVE_SCREEN_UNSUPPORTED:" + type);
             }
-            if ("map".equals(out.get("screen")) && activeWingBoots(core))
-                unsupported(out, "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active");
             RelicOfferRecorder.observe();
             core.put("seenRelics", seenRelicOffers.snapshot());
             core.put("seenRelicsComplete", RelicOfferRecorder.projectionComplete());
@@ -644,17 +642,6 @@ final class LiveOocCapture {
         return counter;
     }
 
-    private static boolean activeWingBoots(Map<String,Object> state) {
-        for (Object raw : list(state.get("relics"))) {
-            Map<String,Object> relic = map(raw);
-            if ("WingedGreaves".equals(relic.get("id"))
-                    && relic.get("liveCounter") instanceof Number
-                    && ((Number)relic.get("liveCounter")).intValue() > 0)
-                return true;
-        }
-        return false;
-    }
-
     static Map<String,Object> card(AbstractCard c) throws ReflectiveOperationException {
         int binding = c.inBottleFlame ? 0 : c.inBottleLightning ? 1 : c.inBottleTornado ? 2 : -1;
         return object("id", c.cardID, "upgraded", c.upgraded, "misc", "Searing Blow".equals(c.cardID) ? c.timesUpgraded : c.misc,
@@ -688,10 +675,16 @@ final class LiveOocCapture {
         List<Map<String,Object>> siblings=new ArrayList<>();
         if(AbstractDungeon.cardRewardScreen.rItem!=null) for(RewardItem parent:AbstractDungeon.combatRewardScreen.rewards) {
             if(parent==AbstractDungeon.cardRewardScreen.rItem || CardRewardSkipObserver.skipped(parent))continue;
-            siblings.add(object("type",parent.type.name(),"potion",
-                    "POTION".equals(parent.type.name())?parent.potion.ID:""));
+            String type=parent.type.name();
+            Map<String,Object> sibling=object("type",type,"identity",rewardIdentity(parent));
+            if("POTION".equals(type))sibling.put("potion",parent.potion.ID);
+            if("GOLD".equals(type)||"STOLEN_GOLD".equals(type))sibling.put("gold",parent.goldAmt+parent.bonusGold);
+            if("RELIC".equals(type))sibling.put("relic",parent.relic.relicId);
+            if("SAPPHIRE_KEY".equals(type))sibling.put("linkedRelicIdentity",
+                    parent.relicLink==null?null:rewardIdentity(parent.relicLink));
+            siblings.add(sibling);
         }
-        String parentFailure=captureParentPotions(r,siblings);
+        String parentFailure=captureParentRewards(r,siblings);
         if(parentFailure!=null)out.put("unsupportedReason",parentFailure);
         List<AbstractCard> offered = AbstractDungeon.cardRewardScreen.rewardGroup;
         mutableList(r.get("cardRewards")).add(cards(offered)); out.put("details", r);
@@ -707,16 +700,56 @@ final class LiveOocCapture {
         }
         else out.put("unsupportedReason", "CARD_REWARD_SKIP_UNAVAILABLE");
     }
-    static String captureParentPotions(Map<String,Object> details,List<Map<String,Object>> siblings) {
+    static String captureParentRewards(Map<String,Object> details,List<Map<String,Object>> siblings) {
+        int unopenedCards=0;boolean emerald=false,sapphire=false;
+        List<Object> potions=new ArrayList<>(),gold=new ArrayList<>(),relics=new ArrayList<>();
+        List<String> relicOccurrences=new ArrayList<>();String sapphireLink=null;
         for(Map<String,Object> sibling:siblings) {
-            if(!"POTION".equals(sibling.get("type")))
-                return "CARD_REWARD_PARENT_UNREPRESENTABLE:"+sibling.get("type");
-            if(!(sibling.get("potion") instanceof String) || ((String)sibling.get("potion")).isEmpty())
-                throw new IllegalArgumentException("parent potion identity absent");
+            String type=String.valueOf(sibling.get("type"));
+            switch(type) {
+                case "CARD":++unopenedCards;break;
+                case "POTION":
+                    if(!(sibling.get("potion") instanceof String)||((String)sibling.get("potion")).isEmpty())
+                        throw new IllegalArgumentException("parent potion identity absent");
+                    potions.add(sibling.get("potion"));break;
+                case "GOLD":case "STOLEN_GOLD":
+                    if(!(sibling.get("gold") instanceof Integer)||(Integer)sibling.get("gold")<0)
+                        throw new IllegalArgumentException("parent gold amount absent");
+                    gold.add(sibling.get("gold"));break;
+                case "RELIC":
+                    if(!(sibling.get("relic") instanceof String)||((String)sibling.get("relic")).isEmpty()
+                            ||!(sibling.get("identity") instanceof String)||((String)sibling.get("identity")).isEmpty()
+                            ||relicOccurrences.contains(sibling.get("identity")))
+                        throw new IllegalArgumentException("parent relic occurrence absent or duplicate");
+                    relics.add(sibling.get("relic"));relicOccurrences.add((String)sibling.get("identity"));break;
+                case "EMERALD_KEY":
+                    if(emerald||sapphire)throw new IllegalArgumentException("duplicate parent key");
+                    emerald=true;break;
+                case "SAPPHIRE_KEY":
+                    if(emerald||sapphire||!(sibling.get("linkedRelicIdentity") instanceof String))
+                        throw new IllegalArgumentException("parent sapphire link absent");
+                    sapphire=true;sapphireLink=(String)sibling.get("linkedRelicIdentity");break;
+                default:return "CARD_REWARD_PARENT_UNREPRESENTABLE:"+type;
+            }
         }
-        if(!siblings.isEmpty()) {
-            for(Map<String,Object> sibling:siblings)mutableList(details.get("potions")).add(sibling.get("potion"));
+        if(unopenedCards>4)throw new IllegalArgumentException("too many unopened card groups");
+        if(sapphire) {
+            int linked=relicOccurrences.indexOf(sapphireLink);
+            if(linked<0)throw new IllegalArgumentException("parent sapphire relic missing");
+            // Native KEY excludes exactly the final relic occurrence.
+            Object paired=relics.remove(linked);relics.add(paired);
+        }
+        if(unopenedCards>0)details.put("parentUnrevealedCardRewards",unopenedCards);
+        if(!potions.isEmpty()) {
+            mutableList(details.get("potions")).addAll(potions);
             details.put("parentPotionRewards",true);
+        }
+        if(!gold.isEmpty()||!relics.isEmpty()||emerald||sapphire) {
+            mutableList(details.get("gold")).addAll(gold);
+            mutableList(details.get("relics")).addAll(relics);
+            details.put("emeraldKey",emerald);details.put("sapphireKey",sapphire);
+            details.put("parentKnownRewards",true);
+            if(sapphire)details.put("sapphireRelicIndex",relics.size()-1);
         }
         return null;
     }

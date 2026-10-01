@@ -1024,16 +1024,16 @@ void ActData_ViolenceAction::operator()(BattleContext &bc) const {
     }
 
 void ActData_BetterDiscardPileToHandAction::operator()(BattleContext &bc) const {
-        if (bc.cards.discardPile.empty()) {
-            return;
-        }
-        if (bc.cards.discardPile.size() == 1) {
-            const int idx = 0;
-            bc.chooseDiscardToHandCard(0, task==CardSelectTask::LIQUID_MEMORIES_POTION);
-        } else {
-            bc.openSimpleCardSelectScreen(task, 1);
-        }
+    if (bc.cards.discardPile.empty() || amount <= 0) return;
+    const bool zeroCost = task == CardSelectTask::LIQUID_MEMORIES_POTION;
+    if (static_cast<int>(bc.cards.discardPile.size()) <= amount) {
+        const int count = bc.cards.discardPile.size();
+        for (int i=0; i<count && bc.cards.cardsInHand < CardManager::MAX_HAND_SIZE; ++i)
+            bc.chooseDiscardToHandCard(0, zeroCost);
+    } else {
+        bc.openSimpleCardSelectScreen(task, amount);
     }
+}
 
 void ActData_ArmamentsAction::operator()(BattleContext &bc) const {
         int canUpgradeCount = 0;
@@ -1306,11 +1306,16 @@ void ActData_ExhaustMany::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::EXHAUST_MANY;
         bc.cardSelectInfo.pickCount = limit;
+        bc.cardSelectInfo.canPickZero = true;
+        bc.cardSelectInfo.canPickAnyNumber = true;
     }
 
 void ActData_GambleAction::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::GAMBLE;
+        bc.cardSelectInfo.pickCount = 99;
+        bc.cardSelectInfo.canPickZero = true;
+        bc.cardSelectInfo.canPickAnyNumber = true;
     }
 
 void ActData_ToolboxAction::operator()(BattleContext &bc) const {
@@ -1573,3 +1578,12 @@ void ActData_AttackAllMonsterRecursive::operator()(BattleContext &bc) const {
             bc.addToTop(Actions::AttackAllMonsterRecursive(matrix, timesRemaining-1)); // todo should this be to the top? test with
         }
     }
+
+// Vanilla Hexaghost Inferno: queued after all six attacks, affecting only
+// draw/discard Burns; hand and exhaust are deliberately not upgraded.
+Action Actions::BurnIncreaseAction() { return makeAction(ActData_BurnIncreaseAction{}); }
+void ActData_BurnIncreaseAction::operator()(BattleContext &bc) const {
+    bc.cards.drawPile.mutateAll([](CardInstance &card) { if(card.getId()==CardId::BURN) card.upgrade(); });
+    for(auto &card:bc.cards.discardPile) if(card.getId()==CardId::BURN) card.upgrade();
+    Actions::MakeTempCardInDiscard(CardInstance(CardId::BURN,true),3)(bc);
+}

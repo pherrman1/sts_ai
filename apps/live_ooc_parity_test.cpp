@@ -323,15 +323,17 @@ int main(int argc,char **argv){try{
             }
         }
     }
-    for(bool bowl:{false,true}) {
+    for(bool bowl:{false,true}) for(int unopened:{0,1,4}) for(bool potions:{false,true}) {
+        if(!potions && !unopened)continue;
         auto source=base;source.screenState=ScreenState::REWARDS;source.potionCapacity=3;source.potionCount=3;
         std::fill(std::begin(source.potions),std::end(source.potions),Potion::EMPTY_POTION_SLOT);
         for(int i=0;i<3;++i)source.potions[i]=Potion::FIRE_POTION;
         if(bowl)source.relics.add({RelicId::SINGING_BOWL,0});
         source.info.rewardsContainer.clear();CardReward cardGroup;cardGroup.push_back(Card(CardId::BASH));
-        source.info.rewardsContainer.addCardReward(cardGroup);source.info.rewardsContainer.addPotion(Potion::SPEED_POTION);
+        source.info.rewardsContainer.addCardReward(cardGroup);if(potions)source.info.rewardsContainer.addPotion(Potion::SPEED_POTION);
         auto wire=project(source,path,"card_parent_potion");auto &o=wire["ooc"];
-        o["screen"]="card_reward";o["details"]["parentPotionRewards"]=true;
+        o["screen"]="card_reward";if(potions)o["details"]["parentPotionRewards"]=true;
+        if(unopened)o["details"]["parentUnrevealedCardRewards"]=unopened;
         auto &choices=o["liveChoices"];
         choices.erase(std::remove_if(choices.begin(),choices.end(),[](const auto &c){
             return c["nativeAction"]["kind"]!="card" && c["nativeAction"]["kind"]!="skip";
@@ -348,19 +350,59 @@ int main(int argc,char **argv){try{
         const auto imported=advisor::importLiveOocStateV1(wire,live);
         check(imported.ok,"card parent potion import (bowl="+std::to_string(bowl)+"): "+imported.message);
         check(!advisor::forcedRewardPotionLiveAction(live),"child card screen cannot claim parent potion");
+        if(unopened)check(!live.mctsRoot.mapHistoryComplete,"unopened siblings escaped value checkpoint");
         for(const auto action:{A(RT::SKIP),A(RT::CARD,0,0),A(RT::CARD,0,5)}) {
             auto child=live.mctsRoot.state;const int hp=child.maxHp;
             action.execute(child);
-            check(child.screenState==ScreenState::REWARDS && child.info.rewardsContainer.cardRewardCount==0
-                && child.info.rewardsContainer.potionCount==1,"card resolution lost parent potion");
+            check(child.info.rewardsContainer.cardRewardCount==0
+                && child.info.rewardsContainer.potionCount==(potions?1:0),"card resolution lost known parent rewards");
+            check(child.screenState==(potions || action.getRewardsActionType()==RT::SKIP
+                    ? ScreenState::REWARDS : ScreenState::MAP_SCREEN),"card continuation boundary mismatch");
             const bool gain=bowl && action.getRewardsActionType()==RT::CARD && action.getIdx2()==5;
             check(child.maxHp==hp+(gain?2:0),"ordinary skip confused with Singing Bowl");
-            A(RT::SKIP).execute(child);
+            if(child.screenState==ScreenState::REWARDS)A(RT::SKIP).execute(child);
             check(child.screenState==ScreenState::MAP_SCREEN && !child.regainControlAction,"parent completion did not restore ordinary continuation");
         }
         auto invalid=wire;invalid["ooc"]["liveChoices"].push_back({{"nativeAction",{{"kind","potion"},{"index",0},{"group",0}}},
             {"liveAction",{{"kind","choose"},{"choiceIndex",2}}}});
         check(!advisor::importLiveOocStateV1(invalid,live).ok,"parent potion clickable through card page");
+    }
+    for(bool sapphire:{false,true}) {
+        auto source=base;source.screenState=ScreenState::REWARDS;source.info.rewardsContainer.clear();
+        CardReward group;group.push_back(Card(CardId::BASH));source.info.rewardsContainer.addCardReward(group);
+        source.info.rewardsContainer.addGold(42);source.info.rewardsContainer.addRelic(RelicId::VAJRA);
+        source.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        source.info.rewardsContainer.sapphireKey=sapphire;source.info.rewardsContainer.emeraldKey=!sapphire;
+        auto wire=project(source,path,"card_parent_known_rewards");auto &o=wire["ooc"];
+        o["screen"]="card_reward";o["details"]["parentKnownRewards"]=true;
+        if(sapphire)o["details"]["sapphireRelicIndex"]=1;
+        auto &choices=o["liveChoices"];
+        choices.erase(std::remove_if(choices.begin(),choices.end(),[](const auto &c){
+            return c["nativeAction"]["kind"]!="card" && c["nativeAction"]["kind"]!="skip";
+        }),choices.end());
+        for(auto &c:choices)if(c["nativeAction"]["kind"]=="skip") {
+            c["nativeAction"]["group"]=0;c["liveAction"]={{"kind","skip"}};
+        }
+        advisor::LiveOocStateV1 live;auto imported=advisor::importLiveOocStateV1(wire,live);
+        check(imported.ok,"known parent reward import: "+imported.message);
+        check(!advisor::forcedRewardGoldLiveAction(live),"parent gold clicked through card screen");
+        for(auto action:{A(RT::CARD,0,0),A(RT::SKIP)}) {
+            auto child=live.mctsRoot.state;action.execute(child);
+            check(child.screenState==ScreenState::REWARDS && child.info.rewardsContainer.cardRewardCount==0
+                && child.info.rewardsContainer.goldRewardCount==1 && child.info.rewardsContainer.relicCount==2,
+                "current card resolution lost known parent rewards");
+            A(RT::GOLD,0).execute(child);check(child.gold==source.gold+42,"parent gold amount changed");
+            auto takeKey=child;A(RT::KEY,0).execute(takeKey);
+            check(takeKey.info.rewardsContainer.relicCount==(sapphire?1:2)
+                && takeKey.info.rewardsContainer.relics[0]==RelicId::VAJRA,"key removed incorrect parent relic");
+            auto takeRelic=child;A(RT::RELIC,1).execute(takeRelic);
+            check(!takeRelic.info.rewardsContainer.sapphireKey && takeRelic.hasRelic(RelicId::ANCHOR),
+                "taking sapphire-paired relic did not exclude key");
+        }
+        if(sapphire) {
+            auto invalid=wire;invalid["ooc"]["details"]["sapphireRelicIndex"]=0;
+            check(!advisor::importLiveOocStateV1(invalid,live).ok,"incorrect sapphire pair accepted");
+        }
     }
     {
         auto source=base;source.screenState=ScreenState::REWARDS;source.info.rewardsContainer.clear();
@@ -1192,19 +1234,6 @@ int main(int argc,char **argv){try{
               "incomplete queue identity must remain a clean unsupported boundary");
     }
     {
-        auto source = base;
-        source.screenState = ScreenState::MAP_SCREEN;
-        auto wire = project(source, path, "active_winged_map_boundary");
-        wire["ooc"]["publicState"]["relics"].push_back(
-                {{"id", J(RelicId::WING_BOOTS)}, {"data", 0}, {"liveCounter", 1}});
-        wire["ooc"]["publicState"]["acquiredRelics"].push_back(J(RelicId::WING_BOOTS));
-        advisor::LiveOocStateV1 live;
-        const auto imported = advisor::importLiveOocStateV1(wire, live);
-        check(imported.ok && !live.mctsRoot.supported
-                && live.mctsRoot.reason == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active",
-              "active Wing Boots MAP roots must fail closed");
-    }
-    {
         auto source=base;source.screenState=ScreenState::MAP_SCREEN;
         source.curMapNodeX=1;source.curMapNodeY=0;
         source.map=std::make_shared<Map>();
@@ -1212,23 +1241,24 @@ int main(int argc,char **argv){try{
             auto &n=source.map->nodes[y][x];n.x=x;n.y=y;n.room=Room::REST;
         }
         source.map->getNode(1,0).addEdge(2);
-        source.map->getNode(2,1).addEdge(2);source.map->getNode(5,1).addEdge(2);
+        for(int y=1;y<15;++y) {
+            source.map->getNode(2,y).addEdge(2);source.map->getNode(5,y).addEdge(2);
+        }
         source.relics.add({RelicId::WING_BOOTS,0});source.wingBootsCharges=1;
-        auto wire=project(source,path,"opt_in_winged_map");
+        auto wire=project(source,path,"charged_winged_map");
         auto &p=wire["ooc"]["publicState"];
         for(auto &r:p["relics"])if(r["id"]==J(RelicId::WING_BOOTS))r["liveCounter"]=1;
         p["questionHistoryComplete"]=true;p["questionOutcomes"]=J::array();
         auto &choices=wire["ooc"]["liveChoices"];
         std::reverse(choices.begin(),choices.end());
         for(int i=0;i<int(choices.size());++i)choices[i]["liveAction"]["choiceIndex"]=i+1;
-        setenv("STS_LIVE_OOC_WING_BOOTS","1",1);
         advisor::LiveOocStateV1 live;
         const auto imported=advisor::importLiveOocStateV1(wire,live);
         check(imported.ok && live.mctsRoot.supported && live.mctsRoot.state.wingBootsCharges==1,
-                "opt-in Wing Boots root did not import");
+                "default Wing Boots root did not import");
         const auto actions=v4CandidateActions(live.mctsRoot.state);
         check(actions.size()==2 && live.mctsRoot.state.mapMoveCost(5)==1,
-                "opt-in Wing Boots candidate set lost jump");
+                "default Wing Boots candidate set lost jump");
         auto jump=live.mctsRoot.state;A(5).execute(jump);
         check(jump.wingBootsCharges==0 && jump.curMapNodeX==5 && jump.curMapNodeY==1,
                 "imported Wing Boots jump did not consume final charge");
@@ -1236,19 +1266,43 @@ int main(int argc,char **argv){try{
         advisor::validateLiveOocActionSet(live,bits);
         check(advisor::lowerLiveOocAction(live,A(5).bits).at("choiceIndex")==1,
                 "jump column was confused with reordered MCP occurrence");
-        for(int mutation=0;mutation<3;++mutation) {
+        // A current-version save restores the public counter, then capture
+        // serializes it again. Each value must preserve the exact legal set.
+        for(int counter : {-2,0,1,2,3}) {
+            auto resumed=J::parse(wire.dump());
+            for(auto &r:resumed["ooc"]["publicState"]["relics"])
+                if(r["id"]==J(RelicId::WING_BOOTS))r["liveCounter"]=counter;
+            if(counter<=0) {
+                resumed["ooc"]["liveChoices"].erase(0);
+                resumed["ooc"]["liveChoices"][0]["liveAction"]["choiceIndex"]=1;
+            }
+            advisor::LiveOocStateV1 restored;
+            check(advisor::importLiveOocStateV1(resumed,restored).ok && restored.mctsRoot.supported
+                    && restored.mctsRoot.state.wingBootsCharges==std::max(0,counter),
+                    "restored Wing Boots counter changed");
+            const auto restoredActions=v4CandidateActions(restored.mctsRoot.state);
+            std::vector<std::uint32_t> restoredBits;
+            for(const auto &a:restoredActions)restoredBits.push_back(a.bits);
+            advisor::validateLiveOocActionSet(restored,restoredBits);
+            check(restoredActions.size()==(counter>0?2u:1u),"restored Wing Boots legal set changed");
+            auto ordinary=restored.mctsRoot.state;A(2).execute(ordinary);
+            check(ordinary.wingBootsCharges==std::max(0,counter),"restored ordinary move consumed a charge");
+        }
+        for(int mutation=0;mutation<5;++mutation) {
             auto invalid=wire;
             if(mutation==0)invalid["ooc"]["liveChoices"].erase(0);
             else if(mutation==1)invalid["ooc"]["liveChoices"].push_back(choices[0]);
-            else {auto extra=choices[0];extra["nativeAction"]["index"]=4;extra["liveAction"]["choiceIndex"]=3;
+            else if(mutation==2) {auto extra=choices[0];extra["nativeAction"]["index"]=4;extra["liveAction"]["choiceIndex"]=3;
                 invalid["ooc"]["liveChoices"].push_back(extra);}
+            else for(auto &r:invalid["ooc"]["publicState"]["relics"])if(r["id"]==J(RelicId::WING_BOOTS)) {
+                if(mutation==3)r.erase("liveCounter");else r["data"]=1;
+            }
             advisor::LiveOocStateV1 rejected;bool failed=false;
             try {const auto status=advisor::importLiveOocStateV1(invalid,rejected);
                 if(!status.ok)failed=true;else advisor::validateLiveOocActionSet(rejected,bits);
             }catch(const std::exception&){failed=true;}
             check(failed,"incomplete/duplicate/extra jump mapping accepted");
         }
-        unsetenv("STS_LIVE_OOC_WING_BOOTS");
         if(output)output<<wire.dump()<<'\n';
     }
     {

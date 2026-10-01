@@ -1,5 +1,6 @@
 // Live combat state -> Silver search view (see SilverConversion.h).
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverWireState.h"
 
 #include <algorithm>
 
@@ -320,6 +321,7 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.cardSelect.damageAllBeforeBlocks = select.damageAllBeforeBlocks;
     out.cardSelect.selectedBits = 0;
     out.curCardQueueItem = toWire(live.curCardQueueItem);
+    capturePendingActionQueue(live,out);
     if (live.inputState == InputState::CARD_SELECT) {
         out.pendingCardQueueObserved = true;
         const auto &queue = live.cardQueue;

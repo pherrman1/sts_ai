@@ -400,42 +400,102 @@ def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     return bool(selected)
 
 
-def forethought_transaction(selected: Any, observation: Mapping[str, Any], screen: Mapping[str, Any]) -> LegalAction:
+def hand_selection_transaction(selected: Any, observation: Mapping[str, Any], screen: Mapping[str, Any]) -> LegalAction:
     combat = _mapping(observation.get("combat", _mapping(observation.get("silverRoot")).get("combat")))
     selection = _mapping(combat.get("cardSelect"))
+    task = selection.get("task")
+    owners = {
+        "FORETHOUGHT": ("unique.ForethoughtAction", (99,)),
+        "GAMBLE": ("unique.GamblingChipAction", (99,)),
+        "EXHAUST_MANY": ("common.ExhaustAction", (3, 5, 99)),
+    }
+    owner, counts = owners.get(task, ("", ()))
+    pick_count = selection.get("pickCount")
     if (not isinstance(selected, Mapping) or set(selected) != {"kind", "cardUuids"}
             or selected.get("kind") != "card_select"
-            or selection.get("task") != "FORETHOUGHT" or selection.get("origin") != "HAND_SELECT"
-            or selection.get("actionClass") != "com.megacrit.cardcrawl.actions.unique.ForethoughtAction"
+            or not owner or selection.get("origin") != "HAND_SELECT"
+            or selection.get("actionClass") != "com.megacrit.cardcrawl.actions." + owner
             or selection.get("canPickAnyNumber") is not True or selection.get("canPickZero") is not True
             or type(selection.get("selectedCount")) is not int or selection["selectedCount"] != 0
-            or selection.get("selectedBits") != 0 or selection.get("pickCount") != 99
+            or type(selection.get("selectedBits")) is not int or selection["selectedBits"] != 0
+            or type(pick_count) is not int or pick_count not in counts
+            or (selection.get("continuation") == "source_card_actions"
+                and (not isinstance(combat.get("pendingActionQueue"), list)
+                     or not combat["pendingActionQueue"]
+                     or not isinstance(combat.get("pendingCardQueue"), list)))
             or screen.get("screen_type") != "HAND_SELECT"):
-        raise IntegrationFailure("unqualified Forethought multi-selection transaction")
+        raise IntegrationFailure("unqualified hand multi-selection transaction")
     hand = [_card_uuid(_mapping(card)) for card in _list(combat.get("hand"))]
     choices = _list(selection.get("liveChoices"))
     wanted = selected.get("cardUuids")
     if (not hand or any(not uuid for uuid in hand) or len(set(hand)) != len(hand)
             or choices != [{"uuid": uuid, "choiceIndex": i+1} for i, uuid in enumerate(hand)]
             or not isinstance(wanted, list) or any(not isinstance(uuid, str) for uuid in wanted)
+            or len(wanted) > pick_count
             or len(set(wanted)) != len(wanted) or any(uuid not in hand for uuid in wanted)
             or wanted != [uuid for uuid in hand if uuid in wanted]):
-        raise IntegrationFailure("Forethought selected UUIDs do not match the ordered physical hand")
-    validate_forethought_screen(screen, hand, [])
-    return LegalAction("forethought-transaction", "Select Forethought cards and confirm",
+        raise IntegrationFailure("Selected UUIDs do not match the ordered physical hand or selection limit")
+    validate_hand_selection_screen(screen, hand, [], pick_count)
+    return LegalAction("hand-selection-transaction", "Select cards and confirm",
                        "select_cards_transaction", {"card_uuids": wanted},
-                       {"kind": "card_select", "card_uuids": wanted, "original_hand": hand})
+                       {"kind": "card_select", "card_uuids": wanted, "original_hand": hand,
+                        "task": task, "pick_count": pick_count})
 
 
-def validate_forethought_screen(screen: Mapping[str, Any], remaining: list[str], selected: list[str]) -> None:
+def validate_hand_selection_screen(screen: Mapping[str, Any], remaining: list[str], selected: list[str],
+                                   pick_count: int) -> None:
     state = _mapping(screen.get("screen_state"))
     uuids = lambda cards: [_card_uuid(_mapping(card)) for card in _list(cards)]
     if (screen.get("screen_type") != "HAND_SELECT" or not _is_combat(screen)
-            or state.get("max_cards") != 99 or state.get("can_pick_zero") is not True
+            or state.get("max_cards") != pick_count or state.get("can_pick_zero") is not True
             or uuids(state.get("hand")) != remaining or uuids(state.get("selected")) != selected
             or uuids(screen.get("hand")) != remaining
-            or len(_list(screen.get("choice_list"))) != len(remaining)):
-        raise IntegrationFailure("Forethought hand or selected cards changed during transaction")
+            or len(_list(screen.get("choice_list"))) != (0 if len(selected) == pick_count else len(remaining))):
+        raise IntegrationFailure("Hand or selected cards changed during transaction")
+
+
+def grid_selection_transaction(selected: Any, observation: Mapping[str, Any], screen: Mapping[str, Any]) -> LegalAction:
+    combat = _mapping(observation.get("combat", _mapping(observation.get("silverRoot")).get("combat")))
+    selection = _mapping(combat.get("cardSelect"))
+    integers = {"pickCount": 2, "selectedCount": 0, "selectedBits": 0, "newCost": 0}
+    if (not isinstance(selected, Mapping) or set(selected) != {"kind", "cardUuids"}
+            or selected.get("kind") != "grid_card_select"
+            or selection.get("task") != "LIQUID_MEMORIES_POTION" or selection.get("origin") != "GRID"
+            or selection.get("actionClass") != "com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction"
+            or any(type(selection.get(key)) is not int or selection[key] != value for key,value in integers.items())
+            or selection.get("canPickZero") is not False or selection.get("canPickAnyNumber") is not False
+            or selection.get("setCostToZero") is not True or selection.get("optional") is not False
+            or selection.get("continuation") not in {"none", "public_actions"}
+            or (selection.get("continuation") == "public_actions"
+                and (not isinstance(combat.get("pendingActionQueue"), list) or not combat["pendingActionQueue"]))):
+        raise IntegrationFailure("Unqualified Liquid Memories grid transaction")
+    discard = [_card_uuid(_mapping(card)) for card in _list(combat.get("discard"))]
+    choices = _list(selection.get("liveChoices"))
+    offered = [_mapping(choice).get("uuid") for choice in choices]
+    wanted = selected.get("cardUuids")
+    if (not discard or any(not uuid for uuid in discard) or len(set(discard)) != len(discard)
+            or any(not isinstance(uuid, str) or not uuid for uuid in offered)
+            or len(set(offered)) != len(offered) or set(offered) != set(discard)
+            or choices != [{"uuid": uuid, "choiceIndex": i+1} for i,uuid in enumerate(offered)]
+            or not isinstance(wanted, list) or len(wanted) != 2
+            or any(not isinstance(uuid, str) or uuid not in offered for uuid in wanted)
+            or len(set(wanted)) != 2):
+        raise IntegrationFailure("Liquid Memories pair does not match the physical discard grid")
+    validate_grid_selection_screen(screen, offered, [])
+    return LegalAction("grid-selection-transaction", "Choose Liquid Memories cards in order",
+                       "select_grid_transaction", {"card_uuids": wanted},
+                       {"kind": "grid_card_select", "card_uuids": wanted, "offered": offered})
+
+
+def validate_grid_selection_screen(screen: Mapping[str, Any], offered: list[str], selected: list[str]) -> None:
+    state = _mapping(screen.get("screen_state"))
+    uuids = lambda cards: [_card_uuid(_mapping(card)) for card in _list(cards)]
+    if (screen.get("screen_type") != "GRID" or not _is_combat(screen)
+            or state.get("num_cards") != 2
+            or any(state.get(key) is not False for key in ("any_number", "for_upgrade", "for_transform", "for_purge", "confirm_up"))
+            or uuids(state.get("cards")) != offered or uuids(state.get("selected_cards")) != selected
+            or len(_list(screen.get("choice_list"))) != len(offered)):
+        raise IntegrationFailure("Liquid Memories grid changed during transaction")
 
 
 def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalAction]) -> LegalAction:
@@ -895,7 +955,7 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
 
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                               candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Open cards after the fixed reward prefix; preserve full-belt potion siblings."""
+    """Open one card group with public relic/key or constrained potion siblings."""
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
         return None
     occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
@@ -918,21 +978,21 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
                          for reward in occurrences)
     sozu = any(_mapping(relic).get("id") == "Sozu" for relic in _list(game.get("relics")))
     constrained_potions = sozu or (free_slots is not None and potion_rewards > free_slots)
-    if sum(_text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "CARD"
-           for reward in occurrences) != 1:
+    if not any(index + 1 in choice_indexes
+               and _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "CARD"
+               for index, reward in enumerate(occurrences)):
         return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
         if kind == "POTION" and constrained_potions:
             continue
-        if kind in {"GOLD", "STOLEN_GOLD", "RELIC", "POTION"} and index + 1 in choice_indexes:
-            # The default simulator continuation collects gold, relics, and
-            # claimable potions before it evaluates the card group. Keys stay
-            # as normal OOC choices under the default policy.
+        if kind in {"GOLD", "STOLEN_GOLD", "POTION"} and index + 1 in choice_indexes:
+            # Collect scalar gold and claimable potions first. Public relics
+            # and keys remain explicit parent rewards after card selection.
             return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind == "CARD":
+        if kind == "CARD" and index + 1 in choice_indexes:
             return next((candidate for candidate in candidates
                          if candidate.mcp_tool == "choose"
                          and candidate.mcp_arguments == {"choice_index": index + 1}), None)
@@ -1196,35 +1256,59 @@ class Driver:
             raise IntegrationFailure("SHOP_ROOM navigation does not match the single merchant entry/proceed surface")
         return matches[0], room if entering else None
 
-    async def execute_forethought_transaction(self, action: LegalAction, screen: Mapping[str, Any],
+    async def execute_hand_selection_transaction(self, action: LegalAction, screen: Mapping[str, Any],
                                               commands: Mapping[str, Any], game: Mapping[str, Any]) -> Mapping[str, Any]:
         original = action.semantic["original_hand"]
         wanted = action.mcp_arguments["card_uuids"]
+        pick_count = action.semantic["pick_count"]
         remaining = list(original)
         selected: list[str] = []
         calls = []
         self.context["transaction_calls"] = calls
         for uuid in reversed(wanted):
-            validate_forethought_screen(screen, remaining, selected)
+            validate_hand_selection_screen(screen, remaining, selected, pick_count)
             if "choose" not in _tool_names(commands):
-                raise DriverError("Forethought choose command is no longer advertised")
+                raise DriverError("Hand selection choose command is no longer advertised")
             index = remaining.index(uuid)
             before = transition_identity(screen, game)
             arguments = {"choice_index": index + 1}
             result = await self.client.call("choose", arguments)
             calls.append({"tool": "choose", "arguments": arguments, "result": result})
             if _mapping(result).get("success") is False or _mapping(result).get("error"):
-                raise DriverError("Forethought selection failed; transaction stopped")
+                raise DriverError("Hand selection failed; transaction stopped")
             remaining.pop(index)
             selected.insert(0, uuid)
             await self.wait_for_ready_advance(before)
             screen, commands, game = await self.read_ready_snapshot()
-        validate_forethought_screen(screen, remaining, selected)
+        validate_hand_selection_screen(screen, remaining, selected, pick_count)
         confirm = next((tool for tool in ("confirm", "proceed") if tool in _tool_names(commands)), None)
         if confirm is None or screen.get("can_proceed") is not True:
-            raise DriverError("Forethought confirmation is not advertised")
+            raise DriverError("Hand selection confirmation is not advertised")
         result = await self.client.call(confirm, {})
         calls.append({"tool": confirm, "arguments": {}, "result": result})
+        return result
+
+    async def execute_grid_selection_transaction(self, action: LegalAction, screen: Mapping[str, Any],
+                                                 commands: Mapping[str, Any], game: Mapping[str, Any]) -> Mapping[str, Any]:
+        offered = action.semantic["offered"]
+        selected: list[str] = []
+        calls = []
+        self.context["transaction_calls"] = calls
+        for uuid in action.mcp_arguments["card_uuids"]:
+            validate_grid_selection_screen(screen, offered, selected)
+            if "choose" not in _tool_names(commands):
+                raise DriverError("Liquid Memories choose command is no longer advertised")
+            before = transition_identity(screen, game)
+            arguments = {"choice_index": offered.index(uuid) + 1}
+            result = await self.client.call("choose", arguments)
+            calls.append({"tool": "choose", "arguments": arguments, "result": result})
+            if _mapping(result).get("success") is False or _mapping(result).get("error"):
+                raise DriverError("Liquid Memories selection failed; transaction stopped")
+            selected.append(uuid)
+            if len(selected) < 2:
+                await self.wait_for_ready_advance(before)
+                screen, commands, game = await self.read_ready_snapshot()
+        # The second selection closes this mandatory grid automatically.
         return result
 
     async def step(self, step: int) -> bool:
@@ -1321,7 +1405,9 @@ class Driver:
                 try:
                     selected = evaluator.get("selectedLiveAction")
                     if combat and _mapping(selected).get("kind") == "card_select" and screen.get("screen_type") == "HAND_SELECT":
-                        action = forethought_transaction(selected, _mapping(snapshot.raw.get("observation")), screen)
+                        action = hand_selection_transaction(selected, _mapping(snapshot.raw.get("observation")), screen)
+                    elif combat and _mapping(selected).get("kind") == "grid_card_select":
+                        action = grid_selection_transaction(selected, _mapping(snapshot.raw.get("observation")), screen)
                     else:
                         action = (map_silver_action if combat else map_ooc_action)(selected, candidates)
                 except IntegrationFailure as error:
@@ -1393,13 +1479,15 @@ class Driver:
             row["observed_state"] = {"screen": screen, "game_state": game_state}
             row["pre_action_state"] = {"screen": current_screen, "game_state": current_game}
             raise DriverError("MCP state changed while awaiting the advisor; no action executed")
-        if action.mcp_tool != "select_cards_transaction" and action.mcp_tool not in _tool_names(current_commands):
+        if action.mcp_tool not in {"select_cards_transaction", "select_grid_transaction"} and action.mcp_tool not in _tool_names(current_commands):
             raise DriverError("selected MCP command is no longer advertised; no action executed")
         call_started = time.monotonic()
         row.update({"executed_mcp_tool": action.mcp_tool,
                     "executed_mcp_arguments": action.mcp_arguments})
         if action.mcp_tool == "select_cards_transaction":
-            row["mcp_result"] = await self.execute_forethought_transaction(action, current_screen, current_commands, current_game)
+            row["mcp_result"] = await self.execute_hand_selection_transaction(action, current_screen, current_commands, current_game)
+        elif action.mcp_tool == "select_grid_transaction":
+            row["mcp_result"] = await self.execute_grid_selection_transaction(action, current_screen, current_commands, current_game)
         else:
             row["mcp_result"] = await self.client.call(action.mcp_tool, action.mcp_arguments)
         row["mcp_action_micros"] = (time.monotonic() - call_started) * 1e6

@@ -19,14 +19,32 @@ public final class LiveOocCaptureTest {
     }
     public static void main(String[] args) throws Exception {
         Map<String,Object> parent=obj("potions",new java.util.ArrayList<Object>());
-        if(LiveOocCapture.captureParentPotions(parent,java.util.Arrays.asList(obj("type","POTION","potion","SpeedPotion")))!=null
+        if(LiveOocCapture.captureParentRewards(parent,java.util.Arrays.asList(obj("type","POTION","potion","SpeedPotion")))!=null
                 || !Boolean.TRUE.equals(parent.get("parentPotionRewards"))
                 || !parent.get("potions").equals(java.util.Arrays.asList("SpeedPotion"))) throw new AssertionError("parent potion lost");
-        for(String type:java.util.Arrays.asList("CARD","GOLD","RELIC","SAPPHIRE_KEY")) {
-            Map<String,Object> guarded=obj("potions",new java.util.ArrayList<Object>());
-            if(LiveOocCapture.captureParentPotions(guarded,java.util.Arrays.asList(obj("type",type)))==null
-                    || !((java.util.List<?>)guarded.get("potions")).isEmpty()) throw new AssertionError("unopened sibling accepted");
-        }
+        Map<String,Object> known=obj("potions",new java.util.ArrayList<Object>(),"gold",new java.util.ArrayList<Object>(),
+                "relics",new java.util.ArrayList<Object>());
+        if(LiveOocCapture.captureParentRewards(known,java.util.Arrays.asList(
+                obj("type","GOLD","gold",42),obj("type","RELIC","identity","paired","relic","Anchor"),
+                obj("type","RELIC","identity","other","relic","Vajra"),
+                obj("type","SAPPHIRE_KEY","linkedRelicIdentity","paired")))!=null
+                ||!Boolean.TRUE.equals(known.get("parentKnownRewards"))
+                ||!known.get("relics").equals(java.util.Arrays.asList("Vajra","Anchor"))
+                ||!Integer.valueOf(1).equals(known.get("sapphireRelicIndex")))
+            throw new AssertionError("known parent rewards or sapphire pair lost");
+        try {
+            LiveOocCapture.captureParentRewards(known,java.util.Arrays.asList(obj("type","SAPPHIRE_KEY","linkedRelicIdentity","absent")));
+            throw new AssertionError("absent sapphire pair accepted");
+        }catch(IllegalArgumentException expected) {}
+        Map<String,Object> unknown=obj("potions",new java.util.ArrayList<Object>());
+        if(LiveOocCapture.captureParentRewards(unknown,java.util.Arrays.asList(obj("type","UNKNOWN")))==null)
+            throw new AssertionError("unknown sibling accepted");
+        Map<String,Object> multi=obj("potions",new java.util.ArrayList<Object>());
+        if(LiveOocCapture.captureParentRewards(multi,java.util.Arrays.asList(
+                obj("type","CARD"),obj("type","CARD"),obj("type","POTION","potion","SpeedPotion")))!=null
+                || !Integer.valueOf(2).equals(multi.get("parentUnrevealedCardRewards"))
+                || !Boolean.TRUE.equals(multi.get("parentPotionRewards")))throw new AssertionError("multiple reward continuation lost");
+        if(multi.containsKey("cardRewards"))throw new AssertionError("unopened sibling cards leaked");
         Object skipPlayer=new Object(),reward=new Object(),other=new Object();
         CardRewardSkipObserver.Ledger ledger=new CardRewardSkipObserver.Ledger();ledger.bind(skipPlayer,1);ledger.skip(reward);
         if(!ledger.contains(reward) || ledger.contains(other))throw new AssertionError("skip occurrence identity lost");
@@ -325,7 +343,8 @@ public final class LiveOocCaptureTest {
         check("Lizard Tail", -2, false, 0, null);
         check("Matryoshka", 2, false, 2, null);
         check("Matryoshka", 1, false, 1, null);
-        check("WingedGreaves", 3, false, 0, null);
+        for(int counter:new int[]{-2,0,1,2,3})
+            check("WingedGreaves", counter, counter==-2, 0, null);
         check("NlothsMask", 1, false, 1, null);
         check("NlothsMask", -2, false, 0, null);
         check("NlothsMask", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:counter");

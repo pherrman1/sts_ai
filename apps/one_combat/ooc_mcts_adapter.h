@@ -29,8 +29,6 @@ struct OocAdapterOptions {
     // Live histories must qualify both room chances and future relic pools
     // before downstream MAP expansion.
     bool stopAtMapCheckpoint = false;
-    // Live-only support boundary, including relics acquired after the root.
-    bool stopAtActiveWingBootsMap = false;
     bool uniformPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;

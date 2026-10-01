@@ -599,12 +599,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
             // the hidden intent through its END_TURN chance node.
-            for (int i = 0; i < bc.monsters.monsterCount; ++i) {
-                auto &m = bc.monsters.arr[i];
-                if (m.pendingMoveRolls > 0 && !m.isDeadOrEscaped()) {
-                    m.materializePendingMove(bc);
-                }
-            }
+            rolloutAgent.materializeHiddenIntents(bc);
             action = rolloutAgent.chooseBattleCardPlay(bc);
         } else if (bc.inputState == InputState::CARD_SELECT) {
             action = rolloutAgent.chooseBattleCardSelect(bc);
@@ -631,7 +626,8 @@ void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleCon
             for (const auto &a : Action::enumerateCardSelectActions(bc)) {
                 const CardInstance *card = a.getActionType() == ActionType::SINGLE_CARD_SELECT
                         ? selectableCard(bc, a.getSelectIdx()) : nullptr;
-                if (card != nullptr) {
+                if (card != nullptr && !(bc.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                        && bc.cardSelectInfo.pickCount == 2)) {
                     const bool duplicate = std::any_of(kept.begin(), kept.end(),
                         [&](const CardInstance *k) { return cardsEquivalentForSearch(*card, *k); });
                     if (duplicate) continue;
@@ -844,6 +840,12 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
                                        from.cards.exhaustPile[src]); break;
                 case 3: idx = findCard(to.cards.drawPile, to.cards.drawPile.size(), from.cards.drawPile[src]); break;
                 default: break;
+            }
+            if (from.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                    && from.cardSelectInfo.pickCount == 2) {
+                const int second = findCard(to.cards.discardPile, static_cast<int>(to.cards.discardPile.size()),
+                    from.cards.discardPile[action.getTargetIdx()-1]);
+                return idx < 0 || second < 0 ? action : Action(ActionType::SINGLE_CARD_SELECT,idx,second+1);
             }
             return idx < 0 ? action : Action(ActionType::SINGLE_CARD_SELECT, idx);
         }

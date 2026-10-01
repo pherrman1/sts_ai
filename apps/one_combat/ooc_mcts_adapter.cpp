@@ -637,8 +637,7 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
     if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
-            && (options.stopAtMapCheckpoint || (options.stopAtActiveWingBootsMap
-                && state(id).hasRelic(sts::RelicId::WING_BOOTS) && state(id).wingBootsCharges > 0)))
+            && options.stopAtMapCheckpoint)
         return true;
     return metadata(id).boundary;
 }
@@ -1148,8 +1147,7 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     endpoint = endpointOf(state(id));
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
     if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
-            && (options.stopAtMapCheckpoint || (options.stopAtActiveWingBootsMap
-                && state(id).hasRelic(sts::RelicId::WING_BOOTS) && state(id).wingBootsCharges > 0)))
+            && options.stopAtMapCheckpoint)
         return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
@@ -1182,9 +1180,7 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
         if (child.gc.screenState == sts::ScreenState::MAP_SCREEN
-                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint
-                    || (options.stopAtActiveWingBootsMap && child.gc.hasRelic(sts::RelicId::WING_BOOTS)
-                        && child.gc.wingBootsCharges > 0))) {
+                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint)) {
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);

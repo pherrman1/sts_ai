@@ -16,10 +16,13 @@ public final class CombatBoundaryTest {
         String[][] selections = {
             {"common.PutOnDeckAction", "WARCRY"}, {"unique.ForethoughtAction", "FORETHOUGHT"},
             {"unique.SkillFromDeckToHandAction", "SECRET_TECHNIQUE"},
-            {"unique.AttackFromDeckToHandAction", "SECRET_WEAPON"}};
+            {"unique.AttackFromDeckToHandAction", "SECRET_WEAPON"},
+            {"common.ExhaustAction", "EXHAUST_ONE"}, {"unique.DiscardPileToTopOfDeckAction", "HEADBUTT"},
+            {"unique.ArmamentsAction", "ARMAMENTS"}, {"unique.ExhumeAction", "EXHUME"},
+            {"unique.DualWieldAction", "DUAL_WIELD"}};
         for (int i = 0; i < selections.length; ++i) {
             String name = "com.megacrit.cardcrawl.actions." + selections[i][0];
-            boolean hand = i < 2;
+            boolean hand = i < 2 || i == 4 || i == 6 || i == 8;
             if (!selections[i][1].equals(STSModelInspector.actionSelectionTask(name, hand, false, 1))
                     || !"".equals(STSModelInspector.actionSelectionTask(name, !hand, false, 1))
                     || !"".equals(STSModelInspector.actionSelectionTask(name, hand, true, 1))
@@ -28,6 +31,43 @@ public final class CombatBoundaryTest {
             try { Class.forName(name, false, CombatBoundaryTest.class.getClassLoader()); }
             catch (ClassNotFoundException error) { throw new AssertionError(error); }
         }
+        String[][] sourceOwners={{"WARCRY","red.Warcry"},{"WARCRY","colorless.ThinkingAhead"},
+            {"EXHAUST_ONE","red.TrueGrit"},{"EXHAUST_ONE","red.BurningPact"},{"ARMAMENTS","red.Armaments"},
+            {"DUAL_WIELD","red.DualWield"},{"EXHUME","red.Exhume"},{"HEADBUTT","red.Headbutt"},
+            {"FORETHOUGHT","colorless.Forethought"},{"EXHAUST_MANY","colorless.Purity"},
+            {"SECRET_TECHNIQUE","colorless.SecretTechnique"},{"SECRET_WEAPON","colorless.SecretWeapon"},{"DISCOVERY","colorless.Discovery"}};
+        if(!STSModelInspector.sourceCleanupExhaust(false,true,"com.megacrit.cardcrawl.powers.CorruptionPower")
+                || !STSModelInspector.sourceCleanupExhaust(true,false,null)
+                || STSModelInspector.sourceCleanupExhaust(false,false,"com.megacrit.cardcrawl.powers.CorruptionPower")
+                || STSModelInspector.sourceCleanupExhaust(false,true,"modded.CorruptionPower"))
+            throw new AssertionError("Corruption source cleanup exhaust projection changed");
+        if(!STSModelInspector.zeroCopyPower("Double Tap","com.megacrit.cardcrawl.powers.DoubleTapPower",0)
+                || !STSModelInspector.zeroCopyPower("DuplicationPower","com.megacrit.cardcrawl.powers.DuplicationPower",0)
+                || STSModelInspector.zeroCopyPower("Double Tap","com.megacrit.cardcrawl.powers.DoubleTapPower",1)
+                || STSModelInspector.zeroCopyPower("Double Tap","modded.DoubleTapPower",0)
+                || STSModelInspector.zeroCopyPower("Strength","com.megacrit.cardcrawl.powers.StrengthPower",0))
+            throw new AssertionError("copy power zero-charge normalization escaped exact vanilla proof");
+        for(String[] owner:sourceOwners) {
+            String className="com.megacrit.cardcrawl.cards."+owner[1];
+            if(!STSModelInspector.sourceSelectionOwner(owner[0],className)
+                    || STSModelInspector.sourceSelectionOwner("GAMBLE",className)
+                    || STSModelInspector.sourceSelectionOwner(owner[0],"modded."+owner[1]))
+                throw new AssertionError("source-owned cleanup qualification changed");
+            try {Class.forName(className,false,CombatBoundaryTest.class.getClassLoader());}
+            catch(ClassNotFoundException error){throw new AssertionError(error);}
+        }
+        try {
+            Class<?> cleanup=Class.forName("com.megacrit.cardcrawl.actions.utility.UseCardAction",false,CombatBoundaryTest.class.getClassLoader());
+            Class<?> cleanse=Class.forName("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction",false,CombatBoundaryTest.class.getClassLoader());
+            if(cleanse.getDeclaredField("c").getType()!=com.megacrit.cardcrawl.core.AbstractCreature.class)
+                throw new AssertionError("Pellets action recipient contract changed");
+            if(cleanup.getDeclaredField("targetCard").getType()!=com.megacrit.cardcrawl.cards.AbstractCard.class
+                    || cleanup.getDeclaredField("exhaustCard").getType()!=boolean.class
+                    || cleanup.getDeclaredField("returnToHand").getType()!=boolean.class
+                    || cleanup.getDeclaredField("reboundCard").getType()!=boolean.class
+                    || cleanup.getSuperclass().getDeclaredField("duration").getType()!=float.class)
+                throw new AssertionError("UseCardAction JAR lifecycle contract changed");
+        } catch(ReflectiveOperationException error){throw new AssertionError(error);}
         if (STSModelInspector.actionSelectionTask("unknown.Action", true, false, 1) != null)
             throw new AssertionError("unknown action was guessed");
         for (int initial : new int[]{30, 35, 40}) {
@@ -66,6 +106,44 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.HAND_SELECT, false, true))
             throw new AssertionError("transitional or OOC modal misclassified");
         java.util.List<String> uuids = java.util.Arrays.asList("physical-c", "physical-a", "physical-b");
+        for (String task : new String[]{"GAMBLE","EXHAUST_MANY"}) {
+            int count="GAMBLE".equals(task)?99:3;
+            String owner="GAMBLE".equals(task)?"com.megacrit.cardcrawl.actions.unique.GamblingChipAction":"com.megacrit.cardcrawl.actions.common.ExhaustAction";
+            JsonObject multi=new Gson().fromJson(STSModelInspector.singleSelectionJson(task,"HAND_SELECT",true,true,count,0,uuids,3),JsonObject.class);
+            if(!task.equals(multi.get("task").getAsString()) || !owner.equals(multi.get("actionClass").getAsString())
+                    || !task.equals(STSModelInspector.actionSelectionTask(owner,true,true,count)))
+                throw new AssertionError("source-owned multi selector rejected");
+        }
+        for(String kind:new String[]{"DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM","GAMBLE","UPGRADE_RANDOM","REMOVE_PEN_NIB","REMOVE_PLAYER_DEBUFFS"})
+            if(STSModelInspector.publicPendingActionJson(kind,3,null)==null)throw new AssertionError("public typed action missing: "+kind);
+        if(STSModelInspector.publicPendingActionJson("BUFF_PLAYER",2,"Strength")==null
+                || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",2,"Flex")==null
+                || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weakened")==null
+                || STSModelInspector.publicPendingActionJson("DEBUFF_ALL_ENEMY",1,"Vulnerable")==null
+                || STSModelInspector.publicPendingActionJson("SHUFFLE_WOUNDS",2,null)==null
+                || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Pen Nib")==null
+                || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",2,"Pen Nib")!=null
+                || STSModelInspector.publicPendingActionJson("SHUFFLE_WOUNDS",3,null)!=null
+                || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null
+                || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Echo Form")!=null
+                || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null
+                || STSModelInspector.publicPendingActionJson("PRIVATE_RANDOM_CARD",1,null)!=null)
+            throw new AssertionError("public pending action qualification");
+        for(int count:new int[]{1,2}) {
+            String owner="com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction";
+            JsonObject liquid=new Gson().fromJson(STSModelInspector.singleSelectionJson("LIQUID_MEMORIES_POTION","GRID",false,false,count,0,uuids,3),JsonObject.class);
+            if(!"LIQUID_MEMORIES_POTION".equals(liquid.get("task").getAsString())
+                    || !"LIQUID_MEMORIES_POTION".equals(STSModelInspector.actionSelectionTask(owner,false,false,count)))
+                throw new AssertionError("Liquid Memories source-owned amount rejected");
+        }
+        try {
+            Class<?> dual=Class.forName("com.megacrit.cardcrawl.actions.unique.DualWieldAction",false,CombatBoundaryTest.class.getClassLoader());
+            Class<?> liquid=Class.forName("com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction",false,CombatBoundaryTest.class.getClassLoader());
+            if(dual.getDeclaredField("dupeAmount").getType()!=int.class || dual.getDeclaredField("cannotDuplicate").getType()!=java.util.ArrayList.class
+                    || liquid.getDeclaredField("numberOfCards").getType()!=int.class || liquid.getDeclaredField("newCost").getType()!=int.class
+                    || liquid.getDeclaredField("optional").getType()!=boolean.class || liquid.getDeclaredField("setCost").getType()!=boolean.class)
+                throw new AssertionError("selector JAR private field contract changed");
+        } catch(ReflectiveOperationException error) {throw new AssertionError(error);}
         JsonObject single = new Gson().fromJson(STSModelInspector.singleSelectionJson(
                 "SECRET_WEAPON", "GRID", false, false, 1, 0, uuids, 3), JsonObject.class);
         if (!single.getAsJsonArray("liveChoices").get(0).getAsJsonObject().get("uuid").getAsString().equals("physical-c")

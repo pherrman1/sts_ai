@@ -14,6 +14,7 @@ final class PendingCardQueueCapture {
         boolean inHand;
         boolean vanillaEndTurnCard;
         Integer target;
+        Integer regretCardCount;
         boolean hasMonster;
         boolean requiresTarget;
         boolean vanilla = true;
@@ -41,8 +42,6 @@ final class PendingCardQueueCapture {
     static Result capture(List<Item> items, Object processedItem, boolean codexEndTurn, boolean unceasingTop) {
         if (items == null) return new Result(null, "queue_unavailable");
         if (items.size() > CAPACITY) return new Result(null, "queue_capacity");
-        if(codexEndTurn && !items.isEmpty() && unceasingTop)
-            return new Result(null,"end_turn_card_continuation");
         java.util.Set<String> endTurnCards = new java.util.HashSet<>();
         StringBuilder out = new StringBuilder("[");
         java.util.Set<Object> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object,Boolean>());
@@ -59,10 +58,17 @@ final class PendingCardQueueCapture {
             // Only an observed Codex end-turn owns this bounded status queue.
             if(codexEndTurn) {
                 if(endTurn || item.triggerOnUse || !item.endTurnAutoPlay || !item.inHand
-                        || !item.vanillaEndTurnCard || !("Burn".equals(item.cardId) || "Decay".equals(item.cardId))
+                        || !item.vanillaEndTurnCard || !("Burn".equals(item.cardId) || "Decay".equals(item.cardId)
+                            || "Doubt".equals(item.cardId) || "Shame".equals(item.cardId) || "Regret".equals(item.cardId))
                         || item.hasMonster || item.requiresTarget || item.target!=null || item.ignoreEnergyTotal
                         || item.freeToPlay || item.randomTarget || item.autoplay || item.purgeOnUse || item.exhaustOnUse
                         || !endTurnCards.add(item.uuid)) return new Result(null,"end_turn_card_continuation");
+                if ("Regret".equals(item.cardId) && (item.regretCardCount == null
+                        || item.regretCardCount < 0 || item.regretCardCount > 10))
+                    return new Result(null,"end_turn_card_continuation");
+                // Java disables Unceasing Top before the last end-turn item.
+                // Native endTurnQueued is the equivalent barrier: its Top
+                // check occurs only after onTurnEnding and the next turn draw.
             } else if (item.endTurnAutoPlay || !item.triggerOnUse)
                 return new Result(null, "end_turn_card_continuation");
             if (item.energyOnUse < 0 || item.energyOnUse > 999)
@@ -84,7 +90,7 @@ final class PendingCardQueueCapture {
                     .append(",\"freeToPlay\":").append(item.freeToPlay)
                     .append(",\"randomTarget\":").append(item.randomTarget)
                     .append(",\"autoplay\":").append(item.autoplay)
-                    .append(",\"regretCardCount\":0")
+                    .append(",\"regretCardCount\":").append(codexEndTurn && "Regret".equals(item.cardId) ? item.regretCardCount : 0)
                     .append(",\"endTurnAutoPlay\":").append(item.endTurnAutoPlay)
                     .append(",\"noTriggerOwner\":\"").append(codexEndTurn?"codex_end_turn":"").append("\"")
                     .append(",\"purgeOnUse\":").append(item.purgeOnUse)

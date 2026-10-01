@@ -395,7 +395,9 @@ json oocResponse(const one_combat::advisor::Request &request,
                     {"observationHash", request.observationHash},
                     {"evaluators", json::array({evaluator})}};
         }
-        if(state.ooc.at("details").value("parentPotionRewards",false)
+        if((state.ooc.at("details").value("parentPotionRewards",false)
+                    || state.ooc.at("details").value("parentKnownRewards",false)
+                    || state.ooc.at("details").contains("parentUnrevealedCardRewards"))
                 && (std::string(policy.name())!="mcts_ctm" || (std::getenv("STS_DIFFERENTIAL_TRACE") && std::string(std::getenv("STS_DIFFERENTIAL_TRACE"))=="1"))) {
             evaluator["reason"]="PARENT_REWARD_CONTINUATION_REQUIRES_MCTS";
             return {{"protocol",advisor::kProtocol},{"protocolVersion",advisor::kProtocolVersion},
@@ -438,6 +440,10 @@ json oocResponse(const one_combat::advisor::Request &request,
             return {{"protocol",advisor::kProtocol},{"protocolVersion",advisor::kProtocolVersion},
                 {"kind","analysis"},{"status","OK"},{"session",request.session},{"sequence",request.sequence},
                 {"observationHash",request.observationHash},{"evaluators",json::array({evaluator})}};
+        }
+        if(state.ooc.at("details").contains("parentUnrevealedCardRewards")) {
+            evaluator["continuationScope"]="visible_reward_checkpoint_omits_unrevealed_sibling_value";
+            evaluator["unrevealedCardRewardCount"]=state.ooc.at("details").at("parentUnrevealedCardRewards");
         }
         try {
             validateCapturedLiveOocMapping(state);
@@ -733,7 +739,10 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         const auto task = selection.value("task", std::string());
         const auto owner = selection.value("actionClass", std::string());
         const bool knownOwner = (task == "WARCRY" && owner == "com.megacrit.cardcrawl.actions.common.PutOnDeckAction")
-            || (task == "FORETHOUGHT" && owner == "com.megacrit.cardcrawl.actions.unique.ForethoughtAction");
+            || (task == "FORETHOUGHT" && owner == "com.megacrit.cardcrawl.actions.unique.ForethoughtAction")
+            || (task == "EXHAUST_ONE" && owner == "com.megacrit.cardcrawl.actions.common.ExhaustAction")
+            || (task == "ARMAMENTS" && owner == "com.megacrit.cardcrawl.actions.unique.ArmamentsAction")
+            || (task == "DUAL_WIELD" && owner == "com.megacrit.cardcrawl.actions.unique.DualWieldAction");
         const auto integerIs = [&](const char *key, int expected) {
             return selection.contains(key) && selection.at(key).is_number_integer()
                 && selection.at(key).get<int>() == expected;
@@ -1073,8 +1082,7 @@ int main() {
                     } else if (request.observation.value("boundary", std::string()) == "ooc") {
                         response = oocResponse(request, *oocPolicy, oocIdentity + ":ctm=" + ctmIdentity
                                                 + ":win=" + oocWinIdentity + ":floor=" + oocFloorIdentity
-                                                + (one_combat::advisor::liveOocWingBootsEnabled()
-                                                    ? ":wingBoots=experimental_exact" : ":wingBoots=guarded"),
+                                                + ":wingBoots=public_exact",
                                                 pendingCompound);
                     } else {
                         one_combat::advisor::PublicOocState imported;

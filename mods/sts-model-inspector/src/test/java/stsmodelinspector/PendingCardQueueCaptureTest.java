@@ -67,12 +67,13 @@ public final class PendingCardQueueCaptureTest {
         marker.autoplay=true; reject(Arrays.asList(marker),processed,"end_turn_marker");
         // Source-shaped Burn/Decay end-turn items: same physical hand cards,
         // no target, no normal play, Java end-turn autoplay flag is distinct.
-        for(String id:Arrays.asList("Burn","Decay")) {
+        for(String id:Arrays.asList("Burn","Decay","Doubt","Shame","Regret")) {
             PendingCardQueueCapture.Item status=new PendingCardQueueCapture.Item();
             status.identity=new Object();status.uuid="status-"+id;status.cardId=id;
             status.cardJson="{\"id\":\""+id+"\",\"uuid\":\""+status.uuid+"\"}";
             status.inHand=true;status.vanillaEndTurnCard=true;status.triggerOnUse=false;
             status.endTurnAutoPlay=true;status.energyOnUse=2;
+            if ("Regret".equals(id)) status.regretCardCount=7;
             PendingCardQueueCapture.Result accepted=PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,false);
             if(accepted.error!=null)throw new AssertionError(id+" Codex queue rejected: "+accepted.error);
             JsonObject row=new Gson().fromJson(accepted.json,JsonArray.class).get(0).getAsJsonObject();
@@ -81,12 +82,14 @@ public final class PendingCardQueueCaptureTest {
                     || !"codex_end_turn".equals(row.get("noTriggerOwner").getAsString()))
                 throw new AssertionError("Codex no-trigger proof lost");
             if(PendingCardQueueCapture.capture(Arrays.asList(status),processed,false,false).error==null
-                    || PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,true).error==null)
-                throw new AssertionError("owner or Unceasing Top guard bypassed");
+                    || PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,true).error!=null)
+                throw new AssertionError("owner proof or Unceasing Top continuation mismatch");
+            if (row.get("regretCardCount").getAsInt() != ("Regret".equals(id)?7:0))
+                throw new AssertionError("Regret captured trigger-time hand count lost");
             status.inHand=false;
             if(PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,false).error==null)
                 throw new AssertionError("non-hand status queue accepted");
-            status.inHand=true;status.cardId="Regret";
+            status.inHand=true;status.cardId="Regret";status.regretCardCount=null;
             if(PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,false).error==null)
                 throw new AssertionError("unqualified no-trigger payload accepted");
         }

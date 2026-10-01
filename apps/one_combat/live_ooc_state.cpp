@@ -150,7 +150,7 @@ const std::map<Event,std::string> eventLeavePages{
     {Event::LIVING_WALL,"RESULT"},{Event::THE_MAUSOLEUM,"RESULT"},{Event::TOMB_OF_LORD_RED_MASK,"RESULT"},
     {Event::FACE_TRADER,"RESULT"},{Event::FALLING,"RESULT"},{Event::THE_WOMAN_IN_BLUE,"RESULT"},
     {Event::OLD_BEGGAR,"LEAVE"},{Event::MINDBLOOM,"LEAVE"},{Event::COLOSSEUM,"LEAVE"},
-    {Event::SECRET_PORTAL,"LEAVE"},{Event::MASKED_BANDITS,"END"},{Event::CURSED_TOME,"END"},
+    {Event::SECRET_PORTAL,"LEAVE"},{Event::SENSORY_STONE,"LEAVE"},{Event::MASKED_BANDITS,"END"},{Event::CURSED_TOME,"END"},
     {Event::MYSTERIOUS_SPHERE,"END"},{Event::WING_STATUE,"MAP"},{Event::THE_SSSSSERPENT,"DISAGREE|COMPLETE"},
     {Event::DESIGNER_IN_SPIRE,"DONE"},{Event::DEAD_ADVENTURER,"ESCAPE|SUCCESS"},
     {Event::KNOWING_SKULL,"COMPLETE"},{Event::WE_MEET_AGAIN,"COMPLETE"},{Event::WHEEL_OF_CHANGE,"LEAVE"},{Event::MATCH_AND_KEEP,"COMPLETE"}
@@ -620,7 +620,9 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         gc.screenState = sts::ScreenState::MAP_SCREEN;
         gc.regainControlAction = nullptr;
     };
-    if(source.ooc.at("details").value("parentPotionRewards",false)) {
+    if(source.ooc.at("details").value("parentPotionRewards",false)
+            || source.ooc.at("details").value("parentKnownRewards",false)
+            || source.ooc.at("details").contains("parentUnrevealedCardRewards")) {
         // UI Skip closes only the visible card page; sibling potions remain.
         // CARD(group,5) still means Singing Bowl when owned. The distinct
         // global SKIP primitive is scoped here to the public card-page close.
@@ -648,15 +650,15 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     result.currentActEventVisits = eventVisits;
     result.questionHistoryComplete=questionHistoryComplete && !questionMonsterChanceAmbiguous;
     if(questionBeliefQualified)result.questionChancePosterior=questionBelief.monster;
-    result.mapHistoryComplete=result.questionHistoryComplete && seenRelicsComplete;
+    // Unknown sibling card identities are not captured or fabricated. Resolve
+    // this visible offer and known potions, then value the resulting player
+    // state at a hard checkpoint; omitted sibling choices are disclosed.
+    result.mapHistoryComplete=result.questionHistoryComplete && seenRelicsComplete
+        && !source.ooc.at("details").contains("parentUnrevealedCardRewards");
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
     // relic branches still require complete public offer history.
-    if (source.projected.screenState == ScreenState::MAP_SCREEN
-            && source.projected.wingBootsCharges > 0 && !liveOocWingBootsEnabled()) {
-        result.supported = false;
-        result.reason = "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active";
-    } else if (!combatHistoryComplete) {
+    if (!combatHistoryComplete) {
         result.supported = false;
         result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";
     } else if (!questionHistoryComplete && eventVisits > 0) {
@@ -689,13 +691,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         std::string deferredUnsupportedReason;
         if (o.contains("unsupportedReason")) {
             const auto reason = string(o,"unsupportedReason");
-            // Non-MAP screens may carry the relic through continuation, but a
-            // direct MAP decision with active charges is fail-closed because
-            // the frozen value models do not encode remaining charges.
+            // Accept the former producer marker for compatible captures;
+            // public charge and exact action-set validation still run below.
             const bool boundedWinged = reason
-                    == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
-                && (liveOocWingBootsEnabled() || screenName != "map" || (o.contains("details") && o.at("details").is_object()
-                    && o.at("details").value("mechanicalTransition",std::string())=="boss_map"));
+                    == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active";
             // A normal combat reward can expose gold alongside an unopened
             // card group. Defer this one support boundary until the complete
             // capture and its live mappings have been validated below.
@@ -762,6 +761,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             require(relicIds.insert(r).second,"duplicate relic identity");
             const int modelData = integer(v,"data",-1000000,1000000);
             if (r == RelicId::WING_BOOTS) {
+                require(modelData == 0, "Wing Boots model data must be zero");
                 require(v.contains("liveCounter"), "Wing Boots liveCounter missing");
                 g.relics.add({r, 0});
                 const int counter=integer(v,"liveCounter",-2,3);
@@ -903,10 +903,22 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             for(const auto &v:array(d,"potions",5))r.addPotion(id<Potion>(v,Potion::INVALID));
             r.emeraldKey=boolean(d,"emeraldKey");r.sapphireKey=boolean(d,"sapphireKey");
             require(!(r.emeraldKey&&r.sapphireKey),"native reward keys are mutually exclusive");
-            if(d.contains("parentPotionRewards")) {
-                require(boolean(d,"parentPotionRewards") && screenName=="card_reward" && r.cardRewardCount==1
-                        && r.potionCount>0 && r.goldRewardCount==0 && r.relicCount==0 && !r.emeraldKey && !r.sapphireKey,
-                        "unqualified parent potion continuation");
+            if(d.contains("parentPotionRewards") || d.contains("parentKnownRewards") || d.contains("parentUnrevealedCardRewards")) {
+                const bool parentPotions=d.contains("parentPotionRewards");
+                const bool known=d.contains("parentKnownRewards");
+                const bool hasKnown=r.goldRewardCount>0 || r.relicCount>0 || r.emeraldKey || r.sapphireKey;
+                require(known==hasKnown && (!known || boolean(d,"parentKnownRewards")),"unqualified public parent rewards");
+                if(r.sapphireKey)require(r.relicCount>0
+                    && integer(d,"sapphireRelicIndex",r.relicCount-1,r.relicCount-1)==r.relicCount-1,
+                    "parent sapphire relic pairing missing");
+                else require(!d.contains("sapphireRelicIndex"),"unexpected parent sapphire pairing");
+                const int unopened=d.contains("parentUnrevealedCardRewards")
+                    ? integer(d,"parentUnrevealedCardRewards",1,4) : 0;
+                require((!parentPotions || boolean(d,"parentPotionRewards"))
+                        && screenName=="card_reward" && r.cardRewardCount==1
+                        && (parentPotions ? r.potionCount>0 : r.potionCount==0)
+                        && (parentPotions || known || unopened>0),
+                        "unqualified parent reward continuation");
                 bool skip=false,leave=false;std::set<int> seen;
                 for(const auto &choice:array(o,"liveChoices",1024)) {
                     const auto &n=choice.at("nativeAction");

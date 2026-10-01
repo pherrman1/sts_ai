@@ -447,6 +447,12 @@ void setupCardOptionsHelper(std::vector<std::pair<search::Action,CardInstance>> 
 
 
 void search::SimpleAgent::stepBattleCardSelect(BattleContext &bc) {
+    if (bc.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION && bc.cardSelectInfo.pickCount == 2) {
+        const auto pairs = search::Action::enumerateCardSelectActions(bc);
+        takeAction(bc,pairs.front());
+        return;
+    }
+
     if (bc.cardSelectInfo.cardSelectTask == CardSelectTask::FORETHOUGHT && bc.cardSelectInfo.canPickAnyNumber) {
         takeAction(bc, search::Action(search::ActionType::MULTI_CARD_SELECT, 0));
         return;

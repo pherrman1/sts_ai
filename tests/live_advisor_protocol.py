@@ -34,7 +34,9 @@ class AdvisorProtocolTest(unittest.TestCase):
         return [json.loads(line) for line in proc.stdout.splitlines()]
 
     def test_completed_single_selection_is_exact_model_free_confirmation(self):
-        for task, owner in (("WARCRY", "common.PutOnDeckAction"), ("FORETHOUGHT", "unique.ForethoughtAction")):
+        for task, owner in (("WARCRY", "common.PutOnDeckAction"), ("FORETHOUGHT", "unique.ForethoughtAction"),
+                            ("EXHAUST_ONE", "common.ExhaustAction"), ("ARMAMENTS", "unique.ArmamentsAction"),
+                            ("DUAL_WIELD", "unique.DualWieldAction")):
             select = dict(mechanicalTransition="single_select_confirm", origin="HAND_SELECT",
                           task=task, actionClass="com.megacrit.cardcrawl.actions." + owner,
                           pickCount=1, selectedCount=1, liveChoiceCount=0,

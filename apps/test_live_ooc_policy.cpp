@@ -604,22 +604,38 @@ int main(int argc, char **argv) {
         {
             for (bool acquiredLater : {false,true}) {
                 auto source=pending;
-                if (!acquiredLater) { source.relics.add({RelicId::WING_BOOTS,0});source.wingBootsCharges=2; }
+                source.map=std::make_shared<Map>();
+                for(int y=0;y<15;++y)for(int x=0;x<7;++x) {
+                    auto &node=source.map->nodes[y][x];node.x=x;node.y=y;node.room=Room::REST;
+                }
+                source.curMapNodeX=1;source.curMapNodeY=0;
+                source.map->getNode(1,0).addEdge(2);
+                source.map->getNode(2,1).addEdge(2);source.map->getNode(5,1).addEdge(2);
+                if (!acquiredLater) source.obtainRelic(RelicId::WING_BOOTS);
                 else source.regainControlAction=[](GameContext &g) {
-                    g.relics.add({RelicId::WING_BOOTS,0});g.wingBootsCharges=3;g.screenState=ScreenState::MAP_SCREEN;
+                    g.obtainRelic(RelicId::WING_BOOTS);g.screenState=ScreenState::MAP_SCREEN;
                 };
-                auto guarded=checkpoint;guarded.stopAtMapCheckpoint=false;guarded.stopAtActiveWingBootsMap=true;
-                auto guardedDeps=deps;
-                OocGameContextModel model(source,path,{},guarded,guardedDeps);
+                auto expanded=checkpoint;expanded.stopAtMapCheckpoint=false;
+                OocGameContextModel model(source,path,{},expanded,deps);
                 std::mt19937_64 rng(29);
                 const auto child=model.sampleSuccessor(0,model.legalActions(0).front().id,rng);
-                require(model.state(child).screenState==ScreenState::MAP_SCREEN && model.isLeafBoundary(child),
-                        "active Wing Boots escaped downstream map guard");
-                require(model.evaluateLeaf(child,rng)==.25,"guarded map leaf failed");
-                guarded.leafCombats=1;
-                OocGameContextModel detached(source,path,{},guarded,guardedDeps);
-                require(detached.evaluateLeaf(0,rng)==.25 && mapContinuationCalls==0,
-                        "detached continuation bypassed charged map boundary");
+                require(model.state(child).screenState==ScreenState::MAP_SCREEN && !model.isLeafBoundary(child),
+                        "public Wing Boots remained a downstream hard leaf");
+                const auto choices=model.legalActions(child);
+                require(choices.size()==2,"downstream Wing Boots lost an edge or jump");
+                bool jumped=false;
+                for(const auto &choice:choices) if(model.candidate(child,choice.id).primitive.getIdx1()==5) {
+                    const auto next=model.sampleSuccessor(child,choice.id,rng);
+                    require(model.state(next).curMapNodeX==5 && model.state(next).wingBootsCharges==2
+                            && model.state(child).wingBootsCharges==3,"downstream jump charge/copy mismatch");
+                    jumped=true;
+                }
+                require(jumped,"downstream Wing Boots jump unavailable");
+                // Relic support cannot bypass missing public map histories.
+                expanded.stopAtMapCheckpoint=true;
+                OocGameContextModel unqualified(source,path,{},expanded,deps);
+                const auto boundary=unqualified.sampleSuccessor(0,unqualified.legalActions(0).front().id,rng);
+                require(unqualified.isLeafBoundary(boundary),"Wing Boots bypassed map-history guard");
             }
         }
         {

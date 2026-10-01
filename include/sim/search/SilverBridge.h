@@ -142,6 +142,21 @@ struct CardQueueItemWire {
     bool exhaustOnUse = false;
 };
 
+// Qualified public action tails at a live selector. These values describe
+// unexecuted effects, never random outcomes or live RNG state.
+enum class PendingActionKind : std::uint8_t {
+    INVALID = 0, DRAW = 1, GAIN_BLOCK = 2, GAIN_ENERGY = 3,
+    DAMAGE_ALL = 4, DAMAGE_RANDOM = 5, GAMBLE = 6, UPGRADE_RANDOM = 7,
+    BUFF_PLAYER = 8, DEBUFF_PLAYER = 9, DEBUFF_ALL_ENEMY = 10, SHUFFLE_WOUNDS = 11,
+    USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14
+};
+struct PendingActionWire {
+    PendingActionKind kind = PendingActionKind::INVALID;
+    int amount = 0;
+    int status = 0;
+    bool sourceMonster = false;
+};
+
 struct BattleStateWire {
     // Version makes an incompatible protocol fail closed in the vendor bridge.
     static constexpr std::uint32_t kVersion = 3;
@@ -185,13 +200,17 @@ struct BattleStateWire {
     PileWire drawPile, discardPile, exhaustPile;
     CardSelectWire cardSelect;
     CardQueueItemWire curCardQueueItem;
-    // Runtime-only, like historicalQueueItemAtSource: the card queue still
-    // pending at a card selection (a copy queued by Double Tap, Duplication or
-    // Necronomicon), front first. Absent from legacy JSON; when it was not
+    // The card queue still pending at a card selection (a copy queued by
+    // Double Tap, Duplication or Necronomicon), front first. Older JSON
+    // snapshots omit these optional fields; when the queue was not
     // observed the search root keeps the queue its replay of the interrupted
     // card rebuilds.
     bool pendingCardQueueObserved = false;
     std::vector<CardQueueItemWire> pendingCardQueue;
+    // An exact public action tail replaces interrupted-card replay. Both
+    // queue kinds persist in current JSON envelopes without live RNG data.
+    bool pendingActionQueueObserved = false;
+    std::vector<PendingActionWire> pendingActionQueue;
     std::uint32_t miscBits = 0;
 };
 

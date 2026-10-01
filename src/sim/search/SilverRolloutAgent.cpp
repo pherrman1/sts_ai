@@ -447,6 +447,13 @@ search::SilverRolloutAgent::SilverRolloutAgent(bool randomizeMode, std::uint64_t
     }
 }
 
+void search::SilverRolloutAgent::materializeHiddenIntents(BattleContext &bc) {
+    for(int i=0;i<bc.monsters.monsterCount;++i) {
+        auto &m=bc.monsters.arr[i];
+        if((m.pendingMoveRolls>0 || m.pendingDirectMoveChoice!=0) && !m.isDeadOrEscaped()) m.materializePendingMove(bc);
+    }
+}
+
 int search::SilverRolloutAgent::getIncomingDamage(const BattleContext &bc) const {
     int incomingDamage = 0;
     for (int i = 0; i < bc.monsters.monsterCount; ++i) {
@@ -455,7 +462,7 @@ int search::SilverRolloutAgent::getIncomingDamage(const BattleContext &bc) const
             continue;
         }
         DamageInfo dInfo;
-        if (m.pendingMoveRolls > 0) {
+        if (m.pendingMoveRolls > 0 || m.pendingDirectMoveChoice != 0) {
             dInfo = {5 * act, 1};   // hidden intent: Silver's flat estimate
         } else {
             dInfo = m.getMoveBaseDamage(bc);
@@ -559,6 +566,11 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
 }
 
 search::Action search::SilverRolloutAgent::chooseBattleCardSelect(const BattleContext &bc) {
+    if (bc.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION && bc.cardSelectInfo.pickCount == 2) {
+        const auto pairs = search::Action::enumerateCardSelectActions(bc);
+        return pairs.front();
+    }
+
     std::vector<std::pair<search::Action,CardInstance>> actions;
     const auto &cards = bc.cards;
     const auto task = bc.cardSelectInfo.cardSelectTask;

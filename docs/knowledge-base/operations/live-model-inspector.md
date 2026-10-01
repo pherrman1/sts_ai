@@ -117,21 +117,41 @@ oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
-`moveHistory`, `intent`, and `intentDamage`. A bounded public-history observer
-qualifies audited ordinary encounters within an explicit safe
-card/relic/potion/power domain. The supported roster includes Jaw Worm, Cultist,
-Fungi Beast, Blue/Red Slaver, medium slimes, both small slimes, Sentry and
-ordinary Gremlin Nob; groups require
-every member to qualify and retain stable original slots. Dead slots retain
-executed history; unqualified replacements and escapes remain unsupported.
-Small Acid Slime begins with a deferred hidden opening roll. Its later turns
-alternate deterministically without a new roll. Schema 2 requires a typed
-`knownNextMove` proof derived from the executed move and the two audited vanilla
-`takeTurn` override sites; no queued move is read. Initial/dead rows carry null.
-The importer validates alternating history, ascension-dependent opening, and
-zero pending rolls for a known next move. Missing, late, duplicate, or unrelated
-overrides fail closed. Spot Weakness on a known next move checks consistency
-without adding hidden observations or consuming RNG.
+`moveHistory`, `intent`, and `intentDamage`. A public-history observer qualifies 49 audited monster types. The roster is
+Jaw Worm, Cultist, Fungi Beast, Blue/Red Slaver, small/medium Acid and Spike
+Slimes, Sentry, Gremlin Nob, Centurion, Mystic, Chosen, Snake Plant, Snecko,
+Spheric Guardian, Exploder, Repulsor, Maw, Nemesis, Orb Walker, Giant Head,
+Donu, Deca, Spiker, Spire Growth, Taskmaster, the five ordinary gremlin types,
+Book of Stabbing, Time Eater, the three Masked Bandits, Transient, Writhing
+Mass, Champ, Byrd, Shelled Parasite, Guardian, Hexaghost, Lagavulin, Looter,
+Mugger and Awakened One. Every member of
+a group must qualify, retaining original physical slots and executed history
+for dead members. Birth and replacement lifecycles outside this roster remain unsupported.
+The thief contract separately qualifies original escaped slots. Generic card, relic, potion and power qualification still
+applies; Dome does not impose a separate restricted deck.
+Schema 3 carries typed known-next and forced-override proofs, public pre-roll
+inputs, roll generations and indexed attack predicates. Exact installed-source
+setter sites qualify deterministic transitions and visible stuns; missing,
+late, duplicate or unrelated overrides fail closed. No queued hidden move is
+read. Writhing Mass retains each public reactive-roll input and only marks
+Implant used after its public execution. Guardian derives the defensive
+threshold from completed Twin Slams and observes the public Mode Shift break.
+Hexaghost records player HP at public Activate execution to derive Divider,
+and derives orb phase from the completed deterministic cycle. Spot Weakness
+on a known next move checks consistency without consuming RNG.
+Lagavulin records public sleep/wake transitions and qualified setter ordering.
+Looter and Mugger retain a deferred direct-choice prior without reading its
+outcome, with public stolen-gold bookkeeping and escaped-slot handling.
+Awakened One records public half-dead/rebirth transitions while retaining the
+original Cultist slots. Deferred direct choices are materialized before rollout
+policy evaluation just as ordinary pending move rolls are.
+The remaining 13 monster types need distinct contracts: summon/split/replacement
+births with canonical slots, occupant generations and per-object timelines; and
+persistent hidden constructor damage for both lice and Darkling, plus Darkling
+regrow. Hidden damage requires a particle-level latent parameter conditioned
+only on public outcomes. Reading private base damage after a blocked or
+mitigated hit would reveal information the player did not observe. These
+boundaries require protocol work beyond allowing a monster ID.
 Spot Weakness contributes only its publicly revealed attack/nonattack predicate,
 indexed to the pending roll. Fair search conditions hidden move samples on that
 predicate without exposing the actual move or damage. Repeated queries retain
@@ -189,16 +209,32 @@ front-first order. It verifies that the processed physical queue item has
 already been removed; unknown subclasses, unsettled queues, invalid targets,
 capacity overflow and unqualified end-turn/no-trigger payloads fail closed.
 At a qualified Nilry's Codex end-turn choice, the producer also preserves
-ordered vanilla Burn/Decay objects still in the hand with their no-trigger
+ordered vanilla Burn, Decay, Doubt, Shame and Regret objects still in the hand with their no-trigger
 flags. The importer verifies their physical card identity, owning continuation
 and exact flags. Pending block gains precede that damage; lethal damage stops
-the continuation. Unceasing Top and other no-trigger owners/cards remain
-unsupported. Java's `isEndTurnAutoPlay` flag is kept separate from the native
+the continuation. Regret retains its trigger-time hand count. Unceasing Top is
+qualified at the Codex end-turn barrier; its next-turn behavior resumes after
+the end-turn queue. Other no-trigger owners/cards remain unsupported.
+Java's `isEndTurnAutoPlay` flag is kept separate from the native
 null-card end-turn marker. A producer-shaped Double Tap/Headbutt fixture checks
 the copied continuation; Codex fixtures check choose/skip, upgraded Burn,
 block order and lethal damage.
-Arbitrary pending action-queue continuations still require their own contracts;
-this change is the card-queue producer slice of issue #328. Boolean monster powers are
+Qualified source-card selectors, standalone selectors and Toolbox capture an
+ordered typed action tail: opening draws, block/energy, literal or random enemy damage,
+Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
+batches, Mark of Pain's two shuffled Wounds, and the owning card's cleanup.
+Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
+are qualified by their exact vanilla relic, action and recipient.
+Exact vanilla action classes,
+unstarted-action fields and public parameters are required. The native root
+restores this observed queue directly instead of replaying a historical card;
+the producer clears stale current-card bookkeeping for standalone selectors.
+Source-card tails require an exact card/task owner, physical queue provenance,
+unstarted cleanup flags and an observed copied-card queue; cleanup executes
+once at its recorded position after effects such as Burning Pact's draw.
+Observed card and action queues survive JSON envelope snapshots, including
+known empty queues. Arbitrary action tails and hidden preselected random
+targets still require their own contracts. Boolean monster powers are
 presence states at the importer boundary, so a negative or sentinel Java amount
 still sets the status bit before numeric amount validation. The stable slot
 registry keeps ordinary Large Slime split children at native slots 0/1; the
@@ -618,11 +654,11 @@ Sozu excludes these candidates. Direct V4 reports
 `POTION_REPLACEMENT_REQUIRES_MCTS`, because its frozen candidate set cannot
 score the additional action; MCTS uses its uniform-prior fallback.
 
-The live driver opens an unrevealed card reward only after all claimable
-non-card rewards in that combat reward have been collected. This preserves the
-simulator continuation order (gold, relic, potion, then card choice; keys stay
-normal OOC choices) and
-ensures the card scorer sees the post-collection root state.
+The live driver opens an unrevealed card reward after gold and freely
+collectable potions in that combat reward have been collected. Visible
+relic/key rewards and constrained potion rewards may remain as exact parent
+continuations while a card group is open. This also supports manually opening
+a card group before collecting visible gold or relic rewards.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat
@@ -632,12 +668,13 @@ fight on the same map symbol: only the former advances the normal encounter
 queue. The combat-class ledger is checked against completed public combat
 floors without indexing `path_taken` by absolute floor. Wing Boots' public
 charge counter is copied into the native root separately from frozen model
-relic features. Charged MAP decisions remain unsupported by default;
-`STS_LIVE_OOC_WING_BOOTS=1` enables experimental exact ordinary Act 1–3
-movement and includes that setting in the OOC evaluator identity. Native
+relic features. Charged ordinary Act 1–3 MAP decisions are supported by default;
+the OOC evaluator identity records `wingBoots=public_exact`. Native
 jump legality, charge consumption, acquire/save entry, reordered MCP choice
-mapping and exhausted `-2` import have fixed-fixture coverage. Live execution
-and policy quality with these extra choices remain unqualified. Missing or
+mapping and exhausted `-2` import have fixed-fixture coverage. An installed-JAR
+fixture checks vanilla connectivity and charge initialization/reset, including
+JSON recapture. Live execution of a charged jump and policy quality with these
+extra choices remain unqualified. Missing or
 contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
 after fifteen public map-room entries for that act and a matching public boss
 combat floor; other unknown path symbols remain unsupported. Public metric
@@ -865,10 +902,20 @@ unsupported phase takes precedence over path and relic warnings, so a terminal
 event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
 group after parent reward collection; their concealed card identities are not
-serialized or scored. Wing Boots is imported with a separate public charge
-  counter, with charged direct and downstream MAP decisions gated behind the
-  explicit experimental setting above. Frozen value inputs omit remaining
-  charges; enabling mechanics does not establish value calibration. Lizard Tail maps its
+serialized or scored. Multiple unopened card groups (Prayer Wheel, Orrery,
+and Sensory Stone) are revealed one eligible physical occurrence at a time;
+the decline ledger prevents reopening skipped groups. An opened group records
+only the count of unrevealed siblings. MCTS resolves its visible card and known
+gold, relic, potion and key rewards, then stops at a player-state value checkpoint; it omits future
+unrevealed sibling-choice value and reports that scope in `continuationScope`.
+Sapphire Key retains its exact publicly linked relic occurrence, so taking
+either excludes only its counterpart. No hidden sibling card identity is
+captured or fabricated. Sensory Stone's
+post-reward `LEAVE` page is a verified mechanical continuation.
+Wing Boots is imported with a separate public charge
+  counter, with charged direct and downstream MAP decisions supported by default.
+  Frozen value inputs omit remaining charges; mechanical support does not
+  establish value calibration. Lizard Tail maps its
   unused/used state to native 1/0; Matryoshka and N'loth's Hungry Face preserve
   remaining charges with Java used-up sentinels mapped to zero. Maw Bank has an explicit
 source-derived active/spent conversion, and a spent Neow's Lament or
@@ -964,8 +1011,9 @@ restored through native interrupted-card replay, preserving exhaust/discard
 cleanup and physical card identity; unrelated queued actions are rejected.
 A standalone potion offer clears historical current-card bookkeeping so an
 already-completed card cannot replay. Typed Attack/Skill/Power Potion offers
-include their exact Skip action. Toolbox preserves normal card costs and ordered opening draws, including
-Bag of Preparation. Nilry's Codex resumes verified queued self-block actions
+include their exact Skip action. Toolbox preserves normal card costs and the
+qualified ordered opening actions, including Bag of Preparation's draw,
+Gambling Chip and Warped Tongs. Nilry's Codex resumes verified queued self-block actions
 and Stone Calendar's literal damage before ending the turn after choosing or
 skipping; lethal damage terminates combat without another turn. Extra
 unrepresented queued relic/power actions remain unsupported; these popups never become deck rewards.
@@ -976,20 +1024,32 @@ combat and returns Silver `UNSUPPORTED` with `silver_unmapped_selection_task`,
 allowing the normal deterministic combat fallback. Hand selections project the
 screen's actual `canPickZero` value. The driver still stops on any genuine
 boundary mismatch instead of reinterpreting OOC output as a Silver result.
-Warcry, base Forethought, Secret Technique and Secret Weapon derive their
+Warcry, base Forethought, Armaments, Dual Wield, Exhume, Headbutt, one-card ExhaustAction,
+Secret Technique and Secret Weapon derive their
 selection task from the active vanilla action class, with exact screen/count
-checks, before the legacy prompt-text fallback. These four single-pick tasks
+checks, before the legacy prompt-text fallback. These single-pick tasks
 capture the physical card UUIDs in MCP's actual displayed order. Import checks
 that the set matches eligible native cards, and lowering resolves that UUID
 to its captured choice index, including duplicate card names. Completed single
 HAND picks emit a verified model-free Proceed, retaining the native predecessor
-session for the next stable combat root. Upgraded Forethought emits the whole
-ordered UUID subset, including the empty subset. The driver clicks descending
+session for the next stable combat root. Armaments, Dual Wield and Exhume capture cards
+temporarily held by their owning action so the native source pile remains
+complete. Upgraded Forethought, Gambling Chip/Gambler's Brew, and Purity/Elixir
+emit the whole ordered UUID subset, including the empty subset. The driver
+checks the action owner and selection limit, then clicks descending
 physical indices, validates remaining and selected UUIDs after every click,
 then confirms. This avoids the installed MCP bulk command's ascending-index
-mutation bug. A partial transaction, unknown owner, missing/duplicate UUID, or
+mutation bug. Exhaust/discard triggers follow the original hand order after
+the selected cards are removed. A partial transaction, unknown owner, missing/duplicate UUID, or
 changed hand stops before any further click. Differential replay excludes UI
 confirmations without an equivalent native state.
+
+Liquid Memories qualifies its exact owning action and one- or two-card count.
+The two-card native decision preserves selection order, including the case
+where only one card fits in hand. The driver clicks the ordered physical UUID
+pair using stable GRID indices, checks the offered and selected UUIDs before
+the second click, and lets vanilla close the grid automatically. This differs
+from HAND selections, which remove chosen cards and require confirmation.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other

@@ -6,14 +6,8 @@
 #include "question_room_belief.h"
 #include "game/GameContext.h"
 #include <optional>
-#include <cstdlib>
 
 namespace one_combat::advisor {
-// Experimental mechanics only; frozen-model quality remains unqualified.
-inline bool liveOocWingBootsEnabled() {
-    const char *flag = std::getenv("STS_LIVE_OOC_WING_BOOTS");
-    return flag && std::string(flag) == "1";
-}
 // Value-only projection. This object must never be used for transitions:
 // hidden queues, random streams and continuation callbacks are not imported.
 struct LiveOocStateV1 {

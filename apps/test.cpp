@@ -49,6 +49,7 @@
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
 #include "sim/search/SilverWireState.h"
+#include "sim/search/SilverWireJson.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
@@ -710,6 +711,88 @@ int testSilverWireState() {
         }
     };
     {
+        // Toolbox can stop before opening draws and another relic's effects.
+        // The exact typed tail must survive both public/native wire paths,
+        // preserving order, action parameters and victory flags.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        bc.inputState = InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = CardSelectTask::DISCOVERY;
+        bc.cardSelectInfo.cards = {CardId::FINESSE,CardId::FLASH_OF_STEEL,CardId::PANACEA};
+        bc.cardSelectInfo.pickCount = 1;
+        bc.curCardQueueItem = CardQueueItem{};
+        bc.actionQueue.clear();
+        bc.addToBot(Actions::GainBlock(7));
+        bc.addToBot(Actions::GainEnergy(1));
+        bc.addToBot(Actions::BuffPlayer<PlayerStatus::ARTIFACT>(1));
+        bc.addToBot(Actions::DebuffPlayer<PlayerStatus::LOSE_STRENGTH>(2,false));
+        bc.addToBot(Actions::DamageAllEnemy(3));
+        bc.addToBot(Actions::DamageRandomEnemy(1));
+        bc.addToBot(Actions::UpgradeRandomCardAction());
+        bc.addToBot(Actions::DrawCards(2));
+        bc.addToBot(Actions::GambleAction());
+        bc.addToBot(Actions::DebuffAllEnemy<MonsterStatus::VULNERABLE>(1,false));
+        bc.addToBot(Actions::MakeTempCardInDrawPile(CardInstance(CardId::WOUND),2,true));
+        bc.addToBot(Actions::DebuffPlayer<PlayerStatus::WEAK>(1,false));
+        bc.addToBot(Actions::BuffPlayer<PlayerStatus::PEN_NIB>(1));
+        bc.addToBot(Actions::RemoveStatus<PlayerStatus::PEN_NIB>());
+        bc.addToBot(Actions::RemovePlayerDebuffs());
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        auto wire=search::makeSilverBattleStateWire(bc,knowledge,search::makeSilverRunContext(gc),0x5eedu);
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.size()==15,
+              "typed selector tail must be observed completely");
+        auto restored=search::battleContextFromWire(wire);
+        check(restored.actionQueue==bc.actionQueue,"typed selector tail changed order or parameters");
+        const auto context=search::searchContextFromWire(wire);
+        auto second=search::wireFromSearchState(restored,context);
+        check(second.pendingActionQueueObserved && search::battleContextFromWire(second).actionQueue==bc.actionQueue,
+              "typed selector tail must survive search-state wire round trip");
+        const auto persisted=silver_bridge::battleStateWireFromEnvelope(silver_bridge::battleStateWireEnvelope(wire));
+        check(persisted.pendingActionQueueObserved && search::battleContextFromWire(persisted).actionQueue==bc.actionQueue,
+              "typed selector tail must survive persisted JSON envelope round trip");
+        const auto reject=[&](silver_bridge::BattleStateWire bad,const char *message) {
+            bool threw=false;
+            try { (void)search::battleContextFromWire(bad); }
+            catch(const std::invalid_argument &) { threw=true; }
+            check(threw,message);
+        };
+        auto bad=wire; bad.pendingActionQueue[0].kind=silver_bridge::PendingActionKind::INVALID;
+        reject(bad,"unknown pending action must reject");
+        bad=wire; bad.pendingActionQueue[0].amount=-1; reject(bad,"negative pending amount must reject");
+        bad=wire; bad.pendingActionQueue[0].status=1; reject(bad,"extraneous pending status must reject");
+        bad=wire; bad.pendingActionQueue[2].status=static_cast<int>(PlayerStatus::ARTIFACT)+256;
+        reject(bad,"wrapped status must reject");
+        bad=wire; bad.pendingActionQueue[3].sourceMonster=true; reject(bad,"unqualified debuff source must reject");
+        bad=wire; bad.pendingActionQueue[9].status=static_cast<int>(MonsterStatus::STRENGTH);
+        reject(bad,"unqualified enemy power must reject");
+        bad=wire; bad.pendingActionQueue[10].amount=1; reject(bad,"unqualified Wound count must reject");
+        bad=wire; bad.pendingActionQueue[12].amount=2; reject(bad,"unqualified Pen Nib amount must reject");
+        bad=wire; bad.pendingActionQueue[13].amount=1; reject(bad,"Pen Nib removal cannot carry amount");
+        bad=wire; bad.pendingActionQueue[14].status=static_cast<int>(PlayerStatus::WEAK);
+        reject(bad,"Pellets cleanup cannot carry arbitrary status");
+        bad=wire; bad.pendingActionQueue[0]={silver_bridge::PendingActionKind::USE_CARD,0,0,false};
+        reject(bad,"card cleanup without physical owner must reject");
+        bad=wire; bad.pendingActionQueue.resize(129); reject(bad,"oversized pending queue must reject");
+        bad=wire; bad.pendingActionQueueObserved=false; reject(bad,"unobserved nonempty pending queue must reject");
+        bad=wire; bad.inputState=static_cast<int>(InputState::PLAYER_NORMAL); reject(bad,"normal root cannot carry selector tail");
+        bc.actionQueue.clear(); bc.addToBot(Actions::NoOpRollMove());
+        search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"unknown native tails stay unobserved");
+        bc.actionQueue.clear(); auto block=Actions::GainBlock(2); block.clearOnCombatVictory=true; bc.addToBot(block);
+        search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved,"changed native victory flags cannot be discarded");
+        bc.actionQueue.clear(); search::capturePendingActionQueue(bc,wire);
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"observed empty tail must stay exact");
+        auto envelope=silver_bridge::battleStateWireEnvelope(persisted);
+        envelope["state"]["pendingActionQueue"][0]["kind"]=257;
+        bool invalidKind=false;
+        try { (void)silver_bridge::battleStateWireFromEnvelope(envelope); }
+        catch(const std::invalid_argument &) { invalidKind=true; }
+        check(invalidKind,"JSON pending action kind cannot wrap to a known enum");
+    }
+    {
         // A Headbutt played under Double Tap stops at its discard selection
         // with the Double Tap copy in the card queue. The replay cannot
         // rebuild that copy (the status is spent), so the wire carries the
@@ -744,6 +827,9 @@ int testSilverWireState() {
         const BattleContext root = search::battleContextFromWire(wire);
         check(root.cardQueue == bc.cardQueue, "double tap fixture: search root lost the Double Tap copy");
         check(root.actionQueue.size == bc.actionQueue.size, "double tap fixture: action queue differs");
+        check(search::battleContextFromWire(silver_bridge::battleStateWireFromEnvelope(
+                  silver_bridge::battleStateWireEnvelope(wire))).cardQueue == bc.cardQueue,
+              "double tap fixture: observed card queue lost in JSON envelope");
         const auto context = search::searchContextFromWire(wire);
         check(search::battleContextFromWire(search::wireFromSearchState(root, context)).cardQueue == root.cardQueue,
               "double tap fixture: card queue lost in the search-state wire round trip");

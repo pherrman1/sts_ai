@@ -481,14 +481,13 @@ Live MAP roots use reconstructed public room chances when history is qualified,
 and the explicit room-chance belief prior otherwise within its existing gate.
 Non-root MAP states expand only when both question-room and relic-offer
 histories qualify future transitions. Otherwise they remain hard checkpoint
-leaves. Active Wing Boots also stops map expansion by default, including
-hypothetical acquisition after the root. `STS_LIVE_OOC_WING_BOOTS=1` enables
-experimental ordinary Act 1–3 charged movement: an existing next-row jump
+leaves. Active Wing Boots supports ordinary Act 1–3 charged movement by default,
+including hypothetical acquisition after the root: an existing next-row jump
 costs one charge, ordinary edges cost none, and exhaustion becomes zero.
 Native obtain/save entry reconstructs charges separately from frozen relic
-features. The added candidate set and transitions have fixture coverage;
-frozen-model quality and live execution remain unqualified. No model features
-or weights change with this flag.
+features. The candidate set and transitions have native fixture coverage and
+installed-JAR connectivity/counter checks; frozen-model quality and live charged
+jump execution remain unqualified. Model features and weights are unchanged.
 
 Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
 searched semantic transitions (primitive transitions on MAP), excluding

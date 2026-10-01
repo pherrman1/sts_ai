@@ -80,7 +80,9 @@ Strength loss).
   unavailable, only the active-Stasis snapshot is rejected.
 - Hexaghost Divider damage is captured from the public Divider intent and
   retained by monster object identity after that move resolves, matching the
-  native `miscInfo` value until the next public Activate/Divider cycle.
+  native `miscInfo` value until the next public Activate/Divider cycle. Under
+  Runic Dome the tracker instead records public player HP at Activate execution;
+  Divider and the subsequent orb phase are derived without reading intent.
 
 ## Explicit current exclusions
 
@@ -102,7 +104,9 @@ These are deliberate boundaries, not silently fabricated defaults:
   runtime or cannot be derived from the current public tracker;
 - combat observations from a producer that does not assert exact damage-event
   tracking; turn-level damage totals are not accepted as a substitute;
-- resolving/action-queue snapshots;
+- ordinary resolving/action-queue snapshots; qualified card selectors instead
+  preserve exact public pending card/action tails, including source cleanup,
+  as described in the inspector contract;
 - selection options that exceed the native `CardSelectWire` public option
   capacity or require unrevealed random choices;
 - native mechanics that are absent from the pinned simulator implementation.

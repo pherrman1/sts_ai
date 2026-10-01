@@ -39,6 +39,7 @@ public final class LiveEventCaptureTest {
         }
         for(String name:Arrays.asList("SensoryStone","TheJoust","Bonfire"))
             check(LiveEventCapture.matches(LiveEventCapture.CONTINUES,name,"INTRO"),"later phases replaced intro "+name);
+        check(LiveEventCapture.matches(LiveEventCapture.LEAVES,"SensoryStone","LEAVE"),"Sensory Stone reward exit missing");
         Cleric cleric=new Cleric();Map<String,Object> out=capture(cleric,0,1,2);
         check(map(out.get("details")).get("hpAmount0").equals(20),"public heal missing");
         check(!out.containsKey("unsupportedReason")&&!out.toString().contains("987"),"hidden field leaked");

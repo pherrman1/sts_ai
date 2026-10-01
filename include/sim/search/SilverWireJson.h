@@ -4,6 +4,7 @@
 #include "sim/search/SilverBridge.h"
 
 #include <nlohmann/json.hpp>
+#include <limits>
 
 namespace silver_bridge {
 
@@ -69,15 +70,133 @@ inline void from_json(const nlohmann::json &j, CardSelectWire &s) {
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardQueueItemWire, card, target, isEndTurn, triggerOnUse,
     ignoreEnergyTotal, energyOnUse, freeToPlay, randomTarget, autoplay, regretCardCount,
     purgeOnUse, exhaustOnUse)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BattleStateWire, version, valid, fullDrawOrderObserved,
-    intentsHidden, isolatedSearchSeed, observedGeneration, floorNum, encounter, loopCount,
-    energyWasted, cardsDrawn, act, omamoriOwned, omamoriValue, ascension, outcome, inputState,
-    monsterTurnIdx, endTurnQueued, turnHasEnded, skipMonsterTurn, potionCount, potionCapacity,
-    potions, turn, player, monsters, monsterCount, monstersAlive, extraRollMoveOnTurn,
-    skipMonsterTurnBits, hand, limbo, stasisCards, nextUniqueCardId, handNormalityCount,
-    handPainCount, strikeCount, handBloodCardCount, drawPileBloodCardCount,
-    discardPileBloodCardCount, drawPile, discardPile, exhaustPile, cardSelect,
-    curCardQueueItem, miscBits)
+inline void to_json(nlohmann::json &j, const PendingActionWire &a) {
+    j = {{"kind",static_cast<int>(a.kind)},{"amount",a.amount},{"status",a.status},{"sourceMonster",a.sourceMonster}};
+}
+inline void from_json(const nlohmann::json &j, PendingActionWire &a) {
+    for (const char *field : {"kind","amount","status"}) {
+        const auto &value=j.at(field);
+        if (!value.is_number_integer()
+                || (value.is_number_unsigned() && value.get<std::uint64_t>()>static_cast<std::uint64_t>(std::numeric_limits<int>::max()))
+                || (!value.is_number_unsigned() && (value.get<std::int64_t>()<std::numeric_limits<int>::min()
+                    || value.get<std::int64_t>()>std::numeric_limits<int>::max())))
+            throw std::invalid_argument("invalid pending action integer");
+    }
+    const int kind=j.at("kind").get<int>();
+    if (kind<1 || kind>14 || !j.at("sourceMonster").is_boolean())
+        throw std::invalid_argument("invalid pending action kind or source");
+    a.kind=static_cast<PendingActionKind>(kind);
+    j.at("amount").get_to(a.amount); j.at("status").get_to(a.status); j.at("sourceMonster").get_to(a.sourceMonster);
+}
+inline void to_json(nlohmann::json &j, const BattleStateWire &w) {
+    j=nlohmann::json::object();
+    j["version"]=w.version;
+    j["valid"]=w.valid;
+    j["fullDrawOrderObserved"]=w.fullDrawOrderObserved;
+    j["intentsHidden"]=w.intentsHidden;
+    j["isolatedSearchSeed"]=w.isolatedSearchSeed;
+    j["observedGeneration"]=w.observedGeneration;
+    j["floorNum"]=w.floorNum;
+    j["encounter"]=w.encounter;
+    j["loopCount"]=w.loopCount;
+    j["energyWasted"]=w.energyWasted;
+    j["cardsDrawn"]=w.cardsDrawn;
+    j["act"]=w.act;
+    j["omamoriOwned"]=w.omamoriOwned;
+    j["omamoriValue"]=w.omamoriValue;
+    j["ascension"]=w.ascension;
+    j["outcome"]=w.outcome;
+    j["inputState"]=w.inputState;
+    j["monsterTurnIdx"]=w.monsterTurnIdx;
+    j["endTurnQueued"]=w.endTurnQueued;
+    j["turnHasEnded"]=w.turnHasEnded;
+    j["skipMonsterTurn"]=w.skipMonsterTurn;
+    j["potionCount"]=w.potionCount;
+    j["potionCapacity"]=w.potionCapacity;
+    j["potions"]=w.potions;
+    j["turn"]=w.turn;
+    j["player"]=w.player;
+    j["monsters"]=w.monsters;
+    j["monsterCount"]=w.monsterCount;
+    j["monstersAlive"]=w.monstersAlive;
+    j["extraRollMoveOnTurn"]=w.extraRollMoveOnTurn;
+    j["skipMonsterTurnBits"]=w.skipMonsterTurnBits;
+    j["hand"]=w.hand;
+    j["limbo"]=w.limbo;
+    j["stasisCards"]=w.stasisCards;
+    j["nextUniqueCardId"]=w.nextUniqueCardId;
+    j["handNormalityCount"]=w.handNormalityCount;
+    j["handPainCount"]=w.handPainCount;
+    j["strikeCount"]=w.strikeCount;
+    j["handBloodCardCount"]=w.handBloodCardCount;
+    j["drawPileBloodCardCount"]=w.drawPileBloodCardCount;
+    j["discardPileBloodCardCount"]=w.discardPileBloodCardCount;
+    j["drawPile"]=w.drawPile;
+    j["discardPile"]=w.discardPile;
+    j["exhaustPile"]=w.exhaustPile;
+    j["cardSelect"]=w.cardSelect;
+    j["curCardQueueItem"]=w.curCardQueueItem;
+    j["miscBits"]=w.miscBits;
+    j["pendingCardQueueObserved"]=w.pendingCardQueueObserved;
+    j["pendingCardQueue"]=w.pendingCardQueue;
+    j["pendingActionQueueObserved"]=w.pendingActionQueueObserved;
+    j["pendingActionQueue"]=w.pendingActionQueue;
+}
+inline void from_json(const nlohmann::json &j, BattleStateWire &w) {
+    j.at("version").get_to(w.version);
+    j.at("valid").get_to(w.valid);
+    j.at("fullDrawOrderObserved").get_to(w.fullDrawOrderObserved);
+    j.at("intentsHidden").get_to(w.intentsHidden);
+    j.at("isolatedSearchSeed").get_to(w.isolatedSearchSeed);
+    j.at("observedGeneration").get_to(w.observedGeneration);
+    j.at("floorNum").get_to(w.floorNum);
+    j.at("encounter").get_to(w.encounter);
+    j.at("loopCount").get_to(w.loopCount);
+    j.at("energyWasted").get_to(w.energyWasted);
+    j.at("cardsDrawn").get_to(w.cardsDrawn);
+    j.at("act").get_to(w.act);
+    j.at("omamoriOwned").get_to(w.omamoriOwned);
+    j.at("omamoriValue").get_to(w.omamoriValue);
+    j.at("ascension").get_to(w.ascension);
+    j.at("outcome").get_to(w.outcome);
+    j.at("inputState").get_to(w.inputState);
+    j.at("monsterTurnIdx").get_to(w.monsterTurnIdx);
+    j.at("endTurnQueued").get_to(w.endTurnQueued);
+    j.at("turnHasEnded").get_to(w.turnHasEnded);
+    j.at("skipMonsterTurn").get_to(w.skipMonsterTurn);
+    j.at("potionCount").get_to(w.potionCount);
+    j.at("potionCapacity").get_to(w.potionCapacity);
+    j.at("potions").get_to(w.potions);
+    j.at("turn").get_to(w.turn);
+    j.at("player").get_to(w.player);
+    j.at("monsters").get_to(w.monsters);
+    j.at("monsterCount").get_to(w.monsterCount);
+    j.at("monstersAlive").get_to(w.monstersAlive);
+    j.at("extraRollMoveOnTurn").get_to(w.extraRollMoveOnTurn);
+    j.at("skipMonsterTurnBits").get_to(w.skipMonsterTurnBits);
+    j.at("hand").get_to(w.hand);
+    j.at("limbo").get_to(w.limbo);
+    j.at("stasisCards").get_to(w.stasisCards);
+    j.at("nextUniqueCardId").get_to(w.nextUniqueCardId);
+    j.at("handNormalityCount").get_to(w.handNormalityCount);
+    j.at("handPainCount").get_to(w.handPainCount);
+    j.at("strikeCount").get_to(w.strikeCount);
+    j.at("handBloodCardCount").get_to(w.handBloodCardCount);
+    j.at("drawPileBloodCardCount").get_to(w.drawPileBloodCardCount);
+    j.at("discardPileBloodCardCount").get_to(w.discardPileBloodCardCount);
+    j.at("drawPile").get_to(w.drawPile);
+    j.at("discardPile").get_to(w.discardPile);
+    j.at("exhaustPile").get_to(w.exhaustPile);
+    j.at("cardSelect").get_to(w.cardSelect);
+    j.at("curCardQueueItem").get_to(w.curCardQueueItem);
+    j.at("miscBits").get_to(w.miscBits);
+    // Absence retains the historical unobserved/replay contract. Observed
+    // queues are persisted explicitly, including a known empty queue.
+    w.pendingCardQueueObserved=j.value("pendingCardQueueObserved",false);
+    w.pendingCardQueue=j.value("pendingCardQueue",std::vector<CardQueueItemWire>{});
+    w.pendingActionQueueObserved=j.value("pendingActionQueueObserved",false);
+    w.pendingActionQueue=j.value("pendingActionQueue",std::vector<PendingActionWire>{});
+}
 
 inline nlohmann::json battleStateWireEnvelope(const BattleStateWire &wire) {
     return {{"corpus_schema", "silver_leaf_wire_v1"},

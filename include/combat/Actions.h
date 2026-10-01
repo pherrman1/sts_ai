@@ -133,7 +133,8 @@ namespace sts {
     X(WhirlwindAction, int,baseDamage, int,energy, bool,useEnergy) \
     X(AttackAllMonsterRecursive, DamageMatrix,matrix, int,timesRemaining) \
     X(TransmutationCardsInHand, Random,rng, int,count, bool,upgraded) \
-    X(IncreasePlayerOrbSlots, int,count)
+    X(IncreasePlayerOrbSlots, int,count) \
+    X(BurnIncreaseAction)
 
 #define STS_ACT_NARG(...) STS_ACT_NARG_(__VA_ARGS__, STS_ACT_RSEQ())
 #define STS_ACT_NARG_(...) STS_ACT_ARG_N(__VA_ARGS__)
@@ -340,6 +341,7 @@ namespace sts {
         static Action WhirlwindAction(int baseDamage, int energy, bool useEnergy);
 
         static Action AttackAllMonsterRecursive(DamageMatrix matrix, int timesRemaining);
+        static Action BurnIncreaseAction();
     };
 
 }

@@ -35,10 +35,6 @@ LiveOocDecision unsupported(const std::string &reason) {
 
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHistory &path,
                              const OocStrategicTokNet &model, bool rewardPityHistoryComplete) {
-    if (projected.screenState == ScreenState::MAP_SCREEN
-            && projected.hasRelic(RelicId::WING_BOOTS) && projected.wingBootsCharges > 0
-            && !advisor::liveOocWingBootsEnabled())
-        return unsupported("RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active");
     if (!rewardPityHistoryComplete)
         return unsupported("PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED");
     if (!v4DecisionSupported(projected)) return unsupported("V4_SCREEN_UNSUPPORTED");
@@ -214,7 +210,6 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     // Qualified public question-room history reconstructs the native chance
     // counters; successors update those counters through normal transitions.
     options.stopAtMapCheckpoint = !mapHistoryComplete_;
-    options.stopAtActiveWingBootsMap = !advisor::liveOocWingBootsEnabled();
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     const int observedEventRooms = currentActEventVisits;

@@ -46,9 +46,9 @@ public final class RunicDomeTrackerTest {
         rejected(t.snapshot(new Object(),1)); // spawn/replacement cannot inherit history
         t=new RunicDomeTracker(monster,"JawWorm",1,1,1);t.beginRoll(monster,42,42);t.endRoll(monster);
         rejected(t.snapshot(monster,2)); // missing public turn hook
-        for(String id:Arrays.asList("BookOfStabbing","Looter","WrithingMass"))
+        for(String id:Arrays.asList("AcidSlime_L","Darkling"))
             rejected(new RunicDomeTracker(monster,id,1,1,1).snapshot(monster,1));
-        rejected(new RunicDomeTracker(monster,"JawWorm",1,3,1).snapshot(monster,1));
+        rejected(new RunicDomeTracker(monster,"JawWorm",1,4,1).snapshot(monster,1));
         rejected(new RunicDomeTracker(monster,"JawWorm",1,1,6).snapshot(monster,1));
         // Every audited concrete takeTurn has one trailing RollMoveAction.
         for(String id:Arrays.asList("FungiBeast","SlaverBlue","SlaverRed","AcidSlime_M","SpikeSlime_M","GremlinNob")) {
@@ -112,6 +112,72 @@ public final class RunicDomeTrackerTest {
             }
             rejected(acid.snapshot(monster,2));
         }
+        // All ordinary roll lifecycles execute public moves and defer exactly
+        // one successor; counters survive beyond the two-move window.
+        String[] ordinary={"Centurion","Healer","Chosen","SnakePlant","Snecko","SphericGuardian",
+                "Exploder","Repulsor","Maw","Nemesis","Orb Walker","GiantHead","Donu","Deca","Spiker",
+                "Serpent","SlaverBoss","GremlinFat","BookOfStabbing","TimeEater"};
+        int[][] sequences={{1,2,1},{3,1,2},{5,4,3},{1,1,2},{1,2,3},{2,4,1,3,1},
+                {1,1},{2,1,2},{2,5,4},{2,4,3},{1,2,1},{1,3,1,3,2,2},{2,0,2},{0,2,0},
+                {2,2,1,2},{2,1,3},{2,2,2},{2,2,2},{1,2,1,1,2},{2,3,5,4}};
+        for(int i=0;i<ordinary.length;++i) {
+            RunicDomeTracker tracker=new RunicDomeTracker(monster,ordinary[i],33,3,2);
+            tracker.beginRoll(monster,40,40,40,40,true,2,true);tracker.endRoll(monster);
+            complete(tracker.snapshot(monster,1));
+            int completed=0;
+            for(int move:sequences[i]) {
+                tracker.execute(monster,move);++completed;
+                tracker.beginRoll(monster,30,40,25,40,true,2,true);tracker.endRoll(monster);
+                Map<String,Object> state=tracker.snapshot(monster,completed+1);complete(state);
+                if(!state.get("playerConstricted").equals(true) || !state.get("pendingMoveRolls").equals(1))
+                    throw new AssertionError("ordinary public roll input lost: "+ordinary[i]);
+            }
+            Map<String,Object> state=tracker.snapshot(monster,completed+1);
+            int misc=ordinary[i].equals("Spiker")?3:ordinary[i].equals("BookOfStabbing")?4:ordinary[i].equals("TimeEater")?1:0;
+            if(!state.get("publicMisc").equals(misc)) throw new AssertionError("public counter lost "+ordinary[i]);
+            tracker.setMove(monster);rejected(tracker.snapshot(monster,completed+1));
+        }
+        String[] knownIds={"GremlinThief","GremlinWarrior","GremlinWizard","GremlinTsundere","BanditBear","BanditLeader","BanditChild","Transient"};
+        int[][] knownMoves={{1,1,1,1},{1,1,1,1},{2,2,2,1,2},{1,1,2,2},{2,3,1,3},{2,3,1,3},{1,1,1,1},{1,1,1,1}};
+        int[][] knownNext={{1,1,1,1},{1,1,1,1},{2,2,1,2,2},{1,2,2,2},{3,1,3,1},{3,1,3,1},{1,1,1,1},{1,1,1,1}};
+        for(int i=0;i<knownIds.length;++i) {
+            RunicDomeTracker known=new RunicDomeTracker(monster,knownIds[i],34,2,3);
+            known.beginRoll(monster,40,40);known.endRoll(monster);
+            for(int j=0;j<knownMoves[i].length;++j) {
+                known.beginKnownTurn(monster,knownMoves[i][j],j==0?3:1);
+                // Setter callback may arrive in a queued SetMoveAction; capture
+                // is incomplete until it has executed with the derived byte.
+                Map<String,Object> unsettled=known.snapshot(monster,j+2);
+                if(Boolean.TRUE.equals(unsettled.get("complete"))) throw new AssertionError("unsettled known setter accepted");
+                known.knownOverride(monster,knownNext[i][j]);known.setMove(monster);known.endKnownTurn(monster);
+                Map<String,Object> state=known.snapshot(monster,j+2);complete(state);
+                Map<?,?> proof=(Map<?,?>)state.get("knownNextMove");
+                if(!proof.get("move").equals(knownNext[i][j]) || !proof.get("kind").equals("public_deterministic_transition_v1")
+                        || !state.get("pendingMoveRolls").equals(0)) throw new AssertionError("known successor lost "+knownIds[i]);
+            }
+        }
+        RunicDomeTracker reactive=new RunicDomeTracker(monster,"WrithingMass",35,3,1);
+        for(int hp:new int[]{40,38,35}) {
+            reactive.beginRoll(monster,hp,40);reactive.setMove(monster);reactive.endRoll(monster);
+            reactive.observeAttack(monster,hp!=38);
+        }
+        Map<String,Object> reactiveState=reactive.snapshot(monster,1);complete(reactiveState);
+        if(!reactiveState.get("schemaVersion").equals(2) || !reactiveState.get("pendingMoveRolls").equals(3)
+                || !reactiveState.get("pendingAttackPredicates").equals(Arrays.asList(Arrays.asList(1,true),Arrays.asList(2,false),Arrays.asList(3,true))))
+            throw new AssertionError("indexed reactive information lost");
+        reactive.execute(monster,1);reactive.beginRoll(monster,35,40);reactive.endRoll(monster);
+        reactiveState=reactive.snapshot(monster,2);complete(reactiveState);
+        if(!reactiveState.get("pendingMoveRolls").equals(1) || !reactiveState.get("pendingAttackPredicates").equals(Collections.emptyList())
+                || !reactiveState.get("totalRolls").equals(4)) throw new AssertionError("reactive chain did not reset at public execution");
+        RunicDomeTracker champ=new RunicDomeTracker(monster,"Champ",36,2,1);
+        champ.beginRoll(monster,400,400);champ.endRoll(monster);
+        champ.execute(monster,2);champ.beginRoll(monster,180,400);champ.endRoll(monster);
+        champ.execute(monster,7);champ.beginRoll(monster,180,400);champ.endRoll(monster);
+        Map<String,Object> champState=champ.snapshot(monster,3);complete(champState);
+        if(!champState.get("publicMisc").equals(5)) throw new AssertionError("Champ public forge/anger count lost");
+        RunicDomeTracker hardJaw=new RunicDomeTracker(monster,"JawWorm",37,3,3);
+        hardJaw.beginRoll(monster,40,40);hardJaw.endRoll(monster);hardJaw.execute(monster,2);
+        hardJaw.beginRoll(monster,40,40);hardJaw.endRoll(monster);complete(hardJaw.snapshot(monster,2));
         RunicDomeTracker red=new RunicDomeTracker(monster,"SlaverRed",9,1,2);
         int turn=1;
         red.beginRoll(monster,40,40);red.endRoll(monster);
@@ -122,12 +188,6 @@ public final class RunicDomeTrackerTest {
         if(!redState.get("publicMisc").equals(1) || !redState.get("executedMoves").equals(Arrays.asList(1,3)))
             throw new AssertionError("public Entangle lost after history rolled over");
         red.execute(monster,2);rejected(red.snapshot(monster,turn+1));
-        if(!RunicDomeTracker.cardAllowed("Spot Weakness") || RunicDomeTracker.cardAllowed("Discovery")
-                || RunicDomeTracker.relicAllowed("Dead Branch") || RunicDomeTracker.relicAllowed("Nilry's Codex")
-                || RunicDomeTracker.potionAllowed("SkillPotion") || RunicDomeTracker.potionAllowed("EntropicBrew"))
-            throw new AssertionError("intent-query/generator domain accepted");
-        for(String power:Arrays.asList("Magnetism","Mayhem","Creative AI","Hello World","Discovery"))
-            if(RunicDomeTracker.playerPowerAllowed(power)) throw new AssertionError("consumed potion generator power accepted");
         if(RunicDomeTracker.monsterPowerAllowed("Ritual","JawWorm")
                 || RunicDomeTracker.monsterPowerAllowed("Compulsive","JawWorm"))
             throw new AssertionError("unaudited monster power accepted");
@@ -143,6 +203,133 @@ public final class RunicDomeTrackerTest {
             predicate.observeAttack(monster,attacking);predicate.observeAttack(monster,!attacking);
             rejected(predicate.snapshot(monster,2));
         }
+        for(String id:Arrays.asList("Byrd","Shelled Parasite")) {
+            RunicDomeTracker d=new RunicDomeTracker(monster,id,38,2,1);
+            d.beginRoll(monster,40,40);d.endRoll(monster);d.observeAttack(monster,true);
+            d.beginForcedStun(monster,4);d.setMove(monster);d.endKnownTurn(monster);
+            Map<String,Object> st=d.snapshot(monster,1);complete(st);
+            if(!st.get("schemaVersion").equals(3) || !st.get("pendingMoveRolls").equals(0)
+                    || !((Map<?,?>)st.get("knownNextMove")).get("kind").equals("public_stun_override")
+                    || !st.get("pendingAttackPredicates").equals(Collections.emptyList())) throw new AssertionError("public stun proof lost");
+            d.observeAttack(monster,false);
+            if(id.equals("Byrd")) d.execute(monster,4);
+            else { d.beginKnownTurn(monster,4);d.knownOverride(monster,1);d.setMove(monster);d.endKnownTurn(monster); }
+            d.beginRoll(monster,30,40);d.endRoll(monster);
+            st=d.snapshot(monster,2);complete(st);
+            if(!st.get("pendingMoveRolls").equals(1) || st.get("knownNextMove")!=null
+                    || (id.equals("Shelled Parasite") && !"shelled_stun_fell".equals(st.get("knownRollPredecessor"))))
+                throw new AssertionError("post-stun deferred roll lost");
+            if(id.equals("Byrd")) {
+                d.beginKnownTurn(monster,5);d.knownOverride(monster,2);d.setMove(monster);d.endKnownTurn(monster);
+                st=d.snapshot(monster,3);complete(st);
+                if(!((Map<?,?>)st.get("knownNextMove")).get("kind").equals("byrd_headbutt_fly")) throw new AssertionError("Byrd Fly proof lost");
+                d.execute(monster,2);d.beginRoll(monster,30,40);d.endRoll(monster);complete(d.snapshot(monster,4));
+            }
+            RunicDomeTracker bad=new RunicDomeTracker(monster,id,39,2,1);
+            bad.beginRoll(monster,40,40);bad.endRoll(monster);bad.setMove(monster);rejected(bad.snapshot(monster,1));
+        }
+        RunicDomeTracker guardian=new RunicDomeTracker(monster,"TheGuardian",40,1,1);
+        guardian.beginRoll(monster,250,250);guardian.endRoll(monster);
+        int guardianTurn=1;
+        for(int move:new int[]{6,2,7,5}) {
+            guardian.beginKnownTurn(monster,move);int next=new int[]{0,3,7,4,5,6,2,5}[move];
+            guardian.knownOverride(monster,next);guardian.setMove(monster);guardian.endKnownTurn(monster);
+            complete(guardian.snapshot(monster,++guardianTurn));
+        }
+        for(int cycle=0;cycle<2;++cycle) {
+            guardian.beginForcedStun(monster,1);guardian.setMove(monster);guardian.endKnownTurn(monster);
+            complete(guardian.snapshot(monster,guardianTurn));
+            for(int move:new int[]{1,3,4}) {
+                guardian.beginKnownTurn(monster,move);int next=new int[]{0,3,7,4,5,6,2,5}[move];
+                guardian.knownOverride(monster,next);guardian.setMove(monster);guardian.endKnownTurn(monster);
+                complete(guardian.snapshot(monster,++guardianTurn));
+            }
+            if(!guardian.snapshot(monster,guardianTurn).get("publicMisc").equals(40+10*cycle)) throw new AssertionError("Guardian public threshold lost");
+        }
+        RunicDomeTracker hex=new RunicDomeTracker(monster,"Hexaghost",41,1,1);
+        hex.beginRoll(monster,250,250);hex.endRoll(monster);
+        for(int completed=1;completed<=17;++completed) {
+            int move=completed==1?5:completed==2?1:new int[]{4,2,4,3,2,4,6}[(completed-3)%7];
+            hex.beginHexTurn(monster,move,47);
+            if(move==5) {hex.knownOverride(monster,1);hex.setMove(monster);hex.endKnownTurn(monster);}
+            else {
+                if((completed-2)%7==6) {hex.beginHexInferno(monster,6);hex.setMove(monster);hex.endKnownTurn(monster);}
+                hex.beginRoll(monster,240,250);hex.endRoll(monster);
+            }
+            Map<String,Object> state=hex.snapshot(monster,completed+1);complete(state);
+            if(!state.get("publicMisc").equals(4) || !state.get("pendingMoveRolls").equals(completed==1?0:1))
+                throw new AssertionError("Hex public phase/Divider base lost");
+            if(completed>=2 && (completed-2)%7==6 && !"hexaghost_inferno_predecessor".equals(state.get("knownRollPredecessor")))
+                throw new AssertionError("Hex extra Inferno setter lost");
+        }
+        for(int wake=-1;wake<=2;++wake) {
+            RunicDomeTracker laga=new RunicDomeTracker(monster,"Lagavulin",42,1,1);
+            laga.beginRoll(monster,110,110);laga.endRoll(monster);
+            int slept=0;
+            for(;slept<(wake<0?3:wake);++slept) {
+                laga.beginLagaTurn(monster,5);int next=slept==2?3:5;
+                laga.knownOverride(monster,next);laga.setMove(monster);laga.endKnownTurn(monster);
+                if(slept<2) {laga.beginRoll(monster,110,110);laga.endRoll(monster);}
+                complete(laga.snapshot(monster,slept+2));
+            }
+            if(wake>=0) {
+                laga.beginForcedStun(monster,4);laga.setMove(monster);laga.endKnownTurn(monster);
+                complete(laga.snapshot(monster,slept+1));laga.beginLagaTurn(monster,4);
+                laga.beginRoll(monster,100,110);laga.endRoll(monster);++slept;
+            }
+            for(int move:new int[]{3,3,1,3}) {
+                laga.beginLagaTurn(monster,move);laga.beginRoll(monster,100,110);laga.endRoll(monster);
+                complete(laga.snapshot(monster,++slept+1));
+            }
+        }
+        RunicDomeTracker eventLaga=new RunicDomeTracker(monster,"Lagavulin",43,1,1);
+        eventLaga.beginRoll(monster,110,110);eventLaga.endRoll(monster);
+        eventLaga.lagaAwakePrebattle(monster,1);eventLaga.setMove(monster);eventLaga.endKnownTurn(monster);
+        complete(eventLaga.snapshot(monster,1));
+        for(String id:Arrays.asList("Looter","Mugger")) for(boolean attacking:new boolean[]{false,true}) {
+            RunicDomeTracker thief=new RunicDomeTracker(monster,id,44,1,1);
+            thief.beginRoll(monster,40,40);thief.endRoll(monster);
+            thief.beginThiefTurn(monster,1);thief.recordTheft(monster,22,15);
+            thief.knownOverride(monster,1);thief.setMove(monster);thief.endKnownTurn(monster);
+            complete(thief.snapshot(monster,2));
+            thief.beginThiefTurn(monster,1);
+            if(!thief.beginHiddenSetter(monster)) throw new AssertionError("thief hidden setter scope missing");
+            thief.setMove(monster);thief.endHiddenSetter(monster);
+            if(Boolean.TRUE.equals(thief.snapshot(monster,3).get("complete"))) throw new AssertionError("missing theft callback accepted");
+            thief.recordTheft(monster,7,15);thief.observeAttack(monster,attacking);
+            Map<String,Object> state=thief.snapshot(monster,3);complete(state);
+            if(!state.get("publicMisc").equals(22) || !state.get("pendingDirectMoveChoice").equals(1)
+                    || !state.get("pendingAttackPredicates").equals(Arrays.asList(Arrays.asList(1,attacking))))
+                throw new AssertionError("thief direct predicate/gold ledger lost");
+            int thiefTurn=3;
+            if(attacking) {
+                thief.beginThiefTurn(monster,4);thief.recordTheft(monster,0,15);thief.knownOverride(monster,2);thief.setMove(monster);thief.endKnownTurn(monster);
+                complete(thief.snapshot(monster,++thiefTurn));
+            }
+            thief.beginThiefTurn(monster,2);thief.knownOverride(monster,3);thief.setMove(monster);thief.endKnownTurn(monster);complete(thief.snapshot(monster,++thiefTurn));
+            thief.beginThiefTurn(monster,3);thief.knownOverride(monster,3);thief.setMove(monster);thief.endKnownTurn(monster);complete(thief.snapshot(monster,++thiefTurn,0,true));
+        }
+        for(int deathTurn:new int[]{0,2}) {
+            RunicDomeTracker awake=new RunicDomeTracker(monster,"AwakenedOne",45,3,3);
+            awake.beginRoll(monster,300,300);awake.endRoll(monster);
+            for(int i=0;i<deathTurn;++i) {awake.execute(monster,i==0?1:2);awake.beginRoll(monster,200,300);awake.endRoll(monster);}
+            awake.beginRebirth(monster,3);awake.setMove(monster);awake.endKnownTurn(monster);
+            if(Boolean.TRUE.equals(awake.snapshot(monster,deathTurn+1,2,false).get("complete"))) throw new AssertionError("missing duplicate rebirth callback accepted");
+            awake.knownOverride(monster,3);awake.setMove(monster);awake.endKnownTurn(monster);
+            complete(awake.snapshot(monster,deathTurn+1,2,false));
+            awake.execute(monster,3);awake.beginRoll(monster,300,300);awake.endRoll(monster);
+            Map<String,Object> reborn=awake.snapshot(monster,deathTurn+2,2,false);complete(reborn);
+            if(!reborn.get("publicMisc").equals(1) || !reborn.get("knownTransitions").equals(2)) throw new AssertionError("public rebirth phase lost");
+            awake.execute(monster,5);awake.beginRoll(monster,200,300);awake.endRoll(monster);complete(awake.snapshot(monster,deathTurn+3,2,false));
+        }
+        RunicDomeTracker thornsAwake=new RunicDomeTracker(monster,"AwakenedOne",46,3,3);
+        thornsAwake.beginRoll(monster,300,300);thornsAwake.endRoll(monster);thornsAwake.execute(monster,1);
+        thornsAwake.beginRebirth(monster,3);thornsAwake.setMove(monster);thornsAwake.endKnownTurn(monster);
+        thornsAwake.beginRoll(monster,0,300);thornsAwake.setMove(monster);thornsAwake.endRoll(monster);
+        if(Boolean.TRUE.equals(thornsAwake.snapshot(monster,2,2,false).get("complete"))) throw new AssertionError("half-dead overwritten roll leaked");
+        thornsAwake.knownOverride(monster,3);thornsAwake.setMove(monster);thornsAwake.endKnownTurn(monster);
+        Map<String,Object> thornsState=thornsAwake.snapshot(monster,2,2,false);complete(thornsState);
+        if(!thornsState.get("totalRolls").equals(2) || !thornsState.get("pendingMoveRolls").equals(0)) throw new AssertionError("in-flight death roll not cancelled");
         javassist.ClassPool pool=new javassist.ClassPool(true);
         pool.appendClassPath(new javassist.LoaderClassPath(RunicDomeTrackerTest.class.getClassLoader()));
         javassist.CtClass action=pool.get("com.megacrit.cardcrawl.actions.unique.SpotWeaknessAction");
@@ -153,8 +340,73 @@ public final class RunicDomeTrackerTest {
         RunicDomeTrackerPatch.AcidSlime_STurn.raw(acidClass.getDeclaredMethod("takeTurn"));
         if(acidClass.toBytecode().length==0) throw new AssertionError("Acid override instrumentation missing");
         acidClass.detach();
-        if(!RunicDomeTracker.cardAllowed("Strike_R") || !RunicDomeTracker.relicAllowed("Runic Dome"))
-            throw new AssertionError("audited domain rejected");
+        for(String cls:Arrays.asList("com.megacrit.cardcrawl.actions.common.SetMoveAction",
+                "com.megacrit.cardcrawl.monsters.exordium.GremlinWizard","com.megacrit.cardcrawl.monsters.exordium.GremlinTsundere",
+                "com.megacrit.cardcrawl.monsters.beyond.Transient")) {
+            javassist.CtClass type=pool.get(cls);
+            if(cls.endsWith("SetMoveAction")) RunicDomeTrackerPatch.PublicSetMoveAction.raw(type.getDeclaredMethod("update"));
+            else if(cls.endsWith("GremlinWizard")) RunicDomeTrackerPatch.GremlinWizardTurn.raw(type.getDeclaredMethod("takeTurn"));
+            else if(cls.endsWith("GremlinTsundere")) RunicDomeTrackerPatch.GremlinTsundereTurn.raw(type.getDeclaredMethod("takeTurn"));
+            else RunicDomeTrackerPatch.TransientTurn.raw(type.getDeclaredMethod("takeTurn"));
+            if(type.toBytecode().length==0) throw new AssertionError("known setter instrumentation missing "+cls);
+            type.detach();
+        }
+
+        for(String cls:Arrays.asList("Byrd","ShelledParasite")) {
+            javassist.CtClass type=pool.get("com.megacrit.cardcrawl.monsters.city."+cls);
+            if(cls.equals("Byrd")) {
+                RunicDomeTrackerPatch.ByrdGrounded.raw(type.getDeclaredMethod("changeState"));
+                RunicDomeTrackerPatch.ByrdTurn.raw(type.getDeclaredMethod("takeTurn"));
+            } else {
+                RunicDomeTrackerPatch.ShelledParasiteStun.raw(type.getDeclaredMethod("changeState"));
+                RunicDomeTrackerPatch.ShelledParasiteTurn.raw(type.getDeclaredMethod("takeTurn"));
+            }
+            if(type.toBytecode().length==0) throw new AssertionError("stun instrumentation missing "+cls);
+            type.detach();
+        }
+
+        javassist.CtClass guardianClass=pool.get("com.megacrit.cardcrawl.monsters.exordium.TheGuardian");
+        RunicDomeTrackerPatch.GuardianDefense.raw(guardianClass.getDeclaredMethod("changeState"));
+        RunicDomeTrackerPatch.Guardian_useCloseUp.raw(guardianClass.getDeclaredMethod("useCloseUp"));
+        RunicDomeTrackerPatch.Guardian_useFierceBash.raw(guardianClass.getDeclaredMethod("useFierceBash"));
+        RunicDomeTrackerPatch.Guardian_useVentSteam.raw(guardianClass.getDeclaredMethod("useVentSteam"));
+        RunicDomeTrackerPatch.Guardian_useRollAttack.raw(guardianClass.getDeclaredMethod("useRollAttack"));
+        RunicDomeTrackerPatch.Guardian_useTwinSmash.raw(guardianClass.getDeclaredMethod("useTwinSmash"));
+        RunicDomeTrackerPatch.Guardian_useWhirlwind.raw(guardianClass.getDeclaredMethod("useWhirlwind"));
+        RunicDomeTrackerPatch.Guardian_useChargeUp.raw(guardianClass.getDeclaredMethod("useChargeUp"));
+        if(guardianClass.toBytecode().length==0) throw new AssertionError("Guardian actual helper instrumentation missing");
+        guardianClass.detach();
+        javassist.CtClass hexClass=pool.get("com.megacrit.cardcrawl.monsters.exordium.Hexaghost");
+        RunicDomeTrackerPatch.HexaghostTurn.raw(hexClass.getDeclaredMethod("takeTurn"));
+        RunicDomeTrackerPatch.HexaghostInferno.raw(hexClass.getDeclaredMethod("changeState"));
+        if(hexClass.toBytecode().length==0) throw new AssertionError("Hex actual setter instrumentation missing");
+        hexClass.detach();
+        javassist.CtClass lagaClass=pool.get("com.megacrit.cardcrawl.monsters.exordium.Lagavulin");
+        RunicDomeTrackerPatch.LagavulinTurn.raw(lagaClass.getDeclaredMethod("takeTurn"));
+        RunicDomeTrackerPatch.LagavulinWake.raw(lagaClass.getDeclaredMethod("damage"));
+        RunicDomeTrackerPatch.LagavulinPrebattle.raw(lagaClass.getDeclaredMethod("usePreBattleAction"));
+        if(lagaClass.toBytecode().length==0) throw new AssertionError("Laga raw instrumentation missing");lagaClass.detach();
+        javassist.CtClass looterClass=pool.get("com.megacrit.cardcrawl.monsters.exordium.Looter");
+        RunicDomeTrackerPatch.LooterTurn.raw(looterClass.getDeclaredMethod("takeTurn"));
+        looterClass.toBytecode();looterClass.detach();
+        javassist.CtClass looter1=pool.get("com.megacrit.cardcrawl.monsters.exordium.Looter$1");
+        RunicDomeTrackerPatch.LooterTheft1.raw(looter1.getDeclaredMethod("update"));
+        looter1.toBytecode();looter1.detach();
+        javassist.CtClass looter2=pool.get("com.megacrit.cardcrawl.monsters.exordium.Looter$2");
+        RunicDomeTrackerPatch.LooterTheft2.raw(looter2.getDeclaredMethod("update"));
+        looter2.toBytecode();looter2.detach();
+        javassist.CtClass muggerClass=pool.get("com.megacrit.cardcrawl.monsters.city.Mugger");
+        RunicDomeTrackerPatch.MuggerTurn.raw(muggerClass.getDeclaredMethod("takeTurn"));
+        muggerClass.toBytecode();muggerClass.detach();
+        javassist.CtClass mugger1=pool.get("com.megacrit.cardcrawl.monsters.city.Mugger$1");
+        RunicDomeTrackerPatch.MuggerTheft1.raw(mugger1.getDeclaredMethod("update"));
+        mugger1.toBytecode();mugger1.detach();
+        javassist.CtClass mugger2=pool.get("com.megacrit.cardcrawl.monsters.city.Mugger$2");
+        RunicDomeTrackerPatch.MuggerTheft2.raw(mugger2.getDeclaredMethod("update"));
+        mugger2.toBytecode();mugger2.detach();
+        javassist.CtClass awakenedClass=pool.get("com.megacrit.cardcrawl.monsters.beyond.AwakenedOne");
+        RunicDomeTrackerPatch.AwakenedOneRebirth.raw(awakenedClass.getDeclaredMethod("damage"));
+        if(awakenedClass.toBytecode().length==0) throw new AssertionError("Awakened raw instrumentation missing");awakenedClass.detach();
         // Hook signatures are verified against the installed JAR without
         // initializing game graphics. Pure lifecycle tests cannot prove hook
         // delivery; installed-mod smoke remains separate evidence.
@@ -165,6 +417,17 @@ public final class RunicDomeTrackerTest {
         base.getDeclaredMethod("setMove",String.class,byte.class,intent,int.class,int.class,boolean.class);
         for(String cls:Arrays.asList("JawWorm","Cultist","FungiBeast","SlaverBlue","SlaverRed","AcidSlime_S","AcidSlime_M","SpikeSlime_M","SpikeSlime_S","Sentry","GremlinNob"))
             Class.forName("com.megacrit.cardcrawl.monsters.exordium."+cls,false,loader).getDeclaredMethod("takeTurn");
+        for(String pkg:Arrays.asList("city","beyond")) for(String cls:Arrays.asList("Centurion","Healer","Chosen","SnakePlant","Snecko",
+                "SphericGuardian","Exploder","Repulsor","Maw","Nemesis","OrbWalker","GiantHead","Donu","Deca","Spiker","SpireGrowth",
+                "Taskmaster","BookOfStabbing","TimeEater","BanditBear","BanditLeader","BanditPointy","Transient","WrithingMass","Champ")) {
+            try { Class.forName("com.megacrit.cardcrawl.monsters."+pkg+"."+cls,false,loader).getDeclaredMethod("takeTurn"); }
+            catch(ClassNotFoundException expectedOtherPackage) { }
+        }
+        for(String[] power:new String[][]{{"GenericStrengthUpPower","Orb Walker"},{"AngryPower","GremlinWarrior"},
+                {"MalleablePower","SnakePlant"},{"ReactivePower","WrithingMass"},{"SlowPower","GiantHead"}}) {
+            String publicId=(String)pool.get("com.megacrit.cardcrawl.powers."+power[0]).getDeclaredField("POWER_ID").getConstantValue();
+            if(!RunicDomeTracker.monsterPowerAllowed(publicId,power[1])) throw new AssertionError("vanilla power ID rejected "+publicId);
+        }
         Class.forName("com.megacrit.cardcrawl.monsters.MonsterGroup",false,loader).getDeclaredMethod("init");
         System.out.println("RunicDomeTrackerTest PASS");
     }

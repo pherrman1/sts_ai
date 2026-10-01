@@ -9,7 +9,7 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action, forethought_transaction,
+    _is_combat, card_reward_reveal_action, hand_selection_transaction, grid_selection_transaction,
 )
 
 
@@ -132,22 +132,30 @@ class LiveGameDriverTest(unittest.TestCase):
             actions = build_legal_actions(screen, ["discard_potion"])
             self.assertEqual([a.mcp_arguments for a in actions], [{"potion_slot": 1}])
 
-    def test_forethought_transaction_preserves_uuid_order_and_stops_on_drift(self):
-        for selected in ([], ["a", "c"], ["a", "b", "c"]):
+    def test_hand_selection_transaction_preserves_uuid_order_and_stops_on_drift(self):
+        import itertools
+        contracts = (("FORETHOUGHT", "unique.ForethoughtAction", 99),
+                     ("GAMBLE", "unique.GamblingChipAction", 99),
+                     ("EXHAUST_MANY", "common.ExhaustAction", 3),
+                     ("EXHAUST_MANY", "common.ExhaustAction", 5),
+                     ("EXHAUST_MANY", "common.ExhaustAction", 99))
+        for selected, (task, owner, count) in itertools.product(([], ["a", "c"], ["a", "b", "c"], list("abcde")), contracts):
+            if len(selected) > count:
+                continue
             for drift in (False, True):
                 if not selected and drift:
                     continue
-                with self.subTest(selected=selected, drift=drift), tempfile.TemporaryDirectory() as directory:
-                    cards = [{"uuid": uuid, "id": "Strike_R"} for uuid in ("a", "b", "c")]
+                with self.subTest(task=task, count=count, selected=selected, drift=drift), tempfile.TemporaryDirectory() as directory:
+                    cards = [{"uuid": uuid, "id": "Strike_R"} for uuid in ("a", "b", "c", "d", "e")]
                     screen = dict(screen_type="HAND_SELECT", room_phase="COMBAT", ready_for_command=True,
-                                  can_proceed=True, hand=list(cards), choice_list=["Strike"]*3,
-                                  screen_state=dict(hand=list(cards), selected=[], max_cards=99, can_pick_zero=True))
+                                  can_proceed=True, hand=list(cards), choice_list=["Strike"]*5,
+                                  screen_state=dict(hand=list(cards), selected=[], max_cards=count, can_pick_zero=True))
                     observation = dict(combat=dict(hand=cards, cardSelect=dict(
-                        task="FORETHOUGHT", origin="HAND_SELECT", canPickAnyNumber=True, canPickZero=True,
-                        pickCount=99, selectedCount=0, selectedBits=0,
-                        actionClass="com.megacrit.cardcrawl.actions.unique.ForethoughtAction",
+                        task=task, origin="HAND_SELECT", canPickAnyNumber=True, canPickZero=True,
+                        pickCount=count, selectedCount=0, selectedBits=0,
+                        actionClass="com.megacrit.cardcrawl.actions." + owner,
                         liveChoices=[dict(uuid=c["uuid"], choiceIndex=i+1) for i,c in enumerate(cards)])))
-                    action = forethought_transaction(dict(kind="card_select",cardUuids=selected), observation, screen)
+                    action = hand_selection_transaction(dict(kind="card_select",cardUuids=selected), observation, screen)
                     class SelectingClient(FakeClient):
                         async def call(self, tool, arguments=None):
                             if tool == "choose":
@@ -158,6 +166,8 @@ class LiveGameDriverTest(unittest.TestCase):
                                 current["screen_state"]["hand"] = list(current["hand"])
                                 current["screen_state"]["selected"].insert(0,card)
                                 current["choice_list"].pop(index)
+                                if len(current["screen_state"]["selected"]) == count:
+                                    current["choice_list"] = []
                                 if drift:
                                     current["screen_state"]["selected"][0] = {"uuid": "unexpected"}
                                 return {"success": True}
@@ -168,7 +178,7 @@ class LiveGameDriverTest(unittest.TestCase):
                         # A ready snapshot is owned by the caller, not the MCP response object.
                         import copy
                         first = copy.deepcopy(screen)
-                        return await driver.execute_forethought_transaction(action,first,
+                        return await driver.execute_hand_selection_transaction(action,first,
                             {"tools":["choose","confirm"]},{})
                     if drift:
                         with self.assertRaises(IntegrationFailure):
@@ -177,11 +187,103 @@ class LiveGameDriverTest(unittest.TestCase):
                     else:
                         asyncio.run(exercise())
                         calls=[(tool,args) for tool,args in client.calls if tool in {"choose","confirm","select_cards"}]
-                        expected=[("choose",{"choice_index": "abc".index(uuid)+1}) for uuid in reversed(selected)]
+                        expected=[("choose",{"choice_index": "abcde".index(uuid)+1}) for uuid in reversed(selected)]
                         self.assertEqual(calls,expected+[("confirm",{})])
                     for bad in (["c","a"],["a","a"],["absent"]):
                         with self.assertRaises(IntegrationFailure):
-                            forethought_transaction(dict(kind="card_select",cardUuids=bad),observation,screen)
+                            hand_selection_transaction(dict(kind="card_select",cardUuids=bad),observation,screen)
+
+    def test_hand_selection_transaction_rejects_wrong_owner_partial_or_excess_picks(self):
+        import copy
+        cards = [{"uuid": str(i), "id": "Strike_R"} for i in range(5)]
+        screen = dict(screen_type="HAND_SELECT", room_phase="COMBAT", hand=cards, choice_list=["Strike"]*5,
+                      screen_state=dict(hand=cards, selected=[], max_cards=3, can_pick_zero=True))
+        selection = dict(task="EXHAUST_MANY", origin="HAND_SELECT", canPickAnyNumber=True, canPickZero=True,
+                         pickCount=3, selectedCount=0, selectedBits=0,
+                         actionClass="com.megacrit.cardcrawl.actions.common.ExhaustAction",
+                         liveChoices=[dict(uuid=c["uuid"], choiceIndex=i+1) for i,c in enumerate(cards)])
+        observation = dict(combat=dict(hand=cards, cardSelect=selection))
+        wanted = dict(kind="card_select", cardUuids=["0", "2", "4"])
+        hand_selection_transaction(wanted, observation, screen)
+        source_owned = copy.deepcopy(observation)
+        source_owned["combat"]["cardSelect"]["continuation"] = "source_card_actions"
+        source_owned["combat"]["pendingActionQueue"] = [{"kind": 12, "amount": 0, "status": 0, "sourceMonster": False}]
+        source_owned["combat"]["pendingCardQueue"] = []
+        hand_selection_transaction(wanted, source_owned, screen)
+        for field, value in (("pendingActionQueue", []), ("pendingActionQueue", None),
+                             ("pendingCardQueue", None)):
+            with self.subTest(queue=field, value=value), self.assertRaises(IntegrationFailure):
+                changed = copy.deepcopy(source_owned)
+                changed["combat"][field] = value
+                hand_selection_transaction(wanted, changed, screen)
+        for field, value in (("actionClass", "com.megacrit.cardcrawl.actions.unique.GamblingChipAction"),
+                             ("selectedCount", 1), ("selectedBits", False), ("pickCount", 4),
+                             ("canPickZero", False), ("canPickAnyNumber", False)):
+            with self.subTest(field=field), self.assertRaises(IntegrationFailure):
+                changed = copy.deepcopy(observation)
+                changed["combat"]["cardSelect"][field] = value
+                hand_selection_transaction(wanted, changed, screen)
+        with self.assertRaises(IntegrationFailure):
+            hand_selection_transaction(dict(kind="card_select",cardUuids=["0","1","2","3"]), observation, screen)
+        screen["screen_state"]["max_cards"] = 5
+        with self.assertRaises(IntegrationFailure):
+            hand_selection_transaction(wanted, observation, screen)
+
+    def test_liquid_memories_grid_pair_preserves_order_and_stops_on_drift(self):
+        import copy
+        for wanted in (["a", "c"], ["c", "a"]):
+            for drift in (None, "selected", "cards", "limit", "closed", "command"):
+                with self.subTest(wanted=wanted, drift=drift), tempfile.TemporaryDirectory() as directory:
+                    cards = [{"uuid": uuid, "id": "Strike_R"} for uuid in ("c", "a", "b")]
+                    screen = dict(screen_type="GRID", room_phase="COMBAT", ready_for_command=True,
+                                  choice_list=["Strike"]*3, can_proceed=False,
+                                  screen_state=dict(cards=cards, selected_cards=[], num_cards=2,
+                                      any_number=False, for_upgrade=False, for_transform=False, for_purge=False, confirm_up=False))
+                    selection = dict(task="LIQUID_MEMORIES_POTION", origin="GRID",
+                                     actionClass="com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction",
+                                     pickCount=2, selectedCount=0, selectedBits=0, canPickZero=False,
+                                     canPickAnyNumber=False, setCostToZero=True, newCost=0, optional=False, continuation="none",
+                                     liveChoices=[dict(uuid=c["uuid"],choiceIndex=i+1) for i,c in enumerate(cards)])
+                    observation = dict(combat=dict(discard=list(reversed(cards)),cardSelect=selection))
+                    if wanted[0] == "c":
+                        selection["continuation"]="public_actions"
+                        observation["combat"]["pendingActionQueue"]=[dict(kind="DRAW",amount=1)]
+                    action = grid_selection_transaction(dict(kind="grid_card_select",cardUuids=wanted),observation,screen)
+                    class SelectingGridClient(FakeClient):
+                        async def call(self, tool, arguments=None):
+                            if tool == "choose":
+                                self.calls.append((tool,arguments))
+                                current = self.states[0]
+                                state = current["screen_state"]
+                                state["selected_cards"].append(state["cards"][arguments["choice_index"]-1])
+                                if len(state["selected_cards"]) == 2:
+                                    current["screen_type"] = "NONE"
+                                elif drift == "selected": state["selected_cards"] = [{"uuid":"unexpected"}]
+                                elif drift == "cards": state["cards"] = list(reversed(state["cards"]))
+                                elif drift == "limit": state["num_cards"] = 1
+                                elif drift == "closed": current["screen_type"] = "NONE"
+                                elif drift == "command": self.commands = []
+                                return {"success":True}
+                            return await super().call(tool,arguments)
+                    client = SelectingGridClient(copy.deepcopy(screen),["choose"])
+                    driver = Driver(client,InspectorReader(inspector_file(directory)),TraceWriter(Path(directory)/"trace"))
+                    async def exercise():
+                        return await driver.execute_grid_selection_transaction(action,copy.deepcopy(screen),{"tools":["choose"]},{})
+                    if drift:
+                        with self.assertRaises(DriverError): asyncio.run(exercise())
+                        self.assertEqual(len([c for c in client.calls if c[0]=="choose"]),1)
+                    else:
+                        asyncio.run(exercise())
+                        self.assertEqual([c for c in client.calls if c[0] in {"choose","confirm","proceed"}],
+                                         [("choose",{"choice_index":"cab".index(uuid)+1}) for uuid in wanted])
+                    for bad in (["a"],["a","a"],["a","absent"],[]):
+                        with self.assertRaises(IntegrationFailure):
+                            grid_selection_transaction(dict(kind="grid_card_select",cardUuids=bad),observation,screen)
+                    for key,bad in (("actionClass","unknown"),("pickCount",1),("selectedCount",1),
+                                    ("optional",True),("newCost",1),("continuation","end_turn")):
+                        changed=copy.deepcopy(observation);changed["combat"]["cardSelect"][key]=bad
+                        with self.assertRaises(IntegrationFailure):
+                            grid_selection_transaction(dict(kind="grid_card_select",cardUuids=wanted),changed,screen)
 
     def test_start_game_requires_character_and_none_is_not_combat(self):
         with self.assertRaises(CandidateEnumerationError):
@@ -271,6 +373,9 @@ class LiveGameDriverTest(unittest.TestCase):
             {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
         self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        without_gold = [candidate for candidate in candidates if candidate.mcp_arguments != {"choice_index": 1}]
+        self.assertEqual(card_reward_reveal_action(screen, game, without_gold).mcp_arguments,
+                         {"choice_index": 3})
         card_only = [candidate for candidate in candidates if candidate.mcp_arguments == {"choice_index": 3}]
         self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
                          {"choice_index": 3})
@@ -294,6 +399,18 @@ class LiveGameDriverTest(unittest.TestCase):
         screen["choice_list"] = ["Speed Potion", "Weak Potion", "Card"]
         candidates = build_legal_actions(screen, ["choose"], game)
         self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 3})
+
+    def test_multiple_card_groups_reveal_first_undeclined_physical_occurrence(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Card", "Card", "Card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [{"reward_type": kind} for kind in ("GOLD","CARD","CARD","CARD")]}}
+        candidates = build_legal_actions(screen, ["choose", "proceed"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        remaining = [c for c in candidates if c.mcp_arguments.get("choice_index") != 1]
+        for index in (2, 3, 4):
+            self.assertEqual(card_reward_reveal_action(screen, game, remaining).mcp_arguments, {"choice_index": index})
+            remaining = [c for c in remaining if c.mcp_arguments.get("choice_index") != index]
+        self.assertIsNone(card_reward_reveal_action(screen, game, remaining))
 
     def test_strict_declined_card_returns_to_parent_potion_decision(self):
         with tempfile.TemporaryDirectory() as directory:

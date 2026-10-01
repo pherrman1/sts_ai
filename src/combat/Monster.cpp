@@ -299,6 +299,7 @@ void Monster::die(BattleContext &bc) {
         removeStatus<MS::CURIOSITY>();
         cancelPendingMove();
         setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH);
+        setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH); // vanilla repeats via queued SetMoveAction
         search::emitHiddenMonsterIntentMaterialized(
             idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
         bc.cardQueue.clear();
@@ -412,7 +413,9 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
     } else if (hasStatus<MS::ASLEEP>()) {
         // lagavulin
         setHasStatus<MS::ASLEEP>(false);
-        decrementStatus<MS::METALLICIZE>(8);
+        removeStatus<MS::METALLICIZE>();
+        cancelPendingMove();
+        setMove(MMID::LAGAVULIN_SLEEP);
 
     } else if (hasStatus<MS::SHIFTING>()) {
         addDebuff<MS::STRENGTH>(-damage);
@@ -472,7 +475,9 @@ void Monster::damageUnblockedHelper(BattleContext &bc, int damage) {
         if (hasStatus<MS::ASLEEP>()) {
         // lagavulin
         setHasStatus<MS::ASLEEP>(false);
-        decrementStatus<MS::METALLICIZE>(8);
+        removeStatus<MS::METALLICIZE>();
+        cancelPendingMove();
+        setMove(MMID::LAGAVULIN_SLEEP);
     }
     if (hasStatus<MS::SHIFTING>()) {
         addDebuff<MS::STRENGTH>(-damage);
