@@ -102,6 +102,17 @@ void validateHint(const J &hint) {
         require(hint.size() == 1, "unexpected liveAction fields");
     }
 }
+void validateForcedChoice(const J &o, const std::string &kind) {
+    const auto &choices=array(o,"liveChoices",1);
+    require(choices.size()==1,"forced transition requires one live choice");
+    const auto &native=choices.at(0).at("nativeAction");
+    require(string(native,"kind")=="option" && integer(native,"index",0,0)==0
+            && integer(native,"group",0,0)==0,"forced transition native choice mismatch");
+    const auto &hint=choices.at(0).at("liveAction");
+    require(string(hint,"kind")==kind,"forced transition live action mismatch");
+    if(kind=="choose")integer(hint,"choiceIndex",1,1);
+    validateHint(hint);
+}
 LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     // The constructor supplies canonical act/pool/history support from a
     // fixed hypothetical seed. It is deliberately overwritten with the
@@ -174,6 +185,37 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         0, 1000, "current-act event visits");
     const bool questionHistoryComplete = publicState.contains("questionHistoryComplete")
         ? boolean(publicState, "questionHistoryComplete") : false;
+    bool questionEventObserved=false;
+    if(questionHistoryComplete) {
+        const auto &outcomes=array(publicState,"questionOutcomes",100);
+        require(outcomes.size()==static_cast<std::size_t>(eventVisits),
+                "complete question history length differs from event visits");
+        int previousFloor=actStartFloor;
+        root.monsterChance=0.1f;
+        root.shopChance=0.03f;
+        root.treasureChance=0.02f;
+        for(const auto &entry:outcomes) {
+            const int floor=integer(entry,"floor",actStartFloor+1,root.floorNum);
+            require(floor>previousFloor,"question outcomes must follow floor order");
+            previousFloor=floor;
+            const auto name=string(entry,"outcome");
+            Room outcome=Room::INVALID;
+            if(name=="MONSTER")outcome=Room::MONSTER;
+            else if(name=="SHOP")outcome=Room::SHOP;
+            else if(name=="TREASURE")outcome=Room::TREASURE;
+            else if(name=="EVENT")outcome=Room::EVENT;
+            require(outcome!=Room::INVALID,"unknown public question outcome");
+            questionEventObserved|=outcome==Room::EVENT;
+            // Match GameContext::getEventRoomOutcomeHelper, including
+            // repeated float additions. Tiny Chest's forced TREASURE takes
+            // these same branches; Juzu's ambiguous EVENT is rejected below.
+            root.monsterChance=outcome==Room::MONSTER?0.1f:root.monsterChance+0.1f;
+            root.shopChance=outcome==Room::SHOP?0.03f:root.shopChance+0.03f;
+            root.treasureChance=outcome==Room::TREASURE?0.02f:root.treasureChance+0.02f;
+            if(floor==root.floorNum)root.curRoom=outcome;
+            if(floor+1==root.floorNum)root.lastRoom=outcome;
+        }
+    }
     int normalCombats = 0, eliteCombats = 0;
     require(!combatHistoryComplete || combatHistory.size() == completedCombatFloors.size(),
         "complete combat history length differs from public combat metric");
@@ -225,8 +267,12 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
                           &root.shopRelicPool, &root.bossRelicPool})
             pool->erase(std::remove(pool->begin(), pool->end(), relic), pool->end());
     };
-    for (const auto &relic : array(publicState, "acquiredRelics", 181))
-        eraseRelic(id<RelicId>(relic, RelicId::INVALID));
+    bool juzuWasOwned=root.relics.has(RelicId::JUZU_BRACELET);
+    for (const auto &relic : array(publicState, "acquiredRelics", 181)) {
+        const auto relicId=id<RelicId>(relic,RelicId::INVALID);
+        juzuWasOwned|=relicId==RelicId::JUZU_BRACELET;
+        eraseRelic(relicId);
+    }
     const bool seenRelicsComplete = boolean(publicState, "seenRelicsComplete");
     require(array(publicState, "seenRelics", 181).size() <= 181,
         "seen relic history too large");
@@ -293,6 +339,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     result.state = std::move(root);
     result.path = source.path;
     result.currentActEventVisits = eventVisits;
+    result.questionHistoryComplete=questionHistoryComplete && !(juzuWasOwned && questionEventObserved);
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
     // relic branches still require complete public offer history.
@@ -306,6 +353,12 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     } else if (!questionHistoryComplete && eventVisits > 0) {
         result.supported = false;
         result.reason = "PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED";
+    } else if(juzuWasOwned && questionEventObserved) {
+        // A Juzu-converted monster resets monsterChance, whereas a genuine
+        // event increments it. Public resolved symbols cannot distinguish
+        // these cases, including a Juzu relic later given away to N'loth.
+        result.supported=false;
+        result.reason="PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED:Juzu_Bracelet";
     } else if (canDrawUnseenRelic) {
         result.supported = false;
         result.reason = "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED";
@@ -331,7 +384,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             // the frozen value models do not encode remaining charges.
             const bool boundedWinged = reason
                     == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
-                && screenName != "map";
+                && (screenName != "map" || (o.contains("details") && o.at("details").is_object()
+                    && o.at("details").value("mechanicalTransition",std::string())=="boss_map"));
             // A normal combat reward can expose gold alongside an unopened
             // card group. Defer this one support boundary until the complete
             // capture and its live mappings have been validated below.
@@ -473,12 +527,50 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.restRoomResolved = options.size() == 1 && options.at(0).is_number_integer()
                     && options.at(0).get<int>() == 6;
         }
-        if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
-            return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
         const auto &d=o.at("details"); require(d.is_object(),"details must be an object");
-        require(!d.contains("mechanicalTransition") || g.screenState==ScreenState::EVENT_SCREEN,
+        const auto transition=d.contains("mechanicalTransition")?string(d,"mechanicalTransition"):std::string();
+        if(transition=="boss_map" || transition=="selector_confirm") {
+            const auto &mcp=o.at("mcpState");
+            require(boolean(mcp,"ready_for_command") && !boolean(mcp,"can_cancel"),
+                    "forced transition is not the sole available continuation");
+            const J choices=mcp.contains("choice_list")?array(mcp,"choice_list",1):J::array();
+            if(transition=="boss_map") {
+                require(g.screenState==ScreenState::MAP_SCREEN && g.act<=3 && g.curMapNodeY==14
+                        && string(mcp,"screen_type")=="MAP" && !boolean(mcp,"can_proceed")
+                        && choices.size()==1 && boolean(d,"bossNodeAvailable")
+                        && integer(d,"nodeChoices",0,0)==0,"unqualified forced boss map transition");
+                validateForcedChoice(o,"choose");
+            } else {
+                require(g.screenState==ScreenState::CARD_SELECT && string(d,"type")=="confirmation"
+                        && string(mcp,"screen_type")=="GRID" && boolean(mcp,"can_proceed")
+                        && choices.empty() && boolean(d,"isJustForConfirming")
+                        && !boolean(d,"confirmScreenUp") && boolean(d,"confirm"),
+                        "unqualified selector result confirmation");
+                validateForcedChoice(o,"confirm");
+            }
+            next.forcedOocTransition=true;
+        } else require(transition.empty() || g.screenState==ScreenState::EVENT_SCREEN,
                 "mechanical event transition on non-event screen");
-        if(g.screenState==ScreenState::REWARDS) {
+        if(!next.forcedOocTransition && g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
+            return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
+        if(next.forcedOocTransition) {
+            // No native selector or encounter transition is synthesized for
+            // these public UI actions. Validation above is the entire decision.
+        } else if(g.screenState==ScreenState::TREASURE_ROOM) {
+            if(!boolean(d,"opened")) {
+                const int size=integer(d,"chestSize",0,2);
+                const char *types[]={"SmallChest","MediumChest","LargeChest"};
+                require(string(d,"chestType")==types[size],"chest size/type mismatch");
+                require(!d.contains("haveGold") && !d.contains("tier"),
+                        "hidden chest contents must not be captured");
+                g.info.chestSize=static_cast<ChestSize>(size);
+                // These placeholders are never scored directly. The existing
+                // MCTS transition sampler replaces both from one shared roll.
+                g.info.haveGold=false;
+                g.info.tier=RelicTier::COMMON;
+                next.hiddenTreasureContents=true;
+            }
+        } else if(g.screenState==ScreenState::REWARDS) {
             auto &r=g.info.rewardsContainer;
             for(const auto &v:array(d,"gold",2)) r.addGold(integerValue(v,0,1000000,"gold reward"));
             for(const auto &group:array(d,"cardRewards",5)) {
@@ -511,6 +603,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             else if(kind=="duplicate")g.info.selectScreenType=CardSelectScreenType::DUPLICATE;
             else if(kind=="bottle")g.info.selectScreenType=CardSelectScreenType::BOTTLE;
             else if(kind=="bonfire")g.info.selectScreenType=CardSelectScreenType::BONFIRE_SPIRITS;
+            else if(kind=="obtain")g.info.selectScreenType=CardSelectScreenType::OBTAIN;
             else return {false,"UNSUPPORTED","selector_type:"+kind};
             g.info.toSelectCount=integer(d,"requiredPicks",1,3);
             CardType bottleType=CardType::INVALID;
@@ -523,7 +616,41 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 require(g.info.toSelectCount==1,"bottle selector requires one pick");
             }
             std::set<int> targets;
+            std::set<CardId> offeredIds;
+            std::set<std::string> offeredUuids;
+            if(kind=="obtain") {
+                require(string(d,"event")=="The Library" && integer(d,"phase",1,1)==1
+                        && g.info.toSelectCount==1 && integer(d,"completedPicks",0,0)==0
+                        && !boolean(d,"confirm"),"unqualified Library selector continuation");
+                const auto &mcp=o.at("mcpState");
+                require(string(mcp,"screen_type")=="GRID" && boolean(mcp,"ready_for_command")
+                        && !boolean(mcp,"can_cancel") && !boolean(mcp,"can_proceed")
+                        && array(mcp,"choice_list",20).size()==20,"Library MCP availability mismatch");
+                require(array(d,"cards",20).size()==20 && array(o,"liveChoices",20).size()==20,
+                        "Library requires twenty public offers");
+                for(const auto &offer:array(d,"cards",20)) {
+                    const auto c=card(offer.at("card"));
+                    require(c==g.previewObtainCard(Card(c.id)),"Library offer preview upgrade mismatch");
+                    // These are valid vanilla offers whose native metadata or
+                    // repeated-upgrade representation is not yet qualified.
+                    if(c.id==CardId::BRUTALITY || c.id==CardId::COMBUST)
+                        return {false,"UNSUPPORTED","LIBRARY_NATIVE_CARD_COLOR_UNQUALIFIED"};
+                    if(c.id==CardId::SEARING_BLOW && c.upgraded)
+                        return {false,"UNSUPPORTED","SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"};
+                }
+            }
             const auto selectedCard=[&](const J &v) {
+                if(kind=="obtain") {
+                    require(!v.contains("deckIndex"),"Library offer must not target the deck");
+                    const auto c=card(v.at("card"));
+                    require(getCardColor(c.id)==CardColor::RED && (c.getRarity()==CardRarity::COMMON
+                            || c.getRarity()==CardRarity::UNCOMMON || c.getRarity()==CardRarity::RARE),
+                            "Library requires reward-pool class cards");
+                    require(offeredIds.insert(c.id).second && offeredUuids.insert(string(v,"uuid")).second
+                            && !string(v,"uuid").empty(),"duplicate Library offer identity");
+                    require(c==g.previewObtainCard(Card(c.id)),"Library offer preview upgrade mismatch");
+                    return SelectScreenCard(c,-1);
+                }
                 const auto idx=integer(v,"deckIndex",0,g.deck.size()-1);
                 const auto c=card(v.at("card"));require(c==g.deck.cards[idx],"selector card does not match deck");
                 require(targets.insert(idx).second,"duplicate physical selector target");
@@ -544,6 +671,15 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 g.info.toSelectCards.push_back(selectedCard(v));
             require(g.info.toSelectCards.size()>=g.info.toSelectCount-completed,
                     "selector has fewer targets than remaining picks");
+            if(kind=="obtain") for(int i=0;i<20;++i) {
+                const auto &choice=o.at("liveChoices")[i];
+                const auto &native=choice.at("nativeAction"), &hint=choice.at("liveAction");
+                require(string(native,"kind")=="option" && integer(native,"index",i,i)==i
+                        && (!native.contains("group") || integer(native,"group",0,0)==0)
+                        && string(hint,"kind")=="choose" && integer(hint,"choiceIndex",i+1,i+1)==i+1
+                        && string(choice,"uuid")==string(d.at("cards")[i],"uuid"),
+                        "Library offer/live order mismatch");
+            }
         } else if(g.screenState==ScreenState::EVENT_SCREEN) {
             const auto event=string(d,"event");
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
@@ -568,7 +704,13 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                             || (transition=="event_leave" && phase=="99"));
                 const bool goop=g.curEvent==Event::WORLD_OF_GOOP && capturedId=="World of Goop"
                         && transition=="event_leave" && phase=="RESULT";
-                require(neow || goop,"unqualified mechanical event transition");
+                const bool forge=g.curEvent==Event::OMINOUS_FORGE && capturedId=="Accursed Blacksmith"
+                        && transition=="event_leave" && phase=="2";
+                const bool writing=g.curEvent==Event::ANCIENT_WRITING && capturedId=="Back to Basics"
+                        && transition=="event_leave" && phase=="COMPLETE";
+                const bool library=g.curEvent==Event::THE_LIBRARY && capturedId=="The Library"
+                        && transition=="event_leave" && phase=="1";
+                require(neow || goop || forge || writing || library,"unqualified mechanical event transition");
                 const auto &options=array(eventCapture,"options",1);
                 require(options.size()==1 && integer(options.at(0),"index",0,0)==0
                         && !boolean(options.at(0),"disabled"),
@@ -583,6 +725,27 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 require(string(hint,"kind")=="choose" && integer(hint,"choiceIndex",1,1)==1,
                         "mechanical event live choice mismatch");
                 next.mechanicalEventTransition=true;
+            } else if(g.curEvent==Event::OMINOUS_FORGE || g.curEvent==Event::ANCIENT_WRITING) {
+                const bool forge=g.curEvent==Event::OMINOUS_FORGE;
+                const auto &captured=o.at("event");
+                require(string(captured,"id")==event && string(captured,"phase")== (forge?"0":"INTRO")
+                        && g.info.phase==0 && g.info.eventData==0,"unqualified forge/writing initial phase");
+                require(forge || g.deck.getTransformableCount(1)>0,"writing has no removable card");
+                const int first=forge && g.deck.getUpgradeableCount()==0 ? 1 : 0;
+                const int count=(forge?3:2)-first;
+                const auto &options=array(captured,"options",3);
+                const auto &choices=array(o,"liveChoices",3);
+                require(options.size()==count && choices.size()==count,"forge/writing choice count mismatch");
+                for(int i=0;i<count;++i) {
+                    require(integer(options[i],"index",first+i,first+i)==first+i && !boolean(options[i],"disabled"),
+                            "forge/writing enabled slot mismatch");
+                    const auto &native=choices[i].at("nativeAction");
+                    const auto &hint=choices[i].at("liveAction");
+                    require(string(native,"kind")=="option" && integer(native,"index",first+i,first+i)==first+i
+                            && (!native.contains("group") || integer(native,"group",0,0)==0)
+                            && string(hint,"kind")=="choose" && integer(hint,"choiceIndex",i+1,i+1)==i+1,
+                            "forge/writing live mapping mismatch");
+                }
             } else if(g.curEvent==Event::NEOW) {
                 const auto &ns=array(d,"neow",4);
                 require(ns.size()==2 || ns.size()==4,"two or four Neow offers required");
@@ -592,10 +755,31 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }
             }
-            if (g.curEvent == Event::THE_LIBRARY
-                    || g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
+            if (g.curEvent == Event::THE_LIBRARY && !next.mechanicalEventTransition) {
+                g.info.hpAmount0=integer(d,"hpAmount0",0,g.maxHp);
+                const auto &captured=o.at("event");
+                require(string(captured,"id")=="The Library" && string(captured,"phase")=="0"
+                        && g.info.phase==0 && g.info.eventData==0,"unqualified Library initial phase");
+                require(g.info.hpAmount0==static_cast<int>(g.maxHp*(g.ascension>=15?0.2f:0.33f)+0.5f),
+                        "Library public heal amount mismatch");
+                const auto &options=array(captured,"options",2), &choices=array(o,"liveChoices",2);
+                require(options.size()==2 && choices.size()==2,"Library requires two initial options");
+                for(int i=0;i<2;++i) {
+                    const auto &native=choices[i].at("nativeAction"), &hint=choices[i].at("liveAction");
+                    require(integer(options[i],"index",i,i)==i && !boolean(options[i],"disabled")
+                            && string(native,"kind")=="option" && integer(native,"index",i,i)==i
+                            && (!native.contains("group") || integer(native,"group",0,0)==0)
+                            && string(hint,"kind")=="choose" && integer(hint,"choiceIndex",i+1,i+1)==i+1,
+                            "Library initial live mapping mismatch");
+                }
+                next.hiddenEventRewardPity=!next.rewardPityHistoryComplete;
+            }
+            // Installed vanilla semantics disagree with the native leave
+            // branches: Mushrooms gives Parasite/heal and Sphere simply leaves.
+            // A prior over reward pity cannot repair those transitions.
+            if (g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
                     || g.curEvent == Event::MYSTERIOUS_SPHERE)
-                return {false,"UNSUPPORTED","PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"};
+                return {false,"UNSUPPORTED","NATIVE_EVENT_TRANSITION_UNQUALIFIED"};
         }
         for(const auto &choice:array(o,"liveChoices",1024)) {
             primitive(choice,g.screenState);validateHint(choice.at("liveAction"));
@@ -623,11 +807,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     + std::to_string(gold.size()) + " choices=" + std::to_string(goldChoiceCount));
             if (goldChoiceCount == 0) return {false,"UNSUPPORTED",deferredUnsupportedReason};
         }
-        if (unqualifiedUpgradeHistory)
+        if (unqualifiedUpgradeHistory && !next.forcedOocTransition)
             return {false,"UNSUPPORTED","SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"};
-        if(next.mechanicalEventTransition) {
+        if(next.mechanicalEventTransition || next.forcedOocTransition) {
             next.mctsRoot.supported=false;
-            next.mctsRoot.reason="MECHANICAL_EVENT_TRANSITION_ONLY";
+            next.mctsRoot.reason=next.mechanicalEventTransition
+                ?"MECHANICAL_EVENT_TRANSITION_ONLY":"FORCED_OOC_TRANSITION_ONLY";
         } else next.mctsRoot = makeMctsRoot(next);
         out=std::move(next);
         return {true,{},{}};

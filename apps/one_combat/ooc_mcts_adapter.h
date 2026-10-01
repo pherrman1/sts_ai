@@ -65,7 +65,10 @@ struct OocMctsDependencies {
 };
 
 OocMctsDependencies defaultOocMctsDependencies();
-void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms);
+// Qualified public question-room history fixes the three room probabilities;
+// reward pity remains hidden and is still sampled from its reachable prior.
+void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms,
+                                 bool questionHistoryComplete = false);
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:

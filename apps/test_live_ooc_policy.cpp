@@ -64,6 +64,25 @@ int main(int argc, char **argv) {
                         && counterState.treasureChance <= .02f + .02f + .02f,
                     "live room chance exceeded observed event-room support");
             }
+            counterState.monsterChance = .1f + .1f + .1f;
+            counterState.shopChance = .03f;
+            counterState.treasureChance = .02f + .02f;
+            bool pityVaried = false;
+            for (int i = 0; i < 32; ++i) {
+                counterState.potionChance = 999;
+                counterState.cardRarityFactor = 999;
+                sampleLiveOocHiddenCounters(counterState, draws, 2, true);
+                require(counterState.monsterChance == .1f + .1f + .1f
+                        && counterState.shopChance == .03f
+                        && counterState.treasureChance == .02f + .02f,
+                    "qualified public question history was resampled");
+                require(counterState.potionChance >= -40 && counterState.potionChance <= 60
+                        && counterState.potionChance % 10 == 0
+                        && counterState.cardRarityFactor >= -40 && counterState.cardRarityFactor <= 5,
+                    "qualified question history prevented hidden reward-pity sampling");
+                pityVaried |= counterState.potionChance != 0;
+            }
+            require(pityVaried, "qualified history collapsed the reward prior");
         }
         {
             auto fullBelt = gc;

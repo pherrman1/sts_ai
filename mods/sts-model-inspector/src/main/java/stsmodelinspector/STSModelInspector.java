@@ -104,6 +104,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final class TrackedCardQueueItem {
         boolean present;
         String cardJson;
+        AbstractCard physicalCard;
         int target;
         int energyOnUse;
         boolean isEndTurn;
@@ -119,6 +120,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         void clear() {
             present = false;
             cardJson = null;
+            physicalCard = null;
             target = 0;
             energyOnUse = 0;
             isEndTurn = false;
@@ -2003,7 +2005,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return phase == AbstractRoom.RoomPhase.COMBAT
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
-                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                         || screen == AbstractDungeon.CurrentScreen.CARD_REWARD) && selectionAvailable));
     }
 
     private static boolean isCardSelectionBoundary() {
@@ -2011,7 +2014,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                     && AbstractDungeon.gridSelectScreen != null)
                 || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
-                    && AbstractDungeon.handCardSelectScreen != null);
+                    && AbstractDungeon.handCardSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    && AbstractDungeon.cardRewardScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -2026,6 +2031,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             trackedLastTargetedMonster = item.monster;
 
         trackedLastCardQueueItem.present = true;
+        trackedLastCardQueueItem.physicalCard = item.card;
         trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
         Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
         if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
@@ -2360,6 +2366,54 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append("]}").toString();
     }
 
+    static String singleSelectionJson(String task, String origin, boolean canPickZero,
+                                      boolean anyNumber, int count, int selectedCount,
+                                      List<String> uuids, int liveChoiceCount) {
+        boolean hand = "HAND_SELECT".equals(origin);
+        boolean qualified = hand ? "WARCRY".equals(task) || "FORETHOUGHT".equals(task)
+                : "GRID".equals(origin) && ("SECRET_TECHNIQUE".equals(task) || "SECRET_WEAPON".equals(task));
+        if (!qualified || canPickZero || anyNumber || count != 1 || selectedCount != 0
+                || uuids == null || uuids.isEmpty() || uuids.size() != liveChoiceCount
+                || uuids.contains(null) || uuids.contains("")
+                || new java.util.HashSet<String>(uuids).size() != uuids.size())
+            return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_live_choices\"}";
+        String base = selectionJson(task, false, false, 1, null);
+        StringBuilder out = new StringBuilder(base.substring(0, base.length() - 1));
+        out.append(",\"origin\":\"").append(origin).append("\",\"liveChoices\":[");
+        for (int i = 0; i < uuids.size(); ++i) {
+            if (i != 0) out.append(',');
+            out.append("{\"uuid\":\"").append(escapeJson(uuids.get(i)))
+                    .append("\",\"choiceIndex\":").append(i + 1).append('}');
+        }
+        return out.append("]}").toString();
+    }
+
+    private static String liveSingleSelectionJson(String task, boolean hand, boolean canPickZero,
+                                                  boolean anyNumber, int count, int selectedCount) {
+        List<String> uuids = new ArrayList<>();
+        int choiceCount = -1;
+        try {
+            // These are the same list and indices used by MCPTheSpire's choose
+            // implementation. Grid order is not the native draw-pile order.
+            Class<?> choices = Class.forName("mcpthespire.ChoiceScreenUtils");
+            Object labels = choices.getMethod("getCurrentChoiceList").invoke(null);
+            Object cards = hand ? AbstractDungeon.player.hand.group
+                    : choices.getMethod("getGridScreenCards").invoke(null);
+            if (labels instanceof List && cards instanceof List) {
+                choiceCount = ((List<?>) labels).size();
+                for (Object value : (List<?>) cards) {
+                    if (!(value instanceof AbstractCard)) { uuids.add(null); continue; }
+                    AbstractCard card = (AbstractCard) value;
+                    uuids.add(card.uuid == null ? null : card.uuid.toString());
+                }
+            }
+        } catch (ReflectiveOperationException | LinkageError error) {
+            // Missing or changed MCP contracts cannot be replaced by pile order.
+        }
+        return singleSelectionJson(task, hand ? "HAND_SELECT" : "GRID", canPickZero,
+                anyNumber, count, selectedCount, uuids, choiceCount);
+    }
+
     private static String stasisJson() {
         StringBuilder out = new StringBuilder("[");
         boolean first = true;
@@ -2384,13 +2438,97 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
+    static String cardRewardSelectionJson(String actionClass, Integer copies, Boolean skippable,
+                                          String continuation, List<String> cards, boolean plainCards) {
+        String reason = "";
+        if ("com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass))
+            reason = "silver_card_reward_end_turn_continuation";
+        else if ("com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass))
+            reason = "silver_card_reward_toolbox_cost";
+        else if (!"com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass))
+            reason = "silver_card_reward_unknown_action";
+        else if (skippable == null || skippable)
+            reason = "silver_card_reward_skip_unrepresentable";
+        else if (copies == null || copies < 1 || copies > 2)
+            reason = "silver_card_reward_copy_count";
+        else if (!"none".equals(continuation) && !"discovery_card".equals(continuation))
+            reason = "silver_card_reward_pending_actions";
+        else if (!plainCards || cards == null || cards.size() != 3
+                || new java.util.HashSet<String>(cards).size() != 3 || cards.contains(null)
+                || cards.contains(""))
+            reason = "silver_card_reward_option_state";
+        if (!reason.isEmpty())
+            return "{\"task\":\"\",\"origin\":\"CARD_REWARD\",\"unsupportedReason\":\"" + reason + "\"}";
+        StringBuilder out = new StringBuilder("{\"task\":\"DISCOVERY\",\"origin\":\"CARD_REWARD\","
+                + "\"canPickZero\":false,\"canPickAnyNumber\":false,\"pickCount\":1,"
+                + "\"setCostToZero\":true,\"selectedBits\":0,\"data0\":");
+        out.append(copies).append(",\"continuation\":\"").append(continuation).append("\",\"cards\":[");
+        for (int i = 0; i < cards.size(); ++i) {
+            if (i != 0) out.append(',');
+            out.append('"').append(escapeJson(cards.get(i))).append('"');
+        }
+        return out.append("]}").toString();
+    }
+
+    private static String cardRewardContinuation() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
+                || !actions.monsterQueue.isEmpty()) return "unsupported";
+        if (actions.actions.isEmpty() && AbstractDungeon.player.limbo.isEmpty()) return "none";
+        // The existing native interrupted-card replay can restore this sole
+        // remainder. Other card/action queues need a separate continuation
+        // contract and must not be discarded when a popup is imported.
+        if (actions.actions.size() != 1 || !trackedLastCardQueueItem.present) return "unsupported";
+        Object pending = actions.actions.get(0);
+        if (!"com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(pending.getClass().getName()))
+            return "unsupported";
+        Object target = readObjectField(pending, "targetCard");
+        if (!(target instanceof AbstractCard)) return "unsupported";
+        AbstractCard card = (AbstractCard) target;
+        if (!"Discovery".equals(card.cardID) || trackedLastCardQueueItem.physicalCard != card
+                || AbstractDungeon.player.hand.group.contains(card)
+                || AbstractDungeon.player.drawPile.group.contains(card)
+                || AbstractDungeon.player.discardPile.group.contains(card)
+                || AbstractDungeon.player.exhaustPile.group.contains(card)
+                || AbstractDungeon.player.limbo.size() > 1
+                || (AbstractDungeon.player.limbo.size() == 1 && AbstractDungeon.player.limbo.group.get(0) != card)
+                || !Boolean.FALSE.equals(readBooleanField(pending, "returnToHand"))
+                || !Boolean.FALSE.equals(readBooleanField(pending, "reboundCard"))
+                || !Boolean.valueOf(trackedLastCardQueueItem.exhaustOnUse).equals(readBooleanField(pending, "exhaustCard"))
+                || trackedLastCardQueueItem.purgeOnUse || trackedLastCardQueueItem.autoplay) return "unsupported";
+        return "discovery_card";
+    }
+
+    private static String combatCardRewardJson() {
+        com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
+        Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+        List<String> ids = new ArrayList<>();
+        boolean plain = screen != null && screen.rewardGroup != null
+                && screen.discoveryCard == null && !hasRelic("PrismaticShard")
+                && !AbstractDungeon.player.hasPower("MasterRealityPower");
+        if (screen != null && screen.rewardGroup != null) for (AbstractCard card : screen.rewardGroup) {
+            if (card == null) { plain = false; continue; }
+            ids.add(card.cardID);
+            plain &= !card.upgraded && card.timesUpgraded == 0 && card.misc == 0
+                    && card.costForTurn == card.cost && !card.freeToPlayOnce && !card.retain;
+        }
+        return cardRewardSelectionJson(action == null ? "" : action.getClass().getName(),
+                readIntField(action, "amount"), readBooleanField(screen, "skippable"),
+                cardRewardContinuation(), ids, plain);
+    }
+
     private static String cardSelectionJson() {
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                && AbstractDungeon.cardRewardScreen != null) return combatCardRewardJson();
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                 && AbstractDungeon.gridSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
                     AbstractDungeon.gridSelectScreen;
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
             String task = currentActionSelectionTask(false, screen.anyNumber, amount == null ? -1 : amount);
+            if (task != null) return liveSingleSelectionJson(task, false, false, screen.anyNumber,
+                    amount == null ? -1 : amount, screen.selectedCards.size());
             if (task == null) {
                 task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
                 if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
@@ -2409,6 +2547,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // vanilla sentinel amount 99.  That is the native GAMBLE task,
             // not an unknown combat screen.
             String task = currentActionSelectionTask(true, canPickAnyNumber, screen.numCardsToSelect);
+            if (task != null) return liveSingleSelectionJson(task, true, screen.canPickZero,
+                    canPickAnyNumber, screen.numCardsToSelect, screen.selectedCards.size());
             if (task == null) task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,

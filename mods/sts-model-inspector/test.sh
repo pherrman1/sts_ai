@@ -9,6 +9,8 @@ javac_bin=${JAVAC:-$(command -v javac)}
   -cp "$root/build/classes:$1:$2:$3" -d "$classes" \
   "$root"/src/test/java/stsmodelinspector/*.java
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.LiveOocCaptureTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.QuestionRoomHistoryTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.RelicOfferRecorderTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.OocOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatBoundaryTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PotionOverlayTest

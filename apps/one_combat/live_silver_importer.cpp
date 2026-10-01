@@ -32,6 +32,32 @@ struct CardRecord {
     silver_bridge::CardWire wire;
 };
 
+std::optional<silver_bridge::CardSource> liveSingleSelectionSource(sts::CardSelectTask task,
+                                                                  const std::string &origin) {
+    if (origin == "HAND_SELECT" && (task == sts::CardSelectTask::WARCRY || task == sts::CardSelectTask::FORETHOUGHT))
+        return silver_bridge::CardSource::HAND;
+    if (origin == "GRID" && (task == sts::CardSelectTask::SECRET_TECHNIQUE || task == sts::CardSelectTask::SECRET_WEAPON))
+        return silver_bridge::CardSource::DRAW;
+    return std::nullopt;
+}
+
+bool liveSingleChoices(const json &selection, std::map<std::string, int> &choices) {
+    if (selection.value("pickCount", 0) != 1 || selection.value("canPickZero", true)
+        || selection.value("canPickAnyNumber", true) || selection.value("selectedBits", -1) != 0)
+        return false;
+    const auto list = selection.value("liveChoices", json::array());
+    if (!list.is_array() || list.empty()) return false;
+    for (std::size_t i = 0; i < list.size(); ++i) {
+        const auto &entry = list[i];
+        if (!entry.is_object() || !entry.contains("uuid") || !entry["uuid"].is_string()
+            || !entry.contains("choiceIndex") || !entry["choiceIndex"].is_number_integer()) return false;
+        const auto uuid = entry["uuid"].get<std::string>();
+        const int index = entry["choiceIndex"].get<int>();
+        if (uuid.empty() || index != static_cast<int>(i) + 1 || !choices.emplace(uuid, index).second) return false;
+    }
+    return true;
+}
+
 std::string fail(const char *reason) { return reason; }
 
 std::uint64_t fnv1a(const std::string &value, std::uint64_t hash = 1469598103934665603ULL) {
@@ -559,6 +585,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     // A stable combat selection is still combat when its action has no native
     // serializer. Reject that explicit support boundary before inspecting the
     // unrelated normal-play state or requiring predecessor reconstruction.
+    if (cardSelect && selectionIt->contains("unsupportedReason")) {
+        const auto &reason = selectionIt->at("unsupportedReason");
+        if (!reason.is_string()) return unsupported("silver_unmapped_selection_task");
+        if (!reason.get<std::string>().empty()) return unsupported(reason.get<std::string>());
+    }
     if (cardSelect && !live_silver::cardSelectTask(selectionIt->value("task", std::string())))
         return unsupported("silver_unmapped_selection_task");
     if (!combat.contains("damageTrackingExact")
@@ -1072,13 +1103,46 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         wire.cardSelect.data0 = selectionIt->value("data0", 0);
         wire.cardSelect.setCostToZero = selectionIt->value("setCostToZero", true);
         wire.cardSelect.selectedBits = selectionIt->value("selectedBits", 0);
+        const auto origin = selectionIt->value("origin", std::string());
+        if (origin == "GRID" || origin == "HAND_SELECT") {
+            const auto source = liveSingleSelectionSource(*task, origin);
+            std::map<std::string, int> choices;
+            if (!source || !liveSingleChoices(*selectionIt, choices))
+                return unsupported("silver_selection_live_choices");
+            std::vector<CardRecord> candidates;
+            if (*source == silver_bridge::CardSource::HAND) candidates = hand;
+            else appendGenericCards(draw, candidates);
+            std::set<std::string> expected;
+            for (const auto &card : candidates) {
+                const auto type = sts::CardInstance(static_cast<sts::CardId>(card.wire.id)).getType();
+                if ((*task == sts::CardSelectTask::SECRET_TECHNIQUE && type != sts::CardType::SKILL)
+                    || (*task == sts::CardSelectTask::SECRET_WEAPON && type != sts::CardType::ATTACK)) continue;
+                expected.insert(card.uuid);
+            }
+            if (expected.size() != choices.size()) return unsupported("silver_selection_live_choices");
+            for (const auto &[uuid, index] : choices)
+                if (!expected.count(uuid)) return unsupported("silver_selection_live_choices");
+        }
         const auto options = selectionIt->value("cards", json::array());
         if (!options.is_array() || options.size() > wire.cardSelect.cards.size()) return unsupported("silver_unmapped_selection_task");
+        const bool offer = *task == sts::CardSelectTask::DISCOVERY || *task == sts::CardSelectTask::CODEX;
+        if (offer && options.size() != wire.cardSelect.cards.size())
+            return unsupported("silver_card_reward_option_state");
+        if (*task == sts::CardSelectTask::DISCOVERY
+            && (wire.cardSelect.data0 < 1 || wire.cardSelect.data0 > 2
+                || wire.cardSelect.canPickZero || wire.cardSelect.canPickAnyNumber
+                || wire.cardSelect.pickCount != 1 || !wire.cardSelect.setCostToZero
+                || wire.cardSelect.selectedBits != 0))
+            return unsupported("silver_card_reward_selection_state");
+        std::set<sts::CardId> offeredIds;
         for (std::size_t i = 0; i < options.size(); ++i) {
             try {
                 const std::string cardName = options[i].is_string() ? options[i].get<std::string>() : options[i].value("id", std::string());
                 const auto cardId = json(cardName).get<sts::CardId>();
                 if (isOffColorIroncladCard(cardId)) return unsupported("silver_off_color_card");
+                if (offer && (!options[i].is_string() || cardId == sts::CardId::INVALID
+                        || !offeredIds.insert(cardId).second))
+                    return unsupported("silver_card_reward_option_state");
                 wire.cardSelect.cards[i] = static_cast<std::int16_t>(cardId);
             } catch (...) { return unsupported("silver_unmapped_selection_task"); }
         }
@@ -1095,7 +1159,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         } else if (item.contains("card") && parseGenericCard(item.at("card"), queueCard)) {
             if (isOffColorIroncladCard(queueCard.wire)) return "silver_off_color_card";
             auto id = context.cardIds.find(queueCard.uuid);
-            if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
+            if (id == context.cardIds.end()) {
+                if (context.nextUniqueCardId > std::numeric_limits<std::int16_t>::max())
+                    return "silver_card_identity";
+                id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
+            }
+            wire.nextUniqueCardId = std::max(wire.nextUniqueCardId, context.nextUniqueCardId);
             queueCard.wire.uniqueId = id->second; out.card = queueCard.wire;
         } else if (item.contains("card")) return "silver_played_card";
         out.target = item.value("target", 0);
@@ -1134,6 +1203,38 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         wire.pendingCardQueueObserved = true;
     }
+    if (cardSelect && selectionIt->value("origin", std::string()) == "CARD_REWARD") {
+        const auto continuation = selectionIt->value("continuation", std::string());
+        if (wire.cardSelect.task != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
+            || (continuation != "none" && continuation != "discovery_card")
+            || wire.endTurnQueued || wire.turnHasEnded || !wire.pendingCardQueue.empty())
+            return unsupported("silver_card_reward_pending_actions");
+        const auto uniqueId = wire.curCardQueueItem.card.uniqueId;
+        const auto inPile = [uniqueId](const auto &pile) {
+            return std::any_of(pile.begin(), pile.end(), [uniqueId](const auto &card) {
+                return card.uniqueId == uniqueId;
+            });
+        };
+        const bool queuedCardInPile = inPile(wire.hand) || inPile(wire.drawPile.unknown)
+            || inPile(wire.drawPile.knownTop) || inPile(wire.drawPile.knownBottom)
+            || inPile(wire.discardPile.unknown) || inPile(wire.exhaustPile.unknown);
+        if (continuation == "discovery_card") {
+            if (limbo.size() > 1 || wire.cardSelect.data0 != 1 || queuedCardInPile
+                || wire.curCardQueueItem.card.id != static_cast<std::int16_t>(sts::CardId::DISCOVERY)
+                || (limbo.size() == 1 && indexedLimbo.front().uniqueId != uniqueId)
+                || wire.curCardQueueItem.purgeOnUse || wire.curCardQueueItem.autoplay)
+                return unsupported("silver_card_reward_pending_actions");
+        } else {
+            if (!limbo.empty()) return unsupported("silver_card_reward_pending_actions");
+            // The producer proved that this potion offer has no interrupted
+            // card cleanup. Its retained last queue item may name a completed
+            // power/purged card, which is legitimately absent from all piles;
+            // do not let generic card-selection replay execute it again.
+            wire.curCardQueueItem = silver_bridge::CardQueueItemWire{};
+            wire.curCardQueueItem.card.uniqueId = -1;
+        }
+    }
+
     wire.potionCount = std::count_if(wire.potions.begin(), wire.potions.end(), [](auto id) {
         return id != static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT);
     });
@@ -1257,8 +1358,40 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         }
         return {{"kind", "proceed"}};
     }
-    case SemanticActionType::SINGLE_CARD_SELECT:
-        return nullptr;
+    case SemanticActionType::SINGLE_CARD_SELECT: {
+        const auto combat = observation.contains("combat") && observation["combat"].is_object()
+            ? observation["combat"] : observation.value("silverRoot", json::object()).value("combat", json::object());
+        const auto select = combat.value("cardSelect", json::object());
+        if (!select.is_object()) return nullptr;
+        const auto task = live_silver::cardSelectTask(select.value("task", std::string()));
+        const auto source = task ? liveSingleSelectionSource(*task, select.value("origin", std::string())) : std::nullopt;
+        if (source) {
+            std::map<std::string, int> choices;
+            if (action.skipCardSelect || action.cardSelectTask != static_cast<std::int16_t>(*task)
+                || action.source != *source || !liveSingleChoices(select, choices)) return nullptr;
+            const auto found = choices.find(uuidForId(action.card.uniqueId));
+            return found == choices.end() ? json(nullptr)
+                : json{{"kind", "choose"}, {"choiceIndex", found->second}};
+        }
+        if (!select.is_object() || select.value("origin", std::string()) != "CARD_REWARD"
+            || select.value("task", std::string()) != "DISCOVERY"
+            || action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
+            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION || action.skipCardSelect)
+            return nullptr;
+        const auto cards = select.value("cards", json::array());
+        if (!cards.is_array() || cards.size() != 3) return nullptr;
+        int selected = -1;
+        std::set<sts::CardId> offered;
+        for (std::size_t i = 0; i < cards.size(); ++i) {
+            if (!cards[i].is_string()) return nullptr;
+            try {
+                const auto id = cards[i].get<sts::CardId>();
+                if (id == sts::CardId::INVALID || !offered.insert(id).second) return nullptr;
+                if (static_cast<std::int16_t>(id) == action.optionCardId) selected = static_cast<int>(i);
+            } catch (...) { return nullptr; }
+        }
+        return selected < 0 ? json(nullptr) : json{{"kind", "choose"}, {"choiceIndex", selected + 1}};
+    }
     case SemanticActionType::INVALID:
         return nullptr;
     }

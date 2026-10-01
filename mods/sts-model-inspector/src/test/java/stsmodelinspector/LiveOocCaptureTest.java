@@ -18,6 +18,111 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        java.util.List<Object> libraryCards=new java.util.ArrayList<>();
+        java.util.List<String> libraryLabels=new java.util.ArrayList<>();
+        for(int i=0;i<20;++i) {
+            libraryCards.add(obj("uuid","uuid-"+i,"card",obj("id","card-"+i)));
+            libraryLabels.add("offer-"+i);
+        }
+        for(int defect=-1;defect<6;++defect) {
+            Map<String,Object> state=obj("screen_type","GRID","ready_for_command",true,
+                    "can_cancel",defect==0,"can_proceed",false,"choice_list",libraryLabels);
+            Map<String,Object> out=obj("mcpState",state);
+            java.util.List<Object> offers=new java.util.ArrayList<>(libraryCards);
+            if(defect==3) offers.set(0,offers.get(1));
+            if(defect==4) offers.remove(0);
+            if(defect==5) offers.set(0,obj("uuid","uuid-0","deckIndex",0,"card",obj("id","card-0")));
+            java.util.List<Map<String,Object>> choices=new java.util.ArrayList<>();
+            boolean accepted=LiveOocCapture.captureLibrarySelector(out,choices,libraryLabels,offers,
+                    defect==1?2:1,defect==2?1:0);
+            if(accepted!=(defect==-1))throw new AssertionError("Library selector qualification "+defect);
+            if(accepted) {
+                if(choices.size()!=20 || !"uuid-7".equals(choices.get(7).get("uuid"))
+                        || !Integer.valueOf(8).equals(((Map<?,?>)choices.get(7).get("liveAction")).get("choiceIndex"))
+                        || offers.size()!=20 || ((Map<?,?>)offers.get(7)).containsKey("deckIndex"))
+                    throw new AssertionError("Library offered order or deck independence lost");
+            } else if(!choices.isEmpty())throw new AssertionError("Partial Library action mapping");
+        }
+        if(!"obtain".equals(LiveOocCapture.selectorType(false,false,false,
+                java.util.Arrays.asList("TheLibrary"),false,false).get("type"))
+                || !"other".equals(LiveOocCapture.selectorType(true,false,false,
+                java.util.Arrays.asList("TheLibrary"),false,false).get("type")))
+            throw new AssertionError("Library selector owner/flags mismatch");
+        for (boolean forge : new boolean[]{false,true}) {
+            String simple=forge?"AccursedBlacksmith":"BackToBasics";
+            for (int upgradeable : new int[]{0,3}) {
+                java.util.List<Object> options=new java.util.ArrayList<>();
+                for(int i=forge && upgradeable==0?1:0;i<(forge?3:2);++i)
+                    options.add(obj("index",i,"disabled",false));
+                Map<String,Object> out=obj("details",obj(),"unsupportedReason","phase");
+                LiveOocCapture.captureForgeOrWriting(out,simple,forge?"0":"INTRO",options,upgradeable,3);
+                if(out.containsKey("unsupportedReason")) throw new AssertionError("forge/writing initial rejected");
+                out.put("unsupportedReason","phase");
+                LiveOocCapture.captureForgeOrWriting(out,simple,"1",options,upgradeable,3);
+                if(!out.containsKey("unsupportedReason")) throw new AssertionError("unknown event phase accepted");
+                options.set(0,obj("index",0,"disabled",true));
+                LiveOocCapture.captureForgeOrWriting(out,simple,forge?"0":"INTRO",options,upgradeable,3);
+                if(!out.containsKey("unsupportedReason")) throw new AssertionError("disabled event choice accepted");
+            }
+            Map<String,Object> result=obj("details",obj(),"unsupportedReason","phase");
+            java.util.List<Object> sole=java.util.Arrays.asList(obj("index",0,"disabled",false));
+            LiveOocCapture.captureForgeOrWriting(result,simple,forge?"2":"COMPLETE",sole,0,0);
+            if(result.containsKey("unsupportedReason") || !"event_leave".equals(
+                    ((Map<?,?>)result.get("details")).get("mechanicalTransition")))
+                throw new AssertionError("forge/writing result rejected");
+        }
+        String[] chestTypes={"SmallChest","MediumChest","LargeChest"};
+        for(int i=0;i<chestTypes.length;++i) {
+            Map<String,Object> out=obj("details",obj("chestType",chestTypes[i],"opened",false));
+            java.util.List<Map<String,Object>> choices=new java.util.ArrayList<>();
+            LiveOocCapture.captureUnopenedTreasure(out,choices,java.util.Arrays.asList("open"),chestTypes[i],true);
+            Map<?,?> details=(Map<?,?>)out.get("details");
+            if(out.containsKey("unsupportedReason") || !Integer.valueOf(i).equals(details.get("chestSize"))
+                    || choices.size()!=2 || details.containsKey("haveGold") || details.containsKey("tier")
+                    || !"choose".equals(((Map<?,?>)choices.get(0).get("liveAction")).get("kind"))
+                    || !"proceed".equals(((Map<?,?>)choices.get(1).get("liveAction")).get("kind")))
+                throw new AssertionError("public chest size/actions projection mismatch");
+        }
+        Map<String,Object> unknownChest=obj("details",obj());
+        java.util.List<Map<String,Object>> chestChoices=new java.util.ArrayList<>();
+        LiveOocCapture.captureUnopenedTreasure(unknownChest,chestChoices,java.util.Arrays.asList("open"),"BossChest",true);
+        if(!unknownChest.containsKey("unsupportedReason") || ((Map<?,?>)unknownChest.get("details")).containsKey("chestSize"))
+            throw new AssertionError("boss chest promoted to ordinary public prior");
+        Map<String,Object> noLeave=obj("details",obj());chestChoices.clear();
+        LiveOocCapture.captureUnopenedTreasure(noLeave,chestChoices,java.util.Arrays.asList("open"),"SmallChest",false);
+        if(!noLeave.containsKey("unsupportedReason") || chestChoices.size()!=1)
+            throw new AssertionError("unavailable chest Leave was fabricated");
+        Map<String,Object> noOpen=obj("details",obj());chestChoices.clear();
+        LiveOocCapture.captureUnopenedTreasure(noOpen,chestChoices,java.util.Collections.emptyList(),"SmallChest",true);
+        if(!noOpen.containsKey("unsupportedReason") || chestChoices.size()!=1)
+            throw new AssertionError("unavailable chest Open was fabricated");
+        for (boolean boss : new boolean[]{false,true}) {
+            java.util.List<String> labels = boss ? java.util.Arrays.asList("Boss") : java.util.Collections.emptyList();
+            Map<String,Object> mcp = obj("screen_type",boss ? "MAP" : "GRID","ready_for_command",true,
+                    "can_proceed",!boss,"can_cancel",false,"choice_list",labels);
+            Map<String,Object> captured = obj("mcpState",mcp);
+            java.util.List<Map<String,Object>> choices = new java.util.ArrayList<>();
+            boolean ok = boss ? LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0)
+                    : LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,true,false);
+            if (!ok || choices.size()!=1 || !(boss?"boss_map":"selector_confirm").equals(
+                    ((Map<?,?>)captured.get("details")).get("mechanicalTransition")))
+                throw new AssertionError("sole public continuation missing");
+            choices.clear();mcp.put("can_cancel",true);
+            ok = boss ? LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0)
+                    : LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,true,false);
+            if (ok || !choices.isEmpty()) throw new AssertionError("cancelable screen was forced");
+            mcp.put("can_cancel",false);
+            if (boss) {
+                if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,13,0)
+                        || LiveOocCapture.captureForcedBossMap(captured,choices,labels,4,14,0)
+                        || LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,1))
+                    throw new AssertionError("non-boss map was forced");
+            } else {
+                if (LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,true,true)
+                        || LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,false,false))
+                    throw new AssertionError("selector preview was forced");
+            }
+        }
         java.util.List<Object> goopOptions = java.util.Arrays.asList(
                 obj("index",0,"disabled",false), obj("index",1,"disabled",false));
         for (int[] values : new int[][]{{11,75,0,0}, {11,75,17,17}, {11,75,45,100}}) {
@@ -62,7 +167,7 @@ public final class LiveOocCaptureTest {
             LiveOocCapture.captureNeowTransition(rejected, "1", options);
             if (!rejected.containsKey("unsupportedReason")) throw new AssertionError("ambiguous Neow transition accepted");
         }
-        String[][] ownerSelectors = {{"Astrolabe", "transform_upgrade", ""},
+        String[][] ownerSelectors = {{"BackToBasics", "remove", ""}, {"Astrolabe", "transform_upgrade", ""},
                 {"DollysMirror", "duplicate", ""}, {"Bottled Flame", "bottle", "attack"},
                 {"Bottled Lightning", "bottle", "skill"}, {"Bottled Tornado", "bottle", "power"}};
         for (String[] row : ownerSelectors) {
@@ -253,9 +358,6 @@ public final class LiveOocCaptureTest {
         seen.observe(player, 11, 3, false, "map", obj());
         if (seen.complete()) throw new AssertionError("missed floors retained complete history");
         LiveOocCapture.CombatClassHistory combats = new LiveOocCapture.CombatClassHistory();
-        String oldHome = System.getProperty("user.home");
-        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
-        System.setProperty("user.home", home.toString());
         Object group = new Object();
         combats.observe(player, 12345, 1, 3, true, true, group, "FIXED_EVENT", "MUSHROOMS_EVENT");
         combats.observe(player, 12345, 1, 3, true, true, new Object(), "FIXED_EVENT", "MUSHROOMS_EVENT");
@@ -268,28 +370,15 @@ public final class LiveOocCaptureTest {
             throw new AssertionError("complete combat-class ledger lost fixed-event distinction");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 9)))
             throw new AssertionError("wrong combat metric floor qualified the ledger");
-        LiveOocCapture.CombatClassHistory restored = new LiveOocCapture.CombatClassHistory();
-        restored.restoreFor(player, 12345, 1);
-        if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
-            throw new AssertionError("persisted combat history did not restore");
-        restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "GREMLIN_NOB");
-        if (restored.snapshot().size() != 3)
-            throw new AssertionError("restart during combat duplicated the current floor");
         combats.observe(new Object(), 12345, 1, 9, false, true, new Object(), "NORMAL_QUEUE", "CULTIST");
-        if (!combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
-            throw new AssertionError("restored mid-act combat history did not remain complete");
+        if (combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
+            throw new AssertionError("new observer reconstructed an unbound same-seed ledger");
         combats.observe(player, 12345, 2, 18, true, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (!combats.completeFor(java.util.Arrays.asList(18)))
             throw new AssertionError("new act did not reset complete combat-class history");
-        LiveOocCapture.CombatClassHistory sameSeed = new LiveOocCapture.CombatClassHistory();
-        sameSeed.resetForFreshRun(player, 12345, 1);
-        if (!sameSeed.snapshot().isEmpty() || !sameSeed.completeFor(java.util.Collections.emptyList()))
-            throw new AssertionError("fresh run did not clear same-seed history");
-        LiveOocCapture.CombatClassHistory staleAct = new LiveOocCapture.CombatClassHistory();
-        staleAct.restoreFor(player, 12345, 2);
-        if (!staleAct.snapshot().isEmpty() || staleAct.completeFor(java.util.Arrays.asList(18)))
-            throw new AssertionError("fresh run retained same-seed Act-2 history");
-        if (oldHome == null) System.clearProperty("user.home"); else System.setProperty("user.home", oldHome);
+        combats.resetForFreshRun(player, 12345, 1);
+        if (!combats.snapshot().isEmpty() || !combats.completeFor(java.util.Collections.emptyList()))
+            throw new AssertionError("fresh same-seed run retained previous history");
         if (!"RED_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverRed", false))
                 || !"RED_SLAVER".equals(STSModelInspector.singleEncounterName("RedSlaver", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))

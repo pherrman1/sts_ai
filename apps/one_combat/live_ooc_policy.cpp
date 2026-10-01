@@ -210,9 +210,10 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     const int observedEventRooms = currentActEventVisits;
-    dependencies.sampleHiddenCounters = [observedEventRooms](sts::GameContext &gc,
+    const bool questionHistoryComplete = questionHistoryComplete_;
+    dependencies.sampleHiddenCounters = [observedEventRooms, questionHistoryComplete](sts::GameContext &gc,
                                                                std::mt19937_64 &rng) {
-        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
+        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms, questionHistoryComplete);
     };
     // The deployed CTM was trained with the ordinary fixed search keep value.
     // Omitting this dependency falls back to zero, far outside that input domain.

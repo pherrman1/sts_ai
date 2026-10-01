@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-01 for the issue #368 power-ID, selector, relic and Neow-dialogue projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -504,19 +504,27 @@ read-only screen and choice converters. The observation contains:
   identities, and the publicly recorded number of paid shop removals. A
   `seenRelics` list is accepted only when its producer marks the history
   complete. The Java observer accumulates visible shop, reward and boss offers
-  from a fresh Neow boundary; a resumed or mid-run observer leaves the marker
-  incomplete. A separate current-act combat-class observer records whether each
+  from a fresh Neow boundary. `RelicOfferRecorder` captures those offers before
+  shop/reward input and persists the ledger with the BaseMod run-save field
+  `stsmodelinspector:relicOffersV1`. Restoration validates schema version,
+  seed, character, ascension and exact checkpoint floor. An unseen merchant
+  makes the current projection incomplete immediately, even if the map is
+  opened from that shop; revealing its offers repairs that temporary gap.
+  Leaving without revealing them invalidates the history. A save without the
+  field cannot recover skipped historical offers and remains incomplete.
+  A separate current-act combat-class observer records whether each
   fight consumed the normal or elite encounter queue, was a fixed event fight,
-  or was a boss. The observer persists this public ledger in
-  `~/.cache/sts-model-inspector/combat-history/<seed>-act<act>.tsv` and restores
-  it on process restart, suppresses duplicate observations of the same current
-  fight, and clears the sidecar at a positively identified fresh Neow run. Each
+  or was a boss. This ledger is part of the same identity-bound run-save
+  checkpoint, suppresses duplicate observations of the same current fight,
+  and resets for a fresh run. Each
   normal/elite queue entry also stores the canonical encounter identity, so
   reconstruction restores the consumed native queue prefix rather than only
-  its length. Legacy two-column sidecars and unknown identities fail closed. It
-  then validates it against `damage_taken`. It qualifies
-  only when every combat in the act is represented; a missing or contradictory
-  sidecar still fails closed with `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
+  its length. Restoration validates the checkpoint against `damage_taken` and
+  rejects unknown identities, conflicting floors and incomplete history.
+  The old seed/act TSV sidecar is not a restoration authority: repeated seeds
+  and checkpoint rollback can leave stale entries in that file. Missing or
+  contradictory history still fails closed with
+  `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
   An optional
   `rewardPityHistoryComplete` marker is reserved for synthetic captures with
   an exact reconstruction; the live Java producer leaves it false.
@@ -580,32 +588,55 @@ seen-but-skipped offers are absent from vanilla metrics. An uninterrupted
 fresh-run observer accumulates them from each public screen; random-relic
 branches and direct MAP search fail closed with
 `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
-resolved `?`-room outcome ledger is not yet persisted in the live producer;
-therefore any current-act history containing event-room visits fails closed
-with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`, and no uniform historical
-room sampler is used. Events whose native `StateInfo` fields are not captured
+resolved `?`-room outcomes are recovered from vanilla's persisted
+`path_per_floor`, checked against `path_taken`, with the current public room
+allowed to complete the current floor. Missing, contradictory or shifted
+history fails closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`.
+Native import replays the observed outcomes using native float increments and
+resets; qualified root particles preserve these exact room probabilities.
+An EVENT outcome while Juzu Bracelet was ever owned remains ambiguous because
+a replaced monster roll has a different reset, so that history stays
+unsupported. Tiny Chest's resolved treasure outcome is representable.
+Events whose native `StateInfo` fields are not captured
 (`ShiningLight`, `Ghosts`, and `WindingHalls`) are unsupported.
+Ominous Forge (`AccursedBlacksmith`, initial phase 0) and Ancient Writing
+(`BackToBasics.INTRO`) qualify their exact enabled option slots. Forge's
+phase 2 and Writing's COMPLETE page have a verified sole Leave click; the
+latter's unflagged removal grid is identified from its event owner.
 World of Goop's initial `GoopPuddle.INTRO` screen projects the displayed gold
 loss into native `StateInfo.goldLoss`; its fixed damage/gold reward are
 validated against the native effect. Its `RESULT` page uses the same strict
 one-button forced transition and differential-trace rejection as Neow.
-Unopened treasure remains unsupported. Its Java `goldReward` and
-`relicReward` fields describe hidden pre-rolls; exposing them as public search
-information would violate the live fair-information contract. Chest support
-needs a qualified sampled-state representation. The
-private Java `potionChance` and `cardRarityFactor` counters are
-not captured. Roots such as Library, Mushrooms and Mysterious Sphere whose pre-MAP
-continuation can generate potion or card rewards fail closed with
-`PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`. The v_win leaf marginalizes those
+Unopened ordinary treasure uses visible chest size and the existing MCTS
+prior for correlated gold/relic-tier draws. Its Java `goldReward` and
+`relicReward` pre-rolls remain hidden. The private Java `potionChance` and
+`cardRarityFactor` counters are
+not captured. Library captures its displayed `healAmt` into `hpAmount0`;
+MCTS uses the existing hypothetical reward-pity prior for Read. Its visible
+20-card grid imports an OBTAIN selector, preserving offer order and UUIDs,
+requiring distinct class reward cards and exact Egg-preview upgrades, and
+checking the non-cancelable one-pick continuation. Its completed Read/Sleep
+page is a forced Leave. Native color-table mismatches for Brutality/Combust
+and upgraded Searing Blow remain explicit unsupported selector boundaries.
+Direct V4 still rejects unknown pity; differential tracing rejects Library's
+unknown-pity initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
+Mushrooms and Mysterious Sphere remain unsupported with
+`NATIVE_EVENT_TRANSITION_UNQUALIFIED`: native option 1 gives 99/50 gold in
+both events, while installed vanilla applies Parasite plus healing for
+Mushrooms and simply leaves Sphere. Sampling private counters cannot repair
+those simulator transitions. The v_win leaf marginalizes the hidden counters
 features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
 native lattice (`potionChance` -40 through 60), never applying the link to an
 expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
 MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
 parity fixtures may mark an exact pity reconstruction explicitly. Live
-hypothetical room-chance and pity counters are sampled once per root particle.
-Room chances use the public current-act `?` visit count and jointly advance
+hypothetical reward-pity counters are sampled once per root particle.
+Without qualified question history, room chances use the public current-act
+`?` visit count and jointly advance
 all three counters for each sampled latent room outcome, so every sampled
-triple is reachable under the native update rule. The shared simulator
+triple is reachable under the native update rule. Qualified question histories
+are preserved instead of resampled; this does not expose reward-pity counters.
+The shared simulator
 sampler retains its previous copied-counter behavior. This is a support-safe
 prior, not an exact posterior conditioned on every prior `?` outcome. An
 already-open boss chest with only native `proceed` is a
@@ -748,16 +779,28 @@ charge data; other
 unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns
 `SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot
-reconstruct the native history-dependent upgradeable count. Confirmation-only
-screens and unsupported dialogue phases are explicitly accounted fallbacks.
+reconstruct the native history-dependent upgradeable count. A GRID result screen
+is a forced confirmation only when `isJustForConfirming` is true, MCP exposes
+Continue with no choices or Cancel, and `confirmScreenUp` is false. Upgrade
+preview screens still offer Cancel and remain unsupported. Acts 1–3 MAP roots
+at row 14 with exactly one boss choice use the same forced-action path;
+Act 4 does not. These paths bypass models and history-dependent search,
+including active Wing Boots at the forced boss step. Differential tracing
+rejects them with `DIFFERENTIAL_FORCED_OOC_UNREPRESENTABLE`.
 OOC selector capture identifies bottle relics, Dolly's Mirror and Astrolabe
 from their pending-selection fields, and Duplicator/Bonfire from their event
 phase. Astrolabe maps to transform-and-upgrade, and Bonfire retains its
 sacrifice/reward continuation. Native import restores completed physical picks
 for Empty Cage/Astrolabe and only offers remaining cards, preserving each
-card's MCP choice index. This does not add confirmation-only or Note For
-Yourself support. Removal, bottle, duplicate and Bonfire selectors may still
+card's MCP choice index. Note For Yourself remains unsupported. Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
+Unopened Small/Medium/Large chests capture only visible size. MCTS samples
+hidden gold and relic tier together using the existing native correlated
+prior; capture never reads either hidden setup field. Both Open and Leave
+must be available in MCP. Unopened boss/unknown chests remain unsupported.
+Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
+tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
+claiming an exact hidden chest state.
 These limits must not be presented as whole-game equivalence.
 Representable relic counters do not expand the frozen CTM/model support gates;
 active Lizard Tail remains subject to their existing qualification boundary.
@@ -783,9 +826,17 @@ stopping. The default resumes an advertised save; `--new-run` refuses to
 replace a save or live run. Without a save, an explicit new-run/character
 request is required. Ascension and seed are passed through to MCP.
 
-In-combat potion/discovery `CARD_REWARD` modals follow the inspector's OOC
-boundary, with explicit unsupported fallback when skipping is unavailable.
-Combat `GRID`/`HAND_SELECT` boundaries continue to use Silver.
+In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.
+Non-skippable Discovery/Colorless Potion offers support exactly three distinct,
+unmodified cards and one or two zero-cost copies. The chosen option lowers to
+its captured MCP choice index. Discovery's sole pending `UseCardAction` is
+restored through native interrupted-card replay, preserving exhaust/discard
+cleanup and physical card identity; unrelated queued actions are rejected.
+A standalone potion offer clears historical current-card bookkeeping so an
+already-completed card cannot replay. Typed Attack/Skill/Power Potion offers
+remain unsupported because their Skip continuation is unrepresented. Toolbox's
+normal-cost copy and Nilry's Codex's end-turn continuation also remain explicit
+Silver unsupported boundaries; they are never scored as deck rewards.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains
@@ -795,8 +846,15 @@ screen's actual `canPickZero` value. The driver still stops on any genuine
 boundary mismatch instead of reinterpreting OOC output as a Silver result.
 Warcry, base Forethought, Secret Technique and Secret Weapon derive their
 selection task from the active vanilla action class, with exact screen/count
-checks, before the legacy prompt-text fallback. Upgraded Forethought's
-multi-pick continuation remains unsupported by the native action.
+checks, before the legacy prompt-text fallback. These four single-pick tasks
+capture the physical card UUIDs in MCP's actual displayed order. Import checks
+that the set matches eligible native cards, and lowering resolves that UUID
+to its captured choice index, including duplicate card names. Partial or
+multi-pick selections, missing/duplicate UUIDs and mismatched choice counts
+remain unsupported. After an initial HAND pick, vanilla still requires
+Proceed; the completed selection uses the existing deterministic fallback,
+and strict Silver stops at that boundary. Upgraded Forethought's multi-pick
+continuation remains unsupported by the native action.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other

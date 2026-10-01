@@ -16,6 +16,16 @@ struct LiveOocStateV1 {
     // Verified one-button Java dialogue transitions have no native policy
     // choice. Never evaluate or execute the projected event for these states.
     bool mechanicalEventTransition = false;
+    // A verified sole boss-node click or post-selection result confirmation.
+    // These UI boundaries must bypass policy/model evaluation as well.
+    bool forcedOocTransition = false;
+    // Only chest size is public before opening. MCTS samples contents from
+    // its existing correlated prior; direct scoring/trace cannot assume them.
+    bool hiddenTreasureContents = false;
+    // Library's unseen card offers depend on latent rarity pity. Search may
+    // sample the existing public belief; a differential trace cannot equate
+    // this root with the live game's hidden counter.
+    bool hiddenEventRewardPity = false;
     // Java does not expose the private reward pity counters. Synthetic parity
     // fixtures may opt in when they provide an exact public reconstruction;
     // real live captures remain false and must not use a fabricated midpoint.
@@ -27,6 +37,7 @@ struct LiveOocStateV1 {
         sts::GameContext state{};
         PathHistory path;
         int currentActEventVisits = 0;
+        bool questionHistoryComplete = false;
         bool supported = true;
         std::string reason;
     } mctsRoot;

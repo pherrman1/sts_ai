@@ -395,26 +395,30 @@ the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
 The live advisor additionally sets `stopAtMapCheckpoint`: every downstream MAP
-state is a true planner leaf, including after the first visit. This prevents a
-revisited MAP particle from sampling a room with unreconstructed
-event/shop/treasure chance history. Live imports remove currently visible shop,
+state is a true planner leaf, including after the first visit. Public question
+history can now reconstruct the room probabilities, but the additional live
+search horizon has not been qualified and remains bounded here. Live imports remove currently visible shop,
 combat-reward and boss-relic offers from the reconstructed relic pools.
 The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM;
 `OocGameContextModel` uses the same neutral value if a custom host omits the
 callback. This matches the native simulator default and the frozen model's
 constant training feature. A zero value causes unsupported predictions from
 this model.
-Pity-sensitive event branches whose reward generation depends on private
-counter history remain unsupported, including Library, Mushrooms and
-Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture
+Library uses its displayed heal amount and the existing MCTS reward-pity
+prior for Read; its revealed cards become a qualified public OBTAIN selector.
+Mushrooms and Mysterious Sphere remain unsupported because their native leave
+transitions differ from installed vanilla, independently of reward pity.
+The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
-(`potionChance=-40..100` in steps of 10 and `cardRarityFactor=-40..5`) rather
+(`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather
 than applying the link to an expected margin or conditioning on 0/5. The
 direct V4 scoring fails closed for real live captures because Java does not
 expose an exact pity history. Live MCTS uses an equal public prior instead of a
 fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
-pity reconstruction. Hypothetical room-chance and pity counters are sampled
-from explicit reachable-state priors before a transition; this is a qualified
+pity reconstruction. Qualified public question-room outcomes reconstruct the
+three room chances, which remain fixed when root particles sample reward pity.
+Without that qualified history, room chances use the existing reachable-state
+prior; this is a qualified
 belief particle, not an exact joint posterior.
 
 `OocGameContextModel::outcomeEquivalenceKey` (`outcomeEquivalenceParts`) exists
@@ -454,7 +458,8 @@ copied. Historical relic offers that were seen and skipped are not present in
 vanilla metrics; the live root therefore fails closed for treasure, Shovel,
 Courier-restock, and random-relic event branches unless a complete
 `seenRelics` history is supplied.
-Live MAP roots are searchable with the explicit room-chance belief prior.
+Live MAP roots use reconstructed public room chances when history is qualified,
+and the explicit room-chance belief prior otherwise within its existing gate.
 Non-root MAP states remain hard checkpoint leaves, so a search never chooses a
 hypothetical room after reaching the checkpoint.
 

@@ -1702,6 +1702,189 @@ int main() {
         if (!nativeSelectionImported.ok
             || !convertedStatesEqualForSearch(nativeSelectionExpected, nativeSelectionImported.wire))
             throw std::runtime_error("optional native selection parity failed");
+        for (const auto &task : {"WARCRY", "FORETHOUGHT", "SECRET_TECHNIQUE", "SECRET_WEAPON"}) {
+            auto selection = genericObservation(fixtures[0], "single-live-selection");
+            auto &combat = selection["silverRoot"]["combat"];
+            const bool handSource = std::string(task) == "WARCRY" || std::string(task) == "FORETHOUGHT";
+            auto prototype = combat["hand"][0];
+            json candidates = json::array();
+            for (int i = 0; i < 3; ++i) {
+                auto card = prototype;
+                card["id"] = std::string(task) == "SECRET_TECHNIQUE" ? "Defend_R" : "Strike_R";
+                card["uuid"] = "single-choice-" + std::to_string(i);
+                candidates.push_back(card);
+            }
+            if (handSource) combat["hand"] = candidates;
+            else combat["draw"] = json{{"unknown", candidates}};
+            json choices = json::array();
+            // Duplicate names remain distinct physical occurrences. Display
+            // order deliberately differs from the native canonical pile order.
+            for (int i : {2, 0, 1}) choices.push_back(json{{"uuid", candidates[i]["uuid"]},
+                {"choiceIndex", static_cast<int>(choices.size()) + 1}});
+            combat["cardSelect"] = json{{"task", task}, {"origin", handSource ? "HAND_SELECT" : "GRID"},
+                {"cards", json::array()}, {"pickCount", 1}, {"canPickZero", false},
+                {"canPickAnyNumber", false}, {"selectedBits", 0}, {"liveChoices", choices}};
+            one_combat::advisor::SilverImportContext context;
+            const auto imported = one_combat::advisor::importSilverRoot(selection, context);
+            if (!imported.ok) throw std::runtime_error("single selector import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            const auto actions = sts::search::Action::enumerateCardSelectActions(selected);
+            if (actions.empty()) throw std::runtime_error("single selector has no legal action");
+            const auto semantic = sts::search::semanticFromSearchAction(selected, actions[0]);
+            const auto lowered = one_combat::advisor::selectedLiveAction(semantic, context, selection);
+            const auto expected = std::find_if(choices.begin(), choices.end(), [&](const auto &choice) {
+                return context.cardIds.at(choice.at("uuid").template get<std::string>()) == semantic.card.uniqueId;
+            });
+            if (expected == choices.end() || lowered.value("choiceIndex", 0) != expected->at("choiceIndex").get<int>())
+                throw std::runtime_error("single selector guessed pile order instead of UUID occurrence");
+            actions[0].execute(selected);
+            if (selected.inputState != InputState::PLAYER_NORMAL)
+                throw std::runtime_error("single selector failed to resume combat");
+            for (int corruption = 0; corruption < 5; ++corruption) {
+                auto invalid = selection;
+                auto &bad = invalid["silverRoot"]["combat"]["cardSelect"];
+                if (corruption == 0) bad["liveChoices"].erase(0);
+                if (corruption == 1) bad["liveChoices"][1]["uuid"] = bad["liveChoices"][0]["uuid"];
+                if (corruption == 2) bad["liveChoices"][0]["uuid"] = "not-in-source";
+                if (corruption == 3) bad["pickCount"] = 2;
+                if (corruption == 4) bad["liveChoices"][0]["choiceIndex"] = 3;
+                const auto rejected = one_combat::advisor::importSilverRoot(invalid);
+                if (rejected.ok || rejected.reason != "silver_selection_live_choices")
+                    throw std::runtime_error("invalid live selector identity set accepted");
+            }
+            auto absent = semantic;
+            absent.card.uniqueId = -1;
+            if (!one_combat::advisor::selectedLiveAction(absent, context, selection).is_null())
+                throw std::runtime_error("missing physical selection identity was lowered");
+        }
+        const auto offerSelection = [](int copies, const char *continuation) {
+            return json{{"task", "DISCOVERY"}, {"origin", "CARD_REWARD"},
+                {"continuation", continuation}, {"cards", json::array({"Anger", "Shrug It Off", "Flash of Steel"})},
+                {"data0", copies}, {"pickCount", 1}, {"canPickZero", false},
+                {"canPickAnyNumber", false}, {"setCostToZero", true}, {"selectedBits", 0}};
+        };
+        for (int copies : {1, 2}) {
+            for (int handSize : {7, 9, 10}) {
+                auto offer = genericObservation(fixtures[0], "colorless-potion-offer");
+                auto &combat = offer["silverRoot"]["combat"];
+                auto prototype = combat["hand"][0];
+                combat["hand"] = json::array();
+                for (int i = 0; i < handSize; ++i) {
+                    auto card = prototype;
+                    card["uuid"] = "offer-hand-" + std::to_string(i);
+                    combat["hand"].push_back(card);
+                }
+                combat["cardSelect"] = offerSelection(copies, "none");
+                one_combat::advisor::SilverImportContext context;
+                const auto imported = one_combat::advisor::importSilverRoot(offer, context);
+                if (!imported.ok) throw std::runtime_error("Colorless Potion offer import: " + imported.reason);
+                auto selected = battleContextFromWire(imported.wire);
+                const auto beforeDiscard = selected.cards.discardPile.size();
+                const auto actions = sts::search::Action::enumerateCardSelectActions(selected);
+                if (actions.size() != 3) throw std::runtime_error("Discovery option count changed");
+                auto semantic = sts::search::semanticFromSearchAction(selected, actions[1]);
+                const auto lowered = one_combat::advisor::selectedLiveAction(semantic, context, offer);
+                if (lowered.value("kind", "") != "choose" || lowered.value("choiceIndex", 0) != 2)
+                    throw std::runtime_error("Discovery option occurrence lowering failed");
+                actions[1].execute(selected);
+                if (selected.inputState != InputState::PLAYER_NORMAL
+                    || selected.cards.cardsInHand != std::min(10, handSize + copies)
+                    || selected.cards.discardPile.size() != beforeDiscard + std::max(0, handSize + copies - 10))
+                    throw std::runtime_error("Discovery copy count/full-hand destination mismatch");
+                int created = 0;
+                const auto checkCreated = [&](const auto &card) {
+                    if (card.id == CardId::SHRUG_IT_OFF) {
+                        if (card.costForTurn != 0 || card.isUpgraded())
+                            throw std::runtime_error("Discovery lost zero-cost/unupgraded card semantics");
+                        ++created;
+                    }
+                };
+                for (int i = 0; i < selected.cards.cardsInHand; ++i) checkCreated(selected.cards.hand[i]);
+                for (const auto &card : selected.cards.discardPile) checkCreated(card);
+                if (created != copies) throw std::runtime_error("Discovery generated wrong number of copies");
+                auto ambiguous = offer;
+                ambiguous["silverRoot"]["combat"]["cardSelect"]["cards"][0] = "Shrug It Off";
+                if (one_combat::advisor::importSilverRoot(ambiguous).reason != "silver_card_reward_option_state"
+                    || !one_combat::advisor::selectedLiveAction(semantic, context, ambiguous).is_null())
+                    throw std::runtime_error("ambiguous Discovery offer accepted/lowered");
+                semantic.optionCardId = static_cast<std::int16_t>(CardId::BASH);
+                if (!one_combat::advisor::selectedLiveAction(semantic, context, offer).is_null())
+                    throw std::runtime_error("absent Discovery option lowered");
+            }
+        }
+        {
+            auto afterPower = genericObservation(fixtures[0], "offer-after-completed-power");
+            auto &combat = afterPower["silverRoot"]["combat"];
+            auto historical = combat["hand"][0];
+            historical["id"] = "Inflame"; historical["uuid"] = "completed-inflame";
+            historical["cost"] = historical["costForTurn"] = 1;
+            afterPower["silverRoot"]["decisionInTurn"] = 1;
+            combat["cardsPlayedThisTurn"] = 1;
+            combat["playerPowers"] = json::array({json{{"id", "Strength"}, {"amount", 2}}});
+            CardQueueItemWire queue;
+            combat["curCardQueueItem"] = producerQueueJson(queue);
+            combat["curCardQueueItem"]["card"] = historical;
+            combat["cardSelect"] = offerSelection(1, "none");
+            const auto imported = one_combat::advisor::importSilverRoot(afterPower);
+            if (!imported.ok || imported.wire.curCardQueueItem.card.id != static_cast<int>(CardId::INVALID))
+                throw std::runtime_error("standalone offer retained completed power as interrupted card");
+            auto selected = battleContextFromWire(imported.wire);
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(selected);
+            if (selected.player.strength != 2 || selected.inputState != InputState::PLAYER_NORMAL)
+                throw std::runtime_error("standalone offer replayed a completed historical power");
+        }
+        for (bool upgraded : {false, true}) {
+            auto discovery = genericObservation(fixtures[0], "discovery-card-continuation");
+            auto &root = discovery["silverRoot"];
+            auto &combat = root["combat"];
+            auto card = combat["hand"][0];
+            combat["hand"].erase(combat["hand"].begin());
+            card["id"] = "Discovery"; card["uuid"] = "played-discovery";
+            card["cost"] = card["costForTurn"] = 1;
+            card["upgraded"] = upgraded;
+            root["decisionInTurn"] = 1;
+            combat["cardsPlayedThisTurn"] = 1; combat["skillsPlayedThisTurn"] = 1;
+            combat["energy"] = 2;
+            combat["playedThisTurn"] = json::array({card});
+            combat["lastCard"] = card;
+            CardQueueItemWire queue;
+            queue.triggerOnUse = true; queue.energyOnUse = 1; queue.exhaustOnUse = !upgraded;
+            combat["curCardQueueItem"] = producerQueueJson(queue);
+            combat["curCardQueueItem"]["card"] = card;
+            combat["cardSelect"] = offerSelection(1, "discovery_card");
+            one_combat::advisor::SilverImportContext context;
+            const auto imported = one_combat::advisor::importSilverRoot(discovery, context);
+            if (!imported.ok) throw std::runtime_error("Discovery cleanup import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            const auto discoveryId = imported.wire.curCardQueueItem.card.uniqueId;
+            if (imported.wire.nextUniqueCardId <= discoveryId)
+                throw std::runtime_error("resumed Discovery would reuse interrupted physical card ID");
+            const int handSize = selected.cards.cardsInHand;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(selected);
+            const auto &destination = upgraded ? selected.cards.discardPile : selected.cards.exhaustPile;
+            if (selected.inputState != InputState::PLAYER_NORMAL || selected.cards.cardsInHand != handSize + 1
+                || std::none_of(destination.begin(), destination.end(), [discoveryId](const auto &c) {
+                    return c.id == CardId::DISCOVERY && c.uniqueId == discoveryId;
+                }))
+                throw std::runtime_error("Discovery cleanup did not preserve exhaust/discard semantics");
+        }
+        for (const char *reason : {"silver_card_reward_end_turn_continuation", "silver_card_reward_toolbox_cost",
+                                  "silver_card_reward_skip_unrepresentable", "silver_card_reward_pending_actions"}) {
+            auto blocked = genericObservation(fixtures[0], "blocked-offer");
+            blocked["silverRoot"]["combat"]["cardSelect"] = json{{"task", ""}, {"origin", "CARD_REWARD"},
+                {"unsupportedReason", reason}};
+            if (one_combat::advisor::importSilverRoot(blocked).reason != reason)
+                throw std::runtime_error("combat offer rejection lost its precise reason");
+        }
+        for (const auto &invalidCards : {json::array({"Anger", "Shrug It Off"}),
+                json::array({"Anger", "Shrug It Off", "Flash of Steel", "Bash"}),
+                json::array({"Anger", "Shrug It Off", json{{"id", "Flash of Steel"}, {"upgraded", true}}})}) {
+            auto invalid = genericObservation(fixtures[0], "invalid-offer");
+            invalid["silverRoot"]["combat"]["cardSelect"] = offerSelection(1, "none");
+            invalid["silverRoot"]["combat"]["cardSelect"]["cards"] = invalidCards;
+            if (one_combat::advisor::importSilverRoot(invalid).ok)
+                throw std::runtime_error("Discovery offer was silently truncated or flattened");
+        }
         auto unknownSelection = nativeSelection;
         unknownSelection["silverRoot"]["combat"]["cardSelect"]["task"] = "";
         // Unknown selectors must not become normal play or be obscured by an

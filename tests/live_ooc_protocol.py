@@ -120,6 +120,53 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertEqual(evaluator["reason"], "DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE")
             self.assertNotIn("selectedLiveAction", evaluator)
 
+    def test_boss_map_and_result_confirmation_need_no_search_or_models(self):
+        observations = [self.fixtures["forced_boss_map"], self.fixtures["forced_selector_confirmation"]]
+        for policy in ("v4", "mcts"):
+            responses = self.run_rows(observations, model=False, floor_model=False, policy=policy)
+            for response, action in zip(responses, (dict(kind="choose", choiceIndex=1), dict(kind="confirm"))):
+                evaluator, = response["evaluators"]
+                self.assertEqual(evaluator["status"], "OK", response)
+                self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+                self.assertEqual(evaluator["selectedLiveAction"], action)
+                self.assertEqual(len(evaluator["candidateSummaries"]), 1)
+                self.assertNotIn("endpointHpDistribution", evaluator)
+        for response in self.run_rows(observations, model=False, differential=True):
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "UNSUPPORTED")
+            self.assertEqual(evaluator["reason"], "DIFFERENTIAL_FORCED_OOC_UNREPRESENTABLE")
+            self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_forge_and_writing_results_are_forced_without_models(self):
+        observations = [self.fixtures["event_forge_leave"], self.fixtures["event_writing_leave"]]
+        for policy in ("v4", "mcts"):
+            for response in self.run_rows(observations, model=False, floor_model=False, policy=policy):
+                evaluator, = response["evaluators"]
+                self.assertEqual(evaluator["status"], "OK", response)
+                self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+                self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+                self.assertNotIn("endpointHpDistribution", evaluator)
+
+    def test_forced_public_continuations_reject_alternative_choices(self):
+        variants = []
+        for name in ("forced_boss_map", "forced_selector_confirmation"):
+            original = self.fixtures[name]
+            for field, value in (("can_cancel", True), ("ready_for_command", False)):
+                observation = copy.deepcopy(original)
+                observation["ooc"]["mcpState"][field] = value
+                variants.append(observation)
+            observation = copy.deepcopy(original)
+            observation["ooc"]["liveChoices"].append(observation["ooc"]["liveChoices"][0])
+            variants.append(observation)
+        observation = copy.deepcopy(self.fixtures["forced_boss_map"])
+        observation["ooc"]["publicState"]["map"]["y"] = 13
+        variants.append(observation)
+        observation = copy.deepcopy(self.fixtures["forced_selector_confirmation"])
+        observation["ooc"]["details"]["confirmScreenUp"] = True
+        variants.append(observation)
+        for response in self.run_rows(variants, model=False):
+            self.assertEqual(response["status"], "ERROR", response)
+
     def test_neow_dialogue_rejects_phase_and_mapping_mismatch(self):
         observation = copy.deepcopy(self.fixtures["neow"])
         ooc = observation["ooc"]
@@ -152,13 +199,38 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
         self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
 
-    def test_event_fights_fail_closed_without_public_reward_pity_history(self):
+    def test_event_fights_fail_closed_for_unqualified_native_transitions(self):
         rows = self.run_rows([self.fixtures["unsupported_mushrooms_reward_pity"],
                               self.fixtures["unsupported_sphere_reward_pity"]], policy="v4")
         for response in rows:
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["status"], "UNSUPPORTED")
-            self.assertEqual(evaluator["reason"], "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED")
+            self.assertEqual(evaluator["reason"], "NATIVE_EVENT_TRANSITION_UNQUALIFIED")
+
+    def test_library_uses_public_heal_and_marginalized_reward_pity(self):
+        observation = copy.deepcopy(self.fixtures["event_library"])
+        observation["ooc"]["publicState"]["rewardPityHistoryComplete"] = False
+        direct, = self.run_rows([observation], policy="v4")
+        self.assertEqual(direct["evaluators"][0]["status"], "UNSUPPORTED")
+        self.assertEqual(direct["evaluators"][0]["reason"], "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED")
+        trace, = self.run_rows([observation], policy="mcts", differential=True)
+        self.assertEqual(trace["evaluators"][0]["reason"], "DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE")
+        sampled, = self.run_rows([observation], policy="mcts")
+        evaluator, = sampled["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", sampled)
+        self.assertIn(evaluator["selectedLiveAction"], [c["liveAction"] for c in observation["ooc"]["liveChoices"]])
+
+    def test_library_result_is_forced_after_read_or_sleep(self):
+        observation = copy.deepcopy(self.fixtures["event_library"])
+        ooc = observation["ooc"]
+        ooc["event"] = dict(id="The Library", phase="1", options=[dict(index=0, disabled=False)])
+        ooc["details"].pop("hpAmount0")
+        ooc["details"]["mechanicalTransition"] = "event_leave"
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=0, group=0),
+                                   liveAction=dict(kind="choose", choiceIndex=1))]
+        response, = self.run_rows([observation], model=False)
+        self.assertEqual(response["evaluators"][0]["status"], "OK", response)
+        self.assertEqual(response["evaluators"][0]["valueSemantics"], "forced_no_search")
 
     def test_resumed_combat_class_history_fails_closed(self):
         observation = copy.deepcopy(self.fixtures["event_big_fish"])
@@ -354,6 +426,23 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(evaluator["status"], "OK")
         self.assertEqual(evaluator["mode"], "native_pass_through")
         self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
+
+    def test_unopened_treasure_samples_contents_from_public_size(self):
+        observation = copy.deepcopy(self.fixtures["treasure_open_leave"])
+        observation["ooc"]["details"].update(chestType="MediumChest", chestSize=1)
+        observation["ooc"]["publicState"]["rewardPityHistoryComplete"] = False
+        direct, = self.run_rows([observation], policy="v4")
+        self.assertEqual(direct["evaluators"][0]["status"], "UNSUPPORTED")
+        self.assertEqual(direct["evaluators"][0]["reason"], "PUBLIC_TREASURE_CONTENTS_UNQUALIFIED")
+        trace, = self.run_rows([observation], policy="mcts", differential=True)
+        self.assertEqual(trace["evaluators"][0]["status"], "UNSUPPORTED")
+        self.assertEqual(trace["evaluators"][0]["reason"], "DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE")
+        sampled, = self.run_rows([observation], policy="mcts")
+        evaluator, = sampled["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", sampled)
+        captured = [row["liveAction"] for row in observation["ooc"]["liveChoices"]]
+        self.assertIn(evaluator["selectedLiveAction"], captured)
+        self.assertEqual(len(evaluator["candidateSummaries"]), 2)
 
     def test_hidden_card_group_still_passes_through_captured_gold(self):
         observation = copy.deepcopy(self.fixtures["rewards_without_cards"])

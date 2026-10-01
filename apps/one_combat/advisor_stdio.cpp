@@ -182,11 +182,18 @@ json oocResponse(const one_combat::advisor::Request &request,
     if (!imported.ok && imported.code != "UNSUPPORTED")
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
+    else if (state.hiddenTreasureContents && std::string(policy.name()) != "mcts_ctm")
+        evaluator["reason"] = "PUBLIC_TREASURE_CONTENTS_UNQUALIFIED";
+    else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
+             state.hiddenTreasureContents && flag && std::string(flag) == "1")
+        evaluator["reason"] = "DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE";
+    else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
+             state.hiddenEventRewardPity && flag && std::string(flag) == "1")
+        evaluator["reason"] = "DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE";
     else {
-        if (state.mechanicalEventTransition) {
-            // Java dialogue is not a native event choice. The importer has
-            // checked the exact event phase and sole enabled option before
-            // permitting this action; never score a fabricated reward page.
+        if (state.mechanicalEventTransition || state.forcedOocTransition) {
+            // The importer checked the exact public boundary and sole
+            // continuation. No model or native search is needed for this click.
             const auto &liveAction = state.ooc.at("liveChoices").at(0).at("liveAction");
             const auto transition = state.ooc.at("details").at("mechanicalTransition").get<std::string>();
             const std::string key = "ooc-live:v1:mechanical:" + transition;
@@ -206,7 +213,9 @@ json oocResponse(const one_combat::advisor::Request &request,
                 // The simulator omits these dialogue boundaries; there is
                 // no equivalent canonical state or intro RNG transition.
                 evaluator["status"] = "UNSUPPORTED";
-                evaluator["reason"] = "DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE";
+                evaluator["reason"] = state.mechanicalEventTransition
+                    ? "DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE"
+                    : "DIFFERENTIAL_FORCED_OOC_UNREPRESENTABLE";
                 evaluator.erase("selectedSemanticKey");
                 evaluator.erase("selectedLiveAction");
                 evaluator.erase("candidateSummaries");
@@ -283,6 +292,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             validateCapturedLiveOocMapping(state);
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
             policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+            policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
             const char *treeEnv = std::getenv("STS_OOC_DEBUG_TREE");
             policy.setTreeCapture(request.observation.value("oocDebugTree", false)
                 || (treeEnv && std::string(treeEnv) == "1"), oocTreeNodeCap());

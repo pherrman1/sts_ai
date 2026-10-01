@@ -210,23 +210,25 @@ std::uint64_t outcomeEquivalenceKeyOf(const GameContext &g, const PathHistory &p
 }
 
 void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
-                                     int priorEventRooms) {
+                                     int priorEventRooms, bool questionHistoryComplete) {
     // Only '?' room transitions change these room chances. Bound increments
     // by the number of rooms already visited in this act, and reproduce the
     // native float-addition lattice (including Juzu's >1 monster chance).
-    const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
-    const int priorRooms = std::clamp(std::min(gc.floorNum - actStart, priorEventRooms), 0, 16);
-    gc.monsterChance = 0.1f;
-    gc.shopChance = 0.03f;
-    gc.treasureChance = 0.02f;
-    // Draw one latent outcome per observed '?' room, then update all three
-    // counters together by the native room-outcome rule. Independent lattice
-    // draws create counter triples that no room history could have produced.
-    for (int i = 0; i < priorRooms; ++i) {
-        const int outcome = std::uniform_int_distribution<int>(0, 3)(rng);
-        gc.monsterChance = outcome == 0 ? 0.1f : gc.monsterChance + 0.1f;
-        gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
-        gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
+    if (!questionHistoryComplete) {
+        const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
+        const int priorRooms = std::clamp(std::min(gc.floorNum - actStart, priorEventRooms), 0, 16);
+        gc.monsterChance = 0.1f;
+        gc.shopChance = 0.03f;
+        gc.treasureChance = 0.02f;
+        // Draw one latent outcome per observed '?' room, then update all three
+        // counters together by the native room-outcome rule. Independent lattice
+        // draws create counter triples that no room history could have produced.
+        for (int i = 0; i < priorRooms; ++i) {
+            const int outcome = std::uniform_int_distribution<int>(0, 3)(rng);
+            gc.monsterChance = outcome == 0 ? 0.1f : gc.monsterChance + 0.1f;
+            gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
+            gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
+        }
     }
     gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
     gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
@@ -334,8 +336,8 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
 }
 }
 void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng,
-                                 int priorEventRooms) {
-    sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms);
+                                 int priorEventRooms, bool questionHistoryComplete) {
+    sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms, questionHistoryComplete);
 }
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {

@@ -55,7 +55,11 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
             for(int i=0;i<r.potionCount;++i)d["potions"].push_back(J(r.potions[i]));break;}
         case ScreenState::REST_ROOM:screen="rest";break;
         case ScreenState::MAP_SCREEN:screen="map";break;
-        case ScreenState::TREASURE_ROOM:screen="treasure";break;
+        case ScreenState::TREASURE_ROOM:{screen="treasure";
+            const char *types[]={"SmallChest","MediumChest","LargeChest"};
+            const int size=static_cast<int>(g.info.chestSize);
+            check(size>=0 && size<3,"fixture chest size");
+            d={{"chestType",types[size]},{"chestSize",size},{"opened",false}};break;}
         case ScreenState::BOSS_RELIC_REWARDS:screen="boss_relic";d["relics"]=J::array();for(auto r:g.info.bossRelics)d["relics"].push_back(J(r));break;
         case ScreenState::CARD_SELECT:{screen="selector";
             const char *types[]={"invalid","transform","transform_upgrade","upgrade","remove",
@@ -65,6 +69,12 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"cards",J::array()},{"selectedCards",J::array()}};
             for(const auto &c:g.info.toSelectCards)d["cards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});
             for(const auto &c:g.info.haveSelectedCards)d["selectedCards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});
+            if(g.info.selectScreenType==CardSelectScreenType::OBTAIN) {
+                d["event"]="The Library";d["phase"]=1;d["confirm"]=false;
+                for(int i=0;i<static_cast<int>(d["cards"].size());++i) {
+                    d["cards"][i].erase("deckIndex");d["cards"][i]["uuid"]="library-"+std::to_string(i);
+                }
+            }
             if(g.info.selectScreenType==CardSelectScreenType::BOTTLE) {
                 const char *types[]={"attack","skill","power"};
                 d["bottleType"]=types[static_cast<int>(g.info.toSelectCards[0].card.getType())];
@@ -81,6 +91,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
                 {"gold",i.gold},{"cardIdx",i.cardIdx}};
             if(g.curEvent==Event::WORLD_OF_GOOP)d["goldLoss"]=i.goldLoss;
+            if(g.curEvent==Event::THE_LIBRARY)d["hpAmount0"]=i.hpAmount0;
             if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}break;}
         default:throw std::runtime_error("fixture screen missing");
     }
@@ -115,6 +126,23 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"nativeAction", {{"kind", "relic"}, {"index", i}}},
                 {"liveAction", {{"kind", "choose"}, {"choiceIndex", ix++}}}});
         }
+    }
+    if(g.screenState==ScreenState::EVENT_SCREEN
+            && (g.curEvent==Event::OMINOUS_FORGE || g.curEvent==Event::ANCIENT_WRITING || g.curEvent==Event::THE_LIBRARY)) {
+        J options=J::array();
+        for(const auto &choice:o["liveChoices"])
+            options.push_back({{"index",choice["nativeAction"]["index"]},{"disabled",false}});
+        o["event"]={{"id",J(g.curEvent)},{"phase",g.curEvent==Event::ANCIENT_WRITING?"INTRO":"0"},
+            {"options",options}};
+    }
+    if(g.screenState==ScreenState::CARD_SELECT && g.info.selectScreenType==CardSelectScreenType::OBTAIN) {
+        J labels=J::array();
+        for(int i=0;i<20;++i) {
+            labels.push_back("offer"+std::to_string(i));
+            o["liveChoices"][i]["uuid"]="library-"+std::to_string(i);
+        }
+        o["mcpState"]={{"screen_type","GRID"},{"ready_for_command",true},
+            {"can_cancel",false},{"can_proceed",false},{"choice_list",labels}};
     }
     return {{"boundary","ooc"},{"ooc",o},{"fixture",name}};
 }
@@ -382,12 +410,118 @@ int main(int argc,char **argv){try{
         invalid=wire;invalid["ooc"]["liveChoices"][0]["liveAction"]["choiceIndex"]=2;rejects(invalid);
         invalid=wire;invalid["ooc"]["liveChoices"][0]["nativeAction"]["index"]=1;rejects(invalid);
     }
+    for(const auto event:{Event::OMINOUS_FORGE,Event::ANCIENT_WRITING}) {
+        auto source=base;source.screenState=ScreenState::EVENT_SCREEN;source.curEvent=event;
+        source.info.phase=0;source.info.eventData=0;
+        auto wire=project(source,path,"verified_simple_event");
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire,live).ok,"forge/writing initial import");
+        const auto reject=[&](J invalid) {
+            advisor::LiveOocStateV1 rejected;
+            check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"forge/writing malformed state accepted");
+        };
+        auto invalid=wire;invalid["ooc"]["event"]["phase"]="1";reject(invalid);
+        invalid=wire;invalid["ooc"]["event"]["id"]="Big Fish";reject(invalid);
+        invalid=wire;invalid["ooc"]["event"]["options"][0]["disabled"]=true;reject(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"][0]["nativeAction"]["index"]=2;reject(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"][0]["liveAction"]["choiceIndex"]=2;reject(invalid);
+        wire["ooc"]["details"]["mechanicalTransition"]="event_leave";
+        wire["ooc"]["event"]["phase"]=event==Event::OMINOUS_FORGE?"2":"COMPLETE";
+        wire["ooc"]["event"]["options"]=J::array({{{"index",0},{"disabled",false}}});
+        wire["ooc"]["liveChoices"]=J::array({{
+            {"nativeAction",{{"kind","option"},{"index",0},{"group",0}}},
+            {"liveAction",{{"kind","choose"},{"choiceIndex",1}}}}});
+        check(advisor::importLiveOocStateV1(wire,live).ok && live.mechanicalEventTransition,
+                "forge/writing result did not qualify mechanical Leave");
+        invalid=wire;invalid["ooc"]["event"]["phase"]="1";reject(invalid);
+        invalid=wire;invalid["ooc"]["event"]["options"].push_back({{"index",1},{"disabled",false}});reject(invalid);
+        wire["fixture"]=event==Event::OMINOUS_FORGE?"event_forge_leave":"event_writing_leave";
+        if(output.is_open())output<<wire.dump()<<'\n';
+    }
+    {
+        auto source=base;source.screenState=ScreenState::EVENT_SCREEN;source.curEvent=Event::OMINOUS_FORGE;
+        source.info.phase=0;source.info.eventData=0;
+        for(const int idx:source.deck.getUpgradeableCardIdxs())source.deck.upgrade(idx);
+        auto wire=project(source,path,"forge_without_upgrade");
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire,live).ok && wire["ooc"]["liveChoices"].size()==2
+                && wire["ooc"]["liveChoices"][0]["nativeAction"]["index"]==1,
+                "forge disabled upgrade shifted option occurrence");
+        wire["ooc"]["event"]["options"][0]["index"]=0;
+        wire["ooc"]["liveChoices"][0]["nativeAction"]["index"]=0;
+        check(!advisor::importLiveOocStateV1(wire,live).ok,"forge enabled nonexistent upgrade");
+    }
+    for(const bool boss:{false,true}) {
+        auto source=base;
+        source.screenState=boss?ScreenState::MAP_SCREEN:ScreenState::CARD_SELECT;
+        if(boss){source.curMapNodeX=3;source.curMapNodeY=14;}
+        else source.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);
+        auto wire=project(source,path,boss?"forced_boss_map":"forced_selector_confirmation");
+        auto &o=wire["ooc"];
+        o["details"]=boss?J{{"mechanicalTransition","boss_map"},{"bossNodeAvailable",true},{"nodeChoices",0}}
+            :J{{"type","confirmation"},{"mechanicalTransition","selector_confirm"},
+                {"isJustForConfirming",true},{"confirmScreenUp",false},{"confirm",true}};
+        o["mcpState"]={{"screen_type",boss?"MAP":"GRID"},{"ready_for_command",true},
+            {"can_proceed",!boss},{"can_cancel",false},{"choice_list",boss?J::array({"Boss"}):J::array()}};
+        const J hint=boss?J{{"kind","choose"},{"choiceIndex",1}}:J{{"kind","confirm"}};
+        o["liveChoices"]=J::array({{{"nativeAction",{{"kind","option"},{"index",0},{"group",0}}},{"liveAction",hint}}});
+        // Neither history nor a value model is necessary for the sole click.
+        o["publicState"]["combatHistoryComplete"]=false;
+        o["publicState"]["questionHistoryComplete"]=false;
+        o["publicState"]["seenRelicsComplete"]=false;
+        advisor::LiveOocStateV1 live;
+        const auto imported=advisor::importLiveOocStateV1(wire,live);
+        check(imported.ok && live.forcedOocTransition && !live.mctsRoot.supported,
+                "forced OOC import: "+imported.message);
+        check(advisor::lowerLiveOocAction(live,A(0).bits)==hint,"forced OOC lowering changed");
+        if(output)output<<wire.dump()<<'\n';
+        const auto rejects=[&](J invalid) {
+            advisor::LiveOocStateV1 rejected;
+            check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"forged forced OOC transition accepted");
+        };
+        auto invalid=wire;invalid["ooc"]["mcpState"]["can_cancel"]=true;rejects(invalid);
+        invalid=wire;invalid["ooc"]["mcpState"]["ready_for_command"]=false;rejects(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"].push_back(invalid["ooc"]["liveChoices"][0]);rejects(invalid);
+        invalid=wire;invalid["ooc"]["liveChoices"][0]["liveAction"]={{"kind","proceed"}};rejects(invalid);
+        if(boss) {
+            invalid=wire;invalid["ooc"]["publicState"]["map"]["y"]=13;rejects(invalid);
+            invalid=wire;invalid["ooc"]["publicState"]["act"]=4;rejects(invalid);
+            invalid=wire;invalid["ooc"]["details"]["bossNodeAvailable"]=false;rejects(invalid);
+            invalid=wire;invalid["ooc"]["details"]["nodeChoices"]=1;rejects(invalid);
+        } else {
+            invalid=wire;invalid["ooc"]["details"]["confirmScreenUp"]=true;rejects(invalid);
+            invalid=wire;invalid["ooc"]["details"]["isJustForConfirming"]=false;rejects(invalid);
+            invalid=wire;invalid["ooc"]["mcpState"]["choice_list"]=J::array({"Strike"});rejects(invalid);
+            // MCP omits choice_list entirely when Choose is unavailable.
+            auto absent=wire;absent["ooc"]["mcpState"].erase("choice_list");
+            check(advisor::importLiveOocStateV1(absent,live).ok,"confirmation without Choose command rejected");
+        }
+    }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);
     g=base;g.screenState=ScreenState::REST_ROOM;add("rest_smith_lift_dig_remove_key",g);
     g.blueKey=g.greenKey=g.redKey=true;add("rest_keys_collected",g);
-    g=base;g.screenState=ScreenState::TREASURE_ROOM;add("treasure_open_leave",g);
+    g=base;g.screenState=ScreenState::TREASURE_ROOM;g.info.chestSize=ChestSize::SMALL;add("treasure_open_leave",g);
+    for(int size=0;size<3;++size) {
+        auto source=g;source.info.chestSize=static_cast<ChestSize>(size);
+        const auto wire=project(source,path,"public_chest_size");
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire,live).ok && live.hiddenTreasureContents
+                && live.mctsRoot.supported
+                && live.mctsRoot.state.info.chestSize==source.info.chestSize,
+                "public chest size did not reach sampled root");
+        for(const auto &field:{"chestType","chestSize","opened"}) {
+            auto missing=wire;missing["ooc"]["details"].erase(field);
+            check(!advisor::importLiveOocStateV1(missing,live).ok,"missing chest field accepted");
+        }
+        for(const auto &field:{"haveGold","tier"}) {
+            auto leaked=wire;leaked["ooc"]["details"][field]=0;
+            check(!advisor::importLiveOocStateV1(leaked,live).ok,"hidden chest field accepted");
+        }
+        auto mismatch=wire;mismatch["ooc"]["details"]["chestSize"]=(size+1)%3;
+        check(!advisor::importLiveOocStateV1(mismatch,live).ok,"mismatched chest size accepted");
+    }
     g=base;g.screenState=ScreenState::REWARDS;g.info.rewardsContainer.clear();
     CardReward cards;cards.push_back(Card(CardId::STRIKE_RED));cards.push_back(Card(CardId::STRIKE_RED));cards.push_back(Card(CardId::BASH,1));
     g.info.rewardsContainer.addCardReward(cards);add("card_reward_duplicate_take_skip",g);
@@ -420,7 +554,11 @@ int main(int argc,char **argv){try{
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
     g.curEvent=Event::WORLD_OF_GOOP;g.info.goldLoss=33;add("event_world_of_goop",g);
-    g.curEvent=Event::THE_LIBRARY;add("unsupported_library_reward_pity",g);
+    g.curEvent=Event::OMINOUS_FORGE;g.info.phase=0;g.info.eventData=0;add("event_ominous_forge",g);
+    g.curEvent=Event::ANCIENT_WRITING;add("event_ancient_writing",g);
+    g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=static_cast<int>(g.maxHp*(g.ascension>=15?0.2f:0.33f)+0.5f);
+    add("event_library",g);
+    { auto grid=g;grid.chooseEventOption(0);add("library_obtain_selector",grid); }
     g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
     g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
@@ -443,12 +581,11 @@ int main(int argc,char **argv){try{
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
         if(name=="unsupported_searing_blow_upgrade_history"
-                || name=="unsupported_library_reward_pity"
                 || name=="unsupported_mushrooms_reward_pity"
                 || name=="unsupported_sphere_reward_pity") {
             const std::string expected = name=="unsupported_searing_blow_upgrade_history"
                 ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"
-                : "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED";
+                : "NATIVE_EVENT_TRANSITION_UNQUALIFIED";
             check(!result.ok && result.code=="UNSUPPORTED"
                 && result.message==expected,name+" must fail closed before scoring");
             if(output)output<<wire.dump()<<'\n';
@@ -456,6 +593,62 @@ int main(int argc,char **argv){try{
             continue;
         }
         check(result.ok,name+": "+result.message);
+        if(name=="event_library") {
+            auto healed=live.mctsRoot.state;healed.chooseEventOption(1);
+            check(healed.curHp==std::min(source.maxHp,source.curHp+source.info.hpAmount0),"Library public heal transition");
+            auto unknown=wire;unknown["ooc"]["publicState"]["rewardPityHistoryComplete"]=false;
+            advisor::LiveOocStateV1 belief;
+            check(advisor::importLiveOocStateV1(unknown,belief).ok && belief.hiddenEventRewardPity,
+                    "Library unknown pity must reach public-belief policy");
+            for(int defect=0;defect<3;++defect) {
+                auto bad=wire;
+                if(defect==0)bad["ooc"]["details"].erase("hpAmount0");
+                if(defect==1)bad["ooc"]["details"]["hpAmount0"]=0;
+                if(defect==2)bad["ooc"]["event"]["phase"]="1";
+                check(!advisor::importLiveOocStateV1(bad,belief).ok,"Library malformed initial state accepted");
+            }
+        }
+        if(name=="library_obtain_selector") {
+            check(live.projected.deck.size()==source.deck.size(),"Library import mutated deck");
+            auto obtained=live.mctsRoot.state;const auto offer=obtained.info.toSelectCards[7].card;
+            obtained.chooseSelectCardScreenOption(7);
+            check(obtained.deck.size()==source.deck.size()+1 && obtained.deck.cards.back()==offer,
+                    "Library visible offer must be obtained after selection");
+            auto eggSource=source;eggSource.relics.add({RelicId::TOXIC_EGG,0});
+            int eggChoice=-1;
+            for(int i=0;i<static_cast<int>(eggSource.info.toSelectCards.size());++i) {
+                auto &c=eggSource.info.toSelectCards[i].card;c=eggSource.previewObtainCard(Card(c.id));
+                if(c.getType()==CardType::SKILL)eggChoice=i;
+            }
+            check(eggChoice>=0,"Library Egg fixture requires a skill");
+            advisor::LiveOocStateV1 eggLive;
+            check(advisor::importLiveOocStateV1(project(eggSource,path,"library_egg"),eggLive).ok,
+                    "Library legitimate Egg preview rejected");
+            const auto eggCard=eggLive.mctsRoot.state.info.toSelectCards[eggChoice].card;
+            eggLive.mctsRoot.state.chooseSelectCardScreenOption(eggChoice);
+            check(eggCard.upgraded && eggLive.mctsRoot.state.deck.cards.back()==eggCard,
+                    "Library Egg preview/obtain mismatch");
+            for(const auto id:{CardId::BRUTALITY,CardId::COMBUST,CardId::SEARING_BLOW}) {
+                auto unsupported=source;
+                if(id==CardId::SEARING_BLOW)unsupported.relics.add({RelicId::MOLTEN_EGG,0});
+                unsupported.info.toSelectCards[0]=SelectScreenCard(unsupported.previewObtainCard(Card(id)),-1);
+                advisor::LiveOocStateV1 rejected;
+                const auto result=advisor::importLiveOocStateV1(project(unsupported,path,"library_unqualified"),rejected);
+                check(!result.ok && result.code=="UNSUPPORTED" && result.message==(id==CardId::SEARING_BLOW
+                        ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED":"LIBRARY_NATIVE_CARD_COLOR_UNQUALIFIED"),
+                        "Valid vanilla Library offer must report explicit unsupported boundary");
+            }
+            for(int defect=0;defect<5;++defect) {
+                auto bad=wire;
+                if(defect==0)bad["ooc"]["details"]["cards"][0]["deckIndex"]=0;
+                if(defect==1)bad["ooc"]["details"]["event"]="Big Fish";
+                if(defect==2)bad["ooc"]["mcpState"]["can_cancel"]=true;
+                if(defect==3)bad["ooc"]["details"]["cards"][0]=bad["ooc"]["details"]["cards"][1];
+                if(defect==4)bad["ooc"]["details"]["cards"][0]["card"]["upgraded"]=true;
+                advisor::LiveOocStateV1 invalid;
+                check(!advisor::importLiveOocStateV1(bad,invalid).ok,"Library malformed selector accepted");
+            }
+        }
         if(source.curEvent==Event::WORLD_OF_GOOP) {
             check(live.projected.info.goldLoss==33 && live.mctsRoot.state.info.goldLoss==33,
                     "World of Goop must preserve visible gold loss");
@@ -625,7 +818,7 @@ int main(int argc,char **argv){try{
         p["combatHistory"][0]["encounter"] = "JAW_WORM";
         p["combatHistory"][1]["encounter"] = "GREMLIN_NOB";
         p["questionHistoryComplete"] = true;
-        p["questionOutcomes"] = J::array({"MONSTER"});
+        p["questionOutcomes"] = J::array({{{"floor",20},{"outcome","MONSTER"}}});
         // Earlier act transitions mean path_taken[22] does not exist.
         p["pathHistory"] = J::array({"MONSTER", "EVENT", "ELITE"});
         advisor::LiveOocStateV1 live;
@@ -636,6 +829,47 @@ int main(int argc,char **argv){try{
                 "act-two elite and question-monster must consume separate queues");
         check(live.mctsRoot.currentActEventVisits == 1,
                 "room belief must use current-act event visits, not whole-run path visits");
+        check(live.mctsRoot.questionHistoryComplete && live.mctsRoot.state.monsterChance==0.1f
+                && live.mctsRoot.state.shopChance==0.03f+0.03f
+                && live.mctsRoot.state.treasureChance==0.02f+0.02f,
+                "resolved question monster must reconstruct exact room counters");
+    }
+    {
+        auto source=base;source.screenState=ScreenState::REST_ROOM;
+        auto wire=project(source,path,"resolved_question_history");
+        auto &p=wire["ooc"]["publicState"];
+        p["questionHistoryComplete"]=true;
+        p["currentActPathVisits"][static_cast<int>(Room::EVENT)]=4;
+        p["questionOutcomes"]=J::array({{{"floor",2},{"outcome","EVENT"}},
+            {{"floor",4},{"outcome","SHOP"}},{{"floor",6},{"outcome","TREASURE"}},
+            {{"floor",7},{"outcome","EVENT"}}});
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.questionHistoryComplete,
+                "complete resolved question history rejected");
+        check(live.mctsRoot.state.monsterChance==0.1f+0.1f+0.1f+0.1f+0.1f
+                && live.mctsRoot.state.shopChance==0.03f+0.03f+0.03f
+                && live.mctsRoot.state.treasureChance==0.02f+0.02f
+                && live.mctsRoot.state.curRoom==Room::EVENT && live.mctsRoot.state.lastRoom==Room::TREASURE,
+                "resolved question counters or room identities differ");
+        auto tiny=wire;tiny["ooc"]["publicState"]["relics"].push_back({{"id",J(RelicId::TINY_CHEST)},{"data",0}});
+        advisor::LiveOocStateV1 tinyLive;
+        check(advisor::importLiveOocStateV1(tiny,tinyLive).ok && tinyLive.mctsRoot.questionHistoryComplete
+                && tinyLive.mctsRoot.state.treasureChance==live.mctsRoot.state.treasureChance,
+                "Tiny Chest resolved treasure was treated as ambiguous");
+        auto juzu=wire;juzu["ooc"]["publicState"]["acquiredRelics"].push_back(J(RelicId::JUZU_BRACELET));
+        advisor::LiveOocStateV1 ambiguous;
+        check(advisor::importLiveOocStateV1(juzu,ambiguous).ok && !ambiguous.mctsRoot.supported
+                && !ambiguous.mctsRoot.questionHistoryComplete
+                && ambiguous.mctsRoot.reason=="PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED:Juzu_Bracelet",
+                "formerly owned Juzu fabricated the hidden monster reset");
+        const auto rejects=[&](J invalid) {
+            advisor::LiveOocStateV1 rejected;
+            check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"malformed question history accepted");
+        };
+        auto invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"].erase(0);rejects(invalid);
+        invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"][1]["floor"]=2;rejects(invalid);
+        invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"][3]["floor"]=8;rejects(invalid);
+        invalid=wire;invalid["ooc"]["publicState"]["questionOutcomes"][0]["outcome"]="BOSS";rejects(invalid);
     }
     {
         auto source = base;
