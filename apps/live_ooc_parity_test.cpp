@@ -323,6 +323,56 @@ int main(int argc,char **argv){try{
             }
         }
     }
+    for(bool bowl:{false,true}) {
+        auto source=base;source.screenState=ScreenState::REWARDS;source.potionCapacity=3;source.potionCount=3;
+        std::fill(std::begin(source.potions),std::end(source.potions),Potion::EMPTY_POTION_SLOT);
+        for(int i=0;i<3;++i)source.potions[i]=Potion::FIRE_POTION;
+        if(bowl)source.relics.add({RelicId::SINGING_BOWL,0});
+        source.info.rewardsContainer.clear();CardReward cardGroup;cardGroup.push_back(Card(CardId::BASH));
+        source.info.rewardsContainer.addCardReward(cardGroup);source.info.rewardsContainer.addPotion(Potion::SPEED_POTION);
+        auto wire=project(source,path,"card_parent_potion");auto &o=wire["ooc"];
+        o["screen"]="card_reward";o["details"]["parentPotionRewards"]=true;
+        auto &choices=o["liveChoices"];
+        choices.erase(std::remove_if(choices.begin(),choices.end(),[](const auto &c){
+            return c["nativeAction"]["kind"]!="card" && c["nativeAction"]["kind"]!="skip";
+        }),choices.end());
+        for(auto &c:choices) {
+            if(c["nativeAction"]["kind"]=="skip") {
+                c["nativeAction"]["group"]=0;
+                c["liveAction"]={{"kind","skip"}};
+            } else if(!bowl && c["nativeAction"]["index"]==5) {
+                c["liveAction"]={{"kind","skip"}};
+            }
+        }
+        advisor::LiveOocStateV1 live;
+        const auto imported=advisor::importLiveOocStateV1(wire,live);
+        check(imported.ok,"card parent potion import (bowl="+std::to_string(bowl)+"): "+imported.message);
+        check(!advisor::forcedRewardPotionLiveAction(live),"child card screen cannot claim parent potion");
+        for(const auto action:{A(RT::SKIP),A(RT::CARD,0,0),A(RT::CARD,0,5)}) {
+            auto child=live.mctsRoot.state;const int hp=child.maxHp;
+            action.execute(child);
+            check(child.screenState==ScreenState::REWARDS && child.info.rewardsContainer.cardRewardCount==0
+                && child.info.rewardsContainer.potionCount==1,"card resolution lost parent potion");
+            const bool gain=bowl && action.getRewardsActionType()==RT::CARD && action.getIdx2()==5;
+            check(child.maxHp==hp+(gain?2:0),"ordinary skip confused with Singing Bowl");
+            A(RT::SKIP).execute(child);
+            check(child.screenState==ScreenState::MAP_SCREEN && !child.regainControlAction,"parent completion did not restore ordinary continuation");
+        }
+        auto invalid=wire;invalid["ooc"]["liveChoices"].push_back({{"nativeAction",{{"kind","potion"},{"index",0},{"group",0}}},
+            {"liveAction",{{"kind","choose"},{"choiceIndex",2}}}});
+        check(!advisor::importLiveOocStateV1(invalid,live).ok,"parent potion clickable through card page");
+    }
+    {
+        auto source=base;source.screenState=ScreenState::REWARDS;source.info.rewardsContainer.clear();
+        source.potionCapacity=3;source.potionCount=0;std::fill(std::begin(source.potions),std::end(source.potions),Potion::EMPTY_POTION_SLOT);
+        source.info.rewardsContainer.addPotion(Potion::SPEED_POTION);
+        auto wire=project(source,path,"hidden_card_free_potion");wire["ooc"]["screen"]="combat_reward";
+        wire["ooc"]["unsupportedReason"]="CARD_GROUP_NOT_REVEALED";
+        advisor::LiveOocStateV1 live;check(advisor::importLiveOocStateV1(wire,live).ok,"hidden-card free potion import");
+        check(advisor::forcedRewardPotionLiveAction(live).has_value(),"hidden card blocked free potion prefix");
+        auto duplicate=wire;duplicate["ooc"]["liveChoices"].push_back(duplicate["ooc"]["liveChoices"][0]);
+        check(!advisor::importLiveOocStateV1(duplicate,live).ok,"duplicate free-potion mapping accepted");
+    }
     {
         auto source = base;
         source.screenState = ScreenState::REWARDS;

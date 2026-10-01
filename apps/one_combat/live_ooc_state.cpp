@@ -620,6 +620,20 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         gc.screenState = sts::ScreenState::MAP_SCREEN;
         gc.regainControlAction = nullptr;
     };
+    if(source.ooc.at("details").value("parentPotionRewards",false)) {
+        // UI Skip closes only the visible card page; sibling potions remain.
+        // CARD(group,5) still means Singing Bowl when owned. The distinct
+        // global SKIP primitive is scoped here to the public card-page close.
+        root.regainControlAction=[](sts::GameContext &gc) {
+            const bool cardPage=gc.info.rewardsContainer.cardRewardCount>0;
+            if(cardPage)gc.info.rewardsContainer.removeCardReward(0);
+            gc.screenState=cardPage?sts::ScreenState::REWARDS:sts::ScreenState::MAP_SCREEN;
+            if(cardPage) gc.regainControlAction=[](sts::GameContext &parent) {
+                parent.screenState=sts::ScreenState::MAP_SCREEN;parent.regainControlAction=nullptr;
+            };
+            else gc.regainControlAction=nullptr;
+        };
+    }
     if(root.screenState==sts::ScreenState::CARD_SELECT && source.ooc.at("details").contains("afterSelect"))
         root.regainControlAction=[](sts::GameContext &gc) {
             gc.deck.upgradeRandomCards(gc.miscRng,1);
@@ -889,6 +903,26 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             for(const auto &v:array(d,"potions",5))r.addPotion(id<Potion>(v,Potion::INVALID));
             r.emeraldKey=boolean(d,"emeraldKey");r.sapphireKey=boolean(d,"sapphireKey");
             require(!(r.emeraldKey&&r.sapphireKey),"native reward keys are mutually exclusive");
+            if(d.contains("parentPotionRewards")) {
+                require(boolean(d,"parentPotionRewards") && screenName=="card_reward" && r.cardRewardCount==1
+                        && r.potionCount>0 && r.goldRewardCount==0 && r.relicCount==0 && !r.emeraldKey && !r.sapphireKey,
+                        "unqualified parent potion continuation");
+                bool skip=false,leave=false;std::set<int> seen;
+                for(const auto &choice:array(o,"liveChoices",1024)) {
+                    const auto &n=choice.at("nativeAction");
+                    if(string(n,"kind")=="skip") {
+                        require(!leave && integer(n,"index",0,0)==0 && integer(n,"group",0,0)==0
+                            && string(choice.at("liveAction"),"kind")=="skip","invalid card close mapping");
+                        leave=true;continue;
+                    }
+                    require(string(n,"kind")=="card" && integer(n,"group",0,0)==0,"parent reward is not clickable on card screen");
+                    const int index=integer(n,"index",0,5);
+                    require(index<r.cardRewards[0].size() || index==5,"card continuation choice out of bounds");
+                    require(seen.insert(index).second,"duplicate card continuation choice");
+                    skip|=index==5;
+                }
+                require(skip && leave && seen.size()==static_cast<std::size_t>(r.cardRewards[0].size()+1),"incomplete card continuation mapping");
+            }
         } else if(g.screenState==ScreenState::SHOP_ROOM) {
             auto &s=g.info.shop;
             auto offers=[&](const char *key,int count,auto load) {
@@ -1149,7 +1183,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             require(goldChoiceCount == static_cast<int>(gold.size()),
                     "gold reward/live mapping count mismatch: rewards="
                     + std::to_string(gold.size()) + " choices=" + std::to_string(goldChoiceCount));
-            if (goldChoiceCount == 0) return {false,"UNSUPPORTED",deferredUnsupportedReason};
+            if (goldChoiceCount == 0 && !forcedRewardPotionLiveAction(next))
+                return {false,"UNSUPPORTED",deferredUnsupportedReason};
         }
         if(next.mechanicalEventTransition || next.forcedOocTransition) {
             next.mctsRoot.supported=false;
@@ -1248,6 +1283,26 @@ std::optional<J> forcedRewardGoldLiveAction(const LiveOocStateV1 &state) {
             "gold reward/live mapping count mismatch: rewards="
             + std::to_string(state.ooc.at("details").at("gold").size())
             + " choices=" + std::to_string(goldChoices));
+    return first->at("liveAction");
+}
+std::optional<J> forcedRewardPotionLiveAction(const LiveOocStateV1 &state) {
+    const auto &g=state.projected;
+    if(g.screenState!=ScreenState::REWARDS || g.potionCount>=g.potionCapacity || g.hasRelic(RelicId::SOZU)
+            || state.ooc.value("screen",std::string())=="card_reward" || g.info.rewardsContainer.relicCount>0)
+        return std::nullopt;
+    const auto &potions=array(state.ooc.at("details"),"potions",5);
+    if(potions.empty() || static_cast<int>(potions.size())>g.potionCapacity-g.potionCount) return std::nullopt;
+    std::set<int> indices;std::set<std::string> actions;const J *first=nullptr;
+    for(const auto &choice:state.ooc.at("liveChoices")) {
+        if(choice.at("nativeAction").value("kind",std::string())!="potion") continue;
+        primitive(choice,g.screenState);
+        const int index=integer(choice.at("nativeAction"),"index",0,static_cast<int>(potions.size())-1);
+        const auto &action=choice.at("liveAction");
+        require(string(action,"kind")=="choose" && integer(action,"choiceIndex",1,1024)>0,"potion must lower to choose");
+        require(indices.insert(index).second && actions.insert(action.dump()).second,"duplicate potion live mapping");
+        if(!first)first=&choice;
+    }
+    require(indices.size()==potions.size(),"potion reward/live mapping count mismatch");
     return first->at("liveAction");
 }
 } // namespace one_combat::advisor

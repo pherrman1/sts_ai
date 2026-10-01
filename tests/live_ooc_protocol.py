@@ -641,6 +641,48 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(second_evaluator["status"], "UNSUPPORTED", second)
         self.assertEqual(second_evaluator["reason"], "CARD_GROUP_NOT_REVEALED")
 
+    def test_hidden_card_group_collects_free_potion_without_model(self):
+        obs = copy.deepcopy(self.fixtures["rewards_without_cards"])
+        ooc = obs["ooc"]
+        ooc["screen"] = "combat_reward"
+        ooc["unsupportedReason"] = "CARD_GROUP_NOT_REVEALED"
+        ooc["details"]["gold"] = []
+        ooc["details"]["potions"] = ["SpeedPotion"]
+        ooc["publicState"]["potions"] = ["Potion Slot"] * 5
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="potion", index=0, group=0),
+                                   liveAction=dict(kind="choose", choiceIndex=1)),
+                              dict(nativeAction=dict(kind="skip", index=0, group=0), liveAction=dict(kind="proceed"))]
+        response, = self.run_rows([obs], model=False, policy="mcts")
+        self.assertIn("evaluators", response, response)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["selectedSemanticKey"], "ooc-live:v1:take-potion")
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+        malformed = copy.deepcopy(obs)
+        malformed["ooc"]["liveChoices"].append(copy.deepcopy(ooc["liveChoices"][0]))
+        rejected, = self.run_rows([malformed], model=False, policy="mcts")
+        self.assertEqual(rejected["status"], "ERROR", rejected)
+
+    def test_card_reward_parent_potion_masks_current_root(self):
+        obs = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
+        ooc = obs["ooc"]
+        ooc["screen"] = "card_reward"
+        ooc["details"].update(parentPotionRewards=True, potions=["SpeedPotion"])
+        capacity = ooc["publicState"]["potionCapacity"]
+        ooc["publicState"]["potions"] = ["Fire Potion"] * capacity + ["Potion Slot"] * (5 - capacity)
+        for choice in ooc["liveChoices"]:
+            if choice["nativeAction"]["kind"] == "skip":
+                choice["nativeAction"]["group"] = 0
+                choice["liveAction"] = dict(kind="skip")
+        response, = self.run_rows([obs], policy="mcts")
+        self.assertIn("evaluators", response, response)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        allowed = [choice["liveAction"] for choice in ooc["liveChoices"]]
+        self.assertTrue(all(row["liveAction"] in allowed for row in evaluator["candidateSummaries"]))
+        direct, = self.run_rows([obs], policy="v4")
+        self.assertEqual(direct["evaluators"][0]["status"], "UNSUPPORTED", direct)
+
     def test_hidden_card_group_rejects_duplicate_gold_mapping(self):
         observation = copy.deepcopy(self.fixtures["rewards_without_cards"])
         ooc = observation["ooc"]

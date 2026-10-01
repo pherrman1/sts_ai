@@ -395,6 +395,14 @@ json oocResponse(const one_combat::advisor::Request &request,
                     {"observationHash", request.observationHash},
                     {"evaluators", json::array({evaluator})}};
         }
+        if(state.ooc.at("details").value("parentPotionRewards",false)
+                && (std::string(policy.name())!="mcts_ctm" || (std::getenv("STS_DIFFERENTIAL_TRACE") && std::string(std::getenv("STS_DIFFERENTIAL_TRACE"))=="1"))) {
+            evaluator["reason"]="PARENT_REWARD_CONTINUATION_REQUIRES_MCTS";
+            return {{"protocol",advisor::kProtocol},{"protocolVersion",advisor::kProtocolVersion},
+                {"kind","analysis"},{"status",evaluator.at("status")},{"session",request.session},
+                {"sequence",request.sequence},{"observationHash",request.observationHash},
+                {"evaluators",json::array({evaluator})}};
+        }
         if (const auto forcedGoldAction = advisor::forcedRewardGoldLiveAction(state)) {
             const auto &liveAction = *forcedGoldAction;
             evaluator["status"] = "OK";
@@ -416,6 +424,20 @@ json oocResponse(const one_combat::advisor::Request &request,
                     {"session", request.session}, {"sequence", request.sequence},
                     {"observationHash", request.observationHash},
                     {"evaluators", json::array({evaluator})}};
+        }
+        if(const auto potionAction=advisor::forcedRewardPotionLiveAction(state)) {
+            const std::string key="ooc-live:v1:take-potion";
+            evaluator["status"]="OK";evaluator["mode"]="native_pass_through";
+            evaluator["valueSemantics"]="fixed_reward_prefix_no_search";
+            evaluator["selectedSemanticKey"]=key;evaluator["selectedLabel"]="collect potion";
+            evaluator["selectedLiveAction"]=*potionAction;
+            evaluator["candidateSummaries"]=json::array({json{{"semanticKey",key},
+                {"semanticPayload",{{"type","take_potion"}}},{"label","collect potion"},
+                {"q",0.0},{"visits",1},{"visitShare",1.0},{"prior",1.0},{"liveAction",*potionAction}}});
+            evaluator["latencyMicros"]=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-started).count();
+            return {{"protocol",advisor::kProtocol},{"protocolVersion",advisor::kProtocolVersion},
+                {"kind","analysis"},{"status","OK"},{"session",request.session},{"sequence",request.sequence},
+                {"observationHash",request.observationHash},{"evaluators",json::array({evaluator})}};
         }
         try {
             validateCapturedLiveOocMapping(state);

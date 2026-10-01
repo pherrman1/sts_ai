@@ -74,6 +74,44 @@ public final class RunicDomeTrackerTest {
         RunicDomeTracker spike=new RunicDomeTracker(monster,"SpikeSlime_S",12,1,5);
         spike.beginRoll(monster,10,10);spike.endRoll(monster);spike.execute(monster,1);
         spike.beginRoll(monster,8,10);spike.endRoll(monster);complete(spike.snapshot(monster,2,4,false));
+        // Small Acid Slime's only RNG is its initial roll. Later moves are
+        // proven by the scoped vanilla takeTurn override, never a queued read.
+        for(int opening:new int[]{1,2}) {
+            RunicDomeTracker acid=new RunicDomeTracker(monster,"AcidSlime_S",13,1,2);
+            acid.beginRoll(monster,10,10);acid.setMove(monster);acid.endRoll(monster);
+            Map<String,Object> initial=acid.snapshot(monster,1,1,false);complete(initial);
+            if(initial.get("knownNextMove")!=null || !initial.get("pendingMoveRolls").equals(1)) throw new AssertionError("initial Acid roll exposed");
+            int move=opening;
+            for(int completed=1;completed<=4;++completed) {
+                acid.beginKnownTurn(monster,move);
+                acid.knownOverride(monster,3-move);acid.setMove(monster);acid.endKnownTurn(monster);
+                Map<String,Object> state=acid.snapshot(monster,completed+1,1,false);complete(state);
+                Map<?,?> proof=(Map<?,?>)state.get("knownNextMove");
+                if(!proof.get("kind").equals("acid_slime_s_alternation") || !proof.get("move").equals(3-move)
+                        || !state.get("pendingMoveRolls").equals(0) || !state.get("generation").equals(2L*completed+1))
+                    throw new AssertionError("Acid known transition lost");
+                acid.observeAttack(monster,3-move==1); // deterministic query stores no hidden predicate
+                if(!acid.snapshot(monster,completed+1,1,false).get("pendingAttackPredicates").equals(Collections.emptyList()))
+                    throw new AssertionError("known Acid acquired hidden constraint");
+                move=3-move;
+            }
+            Map<String,Object> dead=acid.snapshot(monster,6,1,true);complete(dead);
+            if(dead.get("knownNextMove")!=null) throw new AssertionError("dead Acid kept next intent");
+        }
+        for(int mutation=0;mutation<6;++mutation) {
+            RunicDomeTracker acid=new RunicDomeTracker(monster,"AcidSlime_S",13,1,1);
+            acid.beginRoll(monster,10,10);acid.endRoll(monster);acid.beginKnownTurn(monster,1);
+            if(mutation==0) { acid.endKnownTurn(monster); } // missing override
+            if(mutation==1) { acid.setMove(monster);acid.endKnownTurn(monster); } // unaudited callsite
+            if(mutation==2) { acid.knownOverride(monster,1);acid.setMove(monster);acid.endKnownTurn(monster); }
+            if(mutation>=3) {
+                acid.knownOverride(monster,2);acid.setMove(monster);acid.endKnownTurn(monster);
+                if(mutation==3)acid.setMove(monster); // override outside executing turn
+                if(mutation==4)acid.beginRoll(monster,10,10); // unexpected RNG lifecycle
+                if(mutation==5)acid.observeAttack(monster,true); // contradicted known Lick
+            }
+            rejected(acid.snapshot(monster,2));
+        }
         RunicDomeTracker red=new RunicDomeTracker(monster,"SlaverRed",9,1,2);
         int turn=1;
         red.beginRoll(monster,40,40);red.endRoll(monster);
@@ -111,6 +149,10 @@ public final class RunicDomeTrackerTest {
         RunicDomeTrackerPatch.SpotResult.raw(action.getDeclaredMethod("update"));
         if(action.toBytecode().length==0) throw new AssertionError("Spot instrumentation missing");
         action.detach();
+        javassist.CtClass acidClass=pool.get("com.megacrit.cardcrawl.monsters.exordium.AcidSlime_S");
+        RunicDomeTrackerPatch.AcidSlime_STurn.raw(acidClass.getDeclaredMethod("takeTurn"));
+        if(acidClass.toBytecode().length==0) throw new AssertionError("Acid override instrumentation missing");
+        acidClass.detach();
         if(!RunicDomeTracker.cardAllowed("Strike_R") || !RunicDomeTracker.relicAllowed("Runic Dome"))
             throw new AssertionError("audited domain rejected");
         // Hook signatures are verified against the installed JAR without
@@ -121,7 +163,7 @@ public final class RunicDomeTrackerTest {
         base.getDeclaredMethod("rollMove");
         Class<?> intent=Class.forName("com.megacrit.cardcrawl.monsters.AbstractMonster$Intent",false,loader);
         base.getDeclaredMethod("setMove",String.class,byte.class,intent,int.class,int.class,boolean.class);
-        for(String cls:Arrays.asList("JawWorm","Cultist","FungiBeast","SlaverBlue","SlaverRed","AcidSlime_M","SpikeSlime_M","SpikeSlime_S","Sentry","GremlinNob"))
+        for(String cls:Arrays.asList("JawWorm","Cultist","FungiBeast","SlaverBlue","SlaverRed","AcidSlime_S","AcidSlime_M","SpikeSlime_M","SpikeSlime_S","Sentry","GremlinNob"))
             Class.forName("com.megacrit.cardcrawl.monsters.exordium."+cls,false,loader).getDeclaredMethod("takeTurn");
         Class.forName("com.megacrit.cardcrawl.monsters.MonsterGroup",false,loader).getDeclaredMethod("init");
         System.out.println("RunicDomeTrackerTest PASS");

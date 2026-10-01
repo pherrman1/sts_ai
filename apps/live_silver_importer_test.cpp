@@ -1466,6 +1466,60 @@ int main() {
                 obs["silverRoot"]["combat"]["runicDomeKnowledge"]=old;obs["silverRoot"]["playerTurn"]=4;obs["silverRoot"]["combat"]["turn"]=4;
                 if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("legacy Red lost public Entangle accepted");
             }
+            // Small Acid Slime: initial hidden roll, then the public direct
+            // alternating override (no later RNG draw or queued-intent read).
+            for(int asc:{0,17}) for(int opening:{1,2}) {
+                if(asc>=17 && opening!=2) continue;
+                for(int completed=0;completed<=4;++completed) {
+                    std::vector<int> history;
+                    for(int t=std::max(0,completed-2);t<completed;++t) history.push_back(t%2==0?opening:3-opening);
+                    auto obs=groupDome({"AcidSlime_S"},{history});
+                    obs["silverRoot"]["encounter"]="SMALL_SLIMES";
+                    obs["silverRoot"]["ascension"]=asc;
+                    obs["silverRoot"]["playerTurn"]=completed+1;
+                    auto &c=obs["silverRoot"]["combat"];c["turn"]=completed+1;
+                    auto &k=c["runicDomeKnowledge"]["monsters"][0];
+                    k["completedTurns"]=completed;k["generation"]=2*completed+1;
+                    k["pendingMoveRolls"]=completed?0:1;
+                    k["knownNextMove"]=completed?json{{"kind","acid_slime_s_alternation"},{"move",completed%2==0?opening:3-opening}}:json(nullptr);
+                    const auto imported=one_combat::advisor::importSilverRoot(obs);
+                    if(!imported.ok) throw std::runtime_error("Dome small Acid phase: "+imported.reason);
+                    auto bc=battleContextFromWire(imported.wire);auto before=bc;
+                    auto &m=bc.monsters.arr[0];
+                    m.materializePendingMove(bc);
+                    if(completed==0) {
+                        auto &r=before.monsters.arr[0];auto inputs=r.pendingRollInputs;
+                        r.cancelPendingMove();r.rollMoveFromInputs(before,inputs);
+                        if(m.moveHistory[0]!=r.moveHistory[0] || bc.aiRng!=before.aiRng)
+                            throw std::runtime_error("small Acid initial secondary RNG parity");
+                    } else {
+                        const auto expected=(completed%2==0?opening:3-opening)==1?MMID::ACID_SLIME_S_TACKLE:MMID::ACID_SLIME_S_LICK;
+                        const auto previous=history.back()==1?MMID::ACID_SLIME_S_TACKLE:MMID::ACID_SLIME_S_LICK;
+                        if(m.pendingMoveRolls || m.moveHistory[0]!=expected || m.moveHistory[1]!=previous || bc.aiRng!=before.aiRng)
+                            throw std::runtime_error("small Acid known move/history RNG parity");
+                        m.takeTurn(bc);
+                        if(m.moveHistory[0]!=previous || m.moveHistory[1]!=expected || bc.aiRng!=before.aiRng)
+                            throw std::runtime_error("small Acid direct alternating turn parity");
+                    }
+                    const auto rejectAcid=[&](json bad) {
+                        if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("unproven Acid known intent accepted");
+                    };
+                    auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("knownNextMove");rejectAcid(bad);
+                    if(completed) {
+                        bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["knownNextMove"]["move"]=history.back();rejectAcid(bad);
+                        bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["pendingMoveRolls"]=1;rejectAcid(bad);
+                        bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["pendingAttackPredicates"]=json::array({json::array({1,true})});rejectAcid(bad);
+                        bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["knownNextMove"]["kind"]="inferred_private_move";rejectAcid(bad);
+                        if(history.size()==2) {
+                            bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["executedMoves"][0]=history.back();rejectAcid(bad);
+                        }
+                    }
+                    // Dead slots carry neither a latent nor a known future move.
+                    c["monsters"][0]["hp"]=0;k["pendingMoveRolls"]=0;k["knownNextMove"]=nullptr;
+                    const auto dead=one_combat::advisor::importSilverRoot(obs);
+                    if(!dead.ok || dead.wire.monsters[0].pendingMoveRolls) throw std::runtime_error("small Acid dead slot: "+dead.reason);
+                }
+            }
             // Vanilla bytecode boundaries: SlaverRed uses 55 (not 50),
             // asc17 forbids consecutive debuffs, Nob asc18 checks either of
             // the previous two moves for Bash (not two consecutive Bashes).

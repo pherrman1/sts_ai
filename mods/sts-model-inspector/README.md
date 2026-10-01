@@ -133,14 +133,24 @@ the ordinary 15-row map do not increment the native path counters.
 Screen-specific `details` contains card/reward groups, fixed shop slots and
 prices, selector deck indices, event identity/phase, or boss relic offers.
 `liveChoices` binds each exact native candidate descriptor to one current MCP
-command. The live driver collects claimable gold, relic, and potion rewards
-first, then opens an unopened combat card-reward icon as a reversible
-navigation step before asking OOC to score the visible card group. Keys remain
-normal OOC choices under the default continuation policy.
-Direct inspector captures of an unopened icon still produce `CARD_GROUP_NOT_REVEALED`:
-its already-generated Java `RewardItem.cards` contents are never serialized.
-The driver therefore scores the card choice on the next card-reward
-observation. Smith similarly opens the selector before its target is scored. Display strings in `mcpState` and
+command. The live driver collects claimable gold and relic rewards first.
+An unopened card group with potion rewards permits a fixed potion pickup only
+when every visible potion fits in the belt and Sozu is absent. With constrained
+capacity or Sozu, the driver opens one card group and capture carries its
+already-public sibling potions into the native continuation. The current root
+offers only card, Singing Bowl, and ordinary Skip actions; each returns to the
+parent potion decision. Ordinary Skip does not grant Bowl's maximum HP.
+Keys remain normal OOC choices under the default continuation policy.
+An unopened icon still produces `CARD_GROUP_NOT_REVEALED` outside qualified
+public reward prefixes: its already-generated Java `RewardItem.cards` contents
+are never serialized. The card choice is scored on the next observation.
+Vanilla leaves a skipped card icon on the parent screen. A public observer
+records that physical reward's decline for both mouse and MCP skip delivery,
+and the strict driver suppresses automatic reopening. Explicit reopening clears
+the decline; the ledger resets with player/floor identity. Additional unopened
+card groups and non-potion siblings remain guarded for this continuation, as
+do direct V4 and differential replay. Smith similarly opens the selector before
+its target is scored. Display strings in `mcpState` and
 `mcpLabel` detect stale observations only; lowering uses occurrence indices and
 physical card/node identities.
 

@@ -591,7 +591,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(!k.is_object() || !integer("schemaVersion",1,1) || !integer("epoch",1,9007199254740991LL) || k.at("epoch")!=found->at("epoch")
                 || !k.contains("complete") || k.at("complete")!=true || !integer("completedTurns",0,9999)
                 || !integer("generation",1,19999) || !integer("slot",slot,slot)
-                || !integer("pendingMoveRolls",dead?0:1,dead?0:1)
+                || !integer("pendingMoveRolls",0,1)
                 || !integer("rollHp",1,999) || !integer("rollMaxHp",1,999)
                 || !k.contains("monsterId") || !k.at("monsterId").is_string()
                 || !k.contains("executedMoves") || !k.at("executedMoves").is_array())
@@ -601,13 +601,24 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         const auto monsterId=k.at("monsterId").get<std::string>();
         const auto id=live_silver::monsterId(monsterId);
         const bool jaw=monsterId=="JawWorm",cultist=monsterId=="Cultist",fungi=monsterId=="FungiBeast",
-            red=monsterId=="SlaverRed",blue=monsterId=="SlaverBlue",acid=monsterId=="AcidSlime_M",
+            red=monsterId=="SlaverRed",blue=monsterId=="SlaverBlue",acid=monsterId=="AcidSlime_M",smallAcid=monsterId=="AcidSlime_S",
             spike=monsterId=="SpikeSlime_M",smallSpike=monsterId=="SpikeSlime_S",sentry=monsterId=="Sentry",nob=monsterId=="GremlinNob";
         if((!multi && (!(jaw||cultist) || wire.monsterCount!=1 || k.contains("pendingAttackPredicates")))
-                || !(jaw||cultist||fungi||red||blue||acid||spike||smallSpike||sentry||nob) || !id || m.id!=static_cast<int>(*id)
+                || !(jaw||cultist||fungi||red||blue||acid||smallAcid||spike||smallSpike||sentry||nob) || !id || m.id!=static_cast<int>(*id)
                 || m.idx!=slot || m.halfDead || m.isEscapingB || m.escapeNext
                 || (nob && (wire.monsterCount!=1 || wire.encounter!=static_cast<int>(sts::MonsterEncounter::GREMLIN_NOB))))
             return "silver_runic_dome_encounter_domain";
+        const bool knownNext=smallAcid && completed>0 && !dead;
+        if(k.at("pendingMoveRolls")!=(dead || knownNext?0:1)) return "silver_runic_dome_history_gap";
+        if(smallAcid) {
+            if(!k.contains("knownNextMove")) return "silver_runic_dome_known_next_schema";
+            const auto &proof=k.at("knownNextMove");
+            if(knownNext) {
+                if(!proof.is_object() || proof.size()!=2 || !proof.contains("kind")
+                        || proof.at("kind")!="acid_slime_s_alternation" || !validInteger(proof,"move",1,2))
+                    return "silver_runic_dome_known_next_schema";
+            } else if(!proof.is_null()) return "silver_runic_dome_known_next_schema";
+        } else if(k.contains("knownNextMove")) return "silver_runic_dome_known_next_schema";
         const auto generation=k.at("generation").get<int>();
         if((dead?completed>wire.turn:completed!=wire.turn) || generation<2*completed || generation>2*completed+1
                 || (!dead && generation!=2*completed+1) || moves.size()!=static_cast<std::size_t>(std::min(completed,2))
@@ -624,14 +635,21 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             if(!moves[i].is_number_integer() || moves[i]<1 || moves[i]>4) return "silver_runic_dome_history_schema";
             const int move=moves[i].get<int>();
             const int execution=completed-static_cast<int>(moves.size())+static_cast<int>(i);
-            const bool legal=smallSpike?move==1:sentry?move==((slot+execution)%2==0?3:4):jaw?(execution==0?move==1:move>=1&&move<=3)
+            const bool legal=smallAcid?(move==1||move==2):smallSpike?move==1:sentry?move==((slot+execution)%2==0?3:4):jaw?(execution==0?move==1:move>=1&&move<=3)
                 :cultist?move==(execution==0?3:1):nob?(execution==0?move==3:move==1||move==2)
                 :red?(execution==0?move==1:move==1||move==2||move==3)
                 :(blue||spike)?move==1||move==4:acid?move==1||move==2||move==4:move==1||move==2;
-            if(!legal || (red && move==2 && misc!=1)) return "silver_runic_dome_history_gap";
+            if(!legal || (smallAcid && ((i>0 && moves[i-1]==move)
+                    || (wire.ascension>=17 && move!=(execution%2==0?2:1)))) || (red && move==2 && misc!=1)) return "silver_runic_dome_history_gap";
             const auto native=live_silver::monsterMove(monsterId,move);
             if(!native) return "silver_runic_dome_history_schema";
             m.moveHistory[moves.size()-1-i]=static_cast<std::int16_t>(*native);
+        }
+        if(knownNext) {
+            const int derived=3-moves.back().get<int>();
+            if(k.at("knownNextMove").at("move")!=derived) return "silver_runic_dome_known_next_schema";
+            m.moveHistory[1]=m.moveHistory[0];
+            m.moveHistory[0]=static_cast<std::int16_t>(*live_silver::monsterMove(monsterId,derived));
         }
         std::uint64_t allowed=(1ULL<<static_cast<int>(sts::MonsterStatus::ARTIFACT))
             | (1ULL<<static_cast<int>(sts::MonsterStatus::STRENGTH)) | (1ULL<<static_cast<int>(sts::MonsterStatus::WEAK))
@@ -643,7 +661,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             return "silver_runic_dome_monster_power_domain";
         for(std::size_t i=1;i<m.smallPowers.size();++i)
             if(m.smallPowers[i]) return "silver_runic_dome_monster_power_domain";
-        m.miscInfo=misc; m.pendingMoveRolls=dead?0:1; m.pendingDirectMoveChoice=0;
+        m.miscInfo=misc; m.pendingMoveRolls=dead || knownNext?0:1; m.pendingDirectMoveChoice=0;
         auto &inputs=m.pendingRollInputs;
         inputs.curHp=k.at("rollHp").get<int>(); inputs.maxHp=k.at("rollMaxHp").get<int>();
         inputs.knightCurHp=inputs.curHp; inputs.knightMaxHp=inputs.maxHp; inputs.knightAlive=true;
@@ -659,7 +677,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(multi && !k.contains("pendingAttackPredicates")) return "silver_runic_dome_predicate_schema";
         if(k.contains("pendingAttackPredicates")) {
             const auto &predicates=k.at("pendingAttackPredicates");
-            if(!predicates.is_array() || predicates.size()>1 || (!predicates.empty() && (dead || !predicates[0].is_array()
+            if(!predicates.is_array() || predicates.size()>1 || (!predicates.empty() && (dead || knownNext || !predicates[0].is_array()
                     || predicates[0].size()!=2 || !predicates[0][0].is_number_integer() || predicates[0][0]!=1
                     || !predicates[0][1].is_boolean()))) return "silver_runic_dome_predicate_schema";
             if(!predicates.empty()) m.pendingAttackPredicates.emplace_back(1,predicates[0][1].get<bool>());

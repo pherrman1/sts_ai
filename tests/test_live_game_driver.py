@@ -275,6 +275,45 @@ class LiveGameDriverTest(unittest.TestCase):
         self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
                          {"choice_index": 3})
 
+    def test_full_belt_card_reveal_preserves_parent_potion(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Speed Potion", "Card"], "ready_for_command": True}
+        game = {"screen_state": {"rewards": [{"reward_type": "POTION"}, {"reward_type": "CARD"}]},
+                "potions": [{"id": "Fire Potion", "can_discard": True}] * 3}
+        candidates = build_legal_actions(screen, ["choose", "discard_potion"], game)
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 2})
+        game["potions"][0] = {"id": "Potion Slot"}
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        game.pop("potions")
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        game["potions"] = [{"id": "Potion Slot"}] * 3
+        game["relics"] = [{"id": "Sozu"}]
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 2})
+        game.pop("relics")
+        game["potions"] = [{"id": "Potion Slot"}, {"id": "Fire Potion"}, {"id": "Fire Potion"}]
+        game["screen_state"]["rewards"].insert(1, {"reward_type": "POTION"})
+        screen["choice_list"] = ["Speed Potion", "Weak Potion", "Card"]
+        candidates = build_legal_actions(screen, ["choose"], game)
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 3})
+
+    def test_strict_declined_card_returns_to_parent_potion_decision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Speed Potion", "Card"], "ready_for_command": True}
+            game = {"screen_state": {"rewards": [{"reward_type": "POTION"}, {"reward_type": "CARD"}]},
+                    "potions": [{"id": "Fire Potion", "can_discard": True}] * 3}
+            client = FakeClient(screen, ["choose", "discard_potion"], game_state=game)
+            path = ooc_inspector_file(directory, screen, "OK", selectedLiveAction={"kind": "discard_potion", "potionSlot": 1})
+            raw = json.loads(path.read_text())
+            raw["observation"]["ooc"]["screen"] = "combat_reward"
+            raw["observation"]["ooc"]["rewardOccurrences"] = [{"index": 0, "type": "POTION", "identity": "p1"},
+                                                               {"index": 1, "type": "CARD", "identity": "c1"}]
+            path.write_text(json.dumps(raw))
+            driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                            TraceWriter(Path(directory) / "trace"), max_steps=1, strict_ooc=True)
+            driver.declined_rewards.add(("s", "c1"))
+            asyncio.run(driver.run())
+            self.assertIn(("discard_potion", {"potion_slot": 1}), client.calls)
+            self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
+
     def test_shop_leaves(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
         actions = build_legal_actions(screen, ["cancel", "proceed"])

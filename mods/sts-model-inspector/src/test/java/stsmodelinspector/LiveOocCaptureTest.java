@@ -18,6 +18,37 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        Map<String,Object> parent=obj("potions",new java.util.ArrayList<Object>());
+        if(LiveOocCapture.captureParentPotions(parent,java.util.Arrays.asList(obj("type","POTION","potion","SpeedPotion")))!=null
+                || !Boolean.TRUE.equals(parent.get("parentPotionRewards"))
+                || !parent.get("potions").equals(java.util.Arrays.asList("SpeedPotion"))) throw new AssertionError("parent potion lost");
+        for(String type:java.util.Arrays.asList("CARD","GOLD","RELIC","SAPPHIRE_KEY")) {
+            Map<String,Object> guarded=obj("potions",new java.util.ArrayList<Object>());
+            if(LiveOocCapture.captureParentPotions(guarded,java.util.Arrays.asList(obj("type",type)))==null
+                    || !((java.util.List<?>)guarded.get("potions")).isEmpty()) throw new AssertionError("unopened sibling accepted");
+        }
+        Object skipPlayer=new Object(),reward=new Object(),other=new Object();
+        CardRewardSkipObserver.Ledger ledger=new CardRewardSkipObserver.Ledger();ledger.bind(skipPlayer,1);ledger.skip(reward);
+        if(!ledger.contains(reward) || ledger.contains(other))throw new AssertionError("skip occurrence identity lost");
+        ledger.reopen(reward);if(ledger.contains(reward))throw new AssertionError("reopened offer remains declined");
+        ledger.skip(reward);ledger.bind(skipPlayer,2);if(ledger.contains(reward))throw new AssertionError("skip leaked floor");
+        ledger.skip(reward);ledger.bind(new Object(),2);if(ledger.contains(reward))throw new AssertionError("skip leaked run");
+        javassist.ClassPool skipPool=new javassist.ClassPool(true);
+        skipPool.appendClassPath(new javassist.LoaderClassPath(LiveOocCaptureTest.class.getClassLoader()));
+        javassist.CtClass skip=skipPool.get("com.megacrit.cardcrawl.ui.buttons.SkipCardButton");
+        CardRewardSkipObserver.Skip.raw(skip.getDeclaredMethod("update"));skip.toBytecode();skip.detach();
+        javassist.CtClass rewardScreen=skipPool.get("com.megacrit.cardcrawl.screens.CardRewardScreen");
+        CardRewardSkipObserver.Open.raw(rewardScreen.getDeclaredMethod("open",new javassist.CtClass[]{
+            skipPool.get("java.util.ArrayList"),skipPool.get("com.megacrit.cardcrawl.rewards.RewardItem"),skipPool.get("java.lang.String")}));
+        rewardScreen.toBytecode();rewardScreen.detach();
+        String mcpJar=System.getProperty("sts.mcp.jar");
+        if(mcpJar!=null) {
+            skipPool.appendClassPath(mcpJar);
+            javassist.CtClass mcp=skipPool.get("mcpthespire.ChoiceScreenUtils");
+            javassist.CtMethod method=mcp.getDeclaredMethod("pressCancelButton",new javassist.CtClass[0]);
+            method.insertBefore("{ stsmodelinspector.CardRewardSkipObserver.McpSkip.prefix(); }");
+            mcp.toBytecode();mcp.detach();
+        }
         if (!"Match and Keep".equals(LiveOocCapture.canonicalEventId("Match and Keep!"))
                 || !"Sensory Stone".equals(LiveOocCapture.canonicalEventId("SensoryStone")))
             throw new AssertionError("Match canonical ID");

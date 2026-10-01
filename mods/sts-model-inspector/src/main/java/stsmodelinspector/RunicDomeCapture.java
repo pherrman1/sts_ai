@@ -52,6 +52,15 @@ final class RunicDomeCapture {
         // move is public because it is now executing, never while queued.
         if(active() && group!=null) { RunicDomeTracker t=tracker(monster); if(t!=null)t.execute(monster,monster.nextMove); }
     }
+    static void beginAcidTurn(AbstractMonster monster) {
+        if(active() && group!=null) { RunicDomeTracker t=tracker(monster); if(t!=null)t.beginKnownTurn(monster,monster.nextMove); }
+    }
+    static void acidOverride(AbstractMonster monster,int proposed) {
+        if(active() && group!=null) { RunicDomeTracker t=tracker(monster); if(t!=null)t.knownOverride(monster,proposed); }
+    }
+    static void endAcidTurn(AbstractMonster monster) {
+        if(active() && group!=null) { RunicDomeTracker t=tracker(monster); if(t!=null)t.endKnownTurn(monster); }
+    }
     static void observeAttack(AbstractMonster monster,boolean attacking) {
         if(active() && group!=null) { RunicDomeTracker t=tracker(monster); if(t!=null)t.observeAttack(monster,attacking); }
     }

@@ -679,17 +679,40 @@ final class LiveOocCapture {
         if (AbstractDungeon.cardRewardScreen.rItem != null)
             out.put("rewardIdentity", rewardIdentity(AbstractDungeon.cardRewardScreen.rItem));
         Map<String,Object> r = emptyRewards();
+        List<Map<String,Object>> siblings=new ArrayList<>();
+        if(AbstractDungeon.cardRewardScreen.rItem!=null) for(RewardItem parent:AbstractDungeon.combatRewardScreen.rewards) {
+            if(parent==AbstractDungeon.cardRewardScreen.rItem || CardRewardSkipObserver.skipped(parent))continue;
+            siblings.add(object("type",parent.type.name(),"potion",
+                    "POTION".equals(parent.type.name())?parent.potion.ID:""));
+        }
+        String parentFailure=captureParentPotions(r,siblings);
+        if(parentFailure!=null)out.put("unsupportedReason",parentFailure);
         List<AbstractCard> offered = AbstractDungeon.cardRewardScreen.rewardGroup;
         mutableList(r.get("cardRewards")).add(cards(offered)); out.put("details", r);
         for (int i = 0; i < offered.size(); ++i) add(cs, labels, i, "card", i, 0);
         boolean bowl = Boolean.TRUE.equals(call(CHOICES, "isBowlAvailable"));
+
         if (bowl) add(cs, labels, offered.size(), "card", 5, 0);
         else if (Boolean.TRUE.equals(call(CHOICES, "isCardRewardSkipAvailable")))
             button(cs, "skip", "card", 5, 0);
         // The native global skip has the same current-screen effect as skip.
-        if (Boolean.TRUE.equals(call(CHOICES, "isCardRewardSkipAvailable")))
+        if (Boolean.TRUE.equals(call(CHOICES, "isCardRewardSkipAvailable"))) {
             button(cs, "skip", "skip", 0, 0);
+        }
         else out.put("unsupportedReason", "CARD_REWARD_SKIP_UNAVAILABLE");
+    }
+    static String captureParentPotions(Map<String,Object> details,List<Map<String,Object>> siblings) {
+        for(Map<String,Object> sibling:siblings) {
+            if(!"POTION".equals(sibling.get("type")))
+                return "CARD_REWARD_PARENT_UNREPRESENTABLE:"+sibling.get("type");
+            if(!(sibling.get("potion") instanceof String) || ((String)sibling.get("potion")).isEmpty())
+                throw new IllegalArgumentException("parent potion identity absent");
+        }
+        if(!siblings.isEmpty()) {
+            for(Map<String,Object> sibling:siblings)mutableList(details.get("potions")).add(sibling.get("potion"));
+            details.put("parentPotionRewards",true);
+        }
+        return null;
     }
     private static void rewards(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
@@ -701,6 +724,7 @@ final class LiveOocCapture {
             RewardItem reward = offered.get(i);
             String kind = reward.type.name();
             occurrences.add(object("index", i, "type", kind, "identity", rewardIdentity(reward)));
+            if ("CARD".equals(kind) && CardRewardSkipObserver.skipped(reward)) continue;
             if ("CARD".equals(kind)) {
                 // The unopened reward icon reveals only its type. Vanilla
                 // has already generated reward.cards, but those identities

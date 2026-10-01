@@ -58,11 +58,13 @@ Strength loss).
 - The importer never consumes or accepts live RNG fields.
 - An ordinary draw array is imported as an unordered multiset. Concrete order is
   retained only when `Frozen Eye` is present.
-- `Runic Dome` remains fail-closed at the Java boundary. The observer now
-  omits `nextMove`, `moveHistory`, `intent`, and `intentDamage` while the relic
-  is active; native deferred hidden-intent support exists for native fixtures,
-  but the live producer still does not provide the complete public pre-roll
-  tracker needed to qualify a fair import.
+- `Runic Dome` omits `nextMove`, `moveHistory`, `intent`, and `intentDamage`.
+  Audited monster groups use public executed history and pre-roll state for
+  deferred hidden intents, including Spot Weakness's attack predicate. Small
+  Acid Slime's deterministic continuation uses an explicit public-derived
+  known-next proof. The qualified roster and lifecycle limits are maintained
+  in [live-model-inspector.md](../operations/live-model-inspector.md); other
+  monsters and unaudited overrides remain fail-closed.
 - Java physical UUIDs are assigned monotonically by a battle-lifetime
   `SilverImportContext`. The registry resets only when the protocol session or
   combat instance changes and rejects duplicate UUID claims in one snapshot.
@@ -94,9 +96,7 @@ those cards are implemented by `BattleContext`.
 
 These are deliberate boundaries, not silently fabricated defaults:
 
-- live OOC `GameContext + PathHistory` import and OOC MCTS;
-- Runic Dome live import (`silver_hidden_information_required` until the
-  public pre-roll tracker is serialized);
+- Runic Dome outside its audited public-history/lifecycle domain;
 - unknown Java card/relic/potion/power/task IDs;
 - encounter or monster `miscInfo` values that are not present in the public
   runtime or cannot be derived from the current public tracker;

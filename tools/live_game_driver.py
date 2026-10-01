@@ -881,7 +881,7 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
 
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                               candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Open a card reward only after claimable parent rewards are collected."""
+    """Open cards after the fixed reward prefix; preserve full-belt potion siblings."""
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
         return None
     occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
@@ -893,8 +893,24 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
         if candidate.mcp_tool == "choose"
         and type(candidate.mcp_arguments.get("choice_index")) is int
     }
+    # The opened-card producer carries public sibling potions into MCTS
+    # continuation. Unknown belt data cannot authorize this exception.
+    belt = game.get("potions")
+    belt_known = isinstance(belt, list) and bool(belt) and all(
+        isinstance(potion, Mapping) and isinstance(potion.get("id"), str) and potion["id"]
+        for potion in belt)
+    free_slots = sum(potion["id"] == "Potion Slot" for potion in belt) if belt_known else None
+    potion_rewards = sum(_text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "POTION"
+                         for reward in occurrences)
+    sozu = any(_mapping(relic).get("id") == "Sozu" for relic in _list(game.get("relics")))
+    constrained_potions = sozu or (free_slots is not None and potion_rewards > free_slots)
+    if sum(_text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "CARD"
+           for reward in occurrences) != 1:
+        return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
+        if kind == "POTION" and constrained_potions:
+            continue
         if kind in {"GOLD", "STOLEN_GOLD", "RELIC", "POTION"} and index + 1 in choice_indexes:
             # The default simulator continuation collects gold, relics, and
             # claimable potions before it evaluates the card group. Keys stay
@@ -1228,7 +1244,16 @@ class Driver:
             raise DriverError("no legal candidates for a non-terminal screen")
         reveal_card = False
         if action is None:
-            reveal = card_reward_reveal_action(screen, game_state, candidates)
+            reveal_candidates = candidates
+            if self.declined_rewards and screen.get("screen_type") == "COMBAT_REWARD":
+                snapshot = await self.inspector.read_for({**game_state, **screen, "_expected_boundary": "ooc"}, self.previous_inspector)
+                ooc = _mapping(_mapping(snapshot.raw.get("observation")).get("ooc"))
+                declined_indexes = {item["index"] + 1 for item in _list(ooc.get("rewardOccurrences"))
+                    if isinstance(item, Mapping) and type(item.get("index")) is int
+                    and (snapshot.session, item.get("identity")) in self.declined_rewards}
+                reveal_candidates = [candidate for candidate in candidates
+                    if not (candidate.mcp_tool == "choose" and candidate.mcp_arguments.get("choice_index") in declined_indexes)]
+            reveal = card_reward_reveal_action(screen, game_state, reveal_candidates)
             if reveal is not None:
                 action = reveal
                 reveal_card = True
@@ -1247,7 +1272,8 @@ class Driver:
             if combat and _list(game_state.get("monsters")):
                 inspector_state["monsters"] = game_state["monsters"]
             advisor_started = time.monotonic()
-            snapshot = await self.inspector.read_for(inspector_state, self.previous_inspector)
+            if snapshot is None:
+                snapshot = await self.inspector.read_for(inspector_state, self.previous_inspector)
             row.update({"inspector_session": snapshot.session, "inspector_sequence": snapshot.sequence,
                         "inspector_observationHash": snapshot.observation_hash,
                         "inspector_boundary": _mapping(snapshot.raw.get("observation")).get("boundary"),

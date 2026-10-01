@@ -120,10 +120,18 @@ when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
 `moveHistory`, `intent`, and `intentDamage`. A bounded public-history observer
 qualifies audited ordinary encounters within an explicit safe
 card/relic/potion/power domain. The supported roster includes Jaw Worm, Cultist,
-Fungi Beast, Blue/Red Slaver, medium slimes, small Spike Slime, Sentry and
+Fungi Beast, Blue/Red Slaver, medium slimes, both small slimes, Sentry and
 ordinary Gremlin Nob; groups require
 every member to qualify and retain stable original slots. Dead slots retain
 executed history; unqualified replacements and escapes remain unsupported.
+Small Acid Slime begins with a deferred hidden opening roll. Its later turns
+alternate deterministically without a new roll. Schema 2 requires a typed
+`knownNextMove` proof derived from the executed move and the two audited vanilla
+`takeTurn` override sites; no queued move is read. Initial/dead rows carry null.
+The importer validates alternating history, ascension-dependent opening, and
+zero pending rolls for a known next move. Missing, late, duplicate, or unrelated
+overrides fail closed. Spot Weakness on a known next move checks consistency
+without adding hidden observations or consuming RNG.
 Spot Weakness contributes only its publicly revealed attack/nonattack predicate,
 indexed to the pending roll. Fair search conditions hidden move samples on that
 predicate without exposing the actual move or damage. Repeated queries retain

@@ -42,6 +42,30 @@ public final class RunicDomeTrackerPatch {
     public static class SlaverRedTurn {
         @SpirePrefixPatch public static void prefix(SlaverRed __instance) { RunicDomeCapture.execute(__instance); }
     }
+    public static void publicAcidOverride(AbstractMonster monster,int proposed) {
+        RunicDomeCapture.acidOverride(monster,proposed);
+    }
+    @SpirePatch(clz=AcidSlime_S.class,method="takeTurn")
+    public static class AcidSlime_STurn {
+        @SpirePrefixPatch public static void prefix(AcidSlime_S __instance) { RunicDomeCapture.beginAcidTurn(__instance); }
+        @SpirePostfixPatch public static void postfix(AcidSlime_S __instance) { RunicDomeCapture.endAcidTurn(__instance); }
+        @SpireRawPatch public static void raw(javassist.CtBehavior method) throws javassist.CannotCompileException {
+            final int[] sites={0};
+            method.instrument(new javassist.expr.ExprEditor() {
+                @Override public void edit(javassist.expr.MethodCall call) throws javassist.CannotCompileException {
+                    if(call.getClassName().equals(AcidSlime_S.class.getName()) && call.getMethodName().equals("setMove")) {
+                        String signature=call.getSignature();
+                        if(!signature.equals("(BLcom/megacrit/cardcrawl/monsters/AbstractMonster$Intent;)V")
+                                && !signature.equals("(BLcom/megacrit/cardcrawl/monsters/AbstractMonster$Intent;I)V"))
+                            throw new javassist.CannotCompileException("unqualified Acid Slime override signature");
+                        ++sites[0];
+                        call.replace("{ stsmodelinspector.RunicDomeTrackerPatch.publicAcidOverride($0, $1); $proceed($$); }");
+                    }
+                }
+            });
+            if(sites[0]!=2) throw new javassist.CannotCompileException("unqualified Acid Slime override sites");
+        }
+    }
     @SpirePatch(clz=AcidSlime_M.class,method="takeTurn")
     public static class AcidSlime_MTurn {
         @SpirePrefixPatch public static void prefix(AcidSlime_M __instance) { RunicDomeCapture.execute(__instance); }
