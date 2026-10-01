@@ -568,6 +568,11 @@ read-only screen and choice converters. The observation contains:
   reconstruction restores the consumed native queue prefix rather than only
   its length. Restoration validates the checkpoint against `damage_taken` and
   rejects unknown identities, conflicting floors and incomplete history.
+  Loading and fade frames do not observe partially reconstructed combat rooms.
+  An unrelated OOC projection exception rejects that snapshot without erasing
+  validated combat history; actual combat-history contradictions still
+  invalidate the ledger. This preserves a matched post-combat save through
+  reward-screen reconstruction.
   Colosseum's ordered Slavers-then-Nobs fights are the sole qualified
   same-floor pair in Act 2; both are fixed event fights and consume neither
   encounter queue. Capture and save restoration preserve both entries and

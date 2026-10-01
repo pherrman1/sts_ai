@@ -92,7 +92,51 @@ public final class RelicOfferRecorderTest {
             require(!history.complete(),"unverified event source qualified Colosseum sequence");
         }
     }
+    private static void postCombatResume() {
+        // Public fields from a vanilla post_combat floor-one save. In
+        // particular the seed exceeds double's exact integer range; load it
+        // through the actual raw BaseMod callback, not a hand-made ledger.
+        final long seed=3748870555972498651L;
+        JsonObject raw=new com.google.gson.JsonParser().parse("{\"version\":1,\"seed\":3748870555972498651,"
+                +"\"floor\":1,\"ascension\":0,\"character\":\"IRONCLAD\",\"complete\":true,"
+                +"\"currentShopRevealed\":false,\"offers\":[],\"combatAct\":1,\"combatComplete\":true,"
+                +"\"combatEntries\":[{\"floor\":1,\"kind\":\"NORMAL_QUEUE\",\"encounter\":\"SMALL_SLIMES\"}],"
+                +"\"questionVersion\":1,\"questionEntries\":[]}").getAsJsonObject();
+        new RelicOfferRecorder().onLoadRaw(raw);
+        RelicOfferRecorder.restorePending(PLAYER,seed,1,"IRONCLAD",0,1,Arrays.asList(1));
+        LiveOocCapture.CombatClassHistory history=LiveOocCapture.combatClassHistory;
+        require(history.completeFor(Arrays.asList(1)),"public post-combat checkpoint did not restore");
+        QuestionRoomHistory path=QuestionRoomHistory.capture(Arrays.asList("M"),Arrays.asList("M"),1,1,"MONSTER");
+        Map<String,Object> metric=new LinkedHashMap<>();metric.put("floor",1.0);metric.put("enemies","Small Slimes");
+        require(history.snapshot().equals(PublicHistoryRecovery.combats(path,Arrays.asList(metric),1,1)),
+                "post-combat checkpoint differs from persisted public encounter");
+        for(int screen=0;screen<3;++screen) {
+            // Reward list, revealed cards, then map: none is a new combat.
+            history.observe(PLAYER,seed,1,1,false,false,null,null,"");
+            require(history.completeFor(Arrays.asList(1)),"reward navigation lost restored history");
+        }
+        Map<String,Object> failed=new LinkedHashMap<>();
+        LiveOocCapture.recordCaptureError(failed,new IllegalStateException("transient reward projection"));
+        require(failed.containsKey("captureError") && history.completeFor(Arrays.asList(1)),
+                "UI projection failure poisoned independent checkpoint");
+        history.observe(PLAYER,seed,1,1,false,true,new Object(),"NORMAL_QUEUE","CULTIST");
+        require(!history.complete(),"real same-floor encounter contradiction was ignored");
+        require(!history.recoverLegacy(PLAYER,seed,1,1,path,Arrays.asList(metric),Arrays.asList(1)),
+                "contradicted checkpoint was silently requalified");
+        for(int mismatch=0;mismatch<4;++mismatch) {
+            new RelicOfferRecorder().onLoadRaw(raw);
+            RelicOfferRecorder.restorePending(PLAYER,mismatch==0?seed+1:seed,mismatch==1?2:1,
+                    mismatch==2?"THE_SILENT":"IRONCLAD",mismatch==3?1:0,1,Arrays.asList(1));
+            require(!history.complete(),"post-combat identity mismatch accepted "+mismatch);
+        }
+        raw.addProperty("combatComplete",false);
+        new RelicOfferRecorder().onLoadRaw(raw);
+        RelicOfferRecorder.restorePending(PLAYER,seed,1,"IRONCLAD",0,1,Arrays.asList(1));
+        require(!history.recoverLegacy(PLAYER,seed,1,1,path,Arrays.asList(metric),Arrays.asList(1)),
+                "explicitly incomplete post-combat save silently healed");
+    }
     public static void main(String[] args) {
+        postCombatResume();
         colosseumCheckpoints();
         load(checkpoint());
         require(LiveOocCapture.seenRelicOffers.complete()

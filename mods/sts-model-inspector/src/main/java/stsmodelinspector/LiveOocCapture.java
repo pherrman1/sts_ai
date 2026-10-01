@@ -176,6 +176,10 @@ final class LiveOocCapture {
     }
 
     static void observeCombatRoom(AbstractRoom room) {
+        // The restored room exists before its monsters/phase are ready. In
+        // particular a post-combat save reconstructs a COMBAT MonsterRoom
+        // before returning to its rewards. That is not a new observed fight.
+        if (CardCrawlGame.loadingSave || AbstractDungeon.isFadingIn || AbstractDungeon.isFadingOut) return;
         if (AbstractDungeon.player == null || room == null) return;
         RelicOfferRecorder.bind();
         final int act = AbstractDungeon.actNum, floor = AbstractDungeon.floorNum;
@@ -291,7 +295,7 @@ final class LiveOocCapture {
 
     static String capture() {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null
-                || AbstractDungeon.isFadingIn || AbstractDungeon.isFadingOut) return null;
+                || CardCrawlGame.loadingSave || AbstractDungeon.isFadingIn || AbstractDungeon.isFadingOut) return null;
         // waitingOnFadeOut is a legacy latch: vanilla sets it at the first
         // room transition and never clears it until a dungeon constructor.
         // It is not a live animation/readiness signal. Use the actual fading
@@ -343,7 +347,9 @@ final class LiveOocCapture {
             core.put("seenRelicsComplete", RelicOfferRecorder.projectionComplete());
             finalizeSupportReason(out);
         } catch (ReflectiveOperationException | RuntimeException failure) {
-            combatClassHistory.invalidate();
+            // A projection error does not contradict the independent combat
+            // ledger. Keep this snapshot fail-closed without permanently
+            // poisoning a restored checkpoint on a transient UI failure.
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
