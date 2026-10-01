@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -2186,13 +2186,17 @@ accepted exact-10k/V4 data contract, deferred semantic siblings, victory-boundar
 Revision 5 adds opt-in `DECISION` rows with public screen contents and semantic
 candidates on source/branch trajectories, including sequential shop states and
 compound selectors, for later #379 work. These rows are not used to train #334.
-The
-bundle validator and Stage-1 paired-bootstrap analyzer are implemented and
-have local contract/self-tests. This is implementation status only: the A1
-128-seed pilot, #347 Stage-1 replays, A2 collection, model training, lookup-table
-fidelity, MCTS leaf coverage/timing, and any gameplay or default-promotion gate
-have not been run. No result from the tracked model's §353 audit is changed by
-these producers.
+The bundle validator and Stage-1 paired-bootstrap analyzer are implemented.
+The A3 offline model tooling now supports strict mixed-producer corpus access,
+TRAIN-only feature selection, validation-selected X1/X2/M1, mandatory selected-
+checkpoint VALIDATION resource qualification, runtime/Git-bound one-time TEST
+opening, clustered predictive/resource/sibling evaluation, and the X1
+half-TRAIN data-sufficiency diagnostic. See the
+[A3 operational contract](../operations/ooc-label-pipeline.md#a3-offline-model-training-and-evaluation).
+This is tooling status: full candidate training and real TEST predictions
+remain unopened pending independent review. Lookup-table fidelity, MCTS leaf
+coverage/timing, and gameplay/default-promotion gates remain separate later
+work. No result from the tracked model's §353 audit is changed by this tooling.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from

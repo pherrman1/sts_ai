@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-01 for the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -419,6 +419,196 @@ non-timing files with the sink off/on and again with it on:
 python3 tools/vwin_refresh_contract.py OFF.manifest.json --compare ON.manifest.json --allow-sink-toggle
 python3 tools/vwin_refresh_contract.py ON.manifest.json --compare REPEAT_ON.manifest.json
 ```
+
+### A3 offline model training and evaluation
+
+`python3 -m tools.vwin_refresh_model` provides four separate stages for #334.
+Use the system/repository Python with NumPy, XGBoost and PyTorch installed; the
+CPU synthetic tests do not require CUDA. The implementation is offline-only,
+does not replace a tracked model, and does not establish gameplay quality.
+
+1. `preflight INDEX --output NEW_REPORT.json` enters through
+   `validate_corpus()` and verifies the frozen index identity and exact
+   358/77/77 source split. It checks every MAP/runout label join and the B0
+   feature-name contract, and computes variance only on TRAIN MAP rows.
+   It produces no model predictions. Strict validation necessarily reads all
+   component tables, including TEST metadata/labels; TEST prediction access
+   remains closed.
+2. `tune INDEX --output NEW_RUN --authorize-full-training [--threads N]`
+   performs the later, separately authorized full TRAIN/VALIDATION execution.
+   X1/X2 share the 12-recipe CPU-hist grid and selected input features; X2
+   constrains only `curHp`. M1 uses TRAIN normalization, the 64/32 GELU network,
+   12 recipes, seed-0 tuning and selected-recipe retrains at seeds 0/1/2. The
+   lowest validation NLL selects every checkpoint. X1's half-TRAIN check uses
+   the lowest hash-ranked half of source seeds under
+   `vwin-refresh-334-half-train-v1:{seed}` with unchanged selected parameters
+   and early stopping. After selection, the saved checkpoints for all four
+   arms execute the shared VALIDATION/TEST resource wrapper on all VALIDATION
+   MAP and WIN_RAW rows. `validation-resources.json` records per-arm results,
+   timing, cumulative process peak RSS, populations and checkpoint hashes.
+   This is execution qualification; resource outcomes do not change model
+   selection, and negative quality gates may still qualify execution.
+   No TEST feature matrix is loaded.
+3. `freeze RUN` binds the selected checkpoints, B0 copy, normalization,
+   preflight, validation reports and corpus identity in an exclusive v2
+   `freeze.json`. Freeze requires completed selected-checkpoint VALIDATION
+   MAP/WIN_RAW resource qualification with matching hashes, full tooling
+   identity (Git SHA and files), and numerical runtime. All candidates must
+   use the same TRAIN mask.
+4. `open-test RUN --confirm OPEN_REAL_TEST_ONCE` verifies the freeze and
+   corpus again, including equality of the complete tooling identity and
+   Python/NumPy/XGBoost/Torch runtime (CUDA/cuDNN/GPU for CUDA training), then
+   consumes an exclusive `test-opened.json` latch before
+   reading TEST feature matrices. All four arms use identical metrics,
+   source-cluster bootstrap (2,000 replicates), resources and sibling joins.
+   A failed evaluation leaves the latch consumed. Recovery requires a
+   separately reviewed decision; the CLI never automatically reopens TEST.
+
+Sibling ranking joins `(sourceSeed, branchId)` and scores the first recorded MAP
+state after the branch option executes. For `type=MAP`, the producer records
+`rowIdx=0` before executing the option, so the evaluator uses the minimum
+recorded `rowIdx > 0`. For other decision types it uses the minimum recorded
+`rowIdx`, including zero. A branch without an eligible MAP row contributes to
+`branches_without_map` and its per-type count, not a ranking pair. Duplicate
+row/branch identities and malformed row indices fail closed. Ranking credits
+are 1/0 for correct/incorrect outcome ordering and 0.5 for a predicted tie;
+95% intervals resample whole source seeds. Native B0 parity fixtures explicitly
+use LF line endings for the existing `winnettest` parser.
+
+`qualify-validation RUN` can execute qualification for saved checkpoints when
+no successful resource artifact exists. A failed attempt writes a separate
+failure report and leaves TEST untouched. The successful artifact is exclusive
+and must match the exact checkpoints and tuning manifest being frozen.
+
+`validation-smoke INDEX --output NEW_RUN` exercises all real VALIDATION MAP and
+WIN_RAW resource rows without full candidate training. It records a fixed plan
+before execution: at most 4,096 TRAIN rows, 1,024 VALIDATION fitting rows, one
+XGB recipe per arm with at most 16 rounds, and one MLP recipe with two epochs
+per fit and retrain seeds 0/1/2. The feature mask still derives from all TRAIN
+MAP rows. These checkpoints and diagnostics carry `purpose=smoke_only` and
+cannot be frozen. The eventual selected full-training checkpoints must execute
+their own qualification; a smoke artifact cannot substitute for it.
+
+Runtime identity is recorded in tuning, resource qualification, freeze and TEST
+results. CPU fingerprinting does not require a GPU; CUDA fingerprints bind the
+selected accelerator and deterministic cuBLAS setup. Saved predictors currently
+run on CPU. Older freeze records without this binding are rejected. Input
+identity changes during tuning or qualification also fail closed.
+
+The compact implementation separates CLI/custody (`vwin_refresh_model.py`),
+component-preserving dataset access (`vwin_refresh_dataset.py`), model families
+(`vwin_refresh_training.py`) and pure metrics/probes
+(`vwin_refresh_evaluation.py`). It writes no numerical cache. Run directories
+must be new and must remain local; do not commit datasets or checkpoints.
+Preflight binds all component manifests, feature header, split/counts,
+TRAIN-selected ordered names/mask, label checks and tooling identity.
+
+B0 uses its serialized feature names. `native_parity()` optionally feeds up to
+64 supplied canonical-rich-order rows through an existing `one_combat
+winnettest` executable and checks name-aligned Python predictions at 1e-4.
+It neither builds C++ nor drives game seeds. Native parity is a separate check
+and is not implied by Python tests.
+
+Resource probes retain the terminal-pricing audit conventions: integer HP
+sweeps over 1..maxHp, monotonicity tolerance 0.005, flat steps below 1e-6 in the
+first ceil(0.6*maxHp) HP, clamped +/-5 local HP slope with denominator 10,
+coherent held-potion removal, bounded +/-25 gold, and Feed-like/max-HP-only
+changes. WIN_RAW act-boss probes replace HP with `postAfterBattleHp`.
+Missing acts/insufficient independent seeds cannot pass the resource gate.
+Pre-boss MAP breakdowns derive from recorded act/mapY and the exact native
+transition rule: Acts 1-3 at mapY=14 enter the boss at Y=15
+(`GameContext::transitionToMapNode`); Act 4 at mapY=2 has the sole boss successor
+at Y=3 (`Map::act4Map`). No floor-distance heuristic is used. Sibling scores
+join explicit source/branch IDs and take minimum recorded `rowIdx`, counting
+branches with no MAP state.
+
+The later offline verdict requires a strictly negative MAP NLL delta CI and
+MAP resource qualification; candidates within 0.003 NLL are tied pending
+native/in-context speed work. WIN_RAW resource qualification is reported
+separately. Neither verdict grants terminal-pricing readiness or promotion.
+The tooling PR and synthetic tests are not a full experiment result.
+
+### Mixed-producer v_win refresh corpus
+
+`tools/vwin_refresh_corpus.py` validates a read-only index of existing producer
+bundles. It calls the unchanged `validate_bundle()` for every component, then
+requires complete, valid source trajectories and an exact, globally unique
+source-seed cohort. It never generates data, concatenates tables, rewrites
+bundles or presents multiple producers as one. An incomplete full cohort must
+fail; validating an explicitly declared subset establishes only that subset.
+
+The `vwin_refresh_corpus_v1` JSON index has exactly four fields:
+
+- `schemaVersion`: `"vwin_refresh_corpus_v1"`.
+- `sourceSeeds`: a nonempty array of distinct, nonnegative integer source seeds
+  (expand any intended range explicitly).
+- `allowedProducers`: a nonempty array of objects with `producerGitSha`,
+  `producerExecutableSha256`, `teacherManifestSha256`, `teacherId` and
+  `teacherManifest` (path to the original, hash-bound teacher JSON). These four
+  identity fields form one allowed tuple, preventing arbitrary recombination.
+- `components`: a nonempty array of `{ "manifest": "old/seed.manifest.json",
+  "sha256": "<manifest SHA-256>" }` objects.
+
+All index paths resolve relative to the index file; absolute paths also work.
+Each table is found beside its own component manifest using the existing bundle
+suffix contract. The producer's recorded `teacherPath` is retained as historical
+provenance, while the index's hash-checked `teacherManifest` path locates the
+teacher. Thus an evidence directory can move without editing old manifests.
+
+The teacher file must equal the embedded `combatTeacher`, and `policy` must
+equal its `ooc_policy`. The existing OOC teacher validator enforces native Silver
+and exact10k search configuration; the corpus also requires project-fair RNG
+and binds teacher ID, Git SHA, executable SHA and
+`environment.STS_EXECUTABLE_GIT_SHA` to the explicitly allowed identity.
+Only after those checks are the four teacher binding fields removed for
+semantic comparison. These are the exact differences observed between the old
+and repaired #334 recovery freezes. All other teacher fields, including full
+environment, model paths/hashes and OOC flags/parameters, must match, even in
+allowed producers with no components yet. No wildcard normalization is exposed.
+
+Component comparison retains feature schema/header/hash, split, sampling/K/cap,
+parity rule/rate, Ascension, DECISION configuration/label/encoding/join semantics,
+all table headers (including the combat target suffix) and unknown manifest
+metadata. Only producer/teacher identity/path fields, output hashes and known
+per-bundle observations (`integrity`, `perType`, `branchRows`, seed start/count,
+parity checks/failures and DECISION row/size/trajectory measurements) are excluded.
+The existing bundle schema defines MAP labels through runout `finalWon` and
+keeps `WIN_RAW` diagnostic-only; the corpus introduces no new training targets.
+Missing sampling, teacher or policy specifications fail closed.
+
+```python
+from tools.vwin_refresh_corpus import validate_corpus
+
+corpus = validate_corpus("evidence/corpus.json")
+for table in corpus.tables("map.csv"):
+    # Carry this component alongside any loaded rows and branch identifiers.
+    source_manifest = table.component.manifest_path
+    producer = table.component.producer
+    csv_path, csv_sha256 = table.path, table.sha256
+```
+
+`corpus.manifests()` enumerates resolved manifest paths; `corpus.components`
+retains manifest hashes, original producer identities, teacher paths/hashes,
+source seeds and table hashes. `tables()` yields existing paths with their
+component attached and skips an optional table absent from the corpus. Keep
+artifacts immutable during consumption: validation is a snapshot, not a file
+lock. Revalidate after changing any input.
+
+```text
+python3 tools/vwin_refresh_corpus.py evidence/corpus.json
+python3 -m unittest tools.test_vwin_refresh_corpus tools.test_vwin_refresh_contract -q
+```
+
+Synthetic tests cover mixed identities, different directories, relocation,
+cohort failures, strict component rejection, provenance hashes, semantic
+mismatches and the limited teacher-binding normalization. CTest registers
+`vwin_refresh_corpus_selftest` as `core;tooling`. This API does not modify frozen
+external analysis/training scripts; those consumers must explicitly adopt it
+and retain component provenance. Passing this validator establishes artifact
+integrity and compatibility, not gameplay quality, salvage safety or permission
+to continue generation.
+
+### Producer diagnostics and generation
 
 `vwinrefreshcrashdiag 1 OUT_PREFIX SEED TEACHER.json MAX_BRANCHES MARKERS.log`
 is a diagnostic-only, seed-guarded variant of `vwinrefreshgen` for one source

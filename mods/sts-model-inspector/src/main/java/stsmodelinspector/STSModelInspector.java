@@ -2238,11 +2238,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
-    private static int bronzeAutomatonMiscInfo(AbstractMonster monster) {
-        // Ordinary visible-intent capture follows vanilla's getMove counter.
-        // Dome bypasses this method and reconstructs the pre-roll counter from public executions.
-        Integer turns=readIntField(monster,"numTurns");
-        return turns==null?0:turns;
+    static Integer bronzeAutomatonNativeTurns(Integer numTurns) {
+        // Native now follows vanilla's getMove counter directly. Dome reconstructs
+        // its pre-roll counter from public executions and bypasses this accessor.
+        return numTurns == null || numTurns < 0 || numTurns > 4 ? null : numTurns;
+    }
+
+    private static Integer bronzeAutomatonMiscInfo(AbstractMonster monster) {
+        return bronzeAutomatonNativeTurns(readIntField(monster, "numTurns"));
     }
 
     private static Integer monsterUniquePower0(AbstractMonster monster) {

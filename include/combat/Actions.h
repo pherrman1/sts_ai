@@ -136,7 +136,8 @@ namespace sts {
     X(TransmutationCardsInHand, Random,rng, int,count, bool,upgraded) \
     X(IncreasePlayerOrbSlots, int,count) \
     X(BurnIncreaseAction) \
-    X(SetMonsterMove, int,monsterIdx, MMID,move)
+    X(SetMonsterMove, int,monsterIdx, MMID,move) \
+    X(HexaghostBurnIncrease)
 
 #define STS_ACT_NARG(...) STS_ACT_NARG_(__VA_ARGS__, STS_ACT_RSEQ())
 #define STS_ACT_NARG_(...) STS_ACT_ARG_N(__VA_ARGS__)
@@ -330,6 +331,7 @@ namespace sts {
         static Action DualityAction(); // Duality Relic
 
         static Action ApotheosisAction();
+        static Action HexaghostBurnIncrease();
         static Action DropkickAction(int targetIdx);
         static Action EnlightenmentAction(bool upgraded);
         static Action EntrenchAction();

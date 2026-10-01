@@ -92,6 +92,22 @@ public final class CombatBoundaryTest {
                     || guardian.getDeclaredField("isOpen").getType() != boolean.class)
                 throw new AssertionError("Guardian JAR field types changed");
         } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
+        // Native uses vanilla numTurns, including zero after Hyper Beam at A19.
+        for (int turns : new int[]{0, 1, 2, 3, 4}) {
+            Integer captured = STSModelInspector.bronzeAutomatonNativeTurns(turns);
+            if (captured == null || captured != turns)
+                throw new AssertionError("Automaton counter " + turns);
+        }
+        if (STSModelInspector.bronzeAutomatonNativeTurns(null) != null
+                || STSModelInspector.bronzeAutomatonNativeTurns(-1) != null
+                || STSModelInspector.bronzeAutomatonNativeTurns(5) != null)
+            throw new AssertionError("Automaton missing or invalid numTurns accepted");
+        try {
+            Class<?> automatonClass = Class.forName("com.megacrit.cardcrawl.monsters.city.BronzeAutomaton", false,
+                    CombatBoundaryTest.class.getClassLoader());
+            if (automatonClass.getDeclaredField("numTurns").getType() != int.class)
+                throw new AssertionError("BronzeAutomaton numTurns field type changed");
+        } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
         if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true)
                 || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true)
                 || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true))
