@@ -93,7 +93,19 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
             native["kind"]=kinds[static_cast<int>(a.getRewardsActionType())];
             if(g.screenState==ScreenState::REWARDS&&a.getRewardsActionType()==RT::CARD){native["group"]=a.getIdx1();native["index"]=a.getIdx2();}
         }
-        o["liveChoices"].push_back({{"nativeAction",native},{"liveAction",{{"kind","choose"},{"choiceIndex",ix++}}}});
+        J liveAction={{"kind","choose"},{"choiceIndex",ix++}};
+        if(g.screenState==ScreenState::REWARDS && !g.hasRelic(RelicId::SINGING_BOWL)) {
+            const auto &r=g.info.rewardsContainer;
+            const bool finalCard=r.cardRewardCount==1 && r.goldRewardCount==0 && r.relicCount==0
+                && r.potionCount==0 && !r.emeraldKey && !r.sapphireKey;
+            if(finalCard && (a.getRewardsActionType()==RT::SKIP
+                    || (a.getRewardsActionType()==RT::CARD && a.getIdx2()==5)))
+                // Java exposes one Skip button for these two native aliases.
+                // Distinct synthetic choose indices would fail MCTS mapping
+                // validation when it merges the equivalent search choices.
+                liveAction={{"kind","skip"}};
+        }
+        o["liveChoices"].push_back({{"nativeAction",native},{"liveAction",liveAction}});
     }
     if (g.screenState == ScreenState::SHOP_ROOM) {
         const auto &s = g.info.shop;
@@ -143,7 +155,8 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "final_card_boundary");
         for (auto &choice : wire["ooc"]["liveChoices"]) {
             const auto &native = choice["nativeAction"];
-            if (native["kind"] == "skip" || (native["kind"] == "card" && native["index"] == 5))
+            if (variant != 0 && (native["kind"] == "skip"
+                    || (native["kind"] == "card" && native["index"] == 5)))
                 choice["liveAction"] = {{"kind", "skip"}};
         }
         advisor::LiveOocStateV1 live;
@@ -509,6 +522,22 @@ int main(int argc,char **argv){try{
         check(sa.supported==sb.supported&&sa.complete==sb.complete&&sa.actions.size()==sb.actions.size(),name+" semantic support");
         for(std::size_t i=0;i<sa.actions.size();++i){check(search::canonicalOocSemanticActionKey(sa.actions[i])==search::canonicalOocSemanticActionKey(sb.actions[i]),name+" semantic key");
             check(search::oocSemanticActionPayloadJson(sa.actions[i])==search::oocSemanticActionPayloadJson(sb.actions[i]),name+" semantic payload");}
+        if(source.screenState==ScreenState::REWARDS) {
+            // Exercise the exported fixture's MCTS mapping without a search.
+            // V4 keeps both skip primitives, so V4 parity alone cannot detect
+            // an incorrect distinct live click for equivalent skip aliases.
+            const auto bindings=search::enumerateOocSemanticPrimitiveBindings(live.projected);
+            check(bindings.supported && bindings.complete,name+" reward bindings incomplete");
+            const auto captured=advisor::liveOocPrimitiveBits(live);
+            const std::set<std::uint32_t> capturedBits(captured.begin(),captured.end());
+            std::set<std::string> retained;
+            std::vector<std::uint32_t> representativeBits;
+            for(const auto &binding:bindings.bindings)
+                if(capturedBits.count(binding.primitiveBits)
+                        && retained.insert(search::canonicalOocMctsChoiceKey(binding.semantic,&live.projected)).second)
+                    representativeBits.push_back(binding.primitiveBits);
+            advisor::validateLiveOocActionSet(live,representativeBits,true);
+        }
         auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
         const bool v4Unsupported = name.rfind("unsupported_",0)==0
