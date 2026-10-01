@@ -52,6 +52,21 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             b.predict([[2]], ['gold'])
 
+    def test_native_parity_fixture_is_lf_only(self):
+        names = ['curHp'] + [f'feature{i}' for i in range(1016)]
+        X = np.zeros((2, 1017), dtype=np.float32)
+        X[:, 0] = [2, 6]
+        expected = pipeline.Baseline(self.b0).predict(X, names)
+        def run(command, **kwargs):
+            raw = Path(command[3]).read_bytes()
+            self.assertNotIn(b'\r', raw)
+            self.assertEqual(raw.count(b'\n'), 3)
+            return type('Result', (), {'stdout': '\n'.join(
+                f'{i},{p}' for i, p in enumerate(expected))})()
+        with patch.object(pipeline.subprocess, 'run', side_effect=run):
+            result = pipeline.native_parity(X, names, self.b0, model=self.b0)
+        self.assertEqual(result['max_abs_error'], 0.)
+
     def test_unfrozen_test_fails_before_corpus_access(self):
         with patch.object(pipeline, 'validated_dataset') as access:
             with self.assertRaises(FileNotFoundError):

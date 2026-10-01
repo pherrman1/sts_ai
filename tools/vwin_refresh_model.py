@@ -88,7 +88,7 @@ def native_parity(X, feature_names, executable, model=B0, tolerance=1e-4):
     with tempfile.TemporaryDirectory() as temp:
         fixture = Path(temp) / "parity.csv"
         with fixture.open("w", newline="") as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, lineterminator="\n")
             writer.writerow(["chosen", *feature_names, "won"])
             writer.writerows([1, *row, 0] for row in X)
         result = subprocess.run([str(Path(executable).resolve()), "winnettest",
