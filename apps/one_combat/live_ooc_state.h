@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include "live_ooc_importer.h"
 #include "run_features.h"
+#include "question_room_belief.h"
 #include "game/GameContext.h"
 #include <optional>
 #include <cstdlib>
@@ -50,7 +51,10 @@ struct LiveOocStateV1 {
         sts::GameContext state{};
         PathHistory path;
         int currentActEventVisits = 0;
+        // Complete means qualified under public history; posterior size >1
+        // remains latent and is sampled once per root particle.
         bool questionHistoryComplete = false;
+        QuestionChancePosterior questionChancePosterior;
         bool mapHistoryComplete = false;
         bool supported = true;
         std::string reason;

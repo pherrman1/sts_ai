@@ -242,8 +242,8 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
             wm.miscInfo = m.miscInfo;
         } else if (m.idx >= 0 && knowledge.hasPublicMonsterState[i]) {
             // Do not read the concrete immediate live roll under Runic Dome.
-            // For a deferred chain this is the public pre-roll snapshot; once
-            // materialized (e.g. Spot Weakness) it is the public result.
+            // A Spot Weakness predicate leaves this pre-roll snapshot intact;
+            // only an executed monster action publishes the full move.
             wm.moveHistory = knowledge.publicMonsterMoveHistory[i];
             wm.miscInfo = knowledge.publicMonsterMiscInfo[i];
         } else if (m.idx >= 0) {
@@ -259,6 +259,11 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
         if (out.intentsHidden) {
             wm.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
             wm.pendingRollInputs = toWire(knowledge.pendingHiddenIntentInputs[i]);
+            for (const auto &r : knowledge.pendingHiddenIntentInputHistory[i]) {
+                wm.pendingRollInputHistory.push_back(toWire(r));
+            }
+            if (wm.pendingRollInputHistory.size() == 1) wm.pendingRollInputHistory.clear();
+            wm.pendingAttackPredicates = knowledge.pendingAttackPredicates[i];
             // Looter/Mugger sample their next move directly inside takeTurn,
             // rather than through rollMove. At a post-turn Runic root the
             // live concrete result is hidden, so carry only the public rule

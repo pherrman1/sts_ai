@@ -343,6 +343,9 @@ namespace sts::search {
                 m.miscInfo = knowledge.publicMonsterMiscInfo[i];
                 m.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
                 m.pendingRollInputs = knowledge.pendingHiddenIntentInputs[i];
+                m.pendingRollInputHistory = knowledge.pendingHiddenIntentInputHistory[i];
+                if (m.pendingRollInputHistory.size() == 1) m.pendingRollInputHistory.clear();
+                m.pendingAttackPredicates = knowledge.pendingAttackPredicates[i];
                 m.pendingDirectMoveChoice = 0;
                 if (knowledge.hasUnrepresentableHiddenIntent[i]) {
                     // Looter/Mugger choose their next move directly after a Mug.

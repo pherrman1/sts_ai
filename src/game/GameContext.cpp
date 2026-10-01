@@ -2125,6 +2125,26 @@ Event GameContext::generateEvent(Random eventRngCopy) {
     }
 }
 
+Room GameContext::questionRoomOutcomeForCell(int cell, float monster, float shop,
+                                               float treasure, bool previousRoomWasShop) {
+    assert(cell >= 0 && cell < 100);
+    // EventHelper.roll fills these three intervals in order. Its lower bound
+    // clips at 99, not 100: a later class can overwrite the final cell even
+    // when its own width is zero after an earlier interval saturated the table.
+    const int widths[] = {static_cast<int>(monster * 100.0f),
+                          previousRoomWasShop ? 0 : static_cast<int>(shop * 100.0f),
+                          static_cast<int>(treasure * 100.0f)};
+    const Room rooms[] = {Room::MONSTER, Room::SHOP, Room::TREASURE};
+    Room result = Room::EVENT;
+    int start = 0;
+    for (int i = 0; i < 3; ++i) {
+        const int end = start + widths[i];
+        if (cell >= std::min(99, start) && cell < std::min(100, end)) result = rooms[i];
+        start = end;
+    }
+    return result;
+}
+
 Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
     float roll = eventRng.random();
     Room choice = Room::NONE;
@@ -2140,21 +2160,8 @@ Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
     }
 
     if (choice != sts::Room::TREASURE) {
-        int monsterSize = (int) (monsterChance * 100);
-        int shopSize = (lastRoomWasShop ? 0 : (int) (shopChance * 100)) + monsterSize;
-        int treasureSize = (int) (treasureChance * 100) + shopSize;
-
-        int idx = (int) (roll * 100);
-
-        if (idx < monsterSize) {
-            choice = Room::MONSTER;
-        } else if (idx < shopSize) {
-            choice = Room::SHOP;
-        } else if (idx < treasureSize) {
-            choice = Room::TREASURE;
-        } else {
-            choice = Room::EVENT;
-        }
+        choice = questionRoomOutcomeForCell(static_cast<int>(roll * 100.0f),
+                                            monsterChance, shopChance, treasureChance, lastRoomWasShop);
     }
 
     if (choice == Room::MONSTER) {

@@ -10,6 +10,9 @@ final class PendingCardQueueCapture {
         Object identity;
         String cardJson;
         String uuid;
+        String cardId;
+        boolean inHand;
+        boolean vanillaEndTurnCard;
         Integer target;
         boolean hasMonster;
         boolean requiresTarget;
@@ -32,8 +35,15 @@ final class PendingCardQueueCapture {
     }
 
     static Result capture(List<Item> items, Object processedItem) {
+        return capture(items,processedItem,false,false);
+    }
+
+    static Result capture(List<Item> items, Object processedItem, boolean codexEndTurn, boolean unceasingTop) {
         if (items == null) return new Result(null, "queue_unavailable");
         if (items.size() > CAPACITY) return new Result(null, "queue_capacity");
+        if(codexEndTurn && !items.isEmpty() && unceasingTop)
+            return new Result(null,"end_turn_card_continuation");
+        java.util.Set<String> endTurnCards = new java.util.HashSet<>();
         StringBuilder out = new StringBuilder("[");
         java.util.Set<Object> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object,Boolean>());
         for (Item item : items) {
@@ -45,10 +55,15 @@ final class PendingCardQueueCapture {
             boolean endTurn = item.cardJson == null;
             if (!endTurn && (item.uuid == null || item.uuid.isEmpty() || "null".equals(item.uuid)))
                 return new Result(null, "card_identity");
-            // Java's flag is an Unceasing Top end-turn hook, NOT native's
-            // null-card end-turn marker. No-trigger status payloads (Regret's
-            // hand count in particular) need their own continuation contract.
-            if (item.endTurnAutoPlay || !item.triggerOnUse)
+            // This flag is Java's Unceasing Top hook, NOT a null-card marker.
+            // Only an observed Codex end-turn owns this bounded status queue.
+            if(codexEndTurn) {
+                if(endTurn || item.triggerOnUse || !item.endTurnAutoPlay || !item.inHand
+                        || !item.vanillaEndTurnCard || !("Burn".equals(item.cardId) || "Decay".equals(item.cardId))
+                        || item.hasMonster || item.requiresTarget || item.target!=null || item.ignoreEnergyTotal
+                        || item.freeToPlay || item.randomTarget || item.autoplay || item.purgeOnUse || item.exhaustOnUse
+                        || !endTurnCards.add(item.uuid)) return new Result(null,"end_turn_card_continuation");
+            } else if (item.endTurnAutoPlay || !item.triggerOnUse)
                 return new Result(null, "end_turn_card_continuation");
             if (item.energyOnUse < 0 || item.energyOnUse > 999)
                 return new Result(null, "queue_energy");
@@ -70,6 +85,8 @@ final class PendingCardQueueCapture {
                     .append(",\"randomTarget\":").append(item.randomTarget)
                     .append(",\"autoplay\":").append(item.autoplay)
                     .append(",\"regretCardCount\":0")
+                    .append(",\"endTurnAutoPlay\":").append(item.endTurnAutoPlay)
+                    .append(",\"noTriggerOwner\":\"").append(codexEndTurn?"codex_end_turn":"").append("\"")
                     .append(",\"purgeOnUse\":").append(item.purgeOnUse)
                     .append(",\"exhaustOnUse\":").append(item.exhaustOnUse).append('}');
         }

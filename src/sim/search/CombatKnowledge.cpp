@@ -64,6 +64,13 @@ void emitKnownMonsterIntentSet(
     emitCombatKnowledgeEvent(event);
 }
 
+void emitMonsterAttackPredicateObserved(int monsterIdx, bool attacking) {
+    CombatKnowledgeEvent event {CombatKnowledgeEventType::HIDDEN_MONSTER_ATTACK_PREDICATE_OBSERVED};
+    event.monsterIdx = monsterIdx;
+    event.attackPredicate = attacking;
+    emitCombatKnowledgeEvent(event);
+}
+
 void emitUnrepresentableHiddenMonsterIntent(int monsterIdx) {
     CombatKnowledgeEvent event {CombatKnowledgeEventType::UNREPRESENTABLE_HIDDEN_MONSTER_INTENT};
     event.monsterIdx = monsterIdx;
@@ -106,6 +113,8 @@ void CombatKnowledgeState::initializeFromLiveBattle(const BattleContext &bc) {
     fullDrawPileOrderObserved = bc.player.hasRelic<RelicId::FROZEN_EYE>();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    for (auto &v : pendingHiddenIntentInputHistory) v.clear();
+    for (auto &v : pendingAttackPredicates) v.clear();
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
     hasPublicMonsterState.fill(false);
@@ -125,6 +134,8 @@ void CombatKnowledgeState::beginCombatInitialization() {
     knownBottom.clear();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    for (auto &v : pendingHiddenIntentInputHistory) v.clear();
+    for (auto &v : pendingAttackPredicates) v.clear();
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
     hasPublicMonsterState.fill(false);
@@ -281,10 +292,16 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
             publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
             hasPublicMonsterState[event.monsterIdx] = true;
         }
-        if (pendingHiddenIntentRolls[event.monsterIdx] < 255) {
-            ++pendingHiddenIntentRolls[event.monsterIdx];
+        if (pendingHiddenIntentRolls[event.monsterIdx] == 255) {
+            ++consistencyFailureCount;
+            return;
         }
+        ++pendingHiddenIntentRolls[event.monsterIdx];
         pendingHiddenIntentInputs[event.monsterIdx] = event.hiddenIntentInputs;
+        // Roll-time miscInfo after the first hidden roll is itself private.
+        // Replay evolves it from the public pre-chain value instead.
+        pendingHiddenIntentInputs[event.monsterIdx].miscInfo = publicMonsterMiscInfo[event.monsterIdx];
+        pendingHiddenIntentInputHistory[event.monsterIdx].push_back(pendingHiddenIntentInputs[event.monsterIdx]);
         ++generation;
         return;
     case CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_MATERIALIZED:
@@ -296,6 +313,8 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         pendingHiddenIntentRolls[event.monsterIdx] = 0;
         pendingHiddenIntentInputs[event.monsterIdx] = {};
+        pendingHiddenIntentInputHistory[event.monsterIdx].clear();
+        pendingAttackPredicates[event.monsterIdx].clear();
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
         publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
@@ -315,12 +334,33 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         pendingHiddenIntentRolls[event.monsterIdx] = 0;
         pendingHiddenIntentInputs[event.monsterIdx] = {};
+        pendingHiddenIntentInputHistory[event.monsterIdx].clear();
+        pendingAttackPredicates[event.monsterIdx].clear();
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
         publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
         hasUnrepresentableHiddenIntent[event.monsterIdx] = false;
         ++generation;
         return;
+    case CombatKnowledgeEventType::HIDDEN_MONSTER_ATTACK_PREDICATE_OBSERVED: {
+        if (!hiddenMonsterIntents) return;
+        const int idx = event.monsterIdx;
+        if (idx < 0 || idx >= 5 || !hasPublicMonsterState[idx]) {
+            ++consistencyFailureCount;
+            return;
+        }
+        const int step = pendingHiddenIntentRolls[idx] + (hasUnrepresentableHiddenIntent[idx] ? 1 : 0);
+        if (step > 0) {
+            auto &observations = pendingAttackPredicates[idx];
+            if (observations.empty() || observations.back().first != step) {
+                observations.emplace_back(step, event.attackPredicate);
+            } else if (observations.back().second != event.attackPredicate) {
+                ++consistencyFailureCount;
+            }
+        }
+        ++generation;
+        return;
+    }
     case CombatKnowledgeEventType::UNREPRESENTABLE_HIDDEN_MONSTER_INTENT:
         if (!hiddenMonsterIntents) return;
         if (event.monsterIdx < 0 || event.monsterIdx >= static_cast<int>(hasUnrepresentableHiddenIntent.size())) {

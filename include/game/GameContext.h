@@ -333,6 +333,9 @@ namespace sts {
         Event getShrine(Random &eventRngCopy);
         Event getEvent(Random &eventRngCopy);
         Event generateEvent(Random eventRngCopy);
+        // Vanilla ordinary-run EventHelper table, before Tiny Chest/Juzu effects.
+        static Room questionRoomOutcomeForCell(int cell, float monster, float shop,
+                                              float treasure, bool previousRoomWasShop);
         Room getEventRoomOutcomeHelper(bool lastRoomWasShop);
 
         // actions

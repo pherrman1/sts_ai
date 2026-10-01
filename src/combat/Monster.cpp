@@ -5,6 +5,7 @@
 #include "combat/Monster.h"
 
 #include "game/Random.h"
+#include <stdexcept>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
@@ -690,10 +691,15 @@ void Monster::rollMove(BattleContext &bc) {
     if (bc.intentsHidden) {
         // Search under Runic Dome: defer the roll until the move is used or
         // queried (materializePendingMove), so the search cannot see it early.
-        pendingRollInputs = inputs;
-        if (pendingMoveRolls < 255) {
-            ++pendingMoveRolls;
+        if (pendingMoveRolls == 255) throw std::runtime_error("hidden intent roll chain overflow");
+        if (pendingMoveRolls != 0) {
+            if (pendingRollInputHistory.empty()) {
+                pendingRollInputHistory.assign(pendingMoveRolls, pendingRollInputs);
+            }
+            pendingRollInputHistory.push_back(inputs);
         }
+        pendingRollInputs = inputs;
+        ++pendingMoveRolls;
         return;
     }
     rollMoveFromInputs(bc, inputs);
@@ -712,27 +718,59 @@ void Monster::rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in)
     setMove(move);
 }
 
+bool Monster::observeAttackPredicate(BattleContext &bc) {
+    const int step = pendingMoveRolls + (pendingDirectMoveChoice != 0 ? 1 : 0);
+    if (!bc.intentsHidden || step == 0) return isAttacking();
+    if (!pendingAttackPredicates.empty() && pendingAttackPredicates.back().first == step) {
+        return pendingAttackPredicates.back().second;
+    }
+    // Sample only to obtain the public predicate; restore the information set
+    // before returning to a decision node. The isolated search RNG advances.
+    const Monster hidden = *this;
+    materializePendingMove(bc);
+    const bool attacking = isAttacking();
+    *this = hidden;
+    pendingAttackPredicates.emplace_back(step, attacking);
+    return attacking;
+}
+
 void Monster::materializePendingMove(BattleContext &bc) {
-    // Replays deferred rolls in order; moveHistory and miscInfo evolve through
-    // the chain as immediate rolls would have. Consumes aiRng, so inside the
-    // search this point is the chance event for the hidden intent.
     const int n = pendingMoveRolls;
-    pendingMoveRolls = 0;
-    MonsterRollInputs in = pendingRollInputs;
-    pendingRollInputs = MonsterRollInputs{};
-    for (int i = 0; i < n; ++i) {
-        rollMoveFromInputs(bc, in);
-        in.miscInfo = miscInfo;
-    }
-    if (pendingDirectMoveChoice != 0) {
-        const auto choice = pendingDirectMoveChoice;
-        pendingDirectMoveChoice = 0;
-        if (choice == 1) {
-            setMove(bc.aiRng.randomBoolean(0.5f) ? MMID::LOOTER_SMOKE_BOMB : MMID::LOOTER_LUNGE);
-        } else {
-            setMove(bc.aiRng.randomBoolean(0.5f) ? MMID::MUGGER_SMOKE_BOMB : MMID::MUGGER_LUNGE);
+    const auto direct = pendingDirectMoveChoice;
+    if (n == 0 && direct == 0) return;
+    const Monster hidden = *this;
+    // Rejection sampling of complete latent chains gives the exact posterior
+    // conditioned on every public predicate, including before a reactive
+    // reroll. Rejecting never resets the isolated RNG. A pathological or
+    // impossible supplied constraint fails closed, never returns a biased move.
+    search::CombatKnowledgeMoveRollScope rollScope;
+    for (int attempt = 0; attempt < 100000; ++attempt) {
+        *this = hidden;
+        bool accepted = true;
+        auto matches = [&](int step) {
+            for (const auto &[at, attack] : pendingAttackPredicates) {
+                if (at == step && isAttacking() != attack) return false;
+            }
+            return true;
+        };
+        for (int i = 0; i < n; ++i) {
+            auto in = pendingRollInputHistory.empty() ? pendingRollInputs : pendingRollInputHistory.at(i);
+            in.miscInfo = miscInfo;
+            rollMoveFromInputs(bc, in);
+            if (!matches(i + 1)) { accepted = false; break; }
         }
+        if (!accepted) continue;
+        if (direct != 0) {
+            setMove(direct == 1
+                ? (bc.aiRng.randomBoolean(0.5f) ? MMID::LOOTER_SMOKE_BOMB : MMID::LOOTER_LUNGE)
+                : (bc.aiRng.randomBoolean(0.5f) ? MMID::MUGGER_SMOKE_BOMB : MMID::MUGGER_LUNGE));
+            if (!matches(n + 1)) continue;
+        }
+        cancelPendingMove();
+        return;
     }
+    *this = hidden;
+    throw std::runtime_error("hidden intent predicate posterior sampling exhausted");
 }
 
 void Monster::cancelPendingMove() {
@@ -742,6 +780,8 @@ void Monster::cancelPendingMove() {
     pendingMoveRolls = 0;
     pendingRollInputs = MonsterRollInputs{};
     pendingDirectMoveChoice = 0;
+    pendingRollInputHistory.clear();
+    pendingAttackPredicates.clear();
 }
 
 void Monster::setMove(MMID moveId) {

@@ -23,10 +23,34 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlayerWire, characterClass, gold, curHp, maxH
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MonsterRollInputsWire, curHp, maxHp, knightCurHp,
     knightMaxHp, monsterTurnNumber, miscInfo, aliveCount, monstersAlive, knightAlive,
     playerConstricted, asleep, halfDead)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MonsterWire, idx, id, curHp, maxHp, block, isEscapingB,
-    halfDead, escapeNext, moveHistory, statusBits, smallPowers, strength, vulnerable, weak,
-    uniquePower0, uniquePower1, miscInfo, pendingMoveRolls, pendingDirectMoveChoice,
-    pendingRollInputs)
+inline void to_json(nlohmann::json &j, const MonsterWire &m) {
+    j = {{"idx", m.idx}, {"id", m.id}, {"curHp", m.curHp}, {"maxHp", m.maxHp}, {"block", m.block}, {"isEscapingB", m.isEscapingB}, {"halfDead", m.halfDead}, {"escapeNext", m.escapeNext}, {"moveHistory", m.moveHistory}, {"statusBits", m.statusBits}, {"smallPowers", m.smallPowers}, {"strength", m.strength}, {"vulnerable", m.vulnerable}, {"weak", m.weak}, {"uniquePower0", m.uniquePower0}, {"uniquePower1", m.uniquePower1}, {"miscInfo", m.miscInfo}, {"pendingMoveRolls", m.pendingMoveRolls}, {"pendingDirectMoveChoice", m.pendingDirectMoveChoice}, {"pendingRollInputs", m.pendingRollInputs}, {"pendingRollInputHistory", m.pendingRollInputHistory}, {"pendingAttackPredicates", m.pendingAttackPredicates}};
+}
+inline void from_json(const nlohmann::json &j, MonsterWire &m) {
+    j.at("idx").get_to(m.idx);
+    j.at("id").get_to(m.id);
+    j.at("curHp").get_to(m.curHp);
+    j.at("maxHp").get_to(m.maxHp);
+    j.at("block").get_to(m.block);
+    j.at("isEscapingB").get_to(m.isEscapingB);
+    j.at("halfDead").get_to(m.halfDead);
+    j.at("escapeNext").get_to(m.escapeNext);
+    j.at("moveHistory").get_to(m.moveHistory);
+    j.at("statusBits").get_to(m.statusBits);
+    j.at("smallPowers").get_to(m.smallPowers);
+    j.at("strength").get_to(m.strength);
+    j.at("vulnerable").get_to(m.vulnerable);
+    j.at("weak").get_to(m.weak);
+    j.at("uniquePower0").get_to(m.uniquePower0);
+    j.at("uniquePower1").get_to(m.uniquePower1);
+    j.at("miscInfo").get_to(m.miscInfo);
+    j.at("pendingMoveRolls").get_to(m.pendingMoveRolls);
+    j.at("pendingDirectMoveChoice").get_to(m.pendingDirectMoveChoice);
+    j.at("pendingRollInputs").get_to(m.pendingRollInputs);
+    m.hasPredicateKnowledgeFields = j.contains("pendingRollInputHistory") && j.contains("pendingAttackPredicates");
+    m.pendingRollInputHistory = j.value("pendingRollInputHistory", std::vector<MonsterRollInputsWire>{});
+    m.pendingAttackPredicates = j.value("pendingAttackPredicates", std::vector<std::pair<int, bool>>{});
+}
 inline void to_json(nlohmann::json &j, const CardSelectWire &s) {
     j = {{"cards", s.cards}, {"canPickZero", s.canPickZero}, {"canPickAnyNumber", s.canPickAnyNumber},
          {"pickCount", s.pickCount}, {"data0", s.data0}, {"setCostToZero", s.setCostToZero},
@@ -64,11 +88,17 @@ inline nlohmann::json battleStateWireEnvelope(const BattleStateWire &wire) {
 inline BattleStateWire battleStateWireFromEnvelope(const nlohmann::json &envelope) {
     if (envelope.value("corpus_schema", std::string{}) != "silver_leaf_wire_v1")
         throw std::invalid_argument("incompatible Silver corpus schema");
-    if (envelope.value("wire_version", 0u) != BattleStateWire::kVersion)
-        throw std::invalid_argument("incompatible Silver BattleStateWire version");
+    const auto version = envelope.value("wire_version", 0u);
     auto wire = envelope.at("state").get<BattleStateWire>();
-    if (!wire.valid || wire.version != BattleStateWire::kVersion)
-        throw std::invalid_argument("invalid Silver BattleStateWire snapshot");
+    if (!wire.valid || wire.version != version ||
+            (version != BattleStateWire::kVersion && !(version == 2 && !wire.intentsHidden)))
+        throw std::invalid_argument("invalid or incompatible Silver BattleStateWire snapshot");
+    if (wire.intentsHidden) for (const auto &m : wire.monsters) {
+        if (!m.hasPredicateKnowledgeFields ||
+                (m.pendingMoveRolls > 1 && m.pendingRollInputHistory.size() != m.pendingMoveRolls))
+            throw std::invalid_argument("incomplete Silver hidden intent knowledge");
+    }
+    wire.version = BattleStateWire::kVersion;
     return wire;
 }
 

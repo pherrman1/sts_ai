@@ -1526,16 +1526,11 @@ void ActData_SwordBoomerangAction::operator()(BattleContext &bc) const {
     }
 
 void ActData_SpotWeaknessAction::operator()(BattleContext &bc) const {
-        // Spot Weakness queries the current intent. Under Runic Dome this is
-        // an epistemic materialization point just like the monster acting.
-        // The observer captures the now-public move before isAttacking reads
-        // it; no simulator decision or RNG stream is affected.
+        // Vanilla exposes strength/no-strength, not the hidden move or damage.
         auto &monster = bc.monsters.arr[target];
-        monster.materializePendingMove(bc);
-        search::emitHiddenMonsterIntentMaterialized(
-            monster.idx, static_cast<std::int16_t>(monster.moveHistory[0]),
-            static_cast<std::int16_t>(monster.moveHistory[1]), monster.miscInfo);
-        if (bc.monsters.arr[target].isAttacking()) {
+        const bool attacking = monster.observeAttackPredicate(bc);
+        search::emitMonsterAttackPredicateObserved(monster.idx, attacking);
+        if (attacking) {
             bc.player.buff<PS::STRENGTH>(strength);
         }
     }

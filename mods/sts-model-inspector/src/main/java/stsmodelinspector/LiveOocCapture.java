@@ -507,11 +507,19 @@ final class LiveOocCapture {
             PublicHistoryRecovery.annotateJuzu(questions.outcomes,
                     CardCrawlGame.metricData.relics_obtained, CardCrawlGame.metricData.event_choices,
                     AbstractDungeon.player.hasRelic("Juzu Bracelet"), AbstractDungeon.floorNum);
+            PublicHistoryRecovery.annotateTinyChest(questions,
+                    CardCrawlGame.metricData.relics_obtained,CardCrawlGame.metricData.event_choices,
+                    AbstractDungeon.player.hasRelic("Tiny Chest"),
+                    AbstractDungeon.player.hasRelic("Tiny Chest")?AbstractDungeon.player.getRelic("Tiny Chest").counter:0,
+                    AbstractDungeon.floorNum);
             QuestionRoomObserver.annotate(AbstractDungeon.player,Settings.seed,
                     AbstractDungeon.floorNum,questions.outcomes);
         }
+        if(!Settings.isDailyRun && !Settings.isEndless && !Settings.isTrial)
+            p.put("questionRoomRules","vanilla_ordinary_v1");
         p.put("questionOutcomes", questions.outcomes);
         p.put("questionHistoryComplete", exact && questions.complete
+                && !Settings.isDailyRun && !Settings.isEndless && !Settings.isTrial
                 && questions.outcomes.size() == actVisits[2]);
         List<String> acquiredRelics = new ArrayList<>();
         List<String> priorEvents = new ArrayList<>();

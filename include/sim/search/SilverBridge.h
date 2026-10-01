@@ -102,6 +102,11 @@ struct MonsterWire {
     // which public direct-choice rule is pending, never its live outcome.
     std::uint8_t pendingDirectMoveChoice = 0;
     MonsterRollInputsWire pendingRollInputs {};
+    std::vector<MonsterRollInputsWire> pendingRollInputHistory;
+    std::vector<std::pair<int, bool>> pendingAttackPredicates;
+    // Decoder proof, not serialized: only legacy non-hidden states may omit
+    // the v3 knowledge fields. An absent field must never erase a constraint.
+    bool hasPredicateKnowledgeFields = true;
 };
 
 struct CardSelectWire {
@@ -139,7 +144,9 @@ struct CardQueueItemWire {
 
 struct BattleStateWire {
     // Version makes an incompatible protocol fail closed in the vendor bridge.
-    static constexpr std::uint32_t kVersion = 2;
+    static constexpr std::uint32_t kVersion = 3;
+    // v2 has no predicate-only knowledge contract. Only non-hidden v2 states
+    // can be migrated; old Runic roots may already contain a leaked move.
     std::uint32_t version = kVersion;
     bool valid = true;
     // Set only under Frozen Eye; otherwise all draw order travels via PileWire.

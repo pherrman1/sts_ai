@@ -118,8 +118,20 @@ per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
 `moveHistory`, `intent`, and `intentDamage`. A bounded public-history observer
-qualifies single Act-1 Jaw Worm/Cultist encounters within an explicit safe
-card/relic/potion/power domain. Other Dome states remain unsupported.
+qualifies audited ordinary encounters within an explicit safe
+card/relic/potion/power domain. The supported roster includes Jaw Worm, Cultist,
+Fungi Beast, Blue/Red Slaver, medium slimes, small Spike Slime, Sentry and
+ordinary Gremlin Nob; groups require
+every member to qualify and retain stable original slots. Dead slots retain
+executed history; unqualified replacements and escapes remain unsupported.
+Spot Weakness contributes only its publicly revealed attack/nonattack predicate,
+indexed to the pending roll. Fair search conditions hidden move samples on that
+predicate without exposing the actual move or damage. Repeated queries retain
+the same observation; earlier constraints survive subsequent hidden rerolls.
+Silver wire v3 carries this information; legacy v2 is accepted only for roots
+without hidden intents. Binary snapshots use v3 for hidden-intent state while
+ordinary snapshots retain v2 encoding. Impossible predicate constraints fail
+explicitly rather than selecting a fallback move.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
 the bounded reflection helper can read it and are rejected when it cannot.
 The producer maps vanilla `RitualPower.skipFirst` to this field because that
@@ -168,7 +180,15 @@ including an observed empty array, and retains same-UUID generated copies in
 front-first order. It verifies that the processed physical queue item has
 already been removed; unknown subclasses, unsettled queues, invalid targets,
 capacity overflow and unqualified end-turn/no-trigger payloads fail closed.
-A producer-shaped Double Tap/Headbutt fixture checks the copied continuation.
+At a qualified Nilry's Codex end-turn choice, the producer also preserves
+ordered vanilla Burn/Decay objects still in the hand with their no-trigger
+flags. The importer verifies their physical card identity, owning continuation
+and exact flags. Pending block gains precede that damage; lethal damage stops
+the continuation. Unceasing Top and other no-trigger owners/cards remain
+unsupported. Java's `isEndTurnAutoPlay` flag is kept separate from the native
+null-card end-turn marker. A producer-shaped Double Tap/Headbutt fixture checks
+the copied continuation; Codex fixtures check choose/skip, upgraded Burn,
+block order and lethal damage.
 Arbitrary pending action-queue continuations still require their own contracts;
 this change is the card-queue producer slice of issue #328. Boolean monster powers are
 presence states at the importer boundary, so a negative or sentinel Java amount
@@ -632,9 +652,18 @@ room entry; a later known monster reset also removes earlier counter ambiguity.
 For new ordinary transitions, a scoped observer records Juzu's public flash
 inside the room roll and persists true/false/unknown conversion provenance.
 A known conversion resets the monster chance; an observed non-conversion
-uses the normal increment. Legacy Juzu EVENT outcomes without that evidence
-remain ambiguous until a later known reset, rather than becoming guessed
-non-conversions. Tiny Chest's resolved treasure outcome is representable.
+uses the normal increment. Legacy Juzu EVENT outcomes without that evidence can instead form a finite
+weighted belief over reachable monster chances. This requires ordinary vanilla
+room rules, qualified Juzu ownership, the preceding-room shop flag, and proven
+Tiny Chest forcing for every relevant outcome. The belief conditions on all
+observed outcomes using the exact 24-bit room-roll bin counts and native float
+increments. It is conditioning under the fair uniform room-roll prior, not an
+exact posterior over the real run's hidden PRNG state. MCTS samples it once per
+root particle and preserves the sampled counter in descendants. Direct V4 and
+differential tracing reject unresolved mixtures; evaluator diagnostics label
+point, finite-posterior and unqualified cases separately. Missing chronology
+retains the conservative guard until a known reset. Tiny Chest's qualified
+forced treasure outcome is representable.
 Event capture uses source-specific phase tables, public displayed costs and
 exact enabled option slots. This includes Shining Light, Ghosts, Winding Halls,
 and the remaining vanilla Act 1–3 and shrine decision pages. Dead Adventurer

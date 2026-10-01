@@ -1234,6 +1234,9 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::SPIKE_SLIME_S_TACKLE: {
             attackPlayerHelper(bc, asc2 ? 6 : 5);
+            // Vanilla rolls the same deterministic move again and appends it
+            // to history. Preserve both that history and the existing draw.
+            setMove(MMID::SPIKE_SLIME_S_TACKLE);
             bc.addToBot(Actions::NoOpRollMove());
             break;
         }
@@ -2078,8 +2081,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             if (roll >= 40 && !lastTwoMoves(MMID::BLUE_SLAVER_STAB)) {
                 return (MMID::BLUE_SLAVER_STAB);
 
-            } else if ( !lastTwoMoves(MMID::BLUE_SLAVER_RAKE) ||
-                (asc17 && !lastMove(MMID::BLUE_SLAVER_RAKE)) ) {
+            } else if ( asc17 ? !lastMove(MMID::BLUE_SLAVER_RAKE) : !lastTwoMoves(MMID::BLUE_SLAVER_RAKE) ) {
                 return (MMID::BLUE_SLAVER_RAKE);
 
             } else {
@@ -2439,8 +2441,8 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             }
 
             if (asc18) {
-                if (!lastTwoMoves(MMID::GREMLIN_NOB_SKULL_BASH)) {
-                    return (MMID::GREMLIN_NOB_RUSH);
+                if (!lastMove(MMID::GREMLIN_NOB_SKULL_BASH) && !lastMoveBefore(MMID::GREMLIN_NOB_SKULL_BASH)) {
+                    return (MMID::GREMLIN_NOB_SKULL_BASH);
                     break;
                 }
 
@@ -2676,7 +2678,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
                     return (MMID::SENTRY_BEAM);
                 }
             }
-            break;
+            return lastMove(MMID::SENTRY_BEAM) ? MMID::SENTRY_BOLT : MMID::SENTRY_BEAM;
         }
 
         case MonsterId::SHELLED_PARASITE: {
@@ -2811,10 +2813,10 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             } else if (roll >= 75 && !usedEntangle) {
                 return (MMID::RED_SLAVER_ENTANGLE);
 
-            } else if (roll >= 50 && usedEntangle && !lastTwoMoves(MMID::RED_SLAVER_STAB)) {
+            } else if (roll >= 55 && usedEntangle && !lastTwoMoves(MMID::RED_SLAVER_STAB)) {
                 return (MMID::RED_SLAVER_STAB);
 
-            } else if (!lastTwoMoves(MMID::RED_SLAVER_SCRAPE) || (asc17 && !lastMove(MMID::RED_SLAVER_SCRAPE))) {
+            } else if (asc17 ? !lastMove(MMID::RED_SLAVER_SCRAPE) : !lastTwoMoves(MMID::RED_SLAVER_SCRAPE)) {
                 return (MMID::RED_SLAVER_SCRAPE);
 
             } else {

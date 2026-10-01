@@ -394,8 +394,8 @@ restocks, room generation and post-combat rewards. Semantic identity remains
 the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
-The live advisor sets `stopAtMapCheckpoint` only when public question history
-cannot reconstruct native room chances. Qualified histories allow downstream
+The live advisor sets `stopAtMapCheckpoint` when question-room probabilities or
+seen-relic history are unqualified. Qualified histories allow downstream
 MAP choices and use normal native chance updates; root hidden-counter sampling
 never reinitializes a downstream room's inherited probabilities. Live imports
 remove currently visible shop, combat-reward and boss-relic offers from the
@@ -419,6 +419,13 @@ expose an exact pity history. Live MCTS uses an equal public prior instead of a
 fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
 pity reconstruction. Qualified public question-room outcomes reconstruct the
 three room chances, which remain fixed when root particles sample reward pity.
+Qualified legacy Juzu ambiguity is represented by a finite weighted distribution
+over monster chances, conditioned on resolved outcomes, ownership, preceding
+shops and Tiny Chest forcing under the fair uniform 24-bit room-roll prior.
+This distribution is sampled once per root particle and retained downstream;
+it is not a claim about the actual hidden PRNG state. Direct V4 and differential
+tracing reject unresolved mixtures. The native room table uses vanilla's ordered
+clipped fills, including last-cell overwrite when accumulated chances saturate.
 Without that qualified history, room chances use the existing reachable-state
 prior; this is a qualified
 belief particle, not an exact joint posterior.

@@ -1061,6 +1061,29 @@ int main(int argc,char **argv){try{
             if(malformed==3)entry["juzuConverted"]="true";
             check(!advisor::importLiveOocStateV1(invalid,exact).ok,"malformed observed Juzu conversion accepted");
         }
+        auto posterior=juzu;
+        posterior["ooc"]["publicState"]["questionRoomRules"]="vanilla_ordinary_v1";
+        for(auto &entry:posterior["ooc"]["publicState"]["questionOutcomes"]) {
+            entry["juzuOwnedAtEntry"]=true;entry["previousRoomWasShop"]=false;entry["tinyChestForced"]=false;
+        }
+        check(advisor::importLiveOocStateV1(posterior,exact).ok && exact.mctsRoot.supported
+                && exact.mctsRoot.questionHistoryComplete && exact.mctsRoot.mapHistoryComplete
+                && exact.mctsRoot.questionChancePosterior.size()>1,
+                "qualified Juzu posterior was discarded as missing history");
+        const auto distribution=exact.mctsRoot.questionChancePosterior;
+        auto unknownTiny=posterior;unknownTiny["ooc"]["publicState"]["questionOutcomes"][0].erase("tinyChestForced");
+        check(advisor::importLiveOocStateV1(unknownTiny,exact).ok && !exact.mctsRoot.supported,
+                "unknown historical Tiny forcing guessed a prior");
+        auto forced=posterior;forced["ooc"]["publicState"]["questionOutcomes"][2]["tinyChestForced"]=true;
+        check(advisor::importLiveOocStateV1(forced,exact).ok && exact.mctsRoot.supported,
+                "qualified forced Tiny treasure posterior rejected");
+        forced["ooc"]["publicState"]["questionOutcomes"][0]["tinyChestForced"]=true;
+        check(!advisor::importLiveOocStateV1(forced,exact).ok,"zero-likelihood Tiny EVENT accepted");
+        auto impossible=posterior;impossible["ooc"]["publicState"]["questionOutcomes"][1]["previousRoomWasShop"]=true;
+        check(!advisor::importLiveOocStateV1(impossible,exact).ok,"suppressed shop outcome accepted");
+        auto hiddenChanged=posterior;hiddenChanged["observationHash"]="different-public-request-id";
+        check(advisor::importLiveOocStateV1(hiddenChanged,exact).ok && exact.mctsRoot.questionChancePosterior==distribution,
+                "posterior depended on request identity");
         const auto rejects=[&](J invalid) {
             advisor::LiveOocStateV1 rejected;
             check(!advisor::importLiveOocStateV1(invalid,rejected).ok,"malformed question history accepted");

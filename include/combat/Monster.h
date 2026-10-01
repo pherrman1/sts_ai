@@ -8,6 +8,7 @@
 #include <functional>
 #include <random>
 #include <map>
+#include <vector>
 #include <game/Random.h>
 #include <bitset>
 #include <cassert>
@@ -91,6 +92,11 @@ namespace sts {
         std::uint8_t pendingMoveRolls = 0;
         MonsterRollInputs pendingRollInputs;
         std::uint8_t pendingDirectMoveChoice = 0;
+        // Public roll-time inputs and Spot Weakness predicates, indexed by
+        // completed roll count (the direct Looter/Mugger choice is count+1).
+        // Never store the concrete hidden move in these observations.
+        std::vector<MonsterRollInputs> pendingRollInputHistory;
+        std::vector<std::pair<int, bool>> pendingAttackPredicates;
 
         Monster() = default;
         Monster(const Monster& rhs) = default;
@@ -168,6 +174,7 @@ namespace sts {
         [[nodiscard]] MMID getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int &monsterData, int roll) const;
         [[nodiscard]] MonsterRollInputs captureRollInputs(const BattleContext &bc) const;
         void rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in);
+        bool observeAttackPredicate(BattleContext &bc);
         void materializePendingMove(BattleContext &bc);  // evaluates deferred rolls; no-op when none
         void cancelPendingMove();                        // a forced move override discards them
         // The Guardian's Mode Shift trigger without its 20 block (the caller queues it).

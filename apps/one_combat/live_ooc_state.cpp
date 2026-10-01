@@ -407,10 +407,17 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     for (const auto &relic : array(publicState, "acquiredRelics", 181))
         juzuWasOwned |= id<RelicId>(relic,RelicId::INVALID)==RelicId::JUZU_BRACELET;
     bool questionMonsterChanceAmbiguous=false;
+    QuestionRoomBelief questionBelief;
+    bool questionBeliefQualified=false;
     if(questionHistoryComplete) {
         const auto &outcomes=array(publicState,"questionOutcomes",100);
         require(outcomes.size()==static_cast<std::size_t>(eventVisits),
                 "complete question history length differs from event visits");
+        questionBeliefQualified=publicState.value("questionRoomRules",std::string())=="vanilla_ordinary_v1"
+            && std::all_of(outcomes.begin(),outcomes.end(),[](const J &entry) {
+            return entry.contains("previousRoomWasShop") && entry.contains("tinyChestForced")
+                && entry.contains("juzuOwnedAtEntry");
+        });
         int previousFloor=actStartFloor;
         root.monsterChance=0.1f;
         root.shopChance=0.03f;
@@ -437,6 +444,13 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
             require(!conversionKnown || ownershipKnown,"Juzu conversion lacks observed ownership");
             require(!converted || (juzuAtEntry && outcome==Room::EVENT),
                     "Juzu conversion contradicts public room state");
+            // All latent states use exact vanilla bin likelihoods under the
+            // fair room-roll prior, including conditioning on non-EVENT rooms.
+            if(questionBeliefQualified) {
+                require(questionBelief.condition(outcome,juzuAtEntry,boolean(entry,"previousRoomWasShop"),
+                            boolean(entry,"tinyChestForced"),conversionKnown?(converted?1:0):-1),
+                        "public question history has zero likelihood under qualified room rules");
+            }
             if(outcome==Room::MONSTER || converted) questionMonsterChanceAmbiguous=false;
             else if(outcome==Room::EVENT && juzuAtEntry && !conversionKnown) questionMonsterChanceAmbiguous=true;
             // Match GameContext::getEventRoomOutcomeHelper, including
@@ -449,6 +463,12 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
             if(floor==root.floorNum)root.curRoom=outcome;
             if(floor+1==root.floorNum)root.lastRoom=outcome;
         }
+    }
+    if(questionBeliefQualified) {
+        questionMonsterChanceAmbiguous=false;
+        // A multi-state value is only a transition-container placeholder.
+        // Each root particle samples the posterior before any transition.
+        root.monsterChance=questionBelief.monster.front().first;
     }
     int normalCombats = 0, eliteCombats = 0;
     require(!combatHistoryComplete || combatHistory.size() == completedCombatFloors.size(),
@@ -613,6 +633,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     result.path = source.path;
     result.currentActEventVisits = eventVisits;
     result.questionHistoryComplete=questionHistoryComplete && !questionMonsterChanceAmbiguous;
+    if(questionBeliefQualified)result.questionChancePosterior=questionBelief.monster;
     result.mapHistoryComplete=result.questionHistoryComplete && seenRelicsComplete;
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random

@@ -15,13 +15,13 @@
 //
 // Layout (all integers little-endian):
 //   [8]  magic  "STSBC\0\0\0\0"
-//   [4]  version (2; reader also accepts version 1)
+//   [4]  version (3 for hidden intents; otherwise 2; reader also accepts 1)
 //   [4]  total buffer size in bytes
 //   then field groups, each:
 //     [1] group id
 //     [4] group payload size in bytes
 //     [payload]
-// Groups: 1=RNG, 2=Player, 3=Monsters, 4=Cards, 5=Potions, 6=Misc.
+// Groups: 1=RNG, 2=Player, 3=Monsters, 4=Cards, 5=Potions, 6=Misc, 7=Hidden intents (v3).
 //
 // The format is bound to the sts_lightspeed version that wrote it: any
 // BattleContext layout change requires a version bump or re-collection.
@@ -126,7 +126,7 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
     // header: magic + version + total size (patched at the end)
     const char magic[8] = {'S', 'T', 'S', 'B', 'C', 0, 0, 0};
     out.insert(out.end(), magic, magic + 8);
-    putU32(out, 2);                    // version
+    putU32(out, bc.intentsHidden ? 3 : 2); // version
     const std::size_t sizePos = out.size();
     putU32(out, 0);                    // total size placeholder
 
@@ -310,6 +310,37 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
         out.insert(out.end(), g.begin(), g.end());
     }
 
+    if (bc.intentsHidden) {
+        std::vector<std::uint8_t> g;
+        auto putInputs = [&](const MonsterRollInputs &in) {
+            putI16(g, in.curHp);
+            putI16(g, in.maxHp);
+            putI16(g, in.knightCurHp);
+            putI16(g, in.knightMaxHp);
+            putI16(g, in.monsterTurnNumber);
+            putI32(g, in.miscInfo);
+            putI8(g, in.aliveCount);
+            putI8(g, in.monstersAlive);
+            putBool(g, in.knightAlive);
+            putBool(g, in.playerConstricted);
+            putBool(g, in.asleep);
+            putBool(g, in.halfDead);
+        };
+        for (const auto &m : bc.monsters.arr) {
+            putU8(g, m.pendingMoveRolls);
+            putU8(g, m.pendingDirectMoveChoice);
+            putInputs(m.pendingRollInputs);
+            putU32(g, m.pendingRollInputHistory.size());
+            for (const auto &in : m.pendingRollInputHistory) putInputs(in);
+            putU32(g, m.pendingAttackPredicates.size());
+            for (const auto &[step, attack] : m.pendingAttackPredicates) {
+                putI32(g, step); putBool(g, attack);
+            }
+        }
+        putU8(out, 7); putU32(out, g.size());
+        out.insert(out.end(), g.begin(), g.end());
+    }
+
     // patch total size (the placeholder is already counted in out.size())
     const std::uint32_t totalSize = (std::uint32_t)out.size();
     out[sizePos + 0] = (std::uint8_t)(totalSize & 0xFF);
@@ -334,11 +365,12 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
         return bc;
     r.pos = 8;
     std::uint32_t version = 0;
-    if (!r.u32(version) || (version != 1 && version != 2)) return bc;
+    if (!r.u32(version) || (version != 1 && version != 2 && version != 3)) return bc;
     std::uint32_t total = 0;
     if (!r.u32(total) || (std::size_t)total != size) return bc;
 
     bool ok = true;
+    bool hiddenGroupSeen = false;
     while (ok && r.pos < r.size) {
         std::uint8_t gid = 0;
         std::uint32_t gsize = 0;
@@ -560,13 +592,44 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
                 bc.seed = seed;
                 break;
             }
+            case 7: {
+                if (version != 3 || hiddenGroupSeen) { ok = false; break; }
+                hiddenGroupSeen = true;
+                bc.intentsHidden = true;
+                auto readInputs = [&](MonsterRollInputs &in) {
+                    return r.i16(in.curHp) && r.i16(in.maxHp) && r.i16(in.knightCurHp) && r.i16(in.knightMaxHp) && r.i16(in.monsterTurnNumber) && r.i32(in.miscInfo) && r.i8(in.aliveCount) && r.i8(in.monstersAlive) && r.boolean(in.knightAlive) && r.boolean(in.playerConstricted) && r.boolean(in.asleep) && r.boolean(in.halfDead);
+                };
+                for (auto &m : bc.monsters.arr) {
+                    std::uint32_t count;
+                    if (!r.u8(m.pendingMoveRolls) || !r.u8(m.pendingDirectMoveChoice)
+                            || m.pendingDirectMoveChoice > 2 || !readInputs(m.pendingRollInputs)
+                            || !r.u32(count) || ((count != 0 || m.pendingMoveRolls > 1) && count != m.pendingMoveRolls)) { ok = false; break; }
+                    for (std::uint32_t i = 0; i < count; ++i) {
+                        MonsterRollInputs in;
+                        if (!readInputs(in)) { ok = false; break; }
+                        m.pendingRollInputHistory.push_back(in);
+                    }
+                    if (!ok || !r.u32(count) || count > 256) { ok = false; break; }
+                    int previous = 0;
+                    for (std::uint32_t i = 0; i < count; ++i) {
+                        std::int32_t step; bool attack;
+                        if (!r.i32(step) || !r.boolean(attack) || step <= previous
+                                || step > m.pendingMoveRolls + (m.pendingDirectMoveChoice != 0 ? 1 : 0)) { ok = false; break; }
+                        m.pendingAttackPredicates.emplace_back(step, attack);
+                        previous = step;
+                    }
+                    if (!ok) break;
+                }
+                if (r.pos != gend) ok = false;
+                break;
+            }
             default:
                 ok = false;   // unknown group id -> corrupt
                 break;
         }
         r.pos = gend;
     }
-    if (!ok) return BattleContext();
+    if (!ok || (version == 3 && !hiddenGroupSeen)) return BattleContext();
     return bc;
 }
 

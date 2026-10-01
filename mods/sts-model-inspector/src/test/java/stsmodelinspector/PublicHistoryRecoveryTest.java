@@ -78,6 +78,31 @@ public final class PublicHistoryRecoveryTest {
                     bad==3,8);
             require(!unknown.get(0).containsKey("juzuOwnedAtEntry"),"ambiguous ownership fabricated "+bad);
         }
+        QuestionRoomHistory tiny=QuestionRoomHistory.capture(Arrays.asList("?","?","?","?","?"),
+                Arrays.asList("?","?","?","?","T"),1,5,"TREASURE");
+        List<Map<String,Object>> tinyGain=Arrays.asList(obj("floor",1,"key","Tiny Chest"));
+        PublicHistoryRecovery.annotateTinyChest(tiny,tinyGain,Collections.emptyList(),true,0,5);
+        require(Boolean.FALSE.equals(tiny.outcomes.get(0).get("tinyChestForced"))
+                && Boolean.TRUE.equals(tiny.outcomes.get(4).get("tinyChestForced")),"Tiny acquired after entry roll");
+        tiny=QuestionRoomHistory.capture(Arrays.asList("?","?","?","?","?"),
+                Arrays.asList("?","?","?","?","T"),1,5,"TREASURE");
+        PublicHistoryRecovery.annotateTinyChest(tiny,tinyGain,Collections.emptyList(),true,1,5);
+        require(!tiny.outcomes.get(0).containsKey("tinyChestForced"),"Tiny counter contradiction fabricated forcing");
+        List<String> original=new ArrayList<>(),resolved=new ArrayList<>();
+        for(int f=1;f<=19;++f) {
+            String room=f==16?"B":f==17?null:f==2||f==4||f==6||f==19?"?":"M";
+            if(f!=17)original.add(room);resolved.add(f==19?"T":room);
+        }
+        tiny=QuestionRoomHistory.capture(original,resolved,2,19,"TREASURE");
+        PublicHistoryRecovery.annotateTinyChest(tiny,tinyGain,Collections.emptyList(),true,0,19);
+        require(tiny.outcomes.size()==1 && Boolean.TRUE.equals(tiny.outcomes.get(0).get("tinyChestForced")),
+                "Tiny counter must span act reset");
+        QuestionRoomHistory shop=QuestionRoomHistory.capture(Arrays.asList("$","?","?"),
+                Arrays.asList("$","?","?"),1,3,"EVENT");
+        require(Boolean.TRUE.equals(shop.outcomes.get(0).get("previousRoomWasShop"))
+                && Boolean.FALSE.equals(shop.outcomes.get(1).get("previousRoomWasShop")),"previous shop suppression history");
+        PublicHistoryRecovery.annotateTinyChest(shop,Collections.emptyList(),Collections.emptyList(),false,0,3);
+        require(Boolean.FALSE.equals(shop.outcomes.get(0).get("tinyChestForced")),"never-owned Tiny known absent");
         System.out.println("PublicHistoryRecoveryTest passed");
     }
 }

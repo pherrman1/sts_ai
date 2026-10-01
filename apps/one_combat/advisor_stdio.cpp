@@ -182,6 +182,12 @@ json oocResponse(const one_combat::advisor::Request &request,
     const auto imported = advisor::importLiveOocStateV1(request.observation, state);
     if (!imported.ok && imported.code != "UNSUPPORTED")
         return advisor::errorResponse(request, imported.code, imported.message);
+    evaluator["questionChanceBelief"] = {{"qualified",state.mctsRoot.questionHistoryComplete},
+            {"kind",!state.mctsRoot.questionHistoryComplete?"unqualified":
+                state.mctsRoot.questionChancePosterior.size()>1?"finite_posterior":"point"},
+            {"prior","fair_uniform_24_bit_room_roll"},
+            {"monsterChanceStates",state.mctsRoot.questionChancePosterior}};
+
     if (!imported.ok) evaluator["reason"] = imported.message;
     else if (std::string(policy.name()) != "mcts_ctm"
              && std::any_of(state.ooc.at("liveChoices").begin(),state.ooc.at("liveChoices").end(),
@@ -191,6 +197,11 @@ json oocResponse(const one_combat::advisor::Request &request,
         evaluator["reason"] = "PUBLIC_TREASURE_CONTENTS_UNQUALIFIED";
     else if (state.hiddenEventState && std::string(policy.name()) != "mcts_ctm")
         evaluator["reason"] = "PUBLIC_EVENT_STATE_UNQUALIFIED";
+    else if (state.mctsRoot.questionChancePosterior.size()>1 && std::string(policy.name())!="mcts_ctm")
+        evaluator["reason"] = "PUBLIC_QUESTION_CHANCE_POSTERIOR_REQUIRES_MCTS";
+    else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
+             state.mctsRoot.questionChancePosterior.size()>1 && flag && std::string(flag)=="1")
+        evaluator["reason"] = "DIFFERENTIAL_QUESTION_CHANCE_POSTERIOR_UNREPRESENTABLE";
     else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
              state.hiddenEventState && flag && std::string(flag) == "1")
         evaluator["reason"] = "DIFFERENTIAL_HIDDEN_EVENT_UNREPRESENTABLE";
@@ -213,6 +224,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 policy.setRootPrimitiveBits(targets);
                 policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
                 policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
                 policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
                 policy.setSearchSeed(stableHash(differential::canonicalOocState(
                     state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"));
@@ -255,6 +267,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 std::map<std::tuple<int,int,bool>,bool> wants;
                 policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
                 policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
                 policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
                 policy.setTreeCapture(false,0);
                 const auto want=[&](const sts::Card &card) {
@@ -409,6 +422,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
             policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
             policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+            policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
             policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
             const char *treeEnv = std::getenv("STS_OOC_DEBUG_TREE");
             policy.setTreeCapture(request.observation.value("oocDebugTree", false)

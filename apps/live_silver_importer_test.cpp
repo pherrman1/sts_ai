@@ -1371,11 +1371,156 @@ int main() {
                 const auto legal=enumerateSilverLegalActions(imported.wire);
                 if(legal.empty()) throw std::runtime_error("Dome imported root has no legal actions");
             }
+            // Producer schema v2: original physical slots survive a teammate
+            // death, while each living monster keeps its own roll-time state.
+            const auto groupDome=[&](const std::vector<std::string> &ids,const std::vector<std::vector<int>> &history) {
+                const int completed=history[0].size();
+                auto obs=domeObservation(1,0);auto &c=obs["silverRoot"]["combat"];
+                obs["silverRoot"]["playerTurn"]=completed+1;c["turn"]=completed+1;
+                obs["silverRoot"]["encounter"]="EXORDIUM_WILDLIFE";
+                json monsters=json::array(), rows=json::array();
+                for(std::size_t i=0;i<ids.size();++i) {
+                    auto m=c["monsters"][0];m["id"]=ids[i];m["slot"]=i;m["idx"]=i;m["hp"]=28;m["maxHp"]=40;
+                    monsters.push_back(m);
+                    rows.push_back({{"schemaVersion",1},{"epoch",1},{"generation",2*completed+1},
+                        {"complete",true},{"monsterId",ids[i]},{"slot",i},{"completedTurns",completed},
+                        {"executedMoves",history[i]},{"pendingMoveRolls",1},{"rollHp",30},{"rollMaxHp",40},
+                        {"publicMisc",ids[i]=="SlaverRed" && completed==2?1:0},{"firstHp",35},
+                        {"firstMaxHp",40},{"firstAlive",true},{"aliveCount",ids.size()},{"pendingAttackPredicates",json::array()}});
+                }
+                c["monsters"]=monsters;
+                c["runicDomeKnowledge"]={{"schemaVersion",2},{"epoch",1},{"complete",true},{"monsters",rows}};
+                return obs;
+            };
+            for(const auto &ids:std::vector<std::vector<std::string>>{{"FungiBeast","FungiBeast"},
+                    {"SlaverRed","SlaverBlue"},{"AcidSlime_M","SpikeSlime_M"}}) {
+                auto obs=groupDome(ids,{{1},{1}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome group producer: "+imported.reason);
+                auto root=battleContextFromWire(imported.wire),reference=root;
+                for(int slot=0;slot<2;++slot) {
+                    auto &m=root.monsters.arr[slot];auto &r=reference.monsters.arr[slot];
+                    if(m.pendingRollInputs.knightCurHp!=35 || m.pendingRollInputs.aliveCount!=2)
+                        throw std::runtime_error("Dome group lost public roll inputs");
+                    r.pendingMoveRolls=0;r.rollMoveFromInputs(reference,m.pendingRollInputs);m.materializePendingMove(root);
+                    if(!std::equal(std::begin(m.moveHistory),std::end(m.moveHistory),std::begin(r.moveHistory)) || root.aiRng!=reference.aiRng)
+                        throw std::runtime_error("Dome group public-input parity");
+                }
+                obs["silverRoot"]["combat"]["monsters"][0]["hp"]=0;
+                obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["pendingMoveRolls"]=0;
+                imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingMoveRolls || imported.wire.monstersAlive!=1)
+                    throw std::runtime_error("Dome original dead slot: "+imported.reason);
+            }
+            {
+                auto obs=groupDome({"SlaverRed"},{{1,2}});
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].miscInfo!=1 || imported.wire.monsters[0].pendingRollInputs.miscInfo!=1)
+                    throw std::runtime_error("Dome public Entangle history: "+imported.reason);
+            }
+            {
+                auto obs=groupDome({"GremlinNob"},{{3}});obs["silverRoot"]["encounter"]="GREMLIN_NOB";
+                obs["silverRoot"]["roomClass"]="ELITE";
+                obs["silverRoot"]["combat"]["monsters"][0]["powers"].push_back({{"id","Anger"},{"amount",2}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].uniquePower0!=2) throw std::runtime_error("Dome ordinary Nob: "+imported.reason);
+                obs["silverRoot"]["encounter"]="COLOSSEUM_EVENT_NOBS";
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("unaudited Nob constructor variant accepted");
+                obs=groupDome({"FungiBeast","FungiBeast"},{{1},{2}});
+                obs["silverRoot"]["encounter"]="TWO_FUNGI_BEASTS";
+                for(auto &m:obs["silverRoot"]["combat"]["monsters"]) m["powers"].push_back({{"id","Spore Cloud"},{"amount",2}});
+                obs["silverRoot"]["combat"]["playerPowers"].push_back({{"id","Vulnerable"},{"amount",2},{"justApplied",false}});
+                imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[1].uniquePower0!=2) throw std::runtime_error("Dome public Fungi powers: "+imported.reason);
+            }
+            for(int completed=0;completed<3;++completed) {
+                std::vector<std::vector<int>> history(3);
+                for(int slot=0;slot<3;++slot) for(int turn=0;turn<completed;++turn) history[slot].push_back((slot+turn)%2==0?3:4);
+                auto obs=groupDome({"Sentry","Sentry","Sentry"},history);obs["silverRoot"]["encounter"]="THREE_SENTRIES";
+                for(auto &m:obs["silverRoot"]["combat"]["monsters"]) m["powers"].push_back({{"id","Artifact"},{"amount",1}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome Sentry public phase: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);
+                for(int slot=0;slot<3;++slot) {
+                    bc.monsters.arr[slot].materializePendingMove(bc);
+                    const auto expected=(slot+completed)%2==0?MMID::SENTRY_BOLT:MMID::SENTRY_BEAM;
+                    if(bc.monsters.arr[slot].moveHistory[0]!=expected) throw std::runtime_error("Sentry public alternation parity");
+                }
+                if(completed==1) {
+                    obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][1]["executedMoves"]=json::array({3});
+                    if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("wrong Sentry physical phase accepted");
+                }
+            }
+            {
+                auto obs=groupDome({"SpikeSlime_S","AcidSlime_M"},{{1},{1}});obs["silverRoot"]["encounter"]="SMALL_SLIMES";
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome small Spike slime: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);bc.monsters.arr[0].materializePendingMove(bc);
+                if(bc.monsters.arr[0].moveHistory[0]!=MMID::SPIKE_SLIME_S_TACKLE) throw std::runtime_error("small Spike deferred rule");
+                bc.monsters.arr[0].moveHistory[1]=MMID::INVALID;
+                bc.monsters.arr[0].takeTurn(bc);
+                if(bc.monsters.arr[0].moveHistory[1]!=MMID::SPIKE_SLIME_S_TACKLE) throw std::runtime_error("small Spike repeated public history");
+                obs=groupDome({"SlaverRed"},{{1}});
+                auto old=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];old.erase("pendingAttackPredicates");
+                old["completedTurns"]=3;old["generation"]=7;old["executedMoves"]=json::array({3,1});
+                obs["silverRoot"]["combat"]["runicDomeKnowledge"]=old;obs["silverRoot"]["playerTurn"]=4;obs["silverRoot"]["combat"]["turn"]=4;
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("legacy Red lost public Entangle accepted");
+            }
+            // Vanilla bytecode boundaries: SlaverRed uses 55 (not 50),
+            // asc17 forbids consecutive debuffs, Nob asc18 checks either of
+            // the previous two moves for Bash (not two consecutive Bashes).
+            {
+                auto bc=battleContextFromWire(fixtures[1].wire); auto &m=bc.monsters.arr[0];
+                const auto expect=[&](MonsterId id,int asc,int roll,MonsterMoveId last,MonsterMoveId before,int misc,MonsterMoveId wanted) {
+                    bc.ascension=asc;m.id=id;m.miscInfo=misc;m.moveHistory[0]=last;m.moveHistory[1]=before;
+                    auto inputs=m.captureRollInputs(bc);inputs.miscInfo=misc;int data=misc;
+                    const auto actual=m.getMoveForRoll(bc,inputs,data,roll);
+                    if(actual!=wanted) throw std::runtime_error("vanilla Dome move-rule boundary id="+std::to_string(static_cast<int>(id))+" asc="+std::to_string(asc)+" roll="+std::to_string(roll)+" expected="+std::to_string(static_cast<int>(wanted))+" actual="+std::to_string(static_cast<int>(actual)));
+                };
+                for(int roll:{50,54}) expect(MonsterId::RED_SLAVER,0,roll,MMID::RED_SLAVER_STAB,MMID::RED_SLAVER_SCRAPE,1,MMID::RED_SLAVER_SCRAPE);
+                expect(MonsterId::RED_SLAVER,0,55,MMID::RED_SLAVER_STAB,MMID::RED_SLAVER_SCRAPE,1,MMID::RED_SLAVER_STAB);
+                expect(MonsterId::RED_SLAVER,0,74,MMID::RED_SLAVER_STAB,MMID::INVALID,0,MMID::RED_SLAVER_SCRAPE);
+                expect(MonsterId::RED_SLAVER,0,75,MMID::RED_SLAVER_STAB,MMID::INVALID,0,MMID::RED_SLAVER_ENTANGLE);
+                expect(MonsterId::RED_SLAVER,17,0,MMID::RED_SLAVER_SCRAPE,MMID::RED_SLAVER_STAB,1,MMID::RED_SLAVER_STAB);
+                expect(MonsterId::BLUE_SLAVER,17,0,MMID::BLUE_SLAVER_RAKE,MMID::BLUE_SLAVER_STAB,0,MMID::BLUE_SLAVER_STAB);
+                expect(MonsterId::BLUE_SLAVER,0,0,MMID::BLUE_SLAVER_RAKE,MMID::BLUE_SLAVER_STAB,0,MMID::BLUE_SLAVER_RAKE);
+                expect(MonsterId::GREMLIN_NOB,18,99,MMID::GREMLIN_NOB_BELLOW,MMID::INVALID,0,MMID::GREMLIN_NOB_SKULL_BASH);
+                expect(MonsterId::GREMLIN_NOB,18,0,MMID::GREMLIN_NOB_RUSH,MMID::GREMLIN_NOB_SKULL_BASH,0,MMID::GREMLIN_NOB_RUSH);
+                expect(MonsterId::GREMLIN_NOB,18,0,MMID::GREMLIN_NOB_RUSH,MMID::GREMLIN_NOB_RUSH,0,MMID::GREMLIN_NOB_SKULL_BASH);
+                expect(MonsterId::GREMLIN_NOB,0,32,MMID::GREMLIN_NOB_BELLOW,MMID::INVALID,0,MMID::GREMLIN_NOB_SKULL_BASH);
+                expect(MonsterId::GREMLIN_NOB,0,33,MMID::GREMLIN_NOB_BELLOW,MMID::INVALID,0,MMID::GREMLIN_NOB_RUSH);
+            }
+            for(bool attacking:{false,true}) {
+                auto obs=groupDome({"JawWorm"},{{1}});
+                obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["pendingAttackPredicates"]=json::array({json::array({1,attacking})});
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingMoveRolls!=1
+                        || imported.wire.monsters[0].pendingAttackPredicates!=std::vector<std::pair<int,bool>>{{1,attacking}})
+                    throw std::runtime_error("Dome Spot boolean projection: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);
+                bc.monsters.arr[0].materializePendingMove(bc);
+                if(bc.monsters.arr[0].isAttacking()!=attacking) throw std::runtime_error("Dome Spot conditioned materialization");
+            }
+            for(const auto &badPredicate:{json::array({json::array({1,1})}),json::array({json::array({2,true})}),json::array({json::array({1,true}),json::array({1,false})})}) {
+                auto obs=groupDome({"JawWorm"},{{1}});obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["pendingAttackPredicates"]=badPredicate;
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("malformed Spot predicate accepted");
+            }
             const auto expectDomeReject=[&](json obs,const char *reason) {
                 const auto result=one_combat::advisor::importSilverRoot(obs);
                 if(result.ok || result.reason!=reason)
                     throw std::runtime_error(std::string("Dome rejection mismatch expected ")+reason+" got "+result.reason);
             };
+            {
+                auto invalid=groupDome({"FungiBeast","FungiBeast"},{{1},{1}});
+                invalid["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("pendingAttackPredicates");
+                if(one_combat::advisor::importSilverRoot(invalid).ok) throw std::runtime_error("unobserved Spot history accepted");
+            }
+            for(const auto &mutation:{json{{"slot",1}},json{{"publicMisc",1}},json{{"monsterId","Looter"}},
+                    json{{"completedTurns",0}},json{{"pendingMoveRolls",0}},json{{"firstAlive","true"}}}) {
+                auto invalid=groupDome({"FungiBeast","FungiBeast"},{{1},{1}});
+                invalid["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].update(mutation);
+                if(one_combat::advisor::importSilverRoot(invalid).ok) throw std::runtime_error("malformed Dome group accepted");
+            }
             auto bad=domeObservation(1,1); bad["silverRoot"]["combat"].erase("runicDomeKnowledge");
             expectDomeReject(bad,"silver_runic_dome_missing_history");
             for(const auto &field:{"nextMove","moveHistory","intentDamage","uniquePower0"}) {
@@ -1395,7 +1540,7 @@ int main() {
             expectDomeReject(bad,"silver_runic_dome_incomplete_history");
             bad=domeObservation(1,1);bad["silverRoot"]["act"]=2;
             expectDomeReject(bad,"silver_runic_dome_encounter_domain");
-            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["hand"][0]["id"]="Spot Weakness";
+            bad=domeObservation(1,1);bad["silverRoot"]["combat"]["hand"][0]["id"]="Discovery";
             expectDomeReject(bad,"silver_runic_dome_card_domain");
             bad=domeObservation(1,1);bad["silverRoot"]["combat"]["relics"].push_back({{"id","Dead Branch"},{"counter",0},{"usedUp",false}});
             expectDomeReject(bad,"silver_runic_dome_relic_domain");
@@ -2145,6 +2290,64 @@ int main() {
             invalid["silverRoot"]["combat"]["cardSelect"]["canPickZero"] = false;
             if (one_combat::advisor::importSilverRoot(invalid).ok)
                 throw std::runtime_error("unqualified Codex continuation accepted");
+        }
+        // Nilry's Codex pauses before these exact hand-owned end-turn cards.
+        // Preserve pending blocks -> Burn/Decay damage -> discard -> one turn.
+        for (int choice : {0,3}) for (bool upgraded : {false,true}) {
+            auto offer = genericObservation(fixtures[0], "codex-status-queue");
+            auto &combat=offer["silverRoot"]["combat"];
+            combat["relics"].push_back({{"id","Nilry's Codex"},{"counter",-1},{"usedUp",false}});
+            combat["cardSelect"]=offerSelection(1,"codex_end_turn");
+            combat["cardSelect"]["task"]="CODEX";
+            combat["cardSelect"]["canPickZero"]=true;
+            combat["cardSelect"]["setCostToZero"]=false;
+            combat["cardSelect"]["data0"]=0;
+            combat["cardSelect"]["blocksAfter"]=json::array({3});
+            combat["hand"]=json::array(); combat["pendingCardQueue"]=json::array();
+            for(const std::string id:{"Burn","Decay"}) {
+                auto card=genericObservation(fixtures[0],"card")["silverRoot"]["combat"]["hand"][0];
+                card["id"]=id;card["uuid"]="end-turn-"+id;card["cost"]=card["costForTurn"]=-2;
+                card["upgraded"]=id=="Burn" && upgraded;card["freeToPlayOnce"]=false;card["retain"]=false;
+                combat["hand"].push_back(card);
+                combat["pendingCardQueue"].push_back({{"card",card},{"target",0},{"energyOnUse",2},
+                    {"isEndTurn",false},{"triggerOnUse",false},{"ignoreEnergyTotal",false},{"freeToPlay",false},
+                    {"randomTarget",false},{"autoplay",false},{"regretCardCount",0},{"purgeOnUse",false},
+                    {"exhaustOnUse",false},{"endTurnAutoPlay",true},{"noTriggerOwner","codex_end_turn"}});
+            }
+            const auto imported=one_combat::advisor::importSilverRoot(offer);
+            if(!imported.ok || imported.wire.pendingCardQueue.size()!=2)
+                throw std::runtime_error("Codex Burn/Decay import: "+imported.reason);
+            auto root=battleContextFromWire(imported.wire);
+            root.player.block=0;root.player.curHp=root.player.maxHp=80;
+            // Public deterministic nonattack isolates end-turn status damage.
+            root.monsters.arr[0].id=MonsterId::CULTIST;
+            root.monsters.arr[0].moveHistory[0]=MMID::CULTIST_INCANTATION;
+            auto oracle=root;
+            oracle.cardQueue.clear();oracle.cards.cardsInHand=0;
+            oracle.cardSelectInfo.blocksAfter.clear();
+            oracle.addToBot(Actions::GainBlock(3));
+            oracle.addToBot(Actions::DamagePlayer(upgraded?4:2,true));
+            oracle.addToBot(Actions::DamagePlayer(2,true));
+            auto lethal=root;lethal.player.curHp=1;lethal.cardSelectInfo.blocksAfter.clear();
+            const int oldTurn=root.turn;
+            const sts::search::Action action(sts::search::ActionType::SINGLE_CARD_SELECT,choice);
+            action.execute(root);action.execute(oracle);action.execute(lethal);
+            if(root.player.curHp!=80-(upgraded?3:1) || root.player.curHp!=oracle.player.curHp
+                    || root.turn!=oldTurn+1 || root.turn!=oracle.turn || !root.cardQueue.isEmpty()
+                    || root.endTurnQueued || root.turnHasEnded)
+                throw std::runtime_error("Codex queued status order/damage/end-turn mismatch");
+            if(lethal.outcome!=Outcome::PLAYER_LOSS || lethal.turn!=oldTurn)
+                throw std::runtime_error("lethal Codex Burn advanced another turn");
+            const auto reject=[&](json bad) {
+                if(one_combat::advisor::importSilverRoot(bad).ok)
+                    throw std::runtime_error("unqualified Codex no-trigger queue accepted");
+            };
+            auto bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"][0].erase("noTriggerOwner");reject(bad);
+            bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"][0]["endTurnAutoPlay"]=false;reject(bad);
+            bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"][0]["card"]["id"]="Regret";reject(bad);
+            bad=offer;bad["silverRoot"]["combat"]["hand"].erase(0);reject(bad);
+            bad=offer;bad["silverRoot"]["combat"]["pendingCardQueue"].push_back(combat["pendingCardQueue"][0]);reject(bad);
+            bad=offer;bad["silverRoot"]["combat"]["relics"].push_back({{"id","Unceasing Top"},{"counter",0},{"usedUp",false}});reject(bad);
         }
         for (const auto &cardName : {"Brutality", "Combust"}) {
             auto observation = genericObservation(fixtures[0], "ironclad-persistent-power-card");

@@ -65,6 +65,31 @@ public final class PendingCardQueueCaptureTest {
         JsonObject end = new Gson().fromJson(PendingCardQueueCapture.capture(Arrays.asList(marker),processed).json,JsonArray.class).get(0).getAsJsonObject();
         if(!end.get("card").isJsonNull() || !end.get("isEndTurn").getAsBoolean()) throw new AssertionError("null-card marker mapping");
         marker.autoplay=true; reject(Arrays.asList(marker),processed,"end_turn_marker");
+        // Source-shaped Burn/Decay end-turn items: same physical hand cards,
+        // no target, no normal play, Java end-turn autoplay flag is distinct.
+        for(String id:Arrays.asList("Burn","Decay")) {
+            PendingCardQueueCapture.Item status=new PendingCardQueueCapture.Item();
+            status.identity=new Object();status.uuid="status-"+id;status.cardId=id;
+            status.cardJson="{\"id\":\""+id+"\",\"uuid\":\""+status.uuid+"\"}";
+            status.inHand=true;status.vanillaEndTurnCard=true;status.triggerOnUse=false;
+            status.endTurnAutoPlay=true;status.energyOnUse=2;
+            PendingCardQueueCapture.Result accepted=PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,false);
+            if(accepted.error!=null)throw new AssertionError(id+" Codex queue rejected: "+accepted.error);
+            JsonObject row=new Gson().fromJson(accepted.json,JsonArray.class).get(0).getAsJsonObject();
+            if(row.get("isEndTurn").getAsBoolean() || row.get("triggerOnUse").getAsBoolean()
+                    || !row.get("endTurnAutoPlay").getAsBoolean()
+                    || !"codex_end_turn".equals(row.get("noTriggerOwner").getAsString()))
+                throw new AssertionError("Codex no-trigger proof lost");
+            if(PendingCardQueueCapture.capture(Arrays.asList(status),processed,false,false).error==null
+                    || PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,true).error==null)
+                throw new AssertionError("owner or Unceasing Top guard bypassed");
+            status.inHand=false;
+            if(PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,false).error==null)
+                throw new AssertionError("non-hand status queue accepted");
+            status.inHand=true;status.cardId="Regret";
+            if(PendingCardQueueCapture.capture(Arrays.asList(status),processed,true,false).error==null)
+                throw new AssertionError("unqualified no-trigger payload accepted");
+        }
         // Installed JAR shape: missing or changed public fields cannot quietly
         // fall back to false; production reads them directly at compile time.
         Class<?> cls=Class.forName("com.megacrit.cardcrawl.cards.CardQueueItem",false,PendingCardQueueCaptureTest.class.getClassLoader());

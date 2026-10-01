@@ -2,6 +2,10 @@
 #include <array>
 #include <cstdlib>
 #include <iostream>
+#include <set>
+#include "combat/BattleContextBinary.h"
+#include "sim/search/SearchStateHash.h"
+#include "sim/search/SilverWireJson.h"
 
 #include "combat/Actions.h"
 #include "combat/BattleContext.h"
@@ -211,16 +215,21 @@ void testReactiveChainAndIntentQuery() {
     LiveFixture queried(MonsterEncounter::CULTIST, 0xD004u);
     check(queried.knowledge.pendingHiddenIntentRolls[0] == 1,
           "query fixture must begin with pending intent");
+    const auto beforeHistory = queried.knowledge.publicMonsterMoveHistory[0];
+    const auto beforeRng = queried.bc.aiRng;
     Actions::SpotWeaknessAction(0, 3)(queried.bc);
-    check(queried.knowledge.pendingHiddenIntentRolls[0] == 0,
-          "Spot Weakness must materialize and consume the pending intent");
-    check(queried.knowledge.publicMonsterMoveHistory[0][0]
-              == static_cast<std::int16_t>(queried.bc.monsters.arr[0].moveHistory[0]),
-          "intent query must publish the materialized move before reading it");
+    check(queried.knowledge.pendingHiddenIntentRolls[0] == 1
+              && queried.knowledge.pendingAttackPredicates[0] == std::vector<std::pair<int, bool>>{{1, false}},
+          "Spot Weakness must retain pending intent and expose only attack predicate");
+    check(queried.knowledge.publicMonsterMoveHistory[0] == beforeHistory && queried.bc.aiRng == beforeRng,
+          "live query must neither publish hidden move nor alter live RNG");
     const auto converted = inspectRoot(queried.wire());
-    check(converted.accepted && converted.pendingIntentRolls == 0
-              && converted.monsterMoveHistory[0] == queried.knowledge.publicMonsterMoveHistory[0],
-          "post-query Silver root must contain public intent, not a fabricated pending roll");
+    check(converted.accepted && converted.pendingIntentRolls == 1
+              && converted.monsterMoveHistory[0] == beforeHistory,
+          "post-query Silver root must retain the pre-roll public state");
+    endTurn(queried.bc);
+    check(queried.knowledge.pendingAttackPredicates[0].empty(),
+          "executed monster action must clear old predicate constraints");
 }
 
 void testPostTurnDeterministicAndDirectRandomTransitions() {
@@ -275,13 +284,124 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
           "the deferred direct choice must remain stochastic across isolated Silver RNG realizations");
 
     Actions::SpotWeaknessAction(0, 3)(random.bc);
-    check(!random.knowledge.hasUnrepresentableHiddenIntent[0],
-          "a public intent query must consume the deferred Looter choice marker");
-    const auto queriedDirectChoice = inspectRoot(random.wire());
+    check(random.knowledge.hasUnrepresentableHiddenIntent[0],
+          "Spot query must retain the direct-choice rule instead of publishing its full state");
+    const auto queriedDirectChoice = materializedRoot(random.wire());
     check(queriedDirectChoice.accepted && queriedDirectChoice.pendingDirectMoveChoices == 0
               && queriedDirectChoice.monsterMoveHistory[0][0]
                     == static_cast<std::int16_t>(random.bc.monsters.arr[0].moveHistory[0]),
-          "post-query Silver root must carry the public Looter choice without a stale deferred marker");
+          "attack predicate uniquely identifies this bounded two-outcome direct choice");
+}
+
+void testPredicatePosteriorAndSnapshots() {
+    LiveFixture fixture(MonsterEncounter::CHAMP, 0xD008u);
+    auto wire = fixture.wire();
+    // Champ's first roll has two distinct attacks and two distinct nonattacks.
+    // Query outcomes must retain both possibilities inside their class.
+    auto *observer = g_combatKnowledgeObserver;
+    g_combatKnowledgeObserver = nullptr;
+    for (bool attacking : {false, true}) {
+        wire.monsters[0].pendingAttackPredicates = {{1, attacking}};
+        std::set<MonsterMoveId> outcomes;
+        for (std::uint64_t seed = 1; seed <= 128; ++seed) {
+            wire.isolatedSearchSeed = seed;
+            auto root = battleContextFromWire(wire);
+            auto &m = root.monsters.arr[0];
+            const auto rng = root.aiRng;
+            const auto history = m.moveHistory;
+            const auto before = root;
+            Actions::SpotWeaknessAction(0, 3)(root);
+            check(root.aiRng == rng && m.moveHistory[0] == history[0] && m.moveHistory[1] == history[1]
+                      && m.pendingMoveRolls == 1,
+                  "repeated predicate must preserve same latent event and consume no RNG");
+            check(root.player.strength == before.player.strength + (attacking ? 3 : 0),
+                  "Spot strength follows exactly the public predicate");
+            m.materializePendingMove(root);
+            check(m.isAttacking() == attacking && m.pendingAttackPredicates.empty(),
+                  "posterior materialization must obey and consume predicate");
+            outcomes.insert(m.moveHistory[0]);
+        }
+        check(outcomes.size() == 2, "each Champ predicate must preserve uncertainty between two moves");
+        if (!attacking) check(outcomes.contains(MMID::THE_CHAMP_DEFENSIVE_STANCE)
+                                 && outcomes.contains(MMID::THE_CHAMP_GLOAT),
+                             "failed Spot must retain both defensive stance and gloat");
+    }
+    wire.monsters[0].pendingAttackPredicates.clear();
+    wire.isolatedSearchSeed = 101;
+    auto base = battleContextFromWire(wire);
+    // Immediate and deferred no-query rolls have identical move and RNG state.
+    auto immediate = base;
+    auto in = immediate.monsters.arr[0].pendingRollInputs;
+    immediate.monsters.arr[0].cancelPendingMove();
+    immediate.monsters.arr[0].rollMoveFromInputs(immediate, in);
+    auto deferred = base;
+    deferred.monsters.arr[0].materializePendingMove(deferred);
+    check(immediate.aiRng == deferred.aiRng && immediate.monsters == deferred.monsters,
+          "unqueried deferred materialization must preserve original draw count and move");
+    // First query samples only a predicate and leaves full state unmaterialized.
+    Actions::SpotWeaknessAction(0, 3)(base);
+    check(base.monsters.arr[0].pendingMoveRolls == 1
+              && base.monsters.arr[0].moveHistory[0] == MMID::INVALID
+              && base.monsters.arr[0].pendingAttackPredicates.size() == 1,
+          "in-tree Spot successor may expose only its predicate");
+    auto opposite = base;
+    opposite.monsters.arr[0].pendingAttackPredicates.back().second ^= true;
+    check(!base.equalForSearch(opposite) && hashBattleState(base) != hashBattleState(opposite),
+          "opposite predicates require distinct search/cache identities");
+    // Binary snapshots deliberately require a concrete draw pile; isolate
+    // the intent-state round trip from the separate unknown-order contract.
+    auto binaryBase = base;
+    binaryBase.cards.drawPile.assignConcrete({});
+    const auto binary = serializeBattleContext(binaryBase);
+    const auto restored = deserializeBattleContext(binary.data(), binary.size());
+    check(binary[8] == 3 && restored.intentsHidden && restored.monsters == base.monsters
+              && restored.aiRng == base.aiRng && hashBattleState(restored) == hashBattleState(binaryBase),
+          "binary v3 must preserve predicate posterior and public search RNG");
+    auto corrupt = binary;
+    corrupt[8] = 2;
+    check(!deserializeBattleContext(corrupt.data(), corrupt.size()).intentsHidden,
+          "a hidden-intent group cannot masquerade as legacy binary v2");
+    auto envelope = silver_bridge::battleStateWireEnvelope(wire);
+    auto roundtrip = silver_bridge::battleStateWireFromEnvelope(envelope);
+    check(sameRoot(wire, roundtrip), "v3 wire roundtrip must preserve hidden root");
+    for (const auto *field : {"pendingAttackPredicates", "pendingRollInputHistory"}) {
+        auto missing = envelope;
+        missing["state"]["monsters"][0].erase(field);
+        bool rejectedMissing = false;
+        try { silver_bridge::battleStateWireFromEnvelope(missing); }
+        catch (const std::exception &) { rejectedMissing = true; }
+        check(rejectedMissing, "v3 hidden wire cannot silently lose predicate knowledge fields");
+    }
+    envelope["wire_version"] = 2; envelope["state"]["version"] = 2;
+    bool rejected = false;
+    try { silver_bridge::battleStateWireFromEnvelope(envelope); } catch (const std::exception &) { rejected = true; }
+    check(rejected, "legacy hidden roots with old full-reveal semantics must fail closed");
+    envelope["state"]["intentsHidden"] = false;
+    for (auto &m : envelope["state"]["monsters"]) {
+        m.erase("pendingAttackPredicates"); m.erase("pendingRollInputHistory");
+    }
+    check(silver_bridge::battleStateWireFromEnvelope(envelope).version == 3,
+          "legacy non-hidden v2 snapshots migrate with empty predicate history");
+    // Deterministic Cultist opening cannot satisfy an attack observation.
+    auto impossible = base;
+    auto &m = impossible.monsters.arr[0];
+    m.id = MonsterId::CULTIST;
+    m.pendingAttackPredicates = {{1, true}};
+    rejected = false;
+    try { m.materializePendingMove(impossible); } catch (const std::runtime_error &) { rejected = true; }
+    check(rejected && m.pendingMoveRolls == 1, "impossible predicate must throw without a guessed move");
+    // A second hidden roll retains the earlier observation and its input state.
+    auto chained = base;
+    const auto firstPredicate = chained.monsters.arr[0].pendingAttackPredicates;
+    chained.monsters.arr[0].curHp -= 1;
+    chained.monsters.arr[0].rollMove(chained);
+    check(chained.monsters.arr[0].pendingAttackPredicates == firstPredicate
+              && chained.monsters.arr[0].pendingRollInputHistory.size() == 2,
+          "a reactive reroll must retain prior predicate and each public roll input");
+    chained.monsters.arr[0].materializePendingMove(chained);
+    check(isMoveAttack(chained.monsters.arr[0].moveHistory[1]) == firstPredicate[0].second,
+          "posterior after reroll must still condition the previous hidden move");
+    g_combatKnowledgeObserver = observer;
 }
 
 } // namespace
@@ -292,6 +412,7 @@ int main() {
     testRestrictedHistoryAndPreRollMiscInfo();
     testReactiveChainAndIntentQuery();
     testPostTurnDeterministicAndDirectRandomTransitions();
+    testPredicatePosteriorAndSnapshots();
     std::cout << "runic_dome_lifecycle PASS\n";
     return 0;
 }

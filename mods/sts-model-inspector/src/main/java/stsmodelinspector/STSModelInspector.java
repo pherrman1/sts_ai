@@ -1989,7 +1989,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + ",\"exhaustOnUse\":" + item.exhaustOnUse + "}";
     }
 
-    private static PendingCardQueueCapture.Result pendingCardQueue(IdentityHashMap<AbstractMonster,Integer> slots) {
+    private static List<PendingCardQueueCapture.Item> pendingCardQueueItems(IdentityHashMap<AbstractMonster,Integer> slots) {
         List<PendingCardQueueCapture.Item> snapshot = new ArrayList<>();
         for (CardQueueItem item : AbstractDungeon.actionManager.cardQueue) {
             if (item == null) { snapshot.add(null); continue; }
@@ -2006,6 +2006,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (item.card != null) {
                 AbstractCard card = item.card;
                 observed.cardJson = cardJson(card);
+                observed.cardId = card.cardID;
+                observed.vanillaEndTurnCard = card.getClass() == com.megacrit.cardcrawl.cards.status.Burn.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Decay.class;
+                for(AbstractCard handCard:AbstractDungeon.player.hand.group) if(handCard==card) observed.inHand=true;
                 observed.uuid = card.uuid == null ? null : card.uuid.toString();
                 observed.requiresTarget = card.target == AbstractCard.CardTarget.ENEMY
                         || card.target == AbstractCard.CardTarget.SELF_AND_ENEMY;
@@ -2016,7 +2020,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             }
             snapshot.add(observed);
         }
-        return PendingCardQueueCapture.capture(snapshot, trackedLastCardQueueItem.physicalItem);
+        return snapshot;
+    }
+
+    private static PendingCardQueueCapture.Result pendingCardQueue(IdentityHashMap<AbstractMonster,Integer> slots,
+                                                                   boolean codexEndTurn) {
+        return PendingCardQueueCapture.capture(pendingCardQueueItems(slots), trackedLastCardQueueItem.physicalItem,
+                codexEndTurn,hasRelic("Unceasing Top"));
     }
 
     private static boolean isPlayerDecisionPoint() {
@@ -2648,7 +2658,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return actions.actions.size() <= 128 && hasRelic("Nilry's Codex") && codexEndTurnContinuation(classes,
                 AbstractDungeon.player.endTurnQueued && !AbstractDungeon.player.isEndingTurn,
                 !actions.turnHasEnded && !actions.monsterAttacksQueued && actions.preTurnActions.isEmpty()
-                    && actions.cardQueue.isEmpty() && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
+                    && pendingCardQueue(new IdentityHashMap<AbstractMonster,Integer>(),true).error==null
+                    && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
                 AbstractDungeon.player.maxOrbs == 0 && AbstractDungeon.player.orbs.isEmpty());
     }
 
@@ -2966,7 +2977,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         out.append(']');
         if (selection != null) {
-            PendingCardQueueCapture.Result pending = pendingCardQueue(emittedSlots);
+            PendingCardQueueCapture.Result pending = pendingCardQueue(emittedSlots,
+                    selection.contains("\"continuation\":\"codex_end_turn\""));
             if (pending.error != null) out.append(",\"pendingCardQueueError\":\"")
                     .append(escapeJson(pending.error)).append('"');
             else out.append(",\"pendingCardQueue\":").append(pending.json);

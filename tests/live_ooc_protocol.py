@@ -501,6 +501,30 @@ class LiveOocProtocol(unittest.TestCase):
         card = rows[1]["evaluators"][0]["endpointHpDistribution"]
         self.assertEqual(card["root"]["hpCounts"][card["currentHp"]], card["root"]["count"])
 
+    def test_juzu_posterior_labels_uncertainty_and_rejects_exact_trace(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        public = observation["ooc"]["publicState"]
+        public["acquiredRelics"].append("Juzu Bracelet")
+        public["currentActPathVisits"][2] = 1
+        public.update(questionHistoryComplete=True, questionRoomRules="vanilla_ordinary_v1",
+                      questionOutcomes=[dict(floor=2, outcome="EVENT", juzuOwnedAtEntry=True,
+                                             previousRoomWasShop=False, tinyChestForced=False)])
+        response, = self.run_rows([observation], differential=True)
+        evaluator = response["evaluators"][0]
+        self.assertEqual(evaluator["reason"], "DIFFERENTIAL_QUESTION_CHANCE_POSTERIOR_UNREPRESENTABLE", response)
+        self.assertNotIn("differentialState", evaluator)
+        belief = evaluator["questionChanceBelief"]
+        self.assertTrue(belief["qualified"])
+        self.assertEqual(belief["kind"], "finite_posterior")
+        self.assertEqual(belief["prior"], "fair_uniform_24_bit_room_roll")
+        self.assertEqual(len(belief["monsterChanceStates"]), 2)
+        self.assertAlmostEqual(sum(weight for _, weight in belief["monsterChanceStates"]), 1)
+        response, = self.run_rows([observation], policy="v4")
+        self.assertEqual(response["evaluators"][0]["reason"], "PUBLIC_QUESTION_CHANCE_POSTERIOR_REQUIRES_MCTS")
+        response, = self.run_rows([observation])
+        self.assertEqual(response["evaluators"][0]["status"], "OK", response)
+        self.assertEqual(response["evaluators"][0]["questionChanceBelief"], belief)
+
     def test_qualified_question_history_expands_downstream_map(self):
         observation = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
         observation["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])

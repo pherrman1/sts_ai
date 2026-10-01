@@ -9,6 +9,7 @@ import java.util.Map;
 /** Reconstruct only publicly resolved rooms from vanilla's persisted metrics. */
 final class QuestionRoomHistory {
     final List<Map<String,Object>> outcomes = new ArrayList<>();
+    final List<Map<String,Object>> allOutcomes = new ArrayList<>();
     // Absolute floor alignment, including boss-chest placeholders. Used only
     // after complete validates both persisted paths against the current room.
     final List<String> rooms = new ArrayList<>();
@@ -34,11 +35,11 @@ final class QuestionRoomHistory {
             String room = symbol(original.get(source++));
             if ("EVENT".equals(room)) {
                 if (!Arrays.asList("MONSTER","SHOP","TREASURE","EVENT").contains(outcome)) return result;
-                if (visitedFloor > start) {
-                    Map<String,Object> entry = new LinkedHashMap<>();
-                    entry.put("floor",visitedFloor); entry.put("outcome",outcome);
-                    result.outcomes.add(entry);
-                }
+                Map<String,Object> entry = new LinkedHashMap<>();
+                entry.put("floor",visitedFloor); entry.put("outcome",outcome);
+                entry.put("previousRoomWasShop",i>0 && "SHOP".equals(result.rooms.get(i-1)));
+                result.allOutcomes.add(entry);
+                if (visitedFloor > start) result.outcomes.add(entry);
             } else if ("INVALID".equals(room) || "NONE".equals(room) || !room.equals(outcome)) return result;
         }
         result.complete = source == original.size();

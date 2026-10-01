@@ -269,7 +269,7 @@ namespace sts::search {
     }
 
     BattleContext battleContextFromWire(const BattleStateWire &in) {
-        if (in.version != BattleStateWire::kVersion || !in.valid) {
+        if ((in.version != BattleStateWire::kVersion && !(in.version == 2 && !in.intentsHidden)) || !in.valid) {
             throw std::invalid_argument("invalid or incompatible Silver state wire");
         }
         if (in.hand.size() > static_cast<std::size_t>(CardManager::MAX_HAND_SIZE)) {
@@ -350,6 +350,23 @@ namespace sts::search {
             if (in.intentsHidden) {
                 m.pendingMoveRolls = wm.pendingMoveRolls;
                 m.pendingDirectMoveChoice = wm.pendingDirectMoveChoice;
+                m.pendingAttackPredicates = wm.pendingAttackPredicates;
+                const int steps = wm.pendingMoveRolls + (wm.pendingDirectMoveChoice != 0 ? 1 : 0);
+                if (!wm.hasPredicateKnowledgeFields ||
+                        ((!wm.pendingRollInputHistory.empty() || wm.pendingMoveRolls > 1)
+                         && wm.pendingRollInputHistory.size() != wm.pendingMoveRolls)) {
+                    throw std::runtime_error("hidden intent roll input history size mismatch");
+                }
+                int previousStep = 0;
+                for (const auto &[step, attack] : wm.pendingAttackPredicates) {
+                    if (step <= previousStep || step > steps) throw std::runtime_error("invalid hidden intent predicate step");
+                    previousStep = step;
+                }
+                for (const auto &r : wm.pendingRollInputHistory) {
+                    m.pendingRollInputHistory.push_back({r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp,
+                        r.monsterTurnNumber, r.miscInfo, r.aliveCount, r.monstersAlive,
+                        r.knightAlive, r.playerConstricted, r.asleep, r.halfDead});
+                }
                 const auto &r = wm.pendingRollInputs;
                 m.pendingRollInputs = {r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp,
                                        r.monsterTurnNumber, r.miscInfo, r.aliveCount, r.monstersAlive,
@@ -514,6 +531,12 @@ namespace sts::search {
             wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = m.miscInfo;
             wm.pendingMoveRolls = m.pendingMoveRolls;
             wm.pendingDirectMoveChoice = m.pendingDirectMoveChoice;
+            wm.pendingAttackPredicates = m.pendingAttackPredicates;
+            for (const auto &r : m.pendingRollInputHistory) {
+                wm.pendingRollInputHistory.push_back({r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp,
+                    r.monsterTurnNumber, r.miscInfo, r.aliveCount, r.monstersAlive,
+                    r.knightAlive, r.playerConstricted, r.asleep, r.halfDead});
+            }
             const auto &r = m.pendingRollInputs;
             wm.pendingRollInputs = {r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp, r.monsterTurnNumber,
                                     r.miscInfo, r.aliveCount, r.monstersAlive, r.knightAlive,

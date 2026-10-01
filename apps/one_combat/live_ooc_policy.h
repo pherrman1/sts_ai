@@ -8,6 +8,7 @@
 #include "run_features.h"
 #include "live_ooc_action_identity.h"
 #include "ooc_mcts_adapter.h"
+#include "question_room_belief.h"
 
 struct OocStrategicTokNet;
 
@@ -52,6 +53,7 @@ public:
     virtual void setRewardPityHistoryComplete(bool) {}
     virtual void setQuestionHistoryComplete(bool) {}
     virtual void setMapHistoryComplete(bool) {}
+    virtual void setQuestionChancePosterior(const QuestionChancePosterior &) {}
     virtual void setTreeCapture(bool, std::size_t) {}
     virtual LiveOocDecision score(const sts::GameContext &, const PathHistory &, int currentActEventVisits) const = 0;
 };
@@ -84,6 +86,7 @@ public:
     void setRewardPityHistoryComplete(bool value) override { rewardPityHistoryComplete_ = value; }
     void setQuestionHistoryComplete(bool value) override { questionHistoryComplete_ = value; }
     void setMapHistoryComplete(bool value) override { mapHistoryComplete_ = value; }
+    void setQuestionChancePosterior(const QuestionChancePosterior &value) override { questionChancePosterior_ = value; }
     void setTreeCapture(bool enabled, std::size_t cap) override { captureTree_ = enabled; treeNodeCap_ = cap; }
     LiveOocDecision score(const sts::GameContext &, const PathHistory &, int) const override;
 private:
@@ -97,6 +100,7 @@ private:
     bool rewardPityHistoryComplete_ = true;
     bool questionHistoryComplete_ = false;
     bool mapHistoryComplete_ = false;
+    QuestionChancePosterior questionChancePosterior_;
     bool captureTree_ = false;
     std::size_t treeNodeCap_ = 4096;
 };

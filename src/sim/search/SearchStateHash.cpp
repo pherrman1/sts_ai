@@ -86,6 +86,13 @@ namespace sts::search {
             hashCombine(hash, m.statusBits);
             hashCombine(hash, static_cast<int>(m.moveHistory[0]));
             hashCombine(hash, static_cast<int>(m.moveHistory[1]));
+            // Predicate knowledge changes the posterior, so it must not reuse
+            // an unconditioned root's cache identity. Empty preserves old keys.
+            for (const auto &[step, attack] : m.pendingAttackPredicates) {
+                hashCombine(hash, std::uint64_t{0x53504f54u});
+                hashCombine(hash, step);
+                hashCombine(hash, attack);
+            }
         }
 
         // The hand is a multiset for search: fold its cards in commutatively.

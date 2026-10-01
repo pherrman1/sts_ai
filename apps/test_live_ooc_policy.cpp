@@ -29,6 +29,33 @@ int main(int argc, char **argv) {
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
         {
+            // Source-qualified EventHelper interval table; all cells, including
+            // saturation and zero-width overwritten last-cell behavior.
+            struct Case { float monster, shop, treasure; bool previousShop; int monsterEnd,shopEnd,treasureEnd; };
+            const Case cases[] = {
+                {.1f,.03f,.02f,false,10,13,15}, {.1f,.03f,.02f,true,10,10,12},
+                {.99f,.03f,.02f,false,99,99,100}, {1.f,0.f,0.f,false,99,99,100},
+                {1.2f,.3f,.2f,true,99,99,100}, {.8f,.3f,.02f,false,80,99,100},
+                {0.f,0.f,0.f,false,0,0,0}
+            };
+            for (const auto &c:cases) for(int cell=0;cell<100;++cell) {
+                const Room expected=cell<c.monsterEnd?Room::MONSTER:cell<c.shopEnd?Room::SHOP:
+                    cell<c.treasureEnd?Room::TREASURE:Room::EVENT;
+                require(GameContext::questionRoomOutcomeForCell(cell,c.monster,c.shop,c.treasure,c.previousShop)==expected,
+                        "question-room table differs from vanilla clipped intervals");
+            }
+            auto roll=gc;roll.monsterChance=1.f;roll.shopChance=0.f;roll.treasureChance=0.f;
+            auto rng=roll.eventRng;const int cell=static_cast<int>(rng.random()*100.f);
+            const auto expected=cell==99?Room::TREASURE:Room::MONSTER;
+            require(roll.getEventRoomOutcomeHelper(false)==expected && roll.eventRng==rng,
+                    "question-room transition changed draw count or table selection");
+            auto forced=gc;forced.relics.add({RelicId::TINY_CHEST,3});
+            rng=forced.eventRng;(void)rng.random();
+            require(forced.getEventRoomOutcomeHelper(false)==Room::TREASURE && forced.eventRng==rng
+                    && forced.relics.getRelicValue(RelicId::TINY_CHEST)==0 && forced.treasureChance==.02f,
+                    "Tiny Chest forcing skipped draw or failed counter reset");
+        }
+        {
             auto route = gc;
             route.map = std::make_shared<Map>();
             for (int y=0;y<15;++y) for(int x=0;x<7;++x) {
@@ -586,6 +613,63 @@ int main(int argc, char **argv) {
                 OocGameContextModel detached(source,path,{},guarded,guardedDeps);
                 require(detached.evaluateLeaf(0,rng)==.25 && mapContinuationCalls==0,
                         "detached continuation bypassed charged map boundary");
+            }
+        }
+        {
+            // Independent JVM enumeration of every 24-bit RandomXS128 float:
+            // these 16 cells have one extra atom; every other cell has 167772.
+            const std::set<int> extra{0,6,13,19,26,33,39,45,52,58,66,72,79,85,91,97};
+            const auto &bins=questionRoomCellCounts();
+            for(int cell=0;cell<100;++cell)require(bins[cell]==167772u+extra.count(cell),"Java float-bin likelihood mismatch");
+            const auto mass=[&](int lo,int hi) {
+                long double count=0;for(int cell=lo;cell<hi;++cell)count+=bins[cell];return count/(1u<<24);
+            };
+            QuestionRoomBelief belief;
+            require(belief.condition(Room::EVENT,true,false,false,-1) && belief.monster.size()==2,
+                    "Juzu EVENT did not branch latent outcomes");
+            const long double a=mass(0,10)/(mass(0,10)+mass(15,100)),b=1-a;
+            require(std::abs(belief.monster[0].second-a)<1e-14 && belief.monster[0].first==.1f
+                    && belief.monster[1].first==.1f+.1f,"single-room Bayesian likelihood differs");
+            require(belief.condition(Room::EVENT,true,false,false,-1) && belief.monster.size()==3,
+                    "second Juzu EVENT lost a latent state");
+            const long double w0=a*mass(0,10)+b*mass(0,20),w1=a*mass(20,100),w2=b*mass(30,100),total=w0+w1+w2;
+            require(std::abs(belief.monster[0].second-w0/total)<1e-14
+                    && std::abs(belief.monster[1].second-w1/total)<1e-14
+                    && std::abs(belief.monster[2].second-w2/total)<1e-14,"two-step latent enumeration mismatch");
+            auto forced=belief;const auto before=forced.monster;
+            require(forced.condition(Room::TREASURE,true,false,true,-1),"forced Tiny treasure rejected");
+            for(std::size_t i=0;i<before.size();++i)
+                require(forced.monster[i].first==before[i].first+.1f
+                        && std::abs(forced.monster[i].second-before[i].second)<1e-14,"Tiny forced outcome reweighted latent chance");
+            require(belief.condition(Room::MONSTER,false,false,false,-1) && belief.monster.size()==1
+                    && belief.monster[0].first==.1f,"known MONSTER reset did not collapse belief");
+            QuestionRoomBelief suppressed;
+            require(!suppressed.condition(Room::SHOP,true,true,false,-1),"previous SHOP suppression ignored");
+            QuestionRoomBelief impossible;
+            require(!impossible.condition(Room::EVENT,true,false,true,-1),"forced Tiny EVENT accepted");
+            QuestionRoomBelief flash;
+            require(flash.condition(Room::EVENT,true,false,false,1) && flash.monster.size()==1
+                    && flash.monster[0].first==.1f,"observed conversion did not collapse belief");
+            QuestionRoomBelief noFlash;
+            require(noFlash.condition(Room::EVENT,true,false,false,0) && noFlash.monster.size()==1
+                    && noFlash.monster[0].first==.1f+.1f,"observed absence did not exclude conversion");
+            QuestionRoomBelief clipped;clipped.monster={{.1f,.5},{.95f,.5}};clipped.shop=.1f;
+            require(clipped.condition(Room::SHOP,true,false,false,-1) && clipped.monster.size()==2,
+                    "saturated shop observation lost posterior");
+            require(std::abs(clipped.monster[0].second-mass(10,20)/(mass(10,20)+mass(95,99)))<1e-14,
+                    "non-EVENT outcome did not condition latent chances");
+            std::mt19937_64 left(17),right(17);
+            auto particle=gc,replica=gc;particle.shopChance=replica.shopChance=.27f;
+            particle.treasureChance=replica.treasureChance=.12f;
+            for(int draw=0;draw<20;++draw) {
+                sampleLiveOocHiddenCounters(particle,left,4,true);
+                sampleLiveOocHiddenCounters(replica,right,4,true);
+                sampleQuestionChancePosterior(particle,left,clipped.monster);
+                sampleQuestionChancePosterior(replica,right,clipped.monster);
+                require(particle.monsterChance==replica.monsterChance && particle.shopChance==.27f
+                        && particle.treasureChance==.12f,"posterior sampling changed exact counters or isolated determinism");
+                require(particle.monsterChance==clipped.monster[0].first || particle.monsterChance==clipped.monster[1].first,
+                        "posterior sampled outside finite support");
             }
         }
         std::cout << "live OOC policy contract PASS\n";

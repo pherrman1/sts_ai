@@ -124,43 +124,68 @@ final class PublicHistoryRecovery {
     /** Attach ownership only when the complete metric chronology agrees with current ownership. */
     static void annotateJuzu(List<Map<String,Object>> outcomes, List<?> obtained, List<?> events,
             boolean currentlyOwned, int currentFloor) {
-        if(obtained==null || events==null) return;
+        TreeMap<Integer,Boolean> changes=ownershipChanges("Juzu Bracelet",obtained,events,currentlyOwned,currentFloor);
+        if(changes==null) return;
+        for(Map<String,Object> outcome:outcomes) {
+            int f=((Number)outcome.get("floor")).intValue();
+            Map.Entry<Integer,Boolean> before=changes.lowerEntry(f);
+            outcome.put("juzuOwnedAtEntry",before!=null && before.getValue());
+        }
+    }
+
+    /** Tiny Chest starts at zero onEquip and increments on every owned '?' across acts. */
+    static void annotateTinyChest(QuestionRoomHistory history,List<?> obtained,List<?> events,
+            boolean currentlyOwned,int currentCounter,int currentFloor) {
+        if(!history.complete) return;
+        TreeMap<Integer,Boolean> changes=ownershipChanges("Tiny Chest",obtained,events,currentlyOwned,currentFloor);
+        if(changes==null) return;
+        Map<Integer,Map<String,Object>> questions=new LinkedHashMap<>();
+        for(Map<String,Object> entry:history.allOutcomes) questions.put(((Number)entry.get("floor")).intValue(),entry);
+        Map<Integer,Boolean> forced=new LinkedHashMap<>();
+        boolean owned=false; int counter=0;
+        for(int f=0;f<=currentFloor;++f) {
+            Map<String,Object> entry=questions.get(f);
+            if(entry!=null) {
+                boolean force=owned && ++counter==4;
+                if(force) counter=0;
+                if(force && !"TREASURE".equals(entry.get("outcome"))) return;
+                forced.put(f,force);
+            }
+            Boolean after=changes.get(f);
+            if(after!=null) { owned=after; if(owned)counter=0; }
+        }
+        if(currentlyOwned && (currentCounter<0 || currentCounter>3 || currentCounter!=counter)) return;
+        for(Map<String,Object> entry:history.allOutcomes)
+            entry.put("tinyChestForced",forced.get(((Number)entry.get("floor")).intValue()));
+    }
+
+    private static TreeMap<Integer,Boolean> ownershipChanges(String relic,List<?> obtained,List<?> events,
+            boolean currentlyOwned,int currentFloor) {
+        if(obtained==null || events==null) return null;
         TreeMap<Integer,Boolean> changes=new TreeMap<>();
         for(Object raw:obtained) {
             Map<?,?> entry=record(raw);
             Integer f=entry==null?null:floor(entry.get("floor"),currentFloor);
-            if(f==null || !(entry.get("key") instanceof String)) return;
-            if("Juzu Bracelet".equals(entry.get("key")) && !change(changes,f,true)) return;
+            if(f==null || !(entry.get("key") instanceof String)) return null;
+            if(relic.equals(entry.get("key")) && !change(changes,f,true)) return null;
         }
         for(Object raw:events) {
             Map<?,?> entry=record(raw);
             Integer f=entry==null?null:floor(entry.get("floor"),currentFloor);
-            if(f==null) return;
+            if(f==null) return null;
             for(String name:Arrays.asList("relics_obtained","relics_lost")) {
                 Object values=entry.get(name);
                 if(values==null) continue;
-                if(!(values instanceof List)) return;
-                for(Object relic:(List<?>)values) {
-                    if(!(relic instanceof String)) return;
-                    if("Juzu Bracelet".equals(relic)
-                            && !change(changes,f,"relics_obtained".equals(name))) return;
+                if(!(values instanceof List)) return null;
+                for(Object value:(List<?>)values) {
+                    if(!(value instanceof String)) return null;
+                    if(relic.equals(value) && !change(changes,f,"relics_obtained".equals(name))) return null;
                 }
             }
         }
         boolean owned=false;
-        for(boolean next:changes.values()) {
-            // A loss without a recorded acquisition or a later duplicate gain
-            // cannot prove an exact ownership interval.
-            if(next==owned) return;
-            owned=next;
-        }
-        if(owned!=currentlyOwned) return;
-        for(Map<String,Object> outcome:outcomes) {
-            int f=((Number)outcome.get("floor")).intValue();
-            Map.Entry<Integer,Boolean> before=changes.lowerEntry(f);
-            // Acquisitions/losses inside a floor occur after its room roll.
-            outcome.put("juzuOwnedAtEntry",before!=null && before.getValue());
-        }
+        for(boolean next:changes.values()) { if(next==owned)return null; owned=next; }
+        return owned==currentlyOwned?changes:null;
     }
     private static boolean change(TreeMap<Integer,Boolean> changes,int floor,boolean owned) {
         Boolean old=changes.get(floor);

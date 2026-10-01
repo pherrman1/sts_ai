@@ -566,80 +566,129 @@ SilverRootImportResult importSilverRootLegacy(const json &observation) {
     return result;
 }
 
-// Audited public-history slice: single ordinary act-one Cultist/Jaw Worm.
-// This deliberately excludes intent queries and generators whose search
-// continuations could query Spot Weakness or create an unaudited card.
+// Audited Act 1 monsters whose next roll depends on public executed history.
+// Spot Weakness carries only its public attack predicate for the pending roll.
+// Generators and unaudited monster lifecycles remain outside this domain.
 std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStateWire &wire) {
     const auto found=combat.find("runicDomeKnowledge");
     if(found==combat.end() || !found->is_object()) return "silver_runic_dome_missing_history";
-    const auto &k=*found;
-    const auto integer=[&](const char *name, std::int64_t lo, std::int64_t hi) {
-        return k.contains(name) && k.at(name).is_number_integer() && k.at(name)>=lo && k.at(name)<=hi;
+    const auto validInteger=[](const json &obj,const char *name,std::int64_t lo,std::int64_t hi) {
+        return obj.contains(name) && obj.at(name).is_number_integer() && obj.at(name)>=lo && obj.at(name)<=hi;
     };
-    if(!integer("schemaVersion",1,1) || !k.contains("complete") || !k.at("complete").is_boolean())
+    if(!validInteger(*found,"schemaVersion",1,2) || !found->contains("complete") || !found->at("complete").is_boolean())
         return "silver_runic_dome_history_schema";
-    if(!k.at("complete").get<bool>()) return "silver_runic_dome_incomplete_history";
-    if(!integer("epoch",1,9007199254740991LL) || !integer("completedTurns",0,9999)
-            || !integer("generation",1,19999) || !integer("slot",0,0) || !integer("pendingMoveRolls",1,1)
-            || !integer("rollHp",1,999) || !integer("rollMaxHp",1,999)
-            || !k.contains("monsterId") || !k.at("monsterId").is_string()
-            || !k.contains("executedMoves") || !k.at("executedMoves").is_array())
-        return "silver_runic_dome_history_schema";
-    const int completed=k.at("completedTurns").get<int>();
-    const auto &moves=k.at("executedMoves");
-    const auto monsterId=k.at("monsterId").get<std::string>();
-    const bool jaw=monsterId=="JawWorm", cultist=monsterId=="Cultist";
-    if(wire.act!=1 || wire.monsterCount!=1 || wire.monstersAlive!=1 || !(jaw || cultist)
-            || wire.monsters[0].idx!=0 || wire.monsters[0].halfDead || wire.monsters[0].isEscapingB
-            || wire.monsters[0].id!=static_cast<int>(jaw?sts::MonsterId::JAW_WORM:sts::MonsterId::CULTIST)
-            || wire.encounter!=static_cast<int>(jaw?sts::MonsterEncounter::JAW_WORM:sts::MonsterEncounter::CULTIST))
-        return "silver_runic_dome_encounter_domain";
-    if(completed!=wire.turn || k.at("generation")!=2*completed+1
-            || moves.size()!=static_cast<std::size_t>(std::min(completed,2))
-            || k.at("rollHp")>k.at("rollMaxHp") || k.at("rollHp")<wire.monsters[0].curHp
-            || k.at("rollMaxHp")!=wire.monsters[0].maxHp)
-        return "silver_runic_dome_history_gap";
-    auto &m=wire.monsters[0];
-    m.moveHistory.fill(static_cast<std::int16_t>(sts::MonsterMoveId::INVALID));
-    for(std::size_t i=0;i<moves.size();++i) {
-        if(!moves[i].is_number_integer() || moves[i]<1 || moves[i]>3)
+    if(!found->at("complete").get<bool>()) return "silver_runic_dome_incomplete_history";
+    const bool multi=found->at("schemaVersion")==2;
+    json rows=multi?found->value("monsters",json()):json::array({*found});
+    if(!validInteger(*found,"epoch",1,9007199254740991LL) || !rows.is_array()
+            || rows.size()!=static_cast<std::size_t>(wire.monsterCount)) return "silver_runic_dome_history_schema";
+    if(wire.act!=1 || wire.monsterCount<1 || wire.monsterCount>5) return "silver_runic_dome_encounter_domain";
+    for(int slot=0;slot<wire.monsterCount;++slot) {
+        const auto &k=rows.at(slot);
+        const auto integer=[&](const char *name,std::int64_t lo,std::int64_t hi) {return validInteger(k,name,lo,hi);};
+        auto &m=wire.monsters[slot];
+        const bool dead=m.curHp<=0;
+        if(!k.is_object() || !integer("schemaVersion",1,1) || !integer("epoch",1,9007199254740991LL) || k.at("epoch")!=found->at("epoch")
+                || !k.contains("complete") || k.at("complete")!=true || !integer("completedTurns",0,9999)
+                || !integer("generation",1,19999) || !integer("slot",slot,slot)
+                || !integer("pendingMoveRolls",dead?0:1,dead?0:1)
+                || !integer("rollHp",1,999) || !integer("rollMaxHp",1,999)
+                || !k.contains("monsterId") || !k.at("monsterId").is_string()
+                || !k.contains("executedMoves") || !k.at("executedMoves").is_array())
             return "silver_runic_dome_history_schema";
-        const int move=moves[i].get<int>();
-        const int execution=completed-static_cast<int>(moves.size())+static_cast<int>(i);
-        if((execution==0 && move!=(jaw?1:3)) || (cultist && execution>0 && move!=1))
+        const int completed=k.at("completedTurns").get<int>();
+        const auto &moves=k.at("executedMoves");
+        const auto monsterId=k.at("monsterId").get<std::string>();
+        const auto id=live_silver::monsterId(monsterId);
+        const bool jaw=monsterId=="JawWorm",cultist=monsterId=="Cultist",fungi=monsterId=="FungiBeast",
+            red=monsterId=="SlaverRed",blue=monsterId=="SlaverBlue",acid=monsterId=="AcidSlime_M",
+            spike=monsterId=="SpikeSlime_M",smallSpike=monsterId=="SpikeSlime_S",sentry=monsterId=="Sentry",nob=monsterId=="GremlinNob";
+        if((!multi && (!(jaw||cultist) || wire.monsterCount!=1 || k.contains("pendingAttackPredicates")))
+                || !(jaw||cultist||fungi||red||blue||acid||spike||smallSpike||sentry||nob) || !id || m.id!=static_cast<int>(*id)
+                || m.idx!=slot || m.halfDead || m.isEscapingB || m.escapeNext
+                || (nob && (wire.monsterCount!=1 || wire.encounter!=static_cast<int>(sts::MonsterEncounter::GREMLIN_NOB))))
+            return "silver_runic_dome_encounter_domain";
+        const auto generation=k.at("generation").get<int>();
+        if((dead?completed>wire.turn:completed!=wire.turn) || generation<2*completed || generation>2*completed+1
+                || (!dead && generation!=2*completed+1) || moves.size()!=static_cast<std::size_t>(std::min(completed,2))
+                || k.at("rollHp")>k.at("rollMaxHp") || k.at("rollHp")<m.curHp || k.at("rollMaxHp")!=m.maxHp)
             return "silver_runic_dome_history_gap";
-        const auto native=live_silver::monsterMove(monsterId,move);
-        if(!native) return "silver_runic_dome_history_schema";
-        m.moveHistory[moves.size()-1-i]=static_cast<std::int16_t>(*native);
+        int misc=0;
+        if(multi) {
+            if(!integer("publicMisc",0,red?1:0)) return "silver_runic_dome_history_schema";
+            misc=k.at("publicMisc").get<int>();
+            if(red && completed<2 && misc!=0) return "silver_runic_dome_history_gap";
+        }
+        m.moveHistory.fill(static_cast<std::int16_t>(sts::MonsterMoveId::INVALID));
+        for(std::size_t i=0;i<moves.size();++i) {
+            if(!moves[i].is_number_integer() || moves[i]<1 || moves[i]>4) return "silver_runic_dome_history_schema";
+            const int move=moves[i].get<int>();
+            const int execution=completed-static_cast<int>(moves.size())+static_cast<int>(i);
+            const bool legal=smallSpike?move==1:sentry?move==((slot+execution)%2==0?3:4):jaw?(execution==0?move==1:move>=1&&move<=3)
+                :cultist?move==(execution==0?3:1):nob?(execution==0?move==3:move==1||move==2)
+                :red?(execution==0?move==1:move==1||move==2||move==3)
+                :(blue||spike)?move==1||move==4:acid?move==1||move==2||move==4:move==1||move==2;
+            if(!legal || (red && move==2 && misc!=1)) return "silver_runic_dome_history_gap";
+            const auto native=live_silver::monsterMove(monsterId,move);
+            if(!native) return "silver_runic_dome_history_schema";
+            m.moveHistory[moves.size()-1-i]=static_cast<std::int16_t>(*native);
+        }
+        std::uint64_t allowed=(1ULL<<static_cast<int>(sts::MonsterStatus::ARTIFACT))
+            | (1ULL<<static_cast<int>(sts::MonsterStatus::STRENGTH)) | (1ULL<<static_cast<int>(sts::MonsterStatus::WEAK))
+            | (1ULL<<static_cast<int>(sts::MonsterStatus::VULNERABLE)) | (1ULL<<62) | (1ULL<<63);
+        if(cultist) allowed|=(1ULL<<static_cast<int>(sts::MonsterStatus::RITUAL)) | (1ULL<<61);
+        if(fungi) allowed|=1ULL<<static_cast<int>(sts::MonsterStatus::SPORE_CLOUD);
+        if(nob) allowed|=1ULL<<static_cast<int>(sts::MonsterStatus::ENRAGE);
+        if((m.statusBits & ~allowed) || m.uniquePower1 || (!(cultist||fungi||nob) && m.uniquePower0))
+            return "silver_runic_dome_monster_power_domain";
+        for(std::size_t i=1;i<m.smallPowers.size();++i)
+            if(m.smallPowers[i]) return "silver_runic_dome_monster_power_domain";
+        m.miscInfo=misc; m.pendingMoveRolls=dead?0:1; m.pendingDirectMoveChoice=0;
+        auto &inputs=m.pendingRollInputs;
+        inputs.curHp=k.at("rollHp").get<int>(); inputs.maxHp=k.at("rollMaxHp").get<int>();
+        inputs.knightCurHp=inputs.curHp; inputs.knightMaxHp=inputs.maxHp; inputs.knightAlive=true;
+        inputs.aliveCount=1; inputs.monstersAlive=1;
+        if(multi) {
+            if(!integer("firstHp",0,999) || !integer("firstMaxHp",1,999) || k.at("firstHp")>k.at("firstMaxHp")
+                    || !k.contains("firstAlive") || !k.at("firstAlive").is_boolean()
+                    || !integer("aliveCount",1,wire.monsterCount)) return "silver_runic_dome_history_schema";
+            inputs.knightCurHp=k.at("firstHp").get<int>();inputs.knightMaxHp=k.at("firstMaxHp").get<int>();
+            inputs.knightAlive=k.at("firstAlive").get<bool>();inputs.aliveCount=k.at("aliveCount").get<int>();
+            inputs.monstersAlive=inputs.aliveCount;
+        }
+        if(multi && !k.contains("pendingAttackPredicates")) return "silver_runic_dome_predicate_schema";
+        if(k.contains("pendingAttackPredicates")) {
+            const auto &predicates=k.at("pendingAttackPredicates");
+            if(!predicates.is_array() || predicates.size()>1 || (!predicates.empty() && (dead || !predicates[0].is_array()
+                    || predicates[0].size()!=2 || !predicates[0][0].is_number_integer() || predicates[0][0]!=1
+                    || !predicates[0][1].is_boolean()))) return "silver_runic_dome_predicate_schema";
+            if(!predicates.empty()) m.pendingAttackPredicates.emplace_back(1,predicates[0][1].get<bool>());
+        }
+        inputs.monsterTurnNumber=std::max(1,completed); inputs.miscInfo=misc;
+        inputs.playerConstricted=false;inputs.asleep=false;inputs.halfDead=false;
     }
     // A consumed potion can leave a generator power after its source card
     // vanished. Check typed native state as well as the public power names.
     const auto &player=wire.player;
-    const int metallicize=static_cast<int>(PlayerStatus::METALLICIZE);
-    const std::uint64_t allowed0=metallicize<64 ? (1ULL << (metallicize%64)) : 0;
-    const std::uint32_t allowed1=metallicize>=64 ? (1U << (metallicize%64)) : 0;
-    if((player.statusBits0 & ~allowed0) || (player.statusBits1 & ~allowed1) || player.justAppliedBits
+    const std::set<int> statuses={static_cast<int>(PlayerStatus::METALLICIZE),static_cast<int>(PlayerStatus::WEAK),
+        static_cast<int>(PlayerStatus::FRAIL),static_cast<int>(PlayerStatus::VULNERABLE),static_cast<int>(PlayerStatus::ENTANGLED)};
+    std::uint64_t allowed0=0; std::uint32_t allowed1=0,justApplied=0;
+    for(int status:statuses) {if(status<64) allowed0|=1ULL<<status;else allowed1|=1U<<(status-64);}
+    for(auto status:{PlayerStatus::WEAK,PlayerStatus::FRAIL,PlayerStatus::VULNERABLE}) justApplied|=1U<<static_cast<int>(status);
+    if((player.statusBits0 & ~allowed0) || (player.statusBits1 & ~allowed1) || (player.justAppliedBits & ~justApplied)
             || player.orbSlots || player.stance || player.focus || player.combustHpLoss
             || player.devaFormEnergyPerTurn || player.echoFormCardsDoubled || player.panacheCounter
             || std::any_of(player.bombs.begin(),player.bombs.end(),[](auto value){return value!=0;}))
         return "silver_runic_dome_player_power_domain";
     for(const auto &[status,amount]:player.statusMap)
-        if(status!=metallicize) return "silver_runic_dome_player_power_domain";
+        if(!statuses.count(status)) return "silver_runic_dome_player_power_domain";
     for(const auto &power:combat.value("playerPowers",json::array())) {
         const auto id=power.value("id",std::string());
-        if(id!="Strength" && id!="Dexterity" && id!="Artifact" && id!="Metallicize")
+        if(id!="Strength" && id!="Dexterity" && id!="Artifact" && id!="Metallicize"
+                && id!="Weak" && id!="Frail" && id!="Vulnerable" && id!="Entangled")
             return "silver_runic_dome_player_power_domain";
     }
-    std::uint64_t monsterAllowed=(1ULL<<static_cast<int>(sts::MonsterStatus::ARTIFACT))
-        | (1ULL<<static_cast<int>(sts::MonsterStatus::STRENGTH))
-        | (1ULL<<static_cast<int>(sts::MonsterStatus::WEAK))
-        | (1ULL<<static_cast<int>(sts::MonsterStatus::VULNERABLE)) | (1ULL<<62) | (1ULL<<63);
-    if(cultist) monsterAllowed|=(1ULL<<static_cast<int>(sts::MonsterStatus::RITUAL)) | (1ULL<<61);
-    if((m.statusBits & ~monsterAllowed) || m.uniquePower1 || (jaw && m.uniquePower0))
-        return "silver_runic_dome_monster_power_domain";
-    for(std::size_t i=1;i<m.smallPowers.size();++i)
-        if(m.smallPowers[i]) return "silver_runic_dome_monster_power_domain";
-    const auto cardAllowed=[](std::int16_t raw) {
+    const auto cardAllowed=[&](std::int16_t raw) {
         switch(static_cast<sts::CardId>(raw)) {
             case sts::CardId::INVALID: case sts::CardId::STRIKE_RED: case sts::CardId::DEFEND_RED:
             case sts::CardId::BASH: case sts::CardId::ANGER: case sts::CardId::CLEAVE:
@@ -647,7 +696,8 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             case sts::CardId::POMMEL_STRIKE: case sts::CardId::SHRUG_IT_OFF: case sts::CardId::THUNDERCLAP:
             case sts::CardId::TWIN_STRIKE: case sts::CardId::PERFECTED_STRIKE: case sts::CardId::SWORD_BOOMERANG:
             case sts::CardId::HEAVY_BLADE: case sts::CardId::BODY_SLAM: case sts::CardId::INFLAME:
-            case sts::CardId::METALLICIZE: case sts::CardId::WOUND: return true;
+            case sts::CardId::METALLICIZE: case sts::CardId::WOUND: case sts::CardId::SLIMED: case sts::CardId::DAZED: return true;
+            case sts::CardId::SPOT_WEAKNESS: return multi;
             default:return false;
         }
     };
@@ -677,13 +727,6 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             default:return "silver_runic_dome_potion_domain";
         }
     }
-    m.miscInfo=0; m.pendingMoveRolls=1; m.pendingDirectMoveChoice=0;
-    auto &inputs=m.pendingRollInputs;
-    inputs.curHp=k.at("rollHp").get<int>(); inputs.maxHp=k.at("rollMaxHp").get<int>();
-    inputs.knightCurHp=inputs.curHp; inputs.knightMaxHp=inputs.maxHp; inputs.knightAlive=true;
-    inputs.monsterTurnNumber=std::max(1,completed); inputs.miscInfo=0;
-    inputs.aliveCount=1; inputs.monstersAlive=1;
-    inputs.playerConstricted=false; inputs.asleep=false; inputs.halfDead=false;
     wire.intentsHidden=true;
     return {};
 }
@@ -1364,6 +1407,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (const auto pendingIt = combat.find("pendingCardQueue"); pendingIt != combat.end() && !pendingIt->is_null()) {
         if (!pendingIt->is_array() || pendingIt->size() > static_cast<std::size_t>(sts::CardQueue::capacity))
             return unsupported("silver_card_queue_item");
+        std::set<int> noTriggerIds;
         for (const auto &item : *pendingIt) {
             if (!item.is_object()) return unsupported("silver_card_queue_item");
             // Observed pending items replace replayed work, so incomplete or
@@ -1382,6 +1426,21 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 return unsupported("silver_card_queue_item");
             silver_bridge::CardQueueItemWire parsed;
             if (const auto reason = parseQueueItem(item, parsed); !reason.empty()) return unsupported(reason);
+            const bool endTurnAutoPlay = item.value("endTurnAutoPlay",false);
+            if (!parsed.triggerOnUse) {
+                constexpr int top = static_cast<int>(sts::RelicId::UNCEASING_TOP);
+                const bool hasTop = top<64 ? (wire.player.relicBits0 & (1ULL<<(top%64))) : (wire.player.relicBits1 & (1ULL<<(top%64)));
+                const bool codexOwner = cardSelect && selectionIt->value("origin",std::string())=="CARD_REWARD"
+                    && selectionIt->value("continuation",std::string())=="codex_end_turn"
+                    && wire.cardSelect.task==static_cast<std::int16_t>(sts::CardSelectTask::CODEX);
+                const bool inHand=std::any_of(wire.hand.begin(),wire.hand.end(),[&](const auto &c){return c==parsed.card;});
+                if(!codexOwner || hasTop || !endTurnAutoPlay || item.value("noTriggerOwner",std::string())!="codex_end_turn"
+                        || !inHand || !noTriggerIds.insert(parsed.card.uniqueId).second
+                        || (parsed.card.id!=static_cast<int>(sts::CardId::BURN) && parsed.card.id!=static_cast<int>(sts::CardId::DECAY))
+                        || parsed.isEndTurn || parsed.ignoreEnergyTotal || parsed.freeToPlay || parsed.randomTarget
+                        || parsed.autoplay || parsed.purgeOnUse || parsed.exhaustOnUse || parsed.target!=0 || parsed.regretCardCount!=0)
+                    return unsupported("silver_card_reward_end_turn_card_queue");
+            } else if (endTurnAutoPlay) return unsupported("silver_card_reward_end_turn_card_queue");
             if (!parsed.isEndTurn && !parsed.randomTarget
                     && sts::CardInstance(static_cast<sts::CardId>(parsed.card.id), parsed.card.upgraded).requiresTarget()
                     && (parsed.target >= wire.monsterCount || wire.monsters[parsed.target].idx < 0))
@@ -1395,9 +1454,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         const bool codex = continuation == "codex_end_turn" && wire.cardSelect.task == static_cast<std::int16_t>(sts::CardSelectTask::CODEX);
         if ((!codex && wire.cardSelect.task != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY))
             || (!codex && continuation != "none" && continuation != "discovery_card" && continuation != "toolbox_draw")
-            || wire.endTurnQueued || wire.turnHasEnded || !wire.pendingCardQueue.empty())
+            || wire.endTurnQueued || wire.turnHasEnded || (!codex && !wire.pendingCardQueue.empty()))
             return unsupported("silver_card_reward_pending_actions");
         if (codex) {
+            if (std::any_of(wire.pendingCardQueue.begin(),wire.pendingCardQueue.end(),[](const auto &item){return item.triggerOnUse;}))
+                return unsupported("silver_card_reward_end_turn_card_queue");
             constexpr int relic = static_cast<int>(sts::RelicId::NILRYS_CODEX);
             const bool hasCodex = relic < 64 ? (wire.player.relicBits0 & (1ULL << (relic % 64)))
                                             : (wire.player.relicBits1 & (1ULL << (relic % 64)));
