@@ -1994,6 +1994,156 @@ int testMonsterAiJavaParity() {
         return fail("Bear or Centurion HP range differs from the game");
     }
 
+    // ---- Act 3 (monsters.beyond) ----
+
+    // Spire Growth falls through to Constrict after two Quick Tackles.
+    if (roll(0, MonsterEncounter::SPIRE_GROWTH, MonsterId::SPIRE_GROWTH,
+             MMID::SPIRE_GROWTH_QUICK_TACKLE, MMID::SPIRE_GROWTH_QUICK_TACKLE, 0, 30)
+            != MMID::SPIRE_GROWTH_CONSTRICT) {
+        return fail("Spire Growth did not Constrict after two Quick Tackles");
+    }
+
+    // Writhing Mass after Flail on a high roll re-rolls 0..69.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            const int v = r.random(0, 69);
+            if (v >= 40) seed = s;
+        }
+        BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
+        m.moveHistory[1] = MMID::WRITHING_MASS_WITHER;
+        m.miscInfo = 1;
+        bc.aiRng = Random(seed);
+        int monsterData = 1;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::WRITHING_MASS_MULTI_STRIKE) {
+            return fail("Writhing Mass did not re-roll after Flail");
+        }
+    }
+
+    // Writhing Mass Flail block equals its damage (15 at A0).
+    {
+        BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
+        Monster &m = bc.monsters.arr[0];
+        const int blockBefore = m.block;
+        m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.block != blockBefore + 15) return fail("Writhing Mass Flail block is not 15 at A0");
+    }
+
+    // Nemesis may Scythe again once a different move came in between.
+    if (roll(0, MonsterEncounter::NEMESIS, MonsterId::NEMESIS,
+             MMID::NEMESIS_ATTACK, MMID::NEMESIS_SCYTHE, 0, 10) != MMID::NEMESIS_SCYTHE) {
+        return fail("Nemesis Scythe was blocked two moves after the last Scythe");
+    }
+
+    // Nemesis Debuff adds 3 Burns below A18.
+    {
+        BattleContext bc = battle(MonsterEncounter::NEMESIS, 3);
+        Monster &m = bc.monsters.arr[0];
+        bc.cards.discardPile.clear();
+        m.moveHistory[0] = MMID::NEMESIS_DEBUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        int burns = 0;
+        for (const auto &c : bc.cards.discardPile) burns += c.getId() == CardId::BURN;
+        if (burns != 3) return fail("A3 Nemesis Debuff did not add 3 Burns");
+    }
+
+    // Reptomancer can summon with three daggers alive; at A18 it fills the one free slot.
+    {
+        for (const int asc : {0, 18}) {
+            BattleContext bc = battle(MonsterEncounter::REPTOMANCER, asc);
+            Monster &repto = bc.monsters.arr[2];
+            bc.monsters.arr[0] = Monster();
+            bc.monsters.arr[0].construct(bc, MonsterId::DAGGER, 0);
+            ++bc.monsters.monstersAlive;
+            repto.moveHistory[0] = MMID::REPTOMANCER_SNAKE_STRIKE;
+            repto.moveHistory[1] = MMID::REPTOMANCER_BIG_BITE;
+            int monsterData = 0;
+            if (repto.getMoveForRoll(bc, repto.captureRollInputs(bc), monsterData, 50) != MMID::REPTOMANCER_SUMMON) {
+                return fail("Reptomancer did not summon with three daggers alive");
+            }
+            repto.moveHistory[0] = MMID::REPTOMANCER_SUMMON;
+            repto.takeTurn(bc);
+            drain(bc);
+            if (bc.monsters.monstersAlive != 5 || bc.monsters.arr[3].id != MonsterId::DAGGER
+                    || !bc.monsters.arr[3].isAlive()) {
+                return fail("Reptomancer did not fill the last free dagger slot");
+            }
+        }
+    }
+
+    // Darkling Chomp hits twice; Nip hits for its rolled damage.
+    {
+        BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS);
+        Monster &m = bc.monsters.arr[0];
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.moveHistory[0] = MMID::DARKLING_CHOMP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != 16) return fail("Darkling Chomp did not hit 8 twice");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS, 2);
+        Monster &m = bc.monsters.arr[0];
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.moveHistory[0] = MMID::DARKLING_NIP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != m.miscInfo || m.miscInfo < 9 || m.miscInfo > 13) {
+            return fail("A2 Darkling Nip did not hit for its rolled damage");
+        }
+    }
+
+    // A18 Giant Head counts down one turn sooner.
+    {
+        BattleContext bc = battle(MonsterEncounter::GIANT_HEAD, 18);
+        Monster &m = bc.monsters.arr[0];
+        bc.turn = 2;
+        m.moveHistory[0] = MMID::GIANT_HEAD_COUNT;
+        m.moveHistory[1] = MMID::GIANT_HEAD_GLARE;
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 10) != MMID::GIANT_HEAD_IT_IS_TIME) {
+            return fail("A18 Giant Head did not start It Is Time on turn 4");
+        }
+        bc.turn = 3;
+        m.moveHistory[0] = MMID::GIANT_HEAD_IT_IS_TIME;
+        if (m.getMoveBaseDamage(bc).damage != 40) return fail("A18 Giant Head first It Is Time is not 40");
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != 40) return fail("A18 Giant Head first It Is Time did not hit for 40");
+    }
+
+    // Deca and Donu end each turn with a move roll (one aiRng draw).
+    {
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA);
+        Monster &donu = bc.monsters.arr[1];
+        donu.moveHistory[0] = MMID::DONU_CIRCLE_OF_POWER;
+        const auto counterBefore = bc.aiRng.counter;
+        donu.takeTurn(bc);
+        drain(bc);
+        if (bc.aiRng.counter != counterBefore + 1 || !donu.lastMove(MMID::DONU_BEAM)) {
+            return fail("Donu did not roll at the end of its turn");
+        }
+    }
+
+    // Awakened One A9 HP is exactly 320; Jaw Worm Horde Bellow block is 6 at A0.
+    if (monsterHpRange[static_cast<int>(MonsterId::AWAKENED_ONE)][1][0] != 320) {
+        return fail("Awakened One A9 HP range differs from the game");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::JAW_WORM_HORDE);
+        if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
+    }
+
     std::cout << "monster_ai_java_parity PASS\n";
     return 0;
 }

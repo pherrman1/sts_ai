@@ -152,7 +152,7 @@ namespace sts {
             {{65,69},{68,72}}, // ACID_SLIME_L
             {{28,32},{29,34}}, // ACID_SLIME_M
             {{8,12},{9,13}}, // ACID_SLIME_S
-            {{300,300},{300,320}}, // AWAKENED_ONE
+            {{300,300},{320,320}}, // AWAKENED_ONE
             {{38,42},{40,44}}, // BEAR
             {{46,50},{48,52}}, // BLUE_SLAVER
             {{160,164},{168,172}}, // BOOK_OF_STABBING
