@@ -61,6 +61,7 @@ namespace sts {
         void createDeckCardInstanceInDrawPile(const Card &card, int deckIdx, int drawIdx);
         void createTempCardShuffledIntoDrawPile(Random &cardRandomRng, CardInstance c);
         void createTempCardInDiscard(CardInstance c);
+        void createTempCardOnDrawPileTop(CardInstance c);
         void createTempCardInHand(CardInstance c);
 
         void removeFromDrawPileAtIdx(int idx);

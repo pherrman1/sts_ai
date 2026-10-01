@@ -2144,6 +2144,23 @@ int testMonsterAiJavaParity() {
         if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
     }
 
+    // ---- Act 4 (monsters.ending) ----
+
+    // A18 Spire Spear Burn Strike puts two Burns on top of the draw pile.
+    {
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 18);
+        Monster &spear = bc.monsters.arr[1];
+        const int drawBefore = bc.cards.drawPile.size();
+        spear.moveHistory[0] = MMID::SPIRE_SPEAR_BURN_STRIKE;
+        spear.takeTurn(bc);
+        drain(bc);
+        const auto &pile = bc.cards.drawPile;
+        if (pile.size() != drawBefore + 2 || pile[pile.size() - 1].getId() != CardId::BURN
+                || pile[pile.size() - 2].getId() != CardId::BURN) {
+            return fail("A18 Spire Spear did not put two Burns on top of the draw pile");
+        }
+    }
+
     std::cout << "monster_ai_java_parity PASS\n";
     return 0;
 }

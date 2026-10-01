@@ -683,8 +683,9 @@ void ActData_MakeTempCardInDrawPile::operator()(BattleContext &bc) const {
         for (int i = 0; i < amount; ++i) {
             if (shuffleInto) {
                 bc.cards.createTempCardShuffledIntoDrawPile(bc.cardRandomRng, c);
+            } else {
+                bc.cards.createTempCardOnDrawPileTop(c);
             }
-            // todo else
         }
     }
 
