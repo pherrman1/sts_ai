@@ -255,9 +255,19 @@ caller.
 
 ## Ambiguous or not yet inspected
 
-- The Gremlin Wizard and Shield Gremlin native turns do not check
-  `doesEscapeNext()`, while Java's do (`escapeNext`). Only the Act 2 Gremlin
-  Leader sets it. **Unverified**; out of the Act 1 scope.
+- Gremlin `escapeNext` (resolved: unreachable in vanilla). Java's gremlin
+  turns check `escapeNext` before choosing their escape move (99). The native
+  Gremlin Wizard and Shield Gremlin do not; the other native gremlins do, but
+  their `GENERIC_ESCAPE_MOVE` does nothing.
+  - In the pinned JAR, only `AbstractMonster` and the five gremlin classes
+    reference `escapeNext`. The field becomes true only inside the gremlins'
+    `escapeNext()` method, and no class calls it.
+  - When the Gremlin Leader dies, its minions escape immediately
+    (`GremlinLeader.die` queues an `EscapeAction` for each). Natively, the
+    minion-leader branch of `Monster::die` ends the fight instead.
+  - The escape-next path therefore never fires in vanilla play, and the native
+    code is left unchanged. Revisit only if a mod or the live importer
+    (`escapeNext` in `live_silver_importer.cpp`) is shown to set it.
 - The Guardian's switch back to offensive mode queues a block loss in Java;
   the native Twin Slam does not. **Inference**: no block exists at that point
   in reachable Ironclad play, because monster block resets at the start of its
@@ -274,7 +284,6 @@ which reach A0, plus one live-import mapping defect. Every simulator defect has
 a focused test in `monster_ai_java_parity`.
 
 Remaining static targets:
-- the Gremlin Wizard and Shield Gremlin escape gap;
 - the Automaton inspector mapping;
 - the Inference rows above.
 
