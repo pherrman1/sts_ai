@@ -442,16 +442,47 @@ does not replace a tracked model, and does not establish gameplay quality.
    lowest validation NLL selects every checkpoint. X1's half-TRAIN check uses
    the lowest hash-ranked half of source seeds under
    `vwin-refresh-334-half-train-v1:{seed}` with unchanged selected parameters
-   and early stopping. No TEST feature matrix is loaded.
+   and early stopping. After selection, the saved checkpoints for all four
+   arms execute the shared VALIDATION/TEST resource wrapper on all VALIDATION
+   MAP and WIN_RAW rows. `validation-resources.json` records per-arm results,
+   timing, cumulative process peak RSS, populations and checkpoint hashes.
+   This is execution qualification; resource outcomes do not change model
+   selection, and negative quality gates may still qualify execution.
+   No TEST feature matrix is loaded.
 3. `freeze RUN` binds the selected checkpoints, B0 copy, normalization,
-   preflight, validation reports, corpus identity and tooling file hashes in
-   an exclusive `freeze.json`. All candidates must use the same TRAIN mask.
+   preflight, validation reports and corpus identity in an exclusive v2
+   `freeze.json`. Freeze requires completed selected-checkpoint VALIDATION
+   MAP/WIN_RAW resource qualification with matching hashes, full tooling
+   identity (Git SHA and files), and numerical runtime. All candidates must
+   use the same TRAIN mask.
 4. `open-test RUN --confirm OPEN_REAL_TEST_ONCE` verifies the freeze and
-   corpus again, then consumes an exclusive `test-opened.json` latch before
+   corpus again, including equality of the complete tooling identity and
+   Python/NumPy/XGBoost/Torch runtime (CUDA/cuDNN/GPU for CUDA training), then
+   consumes an exclusive `test-opened.json` latch before
    reading TEST feature matrices. All four arms use identical metrics,
    source-cluster bootstrap (2,000 replicates), resources and sibling joins.
    A failed evaluation leaves the latch consumed. Recovery requires a
    separately reviewed decision; the CLI never automatically reopens TEST.
+
+`qualify-validation RUN` can execute qualification for saved checkpoints when
+no successful resource artifact exists. A failed attempt writes a separate
+failure report and leaves TEST untouched. The successful artifact is exclusive
+and must match the exact checkpoints and tuning manifest being frozen.
+
+`validation-smoke INDEX --output NEW_RUN` exercises all real VALIDATION MAP and
+WIN_RAW resource rows without full candidate training. It records a fixed plan
+before execution: at most 4,096 TRAIN rows, 1,024 VALIDATION fitting rows, one
+XGB recipe per arm with at most 16 rounds, and one MLP recipe with two epochs
+per fit and retrain seeds 0/1/2. The feature mask still derives from all TRAIN
+MAP rows. These checkpoints and diagnostics carry `purpose=smoke_only` and
+cannot be frozen. The eventual selected full-training checkpoints must execute
+their own qualification; a smoke artifact cannot substitute for it.
+
+Runtime identity is recorded in tuning, resource qualification, freeze and TEST
+results. CPU fingerprinting does not require a GPU; CUDA fingerprints bind the
+selected accelerator and deterministic cuBLAS setup. Saved predictors currently
+run on CPU. Older freeze records without this binding are rejected. Input
+identity changes during tuning or qualification also fail closed.
 
 The compact implementation separates CLI/custody (`vwin_refresh_model.py`),
 component-preserving dataset access (`vwin_refresh_dataset.py`), model families

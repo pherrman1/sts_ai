@@ -14,6 +14,10 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
+import resource
+import uuid
+import sys
 
 import numpy as np
 
@@ -120,11 +124,117 @@ def preflight(index, output):
     return report
 
 
+def resource_evaluation(model, X, names, rows, kind):
+    """The exact shared VALIDATION/TEST resource path, including adapters."""
+    from tools.vwin_refresh_evaluation import resource_probes
+    started = time.perf_counter()
+    result = resource_probes(lambda values: model.predict(values, names),
+                             X, names, rows, kind=kind)
+    return {"result": result, "elapsed_seconds": time.perf_counter() - started,
+            "process_peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
+
+
+def checkpoint_hashes(run):
+    run = Path(run)
+    files = [run / "B0.txt"]
+    for arm in ARMS:
+        directory = run / arm
+        arm_files = sorted(p for p in directory.rglob("*") if p.is_file())
+        if not arm_files:
+            raise ValueError(f"missing selected checkpoint: {arm}")
+        files.extend(arm_files)
+    return {str(p.relative_to(run)): sha256(p) for p in files}
+
+
+def qualify_validation(run, *, data=None):
+    """Qualify execution, never model quality; negative resource gates are valid.
+
+    The production artifact binds selected checkpoints, the whole VALIDATION
+    populations, runtime and source. Failed attempts are retained separately;
+    no attempt consumes or reads TEST feature matrices.
+    """
+    from tools.vwin_refresh_training import load_predictor, runtime_fingerprint
+    run = Path(run)
+    destination = run / "validation-resources.json"
+    if destination.exists():
+        raise FileExistsError(destination)
+    tuning = json.loads((run / "tuning.json").read_text())
+    tooling = tool_identity()
+    runtime = runtime_fingerprint(tuning["runtime_device"])
+    if tuning["tooling"] != tooling or tuning["runtime"] != runtime:
+        raise ValueError("tooling/runtime changed since tuning")
+    checkpoints = checkpoint_hashes(run)
+    if data is None:
+        data = validated_dataset(tuning["corpus_index"], expected_sha=tuning["corpus_sha256"])
+    models = {"B0": Baseline(run / "B0.txt"),
+              **{arm: load_predictor(run / arm) for arm in ARMS}}
+    started = time.perf_counter()
+    record = {"schema": "vwin_refresh_a3_validation_resources_v1", "status": "running",
+              "purpose": tuning["purpose"], "split": "VALIDATION",
+              "corpus_sha256": tuning["corpus_sha256"], "tooling": tooling,
+              "runtime": runtime, "checkpoint_hashes": checkpoints,
+              "tuning_sha256": sha256(run / "tuning.json"),
+              "populations": {}, "arms": {arm: {} for arm in models},
+              "selection_effect": "none; execution qualification only"}
+    try:
+        for kind in ("MAP", "WIN_RAW"):
+            X, _, rows = data.read("VALIDATION", kind=kind)
+            record["populations"][kind] = {"rows": len(rows),
+                "source_seeds": len({int(r["sourceSeed"]) for r in rows})}
+            for arm, model in models.items():
+                print(f"VALIDATION {kind} {arm}: {len(rows)} rows", file=sys.stderr, flush=True)
+                record["arms"][arm][kind] = resource_evaluation(model, X, data.feature_names, rows, kind)
+                print(f"VALIDATION {kind} {arm}: complete in "
+                      f"{record['arms'][arm][kind]['elapsed_seconds']:.3f}s", file=sys.stderr, flush=True)
+            del X, rows
+        if (tooling != tool_identity() or runtime != runtime_fingerprint(tuning["runtime_device"])
+                or checkpoints != checkpoint_hashes(run)):
+            raise ValueError("qualification inputs changed during execution")
+        record["status"] = "complete"
+        record["elapsed_seconds"] = time.perf_counter() - started
+        write_json(destination, record)
+    except Exception as exc:
+        record.update(status="failed", error=f"{type(exc).__name__}: {exc}",
+                      elapsed_seconds=time.perf_counter() - started)
+        write_json(run / f"validation-resources.failed-{uuid.uuid4().hex}.json", record)
+        raise
+    return record
+
+
+def verify_validation_qualification(run, tuning):
+    from tools.vwin_refresh_training import runtime_fingerprint
+    run = Path(run)
+    report = json.loads((run / "validation-resources.json").read_text())
+    if (report.get("schema") != "vwin_refresh_a3_validation_resources_v1"
+            or report.get("status") != "complete" or report.get("split") != "VALIDATION"
+            or report.get("purpose") != "selected_candidates"):
+        raise ValueError("completed selected-checkpoint VALIDATION resource qualification required")
+    if (report["tooling"] != tool_identity() or report["runtime"] != runtime_fingerprint(tuning["runtime_device"])
+            or report["corpus_sha256"] != tuning["corpus_sha256"]
+            or report["tuning_sha256"] != sha256(run / "tuning.json")
+            or report["checkpoint_hashes"] != checkpoint_hashes(run)):
+        raise ValueError("VALIDATION qualification identity mismatch")
+    if set(report["arms"]) != {"B0", *ARMS} or set(report["populations"]) != {"MAP", "WIN_RAW"}:
+        raise ValueError("incomplete VALIDATION resource qualification")
+    for kind, population in report["populations"].items():
+        if population["rows"] <= 0 or population["source_seeds"] <= 0:
+            raise ValueError("empty VALIDATION resource population")
+        for arm in ("B0", *ARMS):
+            if set(report["arms"][arm]) != {"MAP", "WIN_RAW"}:
+                raise ValueError("incomplete VALIDATION resource qualification")
+            entry = report["arms"][arm][kind]
+            if (entry["result"]["n"] != population["rows"] or entry["result"]["kind"] != kind
+                    or not np.isfinite(entry["elapsed_seconds"]) or entry["elapsed_seconds"] < 0):
+                raise ValueError("invalid VALIDATION resource result/timing")
+    return report
+
+
 def tune(index, output, *, threads=1, device="cpu"):
     from tools.vwin_refresh_training import (train_xgb, train_xgb_fixed, train_mlp,
-                                             _configure_cuda_determinism)
+                                             _configure_cuda_determinism, runtime_fingerprint)
     # XGB version reporting may inspect GPUs before M1 begins.
     _configure_cuda_determinism(device)
+    tooling, runtime = tool_identity(), runtime_fingerprint(device)
     from tools.vwin_refresh_evaluation import evaluate_predictions, sibling_ranking
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
@@ -180,27 +290,84 @@ def tune(index, output, *, threads=1, device="cpu"):
                      "siblings": sibling_ranking(mv, pred, branches)}
     shutil.copyfile(B0, output / "B0.txt")
     write_json(output / "validation.json", reports)
+    if tooling != tool_identity() or runtime != runtime_fingerprint(device):
+        raise ValueError("tooling/runtime changed during tuning")
     write_json(output / "tuning.json", {
-        "schema": "vwin_refresh_a3_tuning_v1", "tooling": tool_identity(),
+        "schema": "vwin_refresh_a3_tuning_v2", "tooling": tooling,
+        "runtime": runtime, "runtime_device": device, "purpose": "selected_candidates",
         "corpus_index": str(Path(index).resolve()), "corpus_sha256": sha256(index),
         "b0": baseline.identity(), "selected_features": selected,
         "selection_split": "VALIDATION", "test_predictions_opened": False,
         "complete_arms": list(ARMS)})
+    del train_selected, val_selected, xv, model
+    qualify_validation(output, data=data)
     return reports
+
+
+def validation_smoke(index, output):
+    """Bounded adapter checkpoints; full real VALIDATION probes, never freezeable.
+
+    This is not hyperparameter selection or scientific candidate qualification.
+    The eventual full tune must qualify its own selected checkpoint hashes.
+    """
+    from tools.vwin_refresh_training import train_xgb, train_mlp, runtime_fingerprint
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    tooling, runtime = tool_identity(), runtime_fingerprint("cpu")
+    plan = {"purpose": "smoke_only", "train_row_limit": 4096,
+            "validation_training_row_limit": 1024,
+            "row_selection": "first eligible rows in validated component order; no balancing",
+            "xgb_grid": [{"max_depth": 4, "eta": .06, "min_child_weight": 10}],
+            "xgb_max_rounds": 16, "xgb_patience": 4,
+            "mlp_recipes": [{"lr": .001, "weight_decay": .0001, "dropout": 0.}],
+            "mlp_max_epochs": 2, "mlp_patience": 1, "mlp_batch_size": 1024,
+            "mlp_retrain_seeds": [0, 1, 2], "threads": 1,
+            "resource_population": "ALL VALIDATION MAP and WIN_RAW, all four arms, 2000 bootstrap replicates",
+            "tooling": tooling, "runtime": runtime}
+    write_json(output / "smoke-plan.json", plan)
+    print("Validating full corpus; no TEST prediction access", file=sys.stderr, flush=True)
+    data = validated_dataset(index)
+    baseline = Baseline()
+    metadata = data.preflight(baseline.features)
+    write_json(output / "preflight.json", metadata)
+    selected = metadata["selected_feature_names"]
+    columns = [data.feature_names.index(name) for name in selected]
+    xt, yt, mt = data.read("TRAIN", row_limit=plan["train_row_limit"])
+    xv, yv, mv = data.read("VALIDATION", row_limit=plan["validation_training_row_limit"])
+    reports = {"plan": plan, "train_rows": len(yt), "validation_training_rows": len(yv),
+               "train_source_seeds": sorted({int(row["sourceSeed"]) for row in mt}),
+               "validation_training_source_seeds": sorted({int(row["sourceSeed"]) for row in mv})}
+    xt, xv = xt[:, columns], xv[:, columns]
+    for arm in ("X1", "X2"):
+        started = time.perf_counter()
+        model, report = train_xgb(xt, yt, xv, yv, selected, monotone=arm == "X2",
+            grid=plan["xgb_grid"], max_rounds=16, patience=4, threads=1)
+        model.save(output / arm)
+        reports[arm] = {"training": report, "elapsed_seconds": time.perf_counter() - started}
+    started = time.perf_counter()
+    model, report = train_mlp(xt, yt, xv, yv, selected, recipes=plan["mlp_recipes"],
+        max_epochs=2, patience=1, batch_size=1024, threads=1, device="cpu")
+    model.save(output / "M1")
+    reports["M1"] = {"training": report, "elapsed_seconds": time.perf_counter() - started}
+    shutil.copyfile(B0, output / "B0.txt")
+    write_json(output / "validation.json", reports)
+    if tooling != tool_identity() or runtime != runtime_fingerprint("cpu"):
+        raise ValueError("tooling/runtime changed during smoke")
+    write_json(output / "tuning.json", {
+        "schema": "vwin_refresh_a3_tuning_v2", "purpose": "smoke_only",
+        "tooling": tooling, "runtime": runtime, "runtime_device": "cpu",
+        "corpus_index": str(Path(index).resolve()), "corpus_sha256": sha256(index),
+        "b0": baseline.identity(), "selected_features": selected,
+        "selection_split": "VALIDATION_SMOKE_ONLY", "test_predictions_opened": False,
+        "complete_arms": list(ARMS)})
+    del xt, xv, model
+    return qualify_validation(output, data=data)
 
 
 def artifact_hashes(run):
     run = Path(run)
-    files = [run / name for name in ("preflight.json", "validation.json", "tuning.json", "B0.txt")]
-    for arm in ARMS:
-        directory = run / arm
-        if not directory.is_dir():
-            raise ValueError(f"missing selected checkpoint: {arm}")
-        arm_files = sorted(p for p in directory.rglob("*") if p.is_file())
-        if not arm_files:
-            raise ValueError(f"empty selected checkpoint: {arm}")
-        files.extend(arm_files)
-    return {str(p.relative_to(run)): sha256(p) for p in files}
+    files = ("preflight.json", "validation.json", "tuning.json", "validation-resources.json")
+    return {**checkpoint_hashes(run), **{name: sha256(run / name) for name in files}}
 
 
 def freeze(run):
@@ -209,11 +376,14 @@ def freeze(run):
     if (tuning["complete_arms"] != list(ARMS) or tuning["selection_split"] != "VALIDATION"
             or tuning["test_predictions_opened"] is not False):
         raise ValueError("only completed validation-selected arms may be frozen")
-    if tuning["tooling"]["files"] != tool_identity()["files"]:
+    if tuning["tooling"] != tool_identity():
         raise ValueError("tooling changed since tuning")
     if (run / "test-opened.json").exists():
         raise ValueError("TEST already opened")
-    from tools.vwin_refresh_training import load_predictor
+    from tools.vwin_refresh_training import load_predictor, runtime_fingerprint
+    if tuning["runtime"] != runtime_fingerprint(tuning["runtime_device"]):
+        raise ValueError("runtime changed since tuning")
+    verify_validation_qualification(run, tuning)
     selected = tuning["selected_features"]
     preflight_record = json.loads((run / "preflight.json").read_text())
     if selected != preflight_record["selected_feature_names"]:
@@ -224,8 +394,9 @@ def freeze(run):
             raise ValueError(f"{arm} feature contract disagrees with TRAIN mask")
     if sha256(run / "B0.txt") != tuning["b0"]["sha256"]:
         raise ValueError("B0 checkpoint changed since tuning")
-    record = {"schema": "vwin_refresh_a3_freeze_v1", "artifacts": artifact_hashes(run),
-              "tooling": tool_identity(), "corpus_sha256": tuning["corpus_sha256"],
+    record = {"schema": "vwin_refresh_a3_freeze_v2", "artifacts": artifact_hashes(run),
+              "tooling": tool_identity(), "runtime": tuning["runtime"],
+              "runtime_device": tuning["runtime_device"], "corpus_sha256": tuning["corpus_sha256"],
               "test_policy": "one exclusive opening, all four frozen arms, no retuning"}
     write_json(run / "freeze.json", record)
     return record
@@ -234,12 +405,15 @@ def freeze(run):
 def verify_freeze(run):
     run = Path(run)
     record = json.loads((run / "freeze.json").read_text())
-    if record.get("schema") != "vwin_refresh_a3_freeze_v1":
+    if record.get("schema") != "vwin_refresh_a3_freeze_v2":
         raise ValueError("invalid freeze schema")
     if record["artifacts"] != artifact_hashes(run):
         raise ValueError("frozen artifacts changed")
-    if record["tooling"]["files"] != tool_identity()["files"]:
+    if record["tooling"] != tool_identity():
         raise ValueError("frozen tooling changed")
+    from tools.vwin_refresh_training import runtime_fingerprint
+    if record["runtime"] != runtime_fingerprint(record["runtime_device"]):
+        raise ValueError("frozen runtime changed")
     if (run / "test-opened.json").exists():
         raise ValueError("TEST was already opened; automatic reopen is prohibited")
     return record
@@ -254,9 +428,10 @@ def open_test(run, confirmation):
     data = validated_dataset(tuning["corpus_index"], expected_sha=record["corpus_sha256"])
     from tools.vwin_refresh_training import load_predictor
     from tools.vwin_refresh_evaluation import (evaluate_predictions, clustered_delta,
-        resource_probes, sibling_ranking, offline_verdict)
+        sibling_ranking, offline_verdict)
     models = {"B0": Baseline(run / "B0.txt"),
               **{arm: load_predictor(run / arm) for arm in ARMS}}
+    verify_freeze(run)  # Recheck after corpus validation/model loading, before latch.
     # An exclusive durable marker is written before the first TEST feature read.
     write_json(run / "test-opened.json", {"freeze_sha256": sha256(run / "freeze.json"),
                                           "status": "consumed_before_test_read"})
@@ -264,14 +439,17 @@ def open_test(run, confirmation):
     names = data.feature_names
     predictions = {arm: model.predict(X, names) for arm, model in models.items()}
     branches = data.branches("TEST", allow_test=True)
-    result = {"freeze_sha256": sha256(run / "freeze.json"), "arms": {}}
+    result = {"freeze_sha256": sha256(run / "freeze.json"), "runtime": record["runtime"],
+              "tooling": record["tooling"], "arms": {}}
     decisions = {}
     seeds = [int(r["sourceSeed"]) for r in rows]
     for arm, model in models.items():
         p = predictions[arm]
         metrics = evaluate_predictions(y, p, rows)
-        resources = resource_probes(lambda values, m=model: m.predict(values, names), X, names, rows)
+        resource_record = resource_evaluation(model, X, names, rows, "MAP")
+        resources = resource_record["result"]
         entry = {"predictive": metrics, "map_resources": resources,
+                 "map_resource_timing": {k: v for k, v in resource_record.items() if k != "result"},
                  "siblings": sibling_ranking(rows, p, branches)}
         if arm != "B0":
             entry["delta_vs_b0"] = clustered_delta(y, predictions["B0"], p, seeds)
@@ -282,8 +460,9 @@ def open_test(run, confirmation):
     del X, predictions
     raw, _, raw_rows = data.read("TEST", kind="WIN_RAW", allow_test=True)
     for arm, model in models.items():
-        resource = resource_probes(lambda values, m=model: m.predict(values, names),
-                                   raw, names, raw_rows, kind="WIN_RAW")
+        resource_record = resource_evaluation(model, raw, names, raw_rows, "WIN_RAW")
+        resource = resource_record["result"]
+        result["arms"][arm]["win_raw_resource_timing"] = {k: v for k, v in resource_record.items() if k != "result"}
         result["arms"][arm]["win_raw_resources"] = resource
         if arm != "B0":
             decisions[arm]["win_raw_resource_gate"] = resource["resource_gate"]
@@ -303,6 +482,9 @@ def main(argv=None):
     p.add_argument("--authorize-full-training", action="store_true", required=True)
     p.add_argument("--threads", type=int, default=1)
     p.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+    p = sub.add_parser("validation-smoke", help="bounded non-freezeable models; full VALIDATION resource probes")
+    p.add_argument("index"); p.add_argument("--output", required=True)
+    p = sub.add_parser("qualify-validation"); p.add_argument("run")
     p = sub.add_parser("freeze"); p.add_argument("run")
     p = sub.add_parser("open-test"); p.add_argument("run")
     p.add_argument("--confirm", required=True, choices=("OPEN_REAL_TEST_ONCE",))
@@ -311,6 +493,10 @@ def main(argv=None):
         result = preflight(args.index, args.output)
     elif args.command == "tune":
         result = tune(args.index, args.output, threads=args.threads, device=args.device)
+    elif args.command == "validation-smoke":
+        result = validation_smoke(args.index, args.output)
+    elif args.command == "qualify-validation":
+        result = qualify_validation(args.run)
     elif args.command == "freeze":
         result = freeze(args.run)
     else:

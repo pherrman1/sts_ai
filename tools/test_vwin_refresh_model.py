@@ -21,7 +21,7 @@ class SyntheticDataset:
     def preflight(self, features):
         return {'selected_feature_names': list(self.feature_names)}
 
-    def read(self, split, kind='MAP', allow_test=False):
+    def read(self, split, kind='MAP', allow_test=False, row_limit=None):
         if split == 'TEST' and not allow_test:
             raise ValueError('TEST blocked')
         seeds = [s for s in range(200) if source_split(s) == split][:6]
@@ -78,6 +78,21 @@ class ModelTests(unittest.TestCase):
                         pipeline.main(args)
             access.assert_not_called()
 
+    def test_bounded_smoke_qualifies_path_but_cannot_freeze(self):
+        index = self.root / 'index.json'
+        index.write_text('{}')
+        run = self.root / 'smoke'
+        with patch.object(pipeline, 'validated_dataset', return_value=SyntheticDataset()), \
+             patch.object(pipeline, 'B0', self.b0):
+            report = pipeline.validation_smoke(index, run)
+        self.assertEqual(report['status'], 'complete')
+        self.assertEqual(report['purpose'], 'smoke_only')
+        self.assertEqual(set(report['arms']), {'B0', 'X1', 'X2', 'M1'})
+        self.assertTrue(all(set(arm) == {'MAP', 'WIN_RAW'} for arm in report['arms'].values()))
+        self.assertFalse((run / 'test-opened.json').exists())
+        with self.assertRaisesRegex(ValueError, 'completed validation-selected'):
+            pipeline.freeze(run)
+
     def test_synthetic_complete_lifecycle_and_tampering(self):
         dataset = SyntheticDataset()
         index = self.root / 'index.json'
@@ -110,6 +125,44 @@ class ModelTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'completed validation-selected'):
                     pipeline.freeze(run)
             tuning_path.write_text(original_tuning)
+            qualification = run / 'validation-resources.json'
+            original_qualification = qualification.read_text()
+            qualification.unlink()
+            with self.assertRaises(FileNotFoundError):
+                pipeline.freeze(run)
+            # Failure is recorded but does not burn TEST or create a qualification.
+            with patch.object(pipeline, 'resource_evaluation', side_effect=ValueError('real-state-edge')):
+                with self.assertRaisesRegex(ValueError, 'real-state-edge'):
+                    pipeline.qualify_validation(run, data=dataset)
+            self.assertFalse(qualification.exists())
+            self.assertTrue(list(run.glob('validation-resources.failed-*.json')))
+            self.assertFalse((run / 'test-opened.json').exists())
+            for key, value in [('status', 'failed'), ('purpose', 'smoke_only'), ('split', 'TEST')]:
+                changed = json.loads(original_qualification)
+                changed[key] = value
+                qualification.write_text(json.dumps(changed))
+                with self.assertRaisesRegex(ValueError, 'resource qualification required'):
+                    pipeline.freeze(run)
+            changed = json.loads(original_qualification)
+            del changed['arms']['M1']['WIN_RAW']
+            qualification.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, 'incomplete VALIDATION'):
+                pipeline.freeze(run)
+            qualification.write_text(original_qualification)
+            checkpoint = run / 'X1/predictor.json'
+            original_checkpoint = checkpoint.read_text()
+            checkpoint.write_text(original_checkpoint + '\n')
+            with self.assertRaisesRegex(ValueError, 'qualification identity mismatch'):
+                pipeline.freeze(run)
+            checkpoint.write_text(original_checkpoint)
+            changed_tooling = dict(pipeline.tool_identity(), git_sha='0' * 40)
+            with patch.object(pipeline, 'tool_identity', return_value=changed_tooling):
+                with self.assertRaisesRegex(ValueError, 'tooling changed since tuning'):
+                    pipeline.freeze(run)
+            changed_runtime = dict(training.runtime_fingerprint(), numpy='different')
+            with patch.object(training, 'runtime_fingerprint', return_value=changed_runtime):
+                with self.assertRaisesRegex(ValueError, 'runtime changed since tuning'):
+                    pipeline.freeze(run)
             pipeline.freeze(run)
             pipeline.verify_freeze(run)
             target = run / 'X1/predictor.json'
@@ -121,6 +174,16 @@ class ModelTests(unittest.TestCase):
             with patch.object(pipeline, 'tool_identity', return_value={'files': {}}):
                 with self.assertRaisesRegex(ValueError, 'tooling changed'):
                     pipeline.verify_freeze(run)
+            for dependency, value, message in [
+                    ('tool_identity', changed_tooling, 'frozen tooling changed'),
+                    ('runtime_fingerprint', changed_runtime, 'frozen runtime changed')]:
+                module = pipeline if dependency == 'tool_identity' else training
+                with patch.object(module, dependency, return_value=value), \
+                     patch.object(pipeline, 'validated_dataset') as access:
+                    with self.assertRaisesRegex(ValueError, message):
+                        pipeline.open_test(run, 'OPEN_REAL_TEST_ONCE')
+                    access.assert_not_called()
+                    self.assertFalse((run / 'test-opened.json').exists())
             # A failed prediction still consumes the latch; only synthetic copies
             # are used here to exercise both success and failure independently.
             failed_run = self.root / 'failed-run'

@@ -11,6 +11,8 @@ import itertools
 import json
 import os
 from pathlib import Path
+import platform
+import sys
 
 import numpy as np
 
@@ -35,6 +37,41 @@ def versions():
                 torch=torch.__version__, cuda=torch.version.cuda,
                 cudnn=torch.backends.cudnn.version(),
                 gpu=[torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())])
+
+
+def runtime_fingerprint(device='cpu'):
+    """Stable numerical-runtime identity for a frozen experiment.
+
+    ``device`` is the MLP training device. Persisted predictors currently run on
+    CPU, even after CUDA training. CPU-only experiments never enumerate GPUs;
+    CUDA experiments require the selected accelerator and bind its properties.
+    Mutable global thread settings are recorded by the caller's run settings,
+    rather than sampled here before/after training.
+    """
+    _configure_cuda_determinism(device)
+    import torch
+    import xgboost
+    selected = torch.device(device)
+    if selected.type not in ('cpu', 'cuda'):
+        raise ValueError('runtime fingerprint supports only cpu or cuda')
+    result = dict(
+        python=dict(version=sys.version, implementation=platform.python_implementation()),
+        platform=dict(system=platform.system(), machine=platform.machine()),
+        numpy=str(np.__version__), xgboost=str(xgboost.__version__),
+        torch=str(torch.__version__), training_device=str(selected),
+        prediction_device='cpu', cuda=None)
+    if selected.type == 'cuda':
+        if not torch.cuda.is_available():
+            raise ValueError('CUDA runtime fingerprint requires an available GPU')
+        index = selected.index if selected.index is not None else torch.cuda.current_device()
+        props = torch.cuda.get_device_properties(index)
+        result['cuda'] = dict(
+            version=torch.version.cuda, cudnn=torch.backends.cudnn.version(),
+            cublas_workspace_config=os.environ['CUBLAS_WORKSPACE_CONFIG'],
+            device_index=index, gpu=dict(name=props.name, major=props.major,
+                                       minor=props.minor, total_memory=props.total_memory,
+                                       multi_processor_count=props.multi_processor_count))
+    return result
 
 
 def _nll(y, p):

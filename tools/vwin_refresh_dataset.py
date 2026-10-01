@@ -123,13 +123,17 @@ class Dataset:
                         _require(np.isfinite(x).all(), "nonfinite state feature")
                     yield split, x, joins[key], metadata
 
-    def read(self, split, kind="MAP", *, allow_test=False):
+    def read(self, split, kind="MAP", *, allow_test=False, row_limit=None):
         self._access(split, allow_test)
+        if row_limit is not None and (split == "TEST" or row_limit < 1):
+            raise ContractError("row limits are only for bounded TRAIN/VALIDATION smokes")
         rows, labels, metadata = [], [], []
         for _, x, y, meta in self._rows(kind, {split}):
             rows.append(x)
             labels.append(y)
             metadata.append(meta)
+            if row_limit is not None and len(rows) >= row_limit:
+                break
         x = np.asarray(rows, dtype=np.float32).reshape((-1, len(self.feature_names)))
         return x, np.asarray(labels, dtype=np.float32), metadata
 

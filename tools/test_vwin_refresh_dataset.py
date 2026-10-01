@@ -49,6 +49,14 @@ class DatasetTests(unittest.TestCase):
         for label, row in zip(labels, metadata):
             self.assertEqual(label, expected[(row["componentManifestSha256"], row["sourceSeed"], row["branchId"])])
 
+    def test_row_limits_are_smoke_only(self):
+        data = self.dataset()
+        self.assertEqual(len(data.read('TRAIN', row_limit=1)[0]), 1)
+        with self.assertRaisesRegex(ContractError, 'row limits'):
+            data.read('TEST', allow_test=True, row_limit=1)
+        with self.assertRaisesRegex(ContractError, 'row limits'):
+            data.read('TRAIN', row_limit=0)
+
     def test_preboss_uses_exact_native_map_transition(self):
         for act in (1, 2, 3):
             self.assertEqual(preboss_map_state(dict(act=act, mapY=14)), 1)

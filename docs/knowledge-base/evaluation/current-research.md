@@ -2188,8 +2188,9 @@ candidates on source/branch trajectories, including sequential shop states and
 compound selectors, for later #379 work. These rows are not used to train #334.
 The bundle validator and Stage-1 paired-bootstrap analyzer are implemented.
 The A3 offline model tooling now supports strict mixed-producer corpus access,
-TRAIN-only feature selection, validation-selected X1/X2/M1, a frozen one-time
-TEST opening, clustered predictive/resource/sibling evaluation, and the X1
+TRAIN-only feature selection, validation-selected X1/X2/M1, mandatory selected-
+checkpoint VALIDATION resource qualification, runtime/Git-bound one-time TEST
+opening, clustered predictive/resource/sibling evaluation, and the X1
 half-TRAIN data-sufficiency diagnostic. See the
 [A3 operational contract](../operations/ooc-label-pipeline.md#a3-offline-model-training-and-evaluation).
 This is tooling status: full candidate training and real TEST predictions

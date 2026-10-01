@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -24,6 +25,46 @@ class TrainingTest(unittest.TestCase):
         self.assertEqual(len(training.MLP_RECIPES), 12)
         self.assertEqual({x['max_depth'] for x in training.XGB_GRID}, {4, 6, 8})
         self.assertEqual({x['lr'] for x in training.MLP_RECIPES}, {1e-3, 3e-4, 1e-4})
+
+    def test_runtime_fingerprint_cpu_is_stable_without_gpu(self):
+        with mock.patch('torch.cuda.is_available', side_effect=AssertionError('GPU queried')):
+            with mock.patch('torch.cuda.device_count', side_effect=AssertionError('GPU queried')):
+                first = training.runtime_fingerprint()
+                self.assertEqual(first, training.runtime_fingerprint('cpu'))
+        self.assertEqual(json.loads(json.dumps(first)), first)
+        self.assertTrue(first['python']['version'])
+        self.assertTrue(first['python']['implementation'])
+        for library in ('numpy', 'xgboost', 'torch'):
+            self.assertTrue(first[library])
+        self.assertIsNone(first['cuda'])
+        self.assertEqual(first['prediction_device'], 'cpu')
+        with mock.patch.object(training.np, '__version__', 'changed-version'):
+            self.assertNotEqual(first, training.runtime_fingerprint())
+
+    def test_runtime_fingerprint_cuda_configured_before_gpu_queries(self):
+        def available():
+            self.assertEqual(os.environ['CUBLAS_WORKSPACE_CONFIG'], ':4096:8')
+            return True
+        props = SimpleNamespace(name='Synthetic GPU', major=9, minor=0,
+                                total_memory=1024, multi_processor_count=2)
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch('torch.cuda.is_initialized', return_value=False), \
+                mock.patch('torch.cuda.is_available', side_effect=available), \
+                mock.patch('torch.cuda.get_device_properties', return_value=props) as get_props, \
+                mock.patch('torch.version.cuda', '12.test'), \
+                mock.patch('torch.backends.cudnn.version', return_value=999):
+            fingerprint = training.runtime_fingerprint('cuda:1')
+            get_props.assert_called_once_with(1)
+        self.assertEqual(fingerprint['cuda']['gpu']['name'], 'Synthetic GPU')
+        self.assertEqual(fingerprint['cuda']['version'], '12.test')
+        self.assertEqual(fingerprint['cuda']['cudnn'], 999)
+        self.assertEqual(fingerprint['training_device'], 'cuda:1')
+        self.assertEqual(fingerprint['prediction_device'], 'cpu')
+        self.assertEqual(json.loads(json.dumps(fingerprint)), fingerprint)
+        with mock.patch.dict(os.environ, {'CUBLAS_WORKSPACE_CONFIG': ':4096:8'}), \
+                mock.patch('torch.cuda.is_available', return_value=False):
+            with self.assertRaisesRegex(ValueError, 'available GPU'):
+                training.runtime_fingerprint('cuda')
 
     def test_xgb_constraint_attaches_only_curhp(self):
         p = training.xgb_parameters(self.names, monotone=True)
