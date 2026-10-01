@@ -86,7 +86,6 @@ void Monster::initHp(Random &hpRng, int ascension) {
         case MonsterId::THE_COLLECTOR:
         case MonsterId::THE_GUARDIAN:
         case MonsterId::TIME_EATER:
-        case MonsterId::TORCH_HEAD:
             setRandomHp(hpRng, ascension >= 9);
             break;
 
@@ -110,6 +109,11 @@ void Monster::initHp(Random &hpRng, int ascension) {
 
         case MonsterId::BRONZE_ORB:
             hpRng.random(52, 58);
+            setRandomHp(hpRng, ascension >= 9);
+            break;
+
+        case MonsterId::TORCH_HEAD:
+            hpRng.random(38, 40);
             setRandomHp(hpRng, ascension >= 9);
             break;
 
@@ -441,7 +445,11 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::ROMEO_CROSS_SLASH:
             attackPlayerHelper(bc, asc2 ? 17 : 15);
-            setMove(MMID::ROMEO_AGONIZING_SLASH);
+            if (asc17 && !lastTwoMoves(MMID::ROMEO_CROSS_SLASH)) {
+                setMove(MMID::ROMEO_CROSS_SLASH);
+            } else {
+                setMove(MMID::ROMEO_AGONIZING_SLASH);
+            }
             break;
 
         case MMID::ROMEO_MOCK: // 2
@@ -483,7 +491,9 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             buff<MS::STRENGTH>(asc4 ? 4 : 3);
             addBlock(asc9 ? 12 : 9);
             auto &lastBoostWasFlail = miscInfo;
-            if (lastBoostWasFlail) {
+            if (lastMoveBefore(MMID::BRONZE_AUTOMATON_HYPER_BEAM)) {
+                setMove(MMID::BRONZE_AUTOMATON_FLAIL);
+            } else if (lastBoostWasFlail) {
                 setMove(MMID::BRONZE_AUTOMATON_HYPER_BEAM);
                 lastBoostWasFlail = false;
             } else {
@@ -571,11 +581,8 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             break;
 
         case MMID::CENTURION_DEFEND: {
-            if (bc.monsters.getAliveCount() > 1) {
-                auto &mystic = bc.monsters.arr[1];
-                mystic.addBlock(asc17 ? 20 : 15);
-            }
-            rollMove(bc);
+            bc.addToBot( Actions::GainBlockRandomEnemy(idx, asc17 ? 20 : 15) );
+            bc.addToBot( Actions::RollMove(idx) );
             break;
         }
 
@@ -729,7 +736,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
                 auto &minion = bc.monsters.arr[i];
                 if (!minion.isDying()) {
                     minion.buff<MS::STRENGTH>(strGain);
-                    minion.addBlock(asc3 ? 10 : 6);
+                    minion.addBlock(asc18 ? 10 : 6);
                 }
             }
             buff<MS::STRENGTH>(strGain);
@@ -1302,7 +1309,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
         }
 
         case MMID::THE_CHAMP_GLOAT: {
-            const int strAmts[3] {3, 4, 5};
+            const int strAmts[3] {2, 3, 4};
             buff<MS::STRENGTH>(strAmts[bossDiffIdx]);
             rollMove(bc);
             break;
@@ -1325,7 +1332,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::THE_COLLECTOR_BUFF: { //3
             const int strAmounts[3] {3, 4, 5};
-            const int blockAmounts[3] {15, 18, 23};
+            const int blockAmount = asc19 ? 23 : (asc9 ? 18 : 15);
 
             for (int i = 0; i < 2; ++i) {
                 auto &torchHead = bc.monsters.arr[i];
@@ -1334,7 +1341,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
                 }
             }
             buff<MS::STRENGTH>(strAmounts[bossDiffIdx]);
-            addBlock(blockAmounts[bossDiffIdx]);
+            addBlock(blockAmount);
 
             bc.addToBot(Actions::RollMove(idx));
             break;
@@ -1345,12 +1352,14 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             bc.addToBot( Actions::RollMove(idx) );
             break;
 
-        case MMID::THE_COLLECTOR_MEGA_DEBUFF: // 4
-            bc.addToBot( Actions::DebuffPlayer<PS::WEAK>(3, true) );
-            bc.addToBot( Actions::DebuffPlayer<PS::VULNERABLE>(3, true) );
-            bc.addToBot( Actions::DebuffPlayer<PS::FRAIL>(3, true) );
+        case MMID::THE_COLLECTOR_MEGA_DEBUFF: { // 4
+            const int megaDebuff = asc19 ? 5 : 3;
+            bc.addToBot( Actions::DebuffPlayer<PS::WEAK>(megaDebuff, true) );
+            bc.addToBot( Actions::DebuffPlayer<PS::VULNERABLE>(megaDebuff, true) );
+            bc.addToBot( Actions::DebuffPlayer<PS::FRAIL>(megaDebuff, true) );
             bc.addToBot( Actions::RollMove(idx) );
             break;
+        }
 
         case MMID::THE_COLLECTOR_SPAWN: // 5, 1(initial spawn)
             bc.addToBot( Actions::SpawnTorchHeads() );
@@ -2217,8 +2226,9 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             // 2 heal
             // 3 buff
 
-            const auto healNeedAmt = asc17 ? 21 : 16;
-            if (in.maxHp-in.curHp >= healNeedAmt || in.knightAlive && in.knightMaxHp-in.knightCurHp >= healNeedAmt) {
+            const int missingHp = (in.maxHp - in.curHp)
+                + (in.knightAlive ? in.knightMaxHp - in.knightCurHp : 0);
+            if (missingHp > (asc17 ? 20 : 15) && !lastTwoMoves(MMID::MYSTIC_HEAL)) {
                 return (MMID::MYSTIC_HEAL);
                 break;
             }
@@ -2295,16 +2305,16 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
                     ++stabCount;
                     return (MMID::BOOK_OF_STABBING_MULTI_STAB);
                 } else {
-                    return (MMID::BOOK_OF_STABBING_SINGLE_STAB);
                     if (asc18) {
                         ++stabCount;
                     }
+                    return (MMID::BOOK_OF_STABBING_SINGLE_STAB);
                 }
             } else if (lastTwoMoves(MMID::BOOK_OF_STABBING_MULTI_STAB)) {
-                return (MMID::BOOK_OF_STABBING_SINGLE_STAB);
                 if (asc18) {
                     ++stabCount;
                 }
+                return (MMID::BOOK_OF_STABBING_SINGLE_STAB);
             } else {
                 ++stabCount;
                 return (MMID::BOOK_OF_STABBING_MULTI_STAB);
@@ -2403,7 +2413,10 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
                     }
 
                 } else if (lastMove(MMID::GREMLIN_LEADER_STAB)) {
-                    const auto roll2 = bc.aiRng.random(0, 80);
+                    int roll2;
+                    do {
+                        roll2 = bc.aiRng.random(0, 80);
+                    } while (roll2 == 80);
                     if (roll2 < 50) {
                         return (MMID::GREMLIN_LEADER_RALLY);
                     } else {
@@ -2702,17 +2715,17 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
                 break;
             }
 
-            int roll2 = 100;
+            int effectiveRoll = roll;
 
             if (roll < 20) {
                 if (!lastMove(MMID::SHELLED_PARASITE_FELL)) {
                     return (MMID::SHELLED_PARASITE_FELL);
                     break;
                 }
-                roll2 = bc.aiRng.random(20,99);
+                effectiveRoll = bc.aiRng.random(20,99);
             }
 
-            if (roll < 60 || roll2 < 60) {
+            if (effectiveRoll < 60) {
                 if (!lastTwoMoves(MMID::SHELLED_PARASITE_DOUBLE_STRIKE)) {
                     return (MMID::SHELLED_PARASITE_DOUBLE_STRIKE);
                 } else {
@@ -2754,7 +2767,8 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
                     } else {
                         return (MMID::SNAKE_PLANT_CHOMP);
                     }
-                } else if (!lastTwoMoves(MMID::SNAKE_PLANT_ENFEEBLING_SPORES)) {
+                } else if (!lastMove(MMID::SNAKE_PLANT_ENFEEBLING_SPORES)
+                        && !lastMoveBefore(MMID::SNAKE_PLANT_ENFEEBLING_SPORES)) {
                     return (MMID::SNAKE_PLANT_ENFEEBLING_SPORES);
                 } else {
                     return (MMID::SNAKE_PLANT_CHOMP);

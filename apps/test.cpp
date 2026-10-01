@@ -1727,8 +1727,8 @@ int testMonsterAiJavaParity() {
     }
 
     // Monster turns (takeTurn) checked against the same reference.
-    auto battle = [](MonsterEncounter encounter) {
-        GameContext gc(CharacterClass::IRONCLAD, 100123, 0);
+    auto battle = [](MonsterEncounter encounter, int ascension = 0) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, ascension);
         gc.curRoom = Room::MONSTER;
         BattleContext bc;
         bc.init(gc, encounter);
@@ -1804,6 +1804,194 @@ int testMonsterAiJavaParity() {
         if (bc.cards.hand[bc.cards.cardsInHand - 1].isUpgraded()) {
             return fail("Inferno upgraded a Burn in hand");
         }
+    }
+
+    // ---- Act 2 (monsters.city) ----
+
+    // Mystic heals on the summed missing HP of living monsters (> 15 at A0),
+    // but not after healing on each of its last two moves.
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        Monster &mystic = bc.monsters.arr[1];
+        centurion.curHp = centurion.maxHp - 10;
+        mystic.curHp = mystic.maxHp - 10;
+        int monsterData = 0;
+        mystic.moveHistory[0] = MMID::MYSTIC_BUFF;
+        mystic.moveHistory[1] = MMID::MYSTIC_ATTACK_DEBUFF;
+        if (mystic.getMoveForRoll(bc, mystic.captureRollInputs(bc), monsterData, 10) != MMID::MYSTIC_HEAL) {
+            return fail("Mystic did not heal on 20 combined missing HP");
+        }
+        mystic.moveHistory[0] = MMID::MYSTIC_HEAL;
+        mystic.moveHistory[1] = MMID::MYSTIC_HEAL;
+        if (mystic.getMoveForRoll(bc, mystic.captureRollInputs(bc), monsterData, 10) == MMID::MYSTIC_HEAL) {
+            return fail("Mystic healed three times in a row");
+        }
+    }
+
+    // Centurion Defend gives a random other monster block, or itself if none.
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        bc.monsters.arr[1].curHp = 0;
+        bc.monsters.monstersAlive = 1;
+        const int blockBefore = centurion.block;
+        centurion.moveHistory[0] = MMID::CENTURION_DEFEND;
+        centurion.takeTurn(bc);
+        drain(bc);
+        if (centurion.block != blockBefore + 15) {
+            return fail("Centurion Defend did not fall back to blocking itself");
+        }
+    }
+
+    // Book of Stabbing at A18 counts a single stab toward the multi-stab.
+    for (const int asc : {0, 18}) {
+        BattleContext bc = battle(MonsterEncounter::BOOK_OF_STABBING, asc);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::BOOK_OF_STABBING_MULTI_STAB;
+        m.moveHistory[1] = MMID::BOOK_OF_STABBING_MULTI_STAB;
+        int stabCount = 2;
+        const auto move = m.getMoveForRoll(bc, m.captureRollInputs(bc), stabCount, 50);
+        if (move != MMID::BOOK_OF_STABBING_SINGLE_STAB || stabCount != (asc >= 18 ? 3 : 2)) {
+            return fail("Book of Stabbing single stab miscounted at A" + std::to_string(asc));
+        }
+    }
+
+    // Gremlin Leader with one gremlin after a Stab re-rolls 0..80, and 80 rolls again.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 100000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.random(0, 80) == 80 && r.random(0, 80) < 50) seed = s;
+        }
+        if (seed == 0) return fail("no Gremlin Leader test seed");
+        BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER);
+        Monster &leader = bc.monsters.arr[3];
+        bc.monsters.arr[2].curHp = 0;
+        leader.moveHistory[0] = MMID::GREMLIN_LEADER_STAB;
+        leader.moveHistory[1] = MMID::GREMLIN_LEADER_ENCOURAGE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (leader.getMoveForRoll(bc, leader.captureRollInputs(bc), monsterData, 90) != MMID::GREMLIN_LEADER_RALLY
+                || bc.aiRng.counter != 2) {
+            return fail("Gremlin Leader did not re-roll a nested 80");
+        }
+    }
+
+    // Gremlin Leader Encourage gives minions 6 block below A18.
+    {
+        BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER, 3);
+        Monster &leader = bc.monsters.arr[3];
+        const int blockBefore = bc.monsters.arr[1].block;
+        leader.moveHistory[0] = MMID::GREMLIN_LEADER_ENCOURAGE;
+        leader.takeTurn(bc);
+        drain(bc);
+        if (bc.monsters.arr[1].block != blockBefore + 6) {
+            return fail("A3 Gremlin Leader Encourage did not give 6 block");
+        }
+    }
+
+    // Shelled Parasite: the re-roll after Fell decides the rest of the choice.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.random(20, 99) >= 60) seed = s;
+        }
+        BattleContext bc = battle(MonsterEncounter::SHELL_PARASITE);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::SHELLED_PARASITE_FELL;
+        m.moveHistory[1] = MMID::SHELLED_PARASITE_DOUBLE_STRIKE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 10) != MMID::SHELLED_PARASITE_SUCK) {
+            return fail("Shelled Parasite ignored its re-roll after Fell");
+        }
+    }
+
+    // A17 Snake Plant never Spores with Spores in either of its last two moves.
+    if (roll(17, MonsterEncounter::SNAKE_PLANT, MonsterId::SNAKE_PLANT,
+             MMID::SNAKE_PLANT_CHOMP, MMID::SNAKE_PLANT_ENFEEBLING_SPORES, 0, 80) != MMID::SNAKE_PLANT_CHOMP) {
+        return fail("A17 Snake Plant used Spores one move after Spores");
+    }
+
+    // A19 Bronze Automaton: the Boost after Hyper Beam does not advance the cycle.
+    {
+        BattleContext bc = battle(MonsterEncounter::AUTOMATON, 19);
+        Monster &m = bc.monsters.arr[1];
+        m.moveHistory[0] = MMID::BRONZE_AUTOMATON_BOOST;
+        m.moveHistory[1] = MMID::BRONZE_AUTOMATON_HYPER_BEAM;
+        m.miscInfo = 0;
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::BRONZE_AUTOMATON_FLAIL) || m.miscInfo != 0) {
+            return fail("A19 Automaton counted its post-Hyper Beam Boost");
+        }
+    }
+
+    // Champ Gloat gains 2 Strength at A0.
+    {
+        BattleContext bc = battle(MonsterEncounter::CHAMP);
+        Monster &m = bc.monsters.arr[0];
+        const int strengthBefore = m.strength;
+        m.moveHistory[0] = MMID::THE_CHAMP_GLOAT;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.strength != strengthBefore + 2) return fail("Champ Gloat Strength is not 2 at A0");
+    }
+
+    // Collector Buff block is 15 below A9; Mega Debuff applies 5 at A19.
+    {
+        BattleContext bc = battle(MonsterEncounter::COLLECTOR, 4);
+        Monster &m = bc.monsters.arr[2];
+        const int blockBefore = m.block;
+        m.moveHistory[0] = MMID::THE_COLLECTOR_BUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.block != blockBefore + 15) return fail("A4 Collector Buff block is not 15");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::COLLECTOR, 19);
+        Monster &m = bc.monsters.arr[2];
+        m.moveHistory[0] = MMID::THE_COLLECTOR_MEGA_DEBUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        if (bc.player.getStatus<PS::WEAK>() != 5 || bc.player.getStatus<PS::FRAIL>() != 5) {
+            return fail("A19 Collector Mega Debuff is not 5");
+        }
+    }
+
+    // A17 Romeo repeats Cross Slash once before Agonizing Slash.
+    {
+        BattleContext bc = battle(MonsterEncounter::MASKED_BANDITS_EVENT, 17);
+        Monster &m = bc.monsters.arr[1];
+        m.moveHistory[0] = MMID::ROMEO_CROSS_SLASH;
+        m.moveHistory[1] = MMID::ROMEO_AGONIZING_SLASH;
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::ROMEO_CROSS_SLASH)) return fail("A17 Romeo did not repeat Cross Slash");
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::ROMEO_AGONIZING_SLASH)) return fail("A17 Romeo used Cross Slash three times");
+    }
+
+    // Torch Head consumes a discarded HP roll before its real one.
+    {
+        Random actual(7), expected(7);
+        Monster m;
+        m.id = MonsterId::TORCH_HEAD;
+        m.initHp(actual, 0);
+        expected.random(38, 40);
+        const int hp = expected.random(38, 40);
+        if (m.curHp != hp || actual.counter != expected.counter) {
+            return fail("Torch Head HP did not discard the constructor roll");
+        }
+    }
+
+    // HP ranges.
+    if (monsterHpRange[static_cast<int>(MonsterId::BEAR)][0][1] != 42
+            || monsterHpRange[static_cast<int>(MonsterId::CENTURION)][1][0] != 78) {
+        return fail("Bear or Centurion HP range differs from the game");
     }
 
     std::cout << "monster_ai_java_parity PASS\n";
