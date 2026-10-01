@@ -817,6 +817,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::HEXAGHOST_INFERNO: // 6
             attackPlayerHelper(bc, asc4 ? 3 : 2, 6);
+            bc.addToBot( Actions::HexaghostBurnIncrease() );
             uniquePower0 = 0;
             setMove(MMID::HEXAGHOST_SEAR);
             bc.addToBot( Actions::NoOpRollMove() );
@@ -898,6 +899,11 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::LAGAVULIN_SLEEP:
             if (bc.turn == 2 || !hasStatus<MS::ASLEEP>()) {
+                if (hasStatus<MS::ASLEEP>()) {
+                    // waking on its own also drops the sleeping Metallicize
+                    setHasStatus<MS::ASLEEP>(false);
+                    decrementStatus<MS::METALLICIZE>(8);
+                }
                 setMove(MMID::LAGAVULIN_ATTACK);
             } else {
                 setMove(MMID::LAGAVULIN_SLEEP);
@@ -1046,6 +1052,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
         // ************ RED SLAVER ************
 
         case MMID::RED_SLAVER_ENTANGLE:
+            miscInfo = 1; // used entangle
             bc.addToBot(Actions::DebuffPlayer<PS::ENTANGLED>(1));
             bc.addToBot(Actions::RollMove(idx));
             break;

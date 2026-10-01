@@ -1659,8 +1659,8 @@ int testSimulatorRelicFidelity() {
     return 0;
 }
 
-// Act 1 monster move rolls audited against the pinned STS1 V2.3.4 reference
-// (#348): each case fixes a move history and roll where the simulator differed.
+// Act 1 monster behavior audited against the pinned STS1 V2.3.4 reference
+// (#348): each case reproduces a move roll or monster turn where the simulator differed.
 int testMonsterAiJavaParity() {
     auto fail = [&](const std::string &msg) {
         std::cout << "monster_ai_java_parity FAIL: " << msg << '\n';
@@ -1723,6 +1723,86 @@ int testMonsterAiJavaParity() {
                  MMID::ACID_SLIME_L_CORROSIVE_SPIT, MMID::ACID_SLIME_L_CORROSIVE_SPIT, 0, r)
                 == MMID::ACID_SLIME_L_CORROSIVE_SPIT) {
             return fail("A17 Acid Slime (L) used Corrosive Spit three times in a row");
+        }
+    }
+
+    // Monster turns (takeTurn) checked against the same reference.
+    auto battle = [](MonsterEncounter encounter) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, 0);
+        gc.curRoom = Room::MONSTER;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        return bc;
+    };
+    auto drain = [](BattleContext &bc) {
+        while (!bc.actionQueue.isEmpty()) {
+            bc.actionQueue.popFront()(bc);
+        }
+    };
+
+    // Entangle marks the Red Slaver so it never entangles again.
+    {
+        BattleContext bc = battle(MonsterEncounter::RED_SLAVER);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::RED_SLAVER_ENTANGLE;
+        m.miscInfo = 0;
+        m.takeTurn(bc);
+        drain(bc);
+        m.moveHistory[0] = MMID::RED_SLAVER_STAB;
+        m.moveHistory[1] = MMID::RED_SLAVER_ENTANGLE;
+        int monsterData = m.miscInfo;
+        if (m.miscInfo != 1
+                || m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::RED_SLAVER_STAB) {
+            return fail("Red Slaver did not record its Entangle");
+        }
+    }
+
+    // Lagavulin waking on its third sleeping turn loses Metallicize.
+    {
+        BattleContext bc = battle(MonsterEncounter::LAGAVULIN);
+        Monster &m = bc.monsters.arr[0];
+        if (!m.hasStatus<MS::ASLEEP>() || m.getStatus<MS::METALLICIZE>() != 8) {
+            return fail("Lagavulin did not start asleep with Metallicize 8");
+        }
+        bc.turn = 2;
+        m.moveHistory[0] = MMID::LAGAVULIN_SLEEP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.hasStatus<MS::ASLEEP>() || m.getStatus<MS::METALLICIZE>() != 0
+                || !m.lastMove(MMID::LAGAVULIN_ATTACK)) {
+            return fail("Lagavulin kept its sleeping Metallicize after waking");
+        }
+    }
+
+    // Hexaghost Inferno upgrades Burns in the draw and discard piles (not the
+    // hand) and adds three upgraded Burns to the discard pile.
+    {
+        BattleContext bc = battle(MonsterEncounter::HEXAGHOST);
+        Monster &m = bc.monsters.arr[0];
+        bc.cards.drawPile.addToTop(CardInstance(CardId::BURN));
+        bc.cards.discardPile.clear();
+        bc.cards.discardPile.push_back(CardInstance(CardId::BURN));
+        bc.cards.hand[bc.cards.cardsInHand++] = CardInstance(CardId::BURN);
+        m.moveHistory[0] = MMID::HEXAGHOST_INFERNO;
+        m.takeTurn(bc);
+        drain(bc);
+        int discardBurns = 0;
+        for (const auto &c : bc.cards.discardPile) {
+            if (c.getId() != CardId::BURN) continue;
+            ++discardBurns;
+            if (!c.isUpgraded()) return fail("Inferno left a discard-pile Burn unupgraded");
+        }
+        for (const auto &c : bc.cards.drawPile) {
+            if (c.getId() == CardId::BURN && !c.isUpgraded()) {
+                return fail("Inferno left a draw-pile Burn unupgraded");
+            }
+        }
+        if (discardBurns != 4) return fail("Inferno did not add three Burns to the discard pile");
+        if (bc.cards.hand[bc.cards.cardsInHand - 1].isUpgraded()) {
+            return fail("Inferno upgraded a Burn in hand");
         }
     }
 
