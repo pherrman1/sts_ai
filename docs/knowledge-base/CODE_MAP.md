@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-26 for the OOC reroot-opportunity observer; 2026-09-25 for native-only Silver and the vendored-model removal (ADR-0022); 2026-09-24 for the one_combat translation-unit split, Silver-only combat and self-play removal (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-23 for frozen Silver prior offline replay and user-authorized online smoke integration; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in live OOC MCTS routing.
+Last verified: 2026-10-01 for A3 offline v_win model tooling; 2026-09-26 for the OOC reroot-opportunity observer; 2026-09-25 for native-only Silver and the vendored-model removal (ADR-0022); 2026-09-24 for the one_combat translation-unit split, Silver-only combat and self-play removal (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-23 for frozen Silver prior offline replay and user-authorized online smoke integration; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in live OOC MCTS routing.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -51,6 +51,7 @@ before broad repository search.
 | Strategic gen | `apps/one_combat/strategic_gen.cpp` | `runStrategicGenSeed`, `strategicGen`, `strategicMargGen`, `strategicGen2` — one rich row per legal OOC action | [training-and-inference.md](architecture/training-and-inference.md) |
 | Next-generation OOC pipeline contracts | `tools/ooc_pipeline_contract.py`, `tools/train_whole_combat_surrogate.py` | fail-closed teacher/corpus manifest, K/H planning, grouped whole-combat trainer | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 | Mixed-producer v_win refresh corpus | `tools/vwin_refresh_corpus.py`, `tools/vwin_refresh_contract.py` | strict component validation, exact source cohort, explicit teacher/producer identities, provenance-bearing table enumeration | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md#mixed-producer-v_win-refresh-corpus) |
+| A3 offline v_win model pipeline | `tools/vwin_refresh_model.py`, `tools/vwin_refresh_dataset.py`, `tools/vwin_refresh_training.py`, `tools/vwin_refresh_evaluation.py` | TRAIN-only features, validation-selected XGB/MLP, frozen TEST access, clustered metrics/resource/sibling gates | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md#a3-offline-model-training-and-evaluation) |
 | Combat gen | `apps/one_combat/combat_datasets.cpp`, `apps/one_combat/counterfactual_gen.cpp` | `datagen3` (`counterfactual_gen.cpp`, with `oocnextgen`, `pathcfgen`, `e2cgen`), `wholecombatgen` (post-afterBattle combat rows), `combatevalgen` (full-run battle-start V_win/L), `vwinrefreshgen` (outcome-blind MAP siblings, victory-boundary `WIN_RAW`, optional public-screen `DECISION` sink), `bossheadroom347gen` (#347 paired exact-budget boss replays), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 
 ## Training and export
