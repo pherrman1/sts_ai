@@ -50,9 +50,12 @@ Java's ascension gates read `AbstractDungeon.ascensionLevel`; native reads
 
 ## Bounded Ironclad Act 1 audit
 
-Scope: `getMove` for every `monsters.exordium` class, and the base and upgrade
-constants of the Ironclad attacks in `BattleContext::useCard`. It did not cover
-`takeTurn` bodies, HP ranges, or the monster damage table.
+Scope: for every `monsters.exordium` class, `getMove`, `takeTurn` (including
+the private move helpers and the `damage` hooks for split, wake, and mode
+shift), constructor HP ranges, and move damage and power constants. Also the
+base and upgrade constants of the Ironclad attacks in `BattleContext::useCard`.
+
+### Move selection (`getMove`)
 
 | Mechanic | Java reference | Native path | Status | Evidence |
 |---|---|---|---|---|
@@ -66,21 +69,62 @@ constants of the Ironclad attacks in `BattleContext::useCard`. It did not cover
 | Jaw Worm, Cultist, Fungi Beast | first move and thresholds | same | Parity | inspection |
 | Red/Green Louse | A17 and base guards | same | Parity | inspection |
 | Sentry first move | even slot Bolt, odd slot Beam | `idx % 2` | Parity | inspection |
-| Lagavulin awake cycle | `debuffTurnCount` < 2 and attack guard | `lastTwoMoves(ATTACK)` in `takeTurn` | Parity (**Inference**: equivalent for reachable histories) | inspection |
 | Gremlins, Looter, Slime Boss, Guardian, Hexaghost first move | fixed first move | same | Parity | inspection |
-| Ironclad attack constants (Anger, Bash, Body Slam, Blood for Blood, Bludgeon, Carnage, Clash, Cleave, Clothesline, Feed, Fiend Fire, Headbutt, Heavy Blade, Hemokinesis, Immolate, Iron Wave, Perfected Strike, Pommel Strike, Pummel, Rampage, Reaper, Reckless Charge, Searing Blow, Sever Soul, Sword Boomerang, Thunderclap, Twin Strike, Uppercut, Whirlwind, Wild Strike) | constructor `baseDamage`/`baseBlock`/`baseMagicNumber` and `upgrade()` deltas | `useCard` literals | Parity (constants only, not effect ordering) | inspection |
 
-Only the Red Slaver threshold is reachable in the current A0 research domain.
-It affects the Act 1 `RED_SLAVER` encounter and Act 2 Slavers elite, so A0
-benchmark values recorded before this fix used the old Red Slaver AI.
-Whether that changed any recorded result is **Unverified**; nothing was rerun.
+### Monster turns (`takeTurn`) and state hooks
+
+| Mechanic | Java reference | Native path | Status | Evidence |
+|---|---|---|---|---|
+| Red Slaver Entangle flag | `takeTurn` sets `usedEntangle` when Entangle resolves | never set `miscInfo` in simulation, so Entangle could repeat and the post-Entangle Stab branch never fired; the live importer supplies the flag, so only simulated Entangles were affected | **Mismatch, fixed** (all ascensions) | `monster_ai_java_parity` |
+| Lagavulin waking on its third sleeping turn | changes to its open state, which removes the 8 Metallicize before the end of the turn | switched to Attack but stayed `ASLEEP` with Metallicize 8, gaining 8 block each turn until it took unblocked damage | **Mismatch, fixed** (all ascensions) | `monster_ai_java_parity` |
+| Hexaghost Inferno | after six hits, `BurnIncreaseAction` upgrades every Burn in the discard and draw piles (not the hand) and adds three upgraded Burns to the discard pile | attacked only | **Mismatch, fixed** (all ascensions) via `Actions::HexaghostBurnIncrease` | `monster_ai_java_parity` |
+| Lagavulin woken by damage | any HP change while asleep sets a Stunned turn and removes Metallicize | clears `ASLEEP` and Metallicize on unblocked damage; the pending `SLEEP` move acts as the Stunned turn | Parity | inspection |
+| Lagavulin awake cycle | `debuffTurnCount` < 2 and attack guard | `lastTwoMoves(ATTACK)` in `takeTurn` | Parity (**Inference**: equivalent for reachable histories) | inspection |
+| Large slime split | float `hp <= max/2` when not already splitting; spawns two medium slimes at its current HP | integer `curHp <= maxHp/2` in `onHpLost` | Parity | inspection |
+| Slime Boss | Goop Spray (Slimed 3, 5 at A19) → Preparing → Slam → repeat; split into Spike (L) then Acid (L) | same, slots 0 and 2 | Parity | inspection |
+| The Guardian | Mode Shift 30/35/40 (A9/A19), +10 per cycle; Charging Up 9 block; Defensive Mode 20 block; Sharp Hide 3 (4 at A19); Vent Steam Weak/Vulnerable 2; Whirlwind 5×4; Twin Slam 8×2 | same values and cycle | Parity | inspection |
+| Hexaghost cycle | Activate → Divider (HP/12+1 ×6) → Sear, Tackle, Sear, Inflame, Tackle, Sear, Inferno, repeat; Inflame 12 block, Strength 2 (3 at A19); Sear Burns 1 (2 at A19) | same | Parity | inspection |
+| Hexaghost Sear Burn upgrade | upgraded after the first Inferno (`burnUpgraded` flag) | upgraded when `bc.turn > 8` | Parity (**Inference**: equal while the Hexaghost never skips a turn, which Ironclad cannot cause) | inspection |
+| Looter / Mug, Lunge, Smoke Bomb | first Mug `aiRng.randomBoolean(0.6)` (dialog); after the second Mug `randomBoolean(0.5)`; gold 15 (20 at A17) | same calls and values | Parity | inspection |
+| Jaw Worm, Cultist, Fungi Beast, lice, slimes, slavers, Sentry, Nob, Fat/Mad/Sneaky/Shield Gremlin, Gremlin Wizard | per-move debuff, block, Strength, Ritual, status-card counts and ascension steps | same | Parity | inspection |
+
+### HP and damage constants
+
+Every Act 1 monster's HP range and A7, A8, and A9 HP step matches
+`include/constants/MonsterIds.h`. Its move damage and A2, A3, A4, and A17 steps
+match `Monster::takeTurn` and `MonsterMoveDamage.cpp`. Status: parity, by
+inspection of the constructors.
+
+### Ironclad attack constants
+
+Anger, Bash, Body Slam, Blood for Blood, Bludgeon, Carnage, Clash, Cleave,
+Clothesline, Feed, Fiend Fire, Headbutt, Heavy Blade, Hemokinesis, Immolate,
+Iron Wave, Perfected Strike, Pommel Strike, Pummel, Rampage, Reaper, Reckless
+Charge, Searing Blow, Sever Soul, Sword Boomerang, Thunderclap, Twin Strike,
+Uppercut, Whirlwind, and Wild Strike were checked. Their constructor
+`baseDamage`/`baseBlock`/`baseMagicNumber` values and `upgrade()` deltas match
+the `useCard` literals. This covers constants only, not effect ordering.
+
+### A0 impact
+
+Four fixes change A0 behavior:
+- the Red Slaver Stab threshold and its Entangle flag (Act 1 `RED_SLAVER`
+  encounter and the Act 2 Slavers elite);
+- the Lagavulin natural wake;
+- the Hexaghost Inferno Burns.
+
+A0 benchmark values recorded before these fixes used the old behavior. Whether
+that changed any recorded result is **Unverified**; nothing was rerun.
 
 ## Ambiguous or not yet inspected
 
-- `Monster::takeTurn` follow-up moves for Hexaghost, The Guardian (mode-shift
-  threshold), Slime Boss, and Sentry alternation.
-- Lagavulin waking from damage, and Large Slime split timing.
-- Act 1 HP ranges and the `MonsterMoveDamage.cpp` table.
+- The Gremlin Wizard and Shield Gremlin native turns do not check
+  `doesEscapeNext()`, while Java's do (`escapeNext`). Only the Act 2 Gremlin
+  Leader sets it. **Unverified**; out of the Act 1 scope.
+- The Guardian's switch back to offensive mode queues a block loss in Java;
+  the native Twin Slam does not. **Inference**: no block exists at that point
+  in reachable Ironclad play, because monster block resets at the start of its
+  turn.
 - Code comments in `useCard` that mark open semantics: Rampage damage when the
   card is played twice, Twin Strike block interaction, and the Sword Boomerang
   Vigor approximation. These need behavioral or differential evidence, not
@@ -88,14 +132,10 @@ Whether that changed any recorded result is **Unverified**; nothing was rerun.
 
 ## Recommendation
 
-The bounded slice found four defects across roughly twenty `getMove` paths.
-Three are gated on A17 or A18, and one affects A0. By the issue's decision
-rule, that justifies continuing the static audit with:
+The Act 1 audit found seven defects: four in `getMove` and three in
+`takeTurn`. Four of them affect A0. The yield justifies continuing with
+`getMove` and `takeTurn` for the Act 2 and Act 3 monsters. Prioritize:
+- the Gremlin Leader escape path above;
+- ascension-gated branches, which the A0 research loop does not exercise.
 
-1. `takeTurn` follow-up moves and the damage and HP constants for Act 1
-   monsters;
-2. `getMove` for the Act 2 and Act 3 monsters.
-
-Ascension-gated branches deserve particular attention because the A0 research
-loop does not exercise them. Every confirmed mismatch still needs a focused
-test before it is fixed.
+Every confirmed mismatch still needs a focused test before it is fixed.
