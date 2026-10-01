@@ -497,11 +497,8 @@ void Monster::damage(BattleContext &bc, int damage) {
         damage = 0;
     }
 
-    if (hasStatus<MS::INTANGIBLE>()) { // this is probably wrong with potions
-        if (damage > 0) {
-            damage = 1;
-        }
-    }
+    // Monster Intangible only caps card attack damage (calculateCardDamage);
+    // the game applies no cap to thorns, power, relic or potion damage.
 
     const bool hadBlock = block > 0;
     const int tempDamage = damage;

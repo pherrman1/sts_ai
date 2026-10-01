@@ -2752,7 +2752,7 @@ void BattleContext::triggerOnOtherCardPlayed(const CardInstance &usedCard) {
         --painCount;
     }
     for (int i = 0; i < painCount; ++i) {
-        addToTop(Actions::PlayerLoseHp(1));
+        addToTop(Actions::PlayerLoseHp(1, true));
     }
 
     const auto thousandCuts = player.getStatus<PS::THOUSAND_CUTS>();
@@ -2827,8 +2827,8 @@ int BattleContext::calculateCardDamage(const CardInstance &card, int targetIdx, 
         damage *= .5;
     }
 
-    if (monster.hasStatus<MS::INTANGIBLE>()) {
-        damage = std::max(damage, 1.0f);
+    if (monster.hasStatus<MS::INTANGIBLE>() && damage > 1.0f) {
+        damage = 1.0f;
     }
 
     return std::max(0, static_cast<int>(damage));

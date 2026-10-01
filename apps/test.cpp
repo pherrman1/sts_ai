@@ -1694,6 +1694,42 @@ int testIroncladCardJavaParity() {
         if (bc.monsters.arr[0].strength != strengthBefore - 3) return fail("Disarm+ did not remove 3 Strength");
     }
 
+    // Brutality and Pain lose HP as self-damage, which triggers Rupture.
+    for (const bool pain : {false, true}) {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.player.buff<PS::RUPTURE>(1);
+        const int strengthBefore = bc.player.getStatus<PS::STRENGTH>();
+        if (pain) {
+            bc.cards.handPainCount = 1;
+            bc.triggerOnOtherCardPlayed(CardInstance(CardId::DEFEND_RED));
+        } else {
+            bc.player.buff<PS::BRUTALITY>(1);
+            bc.player.applyStartOfTurnPostDrawPowers(bc);
+        }
+        while (!bc.actionQueue.isEmpty()) bc.actionQueue.popFront()(bc);
+        if (bc.player.getStatus<PS::STRENGTH>() != strengthBefore + 1) {
+            return fail(pain ? "Pain HP loss did not trigger Rupture" : "Brutality HP loss did not trigger Rupture");
+        }
+    }
+
+    // Monster Intangible caps card damage at 1 (0 stays 0) but not thorns-type damage.
+    {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
+        Monster &m = bc.monsters.arr[0];
+        m.buff<MS::INTANGIBLE>(1);
+        m.block = 0;
+        if (bc.calculateCardDamage(CardInstance(CardId::STRIKE_RED), 0, 10) != 1
+                || bc.calculateCardDamage(CardInstance(CardId::STRIKE_RED), 0, 0) != 0) {
+            return fail("Intangible card damage is not capped at 1 (with 0 kept)");
+        }
+        const int hpBefore = m.curHp;
+        Actions::DamageAllEnemy(5)(bc);
+        if (hpBefore - m.curHp != 5) return fail("Intangible capped thorns-type damage");
+    }
+
     std::cout << "ironclad_card_java_parity PASS\n";
     return 0;
 }
