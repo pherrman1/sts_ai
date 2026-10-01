@@ -1625,7 +1625,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return -1;
     }
 
-    private static IdentityHashMap<AbstractMonster, Integer> emittedMonsterSlots(String encounter) {
+    static IdentityHashMap<AbstractMonster, Integer> emittedMonsterSlots(String encounter) {
+        IdentityHashMap<AbstractMonster,Integer> bound=RunicDomeCapture.emittedSlots();
+        if(bound!=null)return bound;
         IdentityHashMap<AbstractMonster, Integer> emitted = new IdentityHashMap<>();
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return emitted;
@@ -2237,21 +2239,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static int bronzeAutomatonMiscInfo(AbstractMonster monster) {
-        Object raw = readObjectField(monster, "moveHistory");
-        if (!(raw instanceof List<?>)) return 0;
-        List<?> history = (List<?>) raw;
-        if (history.size() < 2) return 0;
-        Object current = history.get(history.size() - 1);
-        Object previous = history.get(history.size() - 2);
-        if (!(current instanceof Number) || !(previous instanceof Number)) return 0;
-        int currentByte = ((Number) current).intValue();
-        int previousByte = ((Number) previous).intValue();
-        // Native Silver's miscInfo is lastBoostWasFlail.  It is not a hidden
-        // Java field, but the public move history determines it exactly at a
-        // stable decision boundary: Boost->Flail and Flail->Boost are the two
-        // states in which the native toggle is true.
-        return (currentByte == 1 && previousByte == 5)
-                || (currentByte == 5 && previousByte == 1) ? 1 : 0;
+        // Ordinary visible-intent capture follows vanilla's getMove counter.
+        // Dome bypasses this method and reconstructs the pre-roll counter from public executions.
+        Integer turns=readIntField(monster,"numTurns");
+        return turns==null?0:turns;
     }
 
     private static Integer monsterUniquePower0(AbstractMonster monster) {
@@ -2826,8 +2817,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 for (AbstractPower power : monster.powers) {
                     if (!"Stasis".equals(power.ID)) continue;
                     Object card = readObjectField(power, "card");
-                    Integer slot = "BronzeOrb".equals(monster.id)
-                            ? readIntField(monster, "count") : null;
+                    Integer physical=emittedMonsterSlots(liveEncounter).get(monster);
+                    Integer slot = "BronzeOrb".equals(monster.id) && physical!=null && (physical==0 || physical==2)?physical/2:null;
                     if (!(card instanceof AbstractCard) || slot == null || slot < 0 || slot > 1)
                         return null;
                     if (!first) out.append(',');
@@ -3099,7 +3090,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String encounter = liveEncounter.isEmpty()
                 ? INSTANCE.encounterName(AbstractDungeon.getCurrRoom()) : liveEncounter;
         IdentityHashMap<AbstractMonster, Integer> emittedSlots = emittedMonsterSlots(encounter);
-        int declaredMonsterCount = 0;
+        int declaredMonsterCount = RunicDomeCapture.declaredCapacity();
         int monstersAlive = 0;
         for (Map.Entry<AbstractMonster, Integer> entry : emittedSlots.entrySet()) {
             AbstractMonster monster = entry.getKey();
@@ -3116,7 +3107,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int lastTargetedMonster = targetedSlot == null || targetedSlot < 0 ? 1 : targetedSlot;
         for (AbstractPower power : AbstractDungeon.player.powers)
             if ("Vulnerable".equals(power.ID)) trackedPlayerVulnerableSeen = true;
-        StringBuilder out = new StringBuilder("{\"turn\":");
+        StringBuilder out = new StringBuilder("{");
+        if(RunicDomeCapture.bindingFailure()!=null)out.append("\"occupantBindingError\":\"").append(escapeJson(RunicDomeCapture.bindingFailure())).append("\",");
+        out.append("\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(EnergyPanel.totalCount)
@@ -3267,6 +3260,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append("{\"id\":\"").append(escapeJson(monster.id))
                         .append("\",\"slot\":").append(slot)
                         .append(",\"idx\":").append(slot)
+                        .append(",\"occupantGeneration\":").append(RunicDomeCapture.occupantGeneration(monster))
                         .append(",\"hp\":").append(monster.currentHealth)
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)

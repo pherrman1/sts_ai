@@ -465,8 +465,7 @@ int search::SilverRolloutAgent::getIncomingDamage(const BattleContext &bc) const
         if (m.pendingMoveRolls > 0 || m.pendingDirectMoveChoice != 0) {
             dInfo = {5 * act, 1};   // hidden intent: Silver's flat estimate
         } else {
-            dInfo = m.getMoveBaseDamage(bc);
-            dInfo.damage = m.calculateDamageToPlayer(bc, dInfo.damage);
+            dInfo = {m.publicIncomingDamage(bc),1};
         }
         incomingDamage += dInfo.damage * dInfo.attackCount;
     }

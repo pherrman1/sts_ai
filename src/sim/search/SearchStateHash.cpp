@@ -80,6 +80,8 @@ namespace sts::search {
         for (int i = 0; i < bc.monsters.monsterCount; ++i) {
             const auto &m = bc.monsters.arr[i];
             hashCombine(hash, static_cast<int>(m.id));
+            hashCombine(hash, static_cast<std::uint64_t>(m.occupantGeneration));
+            hashCombine(hash, m.latentDamageMask);
             hashCombine(hash, m.curHp);
             hashCombine(hash, m.maxHp);
             hashCombine(hash, m.block);

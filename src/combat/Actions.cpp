@@ -119,6 +119,9 @@ Action Actions::MonsterGainBlock(int idx, int amount) {
     return makeAction(ActData_MonsterGainBlock{idx, amount});
 }
 
+Action Actions::SetMonsterMove(int monsterIdx, MMID move) {
+    return makeAction(ActData_SetMonsterMove{monsterIdx,move});
+}
 Action Actions::RollMove(int monsterIdx) {
     return makeAction(ActData_RollMove{monsterIdx});
 }
@@ -583,7 +586,32 @@ void ActData_DamageAllEnemy::operator()(BattleContext &bc) const {
     }
 
 void ActData_AttackPlayer::operator()(BattleContext &bc) const {
-        bc.player.attacked(bc, idx, damage);
+        auto &m=bc.monsters.arr[idx];
+        const bool persistent = m.latentDamageMask &&
+            (m.moveHistory[0]==MMID::RED_LOUSE_BITE || m.moveHistory[0]==MMID::GREEN_LOUSE_BITE || m.moveHistory[0]==MMID::DARKLING_NIP);
+        if(!persistent) { bc.player.attacked(bc, idx, damage); return; }
+        // Bite/Nip enqueue a single attack followed by their next roll. Their
+        // source modifiers cannot change before this hit. Compare only public
+        // recipient outcomes, never the concrete queued damage or base scalar.
+        const BattleContext before=bc;
+        bc.player.attacked(bc,idx,damage);
+        std::uint16_t posterior=0;
+        auto *observer=search::g_combatKnowledgeObserver;
+        search::g_combatKnowledgeObserver=nullptr;
+        try {
+            for(int v=0;v<16;++v) if(m.latentDamageMask&(1u<<v)) {
+                BattleContext candidate=before;
+                const int calculated=candidate.monsters.arr[idx].calculateDamageToPlayer(candidate,v);
+                candidate.player.attacked(candidate,idx,calculated);
+                if(candidate.player.curHp==bc.player.curHp && candidate.player.block==bc.player.block
+                        && candidate.player.getStatus<PS::BUFFER>()==bc.player.getStatus<PS::BUFFER>())
+                    posterior|=std::uint16_t(1u<<v);
+            }
+        } catch(...) { search::g_combatKnowledgeObserver=observer; throw; }
+        search::g_combatKnowledgeObserver=observer;
+        if(!posterior) throw std::runtime_error("inconsistent public persistent attack outcome");
+        m.latentDamageMask=posterior;
+        search::emitMonsterLatentDamageObserved(idx,posterior);
     }
 
 void ActData_DamagePlayer::operator()(BattleContext &bc) const {
@@ -611,6 +639,10 @@ void ActData_MonsterGainBlock::operator()(BattleContext &bc) const {
         bc.monsters.arr[idx].block += amount;
     }
 
+void ActData_SetMonsterMove::operator()(BattleContext &bc) const {
+    auto &m=bc.monsters.arr[monsterIdx];
+    m.cancelPendingMove(); m.setMove(move);
+}
 void ActData_RollMove::operator()(BattleContext &bc) const {
         Monster &m = bc.monsters.arr[monsterIdx];
         m.rollMove(bc);
@@ -861,9 +893,6 @@ void ActData_SummonGremlins::operator()(BattleContext &bc) const {
         auto &gremlin0 = bc.monsters.arr[newGremlinIdxs[0]];
         auto &gremlin1 = bc.monsters.arr[newGremlinIdxs[1]];
 
-        gremlin0 = Monster();
-        gremlin1 = Monster();
-
         gremlin0.construct(bc, MonsterGroup::getGremlin(bc.aiRng), newGremlinIdxs[0]);
         gremlin1.construct(bc, MonsterGroup::getGremlin(bc.aiRng), newGremlinIdxs[1]);
         bc.monsters.monstersAlive += 2;
@@ -877,6 +906,10 @@ void ActData_SummonGremlins::operator()(BattleContext &bc) const {
 
         gremlin0.rollMove(bc);
         gremlin1.rollMove(bc);
+        // SummonGremlinAction invokes usePreBattleAction after init/addMonster.
+        // In particular, a newly summoned Mad Gremlin must acquire Angry.
+        gremlin0.preBattleAction(bc);
+        gremlin1.preBattleAction(bc);
     }
 
 void ActData_SpawnTorchHeads::operator()(BattleContext &bc) const {
@@ -889,9 +922,7 @@ void ActData_SpawnTorchHeads::operator()(BattleContext &bc) const {
         for (int i = 0; i < spawnCount; ++i) {
             const auto idx = spawnIdxs[i];
             auto &torchHead = bc.monsters.arr[idx];
-            torchHead = Monster();
             torchHead.construct(bc, MonsterId::TORCH_HEAD, idx);
-            torchHead.initHp(bc.monsterHpRng, bc.ascension); // bug somewhere in game
             torchHead.setMove(MMID::TORCH_HEAD_TACKLE);
             torchHead.buff<MS::MINION>();
 
@@ -902,7 +933,9 @@ void ActData_SpawnTorchHeads::operator()(BattleContext &bc) const {
         }
 
         for (int i = 0; i < spawnCount; ++i) {
-            bc.noOpRollMove();
+            // Same one initialization draw as vanilla SpawnMonsterAction.init,
+            // with a real observer event when intents are hidden.
+            bc.monsters.arr[spawnIdxs[i]].rollMove(bc);
         }
     }
 

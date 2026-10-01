@@ -354,9 +354,9 @@ void testPredicatePosteriorAndSnapshots() {
     binaryBase.cards.drawPile.assignConcrete({});
     const auto binary = serializeBattleContext(binaryBase);
     const auto restored = deserializeBattleContext(binary.data(), binary.size());
-    check(binary[8] == 3 && restored.intentsHidden && restored.monsters == base.monsters
+    check(binary[8] == 4 && restored.intentsHidden && restored.monsters == base.monsters
               && restored.aiRng == base.aiRng && hashBattleState(restored) == hashBattleState(binaryBase),
-          "binary v3 must preserve predicate posterior and public search RNG");
+          "binary v4 must preserve predicate posterior and public search RNG");
     auto corrupt = binary;
     corrupt[8] = 2;
     check(!deserializeBattleContext(corrupt.data(), corrupt.size()).intentsHidden,
@@ -404,9 +404,224 @@ void testPredicatePosteriorAndSnapshots() {
     g_combatKnowledgeObserver = observer;
 }
 
+
+void checkFreshOccupant(const Monster &m, MonsterId id, int slot, std::uint32_t generation) {
+    check(m.id == id && m.idx == slot && m.occupantGeneration == generation,
+          "replacement must preserve canonical slot and advance occupant generation");
+    check(m.strength == 0 && m.weak == 0 && !m.halfDead
+              && m.pendingAttackPredicates.empty() && m.pendingDirectMoveChoice == 0,
+          "replacement must discard predecessor powers and hidden predicates");
+}
+
+void poisonOldOccupant(Monster &m) {
+    m.strength = 91;
+    m.weak = 4;
+    m.halfDead = true;
+    m.pendingMoveRolls = 2;
+    m.pendingDirectMoveChoice = 1;
+    m.pendingAttackPredicates = {{1, true}};
+    m.pendingRollInputHistory.assign(2, MonsterRollInputs{});
+    m.moveHistory[0] = MMID::LOOTER_MUG;
+    m.moveHistory[1] = MMID::LOOTER_LUNGE;
+}
+
+void testReplacementEpochsAndSplitChildren() {
+    for (const auto id : {MonsterId::ACID_SLIME_L, MonsterId::SPIKE_SLIME_L}) {
+        LiveFixture f(MonsterEncounter::LARGE_SLIME, 0xD100u);
+        auto &parent = f.bc.monsters.arr[0];
+        parent.construct(f.bc, id, 0);
+        const auto generation = parent.occupantGeneration;
+        poisonOldOccupant(parent);
+        f.bc.intentsHidden = true;
+        f.bc.monsterTurnIdx = 0;
+        const auto medium = id == MonsterId::ACID_SLIME_L ? MonsterId::ACID_SLIME_M : MonsterId::SPIKE_SLIME_M;
+        Monster::largeSlimeSplit(f.bc, medium, 0, 19);
+        checkFreshOccupant(f.bc.monsters.arr[0], medium, 0, generation + 1);
+        checkFreshOccupant(f.bc.monsters.arr[1], medium, 1, 1);
+        for (int slot : {0, 1}) {
+            const auto &child = f.bc.monsters.arr[slot];
+            check(child.curHp == 19 && child.maxHp == 19 && child.pendingMoveRolls == 1
+                      && child.moveHistory[0] == MMID::INVALID,
+                  "split children must use source-time HP and a fresh first hidden roll");
+            check(f.knowledge.pendingHiddenIntentRolls[slot] == 1
+                      && f.knowledge.pendingAttackPredicates[slot].empty(),
+                  "birth must reset observer state before the first child roll");
+        }
+        check(f.bc.monsters.extraRollMoveOnTurn[1], "second split child keeps native extra-roll timing");
+    }
+    LiveFixture boss(MonsterEncounter::SLIME_BOSS, 0xD101u);
+    const auto generation = boss.bc.monsters.arr[0].occupantGeneration;
+    boss.bc.intentsHidden = true;
+    Monster::slimeBossSplit(boss.bc, 63);
+    checkFreshOccupant(boss.bc.monsters.arr[0], MonsterId::SPIKE_SLIME_L, 0, generation + 1);
+    checkFreshOccupant(boss.bc.monsters.arr[2], MonsterId::ACID_SLIME_L, 2, 1);
+    Monster::largeSlimeSplit(boss.bc, MonsterId::SPIKE_SLIME_M, 0, 24);
+    Monster::largeSlimeSplit(boss.bc, MonsterId::ACID_SLIME_M, 2, 22);
+    check(boss.bc.monsters.arr[0].occupantGeneration == generation + 2
+              && boss.bc.monsters.arr[2].occupantGeneration == 2
+              && boss.bc.monsters.arr[1].curHp == 24 && boss.bc.monsters.arr[3].curHp == 22,
+          "two-level boss splits maintain independent slot generations and child HP");
+}
+
+void testSummonReplacementEpochs() {
+    LiveFixture bronze(MonsterEncounter::AUTOMATON, 0xD102u);
+    bronze.bc.intentsHidden = true;
+    auto &automaton = bronze.bc.monsters.arr[1];
+    automaton.spawnBronzeOrbs(bronze.bc);
+    for (int slot : {0, 2}) {
+        checkFreshOccupant(bronze.bc.monsters.arr[slot], MonsterId::BRONZE_ORB, slot, 1);
+        check(bronze.bc.monsters.arr[slot].pendingMoveRolls == 1,
+              "new Bronze Orb starts exactly one hidden roll");
+    }
+    LiveFixture collector(MonsterEncounter::COLLECTOR, 0xD103u);
+    collector.bc.intentsHidden = true;
+    ActData_SpawnTorchHeads{}(collector.bc);
+    for (int slot : {0, 1}) {
+        const auto generation = collector.bc.monsters.arr[slot].occupantGeneration;
+        poisonOldOccupant(collector.bc.monsters.arr[slot]);
+        collector.bc.monsters.arr[slot].curHp = 0;
+        collector.bc.monsters.arr[slot].halfDead = false;
+        collector.bc.monsters.arr[slot].isEscapingB = false;
+        collector.bc.monsters.monstersAlive--;
+        ActData_SpawnTorchHeads{}(collector.bc);
+        checkFreshOccupant(collector.bc.monsters.arr[slot], MonsterId::TORCH_HEAD, slot, generation + 1);
+        check(collector.bc.monsters.arr[slot].moveHistory[0] == MMID::TORCH_HEAD_TACKLE,
+              "Torch Head replacement has fresh deterministic opening");
+    }
+    LiveFixture repto(MonsterEncounter::REPTOMANCER, 0xD104u);
+    repto.bc.intentsHidden = true;
+    for (int slot : {1, 4}) {
+        poisonOldOccupant(repto.bc.monsters.arr[slot]);
+        repto.bc.monsters.arr[slot].halfDead = false;
+        repto.bc.monsters.arr[slot].curHp = 0;
+    }
+    const auto gen4 = repto.bc.monsters.arr[4].occupantGeneration;
+    const auto gen1 = repto.bc.monsters.arr[1].occupantGeneration;
+    repto.bc.monsters.monstersAlive = 1;
+    repto.bc.monsters.arr[2].reptomancerSummon(repto.bc, 2);
+    checkFreshOccupant(repto.bc.monsters.arr[4], MonsterId::DAGGER, 4, gen4 + 1);
+    checkFreshOccupant(repto.bc.monsters.arr[1], MonsterId::DAGGER, 1, gen1 + 1);
+    check(repto.bc.monsters.skipTurn[4] && repto.bc.monsters.skipTurn[1],
+          "new Daggers keep source-qualified skipped birth phase");
+    LiveFixture leader(MonsterEncounter::GREMLIN_LEADER, 0xD105u);
+    leader.bc.intentsHidden = true;
+    std::array<std::uint32_t, 3> generations{};
+    for (int slot : {0, 1, 2}) {
+        generations[slot] = leader.bc.monsters.arr[slot].occupantGeneration;
+        poisonOldOccupant(leader.bc.monsters.arr[slot]);
+        leader.bc.monsters.arr[slot].curHp = 0;
+        leader.bc.monsters.arr[slot].halfDead = false;
+    }
+    leader.bc.monsters.monstersAlive = 1;
+    ActData_SummonGremlins{}(leader.bc);
+    for (int slot : {1, 2}) {
+        const auto &m = leader.bc.monsters.arr[slot];
+        checkFreshOccupant(m, m.id, slot, generations[slot] + 1);
+        check(m.pendingMoveRolls == 1 && leader.knowledge.pendingHiddenIntentRolls[slot] == 1,
+              "summoned gremlin must replace old hidden chain with fresh first roll");
+        if (m.id == MonsterId::MAD_GREMLIN) {
+            check(m.hasStatus<MS::ANGRY>(), "summoned Mad Gremlin must execute its pre-battle power hook");
+        }
+    }
+}
+
+void testDarklingReincarnationRetainsOccupant() {
+    LiveFixture f(MonsterEncounter::THREE_DARKLINGS, 0xD106u);
+    auto &m = f.bc.monsters.arr[0];
+    const auto generation = m.occupantGeneration;
+    const auto damage = m.miscInfo;
+    m.buff<MS::STRENGTH>(8);
+    m.curHp = 0;
+    m.die(f.bc);
+    while(!f.bc.actionQueue.isEmpty()) f.bc.actionQueue.popFront()(f.bc);
+    check(m.halfDead && m.moveHistory[0] == MMID::DARKLING_REGROW
+              && m.moveHistory[1] == MMID::DARKLING_REGROW && m.strength == 0,
+          "Darkling death clears powers and qualifies both vanilla Regrow setters");
+    m.takeTurn(f.bc);
+    check(m.moveHistory[0] == MMID::DARKLING_REINCARNATE, "Regrow rolls the mandatory reincarnation");
+    m.takeTurn(f.bc);
+    check(!m.halfDead && m.curHp == m.maxHp / 2 && m.hasStatus<MS::REGROW>()
+              && m.occupantGeneration == generation && m.miscInfo == damage,
+          "Darkling reincarnation restores half HP while retaining identity and persistent damage");
+}
+
+
+void testDarklingDeathDuringOwnAttack() {
+    LiveFixture f(MonsterEncounter::THREE_DARKLINGS,0xD107u);
+    f.bc.actionQueue.clear(); f.bc.cardQueue.clear();
+    auto &m=f.bc.monsters.arr[0];
+    m.curHp=1; m.pendingMoveRolls=0; m.moveHistory[0]=MMID::DARKLING_NIP;
+    f.bc.player.buff<PS::THORNS>(2);
+    m.takeTurn(f.bc);
+    int count=0;
+    while(!f.bc.actionQueue.isEmpty()) {
+        check(++count<32,"Darkling in-flight death queue terminates");
+        f.bc.actionQueue.popFront()(f.bc);
+    }
+    check(m.halfDead && m.moveHistory[0]==MMID::DARKLING_REGROW
+        && m.moveHistory[1]==MMID::DARKLING_REINCARNATE,
+        "queued Regrow overrides post-hit halfDead roll after Thorns death");
+    check(f.knowledge.pendingHiddenIntentRolls[0]==0 && f.knowledge.publicMonsterMoveHistory[0][0]==static_cast<std::int16_t>(MMID::DARKLING_REGROW),
+        "queued Regrow discards hidden roll and publishes source-exact override");
+}
+
+void testNewFamilyRollTables() {
+    for (int asc : {0, 19}) {
+        BattleContext bc;
+        bc.ascension = asc;
+        auto &m = bc.monsters.arr[1];
+        m.id = MonsterId::BRONZE_AUTOMATON;
+        m.idx = 1;
+        m.curHp = m.maxHp = 300;
+        const std::array<MMID, 8> expected{
+            MMID::BRONZE_AUTOMATON_SPAWN_ORBS, MMID::BRONZE_AUTOMATON_FLAIL,
+            MMID::BRONZE_AUTOMATON_BOOST, MMID::BRONZE_AUTOMATON_FLAIL,
+            MMID::BRONZE_AUTOMATON_BOOST, MMID::BRONZE_AUTOMATON_HYPER_BEAM,
+            asc >= 19 ? MMID::BRONZE_AUTOMATON_BOOST : MMID::BRONZE_AUTOMATON_STUNNED,
+            MMID::BRONZE_AUTOMATON_FLAIL};
+        for (auto move : expected) {
+            auto in = m.captureRollInputs(bc);
+            auto counter = m.miscInfo;
+            const auto next = m.getMoveForRoll(bc, in, counter, 50);
+            check(next == move, "Automaton deferred rolls must replay the installed deterministic cycle");
+            m.miscInfo = counter;
+            m.moveHistory[1] = m.moveHistory[0];
+            m.moveHistory[0] = next;
+        }
+    }
+    BattleContext bc;
+    auto &dagger = bc.monsters.arr[0];
+    dagger.id = MonsterId::DAGGER;
+    dagger.idx = 0;
+    int misc = 0;
+    auto in = dagger.captureRollInputs(bc);
+    check(dagger.getMoveForRoll(bc, in, misc, 0) == MMID::DAGGER_STAB,
+          "new Dagger rolls Stab");
+    dagger.moveHistory[0] = MMID::DAGGER_STAB;
+    check(dagger.getMoveForRoll(bc, in, misc, 99) == MMID::DAGGER_EXPLODE,
+          "Dagger trailing roll selects Explode");
+    auto &orb = bc.monsters.arr[2];
+    orb.id = MonsterId::BRONZE_ORB;
+    orb.idx = 2;
+    misc = 0;
+    in = orb.captureRollInputs(bc);
+    check(orb.getMoveForRoll(bc, in, misc, 25) == MMID::BRONZE_ORB_STASIS && misc == 1,
+          "Bronze Orb stores its persistent Stasis-use flag when choosing the hidden move");
+    orb.miscInfo = misc;
+    orb.moveHistory[0] = MMID::BRONZE_ORB_STASIS;
+    in = orb.captureRollInputs(bc);
+    check(orb.getMoveForRoll(bc, in, misc, 25) != MMID::BRONZE_ORB_STASIS,
+          "Bronze Orb never chooses Stasis twice");
+}
+
 } // namespace
 
 int main() {
+    testNewFamilyRollTables();
+    testReplacementEpochsAndSplitChildren();
+    testSummonReplacementEpochs();
+    testDarklingReincarnationRetainsOccupant();
+    testDarklingDeathDuringOwnAttack();
     testInitialAndTurnLifecycle();
     testHiddenMoveAndLiveRngRedaction();
     testRestrictedHistoryAndPreRollMiscInfo();

@@ -126,6 +126,15 @@ used (`takeTurn`) or queried (Spot Weakness), overrides discard them
 `intentsHidden` is always false) is unchanged. Gambling Chip and Purity
 selections are searched as whole subsets.
 
+Each canonical monster slot carries an occupant generation. Source-qualified
+splits and summons reset occupant knowledge before the first roll; Darkling
+regrow retains the same identity. Lice and Darkling carry a public candidate
+mask for their persistent constructor damage. A simulated world samples once
+from that mask, while retained nodes, public hashes and model observations
+keep the belief and redact the sample. Public hit outcomes condition the mask
+without reading hidden damage. [ADR-0025](../../../decisions/0025-runic-monster-identity-and-damage-beliefs.md)
+records this representation and its alternatives.
+
 On the standard 128-seed block the native search won 86/128 against the
 vendored model's 83/128 (no detectable difference;
 [§348](../../experiments/ledger-06.md)).
@@ -136,33 +145,20 @@ vendored model's 83/128 (no detectable difference;
 protocol (`SilverBridge.h`). `battleContextFromWire` (`SilverWireState.cpp`)
 builds the search root: the draw pile from the wire's information set, discard
 and exhaust from their multisets, RNG seeded from the wire's public search
-seed, and Runic Dome pending intents. The wire has no action queue. At a card
-selection interrupted mid-play (the playing card is in no pile) the pending
-work is rebuilt by replaying the card on a copy of the root: the card goes
-back to hand with its cost refunded and the per-turn play counts and Ink
-Bottle/Nunchaku/Pen Nib counters rolled back, and the part of the queue the
-play produced that is still unrun when the selection opens (Burning Pact's
-draw, `OnAfterCardUsed`, relic triggers, Sharp Hide) is copied into the root.
-The replay hits a second time, so on the copy every monster is made
-unkillable and a target the real hit killed is revived; otherwise the replay
-could end the combat or fail to use the card before the selection opens.
-Monster reactions to the card's pre-selection hit are not rebuilt in general:
-after the hit the monster looks the same whether this card or an earlier one
-triggered them. The Guardian's Mode Shift is the exception. Vanilla defers the
-shift to a queued state change, so at the selection the live Guardian still
-shows Mode Shift at or below zero and its offensive move (**Unverified**
-against the installed jar). The root settles such a Guardian as the engine
-does at the hit: `Monster::enterGuardianDefensiveMode`, then its 20 block
-queued behind the card's pending work. A wire built from the engine's own
-state already carries the shift but loses the queued block. Effects the first play consumed (Vigor, the
-Pen Nib buff, Double Tap, Necronomicon) are not rolled back. Vigor and the Pen
-Nib buff only change pre-selection damage, but a spent Double Tap, Duplication
-or Necronomicon queued a copy of the card that the replay cannot rebuild. The
-wire therefore carries a runtime-only `pendingCardQueue`, left out of the JSON
-schema. When it was observed it replaces the replay's card queue. The native
-conversion fills it from the live card queue at every selection, and the
-importer reads an optional `pendingCardQueue` array from the mod. When the
-replay does not reach the same selection, only `OnAfterCardUsed` is restored.
+seed, and Runic Dome pending intents. At supported interrupted selections,
+the producer qualifies the actual pending card queue and a typed public
+action tail. Both queue kinds persist in current JSON envelopes. The importer
+checks the selection's source, physical card identity, action class and
+arguments before restoring the continuation. The fourteen qualified action
+kinds cover draw, block, energy, damage, status changes, random upgrades,
+gambling, wound shuffles and card cleanup. Unqualified tails fail closed.
+
+For native wire roots without an observed public action tail, interrupted-card
+replay reconstructs the continuation on a copy: it refunds the card's cost,
+rolls back per-turn and relevant relic counters, then retains the unexecuted
+work after the selection. An observed pending card queue replaces replayed
+card items. Source-qualified typed tails replace the action replay, preserving
+the effects already executed before the selection.
 `semanticFromSearchAction` maps search actions to the
 index-free `SemanticAction` the advisor lowers to live actions, and
 `NativeSilverAdvisorSession` keeps one searcher per combat for reroot and

@@ -86,8 +86,14 @@ void Monster::initHp(Random &hpRng, int ascension) {
         case MonsterId::THE_COLLECTOR:
         case MonsterId::THE_GUARDIAN:
         case MonsterId::TIME_EATER:
-        case MonsterId::TORCH_HEAD:
             setRandomHp(hpRng, ascension >= 9);
+            break;
+
+        case MonsterId::TORCH_HEAD:
+            // Vanilla constructor samples its fixed base HP argument, then
+            // calls setHp again using the ascension-dependent final range.
+            hpRng.random(38,40);
+            setRandomHp(hpRng,ascension>=9);
             break;
 
         case MonsterId::BOOK_OF_STABBING:
@@ -343,7 +349,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
     materializePendingMove(bc);
     search::emitHiddenMonsterIntentMaterialized(
         idx, static_cast<std::int16_t>(moveHistory[0]),
-        static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+        static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
     const int asc = bc.ascension;
 
     const bool asc2 = bc.ascension >= 2;
@@ -480,46 +486,29 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
         // ************ BRONZE AUTOMATON ************
 
 
-        case MMID::BRONZE_AUTOMATON_BOOST: {// 5
+        case MMID::BRONZE_AUTOMATON_BOOST:
             buff<MS::STRENGTH>(asc4 ? 4 : 3);
             addBlock(asc9 ? 12 : 9);
-            auto &lastBoostWasFlail = miscInfo;
-            if (lastBoostWasFlail) {
-                setMove(MMID::BRONZE_AUTOMATON_HYPER_BEAM);
-                lastBoostWasFlail = false;
-            } else {
-                setMove(MMID::BRONZE_AUTOMATON_FLAIL);
-                lastBoostWasFlail = true;
-            }
-            bc.noOpRollMove();
+            bc.addToBot(Actions::RollMove(idx));
             break;
-        }
 
-        case MMID::BRONZE_AUTOMATON_FLAIL: // 1
+        case MMID::BRONZE_AUTOMATON_FLAIL:
             attackPlayerHelper(bc, asc4 ? 8 : 7, 2);
-            setMove(MMID::BRONZE_AUTOMATON_BOOST);
-            bc.noOpRollMove();
+            bc.addToBot(Actions::RollMove(idx));
             break;
 
-        case MMID::BRONZE_AUTOMATON_HYPER_BEAM: // 2
+        case MMID::BRONZE_AUTOMATON_HYPER_BEAM:
             attackPlayerHelper(bc, asc4 ? 50 : 45);
-            if (asc19) {
-                setMove(MMID::BRONZE_AUTOMATON_BOOST);
-            } else {
-                setMove(MMID::BRONZE_AUTOMATON_STUNNED);
-            }
-            bc.noOpRollMove();
+            bc.addToBot(Actions::RollMove(idx));
             break;
 
-        case MMID::BRONZE_AUTOMATON_SPAWN_ORBS: // 4
+        case MMID::BRONZE_AUTOMATON_SPAWN_ORBS:
             spawnBronzeOrbs(bc);
-            setMove(MMID::BRONZE_AUTOMATON_FLAIL);
-            bc.noOpRollMove();
+            bc.addToBot(Actions::RollMove(idx));
             break;
 
-        case MMID::BRONZE_AUTOMATON_STUNNED: // 3
-            setMove(MMID::BRONZE_AUTOMATON_FLAIL);
-            bc.noOpRollMove();
+        case MMID::BRONZE_AUTOMATON_STUNNED:
+            bc.addToBot(Actions::RollMove(idx));
             break;
 
         case MMID::BRONZE_ORB_BEAM:
@@ -1401,6 +1390,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::TORCH_HEAD_TACKLE:
             attackPlayerHelper(bc, 7);
+            bc.addToBot(Actions::SetMonsterMove(idx, MMID::TORCH_HEAD_TACKLE));
             break;
 
         // ************ SHAPES ************
@@ -1486,7 +1476,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             break;
 
         case MMID::DARKLING_NIP: {
-            const auto damage = miscInfo + (asc2 ? 2 : 0); // todo maybe make d part of the miscInfo at prebattle
+            const auto damage = miscInfo; // constructor already applies the ascension range
             attackPlayerHelper(bc, damage);
             bc.addToBot( Actions::RollMove(idx) );
             break;
@@ -1499,7 +1489,6 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::DARKLING_REINCARNATE:
             // revive with 50% hp
-            // todo does it heep its buffs and debuffs?
             curHp = maxHp / 2;
             halfDead = false;
             ++bc.monsters.monstersAlive;
@@ -1640,8 +1629,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
         case MMID::DAGGER_STAB:
             attackPlayerHelper(bc, 9);
             bc.addToBot( Actions::MakeTempCardInDiscard(CardId::WOUND) );
-            setMove(MMID::DAGGER_EXPLODE);
-            bc.noOpRollMove();
+            bc.addToBot(Actions::RollMove(idx));
             break;
 
         case MMID::DAGGER_EXPLODE:
@@ -2099,8 +2087,21 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
         }
 
         case MonsterId::BRONZE_AUTOMATON: {
-            return (MMID::BRONZE_AUTOMATON_SPAWN_ORBS);
-            break;
+            if (firstTurn()) return MMID::BRONZE_AUTOMATON_SPAWN_ORBS;
+            // Vanilla numTurns counts ordinary getMove calls, resets when
+            // choosing Hyper Beam, and does not increment its stun/boost roll.
+            if (monsterData == 4) {
+                monsterData = 0;
+                return MMID::BRONZE_AUTOMATON_HYPER_BEAM;
+            }
+            if (lastMove(MMID::BRONZE_AUTOMATON_HYPER_BEAM)) {
+                return asc19 ? MMID::BRONZE_AUTOMATON_BOOST : MMID::BRONZE_AUTOMATON_STUNNED;
+            }
+            ++monsterData;
+            return lastMove(MMID::BRONZE_AUTOMATON_STUNNED)
+                || lastMove(MMID::BRONZE_AUTOMATON_BOOST)
+                || lastMove(MMID::BRONZE_AUTOMATON_SPAWN_ORBS)
+                ? MMID::BRONZE_AUTOMATON_FLAIL : MMID::BRONZE_AUTOMATON_BOOST;
         }
 
         case MonsterId::BRONZE_ORB: { // todo bug with discarded cards - blind card not showing in discard pile
@@ -2109,6 +2110,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             // 3 stasis
             const auto haveUsedStasis = miscInfo;
             if (!haveUsedStasis && roll >= 25) {
+                monsterData = 1; // vanilla marks usedStasis when choosing it
                 return (MMID::BRONZE_ORB_STASIS);
 
             } else if (roll >= 70 && !lastTwoMoves(MMID::BRONZE_ORB_SUPPORT_BEAM)) {
@@ -2669,7 +2671,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
         }
 
         case MonsterId::DAGGER: {
-            return MMID::DAGGER_STAB;
+            return firstTurn() ? MMID::DAGGER_STAB : MMID::DAGGER_EXPLODE;
         }
 
         case MonsterId::SENTRY: {
@@ -3345,7 +3347,8 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             }
         }
 
-        case MonsterId::TORCH_HEAD: // setting in collector spawn move
+        case MonsterId::TORCH_HEAD:
+            return MMID::TORCH_HEAD_TACKLE;
         default:
             break;
     }
@@ -3357,8 +3360,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
 }
 
 void Monster::initSpawnedMonster(BattleContext &bc, const MonsterId monsterId, const int monsterIdx, const int hp) {
-    idx = monsterIdx;
-    id = monsterId;
+    resetForNewOccupant(monsterIdx, monsterId, bc.ascension);
     curHp = hp;
     maxHp = hp;
     rollMove(bc);
@@ -3381,10 +3383,8 @@ void Monster::largeSlimeSplit(BattleContext &bc, const MonsterId mediumSlimeType
     const auto idx1 = placeIdx;
     const auto idx2 = placeIdx + 1;
 
-    bc.monsters.arr[idx1] = Monster();
     bc.monsters.arr[idx1].initSpawnedMonster(bc, mediumSlimeType, idx1, hp);
 
-    bc.monsters.arr[idx2] = Monster();
     bc.monsters.arr[idx2].initSpawnedMonster(bc, mediumSlimeType, idx2, hp);
 
     if (bc.player.hasRelic<R::PHILOSOPHERS_STONE>()) {
@@ -3408,10 +3408,8 @@ void Monster::slimeBossSplit(BattleContext &bc, const int hp) {
     const auto idx1 = 0;
     const auto idx2 = 2;
 
-    bc.monsters.arr[idx1] = Monster();
     bc.monsters.arr[idx1].initSpawnedMonster(bc, MonsterId::SPIKE_SLIME_L, idx1, hp);
 
-    bc.monsters.arr[idx2] = Monster();
     bc.monsters.arr[idx2].initSpawnedMonster(bc, MonsterId::ACID_SLIME_L, idx2, hp);
 
     if (bc.player.hasRelic<R::PHILOSOPHERS_STONE>()) {
@@ -3580,7 +3578,6 @@ void Monster::reptomancerSummon(BattleContext &bc, int daggerCount) {
     for (int i = 0; i < daggerCount; ++i) {
         const auto daggerIdx = daggerIdxs[i];
         auto &dagger = bc.monsters.arr[daggerIdx];
-        dagger = Monster();
         dagger.construct(bc, MonsterId::DAGGER, daggerIdx);
         ++bc.monsters.monstersAlive;
         dagger.setMove(MMID::DAGGER_STAB);

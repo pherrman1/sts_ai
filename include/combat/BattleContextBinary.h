@@ -15,7 +15,7 @@
 //
 // Layout (all integers little-endian):
 //   [8]  magic  "STSBC\0\0\0\0"
-//   [4]  version (3 for hidden intents; otherwise 2; reader also accepts 1)
+//   [4]  version (4; reader also accepts 1, 2 and 3)
 //   [4]  total buffer size in bytes
 //   then field groups, each:
 //     [1] group id
@@ -126,7 +126,7 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
     // header: magic + version + total size (patched at the end)
     const char magic[8] = {'S', 'T', 'S', 'B', 'C', 0, 0, 0};
     out.insert(out.end(), magic, magic + 8);
-    putU32(out, bc.intentsHidden ? 3 : 2); // version
+    putU32(out, 4); // version
     const std::size_t sizePos = out.size();
     putU32(out, 0);                    // total size placeholder
 
@@ -341,6 +341,13 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
         out.insert(out.end(), g.begin(), g.end());
     }
 
+    {
+        std::vector<std::uint8_t> g;
+        for(const auto &m:bc.monsters.arr) {
+            putU32(g,m.occupantGeneration); putU32(g,m.latentDamageMask); putBool(g,m.latentDamageMaterialized);
+        }
+        putU8(out,8); putU32(out,g.size()); out.insert(out.end(),g.begin(),g.end());
+    }
     // patch total size (the placeholder is already counted in out.size())
     const std::uint32_t totalSize = (std::uint32_t)out.size();
     out[sizePos + 0] = (std::uint8_t)(totalSize & 0xFF);
@@ -365,12 +372,13 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
         return bc;
     r.pos = 8;
     std::uint32_t version = 0;
-    if (!r.u32(version) || (version != 1 && version != 2 && version != 3)) return bc;
+    if (!r.u32(version) || (version != 1 && version != 2 && version != 3 && version != 4)) return bc;
     std::uint32_t total = 0;
     if (!r.u32(total) || (std::size_t)total != size) return bc;
 
     bool ok = true;
     bool hiddenGroupSeen = false;
+    bool persistentGroupSeen = false;
     while (ok && r.pos < r.size) {
         std::uint8_t gid = 0;
         std::uint32_t gsize = 0;
@@ -592,8 +600,19 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
                 bc.seed = seed;
                 break;
             }
+            case 8: {
+                if(version!=4 || persistentGroupSeen) { ok=false; break; }
+                persistentGroupSeen=true;
+                for(auto &m:bc.monsters.arr) {
+                    std::uint32_t mask;
+                    if(!r.u32(m.occupantGeneration) || !r.u32(mask) || mask>UINT16_MAX || !r.boolean(m.latentDamageMaterialized)) { ok=false; break; }
+                    m.latentDamageMask=static_cast<std::uint16_t>(mask);
+                }
+                if(r.pos!=gend) ok=false;
+                break;
+            }
             case 7: {
-                if (version != 3 || hiddenGroupSeen) { ok = false; break; }
+                if (version < 3 || hiddenGroupSeen) { ok = false; break; }
                 hiddenGroupSeen = true;
                 bc.intentsHidden = true;
                 auto readInputs = [&](MonsterRollInputs &in) {
@@ -629,7 +648,15 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
         }
         r.pos = gend;
     }
-    if (!ok || (version == 3 && !hiddenGroupSeen)) return BattleContext();
+    if (!ok || (version == 3 && !hiddenGroupSeen) || (version==4 && !persistentGroupSeen)) return BattleContext();
+    for(const auto &m:bc.monsters.arr) {
+        const auto prior=Monster::latentDamagePrior(m.id,bc.ascension);
+        if ((version==4 && bc.intentsHidden && m.idx>=0 && prior && !m.latentDamageMask)
+                || (!m.latentDamageMask && m.latentDamageMaterialized)
+                || (bc.intentsHidden && m.latentDamageMask && !m.latentDamageMaterialized && m.miscInfo!=0)
+                || (m.latentDamageMask && (!prior || (m.latentDamageMask&~prior)
+                || (m.latentDamageMaterialized && (m.miscInfo<0 || m.miscInfo>=16 || !(m.latentDamageMask&(1u<<m.miscInfo))))))) return BattleContext();
+    }
     return bc;
 }
 

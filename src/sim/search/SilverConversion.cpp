@@ -235,6 +235,8 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     for (std::size_t i = 0; i < out.monsters.size(); ++i) {
         const Monster &m = live.monsters.arr[i];
         auto &wm = out.monsters[i];
+        wm.occupantGeneration = out.intentsHidden ? knowledge.monsterOccupantGeneration[i] : m.occupantGeneration;
+        wm.latentDamageMask = out.intentsHidden ? knowledge.latentDamageMasks[i] : 0;
         wm.idx = m.idx; wm.id = static_cast<std::int16_t>(m.id); wm.curHp = m.curHp;
         wm.maxHp = m.maxHp; wm.block = m.block; wm.isEscapingB = m.isEscapingB;
         wm.halfDead = m.halfDead; wm.escapeNext = m.escapeNext;

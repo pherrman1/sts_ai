@@ -76,13 +76,19 @@ namespace sts {
         // book of stabbing n
         // champ phase2
         // bronze orb have used stasis
-        // bronze automaton lastBoostWasFlail
+        // bronze automaton numTurns (public deterministic roll counter)
         // spiker thorn buff count
         // writhing mass used implant
         // darkling d
         // time eater has used haste
         // awakened one isPhase2
         int miscInfo = 0;
+        std::uint32_t occupantGeneration = 0;
+        std::uint16_t latentDamageMask = 0;
+        bool latentDamageMaterialized = false;
+        static std::uint16_t latentDamagePrior(MonsterId id, int ascension);
+        void materializeLatentDamage(BattleContext &bc);
+        int publicIncomingDamage(const BattleContext &bc) const;
 
         // Runic Dome search only (BattleContext::intentsHidden): rolls whose
         // result the player cannot see yet are deferred until the move is used
@@ -106,6 +112,7 @@ namespace sts {
 
         void setRandomHp(Random &hpRng, bool higherHp);
         void initHp(Random &hpRng, int ascension);
+        void resetForNewOccupant(int monsterIdx, MonsterId monsterId, int ascension);
         void construct(BattleContext &bc, MonsterId monsterId, int monsterIdx);
         void initSpawnedMonster(BattleContext &bc, MonsterId monsterId, int monsterIdx, int hp);
 

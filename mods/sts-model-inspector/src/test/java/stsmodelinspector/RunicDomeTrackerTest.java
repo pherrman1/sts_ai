@@ -423,12 +423,98 @@ public final class RunicDomeTrackerTest {
             try { Class.forName("com.megacrit.cardcrawl.monsters."+pkg+"."+cls,false,loader).getDeclaredMethod("takeTurn"); }
             catch(ClassNotFoundException expectedOtherPackage) { }
         }
-        for(String[] power:new String[][]{{"GenericStrengthUpPower","Orb Walker"},{"AngryPower","GremlinWarrior"},
+        for(String[] power:new String[][]{{"WeakPower","FuzzyLouseNormal"},{"GenericStrengthUpPower","Orb Walker"},{"AngryPower","GremlinWarrior"},
                 {"MalleablePower","SnakePlant"},{"ReactivePower","WrithingMass"},{"SlowPower","GiantHead"}}) {
             String publicId=(String)pool.get("com.megacrit.cardcrawl.powers."+power[0]).getDeclaredField("POWER_ID").getConstantValue();
             if(!RunicDomeTracker.monsterPowerAllowed(publicId,power[1])) throw new AssertionError("vanilla power ID rejected "+publicId);
         }
         Class.forName("com.megacrit.cardcrawl.monsters.MonsterGroup",false,loader).getDeclaredMethod("init");
+        // New occupants carry local execution history and the public global birth clock.
+        for(String id:Arrays.asList("AcidSlime_L","SpikeSlime_L","SlimeBoss","BronzeAutomaton","BronzeOrb","GremlinLeader","Reptomancer","Dagger","TheCollector","TorchHead","FuzzyLouseNormal","FuzzyLouseDefensive","Darkling")) {
+            Object identity=new Object();RunicDomeTracker remainingTracker=new RunicDomeTracker(identity,id,17,1,5,0);
+            remainingTracker.bind(1,0,"initial",-1,0);if(id.equals("TorchHead"))remainingTracker.constructorTackle(identity);remainingTracker.globalTurn(0);remainingTracker.beginRoll(identity,40,40);remainingTracker.setMove(identity);remainingTracker.endRoll(identity);
+            Map<String,Object> row=remainingTracker.snapshot(identity,1,0,false);
+            if(!Boolean.TRUE.equals(row.get("complete")) || !Integer.valueOf(4).equals(row.get("schemaVersion")))throw new AssertionError("remaining initial "+id+row);
+        }
+        Object torchIdentity=new Object();RunicDomeTracker torchTracker=new RunicDomeTracker(torchIdentity,"TorchHead",17,2,3,0);
+        torchTracker.bind(1,1,"summon",2,1);torchTracker.constructorTackle(torchIdentity);torchTracker.globalTurn(1);
+        torchTracker.beginRoll(torchIdentity,40,40);torchTracker.setMove(torchIdentity);torchTracker.endRoll(torchIdentity);
+        Map<String,Object> torchBorn=torchTracker.snapshot(torchIdentity,2,1,false);
+        if(!Boolean.TRUE.equals(torchBorn.get("complete")) || !"torch_constructor_tackle".equals(torchBorn.get("knownRollPredecessor")) || !Long.valueOf(2).equals(torchBorn.get("generation")))throw new AssertionError("Torch constructor/initial roll "+torchBorn);
+        torchTracker.globalTurn(2);torchTracker.beginKnownTurn(torchIdentity,1);torchTracker.knownOverride(torchIdentity,1);torchTracker.setMove(torchIdentity);torchTracker.endKnownTurn(torchIdentity);
+        Map<String,Object> torchNext=torchTracker.snapshot(torchIdentity,3,1,false);
+        if(!Boolean.TRUE.equals(torchNext.get("complete")) || !Integer.valueOf(0).equals(torchNext.get("pendingMoveRolls")) || !Integer.valueOf(1).equals(torchNext.get("totalRolls")))throw new AssertionError("Torch queued successor "+torchNext);
+        for(int level:new int[]{0,19}) {
+            Object automatonIdentity=new Object();RunicDomeTracker autoTracker=new RunicDomeTracker(automatonIdentity,"BronzeAutomaton",17,2,3,level);
+            autoTracker.bind(1,0,"initial",-1,0);autoTracker.globalTurn(0);autoTracker.beginRoll(automatonIdentity,300,300);autoTracker.setMove(automatonIdentity);autoTracker.endRoll(automatonIdentity);
+            for(int n=0;n<20;++n) {
+                int move=n==0?4:new int[]{1,5,1,5,2,level>=19?5:3}[(n-1)%6];
+                autoTracker.globalTurn(n+1);autoTracker.execute(automatonIdentity,move);autoTracker.beginRoll(automatonIdentity,300,300);autoTracker.setMove(automatonIdentity);autoTracker.endRoll(automatonIdentity);
+                Map<String,Object> autoRow=autoTracker.snapshot(automatonIdentity,n+2,1,false);
+                if(!Boolean.TRUE.equals(autoRow.get("complete")) || !Integer.valueOf(n%6==5?0:n%6).equals(autoRow.get("publicMisc")))throw new AssertionError("Automaton counter level="+level+autoRow);
+            }
+        }
+        Object bornIdentity=new Object();RunicDomeTracker bornTracker=new RunicDomeTracker(bornIdentity,"Dagger",17,3,5,0);
+        bornTracker.bind(3,7,"summon",2,1);bornTracker.globalTurn(7);bornTracker.beginRoll(bornIdentity,25,25);bornTracker.setMove(bornIdentity);bornTracker.endRoll(bornIdentity);
+        if(!Boolean.TRUE.equals(bornTracker.snapshot(bornIdentity,8,4,false).get("complete")))throw new AssertionError("born local history rejected");
+        bornTracker.globalTurn(8);bornTracker.execute(bornIdentity,1);bornTracker.beginRoll(bornIdentity,25,25);bornTracker.setMove(bornIdentity);bornTracker.endRoll(bornIdentity);
+        Map<String,Object> bornRow=bornTracker.snapshot(bornIdentity,9,4,false);
+        if(!Boolean.TRUE.equals(bornRow.get("complete")) || !Integer.valueOf(1).equals(bornRow.get("completedTurns")) || !Integer.valueOf(8).equals(bornRow.get("rollGlobalTurn")))throw new AssertionError("born clock "+bornRow);
+        bornTracker.globalTurn(9);bornTracker.execute(bornIdentity,2);bornTracker.beginTerminalRoll(bornIdentity);bornTracker.setMove(bornIdentity);bornTracker.endRoll(bornIdentity);
+        Map<String,Object> terminalDagger=bornTracker.snapshot(bornIdentity,10,4,true);
+        if(!Boolean.TRUE.equals(terminalDagger.get("complete")) || !Integer.valueOf(0).equals(terminalDagger.get("pendingMoveRolls")) || !Integer.valueOf(3).equals(terminalDagger.get("totalRolls")))throw new AssertionError("dead Dagger trailing roll "+terminalDagger);
+        Object terminalJawIdentity=new Object();RunicDomeTracker terminalJaw=new RunicDomeTracker(terminalJawIdentity,"JawWorm",18,1,1,0);
+        terminalJaw.bind(1,0,"initial",-1,0);terminalJaw.globalTurn(0);terminalJaw.beginRoll(terminalJawIdentity,40,40);terminalJaw.setMove(terminalJawIdentity);terminalJaw.endRoll(terminalJawIdentity);
+        terminalJaw.globalTurn(1);terminalJaw.execute(terminalJawIdentity,1);terminalJaw.beginTerminalRoll(terminalJawIdentity);terminalJaw.setMove(terminalJawIdentity);terminalJaw.endRoll(terminalJawIdentity);
+        Map<String,Object> terminalJawRow=terminalJaw.snapshot(terminalJawIdentity,2,0,true);
+        if(!Boolean.TRUE.equals(terminalJawRow.get("complete")) || !Long.valueOf(3).equals(terminalJawRow.get("generation")) || !Integer.valueOf(0).equals(terminalJawRow.get("pendingMoveRolls")))throw new AssertionError("retaliation terminal roll "+terminalJawRow);
+        Object darkIdentity=new Object();RunicDomeTracker darkTracker=new RunicDomeTracker(darkIdentity,"Darkling",17,3,3,0);
+        darkTracker.bind(1,0,"initial",-1,0);darkTracker.globalTurn(0);darkTracker.beginRoll(darkIdentity,50,50);darkTracker.setMove(darkIdentity);darkTracker.endRoll(darkIdentity);
+        darkTracker.publicOverride(darkIdentity,4,true);darkTracker.setMove(darkIdentity);darkTracker.endKnownTurn(darkIdentity);
+        if(Boolean.TRUE.equals(darkTracker.snapshot(darkIdentity,1,0,false).get("complete")))throw new AssertionError("missing duplicate Regrow accepted");
+        darkTracker.knownOverride(darkIdentity,4);darkTracker.setMove(darkIdentity);darkTracker.endKnownTurn(darkIdentity);
+        if(!Boolean.TRUE.equals(darkTracker.snapshot(darkIdentity,1,0,false).get("complete")))throw new AssertionError("public Regrow rejected");
+        darkTracker.globalTurn(1);darkTracker.execute(darkIdentity,4);darkTracker.beginRoll(darkIdentity,0,50);darkTracker.setMove(darkIdentity);darkTracker.endRoll(darkIdentity);
+        Map<String,Object> darkRow=darkTracker.snapshot(darkIdentity,2,0,false);
+        if(!Boolean.TRUE.equals(darkRow.get("complete")) || !Integer.valueOf(0).equals(darkRow.get("rollHp")))throw new AssertionError("half-dead roll rejected "+darkRow);
+        Object thornDarkIdentity=new Object();RunicDomeTracker thornDark=new RunicDomeTracker(thornDarkIdentity,"Darkling",18,3,3,0);
+        thornDark.bind(1,0,"initial",-1,0);thornDark.globalTurn(0);thornDark.beginRoll(thornDarkIdentity,50,50);thornDark.setMove(thornDarkIdentity);thornDark.endRoll(thornDarkIdentity);
+        thornDark.globalTurn(1);thornDark.execute(thornDarkIdentity,3);thornDark.publicOverride(thornDarkIdentity,4,true);thornDark.setMove(thornDarkIdentity);thornDark.endKnownTurn(thornDarkIdentity);
+        thornDark.beginRoll(thornDarkIdentity,0,50);thornDark.setMove(thornDarkIdentity);thornDark.endRoll(thornDarkIdentity);
+        thornDark.knownOverride(thornDarkIdentity,4);thornDark.setMove(thornDarkIdentity);thornDark.endKnownTurn(thornDarkIdentity);
+        Map<String,Object> thornDarkRow=thornDark.snapshot(thornDarkIdentity,2,0,false);
+        if(!Boolean.TRUE.equals(thornDarkRow.get("complete")) || !"darkling_reincarnate_before_regrow".equals(thornDarkRow.get("knownRollPredecessor")))throw new AssertionError("in-flight Darkling predecessor "+thornDarkRow);
+        for(String name:Arrays.asList("AcidSlime_L","SpikeSlime_L","SlimeBoss")) {
+            javassist.CtClass type=pool.get("com.megacrit.cardcrawl.monsters.exordium."+name);
+            RunicDomeTrackerPatch.instrumentRemainingOverride(type.getDeclaredMethod("damage"),1);
+            if(name.equals("SlimeBoss"))RunicDomeTrackerPatch.SlimeBossRemainingTurn.raw(type.getDeclaredMethod("takeTurn"));
+            else RunicDomeTrackerPatch.instrumentRemainingOverride(type.getDeclaredMethod("takeTurn"),1);
+            type.toBytecode();type.detach();
+        }
+        javassist.CtClass darkType=pool.get("com.megacrit.cardcrawl.monsters.beyond.Darkling");
+        RunicDomeTrackerPatch.instrumentRemainingOverride(darkType.getDeclaredMethod("damage"),1);darkType.toBytecode();darkType.detach();
+        for(String name:Arrays.asList("com.megacrit.cardcrawl.actions.common.SpawnMonsterAction","com.megacrit.cardcrawl.actions.unique.SummonGremlinAction")) {
+            javassist.CtClass type=pool.get(name);RunicDomeTrackerPatch.instrumentSpawnInit(type.getDeclaredMethod("update"));
+            if(name.endsWith("SpawnMonsterAction")) {
+                javassist.CtConstructor ctor=type.getDeclaredConstructor(new javassist.CtClass[]{pool.get("com.megacrit.cardcrawl.monsters.AbstractMonster"),javassist.CtClass.booleanType,javassist.CtClass.intType});
+                javassist.bytecode.LocalVariableAttribute vars=(javassist.bytecode.LocalVariableAttribute)ctor.getMethodInfo().getCodeAttribute().getAttribute(javassist.bytecode.LocalVariableAttribute.tag);
+                boolean namedMonster=false;for(int j=0;j<vars.tableLength();++j)if(vars.index(j)==1 && vars.variableName(j).equals("m"))namedMonster=true;
+                if(!namedMonster)throw new AssertionError("Spawn constructor patch argument binding drift");
+            }
+            if(name.endsWith("SummonGremlinAction")) {
+                if(!type.getDeclaredField("m").getType().getName().equals("com.megacrit.cardcrawl.monsters.AbstractMonster"))throw new AssertionError("Gremlin birth field binding drift");
+                RunicDomeTrackerPatch.GremlinConstructed.raw(type.getDeclaredConstructors()[0]);
+            }
+            type.toBytecode();type.detach();
+        }
+        javassist.CtClass playerDamageType=pool.get("com.megacrit.cardcrawl.characters.AbstractPlayer");
+        javassist.CtMethod playerDamage=playerDamageType.getDeclaredMethod("damage",new javassist.CtClass[]{pool.get("com.megacrit.cardcrawl.cards.DamageInfo")});
+        javassist.bytecode.LocalVariableAttribute damageVars=(javassist.bytecode.LocalVariableAttribute)playerDamage.getMethodInfo().getCodeAttribute().getAttribute(javassist.bytecode.LocalVariableAttribute.tag);
+        boolean namedInfo=false;for(int j=0;j<damageVars.tableLength();++j)if(damageVars.index(j)==1 && damageVars.variableName(j).equals("info"))namedInfo=true;
+        if(!namedInfo)throw new AssertionError("Player.damage patch argument binding drift");
+        playerDamageType.detach();
+        javassist.CtClass torchType=pool.get("com.megacrit.cardcrawl.monsters.city.TorchHead");
+        RunicDomeTrackerPatch.TorchConstructor.raw(torchType.getDeclaredConstructors()[0]);torchType.toBytecode();torchType.detach();
         System.out.println("RunicDomeTrackerTest PASS");
     }
 }

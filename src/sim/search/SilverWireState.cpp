@@ -435,6 +435,8 @@ namespace sts::search {
         for (std::size_t i = 0; i < out.monsters.arr.size(); ++i) {
             const auto &wm = in.monsters[i];
             auto &m = out.monsters.arr[i];
+            m.occupantGeneration = wm.occupantGeneration;
+            m.latentDamageMask = in.intentsHidden ? wm.latentDamageMask : 0; m.latentDamageMaterialized = false;
             m.idx = wm.idx; m.id = static_cast<MonsterId>(wm.id); m.curHp = wm.curHp;
             m.maxHp = wm.maxHp; m.block = wm.block; m.isEscapingB = wm.isEscapingB;
             m.halfDead = wm.halfDead; m.escapeNext = wm.escapeNext;
@@ -454,6 +456,16 @@ namespace sts::search {
             m.shackled = static_cast<std::int8_t>(wm.smallPowers[10]);
             m.strength = wm.strength; m.vulnerable = wm.vulnerable; m.weak = wm.weak;
             m.uniquePower0 = wm.uniquePower0; m.uniquePower1 = wm.uniquePower1; m.miscInfo = wm.miscInfo;
+            const auto prior = Monster::latentDamagePrior(m.id, out.ascension);
+            if ((wm.latentDamageMask && (!prior || (wm.latentDamageMask & ~prior) || (in.intentsHidden && wm.miscInfo != 0)
+                    || (!in.intentsHidden && (wm.miscInfo<0 || wm.miscInfo>=16 || !(wm.latentDamageMask&(1u<<wm.miscInfo))))))
+                    || (in.intentsHidden && m.idx>=0 && prior && !wm.latentDamageMask)) {
+                throw std::runtime_error("invalid persistent damage posterior");
+            }
+            if (in.intentsHidden && wm.latentDamageMask) {
+                if (wm.pendingRollInputs.miscInfo != 0) { throw std::runtime_error("private latent roll input"); }
+                for (const auto &r:wm.pendingRollInputHistory) if(r.miscInfo!=0) { throw std::runtime_error("private latent roll history"); }
+            }
             if (in.intentsHidden) {
                 m.pendingMoveRolls = wm.pendingMoveRolls;
                 m.pendingDirectMoveChoice = wm.pendingDirectMoveChoice;
@@ -628,6 +640,8 @@ namespace sts::search {
         for (std::size_t i = 0; i < out.monsters.size(); ++i) {
             const auto &m = state.monsters.arr[i];
             auto &wm = out.monsters[i];
+            wm.occupantGeneration = m.occupantGeneration;
+            wm.latentDamageMask = state.intentsHidden ? m.latentDamageMask : 0;
             wm.idx = m.idx; wm.id = static_cast<std::int16_t>(m.id); wm.curHp = m.curHp;
             wm.maxHp = m.maxHp; wm.block = m.block; wm.isEscapingB = m.isEscapingB;
             wm.halfDead = m.halfDead; wm.escapeNext = m.escapeNext;
@@ -638,7 +652,7 @@ namespace sts::search {
                               static_cast<std::int16_t>(m.mark), m.metallicize, m.platedArmor,
                               m.poison, m.regen, m.shackled};
             wm.strength = m.strength; wm.vulnerable = m.vulnerable; wm.weak = m.weak;
-            wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = m.miscInfo;
+            wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = state.intentsHidden && wm.latentDamageMask ? 0 : m.miscInfo;
             wm.pendingMoveRolls = m.pendingMoveRolls;
             wm.pendingDirectMoveChoice = m.pendingDirectMoveChoice;
             wm.pendingAttackPredicates = m.pendingAttackPredicates;

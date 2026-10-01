@@ -97,6 +97,8 @@ struct MonsterWire {
     int uniquePower0 = 0;
     std::int16_t uniquePower1 = 0;
     int miscInfo = 0;
+    std::uint32_t occupantGeneration = 0;
+    std::uint16_t latentDamageMask = 0;
     std::uint8_t pendingMoveRolls = 0;
     // 0 none, 1 Looter-after-Mug, 2 Mugger-after-Mug. This carries only
     // which public direct-choice rule is pending, never its live outcome.

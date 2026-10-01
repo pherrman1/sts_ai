@@ -344,7 +344,7 @@ json nativeObservation(const BattleStateWire &wire, const char *room, const char
         if (previous >= 0) history.push_back(previous);
         history.push_back(current);
         combat["monsters"].push_back({
-            {"id", name}, {"slot", monster.idx}, {"idx", monster.idx},
+            {"id", name}, {"slot", monster.idx}, {"idx", monster.idx}, {"occupantGeneration",monster.occupantGeneration},
             {"hp", monster.curHp}, {"maxHp", monster.maxHp}, {"block", monster.block},
             {"dead", monster.curHp <= 0 || monster.isEscapingB},
             {"escaping", monster.isEscapingB}, {"halfDead", monster.halfDead},
@@ -378,13 +378,9 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
                 return power.value("id", std::string()) == "MinionLeader";
             });
             monster["miscInfo"] = phase2 ? 1 : 0;
-        } else if (id == "BronzeOrb") {
-            const auto &powers = monster["powers"];
-            const bool usedStasis = std::any_of(powers.begin(), powers.end(), [](const json &power) {
-                return power.value("id", std::string()) == "Stasis";
-            });
-            monster["miscInfo"] = usedStasis ? 1 : 0;
         }
+        // Ordinary BronzeOrb capture reads Java usedStasis, set when Stasis
+        // is selected. Presence of the later Stasis power is not that flag.
     }
     return out;
 }
@@ -652,6 +648,8 @@ json observation(const BattleStateWire &w, const char *name, int move, const cha
                         {"block", m.block}, {"nextMove", move},
                         {"moveHistory", json::array({move})}, {"miscInfo", m.miscInfo},
                         {"powers", json::array()}});
+    if (m.occupantGeneration > 0)
+        monsters[0]["occupantGeneration"] = m.occupantGeneration;
     json potions = json::array();
     for (int i = 0; i < w.potionCapacity; ++i)
         potions.push_back({{"slot", i}, {"id", "Potion Slot"}});
@@ -822,7 +820,7 @@ Fixture multiFixture() {
                               {"justApplied", false}});
         json monsterJson = {
             {"id", monsterName(static_cast<MonsterId>(monster.id))},
-            {"idx", monster.idx}, {"hp", monster.curHp}, {"maxHp", monster.maxHp},
+            {"idx", monster.idx}, {"occupantGeneration",monster.occupantGeneration}, {"hp", monster.curHp}, {"maxHp", monster.maxHp},
             {"block", monster.block}, {"dead", monster.curHp <= 0 || monster.isEscapingB},
             {"nextMove", current}, {"moveHistory", history},
             {"miscInfo", monster.miscInfo}, {"powers", std::move(powers)}};
@@ -1400,6 +1398,112 @@ int main() {
                 c["runicDomeKnowledge"]={{"schemaVersion",2},{"epoch",1},{"complete",true},{"monsters",rows}};
                 return obs;
             };
+            // Bound public occupants: every remaining family enters before its first hidden roll.
+            const auto boundDome=[&](const std::string &id) {
+                auto obs=groupDome({id},{{}});auto &knowledge=obs["silverRoot"]["combat"]["runicDomeKnowledge"];
+                knowledge["schemaVersion"]=3;auto &row=knowledge["monsters"][0];
+                row.update({{"schemaVersion",4},{"historySchemaVersion",3},{"occupantGeneration",1},
+                    {"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},{"birthParentGeneration",0},
+                    {"lastExecutionGlobalTurn",-1},{"rollGlobalTurn",0},{"totalRolls",1},{"knownTransitions",0},
+                    {"knownNextMove",nullptr},{"knownRollPredecessor",nullptr}});
+                const auto nativeId=one_combat::advisor::live_silver::monsterId(id);
+                const auto prior=Monster::latentDamagePrior(*nativeId,0);
+                if(id=="TorchHead")row.update({{"generation",2},{"knownTransitions",1},{"knownRollPredecessor","torch_constructor_tackle"}});
+                if(prior){row["latentDamageExecutions"]=0;row["latentDamageMask"]=prior;row["latentDamageObservations"]=json::array();}
+                return obs;
+            };
+            for(const std::string id:{"AcidSlime_L","SpikeSlime_L","SlimeBoss","BronzeAutomaton","BronzeOrb","GremlinLeader",
+                    "Reptomancer","Dagger","TheCollector","TorchHead","FuzzyLouseNormal","FuzzyLouseDefensive","Darkling"}) {
+                auto obs=boundDome(id);const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok)throw std::runtime_error("remaining Dome initial "+id+": "+imported.reason);
+                auto state=battleContextFromWire(imported.wire);auto expectedRng=state.aiRng;expectedRng.random(99);state.monsters.arr[0].materializePendingMove(state);
+                if(id=="TorchHead" && (state.monsters.arr[0].moveHistory[0]!=MonsterMoveId::TORCH_HEAD_TACKLE || state.monsters.arr[0].moveHistory[1]!=MonsterMoveId::TORCH_HEAD_TACKLE || state.aiRng!=expectedRng))throw std::runtime_error("Torch constructor then initial roll parity");
+                if(id=="TorchHead") {
+                    const auto turnRng=state.aiRng;state.monsters.arr[0].takeTurn(state);
+                    while(!state.actionQueue.isEmpty()){auto action=state.actionQueue.popFront();action(state);}
+                    if(state.aiRng!=turnRng || state.monsters.arr[0].moveHistory[0]!=MonsterMoveId::TORCH_HEAD_TACKLE || state.monsters.arr[0].moveHistory[1]!=MonsterMoveId::TORCH_HEAD_TACKLE)
+                        throw std::runtime_error("Torch queued turn setter or zero-roll parity");
+                    auto invalidTorch=obs;invalidTorch["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["knownRollPredecessor"]=nullptr;
+                    if(one_combat::advisor::importSilverRoot(invalidTorch).ok)throw std::runtime_error("Torch missing constructor proof accepted");
+                }
+                if(state.monsters.arr[0].occupantGeneration!=1 || state.monsters.arr[0].pendingMoveRolls)
+                    throw std::runtime_error("remaining Dome occupant materialization "+id);
+                auto invalid=obs;invalid["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("occupantGeneration");
+                if(one_combat::advisor::importSilverRoot(invalid).ok)throw std::runtime_error("missing occupant generation accepted");
+            }
+            for(int level:{0,9,19}) {
+                auto state=battleContextFromWire(one_combat::advisor::importSilverRoot(boundDome("TorchHead")).wire);
+                auto actual=state.monsterHpRng,expected=actual;
+                expected.random(38,40);const int hp=expected.random(level>=9?40:38,level>=9?45:40);
+                Monster torch;torch.id=MonsterId::TORCH_HEAD;torch.initHp(actual,level);
+                if(actual!=expected || torch.curHp!=hp || torch.maxHp!=hp)throw std::runtime_error("Torch fixed first HP draw/final ascension range parity");
+            }
+            for(int level:{0,19})for(int completed=1;completed<=20;++completed) {
+                auto obs=boundDome("BronzeAutomaton");auto &c=obs["silverRoot"]["combat"];auto &row=c["runicDomeKnowledge"]["monsters"][0];
+                obs["silverRoot"]["ascension"]=level;obs["silverRoot"]["playerTurn"]=completed+1;c["turn"]=completed+1;
+                const auto move=[&](int i){const int cycle[]={1,5,1,5,2,level>=19?5:3};return i==0?4:cycle[(i-1)%6];};
+                json history=json::array();for(int i=std::max(0,completed-2);i<completed;++i)history.push_back(move(i));
+                row.update({{"completedTurns",completed},{"executedMoves",history},{"generation",2*completed+1},
+                    {"totalRolls",completed+1},{"lastExecutionGlobalTurn",completed},{"rollGlobalTurn",completed},
+                    {"publicMisc",(completed-1)%6==5?0:(completed-1)%6}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok)throw std::runtime_error("Automaton bound cycle: "+imported.reason);
+                auto state=battleContextFromWire(imported.wire);auto before=state.aiRng;state.monsters.arr[0].materializePendingMove(state);
+                if(state.monsters.arr[0].moveHistory[0]!=*one_combat::advisor::live_silver::monsterMove("BronzeAutomaton",move(completed)) || state.aiRng==before)
+                    throw std::runtime_error("Automaton A0/A19 deferred cycle parity");
+            }
+            {
+                auto obs=groupDome({"Darkling","Darkling","Darkling"},{{3},{1},{2}});auto &c=obs["silverRoot"]["combat"];auto &knowledge=c["runicDomeKnowledge"];
+                knowledge["schemaVersion"]=3;
+                for(int slot=0;slot<3;++slot)knowledge["monsters"][slot].update({{"schemaVersion",4},{"historySchemaVersion",3},
+                    {"occupantGeneration",1},{"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},{"birthParentGeneration",0},
+                    {"lastExecutionGlobalTurn",1},{"rollGlobalTurn",1},{"totalRolls",2},{"knownTransitions",0},
+                    {"knownNextMove",nullptr},{"knownRollPredecessor",nullptr},{"latentDamageMask",Monster::latentDamagePrior(MonsterId::DARKLING,0)},
+                    {"latentDamageExecutions",0},{"latentDamageObservations",json::array()}});
+                auto &row=knowledge["monsters"][0];c["monsters"][0]["hp"]=0;c["monsters"][0]["halfDead"]=true;
+                row.update({{"generation",5},{"knownTransitions",2},{"pendingMoveRolls",0},
+                    {"knownNextMove",{{"kind","darkling_public_regrow"},{"move",4}}},
+                    {"knownRollPredecessor","darkling_reincarnate_before_regrow"},{"latentDamageExecutions",1}});
+                row["latentDamageObservations"]=json::array({{{"beforeHp",80},{"afterHp",80},{"beforeBlock",100},{"afterBlock",99},
+                    {"beforeBuffer",0},{"afterBuffer",0},{"maxHp",80},{"strength",0},{"reviveHp",0},
+                    {"weak",false},{"vulnerable",false},{"intangible",true},{"oddMushroom",false},{"paperKrane",false},
+                    {"torii",false},{"tungstenRod",false},{"wrath",false}}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok)throw std::runtime_error("Darkling interleaved bridge: "+imported.reason);
+                auto state=battleContextFromWire(imported.wire);
+                if(state.monsters.arr[0].moveHistory[0]!=MonsterMoveId::DARKLING_REGROW || state.monsters.arr[0].moveHistory[1]!=MonsterMoveId::DARKLING_REINCARNATE)
+                    throw std::runtime_error("Darkling public overwritten roll predecessor lost");
+                row["latentDamageObservations"]=json::array();
+                if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("missing public Bite/Nip observation accepted");
+            }
+            {
+                auto obs=boundDome("WrithingMass");auto &row=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                row.erase("knownNextMove");row.erase("knownRollPredecessor");row.erase("knownTransitions");
+                row.update({{"historySchemaVersion",2},{"generation",2},{"totalRolls",2},{"pendingMoveRolls",2},{"rollGlobalTurn",1}});
+                json inputs={{"rollHp",30},{"rollMaxHp",40},{"firstHp",35},{"firstMaxHp",40},{"firstAlive",true},
+                    {"aliveCount",1},{"playerConstricted",false},{"rollGlobalTurn",0}};
+                row["pendingRollInputs"]=json::array({inputs,inputs});row["pendingRollInputs"][1]["rollGlobalTurn"]=1;
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingRollInputHistory.size()!=2)throw std::runtime_error("bound reactive current-player roll: "+imported.reason);
+                row["pendingRollInputs"][1]["rollGlobalTurn"]=2;
+                if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("future reactive roll accepted");
+            }
+            {
+                auto obs=boundDome("FuzzyLouseNormal");auto &row=obs["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                row["latentDamageMask"]=1<<5;
+                if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("unobserved latent collapse accepted");
+            }
+            {
+                auto obs=boundDome("Dagger");auto &c=obs["silverRoot"]["combat"];auto &row=c["runicDomeKnowledge"]["monsters"][0];
+                obs["silverRoot"]["playerTurn"]=8;c["turn"]=8;
+                row.update({{"occupantGeneration",3},{"birthGlobalTurn",7},{"birthKind","summon"},{"birthParentSlot",2},
+                    {"birthParentGeneration",1},{"rollGlobalTurn",7}});
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingRollInputs.monsterTurnNumber!=7)
+                    throw std::runtime_error("newborn global clock: "+imported.reason);
+                row["birthGlobalTurn"]=8;
+                if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("future birth accepted");
+            }
             for(const auto &ids:std::vector<std::vector<std::string>>{{"FungiBeast","FungiBeast"},
                     {"SlaverRed","SlaverBlue"},{"AcidSlime_M","SpikeSlime_M"}}) {
                 auto obs=groupDome(ids,{{1},{1}});
@@ -1891,7 +1995,7 @@ int main() {
             const auto expectDomeReject=[&](json obs,const char *reason) {
                 const auto result=one_combat::advisor::importSilverRoot(obs);
                 if(result.ok || result.reason!=reason)
-                    throw std::runtime_error(std::string("Dome rejection mismatch expected ")+reason+" got "+result.reason);
+                    throw std::runtime_error(std::string("Dome rejection mismatch expected ")+reason+" got "+result.reason+" knowledge="+obs["silverRoot"]["combat"].value("runicDomeKnowledge",json()).dump());
             };
             {
                 auto invalid=groupDome({"FungiBeast","FungiBeast"},{{1},{1}});
@@ -1911,11 +2015,11 @@ int main() {
                 expectDomeReject(bad,"silver_runic_dome_hidden_field");
             }
             for(auto mutation:{json{{"schemaVersion",2}},json{{"epoch",0}},json{{"generation","3"}},
-                               json{{"pendingMoveRolls",2}},json{{"rollHp",0}}}) {
+                               json{{"pendingMoveRolls",2}}}) {
                 bad=domeObservation(1,1);bad["silverRoot"]["combat"]["runicDomeKnowledge"].update(mutation);
                 expectDomeReject(bad,"silver_runic_dome_history_schema");
             }
-            for(auto mutation:{json{{"completedTurns",0}},json{{"generation",1}},json{{"executedMoves",json::array({2})}}}) {
+            for(auto mutation:{json{{"completedTurns",0}},json{{"generation",1}},json{{"executedMoves",json::array({2})}},json{{"rollHp",0}}}) {
                 bad=domeObservation(1,1);bad["silverRoot"]["combat"]["runicDomeKnowledge"].update(mutation);
                 expectDomeReject(bad,"silver_runic_dome_history_gap");
             }
@@ -2138,7 +2242,9 @@ int main() {
         if (multiHitImported.wire.player.timesDamagedThisCombat != 6
             || multiHitImported.wire.player.lastAttackUnblockedDamage != 4
             || !convertedStatesEqualForSearch(multiHitCanonical, multiHitImported.wire))
-            throw std::runtime_error("multi-hit damage parity failed");
+            throw std::runtime_error("multi-hit damage parity failed: "
+                + json::diff(battleStateWireEnvelope(multiHitCanonical),
+                             battleStateWireEnvelope(multiHitImported.wire)).dump());
         SilverSearchConfig config;
         config.simulationsPerDecision = 1000;
         config.collectRootActionSummaries = true;
@@ -2148,13 +2254,34 @@ int main() {
         config.rhoRacingEnabled = false;
         bool duplicateStrikeSummariesCovered = false;
         bool duplicateDefendSummariesCovered = false;
+        for (const auto &source : {fixtures[0].observation,
+                                  genericObservation(fixtures[0], "generation-binding")}) {
+            auto absent = source;
+            absent["silverRoot"]["combat"]["monsters"][0].erase("occupantGeneration");
+            const auto old = one_combat::advisor::importSilverRoot(absent);
+            if (!old.ok || old.wire.monsters[0].occupantGeneration != 0)
+                throw std::runtime_error("absent occupant generation legacy default changed");
+            auto supplied = source;
+            supplied["silverRoot"]["combat"]["monsters"][0]["occupantGeneration"] = 7;
+            const auto bound = one_combat::advisor::importSilverRoot(supplied);
+            if (!bound.ok || bound.wire.monsters[0].occupantGeneration != 7)
+                throw std::runtime_error("supplied occupant generation was not preserved");
+            for (const auto &invalid : {json(0), json(-1), json(1000001), json(1.5), json(true), json("1")}) {
+                supplied["silverRoot"]["combat"]["monsters"][0]["occupantGeneration"] = invalid;
+                const auto rejected = one_combat::advisor::importSilverRoot(supplied);
+                if (rejected.ok || rejected.reason != "silver_monster_occupant_binding")
+                    throw std::runtime_error("invalid occupant generation accepted or misclassified");
+            }
+        }
         for (const auto &f : fixtures) {
             auto imported = one_combat::advisor::importSilverRoot(f.observation);
             if (!imported.ok) throw std::runtime_error("import failed: " + imported.reason);
             auto canonical = f.wire;
             canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
             if (!convertedStatesEqualForSearch(canonical, imported.wire))
-                throw std::runtime_error(std::string("search parity failed: ") + f.name);
+                throw std::runtime_error(std::string("search parity failed: ") + f.name + " "
+                    + json::diff(battleStateWireEnvelope(canonical),
+                                 battleStateWireEnvelope(imported.wire)).dump());
             if (imported.wire.cardsDrawn != 5 || imported.wire.strikeCount != 5
                 || imported.wire.hand != canonical.hand
                 || imported.wire.handNormalityCount != canonical.handNormalityCount
@@ -2848,12 +2975,11 @@ int main() {
             selected.cards.drawPile.assignConcrete(std::vector<CardInstance>(selected.cards.drawPile.begin(), selected.cards.drawPile.end()));
             const auto binary = serializeBattleContext(selected);
             auto restored = deserializeBattleContext(binary.data(), binary.size());
-            if (binary.at(8) != 2 || restored.cardSelectInfo.setCostToZero
+            if (binary.at(8) != 4 || restored.cardSelectInfo.setCostToZero
                     || restored.cardSelectInfo.drawAfter != 5)
                 throw std::runtime_error("Toolbox binary continuation roundtrip failed");
-            // Build the exact v1 layout by dropping the appended v2
-            // group-6 fields and adjusting its length/header, not by merely
-            // changing the version on a v2 payload.
+            // Build the exact visible v1 layout by dropping the appended v2
+            // group-6 fields and v4 group 8, then adjusting all lengths.
             auto legacy = binary;
             const auto read32 = [&](std::size_t offset) {
                 std::uint32_t value = 0;
@@ -2867,7 +2993,18 @@ int main() {
             while (legacy.at(group) != 6) group += 5 + read32(group+1);
             const auto oldSize = read32(group+1);
             legacy.erase(legacy.begin()+group+5+oldSize-17, legacy.begin()+group+5+oldSize);
-            write32(group+1, oldSize-17); write32(8, 1); write32(12, legacy.size());
+            write32(group+1, oldSize-17);
+            group = 16;
+            while (group < legacy.size() && legacy.at(group) != 8) {
+                if (legacy.at(group) == 7)
+                    throw std::runtime_error("visible legacy binary fixture unexpectedly contains hidden intents");
+                group += 5 + read32(group+1);
+            }
+            if (group == legacy.size())
+                throw std::runtime_error("current binary fixture omitted persistent monster group");
+            const auto persistentSize = read32(group+1);
+            legacy.erase(legacy.begin()+group, legacy.begin()+group+5+persistentSize);
+            write32(8, 1); write32(12, legacy.size());
             const auto legacyRestored = deserializeBattleContext(legacy.data(), legacy.size());
             if (legacyRestored.inputState != selected.inputState
                     || legacyRestored.cardSelectInfo.cards != selected.cardSelectInfo.cards

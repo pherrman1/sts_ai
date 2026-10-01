@@ -417,4 +417,139 @@ public final class RunicDomeTrackerPatch {
             if(sites[0]!=1) throw new javassist.CannotCompileException("unqualified Spot Weakness predicate hook");
         }
     }
+    public static void registeredBirth(AbstractMonster m) {RunicDomeCapture.constructed(m);}
+    public static void spawnInit(AbstractMonster m) {RunicDomeCapture.beforeSpawnInit(m);}
+    public static void publicRemainingOverride(AbstractMonster m,int move) {RunicDomeCapture.publicOverride(m,move);}
+    public static void torchConstructor(boolean before) {RunicDomeCapture.torchConstructor(before);}
+    public static void torchConstructorResult(AbstractMonster m){RunicDomeCapture.torchConstructorResult(m);}
+    static void instrumentSpawnInit(javassist.CtBehavior method) throws javassist.CannotCompileException {
+        final int[] sites={0};method.instrument(new javassist.expr.ExprEditor(){
+            @Override public void edit(javassist.expr.MethodCall c) throws javassist.CannotCompileException {
+                if(c.getClassName().equals(AbstractMonster.class.getName()) && c.getMethodName().equals("init")) {
+                    ++sites[0];c.replace("{stsmodelinspector.RunicDomeTrackerPatch.spawnInit($0);$proceed($$);}");
+                }
+            }
+        });if(sites[0]!=1)throw new javassist.CannotCompileException("unqualified birth init sites");
+    }
+    static void instrumentRemainingOverride(javassist.CtBehavior method,int expected) throws javassist.CannotCompileException {
+        final int[] sites={0};method.instrument(new javassist.expr.ExprEditor(){
+            @Override public void edit(javassist.expr.MethodCall c) throws javassist.CannotCompileException {
+                if(c.getMethodName().equals("setMove")) {
+                    ++sites[0];String arg=c.getSignature().startsWith("(Ljava/lang/String;")?"$2":"$1";
+                    c.replace("{stsmodelinspector.RunicDomeTrackerPatch.publicRemainingOverride($0,"+arg+");$proceed($$);stsmodelinspector.RunicDomeTrackerPatch.finishPublicOverride($0);}");
+                }
+            }
+        });if(sites[0]!=expected)throw new javassist.CannotCompileException("unqualified remaining override sites");
+    }
+    @SpirePatch(clz=com.megacrit.cardcrawl.actions.common.SpawnMonsterAction.class,method=SpirePatch.CONSTRUCTOR,paramtypez={AbstractMonster.class,boolean.class,int.class})
+    public static class SpawnConstructed {
+        @SpirePostfixPatch public static void postfix(AbstractMonster m){registeredBirth(m);}
+    }
+    @SpirePatch(clz=com.megacrit.cardcrawl.actions.common.SpawnMonsterAction.class,method="update")
+    public static class SpawnInit {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentSpawnInit(method);}
+    }
+    @SpirePatch(clz=com.megacrit.cardcrawl.actions.unique.SummonGremlinAction.class,method=SpirePatch.CONSTRUCTOR)
+    public static class GremlinConstructed {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{
+            final int[] sites={0};method.instrument(new javassist.expr.ExprEditor(){
+                @Override public void edit(javassist.expr.FieldAccess f)throws javassist.CannotCompileException{
+                    if(f.isWriter() && f.getFieldName().equals("m")){++sites[0];f.replace("{$proceed($$);stsmodelinspector.RunicDomeTrackerPatch.registeredBirth($1);}");}
+                }
+            });if(sites[0]!=1)throw new javassist.CannotCompileException("unqualified gremlin birth sites");
+        }
+    }
+    @SpirePatch(clz=com.megacrit.cardcrawl.actions.unique.SummonGremlinAction.class,method="update")
+    public static class GremlinInit {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentSpawnInit(method);}
+    }
+    @SpirePatch(clz=TorchHead.class,method=SpirePatch.CONSTRUCTOR)
+    public static class TorchConstructor {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{
+            final int[] sites={0};method.instrument(new javassist.expr.ExprEditor(){
+                @Override public void edit(javassist.expr.MethodCall c)throws javassist.CannotCompileException{
+                    if(c.getMethodName().equals("setMove")){++sites[0];c.replace("{stsmodelinspector.RunicDomeTrackerPatch.torchConstructor(true);$proceed($$);stsmodelinspector.RunicDomeTrackerPatch.torchConstructor(false);stsmodelinspector.RunicDomeTrackerPatch.torchConstructorResult($0);}");}
+                }
+            });if(sites[0]!=1)throw new javassist.CannotCompileException("unqualified torch constructor");
+        }
+    }
+    @SpirePatch(clz=AcidSlime_L.class,method="takeTurn")
+    public static class AcidSlime_LRemainingTurn {
+        @SpirePrefixPatch public static void prefix(AcidSlime_L __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(AcidSlime_L __instance){RunicDomeCapture.endParentTurn(__instance);}
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentRemainingOverride(method,1);}
+    }
+    @SpirePatch(clz=SpikeSlime_L.class,method="takeTurn")
+    public static class SpikeSlime_LRemainingTurn {
+        @SpirePrefixPatch public static void prefix(SpikeSlime_L __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(SpikeSlime_L __instance){RunicDomeCapture.endParentTurn(__instance);}
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentRemainingOverride(method,1);}
+    }
+    @SpirePatch(clz=SlimeBoss.class,method="takeTurn")
+    public static class SlimeBossRemainingTurn {
+        @SpirePrefixPatch public static void prefix(SlimeBoss __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(SlimeBoss __instance){RunicDomeCapture.endParentTurn(__instance);}
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentKnownOverride(method,4);}
+    }
+    @SpirePatch(clz=BronzeAutomaton.class,method="takeTurn")
+    public static class BronzeAutomatonRemainingTurn {
+        @SpirePrefixPatch public static void prefix(BronzeAutomaton __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(BronzeAutomaton __instance){RunicDomeCapture.endParentTurn(__instance);}
+    }
+    @SpirePatch(clz=GremlinLeader.class,method="takeTurn")
+    public static class GremlinLeaderRemainingTurn {
+        @SpirePrefixPatch public static void prefix(GremlinLeader __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(GremlinLeader __instance){RunicDomeCapture.endParentTurn(__instance);}
+    }
+    @SpirePatch(clz=Reptomancer.class,method="takeTurn")
+    public static class ReptomancerRemainingTurn {
+        @SpirePrefixPatch public static void prefix(Reptomancer __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(Reptomancer __instance){RunicDomeCapture.endParentTurn(__instance);}
+    }
+    @SpirePatch(clz=TheCollector.class,method="takeTurn")
+    public static class TheCollectorRemainingTurn {
+        @SpirePrefixPatch public static void prefix(TheCollector __instance){RunicDomeCapture.beginParentTurn(__instance);}
+        @SpirePostfixPatch public static void postfix(TheCollector __instance){RunicDomeCapture.endParentTurn(__instance);}
+    }
+    @SpirePatch(clz=BronzeOrb.class,method="takeTurn")
+    public static class BronzeOrbRemainingTurn {
+        @SpirePrefixPatch public static void prefix(BronzeOrb __instance){RunicDomeCapture.execute(__instance);}
+    }
+    @SpirePatch(clz=SnakeDagger.class,method="takeTurn")
+    public static class SnakeDaggerRemainingTurn {
+        @SpirePrefixPatch public static void prefix(SnakeDagger __instance){RunicDomeCapture.execute(__instance);}
+    }
+    @SpirePatch(clz=LouseNormal.class,method="takeTurn")
+    public static class LouseNormalRemainingTurn {
+        @SpirePrefixPatch public static void prefix(LouseNormal __instance){RunicDomeCapture.execute(__instance);}
+    }
+    @SpirePatch(clz=LouseDefensive.class,method="takeTurn")
+    public static class LouseDefensiveRemainingTurn {
+        @SpirePrefixPatch public static void prefix(LouseDefensive __instance){RunicDomeCapture.execute(__instance);}
+    }
+    @SpirePatch(clz=Darkling.class,method="takeTurn")
+    public static class DarklingRemainingTurn {
+        @SpirePrefixPatch public static void prefix(Darkling __instance){RunicDomeCapture.execute(__instance);}
+    }
+    @SpirePatch(clz=TorchHead.class,method="takeTurn")
+    public static class TorchRemainingTurn {
+        @SpirePrefixPatch public static void prefix(TorchHead __instance){RunicDomeCapture.beginKnownTurn(__instance);}
+    }
+    @SpirePatch(clz=AcidSlime_L.class,method="damage")
+    public static class AcidSlime_LPublicOverride {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentRemainingOverride(method,1);}
+    }
+    @SpirePatch(clz=SpikeSlime_L.class,method="damage")
+    public static class SpikeSlime_LPublicOverride {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentRemainingOverride(method,1);}
+    }
+    @SpirePatch(clz=SlimeBoss.class,method="damage")
+    public static class SlimeBossPublicOverride {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentRemainingOverride(method,1);}
+    }
+    @SpirePatch(clz=Darkling.class,method="damage")
+    public static class DarklingPublicOverride {
+        @SpireRawPatch public static void raw(javassist.CtBehavior method)throws javassist.CannotCompileException{instrumentRemainingOverride(method,1);}
+    }
+
 }

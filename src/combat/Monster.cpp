@@ -108,9 +108,20 @@ void Monster::applyEndOfRoundPowers(BattleContext &bc) {
 
 }
 
+void Monster::resetForNewOccupant(int monsterIdx, MonsterId monsterId, int /*ascension*/) {
+    const auto previousGeneration = occupantGeneration;
+    if (previousGeneration == UINT32_MAX) {
+        throw std::runtime_error("monster occupant generation overflow");
+    }
+    *this = Monster{};
+    occupantGeneration = previousGeneration + 1;
+    id = monsterId;
+    idx = monsterIdx;
+    search::emitMonsterOccupantReset(idx, occupantGeneration);
+}
+
 void Monster::construct(BattleContext &bc, MonsterId monsterId, int monsterIdx) {
-    this->id = monsterId;
-    this->idx = monsterIdx;
+    resetForNewOccupant(monsterIdx, monsterId, bc.ascension);
     initHp(bc.monsterHpRng, bc.ascension);
 
     switch (id) {
@@ -134,6 +145,9 @@ void Monster::construct(BattleContext &bc, MonsterId monsterId, int monsterIdx) 
         default:
             break;
     }
+    latentDamageMask = latentDamagePrior(id, bc.ascension);
+    latentDamageMaterialized = latentDamageMask != 0;
+    search::emitMonsterLatentDamagePrior(idx, latentDamageMask);
 }
 
 const char *Monster::getName() const {
@@ -241,7 +255,7 @@ void Monster::enterGuardianDefensiveMode() {
     cancelPendingMove();
     setMove(MMID::THE_GUARDIAN_DEFENSIVE_MODE);
     search::emitHiddenMonsterIntentMaterialized(
-        idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+        idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
 }
 
 bool Monster::isAlive() const {
@@ -299,9 +313,9 @@ void Monster::die(BattleContext &bc) {
         removeStatus<MS::CURIOSITY>();
         cancelPendingMove();
         setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH);
-        setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH); // vanilla repeats via queued SetMoveAction
+        bc.addToBot(Actions::SetMonsterMove(idx,MMID::AWAKENED_ONE_REBIRTH)); // vanilla queues this after in-flight rolls
         search::emitHiddenMonsterIntentMaterialized(
-            idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+            idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         bc.cardQueue.clear();
 
     } else if ((bc.monsters.monstersAlive == 0 && !bc.monsters.anyHalfDead()) || hasStatus<MS::MINION_LEADER>()) {
@@ -320,8 +334,9 @@ void Monster::die(BattleContext &bc) {
         resetAllStatusEffects();
         cancelPendingMove();
         setMove(MMID::DARKLING_REGROW);
+        bc.addToBot(Actions::SetMonsterMove(idx,MMID::DARKLING_REGROW)); // vanilla queues this after in-flight rolls
         search::emitHiddenMonsterIntentMaterialized(
-            idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+            idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         halfDead = true;
 
     } else if (hasStatus<MS::STASIS>()) {
@@ -374,7 +389,7 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
             cancelPendingMove();
             setMove(MMID::SHELLED_PARASITE_STUNNED);
             search::emitHiddenMonsterIntentMaterialized(
-                idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+                idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         }
 
     } else if (hasStatus<MS::CURL_UP>()) {
@@ -387,7 +402,7 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
             cancelPendingMove();
             setMove(MMID::BYRD_STUNNED);
             search::emitHiddenMonsterIntentMaterialized(
-                idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+                idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         }
         setStatus<MS::FLIGHT>(flight-1);
 
@@ -533,7 +548,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::ACID_SLIME_L_SPLIT;
                 search::emitHiddenMonsterIntentMaterialized(
-                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
             break;
 
@@ -542,7 +557,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SLIME_BOSS_SPLIT;
                 search::emitHiddenMonsterIntentMaterialized(
-                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
             break;
 
@@ -551,7 +566,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SPIKE_SLIME_L_SPLIT;
                 search::emitHiddenMonsterIntentMaterialized(
-                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
             break;
 
@@ -667,7 +682,7 @@ MonsterRollInputs Monster::captureRollInputs(const BattleContext &bc) const {
     MonsterRollInputs inputs;
     inputs.curHp = static_cast<std::int16_t>(curHp);
     inputs.maxHp = static_cast<std::int16_t>(maxHp);
-    inputs.miscInfo = miscInfo;
+    inputs.miscInfo = latentDamageMask ? 0 : miscInfo;
     const auto &knight = bc.monsters.arr[0];
     inputs.knightCurHp = static_cast<std::int16_t>(knight.curHp);
     inputs.knightMaxHp = static_cast<std::int16_t>(knight.maxHp);
@@ -692,7 +707,7 @@ void Monster::rollMove(BattleContext &bc) {
     const MonsterRollInputs inputs = captureRollInputs(bc);
     search::emitHiddenMonsterIntentRollStarted(
         idx, inputs, static_cast<std::int16_t>(moveHistory[0]),
-        static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+        static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
     if (bc.intentsHidden) {
         // Search under Runic Dome: defer the roll until the move is used or
         // queried (materializePendingMove), so the search cannot see it early.
@@ -711,7 +726,7 @@ void Monster::rollMove(BattleContext &bc) {
 }
 
 void Monster::rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in) {
-    auto miscInfoCopy = in.miscInfo;
+    auto miscInfoCopy = latentDamageMask ? miscInfo : in.miscInfo;
 
     const auto move = getMoveForRoll(bc, in, miscInfoCopy, bc.aiRng.random(99));
 
@@ -739,7 +754,35 @@ bool Monster::observeAttackPredicate(BattleContext &bc) {
     return attacking;
 }
 
+std::uint16_t Monster::latentDamagePrior(MonsterId id, int ascension) {
+    int lo=0,hi=0;
+    if(id==MonsterId::RED_LOUSE || id==MonsterId::GREEN_LOUSE) { lo=ascension>=2?6:5; hi=lo+2; }
+    else if(id==MonsterId::DARKLING) { lo=ascension>=2?9:7; hi=lo+4; }
+    std::uint16_t mask=0; for(int v=lo; lo && v<=hi; ++v) mask|=std::uint16_t(1u<<v);
+    return mask;
+}
+int Monster::publicIncomingDamage(const BattleContext &bc) const {
+    if(bc.intentsHidden && latentDamageMask &&
+            (moveHistory[0]==MMID::RED_LOUSE_BITE || moveHistory[0]==MMID::GREEN_LOUSE_BITE || moveHistory[0]==MMID::DARKLING_NIP)) {
+        int count=0,sum=0;
+        for(int v=0;v<16;++v) if(latentDamageMask&(1u<<v)) { ++count; sum+=calculateDamageToPlayer(bc,v); }
+        return count?sum/count:0;
+    }
+    const auto di=getMoveBaseDamage(bc);
+    return calculateDamageToPlayer(bc,di.damage)*di.attackCount;
+}
+void Monster::materializeLatentDamage(BattleContext &bc) {
+    if(!latentDamageMask || latentDamageMaterialized) return;
+    int count=0; for(int v=0;v<16;++v) count+=(latentDamageMask>>v)&1;
+    int pick=bc.monsterHpRng.random(count-1);
+    for(int v=0;v<16;++v) if(latentDamageMask&(1u<<v)) {
+        if(pick--==0) { miscInfo=v; latentDamageMaterialized=true; return; }
+    }
+    throw std::runtime_error("empty persistent damage posterior");
+}
+
 void Monster::materializePendingMove(BattleContext &bc) {
+    materializeLatentDamage(bc);
     const int n = pendingMoveRolls;
     const auto direct = pendingDirectMoveChoice;
     if (n == 0 && direct == 0) return;
@@ -797,7 +840,7 @@ void Monster::setMove(MMID moveId) {
     // so random materialized results cannot arrive here as known information.
     search::emitKnownMonsterIntentSet(
         idx, static_cast<std::int16_t>(moveHistory[0]),
-        static_cast<std::int16_t>(moveHistory[1]), miscInfo);
+        static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
 }
 
 namespace sts {

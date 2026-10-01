@@ -44,6 +44,9 @@ enum class CombatKnowledgeEventType : std::uint8_t {
     // than copying its concrete result.
     UNREPRESENTABLE_HIDDEN_MONSTER_INTENT,
     HIDDEN_MONSTER_ATTACK_PREDICATE_OBSERVED,
+    MONSTER_OCCUPANT_RESET,
+    MONSTER_LATENT_DAMAGE_PRIOR,
+    MONSTER_LATENT_DAMAGE_OBSERVED,
 };
 
 // Type-free representation of exactly the mutable values Silver captures at
@@ -59,6 +62,8 @@ struct CombatKnowledgeEvent {
     CardInstance card {};
     bool hasCard = false;
     int monsterIdx = -1;
+    std::uint32_t occupantGeneration = 0;
+    std::uint16_t latentDamageMask = 0;
     bool attackPredicate = false;
     HiddenIntentRollInputs hiddenIntentInputs {};
     // These fields are snapshots of the public monster state *before* a
@@ -96,6 +101,9 @@ void emitKnownMonsterIntentSet(
     std::int32_t publicMiscInfo);
 void emitUnrepresentableHiddenMonsterIntent(int monsterIdx);
 void emitMonsterAttackPredicateObserved(int monsterIdx, bool attacking);
+void emitMonsterOccupantReset(int monsterIdx, std::uint32_t generation);
+void emitMonsterLatentDamagePrior(int monsterIdx, std::uint16_t mask);
+void emitMonsterLatentDamageObserved(int monsterIdx, std::uint16_t mask);
 
 class CombatKnowledgeMoveRollScope {
 public:
@@ -119,7 +127,7 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::uint64_t consistencyFailureCount = 0;
     // Last semantic observer event, retained only for fail-closed diagnostics.
     CombatKnowledgeEventType lastEvent = CombatKnowledgeEventType::SHUFFLE_OCCURRED;
-    std::array<std::uint32_t, 15> eventCounts {};
+    std::array<std::uint32_t, 18> eventCounts {};
     CardInstance lastExpectedKnownDraw {};
     CardInstance lastObservedDraw {};
     bool hasDrawMismatch = false;
@@ -137,6 +145,8 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::array<bool, 5> hasPublicMonsterState {};
     std::array<bool, 5> hasUnrepresentableHiddenIntent {};
     bool initializationInProgress = false;
+    std::array<std::uint32_t, 5> monsterOccupantGeneration {};
+    std::array<std::uint16_t, 5> latentDamageMasks {};
 
     // Establishes visibility at a live decision boundary. It reads a concrete
     // draw order only when Frozen Eye makes that order legitimately observable.

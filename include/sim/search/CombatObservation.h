@@ -31,6 +31,8 @@ namespace sts {
 // -- Visible Monster State -------------------------------------------------
 struct MonsterVisibleState {
     MonsterId id = MonsterId::INVALID;
+    std::uint32_t occupantGeneration = 0;
+    std::uint16_t latentDamageMask = 0;
     int curHp = 0;
     int maxHp = 0;
     int block = 0;

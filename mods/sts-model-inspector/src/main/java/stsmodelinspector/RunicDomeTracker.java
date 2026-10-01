@@ -14,7 +14,7 @@ final class RunicDomeTracker {
     private boolean knownTurn, knownOverridePermitted, knownOverrideSeen;
     private int expectedKnownMove, knownNextMove;
     private Boolean attackPredicate;
-    private int completed;
+    private int completed,damageExecutions;
     private int rollHp, rollMaxHp, publicMisc;
     private int firstHp, firstMaxHp, aliveCount;
     private boolean firstAlive, playerConstricted;
@@ -25,6 +25,38 @@ final class RunicDomeTracker {
     private boolean pendingDirect,hiddenSetterScope,hiddenSetterSeen;
     private int directChoices,pendingThefts;
     private boolean rebirthDuplicatePending;
+    private int occupantGeneration,birthGlobalTurn,lastExecutionGlobalTurn=-1,globalTurn,rollGlobalTurn;
+    private int birthParentSlot=-1,birthParentGeneration,latentDamageMask;
+    private String birthKind="initial";
+    private boolean publicDuplicatePending,darkInterveningRoll,torchConstructorPredecessor;
+    void constructorTackle(Object source) {
+        if(source!=monster || !"TorchHead".equals(id) || completed!=0 || totalRolls!=0 || knownNextMove!=0){invalidate("torch_constructor_lifecycle");return;}
+        knownNextMove=1;torchConstructorPredecessor=true;++knownTransitions;++generation;
+    }
+    void bind(int generation,int birthTurn,String kind,int parentSlot,int parentGeneration) {
+        if(occupantGeneration!=0 || generation<1 || birthTurn<0) invalidate("occupant_binding");
+        occupantGeneration=generation;birthGlobalTurn=birthTurn;birthKind=kind;
+        birthParentSlot=parentSlot;birthParentGeneration=parentGeneration;
+    }
+    void globalTurn(int turn) {globalTurn=turn;}
+    int occupantGeneration() {return occupantGeneration;}
+    int lastExecutedMove() {return executed.isEmpty()?-1:executed.get(executed.size()-1);}
+    int latentDamageMask() {return latentDamageMask;}
+    void filterLatentDamage(int mask) {
+        if(mask==0 || (mask & ~latentDamageMask)!=0) invalidate("latent_damage_observation");
+        else latentDamageMask=mask;
+    }
+    static boolean latent(String id) {return "FuzzyLouseNormal".equals(id)||"FuzzyLouseDefensive".equals(id)||"Darkling".equals(id);}
+    static boolean split(String id) {return "AcidSlime_L".equals(id)||"SpikeSlime_L".equals(id)||"SlimeBoss".equals(id);}
+    static boolean remaining(String id) {return latent(id)||split(id)||Arrays.asList("BronzeAutomaton","BronzeOrb","GremlinLeader","Reptomancer","Dagger","TheCollector","TorchHead").contains(id);}
+    void publicOverride(Object source,int proposed,boolean threshold) {
+        int expected="Darkling".equals(id)?4:3;
+        if(source!=monster || (!split(id) && !"Darkling".equals(id)) || proposed!=expected || !threshold || inRoll || knownTurn) {invalidate("public_override_lifecycle");return;}
+        pending=false;knownNextMove=0;rollHistory.clear();attackPredicates.clear();
+        knownTurn=true;knownOverridePermitted=false;knownOverrideSeen=false;expectedKnownMove=expected;
+        publicDuplicatePending=true;knownOverride(source,proposed);
+    }
+
     private final List<Map<String,Object>> rollHistory=new ArrayList<>();
     private final Map<Integer,Boolean> attackPredicates=new TreeMap<>();
     private final List<Integer> executed = new ArrayList<>();
@@ -34,20 +66,21 @@ final class RunicDomeTracker {
     }
     RunicDomeTracker(Object monster, String id, long epoch, int act, int count,int ascension) {
         this.monster=monster; this.id=id; this.epoch=epoch; this.ascension=ascension;this.act=act;
+        if(latent(id)) {int lo="Darkling".equals(id)?(ascension>=2?9:7):(ascension>=2?6:5);int hi=lo+("Darkling".equals(id)?4:2);for(int n=lo;n<=hi;++n)latentDamageMask|=1<<n;}
         if("BookOfStabbing".equals(id)) publicMisc=1;
         if("TheGuardian".equals(id)) publicMisc=ascension>=19?40:ascension>=9?35:30;
         if(monster==null || (act<1 || act>3) || (count<1 || count>5) || !monsterAllowed(id))
             invalidate("unsupported_encounter");
     }
     static boolean monsterAllowed(String id) {
-        return Arrays.asList("JawWorm","Cultist","FungiBeast","SlaverBlue","SlaverRed",
+        return remaining(id) || Arrays.asList("JawWorm","Cultist","FungiBeast","SlaverBlue","SlaverRed",
                 "AcidSlime_S","AcidSlime_M","SpikeSlime_M","SpikeSlime_S","Sentry","GremlinNob",
                 "Centurion","Healer","Chosen","SnakePlant","Snecko","SphericGuardian",
                 "Exploder","Repulsor","Maw","Nemesis","Orb Walker","GiantHead","Donu","Deca",
                 "Spiker","Serpent","SlaverBoss","GremlinFat","BookOfStabbing","TimeEater","GremlinThief","GremlinWarrior","GremlinWizard",
                 "GremlinTsundere","BanditBear","BanditLeader","BanditChild","Transient","WrithingMass","Champ","Byrd","Shelled Parasite","TheGuardian","Hexaghost","Lagavulin","Looter","Mugger","AwakenedOne").contains(id);
     }
-    private boolean dynamic() { return "Byrd".equals(id) || "Shelled Parasite".equals(id) || "TheGuardian".equals(id) || "Hexaghost".equals(id) || "Lagavulin".equals(id) || "AwakenedOne".equals(id) || thief(); }
+    private boolean dynamic() { return remaining(id) || "Byrd".equals(id) || "Shelled Parasite".equals(id) || "TheGuardian".equals(id) || "Hexaghost".equals(id) || "Lagavulin".equals(id) || "AwakenedOne".equals(id) || thief(); }
     private boolean thief() {return "Looter".equals(id) || "Mugger".equals(id);}
     void invalidate(String reason) { if(failure==null) failure=reason; }
     void beginRoll(Object source, int hp, int maxHp) {
@@ -63,17 +96,33 @@ final class RunicDomeTracker {
         if("AwakenedOne".equals(id) && rebirthDuplicatePending && knownNextMove==3 && source==monster && !inRoll && !knownTurn && hp==0) {
             knownNextMove=0;pending=true;inRoll=true;++totalRolls;++generation;return;
         }
+        if(publicDuplicatePending && (split(id) || "Darkling".equals(id)) && knownNextMove!=0 && !inRoll) {
+            if("Darkling".equals(id))darkInterveningRoll=true;
+            knownNextMove=0;pending=true;inRoll=true;++totalRolls;++generation;return;
+        }
+        if("TorchHead".equals(id) && torchConstructorPredecessor && totalRolls==0 && knownNextMove==1)knownNextMove=0;
         if(("Shelled Parasite".equals(id) && knownNextMove==1 && shellPredecessor)
                 || ("Hexaghost".equals(id) && knownNextMove==6 && hexPredecessor) || ("Lagavulin".equals(id) && lagaPredecessor)) knownNextMove=0;
         if(source!=monster || inRoll || (pending && !"WrithingMass".equals(id)) || rollHistory.size()>=255 || knownTurn || knownNextMove!=0
-                || (knownLifecycle(id) && completed!=0) || hp<=0 || hp>maxHp || maxHp>999) {
+                || (knownLifecycle(id) && completed!=0) || (hp<=0 && !"Darkling".equals(id)) || hp>maxHp || maxHp>999) {
             invalidate("roll_lifecycle"); return;
         }
-        ++totalRolls; attackPredicate=null; inRoll=true; pending=true; rollHp=hp; rollMaxHp=maxHp; ++generation;
+        rollGlobalTurn=globalTurn; ++totalRolls; attackPredicate=null; inRoll=true; pending=true; rollHp=hp; rollMaxHp=maxHp; ++generation;
         this.firstHp=firstHp; this.firstMaxHp=firstMaxHp; this.firstAlive=firstAlive; this.aliveCount=aliveCount; this.playerConstricted=constricted;
         Map<String,Object> inputs=new LinkedHashMap<>();inputs.put("rollHp",hp);inputs.put("rollMaxHp",maxHp);
         inputs.put("firstHp",firstHp);inputs.put("firstMaxHp",firstMaxHp);inputs.put("firstAlive",firstAlive);
+        if(occupantGeneration>0)inputs.put("rollGlobalTurn",globalTurn);
         inputs.put("aliveCount",aliveCount);inputs.put("playerConstricted",constricted);rollHistory.add(inputs);
+    }
+    // A queued vanilla roll may resolve after its source has publicly died.
+    // It advances lifecycle/RNG accounting but cannot affect a future occupant.
+    void beginTerminalRoll(Object source) {
+        if(source!=monster || totalRolls<1 || completed<1 || inRoll || knownTurn || knownNextMove!=0
+                || pendingDirect || hiddenSetterScope || publicDuplicatePending || rebirthDuplicatePending
+                || pending || knownLifecycle(id)) {
+            invalidate("terminal_roll_lifecycle");return;
+        }
+        ++totalRolls;++generation;inRoll=true;pending=false;rollHistory.clear();attackPredicates.clear();
     }
     void endRoll(Object source) {
         if(source!=monster || !inRoll) invalidate("roll_lifecycle");
@@ -91,6 +140,13 @@ final class RunicDomeTracker {
                 || (knownNextMove!=0 && publicMove!=knownNextMove) || !legalExecuted(publicMove)) {
             invalidate("execution_lifecycle"); return;
         }
+        if(occupantGeneration>0) {
+            if(globalTurn<=lastExecutionGlobalTurn || globalTurn<birthGlobalTurn) invalidate("execution_global_turn");
+            lastExecutionGlobalTurn=globalTurn;
+        }
+        if(latent(id) && publicMove==3)++damageExecutions;
+        if("BronzeOrb".equals(id) && publicMove==3) publicMisc=1;
+        if("BronzeAutomaton".equals(id)) {int residue=completed%6;publicMisc=residue==5?0:residue;}
         if("SlaverRed".equals(id) && publicMove==2) publicMisc=1;
         if("Spiker".equals(id) && publicMove==2) ++publicMisc;
         if("TimeEater".equals(id) && publicMove==5) publicMisc=1;
@@ -99,11 +155,11 @@ final class RunicDomeTracker {
         if("AwakenedOne".equals(id) && publicMove==3) publicMisc=1;
         if("TheGuardian".equals(id) && publicMove==4) publicMisc+=10;
         if("Champ".equals(id)) { if(publicMove==2) ++publicMisc; if(publicMove==7) publicMisc|=4; }
-        pending=false; pendingDirect=false;hiddenSetterSeen=false; knownNextMove=0; shellPredecessor=false; hexPredecessor=false; lagaPredecessor=false; attackPredicate=null;rollHistory.clear();attackPredicates.clear(); ++completed; ++generation;
+        darkInterveningRoll=false;torchConstructorPredecessor=false;pending=false; pendingDirect=false;hiddenSetterSeen=false; knownNextMove=0; shellPredecessor=false; hexPredecessor=false; lagaPredecessor=false; attackPredicate=null;rollHistory.clear();attackPredicates.clear(); ++completed; ++generation;
         executed.add(publicMove); if(executed.size()>2) executed.remove(0);
     }
     static boolean knownLifecycle(String id) {
-        return Arrays.asList("AcidSlime_S","GremlinThief","GremlinWarrior","GremlinWizard","GremlinTsundere",
+        return Arrays.asList("SlimeBoss","TorchHead","AcidSlime_S","GremlinThief","GremlinWarrior","GremlinWizard","GremlinTsundere",
                 "BanditBear","BanditLeader","BanditChild","Transient","TheGuardian").contains(id);
     }
     void beginKnownTurn(Object source,int publicMove) { beginKnownTurn(source,publicMove,aliveCount); }
@@ -115,6 +171,8 @@ final class RunicDomeTracker {
         aliveCount=living;
         if("GremlinWizard".equals(id)) publicMisc=publicMove==2?publicMisc+1:0;
         switch(id) {
+            case "SlimeBoss": expectedKnownMove=publicMove==4?2:publicMove==2?1:publicMove==1?4:3;break;
+            case "TorchHead": expectedKnownMove=1;break;
             case "AcidSlime_S": expectedKnownMove=3-publicMove;break;
             case "Byrd": expectedKnownMove=2;break;
             case "TheGuardian": expectedKnownMove=new int[]{0,3,7,4,5,6,2,5}[publicMove];break;
@@ -198,6 +256,10 @@ final class RunicDomeTracker {
     // Called only at audited deterministic direct/action setter sites.
     // This validates a publicly determined override, not an unexecuted random roll.
     void knownOverride(Object source,int proposed) {
+        if(publicDuplicatePending && !knownTurn && source==monster && proposed==("Darkling".equals(id)?4:3)) {
+            publicDuplicatePending=false;pending=false;rollHistory.clear();attackPredicates.clear();knownNextMove=0;
+            knownTurn=true;knownOverridePermitted=false;knownOverrideSeen=false;expectedKnownMove=proposed;
+        }
         if("AwakenedOne".equals(id) && rebirthDuplicatePending && !knownTurn && (knownNextMove==3 || pending) && source==monster && proposed==3) {
             rebirthDuplicatePending=false;pending=false;rollHistory.clear();attackPredicates.clear();knownNextMove=0;knownTurn=true;knownOverridePermitted=false;knownOverrideSeen=false;expectedKnownMove=3;
         }
@@ -224,7 +286,8 @@ final class RunicDomeTracker {
     private boolean knownMoveAttacks() {
         if("AcidSlime_S".equals(id) || "GremlinWizard".equals(id)) return knownNextMove==1;
         if("GremlinTsundere".equals(id)) return knownNextMove==2;
-        if("AwakenedOne".equals(id)) return false;
+        if("SlimeBoss".equals(id))return knownNextMove==1;
+        if("AwakenedOne".equals(id) || split(id) || "Darkling".equals(id)) return false;
         if(thief()) return knownNextMove==1 || knownNextMove==4;
         if("Lagavulin".equals(id)) return knownNextMove==3;
         if("Hexaghost".equals(id)) return true;
@@ -245,6 +308,18 @@ final class RunicDomeTracker {
         if("AcidSlime_M".equals(id)) return move==1 || move==2 || move==4;
         if("FungiBeast".equals(id)) return move==1 || move==2;
         switch(id) {
+            case "FuzzyLouseNormal": case "FuzzyLouseDefensive": return move==3 || move==4;
+            case "Darkling": return move>=1 && move<=5;
+            case "AcidSlime_L": return move>=1 && move<=4;
+            case "SpikeSlime_L": return move==1 || move==3 || move==4;
+            case "SlimeBoss": return move>=1 && move<=4;
+            case "BronzeAutomaton": return move>=1 && move<=5;
+            case "BronzeOrb": return move>=1 && move<=3;
+            case "GremlinLeader": return move>=1 && move<=3;
+            case "Reptomancer": return move>=1 && move<=3;
+            case "Dagger": return move==(completed==0?1:2);
+            case "TheCollector": return move>=1 && move<=5;
+            case "TorchHead": return move==1;
             case "Centurion": case "Healer": case "Serpent": return move>=1 && move<=3;
             case "Chosen": return completed==0?move==(ascension>=17?4:5):move>=1 && move<=5;
             case "SnakePlant": case "Repulsor": case "Orb Walker": case "Spiker": case "BookOfStabbing": return move==1 || move==2;
@@ -278,14 +353,21 @@ final class RunicDomeTracker {
         return snapshot(source,playerTurn,0,false);
     }
     Map<String,Object> snapshot(Object source, int playerTurn,int slot,boolean dead) {
-        if(source!=monster || (dead ? completed>=playerTurn : playerTurn!=completed+1)) invalidate("history_gap");
+        if(source!=monster || (occupantGeneration==0?(dead ? completed>=playerTurn : playerTurn!=completed+1):(birthGlobalTurn>=playerTurn || lastExecutionGlobalTurn>=playerTurn || (!dead && lastExecutionGlobalTurn!=playerTurn-1 && !(completed==0 && birthGlobalTurn==playerTurn-1))))) invalidate("history_gap");
         if("Sentry".equals(id)) for(int i=0;i<executed.size();++i)
             if(executed.get(i)!=((slot+completed-executed.size()+i)%2==0?3:4)) invalidate("history_gap");
         Map<String,Object> out=new LinkedHashMap<>();
         out.put("schemaVersion",dynamic()?3:"WrithingMass".equals(id)?2:1); out.put("epoch",epoch); out.put("generation",generation);
-        boolean complete=failure==null && !inRoll && !knownTurn && !hiddenSetterScope && !rebirthDuplicatePending && pendingThefts==0 && (pending || (pendingDirect && hiddenSetterSeen) || knownNextMove!=0 || dead);
+        boolean complete=failure==null && !inRoll && !knownTurn && !hiddenSetterScope && !rebirthDuplicatePending && !publicDuplicatePending && pendingThefts==0 && (pending || (pendingDirect && hiddenSetterSeen) || knownNextMove!=0 || dead);
         out.put("complete",complete);
         if(!complete) { out.put("reason",failure==null?"roll_unsettled":failure); return out; }
+        if(occupantGeneration>0) {
+            out.put("historySchemaVersion",out.get("schemaVersion"));out.put("schemaVersion",4);
+            out.put("occupantGeneration",occupantGeneration);out.put("birthGlobalTurn",birthGlobalTurn);
+            out.put("birthKind",birthKind);out.put("birthParentSlot",birthParentSlot);out.put("birthParentGeneration",birthParentGeneration);
+            out.put("lastExecutionGlobalTurn",lastExecutionGlobalTurn);out.put("rollGlobalTurn",rollGlobalTurn);
+        }
+        if(latent(id)){out.put("latentDamageMask",latentDamageMask);out.put("latentDamageExecutions",damageExecutions);}
         out.put("monsterId",id); out.put("slot",slot); out.put("completedTurns",completed);
         out.put("executedMoves",new ArrayList<Integer>(executed));
         List<List<Object>> predicates=new ArrayList<>();
@@ -299,14 +381,14 @@ final class RunicDomeTracker {
         } out.put("publicMisc",publicMisc);
         if(dynamic()) {
             out.put("totalRolls",totalRolls);out.put("knownTransitions",knownTransitions);
-            out.put("knownRollPredecessor",!dead && shellPredecessor?"shelled_stun_fell":!dead && hexPredecessor?"hexaghost_inferno_predecessor":!dead && lagaPredecessor?"lagavulin_sleep_predecessor":null);
+            out.put("knownRollPredecessor",!dead && torchConstructorPredecessor && pending?"torch_constructor_tackle":!dead && darkInterveningRoll && knownNextMove==4?"darkling_reincarnate_before_regrow":!dead && shellPredecessor?"shelled_stun_fell":!dead && hexPredecessor?"hexaghost_inferno_predecessor":!dead && lagaPredecessor?"lagavulin_sleep_predecessor":null);
         }
         if(thief()) {out.put("pendingDirectMoveChoice",!dead && pendingDirect?1:0);out.put("directChoices",directChoices);}
         if("Lagavulin".equals(id)) {out.put("publicAsleep",lagaAsleep);out.put("publicSleepTurns",lagaSleeps);}
         if(knownLifecycle(id) || dynamic()) {
             Map<String,Object> proof=null;
             if(!dead && knownNextMove!=0) {
-                proof=new LinkedHashMap<>();proof.put("kind","AwakenedOne".equals(id)?"awakened_public_rebirth":thief()?"thief_public_cycle":"Lagavulin".equals(id)?(knownNextMove==4?"public_stun_override":knownNextMove==1?"lagavulin_awake_event":"lagavulin_natural_wake"):"Hexaghost".equals(id)?"hexaghost_activate":"TheGuardian".equals(id)?(knownNextMove==1?"guardian_defensive_override":"guardian_public_cycle"):dynamic()?(knownNextMove==4?"public_stun_override":"byrd_headbutt_fly"):"AcidSlime_S".equals(id)?"acid_slime_s_alternation":"public_deterministic_transition_v1");proof.put("move",knownNextMove);
+                proof=new LinkedHashMap<>();proof.put("kind",remaining(id)?(split(id)?(knownNextMove==3?"public_split_override":"slime_boss_public_cycle"):"Darkling".equals(id)?"darkling_public_regrow":"public_deterministic_transition_v1"):"AwakenedOne".equals(id)?"awakened_public_rebirth":thief()?"thief_public_cycle":"Lagavulin".equals(id)?(knownNextMove==4?"public_stun_override":knownNextMove==1?"lagavulin_awake_event":"lagavulin_natural_wake"):"Hexaghost".equals(id)?"hexaghost_activate":"TheGuardian".equals(id)?(knownNextMove==1?"guardian_defensive_override":"guardian_public_cycle"):dynamic()?(knownNextMove==4?"public_stun_override":"byrd_headbutt_fly"):"AcidSlime_S".equals(id)?"acid_slime_s_alternation":"public_deterministic_transition_v1");proof.put("move",knownNextMove);
             }
             out.put("knownNextMove",proof);
         }
@@ -316,8 +398,13 @@ final class RunicDomeTracker {
     }
 
     static boolean monsterPowerAllowed(String id, String monster) {
-        return Arrays.asList("Strength","Artifact","Weak","Vulnerable","Block Return","Choked","Corpse Explosion",
+        return Arrays.asList("Strength","Artifact","Weak","Weakened","Vulnerable","Block Return","Choked","Corpse Explosion",
                 "Lockon","Mark","Metallicize","Plated Armor","Poison","Regenerate","Shackled").contains(id)
+                || (split(monster) && "Split".equals(id))
+                || (("FuzzyLouseNormal".equals(monster)||"FuzzyLouseDefensive".equals(monster)) && "Curl Up".equals(id))
+                || ("Darkling".equals(monster) && "Regrow".equals(id))
+                || (("Dagger".equals(monster)||"TorchHead".equals(monster)||"BronzeOrb".equals(monster)||monster.startsWith("Gremlin")) && "Minion".equals(id))
+                || ("BronzeOrb".equals(monster) && "Stasis".equals(id))
                 || ("Cultist".equals(monster) && "Ritual".equals(id))
                 || ("FungiBeast".equals(monster) && "Spore Cloud".equals(id))
                 || ("GremlinNob".equals(monster) && "Anger".equals(id))

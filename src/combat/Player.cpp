@@ -243,7 +243,7 @@ void Player::attacked(BattleContext &bc, int enemyIdx, int calculatedDamage) {
     }
 
     if (damage > 0) {
-        lastAttackUnblockedDamage = damage;
+        lastAttackUnblockedDamage = std::min(damage,curHp); // vanilla lastDamageTaken caps the public loss before revival
 
         if (hasStatus<PS::PLATED_ARMOR>()) {
             decrementStatus<PS::PLATED_ARMOR>();

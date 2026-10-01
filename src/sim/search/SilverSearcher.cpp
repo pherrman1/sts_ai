@@ -19,6 +19,17 @@ using namespace sts;
 
 namespace {
 
+    // A decision node stores the public posterior, not the first particle that
+    // reached it. Subsequent transitions sample a fresh world from that belief;
+    // the sampled scalar persists throughout each transition/rollout and its
+    // public outcomes update the posterior before the next decision checkpoint.
+    void retainPublicDamageBeliefs(BattleContext &bc) {
+        if(!bc.intentsHidden) return;
+        for(auto &m:bc.monsters.arr) if(m.latentDamageMask) {
+            m.miscInfo=0; m.latentDamageMaterialized=false;
+        }
+    }
+
     // Chance categories for widening: 0 = END_TURN (monster rolls and draws), 1 = other.
     int wideningCategory(const search::Action &a) {
         return a.getActionType() == search::ActionType::END_TURN ? 0 : 1;
@@ -159,6 +170,7 @@ void search::SilverSearcher::resetForSearch() {
     root = allocNode();
     root->state = allocDecisionState();
     *root->state = *rootState;
+    retainPublicDamageBeliefs(*root->state);
     if (root->state->outcome != Outcome::UNDECIDED) {
         root->evaluationSum = evaluateEndState(*root->state);
         root->simulationCount = 1;
@@ -234,6 +246,8 @@ void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
     }
     root = newRoot;
     *rootState = *newRoot->state;
+    retainPublicDamageBeliefs(*rootState);
+    retainPublicDamageBeliefs(*root->state);
     reseedRollouts();
 }
 
@@ -295,6 +309,7 @@ search::SilverSearcher::Node *search::SilverSearcher::getOrCreateNode(BattleCont
     Node *newNode = allocNode();
     newNode->state = allocDecisionState();
     std::swap(*newNode->state, state);
+    retainPublicDamageBeliefs(*newNode->state);
     stateToNode[i] = {hash, newNode};
     ++stateToNodeUsed;
     lastNodeWasCreated = true;
@@ -779,6 +794,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
 }
 
 namespace {
+
 
     template <typename Pile>
     int findCard(const Pile &pile, int count, const CardInstance &card) {

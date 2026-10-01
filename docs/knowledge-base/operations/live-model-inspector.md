@@ -117,19 +117,24 @@ oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
-`moveHistory`, `intent`, and `intentDamage`. A public-history observer qualifies 49 audited monster types. The roster is
+`moveHistory`, `intent`, and `intentDamage`. A public-history observer qualifies 62 audited monster types. The roster is
 Jaw Worm, Cultist, Fungi Beast, Blue/Red Slaver, small/medium Acid and Spike
 Slimes, Sentry, Gremlin Nob, Centurion, Mystic, Chosen, Snake Plant, Snecko,
 Spheric Guardian, Exploder, Repulsor, Maw, Nemesis, Orb Walker, Giant Head,
 Donu, Deca, Spiker, Spire Growth, Taskmaster, the five ordinary gremlin types,
 Book of Stabbing, Time Eater, the three Masked Bandits, Transient, Writhing
 Mass, Champ, Byrd, Shelled Parasite, Guardian, Hexaghost, Lagavulin, Looter,
-Mugger and Awakened One. Every member of
+Mugger, Awakened One, large Acid and Spike Slimes, Slime Boss, Bronze
+Automaton, Bronze Orb, Gremlin Leader, Reptomancer, Snake Dagger, Collector,
+Torch Head, both lice and Darkling. Every member of
 a group must qualify, retaining original physical slots and executed history
-for dead members. Birth and replacement lifecycles outside this roster remain unsupported.
+for dead members. Source-qualified births carry canonical slots, occupant
+generations and local execution timelines. Replacements clear the previous
+occupant's pending rolls and attack predicates before the newborn's first roll.
 The thief contract separately qualifies original escaped slots. Generic card, relic, potion and power qualification still
 applies; Dome does not impose a separate restricted deck.
-Schema 3 carries typed known-next and forced-override proofs, public pre-roll
+Runic history schema 4 carries occupant identity and local timelines alongside
+typed known-next and forced-override proofs, public pre-roll
 inputs, roll generations and indexed attack predicates. Exact installed-source
 setter sites qualify deterministic transitions and visible stuns; missing,
 late, duplicate or unrelated overrides fail closed. No queued hidden move is
@@ -145,20 +150,26 @@ outcome, with public stolen-gold bookkeeping and escaped-slot handling.
 Awakened One records public half-dead/rebirth transitions while retaining the
 original Cultist slots. Deferred direct choices are materialized before rollout
 policy evaluation just as ordinary pending move rolls are.
-The remaining 13 monster types need distinct contracts: summon/split/replacement
-births with canonical slots, occupant generations and per-object timelines; and
-persistent hidden constructor damage for both lice and Darkling, plus Darkling
-regrow. Hidden damage requires a particle-level latent parameter conditioned
-only on public outcomes. Reading private base damage after a blocked or
-mitigated hit would reveal information the player did not observe. These
-boundaries require protocol work beyond allowing a monster ID.
+Both lice and Darkling carry a finite candidate mask for their persistent
+constructor damage. Public hit outcomes narrow that mask by replaying the
+visible HP, block and mitigation context; blocked hits, Buffer, Intangible and
+overkill retain every compatible candidate. The damage callback precedes
+Buffer's queued power reduction. Each simulated world samples one surviving
+candidate and retains it across attacks and Darkling's same-object regrow.
+Under Dome, public wire state, knowledge events, information hashes, model
+observations and retained search nodes redact that sample while preserving the
+mask. Ordinary public roots retain the known scalar and canonicalize the
+irrelevant belief metadata to zero.
+Unknown birth sources, incomplete execution tokens and impossible damage
+histories fail closed. This qualifies the installed vanilla source contract;
+it does not establish gameplay quality or a live smoke of every encounter.
 Spot Weakness contributes only its publicly revealed attack/nonattack predicate,
 indexed to the pending roll. Fair search conditions hidden move samples on that
 predicate without exposing the actual move or damage. Repeated queries retain
 the same observation; earlier constraints survive subsequent hidden rerolls.
 Silver wire v3 carries this information; legacy v2 is accepted only for roots
-without hidden intents. Binary snapshots use v3 for hidden-intent state while
-ordinary snapshots retain v2 encoding. Impossible predicate constraints fail
+without hidden intents. Binary snapshots use v4 for occupant generations and persistent damage
+beliefs. Legacy versions are readable within their representable domain. Impossible predicate constraints fail
 explicitly rather than selecting a fallback move.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
 the bounded reflection helper can read it and are rejected when it cannot.

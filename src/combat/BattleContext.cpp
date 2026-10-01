@@ -3284,7 +3284,7 @@ namespace {
     // Gameplay state compared by both operator== and equalForSearch. Excludes
     // the RNG streams, the debug/statistics fields, curCardQueueItem and the
     // card manager, which each caller compares itself.
-    bool sameGameplayScalars(const BattleContext &a, const BattleContext &b) {
+    bool sameGameplayScalars(const BattleContext &a, const BattleContext &b, bool publicKnowledge=false) {
         return a.seed == b.seed &&
                a.floorNum == b.floorNum &&
                a.encounter == b.encounter &&
@@ -3305,7 +3305,12 @@ namespace {
                a.potions == b.potions &&
                a.turn == b.turn &&
                a.player == b.player &&
-               a.monsters == b.monsters &&
+               [&] { auto am=a.monsters, bm=b.monsters;
+                   if(publicKnowledge && a.intentsHidden && b.intentsHidden) for(int i=0;i<5;++i) {
+                       if(am.arr[i].latentDamageMask) { am.arr[i].miscInfo=0; am.arr[i].latentDamageMaterialized=false; }
+                       if(bm.arr[i].latentDamageMask) { bm.arr[i].miscInfo=0; bm.arr[i].latentDamageMaterialized=false; }
+                   }
+                   return am==bm; }() &&
                a.miscBits == b.miscBits;
     }
 
@@ -3339,7 +3344,7 @@ bool BattleContext::operator==(const BattleContext &rhs) const {
 }
 
 bool BattleContext::equalForSearch(const BattleContext &rhs) const {
-    if (!sameGameplayScalars(*this, rhs)) {
+    if (!sameGameplayScalars(*this, rhs, true)) {
         return false;
     }
     if (!(curCardQueueItem == rhs.curCardQueueItem) && !(quietDecision(*this) && quietDecision(rhs))) {

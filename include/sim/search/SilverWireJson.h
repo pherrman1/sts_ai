@@ -25,7 +25,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MonsterRollInputsWire, curHp, maxHp, knightCu
     knightMaxHp, monsterTurnNumber, miscInfo, aliveCount, monstersAlive, knightAlive,
     playerConstricted, asleep, halfDead)
 inline void to_json(nlohmann::json &j, const MonsterWire &m) {
-    j = {{"idx", m.idx}, {"id", m.id}, {"curHp", m.curHp}, {"maxHp", m.maxHp}, {"block", m.block}, {"isEscapingB", m.isEscapingB}, {"halfDead", m.halfDead}, {"escapeNext", m.escapeNext}, {"moveHistory", m.moveHistory}, {"statusBits", m.statusBits}, {"smallPowers", m.smallPowers}, {"strength", m.strength}, {"vulnerable", m.vulnerable}, {"weak", m.weak}, {"uniquePower0", m.uniquePower0}, {"uniquePower1", m.uniquePower1}, {"miscInfo", m.miscInfo}, {"pendingMoveRolls", m.pendingMoveRolls}, {"pendingDirectMoveChoice", m.pendingDirectMoveChoice}, {"pendingRollInputs", m.pendingRollInputs}, {"pendingRollInputHistory", m.pendingRollInputHistory}, {"pendingAttackPredicates", m.pendingAttackPredicates}};
+    j = {{"idx", m.idx}, {"id", m.id}, {"curHp", m.curHp}, {"maxHp", m.maxHp}, {"block", m.block}, {"isEscapingB", m.isEscapingB}, {"halfDead", m.halfDead}, {"escapeNext", m.escapeNext}, {"moveHistory", m.moveHistory}, {"statusBits", m.statusBits}, {"smallPowers", m.smallPowers}, {"strength", m.strength}, {"vulnerable", m.vulnerable}, {"weak", m.weak}, {"uniquePower0", m.uniquePower0}, {"uniquePower1", m.uniquePower1}, {"miscInfo", m.miscInfo}, {"occupantGeneration", m.occupantGeneration}, {"latentDamageMask", m.latentDamageMask}, {"pendingMoveRolls", m.pendingMoveRolls}, {"pendingDirectMoveChoice", m.pendingDirectMoveChoice}, {"pendingRollInputs", m.pendingRollInputs}, {"pendingRollInputHistory", m.pendingRollInputHistory}, {"pendingAttackPredicates", m.pendingAttackPredicates}};
 }
 inline void from_json(const nlohmann::json &j, MonsterWire &m) {
     j.at("idx").get_to(m.idx);
@@ -45,6 +45,17 @@ inline void from_json(const nlohmann::json &j, MonsterWire &m) {
     j.at("uniquePower0").get_to(m.uniquePower0);
     j.at("uniquePower1").get_to(m.uniquePower1);
     j.at("miscInfo").get_to(m.miscInfo);
+    auto checkedUnsigned = [&](const char *key, std::uint64_t max) {
+        if (!j.contains(key)) return std::uint64_t{0};
+        const auto &v=j.at(key);
+        if(!v.is_number_integer() || (!v.is_number_unsigned() && v.get<std::int64_t>()<0))
+            throw std::invalid_argument(std::string("invalid ")+key);
+        const auto n=v.get<std::uint64_t>();
+        if(n>max) throw std::invalid_argument(std::string("out of range ")+key);
+        return n;
+    };
+    m.occupantGeneration=static_cast<std::uint32_t>(checkedUnsigned("occupantGeneration", UINT32_MAX));
+    m.latentDamageMask=static_cast<std::uint16_t>(checkedUnsigned("latentDamageMask", UINT16_MAX));
     j.at("pendingMoveRolls").get_to(m.pendingMoveRolls);
     j.at("pendingDirectMoveChoice").get_to(m.pendingDirectMoveChoice);
     j.at("pendingRollInputs").get_to(m.pendingRollInputs);
