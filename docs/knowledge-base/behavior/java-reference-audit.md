@@ -326,7 +326,40 @@ All are covered by `ironclad_card_java_parity`.
   Metallicize before end-of-turn cards, and the end-of-turn removals
   (Lose Strength, No Draw, Entangled).
 
-**Not yet inspected:** relics, and the player's own Intangible.
+### Player Intangible (parity)
+
+`AbstractPlayer.damage` caps damage above 1 at 1 for every damage type,
+including HP loss. Native applies the same cap in `Player::damage`, in
+`Player::loseHp`, and in `Monster::calculateDamageToPlayer` (min 1).
+`Player::loseHp` is never called with 0, because `hpWasLost` asserts
+`amount > 0`.
+
+## Ironclad relics
+
+### Pools
+
+`RelicLibrary.populateRelicPool` iterates the `sharedRelics` and then
+`redRelics` `HashMap`s. Replaying the JAR's `RelicLibrary.initialize`
+insertion order into a real JDK 8 `HashMap` gives the same membership and
+order as `include/constants/RelicPools.h` for all five Ironclad pools
+(33/30/28/22/17), assuming a fully unlocked profile. The native shuffle uses
+`java::Collections::shuffle` seeded from `relicRng.randomLong()`, as the game
+does.
+
+### Effects
+
+For every relic in the Ironclad pools and the red relics, each overridden hook
+was compared with the native references.
+
+| Relic | Status | Note |
+|---|---|---|
+| Ancient Tea Set | **Mismatch, not fixed** | Java charges the relic on entering any rest site (`onEnterRestRoom` sets the counter to −2) and spends it on the first turn of the next combat, however many rooms later. Native gives +2 energy only when the room immediately before the fight was a rest site (`gc.lastRoom == Room::REST`), so rest → event, shop or treasure → fight loses the energy. The fix needs a design decision: relic `data` is embedded by the combat-transition model and checked by its native contract (see below). |
+| All other Ironclad-pool and red relics | Parity | Includes the counter relics (Pen Nib's −1 encodes "9 with the power active"; Sundial, Happy Flower, Incense Burner and Nunchaku are offset but equivalent); turn-indexed relics (Captain's Wheel, Horn Cleat, Stone Calendar); Art of War and Pocketwatch from turn 2 only; Orichalcum (its `trigger` flag is never set); Boot and Torii (after block, attack damage only); Preserved Insect; Magic Flower's rounding; Gremlin Horn on Darkling half-death; Mummified Hand's filters and `cardRandomRng`; Strange Spoon's `cardRandomRng`; Whetstone, War Paint and Tiny House with `java.util.Random(miscRng.randomLong())`; Slaver's Collar (elite or boss); Brimstone on turn 1; the Burning and Black Blood victory heals. |
+
+**Not inspected:** relics only reachable through events, Neow or other
+classes, and relic hooks that act purely out of combat beyond the
+upgrade/transform relics listed above.
+
 
 ## Ambiguous or not yet inspected
 
