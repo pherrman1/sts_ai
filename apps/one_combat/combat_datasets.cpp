@@ -308,6 +308,7 @@ struct VwinCollector {
     std::string branchId = "source";
     int deviationIdx = 0;
     bool captureRefresh = false, captureBoss = false, allowSampling = false;
+    bool captureAllCombatEntries = false;   // with captureBoss: every fight, not only bosses (#400)
     bool captureDecisionSink = false;
     int decisionIdx = 0, fightIdx = 0, mapRowIdx = 0, rawRowIdx = 0, decisionSinkRowIdx = 0;
     std::map<std::string, int> eligibleByType;
@@ -335,7 +336,7 @@ struct VwinBranchStart {
 };
 
 struct VwinArmResult {
-    int won = -1, terminalHp = -1, postAfterBattleHp = -1, firstActionBits = -1;
+    int won = -1, terminalHp = -1, postAfterBattleHp = -1, firstActionBits = -1, potionsAfter = -1;
     double signedOutcome = 0.0, cpuSeconds = 0.0;
     std::uint64_t simulations = 0, decisions = 0;
     bool valid = false;
@@ -1242,9 +1243,10 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             const bool representableEncounter = encounterIndex >= 0 && encounterIndex < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
             const std::string features = captureCombat ? vFeatCsv(gc) : std::string{};
             int hooks = 0;
-            const bool captureActions = vwin && (vwin->captureRefresh
-                || (vwin->captureBoss && gc.curRoom == Room::BOSS));
-            const int bossEntryIdx = vwin && vwin->captureBoss && gc.curRoom == Room::BOSS
+            const bool captureEntry = vwin && vwin->captureBoss
+                && (gc.curRoom == Room::BOSS || vwin->captureAllCombatEntries);
+            const bool captureActions = vwin && (vwin->captureRefresh || captureEntry);
+            const int bossEntryIdx = captureEntry
                 ? static_cast<int>(vwin->bossEntries.size()) : -1;
             if (captureActions) {
                 agent.recordActions = true;
@@ -2053,7 +2055,14 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
               << sourceRawRows + branchRawRows << " -> " << outPrefix << "\n";
 }
 
-static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget) {
+static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
+                                    const search::NativeSilverSearchParams *params = nullptr) {
+    struct ParamScope {
+        explicit ParamScope(const search::NativeSilverSearchParams *p) {
+            if (p) search::g_nativeSilverSearchParamOverride = *p;
+        }
+        ~ParamScope() { search::g_nativeSilverSearchParamOverride.reset(); }
+    } paramScope(params);
     trainingRunStart();
     GameContext gc = detachedCounterfactualCopy(*entry.pre);
     PathHistory path = entry.path;
@@ -2095,6 +2104,7 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget) {
         : bc.outcome == Outcome::UNDECIDED ? "undecided_combat" : label.reason;
     bc.exitBattle(gc);
     result.postAfterBattleHp = gc.curHp;
+    result.potionsAfter = gc.potionCount;
     t_curPath = nullptr;
     return result;
 }
@@ -3280,6 +3290,143 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
               << '/' << nSeeds << " selected=" << selected.size() << " A-replay="
               << sourceReplayMatches << '/' << sourceReplayMatches + sourceReplayMismatches
               << " -> " << outPrefix << "\n";
+}
+
+// #400 Stage 1: replay every real fight of each source trajectory under a
+// small fixed grid of Silver search constants. Each arm starts from a detached
+// copy of the pre-battle state with the same agent and hidden future; only the
+// search constants differ. The control arm must reproduce the source fight.
+const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &silverParamScreen400Arms() {
+    static const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> arms = [] {
+        const search::NativeSilverSearchParams control;
+        auto exploration = [&](double c) {
+            auto p = control; p.exploration = c; p.explorationChance = c; return p;
+        };
+        auto wideningAlpha = [&](double alpha) {
+            auto p = control; p.chanceWideningAlpha = alpha; p.endTurnWideningAlpha = alpha; return p;
+        };
+        return std::vector<std::pair<std::string, search::NativeSilverSearchParams>>{
+            {"control", control},
+            {"c12", exploration(12.5)}, {"c50", exploration(50.0)},
+            {"wa040", wideningAlpha(0.40)}, {"wa065", wideningAlpha(0.65)}};
+    }();
+    return arms;
+}
+
+void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                             long long seedOffset, const std::string &teacherPath) {
+    if (nSeeds < 1 || sims != 10000 || asc != 0 || seedOffset < 0)
+        throw std::runtime_error("silver param screen #400: requires positive seed count, exact 10k, Ascension 0");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
+    vwinRequireProductionPolicy(teacher);
+    const search::NativeSilverSearchParams defaults;
+    const auto &spec = teacher.specification["search_configuration"];
+    if (spec.value("exploration_parameter", -1.0) != defaults.exploration
+        || spec.value("exploration_parameter_chance", -1.0) != defaults.explorationChance
+        || spec.value("chance_widening_c", -1.0) != defaults.chanceWideningC
+        || spec.value("chance_widening_alpha", -1.0) != defaults.chanceWideningAlpha
+        || spec.value("end_turn_widening_c", -1.0) != defaults.endTurnWideningC
+        || spec.value("end_turn_widening_alpha", -1.0) != defaults.endTurnWideningAlpha)
+        throw std::runtime_error("silver param screen #400: control arm differs from the frozen teacher constants");
+    const std::string statesPath = outPrefix + ".states.csv";
+    const std::string armsPath = outPrefix + ".arms.csv";
+    const std::string manifestPath = outPrefix + ".manifest.json";
+    for (const auto &path : {statesPath, armsPath, manifestPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("silver param screen #400: refusing to overwrite existing output " + path);
+    std::ofstream states(statesPath), arms(armsPath);
+    if (!states || !arms) throw std::runtime_error("silver param screen #400: cannot open outputs");
+    states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
+              "deckSize,relicCount,sourceWon,sourceSignedOutcome,sourceTerminalHp,"
+              "sourcePostAfterBattleHp,sourceFirstActionBits,trajectoryValid\n";
+    arms << "stateId,sourceSeed,fightIdx,arm,exploration,explorationChance,chanceWideningC,"
+            "chanceWideningAlpha,endTurnWideningC,endTurnWideningAlpha,outcome,won,signedOutcome,"
+            "terminalHp,postAfterBattleHp,potionsAfter,firstActionBits,cpuSeconds,simulations,"
+            "decisions,valid,controlReplayMatch,quarantineReason\n";
+    nlohmann::json armSpec = nlohmann::json::object();
+    for (const auto &[name, p] : silverParamScreen400Arms())
+        armSpec[name] = {{"exploration", p.exploration}, {"explorationChance", p.explorationChance},
+                         {"chanceWideningC", p.chanceWideningC}, {"chanceWideningAlpha", p.chanceWideningAlpha},
+                         {"endTurnWideningC", p.endTurnWideningC}, {"endTurnWideningAlpha", p.endTurnWideningAlpha}};
+    int completeSources = 0, validSources = 0, states_ = 0, controlMatches = 0, controlMismatches = 0;
+    int invalidArmRows = 0;
+    nlohmann::json perSeed = nlohmann::json::array();
+    for (int i = 0; i < nSeeds; ++i) {
+        VwinCollector capture;
+        capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
+        capture.captureBoss = true;
+        capture.captureAllCombatEntries = true;
+        const auto source = runCombatEvalGenSeed(capture.sourceSeed, sims, asc, teacher,
+                                                  false, &capture);
+        if (source.trajectoryComplete) ++completeSources;
+        if (source.trajectoryValid) ++validSources;
+        perSeed.push_back({{"seed", capture.sourceSeed}, {"complete", source.trajectoryComplete},
+                           {"valid", source.trajectoryValid}, {"fights", capture.bossEntries.size()},
+                           {"finalFloor", source.finalFloor},
+                           {"won", source.finalOutcome == GameOutcome::PLAYER_VICTORY}});
+        for (auto &entry : capture.bossEntries) {
+            const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
+            states << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ','
+                   << entry.act << ',' << entry.floor << ',' << entry.roomClass << ','
+                   << csvQuote(entry.encounter) << ',' << entry.pre->curHp << ',' << entry.pre->maxHp << ','
+                   << entry.pre->potionCount << ',' << entry.pre->deck.cards.size() << ','
+                   << entry.pre->relics.relics.size() << ',' << entry.sourceWon << ','
+                   << std::setprecision(17) << entry.signedOutcome << ',' << entry.terminalHp << ','
+                   << entry.postAfterBattleHp << ',' << entry.firstActionBits << ','
+                   << (entry.sourceTrajectoryValid ? 1 : 0) << '\n';
+            ++states_;
+            bool controlMatch = false;
+            for (const auto &[armName, params] : silverParamScreen400Arms()) {
+                const auto result = vwinRunBossArm(entry, sims, &params);
+                const bool isControl = armName == "control";
+                if (isControl) {
+                    controlMatch = result.valid && entry.labelValid && result.won == entry.sourceWon
+                        && result.terminalHp == entry.terminalHp
+                        && result.postAfterBattleHp == entry.postAfterBattleHp
+                        && result.firstActionBits == entry.firstActionBits;
+                    if (controlMatch) ++controlMatches; else ++controlMismatches;
+                }
+                const bool valid = result.valid && entry.sourceTrajectoryValid && controlMatch;
+                std::string reason = result.quarantineReason;
+                if (reason.empty() && !entry.sourceTrajectoryValid) reason = "source_trajectory_invalid";
+                if (reason.empty() && !controlMatch)
+                    reason = isControl ? "control_replay_mismatch" : "control_state_invalid";
+                if (!valid) ++invalidArmRows;
+                arms << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ',' << armName << ','
+                     << std::setprecision(17) << params.exploration << ',' << params.explorationChance << ','
+                     << params.chanceWideningC << ',' << params.chanceWideningAlpha << ','
+                     << params.endTurnWideningC << ',' << params.endTurnWideningAlpha << ','
+                     << result.outcome << ',' << result.won << ',' << result.signedOutcome << ','
+                     << result.terminalHp << ',' << result.postAfterBattleHp << ',' << result.potionsAfter << ','
+                     << result.firstActionBits << ',' << std::setprecision(9) << result.cpuSeconds << ','
+                     << result.simulations << ',' << result.decisions << ',' << (valid ? 1 : 0) << ','
+                     << (isControl ? (controlMatch ? 1 : 0) : -1) << ',' << csvQuote(reason) << '\n';
+            }
+        }
+        states.flush(); arms.flush();
+    }
+    states.close(); arms.close();
+    nlohmann::json manifest = {
+        {"schemaVersion", "silver_param_screen_400_stage1_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"simulationsPerDecision", sims}, {"arms", armSpec},
+        {"sources", std::move(perSeed)},
+        {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
+            {"states", states_}, {"controlReplayMatches", controlMatches},
+            {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows}}},
+        {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)}}}
+    };
+    std::ofstream manifestOut(manifestPath);
+    if (!manifestOut) throw std::runtime_error("silver param screen #400: cannot write manifest");
+    manifestOut << manifest.dump(2) << '\n';
+    std::cout << "silver param screen #400 teacher=" << teacher.id << " sourceValid=" << validSources
+              << '/' << nSeeds << " states=" << states_ << " control-replay=" << controlMatches << '/'
+              << controlMatches + controlMismatches << " -> " << outPrefix << "\n";
 }
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath){trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("wholecombatgen: cannot open output");f<<"sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,parasiteAdded,persistentMutationSummary\n";long long rows=0;int completed=0;
