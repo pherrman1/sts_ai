@@ -66,6 +66,8 @@ public final class LiveOocCaptureTest {
         check("NeowsBlessing", -2, true, 0, null);
         check("NeowsBlessing", 3, false, 3, null);
         check("NeowsBlessing", -1, true, -1, null);
+        check("Ancient Tea Set", -2, false, 1, null);
+        check("Ancient Tea Set", -1, false, 0, null);
         check("Burning Blood", -1, false, -1, null);
         check("Lizard Tail", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
         check("Lizard Tail", -2, true, 0, null);
@@ -226,6 +228,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: Neow two/four-offer projection, 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: Neow two/four-offer projection, 17 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
     }
 }

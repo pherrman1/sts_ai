@@ -554,9 +554,10 @@ final class LiveOocCapture {
             // the live importer carries the counter in a separate field.
             return 0;
         }
-        if ("NeowsBlessing".equals(id) || "Omamori".equals(id)) {
-            // Spent Java -2 is native 0 remaining charges; the CTM rejects
-            // negative charge data. Share the combat-entry mapping.
+        if ("NeowsBlessing".equals(id) || "Omamori".equals(id) || "Ancient Tea Set".equals(id)) {
+            // Spent Java -2 is native 0 remaining charges, and a charged Tea
+            // Set's -2 is native 1; the CTM rejects other values for these
+            // relics. Share the combat-entry mapping.
             return STSModelInspector.combatEntryRelicData(id, counter, usedUp);
         }
         if ("MawBank".equals(id)) {
