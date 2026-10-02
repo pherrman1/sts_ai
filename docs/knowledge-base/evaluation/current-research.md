@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -1953,6 +1953,13 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 Earlier lower root exploration, Sequential Halving, progressive unpruning,
 hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
 produced no stable promotable advantage; ordinary c=25 remains the default.
+
+Per-context search constants (#400 Stage 1, ledger-06 §369) are
+**`ADAPTIVE_SEARCH_PARAMS_NOT_JUSTIFIED`**: across 3,360 replayed fights, choosing
+exploration/widening per room class × act beat the best global arm by only
++0.0044 signedOutcome per fight (CI [-0.0003, +0.0089]), and no tested arm
+(exploration 12.5/50, widening alpha 0.40/0.65) beat the defaults globally.
+No per-combat controller is built; revisit only with a learned prior.
 
 The complete frozen internal-node finite FPU screen is **`INTERNAL_FPU_INCONCLUSIVE`**.
 At the preregistered root metric, 1k CONTROL agreed with 10k CONTROL in 45/64

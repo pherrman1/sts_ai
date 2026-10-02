@@ -1,8 +1,8 @@
 # #400 Stage 1: Silver search-parameter heterogeneity screen (frozen plan)
 
-Status: **pre-registered, not yet run.** Written before any cohort seed ran;
-only the one-seed smoke below has executed. Results go to the experiment
-ledger with the run's evidence packet.
+Status: pre-registered before any cohort seed ran (commit `8e909402`); the
+cohort has since run unchanged. Result: `ADAPTIVE_SEARCH_PARAMS_NOT_JUSTIFIED`,
+see [README.md](README.md) and ledger-06 §369.
 
 ## Question
 
