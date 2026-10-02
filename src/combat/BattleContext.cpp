@@ -257,7 +257,7 @@ void BattleContext::initRelics(const GameContext &gc) {
                 break;
 
             case R::ANCIENT_TEA_SET:
-                if (gc.lastRoom == Room::REST) {
+                if (r.data > 0) { // charged by a rest site since the last combat
                     p.gainEnergy(2);
                 }
                 break;
@@ -616,6 +616,10 @@ void BattleContext::updateRelicsOnExit(GameContext &g) const {
                 if (!player.hasRelic<R::LIZARD_TAIL>()) {
                     r.data = 0;
                 }
+                break;
+
+            case RelicId::ANCIENT_TEA_SET:
+                r.data = 0; // the charge is spent on the first turn of any combat
                 break;
 
             case RelicId::BURNING_BLOOD:
@@ -1348,7 +1352,7 @@ void BattleContext::useSkillCard() {
             break;
 
         case CardId::DISARM:
-            addToBot( Actions::DebuffEnemy<MS::STRENGTH>(t, -2, false) );
+            addToBot( Actions::DebuffEnemy<MS::STRENGTH>(t, up ? -3 : -2, false) );
             break;
 
         case CardId::DISCOVERY:
@@ -2752,7 +2756,7 @@ void BattleContext::triggerOnOtherCardPlayed(const CardInstance &usedCard) {
         --painCount;
     }
     for (int i = 0; i < painCount; ++i) {
-        addToTop(Actions::PlayerLoseHp(1));
+        addToTop(Actions::PlayerLoseHp(1, true));
     }
 
     const auto thousandCuts = player.getStatus<PS::THOUSAND_CUTS>();
@@ -2827,8 +2831,8 @@ int BattleContext::calculateCardDamage(const CardInstance &card, int targetIdx, 
         damage *= .5;
     }
 
-    if (monster.hasStatus<MS::INTANGIBLE>()) {
-        damage = std::max(damage, 1.0f);
+    if (monster.hasStatus<MS::INTANGIBLE>() && damage > 1.0f) {
+        damage = 1.0f;
     }
 
     return std::max(0, static_cast<int>(damage));

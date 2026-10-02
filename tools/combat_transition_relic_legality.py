@@ -16,13 +16,15 @@ CYCLIC = {'HAPPY_FLOWER': 3, 'INCENSE_BURNER': 6, 'INK_BOTTLE': 10,
 # Meat on the Bone changes combat-exit HP in GameContext; its relic data field
 # is not a mutable counter written by BattleContext::updateRelicsOnExit.
 COPY_COUNTERS = {'BURNING_BLOOD', 'BLACK_BLOOD'}
+# Ancient Tea Set holds 1 while charged by a rest site; any combat spends it.
+RESET_COUNTERS = {'ANCIENT_TEA_SET'}
 NAMES = {v: k for k, v in base.MUTABLE_RELIC_NAMES.items()}
 TRAJECTORY = {'HAPPY_FLOWER': ('turns', 6), 'INCENSE_BURNER': ('turns', 6),
               'INSERTER': ('turns', 6), 'NUNCHAKU': ('attacks', 10),
               'PEN_NIB': ('attacks', 10), 'INK_BOTTLE': ('cards', 10),
               'SUNDIAL': ('shuffles', 3)}
 HEAD_CLASSES = {'turns': 6, 'attacks': 10, 'cards': 10, 'shuffles': 3, 'lizard': 2}
-if set(NAMES.values()) != set(CYCLIC) | COPY_COUNTERS | {'NEOWS_LAMENT', 'LIZARD_TAIL', 'OMAMORI'}:
+if set(NAMES.values()) != set(CYCLIC) | COPY_COUNTERS | RESET_COUNTERS | {'NEOWS_LAMENT', 'LIZARD_TAIL', 'OMAMORI'}:
     raise RuntimeError('native write-back set changed; repeat legality audit')
 
 def legal_posts(relic_id: int, pre: int, encounter: int | None = None, mark_of_bloom: bool = False) -> frozenset[int]:
@@ -55,6 +57,10 @@ def legal_posts(relic_id: int, pre: int, encounter: int | None = None, mark_of_b
         return frozenset([pre, max(0, pre - 1)]) if encounter == writhing else frozenset([pre])
     if name in COPY_COUNTERS:
         return frozenset([pre])
+    if name in RESET_COUNTERS:
+        if pre not in (0, 1):
+            raise ValueError(f'SILVER_REQUIRED {name} pre={pre}')
+        return frozenset([0])
     raise ValueError(f'SILVER_REQUIRED unaudited relic={relic_id}')
 
 def reconstruct(relics, residues, encounter, mark_of_bloom=False):

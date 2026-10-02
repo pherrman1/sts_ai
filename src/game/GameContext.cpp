@@ -229,7 +229,11 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
 //        std::cout << getRelicName(r) << " " << s.relic_counters[i] << '\n';
 
         // todo lizard tail, and others
-        RelicInstance relic {r, s.relic_counters[i]};
+        int data = s.relic_counters[i];
+        if (r == RelicId::ANCIENT_TEA_SET) {
+            data = data == -2 ? 1 : 0; // vanilla -2 means charged
+        }
+        RelicInstance relic {r, data};
         relics.add(relic);
     }
 }
@@ -822,6 +826,10 @@ void GameContext::transitionToMapNode(int mapNodeX) {
         }
 
         case Room::REST: {
+            if (relics.has(RelicId::ANCIENT_TEA_SET)) {
+                // charged from entering a rest site until the next combat
+                relics.getRelicValueRef(RelicId::ANCIENT_TEA_SET) = 1;
+            }
             screenState = ScreenState::REST_ROOM;
             break;
         }

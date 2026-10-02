@@ -257,6 +257,112 @@ caller.
   Strike 2×5/6, Piercer +2 Strength to all monsters, Skewer 3/4×10, Artifact
   1/2, and HP.
 
+## Monster method overrides
+
+The per-act audits covered `getMove`, `takeTurn`, constructors and
+`usePreBattleAction`. A later sweep listed every other method each
+`monsters.*` class overrides (92 across 59 classes). Each override was
+reduced to its gameplay operations; animation, sound and VFX were ignored.
+
+### Overrides that matter, all modelled natively
+
+| Override | Effect | Native |
+|---|---|---|
+| `Nemesis.damage` | while Intangible, every positive hit becomes 1, including thorns, power, relic, potion and poison damage. Nemesis is the only monster that gains `IntangiblePower`; the base `AbstractMonster.damage` checks only the player's `IntangiblePlayer` | the Intangible cap in `Monster::damage` and `Monster::attacked`. **Known gap:** native poison ticks (`ActData_PoisonLoseHpAction`) call `damageUnblockedHelper` directly and are not capped, whereas Java's `PoisonLoseHpAction` goes through `Nemesis.damage`. Ironclad can only poison through another class's cards (e.g. Prismatic Shard). |
+| `AcidSlime_L`, `SpikeSlime_L`, `SlimeBoss` `damage` | split at half HP | `Monster::onHpLost` |
+| `Lagavulin`, `TheGuardian`, `ShelledParasite` `damage`/`changeState` | wake, mode shift, plated-armour stun | covered in the Act 1 and Act 2 tables |
+| `Byrd.changeState("GROUNDED")` | Stunned when Flight breaks. `FlightPower.onAttacked` drops Flight only on attack damage (not HP loss or thorns) and resets it each turn | `Monster::attackedUnblockedHelper`, `Monster::applyStartOfTurnPowers` |
+| `AwakenedOne.damage` (first death) | half-dead, power and relic death hooks (e.g. Gremlin Horn), card queue cleared, debuffs removed, Rebirth | `Monster::die` |
+| `TheCollector`, `BronzeAutomaton`, `GremlinLeader`, `AwakenedOne` `die` | minions die or escape | the minion-leader branch of `Monster::die` ends the fight |
+| `Looter`, `Mugger` `die` | stolen gold returned as a reward | the native theft accounting |
+| `SpireShield`, `SpireSpear` `die` | remove the player's Surrounded and the partner's BackAttack | the back-attack ×1.5 in `Monster::calculateDamageToPlayer` cannot apply once either has died. **Inference:** Java multiplies after Weak and Vulnerable and native before; the product is the same apart from float rounding |
+
+### Dead code in vanilla
+
+- Gremlin `deathReact` (switch to the escape move): the only `deathReact`
+  caller is `BanditBear.die`.
+- Gremlin `escapeNext()`: the method is never called.
+
+The bandits' `deathReact` only queues dialogue.
+
+## Ironclad cards and powers
+
+### Card properties
+
+A generated comparison checked all 75 `cards.red` classes against
+`include/constants/Cards.h`: costs, upgraded costs, X cost, exhaust,
+ethereal, innate, self-retain, type, rarity and targeting.
+
+### Card effects
+
+`use()` was compared with `BattleContext::useCard` and `usePowerCard` for every
+card: base and upgrade values, and the actions queued.
+
+### Mismatches, all fixed
+
+All are covered by `ironclad_card_java_parity`.
+
+| Mechanic | Java reference | Native before the fix | Reach |
+|---|---|---|---|
+| Rage cost | 0 | 1 (missing from `getEnergyCost`) | A0+ |
+| Infernal Blade+ cost | 0 | 1 | A0+ |
+| Seeing Red | exhausts | did not exhaust | A0+ |
+| Disarm+ | −3 Strength | −2 | A0+ |
+| Brutality | `atStartOfTurnPostDraw` draws, then loses HP as self-damage (triggers Rupture) | lost HP first, without the self-damage flag | A0+ |
+| Pain | its HP loss is self-damage (triggers Rupture) | not self-damage | A0+ |
+| Intangible card damage | `IntangiblePower.atDamageFinalReceive` caps damage above 1 at 1; 0 stays 0 | `max(damage, 1)` raised 0 to 1 | A0+ (Nemesis) |
+
+### Parity, by inspection
+
+- **Damage formula:** relic modifiers, then player powers in priority order
+  (Strength and Vigor 5, Pen Nib and Double Damage 6, Weak 99), then the
+  target's Slow, Vulnerable (Paper Frog ×1.75), Flight and Intangible, floored.
+- **Powers:** Perfected Strike counts itself (damage is computed before the
+  card leaves the hand); Clash's playability rule; Blood for Blood's cost
+  reduction across hand, draw and discard; Combust (HP loss +1 per extra copy,
+  so the native `todo` is stale); Juggernaut targets with `cardRandomRng`.
+- **Other hooks:** Rage, Double Tap, Evolve (No Draw is checked when drawing),
+  Fire Breathing, Dark Embrace, Feel No Pain, Corruption, Flame Barrier,
+  Metallicize before end-of-turn cards, and the end-of-turn removals
+  (Lose Strength, No Draw, Entangled).
+
+### Player Intangible (parity)
+
+`AbstractPlayer.damage` caps damage above 1 at 1 for every damage type,
+including HP loss. Native applies the same cap in `Player::damage`, in
+`Player::loseHp`, and in `Monster::calculateDamageToPlayer` (min 1).
+`Player::loseHp` is never called with 0, because `hpWasLost` asserts
+`amount > 0`.
+
+## Ironclad relics
+
+### Pools
+
+`RelicLibrary.populateRelicPool` iterates the `sharedRelics` and then
+`redRelics` `HashMap`s. Replaying the JAR's `RelicLibrary.initialize`
+insertion order into a real JDK 8 `HashMap` gives the same membership and
+order as `include/constants/RelicPools.h` for all five Ironclad pools
+(33/30/28/22/17), assuming a fully unlocked profile. The native shuffle uses
+`java::Collections::shuffle` seeded from `relicRng.randomLong()`, as the game
+does.
+
+### Effects
+
+For every relic in the Ironclad pools and the red relics, each overridden hook
+was compared with the native references.
+
+| Relic | Status | Note |
+|---|---|---|
+| Ancient Tea Set | **Mismatch, fixed** | Java charges the relic on entering any rest site (`onEnterRestRoom` sets the counter to −2) and spends it on the first turn of the next combat, however many rooms later. Native used `gc.lastRoom == Room::REST`, which missed rest → event, shop or treasure → fight. Now relic `data` is 1 while charged: `GameContext::transitionToMapNode` sets it on entering a rest site, `BattleContext::initRelics` grants +2 energy when it is set, and `updateRelicsOnExit` clears it. Save files and the inspector map the vanilla −2 to 1 and everything else to 0. In the inspector this is `combatEntryRelicData`, which is used for combat entry and the CTM and is shared by `LiveOocCapture.nativeRelicData` for live out-of-combat roots. **Limitations:**
+- The lazy combat-entry fallback, which captures at the first decision when the battle-start capture was missed, sees the already spent −1, so that entry records 0 although Java granted +2.
+- Snapshots recorded before this change replay without the old `lastRoom` energy. The CTM relic legality and native contract model the post-combat data as 0. Covered by `ironclad_card_java_parity` and `CombatBoundaryTest`. |
+| All other Ironclad-pool and red relics | Parity | Includes the counter relics (Pen Nib's −1 encodes "9 with the power active"; Sundial, Happy Flower, Incense Burner and Nunchaku are offset but equivalent); turn-indexed relics (Captain's Wheel, Horn Cleat, Stone Calendar); Art of War and Pocketwatch from turn 2 only; Orichalcum (its `trigger` flag is never set); Boot and Torii (after block, attack damage only); Preserved Insect; Magic Flower's rounding; Gremlin Horn on Darkling half-death; Mummified Hand's filters and `cardRandomRng`; Strange Spoon's `cardRandomRng`; Whetstone, War Paint and Tiny House with `java.util.Random(miscRng.randomLong())`; Slaver's Collar (elite or boss); Brimstone on turn 1; the Burning and Black Blood victory heals. |
+
+**Not inspected:** relics only reachable through events, Neow or other
+classes, and relic hooks that act purely out of combat beyond the
+upgrade/transform relics listed above.
+
+
 ## Ambiguous or not yet inspected
 
 - Gremlin `escapeNext` (resolved: unreachable in vanilla). Java's gremlin

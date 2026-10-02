@@ -536,6 +536,7 @@ namespace sts {
             case CardId::WARCRY:
             case CardId::DISARM:
             case CardId::INFERNAL_BLADE:
+            case CardId::SEEING_RED:
             case CardId::INTIMIDATE:
             case CardId::PUMMEL:
             case CardId::SHOCKWAVE:
@@ -732,6 +733,7 @@ namespace sts {
             case CardId::PANACHE:
             case CardId::PANIC_BUTTON:
             case CardId::PURITY:
+            case CardId::RAGE:
             case CardId::RECKLESS_CHARGE:
             case CardId::SADISTIC_NATURE:
             case CardId::SECRET_TECHNIQUE:
@@ -801,6 +803,7 @@ namespace sts {
                 return upgraded ? 1 : 2;
 
             case CardId::HAVOC:
+            case CardId::INFERNAL_BLADE:
             case CardId::SEEING_RED:
             case CardId::BODY_SLAM:
             case CardId::EXHUME:

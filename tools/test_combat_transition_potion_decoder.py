@@ -106,6 +106,9 @@ class ContractTests(unittest.TestCase):
         for pre in range(3):
             self.assertEqual(r.legal_posts(b._RELIC_IDS['OMAMORI'], pre, 0), {pre})
         for name in r.COPY_COUNTERS: self.assertEqual(r.legal_posts(b._RELIC_IDS[name], 19), {19})
+        tea = b._RELIC_IDS['ANCIENT_TEA_SET']
+        for pre in (0, 1): self.assertEqual(r.legal_posts(tea, pre), {0})
+        with self.assertRaises(ValueError): r.legal_posts(tea, -2)
     def test_death_terminates_before_transition(self):
         decoder = Mock(side_effect=AssertionError('must not call'))
         self.assertIsNone(d.sample_composed({}, 0., {}, decoder, None, {}, np.random.default_rng(1)))
