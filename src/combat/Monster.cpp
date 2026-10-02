@@ -497,8 +497,13 @@ void Monster::damage(BattleContext &bc, int damage) {
         damage = 0;
     }
 
-    // Monster Intangible only caps card attack damage (calculateCardDamage);
-    // the game applies no cap to thorns, power, relic or potion damage.
+    // Only Nemesis gains monster Intangible; its damage() override caps every
+    // positive hit to 1, including thorns, power, relic and potion damage.
+    if (hasStatus<MS::INTANGIBLE>()) {
+        if (damage > 0) {
+            damage = 1;
+        }
+    }
 
     const bool hadBlock = block > 0;
     const int tempDamage = damage;

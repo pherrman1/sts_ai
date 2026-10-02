@@ -1715,7 +1715,8 @@ int testIroncladCardJavaParity() {
         }
     }
 
-    // Monster Intangible caps card damage at 1 (0 stays 0) but not thorns-type damage.
+    // Monster Intangible (Nemesis) caps card damage at 1, keeps 0 at 0, and
+    // also caps thorns-type damage (Nemesis.damage override).
     {
         BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
         Monster &m = bc.monsters.arr[0];
@@ -1727,7 +1728,7 @@ int testIroncladCardJavaParity() {
         }
         const int hpBefore = m.curHp;
         Actions::DamageAllEnemy(5)(bc);
-        if (hpBefore - m.curHp != 5) return fail("Intangible capped thorns-type damage");
+        if (hpBefore - m.curHp != 1) return fail("Intangible did not cap thorns-type damage at 1");
     }
 
     std::cout << "ironclad_card_java_parity PASS\n";
