@@ -1731,6 +1731,34 @@ int testIroncladCardJavaParity() {
         if (hpBefore - m.curHp != 1) return fail("Intangible did not cap thorns-type damage at 1");
     }
 
+    // Ancient Tea Set: charged on entering any rest site, spent by the next
+    // combat's first turn, even with other rooms in between.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, 0);
+        gc.relics.add({RelicId::ANCIENT_TEA_SET, 0});
+        gc.map->getNode(0, gc.curMapNodeY + 1).room = Room::REST;
+        gc.transitionToMapNode(0);
+        if (gc.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != 1) {
+            return fail("Ancient Tea Set was not charged by a rest site");
+        }
+        gc.curRoom = Room::MONSTER;
+        gc.lastRoom = Room::EVENT;
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        if (bc.player.energy != bc.player.energyPerTurn + 2) {
+            return fail("charged Ancient Tea Set did not give 2 energy after a non-rest room");
+        }
+        bc.updateRelicsOnExit(gc);
+        if (gc.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != 0) {
+            return fail("Ancient Tea Set charge was not spent by combat");
+        }
+        BattleContext again;
+        again.init(gc, MonsterEncounter::JAW_WORM);
+        if (again.player.energy != again.player.energyPerTurn) {
+            return fail("spent Ancient Tea Set still gave energy");
+        }
+    }
+
     std::cout << "ironclad_card_java_parity PASS\n";
     return 0;
 }

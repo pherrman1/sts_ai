@@ -83,6 +83,9 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.combatEntryRelicData("Omamori", -2, false) != -2
                 || STSModelInspector.combatEntryRelicData("Pen Nib", -2, true) != -2)
             throw new AssertionError("spent charge mapping is not exact and relic-specific");
-        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 12 entry-relic checks passed");
+        if (STSModelInspector.combatEntryRelicData("Ancient Tea Set", -2, false) != 1
+                || STSModelInspector.combatEntryRelicData("Ancient Tea Set", -1, false) != 0)
+            throw new AssertionError("Ancient Tea Set charge is not mapped to native 1/0");
+        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 14 entry-relic checks passed");
     }
 }

@@ -257,7 +257,7 @@ void BattleContext::initRelics(const GameContext &gc) {
                 break;
 
             case R::ANCIENT_TEA_SET:
-                if (gc.lastRoom == Room::REST) {
+                if (r.data > 0) { // charged by a rest site since the last combat
                     p.gainEnergy(2);
                 }
                 break;
@@ -616,6 +616,10 @@ void BattleContext::updateRelicsOnExit(GameContext &g) const {
                 if (!player.hasRelic<R::LIZARD_TAIL>()) {
                     r.data = 0;
                 }
+                break;
+
+            case RelicId::ANCIENT_TEA_SET:
+                r.data = 0; // the charge is spent on the first turn of any combat
                 break;
 
             case RelicId::BURNING_BLOOD:

@@ -90,7 +90,10 @@ This adapter does not qualify native transitions or RNG continuation.
 from the native RAW write-back set, rather than relying on observed delta
 classes. Cyclic counters use native periods, Neow's Lament decrements once,
 Lizard Tail cannot recharge (Mark of the Bloom also prevents consumption),
-Omamori decrements only in Writhing Mass, and healing-relic data copies through.
+Omamori decrements only in Writhing Mass, healing-relic data copies through,
+and Ancient Tea Set data (1 while charged by a rest site, else 0) always ends at
+0, because any combat spends the charge. The native composed contract applies
+the same Tea Set rule.
 Unknown or invalid pre domains require future Silver fallback; global support
 is unchanged. The helper normalizes only legal classes and rejects empty mass.
 It does not enforce joint reachability of multiple relic counters.
