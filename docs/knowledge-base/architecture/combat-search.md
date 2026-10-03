@@ -36,8 +36,9 @@ exit with an error, as does any `STS_SILVER_*` option the native backend does
 not honor (the vendored model's options; see
 [environment-variables.md](../operations/environment-variables.md)). An
 explicit sims argument selects flat Silver at that budget in every mode; only
-`run`, `bestbench` and `reprobench` called without a sims argument use
-adaptive Silver by default (ADR-0018).
+`run`, `bestbench` and `reprobench` called without a sims argument use a
+budget policy by default: learned stopping (ADR-0026, which replaced the #199
+adaptive default of ADR-0018). `STS_SILVER_ADAPTIVE=1` selects #199.
 
 ### Removed searchers and tooling
 

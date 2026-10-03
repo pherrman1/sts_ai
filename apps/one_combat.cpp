@@ -2845,15 +2845,22 @@ int main(int argc, char **argv) {
     }
     setenv("STS_SILVER_SEARCH", "1", 0);
     setenv("STS_FAIR", "1", 0);
-    // Adaptive Silver ignores the caller's budget. Only whole-run modes called
-    // without a sims argument keep it by default (ADR-0018); every other call
-    // searches the flat caller budget unless adaptive stopping is configured.
+    // Budgeted Silver policies ignore the caller's budget. Only whole-run modes
+    // called without a sims argument use one by default: learned stopping
+    // (ADR-0026, replacing the #199 adaptive default of ADR-0018). Every other
+    // call searches the flat caller budget unless a policy is configured.
     {
         const bool wholeRunDefault = argc <= 2
             && (mode == "run" || mode == "bestbench" || mode == "reprobench");
-        if (!wholeRunDefault && !std::getenv("STS_SILVER_ADAPTIVE")
-                && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
-                && !std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
+        const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
+            || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
+            || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
+        const char *learned = std::getenv("STS_SILVER_LEARNED_STOP");
+        const bool learnedRequested = learned && std::atoi(learned) != 0;
+        if (wholeRunDefault && !adaptiveConfigured && !learned && !std::getenv("STS_SILVER_STOP_TRACE")) {
+            setenv("STS_SILVER_LEARNED_STOP", "1", 0);
+            setenv("STS_SILVER_ADAPTIVE", "0", 0);
+        } else if (learnedRequested || (!wholeRunDefault && !adaptiveConfigured)) {
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
         }
     }
