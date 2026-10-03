@@ -1,7 +1,8 @@
 # Learned Silver stopping v2: frozen confirmation plan
 
-Status: frozen before any confirmation seed ran. Code `adbcae75`; the plan
-commit follows it and changes no code.
+Status: frozen before any confirmation seed ran, then run unchanged. Code
+`adbcae75`; the plan commits that follow it change no code. Result:
+`LEARNED_STOP_PASS`, see [README.md](README.md) and ledger-06 §372.
 
 ## Why a v2
 

@@ -1,0 +1,240 @@
+{
+ "verdict": "LEARNED_STOP_PASS",
+ "rule": {
+  "minSaving": 0.1,
+  "margin": -0.005,
+  "reps": 2000
+ },
+ "fights": 3412,
+ "validFights": 3385,
+ "sourceSeeds": 128,
+ "excluded": {
+  "escape": 27,
+  "armInvalid": {
+   "adaptive199": 0,
+   "lockonly": 0,
+   "learned": 0
+  },
+  "armOnlyInvalid": {
+   "adaptive199": 0,
+   "lockonly": 0,
+   "learned": 0
+  },
+  "pairwiseInvalid": {
+   "learnedNotAdaptive199": 0,
+   "adaptive199NotLearned": 0
+  }
+ },
+ "primary": {
+  "n": 3385,
+  "signedOutcome": -0.0007078736847453891,
+  "signedOutcomeCI": [
+   -0.003107202616386105,
+   0.0017603557393577965
+  ],
+  "winRate": 0.0,
+  "potionsAfter": 0.004431314623338257,
+  "simulationSaving": 0.21330830630999098,
+  "cpuRatio": 0.7918192834519555,
+  "simulationSavingCI": [
+   0.20344049696067212,
+   0.2231652095401867
+  ]
+ },
+ "secondary": {
+  "adaptive199_vs_control": {
+   "n": 3385,
+   "signedOutcome": 0.0013227371547499171,
+   "signedOutcomeCI": [
+    -0.001015586462082824,
+    0.0037395428637307256
+   ],
+   "winRate": 0.0008862629246676514,
+   "potionsAfter": -0.0011816838995568684,
+   "simulationSaving": 0.4512717751416052,
+   "cpuRatio": 0.5372377011399267
+  },
+  "lockonly_vs_control": {
+   "n": 3385,
+   "signedOutcome": -8.963268140048445e-06,
+   "signedOutcomeCI": [
+    -0.0025674155439556015,
+    0.0025114674136320326
+   ],
+   "winRate": 0.0005908419497784342,
+   "potionsAfter": 0.012112259970457902,
+   "simulationSaving": 0.3813971714580884,
+   "cpuRatio": 0.6000009307732473
+  },
+  "learned_vs_control": {
+   "n": 3385,
+   "signedOutcome": 0.0006148634700045282,
+   "signedOutcomeCI": [
+    -0.0018011555257114325,
+    0.0031738064205776907
+   ],
+   "winRate": 0.0008862629246676514,
+   "potionsAfter": 0.0032496307237813884,
+   "simulationSaving": 0.5683200634106373,
+   "cpuRatio": 0.4253951715599926
+  },
+  "learned_vs_lockonly": {
+   "n": 3385,
+   "signedOutcome": 0.0006238267381445772,
+   "signedOutcomeCI": [
+    -0.001688709834286626,
+    0.0029973571307276665
+   ],
+   "winRate": 0.0002954209748892171,
+   "potionsAfter": -0.008862629246676515,
+   "simulationSaving": 0.3021694750299456,
+   "cpuRatio": 0.7089908527504571
+  },
+  "lockonly_vs_adaptive199": {
+   "n": 3385,
+   "signedOutcome": -0.0013317004228899664,
+   "signedOutcomeCI": [
+    -0.003625316236865859,
+    0.000822815530015148
+   ],
+   "winRate": -0.0002954209748892171,
+   "potionsAfter": 0.013293943870014771,
+   "simulationSaving": -0.12733918271025457,
+   "cpuRatio": 1.116825810065354
+  },
+  "stops": {
+   "lockonly": {
+    "lock": 40123,
+    "model": 0
+   },
+   "learned": {
+    "lock": 9629,
+    "model": 35598
+   }
+  }
+ },
+ "byRoom": {
+  "BOSS": {
+   "learned_vs_adaptive199": {
+    "n": 367,
+    "signedOutcome": -0.007374278797589197,
+    "signedOutcomeCI": [
+     -0.02460187820077779,
+     0.010058625468302622
+    ],
+    "winRate": -0.005449591280653951,
+    "potionsAfter": 0.013623978201634877,
+    "simulationSaving": 0.1721558812553884,
+    "cpuRatio": 0.8085792865042274
+   },
+   "learned_vs_control": {
+    "n": 367,
+    "signedOutcome": 0.015915767723931117,
+    "signedOutcomeCI": [
+     -0.002354148382758731,
+     0.03521115134969891
+    ],
+    "winRate": 0.005449591280653951,
+    "potionsAfter": -0.013623978201634877,
+    "simulationSaving": 0.5085987626031164,
+    "cpuRatio": 0.45273376074428096
+   }
+  },
+  "ELITE": {
+   "learned_vs_adaptive199": {
+    "n": 827,
+    "signedOutcome": -0.0005022515712213812,
+    "signedOutcomeCI": [
+     -0.004551777003016656,
+     0.003724032216843083
+    ],
+    "winRate": 0.0012091898428053204,
+    "potionsAfter": 0.018137847642079808,
+    "simulationSaving": 0.23162687451915198,
+    "cpuRatio": 0.7677737543905282
+   },
+   "learned_vs_control": {
+    "n": 827,
+    "signedOutcome": -0.003308344853217329,
+    "signedOutcomeCI": [
+     -0.007395495836106012,
+     0.00115908224852763
+    ],
+    "winRate": 0.0012091898428053204,
+    "potionsAfter": 0.020556227327690448,
+    "simulationSaving": 0.6222594246031746,
+    "cpuRatio": 0.36607627985546404
+   }
+  },
+  "NORMAL": {
+   "learned_vs_adaptive199": {
+    "n": 2082,
+    "signedOutcome": 0.0001558848705779679,
+    "signedOutcomeCI": [
+     -0.0009331646442383728,
+     0.001300759355868386
+    ],
+    "winRate": 0.0004803073967339097,
+    "potionsAfter": -0.001440922190201729,
+    "simulationSaving": 0.22601565675307922,
+    "cpuRatio": 0.7906431033807141
+   },
+   "learned_vs_control": {
+    "n": 2082,
+    "signedOutcome": -0.0004543195854741234,
+    "signedOutcomeCI": [
+     -0.0016033762650778927,
+     0.0006565910716524173
+    ],
+    "winRate": 0.0,
+    "potionsAfter": -0.0009606147934678194,
+    "simulationSaving": 0.5659339570284627,
+    "cpuRatio": 0.4451990431462288
+   }
+  },
+  "OTHER": {
+   "learned_vs_adaptive199": {
+    "n": 109,
+    "signedOutcome": 0.003679060960631619,
+    "signedOutcomeCI": [
+     -0.004817679340295656,
+     0.011970921195324197
+    ],
+    "winRate": 0.0,
+    "potionsAfter": -0.01834862385321101,
+    "simulationSaving": 0.20787951430507057,
+    "cpuRatio": 0.8025701184089252
+   },
+   "learned_vs_control": {
+    "n": 109,
+    "signedOutcome": -0.0007144893408214415,
+    "signedOutcomeCI": [
+     -0.011472230864104791,
+     0.00884808612092196
+    ],
+    "winRate": 0.0,
+    "potionsAfter": 0.009174311926605505,
+    "simulationSaving": 0.5518867924528301,
+    "cpuRatio": 0.4444130141860784
+   }
+  }
+ },
+ "inputs": [
+  "/mnt/project-files/silver-learned-stop/run2/part0/replay0",
+  "/mnt/project-files/silver-learned-stop/run2/part0/replay1",
+  "/mnt/project-files/silver-learned-stop/run2/part0/replay2",
+  "/mnt/project-files/silver-learned-stop/run2/part0/replay3",
+  "/mnt/project-files/silver-learned-stop/run2/part1/replay0",
+  "/mnt/project-files/silver-learned-stop/run2/part1/replay1",
+  "/mnt/project-files/silver-learned-stop/run2/part1/replay2",
+  "/mnt/project-files/silver-learned-stop/run2/part1/replay3",
+  "/mnt/project-files/silver-learned-stop/run2/part2/replay0",
+  "/mnt/project-files/silver-learned-stop/run2/part2/replay1",
+  "/mnt/project-files/silver-learned-stop/run2/part2/replay2",
+  "/mnt/project-files/silver-learned-stop/run2/part2/replay3",
+  "/mnt/project-files/silver-learned-stop/run2/part3/replay0",
+  "/mnt/project-files/silver-learned-stop/run2/part3/replay1",
+  "/mnt/project-files/silver-learned-stop/run2/part3/replay2",
+  "/mnt/project-files/silver-learned-stop/run2/part3/replay3"
+ ]
+}
