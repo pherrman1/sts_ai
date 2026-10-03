@@ -20,6 +20,10 @@ namespace sts::search {
     // std::invalid_argument for an invalid or incompatible wire.
     BattleContext battleContextFromWire(const silver_bridge::BattleStateWire &wire);
 
+    // Export the bounded typed tail only when every queued action is
+    // representable; otherwise retain the historical unobserved contract.
+    void capturePendingActionQueue(const BattleContext &state, silver_bridge::BattleStateWire &wire);
+
     // The run context the wire carries for Silver's terminal evaluation.
     SilverSearchContext searchContextFromWire(const silver_bridge::BattleStateWire &wire);
 

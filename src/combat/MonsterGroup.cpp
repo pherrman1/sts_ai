@@ -6,6 +6,7 @@
 
 #include "combat/MonsterGroup.h"
 #include "combat/BattleContext.h"
+#include "sim/search/CombatKnowledge.h"
 
 
 #include <algorithm>
@@ -498,7 +499,14 @@ void MonsterGroup::createStrongHumanoid(BattleContext &bc) {
     temp[2].construct(bc, MonsterId::LOOTER, monsterCount);
 
     const int idx = bc.miscRng.random(2);
-    arr[monsterCount++] = temp[idx];
+    arr[monsterCount] = temp[idx];
+    auto &selected = arr[monsterCount++];
+    selected.idx = monsterCount - 1;
+    // Candidate constructors are deliberately evaluated for native RNG parity.
+    // Publish the chosen occupant again before its first roll, discarding any
+    // observer prior belonging to an unchosen temporary candidate.
+    search::emitMonsterOccupantReset(selected.idx, selected.occupantGeneration);
+    search::emitMonsterLatentDamagePrior(selected.idx, selected.latentDamageMask);
     monstersAlive++; // todo this is hacky
 }
 
@@ -507,7 +515,14 @@ void MonsterGroup::createStrongWildlife(BattleContext &bc) {
     temp[0].construct(bc, MonsterId::FUNGI_BEAST, 0);
     temp[1].construct(bc, MonsterId::JAW_WORM, 0);
     const int idx = bc.miscRng.random(1);
-    arr[monsterCount++] = temp[idx];
+    arr[monsterCount] = temp[idx];
+    auto &selected = arr[monsterCount++];
+    selected.idx = monsterCount - 1;
+    // Candidate constructors are deliberately evaluated for native RNG parity.
+    // Publish the chosen occupant again before its first roll, discarding any
+    // observer prior belonging to an unchosen temporary candidate.
+    search::emitMonsterOccupantReset(selected.idx, selected.occupantGeneration);
+    search::emitMonsterLatentDamagePrior(selected.idx, selected.latentDamageMask);
     monstersAlive++; // todo this is hacky
 }
 
@@ -519,7 +534,14 @@ void MonsterGroup::createWeakWildlife(BattleContext &bc) {
     temp[2].construct(bc, MonsterId::ACID_SLIME_M, monsterCount);
 
     const int idx = bc.miscRng.random(2);
-    arr[monsterCount++] = temp[idx];
+    arr[monsterCount] = temp[idx];
+    auto &selected = arr[monsterCount++];
+    selected.idx = monsterCount - 1;
+    // Candidate constructors are deliberately evaluated for native RNG parity.
+    // Publish the chosen occupant again before its first roll, discarding any
+    // observer prior belonging to an unchosen temporary candidate.
+    search::emitMonsterOccupantReset(selected.idx, selected.occupantGeneration);
+    search::emitMonsterLatentDamagePrior(selected.idx, selected.latentDamageMask);
     monstersAlive++; // todo this is hacky
 }
 

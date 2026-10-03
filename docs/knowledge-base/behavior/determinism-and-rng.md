@@ -62,6 +62,15 @@ per-battle seed (see [combat-search.md](../architecture/combat-search.md)); it
 never reads the live battle's hidden RNG streams. Searcher2 (partial
 determinization) and Searcher3 (particles) were removed.
 
+Under Runic Dome, Spot Weakness reveals only an attack/nonattack predicate.
+The actual simulator observation consumes no additional RNG. Fair search
+samples the predicate on its isolated stream, retains the hidden information
+state, and conditions later materialization on all indexed observations.
+Repeated queries of the same pending roll consume no further draw. Rejection
+sampling preserves the conditional latent-chain distribution; exhausting its
+bound fails explicitly instead of substituting a move. These constraints and
+per-roll public inputs survive Silver wire and hidden binary snapshot v3.
+
 Live opt-in OOC MCTS separately samples unknown native futures in
 `apps/one_combat/ooc_mcts_adapter.cpp::sampleNoncombatFuture`. Before search
 transitions and leaf continuation, detached copies receive planner-owned RNG

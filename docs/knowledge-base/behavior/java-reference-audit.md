@@ -149,7 +149,7 @@ All are covered by `monster_ai_java_parity`.
 - **Move selection (`getMove`):** Byrd (first move and the flying and grounded
   trees), Centurion move selection, Chosen (both ascension branches), Snecko,
   Spheric Guardian, Taskmaster, Bronze Orb (Stasis is recorded at roll time in
-  Java and at turn time natively; equivalent), Champ, Collector, Torch Head,
+  both Java and native move selection), Champ, Collector, Torch Head,
   Mugger, the bandits, and the Gremlin Leader's gremlin count and pool.
 - **Monster turns (`takeTurn`) and constants:** Byrd (Headbutt sets Fly
   without a roll; Stunned rolls into Headbutt), Book of Stabbing, Chosen,
@@ -170,11 +170,13 @@ two Java moves were Boost and Flail in either order. The native
 `lastBoostWasFlail` is 0 at the first Boost after a Flail, so live search
 expected Hyper Beam a cycle early.
 
-The mapping now uses `bronzeAutomatonNativeFlag(nextMove, numTurns)`: 1 exactly
-when the intent is Flail or Boost and Java's `numTurns` is 3 or 4. It fails
-closed if `numTurns` is missing or outside 0–4. `CombatBoundaryTest` checks the
-whole cycle, including the A19 post-Hyper Beam Boost, and the JAR's `numTurns`
-field type.
+Native move reconstruction now follows Java's `numTurns` directly instead of
+retaining the old `lastBoostWasFlail` toggle. Ordinary capture uses
+`bronzeAutomatonNativeTurns(numTurns)` and rejects missing or out-of-range
+values (0–4). Under Runic Dome the observer bypasses this private accessor and
+reconstructs the pre-roll counter from public executions. `CombatBoundaryTest`
+checks the public mapping and JAR field type; `runic_dome_lifecycle` checks the
+complete ordinary/hidden cycle and post-Hyper Beam behavior.
 
 ## Act 3 audit
 
