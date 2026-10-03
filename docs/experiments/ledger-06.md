@@ -13863,7 +13863,7 @@ will cost at the next shop, did not help the model predict wins.
 **Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
 and `evaluation/current-research.md`.
 
-## §377 — #397 follow-up: history and derived families with the A3 M1 MLP (2026-10-03)
+## §378 — #397 follow-up: history and derived families with the A3 M1 MLP (2026-10-03)
 
 **Question:** §§374–376 tested every family with XGBoost only, which is
 invariant to monotone rescaling. Does the frozen A3 M1 network gain from the
