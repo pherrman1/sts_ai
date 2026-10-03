@@ -170,12 +170,21 @@ namespace sts::search {
             }
         }
 
+        // Leader and previous features across the checkpoints of one root.
+        struct StopTrack {
+            int leaderEdge = -1;
+            int streak = 0;
+            bool hasPrevious = false;
+            NativeSilverStopFeatures previous{};
+        };
+
         // Root statistics after `checkpoint` new simulations of a search with
-        // maximum `budget`. `leaderEdge`/`streak` carry the leader across the
-        // checkpoints of one root.
+        // maximum `budget`.
         NativeSilverStopFeatures stopFeatures(const SilverSearcher &searcher, std::int64_t inheritedVisits,
                                               std::int64_t checkpoint, std::int64_t budget, int turn, int act,
-                                              int room, int &leaderEdge, int &streak) {
+                                              int room, StopTrack &track) {
+            int &leaderEdge = track.leaderEdge;
+            int &streak = track.streak;
             const auto &edges = searcher.rootNode().edges;
             std::int64_t total = 0, n1 = 0, n2 = 0;
             int first = -1, second = -1;
@@ -226,6 +235,13 @@ namespace sts::search {
             x[kStopLeaderStreak] = streak;
             x[kStopRho] = static_cast<double>(n1 - n2) / static_cast<double>(std::max<std::int64_t>(remaining, 1));
             x[kStopLock] = n1 - n2 > remaining ? 1 : 0;
+            const auto &p = track.hasPrevious ? track.previous : x;
+            x[kStopGapShareDelta] = x[kStopGapShare] - p[kStopGapShare];
+            x[kStopTopShareDelta] = x[kStopTopShare] - p[kStopTopShare];
+            x[kStopQGapDelta] = x[kStopQGap] - p[kStopQGap];
+            x[kStopEntropyDelta] = x[kStopEntropy] - p[kStopEntropy];
+            track.previous = x;
+            track.hasPrevious = true;
             return x;
         }
 
@@ -302,6 +318,7 @@ namespace sts::search {
                                                  : g_options.adaptive;
             const bool learnedStop = budgetOverride ? budgetOverride->policy == BudgetPolicy::LearnedStop
                                                     : g_options.learnedStop;
+            const bool lockOnly = budgetOverride && budgetOverride->policy == BudgetPolicy::LockOnly;
             const bool stopTrace = !budgetOverride && !g_options.stopTrace.empty();
             const bool skipSingletons = budgetOverride ? budgetOverride->skipSingletonRoots
                 : !g_options.exactRootBudgets && !g_options.searchSingletonRoots;
@@ -358,7 +375,7 @@ namespace sts::search {
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
                 ProfileScope profiling(*searcher);
-                const auto configured = learnedStop || stopTrace
+                const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
 
                 // Simulated actions must not reach the live knowledge tracker.
@@ -371,28 +388,36 @@ namespace sts::search {
                 try {
                     if (skipSearch) {
                         ++g_singletonSkips;
-                    } else if (learnedStop || stopTrace) {
+                    } else if (learnedStop || lockOnly || stopTrace) {
                         // Checkpointed search. The trace runs every checkpoint
                         // (the full-budget leader is the label); the learned
-                        // policy stops at the first strict lock or low risk.
+                        // policy stops at the first strict lock or low risk,
+                        // the lock-only policy at the first strict lock.
                         // One-action roots are searched only under exact-root
                         // budgets and never stop early.
                         const bool eligible = searcher->prepareRootActions() > 1;
                         const auto budget = kNativeSilverStopCheckpoints.back();
                         const int room = stopRoomCode(gc.curRoom);
-                        int leaderEdge = -1, streak = 0;
+                        StopTrack track;
                         for (const auto checkpoint : kNativeSilverStopCheckpoints) {
                             searcher->search(checkpoint - simulations);
                             simulations = checkpoint;
                             const auto x = stopFeatures(*searcher, inheritedVisits, checkpoint, budget,
-                                bc.turn, gc.act, room, leaderEdge, streak);
+                                bc.turn, gc.act, room, track);
                             if (stopTrace) {
                                 traceStopCheckpoint(gc, combatId, decision, x, SilverSearcher::translateAction(
                                     searcher->bestAction(), searcher->rootSearchState(), bc));
-                            } else if (checkpoint < budget && eligible && (x[kStopLock] > 0
-                                    || nativeSilverStopModelRisk(x) < g_options.learnedStopThreshold)) {
-                                ++g_learnedStops;
-                                break;
+                            } else if (checkpoint < budget && eligible) {
+                                if (x[kStopLock] > 0) {
+                                    ++g_learnedStops;
+                                    ++g_nativeSilverCombatStats.lockStops;
+                                    break;
+                                }
+                                if (!lockOnly && nativeSilverStopModelRisk(x) < g_options.learnedStopThreshold) {
+                                    ++g_learnedStops;
+                                    ++g_nativeSilverCombatStats.modelStops;
+                                    break;
+                                }
                             }
                         }
                     } else if (adaptive) {
@@ -589,6 +614,7 @@ namespace sts::search {
         "checkpoint", "inherited_visits", "fresh_root", "legal_actions", "top_share",
         "second_share", "gap_share", "entropy", "q_gap", "q_gap_valid", "root_visits",
         "turn", "act", "room", "leader_same", "leader_streak", "rho", "lock",
+        "gap_share_delta", "top_share_delta", "q_gap_delta", "entropy_delta",
     };
 
     bool nativeSilverLearnedStopEnabled() {

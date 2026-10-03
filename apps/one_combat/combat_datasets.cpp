@@ -339,6 +339,7 @@ struct VwinArmResult {
     int won = -1, terminalHp = -1, postAfterBattleHp = -1, firstActionBits = -1, potionsAfter = -1;
     double signedOutcome = 0.0, cpuSeconds = 0.0;
     std::uint64_t simulations = 0, decisions = 0;
+    std::int64_t lockStops = 0, modelStops = 0;
     bool valid = false;
     std::string outcome, quarantineReason;
 };
@@ -2098,6 +2099,8 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
     result.simulations = static_cast<std::uint64_t>(std::max<std::int64_t>(0,
         agent.simulationCountTotal - simulationsBefore));
     result.decisions = static_cast<std::uint64_t>(decisionScope.hooks);
+    result.lockStops = search::g_nativeSilverCombatStats.lockStops;
+    result.modelStops = search::g_nativeSilverCombatStats.modelStops;
     result.valid = label.labelValid && bc.outcome != Outcome::UNDECIDED;
     if (!result.valid) result.quarantineReason = !label.healthOk ? "simulator_health_failure"
         : decisionScope.hooks == 0 && !initializationTerminal ? "missing_combat_decision_hook"
@@ -3431,8 +3434,8 @@ void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &o
 
 // Learned-stop replay A/B: replay every real fight of each exact-10k source
 // trajectory under the flat 10k control (must reproduce the source fight), the
-// production #199 retained-root adaptive policy, and the learned stopping
-// policy. Same state, agent and hidden future per arm; only the budget policy
+// production #199 retained-root adaptive policy, strict-lock-only stopping, and
+// the learned stopping policy. Same state, agent and hidden future per arm; only the budget policy
 // differs. Adaptive and learned arms commit one-action roots unsearched, as
 // production does.
 void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
@@ -3448,6 +3451,7 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
     const std::vector<std::pair<std::string, search::NativeSilverBudgetOverride>> armDefs = {
         {"control", {Policy::Flat, false}},
         {"adaptive199", {Policy::Adaptive, true}},
+        {"lockonly", {Policy::LockOnly, true}},
         {"learned", {Policy::LearnedStop, true}},
     };
     const std::string statesPath = outPrefix + ".states.csv";
@@ -3462,8 +3466,8 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
               "sourceWon,sourceSignedOutcome,sourceTerminalHp,sourcePostAfterBattleHp,"
               "sourceFirstActionBits,trajectoryValid\n";
     arms << "stateId,sourceSeed,fightIdx,arm,outcome,won,signedOutcome,terminalHp,postAfterBattleHp,"
-            "potionsAfter,firstActionBits,cpuSeconds,simulations,decisions,valid,controlReplayMatch,"
-            "quarantineReason\n";
+            "potionsAfter,firstActionBits,cpuSeconds,simulations,decisions,lockStops,modelStops,valid,"
+            "controlReplayMatch,quarantineReason\n";
     int completeSources = 0, validSources = 0, states_ = 0, controlMatches = 0, controlMismatches = 0;
     int invalidArmRows = 0;
     nlohmann::json perSeed = nlohmann::json::array();
@@ -3517,6 +3521,7 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
                      << result.signedOutcome << ',' << result.terminalHp << ',' << result.postAfterBattleHp << ','
                      << result.potionsAfter << ',' << result.firstActionBits << ',' << std::setprecision(9)
                      << result.cpuSeconds << ',' << result.simulations << ',' << result.decisions << ','
+                     << result.lockStops << ',' << result.modelStops << ','
                      << (valid ? 1 : 0) << ',' << (isControl ? (controlMatch ? 1 : 0) : -1) << ','
                      << csvQuote(reason) << '\n';
             }
@@ -3525,7 +3530,7 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
     }
     states.close(); arms.close();
     nlohmann::json manifest = {
-        {"schemaVersion", "silver_stop_replay_v1"},
+        {"schemaVersion", "silver_stop_replay_v2"},
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
@@ -3534,7 +3539,7 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
         {"stopThreshold", search::nativeSilverLearnedStopThreshold()},
         {"adaptiveTopGap", search::nativeSilverAdaptiveTopGap()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
-        {"simulationsPerDecision", sims}, {"arms", {"control", "adaptive199", "learned"}},
+        {"simulationsPerDecision", sims}, {"arms", {"control", "adaptive199", "lockonly", "learned"}},
         {"sources", std::move(perSeed)},
         {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
             {"states", states_}, {"controlReplayMatches", controlMatches},

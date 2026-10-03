@@ -32,6 +32,11 @@ namespace sts::search {
         kStopLeaderStreak,        // consecutive checkpoints with this leader
         kStopRho,                 // (N1 - N2) / max(Bmax - checkpoint, 1)
         kStopLock,                // N1 - N2 > Bmax - checkpoint
+        // Change since the previous checkpoint of the same root (0 at the first).
+        kStopGapShareDelta,
+        kStopTopShareDelta,
+        kStopQGapDelta,
+        kStopEntropyDelta,
         kStopFeatureCount
     };
     using NativeSilverStopFeatures = std::array<double, kStopFeatureCount>;

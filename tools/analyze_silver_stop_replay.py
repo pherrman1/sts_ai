@@ -26,13 +26,14 @@ import random
 import sys
 from collections import defaultdict
 
-ARMS = ["control", "adaptive199", "learned"]
+ARMS = ["control", "adaptive199", "learned"]   # v1; v2 adds "lockonly"
 MIN_SAVING = 0.10
 MARGIN = -0.005
 REPS = 2000
 
 
 def load(prefixes):
+    global ARMS
     fights = defaultdict(dict)
     rooms = {}
     for prefix in prefixes:
@@ -42,7 +43,10 @@ def load(prefixes):
         with open(prefix + ".states.csv", newline="") as f:
             for row in csv.DictReader(f):
                 rooms[row["stateId"]] = row["roomClass"]
+    present = {a for arms in fights.values() for a in arms}
+    ARMS = ["control", "adaptive199"] + (["lockonly"] if "lockonly" in present else []) + ["learned"]
     valid, excluded = [], defaultdict(int)
+    pairwise = {"learnedNotAdaptive199": 0, "adaptive199NotLearned": 0}
     arm_invalid = {a: 0 for a in ARMS[1:]}
     only_invalid = {a: 0 for a in ARMS[1:]}
     for sid, arms in fights.items():
@@ -59,6 +63,8 @@ def load(prefixes):
         for a in ARMS[1:]:
             arm_invalid[a] += bad[a]
             only_invalid[a] += bad[a] and not any(bad[b] for b in ARMS[1:] if b != a)
+        pairwise["learnedNotAdaptive199"] += bad["learned"] and not bad["adaptive199"]
+        pairwise["adaptive199NotLearned"] += bad["adaptive199"] and not bad["learned"]
         row = {"seed": int(arms["control"]["sourceSeed"]), "room": rooms.get(sid, "?")}
         for a in ARMS:
             invalid = a != "control" and bad[a]
@@ -67,9 +73,12 @@ def load(prefixes):
             row[f"sims_{a}"] = int(arms[a]["simulations"])
             row[f"cpu_{a}"] = float(arms[a]["cpuSeconds"])
             row[f"pot_{a}"] = int(arms[a]["potionsAfter"])
+            row[f"lock_{a}"] = int(arms[a].get("lockStops") or 0)
+            row[f"model_{a}"] = int(arms[a].get("modelStops") or 0)
         valid.append(row)
     excluded["armInvalid"] = arm_invalid
     excluded["armOnlyInvalid"] = only_invalid
+    excluded["pairwiseInvalid"] = pairwise
     return valid, dict(excluded), len(fights)
 
 
@@ -111,11 +120,17 @@ def analyze(prefixes):
     primary = compare(rows, "learned", "adaptive199")
     primary["simulationSavingCI"] = bootstrap(rows, lambda x: saving(x, "learned", "adaptive199"))
     s, lo = primary["simulationSaving"], primary["signedOutcomeCI"][0]
-    only = excluded["armOnlyInvalid"]
+    pair = excluded["pairwiseInvalid"]
     verdict = ("LEARNED_STOP_COMPUTE_FAIL" if s < MIN_SAVING
-               else "LEARNED_STOP_PASS" if lo > MARGIN and only["learned"] <= only["adaptive199"]
+               else "LEARNED_STOP_PASS" if lo > MARGIN
+               and pair["learnedNotAdaptive199"] <= pair["adaptive199NotLearned"]
                else "LEARNED_STOP_QUALITY_FAIL")
-    secondary = {f"{a}_vs_control": compare(rows, a, "control") for a in ("adaptive199", "learned")}
+    secondary = {f"{a}_vs_control": compare(rows, a, "control") for a in ARMS[1:]}
+    if "lockonly" in ARMS:
+        secondary["learned_vs_lockonly"] = compare(rows, "learned", "lockonly")
+        secondary["lockonly_vs_adaptive199"] = compare(rows, "lockonly", "adaptive199")
+    secondary["stops"] = {a: {"lock": sum(r[f"lock_{a}"] for r in rows), "model": sum(r[f"model_{a}"] for r in rows)}
+                          for a in ("lockonly", "learned") if a in ARMS}
     by_room = {}
     for room in sorted({r["room"] for r in rows}):
         sub = [r for r in rows if r["room"] == room]

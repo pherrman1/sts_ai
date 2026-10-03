@@ -29,6 +29,11 @@ FEATURES = [
     "second_share", "gap_share", "entropy", "q_gap", "q_gap_valid", "root_visits",
     "turn", "act", "room", "leader_same", "leader_streak", "rho", "lock",
 ]
+# Change since the previous checkpoint of the same root (0 at the first);
+# computed here from the base features, exactly as the runtime does.
+DELTAS = ["gap_share", "top_share", "q_gap", "entropy"]
+BASE_FEATURES = list(FEATURES)
+FEATURES = BASE_FEATURES + [f"{name}_delta" for name in DELTAS]
 CHECKPOINTS = [250, 500, 1000, 2000, 4000, 8000, 10000]
 BMAX = 10000
 TOP_GAP_199 = 0.2932885906040268
@@ -121,12 +126,23 @@ def load_traces(paths):
             for row in csv.DictReader(f):
                 key = (row["seed"], row["combat"], row["decision"])
                 d = decisions.setdefault(key, {"seed": int(row["seed"]), "rows": []})
-                d["rows"].append((int(row["checkpoint"]), [float(row[k]) for k in FEATURES], row["leader"]))
+                traced = [float(row[k]) for k in FEATURES if k in row] if FEATURES[-1] in row else None
+                d["rows"].append((int(row["checkpoint"]), [float(row[k]) for k in BASE_FEATURES], row["leader"],
+                                  traced))
     complete = {}
     for key, d in decisions.items():
         d["rows"].sort(key=lambda r: r[0])
         if [r[0] for r in d["rows"]] != CHECKPOINTS:
             raise SystemExit(f"incomplete checkpoint schedule for decision {key}")
+        rows, previous = [], None
+        for ck, base, leader, traced in d["rows"]:
+            p = previous or base
+            x = base + [base[BASE_FEATURES.index(n)] - p[BASE_FEATURES.index(n)] for n in DELTAS]
+            if traced is not None and traced != x:
+                raise SystemExit(f"traced delta features differ from recomputed ones for decision {key}")
+            rows.append((ck, x, leader))
+            previous = base
+        d["rows"] = rows
         d["final"] = d["rows"][-1][2]
         d["fresh"] = int(d["rows"][0][1][FEATURES.index("fresh_root")])
         complete[key] = d

@@ -40,6 +40,8 @@ namespace sts::search {
     struct NativeSilverCombatStats {
         std::int64_t decisions = 0;
         std::int64_t simulations = 0;
+        std::int64_t lockStops = 0;    // learned-stop/lock-only roots stopped by a strict lock
+        std::int64_t modelStops = 0;   // learned-stop roots stopped by model risk
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
@@ -68,7 +70,7 @@ namespace sts::search {
     // Research-only (learned-stop replay A/B): when set, replaces the
     // process budget policy for the current thread's combats. Unset elsewhere.
     struct NativeSilverBudgetOverride {
-        enum class Policy { Flat, Adaptive, LearnedStop };
+        enum class Policy { Flat, Adaptive, LearnedStop, LockOnly };
         Policy policy = Policy::Flat;
         bool skipSingletonRoots = false;
     };
