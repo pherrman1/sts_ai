@@ -79,9 +79,10 @@ def screen_observations(screen, contents):
     if screen == "event":
         events.add(int(contents["eventId"]))
     elif screen in ("shop",):
-        relics.update(int(r["id"]) for r in contents.get("relics", []))
+        # Purchased shop slots keep their position with a null id.
+        relics.update(int(r["id"]) for r in contents.get("relics", []) if r.get("id") is not None)
     elif screen in ("boss_relic", "rewards"):
-        relics.update(int(r) for r in contents.get("relics", []))
+        relics.update(int(r) for r in contents.get("relics", []) if r is not None)
     return events, relics
 
 
@@ -375,6 +376,7 @@ def _self_test():
     assert M.tolist() == [[1, 0], [1, 0], [0, 0], [1, 2]]
     ev, rel = screen_observations("shop", {"relics": [{"id": 3}, {"id": 4}]})
     assert rel == {3, 4} and not ev
+    assert screen_observations("shop", {"relics": [{"id": None, "slot": 0}, {"id": 4}]})[1] == {4}
     assert screen_observations("boss_relic", {"relics": [1, 2, 3]})[1] == {1, 2, 3}
     assert screen_observations("event", {"eventId": 41})[0] == {41}
     ci = lambda m, lo, hi: {"mean": m, "ci95": [lo, hi]}
