@@ -6,6 +6,8 @@
 #include "game/GameContext.h"
 #include "game/Game.h"
 
+#include <stdexcept>
+
 using namespace sts;
 
 thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_onBattleExitPersistent;
@@ -2980,6 +2982,9 @@ void BattleContext::openDiscoveryScreen(std::array<CardId, 3> discoveryCards, in
     cardSelectInfo.canPickZero = false;
     cardSelectInfo.cards = discoveryCards;
     cardSelectInfo.discovery_CopyCount() = copyCount;
+    cardSelectInfo.setCostToZero = true;
+    cardSelectInfo.drawAfter = 0;
+    cardSelectInfo.drawsAfter.clear(); cardSelectInfo.blocksAfter.clear(); cardSelectInfo.damageAllBeforeBlocks = 0;
 }
 
 void BattleContext::openSimpleCardSelectScreen(CardSelectTask task, int count) {
@@ -3024,6 +3029,11 @@ void BattleContext::chooseArmamentsCard(int handIdx) {
 }
 
 void BattleContext::chooseCodexCard(CardId id) {
+    if (cardSelectInfo.damageAllBeforeBlocks > 0) addToBot(Actions::DamageAllEnemy(cardSelectInfo.damageAllBeforeBlocks));
+    cardSelectInfo.damageAllBeforeBlocks = 0;
+    for (int amount : cardSelectInfo.blocksAfter) addToBot(Actions::GainBlock(amount));
+    cardSelectInfo.blocksAfter.clear();
+    if (id == CardId::INVALID) return;
     CardInstance c(id);
     c.uniqueId = static_cast<std::int16_t>(cards.nextUniqueCardId++);
     cards.notifyAddCardToCombat(c);
@@ -3081,6 +3091,8 @@ void BattleContext::chooseDualWieldCard(int handIdx) {
 }
 
 void BattleContext::chooseDiscardToHandCard(int discardIdx, bool forZeroCost) {
+    // Liquid Memories leaves excess selections in discard with their costs intact.
+    if (forZeroCost && cards.cardsInHand >= CardManager::MAX_HAND_SIZE) return;
     CardInstance c = cards.discardPile[discardIdx];
     cards.removeFromDiscard(discardIdx);
     if (forZeroCost) {
@@ -3091,8 +3103,13 @@ void BattleContext::chooseDiscardToHandCard(int discardIdx, bool forZeroCost) {
 
 void BattleContext::chooseDiscoveryCard(CardId id) {
     const auto discoveryAmount = cardSelectInfo.data0;
+    const int drawAfter = cardSelectInfo.drawAfter;
+    cardSelectInfo.drawAfter = 0;
+    if (drawAfter > 0) addToBot(Actions::DrawCards(drawAfter));
+    for (int amount : cardSelectInfo.drawsAfter) addToBot(Actions::DrawCards(amount));
+    cardSelectInfo.drawsAfter.clear();
     CardInstance c(id);
-    c.setCostForTurn(0);
+    if (cardSelectInfo.setCostToZero) c.setCostForTurn(0);
 
     for (int i = 0; i < discoveryAmount; ++i) {
         if (cards.cardsInHand + 1 <= CardManager::MAX_HAND_SIZE) {
@@ -3132,6 +3149,26 @@ void BattleContext::chooseForethoughtCard(int handIdx) {
     cards.removeFromHandAtIdx(handIdx);
 }
 
+void BattleContext::chooseForethoughtCards(const fixed_list<int,10> &idxs) {
+    // Atomic native subsets use original hand order. The live adapter clicks
+    // descending indices: Java addToTop produces this same selected-card order.
+    auto ordered = idxs;
+    std::sort(ordered.begin(), ordered.end());
+    for (int i = 0; i < ordered.size(); ++i) {
+        if (ordered[i] < 0 || ordered[i] >= cards.cardsInHand
+                || (i > 0 && ordered[i] == ordered[i-1]))
+            throw std::invalid_argument("Forethought requires distinct valid hand indices");
+    }
+    fixed_list<CardInstance,10> selected;
+    for (int idx : ordered) {
+        auto card = cards.hand[idx];
+        if (card.cost > 0) card.freeToPlayOnce = true;
+        selected.push_back(card);
+    }
+    for (int i = static_cast<int>(ordered.size()) - 1; i >= 0; --i) cards.removeFromHandAtIdx(ordered[i]);
+    for (const auto &card : selected) cards.moveToDrawPileBottom(card);
+}
+
 void BattleContext::chooseHeadbuttCard(int discardIdx) {
 #ifdef sts_asserts
     assert(discardIdx >= 0 && discardIdx < cards.discardPile.size());
@@ -3162,34 +3199,33 @@ void BattleContext::chooseDrawToHandCards(const int *idxs, int cardCount) {
 }
 
 void BattleContext::chooseExhaustCards(const fixed_list<int, 10> &idxs) {
-    if (idxs.empty()) {
-        return;
+    auto indices = idxs;
+    std::sort(indices.begin(), indices.end());
+    std::vector<CardInstance> selected;
+    for (int index : indices) {
+        if (index < 0 || index >= cards.cardsInHand || (!selected.empty() && index == indices[selected.size()-1])) return;
+        selected.push_back(cards.hand[index]);
     }
-    auto listCopy = idxs;
-    std::sort(listCopy.begin(), listCopy.end(), [](auto a, auto b) { return b < a; });
-
-    // assume idxs is sorted in descending order
-    for (const auto handIdx : listCopy) {
-        auto c = cards.hand[handIdx];
-        cards.removeFromHandAtIdx(handIdx);
-        triggerAndMoveToExhaustPile(c);
-    }
+    // The live hand selector removes all selected cards before resolving the
+    // action. Its selected group then resolves in original hand order.
+    for (int i = indices.size()-1; i >= 0; --i) cards.removeFromHandAtIdx(indices[i]);
+    for (auto &card : selected) triggerAndMoveToExhaustPile(card);
 }
 
 void BattleContext::chooseGambleCards(const fixed_list<int, 10> &idxs) {
-    if (idxs.empty()) {
-        return;
+    auto indices = idxs;
+    std::sort(indices.begin(), indices.end());
+    std::vector<CardInstance> selected;
+    for (int index : indices) {
+        if (index < 0 || index >= cards.cardsInHand || (!selected.empty() && index == indices[selected.size()-1])) return;
+        selected.push_back(cards.hand[index]);
     }
-    auto listCopy = idxs;
-    std::sort(listCopy.begin(), listCopy.end(), [](auto a, auto b) { return b < a; });
-
-    // assume idxs is sorted in descending order
-    addToTop( Actions::DrawCards(listCopy.size()) );
-    for (const auto handIdx : listCopy) {
-        auto c = cards.hand[handIdx];
-        cards.removeFromHandAtIdx(handIdx);
-        cards.moveToDiscardPile(c);
-        onManualDiscard(c);
+    for (int i = indices.size()-1; i >= 0; --i) cards.removeFromHandAtIdx(indices[i]);
+    if (!selected.empty()) addToTop(Actions::DrawCards(selected.size()));
+    for (auto &card : selected) {
+        cards.moveToDiscardPile(card);
+        ++player.cardsDiscardedThisTurn;
+        onManualDiscard(card);
     }
 }
 
@@ -3252,7 +3288,7 @@ namespace {
     // Gameplay state compared by both operator== and equalForSearch. Excludes
     // the RNG streams, the debug/statistics fields, curCardQueueItem and the
     // card manager, which each caller compares itself.
-    bool sameGameplayScalars(const BattleContext &a, const BattleContext &b) {
+    bool sameGameplayScalars(const BattleContext &a, const BattleContext &b, bool publicKnowledge=false) {
         return a.seed == b.seed &&
                a.floorNum == b.floorNum &&
                a.encounter == b.encounter &&
@@ -3273,7 +3309,12 @@ namespace {
                a.potions == b.potions &&
                a.turn == b.turn &&
                a.player == b.player &&
-               a.monsters == b.monsters &&
+               [&] { auto am=a.monsters, bm=b.monsters;
+                   if(publicKnowledge && a.intentsHidden && b.intentsHidden) for(int i=0;i<5;++i) {
+                       if(am.arr[i].latentDamageMask) { am.arr[i].miscInfo=0; am.arr[i].latentDamageMaterialized=false; }
+                       if(bm.arr[i].latentDamageMask) { bm.arr[i].miscInfo=0; bm.arr[i].latentDamageMaterialized=false; }
+                   }
+                   return am==bm; }() &&
                a.miscBits == b.miscBits;
     }
 
@@ -3307,7 +3348,7 @@ bool BattleContext::operator==(const BattleContext &rhs) const {
 }
 
 bool BattleContext::equalForSearch(const BattleContext &rhs) const {
-    if (!sameGameplayScalars(*this, rhs)) {
+    if (!sameGameplayScalars(*this, rhs, true)) {
         return false;
     }
     if (!(curCardQueueItem == rhs.curCardQueueItem) && !(quietDecision(*this) && quietDecision(rhs))) {

@@ -12,6 +12,7 @@
 
 #include "constants/PlayerStatusEffects.h"
 #include "constants/MonsterStatusEffects.h"
+#include "constants/MonsterMoves.h"
 #include "constants/Cards.h"
 #include "constants/Potions.h"
 
@@ -134,6 +135,8 @@ namespace sts {
     X(AttackAllMonsterRecursive, DamageMatrix,matrix, int,timesRemaining) \
     X(TransmutationCardsInHand, Random,rng, int,count, bool,upgraded) \
     X(IncreasePlayerOrbSlots, int,count) \
+    X(BurnIncreaseAction) \
+    X(SetMonsterMove, int,monsterIdx, MMID,move) \
     X(HexaghostBurnIncrease)
 
 #define STS_ACT_NARG(...) STS_ACT_NARG_(__VA_ARGS__, STS_ACT_RSEQ())
@@ -229,6 +232,7 @@ namespace sts {
 
         static Action MonsterGainBlock(int idx, int amount);
         static Action RollMove(int monsterIdx);
+        static Action SetMonsterMove(int monsterIdx, MMID move);
         static Action ReactiveRollMove(); // for writhing mass
 
         static Action NoOpRollMove();
@@ -342,6 +346,7 @@ namespace sts {
         static Action WhirlwindAction(int baseDamage, int energy, bool useEnergy);
 
         static Action AttackAllMonsterRecursive(DamageMatrix matrix, int timesRemaining);
+        static Action BurnIncreaseAction();
     };
 
 }

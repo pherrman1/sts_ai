@@ -360,7 +360,7 @@ namespace sts {
             return;
         }
 
-        if (s == PS::DOUBLE_DAMAGE || s == PS::INTANGIBLE) { // todo this is definitely wrong
+        if (s == PS::DOUBLE_DAMAGE) {
             setJustApplied<s>(true);
         }
 

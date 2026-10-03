@@ -1,4 +1,5 @@
 #include "live_ooc_policy.h"
+#include "live_ooc_state.h"
 #include "ooc_v4_encoding.h"
 
 #include <algorithm>
@@ -206,13 +207,18 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     OocAdapterOptions options;
     options.sampleNoncombat = true;
     options.checkpointLeaves = true;
-    options.stopAtMapCheckpoint = true;
+    // Qualified public question-room history reconstructs the native chance
+    // counters; successors update those counters through normal transitions.
+    options.stopAtMapCheckpoint = !mapHistoryComplete_;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     const int observedEventRooms = currentActEventVisits;
-    dependencies.sampleHiddenCounters = [observedEventRooms](sts::GameContext &gc,
+    const bool questionHistoryComplete = questionHistoryComplete_;
+    const auto questionPosterior = questionChancePosterior_;
+    dependencies.sampleHiddenCounters = [observedEventRooms, questionHistoryComplete, questionPosterior](sts::GameContext &gc,
                                                                std::mt19937_64 &rng) {
-        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
+        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms, questionHistoryComplete);
+        sampleQuestionChancePosterior(gc,rng,questionPosterior);
     };
     // The deployed CTM was trained with the ordinary fixed search keep value.
     // Omitting this dependency falls back to zero, far outside that input domain.
@@ -341,9 +347,12 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         }
         LiveOocDecision result;
         result.policy = name();
+        result.trivialRootBypass = search.metrics.trivialRootBypasses != 0;
         result.tree = search.tree;
-        result.valueDistribution = search.rootValues.value_or(sts::search::OocValueDistribution{});
-        result.hpDistribution = search.rootHp.value_or(sts::search::OocHpDistribution{});
+        if (!result.trivialRootBypass) {
+            result.valueDistribution = search.rootValues.value_or(sts::search::OocValueDistribution{});
+            result.hpDistribution = search.rootHp.value_or(sts::search::OocHpDistribution{});
+        }
         result.rootHp = projected.curHp;
         result.rootMaxHp = projected.maxHp;
         result.rootFloor = projected.floorNum;
@@ -361,15 +370,15 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                 key = "ooc-live:v1:map:x=" + std::to_string(x) + ":y=" + std::to_string(y);
                 payload = nlohmann::json({{"type", "map_node"}, {"x", x}, {"y", y}}).dump();
             }
-            const double share = search.metrics.trivialRootBypasses ? 1.0 : search.metrics.simulations
+            const double share = search.metrics.simulations
                 ? static_cast<double>(root.visits) / search.metrics.simulations : 0.0;
             result.candidates.push_back({key, payload, candidate.primitive.bits, root.q,
                                          root.visits, share, root.prior});
             const auto values = search.actionValues.find(root.id);
-            result.candidates.back().valueDistribution = values == search.actionValues.end()
+            if (!result.trivialRootBypass) result.candidates.back().valueDistribution = values == search.actionValues.end()
                 ? sts::search::OocValueDistribution{} : values->second;
             const auto hp = search.actionHp.find(root.id);
-            result.candidates.back().hpDistribution = hp == search.actionHp.end()
+            if (!result.trivialRootBypass) result.candidates.back().hpDistribution = hp == search.actionHp.end()
                 ? sts::search::OocHpDistribution{} : hp->second;
         }
         if (result.tree) annotateOocTree(provider, *result.tree);

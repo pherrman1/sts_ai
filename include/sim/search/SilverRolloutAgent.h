@@ -24,6 +24,7 @@ namespace sts::search {
         SilverRolloutAgent();
         SilverRolloutAgent(bool randomizeMode, std::uint64_t seed, int act);
 
+        static void materializeHiddenIntents(BattleContext &bc);
         [[nodiscard]] int getIncomingDamage(const BattleContext &bc) const;
         Action chooseBattleCardPlay(const BattleContext &bc);
         Action chooseBattleCardSelect(const BattleContext &bc);

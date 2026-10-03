@@ -433,6 +433,7 @@ add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhe
 add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
+add_test(NAME persistent_latent_damage COMMAND $<TARGET_FILE:unit-test> persistent_latent_damage)
 add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
 add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)

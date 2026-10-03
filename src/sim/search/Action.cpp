@@ -149,10 +149,16 @@ bool isValidSingleCardSelectAction(const BattleContext &bc, const search::Action
             return a.getSelectIdx() >= 0 && a.getSelectIdx() < 4;
 
         case CardSelectTask::DISCOVERY:
-            return a.getSelectIdx() >= 0 && a.getSelectIdx() < 3;
+            return a.getSelectIdx() >= 0 && a.getSelectIdx() < (bc.cardSelectInfo.canPickZero ? 4 : 3);
+
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+            return a.getSelectIdx() < bc.cards.discardPile.size()
+                && (bc.cardSelectInfo.pickCount == 1 ? a.getTargetIdx() == 0
+                    : bc.cardSelectInfo.pickCount == 2 && a.getTargetIdx() > 0
+                        && a.getTargetIdx()-1 < bc.cards.discardPile.size()
+                        && a.getTargetIdx()-1 != a.getSelectIdx());
 
         case CardSelectTask::HOLOGRAM:
-        case CardSelectTask::LIQUID_MEMORIES_POTION:
         case CardSelectTask::HEADBUTT:
         case CardSelectTask::MEDITATE:
             return a.getSelectIdx() >= 0 && a.getSelectIdx() < bc.cards.discardPile.size();
@@ -163,8 +169,10 @@ bool isValidSingleCardSelectAction(const BattleContext &bc, const search::Action
             }
             return bc.cards.exhaustPile[a.getSelectIdx()].id != sts::CardId::EXHUME;
 
-        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::FORETHOUGHT:
+            return !bc.cardSelectInfo.canPickAnyNumber && a.getSelectIdx() >= 0 && a.getSelectIdx() < bc.cards.cardsInHand;
+
+        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::NIGHTMARE:
         case CardSelectTask::RECYCLE:
         case CardSelectTask::SETUP:
@@ -228,6 +236,9 @@ bool isValidMultiCardSelectAction(const BattleContext &bc, const search::Action 
             return true;
         }
 
+        case sts::CardSelectTask::FORETHOUGHT:
+            if (!bc.cardSelectInfo.canPickAnyNumber) return false;
+            [[fallthrough]];
         case sts::CardSelectTask::GAMBLE: {
             const auto selected = a.getSelectedIdxs();
             for (auto x : selected) {
@@ -360,13 +371,11 @@ void executeSingleCardSelectActionHelper(BattleContext &bc, search::Action a) {
             break;
 
         case CardSelectTask::CODEX:
-            if (idx != 3) { // idx 3 means skip
-                bc.chooseCodexCard(bc.cardSelectInfo.codexCards()[idx]);
-            }
+            bc.chooseCodexCard(idx == 3 ? CardId::INVALID : bc.cardSelectInfo.codexCards()[idx]);
             break;
 
         case CardSelectTask::DISCOVERY:
-            bc.chooseDiscoveryCard(bc.cardSelectInfo.discovery_Cards()[idx]);
+            if (idx != 3) bc.chooseDiscoveryCard(bc.cardSelectInfo.discovery_Cards()[idx]);
             break;
 
         case CardSelectTask::DUAL_WIELD:
@@ -393,9 +402,16 @@ void executeSingleCardSelectActionHelper(BattleContext &bc, search::Action a) {
             bc.chooseDiscardToHandCard(idx, false);
             break;
 
-        case CardSelectTask::LIQUID_MEMORIES_POTION:
+        case CardSelectTask::LIQUID_MEMORIES_POTION: {
+            const auto before = bc.cards.discardPile.size();
             bc.chooseDiscardToHandCard(idx, true);
+            if (bc.cardSelectInfo.pickCount == 2) {
+                int second = a.getTargetIdx()-1;
+                if (bc.cards.discardPile.size() < before && second > idx) --second;
+                bc.chooseDiscardToHandCard(second, true);
+            }
             break;
+        }
 
         case CardSelectTask::SECRET_TECHNIQUE:
             bc.chooseDrawToHandCards(&idx, 1);
@@ -427,6 +443,10 @@ void executeMultiCardSelectActionHelper(BattleContext &bc, search::Action a) {
 
         case sts::CardSelectTask::EXHAUST_MANY:
             bc.chooseExhaustCards(a.getSelectedIdxs());
+            break;
+
+        case sts::CardSelectTask::FORETHOUGHT:
+            bc.chooseForethoughtCards(a.getSelectedIdxs());
             break;
 
         case sts::CardSelectTask::GAMBLE:
@@ -565,7 +585,10 @@ static void pushMultiSelectActions(std::vector<search::Action> &actions,
             for (int idx : a.getSelectedIdxs()) {
                 key.push_back(cardIdentityKey(bc.cards.hand[idx]));
             }
-            std::sort(key.begin(), key.end());
+            if (bc.cardSelectInfo.cardSelectTask != CardSelectTask::FORETHOUGHT
+                    && bc.cardSelectInfo.cardSelectTask != CardSelectTask::GAMBLE
+                    && bc.cardSelectInfo.cardSelectTask != CardSelectTask::EXHAUST_MANY)
+                std::sort(key.begin(), key.end());
             if (!seenKeys.insert(std::move(key)).second) return;
         }
         actions.push_back({a});
@@ -610,7 +633,7 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
             break;
 
         case CardSelectTask::DISCOVERY:
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < (bc.cardSelectInfo.canPickZero ? 4 : 3); ++i) {
                 actions.push_back({Action(search::ActionType::SINGLE_CARD_SELECT, i)});
             }
             break;
@@ -627,8 +650,12 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
                                    [](const auto &c) { return c.getId() != CardId::EXHUME; });
             break;
 
-        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::FORETHOUGHT:
+            if (bc.cardSelectInfo.canPickAnyNumber) pushMultiSelectActions(actions, bc, false);
+            else setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
+            break;
+
+        case CardSelectTask::EXHAUST_ONE:
         case CardSelectTask::NIGHTMARE:
         case CardSelectTask::RECYCLE:
         case CardSelectTask::SETUP:
@@ -636,9 +663,16 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
             setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
             break;
 
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+            if (bc.cardSelectInfo.pickCount == 2) {
+                for (int first=0; first<bc.cards.discardPile.size(); ++first)
+                    for (int second=0; second<bc.cards.discardPile.size(); ++second)
+                        if (first != second) actions.emplace_back(ActionType::SINGLE_CARD_SELECT,first,second+1);
+            } else setupCardOptionsHelper(actions,bc.cards.discardPile.begin(),bc.cards.discardPile.end());
+            break;
+
         case CardSelectTask::HEADBUTT:
         case CardSelectTask::HOLOGRAM:
-        case CardSelectTask::LIQUID_MEMORIES_POTION:
         case CardSelectTask::MEDITATE:
             setupCardOptionsHelper(actions, bc.cards.discardPile.begin(), bc.cards.discardPile.end());
             break;

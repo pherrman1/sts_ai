@@ -174,6 +174,17 @@ class TestSemanticPipeline(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'boolean'):
             canonical_payload_suffix(malformed)
 
+    def test_append_only_discard_potion_identity(self):
+        typed = dict(type="reward",entity=dict(type="potion",value=7),cardGroup=[],
+                     groupOccurrence=0,occurrence=1,sapphirePaired=False)
+        action = dict(semanticActionIdx=0,semanticEffect=29,semanticSource=7,
+                      semanticKey="ooc:v1:effect=29:source=7"+canonical_payload_suffix(typed),
+                      semanticPayload=typed)
+        self.assertEqual(action_identity(action)[2:4], (29,7))
+        action["semanticEffect"] = 30
+        with self.assertRaisesRegex(ValueError,"unknown semantic effect"):
+            action_identity(action)
+
     def test_hash_binding(self):
         self.write()
         with self.path.open('a') as stream:

@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tools.live_game_runtime import CTM_NAME, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, RuntimeFailure, RuntimeManager, sha256
+from tools.live_game_runtime import CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, RuntimeFailure, RuntimeManager, sha256
 
 
 class LiveGameRuntimeTest(unittest.TestCase):
@@ -25,6 +25,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         root_models = self.repo / "models"
         root_models.mkdir(parents=True)
         (models / CTM_NAME).write_bytes(b"ctm")
+        (models / CTM_FAST_NAME).write_bytes(b"fast-ctm")
         (models / OOC_NAME).write_bytes(b"ooc")
         (root_models / OOC_WIN_NAME).write_bytes(b"win")
         (root_models / OOC_FLOOR_NAME).write_bytes(b"floor")
@@ -57,6 +58,60 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual(manifest["advisorSha256"], sha256(release / "one_combat_advisor"))
         self.assertNotIn("/.codex/worktrees/", json.dumps(self.manager.desired_config(manifest)))
         self.assertFalse(any(path.name.startswith(".current.") for path in self.manager.root.iterdir()))
+
+    def test_new_stack_pins_both_models_and_configures_fast_primary(self):
+        manifest = self.install()
+        self.assertEqual(manifest["ctmPrimary"], CTM_FAST_NAME)
+        self.assertIs(manifest["ctmActiveLizard"], True)
+        self.assertEqual(manifest["ctmFastSha256"], sha256(self.manager.current / "models" / CTM_FAST_NAME))
+        self.assertEqual(self.manager.desired_config(manifest)["ctmModel"],
+                         str(self.manager.current / "models" / CTM_FAST_NAME))
+        active = self.manager.record_active(Path(self.temp.name) / "missing.jar", os.getpid())
+        for key in CTM_STACK_KEYS:
+            self.assertEqual(active[key], manifest[key])
+
+    def test_legacy_single_model_manifest_remains_valid(self):
+        manifest = self.install()
+        for key in CTM_STACK_KEYS:
+            del manifest[key]
+        path = self.manager.current / "manifest.json"
+        path.write_text(json.dumps(manifest))
+        (self.manager.current / "models" / CTM_FAST_NAME).unlink()
+        self.assertEqual(self.manager.validate_release(), manifest)
+        self.assertEqual(self.manager.desired_config(manifest)["ctmModel"],
+                         str(self.manager.current / "models" / CTM_NAME))
+
+    def test_partial_stack_never_downgrades_to_legacy(self):
+        manifest = self.install()
+        path = self.manager.current / "manifest.json"
+        for missing in CTM_STACK_KEYS:
+            with self.subTest(missing=missing):
+                partial = {key: value for key, value in manifest.items() if key != missing}
+                path.write_text(json.dumps(partial))
+                with self.assertRaisesRegex(RuntimeFailure, "CTM stack manifest"):
+                    self.manager.validate_release()
+        for key, value in (("ctmActiveLizard", False), ("ctmPrimary", "../foreign"),
+                           ("ctmStackVersion", True), ("ctmFastSha256", "bad")):
+            path.write_text(json.dumps({**manifest, key: value}))
+            with self.assertRaisesRegex(RuntimeFailure, "CTM stack manifest"):
+                self.manager.validate_release()
+
+    def test_fast_model_corruption_and_cache_identity(self):
+        first = self.install()
+        fast = self.manager.current / "models" / CTM_FAST_NAME
+        fast.write_bytes(b"corrupt")
+        with self.assertRaisesRegex(RuntimeFailure, "hash mismatch"):
+            self.manager.validate_release()
+        (self.repo / "selfplay/models" / CTM_FAST_NAME).write_bytes(b"changed-fast")
+        second = self.install()
+        self.assertNotEqual(first["ctmFastSha256"], second["ctmFastSha256"])
+        self.assertNotEqual(first["runtimeId"], second["runtimeId"])
+
+    def test_missing_fast_model_fails_before_activation(self):
+        (self.repo / "selfplay/models" / CTM_FAST_NAME).unlink()
+        with self.assertRaisesRegex(RuntimeFailure, "tracked CTM fast model missing"):
+            self.install()
+        self.assertFalse(self.manager.current.exists())
 
     def test_repairs_stale_config_and_preserves_unrelated_keys(self):
         self.config.parent.mkdir(parents=True)
@@ -145,6 +200,40 @@ class LiveGameRuntimeTest(unittest.TestCase):
         status = self.manager.status()
         self.assertTrue(status["activeProcessMatches"])
         self.assertTrue(status["activeRuntimeMatchesCurrent"])
+
+    def test_active_override_does_not_claim_installed_stack_match(self):
+        self.install()
+        for overrides in ({"STS_CTM_MODEL": str(self.manager.current / "models" / CTM_NAME)},
+                          {"STS_CTM_ACTIVE_LIZARD": "0"},
+                          {"STS_CTM_BREW_FALLBACK_MODEL": "/missing/model"}):
+            with self.subTest(overrides=overrides), mock.patch.dict(os.environ, overrides):
+                active = self.manager.record_active(Path(self.temp.name) / "inspector.jar", os.getpid())
+                self.assertFalse(active["ctmMatchesInstalled"])
+                self.assertEqual(active["ctmEnvironmentOverrides"], overrides)
+                self.assertFalse(self.manager.status()["activeRuntimeMatchesCurrent"])
+
+    def test_launcher_primary_uses_manifest_and_preserves_explicit_overrides(self):
+        self.install()
+        source = (Path(__file__).parents[1] / "tools/live_game_start.sh").read_text()
+        block = source.split("  # ensure/install validated this manifest;", 1)[1].split(
+            '  if [[ -f "$runtime_root/current/models/v_win_trees.txt"', 1)[0]
+        for primary in (CTM_FAST_NAME, None):
+            manifest = self.manager.load_manifest()
+            if primary is None:
+                for key in CTM_STACK_KEYS:
+                    manifest.pop(key, None)
+            (self.manager.current / "manifest.json").write_text(json.dumps(manifest))
+            for override in (None, "/explicit/model", ""):
+                env = {key: value for key, value in os.environ.items() if key != "STS_CTM_MODEL"}
+                if override is not None:
+                    env["STS_CTM_MODEL"] = override
+                script = ('set -euo pipefail\nruntime_root=' + shlex.quote(str(self.manager.root))
+                          + '\n# ensure/install validated this manifest;' + block
+                          + '\nprintf "%s" "$STS_CTM_MODEL"\n')
+                result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, override if override is not None else
+                                 str(self.manager.current / "models" / (primary or CTM_NAME)))
 
     def test_build_advisor_packages_only_wrapper_selected_fallback_preset(self):
         fallback = self.repo / "build/linux-gcc-release/one_combat_advisor"
@@ -245,7 +334,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         source = (Path(__file__).parents[1] /
                   "mods/sts-model-inspector/src/main/java/stsmodelinspector/STSModelInspector.java").read_text()
         self.assertIn('environmentFirst(p, "STS_MODEL_INSPECTOR_ADVISOR", "advisor")', source)
-        self.assertIn('environmentFirst(p, "STS_CTM_MODEL", "ctmModel")', source)
+        self.assertIn('ctmPrimaryModel(p, System.getenv("STS_CTM_MODEL"))', source)
         self.assertIn('environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel")', source)
         self.assertIn('System.getenv("STS_MODEL_INSPECTOR_CONFIG")', source)
 

@@ -334,6 +334,14 @@ namespace sts::search {
     std::string nativeSilverSearchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge,
                            BattleContext &root) {
         root = live;
+        root.intentsHidden=knowledge.hiddenMonsterIntents;
+        if(!knowledge.hiddenMonsterIntents) {
+            // Visible constructor damage is an exact public scalar. Its raw
+            // simulation metadata is irrelevant to the canonical public root.
+            for(auto &m:root.monsters.arr) {
+                m.latentDamageMask=0; m.latentDamageMaterialized=false;
+            }
+        }
         const auto view = makeSilverDrawPileObservation(live, knowledge);
         if (!view.fullOrderObserved) {
             root.cards.drawPile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
@@ -348,9 +356,15 @@ namespace sts::search {
                 }
                 m.moveHistory[0] = static_cast<MMID>(knowledge.publicMonsterMoveHistory[i][0]);
                 m.moveHistory[1] = static_cast<MMID>(knowledge.publicMonsterMoveHistory[i][1]);
-                m.miscInfo = knowledge.publicMonsterMiscInfo[i];
+                m.occupantGeneration = knowledge.monsterOccupantGeneration[i];
+                m.latentDamageMask = knowledge.latentDamageMasks[i];
+                m.latentDamageMaterialized = false;
+                m.miscInfo = m.latentDamageMask ? 0 : knowledge.publicMonsterMiscInfo[i];
                 m.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
                 m.pendingRollInputs = knowledge.pendingHiddenIntentInputs[i];
+                m.pendingRollInputHistory = knowledge.pendingHiddenIntentInputHistory[i];
+                if (m.pendingRollInputHistory.size() == 1) m.pendingRollInputHistory.clear();
+                m.pendingAttackPredicates = knowledge.pendingAttackPredicates[i];
                 m.pendingDirectMoveChoice = 0;
                 if (knowledge.hasUnrepresentableHiddenIntent[i]) {
                     // Looter/Mugger choose their next move directly after a Mug.
