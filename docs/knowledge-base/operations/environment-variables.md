@@ -182,8 +182,8 @@ enable flag:
 
 ## Known limitations
 
-- `STS_SILVER_ADAPTIVE` has a mode-dependent default (ADR-0018, ADR-0020);
-  the exact precedence is in `apps/one_combat.cpp::main`.
+- `STS_SILVER_ADAPTIVE` and `STS_SILVER_LEARNED_STOP` have mode-dependent
+  defaults (ADR-0018, ADR-0020, ADR-0026); the exact precedence is in `apps/one_combat.cpp::main`.
 - This table intentionally omits legacy server-mode env vars consumed only by
   `v_server.py` (not `one_combat`).
 

@@ -27,6 +27,12 @@ It passed three frozen, independently reviewed tests against #199:
   `PROMOTE_learned`: +0.49 floors, 98.33% CI [+0.08, +0.91]; 80.3% vs 78.3%
   wins; 0.81× time per run.
 
+All three tests ran `bestbench` with explicit environment under
+`docs/experiments/evidence/silver_learned_stop/live_env.sh`, which enables the
+V4 strategic OOC token net and gate stack. A flag-free run uses the heuristic
+OOC stack instead. The combat budget policy is the same in both, but the gain
+under the heuristic OOC stack is **Inference**, not measured.
+
 Philipp chose to make it the default on 2026-10-03.
 
 ## Decision
@@ -68,6 +74,11 @@ environment. This happens only when none of the following is set:
   form a new series. The bestbench sidecar records `silverAdaptiveEnabled:
   false` and `silverLearnedStopModel: gbt-770201c31f7b`, and the banner says
   "learned stop".
+- `tools/seed_guard.sh` requires a seed count for `bestbench`, so a guarded
+  `bestbench` always passes a sims argument and runs flat Silver. The default
+  therefore reaches only flag-free `run`, `reprobench` and unguarded
+  `bestbench`, as under ADR-0018. Frozen benchmarks of the default must set
+  `STS_SILVER_LEARNED_STOP=1 STS_SILVER_ADAPTIVE=0` explicitly.
 - Frozen research contracts that pin `STS_SILVER_ADAPTIVE` or pass a sims
   argument are unaffected.
 - Retraining the stop model changes the default policy. A new model needs its
@@ -79,6 +90,7 @@ environment. This happens only when none of the following is set:
 - `docs/knowledge-base/architecture/combat-search.md`
 - `docs/knowledge-base/operations/environment-variables.md`
 - `docs/knowledge-base/evaluation/current-research.md`
+- `docs/knowledge-base/evaluation/current-baselines.md`
 
 ## Evidence
 
