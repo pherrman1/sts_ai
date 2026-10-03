@@ -248,6 +248,14 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    if (const auto &params = g_nativeSilverSearchParamOverride) {
+                        searcher->explorationParameter = params->exploration;
+                        searcher->explorationParameterChance = params->explorationChance;
+                        searcher->chanceWideningC = params->chanceWideningC;
+                        searcher->chanceWideningAlpha = params->chanceWideningAlpha;
+                        searcher->endTurnWideningC = params->endTurnWideningC;
+                        searcher->endTurnWideningAlpha = params->endTurnWideningAlpha;
+                    }
                 }
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
@@ -427,6 +435,7 @@ namespace sts::search {
     }
 
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
+    thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),

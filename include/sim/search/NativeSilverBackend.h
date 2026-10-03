@@ -2,6 +2,7 @@
 #define STS_LIGHTSPEED_NATIVESILVERBACKEND_H
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace sts {
@@ -41,6 +42,20 @@ namespace sts::search {
         std::int64_t simulations = 0;
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
+
+    // Silver's UCB exploration and chance-widening constants.
+    struct NativeSilverSearchParams {
+        double exploration = 25.0;
+        double explorationChance = 25.0;
+        double chanceWideningC = 3.7028;
+        double chanceWideningAlpha = 0.52389;
+        double endTurnWideningC = 3.7028;
+        double endTurnWideningAlpha = 0.52389;
+    };
+    // Research-only (#400 parameter screen): when set, applied to each combat's
+    // searcher of the current thread at creation. Unset everywhere else; no
+    // environment variable reaches it.
+    extern thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
 
     struct CombatKnowledgeState;
 

@@ -13520,3 +13520,51 @@ frozen hashes and verification logs. `ranking.json` SHA-256:
 
 **Knowledge impact:** maintained A3 ranking/parity semantics in
 `operations/ooc-label-pipeline.md`; this ledger corrects scientific evidence.
+
+## §369 — #400 Stage 1 Silver search-parameter heterogeneity screen (2026-10-02)
+
+**Question:** do combat contexts (room class × act) prefer different native
+Silver search constants strongly enough that choosing them per combat beats
+the single best global choice?
+
+**Protocol:** frozen plan
+[PLAN.md](evidence/silver_param_screen_400/PLAN.md), pre-registered before the
+cohort. Code `31de6a6d` (PR #402); independent review passed before analysis.
+`one_combat silverparams400gen` played seeds `40000000..40000127` with the
+exact-10k native Silver teacher and the V4-gated policy, then replayed every
+real fight from a detached pre-battle copy under five arms: control
+(exploration 25, widening alpha 0.52389), exploration 12.5 / 50, and widening
+alpha 0.40 / 0.65. The control arm had to reproduce the source fight.
+Discovery and confirmation halves were split by seed hash.
+
+**Integrity:** 128/128 valid sources and 3,380 fights. The control replay
+reproduced 3,361 of them; all 19 exclusions were Smoke Bomb escapes, and one
+more fight escaped only under c50. That leaves 3,360 valid paired fights
+(1,679 discovery / 1,681 confirmation). About 11.8 process CPU-hours on a
+4-CPU cloud container.
+
+**Result:** **`ADAPTIVE_SEARCH_PARAMS_NOT_JUSTIFIED`**.
+- On confirmation, per-cell choice minus the best global arm (wa065) was
+  **+0.0044 signedOutcome/fight, 95% CI [-0.0003, +0.0089]**. The upper bound
+  is below the frozen 0.01 materiality threshold.
+- No arm beat control globally: c12 -0.004 [-0.007, -0.001], c50 -0.005
+  [-0.008, -0.002], wa040 -0.002 [-0.005, +0.001], wa065 -0.001
+  [-0.004, +0.002].
+- Descriptive only: c12 helped Act-1 bosses on all data (+0.038
+  [+0.006, +0.071]), but on confirmation alone it was +0.027
+  [-0.014, +0.069]. c50 hurt Act-1 and Act-2 bosses.
+
+**Decision:** keep the current constants. Do not build the #400 Stage 2
+controller. Revisit only together with a learned Silver prior (the issue's
+factorial check) or with a new, sharper context hypothesis.
+
+**Evidence:** [packet](evidence/silver_param_screen_400/README.md).
+
+**ELI5:** We replayed about 3,400 fights five times each, changing only how
+adventurous Silver's search is. Picking the setting per fight type gained
+about a third of an HP per fight at most, too little to justify a controller,
+and the default setting was already as good as any alternative.
+
+**Knowledge impact:** `evaluation/current-research.md` (Silver root
+allocation section); the research-only mode is recorded here and in its
+evidence packet. No default changed.
