@@ -1,0 +1,202 @@
+{
+ "model_id": "gbt-b91dcfea64e1",
+ "train_seeds": [
+  41000000,
+  41000023
+ ],
+ "train_rows": 62118,
+ "train": {
+  "rule_199": {
+   "decisions": 10353,
+   "saving": 0.3986090988119386,
+   "disagreement": 0.011301072152999131,
+   "fresh": {
+    "decisions": 2364,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 7989,
+    "saving": 0.5165602703717611,
+    "disagreement": 0.01464513706346226
+   }
+  },
+  "learned_0.005": {
+   "decisions": 10353,
+   "saving": 0.4221964647928137,
+   "disagreement": 9.659036028204386e-05,
+   "fresh": {
+    "decisions": 2364,
+    "saving": 0.21831641285956005,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 7989,
+    "saving": 0.48252597321316815,
+    "disagreement": 0.00012517211165352359
+   },
+   "stops": 7545
+  },
+  "learned_0.01": {
+   "decisions": 10353,
+   "saving": 0.46501980102385787,
+   "disagreement": 9.659036028204386e-05,
+   "fresh": {
+    "decisions": 2364,
+    "saving": 0.2756873942470389,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 7989,
+    "saving": 0.5210445612717487,
+    "disagreement": 0.00012517211165352359
+   },
+   "stops": 7663
+  },
+  "learned_0.02": {
+   "decisions": 10353,
+   "saving": 0.5203998840915677,
+   "disagreement": 0.0002897710808461316,
+   "fresh": {
+    "decisions": 2364,
+    "saving": 0.33196912013536384,
+    "disagreement": 0.00042301184433164127
+   },
+   "retained": {
+    "decisions": 7989,
+    "saving": 0.5761578420327951,
+    "disagreement": 0.00025034422330704717
+   },
+   "stops": 8052
+  },
+  "learned_0.03": {
+   "decisions": 10353,
+   "saving": 0.5614073215493094,
+   "disagreement": 0.0005795421616922632,
+   "fresh": {
+    "decisions": 2364,
+    "saving": 0.3784369712351946,
+    "disagreement": 0.0008460236886632825
+   },
+   "retained": {
+    "decisions": 7989,
+    "saving": 0.615549505570159,
+    "disagreement": 0.0005006884466140943
+   },
+   "stops": 8400
+  },
+  "learned_0.05": {
+   "decisions": 10353,
+   "saving": 0.6125301844875881,
+   "disagreement": 0.0018352168453588333,
+   "fresh": {
+    "decisions": 2364,
+    "saving": 0.4452939932318105,
+    "disagreement": 0.002961082910321489
+   },
+   "retained": {
+    "decisions": 7989,
+    "saving": 0.6620165227187382,
+    "disagreement": 0.0015020653398422831
+   },
+   "stops": 8820
+  }
+ },
+ "other": {
+  "rule_199": {
+   "decisions": 3547,
+   "saving": 0.42478150549760363,
+   "disagreement": 0.00986749365661122,
+   "fresh": {
+    "decisions": 883,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 2664,
+    "saving": 0.5655780780780781,
+    "disagreement": 0.013138138138138139
+   }
+  },
+  "learned_0.005": {
+   "decisions": 3547,
+   "saving": 0.4407597970115591,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 883,
+    "saving": 0.21002265005662513,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 2664,
+    "saving": 0.5172391141141142,
+    "disagreement": 0.0
+   },
+   "stops": 2669
+  },
+  "learned_0.01": {
+   "decisions": 3547,
+   "saving": 0.4830067662813645,
+   "disagreement": 0.0008457851705666761,
+   "fresh": {
+    "decisions": 883,
+    "saving": 0.26370328425821066,
+    "disagreement": 0.0011325028312570782
+   },
+   "retained": {
+    "decisions": 2664,
+    "saving": 0.5556963213213213,
+    "disagreement": 0.0007507507507507507
+   },
+   "stops": 2702
+  },
+  "learned_0.02": {
+   "decisions": 3547,
+   "saving": 0.541725401747956,
+   "disagreement": 0.003665069072455596,
+   "fresh": {
+    "decisions": 883,
+    "saving": 0.32975651189127975,
+    "disagreement": 0.004530011325028313
+   },
+   "retained": {
+    "decisions": 2664,
+    "saving": 0.6119838588588589,
+    "disagreement": 0.0033783783783783786
+   },
+   "stops": 2850
+  },
+  "learned_0.03": {
+   "decisions": 3547,
+   "saving": 0.5807301945305892,
+   "disagreement": 0.007612066535100085,
+   "fresh": {
+    "decisions": 883,
+    "saving": 0.3790486976217441,
+    "disagreement": 0.01245753114382786
+   },
+   "retained": {
+    "decisions": 2664,
+    "saving": 0.6475788288288289,
+    "disagreement": 0.006006006006006006
+   },
+   "stops": 2971
+  },
+  "learned_0.05": {
+   "decisions": 3547,
+   "saving": 0.633478996334931,
+   "disagreement": 0.014096419509444602,
+   "fresh": {
+    "decisions": 883,
+    "saving": 0.45192525481313706,
+    "disagreement": 0.021517553793884484
+   },
+   "retained": {
+    "decisions": 2664,
+    "saving": 0.6936561561561562,
+    "disagreement": 0.011636636636636636
+   },
+   "stops": 3103
+  }
+ }
+}
