@@ -558,6 +558,26 @@ every unreachable card, other-class relic and other-class potion column
 (ledger-06 §373), so model inputs need no domain filter; the producer keeps the
 broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.
 
+Raw public-history families (relics seen but not owned, events seen,
+encounters fought), reconstructed from #334 `combat.csv`/`decision.csv` by
+`tools/analyze_vwin_history_397.py`, each made a 5-seed X1 ensemble slightly
+worse on VALIDATION (ledger-06 §374, preregistered `INCONCLUSIVE`); none is
+part of the feature contract. The decision sink leaves 3.2% of event visits
+without an `eventId` (first screen single-option or not enumerable).
+Rule-derived public probabilities, each checked against the V2.3.4 Java
+reference, also gave no held-out gain (ledger-06 §§375–376):
+`tools/analyze_vwin_derived_397.py` (potion drop, card rarity, next elite,
+next hallway encounter) and `tools/analyze_vwin_derived_rooms_397.py` (?-room
+outcome odds, next remove price). Adding a monotone duplicate of
+`potionChance` alone moved the 5-seed X1 ensemble by +0.0056 NLL, so feature
+changes below about ±0.005 are not resolvable on the #334 TRAIN/VALIDATION
+split. The derived-feature code is the reference if a later value model wants
+these public quantities.
+With the A3 M1 MLP instead of XGBoost (ledger-06 §378,
+`tools/analyze_vwin_mlp_397.py`) no family qualified either; relics seen but
+not owned improved every MLP seed but the gain came from a few sources, and
+the MLP stays well behind the XGBoost baseline.
+
 ### Mixed-producer v_win refresh corpus
 
 `tools/vwin_refresh_corpus.py` validates a read-only index of existing producer
