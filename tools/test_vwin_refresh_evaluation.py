@@ -17,6 +17,36 @@ class EvaluationTests(unittest.TestCase):
         self.assertAlmostEqual(result['ece'], expected)
         self.assertIsNone(predictive_metrics([0, 0], [.1, .2])['roc_auc'])
 
+    def test_constant_baseline_and_outcome_rmse(self):
+        for y in ([0, 0, 0, 1], [0, 0], [1, 1]):
+            rate = np.mean(y)
+            report = predictive_metrics(y, np.full(len(y), rate))
+            self.assertEqual(report['observed_row_win_rate'], rate)
+            self.assertEqual(report['constant_predictor_probability'], rate)
+            self.assertAlmostEqual(report['constant_baseline_nll'], report['nll'])
+            self.assertAlmostEqual(report['constant_baseline_brier'], rate * (1-rate))
+            self.assertAlmostEqual(report['constant_baseline_brier'], report['brier'])
+            self.assertAlmostEqual(report['outcome_probability_rmse'], np.sqrt(report['brier']))
+            self.assertIsNone(report['observed_unique_source_win_rate'])
+            self.assertEqual(report['unique_source_win_rate_status'], 'source_ids_unavailable')
+        self.assertAlmostEqual(predictive_metrics([0, 0, 0, 1], [.2] * 4)['constant_baseline_nll'],
+                               -.75 * np.log(.75) - .25 * np.log(.25))
+
+    def test_unique_source_rate_and_population_specific_baselines(self):
+        metadata = [dict(sourceSeed=s, act=a, branchId='source')
+                    for s, a in [(1, 1), (1, 1), (1, 2), (2, 2)]]
+        result = evaluate_predictions([0, 0, 0, 1], [.2] * 4, metadata)
+        self.assertEqual(result['overall']['observed_row_win_rate'], .25)
+        self.assertEqual(result['overall']['observed_unique_source_win_rate'], .5)
+        self.assertEqual(result['overall']['unique_source_win_rate_status'], 'constant_labels_per_source')
+        self.assertEqual(result['breakdowns']['act:1']['constant_predictor_probability'], 0.)
+        self.assertEqual(result['breakdowns']['act:2']['constant_predictor_probability'], .5)
+        mixed = evaluate_predictions([0, 1, 0, 1], [.2] * 4, metadata)
+        self.assertIsNone(mixed['overall']['observed_unique_source_win_rate'])
+        self.assertEqual(mixed['overall']['unique_source_win_rate_status'], 'labels_vary_within_source')
+        with self.assertRaisesRegex(ValueError, 'source seeds length'):
+            predictive_metrics([0, 1], [.2, .3], [1])
+
     def test_cluster_resamples_whole_sources_row_weighted(self):
         result = cluster_mean([0, 0, 0, 1], [7, 7, 7, 8], reps=2000)
         self.assertEqual(result['mean'], .25)
