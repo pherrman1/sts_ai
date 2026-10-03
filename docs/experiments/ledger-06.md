@@ -13644,3 +13644,50 @@ measure, so the honest answer is "no sign it matters, not proven tiny".
 **Knowledge impact:** information-boundary classification and public-safe
 allowlist in `operations/ooc-label-pipeline.md`; status in
 `evaluation/current-research.md`.
+
+## §372 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
+
+**Question:** of the 744 rich card columns (`d0..d371`, `u0..u371`), which
+card IDs can an Ironclad run actually hold, and does the #334 A3 TRAIN
+variance mask already exclude the rest?
+
+**Method:** `tools/analyze_rich_domain_397.py` derives the master-deck domain
+from the simulator's own tables and obtain sites (Ironclad Transform/
+TrulyRandom/Rarity pools, colorless pools, curse pool, every literal
+`deck.obtain`/`obtainCard` `CardId` in `src/`, the Note For Yourself default)
+and compares it with the frozen A3 `preflight.json` mask. No corpus rows,
+seeds, or builds. Prismatic Shard is compile-time disabled
+(`GameContext::disablePrismaticShard`), so `AnyColorTypeCardPool` is
+unreachable; in-combat generated cards never enter the master deck.
+
+**Result:** 127 reachable IDs of 371 enum values: 75 red (starters + 72-card
+class pool), 39 colorless (35-card pool + event cards Apparition, Bite,
+J.A.X., Ritual Dagger), 13 curses (10-card pool + Ascender's Bane, Curse of
+the Bell, and live-only Necronomicurse). Column 371 is beyond the 371-value
+enum and is always empty. **No TRAIN-variable `d`/`u` column is unreachable**
+(125 `d`, 114 `u` variable). Reachable but TRAIN-constant: `d` Ascender's Bane
+(asc 0 corpus) and Necronomicurse; `u` all 13 curses. Relics: no TRAIN-variable
+column belongs to the 16 other-class-only relics; potions: no TRAIN-variable
+column belongs to the 9 other-class potions.
+
+**Finding (simulator fidelity, not fixed here):** the Cursed Tome event grants
+Necronomicon, but the simulator never adds Necronomicurse (`grep
+NECRONOMICURSE src/` finds only `Card.cpp` transformability). The real game
+does, so the allowlist keeps it as `live_game_only`.
+
+**Decision:** per #397 Stage 1b, the TRAIN variance mask already removes every
+unreachable card, relic and potion column, so no model-input change is needed.
+The broad 1,017-column producer schema stays for compatibility. 490 of the 744
+card columns (and `d371`/`u371`) are structurally zero, which matters only if
+producer storage or feature preparation becomes a measured cost.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage1b-card-domain.json`
+(SHA-256 `934206626d71f8348955a6a3df2b1c96901c34a4b61d82473051bbba22702404`):
+reachable list with sources and every literal obtain site.
+
+**ELI5:** About two thirds of the card slots in the state are for cards an
+Ironclad can never own. The training pipeline already ignores them because
+they are always zero, so nothing needs changing.
+
+**Knowledge impact:** reachable-domain summary added to the rich `v_win`
+information-boundary section of `operations/ooc-label-pipeline.md`.
