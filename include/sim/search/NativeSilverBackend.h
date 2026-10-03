@@ -65,6 +65,14 @@ namespace sts::search {
     // STS_SILVER_STOP_TRACE=<csv> instead runs every checkpoint and writes the
     // features and leader of each one.
     bool nativeSilverLearnedStopEnabled();
+    // Research-only (learned-stop replay A/B): when set, replaces the
+    // process budget policy for the current thread's combats. Unset elsewhere.
+    struct NativeSilverBudgetOverride {
+        enum class Policy { Flat, Adaptive, LearnedStop };
+        Policy policy = Policy::Flat;
+        bool skipSingletonRoots = false;
+    };
+    extern thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 

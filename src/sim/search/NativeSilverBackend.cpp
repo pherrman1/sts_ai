@@ -295,6 +295,18 @@ namespace sts::search {
                 && gc.relics.getRelicValue(RelicId::OMAMORI) > 0;
             context.eliteRewards = gc.isEliteTriggerCombat();
 
+            // Budget policy: the process options, or this thread's override.
+            const auto &budgetOverride = g_nativeSilverBudgetOverride;
+            using BudgetPolicy = NativeSilverBudgetOverride::Policy;
+            const bool adaptive = budgetOverride ? budgetOverride->policy == BudgetPolicy::Adaptive
+                                                 : g_options.adaptive;
+            const bool learnedStop = budgetOverride ? budgetOverride->policy == BudgetPolicy::LearnedStop
+                                                    : g_options.learnedStop;
+            const bool stopTrace = !budgetOverride && !g_options.stopTrace.empty();
+            const bool skipSingletons = budgetOverride ? budgetOverride->skipSingletonRoots
+                : !g_options.exactRootBudgets && !g_options.searchSingletonRoots;
+            if (learnedStop && !nativeSilverStopModelTrained())
+                fail(gc, bc, "learned stopping requires a trained stop model");
             const std::int64_t flatBudget = isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
@@ -346,8 +358,8 @@ namespace sts::search {
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
                 ProfileScope profiling(*searcher);
-                const auto configured = g_options.learnedStop || !g_options.stopTrace.empty()
-                    ? kNativeSilverStopCheckpoints.back() : g_options.adaptive ? kAdaptiveTotal : flatBudget;
+                const auto configured = learnedStop || stopTrace
+                    ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
 
                 // Simulated actions must not reach the live knowledge tracker.
                 KnowledgeObserverSuspension searching;
@@ -355,12 +367,11 @@ namespace sts::search {
                 // A root with one legal action needs no search: commit it and keep
                 // the retained graph for the next reroot. Exact-root-budget
                 // contracts search every root.
-                const bool skipSearch = !g_options.exactRootBudgets && !g_options.searchSingletonRoots
-                    && searcher->prepareRootActions() == 1;
+                const bool skipSearch = skipSingletons && searcher->prepareRootActions() == 1;
                 try {
                     if (skipSearch) {
                         ++g_singletonSkips;
-                    } else if (g_options.learnedStop || !g_options.stopTrace.empty()) {
+                    } else if (learnedStop || stopTrace) {
                         // Checkpointed search. The trace runs every checkpoint
                         // (the full-budget leader is the label); the learned
                         // policy stops at the first strict lock or low risk.
@@ -375,7 +386,7 @@ namespace sts::search {
                             simulations = checkpoint;
                             const auto x = stopFeatures(*searcher, inheritedVisits, checkpoint, budget,
                                 bc.turn, gc.act, room, leaderEdge, streak);
-                            if (!g_options.stopTrace.empty()) {
+                            if (stopTrace) {
                                 traceStopCheckpoint(gc, combatId, decision, x, SilverSearcher::translateAction(
                                     searcher->bestAction(), searcher->rootSearchState(), bc));
                             } else if (checkpoint < budget && eligible && (x[kStopLock] > 0
@@ -384,7 +395,7 @@ namespace sts::search {
                                 break;
                             }
                         }
-                    } else if (g_options.adaptive) {
+                    } else if (adaptive) {
                         searcher->search(kAdaptiveInitial);
                         simulations = kAdaptiveInitial;
                         const bool retained = inheritedVisits > 0;
@@ -593,6 +604,7 @@ namespace sts::search {
     }
 
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
+    thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
 
     NativeSilverTotals nativeSilverTotals() {

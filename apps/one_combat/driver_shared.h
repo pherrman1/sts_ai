@@ -277,6 +277,10 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
 void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                              long long seedOffset, const std::string &teacherPath);
 const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &silverParamScreen400Arms();
+// Learned-stop replay A/B: every fight of each exact-10k source trajectory
+// replayed under flat 10k (control), #199 adaptive, and learned stopping.
+void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                         long long seedOffset, const std::string &teacherPath);
 int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();

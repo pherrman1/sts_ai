@@ -3684,6 +3684,18 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "silverstopreplaygen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat silverstopreplaygen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";
+            return 2;
+        }
+        try {
+            silverStopReplayGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                                std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "vwinrefreshpolicyspec") {
         if (argc != 3) return 2;
         try { return vwinRefreshPolicySpec(argv[2]); }

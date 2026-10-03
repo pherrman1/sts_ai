@@ -3429,6 +3429,127 @@ void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &o
               << controlMatches + controlMismatches << " -> " << outPrefix << "\n";
 }
 
+// Learned-stop replay A/B: replay every real fight of each exact-10k source
+// trajectory under the flat 10k control (must reproduce the source fight), the
+// production #199 retained-root adaptive policy, and the learned stopping
+// policy. Same state, agent and hidden future per arm; only the budget policy
+// differs. Adaptive and learned arms commit one-action roots unsearched, as
+// production does.
+void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                         long long seedOffset, const std::string &teacherPath) {
+    if (nSeeds < 1 || sims != 10000 || asc != 0 || seedOffset < 0)
+        throw std::runtime_error("silver stop replay: requires positive seed count, exact 10k, Ascension 0");
+    if (!search::nativeSilverStopModelTrained())
+        throw std::runtime_error("silver stop replay: the compiled stop model is untrained");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
+    vwinRequireProductionPolicy(teacher);
+    using Policy = search::NativeSilverBudgetOverride::Policy;
+    const std::vector<std::pair<std::string, search::NativeSilverBudgetOverride>> armDefs = {
+        {"control", {Policy::Flat, false}},
+        {"adaptive199", {Policy::Adaptive, true}},
+        {"learned", {Policy::LearnedStop, true}},
+    };
+    const std::string statesPath = outPrefix + ".states.csv";
+    const std::string armsPath = outPrefix + ".arms.csv";
+    const std::string manifestPath = outPrefix + ".manifest.json";
+    for (const auto &path : {statesPath, armsPath, manifestPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("silver stop replay: refusing to overwrite existing output " + path);
+    std::ofstream states(statesPath), arms(armsPath);
+    if (!states || !arms) throw std::runtime_error("silver stop replay: cannot open outputs");
+    states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
+              "sourceWon,sourceSignedOutcome,sourceTerminalHp,sourcePostAfterBattleHp,"
+              "sourceFirstActionBits,trajectoryValid\n";
+    arms << "stateId,sourceSeed,fightIdx,arm,outcome,won,signedOutcome,terminalHp,postAfterBattleHp,"
+            "potionsAfter,firstActionBits,cpuSeconds,simulations,decisions,valid,controlReplayMatch,"
+            "quarantineReason\n";
+    int completeSources = 0, validSources = 0, states_ = 0, controlMatches = 0, controlMismatches = 0;
+    int invalidArmRows = 0;
+    nlohmann::json perSeed = nlohmann::json::array();
+    for (int i = 0; i < nSeeds; ++i) {
+        VwinCollector capture;
+        capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
+        capture.captureBoss = true;
+        capture.captureAllCombatEntries = true;
+        const auto source = runCombatEvalGenSeed(capture.sourceSeed, sims, asc, teacher, false, &capture);
+        if (source.trajectoryComplete) ++completeSources;
+        if (source.trajectoryValid) ++validSources;
+        perSeed.push_back({{"seed", capture.sourceSeed}, {"complete", source.trajectoryComplete},
+                           {"valid", source.trajectoryValid}, {"fights", capture.bossEntries.size()},
+                           {"finalFloor", source.finalFloor},
+                           {"won", source.finalOutcome == GameOutcome::PLAYER_VICTORY}});
+        for (auto &entry : capture.bossEntries) {
+            const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
+            states << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ','
+                   << entry.act << ',' << entry.floor << ',' << entry.roomClass << ','
+                   << csvQuote(entry.encounter) << ',' << entry.pre->curHp << ',' << entry.pre->maxHp << ','
+                   << entry.pre->potionCount << ',' << entry.sourceWon << ','
+                   << std::setprecision(17) << entry.signedOutcome << ',' << entry.terminalHp << ','
+                   << entry.postAfterBattleHp << ',' << entry.firstActionBits << ','
+                   << (entry.sourceTrajectoryValid ? 1 : 0) << '\n';
+            ++states_;
+            bool controlMatch = false;
+            for (const auto &[armName, policy] : armDefs) {
+                struct BudgetScope {
+                    explicit BudgetScope(const search::NativeSilverBudgetOverride &p) {
+                        search::g_nativeSilverBudgetOverride = p;
+                    }
+                    ~BudgetScope() { search::g_nativeSilverBudgetOverride.reset(); }
+                } budgetScope(policy);
+                const auto result = vwinRunBossArm(entry, sims);
+                const bool isControl = armName == "control";
+                if (isControl) {
+                    controlMatch = result.valid && entry.labelValid && result.won == entry.sourceWon
+                        && result.terminalHp == entry.terminalHp
+                        && result.postAfterBattleHp == entry.postAfterBattleHp
+                        && result.firstActionBits == entry.firstActionBits;
+                    if (controlMatch) ++controlMatches; else ++controlMismatches;
+                }
+                const bool valid = result.valid && entry.sourceTrajectoryValid && controlMatch;
+                std::string reason = result.quarantineReason;
+                if (reason.empty() && !entry.sourceTrajectoryValid) reason = "source_trajectory_invalid";
+                if (reason.empty() && !controlMatch)
+                    reason = isControl ? "control_replay_mismatch" : "control_state_invalid";
+                if (!valid) ++invalidArmRows;
+                arms << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ',' << armName << ','
+                     << result.outcome << ',' << result.won << ',' << std::setprecision(17)
+                     << result.signedOutcome << ',' << result.terminalHp << ',' << result.postAfterBattleHp << ','
+                     << result.potionsAfter << ',' << result.firstActionBits << ',' << std::setprecision(9)
+                     << result.cpuSeconds << ',' << result.simulations << ',' << result.decisions << ','
+                     << (valid ? 1 : 0) << ',' << (isControl ? (controlMatch ? 1 : 0) : -1) << ','
+                     << csvQuote(reason) << '\n';
+            }
+        }
+        states.flush(); arms.flush();
+    }
+    states.close(); arms.close();
+    nlohmann::json manifest = {
+        {"schemaVersion", "silver_stop_replay_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"stopModel", search::nativeSilverStopModelId()},
+        {"stopThreshold", search::nativeSilverLearnedStopThreshold()},
+        {"adaptiveTopGap", search::nativeSilverAdaptiveTopGap()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"simulationsPerDecision", sims}, {"arms", {"control", "adaptive199", "learned"}},
+        {"sources", std::move(perSeed)},
+        {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
+            {"states", states_}, {"controlReplayMatches", controlMatches},
+            {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows}}},
+        {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)}}}
+    };
+    std::ofstream manifestOut(manifestPath);
+    if (!manifestOut) throw std::runtime_error("silver stop replay: cannot write manifest");
+    manifestOut << manifest.dump(2) << '\n';
+    std::cout << "silver stop replay teacher=" << teacher.id << " model=" << search::nativeSilverStopModelId()
+              << " sourceValid=" << validSources << '/' << nSeeds << " states=" << states_
+              << " control-replay=" << controlMatches << '/' << controlMatches + controlMismatches
+              << " -> " << outPrefix << "\n";
+}
+
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath){trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("wholecombatgen: cannot open output");f<<"sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,parasiteAdded,persistentMutationSummary\n";long long rows=0;int completed=0;
     #pragma omp parallel for schedule(dynamic)
     for(int s=0;s<nSeeds;++s){const std::string generated=runWholeCombatGenSeed(seedOffset+s,sims,asc,teacher);
