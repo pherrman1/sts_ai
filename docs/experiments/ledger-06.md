@@ -13862,3 +13862,69 @@ will cost at the next shop, did not help the model predict wins.
 
 **Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
 and `evaluation/current-research.md`.
+
+## §378 — #397 follow-up: history and derived families with the A3 M1 MLP (2026-10-03)
+
+**Question:** §§374–376 tested every family with XGBoost only, which is
+invariant to monotone rescaling. Does the frozen A3 M1 network gain from the
+same families?
+
+**Protocol:** preregistered in `tools/analyze_vwin_mlp_397.py` (committed
+`2ab1bd81` before training). `47203156` added `--skip-corpus-validation`
+(user request); it checks only the frozen index SHA-256 and builds the
+component view from the manifests instead of re-hashing every table already
+validated by §§371–376. Frozen M1 recipe (457→64→32 GELU MLP, AdamW lr 1e-4,
+weight decay 1e-3, dropout 0.1, TRAIN normalization, batch 8192, ≤60 epochs,
+patience 8 on VALIDATION, deterministic CUDA on the RTX 3060 Ti, 4 threads),
+seeds 0–2, 3-seed ensemble vs P (457 public-safe features). Arms: H1–H3
+(§374), F1–F6 (§§375–376), ALL (F1–F6), N0 (one standard-normal noise
+column, null control). `USEFUL` additionally requires beating N0's delta by
+0.002. Two earlier attempts were stopped by the user before any result
+(directories suffixed `-ABORTED-*`); a third was stopped after 21 of 37 fits
+(`-STOPPED-partial`), and the complete rerun reproduced those 21 lines
+exactly.
+
+**Gate:** the 461-feature A3 set at seed 0 reproduced the frozen M1 exactly
+(NLL `0.47669561245471703`, best epoch 10).
+
+**Results (3-seed ensemble, VALIDATION; P NLL 0.46886, still far behind the
+XGBoost P at 0.44338):**
+
+| arm | NLL | ΔNLL vs P [95% CI] | label |
+| --- | ---: | --- | --- |
+| N0 noise control | 0.47190 | +0.0030 [−0.0043, +0.0100] | NULL_CONTROL |
+| H1 relics seen not owned | 0.45721 | −0.0117 [−0.0356, +0.0126] | INCONCLUSIVE |
+| H2 events seen | 0.47943 | +0.0106 [−0.0042, +0.0284] | INCONCLUSIVE |
+| H3 encounters fought | 0.47569 | +0.0068 [−0.0083, +0.0234] | INCONCLUSIVE |
+| F1 potion drop | 0.47155 | +0.0027 [−0.0047, +0.0098] | INCONCLUSIVE |
+| F2 rarity block | 0.47463 | +0.0058 [−0.0014, +0.0138] | LOW_VALUE |
+| F3 next elite | 0.46980 | +0.0009 [−0.0060, +0.0083] | INCONCLUSIVE |
+| F4 next hallway | 0.47327 | +0.0044 [−0.0049, +0.0145] | INCONCLUSIVE |
+| F5 ?-room odds | 0.46916 | +0.0003 [−0.0053, +0.0059] | INCONCLUSIVE |
+| F6 remove price | 0.47184 | +0.0030 [−0.0046, +0.0104] | INCONCLUSIVE |
+| ALL F1–F6 | 0.47302 | +0.0042 [−0.0051, +0.0142] | INCONCLUSIVE |
+
+**H1 diagnostic (not preregistered):** every H1 seed (0.4640, 0.4568, 0.4642)
+beat every P seed (0.4731, 0.4702, 0.4771), and act 2 improved most (0.5251 →
+0.5034). The gain is concentrated, though: 43 of 77 VALIDATION sources
+improved, and the five most-improved sources account for 114% of the net
+log-loss reduction, hence the wide source-clustered CI. Even with H1 the MLP
+(0.4572) stays behind the plain XGBoost baseline (0.4434).
+
+**Verdict:** no family is `USEFUL` for the MLP either. H1 relic history is the
+only direction with a consistent seed-level gain and a plausible mechanism (the
+tree arm worsened instead); it is a candidate to re-test on a larger corpus or
+inside the replacement model, not a contract change.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/mlp-20261003-47203156-run2/`
+(`report.json` SHA-256 `f6f56f3fe27ac2463479380c814d525f1425bce1161afc596ee290391cde50fc`,
+`validation_predictions.npz` `a5d16bdef8e27e0f296b5511116cbd195043bab0d13f379d9d6053dd2ddc4a2b`).
+9:42 wall, 11.5 GB peak RSS.
+
+**ELI5:** We tried the extra features with the small neural network instead
+of trees. Knowing which relics it passed up seemed to help a little, but the
+gain came from a handful of runs, and the network is still worse than the
+tree model without any extras.
+
+**Knowledge impact:** summary added to `operations/ooc-label-pipeline.md` and
+`evaluation/current-research.md`.

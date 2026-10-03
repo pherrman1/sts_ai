@@ -573,6 +573,10 @@ outcome odds, next remove price). Adding a monotone duplicate of
 changes below about ±0.005 are not resolvable on the #334 TRAIN/VALIDATION
 split. The derived-feature code is the reference if a later value model wants
 these public quantities.
+With the A3 M1 MLP instead of XGBoost (ledger-06 §378,
+`tools/analyze_vwin_mlp_397.py`) no family qualified either; relics seen but
+not owned improved every MLP seed but the gain came from a few sources, and
+the MLP stays well behind the XGBoost baseline.
 
 ### Mixed-producer v_win refresh corpus
 

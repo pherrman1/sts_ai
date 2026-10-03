@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities (§§371, 373–376); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -2221,6 +2221,9 @@ next-hallway, ?-room and remove-price features gave no held-out gain (none
 adopted); a monotone duplicate column alone shifted the ensemble by +0.0056
 NLL, which bounds the method's resolution on this corpus. Event-eligibility
 distributions were not built.
+The A3 M1 MLP follow-up (§378) also found no qualifying family; relic
+history (relics seen but not owned) is the one direction worth re-testing on a
+larger corpus or in the replacement model.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from
