@@ -67,7 +67,7 @@ def frontier(risk, X, wrong, fresh):
     return out
 
 
-def make_variants():
+def make_variants(n_features=len(F)):
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.pipeline import make_pipeline
@@ -84,7 +84,7 @@ def make_variants():
                                                             random_state=0),
         "gbt_mono": lambda: HistGradientBoostingClassifier(max_iter=200, learning_rate=0.05, max_leaf_nodes=15,
                                                            min_samples_leaf=200, l2_regularization=1.0,
-                                                           monotonic_cst=mono, random_state=0),
+                                                           monotonic_cst=mono[:n_features], random_state=0),
         "logistic": lambda: make_pipeline(StandardScaler(), LogisticRegression(C=1.0, max_iter=2000)),
     }
 
@@ -94,29 +94,32 @@ def main():
     p.add_argument("trace", nargs="+")
     p.add_argument("--folds", type=int, default=5)
     p.add_argument("--variants", default="")
+    p.add_argument("--features", choices=["base", "all"], default="all",
+                   help="base: the 18 v1 features; all: plus the 4 trend features")
     p.add_argument("--out")
     args = p.parse_args()
     decisions = [d for d in sls.load_traces(args.trace).values() if d["rows"][0][1][IDX["legal_actions"]] > 1]
     X, wrong, seeds, fresh = arrays(decisions)
+    Xfit = X if args.features == "all" else X[:, :, :len(sls.BASE_FEATURES)]
     useeds = np.unique(seeds)
     fold_of_seed = {s: i % args.folds for i, s in enumerate(np.random.default_rng(0).permutation(useeds))}
     fold = np.array([fold_of_seed[s] for s in seeds])
-    report = {"decisions": int(len(X)), "seeds": int(len(useeds)), "folds": args.folds,
+    report = {"decisions": int(len(X)), "seeds": int(len(useeds)), "folds": args.folds, "features": args.features,
               "freshDecisions": int(fresh.sum())}
     used, err = rule_199(X, wrong, fresh)
     report["rule_199"] = {"saving": 1 - used.sum() / (sls.BMAX * len(X)), "disagreement": float(err.mean())}
     lock = np.ones(X.shape[:2])  # risk 1 everywhere: only locks stop
     report["lock_only"] = frontier(lock, X, wrong, fresh)["0.01"]
-    variants = make_variants()
+    variants = make_variants(Xfit.shape[2])
     chosen = [v for v in args.variants.split(",") if v] or list(variants)
     for name in chosen:
         risk = np.ones(X.shape[:2])
         for f in range(args.folds):
             tr, te = fold != f, fold == f
-            Xtr = X[tr][:, :-1].reshape(-1, len(F))
+            Xtr = Xfit[tr][:, :-1].reshape(-1, Xfit.shape[2])
             ytr = wrong[tr][:, :-1].reshape(-1)
             model = variants[name]().fit(Xtr, ytr)
-            Xte = X[te][:, :-1].reshape(-1, len(F))
+            Xte = Xfit[te][:, :-1].reshape(-1, Xfit.shape[2])
             risk[te, :-1] = model.predict_proba(Xte)[:, 1].reshape(-1, X.shape[1] - 1)
         report[name] = frontier(risk, X, wrong, fresh)
         print(name, json.dumps(report[name]), flush=True)
