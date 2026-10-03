@@ -66,7 +66,14 @@ namespace sts::search {
     // (STS_SILVER_LEARNED_STOP_THRESHOLD, default from the model).
     // STS_SILVER_STOP_TRACE=<csv> instead runs every checkpoint and writes the
     // features and leader of each one.
+    // STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1 (with learned stopping) runs
+    // boss rooms under the #199 retained-root rule instead.
+    // STS_SILVER_LEARNED_STOP_BOSS_MAX=<n> (> 10,000, with learned stopping)
+    // lets a boss root that reached 10,000 unstopped continue in 10,000 steps
+    // to n, until its leader is strictly locked against n.
     bool nativeSilverLearnedStopEnabled();
+    bool nativeSilverLearnedStopBossFallback();
+    std::int64_t nativeSilverLearnedStopBossMax();
     // Research-only (learned-stop replay A/B): when set, replaces the
     // process budget policy for the current thread's combats. Unset elsewhere.
     struct NativeSilverBudgetOverride {

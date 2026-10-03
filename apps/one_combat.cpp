@@ -1270,6 +1270,8 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         if (search::nativeSilverLearnedStopEnabled()) {
             meta.silverLearnedStopModel = search::nativeSilverStopModelId();
             meta.silverLearnedStopThreshold = search::nativeSilverLearnedStopThreshold();
+            meta.silverLearnedStopBossFallback = search::nativeSilverLearnedStopBossFallback();
+            meta.silverLearnedStopBossMax = search::nativeSilverLearnedStopBossMax();
         }
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
@@ -2794,7 +2796,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
-        {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""}, {"STS_SILVER_STOP_TRACE", ""},
+        {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
+        {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3272,7 +3275,11 @@ int main(int argc, char **argv) {
     search::installNativeSilverBackend();
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
-                  : search::nativeSilverLearnedStopEnabled() ? "; learned stop" : "; flat budget")
+                  : search::nativeSilverLearnedStopEnabled()
+                      ? (search::nativeSilverLearnedStopBossFallback() ? "; learned stop, bosses #199"
+                         : search::nativeSilverLearnedStopBossMax() > 0 ? "; learned stop, boss cap raised"
+                         : "; learned stop")
+                      : "; flat budget")
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";

@@ -41,6 +41,8 @@ namespace sts::search {
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
+            bool learnedStopBossFallback = false;   // boss rooms use the #199 rule
+            std::int64_t learnedStopBossMax = 0;    // > 10k: hard boss roots continue to this cap
             std::string stopTrace;
         };
         Options g_options;
@@ -314,10 +316,13 @@ namespace sts::search {
             // Budget policy: the process options, or this thread's override.
             const auto &budgetOverride = g_nativeSilverBudgetOverride;
             using BudgetPolicy = NativeSilverBudgetOverride::Policy;
+            // Learned stopping with the boss fallback runs boss rooms under #199.
+            const bool bossFallback = !budgetOverride && g_options.learnedStop
+                && g_options.learnedStopBossFallback && gc.curRoom == Room::BOSS;
             const bool adaptive = budgetOverride ? budgetOverride->policy == BudgetPolicy::Adaptive
-                                                 : g_options.adaptive;
+                                                 : g_options.adaptive || bossFallback;
             const bool learnedStop = budgetOverride ? budgetOverride->policy == BudgetPolicy::LearnedStop
-                                                    : g_options.learnedStop;
+                                                    : g_options.learnedStop && !bossFallback;
             const bool lockOnly = budgetOverride && budgetOverride->policy == BudgetPolicy::LockOnly;
             const bool stopTrace = !budgetOverride && !g_options.stopTrace.empty();
             const bool skipSingletons = budgetOverride ? budgetOverride->skipSingletonRoots
@@ -418,6 +423,22 @@ namespace sts::search {
                                     ++g_nativeSilverCombatStats.modelStops;
                                     break;
                                 }
+                            }
+                        }
+                        // Boss extension: a root that reached the 10k budget
+                        // unstopped continues in 10k steps to the boss cap,
+                        // until the leader is strictly locked against that cap.
+                        if (learnedStop && !budgetOverride && eligible && simulations == budget
+                            && gc.curRoom == Room::BOSS && g_options.learnedStopBossMax > budget) {
+                            const auto cap = g_options.learnedStopBossMax;
+                            while (simulations < cap) {
+                                StopTrack extension;
+                                const auto x = stopFeatures(*searcher, inheritedVisits, simulations, cap,
+                                    bc.turn, gc.act, room, extension);
+                                if (x[kStopLock] > 0) break;
+                                const auto next = std::min(simulations + budget, cap);
+                                searcher->search(next - simulations);
+                                simulations = next;
                             }
                         }
                     } else if (adaptive) {
@@ -560,6 +581,21 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP_THRESHOLD"); raw && *raw) {
             g_options.learnedStopThreshold = std::atof(raw);
         }
+        if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP_BOSS_FALLBACK")) {
+            g_options.learnedStopBossFallback = std::atoi(raw) != 0;
+            if (g_options.learnedStopBossFallback && !g_options.learnedStop)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP_BOSS_MAX"); raw && *raw) {
+            g_options.learnedStopBossMax = std::atoll(raw);
+            const auto base = kNativeSilverStopCheckpoints.back();
+            if (g_options.learnedStopBossMax != 0 && g_options.learnedStopBossMax <= base)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000");
+            if (g_options.learnedStopBossMax != 0 && !g_options.learnedStop)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX requires STS_SILVER_LEARNED_STOP=1");
+            if (g_options.learnedStopBossMax != 0 && g_options.learnedStopBossFallback)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX and _BOSS_FALLBACK are exclusive");
+        }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
         }
@@ -623,6 +659,14 @@ namespace sts::search {
 
     double nativeSilverLearnedStopThreshold() {
         return g_options.learnedStopThreshold;
+    }
+
+    bool nativeSilverLearnedStopBossFallback() {
+        return g_options.learnedStopBossFallback;
+    }
+
+    std::int64_t nativeSilverLearnedStopBossMax() {
+        return g_options.learnedStopBossMax;
     }
 
     std::int64_t nativeSilverLearnedStops() {
