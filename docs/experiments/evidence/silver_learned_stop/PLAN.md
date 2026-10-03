@@ -1,7 +1,11 @@
 # Learned Silver stopping: frozen A/B plan
 
-Status: frozen before any A/B seed ran. Code commit `ae7a6d79`; the plan
-commit follows it and changes no code.
+Status: frozen before any A/B seed ran. The code is commit `ae7a6d79`, and
+the plan commits that follow it change no code. The independent pre-run review
+returned GO WITH FIXES. Its three required fixes are applied here:
+- invalid-arm scoring;
+- the training env and full hashes;
+- the binary check in `launch.sh`.
 
 ## Question
 
@@ -28,10 +32,16 @@ fresh roots.
   equals the Python evaluation exactly.
 - Training data (`training/`):
   - Native exact-10k checkpoint traces (`STS_SILVER_STOP_TRACE`) for seeds
-    `41000000..41000031`, produced by code `78347c7e`, binary
-    `21b4128e…573c`.
+    `41000000..41000031`, produced by code `78347c7e`, binary sha256
+    `21b4128e22e9c75086f47f6b3ae81240160f541aceed94ec75649b28d1a3573c`, with
+    the environment in `training/env.sh` (identical to `live_env.sh`).
   - Fit on `41000000..41000023` (62,118 checkpoint rows).
   - The label is "checkpoint leader differs from the 10k leader".
+  - The fitted model is `training/model.json.gz` (sha256
+    `e83f6ab899eab0e29ba357a8fed9075753c04ad03006ff6bf40ece9aa7e0f5ad`).
+    The A/B binary has sha256
+    `2136c77015a1546d9b538bd9603dcee377dd468b6a9f71f3b21e0b875aefa119`, and
+    `launch.sh` checks it before any shard starts.
 - Threshold rule: the largest value in {0.005, 0.01, 0.02, 0.03, 0.05} whose
   disagreement on the 8 held-out seeds `41000024..41000031` does not exceed
   #199's. This rule was decided before the held-out results were seen but was
@@ -62,15 +72,21 @@ Held-out offline result for multi-action decisions:
   one CPU each, all through `tools/seed_guard.sh`. The smoke on seed
   `42009000` (not pooled) reproduced 25/25 control fights at about
   120 CPU-seconds per seed.
-- A fight counts only when all three arms are valid and the control replay
-  matched.
+- A fight counts when the control replay matched. If the adaptive199 or
+  learned result in such a fight is invalid (escape, turn cap, non-death
+  loss), that arm scores signedOutcome −1 and won 0. The analysis reports
+  per-arm invalid counts.
 - Analysis: `tools/analyze_silver_stop_replay.py`. The self-test is in ctest.
   - S = 1 − Σ simulations(learned) / Σ simulations(adaptive199).
   - D = mean per-fight `signedOutcome(learned) − signedOutcome(adaptive199)`,
     with a 95% source-seed-clustered bootstrap (2,000 replicates, seed 0).
 - Verdict:
-  - `LEARNED_STOP_PASS`: S ≥ 0.10 and the CI lower bound of D is above
-    −0.005 (about 0.4 HP at 80 max HP per fight).
+  - `LEARNED_STOP_PASS`: all three of the following hold.
+    - S ≥ 0.10.
+    - The CI lower bound of D is above −0.005 (about 0.4 HP at 80 max HP per
+      fight).
+    - There are no more learned-only invalid fights than adaptive199-only
+      invalid fights.
   - `LEARNED_STOP_COMPUTE_FAIL`: S < 0.10.
   - `LEARNED_STOP_QUALITY_FAIL`: otherwise.
 - Reported, not part of the verdict:

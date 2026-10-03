@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Pre-registered analysis of the learned-stop replay A/B (silverstopreplaygen).
 
-Input: shard prefixes (PREFIX.arms.csv). A fight counts only when the control
-replay matched the source fight and all three arms are valid.
+Input: shard prefixes (PREFIX.arms.csv). A fight counts when the control
+replay matched the source fight. An invalid adaptive199 or learned result in
+such a fight (escape, turn cap, non-death loss) scores signedOutcome -1 and
+won 0 for that arm; per-arm invalid counts are reported.
 
 Primary (learned vs adaptive199, the production #199 policy):
   S = 1 - sum(simulations learned) / sum(simulations adaptive199)
   D = mean over fights of signedOutcome(learned) - signedOutcome(adaptive199),
       95% source-seed-clustered bootstrap (2,000 replicates, seed 0)
 Verdict:
-  LEARNED_STOP_PASS           S >= 0.10 and CI lower bound of D > -0.005
+  LEARNED_STOP_PASS           S >= 0.10, CI lower bound of D > -0.005, and no
+                              more learned-only than adaptive199-only invalid
+                              fights
   LEARNED_STOP_COMPUTE_FAIL   S < 0.10
   LEARNED_STOP_QUALITY_FAIL   otherwise (non-inferiority not shown)
 Secondary, descriptive: every arm against control (flat 10k), win rates,
@@ -39,22 +43,33 @@ def load(prefixes):
             for row in csv.DictReader(f):
                 rooms[row["stateId"]] = row["roomClass"]
     valid, excluded = [], defaultdict(int)
+    arm_invalid = {a: 0 for a in ARMS[1:]}
+    only_invalid = {a: 0 for a in ARMS[1:]}
     for sid, arms in fights.items():
         if set(arms) != set(ARMS):
             excluded["missing_arm"] += 1
             continue
-        if any(arms[a]["valid"] != "1" for a in ARMS):
-            reasons = sorted({arms[a]["quarantineReason"] for a in ARMS if arms[a]["valid"] != "1"})
-            excluded["|".join(reasons)] += 1
+        # The fight counts when the control replay matched; an invalid
+        # adaptive199/learned result (escape, turn cap, non-death loss) is that
+        # arm's own outcome and scores as a loss with signedOutcome -1.
+        if arms["control"]["valid"] != "1":
+            excluded[arms["control"]["quarantineReason"] or "control_invalid"] += 1
             continue
-        valid.append({
-            "seed": int(arms["control"]["sourceSeed"]), "room": rooms.get(sid, "?"),
-            **{f"q_{a}": float(arms[a]["signedOutcome"]) for a in ARMS},
-            **{f"won_{a}": int(arms[a]["won"]) for a in ARMS},
-            **{f"sims_{a}": int(arms[a]["simulations"]) for a in ARMS},
-            **{f"cpu_{a}": float(arms[a]["cpuSeconds"]) for a in ARMS},
-            **{f"pot_{a}": int(arms[a]["potionsAfter"]) for a in ARMS},
-        })
+        bad = {a: arms[a]["valid"] != "1" for a in ARMS[1:]}
+        for a in ARMS[1:]:
+            arm_invalid[a] += bad[a]
+            only_invalid[a] += bad[a] and not any(bad[b] for b in ARMS[1:] if b != a)
+        row = {"seed": int(arms["control"]["sourceSeed"]), "room": rooms.get(sid, "?")}
+        for a in ARMS:
+            invalid = a != "control" and bad[a]
+            row[f"q_{a}"] = -1.0 if invalid else float(arms[a]["signedOutcome"])
+            row[f"won_{a}"] = 0 if invalid else int(arms[a]["won"])
+            row[f"sims_{a}"] = int(arms[a]["simulations"])
+            row[f"cpu_{a}"] = float(arms[a]["cpuSeconds"])
+            row[f"pot_{a}"] = int(arms[a]["potionsAfter"])
+        valid.append(row)
+    excluded["armInvalid"] = arm_invalid
+    excluded["armOnlyInvalid"] = only_invalid
     return valid, dict(excluded), len(fights)
 
 
@@ -96,8 +111,10 @@ def analyze(prefixes):
     primary = compare(rows, "learned", "adaptive199")
     primary["simulationSavingCI"] = bootstrap(rows, lambda x: saving(x, "learned", "adaptive199"))
     s, lo = primary["simulationSaving"], primary["signedOutcomeCI"][0]
+    only = excluded["armOnlyInvalid"]
     verdict = ("LEARNED_STOP_COMPUTE_FAIL" if s < MIN_SAVING
-               else "LEARNED_STOP_PASS" if lo > MARGIN else "LEARNED_STOP_QUALITY_FAIL")
+               else "LEARNED_STOP_PASS" if lo > MARGIN and only["learned"] <= only["adaptive199"]
+               else "LEARNED_STOP_QUALITY_FAIL")
     secondary = {f"{a}_vs_control": compare(rows, a, "control") for a in ("adaptive199", "learned")}
     by_room = {}
     for room in sorted({r["room"] for r in rows}):
@@ -127,6 +144,21 @@ def selftest():
     out = analyze([prefix])
     assert out["validFights"] == 40 and abs(out["primary"]["simulationSaving"] - 1 / 3) < 1e-12
     assert abs(out["primary"]["signedOutcome"] + 0.0005) < 1e-12 and out["verdict"] == "LEARNED_STOP_PASS"
+    # One learned-only escape: scored -1 and PASS becomes impossible.
+    prefix2 = os.path.join(d, "u")
+    with open(prefix2 + ".states.csv", "w") as f:
+        f.write("stateId,roomClass\n")
+        for i in range(40):
+            f.write(f"s{i},NORMAL\n")
+    with open(prefix2 + ".arms.csv", "w") as f:
+        f.write("stateId,sourceSeed,arm,won,signedOutcome,potionsAfter,cpuSeconds,simulations,valid,quarantineReason\n")
+        for i in range(40):
+            for arm, sims in (("control", 100), ("adaptive199", 60), ("learned", 40)):
+                bad = arm == "learned" and i == 0
+                f.write(f"s{i},{i % 10},{arm},{-1 if bad else 1},0.5,1,1.0,{sims},{0 if bad else 1},{'escape' if bad else ''}\n")
+    out = analyze([prefix2])
+    assert out["validFights"] == 40 and out["excluded"]["armOnlyInvalid"] == {"adaptive199": 0, "learned": 1}
+    assert abs(out["primary"]["signedOutcome"] + 1.5 / 40) < 1e-12 and out["verdict"] == "LEARNED_STOP_QUALITY_FAIL"
     print("selftest ok")
 
 

@@ -8,6 +8,7 @@ BIN=/tmp/claude-0/ls/frozen-ae7a6d79/one_combat
 EV=docs/experiments/evidence/silver_learned_stop
 OUT=/tmp/claude-0/ls/run
 mkdir -p $OUT
+echo "2136c77015a1546d9b538bd9603dcee377dd468b6a9f71f3b21e0b875aefa119  $BIN" | sha256sum -c - || exit 1
 export STS_EXECUTABLE_GIT_SHA=ae7a6d79ed6b98963d6d5467686dcaec4815ef62
 for k in 0 1 2 3; do
   (
