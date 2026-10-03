@@ -13691,3 +13691,66 @@ they are always zero, so nothing needs changing.
 
 **Knowledge impact:** reachable-domain summary added to the rich `v_win`
 information-boundary section of `operations/ooc-label-pipeline.md`.
+
+## §373 — #397 Stage 2 public-history families on the public-safe `v_win` baseline (2026-10-03)
+
+**Question:** do raw public-history features (relics seen but not owned,
+events seen, encounters fought) improve held-out run-win prediction beyond
+the 457-feature public-safe baseline (§371)?
+
+**Protocol:** preregistered in `tools/analyze_vwin_history_397.py` (committed
+`69e17093` before any arm was trained; `a095ca79` fixed a crash on purchased
+shop slots with null relic ids, found while loading history and before any
+training; the crashed attempt's empty output directory is kept with suffix
+`-FAILED-null-relic`). Frozen #334 corpus (SHA-256 `ca4b6e2b…cd87f`),
+TRAIN 333,367 / VALIDATION 68,903 MAP rows, no gameplay seeds, no C++ build,
+no TEST rows. History is rebuilt per trajectory from `combat.csv` encounters,
+`decision.csv` event ids and offered relics (shop, boss relic, rewards);
+branches inherit the source prefix before their deviating screen; a MAP row at
+floor F sees items at floor ≤ F. New columns kept only if TRAIN-variable:
+H1 128 `relicSeenNotOwned_*`, H2 47 `eventSeen_*`, H3 58 `fought_*`. Frozen
+A3 X1 recipe, XGBoost seeds 0–4, arm prediction = 5-seed mean probability.
+Rule: `USEFUL` if ensemble ΔNLL ≤ −0.002 and CI upper < 0; `LOW_VALUE` if CI
+lower > −0.002; else `INCONCLUSIVE`.
+
+**Coverage:** 15,067 trajectories (14,632 branches), 0 ambiguous branch fight
+prefixes, every MAP row joined. Event identities are incomplete: the decision
+sink skips single-option screens, so 15,462 singleton event screens have no
+recorded `eventId` against 57,405 captured event screens.
+
+**Results (5-seed ensemble, VALIDATION):**
+
+| arm | features | NLL | Brier | AUC | ECE | pooled sibling acc. |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| P (public-safe) | 457 | 0.44338 | 0.14534 | 0.8062 | 0.0481 | 0.570 [0.522, 0.617] |
+| P+H1 relics | 585 | 0.45094 | 0.14842 | 0.8002 | 0.0571 | 0.557 [0.509, 0.605] |
+| P+H2 events | 504 | 0.44635 | 0.14595 | 0.8015 | 0.0470 | 0.540 [0.490, 0.590] |
+| P+H3 encounters | 515 | 0.44995 | 0.14747 | 0.7902 | 0.0489 | 0.563 [0.522, 0.604] |
+
+Ensemble ΔNLL vs P [source-clustered 95% CI]: H1 +0.00756 [−0.00267,
++0.01971]; H2 +0.00297 [−0.00430, +0.01093]; H3 +0.00657 [−0.00677,
++0.02197]. Per-seed paired ΔNLL: H1 all five positive (+0.0017…+0.0117);
+H2 four of five positive; H3 four of five positive.
+
+**Verdict:** `H1/H2/H3_HISTORY_INCONCLUSIVE` under the preregistered rule.
+Descriptively every family made the ensemble worse on NLL, Brier and AUC, and
+no CI reaches the −0.002 usefulness threshold on its favorable side by more
+than ~0.005. Per #397's decision rule (add a family only with clear held-out
+signal) none is added. H4/Stage 2b–2d derived public probabilities remain a
+separate question; raw history shows no signal for them to compress.
+
+**Side observation:** the 5-seed ensemble of P (0.44338) beats every single P
+seed (0.43996–0.44959, mean 0.44664), which supports seed-averaging in #334.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage2-history-20261003-a095ca79/`
+(`report.json` SHA-256 `b38f681be2003a1c4af9339140ab19b94a16f3f7935eb92a41d29b9b8f666dce`,
+`validation_predictions.npz` `ed6439992c228d2cc7bd462fddeefaf1fed3629d8dd240a8775ca965c9bcf4ad`,
+sibling logs). 20:52 wall, 2,153 CPU-s, 8.1 GB peak RSS.
+
+**ELI5:** We told the model which relics it had passed up, which events it had
+already seen, and which monsters it had already fought. On runs it had never
+seen, it predicted wins slightly worse with each of these, not better.
+
+**Knowledge impact:** history-family outcome in the rich `v_win`
+information-boundary section of `operations/ooc-label-pipeline.md` and in
+`evaluation/current-research.md`.
