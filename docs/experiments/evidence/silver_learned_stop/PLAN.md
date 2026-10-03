@@ -1,6 +1,8 @@
 # Learned Silver stopping: frozen A/B plan
 
-Status: frozen before any A/B seed ran. The code is commit `ae7a6d79`, and
+Status: frozen before any A/B seed ran, then run unchanged. Result:
+`LEARNED_STOP_PASS`, see [README.md](README.md) and ledger-06 §370.
+ The code is commit `ae7a6d79`, and
 the plan commits that follow it change no code. The independent pre-run review
 returned GO WITH FIXES. Its three required fixes are applied here:
 - invalid-arm scoring;

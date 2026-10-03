@@ -13568,3 +13568,84 @@ and the default setting was already as good as any alternative.
 **Knowledge impact:** `evaluation/current-research.md` (Silver root
 allocation section); the research-only mode is recorded here and in its
 evidence packet. No default changed.
+
+## §370 — Learned Silver stopping: fight-replay and live A/B against #199 (2026-10-03)
+
+**Question:** can a learned stop/continue model at fixed search checkpoints
+save native Silver compute against the production #199 rule without making
+fights worse? This revisits §285, where a logistic model was rejected because
+it almost never stopped.
+
+**Policy:** `STS_SILVER_LEARNED_STOP=1` (research-only, default off).
+- Each multi-action root is searched to the checkpoints
+  250/500/1k/2k/4k/8k/10k new simulations.
+- Search stops at the first strict visit lock (`N1 − N2 > 10k − used`) or
+  when the risk from model `gbt-b91dcfea64e1` is below 0.03.
+- The model is a 300-tree histogram GBT over 18 root features, compiled into
+  the binary.
+- It was trained on native exact-10k checkpoint traces
+  (`STS_SILVER_STOP_TRACE`), seeds `41000000..41000023`. The threshold was
+  chosen on `41000024..41000031`. Held-out offline result: 58.1% saving
+  against flat 10k at 0.76% disagreement with the 10k action; #199 gets
+  42.5% at 0.99%.
+
+**Protocol:** frozen [PLAN.md](evidence/silver_learned_stop/PLAN.md).
+- Code `ae7a6d79` (PR #403). The independent pre-run review returned GO WITH
+  FIXES, and the fixes were applied in plan commit `885987d`.
+- Part A (primary): `one_combat silverstopreplaygen` on seeds
+  `42000000..42000095`. Every real fight of exact-10k source runs was replayed
+  under three arms: flat 10k (control, which must reproduce the source),
+  #199, and learned stopping.
+- Gate:
+  - S = 1 − sims(learned)/sims(#199) ≥ 10%;
+  - the 95% seed-clustered CI lower bound of the per-fight signedOutcome
+    difference above −0.005;
+  - no more learned-only than #199-only invalid fights.
+- Part B (descriptive): 128 paired `bestbench` runs on seeds
+  `43000000..43000127`, production default against learned stopping.
+
+**Integrity:** 96/96 valid sources and 2,445 fights. The control replay
+reproduced 2,437; all 8 exclusions were Smoke Bomb escapes. No arm had an
+invalid result in a counted fight. All shards exited 0. One launch was stopped
+by the operator about 40 seconds in, before any seed finished (waiter timeout
+risk), and restarted unchanged. About 3.5 replay CPU-hours plus 1.5 live
+CPU-hours.
+
+**Result:** **`LEARNED_STOP_PASS`**.
+- Learned − #199: **+0.0019 signedOutcome/fight, 95% CI [−0.0009, +0.0048]**,
+  with **19.4% fewer simulations** [18.3, 20.5] and a CPU ratio of 0.80.
+- Against flat 10k:
+  - #199: −0.0029 [−0.0054, −0.0004] at a 46.4% saving;
+  - learned: −0.0010 [−0.0040, +0.0021] at a 56.8% saving.
+- No room class showed a negative point estimate.
+- Live, descriptive (#199 → learned):
+  - wins 70.3% → 75.8%, +5.5 pp [−3.1, +14.1], with 13 #199-only and 20
+    learned-only wins;
+  - floor −1.1 [−2.4, +0.0];
+  - ending HP +1.8;
+  - CPU-seconds per run −23%.
+
+**Review notes, not blocking:**
+- Offline, the strict lock alone saves 38.2% with zero disagreements. The
+  model adds about 20 pp and causes all held-out disagreements. The runtime
+  counter does not split lock and model stops.
+- Fresh-root held-out disagreement was 1.25%; #199 never stops fresh roots.
+- Train vs held-out disagreement (0.06% vs 0.76%) indicates overfitting.
+- **Inference:** P(PASS | true D = 0) is about 80%. This is non-inferiority
+  evidence, not superiority.
+
+**Decision:** the learned stopper passes its pre-registered gate as a
+compute-saving candidate: about 19% fewer simulations than #199 with no
+detectable fight-quality loss. It stays default-off. Promotion to the
+production default is a separate decision, which should come with a lock-only
+control arm and a fresh confirmation.
+
+**Evidence:** [packet](evidence/silver_learned_stop/README.md).
+
+**ELI5:** At a few points during each search, a small learned model checks
+whether more thinking would still change the move, and stops if not. Over
+about 2,400 replayed fights it played as well as the current rule while
+thinking about a fifth less.
+
+**Knowledge impact:** `evaluation/current-research.md` (retained-root adaptive
+section) and `operations/environment-variables.md`. No default changed.
