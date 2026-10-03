@@ -59,6 +59,30 @@ class MLPAuditError(ValueError):
     pass
 
 
+def fast_corpus(index_path):
+    """Index/manifest-only corpus view, skipping the full strict table validation.
+
+    The frozen index SHA-256 is still checked by `Dataset`; this only skips
+    re-hashing every component table, which earlier #397 runs already did on
+    the same immutable corpus.
+    """
+    from tools.vwin_refresh_corpus import Component, Corpus
+    index_path = Path(index_path).resolve()
+    index = json.loads(index_path.read_text())
+    components = []
+    for entry in index["components"]:
+        path = (index_path.parent / entry["manifest"]).resolve()
+        manifest = json.loads(path.read_text())
+        spec = manifest["seedSpec"]
+        components.append(Component(path, entry["sha256"], None,
+                                     tuple(range(spec["start"], spec["start"] + spec["count"])),
+                                     tuple(sorted(manifest["outputs"].items()))))
+    seeds = tuple(s for c in components for s in c.source_seeds)
+    if sorted(seeds) != sorted(index["sourceSeeds"]):
+        raise MLPAuditError("fast corpus view: source seed cohort mismatch")
+    return Corpus(index_path, tuple(components), tuple(index["sourceSeeds"]))
+
+
 def label(arm, delta, null_mean):
     mean, (lo, hi) = delta["mean"], delta["ci95"]
     if mean <= -MATERIAL_NLL and hi < 0 and mean <= null_mean - MATERIAL_NLL:
@@ -77,12 +101,15 @@ def write_json(path, value):
         f.write("\n")
 
 
-def run(index, a3_run, output, threads, device):
+def run(index, a3_run, output, threads, device, skip_validation=False):
     from tools.vwin_refresh_training import (_configure_cuda_determinism, _fit_mlp, _inputs,
                                              train_normalization, versions, runtime_fingerprint)
     _configure_cuda_determinism(device)
     import torch
+    import tools.vwin_refresh_dataset as dataset_module
     from tools.vwin_refresh_dataset import validated_dataset
+    if skip_validation:
+        dataset_module.validate_corpus = fast_corpus
     from tools.vwin_refresh_evaluation import evaluate_predictions, sibling_ranking, clustered_delta
     from tools.vwin_refresh_model import sha256, tool_identity
     from tools.analyze_vwin_public_info_397 import arms
@@ -182,6 +209,7 @@ def run(index, a3_run, output, threads, device):
               "recipe": RECIPE, "fit": FIT, "corpus_index": str(Path(index).resolve()),
               "corpus_sha256": sha256(index), "a3_run": str(a3_run.resolve()),
               "a3_hashes": {n: sha256(a3_run / n) for n in ("validation.json", "preflight.json")},
+              "corpus_validation": "skipped (index SHA only)" if skip_validation else "strict",
               "reproduction_gate": gate, "baseline_features": base, "results": results,
               "paired_deltas": deltas, "labels": labels, "test_rows_read": False,
               "elapsed_seconds": time.time() - started}
@@ -210,12 +238,14 @@ def main(argv=None):
     parser.add_argument("--output")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
+    parser.add_argument("--skip-corpus-validation", action="store_true",
+                        help="check only the index SHA-256, not every component table")
     args = parser.parse_args(argv)
     if args.self_test:
         return _self_test()
     if not (args.index and args.a3_run and args.output):
         parser.error("--index, --a3-run and --output are required")
-    run(args.index, args.a3_run, args.output, args.threads, args.device)
+    run(args.index, args.a3_run, args.output, args.threads, args.device, args.skip_corpus_validation)
     return 0
 
 
