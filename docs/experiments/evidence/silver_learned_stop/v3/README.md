@@ -1,6 +1,6 @@
 # Learned Silver stopping v3: live promotion result
 
-Verdict: **`PROMOTE_learned`** (ledger-06 §373). [PLAN.md](PLAN.md) was frozen
+Verdict: **`PROMOTE_learned`** (ledger-06 §377). [PLAN.md](PLAN.md) was frozen
 before any seed ran, reviewed (fixes applied in `4a5e1a5`), and run unchanged
 after Philipp's go. The verdict is a recommendation: the default flip is a
 separate ADR and PR.

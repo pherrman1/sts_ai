@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §373); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -610,7 +610,7 @@ restores flat Silver. This remains a deployment screen, not a formal
 equivalence proof or superiority claim. See [ledger §288](../../experiments/ledger-06.md)
 and the [deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md).
 
-### Learned Silver stopping (§370, §372, §373, 2026-10-03)
+### Learned Silver stopping (§370, §372, §377, 2026-10-03)
 
 **`LEARNED_STOP_PASS`**, research-only and default off. With
 `STS_SILVER_LEARNED_STOP=1`, each multi-action root is searched to the
@@ -637,7 +637,7 @@ seed-grouped cross-validation. A fresh confirmation on seeds
 than #199 [20.3, 22.3] at −0.0007 signedOutcome per fight
 [−0.0031, +0.0018]. A lock-only arm used 12.7% more simulations than #199, so
 the model carries the saving. Live (128 paired, descriptive): 77.3% vs 76.6%
-wins and 25% less time per run. **v3 live (§373):** a 1,024-pair live run against #199 gave
+wins and 25% less time per run. **v3 live (§377):** a 1,024-pair live run against #199 gave
 `PROMOTE_learned`: +0.49 floors (98.33% CI [+0.08, +0.91]), 80.3% vs 78.3%
 wins, 19% less time per run. The earlier −1 floor lean did not replicate.
 Neither variant tested for boss fights did better than plain v2: falling back
@@ -646,7 +646,7 @@ to #199 in boss rooms, or allowing up to 30k simulations
 research-only, and the 10k cap stays. Learned stopping is recommended as the
 production default; the flip needs its own ADR and PR.
 
-See [ledger §370, §372 and §373](../../experiments/ledger-06.md), the
+See [ledger §370, §372 and §377](../../experiments/ledger-06.md), the
 [v1 packet](../../experiments/evidence/silver_learned_stop/README.md) and the
 [v2 packet](../../experiments/evidence/silver_learned_stop/v2/README.md) and the [v3 packet](../../experiments/evidence/silver_learned_stop/v3/README.md).
 

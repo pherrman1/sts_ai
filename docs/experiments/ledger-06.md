@@ -13720,7 +13720,9 @@ well as the current rule while thinking about a fifth less, and the simple
 section) and `operations/environment-variables.md` (v2 default threshold). No
 default changed.
 
-## §373 — Learned Silver stopping v3: 1,024-pair live promotion run with boss variants (2026-10-03)
+## §377 — Learned Silver stopping v3: 1,024-pair live promotion run with boss variants (2026-10-03)
+
+(§373–§376 are used by the parallel #397 work.)
 
 **Question:** do the about −1 floor leans in the §370/§372 live runs reflect a
 real strength cost of learned stopping against #199? Do boss fights benefit
