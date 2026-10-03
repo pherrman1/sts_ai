@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-03 for the #397 v_win information-boundary audit, card domain and history families (§§371, 373–374); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities (§§371, 373–376); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -2216,7 +2216,11 @@ stages of #397 remain open on the 457-feature public-safe baseline.
 Stage 1b (§373) found the TRAIN mask already excludes every unreachable card,
 relic and potion column. Stage 2 (§374): raw relic/event/encounter history
 each worsened a 5-seed ensemble slightly (`INCONCLUSIVE`, none adopted);
-derived public-probability features (Stages 2b–2d) are untested.
+Stages 2b–2d (§§375–376): Java-verified potion, rarity, next-elite,
+next-hallway, ?-room and remove-price features gave no held-out gain (none
+adopted); a monotone duplicate column alone shifted the ensemble by +0.0056
+NLL, which bounds the method's resolution on this corpus. Event-eligibility
+distributions were not built.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from

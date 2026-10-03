@@ -13758,3 +13758,107 @@ seen, it predicted wins slightly worse with each of these, not better.
 **Knowledge impact:** history-family outcome in the rich `v_win`
 information-boundary section of `operations/ooc-label-pipeline.md` and in
 `evaluation/current-research.md`.
+
+## §375 — #397 Stages 2b–2c rule-derived public probabilities (2026-10-03)
+
+**Question:** do public-rule probabilities (potion-drop chance, card-rarity
+odds, next-elite and next-hallway-encounter distributions) predict run wins
+better than the raw counters/history on the public-safe `v_win` baseline?
+
+**Protocol:** preregistered in `tools/analyze_vwin_derived_397.py` (committed
+`c7ff841a` before any arm was trained). The report's `tooling.git_sha` reads
+`5cc739d3` because that commit, which only adds
+`tools/analyze_vwin_derived_rooms_397.py` and its CMake test, landed during
+the run; the analysis file is identical. Rules were checked with `javap`
+against STS1 V2.3.4 `desktop-1.0.jar`: `AbstractRoom.addPotionToRewards`,
+`AbstractDungeon.rollRarity`/`AbstractRoom.getCardRarity`/`MonsterRoomElite`
+(factor start 5, −1 per common to −40, reset on rare; N'loth's Gift ×3),
+`AbstractDungeon.populateMonsterList`/`populateFirstStrongEnemy` and the
+`Exordium`/`TheCity`/`TheBeyond` weights and exclusions. Frozen #334 corpus,
+TRAIN/VALIDATION only, no seeds, no build; frozen A3 X1 recipe, XGBoost seeds
+0–4, 5-seed ensemble vs P (457 public-safe features). Arms: F1d (P −
+`potionChance` + `pPotionDrop`), F1b (P + `pPotionDrop`), F2d/F2b (same with
+`cardRarityFactor` and a 14-column per-card and per-reward rarity block), F3
+(P + next-elite distribution), F4 (P + next-hallway distribution + entropy).
+
+**Integrity:** the observed hallway/elite prefix lengths matched `monOffset`
+and `eliteOffset` on every TRAIN/VALIDATION row (0 mismatches), confirming
+that the observed fights are exactly the consumed queue prefix.
+
+**Findings (simulator, not fixed here):** native `populateFirstStrongEnemy`
+applies the first-strong exclusions only in act 1; Java also excludes in acts
+2–3 (#407). The derived F4 features use the Java rule.
+
+**Results (5-seed ensemble, VALIDATION; P NLL 0.44338):**
+
+| arm | features | NLL | ΔNLL vs P [95% CI] | label |
+| --- | ---: | ---: | --- | --- |
+| F1d potion derived only | 457 | 0.44555 | +0.0022 [−0.0013, +0.0058] | DERIVED_NOT_SHOWN_EQUIVALENT |
+| F1b potion raw + derived | 458 | 0.44900 | +0.0056 [+0.0023, +0.0090] | DERIVED_ADDS_NO_CLEAR_SIGNAL |
+| F2d rarity derived only | 470 | 0.44889 | +0.0055 [−0.0003, +0.0111] | DERIVED_NOT_SHOWN_EQUIVALENT |
+| F2b rarity raw + derived | 471 | 0.44588 | +0.0025 [−0.0007, +0.0063] | DERIVED_ADDS_NO_CLEAR_SIGNAL |
+| F3 next elite | 466 | 0.44715 | +0.0038 [+0.0006, +0.0072] | F3_LOW_VALUE |
+| F4 next hallway fight | 495 | 0.44387 | +0.0005 [−0.0045, +0.0051] | F4_INCONCLUSIVE |
+
+**Interpretation:** no derived family improved prediction; none is adopted.
+F1b is a calibration of the method's resolution: `pPotionDrop` is a monotone
+transform of `potionChance` (it differs only with White Beast Statue), yet
+adding it worsened the ensemble by +0.0056 with a CI excluding zero. The
+source-clustered CI holds the fitted models fixed and does not include
+training-procedure variance, so feature-set perturbations of about ±0.005 are
+within what retraining alone produces here. Effects smaller than that cannot
+be resolved on this 358-source TRAIN / 77-source VALIDATION corpus.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage2bc-derived-20261003-c7ff841a/`
+(`report.json` SHA-256 `0e6434b1cac71c6d8fbad48c760f1fcb16ac3d926da0ec74aabeb508939b9f75`,
+`validation_predictions.npz` `83314aa8752af64799efe3e87380453d6a1ed02a82250983ad0ebdf2bef2be72`).
+21:56 wall, 2,585 CPU-s, 6.7 GB peak RSS.
+
+**ELI5:** We handed the model the actual odds the game uses (chance of a
+potion, of a rare card, of which elite or monster comes next) instead of
+making it learn them. It did not get better; even adding a copy of a number it
+already had moved the score about as much.
+
+**Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
+and `evaluation/current-research.md`.
+
+## §376 — #397 Stage 2d unknown-room odds and next remove price (2026-10-03)
+
+**Question:** do the next ? room outcome odds and the next card-remove price,
+derived from public history and verified rules, improve held-out run-win
+prediction over the public-safe baseline?
+
+**Protocol:** preregistered in `tools/analyze_vwin_derived_rooms_397.py`
+(committed `5cc739d3` before training). Rules checked with `javap`:
+`EventHelper.roll`/`resetProbabilities` (0.1/0.03/0.02 float chances, slot
+order monster→shop→treasure→event, shop 0 from a shop room, Tiny Chest every
+fourth ?, Juzu Bracelet monster→event, reset-on-hit else +base) and
+`ShopScreen` (`purgeCost` 75 +25 per paid removal; Courier ×0.8, Membership
+×0.5, Smiling Mask 50 at shop open). Native `getEventRoomOutcomeHelper`
+matches. ? nodes come from `pvEvent` increments between MAP rows; outcomes
+from the same floor's NORMAL fight / shop / treasure screen. Limitation: with
+Juzu Bracelet a rolled monster appears as an event. Same corpus, recipe and
+5-seed ensemble design as §375. Arms: F5 (P + `pQMonster`, `pQShop`,
+`pQTreasure`, `pQEvent`), F6 (P + `nextRemoveCost`).
+
+**Integrity:** the reconstructed remove price matched the displayed
+`removeCost` on 106,975 of 107,900 shop screens (99.14%, above the 99% stop
+threshold); the residual 0.86% is unexplained.
+
+**Results (5-seed ensemble, VALIDATION; P NLL 0.44338):** F5 0.44457, ΔNLL
++0.0012 [−0.0021, +0.0045], `F5_INCONCLUSIVE`; F6 0.44859, ΔNLL +0.0052
+[−0.0001, +0.0102], `F6_LOW_VALUE`. Neither improves; neither is adopted.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage2d-rooms-20261003-5cc739d3/`
+(`report.json` SHA-256 `56f56d4c94efaf26ba1dd379c9c4312329285798ae7b4865b29840521db8b5a3`,
+`validation_predictions.npz` `8a3c88a165e4fb47cc7479beda8c5cd49c0212d9c03b75f265701476e640e9af`).
+17:03 wall, 1,515 CPU-s, 6.4 GB peak RSS. Event-eligibility distributions
+(Stage 2d item 4) and chest/relic summaries (item 5) were not built: 3.2% of
+event visits lack an identity (§374) and the eligibility rules were not
+verified.
+
+**ELI5:** Knowing what the next ? room is likely to be, or what card removal
+will cost at the next shop, did not help the model predict wins.
+
+**Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
+and `evaluation/current-research.md`.

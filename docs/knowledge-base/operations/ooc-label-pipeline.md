@@ -564,6 +564,15 @@ encounters fought), reconstructed from #334 `combat.csv`/`decision.csv` by
 worse on VALIDATION (ledger-06 §374, preregistered `INCONCLUSIVE`); none is
 part of the feature contract. The decision sink leaves 3.2% of event visits
 without an `eventId` (first screen single-option or not enumerable).
+Rule-derived public probabilities, each checked against the V2.3.4 Java
+reference, also gave no held-out gain (ledger-06 §§375–376):
+`tools/analyze_vwin_derived_397.py` (potion drop, card rarity, next elite,
+next hallway encounter) and `tools/analyze_vwin_derived_rooms_397.py` (?-room
+outcome odds, next remove price). Adding a monotone duplicate of
+`potionChance` alone moved the 5-seed X1 ensemble by +0.0056 NLL, so feature
+changes below about ±0.005 are not resolvable on the #334 TRAIN/VALIDATION
+split. The derived-feature code is the reference if a later value model wants
+these public quantities.
 
 ### Mixed-producer v_win refresh corpus
 
