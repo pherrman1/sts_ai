@@ -67,6 +67,8 @@ struct BenchConfigSidecar {
     bool silverExactRootBudgets = false;
     bool silverExactVisitLock = false;
     bool silverRhoRacing = false;
+    std::string silverLearnedStopModel;     // "" when learned stopping is off
+    double silverLearnedStopThreshold = 0.0;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -164,6 +166,8 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
     o << ",\"silverExactVisitLock\":" << (c.silverExactVisitLock ? "true" : "false");
     o << ",\"silverRhoRacing\":" << (c.silverRhoRacing ? "true" : "false");
+    o << ",\"silverLearnedStopModel\":\"" << detail::jsonEscape(c.silverLearnedStopModel) << '\"';
+    o << ",\"silverLearnedStopThreshold\":" << c.silverLearnedStopThreshold;
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

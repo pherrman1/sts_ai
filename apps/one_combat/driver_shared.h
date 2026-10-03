@@ -36,6 +36,7 @@
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatCpsiNet.h"
 #include "sim/search/NativeSilverBackend.h"
+#include "sim/search/NativeSilverStopModel.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/ExpertKnowledge.h"

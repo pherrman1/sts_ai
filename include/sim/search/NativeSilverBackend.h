@@ -57,6 +57,17 @@ namespace sts::search {
     // environment variable reaches it.
     extern thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
 
+    // Research-only learned stopping (NativeSilverStopModel.h):
+    // STS_SILVER_LEARNED_STOP=1 with STS_SILVER_ADAPTIVE=0 searches each
+    // multi-action root to the 250..10,000 checkpoints and stops at the first
+    // strict visit lock or model risk below the threshold
+    // (STS_SILVER_LEARNED_STOP_THRESHOLD, default from the model).
+    // STS_SILVER_STOP_TRACE=<csv> instead runs every checkpoint and writes the
+    // features and leader of each one.
+    bool nativeSilverLearnedStopEnabled();
+    double nativeSilverLearnedStopThreshold();
+    std::int64_t nativeSilverLearnedStops();
+
     struct CombatKnowledgeState;
 
     // Public per-battle seed for the search's randomness: constant through the

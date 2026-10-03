@@ -389,6 +389,10 @@ add_test(NAME silver_param_screen_400_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_param_screen_400.py --self-test)
 set_tests_properties(silver_param_screen_400_analysis_selftest PROPERTIES
     LABELS "research-repro;tooling")
+add_test(NAME silver_learned_stop_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/silver_learned_stop.py selftest)
+set_tests_properties(silver_learned_stop_selftest PROPERTIES
+    LABELS "research-repro;tooling")
 add_test(NAME silver_param_screen_400_seed_guard_rejects_zero
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
         $<TARGET_FILE:one_combat> silverparams400gen 0 10000 0 /tmp/sp400 40000000 teacher.json)
