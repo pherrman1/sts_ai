@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # v3 live promotion run (PLAN.md): 4 disjoint parts of 256 seeds, 4 shards of 64
-# per part, one CPU per shard; each shard runs the four arms in order.
+# per part, one CPU per shard; each shard runs the four arms, shard k starting the
+# arm list at position k so every arm runs once in every position within a part.
 #   part M (0..3): seeds 46000000+256M .. +255
 # Usage: launch_part.sh M [BINARY_SOURCE] [OUT]   (run from a checkout of the plan commit)
 set -u
@@ -31,7 +32,8 @@ arm() {   # arm NAME K SEED_START
 }
 for k in 0 1 2 3; do
   s=$((46000000 + 256*M + 64*k))
-  ( for a in control learned bossfallback bossmax30k; do arm $a $k $s; done ) &
+  arms=(control learned bossfallback bossmax30k)
+  ( for i in 0 1 2 3; do arm ${arms[$(( (i + k) % 4 ))]} $k $s; done ) &
 done
 wait
 echo "part $M done" > "$OUT/DONE"

@@ -1,15 +1,24 @@
 # Learned Silver stopping v3: frozen live promotion plan
 
-Status: frozen before any v3 seed ran. Code `8c7da1d0`; the plan commit follows
-it and changes no code.
+Status: frozen before any v3 seed ran. Code `8c7da1d0`; the plan commits that
+follow it change no code. The independent pre-run review
+(`/mnt/project-files/reviews/pr403-v3-prerun-review.md`) required three plan
+fixes, applied here: the Bonferroni bound, a full-precision analysis script,
+and corrected v1/v2 attribution. Its recommendations are also applied: the arm
+order rotates per shard, and `bossmax30k` is labelled as likely informative
+only.
 
 ## Why
 
-v2 passed its replay gate twice (ledger §370, §372). Pooling both 128-seed live
-runs (256 pairs) shows two things:
-- more wins for learned stopping (196 vs 188);
-- earlier deaths in lost runs, with a floor difference of −1.05,
-  CI [−1.88, −0.23].
+Learned stopping passed its replay gate twice: v1 (`gbt-b91dcfea64e1`,
+ledger §370) and v2 (`gbt-770201c31f7b`, §372). The live floor difference
+against #199 leaned negative in both 128-seed live runs:
+- v1 (43M): −1.15;
+- v2 (45M): −0.96, 95% CI [−2.1, +0.0].
+
+Pooling both runs (256 pairs, two different models) gives −1.05,
+CI [−1.88, −0.23]. Learned stopping won more often (196 vs 188) but died
+earlier in lost runs.
 
 The v2 replay also had its only negative room estimate in boss fights:
 −0.0074, CI [−0.0246, +0.0101].
@@ -46,28 +55,34 @@ Smoke checks (seed `46009000`, not pooled):
   (1,024 seeds, unused before).
 - `launch_part.sh M`, M = 0..3, splits the seeds into four disjoint parts of
   256, one part per 4-CPU cloud container.
-- Each part runs 4 shards of 64 seeds, one CPU each. Each shard runs the four
-  arms in order.
+- Each part runs 4 shards of 64 seeds, one CPU each. Each shard runs all four
+  arms; shard k starts the arm list at position k, so within a part every arm
+  runs once in every position. Per-seed results do not depend on the order.
 - Every command goes through `tools/seed_guard.sh`, and the script checks the
   binary hash before any shard starts.
-- Budget: about 91 CPU-seconds per seed over all four arms, measured in the
-  §372 live runs. That is about 26 CPU-hours in total, or about 1.7 hours
-  wall time per container.
+- Budget: about 91–96 CPU-seconds per seed over all four arms, estimated from
+  the §372 live and replay timings. That is about 26–28 CPU-hours in total, or
+  about 1.75 hours wall time per container.
 - A shard that exits nonzero is kept and not retried. The analysis then uses
   the seeds present in all four arms and says so.
 
 ## Analysis
 
-For each variant V in {`learned`, `bossfallback`, `bossmax30k`}:
-- Pool each arm's 16 shard CSVs.
-- Run `paired_analysis.py control.csv V.csv`: strict seed pairing, a
-  10,000-replicate bootstrap with fixed seed 20260807.
+The verdict comes from `analyze.py run3` in this directory, at full precision.
+- It pools each arm's 16 shard CSVs and pairs by seed.
+- For each variant V in {`learned`, `bossfallback`, `bossmax30k`} it calls
+  `paired_analysis.bootstrap_ci` with 10,000 replicates and a fresh generator
+  with seed 20260807.
+- If a shard is missing, the analysis runs on the intersection of the seeds
+  present in all four arms and marks the report as partial. The descriptive
+  `paired_analysis.py` reports then need `--allow-partial`.
 
 **Primary metric:** the mean paired floor difference ΔF(V) = floor(V) −
-floor(control), with its 95% bootstrap CI.
+floor(control), with a **Bonferroni-corrected 98.33% bootstrap CI**
+(1 − 0.05/3, for three variants against one control).
 
 **Qualification:** V qualifies when both of the following hold.
-- The CI lower bound of ΔF(V) is above **−0.75 floors**.
+- The lower bound of that 98.33% CI is above **−0.75 floors**.
 - Its mean seconds per run are below the control's.
 
 **Verdict:**
@@ -82,13 +97,21 @@ floor(control), with its 95% bootstrap CI.
 - deaths by encounter class, boss deaths in particular;
 - `bossmax30k` against `learned` and `bossfallback` against `learned`.
 
+**`bossmax30k` is likely informative only.** The review estimates about 27–29
+seconds per run for it, against 26.7 for the control, so it probably fails the
+time criterion by construction. It answers Philipp's question through the
+`bossmax30k` − `learned` comparison: floors, wins and boss deaths. If that
+comparison shows a gain (Inference: ΔF above 0 with a 95% CI excluding 0), a
+cheaper version of the boss cap becomes the next candidate. Otherwise the
+10k cap stays.
+
 **Power (Inference):**
-- The per-pair SD of ΔF was 6.2–7.2 floors in §370 and §372. At 1,024 pairs
-  the CI half-width is about 0.4 floors.
-- A variant with a true ΔF of 0 qualifies with about 95% probability.
+- The per-pair SD of ΔF was 7.2 floors in §370 (v1) and 6.2 in §372 (v2).
+  At 1,024 pairs the 98.33% CI half-width is about 0.5 floors.
+- A variant with a true ΔF of 0 qualifies with about 88% probability.
 - A variant with a true ΔF of −1 qualifies with under 1% probability.
-- Three variants are each tested at 95%. The pick among qualifiers is a
-  point-estimate choice, not a significance claim.
+- The pick among qualifiers is a point-estimate choice, not a significance
+  claim.
 
 ## What follows
 
