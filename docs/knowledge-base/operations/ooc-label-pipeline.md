@@ -555,13 +555,13 @@ card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
 39 colorless, 13 curses, Necronomicurse kept as live-only because the simulator
 omits its Necronomicon obtain). The #334 TRAIN variance mask already excludes
 every unreachable card, other-class relic and other-class potion column
-(ledger-06 §372), so model inputs need no domain filter; the producer keeps the
+(ledger-06 §373), so model inputs need no domain filter; the producer keeps the
 broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.
 
 Raw public-history families (relics seen but not owned, events seen,
 encounters fought), reconstructed from #334 `combat.csv`/`decision.csv` by
 `tools/analyze_vwin_history_397.py`, each made a 5-seed X1 ensemble slightly
-worse on VALIDATION (ledger-06 §373, preregistered `INCONCLUSIVE`); none is
+worse on VALIDATION (ledger-06 §374, preregistered `INCONCLUSIVE`); none is
 part of the feature contract. Event identities from the decision sink are
 incomplete because single-option screens are not captured.
 

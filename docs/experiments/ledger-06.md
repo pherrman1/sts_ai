@@ -13645,7 +13645,7 @@ measure, so the honest answer is "no sign it matters, not proven tiny".
 allowlist in `operations/ooc-label-pipeline.md`; status in
 `evaluation/current-research.md`.
 
-## §372 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
+## §373 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
 
 **Question:** of the 744 rich card columns (`d0..d371`, `u0..u371`), which
 card IDs can an Ironclad run actually hold, and does the #334 A3 TRAIN
@@ -13692,7 +13692,7 @@ they are always zero, so nothing needs changing.
 **Knowledge impact:** reachable-domain summary added to the rich `v_win`
 information-boundary section of `operations/ooc-label-pipeline.md`.
 
-## §373 — #397 Stage 2 public-history families on the public-safe `v_win` baseline (2026-10-03)
+## §374 — #397 Stage 2 public-history families on the public-safe `v_win` baseline (2026-10-03)
 
 **Question:** do raw public-history features (relics seen but not owned,
 events seen, encounters fought) improve held-out run-win prediction beyond
