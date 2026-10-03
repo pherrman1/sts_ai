@@ -337,6 +337,8 @@ public final class LiveOocCaptureTest {
         check("NeowsBlessing", -2, true, 0, null);
         check("NeowsBlessing", 3, false, 3, null);
         check("NeowsBlessing", -1, true, -1, null);
+        check("Ancient Tea Set", -2, false, 1, null);
+        check("Ancient Tea Set", -1, false, 0, null);
         check("Burning Blood", -1, false, -1, null);
         check("Lizard Tail", -1, false, 1, null);
         check("Lizard Tail", -2, true, 0, null);

@@ -1891,6 +1891,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // sentinel; native CTM stores remaining charges (0 when spent).
         // Keep every other value exact and fail closed.
         final boolean spentCharges = "NeowsBlessing".equals(id) || "Omamori".equals(id);
+        // Ancient Tea Set is charged (vanilla counter -2) from entering a rest
+        // site until the next combat; native stores 1 when charged, else 0.
+        if ("Ancient Tea Set".equals(id)) return counter == -2 ? 1 : 0;
         return spentCharges && usedUp && counter == -2 ? 0 : counter;
     }
 

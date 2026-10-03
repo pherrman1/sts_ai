@@ -271,6 +271,11 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                         long long seedOffset, const std::string &teacherPath);
+// #400 Stage 1: every fight of each source trajectory replayed under a fixed
+// grid of Silver search constants (control must reproduce the source fight).
+void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                             long long seedOffset, const std::string &teacherPath);
+const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &silverParamScreen400Arms();
 int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();

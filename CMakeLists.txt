@@ -314,6 +314,8 @@ set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
 set_tests_properties(simulator_relic_fidelity PROPERTIES LABELS "core")
 add_test(NAME monster_ai_java_parity COMMAND $<TARGET_FILE:unit-test> monster_ai_java_parity)
 set_tests_properties(monster_ai_java_parity PROPERTIES LABELS "core")
+add_test(NAME ironclad_card_java_parity COMMAND $<TARGET_FILE:unit-test> ironclad_card_java_parity)
+set_tests_properties(ironclad_card_java_parity PROPERTIES LABELS "core")
 add_test(NAME match_and_keep COMMAND $<TARGET_FILE:unit-test> match_and_keep)
 set_tests_properties(match_and_keep PROPERTIES LABELS "core")
 add_test(NAME silver_escape_penalty COMMAND $<TARGET_FILE:unit-test> silver_escape_penalty)
@@ -383,6 +385,18 @@ add_test(NAME boss_headroom_347_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
 set_tests_properties(boss_headroom_347_analysis_selftest PROPERTIES
     LABELS "research-repro;tooling")
+add_test(NAME silver_param_screen_400_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_param_screen_400.py --self-test)
+set_tests_properties(silver_param_screen_400_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME silver_param_screen_400_seed_guard_rejects_zero
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> silverparams400gen 0 10000 0 /tmp/sp400 40000000 teacher.json)
+set_tests_properties(silver_param_screen_400_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE)
+add_test(NAME silver_param_screen_400_rejects_non_exact_budget
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> silverparams400gen 1 1000 0 /tmp/sp400-invalid 40000000 teacher.json)
+set_tests_properties(silver_param_screen_400_rejects_non_exact_budget PROPERTIES WILL_FAIL TRUE)
 add_test(NAME vwin_refresh_seed_guard_accepts_positive
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
         $<TARGET_FILE:one_combat> vwinrefreshgen 128 10000 0 /tmp/vwin 13000000 teacher.json 1)

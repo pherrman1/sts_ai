@@ -1901,6 +1901,125 @@ int testSimulatorRelicFidelity() {
     return 0;
 }
 
+// Ironclad card properties and effects audited against the pinned STS1 V2.3.4
+// reference: each case is a card where the simulator differed.
+int testIroncladCardJavaParity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "ironclad_card_java_parity FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // Costs: Rage is 0; Infernal Blade is 1, 0 when upgraded.
+    if (CardInstance(CardId::RAGE).cost != 0 || CardInstance(CardId::RAGE, true).cost != 0) {
+        return fail("Rage does not cost 0");
+    }
+    if (CardInstance(CardId::INFERNAL_BLADE).cost != 1 || CardInstance(CardId::INFERNAL_BLADE, true).cost != 0) {
+        return fail("Infernal Blade cost is not 1/0");
+    }
+
+    // Seeing Red exhausts when played.
+    if (!CardInstance(CardId::SEEING_RED).doesExhaust() || !CardInstance(CardId::SEEING_RED, true).doesExhaust()) {
+        return fail("Seeing Red does not exhaust");
+    }
+
+    // Disarm+ removes 3 Strength.
+    {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DISARM, 1), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        const int strengthBefore = bc.monsters.arr[0].strength;
+        simulatorCorrectnessPlay(bc, 0, 0);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        if (bc.monsters.arr[0].strength != strengthBefore - 3) return fail("Disarm+ did not remove 3 Strength");
+    }
+
+    // Brutality and Pain lose HP as self-damage, which triggers Rupture.
+    for (const bool pain : {false, true}) {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.player.buff<PS::RUPTURE>(1);
+        const int strengthBefore = bc.player.getStatus<PS::STRENGTH>();
+        if (pain) {
+            bc.cards.handPainCount = 1;
+            bc.triggerOnOtherCardPlayed(CardInstance(CardId::DEFEND_RED));
+        } else {
+            bc.player.buff<PS::BRUTALITY>(1);
+            bc.player.applyStartOfTurnPostDrawPowers(bc);
+        }
+        while (!bc.actionQueue.isEmpty()) bc.actionQueue.popFront()(bc);
+        if (bc.player.getStatus<PS::STRENGTH>() != strengthBefore + 1) {
+            return fail(pain ? "Pain HP loss did not trigger Rupture" : "Brutality HP loss did not trigger Rupture");
+        }
+    }
+
+    // Monster Intangible (Nemesis) caps card damage at 1, keeps 0 at 0, and
+    // also caps thorns-type damage (Nemesis.damage override).
+    {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
+        Monster &m = bc.monsters.arr[0];
+        m.buff<MS::INTANGIBLE>(1);
+        m.block = 0;
+        if (bc.calculateCardDamage(CardInstance(CardId::STRIKE_RED), 0, 10) != 1
+                || bc.calculateCardDamage(CardInstance(CardId::STRIKE_RED), 0, 0) != 0) {
+            return fail("Intangible card damage is not capped at 1 (with 0 kept)");
+        }
+        const int hpBefore = m.curHp;
+        Actions::DamageAllEnemy(5)(bc);
+        if (hpBefore - m.curHp != 1) return fail("Intangible did not cap thorns-type damage at 1");
+    }
+
+    // Save loading retains both Wing Boots charges and the Tea Set's charged
+    // sentinel when the relics are present together.
+    for (int teaCounter : {-2, -1}) {
+        SaveFile save;
+        save.relics = {RelicId::WING_BOOTS, RelicId::ANCIENT_TEA_SET};
+        save.relic_counters = {2, teaCounter};
+        GameContext restored(CharacterClass::IRONCLAD, 100123, 0);
+        restored.initRelicsFromSave(save);
+        if (restored.wingBootsCharges != 2
+                || restored.relics.getRelicValue(RelicId::WING_BOOTS) != 0
+                || restored.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != (teaCounter == -2 ? 1 : 0)) {
+            return fail("save loading lost Wing Boots or Ancient Tea Set state");
+        }
+    }
+
+    // Ancient Tea Set: charged on entering any rest site, spent by the next
+    // combat's first turn, even with other rooms in between.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, 0);
+        gc.relics.add({RelicId::ANCIENT_TEA_SET, 0});
+        gc.map->getNode(0, gc.curMapNodeY + 1).room = Room::REST;
+        gc.transitionToMapNode(0);
+        if (gc.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != 1) {
+            return fail("Ancient Tea Set was not charged by a rest site");
+        }
+        gc.curRoom = Room::MONSTER;
+        gc.lastRoom = Room::EVENT;
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        if (bc.player.energy != bc.player.energyPerTurn + 2) {
+            return fail("charged Ancient Tea Set did not give 2 energy after a non-rest room");
+        }
+        bc.updateRelicsOnExit(gc);
+        if (gc.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != 0) {
+            return fail("Ancient Tea Set charge was not spent by combat");
+        }
+        BattleContext again;
+        again.init(gc, MonsterEncounter::JAW_WORM);
+        if (again.player.energy != again.player.energyPerTurn) {
+            return fail("spent Ancient Tea Set still gave energy");
+        }
+    }
+
+    std::cout << "ironclad_card_java_parity PASS\n";
+    return 0;
+}
+
 // Act 1 monster behavior audited against the pinned STS1 V2.3.4 reference
 // (#348): each case reproduces a move roll or monster turn where the simulator differed.
 int testMonsterAiJavaParity() {
@@ -5221,6 +5340,8 @@ int main(int argc, const char* argv[]) {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {
         return testSimulatorRelicFidelity();
+    } else if (command == "ironclad_card_java_parity") {
+        return testIroncladCardJavaParity();
     } else if (command == "monster_ai_java_parity") {
         return testMonsterAiJavaParity();
     } else if (command == "relic_reward_sapphire") {

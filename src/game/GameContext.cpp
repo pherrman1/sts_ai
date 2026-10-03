@@ -236,6 +236,8 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
                 throw std::invalid_argument("invalid Wing Boots save counter");
             wingBootsCharges = std::max(0, data);
             data = 0; // Frozen OOC encoders keep mechanics in the separate field.
+        } else if (r == RelicId::ANCIENT_TEA_SET) {
+            data = data == -2 ? 1 : 0; // vanilla -2 means charged
         }
         RelicInstance relic {r, data};
         relics.add(relic);
@@ -847,6 +849,10 @@ void GameContext::transitionToMapNode(int mapNodeX) {
         }
 
         case Room::REST: {
+            if (relics.has(RelicId::ANCIENT_TEA_SET)) {
+                // charged from entering a rest site until the next combat
+                relics.getRelicValueRef(RelicId::ANCIENT_TEA_SET) = 1;
+            }
             screenState = ScreenState::REST_ROOM;
             break;
         }

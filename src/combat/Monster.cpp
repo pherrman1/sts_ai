@@ -518,7 +518,9 @@ void Monster::damage(BattleContext &bc, int damage) {
         damage = 0;
     }
 
-    if (hasStatus<MS::INTANGIBLE>()) { // this is probably wrong with potions
+    // Only Nemesis gains monster Intangible; its damage() override caps every
+    // positive hit to 1, including thorns, power, relic and potion damage.
+    if (hasStatus<MS::INTANGIBLE>()) {
         if (damage > 0) {
             damage = 1;
         }
