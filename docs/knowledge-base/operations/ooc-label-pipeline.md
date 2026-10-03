@@ -562,8 +562,8 @@ Raw public-history families (relics seen but not owned, events seen,
 encounters fought), reconstructed from #334 `combat.csv`/`decision.csv` by
 `tools/analyze_vwin_history_397.py`, each made a 5-seed X1 ensemble slightly
 worse on VALIDATION (ledger-06 §374, preregistered `INCONCLUSIVE`); none is
-part of the feature contract. Event identities from the decision sink are
-incomplete because single-option screens are not captured.
+part of the feature contract. The decision sink leaves 3.2% of event visits
+without an `eventId` (first screen single-option or not enumerable).
 
 ### Mixed-producer v_win refresh corpus
 

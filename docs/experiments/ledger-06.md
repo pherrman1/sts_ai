@@ -13715,8 +13715,12 @@ lower > −0.002; else `INCONCLUSIVE`.
 
 **Coverage:** 15,067 trajectories (14,632 branches), 0 ambiguous branch fight
 prefixes, every MAP row joined. Event identities are incomplete: the decision
-sink skips single-option screens, so 15,462 singleton event screens have no
-recorded `eventId` against 57,405 captured event screens.
+sink writes only screens with more than one option, so 15,462 TRAIN/VALIDATION
+event screens have no recorded `eventId` against 57,405 captured. Most are
+later pages of an identified event; per event visit (consecutive event
+screens, all 512 sources) 1,959 of 61,173 (3.2%) have no captured screen —
+1,048 whose first screen failed option enumeration and 911 with a single
+option.
 
 **Results (5-seed ensemble, VALIDATION):**
 
