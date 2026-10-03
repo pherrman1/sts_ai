@@ -546,7 +546,7 @@ redundant. Relic columns store `1 + counter`; every counter observed in the
 
 The public-safe allowlist for future `v_win` training is the TRAIN-variable
 mask minus the four HIDDEN_FUTURE fields (457 of the A3 461). Removing them
-did not measurably hurt the A3 X1 recipe (ledger-06 §370, `INCONCLUSIVE`
+did not measurably hurt the A3 X1 recipe (ledger-06 §371, `INCONCLUSIVE`
 because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
 `models/v_win_trees.txt` still reads all eight V4-excluded fields.
 

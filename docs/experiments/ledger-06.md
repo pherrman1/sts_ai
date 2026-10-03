@@ -13569,7 +13569,7 @@ and the default setting was already as good as any alternative.
 allocation section); the research-only mode is recorded here and in its
 evidence packet. No default changed.
 
-## §370 — #397 Stage 1 `v_win` information-boundary audit and hidden-future ablation (2026-10-03)
+## §371 — #397 Stage 1 `v_win` information-boundary audit and hidden-future ablation (2026-10-03)
 
 **Question:** which rich `v_win` features could a real player not know, and
 how much of the #334 A3 X1 VALIDATION score depends on them?
