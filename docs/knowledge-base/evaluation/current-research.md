@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-03 for the #397 v_win information-boundary audit (§370); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -2204,6 +2204,15 @@ This is tooling status: full candidate training and real TEST predictions
 remain unopened pending independent review. Lookup-table fidelity, MCTS leaf
 coverage/timing, and gameplay/default-promotion gates remain separate later
 work. No result from the tracked model's §353 audit is changed by this tooling.
+
+#397 Stage 1 (ledger-06 §370) classified the rich `v_win` state: only
+`nextEliteId`/`nextFight0..2` are hidden future; the remaining V4-excluded
+counts are public. Retraining the A3 X1 recipe without the four hidden fields
+was `INCONCLUSIVE` (3-seed mean VALIDATION NLL 0.4458 versus 0.4485 with them),
+with no sign the leak helps. XGBoost seed noise (~0.007-0.010 NLL) exceeds the
+question's 0.002 materiality and the A3 X1 grid spread, so single-seed A3
+selection should not be over-interpreted. Public-history/derived-probability
+stages of #397 remain open on the 457-feature public-safe baseline.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from

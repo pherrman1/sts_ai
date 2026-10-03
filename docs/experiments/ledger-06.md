@@ -13568,3 +13568,79 @@ and the default setting was already as good as any alternative.
 **Knowledge impact:** `evaluation/current-research.md` (Silver root
 allocation section); the research-only mode is recorded here and in its
 evidence packet. No default changed.
+
+## §370 — #397 Stage 1 `v_win` information-boundary audit and hidden-future ablation (2026-10-03)
+
+**Question:** which rich `v_win` features could a real player not know, and
+how much of the #334 A3 X1 VALIDATION score depends on them?
+
+**Protocol:** preregistered in `tools/analyze_vwin_public_info_397.py`
+(committed `f86119dc` before any arm was trained). Offline only: frozen #334
+corpus `corpus-mixed-512.json` (SHA-256 `ca4b6e2b…cd87f`), TRAIN 333,367 /
+VALIDATION 68,903 MAP rows, no gameplay seeds, no C++ build, no TEST rows read.
+Frozen A3 X1 recipe (depth 6, eta 0.06, min_child_weight 30, CPU hist, early
+stopping on VALIDATION, 4 threads), XGBoost seeds 0/1/2. Arms: **A** the 461
+TRAIN-variable A3 features; **B** A minus the four verified hidden-future
+fields; **C** A minus all eight V4-excluded fields (diagnostic). Rule:
+`HIDDEN_FUTURE_LEAK_MATERIAL` if the mean B−A NLL delta is ≥ 0.002 and every
+seed's source-clustered CI lower bound is > 0; `NOT_MATERIAL` if the mean is
+< 0.002 and every CI upper bound is < 0.002; else `INCONCLUSIVE`.
+
+**Classification (all 1,017 rich features):** HIDDEN_FUTURE 4
+(`nextEliteId`, `nextFight0..2`: realized queue entries); PUBLIC_HISTORY 10
+(`pv*`, `potionChance`, `cardRarityFactor`, `monOffset`, `eliteOffset`);
+REDUNDANT 4 (`remFights`, `remElites`, `deckSize`, `potionCount`);
+PUBLIC_CURRENT 999. `monOffset`/`eliteOffset` count combats already entered
+this act and `remFights`/`remElites` equal the fixed act queue length minus
+them: the identity `offset + remaining = {16,15,15,0}` (hallway) /
+`{10,10,10,1}` (elite) held on **all** 333,367 TRAIN and 68,903 VALIDATION
+rows (0 violations). Of the V4 "leak" eight, only four are hidden. All 12
+relic columns carrying counters (Happy Flower, Incense Burner, Ink Bottle,
+Lizard Tail, Nunchaku, Omamori, Pen Nib, Sundial, Girya, Neow's Lament,
+Maw Bank, Tiny Chest) are in-game visible counters.
+
+**Sanity gate:** A seed 0 reproduced the frozen X1 exactly (NLL
+`0.44453298345900494`, 290 trees).
+
+**Results (VALIDATION NLL / Brier / AUC; pooled sibling accuracy):**
+
+| arm | seed 0 | seed 1 | seed 2 | mean NLL |
+| --- | --- | --- | --- | ---: |
+| A (461) | 0.44453 / 0.14563 / 0.8024; 0.559 | 0.44905 / 0.14701 / 0.8003; 0.571 | 0.45195 / 0.14808 / 0.7961; 0.582 | 0.44851 |
+| B (457) | 0.44959 / 0.14712 / 0.7978; 0.549 | 0.44793 / 0.14685 / 0.8014; 0.568 | 0.43996 / 0.14425 / 0.8082; 0.554 | 0.44583 |
+| C (453) | 0.45072 / 0.14831 / 0.7997; 0.558 | 0.44890 / 0.14700 / 0.8009; 0.577 | 0.44774 / 0.14685 / 0.8027; 0.567 | 0.44912 |
+
+Paired B−A NLL [source-clustered 95% CI]: seed 0 +0.00506 [−0.00243,
++0.01289]; seed 1 −0.00112 [−0.00888, +0.00617]; seed 2 −0.01199
+[−0.02010, −0.00373]; mean **−0.00268**. C−A: +0.00619, −0.00015, −0.00421;
+mean +0.00061. Every sibling-accuracy CI overlaps across arms.
+
+**Verdict:** **`INCONCLUSIVE`** under the preregistered rule (B and C as well).
+No evidence that the hidden-future fields help held-out prediction: removing
+them did not worsen the 3-seed mean, and the only CI excluding zero favors B.
+The 0.002 materiality cannot be certified because **XGBoost seed noise alone
+is ~0.007–0.010 NLL** within one feature set — larger than the leak question
+and comparable to the whole A3 X1 grid spread (0.4445–0.4578). B is the
+public-safe baseline (`PUBLIC_SAFE_BASELINE_ESTABLISHED` as a contract, not as
+a measured equivalence).
+
+**Implication for #334:** A3 X1/X2 checkpoint selection by single-seed
+VALIDATION NLL is within subsampling-seed noise; selection-level comparisons
+need multiple seeds (or deterministic subsampling) before they are interpreted.
+Not tested here: a deployed model's dependence on these fields under fair-play
+sampled queues (B0 `models/v_win_trees.txt` also reads all eight).
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage1-20261003-f86119dc/`
+(`report.json` SHA-256 `61193b03da6e5c8c3d7d71d0d86f341be46954e16bdf030a2843eb5806c6b854`,
+`validation_predictions.npz` `c415e0e3c29d98345d4acbb6b443a025371d91936075e63b98bd1c86d59f0d06`,
+sibling stdout/stderr/time logs). 15 min wall, 1,194 CPU-s, 5.5 GB peak RSS.
+
+**ELI5:** Four of the model's inputs peek at which monsters are coming next,
+which a player can't see. We trained the same model with and without them three
+times each. Dropping them didn't make it worse on average, but the model's own
+random wiggle between training runs is bigger than the effect we were trying to
+measure, so the honest answer is "no sign it matters, not proven tiny".
+
+**Knowledge impact:** information-boundary classification and public-safe
+allowlist in `operations/ooc-label-pipeline.md`; status in
+`evaluation/current-research.md`.

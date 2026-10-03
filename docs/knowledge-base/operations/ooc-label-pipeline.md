@@ -528,6 +528,28 @@ native/in-context speed work. WIN_RAW resource qualification is reported
 separately. Neither verdict grants terminal-pricing readiness or promotion.
 The tooling PR and synthetic tests are not a full experiment result.
 
+### Rich `v_win` information boundary (#397)
+
+`tools/analyze_vwin_public_info_397.py` is the maintained classification of
+every `richStateHeader` feature; unknown names fail closed. Only four fields
+expose the simulator's realized future queue and are **HIDDEN_FUTURE**:
+`nextEliteId`, `nextFight0`, `nextFight1`, `nextFight2`. The other four
+V4-excluded fields are public: `monOffset`/`eliteOffset` count hallway/elite
+combats already entered this act (`GameContext::getMonsterForRoomCreation`,
+`getEliteForRoomCreation`; reset at act transition), and `remFights`/
+`remElites` are the fixed act queue length (hallway 16/15/15/0, elite
+10/10/10/1 for acts 1-4) minus that count. The identity held on every #334
+TRAIN/VALIDATION MAP row. `potionChance`, `cardRarityFactor` and `pv*` are
+public history; `deckSize`, `potionCount`, `remFights`, `remElites` are
+redundant. Relic columns store `1 + counter`; every counter observed in the
+#334 corpus is an in-game visible counter.
+
+The public-safe allowlist for future `v_win` training is the TRAIN-variable
+mask minus the four HIDDEN_FUTURE fields (457 of the A3 461). Removing them
+did not measurably hurt the A3 X1 recipe (ledger-06 §370, `INCONCLUSIVE`
+because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
+`models/v_win_trees.txt` still reads all eight V4-excluded fields.
+
 ### Mixed-producer v_win refresh corpus
 
 `tools/vwin_refresh_corpus.py` validates a read-only index of existing producer
