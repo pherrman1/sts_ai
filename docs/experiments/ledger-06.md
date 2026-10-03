@@ -13645,7 +13645,7 @@ measure, so the honest answer is "no sign it matters, not proven tiny".
 allowlist in `operations/ooc-label-pipeline.md`; status in
 `evaluation/current-research.md`.
 
-## §372 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
+## §373 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
 
 **Question:** of the 744 rich card columns (`d0..d371`, `u0..u371`), which
 card IDs can an Ironclad run actually hold, and does the #334 A3 TRAIN

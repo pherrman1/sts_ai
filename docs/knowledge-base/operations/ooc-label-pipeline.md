@@ -555,7 +555,7 @@ card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
 39 colorless, 13 curses, Necronomicurse kept as live-only because the simulator
 omits its Necronomicon obtain). The #334 TRAIN variance mask already excludes
 every unreachable card, other-class relic and other-class potion column
-(ledger-06 §372), so model inputs need no domain filter; the producer keeps the
+(ledger-06 §373), so model inputs need no domain filter; the producer keeps the
 broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.
 
 ### Mixed-producer v_win refresh corpus
