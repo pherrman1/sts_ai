@@ -94,6 +94,15 @@ Code `adbcae75`, binary sha256
   `STS_SILVER_ADAPTIVE=0 STS_SILVER_LEARNED_STOP=1`.
 - Analysis: `paired_analysis.py`. There is no gate.
 
+**Execution (added before launch, on Philipp's request to run in parallel).**
+The same seed ranges and binary are split into 4 disjoint parts with
+`launch_part.sh M` (M = 0..3). Each part covers 32 replay seeds
+(`44000000+32M..+31`) and 32 live seeds (`45000000+32M..+31`), as 4 shards of
+8 seeds. Each part runs on its own 4-CPU cloud machine against the binary in
+`/mnt/project-files/silver-learned-stop/one_combat-adbcae75`, and the script
+checks the sha256 first. Seeds are processed independently, so the split
+changes only scheduling. `launch.sh` remains the single-machine equivalent.
+
 **Budget and stop rule.**
 - About 5.8 CPU-hours for Part A and 1.5 for Part B, on 4 CPUs.
 - A shard that exits nonzero is kept and not retried. The analysis then runs
