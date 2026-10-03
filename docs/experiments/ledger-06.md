@@ -13719,3 +13719,63 @@ well as the current rule while thinking about a fifth less, and the simple
 **Knowledge impact:** `evaluation/current-research.md` (learned stopping
 section) and `operations/environment-variables.md` (v2 default threshold). No
 default changed.
+
+## §373 — Learned Silver stopping v3: 1,024-pair live promotion run with boss variants (2026-10-03)
+
+**Question:** do the about −1 floor leans in the §370/§372 live runs reflect a
+real strength cost of learned stopping against #199? Do boss fights benefit
+from falling back to #199, or from a cap above 10k? Philipp asked the second
+question.
+
+**Protocol:** frozen [v3/PLAN.md](evidence/silver_learned_stop/v3/PLAN.md).
+- Code `8c7da1d0`, which adds research-only `STS_SILVER_LEARNED_STOP_BOSS_FALLBACK`
+  and `STS_SILVER_LEARNED_STOP_BOSS_MAX`.
+- The pre-run review required three fixes, applied in `4a5e1a5`: Bonferroni,
+  full-precision analysis, and correct v1/v2 attribution.
+- Run after Philipp's go.
+- 1,024 paired `bestbench` seeds `46000000..46001023`, four arms:
+  - #199;
+  - v2 learned (`gbt-770201c31f7b`);
+  - v2 with boss rooms on #199;
+  - v2 with boss roots that reach 10k unstopped continuing to 30k unless
+    strictly locked.
+- Rule: a variant qualifies when the 98.33% bootstrap CI lower bound of the
+  paired floor difference ΔF against #199 is above −0.75 and its mean
+  seconds per run are below #199's. The qualifier with the highest ΔF is
+  recommended.
+
+**Integrity:** 4 parts on 4 cloud containers, 64 shards, all exit 0, each run
+once. All sidecars name executable `8c7da1d0` and the arm settings.
+`analyze.py` reproduces `report.json`. 30.7 CPU-hours (planned 26–28).
+
+**Result:** **`PROMOTE_learned`**.
+- learned − #199: **ΔF +0.49 floors, 98.33% CI [+0.08, +0.91]**; wins 80.3%
+  vs 78.3% (+2.0 pp, 95% CI [−0.6, +4.5]); 23.7 vs 29.3 s per run (ratio
+  0.81).
+- bossfallback − #199: +0.33 [−0.03, +0.71], qualifies, ratio 0.87.
+- bossmax30k − #199: +0.32 [−0.08, +0.75], ratio 1.05, so it fails the time
+  criterion.
+- Against plain v2, both boss variants were slightly worse:
+  - fallback: −0.2 floors, −1.5 pp wins;
+  - 30k: −0.2 floors, −1.1 pp wins, +7.1 s per run.
+- Deaths on an act-boss floor: #199 163, learned 157.
+
+**Notes (Inference):**
+- The negative live floor lean of §370/§372 (128 pairs each) did not
+  replicate at 8× the sample size.
+- More boss search than 10k showed no benefit here, so the 10k cap stays.
+- The design is non-inferiority. The positive ΔF and the CI excluding 0 are
+  reported, but superiority was not pre-registered.
+
+**Decision:** learned stopping v2 is recommended as the production Silver
+budget policy, replacing #199. The flip needs its own ADR and PR, and
+Philipp's decision. The boss options stay research-only.
+
+**Evidence:** [v3 packet](evidence/silver_learned_stop/v3/README.md).
+
+**ELI5:** On 1,024 new games, the learned stopper reached half a floor further
+on average, won slightly more often and used about a fifth less time than
+the current rule. Giving bosses extra thinking time did not help.
+
+**Knowledge impact:** `evaluation/current-research.md` and
+`operations/environment-variables.md` (the boss options). No default changed.

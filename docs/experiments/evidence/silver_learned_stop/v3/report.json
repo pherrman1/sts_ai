@@ -1,0 +1,55 @@
+{
+ "pairs": 1024,
+ "seedsMissingInSomeArm": 0,
+ "ci": 0.9833333333333333,
+ "margin": -0.75,
+ "variants": {
+  "learned": {
+   "floorDiff": 0.4921875,
+   "floorDiffCI": [
+    0.07551269531250025,
+    0.9137451171875011
+   ],
+   "winDiff": 0.01953125,
+   "winDiffCI95": [
+    -0.005859375,
+    0.044921875
+   ],
+   "secPerRun": 23.661887021484375,
+   "secRatio": 0.8079412973586978,
+   "qualifies": true
+  },
+  "bossfallback": {
+   "floorDiff": 0.326171875,
+   "floorDiffCI": [
+    -0.03288574218749975,
+    0.7060546875
+   ],
+   "winDiff": 0.0048828125,
+   "winDiffCI95": [
+    -0.01953125,
+    0.0283203125
+   ],
+   "secPerRun": 25.576482568359374,
+   "secRatio": 0.8733156611469639,
+   "qualifies": true
+  },
+  "bossmax30k": {
+   "floorDiff": 0.32421875,
+   "floorDiffCI": [
+    -0.08203125,
+    0.74609375
+   ],
+   "winDiff": 0.0087890625,
+   "winDiffCI95": [
+    -0.017578125,
+    0.03515625
+   ],
+   "secPerRun": 30.727212089843746,
+   "secRatio": 1.049188662660043,
+   "qualifies": false
+  }
+ },
+ "controlSecPerRun": 29.2866413671875,
+ "verdict": "PROMOTE_learned"
+}
