@@ -19,6 +19,8 @@ from typing import Any
 
 
 CTM_NAME = "combat_transition_near_full_except_smoke_v2.native"
+CTM_FAST_NAME = "combat_transition_deepsets_lizard_t2.native"
+CTM_STACK_KEYS = ("ctmStackVersion", "ctmPrimary", "ctmFastSha256", "ctmActiveLizard")
 OOC_NAME = "ooc_strategic_tok_final.native"
 OOC_WIN_NAME = "v_win_trees.txt"
 OOC_FLOOR_NAME = "v_rich_trees.txt"
@@ -126,6 +128,17 @@ class RuntimeManager:
         release = (release or self.current).resolve()
         manifest = self.load_manifest(release)
         checks = (("one_combat_advisor", "advisorSha256", True), (f"models/{CTM_NAME}", "ctmSha256", False))
+        # Old single-model releases remain usable. A partially described new
+        # stack must never silently downgrade to that legacy interpretation.
+        if any(key in manifest for key in CTM_STACK_KEYS):
+            if (type(manifest.get("ctmStackVersion")) is not int
+                    or manifest["ctmStackVersion"] != 1
+                    or manifest.get("ctmPrimary") != CTM_FAST_NAME
+                    or manifest.get("ctmActiveLizard") is not True
+                    or not isinstance(manifest.get("ctmFastSha256"), str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", manifest["ctmFastSha256"])):
+                raise RuntimeFailure("incomplete or unsupported CTM stack manifest")
+            checks += ((f"models/{CTM_FAST_NAME}", "ctmFastSha256", False),)
         if manifest.get("oocModelSha256"):
             checks += ((f"models/{OOC_NAME}", "oocModelSha256", False),)
         if manifest.get("oocWinModelSha256"):
@@ -158,7 +171,7 @@ class RuntimeManager:
     def desired_config(self, manifest: dict[str, Any]) -> dict[str, str]:
         desired = {
             "advisor": str(self.current / "one_combat_advisor"),
-            "ctmModel": str(self.current / "models" / CTM_NAME),
+            "ctmModel": str(self.current / "models" / manifest.get("ctmPrimary", CTM_NAME)),
         }
         if manifest.get("oocModelSha256"):
             desired["oocModel"] = str(self.current / "models" / OOC_NAME)
@@ -245,6 +258,7 @@ class RuntimeManager:
             matches_hashes = hashes is None or (
                 manifest.get("advisorSha256") == hashes.get("advisor")
                 and manifest.get("ctmSha256") == hashes.get("ctm")
+                and manifest.get("ctmFastSha256") == hashes.get("ctmFast")
                 and manifest.get("oocModelSha256") == hashes.get("ooc")
                 and manifest.get("oocWinModelSha256") == hashes.get("oocWin")
                 and manifest.get("oocFloorModelSha256") == hashes.get("oocFloor")
@@ -276,16 +290,19 @@ class RuntimeManager:
         if not advisor_source.is_file() or not os.access(advisor_source, os.X_OK):
             raise RuntimeFailure(f"advisor is missing or not executable: {advisor_source}")
         ctm = self.repo / "selfplay/models" / CTM_NAME
+        ctm_fast = self.repo / "selfplay/models" / CTM_FAST_NAME
         ooc = self.repo / "selfplay/models" / OOC_NAME
         ooc_win = self.repo / "models" / OOC_WIN_NAME
         ooc_floor = self.repo / "models" / OOC_FLOOR_NAME
         if not ctm.is_file():
             raise RuntimeFailure(f"tracked CTM model missing: {ctm}")
+        if not ctm_fast.is_file():
+            raise RuntimeFailure(f"tracked CTM fast model missing: {ctm_fast}")
         if not ooc_win.is_file():
             raise RuntimeFailure(f"tracked OOC win model missing: {ooc_win}")
         if not ooc_floor.is_file():
             raise RuntimeFailure(f"tracked OOC floor model missing: {ooc_floor}")
-        hashes = {"advisor": sha256(advisor_source), "ctm": sha256(ctm)}
+        hashes = {"advisor": sha256(advisor_source), "ctm": sha256(ctm), "ctmFast": sha256(ctm_fast)}
         if ooc.is_file():
             hashes["ooc"] = sha256(ooc)
         hashes["oocWin"] = sha256(ooc_win)
@@ -307,6 +324,7 @@ class RuntimeManager:
             shutil.copy2(advisor_source, staging / "one_combat_advisor")
             (staging / "models").mkdir()
             shutil.copy2(ctm, staging / "models" / CTM_NAME)
+            shutil.copy2(ctm_fast, staging / "models" / CTM_FAST_NAME)
             if ooc.is_file():
                 shutil.copy2(ooc, staging / "models" / OOC_NAME)
             shutil.copy2(ooc_win, staging / "models" / OOC_WIN_NAME)
@@ -317,6 +335,10 @@ class RuntimeManager:
                 "dirty": dirty,
                 "advisorSha256": hashes["advisor"],
                 "ctmSha256": hashes["ctm"],
+                "ctmStackVersion": 1,
+                "ctmPrimary": CTM_FAST_NAME,
+                "ctmFastSha256": hashes["ctmFast"],
+                "ctmActiveLizard": True,
                 "installedAt": utc_now(),
             }
             if "ooc" in hashes:
@@ -371,7 +393,9 @@ class RuntimeManager:
                 installed_id = result.get("manifest", {}).get("runtimeId")
                 process_matches = self.active_process_matches(active)
                 result["activeProcessMatches"] = process_matches
-                result["activeRuntimeMatchesCurrent"] = process_matches and active.get("runtimeId") == installed_id
+                result["activeRuntimeMatchesCurrent"] = (process_matches
+                    and active.get("runtimeId") == installed_id
+                    and active.get("ctmMatchesInstalled", True))
             except (OSError, json.JSONDecodeError) as exc:
                 result["activeRuntimeError"] = str(exc)
         return result
@@ -403,12 +427,33 @@ class RuntimeManager:
     def record_active(self, inspector_jar: Path, process_pid: int) -> dict[str, Any]:
         manifest = self.validate_release()
         value = {key: manifest[key] for key in ("runtimeId", "gitHead", "advisorSha256", "ctmSha256")}
+        for key in CTM_STACK_KEYS:
+            if key in manifest:
+                value[key] = manifest[key]
         if manifest.get("oocModelSha256"):
             value["oocModelSha256"] = manifest["oocModelSha256"]
         if manifest.get("oocWinModelSha256"):
             value["oocWinModelSha256"] = manifest["oocWinModelSha256"]
         if manifest.get("oocFloorModelSha256"):
             value["oocFloorModelSha256"] = manifest["oocFloorModelSha256"]
+        # These are launch-time configuration claims, not proof that the game
+        # advisor loaded a model. Its hello/analysis carries the loaded identity.
+        primary = Path(os.environ.get("STS_CTM_MODEL", self.desired_config(manifest)["ctmModel"]))
+        hybrid = "ctmStackVersion" in manifest
+        primary_hash = manifest["ctmFastSha256"] if hybrid else manifest["ctmSha256"]
+        matches = primary.is_file() and sha256(primary) == primary_hash
+        fallback_override = os.environ.get("STS_CTM_BREW_FALLBACK_MODEL")
+        if hybrid:
+            fallback = Path(fallback_override) if fallback_override is not None else primary.parent / CTM_NAME
+            matches = matches and fallback.is_file() and sha256(fallback) == manifest["ctmSha256"]
+        elif fallback_override is not None:
+            matches = False
+        active_override = os.environ.get("STS_CTM_ACTIVE_LIZARD")
+        if active_override is not None:
+            matches = matches and active_override == ("1" if hybrid else "0")
+        value["ctmMatchesInstalled"] = bool(matches)
+        value["ctmEnvironmentOverrides"] = {key: os.environ[key] for key in
+            ("STS_CTM_MODEL", "STS_CTM_BREW_FALLBACK_MODEL", "STS_CTM_ACTIVE_LIZARD") if key in os.environ}
         value["inspectorJarSha256"] = sha256(inspector_jar) if inspector_jar.is_file() else None
         value["startedAt"] = utc_now()
         value.update(self.process_identity(process_pid))

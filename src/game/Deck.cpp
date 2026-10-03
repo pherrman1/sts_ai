@@ -110,8 +110,7 @@ void Deck::upgradeRandomCards(Random &miscRng, int count) {
     java::Collections::shuffle(list.begin(), list.end(), java::Random(miscRng.randomLong()));
     const int end = std::min(list.size(), count);
     for (int i = 0; i < end; ++i) {
-        --upgradeableCount;
-        cards[list[i]].upgrade();
+        upgrade(list[i]);
     }
 }
 
@@ -126,31 +125,28 @@ void Deck::obtain(GameContext &gc, Card card, int count) {
         case CardType::ATTACK:
             transformableCount += count;
             cardTypeCounts[static_cast<int>(CardType::ATTACK)] += count;
-            if (gc.hasRelic(RelicId::MOLTEN_EGG)) {
+            if (gc.hasRelic(RelicId::MOLTEN_EGG) && !card.isUpgraded()) {
                 card.upgrade();
-            } else if (card.canUpgrade()) {
-                upgradeableCount += count;
             }
+            if (card.canUpgrade()) upgradeableCount += count;
             break;
 
         case CardType::SKILL:
             transformableCount += count;
             cardTypeCounts[static_cast<int>(CardType::SKILL)] += count;
-            if (gc.hasRelic(RelicId::TOXIC_EGG)) {
+            if (gc.hasRelic(RelicId::TOXIC_EGG) && !card.isUpgraded()) {
                 card.upgrade();
-            } else if (card.canUpgrade()) {
-                upgradeableCount += count;
             }
+            if (card.canUpgrade()) upgradeableCount += count;
             break;
 
         case CardType::POWER:
             transformableCount += count;
             cardTypeCounts[static_cast<int>(CardType::POWER)] += count;
-            if (gc.hasRelic(RelicId::FROZEN_EGG)) {
+            if (gc.hasRelic(RelicId::FROZEN_EGG) && !card.isUpgraded()) {
                 card.upgrade();
-            } else if (card.canUpgrade()) {
-                upgradeableCount += count;
             }
+            if (card.canUpgrade()) upgradeableCount += count;
             break;
 
         case CardType::CURSE:
@@ -165,6 +161,9 @@ void Deck::obtain(GameContext &gc, Card card, int count) {
                         return;
                     }
                 }
+            }
+            if (gc.hasRelic(RelicId::DARKSTONE_PERIAPT)) {
+                gc.playerIncreaseMaxHp(6 * count);
             }
             if (card.canTransform()) {
                 transformableCount += count;
@@ -274,8 +273,11 @@ void Deck::remove(GameContext &gc, int idx) {
 }
 
 void Deck::upgrade(int idx) {
+    const bool wasUpgradeable = cards[idx].canUpgrade();
     cards[idx].upgrade();
-    --upgradeableCount;
+    // Searing Blow remains upgradeable after every upgrade. The cache is a
+    // property of the current cards, not the number of prior upgrade actions.
+    upgradeableCount += int(cards[idx].canUpgrade()) - int(wasUpgradeable);
 }
 
 void Deck::addMatchingToSelectList(fixed_list<SelectScreenCard, Deck::MAX_SIZE> &selectList, const CardPredicate &p) const {

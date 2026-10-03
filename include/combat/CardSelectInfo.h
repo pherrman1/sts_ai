@@ -6,6 +6,7 @@
 #define STS_LIGHTSPEED_CARDSELECTINFO_H
 
 #include <array>
+#include <vector>
 
 #include "constants/Cards.h"
 
@@ -61,6 +62,10 @@ namespace sts {
 
     struct CardSelectInfo {
         std::array<CardId, 3> cards {CardId::INVALID, CardId::INVALID, CardId::INVALID};
+        bool setCostToZero = true;
+        std::vector<int> drawsAfter, blocksAfter;
+        int damageAllBeforeBlocks = 0;
+        int drawAfter = 0; // Explicit live Toolbox continuation; native queues keep this zero.
         bool canPickZero = false;
         bool canPickAnyNumber = false;
         int pickCount = 0;

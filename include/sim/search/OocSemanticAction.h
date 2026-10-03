@@ -43,6 +43,7 @@ enum class OocSemanticEffect : std::uint8_t {
     EVENT_CHOICE = 26,
     TAKE_BOSS_RELIC = 27,
     SKIP_BOSS_RELIC = 28,
+    DISCARD_POTION = 29,
 };
 
 enum class OocSemanticSource : std::uint8_t {

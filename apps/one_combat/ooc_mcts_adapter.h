@@ -26,8 +26,8 @@ struct OocContinuationMetrics {
 };
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
-    // Live-advisor searches evaluate a downstream MAP state without expanding
-    // it.  The public observation cannot reconstruct native room-chance state.
+    // Live histories must qualify both room chances and future relic pools
+    // before downstream MAP expansion.
     bool stopAtMapCheckpoint = false;
     bool uniformPrior = false;
     double priorTemperature = 1.0;
@@ -65,7 +65,10 @@ struct OocMctsDependencies {
 };
 
 OocMctsDependencies defaultOocMctsDependencies();
-void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms);
+// Qualified public question-room history fixes the three room probabilities;
+// reward pity remains hidden and is still sampled from its reachable prior.
+void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms,
+                                 bool questionHistoryComplete = false);
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:

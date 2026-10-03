@@ -1,5 +1,6 @@
 """Small strict-fixture and numerical tests; never access the real corpus."""
 import hashlib
+from dataclasses import FrozenInstanceError, replace
 import unittest
 from unittest.mock import patch
 
@@ -7,7 +8,7 @@ import numpy as np
 
 from tools import test_vwin_refresh_corpus as corpus_fixtures
 from tools.vwin_refresh_contract import ContractError, _sha256
-from tools.vwin_refresh_dataset import Dataset, half_train_sources, source_split, validated_dataset, preboss_map_state
+from tools.vwin_refresh_dataset import Dataset, half_train_sources, source_split, validated_dataset, preboss_map_state, CorpusBinding, DEFAULT_CORPUS_BINDING, SPLIT_NAMES
 
 
 class DatasetTests(unittest.TestCase):
@@ -119,6 +120,57 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(calls, [({"TRAIN"}, True), ({"VALIDATION", "TEST"}, False)])
         with self.assertRaisesRegex(ContractError, "B0 required"):
             data.preflight(["absent"])
+
+
+class CorpusBindingTests(unittest.TestCase):
+    setUp = DatasetTests.setUp
+
+    def test_binding_is_immutable_and_strict(self):
+        counts = {'TRAIN': 696, 'VALIDATION': 155, 'TEST': 173}
+        binding = CorpusBinding('A' * 64, counts)
+        counts['TRAIN'] = 1
+        self.assertEqual(binding.split_counts['TRAIN'], 696)
+        with self.assertRaises(TypeError):
+            binding.split_counts['TRAIN'] = 1
+        with self.assertRaises(FrozenInstanceError):
+            binding.index_sha256 = 'b' * 64
+        self.assertEqual(binding, CorpusBinding.from_dict(binding.to_dict()))
+        for bad in (None, {}, {'index_sha256': 'a' * 64},
+                    {'index_sha256': 'a' * 64, 'split_counts': {'TRAIN': 1}},
+                    {'index_sha256': 'g' * 64, 'split_counts': dict(binding.split_counts)},
+                    {'index_sha256': 'a' * 64, 'split_counts': {'TRAIN': True, 'VALIDATION': 1, 'TEST': 1}},
+                    {'index_sha256': 'a' * 64, 'split_counts': {'TRAIN': 1.0, 'VALIDATION': 1, 'TEST': 1}},
+                    {'index_sha256': 'a' * 64, 'split_counts': {'TRAIN': -1, 'VALIDATION': 1, 'TEST': 1}}):
+            with self.subTest(bad=bad), self.assertRaises(ContractError):
+                CorpusBinding.from_dict(bad)
+
+    def test_default_512_and_explicit_1024_counts(self):
+        from tools.vwin_refresh_corpus import validate_corpus
+        corpus = validate_corpus(self.fixture.index_path)
+        for binding in (DEFAULT_CORPUS_BINDING,
+                        CorpusBinding('a' * 64, {'TRAIN': 696, 'VALIDATION': 155, 'TEST': 173})):
+            # Mock only the strictly validated source inventory and index hash;
+            # exercise Dataset's real hashing split/count and contract checks.
+            seeds, counts, seed = [], dict.fromkeys(SPLIT_NAMES, 0), 0
+            while counts != dict(binding.split_counts):
+                split = source_split(seed)
+                if counts[split] < binding.split_counts[split]:
+                    seeds.append(seed)
+                    counts[split] += 1
+                seed += 1
+            with patch('tools.vwin_refresh_dataset.validate_corpus', return_value=replace(corpus, source_seeds=tuple(seeds))), \
+                 patch('tools.vwin_refresh_dataset._sha256', return_value=binding.index_sha256):
+                kwargs = {} if binding == DEFAULT_CORPUS_BINDING else {'binding': binding}
+                data = validated_dataset(self.fixture.index_path, **kwargs)
+                self.assertEqual(data.binding, binding)
+                self.assertEqual(data.split_counts, dict(binding.split_counts))
+                wrong = dict(binding.split_counts, TEST=binding.split_counts['TEST'] + 1)
+                with self.assertRaisesRegex(ContractError, 'split counts mismatch'):
+                    validated_dataset(self.fixture.index_path, binding=CorpusBinding(binding.index_sha256, wrong))
+                with self.assertRaisesRegex(ContractError, 'SHA-256 mismatch'):
+                    validated_dataset(self.fixture.index_path, binding=CorpusBinding('b' * 64, binding.split_counts))
+                with self.assertRaisesRegex(ContractError, 'not both'):
+                    validated_dataset(self.fixture.index_path, binding=binding, expected_sha=binding.index_sha256)
 
 
 class SplitTests(unittest.TestCase):

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
 
 #include "constants/RelicPools.h"
 #include "constants/CardPools.h"
@@ -229,8 +230,13 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
 //        std::cout << getRelicName(r) << " " << s.relic_counters[i] << '\n';
 
         // todo lizard tail, and others
-        int data = s.relic_counters[i];
-        if (r == RelicId::ANCIENT_TEA_SET) {
+        int data = s.relic_counters.at(i);
+        if (r == RelicId::WING_BOOTS) {
+            if (data < -2 || data == -1 || data > 3)
+                throw std::invalid_argument("invalid Wing Boots save counter");
+            wingBootsCharges = std::max(0, data);
+            data = 0; // Frozen OOC encoders keep mechanics in the separate field.
+        } else if (r == RelicId::ANCIENT_TEA_SET) {
             data = data == -2 ? 1 : 0; // vanilla -2 means charged
         }
         RelicInstance relic {r, data};
@@ -753,7 +759,24 @@ void GameContext::transitionToAct(int targetAct) {
     screenState = ScreenState::MAP_SCREEN;
 }
 
+int GameContext::mapMoveCost(int mapNodeX) const {
+    if (mapNodeX < 0 || mapNodeX > 6 || !map) return -1;
+    if (curMapNodeY == 14) return mapNodeX == 0 ? 0 : -1;
+    if (curMapNodeY == -1) return map->getNode(mapNodeX, 0).edgeCount > 0 ? 0 : -1;
+    if (curMapNodeY < 0 || curMapNodeY > 13 || curMapNodeX < 0 || curMapNodeX > 6) return -1;
+    const auto &current = getCurMapNode();
+    for (int i = 0; i < current.edgeCount; ++i)
+        if (current.edges[i] == mapNodeX) return 0;
+    if (act >= 1 && act <= 3 && current.edgeCount > 0
+            && hasRelic(RelicId::WING_BOOTS) && wingBootsCharges > 0 && wingBootsCharges <= 3
+            && map->getNode(mapNodeX, curMapNodeY + 1).edgeCount > 0) return 1;
+    return -1;
+}
+
 void GameContext::transitionToMapNode(int mapNodeX) {
+    // Scripted room setup also uses this function. Only a verified jump costs
+    // a charge; action validation rejects unreachable player destinations.
+    if (mapMoveCost(mapNodeX) == 1) --wingBootsCharges;
     lastRoom = curRoom;
     curMapNodeX = mapNodeX;
     ++floorNum;
@@ -894,10 +917,11 @@ void GameContext::setupEvent() { // todo necronomicon event
             info.hpAmount0 = std::max(1, fractionMaxHp(.10f, FLOOR));
             break;
 
-        case Event::FALLING: { // todo test and CANNOT BE BOTTLED
+        case Event::FALLING: {
             int counts[8] {0};
-            for (const auto &c : deck.cards) {
-                int t = static_cast<int>(c.getType());
+            for (int i=0;i<deck.size();++i) {
+                if(deck.isCardBottled(i))continue;
+                int t = static_cast<int>(deck.cards[i].getType());
                 if (t >= 0 && t < 8) ++counts[t];
             }
 
@@ -914,6 +938,7 @@ void GameContext::setupEvent() { // todo necronomicon event
             info.powerCardDeckIdx = -1;
 
             for (int i = 0; i < deck.cards.size(); ++i) {
+                if(deck.isCardBottled(i))continue;
                 switch (deck.cards[i].getType()) {
                     case CardType::ATTACK:
                         if (attackCount++ == attacksIdx) {
@@ -949,8 +974,9 @@ void GameContext::setupEvent() { // todo necronomicon event
             break;
 
         case Event::GOLDEN_IDOL:
+            info.phase = 0;
             info.hpAmount0 = fractionMaxHp(unfavorable ? 0.35f : 0.25f);
-            info.hpAmount1 = fractionMaxHp(unfavorable ? 0.10f : 0.08f);
+            info.hpAmount1 = std::max(1, fractionMaxHp(unfavorable ? 0.10f : 0.08f));
             break;
 
         case Event::KNOWING_SKULL:
@@ -1330,6 +1356,10 @@ bool GameContext::obtainRelic(RelicId r) {
 
     switch (r) {
 
+        case RelicId::WING_BOOTS:
+            wingBootsCharges = 3;
+            break;
+
         case RelicId::LIZARD_TAIL: {
             // A newly acquired Tail is active until its first native revival.
             relicData = 1;
@@ -1613,19 +1643,19 @@ RelicId GameContext::returnRandomScreenlessRelic(RelicTier tier, bool shopRoom) 
 Card GameContext::previewObtainCard(Card card) {
     switch (card.getType()) {
         case CardType::ATTACK:
-            if (hasRelic(RelicId::MOLTEN_EGG)) {
+            if (hasRelic(RelicId::MOLTEN_EGG) && !card.isUpgraded()) {
                 card.upgrade();
             }
             break;
 
         case CardType::SKILL:
-            if (hasRelic(RelicId::TOXIC_EGG)) {
+            if (hasRelic(RelicId::TOXIC_EGG) && !card.isUpgraded()) {
                 card.upgrade();
             }
             break;
 
         case CardType::POWER:
-            if (hasRelic(RelicId::FROZEN_EGG)) {
+            if (hasRelic(RelicId::FROZEN_EGG) && !card.isUpgraded()) {
                 card.upgrade();
             }
             break;
@@ -2101,6 +2131,26 @@ Event GameContext::generateEvent(Random eventRngCopy) {
     }
 }
 
+Room GameContext::questionRoomOutcomeForCell(int cell, float monster, float shop,
+                                               float treasure, bool previousRoomWasShop) {
+    assert(cell >= 0 && cell < 100);
+    // EventHelper.roll fills these three intervals in order. Its lower bound
+    // clips at 99, not 100: a later class can overwrite the final cell even
+    // when its own width is zero after an earlier interval saturated the table.
+    const int widths[] = {static_cast<int>(monster * 100.0f),
+                          previousRoomWasShop ? 0 : static_cast<int>(shop * 100.0f),
+                          static_cast<int>(treasure * 100.0f)};
+    const Room rooms[] = {Room::MONSTER, Room::SHOP, Room::TREASURE};
+    Room result = Room::EVENT;
+    int start = 0;
+    for (int i = 0; i < 3; ++i) {
+        const int end = start + widths[i];
+        if (cell >= std::min(99, start) && cell < std::min(100, end)) result = rooms[i];
+        start = end;
+    }
+    return result;
+}
+
 Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
     float roll = eventRng.random();
     Room choice = Room::NONE;
@@ -2116,21 +2166,8 @@ Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
     }
 
     if (choice != sts::Room::TREASURE) {
-        int monsterSize = (int) (monsterChance * 100);
-        int shopSize = (lastRoomWasShop ? 0 : (int) (shopChance * 100)) + monsterSize;
-        int treasureSize = (int) (treasureChance * 100) + shopSize;
-
-        int idx = (int) (roll * 100);
-
-        if (idx < monsterSize) {
-            choice = Room::MONSTER;
-        } else if (idx < shopSize) {
-            choice = Room::SHOP;
-        } else if (idx < treasureSize) {
-            choice = Room::TREASURE;
-        } else {
-            choice = Room::EVENT;
-        }
+        choice = questionRoomOutcomeForCell(static_cast<int>(roll * 100.0f),
+                                            monsterChance, shopChance, treasureChance, lastRoomWasShop);
     }
 
     if (choice == Room::MONSTER) {
@@ -2158,6 +2195,7 @@ Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
 }
 
 void GameContext::damagePlayer(int amount) {
+    if (amount <= 0) return;
 #ifdef sts_asserts
     assert(amount > 0);
 #endif
@@ -2168,12 +2206,13 @@ void GameContext::damagePlayer(int amount) {
 }
 
 void GameContext::playerLoseHp(int amount) {
+    if (amount <= 0) return;
 #ifdef sts_asserts
     assert(amount > 0);
 #endif
 
     if (hasRelic(RelicId::TUNGSTEN_ROD)) {
-        amount -= 1;
+        amount = std::max(0,amount - 1);
     }
     curHp -= amount;
 
@@ -2781,6 +2820,7 @@ void GameContext::chooseEventOption(int idx) {
                     break;
 
                 case 1:
+                    loseGold(unfavorable ? 50 : 40);
                     deck.upgradeRandomCards(miscRng, 2);
                     regainControl();
                     break;
@@ -2792,8 +2832,8 @@ void GameContext::chooseEventOption(int idx) {
 
                 case 3:
                     loseGold(unfavorable ? 75 : 60);
-                    deck.transformRandomCards(miscRng, 2); // TODO
-                    regainControl();
+                    info.transformRng = MISC_RNG;
+                    openCardSelectScreen(CardSelectScreenType::TRANSFORM, 2);
                     break;
 
                 case 4:
@@ -2907,7 +2947,8 @@ void GameContext::chooseEventOption(int idx) {
             switch (idx) {
                 case 0:
                     // Warn!! replace might go around future obtainRelic logic
-                    relics.replaceRelic(RelicId::GOLDEN_IDOL, RelicId::BLOODY_IDOL);
+                    relics.remove(RelicId::GOLDEN_IDOL);
+                    obtainRelic(hasRelic(RelicId::BLOODY_IDOL)?RelicId::CIRCLET:RelicId::BLOODY_IDOL);
                     regainControl();
                     break;
 
@@ -2965,7 +3006,8 @@ void GameContext::chooseEventOption(int idx) {
         case Event::GOLDEN_IDOL: {
             switch (idx) {
                 case 0:
-                    obtainRelic(RelicId::GOLDEN_IDOL);
+                    obtainRelic(hasRelic(RelicId::GOLDEN_IDOL)?RelicId::CIRCLET:RelicId::GOLDEN_IDOL);
+                    info.phase = 1;
                     break;
 
                 case 1:
@@ -3115,7 +3157,8 @@ void GameContext::chooseEventOption(int idx) {
                 regainControlAction = [goldAmt](auto &gc) {
                     Rewards reward;
                     reward.addGold(goldAmt);
-                    reward.addRelic(RelicId::RED_MASK);
+                    reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
+                    gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));
                     gc.openCombatRewardScreen(reward);
                     gc.regainControlAction = returnToMapAction;
@@ -3201,7 +3244,10 @@ void GameContext::chooseEventOption(int idx) {
                 enterBattle(MonsterEncounter::MUSHROOMS_EVENT);
 
             } else if (idx == 1) {
-                obtainGold(unfavorable ? 50 : 99);
+                // Vanilla heals before the Parasite acquisition (which may
+                // itself trigger Darkstone Periapt or be blocked by Omamori).
+                playerHeal(fractionMaxHp(0.25f));
+                deck.obtain(*this, CardId::PARASITE);
                 regainControl();
 
             } else {
@@ -3222,7 +3268,6 @@ void GameContext::chooseEventOption(int idx) {
                 enterBattle(MonsterEncounter::MYSTERIOUS_SPHERE_EVENT);
 
             } else if (idx == 1) {
-                obtainGold(unfavorable ? 50 : 99);
                 regainControl();
 
             } else {
@@ -3251,12 +3296,14 @@ void GameContext::chooseEventOption(int idx) {
         case Event::NLOTH: {
             switch (idx) {
                 case 0:
+                    if (relics.relics[info.relicIdx0].id == RelicId::WING_BOOTS) wingBootsCharges = 0;
                     relics.remove(relics.relics[info.relicIdx0].id); // maybe add a removeAtIdx method?
                     obtainRelic(RelicId::NLOTHS_GIFT);
                     regainControl();
                     break;
 
                 case 1:
+                    if (relics.relics[info.relicIdx1].id == RelicId::WING_BOOTS) wingBootsCharges = 0;
                     relics.remove(relics.relics[info.relicIdx1].id); // maybe add a removeAtIdx method?
                     obtainRelic(RelicId::NLOTHS_GIFT);
                     regainControl();
@@ -3274,7 +3321,13 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::NOTE_FOR_YOURSELF:
             if (idx == 0) {
+                // This event directly invokes relic hooks and adds the stored
+                // card, bypassing ShowCardAndObtainEffect's Omamori interception.
+                const bool omamori=hasRelic(RelicId::OMAMORI);
+                const int charges=omamori?relics.getRelicValueRef(RelicId::OMAMORI):0;
+                if(omamori)relics.getRelicValueRef(RelicId::OMAMORI)=0;
                 deck.obtain(*this, noteForYourselfCard);
+                if(omamori)relics.getRelicValueRef(RelicId::OMAMORI)=charges;
                 openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
             } else if (idx == 1) {
                 regainControl();
@@ -3298,7 +3351,7 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::SCRAP_OOZE:
             if (idx == 0) {
-                damagePlayer(unfavorable ? 5 : 3);
+                damagePlayer((unfavorable ? 5 : 3) + info.eventData);
                 const int roll = miscRng.random(99);
                 const int relicChance = info.eventData*10 + 25;
                 if (roll >= 99 - relicChance) {
@@ -3449,6 +3502,7 @@ void GameContext::chooseEventOption(int idx) {
                 if (result || unfavorable) {
                     deck.obtain(*this, CardId::WRITHE);
                 }
+                obtainRelic(returnRandomScreenlessRelic(returnRandomRelicTier(relicRng, act)));
                 regainControl();
 
             } else if (idx == 1) {

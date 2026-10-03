@@ -112,7 +112,18 @@ fi
 runtime_root=${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$home_dir/.local/share}/sts-ai/live-runtime}
 if ((runtime_available)); then
   export STS_MODEL_INSPECTOR_ADVISOR=${STS_MODEL_INSPECTOR_ADVISOR:-$runtime_root/current/one_combat_advisor}
-  export STS_CTM_MODEL=${STS_CTM_MODEL:-$runtime_root/current/models/combat_transition_near_full_except_smoke_v2.native}
+  # ensure/install validated this manifest; use its primary so legacy releases
+  # remain usable and explicit model overrides retain precedence.
+  if [[ ! ${STS_CTM_MODEL+x} ]]; then
+    ctm_primary=$(python3 - "$runtime_root/current/manifest.json" <<'PY_CTM'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as stream:
+    manifest = json.load(stream)
+print(manifest.get("ctmPrimary", "combat_transition_near_full_except_smoke_v2.native"))
+PY_CTM
+    )
+    export STS_CTM_MODEL="$runtime_root/current/models/$ctm_primary"
+  fi
   if [[ -f "$runtime_root/current/models/v_win_trees.txt" ]]; then
     export STS_LIVE_OOC_WIN_MODEL=${STS_LIVE_OOC_WIN_MODEL:-$runtime_root/current/models/v_win_trees.txt}
   fi

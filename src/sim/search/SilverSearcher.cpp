@@ -19,6 +19,17 @@ using namespace sts;
 
 namespace {
 
+    // A decision node stores the public posterior, not the first particle that
+    // reached it. Subsequent transitions sample a fresh world from that belief;
+    // the sampled scalar persists throughout each transition/rollout and its
+    // public outcomes update the posterior before the next decision checkpoint.
+    void retainPublicDamageBeliefs(BattleContext &bc) {
+        if(!bc.intentsHidden) return;
+        for(auto &m:bc.monsters.arr) if(m.latentDamageMask) {
+            m.miscInfo=0; m.latentDamageMaterialized=false;
+        }
+    }
+
     // Chance categories for widening: 0 = END_TURN (monster rolls and draws), 1 = other.
     int wideningCategory(const search::Action &a) {
         return a.getActionType() == search::ActionType::END_TURN ? 0 : 1;
@@ -159,6 +170,7 @@ void search::SilverSearcher::resetForSearch() {
     root = allocNode();
     root->state = allocDecisionState();
     *root->state = *rootState;
+    retainPublicDamageBeliefs(*root->state);
     if (root->state->outcome != Outcome::UNDECIDED) {
         root->evaluationSum = evaluateEndState(*root->state);
         root->simulationCount = 1;
@@ -234,6 +246,8 @@ void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
     }
     root = newRoot;
     *rootState = *newRoot->state;
+    retainPublicDamageBeliefs(*rootState);
+    retainPublicDamageBeliefs(*root->state);
     reseedRollouts();
 }
 
@@ -295,6 +309,7 @@ search::SilverSearcher::Node *search::SilverSearcher::getOrCreateNode(BattleCont
     Node *newNode = allocNode();
     newNode->state = allocDecisionState();
     std::swap(*newNode->state, state);
+    retainPublicDamageBeliefs(*newNode->state);
     stateToNode[i] = {hash, newNode};
     ++stateToNodeUsed;
     lastNodeWasCreated = true;
@@ -599,12 +614,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
             // the hidden intent through its END_TURN chance node.
-            for (int i = 0; i < bc.monsters.monsterCount; ++i) {
-                auto &m = bc.monsters.arr[i];
-                if (m.pendingMoveRolls > 0 && !m.isDeadOrEscaped()) {
-                    m.materializePendingMove(bc);
-                }
-            }
+            rolloutAgent.materializeHiddenIntents(bc);
             action = rolloutAgent.chooseBattleCardPlay(bc);
         } else if (bc.inputState == InputState::CARD_SELECT) {
             action = rolloutAgent.chooseBattleCardSelect(bc);
@@ -631,7 +641,8 @@ void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleCon
             for (const auto &a : Action::enumerateCardSelectActions(bc)) {
                 const CardInstance *card = a.getActionType() == ActionType::SINGLE_CARD_SELECT
                         ? selectableCard(bc, a.getSelectIdx()) : nullptr;
-                if (card != nullptr) {
+                if (card != nullptr && !(bc.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                        && bc.cardSelectInfo.pickCount == 2)) {
                     const bool duplicate = std::any_of(kept.begin(), kept.end(),
                         [&](const CardInstance *k) { return cardsEquivalentForSearch(*card, *k); });
                     if (duplicate) continue;
@@ -784,6 +795,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
 
 namespace {
 
+
     template <typename Pile>
     int findCard(const Pile &pile, int count, const CardInstance &card) {
         for (int i = 0; i < count; ++i) {
@@ -844,6 +856,12 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
                                        from.cards.exhaustPile[src]); break;
                 case 3: idx = findCard(to.cards.drawPile, to.cards.drawPile.size(), from.cards.drawPile[src]); break;
                 default: break;
+            }
+            if (from.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                    && from.cardSelectInfo.pickCount == 2) {
+                const int second = findCard(to.cards.discardPile, static_cast<int>(to.cards.discardPile.size()),
+                    from.cards.discardPile[action.getTargetIdx()-1]);
+                return idx < 0 || second < 0 ? action : Action(ActionType::SINGLE_CARD_SELECT,idx,second+1);
             }
             return idx < 0 ? action : Action(ActionType::SINGLE_CARD_SELECT, idx);
         }

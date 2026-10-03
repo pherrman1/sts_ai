@@ -22,7 +22,8 @@ import sys
 import numpy as np
 
 from tools.analysis.vwin_tree_utils import load_trees, predict_rows
-from tools.vwin_refresh_dataset import validated_dataset, half_train_sources, HALF_TRAIN_RULE
+from tools.vwin_refresh_dataset import (validated_dataset, half_train_sources, HALF_TRAIN_RULE,
+    CorpusBinding, DEFAULT_CORPUS_BINDING, SPLIT_NAMES)
 
 ARMS = ("X1", "X2", "M1")
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,11 +113,11 @@ def native_parity(X, feature_names, executable, model=B0, tolerance=1e-4):
             "executable_sha256": sha256(executable), "model_sha256": sha256(model)}
 
 
-def preflight(index, output):
+def preflight(index, output, *, binding=DEFAULT_CORPUS_BINDING):
     if Path(output).exists():
         raise FileExistsError(output)
     baseline = Baseline()
-    data = validated_dataset(index)
+    data = validated_dataset(index, binding=binding)
     report = data.preflight(baseline.features)
     report.update(b0=baseline.identity(), tooling=tool_identity(),
                   real_test_predictions_opened=False, full_candidate_training_run=False)
@@ -146,6 +147,18 @@ def checkpoint_hashes(run):
     return {str(p.relative_to(run)): sha256(p) for p in files}
 
 
+def bound_corpus(run, tuning):
+    """Validate saved expectations before any qualification or TEST corpus access."""
+    binding = CorpusBinding.from_dict(tuning.get("corpus_binding"))
+    preflight = json.loads((Path(run) / "preflight.json").read_text())
+    if (CorpusBinding.from_dict(preflight.get("corpus_binding")) != binding
+            or tuning["corpus_sha256"] != binding.index_sha256
+            or preflight["corpus_index_sha256"] != binding.index_sha256
+            or preflight["split_counts"] != dict(binding.split_counts)):
+        raise ValueError("corpus binding disagrees with tuning/preflight")
+    return binding
+
+
 def qualify_validation(run, *, data=None):
     """Qualify execution, never model quality; negative resource gates are valid.
 
@@ -163,15 +176,18 @@ def qualify_validation(run, *, data=None):
     runtime = runtime_fingerprint(tuning["runtime_device"])
     if tuning["tooling"] != tooling or tuning["runtime"] != runtime:
         raise ValueError("tooling/runtime changed since tuning")
+    binding = bound_corpus(run, tuning)
     checkpoints = checkpoint_hashes(run)
     if data is None:
-        data = validated_dataset(tuning["corpus_index"], expected_sha=tuning["corpus_sha256"])
+        data = validated_dataset(tuning["corpus_index"], binding=binding)
+    if data.binding != binding:
+        raise ValueError("qualification dataset corpus binding mismatch")
     models = {"B0": Baseline(run / "B0.txt"),
               **{arm: load_predictor(run / arm) for arm in ARMS}}
     started = time.perf_counter()
     record = {"schema": "vwin_refresh_a3_validation_resources_v1", "status": "running",
               "purpose": tuning["purpose"], "split": "VALIDATION",
-              "corpus_sha256": tuning["corpus_sha256"], "tooling": tooling,
+              "corpus_sha256": tuning["corpus_sha256"], "corpus_binding": binding.to_dict(), "tooling": tooling,
               "runtime": runtime, "checkpoint_hashes": checkpoints,
               "tuning_sha256": sha256(run / "tuning.json"),
               "populations": {}, "arms": {arm: {} for arm in models},
@@ -204,7 +220,10 @@ def qualify_validation(run, *, data=None):
 def verify_validation_qualification(run, tuning):
     from tools.vwin_refresh_training import runtime_fingerprint
     run = Path(run)
+    binding = bound_corpus(run, tuning)
     report = json.loads((run / "validation-resources.json").read_text())
+    if CorpusBinding.from_dict(report.get("corpus_binding")) != binding:
+        raise ValueError("VALIDATION qualification corpus binding mismatch")
     if (report.get("schema") != "vwin_refresh_a3_validation_resources_v1"
             or report.get("status") != "complete" or report.get("split") != "VALIDATION"
             or report.get("purpose") != "selected_candidates"):
@@ -229,7 +248,7 @@ def verify_validation_qualification(run, tuning):
     return report
 
 
-def tune(index, output, *, threads=1, device="cpu"):
+def tune(index, output, *, threads=1, device="cpu", binding=DEFAULT_CORPUS_BINDING):
     from tools.vwin_refresh_training import (train_xgb, train_xgb_fixed, train_mlp,
                                              _configure_cuda_determinism, runtime_fingerprint)
     # XGB version reporting may inspect GPUs before M1 begins.
@@ -239,7 +258,7 @@ def tune(index, output, *, threads=1, device="cpu"):
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
     baseline = Baseline()
-    data = validated_dataset(index)
+    data = validated_dataset(index, binding=binding)
     metadata = data.preflight(baseline.features)
     write_json(output / "preflight.json", metadata)
     names = data.feature_names
@@ -296,6 +315,7 @@ def tune(index, output, *, threads=1, device="cpu"):
         "schema": "vwin_refresh_a3_tuning_v2", "tooling": tooling,
         "runtime": runtime, "runtime_device": device, "purpose": "selected_candidates",
         "corpus_index": str(Path(index).resolve()), "corpus_sha256": sha256(index),
+        "corpus_binding": binding.to_dict(),
         "b0": baseline.identity(), "selected_features": selected,
         "selection_split": "VALIDATION", "test_predictions_opened": False,
         "complete_arms": list(ARMS)})
@@ -304,7 +324,7 @@ def tune(index, output, *, threads=1, device="cpu"):
     return reports
 
 
-def validation_smoke(index, output):
+def validation_smoke(index, output, *, binding=DEFAULT_CORPUS_BINDING):
     """Bounded adapter checkpoints; full real VALIDATION probes, never freezeable.
 
     This is not hyperparameter selection or scientific candidate qualification.
@@ -326,7 +346,7 @@ def validation_smoke(index, output):
             "tooling": tooling, "runtime": runtime}
     write_json(output / "smoke-plan.json", plan)
     print("Validating full corpus; no TEST prediction access", file=sys.stderr, flush=True)
-    data = validated_dataset(index)
+    data = validated_dataset(index, binding=binding)
     baseline = Baseline()
     metadata = data.preflight(baseline.features)
     write_json(output / "preflight.json", metadata)
@@ -357,6 +377,7 @@ def validation_smoke(index, output):
         "schema": "vwin_refresh_a3_tuning_v2", "purpose": "smoke_only",
         "tooling": tooling, "runtime": runtime, "runtime_device": "cpu",
         "corpus_index": str(Path(index).resolve()), "corpus_sha256": sha256(index),
+        "corpus_binding": binding.to_dict(),
         "b0": baseline.identity(), "selected_features": selected,
         "selection_split": "VALIDATION_SMOKE_ONLY", "test_predictions_opened": False,
         "complete_arms": list(ARMS)})
@@ -384,6 +405,7 @@ def freeze(run):
     if tuning["runtime"] != runtime_fingerprint(tuning["runtime_device"]):
         raise ValueError("runtime changed since tuning")
     verify_validation_qualification(run, tuning)
+    binding = bound_corpus(run, tuning)
     selected = tuning["selected_features"]
     preflight_record = json.loads((run / "preflight.json").read_text())
     if selected != preflight_record["selected_feature_names"]:
@@ -397,6 +419,7 @@ def freeze(run):
     record = {"schema": "vwin_refresh_a3_freeze_v2", "artifacts": artifact_hashes(run),
               "tooling": tool_identity(), "runtime": tuning["runtime"],
               "runtime_device": tuning["runtime_device"], "corpus_sha256": tuning["corpus_sha256"],
+              "corpus_binding": binding.to_dict(),
               "test_policy": "one exclusive opening, all four frozen arms, no retuning"}
     write_json(run / "freeze.json", record)
     return record
@@ -414,6 +437,12 @@ def verify_freeze(run):
     from tools.vwin_refresh_training import runtime_fingerprint
     if record["runtime"] != runtime_fingerprint(record["runtime_device"]):
         raise ValueError("frozen runtime changed")
+    tuning = json.loads((run / "tuning.json").read_text())
+    binding = bound_corpus(run, tuning)
+    if (CorpusBinding.from_dict(record.get("corpus_binding")) != binding
+            or record["corpus_sha256"] != binding.index_sha256):
+        raise ValueError("frozen corpus binding changed")
+    verify_validation_qualification(run, tuning)
     if (run / "test-opened.json").exists():
         raise ValueError("TEST was already opened; automatic reopen is prohibited")
     return record
@@ -425,7 +454,8 @@ def open_test(run, confirmation):
     run = Path(run)
     record = verify_freeze(run)  # before corpus or model access
     tuning = json.loads((run / "tuning.json").read_text())
-    data = validated_dataset(tuning["corpus_index"], expected_sha=record["corpus_sha256"])
+    data = validated_dataset(tuning["corpus_index"],
+                             binding=CorpusBinding.from_dict(record["corpus_binding"]))
     from tools.vwin_refresh_training import load_predictor
     from tools.vwin_refresh_evaluation import (evaluate_predictions, clustered_delta,
         sibling_ranking, offline_verdict)
@@ -434,13 +464,14 @@ def open_test(run, confirmation):
     verify_freeze(run)  # Recheck after corpus validation/model loading, before latch.
     # An exclusive durable marker is written before the first TEST feature read.
     write_json(run / "test-opened.json", {"freeze_sha256": sha256(run / "freeze.json"),
+                                          "corpus_binding": record["corpus_binding"],
                                           "status": "consumed_before_test_read"})
     X, y, rows = data.read("TEST", allow_test=True)
     names = data.feature_names
     predictions = {arm: model.predict(X, names) for arm, model in models.items()}
     branches = data.branches("TEST", allow_test=True)
     result = {"freeze_sha256": sha256(run / "freeze.json"), "runtime": record["runtime"],
-              "tooling": record["tooling"], "arms": {}}
+              "tooling": record["tooling"], "corpus_binding": record["corpus_binding"], "arms": {}}
     decisions = {}
     seeds = [int(r["sourceSeed"]) for r in rows]
     for arm, model in models.items():
@@ -488,11 +519,29 @@ def main(argv=None):
     p = sub.add_parser("freeze"); p.add_argument("run")
     p = sub.add_parser("open-test"); p.add_argument("run")
     p.add_argument("--confirm", required=True, choices=("OPEN_REAL_TEST_ONCE",))
+    for command in ("preflight", "tune"):
+        command_parser = sub.choices[command]
+        command_parser.add_argument("--expected-index-sha", help="preregistered 64-hex corpus index SHA-256")
+        command_parser.add_argument("--expected-split-counts", metavar="TRAIN,VALIDATION,TEST",
+                                    help="three positive source counts, in TRAIN,VALIDATION,TEST order")
     args = parser.parse_args(argv)
+    binding = DEFAULT_CORPUS_BINDING
+    if args.command in ("preflight", "tune"):
+        sha, counts = args.expected_index_sha, args.expected_split_counts
+        if (sha is None) != (counts is None):
+            parser.error("expected-index-sha and expected-split-counts must be supplied together")
+        if sha is not None:
+            import re
+            if re.fullmatch(r"[0-9]+,[0-9]+,[0-9]+", counts) is None or any(int(v) <= 0 for v in counts.split(",")):
+                parser.error("expected-split-counts requires three positive integers: TRAIN,VALIDATION,TEST")
+            try:
+                binding = CorpusBinding(sha, dict(zip(SPLIT_NAMES, map(int, counts.split(",")))))
+            except ValueError as exc:
+                parser.error(str(exc))
     if args.command == "preflight":
-        result = preflight(args.index, args.output)
+        result = preflight(args.index, args.output, binding=binding)
     elif args.command == "tune":
-        result = tune(args.index, args.output, threads=args.threads, device=args.device)
+        result = tune(args.index, args.output, threads=args.threads, device=args.device, binding=binding)
     elif args.command == "validation-smoke":
         result = validation_smoke(args.index, args.output)
     elif args.command == "qualify-validation":
