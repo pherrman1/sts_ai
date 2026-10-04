@@ -689,6 +689,11 @@ add_test(NAME combat_transition_runtime_loader COMMAND python3
 set_tests_properties(combat_transition_runtime_loader PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
+add_test(NAME vwin_override COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tools/test_vwin_override.py $<TARGET_FILE:one_combat>)
+set_tests_properties(vwin_override PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+
 add_test(NAME ooc_mcts_live_startup COMMAND python3
     ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>
     --artifact ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)

@@ -420,6 +420,25 @@ prior for Read; its revealed cards become a qualified public OBTAIN selector.
 Mushrooms and Mysterious Sphere use the same hidden reward prior; their native
 leave effects now match vanilla (Parasite plus healing, and no reward,
 respectively).
+The default native win artifact remains B0, `models/v_win_trees.txt`.
+The default-off X2-B candidate is `models/candidates/v_win_x2b_trees.txt`,
+selected explicitly with `STS_WIN_NET` for simulator policies. Its adjacent
+identity JSON binds the exact frozen UBJ, ordered features and exported bytes;
+the existing `export_win_model.py` serializer exports all 445 trees. Production
+C++ continues to use `CompactTreeNet`, with no XGBoost runtime dependency.
+Explicit load failures stop startup instead of falling back to B0. The live
+advisor has a separate `STS_LIVE_OOC_WIN_MODEL` dependency, and the legacy Python
+server has a separate `VWIN` setting; the simulator override does not select
+those models. This candidate is not a qualified gameplay default, and
+terminal-pricing readiness remains false.
+
+The rich fields `nextEliteId` and `nextFight0/1/2` encode encounter IDs from
+native queues at their current offsets, with 0 only past the end. Full-run
+policies use realized queues; OOC particles sample future queues while
+preserving observed history. Live import reconstructs public encounter history
+and samples unknown futures before MCTS evaluation. These values represent
+hypothetical encounters, not visibility into the real game's hidden future.
+
 The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
 (`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather

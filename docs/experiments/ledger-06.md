@@ -14142,7 +14142,64 @@ tree model without any extras.
 **Knowledge impact:** summary added to `operations/ooc-label-pipeline.md` and
 `evaluation/current-research.md`.
 
-## §379 — OOC leaf `v_win` preparation profile; state copy removed (2026-09-26)
+## §379 — Frozen X2-B native deployment qualification, default off (2026-10-05)
+
+**Question:** can the exact post-#334 X2-B ensemble run through native v_win
+without changing the B0 default, with Python parity and no full-path slowdown?
+Baseline source: `8ab1157e45403d25e13a8db735e7515ecc77fa04`. No gameplay,
+retraining, or TEST evaluation was performed for this engineering qualification.
+
+**Identity:** frozen UBJ `99dbac6b5b082c46fe07242d2d15d8ccc6818041cb851efa79d6b423cdcb52dd`;
+freeze `ade2d0cfc0ff8af1d6e5638ced3888b6d7a754d8969dc6932017cb78146d289a`;
+export `a251b33d4f71c1aa3fca529801da23ea9740dd0ded58abfb1a90fe69da7c9acf`.
+The existing exporter preserves 445 trees and 461 ordered features. B0 stays
+`fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`.
+
+**Parity:** 1,024 deterministic MAP rows across all 155 frozen VALIDATION
+sources, acts 1–3, plus nine complete HP sweeps (756 rows). Maximum absolute
+Python/native error `3.57778595e-7`, mean `6.36904418e-8`, p99 `2.43617067e-7`;
+passes the unchanged `<1e-5` gate. Worst row 866: Python 0.736649215221405,
+native 0.736649573. Cached input hashes and source partitions were verified.
+
+**Latency:** GCC 13.3 Release `-O3 -DNDEBUG -flto`, Ryzen 5 7500F,
+`OMP_NUM_THREADS=1`, CPU 2; 10,000 warmups then 100,000 measurements per model
+and mode, alternating arm order. Model-only median/p95: B0 28.103/42.750 us,
+X2-B 7.414/15.038 us. Full rich-feature preparation plus prediction:
+B0 28.323/43.602 us, X2-B 8.266/15.990 us. Full-path median ratio 0.29185
+passes `<=1.05`; mean throughput 31,949 vs 105,400 evaluations/s.
+The corpus reconstructs the selected VALIDATION states and sweeps; unavailable
+original map topology is replaced by deterministic native act maps in both
+arms. Every other encoded feature is checked for equality. This is an
+implementation microbenchmark, not a gameplay speed claim. Existing fixed
+OOC workload: `NOT_RUN` (no applicable workload found).
+
+**Hidden-future audit:** nextEliteId/nextFight0/nextFight1/nextFight2 have
+57/61/58/54 splits, in 52/52/50/50 trees respectively (230 splits in 161 trees
+combined). Depth ranges are 1–5/2–5/1–5/0–5. Full simulator policies use native
+realized queues; OOC and live MCTS use sampled native queues with observed
+history preserved. Rich encoding matches the frozen producer. Classification:
+`X2B_HIDDEN_RUNTIME_COMPATIBLE` for these queue fields. No incompatible sentinel
+representation was found, so substitution sensitivity is not applicable.
+The live advisor's separate loading and pity marginalization are not qualified
+for gameplay by this simulator engineering result.
+
+**Evidence:** local persistent directory
+`/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/x2b-deployment-20261005-1ee9/`;
+`stage-a-files.sha256`, input provenance, raw Python/native predictions,
+per-evaluation latency samples, source scripts, caller matrix, and build/test logs.
+`GITHUB_CI_NOT_USED_BILLING_LIMIT`. Local Release build, default/override/parser/
+projection tests, legacy bitwise tree parity, OOC startup and adapter tests in
+both model configurations passed. Worktree/submodule check and environment
+doctor passed. Candidate is default off; terminal-pricing readiness remains false.
+
+**ELI5:** the frozen tree model agrees with Python and is substantially cheaper
+to evaluate. Whether it preserves current gameplay quality is a separate,
+preregistered paired experiment; these checks do not promote the default.
+
+**Knowledge impact:** runtime selection and encounter-queue semantics recorded
+in maintained out-of-combat architecture and environment-variable documentation.
+
+## §380 — OOC leaf `v_win` preparation profile; state copy removed (2026-09-26)
 
 Issue #338. Profiled native OOC-MCTS leaf value on one fixed seed
 (`12002032`, A0 fair, Act 3 stop, 2,048 sims, V4 leaf policy, zero leaf
