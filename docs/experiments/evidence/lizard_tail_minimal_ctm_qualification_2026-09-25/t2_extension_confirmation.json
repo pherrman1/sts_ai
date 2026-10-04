@@ -1,0 +1,186 @@
+{
+  "baselineGitSha": "03ae0297ac33fba41c64921d5b0bcc6eabe4be2a",
+  "bootstrap": {
+    "confidenceLevel": 0.95,
+    "method": "resample source seeds with replacement; keep all matched rows from each sampled source and compute row-weighted mean delta",
+    "replicates": 5000,
+    "seed": 20260925
+  },
+  "classification": "T2_FROZEN_CANDIDATE_CONFIRMATION_PASS",
+  "comparison": "T2_revive minus T0_ordinary on post-selection B1-extension WIN_CONSUMED rows",
+  "developmentRows": {
+    "T0ScoreableRows": 33,
+    "T2ScoreableRows": 33,
+    "extensionUniquePairs": 347,
+    "fairyBoundaryRows": 1,
+    "newWinConsumedRows": 34,
+    "newWinConsumedSources": 31,
+    "otherOrdinarySupportExclusions": 0,
+    "pairedRows": 33,
+    "pairedSources": 31,
+    "prospectiveSupportScoreableRows": 33,
+    "prospectiveSupportSources": 31,
+    "sourceIds": [
+      4200301,
+      4200302,
+      4200305,
+      4200306,
+      4200308,
+      4200309,
+      4200321,
+      4200323,
+      4200325,
+      4200333,
+      4200338,
+      4200341,
+      4200347,
+      4200354,
+      4200359,
+      4200362,
+      4200364,
+      4200376,
+      4200377,
+      4200379,
+      4200380,
+      4200385,
+      4200387,
+      4200392,
+      4200394,
+      4200399,
+      4200406,
+      4200407,
+      4200409,
+      4200413,
+      4200418
+    ],
+    "zeroNewDomainOrLegalityFailures": true
+  },
+  "frozenCtmComponentHashes": {
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "gateInterpretation": {
+    "decision": "freeze T2 as a candidate and continue; extension confirmation is not fresh qualification",
+    "domainAndLegalityFailuresIntroduced": 0,
+    "expectedHpMaeDoesNotWorsenPointEstimate": true,
+    "hpCrpsPointImproves": true,
+    "hpNllStrictlyImprovesWithCIUpperBelowZero": true,
+    "maxHpPotionAndRelicOutputsShowNoClearDegradation": true
+  },
+  "inputManifests": {
+    "paired-b1-batch-01.jsonl.manifest.json": {
+      "jsonlSha256": "0d4f5276c7e3e0636afc9c6355620de4fcea9d482ec0bb93f22853ebfdf8e1ea",
+      "manifestSha256": "e84f3a00af1c05ecda760b862b6278650f078165f39437ef6178f7aa897da7b9"
+    },
+    "paired-b1-batch-02.jsonl.manifest.json": {
+      "jsonlSha256": "033435e10413e64add99ef4f260d2ce95cccba6b82e3241b58b62743591f942b",
+      "manifestSha256": "9aa206070d582b5d4c351d7fe6c70c5c13f0ebcf1656db2640b5ed7a77cc84be"
+    },
+    "paired-b1-batch-03-next95.jsonl.manifest.json": {
+      "jsonlSha256": "095737b22022bb010b0be8fdb9e2a90f8c2b039724f4bec2086ebcb22be29b7b",
+      "manifestSha256": "3d923737d0a51c19767c1ec01b17ec14353b5d19183224188a9fcb09c911f63d"
+    },
+    "paired-b1-batch-03.jsonl.manifest.json": {
+      "jsonlSha256": "ced4ed9457de646c5241060c9365ab2fcc83b3401b61690623d8f64eb5ff8248",
+      "manifestSha256": "2349b4daa1c9b3b52e7c9628076494af903a85676b7004693fe933f5390cfcb7"
+    }
+  },
+  "metrics": {
+    "expectedHpMae": {
+      "T0": 16.059048265531214,
+      "T2": 12.390582600015232,
+      "T2MinusT0": -3.668465665515983,
+      "sourceClusterBootstrap95CI": [
+        -8.026818483392425,
+        0.6718761370201493
+      ]
+    },
+    "hpCrps": {
+      "T0": 12.731185988306652,
+      "T2": 8.670163274950818,
+      "T2MinusT0": -4.061022713355833,
+      "sourceClusterBootstrap95CI": [
+        -7.701895877305391,
+        -0.39898619053582485
+      ]
+    },
+    "hpNll": {
+      "T0": 5.590665092529377,
+      "T2": 3.9901268634024305,
+      "T2MinusT0": -1.600538229126946,
+      "sourceClusterBootstrap95CI": [
+        -2.577829190921167,
+        -0.6605323428376996
+      ]
+    },
+    "maxHpNll": {
+      "T0": 0.027530346875828785,
+      "T2": 0.03322966019592068,
+      "T2MinusT0": 0.0056993133200918845,
+      "sourceClusterBootstrap95CI": [
+        -0.000500370436014579,
+        0.01676437819724513
+      ]
+    },
+    "potionMaskNll": {
+      "T0": 0.5874526390295591,
+      "T2": 0.6345826749212078,
+      "T2MinusT0": 0.04713003589164857,
+      "sourceClusterBootstrap95CI": [
+        -0.05365329009416821,
+        0.2057261160035058
+      ]
+    }
+  },
+  "schema": "active_lizard_t2_extension_confirmation_v1",
+  "supportedRelicConstraintNll": {
+    "attacks": {
+      "T0": 2.3369993970373764,
+      "T2": 2.312271321719127,
+      "T2MinusT0": -0.0247280753182495,
+      "rows": 7,
+      "sourceClusterBootstrap95CI": [
+        -0.1265439655430169,
+        0.07734655978074732
+      ],
+      "sources": 7
+    },
+    "cards": {
+      "T0": 2.3961333148824577,
+      "T2": 2.178302420606959,
+      "T2MinusT0": -0.21783089427549904,
+      "rows": 3,
+      "sourceClusterBootstrap95CI": [
+        -0.33027107954259627,
+        -0.006558299958381308
+      ],
+      "sources": 3
+    },
+    "shuffles": {
+      "T0": 1.5364509415445398,
+      "T2": 1.3060789214583008,
+      "T2MinusT0": -0.23037202008623917,
+      "rows": 3,
+      "sourceClusterBootstrap95CI": [
+        -0.45759976160833427,
+        -0.05466510137130309
+      ],
+      "sources": 3
+    },
+    "turns": {
+      "T0": 1.341718941242018,
+      "T2": 1.3531279213870888,
+      "T2MinusT0": 0.011408980145070746,
+      "rows": 6,
+      "sourceClusterBootstrap95CI": [
+        -0.052853307821038066,
+        0.07290155509083529
+      ],
+      "sources": 6
+    }
+  }
+}
