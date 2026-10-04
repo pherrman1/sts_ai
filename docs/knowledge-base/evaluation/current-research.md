@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -609,6 +609,46 @@ The policy is now the normal live Silver default, while `STS_SILVER_ADAPTIVE=0`
 restores flat Silver. This remains a deployment screen, not a formal
 equivalence proof or superiority claim. See [ledger §288](../../experiments/ledger-06.md)
 and the [deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md).
+
+### Learned Silver stopping (§370, §372, §377, 2026-10-03)
+
+**`LEARNED_STOP_PASS`**, research-only and default off. With
+`STS_SILVER_LEARNED_STOP=1`, each multi-action root is searched to the
+250..10k checkpoints. Search stops at a strict visit lock or when the risk
+from the compiled GBT model is below its threshold (v1 `gbt-b91dcfea64e1` at 0.03), and this
+applies to fresh roots too. In the frozen fight-replay A/B over 2,437 fights
+(seeds `42000000..42000095`), learned stopping used 19.4% fewer simulations
+than #199 [18.3, 20.5]. The signedOutcome difference was +0.0019 per fight
+[−0.0009, +0.0048].
+
+Against flat 10k:
+- #199: −0.0029 [−0.0054, −0.0004];
+- learned stopping: −0.0010 [−0.0040, +0.0021].
+
+128 live paired runs were descriptive only: 75.8% vs 70.3% wins and 23% less
+CPU per run. Most of the offline saving comes from the strict lock alone. The
+model overfits its training seeds, and the gate is non-inferiority with about
+80% pass probability at zero true effect.
+
+**v2 (§372):** the compiled model is now `gbt-770201c31f7b` (threshold
+0.0323). It was trained on 160 seeds with 4 trend features and chosen by
+seed-grouped cross-validation. A fresh confirmation on seeds
+`44000000..44000127` (3,385 fights) also passed: 21.3% fewer simulations
+than #199 [20.3, 22.3] at −0.0007 signedOutcome per fight
+[−0.0031, +0.0018]. A lock-only arm used 12.7% more simulations than #199, so
+the model carries the saving. Live (128 paired, descriptive): 77.3% vs 76.6%
+wins and 25% less time per run. **v3 live (§377):** a 1,024-pair live run against #199 gave
+`PROMOTE_learned`: +0.49 floors (98.33% CI [+0.08, +0.91]), 80.3% vs 78.3%
+wins, 19% less time per run. The earlier −1 floor lean did not replicate.
+Neither variant tested for boss fights did better than plain v2: falling back
+to #199 in boss rooms, or allowing up to 30k simulations
+(`STS_SILVER_LEARNED_STOP_BOSS_FALLBACK`, `_BOSS_MAX`). Both options stay
+research-only, and the 10k cap stays. Learned stopping is recommended as the
+production default; the flip needs its own ADR and PR.
+
+See [ledger §370, §372 and §377](../../experiments/ledger-06.md), the
+[v1 packet](../../experiments/evidence/silver_learned_stop/README.md) and the
+[v2 packet](../../experiments/evidence/silver_learned_stop/v2/README.md) and the [v3 packet](../../experiments/evidence/silver_learned_stop/v3/README.md).
 
 ## Current priority / active line
 

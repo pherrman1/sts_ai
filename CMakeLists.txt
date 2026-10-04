@@ -389,6 +389,14 @@ add_test(NAME silver_param_screen_400_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_param_screen_400.py --self-test)
 set_tests_properties(silver_param_screen_400_analysis_selftest PROPERTIES
     LABELS "research-repro;tooling")
+add_test(NAME silver_learned_stop_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/silver_learned_stop.py selftest)
+set_tests_properties(silver_learned_stop_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME silver_stop_replay_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_stop_replay.py --self-test)
+set_tests_properties(silver_stop_replay_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
 add_test(NAME silver_param_screen_400_seed_guard_rejects_zero
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
         $<TARGET_FILE:one_combat> silverparams400gen 0 10000 0 /tmp/sp400 40000000 teacher.json)
@@ -397,6 +405,28 @@ add_test(NAME silver_param_screen_400_rejects_non_exact_budget
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
         $<TARGET_FILE:one_combat> silverparams400gen 1 1000 0 /tmp/sp400-invalid 40000000 teacher.json)
 set_tests_properties(silver_param_screen_400_rejects_non_exact_budget PROPERTIES WILL_FAIL TRUE)
+add_test(NAME silver_stop_replay_seed_guard_rejects_zero
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> silverstopreplaygen 0 10000 0 /tmp/ssr 42000000 teacher.json)
+set_tests_properties(silver_stop_replay_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE)
+add_test(NAME silver_stop_replay_rejects_non_exact_budget
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> silverstopreplaygen 1 1000 0 /tmp/ssr-invalid 42000000 teacher.json)
+set_tests_properties(silver_stop_replay_rejects_non_exact_budget PROPERTIES WILL_FAIL TRUE)
+# The invalid option aborts the process before any seed runs; `!` turns that
+# into a pass (WILL_FAIL does not accept an abort).
+add_test(NAME silver_learned_stop_rejects_small_boss_max
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
+add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
 add_test(NAME vwin_refresh_seed_guard_accepts_positive
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
         $<TARGET_FILE:one_combat> vwinrefreshgen 128 10000 0 /tmp/vwin 13000000 teacher.json 1)

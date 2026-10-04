@@ -1,0 +1,137 @@
+{
+ "decisions": 66930,
+ "seeds": 160,
+ "folds": 5,
+ "freshDecisions": 15284,
+ "rule_199": {
+  "saving": 0.41009113999701186,
+  "disagreement": 0.010294337367398775
+ },
+ "lock_only": {
+  "threshold": 0.0001,
+  "saving": 0.37067421186314065,
+  "disagreement": 0.0,
+  "freshSaving": 0.13451975922533366,
+  "freshDisagreement": 0.0
+ },
+ "gbt_v1": {
+  "0.0025": {
+   "threshold": 0.017568,
+   "saving": 0.5058172717764828,
+   "disagreement": 0.002450321231137009,
+   "freshSaving": 0.3087771525778592,
+   "freshDisagreement": 0.0028788275320596702
+  },
+  "0.005": {
+   "threshold": 0.02635,
+   "saving": 0.5388230240549828,
+   "disagreement": 0.004467353951890034,
+   "freshSaving": 0.34969248887725723,
+   "freshDisagreement": 0.005365087673383931
+  },
+  "0.0075": {
+   "threshold": 0.035713,
+   "saving": 0.568019572687883,
+   "disagreement": 0.007052144031077245,
+   "freshSaving": 0.3867917429992148,
+   "freshDisagreement": 0.008898194190002618
+  },
+  "0.01": {
+   "threshold": 0.043737,
+   "saving": 0.5890859853578365,
+   "disagreement": 0.009188704616763783,
+   "freshSaving": 0.4150369667626276,
+   "freshDisagreement": 0.011646165925150484
+  }
+ },
+ "gbt_small": {
+  "0.0025": {
+   "threshold": 0.019442,
+   "saving": 0.4895663379650381,
+   "disagreement": 0.002300911399970118,
+   "freshSaving": 0.2871843103899503,
+   "freshDisagreement": 0.002551688039780162
+  },
+  "0.005": {
+   "threshold": 0.02916,
+   "saving": 0.5272093978783804,
+   "disagreement": 0.004422531002539967,
+   "freshSaving": 0.33779115414812877,
+   "freshDisagreement": 0.005953938759487045
+  },
+  "0.0075": {
+   "threshold": 0.039522,
+   "saving": 0.5607638577618408,
+   "disagreement": 0.007067085014193934,
+   "freshSaving": 0.3847749280293117,
+   "freshDisagreement": 0.009552473174561633
+  },
+  "0.01": {
+   "threshold": 0.048402,
+   "saving": 0.5854168534289557,
+   "disagreement": 0.00956222919468101,
+   "freshSaving": 0.41661541481287623,
+   "freshDisagreement": 0.013281863386548024
+  }
+ },
+ "gbt_mono": {
+  "0.0025": {
+   "threshold": 0.015875,
+   "saving": 0.4841319288809204,
+   "disagreement": 0.0022560884506200507,
+   "freshSaving": 0.28309997382884067,
+   "freshDisagreement": 0.002551688039780162
+  },
+  "0.005": {
+   "threshold": 0.02381,
+   "saving": 0.5187386075003735,
+   "disagreement": 0.0045569998505901686,
+   "freshSaving": 0.33686862077990054,
+   "freshDisagreement": 0.006215650353310652
+  },
+  "0.0075": {
+   "threshold": 0.032271,
+   "saving": 0.5496156432093231,
+   "disagreement": 0.007141789929777379,
+   "freshSaving": 0.3767043967547762,
+   "freshDisagreement": 0.010141324260664747
+  },
+  "0.01": {
+   "threshold": 0.039522,
+   "saving": 0.5723117436127297,
+   "disagreement": 0.009248468549230539,
+   "freshSaving": 0.40325013085579686,
+   "freshDisagreement": 0.012758440198900812
+  }
+ },
+ "logistic": {
+  "0.0025": {
+   "threshold": 0.011713,
+   "saving": 0.4550026146720454,
+   "disagreement": 0.0021515015688032273,
+   "freshSaving": 0.25513118293640413,
+   "freshDisagreement": 0.0037948181104422926
+  },
+  "0.005": {
+   "threshold": 0.021516,
+   "saving": 0.4946466457492903,
+   "disagreement": 0.004900642462274018,
+   "freshSaving": 0.3095361161999477,
+   "freshDisagreement": 0.008701910494634913
+  },
+  "0.0075": {
+   "threshold": 0.032271,
+   "saving": 0.5236045121769013,
+   "disagreement": 0.007425668608994472,
+   "freshSaving": 0.3492083224286836,
+   "freshDisagreement": 0.012431300706621304
+  },
+  "0.01": {
+   "threshold": 0.043737,
+   "saving": 0.5462460779919318,
+   "disagreement": 0.009965635738831614,
+   "freshSaving": 0.3774290107301753,
+   "freshDisagreement": 0.0162915467155195
+  }
+ }
+}
