@@ -1,0 +1,202 @@
+{
+ "model_id": "gbt-770201c31f7b",
+ "train_seeds": [
+  41000000,
+  41000159
+ ],
+ "train_rows": 401580,
+ "train": {
+  "rule_199": {
+   "decisions": 66930,
+   "saving": 0.41009113999701186,
+   "disagreement": 0.010294337367398775,
+   "fresh": {
+    "decisions": 15284,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 51646,
+    "saving": 0.5314525810324129,
+    "disagreement": 0.013340820199047362
+   }
+  },
+  "learned_0.005": {
+   "decisions": 66930,
+   "saving": 0.4373860750037353,
+   "disagreement": 1.4940983116689078e-05,
+   "fresh": {
+    "decisions": 15284,
+    "saving": 0.21350758963622085,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 51646,
+    "saving": 0.5036401657437168,
+    "disagreement": 1.936258374317469e-05
+   },
+   "stops": 49427
+  },
+  "learned_0.01": {
+   "decisions": 66930,
+   "saving": 0.47660615568504405,
+   "disagreement": 0.00017929179740026893,
+   "fresh": {
+    "decisions": 15284,
+    "saving": 0.2696496336037687,
+    "disagreement": 6.542789845590159e-05
+   },
+   "retained": {
+    "decisions": 51646,
+    "saving": 0.5378523990241257,
+    "disagreement": 0.00021298842117492157
+   },
+   "stops": 51011
+  },
+  "learned_0.02": {
+   "decisions": 66930,
+   "saving": 0.5351191543403556,
+   "disagreement": 0.0010608098012849245,
+   "fresh": {
+    "decisions": 15284,
+    "saving": 0.3383620125621565,
+    "disagreement": 0.0013739858675739336
+   },
+   "retained": {
+    "decisions": 51646,
+    "saving": 0.5933470162258452,
+    "disagreement": 0.0009681291871587344
+   },
+   "stops": 54000
+  },
+  "learned_0.0323": {
+   "decisions": 66930,
+   "saving": 0.5789119229045272,
+   "disagreement": 0.0031376064545047063,
+   "fresh": {
+    "decisions": 15284,
+    "saving": 0.3948001177702172,
+    "disagreement": 0.003991101805809997
+   },
+   "retained": {
+    "decisions": 51646,
+    "saving": 0.6333975525694149,
+    "disagreement": 0.0028850249777330286
+   },
+   "stops": 56029
+  },
+  "learned_0.05": {
+   "decisions": 66930,
+   "saving": 0.6211048857014791,
+   "disagreement": 0.006828029284326909,
+   "fresh": {
+    "decisions": 15284,
+    "saving": 0.44777872284742215,
+    "disagreement": 0.00896362208845852
+   },
+   "retained": {
+    "decisions": 51646,
+    "saving": 0.6723986368741045,
+    "disagreement": 0.0061960267978159005
+   },
+   "stops": 57876
+  }
+ },
+ "other": {
+  "rule_199": {
+   "decisions": 0,
+   "saving": 0.0,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   }
+  },
+  "learned_0.005": {
+   "decisions": 0,
+   "saving": 0.0,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "stops": 0
+  },
+  "learned_0.01": {
+   "decisions": 0,
+   "saving": 0.0,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "stops": 0
+  },
+  "learned_0.02": {
+   "decisions": 0,
+   "saving": 0.0,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "stops": 0
+  },
+  "learned_0.0323": {
+   "decisions": 0,
+   "saving": 0.0,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "stops": 0
+  },
+  "learned_0.05": {
+   "decisions": 0,
+   "saving": 0.0,
+   "disagreement": 0.0,
+   "fresh": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "retained": {
+    "decisions": 0,
+    "saving": 0.0,
+    "disagreement": 0.0
+   },
+   "stops": 0
+  }
+ }
+}

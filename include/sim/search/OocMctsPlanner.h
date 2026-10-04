@@ -1,6 +1,7 @@
 #ifndef STS_LIGHTSPEED_OOCMCTSPLANNER_H
 #define STS_LIGHTSPEED_OOCMCTSPLANNER_H
 
+#include <algorithm>
 #include <cstdint>
 #include <cstddef>
 #include <optional>
@@ -15,7 +16,14 @@ namespace sts::search {
 using OocStateId = std::uint64_t;
 using OocActionId = std::uint32_t;
 struct OocPlannerAction { OocActionId id; double prior; };
-struct OocLeafEvaluation { double value; bool terminal = false; };
+// Player state where a simulation's evaluation ended (leaf checkpoint or
+// terminal), reported by providers that can observe it.
+struct OocEndpoint { int hp = 0, maxHp = 0, floor = 0; };
+struct OocLeafEvaluation {
+    double value;
+    bool terminal = false;
+    std::optional<OocEndpoint> endpoint;
+};
 // A support failure invalidates the whole root, not a scalar leaf or action.
 class OocSearchUnsupported : public std::runtime_error {
 public: using std::runtime_error::runtime_error;
@@ -44,6 +52,12 @@ public:
     virtual bool searchGuaranteedNonAborting() const { return false; }
     // Default preserves independent particles, even for identical sampled IDs.
     virtual bool isDeterministicTransition(OocStateId, OocActionId) const { return false; }
+    // Observation of a stored (e.g. terminal) state; must not draw randomness.
+    virtual std::optional<OocEndpoint> endpoint(OocStateId) const { return std::nullopt; }
+    // Optional search-equivalence key of a sampled successor. Two successors of
+    // one chance node with equal keys must have the same future distribution
+    // (the provider re-samples everything the key omits). Empty never merges.
+    virtual std::optional<std::uint64_t> outcomeEquivalenceKey(OocStateId) const { return std::nullopt; }
 };
 struct OocMctsConfig {
     double cPuct = 1.5;
@@ -66,6 +80,10 @@ struct OocMctsConfig {
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
     bool captureValueDistribution = false; // root-only observational aggregates
+    // Pool a sampled successor into an earlier particle of the same chance node
+    // when the provider reports an equal outcomeEquivalenceKey. The particle list
+    // keeps one entry per sample, so reuse stays frequency-weighted.
+    bool mergeEquivalentOutcomes = false;
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;
@@ -107,6 +125,8 @@ struct OocMctsMetrics {
     std::uint64_t expandedNodes2Actions = 0, expandedNodes3PlusActions = 0;
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
+    // Sampled successors pooled into an existing equivalent particle.
+    std::uint64_t mergedOutcomes = 0;
     std::uint32_t maxDepthReached = 0;
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;
@@ -120,11 +140,29 @@ struct OocMctsMetrics {
 struct OocValueDistribution {
     std::array<std::uint64_t, 22> bins{};
     std::uint64_t count = 0;
-    double sum = 0;
+    double sum = 0, sumSquares = 0;
     void record(double value, int terminalKind) {
         const int interval = value >= 1 ? 19 : static_cast<int>(value * 20);
         const int bin = terminalKind == 1 ? 0 : terminalKind == 2 ? 21 : 1 + interval;
-        ++bins[bin]; ++count; sum += value;
+        ++bins[bin]; ++count; sum += value; sumSquares += value * value;
+    }
+};
+// Player HP at each simulation's evaluated endpoint. Index 0 holds explicit
+// terminal deaths; samples without a reported endpoint are unresolved.
+struct OocHpDistribution {
+    std::vector<std::uint64_t> hpCounts;
+    std::uint64_t count = 0, deaths = 0, unresolved = 0;
+    std::map<int, std::uint64_t> floors;   // endpoint floor -> resolved samples
+    int maxHp = 0;                         // largest endpoint max HP
+    void record(const std::optional<OocEndpoint> &endpoint, int terminalKind) {
+        if (!endpoint || (terminalKind != 1 && endpoint->hp <= 0)) { ++unresolved; return; }
+        const int hp = terminalKind == 1 ? 0 : endpoint->hp;
+        if (hpCounts.size() <= static_cast<std::size_t>(hp)) hpCounts.resize(hp + 1, 0);
+        ++hpCounts[hp];
+        ++count;
+        if (terminalKind == 1) ++deaths;
+        ++floors[endpoint->floor];
+        maxHp = std::max(maxHp, endpoint->maxHp);
     }
 };
 struct OocRootActionStats {
@@ -149,6 +187,8 @@ struct OocMctsResult {
     std::optional<OocTreeSnapshot> tree;
     std::optional<OocValueDistribution> rootValues;
     std::map<OocActionId, OocValueDistribution> actionValues;
+    std::optional<OocHpDistribution> rootHp;
+    std::map<OocActionId, OocHpDistribution> actionHp;
 };
 class OocMctsPlanner {
 public:

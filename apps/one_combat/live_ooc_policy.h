@@ -6,7 +6,9 @@
 #include <vector>
 #include <memory>
 #include "run_features.h"
+#include "live_ooc_action_identity.h"
 #include "ooc_mcts_adapter.h"
+#include "question_room_belief.h"
 
 struct OocStrategicTokNet;
 
@@ -24,18 +26,23 @@ struct LiveOocCandidateScore {
     // Never an executable compound action or part of the parent's Q value.
     std::string followUpPreview;
     std::optional<sts::search::OocValueDistribution> valueDistribution;
+    std::optional<sts::search::OocHpDistribution> hpDistribution;
 };
 
 // Common provider output. MCP lowering is separate and consumes these stable
 // semantic identities; primitive bits are diagnostics and never live commands.
 struct LiveOocDecision {
     bool supported = false;
+    bool trivialRootBypass = false;
     std::string reason;
     std::string policy;
     std::vector<LiveOocCandidateScore> candidates;
     int selectedIndex = -1;
     std::optional<sts::search::OocTreeSnapshot> tree;
     std::optional<sts::search::OocValueDistribution> valueDistribution;
+    // Player HP where each simulation's evaluation ended; root player state.
+    std::optional<sts::search::OocHpDistribution> hpDistribution;
+    int rootHp = 0, rootMaxHp = 0, rootFloor = 0;
 };
 
 class LiveOocPolicy {
@@ -45,6 +52,9 @@ public:
     virtual void setSearchSeed(std::uint64_t) {}
     virtual void setRootPrimitiveBits(const std::vector<std::uint32_t> &) {}
     virtual void setRewardPityHistoryComplete(bool) {}
+    virtual void setQuestionHistoryComplete(bool) {}
+    virtual void setMapHistoryComplete(bool) {}
+    virtual void setQuestionChancePosterior(const QuestionChancePosterior &) {}
     virtual void setTreeCapture(bool, std::size_t) {}
     virtual LiveOocDecision score(const sts::GameContext &, const PathHistory &, int currentActEventVisits) const = 0;
 };
@@ -75,6 +85,9 @@ public:
     void setSearchSeed(std::uint64_t seed) override { searchSeed_ = seed; }
     void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
     void setRewardPityHistoryComplete(bool value) override { rewardPityHistoryComplete_ = value; }
+    void setQuestionHistoryComplete(bool value) override { questionHistoryComplete_ = value; }
+    void setMapHistoryComplete(bool value) override { mapHistoryComplete_ = value; }
+    void setQuestionChancePosterior(const QuestionChancePosterior &value) override { questionChancePosterior_ = value; }
     void setTreeCapture(bool enabled, std::size_t cap) override { captureTree_ = enabled; treeNodeCap_ = cap; }
     LiveOocDecision score(const sts::GameContext &, const PathHistory &, int) const override;
 private:
@@ -86,6 +99,9 @@ private:
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;
     bool rewardPityHistoryComplete_ = true;
+    bool questionHistoryComplete_ = false;
+    bool mapHistoryComplete_ = false;
+    QuestionChancePosterior questionChancePosterior_;
     bool captureTree_ = false;
     std::size_t treeNodeCap_ = 4096;
 };

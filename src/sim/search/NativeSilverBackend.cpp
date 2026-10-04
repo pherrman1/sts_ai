@@ -1,5 +1,7 @@
 #include "sim/search/NativeSilverBackend.h"
+#include "sim/search/NativeSilverStopModel.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstdlib>
 #include <memory>
@@ -34,8 +36,18 @@ namespace sts::search {
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
             double topGap = kDefaultTopGap;
+            double escapePenalty = 0;
+            double eliteEscapePenalty = 0;
+            // Research-only learned stopping (NativeSilverStopModel.h).
+            bool learnedStop = false;
+            double learnedStopThreshold = 0;
+            bool learnedStopBossFallback = false;   // boss rooms use the #199 rule
+            std::int64_t learnedStopBossMax = 0;    // > 10k: hard boss roots continue to this cap
+            std::string stopTrace;
         };
         Options g_options;
+        std::mutex g_stopTraceMutex;
+        std::ofstream g_stopTraceFile;
         std::string g_uselessTrace;
         std::mutex g_uselessMutex;
 
@@ -149,6 +161,100 @@ namespace sts::search {
         std::atomic<std::int64_t> g_freshRoots {0};
         std::atomic<std::int64_t> g_singletonSkips {0};
         std::atomic<std::int64_t> g_equivalentCopyReroots {0};
+        std::atomic<std::int64_t> g_learnedStops {0};
+
+        int stopRoomCode(Room room) {
+            switch (room) {
+                case Room::MONSTER: return 0;
+                case Room::ELITE: return 1;
+                case Room::BOSS: return 2;
+                default: return 3;
+            }
+        }
+
+        // Leader and previous features across the checkpoints of one root.
+        struct StopTrack {
+            int leaderEdge = -1;
+            int streak = 0;
+            bool hasPrevious = false;
+            NativeSilverStopFeatures previous{};
+        };
+
+        // Root statistics after `checkpoint` new simulations of a search with
+        // maximum `budget`.
+        NativeSilverStopFeatures stopFeatures(const SilverSearcher &searcher, std::int64_t inheritedVisits,
+                                              std::int64_t checkpoint, std::int64_t budget, int turn, int act,
+                                              int room, StopTrack &track) {
+            int &leaderEdge = track.leaderEdge;
+            int &streak = track.streak;
+            const auto &edges = searcher.rootNode().edges;
+            std::int64_t total = 0, n1 = 0, n2 = 0;
+            int first = -1, second = -1;
+            for (int i = 0; i < static_cast<int>(edges.size()); ++i) {
+                const std::int64_t v = edges[i].visitCount;
+                total += v;
+                if (first < 0 || v > n1) {
+                    second = first; n2 = n1;
+                    first = i; n1 = v;
+                } else if (second < 0 || v > n2) {
+                    second = i; n2 = v;
+                }
+            }
+            double entropy = 0;
+            for (const auto &e : edges) {
+                if (total > 0 && e.visitCount > 0) {
+                    const double p = static_cast<double>(e.visitCount) / static_cast<double>(total);
+                    entropy -= p * std::log(p);
+                }
+            }
+            auto q = [&](int i, double &out) {
+                if (i < 0 || !edges[i].node || edges[i].node->simulationCount <= 0) return false;
+                out = edges[i].node->evaluationSum / static_cast<double>(edges[i].node->simulationCount);
+                return true;
+            };
+            double q1 = 0, q2 = 0;
+            const bool qValid = q(first, q1) && q(second, q2);
+            const bool same = first == leaderEdge;
+            streak = same ? streak + 1 : 1;
+            leaderEdge = first;
+            const std::int64_t remaining = budget - checkpoint;
+            NativeSilverStopFeatures x{};
+            x[kStopCheckpoint] = static_cast<double>(checkpoint);
+            x[kStopInheritedVisits] = static_cast<double>(inheritedVisits);
+            x[kStopFreshRoot] = inheritedVisits == 0 ? 1 : 0;
+            x[kStopLegalActions] = static_cast<double>(edges.size());
+            x[kStopTopShare] = total > 0 ? static_cast<double>(n1) / static_cast<double>(total) : 0;
+            x[kStopSecondShare] = total > 0 ? static_cast<double>(n2) / static_cast<double>(total) : 0;
+            x[kStopGapShare] = total > 0 ? static_cast<double>(n1 - n2) / static_cast<double>(total) : 0;
+            x[kStopEntropy] = entropy;
+            x[kStopQGap] = qValid ? q1 - q2 : 0;
+            x[kStopQGapValid] = qValid ? 1 : 0;
+            x[kStopRootVisits] = static_cast<double>(searcher.rootNode().simulationCount);
+            x[kStopTurn] = turn;
+            x[kStopAct] = act;
+            x[kStopRoom] = room;
+            x[kStopLeaderSame] = same ? 1 : 0;
+            x[kStopLeaderStreak] = streak;
+            x[kStopRho] = static_cast<double>(n1 - n2) / static_cast<double>(std::max<std::int64_t>(remaining, 1));
+            x[kStopLock] = n1 - n2 > remaining ? 1 : 0;
+            const auto &p = track.hasPrevious ? track.previous : x;
+            x[kStopGapShareDelta] = x[kStopGapShare] - p[kStopGapShare];
+            x[kStopTopShareDelta] = x[kStopTopShare] - p[kStopTopShare];
+            x[kStopQGapDelta] = x[kStopQGap] - p[kStopQGap];
+            x[kStopEntropyDelta] = x[kStopEntropy] - p[kStopEntropy];
+            track.previous = x;
+            track.hasPrevious = true;
+            return x;
+        }
+
+        void traceStopCheckpoint(const GameContext &gc, std::int64_t combatId, int decision,
+                                 const NativeSilverStopFeatures &x, const Action &leader) {
+            std::lock_guard lock(g_stopTraceMutex);
+            g_stopTraceFile << gc.seed << ',' << combatId << ',' << decision << ',' << gc.floorNum << ','
+                << static_cast<std::int64_t>(x[kStopCheckpoint]) << ',' << leader.bits;
+            for (const double v : x) g_stopTraceFile << ',' << v;
+            g_stopTraceFile << '\n';
+        }
 
         class KnowledgeObserverScope {
         public:
@@ -205,7 +311,24 @@ namespace sts::search {
             context.actBossRoom = gc.curRoom == Room::BOSS;
             context.omamoriCharged = gc.relics.has(RelicId::OMAMORI)
                 && gc.relics.getRelicValue(RelicId::OMAMORI) > 0;
+            context.eliteRewards = gc.isEliteTriggerCombat();
 
+            // Budget policy: the process options, or this thread's override.
+            const auto &budgetOverride = g_nativeSilverBudgetOverride;
+            using BudgetPolicy = NativeSilverBudgetOverride::Policy;
+            // Learned stopping with the boss fallback runs boss rooms under #199.
+            const bool bossFallback = !budgetOverride && g_options.learnedStop
+                && g_options.learnedStopBossFallback && gc.curRoom == Room::BOSS;
+            const bool adaptive = budgetOverride ? budgetOverride->policy == BudgetPolicy::Adaptive
+                                                 : g_options.adaptive || bossFallback;
+            const bool learnedStop = budgetOverride ? budgetOverride->policy == BudgetPolicy::LearnedStop
+                                                    : g_options.learnedStop && !bossFallback;
+            const bool lockOnly = budgetOverride && budgetOverride->policy == BudgetPolicy::LockOnly;
+            const bool stopTrace = !budgetOverride && !g_options.stopTrace.empty();
+            const bool skipSingletons = budgetOverride ? budgetOverride->skipSingletonRoots
+                : !g_options.exactRootBudgets && !g_options.searchSingletonRoots;
+            if (learnedStop && !nativeSilverStopModelTrained())
+                fail(gc, bc, "learned stopping requires a trained stop model");
             const std::int64_t flatBudget = isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
@@ -243,11 +366,22 @@ namespace sts::search {
                     searcher->setRoot(root);
                 } else {
                     searcher = std::make_unique<SilverSearcher>(root, context);
+                    searcher->evalWeights.escapePenalty = g_options.escapePenalty;
+                    searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    if (const auto &params = g_nativeSilverSearchParamOverride) {
+                        searcher->explorationParameter = params->exploration;
+                        searcher->explorationParameterChance = params->explorationChance;
+                        searcher->chanceWideningC = params->chanceWideningC;
+                        searcher->chanceWideningAlpha = params->chanceWideningAlpha;
+                        searcher->endTurnWideningC = params->endTurnWideningC;
+                        searcher->endTurnWideningAlpha = params->endTurnWideningAlpha;
+                    }
                 }
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
                 ProfileScope profiling(*searcher);
-                const auto configured = g_options.adaptive ? kAdaptiveTotal : flatBudget;
+                const auto configured = learnedStop || lockOnly || stopTrace
+                    ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
 
                 // Simulated actions must not reach the live knowledge tracker.
                 KnowledgeObserverSuspension searching;
@@ -255,12 +389,59 @@ namespace sts::search {
                 // A root with one legal action needs no search: commit it and keep
                 // the retained graph for the next reroot. Exact-root-budget
                 // contracts search every root.
-                const bool skipSearch = !g_options.exactRootBudgets && !g_options.searchSingletonRoots
-                    && searcher->prepareRootActions() == 1;
+                const bool skipSearch = skipSingletons && searcher->prepareRootActions() == 1;
                 try {
                     if (skipSearch) {
                         ++g_singletonSkips;
-                    } else if (g_options.adaptive) {
+                    } else if (learnedStop || lockOnly || stopTrace) {
+                        // Checkpointed search. The trace runs every checkpoint
+                        // (the full-budget leader is the label); the learned
+                        // policy stops at the first strict lock or low risk,
+                        // the lock-only policy at the first strict lock.
+                        // One-action roots are searched only under exact-root
+                        // budgets and never stop early.
+                        const bool eligible = searcher->prepareRootActions() > 1;
+                        const auto budget = kNativeSilverStopCheckpoints.back();
+                        const int room = stopRoomCode(gc.curRoom);
+                        StopTrack track;
+                        for (const auto checkpoint : kNativeSilverStopCheckpoints) {
+                            searcher->search(checkpoint - simulations);
+                            simulations = checkpoint;
+                            const auto x = stopFeatures(*searcher, inheritedVisits, checkpoint, budget,
+                                bc.turn, gc.act, room, track);
+                            if (stopTrace) {
+                                traceStopCheckpoint(gc, combatId, decision, x, SilverSearcher::translateAction(
+                                    searcher->bestAction(), searcher->rootSearchState(), bc));
+                            } else if (checkpoint < budget && eligible) {
+                                if (x[kStopLock] > 0) {
+                                    ++g_learnedStops;
+                                    ++g_nativeSilverCombatStats.lockStops;
+                                    break;
+                                }
+                                if (!lockOnly && nativeSilverStopModelRisk(x) < g_options.learnedStopThreshold) {
+                                    ++g_learnedStops;
+                                    ++g_nativeSilverCombatStats.modelStops;
+                                    break;
+                                }
+                            }
+                        }
+                        // Boss extension: a root that reached the 10k budget
+                        // unstopped continues in 10k steps to the boss cap,
+                        // until the leader is strictly locked against that cap.
+                        if (learnedStop && !budgetOverride && eligible && simulations == budget
+                            && gc.curRoom == Room::BOSS && g_options.learnedStopBossMax > budget) {
+                            const auto cap = g_options.learnedStopBossMax;
+                            while (simulations < cap) {
+                                StopTrack extension;
+                                const auto x = stopFeatures(*searcher, inheritedVisits, simulations, cap,
+                                    bc.turn, gc.act, room, extension);
+                                if (x[kStopLock] > 0) break;
+                                const auto next = std::min(simulations + budget, cap);
+                                searcher->search(next - simulations);
+                                simulations = next;
+                            }
+                        }
+                    } else if (adaptive) {
                         searcher->search(kAdaptiveInitial);
                         simulations = kAdaptiveInitial;
                         const bool retained = inheritedVisits > 0;
@@ -291,8 +472,7 @@ namespace sts::search {
                 if (!action.isValidAction(bc)) {
                     fail(gc, bc, "selected action is not valid on the live state");
                 }
-                traceUselessAction(gc, bc, decision, *searcher, action,
-                    g_options.adaptive ? kAdaptiveTotal : flatBudget, simulations);
+                traceUselessAction(gc, bc, decision, *searcher, action, configured, simulations);
                 if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
                     inheritedVisits, configured, skipSearch, action.bits);
                 agent.takeAction(bc, action);
@@ -321,6 +501,14 @@ namespace sts::search {
     std::string nativeSilverSearchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge,
                            BattleContext &root) {
         root = live;
+        root.intentsHidden=knowledge.hiddenMonsterIntents;
+        if(!knowledge.hiddenMonsterIntents) {
+            // Visible constructor damage is an exact public scalar. Its raw
+            // simulation metadata is irrelevant to the canonical public root.
+            for(auto &m:root.monsters.arr) {
+                m.latentDamageMask=0; m.latentDamageMaterialized=false;
+            }
+        }
         const auto view = makeSilverDrawPileObservation(live, knowledge);
         if (!view.fullOrderObserved) {
             root.cards.drawPile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
@@ -335,9 +523,15 @@ namespace sts::search {
                 }
                 m.moveHistory[0] = static_cast<MMID>(knowledge.publicMonsterMoveHistory[i][0]);
                 m.moveHistory[1] = static_cast<MMID>(knowledge.publicMonsterMoveHistory[i][1]);
-                m.miscInfo = knowledge.publicMonsterMiscInfo[i];
+                m.occupantGeneration = knowledge.monsterOccupantGeneration[i];
+                m.latentDamageMask = knowledge.latentDamageMasks[i];
+                m.latentDamageMaterialized = false;
+                m.miscInfo = m.latentDamageMask ? 0 : knowledge.publicMonsterMiscInfo[i];
                 m.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
                 m.pendingRollInputs = knowledge.pendingHiddenIntentInputs[i];
+                m.pendingRollInputHistory = knowledge.pendingHiddenIntentInputHistory[i];
+                if (m.pendingRollInputHistory.size() == 1) m.pendingRollInputHistory.clear();
+                m.pendingAttackPredicates = knowledge.pendingAttackPredicates[i];
                 m.pendingDirectMoveChoice = 0;
                 if (knowledge.hasUnrepresentableHiddenIntent[i]) {
                     // Looter/Mugger choose their next move directly after a Mug.
@@ -384,6 +578,61 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS")) {
             g_options.searchSingletonRoots = std::atoi(raw) != 0;
         }
+        if (const char *raw = std::getenv("STS_SILVER_ESCAPE_PENALTY"); raw && *raw) {
+            // "<normal>,<elite>" in Silver score units (HP-equivalent).
+            char *end = nullptr;
+            g_options.escapePenalty = std::strtod(raw, &end);
+            if (end == raw || *end != ',') throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
+            const char *elite = end + 1;
+            g_options.eliteEscapePenalty = std::strtod(elite, &end);
+            if (end == elite || *end != '\0' || g_options.escapePenalty < 0 || g_options.eliteEscapePenalty < 0)
+                throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
+            g_options.learnedStop = std::atoi(raw) != 0;
+        }
+        g_options.learnedStopThreshold = nativeSilverStopModelDefaultThreshold();
+        if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP_THRESHOLD"); raw && *raw) {
+            g_options.learnedStopThreshold = std::atof(raw);
+        }
+        if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP_BOSS_FALLBACK")) {
+            g_options.learnedStopBossFallback = std::atoi(raw) != 0;
+            if (g_options.learnedStopBossFallback && !g_options.learnedStop)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP_BOSS_MAX"); raw && *raw) {
+            g_options.learnedStopBossMax = std::atoll(raw);
+            const auto base = kNativeSilverStopCheckpoints.back();
+            if (g_options.learnedStopBossMax != 0 && g_options.learnedStopBossMax <= base)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000");
+            if (g_options.learnedStopBossMax != 0 && !g_options.learnedStop)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX requires STS_SILVER_LEARNED_STOP=1");
+            if (g_options.learnedStopBossMax != 0 && g_options.learnedStopBossFallback)
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX and _BOSS_FALLBACK are exclusive");
+        }
+        if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
+            g_options.stopTrace = path;
+        }
+        if (g_stopTraceFile.is_open()) g_stopTraceFile.close();
+        if (g_options.learnedStop || !g_options.stopTrace.empty()) {
+            // Both replace the budget policy: a 10k maximum with checkpoints.
+            if (g_options.learnedStop && !g_options.stopTrace.empty())
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP and STS_SILVER_STOP_TRACE are exclusive");
+            if (g_options.adaptive)
+                throw std::runtime_error("learned stopping and its trace require STS_SILVER_ADAPTIVE=0");
+            if (g_options.learnedStop && !nativeSilverStopModelTrained())
+                throw std::runtime_error("STS_SILVER_LEARNED_STOP: the compiled stop model is untrained");
+        }
+        if (!g_options.stopTrace.empty()) {
+            g_stopTraceFile.open(g_options.stopTrace, std::ios::app);
+            if (!g_stopTraceFile) throw std::runtime_error("cannot open STS_SILVER_STOP_TRACE");
+            g_stopTraceFile.precision(17);
+            if (g_stopTraceFile.tellp() == 0) {
+                g_stopTraceFile << "seed,combat,decision,floor,checkpoint_sims,leader";
+                for (const auto *name : kNativeSilverStopFeatureNames) g_stopTraceFile << ',' << name;
+                g_stopTraceFile << '\n';
+            }
+        }
         g_externalCombatBackend = runNativeSilverCombat;
     }
 
@@ -411,7 +660,36 @@ namespace sts::search {
         return static_cast<std::int64_t>(kReuseCap);
     }
 
+    const char *const kNativeSilverStopFeatureNames[kStopFeatureCount] = {
+        "checkpoint", "inherited_visits", "fresh_root", "legal_actions", "top_share",
+        "second_share", "gap_share", "entropy", "q_gap", "q_gap_valid", "root_visits",
+        "turn", "act", "room", "leader_same", "leader_streak", "rho", "lock",
+        "gap_share_delta", "top_share_delta", "q_gap_delta", "entropy_delta",
+    };
+
+    bool nativeSilverLearnedStopEnabled() {
+        return g_options.learnedStop;
+    }
+
+    double nativeSilverLearnedStopThreshold() {
+        return g_options.learnedStopThreshold;
+    }
+
+    bool nativeSilverLearnedStopBossFallback() {
+        return g_options.learnedStopBossFallback;
+    }
+
+    std::int64_t nativeSilverLearnedStopBossMax() {
+        return g_options.learnedStopBossMax;
+    }
+
+    std::int64_t nativeSilverLearnedStops() {
+        return g_learnedStops.load();
+    }
+
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
+    thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),

@@ -36,8 +36,9 @@ exit with an error, as does any `STS_SILVER_*` option the native backend does
 not honor (the vendored model's options; see
 [environment-variables.md](../operations/environment-variables.md)). An
 explicit sims argument selects flat Silver at that budget in every mode; only
-`run`, `bestbench` and `reprobench` called without a sims argument use
-adaptive Silver by default (ADR-0018).
+`run`, `bestbench` and `reprobench` called without a sims argument use a
+budget policy by default: learned stopping (ADR-0026, which replaced the #199
+adaptive default of ADR-0018). `STS_SILVER_ADAPTIVE=1` selects #199.
 
 ### Removed searchers and tooling
 
@@ -111,9 +112,11 @@ restore searching such roots. Other roots search a flat
 `STS_SILVER_EXACT_ROOT_BUDGETS=1`) or, with `STS_SILVER_ADAPTIVE`, 10,000 for
 fresh roots and 500 for a retained root whose top-two visit-share gap reaches
 `STS_SILVER_ADAPTIVE_TOP_GAP`. Searched simulations are added to
-`ScumSearchAgent2::simulationCountTotal`. The knowledge observer
-is detached while searching. `g_nativeSilverCombatStats` holds the current
-thread's decisions and simulations for its latest combat.
+`ScumSearchAgent2::simulationCountTotal`, which is default-initialized to zero
+so native backends can safely accumulate counts for every default-constructed
+agent. The knowledge observer is detached while searching.
+`g_nativeSilverCombatStats` holds the current thread's decisions and
+simulations for its latest combat.
 
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
@@ -123,6 +126,15 @@ used (`takeTurn`) or queried (Spot Weakness), overrides discard them
 `getMoveForRoll` reads the roll-time `MonsterRollInputs`, so real play (where
 `intentsHidden` is always false) is unchanged. Gambling Chip and Purity
 selections are searched as whole subsets.
+
+Each canonical monster slot carries an occupant generation. Source-qualified
+splits and summons reset occupant knowledge before the first roll; Darkling
+regrow retains the same identity. Lice and Darkling carry a public candidate
+mask for their persistent constructor damage. A simulated world samples once
+from that mask, while retained nodes, public hashes and model observations
+keep the belief and redact the sample. Public hit outcomes condition the mask
+without reading hidden damage. [ADR-0025](../../../decisions/0025-runic-monster-identity-and-damage-beliefs.md)
+records this representation and its alternatives.
 
 On the standard 128-seed block the native search won 86/128 against the
 vendored model's 83/128 (no detectable difference;
@@ -134,21 +146,20 @@ vendored model's 83/128 (no detectable difference;
 protocol (`SilverBridge.h`). `battleContextFromWire` (`SilverWireState.cpp`)
 builds the search root: the draw pile from the wire's information set, discard
 and exhaust from their multisets, RNG seeded from the wire's public search
-seed, and Runic Dome pending intents. The wire has no action queue. At a card
-selection interrupted mid-play (the playing card is in no pile) the pending
-work is rebuilt by replaying the card on a copy of the root: the card goes
-back to hand with its cost refunded and the per-turn play counts and Ink
-Bottle/Nunchaku/Pen Nib counters rolled back, and the part of the queue the
-play produced that is still unrun when the selection opens (Burning Pact's
-draw, `OnAfterCardUsed`, relic triggers, Sharp Hide) is copied into the root.
-The replay hits a second time, so on the copy every monster is made
-unkillable and a target the real hit killed is revived; otherwise the replay
-could end the combat or fail to use the card before the selection opens.
-Monster reactions to the card's pre-selection hit (a Mode Shift it triggered)
-are not rebuilt: after the hit the monster looks the same whether this card
-or an earlier one triggered them. Effects the first play consumed (Vigor, the
-Pen Nib buff, Double Tap, Necronomicon) are not rolled back. When the replay
-does not reach the same selection, only `OnAfterCardUsed` is restored.
+seed, and Runic Dome pending intents. At supported interrupted selections,
+the producer qualifies the actual pending card queue and a typed public
+action tail. Both queue kinds persist in current JSON envelopes. The importer
+checks the selection's source, physical card identity, action class and
+arguments before restoring the continuation. The fourteen qualified action
+kinds cover draw, block, energy, damage, status changes, random upgrades,
+gambling, wound shuffles and card cleanup. Unqualified tails fail closed.
+
+For native wire roots without an observed public action tail, interrupted-card
+replay reconstructs the continuation on a copy: it refunds the card's cost,
+rolls back per-turn and relevant relic counters, then retains the unexecuted
+work after the selection. An observed pending card queue replaces replayed
+card items. Source-qualified typed tails replace the action replay, preserving
+the effects already executed before the selection.
 `semanticFromSearchAction` maps search actions to the
 index-free `SemanticAction` the advisor lowers to live actions, and
 `NativeSilverAdvisorSession` keeps one searcher per combat for reroot and
@@ -175,6 +186,19 @@ fill each newly freed slot with a generated potion. Fairy in a Bottle is never
 drunk (it procs on lethal), and Smoke Bomb is skipped where escape is blocked.
 Alchemize is not used for the discard rule because its combat effect is not
 implemented in the simulator.
+
+A Smoke Bomb escape ends combat as `PLAYER_VICTORY` with `smokeBombUsed`, and
+Silver's terminal evaluation historically scores it exactly like a win, although
+the escape forfeits the combat rewards. In the 510,030-fight Silver corpus
+(ledger-06), 3,765 fights start with a Smoke Bomb and about 2,923 of them end in
+an escape (the other 78 of 3,001 escapes used a Brew-generated Smoke Bomb). A
+seeded unit fixture shows Silver fleeing even Cultist and Jaw Worm at full HP.
+`SilverEvalWeights::escapePenalty`/`eliteEscapePenalty` subtract the forfeited
+rewards, capped at half the HP left when escaping, because a death also scores
+positively and an uncapped penalty could make a low-HP escape look worse than
+dying. Elite-trigger fights (`GameContext::isEliteTriggerCombat`) use the elite
+penalty. Both default to 0 (historical behavior) until a paired gameplay gate
+decides; `STS_SILVER_ESCAPE_PENALTY` enables them (#370).
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
@@ -277,8 +301,16 @@ invocation details from
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
 - At a mid-card selection the advisor's root lacks monster reactions to the
-  card's pre-selection effects and does not undo effects the first play
-  consumed (see Live advisor).
+  card's pre-selection effects, apart from the Guardian's deferred Mode Shift
+  (see Live advisor). Copies queued by a spent
+  Double Tap, Duplication or Necronomicon are present only when the producer
+  sends `pendingCardQueue`, which the mod does not emit yet (issue #328).
+- The Guardian's `miscInfo` is its native shift threshold, separate from the
+  remaining Mode Shift power. The Java producer reads `dmgThreshold`,
+  `dmgThresholdIncrease` and `isOpen`: Java increments on entering Defensive
+  Mode, while native increments on Twin Slam, so the defensive projection
+  subtracts the increment (10). This also works without an earlier observation
+  of the fight. Missing fields or a non-vanilla increment remain unsupported.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 

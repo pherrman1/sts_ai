@@ -1,0 +1,16 @@
+Purpose: temporary speed-only C1 treatment; no repository source was modified.
+Baseline source commit: 71e9ace30a876a3c0ed12254615eb58814d87d14
+Compiler: g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Compile command:
+g++ -I/tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/overlay -I/home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/apps -I/home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/json/include -O3 -DNDEBUG -std=gnu++20 -Wno-shift-count-overflow -fopenmp -O3 -flto /tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/ooc_contextual_native_probe.cpp -o /tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/ooc_contextual_native_probe_tanh
+Compile exit code: 0
+Treatment header SHA-256: 0d2d01c53d5139075dce6d4f7b591e409a41d542edbee21a14dbb3386da2b8d0
+Probe source SHA-256: 6d1e06fe5b1bd5ce9db7b92bb1b0b564589771880ce72da204b92cdf2d5788b7
+Treatment probe SHA-256: cdc9d9a018eb8ac031b8e20495e4a22ed7500a9c7bd9af62ab05786548a2e6f0
+Header resolution proof:
+. /tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/overlay/ooc_strategic_tok_net.h
+.. /home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/apps/one_combat/ooc_profile.h
+Runtime command:
+OMP_NUM_THREADS=1 /tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/ooc_contextual_native_probe_tanh --benchmark selfplay/models/ooc_strategic_tok_final.native selfplay/models/ooc_strategic_tok_contextual.native 5 < /tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/priors.jsonl > /tmp/ooc-contextual-tanh-followup-20260926-A7t5wR/tanh_speed_diagnostic.json
+Runtime exit code: 0
+The benchmark output is preserved in tanh_speed_diagnostic.json.

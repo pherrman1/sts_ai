@@ -2,6 +2,7 @@
 #define STS_LIGHTSPEED_NATIVESILVERBACKEND_H
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace sts {
@@ -39,8 +40,50 @@ namespace sts::search {
     struct NativeSilverCombatStats {
         std::int64_t decisions = 0;
         std::int64_t simulations = 0;
+        std::int64_t lockStops = 0;    // learned-stop/lock-only roots stopped by a strict lock
+        std::int64_t modelStops = 0;   // learned-stop roots stopped by model risk
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
+
+    // Silver's UCB exploration and chance-widening constants.
+    struct NativeSilverSearchParams {
+        double exploration = 25.0;
+        double explorationChance = 25.0;
+        double chanceWideningC = 3.7028;
+        double chanceWideningAlpha = 0.52389;
+        double endTurnWideningC = 3.7028;
+        double endTurnWideningAlpha = 0.52389;
+    };
+    // Research-only (#400 parameter screen): when set, applied to each combat's
+    // searcher of the current thread at creation. Unset everywhere else; no
+    // environment variable reaches it.
+    extern thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
+
+    // Research-only learned stopping (NativeSilverStopModel.h):
+    // STS_SILVER_LEARNED_STOP=1 with STS_SILVER_ADAPTIVE=0 searches each
+    // multi-action root to the 250..10,000 checkpoints and stops at the first
+    // strict visit lock or model risk below the threshold
+    // (STS_SILVER_LEARNED_STOP_THRESHOLD, default from the model).
+    // STS_SILVER_STOP_TRACE=<csv> instead runs every checkpoint and writes the
+    // features and leader of each one.
+    // STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1 (with learned stopping) runs
+    // boss rooms under the #199 retained-root rule instead.
+    // STS_SILVER_LEARNED_STOP_BOSS_MAX=<n> (> 10,000, with learned stopping)
+    // lets a boss root that reached 10,000 unstopped continue in 10,000 steps
+    // to n, until its leader is strictly locked against n.
+    bool nativeSilverLearnedStopEnabled();
+    bool nativeSilverLearnedStopBossFallback();
+    std::int64_t nativeSilverLearnedStopBossMax();
+    // Research-only (learned-stop replay A/B): when set, replaces the
+    // process budget policy for the current thread's combats. Unset elsewhere.
+    struct NativeSilverBudgetOverride {
+        enum class Policy { Flat, Adaptive, LearnedStop, LockOnly };
+        Policy policy = Policy::Flat;
+        bool skipSingletonRoots = false;
+    };
+    extern thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    double nativeSilverLearnedStopThreshold();
+    std::int64_t nativeSilverLearnedStops();
 
     struct CombatKnowledgeState;
 

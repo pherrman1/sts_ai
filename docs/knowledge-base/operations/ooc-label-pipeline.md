@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -18,7 +18,7 @@ instead of resolving `git rev-parse HEAD` from the launcher's working
 directory. Git working-tree variables remain independently relevant to dirty
 state and other Git-derived diagnostics.
 
-`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; the exact-SHA GCP research manifest accepts its CLI and reserves its `.provenance.json` sidecar.
+`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; reserve its `.provenance.json` sidecar alongside fresh outputs in the frozen experiment manifest.
 
 #### RAW combat-transition producer
 
@@ -245,18 +245,530 @@ the already collected pre-parity raw corpus is retained as explicitly
 auxiliary LL analysis, but must not be relabeled or pooled as the primary new
 V_win/L corpus.
 
-The large corpus uses 128-source shards through the designated GCP research
-path. Raw shards, manifests, teacher/model identities, logs, timings and
+The corpus design uses 128-source shards; larger local collection requires
+explicit authorization and the research preflight. This shard size is an
+experiment choice, not a repository ceiling. Raw shards, manifests, teacher/model
+identities, logs, timings and
 coverage reports remain outside Git; semantic-branch, E2/E2c and other
 historical corpora are auxiliary evidence and are not silently pooled into
 this battle-start corpus.
+
+#### `v_win` refresh and #347 boss-headroom collector
+
+`vwinrefreshgen` extends the same exact-10k native Silver teacher binding and
+`runFullRunOOC` continuation loop with outcome-blind semantic sibling capture.
+The producer requires Ascension 0, native floor/win models, the V4 token model,
+the five V4 strategic gates, the 1.0 strategic margin, keys off, and the other
+experimental action/policy overrides off. `loadWholeCombatTeacher` also
+requires the teacher's `ooc_policy` and loaded artifact hashes to match the
+effective runtime configuration. The V4 token artifact must match pinned
+SHA-256 `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`.
+The frozen-policy guard also rejects enabled `STS_VPATH`/V-informed route
+scoring, which is configured separately from the newer path-policy flags and
+is not represented by the teacher's effective-policy manifest.
+
+Each source trajectory and each deferred sibling branch writes:
+
+- `MAP`: the 1,017-value `richStateHeader` at every map action, before the
+  selected action. The run-out row supplies the eventual `finalWon` label.
+- `WIN_RAW`: one victory-boundary row per won fight, captured through the
+  composed `g_onBattleExitRaw` observer before `regainControl`/`afterBattle`;
+  `postAfterBattleHp` is filled after the ordinary exit call returns. This is
+  evaluation/probe data and is not a training target.
+  - `decisions`: decision type, complete option keys, chosen option and
+    enumeration support/completeness. MAP uses primitive actions; other OOC
+    choices use the semantic-action API. Compound selector primitives remain
+    part of their parent semantic action; the collector resolves the full chosen
+    semantic key from the observed source-plus-selector primitive sequence before
+    admitting that decision to the outcome-blind reservoir. On REWARDS screens,
+    `CARD_REWARD` covers only card take/skip and Singing Bowl skip choices, with
+    siblings limited to the same card-reward group; gold, potion, relic, key, and
+    leave actions do not enter this sampling pool.
+    Treasure open/leave decisions use a separate `TREASURE` pool, leaving
+    `OTHER_SELECTOR` for selectors outside rest/shop parent decisions. Every
+    map action is `MAP`, including the singleton row-14 boss link after a rest
+    site; singleton decisions are logged but do not enter the reservoir.
+- `branches`: one row per sampled sibling, with the chosen option retained and
+  at most five other options selected by a deterministic SHA-256 rank when a
+  decision has more than six choices. Branches start from detached
+  `GameContext`, `PathHistory`, copied agent/RNG and saved OOC thread-local
+  policy state, then continue to the end under the same policy chain.
+
+Revision 5 adds the optional `DECISION` capture sink for future screen-aware
+value-model work (#379). Set `STS_VWIN_DECISION_SINK=1` when collecting it;
+unset or `0` preserves all existing output files and sampling/replay indices.
+The sink writes `<PREFIX>.decision.csv` on source trajectories and branches
+at each non-map screen with more than one semantic option, including intermediate
+shop purchases, reward pickups, and the card selector inside a compound action.
+It records the unchanged rich state vector, public screen contents as JSON,
+all canonical semantic candidate keys plus the chosen key, and the trajectory's
+`finalWon` as `won`. It is capture-only; #334 training still uses MAP rows.
+
+The two decision files serve different purposes: `.decisions.csv` audits
+semantic decisions and reservoir eligibility; the optional `.decision.csv`
+stores screen-level value-model inputs, including capture-only steps that are
+absent from that sampling log.
+
+The CSV prefix is
+`sourceSeed,branchId,deviationIdx,rowIdx,decisionIdx,act,floor,screen,teacherId`,
+followed by the 1,017 rich features and `screenContents,candidates,won`.
+`rowIdx` orders all captured screens within a trajectory. `decisionIdx` joins
+an existing sampling decision when present; `-1` identifies capture-only
+reward pickups or compound-selector screens. These extra states never consume
+sampling indices. `candidates` is a JSON object with `optionKeys`, `chosenKey`,
+`supported`, and `complete`. `screenContents` carries a matching screen tag,
+public offers/identifiers, and selector or inventory details; it contains no
+RNG state or concealed treasure reward. Unsupported/incomplete enumeration or
+an unresolved chosen key omits that capture row and records `rowIdx=-1`,
+`supported`, `complete`, and `error` in the manifest's per-trajectory capture
+log; `enumerationError` preserves the enumerator's diagnostic. Collection
+continues with the existing semantic sampling log and replay trace unchanged.
+Zero/singleton candidate sets return before chosen-key matching or feature
+capture; a partial enumeration is still recorded as an error, since its true
+option count is unknown. If a compound choice cannot resolve, its reserved
+row is removed and subsequent capture-row indices are compacted.
+
+The optional `decisionSink` manifest section contains a per-trajectory capture
+log (including singleton screens omitted from the CSV), row counts by screen
+and source/branch, bytes per row, and a linear projection to 4,096 sources.
+The validator checks the capture log against the rows, joins sampling decisions
+to the existing decision log, and checks JSON/schema, candidate membership,
+trajectory labels, counts, hashes, and size reports. Logged capture errors
+are counted separately by screen and source/branch in the validator's
+`decision_capture_errors` report. An error may not conceal a resolved decision
+in the sampling log; unexplained missing rows and invalid captured rows still
+fail validation. Older v1 capture logs without error fields remain readable.
+Review the measured size before A2; any subsampling rule must be selected and
+recorded before collection.
+
+Semantic branches also resume the source policy layer's intra-call continuation.
+A card decision observed inside `serverCardRewardPolicy` carries a
+`CARD_REWARD_FALLBACK_DRAIN` continuation on its sampled decision; actions
+handled by V4 carry `NONE`. After forcing any sibling, remaining card rewards
+are drained directly through the same fallback under the decision observer,
+before re-entering the outer policy chain. This applies equally to chosen and
+untaken siblings and retains intermediate decision/sink rows. The scoped
+fallback marker is restored under nesting and exceptions; it is not general
+`OocPolicyThreadState`. Normal source fallback gameplay is unchanged.
+`vwin_refresh_reward_continuation` exercises a real V4 two-group tie, the
+incorrect fresh-entry alternative, all three siblings, and marker lifetime.
+
+`OocPolicyThreadState` also captures the complete Match and Keep preference
+cache: seed, act, floor, and `(cardId, upgraded) -> want` entries. Restoring a
+sampled branch restores that cache by value before sibling execution, so an
+earlier sibling cannot supply preferences computed from another deck or path.
+The ordinary seed/act/floor lazy invalidation and within-event preference reuse
+are unchanged. `vwin_refresh_match_and_keep_isolation` uses actual hypothetical
+card valuation to exercise opposite sibling preferences, nested snapshot
+restoration, and multiple clicks in the same event.
+
+For every sampled chosen sibling the producer runs the same forced-action
+branch as the counterfactuals. `PARITY_PERCENT=100` checks every chosen replay
+on the A1 pilot; `PARITY_PERCENT=5` selects an outcome-independent 5% by the
+manifested seed/decision hash for main collection. Parity compares the source
+suffix and branch trace, including later semantic decision keys, recorded
+combat actions, fight outcomes and terminal/post-afterBattle HP, then checks
+the final run result. The old `combatevalgen` output path remains unchanged.
+The trace is an OOC/real-combat trajectory trace for this check; the separate
+`STS_OOC_MCTS_LEAF_TRACE` MCTS leaf-state probe is deferred until its #363 seam
+is available.
+
+Outputs are `<PREFIX>.map.csv`, `.win_raw.csv`, `.decisions.csv`,
+`.branches.csv`, `.combat.csv`, `.runout.csv`, and a hash-bound
+`.manifest.json`. The manifest binds producer/executable/teacher identities,
+effective OOC policy and artifacts, feature-header hash, source seed range,
+reservoir/cap/parity rules, the source-seed 70/15/15 split rule, row totals,
+chosen-replay parity and output hashes. Its `perType` summary reports decision,
+eligibility, support/completeness, candidate-option, sample and branch counts;
+branch CPU seconds are reported by decision type and for each branch. Branches
+inherit the source seed's split. Validate a completed bundle with:
+
+```text
+python3 tools/vwin_refresh_contract.py PREFIX.manifest.json
+```
+
+The validator checks each output hash/header, finite numeric fields, seed and
+branch joins, one run-out outcome per branch, sampled chosen-option presence,
+the six-option cap, the 70/15/15 split metadata, and one `WIN_RAW` row per
+victory in each valid trajectory. It recomputes required chosen replays from
+the manifested percentage, SHA-256 seed/decision bucket and source validity;
+requires PASS for every selected replay; and reconciles runout statuses,
+`branchRows[].chosenReplayParity`, branch validity and both parity summaries.
+Runout `finalWon` must map victory/loss/unresolved to 1/0/-1. Completion and
+trajectory validity must agree with outcome, fatal failure and simulator-health
+fields; completed/valid source totals are recomputed from those runouts.
+`vwinrefreshselftest` covers option-cap determinism, per-seed reservoir-helper
+repeatability, copied agent/RNG and policy state, the rich-feature width and
+thread CPU clock. It does not rerun generated trajectories or compare their
+non-timing outputs across seeds. `vwinrefreshcompoundselftest` exercises Smith,
+Peace Pipe, shop-removal and event compound decisions through selector
+resolution, branch execution and chosen-action replay parity. It also runs the
+production OOC policy step twice for a real rest-site Smith: the first step
+must leave the decision pending on the upgrade selector, and the second must
+resolve, sample and replay the full semantic choice. The
+`vwin_refresh_rejects_vpath_override` contract test runs with `STS_VPATH=1` and
+requires the frozen-policy guard to reject it. `vwinrefreshbranchselftest` is a
+single-seed, seed-guarded full-run chosen-branch replay check.
+`vwinrefreshdecisionsinkselftest` captures two sequential shop purchases and
+leave, verifies reward pickup/card-choice capture and unchanged legacy outputs,
+and checks the schema. The compound test also checks the separate selector
+row and forced-branch reconstruction. Full two-seed generation compares all
+non-timing files with the sink off/on and again with it on:
+
+```text
+python3 tools/vwin_refresh_contract.py OFF.manifest.json --compare ON.manifest.json --allow-sink-toggle
+python3 tools/vwin_refresh_contract.py ON.manifest.json --compare REPEAT_ON.manifest.json
+```
+
+### A3 offline model training and evaluation
+
+`python3 -m tools.vwin_refresh_model` provides four separate stages for #334.
+Use the system/repository Python with NumPy, XGBoost and PyTorch installed; the
+CPU synthetic tests do not require CUDA. The implementation is offline-only,
+does not replace a tracked model, and does not establish gameplay quality.
+
+1. `preflight INDEX --output NEW_REPORT.json` enters through
+   `validate_corpus()` and verifies the frozen index identity and exact
+   source split (358/77/77 by default). It checks every MAP/runout label join
+   and the B0 feature-name contract, and computes variance only on TRAIN MAP rows.
+   It produces no model predictions. Strict validation necessarily reads all
+   component tables, including TEST metadata/labels; TEST prediction access
+   remains closed.
+2. `tune INDEX --output NEW_RUN --authorize-full-training [--threads N]`
+   performs the later, separately authorized full TRAIN/VALIDATION execution.
+   X1/X2 share the 12-recipe CPU-hist grid and selected input features; X2
+   constrains only `curHp`. M1 uses TRAIN normalization, the 64/32 GELU network,
+   12 recipes, seed-0 tuning and selected-recipe retrains at seeds 0/1/2. The
+   lowest validation NLL selects every checkpoint. X1's half-TRAIN check uses
+   the lowest hash-ranked half of source seeds under
+   `vwin-refresh-334-half-train-v1:{seed}` with unchanged selected parameters
+   and early stopping. After selection, the saved checkpoints for all four
+   arms execute the shared VALIDATION/TEST resource wrapper on all VALIDATION
+   MAP and WIN_RAW rows. `validation-resources.json` records per-arm results,
+   timing, cumulative process peak RSS, populations and checkpoint hashes.
+   This is execution qualification; resource outcomes do not change model
+   selection, and negative quality gates may still qualify execution.
+   No TEST feature matrix is loaded.
+3. `freeze RUN` binds the selected checkpoints, B0 copy, normalization,
+   preflight, validation reports and corpus identity in an exclusive v2
+   `freeze.json`. Freeze requires completed selected-checkpoint VALIDATION
+   MAP/WIN_RAW resource qualification with matching hashes, full tooling
+   identity (Git SHA and files), and numerical runtime. All candidates must
+   use the same TRAIN mask.
+4. `open-test RUN --confirm OPEN_REAL_TEST_ONCE` verifies the freeze and
+   corpus again, including equality of the complete tooling identity and
+   Python/NumPy/XGBoost/Torch runtime (CUDA/cuDNN/GPU for CUDA training), then
+   consumes an exclusive `test-opened.json` latch before
+   reading TEST feature matrices. All four arms use identical metrics,
+   source-cluster bootstrap (2,000 replicates), resources and sibling joins.
+   A failed evaluation leaves the latch consumed. Recovery requires a
+   separately reviewed decision; the CLI never automatically reopens TEST.
+
+Both `preflight` and `tune` accept paired explicit inputs
+`--expected-index-sha SHA256 --expected-split-counts TRAIN,VALIDATION,TEST`.
+For the final 1,024-source corpus, use SHA-256
+`ae56f9633ce8da8a72e341978d707c9f145c1f1b6479afa438067af5570dfa00`
+and counts `696,155,173`. The CLI requires a 64-hex SHA and exactly three
+positive integer counts; neither expectation is inferred from the corpus.
+Omitting both flags retains the original 512 SHA and 358/77/77 contract.
+The Python `CorpusBinding(index_sha256, split_counts)` copies the named count
+mapping into immutable storage. `Dataset` retains its legacy explicit
+`expected_sha`/`expected_counts` interface, including empty synthetic splits;
+legacy expectations cannot be combined with a binding.
+
+The exact `corpus_binding` is saved in preflight, tuning, VALIDATION resource
+qualification, freeze, TEST opening and TEST result records. Qualification,
+freeze and verification cross-check the persisted binding and existing SHA/count
+fields. TEST opening passes the frozen binding to strict corpus validation.
+Missing or inconsistent saved bindings fail closed before corpus access; old
+saved runs without bindings must not be silently upgraded or opened. Newly
+started 512 runs retain the existing default semantics. The final baseline
+feature mask derives from all 696 TRAIN sources; the old scaling experiment's
+461-feature mask is not forced, and VALIDATION/TEST variance is never used.
+
+Each overall and breakdown predictive population retains model `nll`, `brier`,
+ROC-AUC, ECE and stable equal-mass reliability bins. Descriptive additions are
+observed row win rate, a constant predictor equal to that population's row win
+rate and its NLL/Brier, plus `outcome_probability_rmse = sqrt(brier)`.
+This RMSE is against observed binary outcomes, not an unobserved true state
+probability. Unique-source win rate weights each represented source once and
+is reported only when labels are constant within every source in that
+population; otherwise it is null with an explicit status (also null when source
+IDs are unavailable). Constant-baseline NLL uses the same probability clipping
+as model NLL, including all-win/all-loss populations. These diagnostics do not
+participate in hyperparameter or checkpoint selection.
+
+The reviewed X1/X2 grids and M1 recipes/64-32 GELU architecture remain unchanged.
+The categorical encoding and MLP capacity screens are deferred until the final
+696/155 baseline rerun makes M1 decision-relevant; they are not unconditional
+extensions of `tune`.
+
+Sibling ranking joins `(sourceSeed, branchId)` and scores the first recorded MAP
+state after the branch option executes. For `type=MAP`, the producer records
+`rowIdx=0` before executing the option, so the evaluator uses the minimum
+recorded `rowIdx > 0`. For other decision types it uses the minimum recorded
+`rowIdx`, including zero. A branch without an eligible MAP row contributes to
+`branches_without_map` and its per-type count, not a ranking pair. Duplicate
+row/branch identities and malformed row indices fail closed. Ranking credits
+are 1/0 for correct/incorrect outcome ordering and 0.5 for a predicted tie;
+95% intervals resample whole source seeds. Native B0 parity fixtures explicitly
+use LF line endings for the existing `winnettest` parser.
+
+`qualify-validation RUN` can execute qualification for saved checkpoints when
+no successful resource artifact exists. A failed attempt writes a separate
+failure report and leaves TEST untouched. The successful artifact is exclusive
+and must match the exact checkpoints and tuning manifest being frozen.
+
+`validation-smoke INDEX --output NEW_RUN` exercises all real VALIDATION MAP and
+WIN_RAW resource rows without full candidate training. It records a fixed plan
+before execution: at most 4,096 TRAIN rows, 1,024 VALIDATION fitting rows, one
+XGB recipe per arm with at most 16 rounds, and one MLP recipe with two epochs
+per fit and retrain seeds 0/1/2. The feature mask still derives from all TRAIN
+MAP rows. These checkpoints and diagnostics carry `purpose=smoke_only` and
+cannot be frozen. The eventual selected full-training checkpoints must execute
+their own qualification; a smoke artifact cannot substitute for it.
+
+Runtime identity is recorded in tuning, resource qualification, freeze and TEST
+results. CPU fingerprinting does not require a GPU; CUDA fingerprints bind the
+selected accelerator and deterministic cuBLAS setup. Saved predictors currently
+run on CPU. Older freeze records without this binding are rejected. Input
+identity changes during tuning or qualification also fail closed.
+
+The compact implementation separates CLI/custody (`vwin_refresh_model.py`),
+component-preserving dataset access (`vwin_refresh_dataset.py`), model families
+(`vwin_refresh_training.py`) and pure metrics/probes
+(`vwin_refresh_evaluation.py`). It writes no numerical cache. Run directories
+must be new and must remain local; do not commit datasets or checkpoints.
+Preflight binds all component manifests, feature header, split/counts,
+TRAIN-selected ordered names/mask, label checks and tooling identity.
+
+B0 uses its serialized feature names. `native_parity()` optionally feeds up to
+64 supplied canonical-rich-order rows through an existing `one_combat
+winnettest` executable and checks name-aligned Python predictions at 1e-4.
+It neither builds C++ nor drives game seeds. Native parity is a separate check
+and is not implied by Python tests.
+
+Resource probes retain the terminal-pricing audit conventions: integer HP
+sweeps over 1..maxHp, monotonicity tolerance 0.005, flat steps below 1e-6 in the
+first ceil(0.6*maxHp) HP, clamped +/-5 local HP slope with denominator 10,
+coherent held-potion removal, bounded +/-25 gold, and Feed-like/max-HP-only
+changes. WIN_RAW act-boss probes replace HP with `postAfterBattleHp`.
+Missing acts/insufficient independent seeds cannot pass the resource gate.
+Pre-boss MAP breakdowns derive from recorded act/mapY and the exact native
+transition rule: Acts 1-3 at mapY=14 enter the boss at Y=15
+(`GameContext::transitionToMapNode`); Act 4 at mapY=2 has the sole boss successor
+at Y=3 (`Map::act4Map`). No floor-distance heuristic is used. Sibling scores
+join explicit source/branch IDs and take minimum recorded `rowIdx`, counting
+branches with no MAP state.
+
+The later offline verdict requires a strictly negative MAP NLL delta CI and
+MAP resource qualification; candidates within 0.003 NLL are tied pending
+native/in-context speed work. WIN_RAW resource qualification is reported
+separately. Neither verdict grants terminal-pricing readiness or promotion.
+The tooling PR and synthetic tests are not a full experiment result.
+
+### Rich `v_win` information boundary (#397)
+
+`tools/analyze_vwin_public_info_397.py` is the maintained classification of
+every `richStateHeader` feature; unknown names fail closed. Only four fields
+expose the simulator's realized future queue and are **HIDDEN_FUTURE**:
+`nextEliteId`, `nextFight0`, `nextFight1`, `nextFight2`. The other four
+V4-excluded fields are public: `monOffset`/`eliteOffset` count hallway/elite
+combats already entered this act (`GameContext::getMonsterForRoomCreation`,
+`getEliteForRoomCreation`; reset at act transition), and `remFights`/
+`remElites` are the fixed act queue length (hallway 16/15/15/0, elite
+10/10/10/1 for acts 1-4) minus that count. The identity held on every #334
+TRAIN/VALIDATION MAP row. `potionChance`, `cardRarityFactor` and `pv*` are
+public history; `deckSize`, `potionCount`, `remFights`, `remElites` are
+redundant. Relic columns store `1 + counter`; every counter observed in the
+#334 corpus is an in-game visible counter.
+
+The public-safe allowlist for future `v_win` training is the TRAIN-variable
+mask minus the four HIDDEN_FUTURE fields (457 of the A3 461). Removing them
+did not measurably hurt the A3 X1 recipe (ledger-06 §371, `INCONCLUSIVE`
+because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
+`models/v_win_trees.txt` still reads all eight V4-excluded fields.
+
+`tools/analyze_rich_domain_397.py` derives the reachable Ironclad master-deck
+card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
+39 colorless, 13 curses, Necronomicurse kept as live-only because the simulator
+omits its Necronomicon obtain). The #334 TRAIN variance mask already excludes
+every unreachable card, other-class relic and other-class potion column
+(ledger-06 §373), so model inputs need no domain filter; the producer keeps the
+broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.
+
+Raw public-history families (relics seen but not owned, events seen,
+encounters fought), reconstructed from #334 `combat.csv`/`decision.csv` by
+`tools/analyze_vwin_history_397.py`, each made a 5-seed X1 ensemble slightly
+worse on VALIDATION (ledger-06 §374, preregistered `INCONCLUSIVE`); none is
+part of the feature contract. The decision sink leaves 3.2% of event visits
+without an `eventId` (first screen single-option or not enumerable).
+Rule-derived public probabilities, each checked against the V2.3.4 Java
+reference, also gave no held-out gain (ledger-06 §§375–376):
+`tools/analyze_vwin_derived_397.py` (potion drop, card rarity, next elite,
+next hallway encounter) and `tools/analyze_vwin_derived_rooms_397.py` (?-room
+outcome odds, next remove price). Adding a monotone duplicate of
+`potionChance` alone moved the 5-seed X1 ensemble by +0.0056 NLL, so feature
+changes below about ±0.005 are not resolvable on the #334 TRAIN/VALIDATION
+split. The derived-feature code is the reference if a later value model wants
+these public quantities.
+With the A3 M1 MLP instead of XGBoost (ledger-06 §378,
+`tools/analyze_vwin_mlp_397.py`) no family qualified either; relics seen but
+not owned improved every MLP seed but the gain came from a few sources, and
+the MLP stays well behind the XGBoost baseline.
+
+### Mixed-producer v_win refresh corpus
+
+`tools/vwin_refresh_corpus.py` validates a read-only index of existing producer
+bundles. It calls the unchanged `validate_bundle()` for every component, then
+requires complete, valid source trajectories and an exact, globally unique
+source-seed cohort. It never generates data, concatenates tables, rewrites
+bundles or presents multiple producers as one. An incomplete full cohort must
+fail; validating an explicitly declared subset establishes only that subset.
+
+The `vwin_refresh_corpus_v1` JSON index has exactly four fields:
+
+- `schemaVersion`: `"vwin_refresh_corpus_v1"`.
+- `sourceSeeds`: a nonempty array of distinct, nonnegative integer source seeds
+  (expand any intended range explicitly).
+- `allowedProducers`: a nonempty array of objects with `producerGitSha`,
+  `producerExecutableSha256`, `teacherManifestSha256`, `teacherId` and
+  `teacherManifest` (path to the original, hash-bound teacher JSON). These four
+  identity fields form one allowed tuple, preventing arbitrary recombination.
+- `components`: a nonempty array of `{ "manifest": "old/seed.manifest.json",
+  "sha256": "<manifest SHA-256>" }` objects.
+
+All index paths resolve relative to the index file; absolute paths also work.
+Each table is found beside its own component manifest using the existing bundle
+suffix contract. The producer's recorded `teacherPath` is retained as historical
+provenance, while the index's hash-checked `teacherManifest` path locates the
+teacher. Thus an evidence directory can move without editing old manifests.
+
+The teacher file must equal the embedded `combatTeacher`, and `policy` must
+equal its `ooc_policy`. The existing OOC teacher validator enforces native Silver
+and exact10k search configuration; the corpus also requires project-fair RNG
+and binds teacher ID, Git SHA, executable SHA and
+`environment.STS_EXECUTABLE_GIT_SHA` to the explicitly allowed identity.
+Only after those checks are the four teacher binding fields removed for
+semantic comparison. These are the exact differences observed between the old
+and repaired #334 recovery freezes. All other teacher fields, including full
+environment, model paths/hashes and OOC flags/parameters, must match, even in
+allowed producers with no components yet. No wildcard normalization is exposed.
+
+Component comparison retains feature schema/header/hash, split, sampling/K/cap,
+parity rule/rate, Ascension, DECISION configuration/label/encoding/join semantics,
+all table headers (including the combat target suffix) and unknown manifest
+metadata. Only producer/teacher identity/path fields, output hashes and known
+per-bundle observations (`integrity`, `perType`, `branchRows`, seed start/count,
+parity checks/failures and DECISION row/size/trajectory measurements) are excluded.
+The existing bundle schema defines MAP labels through runout `finalWon` and
+keeps `WIN_RAW` diagnostic-only; the corpus introduces no new training targets.
+Missing sampling, teacher or policy specifications fail closed.
+
+```python
+from tools.vwin_refresh_corpus import validate_corpus
+
+corpus = validate_corpus("evidence/corpus.json")
+for table in corpus.tables("map.csv"):
+    # Carry this component alongside any loaded rows and branch identifiers.
+    source_manifest = table.component.manifest_path
+    producer = table.component.producer
+    csv_path, csv_sha256 = table.path, table.sha256
+```
+
+`corpus.manifests()` enumerates resolved manifest paths; `corpus.components`
+retains manifest hashes, original producer identities, teacher paths/hashes,
+source seeds and table hashes. `tables()` yields existing paths with their
+component attached and skips an optional table absent from the corpus. Keep
+artifacts immutable during consumption: validation is a snapshot, not a file
+lock. Revalidate after changing any input.
+
+```text
+python3 tools/vwin_refresh_corpus.py evidence/corpus.json
+python3 -m unittest tools.test_vwin_refresh_corpus tools.test_vwin_refresh_contract -q
+```
+
+Synthetic tests cover mixed identities, different directories, relocation,
+cohort failures, strict component rejection, provenance hashes, semantic
+mismatches and the limited teacher-binding normalization. CTest registers
+`vwin_refresh_corpus_selftest` as `core;tooling`. This API does not modify frozen
+external analysis/training scripts; those consumers must explicitly adopt it
+and retain component provenance. Passing this validator establishes artifact
+integrity and compatibility, not gameplay quality, salvage safety or permission
+to continue generation.
+
+### Producer diagnostics and generation
+
+`vwinrefreshcrashdiag 1 OUT_PREFIX SEED TEACHER.json MAX_BRANCHES MARKERS.log`
+is a diagnostic-only, seed-guarded variant of `vwinrefreshgen` for one source
+seed: it keeps the production teacher/policy guard, exact 10k, K=1, the
+six-option cap and branch order, stops after `MAX_BRANCHES` sibling branches,
+writes no manifest, and appends flushed `<branchId> <phase>` markers around
+`runCombatEvalGenSeed`, the collector/runout writers, branch bookkeeping and
+branch-local destruction. Production `vwinrefreshgen` writes no markers.
+
+`ActData_ViolenceAction` (Violence) used a 64-entry stack `fixed_list` for draw
+pile attack indices, while `CardPile` is unbounded; a native Silver rollout that
+grew the draw pile past 64 attacks overflowed it (A2a seed 13001491, Golden Idol
+branch `s13001491-d6-e4060641b190`). The Bronze Orb Stasis helper
+(`MonsterSpecific.cpp`) had the same 64-entry pattern over the cards of one
+rarity in the draw or discard pile. Both temporary lists are now `std::vector`
+with unchanged ordering, card choice and RNG use (the `int` casts keep the
+32-bit `Random::random` overload); `unit-test violence_large_draw_pile` and
+`unit-test stasis_large_pile` pin pre-fix digests and cover more than 64
+candidates. In a locally rebuilt pre-fix GCC 13 `-O3 -flto` release frame, the
+65th Violence entry lands in an unused 4-byte slot (same result as an unbounded
+list) and later entries reach the stack canary, so such a process fails stop
+unless the overwrite happens to reproduce the canary value. That frame layout is
+a property of the compiled binary: data from a pre-fix producer stays held out
+until the frozen producer itself is inspected.
+
+`one_combat vwinrefreshpolicyspec POLICY.json` exports the effective loaded
+OOC policy without generating trajectories. Use it for the teacher's
+`ooc_policy`, with that executable's hash and source SHA; the producer still
+checks all teacher fields and loaded artifacts before generation.
+
+The A1 command uses 128 sources from 13,000,000, K=1, exact 10k and 100% chosen
+replay checks. It is run only after the implementation review and frozen SHA:
+
+```text
+STS_VWIN_DECISION_SINK=1 tools/seed_guard.sh build/linux-gcc-release/one_combat vwinrefreshgen 128 10000 0 PREFIX 13000000 TEACHER.json 1 100
+python3 tools/vwin_refresh_contract.py PREFIX.manifest.json
+```
+
+`bossheadroom347gen` uses the same fixed 128-source cohort. It retains valid
+boss-entry states by act (11/11/10, or all available below quota), ranked by
+`sha256("boss-headroom-347-v1:{seed}:{fightIdx}")`. Arm A replays exact 10k and
+must match the source outcome and terminal HP; only then are B100 (flat 100k)
+and B30 (flat 30k) valid paired comparisons. The mode writes source states,
+per-arm outcome/signed-outcome/HP/first-action/CPU/simulation/decision rows and
+a provenance manifest. `tools/analyze_boss_headroom_347.py` requires the
+adjacent hash-bound manifest and verifies the state/arm joins before analysis.
+Both bundle loading and the analysis entry point require source-state rows,
+recompute A's outcome/terminal-HP match, and reject contradictory match flags.
+A valid B100 or B30 arm requires a matching valid A replay; quarantined A states
+are excluded from both paired analyses.
+It reports paired metrics and source-seed-clustered bootstrap intervals
+overall, by act, and by boss; applies the Stage-1 classification thresholds;
+and flags the authorized extension case.
+
+The analysis command is:
+
+```text
+python3 tools/analyze_boss_headroom_347.py PREFIX.arms.csv
+```
+
+No pilot or Stage-1 cohort is part of implementation verification. The default
+4,096-seed A2 collection still requires explicit authorization; no training,
+model export, leaf-runtime routing, Silver terminal pricing or gameplay/default
+promotion is performed by these producers.
 
 #### Fresh confirmation orchestration and offline analysis
 
 `tools/run_ooc_semantic_confirmation.py` is a deliberately fixed experiment
 runner for seeds 992000 through 993023: 64 independent shards, each retaining
-the native 16-source command ceiling. It runs only through the designated GCP
-launcher and preserves completed, validated shards. `freeze`, `capture`, `gate`
+the native 16-source command ceiling. It can run locally when explicitly
+authorized and preserves completed, validated shards. `freeze`, `capture`, `gate`
 and `evaluate` are separate stages. Evaluation requires every capture to
 validate, an explicit hash-bound capture-distribution review, and frozen
 analysis script hashes. The source archive, pinned dependencies, Release
@@ -332,7 +844,7 @@ tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manife
 
 tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json stageA_B.shard-00-of-24.csv 10000 4 100 B build/ooc_k_budget/experiment.json 0 24
 
-# Launch one command of each arm per index 0..23 (concurrently on the GCP host),
+# Launch one command of each arm per index 0..23 (with concurrency within the authorized local resource budget),
 # substituting the same zero-padded index in the filename and numeric argument.
 python tools/analyze_ooc_k_budget.py stageA_A.shard-*-of-24.csv stageA_B.shard-*-of-24.csv --spec build/ooc_k_budget/experiment.json --output analysis.json
 ```

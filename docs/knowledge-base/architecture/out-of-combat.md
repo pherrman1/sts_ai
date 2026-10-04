@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -35,6 +35,13 @@ its first sample the core reuses that single child instead of widening it. Actio
 Depth counts action transitions (root zero); exact terminals precede model-defined
 leaf boundaries, which precede the technical depth safety guard,
 and newly expanded downstream nonterminal leaves use the injected evaluator.
+With `OocMctsConfig::mergeEquivalentOutcomes`, a newly sampled successor whose
+provider `outcomeEquivalenceKey` equals an earlier particle's key in the same
+chance node reuses that particle's decision node. The particle list still gets
+one entry per sample, so uniform reuse stays frequency-weighted and the widening
+schedule counts samples, not distinct nodes. Providers without keys, or with the
+option off (default), keep independent particles. Merged nodes are captured once
+in tree snapshots; `mergedOutcomes` counts pooled samples.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
 `cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
@@ -110,6 +117,18 @@ provider guarantee. The Smoke-excluded V2 artifact and remaining continuation
 abort paths do not qualify the provider guarantee; live stopping uses the explicit
 unqualified policy instead.
 
+Each live search builds a fresh tree; there is no reroot or tree reuse across
+real decisions. Live `STS_OOC_MCTS_REUSE_TRACE=<fresh.jsonl>` measures the
+opportunity without changing search. Full-state identity never matches, because
+sampling redraws the unrevealed encounter suffix and so advances `monsterRng`
+counters in every stored particle. Public-state identity matches often within
+noncombat stretches, never across a real combat. Even then the matched outcome
+is split across many independent sibling particles, since sampled mode can add
+a particle on every chance visit. Rerooting to one particle therefore retains
+little work (§361: 0.90% of searched simulations on the representative
+workload). Merging publicly identical particles would change search semantics
+and is an open question.
+
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
 `OocGameContextModel` integration through explicit `one_combat oocmctsselftest`
@@ -160,9 +179,19 @@ scoring any remaining reward decision. Multiple captured gold choices are
 handled one observation at a time, including when their native primitive bits
 coincide. If the capture marks an unopened card group as
 `CARD_GROUP_NOT_REVEALED`, the importer still validates the complete schema and
-gold-to-live mappings before allowing that gold pass-through; after the gold is
-gone, the unsupported card-group boundary is returned unchanged. Ectoplasm and
-Bloody Idol therefore retain their normal acquisition semantics.
+gold-to-live mappings before allowing that gold pass-through. A fixed potion
+pickup is also permitted when all visible potion rewards fit and Sozu is
+absent; remaining reward decisions require a fresh observation. Ectoplasm and
+Bloody Idol retain their normal acquisition semantics.
+
+With constrained potion space or Sozu, the driver may reveal a single card
+group while retaining already-public sibling potions. The MCTS root masks
+parent potion actions until card take, ordinary Skip, or Singing Bowl returns
+to the parent rewards. A one-shot continuation removes only that card group;
+ordinary Skip does not acquire Bowl's HP. Direct V4 and differential replay
+reject this parent-potion continuation. A public physical-reward decline ledger
+prevents automatic reopening of vanilla's retained skipped card icon; explicit
+reopening clears the decline. Unrevealed card identities are never imported.
 
 V4 remains a primitive-trained source-level prior. When the state's unique
 semantic source primitives exactly match the complete, duplicate-free V4
@@ -252,24 +281,44 @@ environment model** or a scientifically qualified full OOC planner.
 
 `STS_OOC_MCTS=1` intercepts each nonbattle decision immediately before the
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
-loaded native V4 policy and native win models plus a compatible
-`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. Startup also
-requires the effective Silver reuse cap to be 32,768; the experimental 131,072
-override is rejected. Real combat requires ordinary exact-10k Silver, allocated
-reuse, and adaptive-off, preserving the frozen teacher cap contract. The default
-is OFF and does not load a combat artifact or run MCTS. Both arms retain the
-same normal real combat branch and the same fallback OOC policy chain.
+loaded native V4 policy and native win models plus a compatible combat
+artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
+`selfplay/models/combat_transition_deepsets_lizard_t2.native` artifact and
+automatically pairs it with the pinned standard Attention Brew fallback. An
+explicit combat-model path overrides the automatic stack; explicit artifact
+failures are fatal. Startup also requires the effective Silver reuse cap to be
+32,768; the experimental 131,072 override is rejected. Real combat requires
+ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
+frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
+does not load a combat artifact or run MCTS. Both arms retain the same normal
+real combat branch and the same fallback OOC policy chain.
 
-An experimental fast combat-transition artifact may declare the Entropic Brew
-fallback contract. When that contract is present,
-`STS_OOC_MCTS_BREW_FALLBACK_MODEL` optionally supplies a separate current-standard
-V2 artifact. The adapter routes the whole transition to that artifact when
-Entropic Brew is present in the pre-combat inventory; it does not switch models
-based on generated outcomes. The fallback's actual SHA256 must equal the pinned
-current-standard artifact `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`;
-the runtime also checks source/cohort metadata. Missing or invalid required
-artifacts are fatal. The variable is unset by default, so this experimental
-hybrid is opt-in and does not alter the default OOC path.
+The promoted DeepSets artifact declares the Entropic Brew fallback contract.
+The adapter routes the whole transition to the standard Attention artifact
+when Entropic Brew is present in the pre-combat inventory; it does not switch
+models based on generated outcomes. The fallback's actual SHA256 must equal
+the pinned current-standard artifact
+`e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`; the
+runtime also checks source/cohort metadata. `STS_OOC_MCTS_BREW_FALLBACK_MODEL`
+overrides the automatic fallback path. Missing or invalid required artifacts
+are fatal.
+
+With the automatic model stack, the qualified active-Lizard correction is
+enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips
+active Lizard from the ordinary CTM children, applies the frozen mechanical-q,
+learned-r and T2 semantics, and restores Tail active or spent on the sampled
+post-state. The production artifact
+`selfplay/models/combat_transition_deepsets_lizard_t2.native` has artifact
+SHA-256 `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`
+and unchanged DeepSets tensor-payload SHA-256
+`429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`.
+Its metadata is pinned to Gate 2 PASS report SHA-256
+`1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
+Active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom remain
+explicit boundaries that use the existing fail-closed or exact-path behavior.
+Explicit model paths keep the correction off unless
+`STS_OOC_MCTS_ACTIVE_LIZARD=1` is also set and a Brew fallback is available.
+The correction changes only OOC CTM handling; it does not enable OOC MCTS.
 
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
@@ -355,28 +404,61 @@ restocks, room generation and post-combat rewards. Semantic identity remains
 the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
-The live advisor additionally sets `stopAtMapCheckpoint`: every downstream MAP
-state is a true planner leaf, including after the first visit. This prevents a
-revisited MAP particle from sampling a room with unreconstructed
-event/shop/treasure chance history. Live imports remove currently visible shop,
-combat-reward and boss-relic offers from the reconstructed relic pools.
+The live advisor sets `stopAtMapCheckpoint` when question-room probabilities or
+seen-relic history are unqualified. Qualified histories allow downstream
+MAP choices and use normal native chance updates; root hidden-counter sampling
+never reinitializes a downstream room's inherited probabilities. Live imports
+remove currently visible shop, combat-reward and boss-relic offers from the
+reconstructed relic pools.
 The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM;
 `OocGameContextModel` uses the same neutral value if a custom host omits the
 callback. This matches the native simulator default and the frozen model's
 constant training feature. A zero value causes unsupported predictions from
 this model.
-Pity-sensitive event branches whose reward generation depends on private
-counter history remain unsupported, including Library, Mushrooms and
-Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture
+Library uses its displayed heal amount and the existing MCTS reward-pity
+prior for Read; its revealed cards become a qualified public OBTAIN selector.
+Mushrooms and Mysterious Sphere use the same hidden reward prior; their native
+leave effects now match vanilla (Parasite plus healing, and no reward,
+respectively).
+The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
-(`potionChance=-40..100` in steps of 10 and `cardRarityFactor=-40..5`) rather
+(`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather
 than applying the link to an expected margin or conditioning on 0/5. The
 direct V4 scoring fails closed for real live captures because Java does not
 expose an exact pity history. Live MCTS uses an equal public prior instead of a
 fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
-pity reconstruction. Hypothetical room-chance and pity counters are sampled
-from explicit reachable-state priors before a transition; this is a qualified
+pity reconstruction. Qualified public question-room outcomes reconstruct the
+three room chances, which remain fixed when root particles sample reward pity.
+Qualified legacy Juzu ambiguity is represented by a finite weighted distribution
+over monster chances, conditioned on resolved outcomes, ownership, preceding
+shops and Tiny Chest forcing under the fair uniform 24-bit room-roll prior.
+This distribution is sampled once per root particle and retained downstream;
+it is not a claim about the actual hidden PRNG state. Direct V4 and differential
+tracing reject unresolved mixtures. The native room table uses vanilla's ordered
+clipped fills, including last-cell overwrite when accumulated chances saturate.
+Without that qualified history, room chances use the existing reachable-state
+prior; this is a qualified
 belief particle, not an exact joint posterior.
+
+`OocGameContextModel::outcomeEquivalenceKey` (`outcomeEquivalenceParts`) exists
+only with sampled futures; exact-replay providers return none. It omits exactly
+what `sampleNoncombatFuture` re-draws before the next transition or leaf
+continuation: the run seed, all RNG streams (counters only position a re-seeded
+stream), pool order, unseen normal/elite queue entries, the A20 second Act-3
+boss, hidden chest gold/tier and unsearched Dead Adventurer order. It keeps
+everything copied forward: visible player, deck, relic, potion, map, screen and
+path state, and hidden room/potion/rarity counters and pool membership. Live
+root particles therefore do not merge when they draw different counter beliefs.
+`STS_OOC_MCTS_MERGE_OUTCOMES=1` enables pooling. On two historical seeds at
+2048 simulations it pooled about 35% of sampled successors, removed all
+duplicate visible states from the trees (about 50% of decision nodes without
+it), raised the maximum searched depth from 4 to 11-12, and cost about 30%
+more MCTS CPU per simulation. The sibling states it still keeps apart differed
+in visible state in all but a handful of event cases
+([#384](https://github.com/pherrman1/sts_ai/issues/384)). A paired 128-seed
+gameplay comparison (§367) was inconclusive: `floor + 10*won` difference
+-0.25, 95% interval [-2.46, +1.96], wins 86 vs 83, about 13% more time per
+run. The option stays off.
 
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
@@ -395,9 +477,17 @@ copied. Historical relic offers that were seen and skipped are not present in
 vanilla metrics; the live root therefore fails closed for treasure, Shovel,
 Courier-restock, and random-relic event branches unless a complete
 `seenRelics` history is supplied.
-Live MAP roots are searchable with the explicit room-chance belief prior.
-Non-root MAP states remain hard checkpoint leaves, so a search never chooses a
-hypothetical room after reaching the checkpoint.
+Live MAP roots use reconstructed public room chances when history is qualified,
+and the explicit room-chance belief prior otherwise within its existing gate.
+Non-root MAP states expand only when both question-room and relic-offer
+histories qualify future transitions. Otherwise they remain hard checkpoint
+leaves. Active Wing Boots supports ordinary Act 1–3 charged movement by default,
+including hypothetical acquisition after the root: an existing next-row jump
+costs one charge, ordinary edges cost none, and exhaustion becomes zero.
+Native obtain/save entry reconstructs charges separately from frozen relic
+features. The candidate set and transitions have native fixture coverage and
+installed-JAR connectivity/counter checks; frozen-model quality and live charged
+jump execution remain unqualified. Model features and weights are unchanged.
 
 Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
 searched semantic transitions (primitive transitions on MAP), excluding
@@ -436,6 +526,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
+| `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
 for unsupported/nonunique selectors; all transitions keep the same combat
@@ -563,8 +654,29 @@ persisted semantic target identity.
 `enumerateOocSemanticActions` returns `supported`, `complete`, `error` and
 canonically ordered actions. Consumers must check completeness before treating
 the result as the complete legal action space. MAP, BATTLE and INVALID screens
-are unsupported; disabled Match and Keep and malformed selector states cannot
-be presented as complete supported decisions.
+are unsupported; Match and Keep and malformed selector states cannot be
+presented as complete supported decisions.
+
+A combat that starts with a Smoke Bomb is outside the qualified CTM support.
+The OOC model wraps its sampler (`maskInitialSmokeBomb`) so such a combat is
+valued as if the Smoke Bomb slot were empty (no escape) and the Smoke Bomb is
+returned unused afterwards; a potion generated into that slot is dropped. This
+Phase-0 approximation (#370) replaces the former whole-search abort. It is
+pessimistic where an escape would help; against bosses only slot occupancy
+differs, because escape is blocked there.
+
+Match and Keep is enabled in the simulator (shrine selection, and therefore
+event outcomes, changed for affected seeds). Each action is one click on one of
+12 slots; slot state is `info.toSelectCards[i].deckIdx` (-1 unseen, 1 seen face
+down, 2 face up this attempt, 0 matched), `info.eventData` counts the 5
+attempts, and a matched pair is added to the deck. Its clicks are not searched:
+`matchAndKeepPolicyStep` (`run_driver.cpp`) plays the fair fixed pattern in
+`sim/search/MatchAndKeepPolicy` for real runs and for OOC MCTS continuations.
+The pattern reads a slot's card only after that slot was flipped. Each seen
+card is valued by the active primary guide as a lone card reward
+(`oocHypotheticalCardTaken`): OOC MCTS when it is enabled, otherwise the
+ordinary V4/one-ply chain; inside a search only the chain is used, so no search
+nests inside another.
 
 A compound may combine a source option with one target only when its complete
 candidate set is public before the source click and that click reveals no new
@@ -633,9 +745,30 @@ Rewards enumerate all available card, relic, gold, potion and key actions
 together, plus their distinct skip/leave choices. `CARD(group,5)` skips one
 card group; with Singing Bowl it is represented as `SINGING_BOWL` because the
 primitive grants the Bowl effect. `LEAVE_REWARDS` maps to reward `SKIP` and
-leaves the entire screen. Taking a Sapphire-paired relic consumes that key
+leaves the entire screen. Taking or skipping the final card group immediately
+invokes its saved continuation when every reward category is empty. A nested
+continuation can restore parent rewards; it is never replaced with a direct
+map transition. Other remaining rewards retain the explicit leave decision.
+The emptiness check includes relics and both keys rather than relying on
+`Rewards::getTotalCount()`, which omits relics.
+
+For a sole card group with no other rewards and no Singing Bowl, MCTS groups
+card-skip and leave into one search choice. Full semantic/wire identities and
+primitive enumeration remain distinct. Root filtering precedes grouping, so
+either captured alias can be the representative. The existing prior bridge
+averages the source logits for that group, and the live MCTS validator accepts
+an omitted alias only if it has the same search equivalence key and live action
+as the retained primitive. Singing Bowl, multiple groups and mixed rewards keep
+their distinct choices. Taking a Sapphire-paired relic consumes that key
 choice, and taking Sapphire consumes its paired relic. Treasure `OPEN_CHEST`
 ends at the revealed reward screen; it does not choose a generated reward.
+
+`DISCARD_POTION` is append-only effect 29. It identifies a held potion and its
+duplicate occurrence, and is offered only for a full belt with a visible refill
+or affordable shop potion, without Sozu. It leaves the current screen/rewards
+unchanged. Taking the refill is a separate subsequent decision. The frozen V4
+primitive set omits discard, so MCTS uses the existing uniform-prior fallback
+when this extends the candidate set. This is no model-schema migration.
 
 Reward-origin relic acquisition preserves its remaining reward container and
 leave continuation. A bottle or other selector returns to those rewards; a
@@ -712,7 +845,7 @@ shared across sibling actions for the same rollout/encounter occurrence. The
 mode writes the requested CSV plus `.json` and `.report.txt` summaries and
 has a deterministic `--self-test` canary. Run seed-driven commands through
 `tools/seed_guard.sh`; this mode has one source seed, so its rollout count is
-not mistaken for a multi-seed sweep by the local 128-seed guard.
+not mistaken for a multi-seed sweep by the seed-count validator.
 
 `GameContext` owns run RNG streams, deck, relics, potions, map, resources,
 act/floor, and the active `ScreenState`
@@ -1011,7 +1144,10 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    belt was full in 759/3,069 RAW rows (24.7%); among 301 full-belt rows with
    classifiable adjacent-floor status, 148 (49.2%) had a potion drop. The run
    policy takes a potion only when capacity is available and has no discard or
-   swap path. The exact cohort forfeiture rate is unknown.
+   swap path. The exact cohort forfeiture rate is unknown. This historical
+   full-run collection behavior is separate from the live semantic MCTS path,
+   which now exposes `DISCARD_POTION` when a visible reward or affordable shop
+   potion can refill a full belt (see the live inspector contract).
    When `STS_COLLECT_KEYS=1` (default off), every REWARDS handler takes the
    emerald (burning elite) / sapphire (chest) key via `RT::KEY` right after
    gold/relic/potion, and every act-3+ rest room takes the ruby key (RECALL,

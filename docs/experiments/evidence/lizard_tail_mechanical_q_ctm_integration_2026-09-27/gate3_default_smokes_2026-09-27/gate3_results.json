@@ -1,0 +1,105 @@
+{
+  "binarySha256": "ebe2dcc09b0ca76867a12332f583e7529a58991033afeb7b7a00fb065a5e10fe",
+  "brewFallbackSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+  "decision": {
+    "activeLizardDefaultVerifiedFromStartupAndTelemetry": true,
+    "automaticDeepSetsAndBrewStackVerifiedFromStartupLogs": true,
+    "auxiliaryOocConfigJsonValid": false,
+    "bothGuardOnlyChecksPassed": true,
+    "bothRunsProducedCompleteResultSidecarAndTraces": true,
+    "declaredExistingSupportExclusionObserved": {
+      "count": 2,
+      "reason": "unsupported:smoke_bomb"
+    },
+    "exactlyTwoSmokeCasesExecuted": true,
+    "forcedLizardPathHasNonzeroPreparationsAndSamples": true,
+    "ordinarySubprocessExitCodeCaptured": false,
+    "unexpectedSupportReasons": []
+  },
+  "evidenceFiles": {
+    "execution_status.jsonl": "cbeefc6d1376c596b79a1978f1e79611460316c0c8d5c31c6155bd1e024e0d48",
+    "gate3_frozen_manifest.json": "e3778296788e8550f450d85df8dbf897e4886f009542061d5debcb028b67cf93",
+    "gate3_frozen_manifest.sha256": "0aed2e5c1f4ed2d62e24a6039694556ab854e5c7b0b34a8afb086dc7db8608f5",
+    "guard_only_results.json": "d66a31958b5e9ddaa9d2bf15611909f776493e97ead7f3699c002e3752e92f7e",
+    "guard_only_stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runs/seed991016_ordinary.csv": "07527b5a15fc3a528c04f86d559a977f2f557270b03330cf70f232216ffddc7c",
+    "runs/seed991016_ordinary.csv.meta.json": "dd15878121123a556428f3825ab7d182d076a26b9e12fbf8e8c3d29313418871",
+    "runs/seed991016_ordinary.mcts-trace.csv": "da879a838312f419ed15824a8048cb790985fc403ad107965ec58bc519daf061",
+    "runs/seed991016_ordinary.mcts-trace.csv.actions.jsonl": "404d2b0a2e1bc481151b3fb2cb39f246f2477c8134b862bb940cc06c91e9aa18",
+    "runs/seed991016_ordinary.mcts-trace.csv.support.jsonl": "ab8ffbfdf8ea116b669f1753a98b62581ba28e768d0042647e623efc77cc2374",
+    "runs/seed991016_ordinary.process.log": "ba8e1100891dd43833459b613e323868da4913d9f943940b629d47bbf02db410",
+    "runs/seed991017_active_lizard.csv": "3de123907387a8a0b523442bb3b286de9ef6367cbf9a449d416cc996ab14211d",
+    "runs/seed991017_active_lizard.csv.meta.json": "5a02e3adb7b4bc095543136bdc8dc02f083a5b73b0b51566361d0fd6cce35d66",
+    "runs/seed991017_active_lizard.mcts-trace.csv": "5cbbe1e9c633f90c57cc7239fe07c107b94796fc0c4d8e429e18a412e555d90b",
+    "runs/seed991017_active_lizard.mcts-trace.csv.actions.jsonl": "b8c9fcb59fbb0a19175edd600fe21576cdddceef30888bca688530626cf65e6d",
+    "runs/seed991017_active_lizard.mcts-trace.csv.support.jsonl": "7eb65f9d4b910abebcac6d0ae6f1ca0b586542dbee52b63da6dbfb0a7f533c58",
+    "runs/seed991017_active_lizard.process.log": "2de046ab6ed54732afbdd0744dd31284defc904b468f1d7bcb1fbd3ab11faebd"
+  },
+  "limitations": [
+    "The auxiliary [ooc-mcts-config] line contains the expected model/fallback/active-Lizard fields but is malformed JSON because its dispatchRule value is missing a closing quote. The separate startup configuration line and combat telemetry are valid and verify the automatic stack.",
+    "The ordinary smoke wrapper raised during auxiliary-config parsing after the subprocess completed; complete outputs and final BEST summary were saved, but its subprocess exit code was not persisted. Seed 991016 was not repeated.",
+    "The forced-Lizard smoke encountered two existing smoke_bomb support exclusions, recorded as unsupported:smoke_bomb; fast/fallback sampler support-failure counters remained zero."
+  ],
+  "manifestSha256": "e3778296788e8550f450d85df8dbf897e4886f009542061d5debcb028b67cf93",
+  "promotedArtifactSha256": "abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab",
+  "runs": [
+    {
+      "activeLizardEnabled": true,
+      "configLineJsonValid": false,
+      "effectiveStartupLineVerified": true,
+      "executableGitSha": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+      "fallbackSupportFailures": 0,
+      "fastSupportFailures": 0,
+      "forcedRelic": null,
+      "lizardBoundaryExclusions": 0,
+      "lizardPreparations": 1,
+      "lizardSamples": 1,
+      "lizardSupportFailures": 0,
+      "mctsSupportReasons": {},
+      "name": "ordinary",
+      "ordinaryExitCodeCaptureNote": "Complete outputs and a normal final BEST summary are present; wrapper failed afterward before saving subprocess rc.",
+      "processExitCode": null,
+      "result": {
+        "act": "3",
+        "floor": "51",
+        "hpEnd": "40",
+        "maxHp": "122",
+        "sec": "75.7493",
+        "won": "1"
+      },
+      "seed": 991016
+    },
+    {
+      "activeLizardEnabled": true,
+      "configLineJsonValid": false,
+      "effectiveStartupLineVerified": true,
+      "executableGitSha": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+      "fallbackSupportFailures": 0,
+      "fastSupportFailures": 0,
+      "forcedRelic": "LIZARD_TAIL",
+      "lizardBoundaryExclusions": 38,
+      "lizardPreparations": 17610,
+      "lizardSamples": 17608,
+      "lizardSupportFailures": 2,
+      "mctsSupportReasons": {
+        "unsupported:smoke_bomb": 2
+      },
+      "name": "active_lizard",
+      "ordinaryExitCodeCaptureNote": null,
+      "processExitCode": 0,
+      "result": {
+        "act": "3",
+        "floor": "51",
+        "hpEnd": "10",
+        "maxHp": "40",
+        "sec": "74.0688",
+        "won": "1"
+      },
+      "seed": 991017
+    }
+  ],
+  "schema": "ooc_ctm_gate3_default_smokes_v1",
+  "sourceCommit": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+  "status": "PASS_WITH_DECLARED_LIMITATIONS",
+  "tensorPayloadSha256": "429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139"
+}

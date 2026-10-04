@@ -1,0 +1,18 @@
+[collect keys OFF]
+[ooc-strat-tok-net] loaded selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+silver param screen #400 teacher=native-silver-v4-sp400-31de6a6d sourceValid=32/32 states=817 control-replay=810/817 -> /tmp/claude-0/sp400/run/shard3
+
+real	162m10.073s
+user	160m8.310s
+sys	0m1.768s
+exit 0

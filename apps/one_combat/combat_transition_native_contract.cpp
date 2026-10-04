@@ -25,6 +25,7 @@ void legal(int rid,int data,int encounter,bool bloom,bool full=false) {
     auto t=trajectory(rid);
     if(t.second && (data<0 || data>=t.second)) throw std::invalid_argument("invalid_relic_counter");
     if(rid==id(R::NEOWS_LAMENT) && (data<0 || data>3)) throw std::invalid_argument("invalid_relic_counter");
+    if(rid==id(R::ANCIENT_TEA_SET) && (data<0 || data>1)) throw std::invalid_argument("invalid_relic_counter");
     if(rid==id(R::OMAMORI) && (data<0 || data>2 || (!full && encounter==id(E::WRITHING_MASS)))) throw std::invalid_argument("invalid_relic_counter");
     if(rid==id(R::LIZARD_TAIL) && (data<0 || data>1 || (data==1 && !bloom))) throw std::invalid_argument("active_unqualified_lizard");
 }
@@ -59,6 +60,7 @@ std::vector<CombatTransitionRelicState> reconstructNativeComposedRelics(const st
     auto post=pre; for(auto &r:post) {legal(r.id,r.data,encounter,bloom);auto t=trajectory(r.id);
         if(t.second) r.data=(r.data+residues.at(t.first))%t.second;
         else if(r.id==id(R::NEOWS_LAMENT)) r.data=std::max(0,r.data-1);
+        else if(r.id==id(R::ANCIENT_TEA_SET)) r.data=0;
     } return post;
 }
 std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInputV1 &pi,const CombatTransitionPersistentState &pre,const NativeComposedDomain &d) {

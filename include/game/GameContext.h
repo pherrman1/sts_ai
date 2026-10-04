@@ -153,8 +153,8 @@ namespace sts {
 
         sts::Card noteForYourselfCard = Card(CardId::IRON_WAVE);
 
-        static constexpr bool disableColosseum = true;
-        static constexpr bool disableMatchAndKeep = true;
+        static constexpr bool disableColosseum = false;
+        static constexpr bool disableMatchAndKeep = false;
         static constexpr bool disablePrismaticShard = true;
         bool skipBattles = false;
 
@@ -262,6 +262,9 @@ namespace sts {
         [[nodiscard]] const MapNode& getCurMapNode() const;
         [[nodiscard]] int fractionMaxHp(float percent, HpType type=HpType::FLOOR) const;
         [[nodiscard]] bool hasRelic(RelicId r) const;
+        // Java eliteTrigger: elite rooms plus the Dead Adventurer fight and
+        // Colosseum's Nob fight, which trigger elite relic effects.
+        [[nodiscard]] bool isEliteTriggerCombat() const;
         [[nodiscard]] bool hasKey(Key key) const;
 
         [[nodiscard]] bool hasLessThanTwoCampfireRelics() const;
@@ -283,6 +286,8 @@ namespace sts {
 
         // room setup
         void transitionToAct(int act);
+        // -1 invalid, 0 ordinary edge, 1 charged Wing Boots jump.
+        int mapMoveCost(int mapNodeX) const;
         void transitionToMapNode(int mapNodeX);
         void setupEvent();
         void setupTreasureRoom();
@@ -328,6 +333,9 @@ namespace sts {
         Event getShrine(Random &eventRngCopy);
         Event getEvent(Random &eventRngCopy);
         Event generateEvent(Random eventRngCopy);
+        // Vanilla ordinary-run EventHelper table, before Tiny Chest/Juzu effects.
+        static Room questionRoomOutcomeForCell(int cell, float monster, float shop,
+                                              float treasure, bool previousRoomWasShop);
         Room getEventRoomOutcomeHelper(bool lastRoomWasShop);
 
         // actions
@@ -356,7 +364,14 @@ namespace sts {
         void chooseEventOption(int idx);
         void chooseSelectCardScreenOption(int idx);
         void chooseCampfireOption(int idx);
-        void chooseMatchAndKeepCards(int idx1, int idx2);
+        // Match and Keep slot state lives in info.toSelectCards[i].deckIdx:
+        // -1 unseen, 1 seen face down, 2 face up this attempt, 0 matched.
+        static constexpr int MATCH_AND_KEEP_UNSEEN = -1;
+        static constexpr int MATCH_AND_KEEP_MATCHED = 0;
+        static constexpr int MATCH_AND_KEEP_SEEN = 1;
+        static constexpr int MATCH_AND_KEEP_FACE_UP = 2;
+        void chooseMatchAndKeepSlot(int idx); // one click
+        void chooseMatchAndKeepCards(int idx1, int idx2); // both clicks of one attempt
         void chooseTreasureRoomOption(bool openChest);
 
         void regainControl();

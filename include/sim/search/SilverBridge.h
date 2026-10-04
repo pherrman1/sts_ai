@@ -6,6 +6,7 @@
 #define STS_SILVER_BRIDGE_H
 
 #include <array>
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -96,21 +97,30 @@ struct MonsterWire {
     int uniquePower0 = 0;
     std::int16_t uniquePower1 = 0;
     int miscInfo = 0;
+    std::uint32_t occupantGeneration = 0;
+    std::uint16_t latentDamageMask = 0;
     std::uint8_t pendingMoveRolls = 0;
     // 0 none, 1 Looter-after-Mug, 2 Mugger-after-Mug. This carries only
     // which public direct-choice rule is pending, never its live outcome.
     std::uint8_t pendingDirectMoveChoice = 0;
     MonsterRollInputsWire pendingRollInputs {};
+    std::vector<MonsterRollInputsWire> pendingRollInputHistory;
+    std::vector<std::pair<int, bool>> pendingAttackPredicates;
+    // Decoder proof, not serialized: only legacy non-hidden states may omit
+    // the v3 knowledge fields. An absent field must never erase a constraint.
+    bool hasPredicateKnowledgeFields = true;
 };
 
 struct CardSelectWire {
     std::array<std::int16_t, 3> cards {};
     bool canPickZero = false, canPickAnyNumber = false;
     int pickCount = 0, data0 = 0;
-    // Current live input state has no sequential-selection memory and no
-    // discovery setCost flag. Its semantics are zero selections and the live
-    // discovery default (`true`); fields remain explicit for bridge audit.
+    // Discovery-style offers differ in temporary cost (Toolbox preserves it).
+    // drawAfter is a qualified suspended opening draw, not a hidden pile order.
     bool setCostToZero = true;
+    std::vector<int> drawsAfter, blocksAfter;
+    int damageAllBeforeBlocks = 0;
+    int drawAfter = 0;
     int selectedBits = 0;
     std::int16_t task = 0;
 };
@@ -134,9 +144,26 @@ struct CardQueueItemWire {
     bool exhaustOnUse = false;
 };
 
+// Qualified public action tails at a live selector. These values describe
+// unexecuted effects, never random outcomes or live RNG state.
+enum class PendingActionKind : std::uint8_t {
+    INVALID = 0, DRAW = 1, GAIN_BLOCK = 2, GAIN_ENERGY = 3,
+    DAMAGE_ALL = 4, DAMAGE_RANDOM = 5, GAMBLE = 6, UPGRADE_RANDOM = 7,
+    BUFF_PLAYER = 8, DEBUFF_PLAYER = 9, DEBUFF_ALL_ENEMY = 10, SHUFFLE_WOUNDS = 11,
+    USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14
+};
+struct PendingActionWire {
+    PendingActionKind kind = PendingActionKind::INVALID;
+    int amount = 0;
+    int status = 0;
+    bool sourceMonster = false;
+};
+
 struct BattleStateWire {
     // Version makes an incompatible protocol fail closed in the vendor bridge.
-    static constexpr std::uint32_t kVersion = 2;
+    static constexpr std::uint32_t kVersion = 3;
+    // v2 has no predicate-only knowledge contract. Only non-hidden v2 states
+    // can be migrated; old Runic roots may already contain a leaked move.
     std::uint32_t version = kVersion;
     bool valid = true;
     // Set only under Frozen Eye; otherwise all draw order travels via PileWire.
@@ -175,6 +202,17 @@ struct BattleStateWire {
     PileWire drawPile, discardPile, exhaustPile;
     CardSelectWire cardSelect;
     CardQueueItemWire curCardQueueItem;
+    // The card queue still pending at a card selection (a copy queued by
+    // Double Tap, Duplication or Necronomicon), front first. Older JSON
+    // snapshots omit these optional fields; when the queue was not
+    // observed the search root keeps the queue its replay of the interrupted
+    // card rebuilds.
+    bool pendingCardQueueObserved = false;
+    std::vector<CardQueueItemWire> pendingCardQueue;
+    // An exact public action tail replaces interrupted-card replay. Both
+    // queue kinds persist in current JSON envelopes without live RNG data.
+    bool pendingActionQueueObserved = false;
+    std::vector<PendingActionWire> pendingActionQueue;
     std::uint32_t miscBits = 0;
 };
 

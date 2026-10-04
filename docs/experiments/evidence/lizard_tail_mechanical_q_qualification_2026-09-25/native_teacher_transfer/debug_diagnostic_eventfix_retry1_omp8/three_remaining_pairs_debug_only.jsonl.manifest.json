@@ -1,0 +1,151 @@
+{
+  "baselineGitSha": "0eed6993999386737d87f040e38fb241623b5cf3",
+  "combatTeacher": {
+    "combat_backend": "native_silver",
+    "diagnostic_only": true,
+    "environment": {
+      "OMP_NUM_THREADS": "8",
+      "STS_EXECUTABLE_GIT_SHA": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+      "STS_FAIR": "1",
+      "STS_LIZARD_DEBUG_TRACE": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "executable_sha256": "67b1c618a45d487b1afa5072edfba33f7a87a70d99f6a393ecd3a3c70c520d12",
+    "git_sha": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+    "model_artifacts": [
+      {
+        "path": "models/policy_trees_c.txt",
+        "role": "policy",
+        "sha256": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+      },
+      {
+        "path": "models/v_rich_trees.txt",
+        "role": "floor",
+        "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+      },
+      {
+        "path": "models/v_win_trees.txt",
+        "role": "win",
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+      }
+    ],
+    "rng_regime": "project_fair",
+    "search_configuration": {
+      "adaptive": false,
+      "belief": "not_applicable_silver_private_chance_search",
+      "chance_widening_alpha": 0.52389,
+      "chance_widening_c": 3.7028,
+      "direct_learned_leaf": false,
+      "end_turn_widening_alpha": 0.52389,
+      "end_turn_widening_c": 3.7028,
+      "exploration_parameter": 25.0,
+      "exploration_parameter_chance": 25.0,
+      "learned_visit_puct": false,
+      "particles": "not_applicable_silver_private_chance_search",
+      "pruning": false,
+      "reuse_cap": 32768,
+      "reuse_cap_mode": "allocated",
+      "sequential_halving": false,
+      "simulation_budgets": [
+        10000
+      ]
+    },
+    "teacher_id": "silver-ordinary-fair-exact10k-native-5aeb7256-omp8-debug-only"
+  },
+  "combatTeacherManifestSha256": "ebf0c1f8ff846f8ee58dc08beb25b6de0d18e3406d43a5fcfdbc193353b9a678",
+  "directReplayPlan": {
+    "excludedBurningEliteTargets": [
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201016
+      },
+      {
+        "fightIdx": 5,
+        "sourceSeed": 4201026
+      },
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201030
+      },
+      {
+        "fightIdx": 20,
+        "sourceSeed": 4201031
+      },
+      {
+        "fightIdx": 20,
+        "sourceSeed": 4201055
+      },
+      {
+        "fightIdx": 4,
+        "sourceSeed": 4201070
+      },
+      {
+        "fightIdx": 16,
+        "sourceSeed": 4201089
+      },
+      {
+        "fightIdx": 14,
+        "sourceSeed": 4201103
+      },
+      {
+        "fightIdx": 6,
+        "sourceSeed": 4201113
+      }
+    ],
+    "mode": "persistent_snapshot_direct",
+    "path": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_plan_debug_only.json",
+    "sha256": "62d356f09edcd6c22d0dada50ddd2332a76200e128f1c9d8ecf72d48d5a055dd"
+  },
+  "format": "jsonl",
+  "integrity": {
+    "completedSeeds": 3,
+    "pairs": 3,
+    "quarantinedSeeds": 0,
+    "requestedSeeds": 3
+  },
+  "jsonl": {
+    "path": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl",
+    "sha256": "da7617686e9d2af10a1104363943139144193809c547e282477fa0289a153a06"
+  },
+  "pairCheckpointing": {
+    "atomicWritePerCompletedPair": true,
+    "directory": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_pairs_debug_only.jsonl.checkpoints",
+    "exclusiveCollectorLock": true,
+    "resumeValidatesPlanTeacherCollectorAndRowChecksum": true,
+    "schema": "lizard_direct_snapshot_pair_checkpoint_v1"
+  },
+  "predictorInputFieldSchemaHash": "1a92692da9247008",
+  "predictorInputSchemaVersion": "combat_predictor_input_v1",
+  "producerExecutableSha256": "67b1c618a45d487b1afa5072edfba33f7a87a70d99f6a393ecd3a3c70c520d12",
+  "producerGitSha": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+  "protocol": {
+    "interventionBranchLizard": "active_data_1",
+    "markOfBloom": "eligible_states_excluded",
+    "ordinaryBranchLizard": "absent",
+    "samePrecombatContext": true,
+    "sameSilverSearchRngSeed": true,
+    "sourceTrajectory": "not_replayed_direct_snapshot",
+    "stateSelection": "direct_archived_snapshot_replay_nonburning_subset_v1"
+  },
+  "rowSchemaVersion": "combat_transition_row_v2",
+  "schema": "lizard_tail_direct_snapshot_paired_transition_diagnostic_v1",
+  "seedSpec": {
+    "count": 3,
+    "start": 4201028
+  },
+  "sourceSeeds": [
+    4201028,
+    4201056,
+    4201117
+  ],
+  "targetSelection": {
+    "path": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/debug_diagnostic_eventfix_retry1_omp8/three_remaining_targets_debug_only.json",
+    "sha256": "b98d8373f5c5d6f1aec5b30e5456390b45bbd8121ae0393c58753801df7d06be"
+  }
+}

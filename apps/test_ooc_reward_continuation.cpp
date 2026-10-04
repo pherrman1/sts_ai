@@ -46,14 +46,65 @@ void finish(GameContext &gc) {
     require(gc.info.rewardsContainer.cardRewardCount == 1, "original card reward lost");
     execute(gc, Action(Type::CARD, 0, 0));
     if (gc.info.rewardsContainer.goldRewardCount) execute(gc, Action(Type::GOLD));
-    require(gc.info.eventData == 0, "leave continuation ran prematurely");
-    execute(gc, Action(Type::SKIP));
+    if (gc.screenState == ScreenState::REWARDS) {
+        require(gc.info.eventData == 0, "leave continuation ran prematurely");
+        execute(gc, Action(Type::SKIP));
+    }
     require(gc.screenState == ScreenState::MAP_SCREEN && gc.info.eventData == 1,
             "original leave continuation not restored exactly once");
 }
 }
 
 namespace {
+void testFinalCardReward() {
+    for (bool bowl : {false, true}) {
+        for (int choice : {0, 5}) {
+            for (int remaining = 0; remaining < 7; ++remaining) {
+                auto gc = fixture(RelicId::ANCHOR);
+                auto &r = gc.info.rewardsContainer;
+                r.goldRewardCount = 0;
+                r.relicCount = 0;
+                if (bowl) gc.relics.add({RelicId::SINGING_BOWL, 0});
+                switch (remaining) {
+                    case 1: r.addGold(25); break;
+                    case 2: r.addRelic(RelicId::ANCHOR); break;
+                    case 3: r.addPotion(Potion::FIRE_POTION); break;
+                    case 4: r.emeraldKey = true; break;
+                    case 5: r.sapphireKey = true; break;
+                    case 6: r.addCardReward(r.cardRewards[0]); break;
+                }
+                const int hp = gc.maxHp, size = gc.deck.size();
+                execute(gc, Action(Type::CARD, 0, choice));
+                require(gc.maxHp == hp + (bowl && choice == 5 ? 2 : 0), "final Bowl effect lost");
+                require(gc.deck.size() == size + (choice == 0 ? 1 : 0), "final card acquisition lost");
+                require(gc.screenState == (remaining ? ScreenState::REWARDS : ScreenState::MAP_SCREEN),
+                        "final card must continue only when all reward categories are empty");
+                require(gc.info.eventData == (remaining ? 0 : 1), "final reward continuation count");
+            }
+        }
+    }
+    auto nested = fixture(RelicId::ANCHOR);
+    nested.info.rewardsContainer.goldRewardCount = 0;
+    nested.info.rewardsContainer.relicCount = 0;
+    nested.regainControlAction = [](GameContext &next) {
+        ++next.info.eventData;
+        Rewards parent;
+        parent.addGold(17);
+        next.openCombatRewardScreen(parent);
+        next.regainControlAction = [](GameContext &last) {
+            ++last.info.eventData;
+            last.screenState = ScreenState::MAP_SCREEN;
+        };
+    };
+    execute(nested, Action(Type::CARD, 0, 5));
+    require(nested.screenState == ScreenState::REWARDS
+            && nested.info.rewardsContainer.gold[0] == 17 && nested.info.eventData == 1,
+            "final child card must resume parent rewards without skipping them");
+    execute(nested, Action(Type::SKIP));
+    require(nested.screenState == ScreenState::MAP_SCREEN && nested.info.eventData == 2,
+            "parent continuation must survive final child card");
+}
+
 void testPermutedSelections() {
     const std::array<CardId, 6> ids {CardId::BASH, CardId::INFLAME,
         CardId::ANGER, CardId::CLEAVE, CardId::SHRUG_IT_OFF, CardId::IRON_WAVE};
@@ -111,6 +162,7 @@ void testPermutedSelections() {
 
 int runOocRewardContinuationTests() {
     try {
+        testFinalCardReward();
         testPermutedSelections();
         for (bool goldFirst : {false, true}) {
             auto gc = fixture(RelicId::BOTTLED_FLAME, true);

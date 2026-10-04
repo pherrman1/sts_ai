@@ -1,0 +1,53 @@
+{
+  "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+  "conditionalT2ChildIdentityRows": 320,
+  "dispatchFixtures": {
+    "activeLizard": true,
+    "brewAttention": true,
+    "fairy": "active_unqualified_lizard",
+    "lizardBrew": "active_lizard_entropic_brew_unsupported",
+    "markBloom": "supported",
+    "metrics": {
+      "dispatchFixtures": 8,
+      "fallbackPreparations": 1,
+      "fallbackSupportFailures": 0,
+      "fastPreparations": 6,
+      "fastSupportFailures": 3,
+      "lizardBoundaryExclusions": 9,
+      "lizardPreparations": 3,
+      "lizardSamples": 2,
+      "lizardSupportFailures": 2,
+      "preparations": 8
+    },
+    "middleTail": true,
+    "ordinaryDeepSets": true,
+    "rows": 8,
+    "spentTail": true
+  },
+  "fastArtifactSha256": "abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab",
+  "fastTensorPayloadSha256": "429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139",
+  "forcedBranchChecksPerRow": 3,
+  "frozenEvidenceHashes": {
+    "candidate": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "lizardMechanicalQ": "fcee01d2319d40719cddcb6a6c81ff888ea2720b873d7223b7abe0683192bdbf",
+    "lizardMinimal": "2465502731defca4ace9cfcd84eb222a8330b206297f50aaba55e1ad34e584eb",
+    "pairs": "d60bf8004234abf6549997ab4cff12da6650cc50d4f42b2d6bceb6a07f5cdf73",
+    "pairsManifest": "c0269eb57ce3fe4eeb2890e7d58f06a2b778f62da43fb9345612e42aa69bc78b",
+    "qr": "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9",
+    "selection": "68c4e6e4c20596464338e3b8ab44ea0bae8bc4a431d7f3de765a944dc8063493",
+    "sourceAssignment": "752fd7cc3769a065478c0045593944a0822e24909db7cd374397a0f464ae964a"
+  },
+  "maxAbsoluteErrors": {
+    "classProbabilities": 5.364418029785156e-07,
+    "pOrdinaryWin": 5.364418029785156e-07,
+    "pReserveWin": 3.5762786865234375e-07,
+    "qTailConsumed": 5.364418029785156e-07,
+    "rWinGivenConsumed": 3.884912700424792e-07
+  },
+  "rArtifactSha256": "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9",
+  "rows": 320,
+  "schema": "active_lizard_deepsets_native_parity_v1",
+  "semanticMismatches": 0,
+  "supportMismatches": 0,
+  "tolerance": 0.0001
+}

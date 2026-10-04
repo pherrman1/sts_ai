@@ -1,0 +1,64 @@
+{
+  "schema": "lizard_tail_stage_b_preoutcome_attempt_v1",
+  "classification": "LIZARD_NATIVE_QUALIFICATION_INVALID_EXECUTION",
+  "finishedAtUtc": "2026-09-25T13:57:23Z",
+  "planSha256": "9dde779d1d3d9fdfed83debfa9af101df96088ed0aba7aff7c597cec76928c03",
+  "baselineGitSha": "0eed6993999386737d87f040e38fb241623b5cf3",
+  "collectorGitSha": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
+  "executableSha256": "ce0ef761b63d46c40bffd7b0518f9891ac8ab9aa3075d2a15e497352305561be",
+  "teacherManifestSha256": "bf77c1436518514fb8c8d4e6612bbbacefd3dffa227c67c9256fdb7135a60951",
+  "seedGuard": {
+    "command": "bash tools/seed_guard.sh",
+    "mode": "local",
+    "requestedSources": 119,
+    "maximumSources": 128,
+    "result": "accepted"
+  },
+  "argv": [
+    "build/linux-gcc-release/one_combat",
+    "combattransitionlizardtargetpairgen",
+    "119",
+    "10000",
+    "0",
+    "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs.jsonl",
+    "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_plan.json",
+    "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/native_silver_direct_replay_teacher.json",
+    "0eed6993999386737d87f040e38fb241623b5cf3",
+    "00f34384b0235bcc4053e60fee05b42dc1d23c46"
+  ],
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "STS_EXECUTABLE_GIT_SHA": "00f34384b0235bcc4053e60fee05b42dc1d23c46",
+    "STS_FAIR": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0"
+  },
+  "exitCode": 134,
+  "firstReportedFailureInSortedSourceOrder": {
+    "sourceSeed": 4201000,
+    "fightIdx": 26
+  },
+  "error": "targeted Lizard pair failed for source 4201000: bad_function_call",
+  "rootCause": "Direct snapshot restoration created a bare GameContext without the post-victory regainControlAction installed by the normal save loader. BattleContext::exitBattle calls regainControl on a won battle; GameContext::regainControl attempted to invoke the empty callback.",
+  "fix": {
+    "commit": "afa06c6be69bbc4637901ad53923caac890925d1",
+    "path": "apps/one_combat/combat_datasets.cpp",
+    "action": "Install the normal afterBattle callback on the restored source context before creating either paired branch."
+  },
+  "outputs": {
+    "pairJsonlWritten": false,
+    "manifestWritten": false,
+    "partialPairArtifactWritten": false,
+    "retainedNativeOutcomeLabels": false
+  },
+  "rawLog": {
+    "path": "stage_b_direct_snapshot_collection_retry1.log",
+    "sha256": "351c6aad9d625a363bd7d37fea62d248bef38ece38bb103c56e8f12d0ec06091"
+  },
+  "stageCStarted": false
+}

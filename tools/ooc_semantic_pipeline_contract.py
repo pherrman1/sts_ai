@@ -128,7 +128,7 @@ def canonical_payload_suffix(p):
 
 def action_identity(action):
     effect, source = integer(action['semanticEffect']), integer(action['semanticSource'])
-    require(0 <= effect <= 28 and 0 <= source <= 9, 'unknown semantic effect/source')
+    require(0 <= effect <= 29 and 0 <= source <= 9, 'unknown semantic effect/source')
     key = action['semanticKey']
     require(isinstance(key, str) and re.fullmatch(
         rf'ooc:v1:effect={effect}:source={source}:(?:none|card=.+|transaction:event=.+|selector=.+|reward=.+|shop=.+|event=-?\d+:option=-?\d+|relic=-?\d+:occurrence=\d+)', key) is not None,

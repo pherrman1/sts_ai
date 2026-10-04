@@ -41,15 +41,12 @@ missing rather than expanding the search indefinitely.
    common seeds, fair/known-RNG labels, model paths or hashes, simulation
    budgets, and output schema.
 4. Use the cheapest meaningful verification first. Route every seed-based
-   command through `tools/seed_guard.sh`. Local automated execution remains
-   capped at 128 seeds and should normally use substantially fewer. A justified
-   large research run may be launched autonomously on the designated GCP host
-   through `tools/agent/gcp_benchmark.py`; its explicit `--gcp-research` mode
-   has no numeric seed ceiling and does not require a further seed-count
-   approval step. Choose the smallest sample that answers the question.
-   Before launch state the hypothesis, baseline/treatment, seed regime, budget,
-   fair-vs-known-RNG regime, model/configuration provenance, intended N, and
-   decision rule.
+   command through `tools/seed_guard.sh`. Use the smallest justified
+   experiment. Larger local runs require explicit authorization; there is no
+   fixed numerical ceiling. Before launch record the hypothesis, baseline and
+   treatment, exact seed ranges/counts, simulation and resource budgets,
+   fair-vs-known-RNG regime, frozen source/model/binary provenance, and decision
+   rule.
    Before collecting new data, inventory preserved local and remote artifacts
    and record why each candidate does or does not satisfy the required
    provenance, configuration, sample size, replication, freshness, and state

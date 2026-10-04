@@ -60,11 +60,10 @@ class IroncladReachableDomainCensusTests(unittest.TestCase):
         self.assertEqual(cards["RITUAL_DAGGER"]["classification"], "REACHABLE")
         self.assertIn("Event::THE_NEST", cards["RITUAL_DAGGER"]["evidence"][0]["symbol"])
 
-    def test_disabled_colosseum_encounters_are_not_reachable(self) -> None:
+    def test_enabled_colosseum_encounters_are_reachable(self) -> None:
         encounters = {entry["enumName"]: entry for entry in self.census["domains"]["encounters"]["entries"]}
         for name in ("COLOSSEUM_EVENT_SLAVERS", "COLOSSEUM_EVENT_NOBS"):
-            self.assertEqual(encounters[name]["classification"], "PROVABLY_UNREACHABLE")
-            self.assertEqual(encounters[name]["reasonClass"], "disabled_event_path")
+            self.assertEqual(encounters[name]["classification"], "REACHABLE")
 
     def test_reachable_encounter_spawns_are_closed_over(self) -> None:
         monsters = {entry["enumName"]: entry for entry in self.census["domains"]["monsters"]["entries"]}

@@ -1,0 +1,18 @@
+[collect keys OFF]
+[ooc-strat-tok-net] loaded selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+silver stop replay teacher=native-silver-v4-learnedstop2-adbcae75 model=gbt-770201c31f7b sourceValid=8/8 states=211 control-replay=210/211 -> /mnt/project-files/silver-learned-stop/run2/part1/replay1
+
+real	20m11.064s
+user	19m58.491s
+sys	0m1.579s
+exit 0

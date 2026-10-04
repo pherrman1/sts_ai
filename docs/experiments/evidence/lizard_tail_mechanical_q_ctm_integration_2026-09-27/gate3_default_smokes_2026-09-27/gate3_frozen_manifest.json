@@ -1,0 +1,167 @@
+{
+  "branchBaseCurrentMain": "56381780ff4382c85564b02a86d45325b4421021",
+  "commonEnvironmentSource": "Gate 2 follow-up treatment environment with model, fallback, active-Lizard, and force-relic entries removed before per-case setup",
+  "configuration": {
+    "actHorizon": 3,
+    "ascension": 0,
+    "fairNativeSilverRealCombats": 10000,
+    "noReplacements": true,
+    "oocMctsSimulations": 2048,
+    "smokesOnly": true
+  },
+  "executableGitShaEnv": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+  "inputs": {
+    "brewFallback": {
+      "path": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+      "sha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"
+    },
+    "oneCombat": {
+      "path": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/build/linux-gcc-release/one_combat",
+      "sha256": "ebe2dcc09b0ca76867a12332f583e7529a58991033afeb7b7a00fb065a5e10fe"
+    },
+    "promotedArtifact": {
+      "path": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/selfplay/models/combat_transition_deepsets_lizard_t2.native",
+      "sha256": "abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab"
+    },
+    "seedGuard": {
+      "path": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/tools/seed_guard.sh",
+      "sha256": "bf2c2247319019e8e37032ab0b9cfce0f14fff2588868c753438e0a391d2c3c1"
+    },
+    "strategicTokenModel": {
+      "path": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    }
+  },
+  "runs": [
+    {
+      "actionsTracePath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.mcts-trace.csv.actions.jsonl",
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/linux-gcc-release/one_combat",
+        "bestbench",
+        "10000",
+        "1",
+        "0",
+        "991016",
+        "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.csv"
+      ],
+      "environment": {
+        "HOME": "/home/philippherrmann",
+        "OMP_NUM_THREADS": "24",
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "STS_COLLECT_KEYS": "0",
+        "STS_EXECUTABLE_GIT_SHA": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+        "STS_FAIR": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_EARLY_STOP": "1",
+        "STS_OOC_MCTS_GAP_STOP_20": "0",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_TRACE": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.mcts-trace.csv",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+        "STS_OOC_STRATEGIC_EVENT": "1",
+        "STS_OOC_STRATEGIC_MARGIN": "1.0",
+        "STS_OOC_STRATEGIC_REST": "1",
+        "STS_OOC_STRATEGIC_SHOP": "1",
+        "STS_OOC_STRATEGIC_TOK_NN": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_STRATEGIC_TREASURE": "1",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_TELEMETRY": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_STOP_AFTER_ACT": "3"
+      },
+      "forcedRelic": null,
+      "name": "ordinary",
+      "processLogPath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.process.log",
+      "resultPath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.csv",
+      "seed": 991016,
+      "sidecarPath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.csv.meta.json",
+      "supportTracePath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.mcts-trace.csv.support.jsonl",
+      "tracePath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991016_ordinary.mcts-trace.csv"
+    },
+    {
+      "actionsTracePath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.mcts-trace.csv.actions.jsonl",
+      "argv": [
+        "bash",
+        "tools/seed_guard.sh",
+        "build/linux-gcc-release/one_combat",
+        "bestbench",
+        "10000",
+        "1",
+        "0",
+        "991017",
+        "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.csv"
+      ],
+      "environment": {
+        "HOME": "/home/philippherrmann",
+        "OMP_NUM_THREADS": "24",
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "STS_COLLECT_KEYS": "0",
+        "STS_EXECUTABLE_GIT_SHA": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+        "STS_FAIR": "1",
+        "STS_FORCE_RELIC": "LIZARD_TAIL",
+        "STS_NATIVE_OOC": "1",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_EARLY_STOP": "1",
+        "STS_OOC_MCTS_GAP_STOP_20": "0",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_TRACE": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.mcts-trace.csv",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+        "STS_OOC_STRATEGIC_EVENT": "1",
+        "STS_OOC_STRATEGIC_MARGIN": "1.0",
+        "STS_OOC_STRATEGIC_REST": "1",
+        "STS_OOC_STRATEGIC_SHOP": "1",
+        "STS_OOC_STRATEGIC_TOK_NN": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_STRATEGIC_TREASURE": "1",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_TELEMETRY": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_STOP_AFTER_ACT": "3"
+      },
+      "forcedRelic": "LIZARD_TAIL",
+      "name": "active_lizard",
+      "processLogPath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.process.log",
+      "resultPath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.csv",
+      "seed": 991017,
+      "sidecarPath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.csv.meta.json",
+      "supportTracePath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.mcts-trace.csv.support.jsonl",
+      "tracePath": "/tmp/lizard-gate3-default-smokes-2026-09-27/runs/seed991017_active_lizard.mcts-trace.csv"
+    }
+  ],
+  "schema": "ooc_ctm_gate3_default_smokes_v1",
+  "sourceCommit": "529c214562fd7eda4842f4386c05303c4d3d3d47",
+  "status": "FROZEN_BEFORE_GAMEPLAY",
+  "taskBaseline": "812ce0235e67aa9832142f69c6c8fc89d6875372",
+  "unsetForBoth": [
+    "STS_OOC_MCTS_COMBAT_MODEL",
+    "STS_OOC_MCTS_BREW_FALLBACK_MODEL",
+    "STS_OOC_MCTS_ACTIVE_LIZARD"
+  ]
+}

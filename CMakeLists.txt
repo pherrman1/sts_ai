@@ -100,6 +100,8 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/differential_state.cpp
+    apps/one_combat/differential_replay_native.cpp
     apps/one_combat/run_trace.cpp
     apps/one_combat/semantic_pilot.cpp
     apps/one_combat/combat_datasets.cpp
@@ -126,6 +128,7 @@ add_executable(one_combat_advisor
 target_include_directories(one_combat_advisor PUBLIC json/include)
 target_sources(one_combat_advisor PRIVATE
     apps/one_combat/live_ooc_state.cpp
+    apps/one_combat/differential_state.cpp
     apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_features.cpp
@@ -202,7 +205,13 @@ add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_o
     ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt)
 set_tests_properties(live_ooc_protocol PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME live_game_driver COMMAND python3 -m unittest tests.test_live_game_driver)
+add_test(NAME differential_trace COMMAND python3 -m unittest tests.test_differential_trace)
+add_test(NAME native_differential_replay COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/native_differential_replay.py $<TARGET_FILE:one_combat>)
 set_tests_properties(live_game_driver PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+set_tests_properties(differential_trace PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+set_tests_properties(native_differential_replay PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/live_ooc_importer.cpp
@@ -300,7 +309,17 @@ add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_over
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
 add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simulator_correctness_pr9_19)
+add_test(NAME simulator_relic_fidelity COMMAND $<TARGET_FILE:unit-test> simulator_relic_fidelity)
 set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
+set_tests_properties(simulator_relic_fidelity PROPERTIES LABELS "core")
+add_test(NAME monster_ai_java_parity COMMAND $<TARGET_FILE:unit-test> monster_ai_java_parity)
+set_tests_properties(monster_ai_java_parity PROPERTIES LABELS "core")
+add_test(NAME ironclad_card_java_parity COMMAND $<TARGET_FILE:unit-test> ironclad_card_java_parity)
+set_tests_properties(ironclad_card_java_parity PROPERTIES LABELS "core")
+add_test(NAME match_and_keep COMMAND $<TARGET_FILE:unit-test> match_and_keep)
+set_tests_properties(match_and_keep PROPERTIES LABELS "core")
+add_test(NAME silver_escape_penalty COMMAND $<TARGET_FILE:unit-test> silver_escape_penalty)
+set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
 add_test(NAME ironclad_card_coverage COMMAND $<TARGET_FILE:unit-test> ironclad_card_coverage)
@@ -312,6 +331,136 @@ set_tests_properties(combat_evaluator_semantic_branch_contract PROPERTIES LABELS
 add_test(NAME battle_start_runout_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_battle_start_runout_contract.py)
 set_tests_properties(battle_start_runout_contract PROPERTIES LABELS "core;research-repro")
+add_test(NAME vwin_refresh_policy_export
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshpolicyspec ${CMAKE_CURRENT_BINARY_DIR}/vwin_policy_export.json)
+set_tests_properties(vwin_refresh_policy_export PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "vwin policy export: PASS")
+add_test(NAME vwin_refresh_producer_contract COMMAND $<TARGET_FILE:one_combat> vwinrefreshselftest)
+set_tests_properties(vwin_refresh_producer_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_compound_decision_contract
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshcompoundselftest)
+set_tests_properties(vwin_refresh_compound_decision_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_decision_sink_contract
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshdecisionsinkselftest)
+set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_match_and_keep_isolation
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshmatchkeepselftest)
+set_tests_properties(vwin_refresh_match_and_keep_isolation PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_reward_continuation
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshcontinuationselftest)
+set_tests_properties(vwin_refresh_reward_continuation PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_card_reward_classification
+    COMMAND $<TARGET_FILE:one_combat> vwinrefreshrewardselftest)
+set_tests_properties(vwin_refresh_card_reward_classification PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_fatal_runout_fight_count
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> vwinrefreshfatalcountselftest 13000000 100)
+set_tests_properties(vwin_refresh_fatal_runout_fight_count PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_rejects_vpath_override
+    COMMAND ${CMAKE_COMMAND} -E env STS_VPATH=1
+        $<TARGET_FILE:one_combat> vwinvpathguardselftest)
+set_tests_properties(vwin_refresh_rejects_vpath_override PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_branch_parity
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> vwinrefreshbranchselftest 4000598 100 0)
+set_tests_properties(vwin_refresh_branch_parity PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_validator_selftest
+    COMMAND python3 -m unittest tools.test_vwin_refresh_contract -q)
+set_tests_properties(vwin_refresh_validator_selftest PROPERTIES
+    LABELS "research-repro;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_refresh_corpus_selftest
+    COMMAND python3 -m unittest tools.test_vwin_refresh_corpus -q)
+set_tests_properties(vwin_refresh_corpus_selftest PROPERTIES
+    LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME boss_headroom_347_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
+set_tests_properties(boss_headroom_347_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME silver_param_screen_400_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_param_screen_400.py --self-test)
+set_tests_properties(silver_param_screen_400_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_public_info_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_public_info_397.py --self-test)
+set_tests_properties(vwin_public_info_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME rich_domain_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_rich_domain_397.py --self-test)
+set_tests_properties(rich_domain_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_history_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_history_397.py --self-test)
+set_tests_properties(vwin_history_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_derived_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_derived_397.py --self-test)
+set_tests_properties(vwin_derived_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_derived_rooms_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_derived_rooms_397.py --self-test)
+set_tests_properties(vwin_derived_rooms_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_mlp_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_mlp_397.py --self-test)
+set_tests_properties(vwin_mlp_397_analysis_selftest PROPERTIES
+add_test(NAME silver_learned_stop_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/silver_learned_stop.py selftest)
+set_tests_properties(silver_learned_stop_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME silver_stop_replay_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_stop_replay.py --self-test)
+set_tests_properties(silver_stop_replay_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME silver_param_screen_400_seed_guard_rejects_zero
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> silverparams400gen 0 10000 0 /tmp/sp400 40000000 teacher.json)
+set_tests_properties(silver_param_screen_400_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE)
+add_test(NAME silver_param_screen_400_rejects_non_exact_budget
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> silverparams400gen 1 1000 0 /tmp/sp400-invalid 40000000 teacher.json)
+set_tests_properties(silver_param_screen_400_rejects_non_exact_budget PROPERTIES WILL_FAIL TRUE)
+add_test(NAME silver_stop_replay_seed_guard_rejects_zero
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> silverstopreplaygen 0 10000 0 /tmp/ssr 42000000 teacher.json)
+set_tests_properties(silver_stop_replay_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE)
+add_test(NAME silver_stop_replay_rejects_non_exact_budget
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> silverstopreplaygen 1 1000 0 /tmp/ssr-invalid 42000000 teacher.json)
+set_tests_properties(silver_stop_replay_rejects_non_exact_budget PROPERTIES WILL_FAIL TRUE)
+# The invalid option aborts the process before any seed runs; `!` turns that
+# into a pass (WILL_FAIL does not accept an abort).
+add_test(NAME silver_learned_stop_rejects_small_boss_max
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
+add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
+add_test(NAME vwin_refresh_seed_guard_accepts_positive
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> vwinrefreshgen 128 10000 0 /tmp/vwin 13000000 teacher.json 1)
+add_test(NAME vwin_refresh_seed_guard_rejects_zero
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
+        $<TARGET_FILE:one_combat> vwinrefreshgen 0 10000 0 /tmp/vwin 13000000 teacher.json 1)
+set_tests_properties(vwin_refresh_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE)
+add_test(NAME vwin_refresh_rejects_negative_seed_start
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+        $<TARGET_FILE:one_combat> vwinrefreshgen 1 10000 0 /tmp/vwin-invalid-offset -1 teacher.json 1)
+set_tests_properties(vwin_refresh_rejects_negative_seed_start PROPERTIES WILL_FAIL TRUE)
 add_test(NAME ooc_policy_parity
     COMMAND $<TARGET_FILE:one_combat> oocpolicyparity 4000598 100 0)
 set_tests_properties(ooc_policy_parity PROPERTIES
@@ -337,9 +486,12 @@ add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhe
 add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
+add_test(NAME persistent_latent_damage COMMAND $<TARGET_FILE:unit-test> persistent_latent_damage)
 add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
 add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)
+add_test(NAME violence_large_draw_pile COMMAND $<TARGET_FILE:unit-test> violence_large_draw_pile)
+add_test(NAME stasis_large_pile COMMAND $<TARGET_FILE:unit-test> stasis_large_pile)
 add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
 add_test(NAME silver_wire_state COMMAND $<TARGET_FILE:unit-test> silver_wire_state)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
@@ -478,6 +630,10 @@ add_test(NAME combat_transition_active_lizard_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionlizardselftest)
 set_tests_properties(combat_transition_active_lizard_fixture PROPERTIES
     ENVIRONMENT "STS_NATIVE_OOC=0")
+add_test(NAME collect_lizard_stage_c_shards_selftest
+    COMMAND python3 -m unittest tools.test_collect_lizard_stage_c_shards)
+set_tests_properties(collect_lizard_stage_c_shards_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "research-repro")
 add_test(NAME combat_transition_fixture_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/combat_transition_contract.py
         ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.manifest.json)
@@ -493,7 +649,9 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_selection_failure battle_equality card_pile card_pile_engine silver_searcher silver_wire_state
+    simhealth_selection_failure battle_equality card_pile card_pile_engine violence_large_draw_pile
+    stasis_large_pile
+    silver_searcher silver_wire_state
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
     e2c_observer_scope combat_knowledge silver_semantic_action runic_dome_lifecycle

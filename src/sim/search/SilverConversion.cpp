@@ -1,5 +1,6 @@
 // Live combat state -> Silver search view (see SilverConversion.h).
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverWireState.h"
 
 #include <algorithm>
 
@@ -234,6 +235,8 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     for (std::size_t i = 0; i < out.monsters.size(); ++i) {
         const Monster &m = live.monsters.arr[i];
         auto &wm = out.monsters[i];
+        wm.occupantGeneration = out.intentsHidden ? knowledge.monsterOccupantGeneration[i] : m.occupantGeneration;
+        wm.latentDamageMask = out.intentsHidden ? knowledge.latentDamageMasks[i] : 0;
         wm.idx = m.idx; wm.id = static_cast<std::int16_t>(m.id); wm.curHp = m.curHp;
         wm.maxHp = m.maxHp; wm.block = m.block; wm.isEscapingB = m.isEscapingB;
         wm.halfDead = m.halfDead; wm.escapeNext = m.escapeNext;
@@ -242,8 +245,8 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
             wm.miscInfo = m.miscInfo;
         } else if (m.idx >= 0 && knowledge.hasPublicMonsterState[i]) {
             // Do not read the concrete immediate live roll under Runic Dome.
-            // For a deferred chain this is the public pre-roll snapshot; once
-            // materialized (e.g. Spot Weakness) it is the public result.
+            // A Spot Weakness predicate leaves this pre-roll snapshot intact;
+            // only an executed monster action publishes the full move.
             wm.moveHistory = knowledge.publicMonsterMoveHistory[i];
             wm.miscInfo = knowledge.publicMonsterMiscInfo[i];
         } else if (m.idx >= 0) {
@@ -259,6 +262,11 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
         if (out.intentsHidden) {
             wm.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
             wm.pendingRollInputs = toWire(knowledge.pendingHiddenIntentInputs[i]);
+            for (const auto &r : knowledge.pendingHiddenIntentInputHistory[i]) {
+                wm.pendingRollInputHistory.push_back(toWire(r));
+            }
+            if (wm.pendingRollInputHistory.size() == 1) wm.pendingRollInputHistory.clear();
+            wm.pendingAttackPredicates = knowledge.pendingAttackPredicates[i];
             // Looter/Mugger sample their next move directly inside takeTurn,
             // rather than through rollMove. At a post-turn Runic root the
             // live concrete result is hidden, so carry only the public rule
@@ -307,11 +315,22 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.cardSelect.canPickZero = select.canPickZero; out.cardSelect.canPickAnyNumber = select.canPickAnyNumber;
     out.cardSelect.pickCount = select.pickCount; out.cardSelect.data0 = select.data0;
     out.cardSelect.task = static_cast<std::int16_t>(select.cardSelectTask);
-    // The live simulator has atomic multi-select actions and no mutable
-    // selected-bit state at a decision boundary; Discovery has its legacy true default.
-    out.cardSelect.setCostToZero = true;
+    // Atomic native multi-select actions have no partially selected cards.
+    out.cardSelect.setCostToZero = select.setCostToZero;
+    out.cardSelect.drawAfter = select.drawAfter;
+    out.cardSelect.drawsAfter = select.drawsAfter;
+    out.cardSelect.blocksAfter = select.blocksAfter;
+    out.cardSelect.damageAllBeforeBlocks = select.damageAllBeforeBlocks;
     out.cardSelect.selectedBits = 0;
     out.curCardQueueItem = toWire(live.curCardQueueItem);
+    capturePendingActionQueue(live,out);
+    if (live.inputState == InputState::CARD_SELECT) {
+        out.pendingCardQueueObserved = true;
+        const auto &queue = live.cardQueue;
+        for (int i = 0; i < queue.size; ++i) {
+            out.pendingCardQueue.push_back(toWire(queue.arr[(queue.frontIdx + i) % CardQueue::capacity]));
+        }
+    }
     return conversion;
 }
 

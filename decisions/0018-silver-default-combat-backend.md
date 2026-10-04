@@ -1,7 +1,8 @@
 # ADR-0018: Silver is the default combat backend for whole-run play
 
 Date: 2026-09-24
-Status: accepted
+Status: accepted; the whole-run adaptive default is amended by
+[ADR-0026](0026-learned-silver-stopping-default.md) (learned stopping)
 
 Supersedes: [ADR-0003](0003-searcher2-default-searcher3-opt-in.md)
 

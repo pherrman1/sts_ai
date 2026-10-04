@@ -74,10 +74,11 @@ static constexpr const char *COMBAT_TRANSITION_ROW_SCHEMA =
 CombatTransitionPersistentState captureCombatTransitionState(const sts::GameContext &gc);
 void applyCombatTransitionState(sts::GameContext &gc,
                                  const CombatTransitionPersistentState &state);
+nlohmann::json combatTransitionStateJson(const CombatTransitionPersistentState &state);
+CombatTransitionPersistentState combatTransitionStateFromJson(const nlohmann::json &value);
 CombatTransitionRecord captureCombatTransition(const sts::GameContext &pre,
                                                const sts::BattleContext &bc,
                                                const sts::GameContext &rawPost);
-nlohmann::json combatTransitionStateJson(const CombatTransitionPersistentState &state);
 nlohmann::json combatTransitionRecordJson(const CombatTransitionRecord &record);
 std::string combatTransitionFingerprint(const sts::GameContext &gc);
 

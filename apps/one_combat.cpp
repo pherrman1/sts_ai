@@ -2,6 +2,7 @@
 // and focused search/model diagnostics.
 
 #include "one_combat/driver_shared.h"
+#include "one_combat/differential_replay_native.h"
 
 OocCheckpointNet g_oocCheckpointNet;
 OocStrategicNet g_oocStrategicNet;
@@ -1272,6 +1273,12 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.silverExactRootBudgets = search::nativeSilverExactRootBudgets();
         meta.silverExactVisitLock = false;
         meta.silverRhoRacing = false;
+        if (search::nativeSilverLearnedStopEnabled()) {
+            meta.silverLearnedStopModel = search::nativeSilverStopModelId();
+            meta.silverLearnedStopThreshold = search::nativeSilverLearnedStopThreshold();
+            meta.silverLearnedStopBossFallback = search::nativeSilverLearnedStopBossFallback();
+            meta.silverLearnedStopBossMax = search::nativeSilverLearnedStopBossMax();
+        }
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2795,6 +2802,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
+        {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
+        {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -2826,6 +2835,8 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "";
 
+    if (mode == "differentialreplay")
+        return one_combat::runDifferentialReplayNative(std::cin, std::cout);
     // ADR-0020: Silver is the only combat searcher. The native searchers and
     // their known-RNG regime were removed, so a request for them fails.
     if (const char *d = std::getenv("STS_SILVER_SEARCH"); d && std::atoi(d) == 0) {
@@ -2840,15 +2851,22 @@ int main(int argc, char **argv) {
     }
     setenv("STS_SILVER_SEARCH", "1", 0);
     setenv("STS_FAIR", "1", 0);
-    // Adaptive Silver ignores the caller's budget. Only whole-run modes called
-    // without a sims argument keep it by default (ADR-0018); every other call
-    // searches the flat caller budget unless adaptive stopping is configured.
+    // Budgeted Silver policies ignore the caller's budget. Only whole-run modes
+    // called without a sims argument use one by default: learned stopping
+    // (ADR-0026, replacing the #199 adaptive default of ADR-0018). Every other
+    // call searches the flat caller budget unless a policy is configured.
     {
         const bool wholeRunDefault = argc <= 2
             && (mode == "run" || mode == "bestbench" || mode == "reprobench");
-        if (!wholeRunDefault && !std::getenv("STS_SILVER_ADAPTIVE")
-                && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
-                && !std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
+        const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
+            || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
+            || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
+        const char *learned = std::getenv("STS_SILVER_LEARNED_STOP");
+        const bool learnedRequested = learned && std::atoi(learned) != 0;
+        if (wholeRunDefault && !adaptiveConfigured && !learned && !std::getenv("STS_SILVER_STOP_TRACE")) {
+            setenv("STS_SILVER_LEARNED_STOP", "1", 0);
+            setenv("STS_SILVER_ADAPTIVE", "0", 0);
+        } else if (learnedRequested || (!wholeRunDefault && !adaptiveConfigured)) {
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
         }
     }
@@ -3269,7 +3287,12 @@ int main(int argc, char **argv) {
     }
     search::installNativeSilverBackend();
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
-              << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+              << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
+                  : search::nativeSilverLearnedStopEnabled()
+                      ? (search::nativeSilverLearnedStopBossFallback() ? "; learned stop, bosses #199"
+                         : search::nativeSilverLearnedStopBossMax() > 0 ? "; learned stop, boss cap raised"
+                         : "; learned stop")
+                      : "; flat budget")
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
@@ -3361,6 +3384,8 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
+    } else if (mode == "oocmctsconfigselftest") {
+        std::cout << "PASS live OOC MCTS configuration startup\n";
     } else if (mode == "oocmctsselftest") {
         try {
             one_combat::oocMctsAdapterSelfTest();
@@ -3625,6 +3650,168 @@ int main(int argc, char **argv) {
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");
+    } else if (mode == "vwinrefreshgen") {
+        if (argc < 9 || argc > 10) {
+            std::cerr << "usage: one_combat vwinrefreshgen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json K [PARITY_PERCENT]\n";
+            return 2;
+        }
+        try {
+            vwinRefreshGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                           std::stoll(argv[6]), argv[7], std::stoi(argv[8]),
+                           argc > 9 ? std::stoi(argv[9]) : 100);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "vwinrefreshcrashdiag") {
+        // Diagnostic-only: one source seed, production vwinrefreshgen semantics,
+        // stop after MAX_BRANCHES sibling branches; flushed phase markers.
+        if (argc != 8) {
+            std::cerr << "usage: one_combat vwinrefreshcrashdiag N_SEEDS OUT_PREFIX SEED TEACHER.json MAX_BRANCHES MARKERS.log\n";
+            return 2;
+        }
+        try {
+            if (std::stoi(argv[2]) != 1) throw std::runtime_error("vwinrefreshcrashdiag: N_SEEDS must be 1");
+            const int maxBranches = std::stoi(argv[6]);
+            if (maxBranches < 1) throw std::runtime_error("vwinrefreshcrashdiag: MAX_BRANCHES must be positive");
+            vwinRefreshGen(1, 10000, 0, argv[3], std::stoll(argv[4]), argv[5], 1, 100,
+                           maxBranches, argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "bossheadroom347gen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat bossheadroom347gen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";
+            return 2;
+        }
+        try {
+            bossHeadroom347Gen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                               std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "silverparams400gen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat silverparams400gen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";
+            return 2;
+        }
+        try {
+            silverParamScreen400Gen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                                    std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "silverstopreplaygen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat silverstopreplaygen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";
+            return 2;
+        }
+        try {
+            silverStopReplayGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                                std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "vwinrefreshpolicyspec") {
+        if (argc != 3) return 2;
+        try { return vwinRefreshPolicySpec(argv[2]); }
+        catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshcompoundselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshcompoundselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshCompoundSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshdecisionsinkselftest") {
+        if (argc != 2) return 2;
+        try { return vwinRefreshDecisionSinkSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshmatchkeepselftest") {
+        if (argc != 2) return 2;
+        try { return vwinRefreshMatchAndKeepSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshcontinuationselftest") {
+        if (argc != 2) return 2;
+        try { return vwinRefreshContinuationSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshrewardselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinrefreshrewardselftest\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshRewardTypeSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshfatalcountselftest") {
+        if (argc < 3 || argc > 4) {
+            std::cerr << "usage: one_combat vwinrefreshfatalcountselftest SEED [SIMS]\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshFatalRunoutCountSelfTest(std::stoull(argv[2]),
+                argc > 3 ? std::stoi(argv[3]) : 100);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinvpathguardselftest") {
+        if (argc != 2) {
+            std::cerr << "usage: one_combat vwinvpathguardselftest\n";
+            return 2;
+        }
+        try {
+            return vwinVPathPolicyGuardSelfTest();
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "vwinrefreshbranchselftest") {
+        if (argc < 3 || argc > 5) {
+            std::cerr << "usage: one_combat vwinrefreshbranchselftest SEED [SIMS] [ASC]\n";
+            return 2;
+        }
+        try {
+            return vwinRefreshBranchParitySelfTest(std::stoull(argv[2]),
+                argc > 3 ? std::stoi(argv[3]) : 100, argc > 4 ? std::stoi(argv[4]) : 0);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     } else if (mode == "oocpolicyparity") {
         if (argc < 3 || argc > 5) {
             std::cerr << "usage: one_combat oocpolicyparity SEED [SIMS] [ASC]\n";

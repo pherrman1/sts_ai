@@ -292,6 +292,7 @@ void BattleSimulator::printCardSelectActions(std::ostream &os) const {
         case CardSelectTask::DISCOVERY:
             os << "Discovery Action: Choose a card to create " << bc->cardSelectInfo.discovery_CopyCount() << " copies of in your hand.\n";
             printCardOptionsHelper(os, bc->cardSelectInfo.discovery_Cards().begin(), bc->cardSelectInfo.discovery_Cards().end());
+            if (bc->cardSelectInfo.canPickZero) os << "3: skip\n";
             break;
 
         case CardSelectTask::DUAL_WIELD:
@@ -320,9 +321,7 @@ void BattleSimulator::printCardSelectActions(std::ostream &os) const {
 
         case CardSelectTask::FORETHOUGHT: {
             if (bc->cardSelectInfo.canPickAnyNumber) {
-                // todo unsupported
-                assert(false);
-                os << "Forethought: Choose a card to put on bottom of your draw pile.\n";
+                os << "Forethought+: Choose any number of cards to put on bottom of your draw pile.\n";
             } else {
                 os << "Forethought: Choose card to put on bottom of your draw pile.\n";
             }
@@ -423,15 +422,16 @@ void BattleSimulator::takeCardSelectAction(const std::string &action) {
         case CardSelectTask::CODEX: {
             const auto chooseIdx = std::stoi(action);
             assert(chooseIdx >= 0 && chooseIdx < 4);
-            if (chooseIdx != 3) {
-                bc->chooseCodexCard(bc->cardSelectInfo.codexCards()[chooseIdx]);
-            }
+            bc->chooseCodexCard(chooseIdx == 3 ? CardId::INVALID : bc->cardSelectInfo.codexCards()[chooseIdx]);
             break;
         }
 
-        case CardSelectTask::DISCOVERY:
-            bc->chooseDiscoveryCard(bc->cardSelectInfo.discovery_Cards()[std::stoi(action)]);
+        case CardSelectTask::DISCOVERY: {
+            const int idx = std::stoi(action);
+            if (idx >= 0 && idx < 3) bc->chooseDiscoveryCard(bc->cardSelectInfo.discovery_Cards()[idx]);
+            else if (idx != 3 || !bc->cardSelectInfo.canPickZero) throw std::invalid_argument("invalid Discovery choice");
             break;
+        }
 
         case CardSelectTask::DUAL_WIELD:
             bc->chooseDualWieldCard(std::stoi(action));
@@ -451,7 +451,7 @@ void BattleSimulator::takeCardSelectAction(const std::string &action) {
 
         case CardSelectTask::FORETHOUGHT:
             if (bc->cardSelectInfo.canPickAnyNumber) {
-
+                bc->chooseForethoughtCards(getIdxListFromString(action));
             } else {
                 bc->chooseForethoughtCard(std::stoi(action));
             }

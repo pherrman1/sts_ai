@@ -2,6 +2,7 @@
 #define STS_ONE_COMBAT_OOC_POLICY_H
 
 #include <cstdint>
+#include <map>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -58,6 +59,32 @@ extern bool g_restWin;
 
 extern thread_local const one_combat::PathHistory *t_curPath;
 extern thread_local one_combat::PathHistory t_emptyPath;
+
+// Per event instance preferences computed by the active guide. Deferred
+// branches must restore these along with the rest of the policy state.
+struct MatchAndKeepWantCache {
+    std::uint64_t seed = 0;
+    int act = -1;
+    int floor = -1;
+    std::map<std::pair<int, bool>, bool> want;
+};
+extern thread_local MatchAndKeepWantCache t_matchAndKeepWant;
+
+// State that affects the ordered OOC policy chain and therefore must travel
+// with detached counterfactual branches. t_curPath is deliberately excluded:
+// callers bind it to the branch's own PathHistory after restoring this value.
+struct OocPolicyThreadState {
+    int pathActionUses = 0;
+    double pathAggr = 0.0;
+    bool tokCheckPending = false;
+    bool shopV = false;
+    std::string strategicTraceRows;
+    int strategicTraceDecision = 0;
+    int actFightProbeDecisionIdx = 0;
+    int actFightProbeActionIdx = 0;
+    int actFightProbeFutureIdx = 0;
+    MatchAndKeepWantCache matchAndKeepWant;
+};
 
 // Cross-module run configuration/state. These remain driver-owned because the
 // retained run loop, strategic generators, or both also consume them.
@@ -120,8 +147,13 @@ bool regretGateTail(GameContext &, const std::vector<GameAction> &,
                     const ScumSearchAgent2 &);
 
 namespace one_combat {
+OocPolicyThreadState captureOocPolicyThreadState();
+void restoreOocPolicyThreadState(const OocPolicyThreadState &state);
+
 using ::richFeatureVec;
 
+// True only while executing the multi-action card-reward fallback invocation.
+bool inCardRewardFallback();
 void serverCardRewardPolicy(GameContext &);
 bool restWinPolicy(GameContext &);
 void upgradeSelectWinPolicy(GameContext &);
@@ -136,6 +168,7 @@ void removeSelectVPolicy(GameContext &);
 void neowVPolicy(GameContext &);
 bool configurePathActionPolicyFromEnvironment();
 void configureVPathPolicyFromEnvironment();
+bool vPathPolicyEnabled();
 void configureRestVPolicyFromEnvironment();
 void resetPathPolicyState();
 

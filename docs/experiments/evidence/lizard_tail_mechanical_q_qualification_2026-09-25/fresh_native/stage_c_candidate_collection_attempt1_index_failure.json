@@ -1,0 +1,98 @@
+{
+  "candidateScoringOrSelectionRun": false,
+  "candidateShardSeedsRevalidated": [
+    4202000,
+    4202001,
+    4202002,
+    4202003,
+    4202004,
+    4202005,
+    4202006,
+    4202007
+  ],
+  "collectorScriptSha256": "46cce5b4837819417c6de4086cba698804b29291319da6d650a89c2d72ed2086",
+  "completedSourcesInFailedAttempt": 8,
+  "failedIndexSha256": "18c61dbadb897fef2be7ef1668a59aec825f0f245e51d2bc86d67057a4fd9024",
+  "failure": "Progress index updates called the immutable-output writer; after the initial empty index was written, completed workers could not atomically replace it.",
+  "pairGenerationRun": false,
+  "phase": "candidates",
+  "planPath": "docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/fresh_native/stage_c_preoutcome_plan.json",
+  "planSha256": "54784e141ef029e132d07c5aa0300d5f7440034a49d427c19438a6096355736c",
+  "qualificationAnalysisRun": false,
+  "recovery": "Retain only shards that independently validate against the frozen producer executable, native teacher, source seed, manifest, data hash, provenance sidecar, and completed log. The corrected collector will revalidate these shards under the amended operational plan and resume the remaining sources.",
+  "schema": "active_lizard_stage_c_attempt_record_v1",
+  "scienceContractUnchanged": true,
+  "shardEntries": [
+    {
+      "dataSha256": "3a6edcc529df6d315d357cd2285e15866fa0bea76564225eba3dc4c7c9ca017a",
+      "logSha256": "9ac63fe11e1b3bbbacde1e732d956cf4ebdfde990f0392dd6247d7a00f8768bc",
+      "manifestSha256": "ab1b99cf64864168c3cb90a64f44a13fc3ac0a81dee0adbcb87e9142c767ecb9",
+      "provenanceSha256": "23ecc8293b1ae56a119083e9b376b13ae9a10867e1c319efdf60f9ce25806429",
+      "rows": 24,
+      "seed": 4202000
+    },
+    {
+      "dataSha256": "4ec4669f20644730cc368a74e4c4c087712d8a55d42b4076aec627e8205a391d",
+      "logSha256": "f75b17036518fc7b0bfea093f74b66eb6d15852c5c028d7f7abba80c5b5481e1",
+      "manifestSha256": "50c2b9bc0e0fc553e517a5f6c546bccd7514de4574d35af0ad6a7f5bbbc41253",
+      "provenanceSha256": "4cdc1a4ac69b1657362eb7f1b9cb209a4a7ab4a8c9311d496289cb5d4dfb43c4",
+      "rows": 26,
+      "seed": 4202001
+    },
+    {
+      "dataSha256": "f66fed9a6df0c20b7eac052d035fc0e2ce94baf3a952c9704370f0184931cdef",
+      "logSha256": "365cb1921ac975d5e974a8c896084ddc6b003aa81cd5b950e8898aa8be0cdd88",
+      "manifestSha256": "2bc20cda831c3704d07e831be8a3e8b54225182e0c32d58a66dc2a6ee84d566e",
+      "provenanceSha256": "e355b1141c3835722311cf3c5cae9ebc3a486d0b5f88e2ecdb7774a224fdfda4",
+      "rows": 19,
+      "seed": 4202002
+    },
+    {
+      "dataSha256": "668b197477766cb22af427b4955c0515ca41544203727fc4ff4032f924f369c9",
+      "logSha256": "3706bdf90b97c5fb4008da4962e0f7bbb3909752628976c5ae5102c1742b2b4a",
+      "manifestSha256": "76b3bcf3c2ac54e18678fcc8706e4354e0cf2d0cc35820f88b7dca3f3774c309",
+      "provenanceSha256": "6b0c22db28f91ee642987e6538053b2c000f566de6737e6322e6b56120f6fd0d",
+      "rows": 18,
+      "seed": 4202003
+    },
+    {
+      "dataSha256": "3b17407d66b02053cd727008138773ff4381b97a69dfba365613b252f198db8f",
+      "logSha256": "62bc8ce2953c848afb77e22d2a478e59b1d11b650b78487812709f095f4473f3",
+      "manifestSha256": "65113761473a83a042caf7b88d21cbe3f4f328ac729c671c86c9109556033d84",
+      "provenanceSha256": "7603e8578efceca6f69a350b91a7e21a3e424f9f6b717a2e7a1342972c65ffcd",
+      "rows": 24,
+      "seed": 4202004
+    },
+    {
+      "dataSha256": "58c0c46be034c8452ec9de3cfef01ecff7300c26ef5fa13790e43de97f178569",
+      "logSha256": "d7dda1ef1a262e42e24a905fc62a10ca866c6f5c5d33725cb7173946e4d18a61",
+      "manifestSha256": "9faf92eebd209a7efe4a7e646d2985f5e52668420b183a866c879fb82ae85b75",
+      "provenanceSha256": "3ccf71749c2568e4b1b610711752ea9e1681ed53408e84e7f1a2c022e8acd947",
+      "rows": 27,
+      "seed": 4202005
+    },
+    {
+      "dataSha256": "e4d906809731d4e2022a4ce7e95e4d66983558cad4fe51f781550fc47a697dce",
+      "logSha256": "5b2e44580a5844d46d8050d2ef436e49108f7ce7089ae26f21736425c757e8d5",
+      "manifestSha256": "60f6eaa808d77ae4228c915196012ffedeb0c601ed43c7d106b73a7758ce8a1b",
+      "provenanceSha256": "8b34ca7fc35e9bdf956791a99904b709bdda723e0e1a5f07a60eb54df3a52f1e",
+      "rows": 26,
+      "seed": 4202006
+    },
+    {
+      "dataSha256": "947a42e243027985769620536b3e9c1812040e7bbdcdd3e859657c4890593925",
+      "logSha256": "f8e2cbb23d6bb794d61f70d7f49aa70d45a66e110a19ffc45081ded381fc358b",
+      "manifestSha256": "bd123cff9e7a6270c92fbcf14e03798b7cb440ee1488d8f9bee9992badd4d730",
+      "provenanceSha256": "ec5c47b5ff71a0401ed01be075ba174ff12b1eb394ed72ac2455b4a7efc43d77",
+      "rows": 16,
+      "seed": 4202007
+    }
+  ],
+  "status": "ABORTED_INDEX_WRITE_FAILURE",
+  "workerTopology": {
+    "maxConcurrentProcesses": 8,
+    "ompThreadsPerProcess": 1,
+    "resumeUnit": "one sourceSeed per independently manifested subprocess",
+    "totalWorkerThreads": 8
+  }
+}

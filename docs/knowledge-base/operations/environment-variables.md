@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main`.
+Last verified: 2026-09-27 for the automatic OOC CTM stack, active-Lizard default, and `STS_FORCE_RELIC` Lizard initialization; 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -40,10 +40,16 @@ diagnostics.
 |----------|--------|---------|------------|
 | `STS_SILVER_SEARCH` | Accepted for compatibility; Silver is always installed. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_NATIVE_SILVER` | Accepted for compatibility; `0` (the removed vendored model) makes `one_combat` exit with an error (ADR-0022) | native | `main` |
-| `STS_SILVER_ADAPTIVE` | Enable retained-root adaptive Silver: fresh multi-action roots search 10,000; a retained root stops at 500 when its top-two visit-share gap reaches `STS_SILVER_ADAPTIVE_TOP_GAP`; `0` gives flat Silver | on only for `run`/`bestbench`/`reprobench` without a sims argument; every other invocation resolves an unset value to `0` (flat caller budget) unless `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or `STS_SILVER_ADAPTIVE_TOP_GAP` is set (ADR-0018, ADR-0020) | `NativeSilverBackend` |
+| `STS_SILVER_ADAPTIVE` | Enable retained-root adaptive Silver (#199): fresh multi-action roots search 10,000; a retained root stops at 500 when its top-two visit-share gap reaches `STS_SILVER_ADAPTIVE_TOP_GAP`; `0` gives flat Silver or, with `STS_SILVER_LEARNED_STOP=1`, learned stopping | `run`/`bestbench`/`reprobench` without a sims argument resolve an unset value to `0` with learned stopping (ADR-0026) unless an adaptive knob or `STS_SILVER_LEARNED_STOP` is set; `STS_SILVER_LEARNED_STOP=0` alone keeps #199 there; every other invocation resolves an unset value to `0` (flat caller budget) (ADR-0018, ADR-0020) | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Stopping threshold for `STS_SILVER_ADAPTIVE` (top-vs-second visit-share gap `>=` this value) | `0.2932885906040268` | `NativeSilverBackend` |
+| `STS_SILVER_LEARNED_STOP` | Learned stopping: each multi-action root searches to the 250..10,000 checkpoints and stops at the first strict visit lock or compiled stop-model risk below the threshold (`NativeSilverStopModel.h`). Requires `STS_SILVER_ADAPTIVE=0` (an unset value resolves to `0` when this is `1`); refuses an untrained model | `1` for `run`/`bestbench`/`reprobench` without a sims argument and without adaptive knobs (ADR-0026); otherwise off | `main`, `NativeSilverBackend` |
+| `STS_SILVER_LEARNED_STOP_THRESHOLD` | Risk threshold for `STS_SILVER_LEARNED_STOP` | the compiled model's default (`0.0323` for `gbt-770201c31f7b`) | `NativeSilverBackend` |
+| `STS_SILVER_LEARNED_STOP_BOSS_FALLBACK` | Research-only: with `STS_SILVER_LEARNED_STOP=1`, boss rooms use the #199 retained-root rule instead of learned stopping. Requires `STS_SILVER_LEARNED_STOP=1` | unset/off | `NativeSilverBackend` |
+| `STS_SILVER_LEARNED_STOP_BOSS_MAX` | Research-only: with `STS_SILVER_LEARNED_STOP=1`, a boss root that reached 10,000 simulations without stopping continues in 10,000 steps up to this cap, until its leader is strictly locked against the cap. `0` or unset: off; otherwise must exceed 10,000; exclusive with `_BOSS_FALLBACK` | unset/off | `NativeSilverBackend` |
+| `STS_SILVER_STOP_TRACE` | Research-only CSV of root features and leaders at every learned-stop checkpoint; searches each multi-action root to 10,000. Requires `STS_SILVER_ADAPTIVE=0`; exclusive with `STS_SILVER_LEARNED_STOP` | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | Accepted only as `1` (adaptive Silver is always retained-only) | `1` | `main` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier) and one-action roots are searched; used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
+| `STS_SILVER_ESCAPE_PENALTY` | `<normal>,<elite>`: Silver score penalty (HP-equivalent) for a Smoke Bomb escape in normal and elite-trigger fights, capped at half the HP left; see combat-search.md | unset (`0,0`, escape scored as a win) | `NativeSilverBackend` |
 | `STS_SILVER_SEARCH_SINGLETON_ROOTS` | `1`: search roots with one legal action instead of committing that action without search | off (one-action roots unsearched) | `NativeSilverBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |
@@ -75,11 +81,14 @@ enable flag:
 | `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format) | unset (off) | `main` ~L9300 |
 | `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4, a compatible combat artifact, and ordinary exact-10k Silver real combat with effective cap 32768. Native leaf mode requires `v_win`; boss leaf mode does not call it, though the unchanged fallback policy may. | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
 | `STS_OOC_MCTS_SIMS` | Positive simulations per supported OOC root | `512` | `configureLiveOocMcts` |
-| `STS_OOC_MCTS_COMBAT_MODEL` | Compatible native combat-transition artifact; required when enabled, fatal load errors | unset | `configureLiveOocMcts` |
-| `STS_OOC_MCTS_BREW_FALLBACK_MODEL` | Optional pinned current-standard V2 artifact (SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`) used only for pre-combat Entropic Brew states when the primary fast artifact declares the fallback contract; metadata and bytes are checked and failures are fatal | unset (off) | `configureLiveOocMcts` |
+| `STS_OOC_MCTS_COMBAT_MODEL` | Compatible native combat-transition artifact; when unset with OOC MCTS enabled, uses the tracked qualified DeepSets + active-Lizard artifact. Explicit paths override it; empty values and load failures are fatal. | unset (automatic default stack) | `configureLiveOocMcts` |
+| `STS_OOC_MCTS_BREW_FALLBACK_MODEL` | Pinned current-standard V2 artifact (SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`) used only for pre-combat Entropic Brew states when the primary artifact declares that fallback contract. The automatic OOC CTM stack supplies it by default; an explicit path overrides it, and metadata/bytes are checked. | standard Attention artifact with automatic default stack; otherwise unset | `configureLiveOocMcts` |
+| `STS_OOC_MCTS_ACTIVE_LIZARD` | Enables or disables the qualified active-Lizard correction. Accepts only `0` or `1`; the automatic default CTM stack enables it, `0` is a diagnostic rollback, and `1` with a custom combat model requires a Brew fallback. Active Lizard + Brew, Fairy, and Mark-of-the-Bloom retain their declared boundary behavior. | `1` with automatic default stack; otherwise `0` | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_LEAF_VALUE` | `native`, `constant`, or `boss`; boss mode averages a survival-dominant expected-HP utility over all ten Act1--4 bosses and does not call `v_win` at the leaf | `native` | `configureLiveOocMcts`, `OocGameContextModel::leafValue` |
 | `STS_OOC_MCTS_EARLY_STOP` | Strict visit-lock stopping even without a non-aborting provider guarantee; may skip later support/continuation aborts; `0` restores guarantee requirement; root-lock trace overrides stopping | `1` when OOC MCTS enabled | `configureLiveOocMcts`, `OocMctsPlanner::search` |
+| `STS_OOC_MCTS_MERGE_OUTCOMES` | `1`: pool sampled chance-node successors whose search-equivalence keys are equal into one decision node (#384); `0` keeps independent particles | `0` | `applyLiveControl`, `OocMctsPlanner::search` |
 | `STS_OOC_MCTS_ROOT_LOCK_TRACE` | Optional JSONL per searched root: hypothetical earliest strict visit lock/action/remaining budget/suffix time and eventual abort/completion; forces full budget and suppresses all root shortcuts; no support qualification | unset (off) | `configureLiveOocMcts`, `selectOocMctsAction` |
+| `STS_OOC_MCTS_REUSE_TRACE` | Optional JSONL per real OOC decision: does the real root's public (and RNG-counter) fingerprint match a stored decision node of the previous completed non-singleton search, at what depth, on which root branch, and with how many visits/subtree nodes. Observation only; captures each tree (cap 100,000 nodes); rejects `STS_OOC_MCTS_GRAPH_FILE`. Analyze with `tools/analyze_ooc_reuse_trace.py`. Fresh path per run. | unset (off) | `configureLiveOocMcts`, `selectOocMctsAction` |
 | `STS_RUN_PROFILE` | Append-only JSONL for real floor timing/counters and in-search OOC root checkpoints/exact branching; preserves budgets, early stops and singleton shortcuts. Analyze with `tools/analyze_run_profile.py`. Fresh path per run. | unset/off | `runFullRunOOC`, `selectOocMctsAction`, `oocMctsPolicyStep` |
 | `STS_OOC_MCTS_TRACE` | Optional completed-run CSV of search/continuation/combat counts and timing plus `.support.jsonl`; works with OFF | unset | `writeLiveOocMctsTrace` |
 | `STS_OOC_STRATEGIC_TOK_CHECK` | First-decision glob parity hook | `0` (off) | `main` ~L9305 |
@@ -169,12 +178,12 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_STOP_AFTER_ACT` | Stop benchmark after Act N boss | 0 (full run) | `main` ~L9627 |
-| `STS_FORCE_RELIC` | Force a relic at run start (paired A/B) | unset | `main` ~L9690 |
+| `STS_FORCE_RELIC` | Force a relic at run start (paired A/B), removing it from relic pools; forced Lizard Tail is initialized active (`data=1`), while other forced relics retain zero-initialized data | unset | `main` ~L9690; `run_driver.cpp::installRunForcedRelic` |
 
 ## Known limitations
 
-- `STS_SILVER_ADAPTIVE` has a mode-dependent default (ADR-0018, ADR-0020);
-  the exact precedence is in `apps/one_combat.cpp::main`.
+- `STS_SILVER_ADAPTIVE` and `STS_SILVER_LEARNED_STOP` have mode-dependent
+  defaults (ADR-0018, ADR-0020, ADR-0026); the exact precedence is in `apps/one_combat.cpp::main`.
 - This table intentionally omits legacy server-mode env vars consumed only by
   `v_server.py` (not `one_combat`).
 

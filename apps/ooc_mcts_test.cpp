@@ -60,6 +60,23 @@ void print(const char *name, const OocMctsResult &r) {
         << " transition_samples=" << m.transitionSamples << " leaf_evaluations=" << m.leafEvaluations
         << " max_depth_reached=" << m.maxDepthReached << '\n';
 }
+// Every sample is a fresh ID; the key decides which samples are equivalent.
+struct Keyed : Toy {
+    std::function<std::optional<std::uint64_t>(OocStateId)> key;
+    std::optional<std::uint64_t> outcomeEquivalenceKey(OocStateId s) const override { return key(s); }
+};
+Keyed keyedFreshOutcomes(std::function<std::optional<std::uint64_t>(OocStateId)> key) {
+    Keyed t;
+    t.terminals = {{1, .25}};
+    t.actions = {{0, {{0, 1}}}};
+    t.transition = [n = OocStateId{100}](OocStateId s, auto, auto &) mutable {
+        return s == 0 ? n++ : OocStateId{1};
+    };
+    for (OocStateId s = 100; s < 1000; ++s) t.actions[s] = {{0, 1}};
+    // Only root successors are keyed; the shared terminal stays unkeyed.
+    t.key = [key = std::move(key)](OocStateId s) { return s == 1 ? std::nullopt : key(s); };
+    return t;
+}
 Toy alternating() {
     Toy t;
     t.terminals = {{1, 0}, {2, 1}};
@@ -67,7 +84,47 @@ Toy alternating() {
     t.transition = [n = 0u](auto, auto, auto &) mutable { return ++n % 2 ? 1 : 2; };
     return t;
 }
+void mergeTests() {
+    OocMctsConfig config;
+    config.seed = 7;
+    config.captureTree = true;
+    auto merging = config; merging.mergeEquivalentOutcomes = true;
+    const auto rootChildren = [](const OocMctsResult &r) {
+        std::uint64_t children = 0, visits = 0;
+        for (const auto &edge : r.tree->edges)
+            if (edge.particle && edge.parentId == 1) { ++children; visits += edge.visits; }
+        return std::pair{children, visits};
+    };
+    // Off by default: equal keys still produce independent particles.
+    auto independentModel = keyedFreshOutcomes([](OocStateId) { return 7; });
+    const auto independent = OocMctsPlanner(config).search(independentModel, 0, 64);
+    require(independent.metrics.mergedOutcomes == 0 && rootChildren(independent).first > 1,
+            "outcome merging must be opt-in");
+    // Equal keys pool into one node; one particle entry per sample is kept.
+    auto pooledModel = keyedFreshOutcomes([](OocStateId) { return 7; });
+    const auto pooled = OocMctsPlanner(merging).search(pooledModel, 0, 64);
+    const auto [pooledChildren, pooledVisits] = rootChildren(pooled);
+    require(pooled.metrics.mergedOutcomes > 0 && pooledChildren == 1
+            && pooledVisits == pooled.rootActions.front().visits,
+            "equal keys must share one decision node that receives every visit, captured once");
+    require(pooled.metrics.decisionNodes < independent.metrics.decisionNodes, "merging must shrink the tree");
+    // Distinct or absent keys never merge, even when enabled.
+    auto distinctModel = keyedFreshOutcomes([](OocStateId s) { return s; });
+    const auto distinct = OocMctsPlanner(merging).search(distinctModel, 0, 64);
+    require(distinct.metrics.mergedOutcomes == 0 && rootChildren(distinct).first == rootChildren(independent).first,
+            "distinct keys must remain independent particles");
+    auto absentModel = keyedFreshOutcomes([](OocStateId) { return std::nullopt; });
+    const auto absent = OocMctsPlanner(merging).search(absentModel, 0, 64);
+    require(absent.metrics.mergedOutcomes == 0, "a provider without keys never merges");
+    // Two outcome classes keep their sampled frequencies as particle entries.
+    auto twoModel = keyedFreshOutcomes([](OocStateId s) { return s % 2; });
+    const auto two = OocMctsPlanner(merging).search(twoModel, 0, 256);
+    const auto [twoChildren, twoVisits] = rootChildren(two);
+    require(two.metrics.mergedOutcomes > 0 && twoChildren == 2 && twoVisits == two.rootActions.front().visits,
+            "two key classes must produce exactly two pooled nodes");
+}
 void tests() {
+    mergeTests();
     OocMctsConfig config;
     config.seed = 42;
     OocMctsPlanner planner(config);
@@ -183,6 +240,36 @@ void tests() {
         for (std::size_t i=0; i<combined.size(); ++i) combined[i] += candidate.bins[i];
     }
     require(combined == mixedResult.rootValues->bins, "candidate bins conserve baseline bins");
+    // Endpoint HP: deaths in bin 0, others at the evaluated state's HP;
+    // candidates partition the root and reporting endpoints changes nothing.
+    struct EndpointToy : Toy {
+        std::optional<OocEndpoint> endpoint(OocStateId s) const override {
+            return OocEndpoint{static_cast<int>(10 + s), 20, static_cast<int>(s)};
+        }
+        OocLeafEvaluation evaluateLeafWithOutcome(OocStateId s, std::mt19937_64 &) override {
+            return {leafValue(s), false, endpoint(s)};
+        }
+    };
+    EndpointToy endpointModel;
+    static_cast<Toy &>(endpointModel) = mixed;
+    const auto endpointResult = OocMctsPlanner(distributionConfig).search(endpointModel, 0, 3);
+    const auto &rootHp = *endpointResult.rootHp;
+    require(!mixedResult.rootHp->count && mixedResult.rootHp->unresolved == 3,
+        "providers without endpoints report unresolved HP samples");
+    require(rootHp.count == 3 && rootHp.deaths == 1 && rootHp.unresolved == 0 && rootHp.maxHp == 20
+        && rootHp.hpCounts == std::vector<std::uint64_t>({1,0,0,0,0,0,0,0,0,0,0,0,1,1})
+        && rootHp.floors == std::map<int, std::uint64_t>({{1,1},{2,1},{3,1}}),
+        "endpoint HP records deaths at zero and evaluated states at their HP");
+    std::vector<std::uint64_t> hpColumns(rootHp.hpCounts.size());
+    for (std::size_t i = 0; i < endpointResult.rootActions.size(); ++i) {
+        const auto &action = endpointResult.rootActions[i];
+        const auto &candidate = endpointResult.actionHp.at(action.id);
+        require(candidate.count == action.visits && action.visits == mixedResult.rootActions[i].visits
+            && action.q == mixedResult.rootActions[i].q,
+            "endpoint capture partitions visits and leaves allocation unchanged");
+        for (std::size_t h = 0; h < candidate.hpCounts.size(); ++h) hpColumns[h] += candidate.hpCounts[h];
+    }
+    require(hpColumns == rootHp.hpCounts, "candidate HP samples conserve the root");
     OocValueDistribution edges; edges.record(0,0); edges.record(.05,0); edges.record(1,0);
     require(edges.bins[1] == 1 && edges.bins[2] == 1 && edges.bins[20] == 1
         && edges.bins[0] == 0 && edges.bins[21] == 0, "fixed model-value bucket boundaries");

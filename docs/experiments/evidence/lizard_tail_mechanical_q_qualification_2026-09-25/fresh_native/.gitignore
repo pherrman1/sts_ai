@@ -1,0 +1,3 @@
+# Per-source JSONL/checkpoint and log files are local resume scratch; the
+# aggregate corpora and compact hash indexes live beside this directory.
+/shards/

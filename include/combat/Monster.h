@@ -8,6 +8,7 @@
 #include <functional>
 #include <random>
 #include <map>
+#include <vector>
 #include <game/Random.h>
 #include <bitset>
 #include <cassert>
@@ -75,13 +76,19 @@ namespace sts {
         // book of stabbing n
         // champ phase2
         // bronze orb have used stasis
-        // bronze automaton lastBoostWasFlail
+        // bronze automaton numTurns (public deterministic roll counter)
         // spiker thorn buff count
         // writhing mass used implant
         // darkling d
         // time eater has used haste
         // awakened one isPhase2
         int miscInfo = 0;
+        std::uint32_t occupantGeneration = 0;
+        std::uint16_t latentDamageMask = 0;
+        bool latentDamageMaterialized = false;
+        static std::uint16_t latentDamagePrior(MonsterId id, int ascension);
+        void materializeLatentDamage(BattleContext &bc);
+        int publicIncomingDamage(const BattleContext &bc) const;
 
         // Runic Dome search only (BattleContext::intentsHidden): rolls whose
         // result the player cannot see yet are deferred until the move is used
@@ -91,6 +98,11 @@ namespace sts {
         std::uint8_t pendingMoveRolls = 0;
         MonsterRollInputs pendingRollInputs;
         std::uint8_t pendingDirectMoveChoice = 0;
+        // Public roll-time inputs and Spot Weakness predicates, indexed by
+        // completed roll count (the direct Looter/Mugger choice is count+1).
+        // Never store the concrete hidden move in these observations.
+        std::vector<MonsterRollInputs> pendingRollInputHistory;
+        std::vector<std::pair<int, bool>> pendingAttackPredicates;
 
         Monster() = default;
         Monster(const Monster& rhs) = default;
@@ -100,6 +112,7 @@ namespace sts {
 
         void setRandomHp(Random &hpRng, bool higherHp);
         void initHp(Random &hpRng, int ascension);
+        void resetForNewOccupant(int monsterIdx, MonsterId monsterId, int ascension);
         void construct(BattleContext &bc, MonsterId monsterId, int monsterIdx);
         void initSpawnedMonster(BattleContext &bc, MonsterId monsterId, int monsterIdx, int hp);
 
@@ -168,8 +181,11 @@ namespace sts {
         [[nodiscard]] MMID getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int &monsterData, int roll) const;
         [[nodiscard]] MonsterRollInputs captureRollInputs(const BattleContext &bc) const;
         void rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in);
+        bool observeAttackPredicate(BattleContext &bc);
         void materializePendingMove(BattleContext &bc);  // evaluates deferred rolls; no-op when none
         void cancelPendingMove();                        // a forced move override discards them
+        // The Guardian's Mode Shift trigger without its 20 block (the caller queues it).
+        void enterGuardianDefensiveMode();
 
         [[nodiscard]] int calculateDamageToPlayer(const BattleContext &bc, int baseDamage) const;
         void attackPlayerHelper(BattleContext &bc, int baseDamage, int times=1);

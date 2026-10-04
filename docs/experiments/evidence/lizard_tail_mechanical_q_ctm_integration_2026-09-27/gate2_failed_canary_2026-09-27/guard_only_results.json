@@ -1,0 +1,101 @@
+{
+  "all_passed": true,
+  "runs": [
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991000,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991000,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991001,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991001,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991002,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991002,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991003,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991003,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991004,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991004,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991005,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991005,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991006,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991006,
+      "stderr": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991007,
+      "stderr": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991007,
+      "stderr": ""
+    }
+  ]
+}
