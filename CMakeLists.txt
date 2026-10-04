@@ -412,6 +412,7 @@ set_tests_properties(vwin_derived_rooms_397_analysis_selftest PROPERTIES
 add_test(NAME vwin_mlp_397_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_mlp_397.py --self-test)
 set_tests_properties(vwin_mlp_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
 add_test(NAME silver_learned_stop_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/silver_learned_stop.py selftest)
 set_tests_properties(silver_learned_stop_selftest PROPERTIES
