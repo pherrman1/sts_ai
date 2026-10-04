@@ -40,9 +40,9 @@ diagnostics.
 |----------|--------|---------|------------|
 | `STS_SILVER_SEARCH` | Accepted for compatibility; Silver is always installed. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_NATIVE_SILVER` | Accepted for compatibility; `0` (the removed vendored model) makes `one_combat` exit with an error (ADR-0022) | native | `main` |
-| `STS_SILVER_ADAPTIVE` | Enable retained-root adaptive Silver: fresh multi-action roots search 10,000; a retained root stops at 500 when its top-two visit-share gap reaches `STS_SILVER_ADAPTIVE_TOP_GAP`; `0` gives flat Silver | on only for `run`/`bestbench`/`reprobench` without a sims argument; every other invocation resolves an unset value to `0` (flat caller budget) unless `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or `STS_SILVER_ADAPTIVE_TOP_GAP` is set (ADR-0018, ADR-0020) | `NativeSilverBackend` |
+| `STS_SILVER_ADAPTIVE` | Enable retained-root adaptive Silver (#199): fresh multi-action roots search 10,000; a retained root stops at 500 when its top-two visit-share gap reaches `STS_SILVER_ADAPTIVE_TOP_GAP`; `0` gives flat Silver or, with `STS_SILVER_LEARNED_STOP=1`, learned stopping | `run`/`bestbench`/`reprobench` without a sims argument resolve an unset value to `0` with learned stopping (ADR-0026) unless an adaptive knob or `STS_SILVER_LEARNED_STOP` is set; `STS_SILVER_LEARNED_STOP=0` alone keeps #199 there; every other invocation resolves an unset value to `0` (flat caller budget) (ADR-0018, ADR-0020) | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Stopping threshold for `STS_SILVER_ADAPTIVE` (top-vs-second visit-share gap `>=` this value) | `0.2932885906040268` | `NativeSilverBackend` |
-| `STS_SILVER_LEARNED_STOP` | Research-only learned stopping: each multi-action root searches to the 250..10,000 checkpoints and stops at the first strict visit lock or compiled stop-model risk below the threshold (`NativeSilverStopModel.h`). Requires `STS_SILVER_ADAPTIVE=0`; refuses an untrained model | unset/off | `NativeSilverBackend` |
+| `STS_SILVER_LEARNED_STOP` | Learned stopping: each multi-action root searches to the 250..10,000 checkpoints and stops at the first strict visit lock or compiled stop-model risk below the threshold (`NativeSilverStopModel.h`). Requires `STS_SILVER_ADAPTIVE=0` (an unset value resolves to `0` when this is `1`); refuses an untrained model | `1` for `run`/`bestbench`/`reprobench` without a sims argument and without adaptive knobs (ADR-0026); otherwise off | `main`, `NativeSilverBackend` |
 | `STS_SILVER_LEARNED_STOP_THRESHOLD` | Risk threshold for `STS_SILVER_LEARNED_STOP` | the compiled model's default (`0.0323` for `gbt-770201c31f7b`) | `NativeSilverBackend` |
 | `STS_SILVER_LEARNED_STOP_BOSS_FALLBACK` | Research-only: with `STS_SILVER_LEARNED_STOP=1`, boss rooms use the #199 retained-root rule instead of learned stopping. Requires `STS_SILVER_LEARNED_STOP=1` | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_LEARNED_STOP_BOSS_MAX` | Research-only: with `STS_SILVER_LEARNED_STOP=1`, a boss root that reached 10,000 simulations without stopping continues in 10,000 steps up to this cap, until its leader is strictly locked against the cap. `0` or unset: off; otherwise must exceed 10,000; exclusive with `_BOSS_FALLBACK` | unset/off | `NativeSilverBackend` |
@@ -182,8 +182,8 @@ enable flag:
 
 ## Known limitations
 
-- `STS_SILVER_ADAPTIVE` has a mode-dependent default (ADR-0018, ADR-0020);
-  the exact precedence is in `apps/one_combat.cpp::main`.
+- `STS_SILVER_ADAPTIVE` and `STS_SILVER_LEARNED_STOP` have mode-dependent
+  defaults (ADR-0018, ADR-0020, ADR-0026); the exact precedence is in `apps/one_combat.cpp::main`.
 - This table intentionally omits legacy server-mode env vars consumed only by
   `v_server.py` (not `one_combat`).
 

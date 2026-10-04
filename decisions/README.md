@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0026](0026-learned-silver-stopping-default.md) makes learned Silver
+  stopping (model `gbt-770201c31f7b`) the whole-run default budget instead of
+  the #199 adaptive rule, amending ADR-0018.
 - [ADR-0025](0025-runic-monster-identity-and-damage-beliefs.md) records
   canonical monster occupant identity and public persistent-damage beliefs
   under Runic Dome.

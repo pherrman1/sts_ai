@@ -643,8 +643,8 @@ wins, 19% less time per run. The earlier −1 floor lean did not replicate.
 Neither variant tested for boss fights did better than plain v2: falling back
 to #199 in boss rooms, or allowing up to 30k simulations
 (`STS_SILVER_LEARNED_STOP_BOSS_FALLBACK`, `_BOSS_MAX`). Both options stay
-research-only, and the 10k cap stays. Learned stopping is recommended as the
-production default; the flip needs its own ADR and PR.
+research-only, and the 10k cap stays. Philipp made learned stopping the whole-run default
+([ADR-0026](../../../decisions/0026-learned-silver-stopping-default.md)).
 
 See [ledger §370, §372 and §377](../../experiments/ledger-06.md), the
 [v1 packet](../../experiments/evidence/silver_learned_stop/README.md) and the
