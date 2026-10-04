@@ -591,8 +591,10 @@ the full-run trace boundary. Defaults remain off. Thread-local CPU scopes
 record calls, inclusive CPU and exclusive CPU after subtracting timed children;
 do not sum inclusive buckets. They cover real combat, MCTS, prior preparation
 and predictions, V4 state/Q inference inside active scopes, native leaf value,
-projection, successors, CTM preparation/resolution and metadata. Native leaf
-timing includes feature construction; projection excludes timed child networks.
+projection, successors, CTM preparation/resolution and metadata. Native
+`leaf_value` is split into child buckets `leaf_features` (rich feature vector)
+and `leaf_predict` (`v_win` tree inference); projection excludes timed child
+networks. The native leaf reads the resolved state directly and makes no copy.
 Counters reset at each report. `processCpuAtReportSec` is cumulative process CPU,
 not per-seed CPU in a multi-seed process; use external process CPU timing for
 one-seed invocations. These are attribution diagnostics, not production timings.

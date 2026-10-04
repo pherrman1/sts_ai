@@ -8,6 +8,7 @@
 namespace one_combat {
 enum class OocProfileBucket { Mcts, RealCombat, Metadata, PolicyLogits, PolicyPrepare,
     PolicyPredict, Successor, CombatPrepare, CombatResolve, EvaluateLeaf, LeafValue,
+    LeafFeatures, LeafPredict,
     V4StateNetwork, V4EncodeDeck, V4EncodeRel, V4EncodePot, V4StateFusion,
     V4ActionValue, PriorBuild, SingletonPrior, Count };
 struct OocProfileCounter {

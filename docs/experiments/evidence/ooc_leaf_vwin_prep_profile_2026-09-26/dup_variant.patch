@@ -1,0 +1,28 @@
+--- a/apps/one_combat/ooc_mcts_adapter.cpp
++++ b/apps/one_combat/ooc_mcts_adapter.cpp
+@@ -6,6 +6,8 @@
+ #include <cstdlib>
+ #include <fstream>
+ #include <mutex>
++#include <deque>
++#include <unordered_set>
+ #include <numeric>
+ #include <time.h>
+ #include "../ooc_strategic_tok_net.h"
+@@ -196,6 +198,16 @@
+                 OocProfileScope features(OocProfileBucket::LeafFeatures);
+                 raw = richFeatureVec(source, path);
+             }
++            {
++                struct Dup { std::unordered_set<std::string> seen; std::uint64_t calls=0; std::deque<std::string> recent; std::unordered_map<std::string,int> recentCount; std::uint64_t recentHits=0;
++                    ~Dup(){ std::fprintf(stderr,"[dup] calls=%llu unique=%zu recentHits=%llu\n",(unsigned long long)calls,seen.size(),(unsigned long long)recentHits);} };
++                static Dup dup;
++                std::string key(reinterpret_cast<const char*>(raw.data()), raw.size()*sizeof(float));
++                ++dup.calls; dup.seen.insert(key);
++                if (dup.recentCount[key]++ > 0) ++dup.recentHits;
++                dup.recent.push_back(key);
++                if (dup.recent.size() > 4096) { auto &old=dup.recent.front(); if(--dup.recentCount[old]==0) dup.recentCount.erase(old); dup.recent.pop_front(); }
++            }
+             OocProfileScope predict(OocProfileBucket::LeafPredict);
+             return vStateWinNativeFeatures(raw);
+         };

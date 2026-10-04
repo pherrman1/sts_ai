@@ -14198,3 +14198,27 @@ preregistered paired experiment; these checks do not promote the default.
 
 **Knowledge impact:** runtime selection and encounter-queue semantics recorded
 in maintained out-of-combat architecture and environment-variable documentation.
+
+## §380 — OOC leaf `v_win` preparation profile; state copy removed (2026-09-26)
+
+Issue #338. Profiled native OOC-MCTS leaf value on one fixed seed
+(`12002032`, A0 fair, Act 3 stop, 2,048 sims, V4 leaf policy, zero leaf
+combats). New profiler buckets split `leaf_value` into `leaf_features` and
+`leaf_predict`.
+
+Profile (139 decisions, 119,520 native leaf values, 208 s MCTS CPU):
+- `leaf_value`: ~7% of MCTS CPU.
+- Feature construction: 3.7 µs/call, **0.2%** of MCTS CPU.
+- `v_win` tree inference: 115 µs/call, 6.6%.
+- The leaf deep-copied `GameContext` and map (~4 µs/call) only to call a
+  non-const wrapper; the copy is removed.
+
+Exact repeated feature vectors: 16.7% of calls. A per-decision exact
+`v_win` cache hit 12.0% of calls but produced no end-to-end change beyond
+run-to-run noise. Every run had identical result rows and non-timing MCTS
+trace columns.
+
+Decision: adopt the copy removal and profiler split (exact parity). Reject
+parent→child incremental features (ceiling 0.2%) and the exact cache (no
+measured gain). Leaf cost is model inference and belongs to #334. Evidence:
+[ooc_leaf_vwin_prep_profile_2026-09-26](evidence/ooc_leaf_vwin_prep_profile_2026-09-26/README.md).
