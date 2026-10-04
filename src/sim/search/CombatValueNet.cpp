@@ -329,7 +329,7 @@ void combatExtractFeatures(const BattleContext &bc, float *out) {
         const auto &mm = bc.monsters.arr[i];
         int idmg = 0;
         const bool atk = mm.isAttacking();
-        if (atk) { const auto di = mm.getMoveBaseDamage(bc); idmg = mm.calculateDamageToPlayer(bc, di.damage) * di.attackCount; }
+        if (atk) idmg=mm.publicIncomingDamage(bc);
         out[b+0] = (float)(int)mm.id;
         out[b+1] = (float)mm.curHp;
         out[b+2] = (float)mm.block;

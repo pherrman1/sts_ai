@@ -1,0 +1,5 @@
+control (main) wins 86/128, treatment (equivalent-copy reroot) wins 89/128
+paired difference +2.3 pp, normal 95% CI [-3.2, +7.9] pp
+discordant seeds: treatment-only 8, control-only 5, McNemar z = +0.83
+mean floor: control 47.42, treatment 48.11
+mean sec: control 38.36, treatment 39.30

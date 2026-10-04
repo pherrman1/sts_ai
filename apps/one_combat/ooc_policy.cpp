@@ -73,6 +73,10 @@ void configureVPathPolicyFromEnvironment() {
     }
 }
 
+bool vPathPolicyEnabled() {
+    return g_vPath != 0;
+}
+
 void configureRestVPolicyFromEnvironment() {
     if (const char *d = std::getenv("STS_REST_V_THRESH")) {
         g_restVThreshold = std::atof(d);
@@ -83,6 +87,26 @@ void configureRestVPolicyFromEnvironment() {
 void resetPathPolicyState() {
     t_pathActionUses = 0;
     t_pathAggr = 0.0;
+}
+
+OocPolicyThreadState captureOocPolicyThreadState() {
+    return {t_pathActionUses, t_pathAggr, t_tokCheckPending, t_shopV,
+            t_oocStrategicTraceRows, t_oocStrategicTraceDecision,
+            t_actFightProbeDecisionIdx, t_actFightProbeActionIdx,
+            t_actFightProbeFutureIdx, t_matchAndKeepWant};
+}
+
+void restoreOocPolicyThreadState(const OocPolicyThreadState &state) {
+    t_pathActionUses = state.pathActionUses;
+    t_pathAggr = state.pathAggr;
+    t_tokCheckPending = state.tokCheckPending;
+    t_shopV = state.shopV;
+    t_oocStrategicTraceRows = state.strategicTraceRows;
+    t_oocStrategicTraceDecision = state.strategicTraceDecision;
+    t_actFightProbeDecisionIdx = state.actFightProbeDecisionIdx;
+    t_actFightProbeActionIdx = state.actFightProbeActionIdx;
+    t_actFightProbeFutureIdx = state.actFightProbeFutureIdx;
+    t_matchAndKeepWant = state.matchAndKeepWant;
 }
 
 bool oocActionNNPolicy(GameContext &gc) {
@@ -868,7 +892,18 @@ static std::vector<int> upgradeableIds(GameContext &gc) {
     return ids;
 }
 
+namespace {
+thread_local unsigned cardRewardFallbackDepth = 0;
+struct CardRewardFallbackScope {
+    CardRewardFallbackScope() { ++cardRewardFallbackDepth; }
+    ~CardRewardFallbackScope() { --cardRewardFallbackDepth; }
+};
+}
+
+bool inCardRewardFallback() { return cardRewardFallbackDepth != 0; }
+
 void serverCardRewardPolicy(GameContext &gc) {
+    const CardRewardFallbackScope scope;
     using RT = search::GameAction::RewardsActionType;
     auto &r = gc.info.rewardsContainer;
     while (r.cardRewardCount > 0) {
@@ -896,6 +931,7 @@ void bossRelicVPolicy(GameContext &gc) {
 void neowVPolicy(GameContext &gc) {
     int best = 0; double bestV = -1e18;
     for (int i = 0; i < (int)gc.info.neowRewards.size(); ++i) {
+        if (gc.info.neowRewards[i].r == Neow::Bonus::INVALID) continue;
         GameContext g2 = gc;
         g2.map = std::make_shared<Map>(*gc.map);
         g2.chooseNeowOption(g2.info.neowRewards[i]);

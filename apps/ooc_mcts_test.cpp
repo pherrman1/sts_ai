@@ -60,6 +60,23 @@ void print(const char *name, const OocMctsResult &r) {
         << " transition_samples=" << m.transitionSamples << " leaf_evaluations=" << m.leafEvaluations
         << " max_depth_reached=" << m.maxDepthReached << '\n';
 }
+// Every sample is a fresh ID; the key decides which samples are equivalent.
+struct Keyed : Toy {
+    std::function<std::optional<std::uint64_t>(OocStateId)> key;
+    std::optional<std::uint64_t> outcomeEquivalenceKey(OocStateId s) const override { return key(s); }
+};
+Keyed keyedFreshOutcomes(std::function<std::optional<std::uint64_t>(OocStateId)> key) {
+    Keyed t;
+    t.terminals = {{1, .25}};
+    t.actions = {{0, {{0, 1}}}};
+    t.transition = [n = OocStateId{100}](OocStateId s, auto, auto &) mutable {
+        return s == 0 ? n++ : OocStateId{1};
+    };
+    for (OocStateId s = 100; s < 1000; ++s) t.actions[s] = {{0, 1}};
+    // Only root successors are keyed; the shared terminal stays unkeyed.
+    t.key = [key = std::move(key)](OocStateId s) { return s == 1 ? std::nullopt : key(s); };
+    return t;
+}
 Toy alternating() {
     Toy t;
     t.terminals = {{1, 0}, {2, 1}};
@@ -67,7 +84,47 @@ Toy alternating() {
     t.transition = [n = 0u](auto, auto, auto &) mutable { return ++n % 2 ? 1 : 2; };
     return t;
 }
+void mergeTests() {
+    OocMctsConfig config;
+    config.seed = 7;
+    config.captureTree = true;
+    auto merging = config; merging.mergeEquivalentOutcomes = true;
+    const auto rootChildren = [](const OocMctsResult &r) {
+        std::uint64_t children = 0, visits = 0;
+        for (const auto &edge : r.tree->edges)
+            if (edge.particle && edge.parentId == 1) { ++children; visits += edge.visits; }
+        return std::pair{children, visits};
+    };
+    // Off by default: equal keys still produce independent particles.
+    auto independentModel = keyedFreshOutcomes([](OocStateId) { return 7; });
+    const auto independent = OocMctsPlanner(config).search(independentModel, 0, 64);
+    require(independent.metrics.mergedOutcomes == 0 && rootChildren(independent).first > 1,
+            "outcome merging must be opt-in");
+    // Equal keys pool into one node; one particle entry per sample is kept.
+    auto pooledModel = keyedFreshOutcomes([](OocStateId) { return 7; });
+    const auto pooled = OocMctsPlanner(merging).search(pooledModel, 0, 64);
+    const auto [pooledChildren, pooledVisits] = rootChildren(pooled);
+    require(pooled.metrics.mergedOutcomes > 0 && pooledChildren == 1
+            && pooledVisits == pooled.rootActions.front().visits,
+            "equal keys must share one decision node that receives every visit, captured once");
+    require(pooled.metrics.decisionNodes < independent.metrics.decisionNodes, "merging must shrink the tree");
+    // Distinct or absent keys never merge, even when enabled.
+    auto distinctModel = keyedFreshOutcomes([](OocStateId s) { return s; });
+    const auto distinct = OocMctsPlanner(merging).search(distinctModel, 0, 64);
+    require(distinct.metrics.mergedOutcomes == 0 && rootChildren(distinct).first == rootChildren(independent).first,
+            "distinct keys must remain independent particles");
+    auto absentModel = keyedFreshOutcomes([](OocStateId) { return std::nullopt; });
+    const auto absent = OocMctsPlanner(merging).search(absentModel, 0, 64);
+    require(absent.metrics.mergedOutcomes == 0, "a provider without keys never merges");
+    // Two outcome classes keep their sampled frequencies as particle entries.
+    auto twoModel = keyedFreshOutcomes([](OocStateId s) { return s % 2; });
+    const auto two = OocMctsPlanner(merging).search(twoModel, 0, 256);
+    const auto [twoChildren, twoVisits] = rootChildren(two);
+    require(two.metrics.mergedOutcomes > 0 && twoChildren == 2 && twoVisits == two.rootActions.front().visits,
+            "two key classes must produce exactly two pooled nodes");
+}
 void tests() {
+    mergeTests();
     OocMctsConfig config;
     config.seed = 42;
     OocMctsPlanner planner(config);
@@ -144,6 +201,7 @@ void tests() {
     };
     auto randomObserveConfig=config; randomObserveConfig.observeRootLock=true;
     randomObserveConfig.rootCheckpointSimulations={1,64,128};
+    randomObserveConfig.profileSearch = true;
     const auto randomFull=planner.search(randomReference,0,128);
     const auto randomRecorded=OocMctsPlanner(randomObserveConfig).search(randomObserved,0,128);
     require(referenceDraws==observedDraws && randomFull.selectedAction==randomRecorded.selectedAction
@@ -151,6 +209,91 @@ void tests() {
         && randomFull.rootActions[0].q==randomRecorded.rootActions[0].q
         && randomFull.metrics.transitionSamples==randomRecorded.metrics.transitionSamples,
         "observation preserves every sampling draw and full-budget stochastic particle result");
+    auto distributionConfig = config; distributionConfig.captureValueDistribution = true;
+    auto distributionModel = alternating();
+    std::vector<std::uint64_t> distributionDraws;
+    distributionModel.transition = [&](auto, auto, auto &rng) {
+        const auto draw = rng(); distributionDraws.push_back(draw); return OocStateId(1 + draw % 2);
+    };
+    const auto distribution = OocMctsPlanner(distributionConfig).search(distributionModel, 0, 128);
+    require(!randomFull.rootValues && randomFull.actionValues.empty()
+        && distributionDraws == referenceDraws && distribution.selectedAction == randomFull.selectedAction
+        && distribution.rootActions[0].visits == randomFull.rootActions[0].visits
+        && distribution.rootActions[0].q == randomFull.rootActions[0].q,
+        "distribution capture preserves exact sampling draws, allocation, value and selection");
+    const auto &values = *distribution.rootValues;
+    require(values.count == 128 && values.bins[0] + values.bins[21] == 128
+        && values.sum / values.count == distribution.rootActions[0].q
+        && values.bins == distribution.actionValues.at(0).bins,
+        "terminal samples and candidate/root means conserve every backup");
+    auto mixed = deterministic(); mixed.terminals = {{1, 0}, {2, 1}};
+    mixed.actions[0].push_back({3, 1}); mixed.actions[3] = {{3, 1}}; mixed.leaf = 0;
+    const auto mixedResult = OocMctsPlanner(distributionConfig).search(mixed, 0, 3);
+    require(mixedResult.rootValues->count == 3 && mixedResult.rootValues->bins[0] == 1
+        && mixedResult.rootValues->bins[1] == 1 && mixedResult.rootValues->bins[21] == 1,
+        "a nonterminal zero evaluation stays separate from exact terminal death");
+    std::array<std::uint64_t,22> combined{};
+    for (const auto &action : mixedResult.rootActions) {
+        const auto &candidate = mixedResult.actionValues.at(action.id);
+        require(candidate.count == action.visits && candidate.sum / candidate.count == action.q,
+            "per-candidate distribution is the backed-up root Q sample set");
+        for (std::size_t i=0; i<combined.size(); ++i) combined[i] += candidate.bins[i];
+    }
+    require(combined == mixedResult.rootValues->bins, "candidate bins conserve baseline bins");
+    // Endpoint HP: deaths in bin 0, others at the evaluated state's HP;
+    // candidates partition the root and reporting endpoints changes nothing.
+    struct EndpointToy : Toy {
+        std::optional<OocEndpoint> endpoint(OocStateId s) const override {
+            return OocEndpoint{static_cast<int>(10 + s), 20, static_cast<int>(s)};
+        }
+        OocLeafEvaluation evaluateLeafWithOutcome(OocStateId s, std::mt19937_64 &) override {
+            return {leafValue(s), false, endpoint(s)};
+        }
+    };
+    EndpointToy endpointModel;
+    static_cast<Toy &>(endpointModel) = mixed;
+    const auto endpointResult = OocMctsPlanner(distributionConfig).search(endpointModel, 0, 3);
+    const auto &rootHp = *endpointResult.rootHp;
+    require(!mixedResult.rootHp->count && mixedResult.rootHp->unresolved == 3,
+        "providers without endpoints report unresolved HP samples");
+    require(rootHp.count == 3 && rootHp.deaths == 1 && rootHp.unresolved == 0 && rootHp.maxHp == 20
+        && rootHp.hpCounts == std::vector<std::uint64_t>({1,0,0,0,0,0,0,0,0,0,0,0,1,1})
+        && rootHp.floors == std::map<int, std::uint64_t>({{1,1},{2,1},{3,1}}),
+        "endpoint HP records deaths at zero and evaluated states at their HP");
+    std::vector<std::uint64_t> hpColumns(rootHp.hpCounts.size());
+    for (std::size_t i = 0; i < endpointResult.rootActions.size(); ++i) {
+        const auto &action = endpointResult.rootActions[i];
+        const auto &candidate = endpointResult.actionHp.at(action.id);
+        require(candidate.count == action.visits && action.visits == mixedResult.rootActions[i].visits
+            && action.q == mixedResult.rootActions[i].q,
+            "endpoint capture partitions visits and leaves allocation unchanged");
+        for (std::size_t h = 0; h < candidate.hpCounts.size(); ++h) hpColumns[h] += candidate.hpCounts[h];
+    }
+    require(hpColumns == rootHp.hpCounts, "candidate HP samples conserve the root");
+    OocValueDistribution edges; edges.record(0,0); edges.record(.05,0); edges.record(1,0);
+    require(edges.bins[1] == 1 && edges.bins[2] == 1 && edges.bins[20] == 1
+        && edges.bins[0] == 0 && edges.bins[21] == 0, "fixed model-value bucket boundaries");
+    struct DetachedTerminal : Toy {
+        OocLeafEvaluation evaluateLeafWithOutcome(OocStateId, std::mt19937_64 &) override { return {0,true}; }
+    } detached;
+    detached.boundary = true; detached.leaf = 0;
+    const auto detachedResult = OocMctsPlanner(distributionConfig).search(detached,0,3);
+    require(detachedResult.rootValues->bins[0] == 3 && detachedResult.rootValues->bins[1] == 0,
+        "terminal death reached inside detached leaf evaluation retains its endpoint");
+    require(randomFull.metrics.expandedActionHistogram.empty()
+        && randomRecorded.metrics.expandedActionHistogram == std::map<std::size_t, std::uint64_t>{{1, 1}},
+        "exact histogram defaults off and counts expanded singleton root once");
+    Toy wide;
+    for (unsigned i = 1; i <= 10; ++i) {
+        wide.actions[0].push_back({i, 1});
+        wide.terminals[i] = i / 10.0;
+    }
+    wide.transition = [](auto, auto a, auto &) { return a; };
+    auto wideConfig = config; wideConfig.profileSearch = true;
+    const auto wideResult = OocMctsPlanner(wideConfig).search(wide, 0, 32);
+    require(wideResult.metrics.expandedActionHistogram == std::map<std::size_t, std::uint64_t>{{10, 1}}
+        && wideResult.metrics.expandedNodes3PlusActions == 1,
+        "exact ten-way expansion reconciles with existing coarse census");
     auto checkpointModel = deterministic();
     auto checkpointConfig = config;
     checkpointConfig.rootCheckpointSimulations = {2, 3, 4};
@@ -308,9 +451,10 @@ void tests() {
         if (action==2) throw OocSearchUnsupported("toy unsupported");
         return 1;
     };
-    const auto discarded=planner.search(unsupported,0,128);
+    const auto discarded=OocMctsPlanner(distributionConfig).search(unsupported,0,128);
     require(discarded.aborted && discarded.abortReason=="toy unsupported"
         && !discarded.selectedAction && discarded.rootActions.empty()
+        && !discarded.rootValues && discarded.actionValues.empty()
         && discarded.metrics.simulations==1 && discarded.metrics.simulationAttempts==2,
         "one unsupported transition discards entire root, including previous supported Q");
     auto t = deterministic();
@@ -397,19 +541,66 @@ void tests() {
         && x.outcomeParticles == y.outcomeParticles && x.transitionSamples == y.transitionSamples
         && x.leafEvaluations == y.leafEvaluations && x.maxDepthReached == y.maxDepthReached, "exact replay metrics");
 
-    // A cycle verifies horizon depth and newly expanded leaf stopping.
+    // A safety-cap hit invalidates the entire root, never a value-bearing leaf.
     t = Toy{}; t.leaf = .3; t.actions = {{0, {{0, 1}}}};
     t.transition = [](auto, auto, auto &) { return 0; };
     auto cfg = config; cfg.maxDepth = 2; cfg.wideningK = .01;
     auto h = OocMctsPlanner(cfg).search(t, 0, 20);
-    require(h.metrics.maxDepthReached == 2 && h.metrics.leafEvaluations == 20, "depth counts transitions");
-    require(std::abs(h.rootActions[0].q - .3) < 1e-12, "leaf backup");
-    cfg.maxDepth = 0;
+    require(h.aborted && !h.selectedAction && h.rootActions.empty()
+        && h.abortReason == "ooc_depth_safety_cap_2_state_0"
+        && h.metrics.maxDepthReached == 2 && h.metrics.simulations == 1
+        && h.metrics.simulationAttempts == 2 && t.leafCalls == 1,
+        "cycle aborts without evaluating or backing up the cap-hit state");
+    auto combinedCapture = cfg;
+    combinedCapture.captureValueDistribution = true;
+    combinedCapture.profileSearch = true;
+    t.leafCalls = 0;
+    const auto capturedCap = OocMctsPlanner(combinedCapture).search(t, 0, 20);
+    require(capturedCap.aborted && capturedCap.abortReason == h.abortReason
+        && !capturedCap.rootValues && capturedCap.actionValues.empty()
+        && capturedCap.metrics.simulations == h.metrics.simulations
+        && capturedCap.metrics.transitionSamples == h.metrics.transitionSamples
+        && t.leafCalls == 1,
+        "combined profiling and distribution capture preserve fail-closed cap and discard samples");
+    cfg.maxDepth = 0; t.leafCalls = 0;
     h = OocMctsPlanner(cfg).search(t, 0, 3);
-    require(!h.selectedAction && h.metrics.transitionSamples == 0 && h.metrics.maxDepthReached == 0, "root horizon");
+    require(h.aborted && !h.selectedAction && h.metrics.transitionSamples == 0
+        && h.metrics.maxDepthReached == 0 && t.leafCalls == 0, "root safety cap");
     t.terminals[0] = 1;
     h = OocMctsPlanner(cfg).search(t, 0, 3);
-    require(h.metrics.leafEvaluations == 0 && !h.selectedAction, "terminal precedes horizon");
+    require(!h.aborted && h.metrics.leafEvaluations == 0 && !h.selectedAction,
+        "true terminal does not require further traversal at cap");
+    t.terminals.clear(); t.boundary = true;
+    h = OocMctsPlanner(cfg).search(t, 0, 3);
+    require(!h.aborted && t.leafCalls == 3, "semantic boundary remains valid at cap");
+    cfg = config;
+    require(cfg.maxDepth == 512, "default safety cap is 512");
+    struct SafetyChain : Toy {
+        std::vector<OocPlannerAction> legalActions(OocStateId) const override { return {{0,1}}; }
+        bool isDeterministicTransition(OocStateId, OocActionId) const override { return true; }
+    } safetyChain;
+    safetyChain.terminals[64] = 1;
+    safetyChain.transition = [](auto state, auto, auto &) { return state+1; };
+    auto beyond32 = OocMctsPlanner(cfg).search(safetyChain, 0, 80);
+    require(!beyond32.aborted && beyond32.metrics.maxDepthReached == 64
+        && beyond32.metrics.simulations == 80, "ordinary search grows beyond old horizon");
+    safetyChain.terminals.clear();
+    auto runaway = OocMctsPlanner(cfg).search(safetyChain, 0, 600);
+    require(runaway.aborted && runaway.metrics.maxDepthReached == 512
+        && runaway.abortReason == "ooc_depth_safety_cap_512_state_512",
+        "default cap catches runaway graph");
+    auto below32 = config; below32.maxDepth = 32;
+    auto parityA = stochastic(), parityB = stochastic();
+    const auto lowCap = OocMctsPlanner(below32).search(parityA, 0, 5000);
+    const auto highCap = planner.search(parityB, 0, 5000);
+    require(lowCap.selectedAction == highCap.selectedAction
+        && lowCap.metrics.transitionSamples == highCap.metrics.transitionSamples
+        && lowCap.metrics.depthSum == highCap.metrics.depthSum,
+        "cap value does not change below-cap selection or sampling");
+    for (std::size_t i=0; i<lowCap.rootActions.size(); ++i)
+        require(lowCap.rootActions[i].visits == highCap.rootActions[i].visits
+            && lowCap.rootActions[i].q == highCap.rootActions[i].q,
+            "below-cap root statistics exact parity");
 
     t = Toy{}; t.boundary = true; t.leaf = .4;
     auto boundaryResult = planner.search(t, 0, 3);

@@ -1,0 +1,35 @@
+{
+  "analyzerSha256": "d2d8731b5dc146b9288c92959b232ce38245906640396c83d6ab9a7f755c9e27",
+  "analyzerWorkingTreeDiffSha256": "b00815b4c23d7d03e7803e497dd89270e3be5c31bd057116e5644ff220273996",
+  "artifactSha256": {
+    "binary": "c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244",
+    "fast_ctm": "a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a",
+    "floor_model": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "standard_ctm": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "v4_policy": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "win_model": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+  },
+  "canarySeed": 989999,
+  "canaryStatus": "CANARY_MECHANISM_AND_PROVENANCE_PASS",
+  "canaryValidationSha256": "886dae715b04df441c06ee160d36778647929d3e4958553bef7a3e7bef19f60d",
+  "confirmationManifestSha256": "b9b8b14d510a27ef0f57ccf49a533d89e66e69191ee44aad10bbc6004fdf7ae2",
+  "cpuAffinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "cpuAffinityIsTransportOnly": true,
+  "frozenSourceGitSha": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+  "metadataCorrection": "frozen c9 models.policyNet expectation is off; independent V4 load/effective-config checks are preserved",
+  "ompNumThreads": "24",
+  "schemaVersion": 1,
+  "scientificProtocolChanged": false,
+  "transport": "local-seed-guarded-four-by-128",
+  "transportPlanSha256": "5f80578f8426ed98b46c52a0095be2878f635db4d89346244bea8869f39a7d16",
+  "transportToolGitSha": "7069518b5da3b38f4bac562a9b724de158814583"
+}

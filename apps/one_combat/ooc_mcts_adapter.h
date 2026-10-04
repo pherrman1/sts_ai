@@ -1,9 +1,11 @@
 #pragma once
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <map>
 #include <optional>
 #include <set>
+#include <string>
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
@@ -24,8 +26,8 @@ struct OocContinuationMetrics {
 };
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
-    // Live-advisor searches evaluate a downstream MAP state without expanding
-    // it.  The public observation cannot reconstruct native room-chance state.
+    // Live histories must qualify both room chances and future relic pools
+    // before downstream MAP expansion.
     bool stopAtMapCheckpoint = false;
     bool uniformPrior = false;
     double priorTemperature = 1.0;
@@ -37,6 +39,11 @@ struct OocAdapterOptions {
     bool sampleNoncombat = false;
     // Optional live-capture root restriction; child states remain semantic.
     std::optional<std::set<std::uint32_t>> rootPrimitiveBits;
+    // Strictly opt-in serialization of the exact prior inputs consumed by OOC MCTS.
+    std::string priorTracePath;
+    std::uint64_t priorTraceRunSeed = 0;
+    std::uint64_t priorTraceDecisionIndex = 0;
+    std::uint64_t priorTraceSearchSeed = 0;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -58,7 +65,10 @@ struct OocMctsDependencies {
 };
 
 OocMctsDependencies defaultOocMctsDependencies();
-void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms);
+// Qualified public question-room history fixes the three room probabilities;
+// reward pity remains hidden and is still sampled from its reachable prior.
+void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms,
+                                 bool questionHistoryComplete = false);
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:
@@ -80,6 +90,10 @@ private:
         std::unique_ptr<PreparedCombatTransition> combat;
     };
     struct Metadata {
+        struct PriorTraceSources {
+            std::vector<GameAction> actions;
+            std::vector<double> logits;
+        };
         bool boundary = true;
         std::vector<Candidate> candidates;
         bool sourcePriorCovered = false;
@@ -88,6 +102,8 @@ private:
         std::vector<Edge> edges;
         std::optional<std::vector<double>> logits;
         std::optional<std::vector<sts::search::OocPlannerAction>> priors;
+        std::optional<PriorTraceSources> priorTraceSources;
+        bool priorTraceWritten = false;
     };
     struct Snapshot { GameContext gc; PathHistory path; mutable std::optional<Metadata> metadata;
         CombatPrediction combatPrediction; };
@@ -100,7 +116,11 @@ private:
     mutable OocContinuationMetrics continuation_;
     const Metadata &metadata(sts::search::OocStateId) const;
     Metadata &mutableMetadata(sts::search::OocStateId) const;
+    void tracePrior(sts::search::OocStateId, Metadata &,
+        const std::vector<sts::search::OocPlannerAction> &) const;
     double bossLeafValue(const GameContext &) const;
+    double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
+                            sts::search::OocEndpoint &endpoint);
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
         const PreparedCombatTransition * = nullptr);
 public:
@@ -128,7 +148,10 @@ public:
                                             std::mt19937_64 &) override;
     double leafValue(sts::search::OocStateId) const override;
     double evaluateLeaf(sts::search::OocStateId, std::mt19937_64 &) override;
+    sts::search::OocLeafEvaluation evaluateLeafWithOutcome(sts::search::OocStateId, std::mt19937_64 &) override;
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
+    std::optional<std::uint64_t> outcomeEquivalenceKey(sts::search::OocStateId) const override;
+    std::optional<sts::search::OocEndpoint> endpoint(sts::search::OocStateId) const override;
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
@@ -157,6 +180,11 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// Offers `card` alone as a card reward on a detached copy of `gc`, runs one
+// decision of the caller's OOC guide (`step`) inside the imagined scope, and
+// reports whether the guide added the card. Used to value Match and Keep cards.
+bool oocHypotheticalCardTaken(const GameContext &, const PathHistory &, const sts::Card &,
+    const std::function<void(GameContext &)> &step);
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &, int realCombats);
 void oocMctsAdapterSelfTest();
 }

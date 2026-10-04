@@ -1,4 +1,4 @@
-// Observational combat information state for the isolated Silver backend.
+// Observational combat information state for the Silver search.
 #include "sim/search/CombatKnowledge.h"
 
 #include <algorithm>
@@ -64,6 +64,13 @@ void emitKnownMonsterIntentSet(
     emitCombatKnowledgeEvent(event);
 }
 
+void emitMonsterAttackPredicateObserved(int monsterIdx, bool attacking) {
+    CombatKnowledgeEvent event {CombatKnowledgeEventType::HIDDEN_MONSTER_ATTACK_PREDICATE_OBSERVED};
+    event.monsterIdx = monsterIdx;
+    event.attackPredicate = attacking;
+    emitCombatKnowledgeEvent(event);
+}
+
 void emitUnrepresentableHiddenMonsterIntent(int monsterIdx) {
     CombatKnowledgeEvent event {CombatKnowledgeEventType::UNREPRESENTABLE_HIDDEN_MONSTER_INTENT};
     event.monsterIdx = monsterIdx;
@@ -89,6 +96,19 @@ bool eraseOne(std::vector<CardInstance> &cards, const CardInstance &card) {
 
 } // namespace
 
+void emitMonsterOccupantReset(int idx, std::uint32_t generation) {
+    CombatKnowledgeEvent e{CombatKnowledgeEventType::MONSTER_OCCUPANT_RESET};
+    e.monsterIdx=idx; e.occupantGeneration=generation; emitCombatKnowledgeEvent(e);
+}
+void emitMonsterLatentDamagePrior(int idx, std::uint16_t mask) {
+    CombatKnowledgeEvent e{CombatKnowledgeEventType::MONSTER_LATENT_DAMAGE_PRIOR};
+    e.monsterIdx=idx; e.latentDamageMask=mask; emitCombatKnowledgeEvent(e);
+}
+void emitMonsterLatentDamageObserved(int idx, std::uint16_t mask) {
+    CombatKnowledgeEvent e{CombatKnowledgeEventType::MONSTER_LATENT_DAMAGE_OBSERVED};
+    e.monsterIdx=idx; e.latentDamageMask=mask; emitCombatKnowledgeEvent(e);
+}
+
 void CombatKnowledgeState::clearPositionalKnowledge() {
     knownTop.clear();
     knownBottom.clear();
@@ -106,8 +126,12 @@ void CombatKnowledgeState::initializeFromLiveBattle(const BattleContext &bc) {
     fullDrawPileOrderObserved = bc.player.hasRelic<RelicId::FROZEN_EYE>();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    for (auto &v : pendingHiddenIntentInputHistory) v.clear();
+    for (auto &v : pendingAttackPredicates) v.clear();
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
+    monsterOccupantGeneration.fill(0);
+    latentDamageMasks.fill(0);
     hasPublicMonsterState.fill(false);
     hasUnrepresentableHiddenIntent.fill(false);
     eventCounts.fill(0);
@@ -125,8 +149,12 @@ void CombatKnowledgeState::beginCombatInitialization() {
     knownBottom.clear();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    for (auto &v : pendingHiddenIntentInputHistory) v.clear();
+    for (auto &v : pendingAttackPredicates) v.clear();
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
+    monsterOccupantGeneration.fill(0);
+    latentDamageMasks.fill(0);
     hasPublicMonsterState.fill(false);
     hasUnrepresentableHiddenIntent.fill(false);
     eventCounts.fill(0);
@@ -215,10 +243,32 @@ bool CombatKnowledgeState::removeObservedPileCard(const CardInstance &card) {
 void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEvent &event) {
     lastEvent = event.type;
     ++eventCounts[static_cast<std::size_t>(event.type)];
-    if (initializationInProgress && event.type != CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLL_STARTED) {
+    if (initializationInProgress && event.type != CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLL_STARTED
+            && event.type != CombatKnowledgeEventType::MONSTER_OCCUPANT_RESET
+            && event.type != CombatKnowledgeEventType::MONSTER_LATENT_DAMAGE_PRIOR) {
         return;
     }
     switch (event.type) {
+    case CombatKnowledgeEventType::MONSTER_OCCUPANT_RESET: {
+        const int i=event.monsterIdx;
+        if(i<0 || i>=5 || (event.occupantGeneration<monsterOccupantGeneration[i] ||
+                (event.occupantGeneration==monsterOccupantGeneration[i] && !initializationInProgress))) { ++consistencyFailureCount; return; }
+        monsterOccupantGeneration[i]=event.occupantGeneration;
+        latentDamageMasks[i]=0; pendingHiddenIntentRolls[i]=0; pendingHiddenIntentInputs[i]={};
+        pendingHiddenIntentInputHistory[i].clear(); pendingAttackPredicates[i].clear();
+        publicMonsterMoveHistory[i]={}; publicMonsterMiscInfo[i]=0;
+        hasPublicMonsterState[i]=false; hasUnrepresentableHiddenIntent[i]=false; ++generation; return;
+    }
+    case CombatKnowledgeEventType::MONSTER_LATENT_DAMAGE_PRIOR:
+    case CombatKnowledgeEventType::MONSTER_LATENT_DAMAGE_OBSERVED: {
+        const int i=event.monsterIdx;
+        if(i<0 || i>=5) { ++consistencyFailureCount; return; }
+        if(event.type==CombatKnowledgeEventType::MONSTER_LATENT_DAMAGE_OBSERVED &&
+                (!event.latentDamageMask || (event.latentDamageMask & ~latentDamageMasks[i]))) {
+            ++consistencyFailureCount; return;
+        }
+        latentDamageMasks[i]=event.latentDamageMask; publicMonsterMiscInfo[i]=0; ++generation; return;
+    }
     case CombatKnowledgeEventType::KNOWN_TOP_PLACED:
         if (!fullDrawPileOrderObserved && event.hasCard) {
             knownTop.push_back(event.card);
@@ -278,13 +328,19 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
                 return;
             }
             publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
-            publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
+            publicMonsterMiscInfo[event.monsterIdx] = latentDamageMasks[event.monsterIdx] ? 0 : event.publicMonsterMiscInfo;
             hasPublicMonsterState[event.monsterIdx] = true;
         }
-        if (pendingHiddenIntentRolls[event.monsterIdx] < 255) {
-            ++pendingHiddenIntentRolls[event.monsterIdx];
+        if (pendingHiddenIntentRolls[event.monsterIdx] == 255) {
+            ++consistencyFailureCount;
+            return;
         }
+        ++pendingHiddenIntentRolls[event.monsterIdx];
         pendingHiddenIntentInputs[event.monsterIdx] = event.hiddenIntentInputs;
+        // Roll-time miscInfo after the first hidden roll is itself private.
+        // Replay evolves it from the public pre-chain value instead.
+        pendingHiddenIntentInputs[event.monsterIdx].miscInfo = publicMonsterMiscInfo[event.monsterIdx];
+        pendingHiddenIntentInputHistory[event.monsterIdx].push_back(pendingHiddenIntentInputs[event.monsterIdx]);
         ++generation;
         return;
     case CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_MATERIALIZED:
@@ -296,8 +352,10 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         pendingHiddenIntentRolls[event.monsterIdx] = 0;
         pendingHiddenIntentInputs[event.monsterIdx] = {};
+        pendingHiddenIntentInputHistory[event.monsterIdx].clear();
+        pendingAttackPredicates[event.monsterIdx].clear();
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
-        publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
+        publicMonsterMiscInfo[event.monsterIdx] = latentDamageMasks[event.monsterIdx] ? 0 : event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
         // Materialization resolves every kind of hidden current intent,
         // including the Looter/Mugger direct post-Mug choice represented by
@@ -315,12 +373,33 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         pendingHiddenIntentRolls[event.monsterIdx] = 0;
         pendingHiddenIntentInputs[event.monsterIdx] = {};
+        pendingHiddenIntentInputHistory[event.monsterIdx].clear();
+        pendingAttackPredicates[event.monsterIdx].clear();
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
-        publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
+        publicMonsterMiscInfo[event.monsterIdx] = latentDamageMasks[event.monsterIdx] ? 0 : event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
         hasUnrepresentableHiddenIntent[event.monsterIdx] = false;
         ++generation;
         return;
+    case CombatKnowledgeEventType::HIDDEN_MONSTER_ATTACK_PREDICATE_OBSERVED: {
+        if (!hiddenMonsterIntents) return;
+        const int idx = event.monsterIdx;
+        if (idx < 0 || idx >= 5 || !hasPublicMonsterState[idx]) {
+            ++consistencyFailureCount;
+            return;
+        }
+        const int step = pendingHiddenIntentRolls[idx] + (hasUnrepresentableHiddenIntent[idx] ? 1 : 0);
+        if (step > 0) {
+            auto &observations = pendingAttackPredicates[idx];
+            if (observations.empty() || observations.back().first != step) {
+                observations.emplace_back(step, event.attackPredicate);
+            } else if (observations.back().second != event.attackPredicate) {
+                ++consistencyFailureCount;
+            }
+        }
+        ++generation;
+        return;
+    }
     case CombatKnowledgeEventType::UNREPRESENTABLE_HIDDEN_MONSTER_INTENT:
         if (!hiddenMonsterIntents) return;
         if (event.monsterIdx < 0 || event.monsterIdx >= static_cast<int>(hasUnrepresentableHiddenIntent.size())) {

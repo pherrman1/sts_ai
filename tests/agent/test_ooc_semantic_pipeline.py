@@ -25,9 +25,9 @@ class TestSemanticPipeline(unittest.TestCase):
                       learned_visit_puct=False, direct_learned_leaf=False, adaptive=False)
         environment = dict(STS_FAIR='1', STS_SEARCHER3='0', STS_SILVER_SEARCH='1',
                            STS_SILVER_EXACT_ROOT_BUDGETS='1', STS_SILVER_REUSE_CAP_MODE='allocated',
-                           STS_SILVER_ADAPTIVE='0', STS_SILVER_VNET_LEAF_DIRECT='0', STS_SILVER_TELEMETRY='1')
+                           STS_SILVER_ADAPTIVE='0', STS_SILVER_VNET_LEAF_DIRECT='0')
         teacher = dict(teacher_id='synthetic-only', git_sha='a'*40, executable_sha256='b'*64,
-                       combat_backend='silver_uct', rng_regime='project_fair', search_configuration=search,
+                       combat_backend='native_silver', rng_regime='project_fair', search_configuration=search,
                        environment=environment, model_artifacts=[dict(role='floor', path='synthetic', sha256='c'*64)])
         actions = [dict(semanticActionIdx=i, semanticKey=f'ooc:v1:effect=26:source=5:event=17:option={i}',
                         semanticEffect=26, semanticSource=5, semanticPayload={'type':'event','event':17,'option':i}) for i in range(2)]
@@ -90,7 +90,7 @@ class TestSemanticPipeline(unittest.TestCase):
                    lambda m:m.pop('runtime'),
                    lambda m:m['runtime'].pop('environment'),
                    lambda m:m['runtime']['environment'].update(STS_NATIVE_OOC='0'),
-                   lambda m:m['runtime']['environment'].pop('STS_SILVER_TELEMETRY'),
+                   lambda m:m['runtime']['environment'].pop('STS_SILVER_ADAPTIVE'),
                    lambda m:m['runtime']['oocModels'].pop(),
                    lambda m:m['runtime']['oocModels'][0].update(sha256='0'*64),
                    lambda m:m.update(producer_git_sha='0'*40),
@@ -173,6 +173,17 @@ class TestSemanticPipeline(unittest.TestCase):
         malformed = {'type':'deck_card', 'card':dict(deck, upgraded=0)}
         with self.assertRaisesRegex(ValueError, 'boolean'):
             canonical_payload_suffix(malformed)
+
+    def test_append_only_discard_potion_identity(self):
+        typed = dict(type="reward",entity=dict(type="potion",value=7),cardGroup=[],
+                     groupOccurrence=0,occurrence=1,sapphirePaired=False)
+        action = dict(semanticActionIdx=0,semanticEffect=29,semanticSource=7,
+                      semanticKey="ooc:v1:effect=29:source=7"+canonical_payload_suffix(typed),
+                      semanticPayload=typed)
+        self.assertEqual(action_identity(action)[2:4], (29,7))
+        action["semanticEffect"] = 30
+        with self.assertRaisesRegex(ValueError,"unknown semantic effect"):
+            action_identity(action)
 
     def test_hash_binding(self):
         self.write()

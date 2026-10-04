@@ -52,8 +52,9 @@ def _strip_lizard_input(value):
 def _resolve_manifest_file(raw_path: str, manifest_dir: Path) -> Path:
     """Resolve archived absolute paths against this packet when files moved.
 
-    The content hash is still checked by the caller. This supports an evidence
-    packet copied into a fresh worktree without accepting different content.
+    The content hash is still checked by the caller. Relative paths are
+    confined to the packet so a copied manifest cannot escape its evidence
+    directory.
     """
     path = Path(raw_path)
     root = manifest_dir.resolve()
@@ -73,7 +74,21 @@ def _resolve_manifest_file(raw_path: str, manifest_dir: Path) -> Path:
     raise ValueError(f'manifest artifact missing: {raw_path}')
 
 
-def validate_pair_corpus(manifest_path: Path):
+def _validate_historical_teacher(manifest: dict, expected: dict) -> None:
+    """Pin a read-only historical cohort to its original retired teacher.
+
+    This path is for archived analysis only. It does not make retired teacher
+    manifests valid for new collection; fresh collection uses validate_teacher.
+    """
+    teacher = manifest.get('combatTeacher', {})
+    if (teacher.get('combat_backend') != 'silver_uct'
+            or teacher != expected.get('provenance')
+            or teacher.get('teacher_id') != expected.get('identity')
+            or manifest.get('combatTeacherManifestSha256') != expected.get('manifestSha256')):
+        raise ValueError('historical teacher differs from the explicitly pinned frozen provenance')
+
+
+def validate_pair_corpus(manifest_path: Path, *, historical_teacher: dict | None = None):
     manifest = json.loads(manifest_path.read_text())
     required = {
         'schema', 'rowSchemaVersion', 'predictorInputSchemaVersion',
@@ -81,12 +96,33 @@ def validate_pair_corpus(manifest_path: Path):
         'producerExecutableSha256', 'baselineGitSha', 'combatTeacher',
         'combatTeacherManifestSha256', 'seedSpec', 'jsonl', 'integrity', 'protocol',
     }
-    targeted = manifest.get('schema') == 'lizard_tail_targeted_paired_transition_pilot_v1'
-    expected_keys = required | ({'targetSelection', 'sourceSeeds'} if targeted else set())
+    direct_snapshot = manifest.get('schema') == 'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1'
+    targeted = manifest.get('schema') in (
+        'lizard_tail_targeted_paired_transition_pilot_v1',
+        'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1')
+    targeted_keys = {'targetSelection', 'sourceSeeds'} if targeted else set()
+    if direct_snapshot:
+        targeted_keys.update({'directReplayPlan', 'pairCheckpointing'})
+    expected_keys = required | targeted_keys
     if (set(manifest) != expected_keys or manifest['schema'] not in (
             'lizard_tail_paired_transition_pilot_v1',
-            'lizard_tail_targeted_paired_transition_pilot_v1')):
+            'lizard_tail_targeted_paired_transition_pilot_v1',
+            'lizard_tail_direct_snapshot_paired_transition_diagnostic_v1')):
         raise ValueError('paired pilot manifest keys/schema mismatch')
+    if direct_snapshot:
+        checkpointing = manifest['pairCheckpointing']
+        expected_checkpointing_keys = {
+            'schema', 'directory', 'atomicWritePerCompletedPair',
+            'exclusiveCollectorLock', 'resumeValidatesPlanTeacherCollectorAndRowChecksum',
+        }
+        if (set(checkpointing) != expected_checkpointing_keys
+                or checkpointing.get('schema') != 'lizard_direct_snapshot_pair_checkpoint_v1'
+                or not isinstance(checkpointing.get('directory'), str)
+                or not checkpointing['directory']
+                or any(checkpointing.get(key) is not True for key in (
+                    'atomicWritePerCompletedPair', 'exclusiveCollectorLock',
+                    'resumeValidatesPlanTeacherCollectorAndRowChecksum'))):
+            raise ValueError('direct snapshot pair-checkpoint provenance mismatch')
     if manifest['rowSchemaVersion'] != ROW_SCHEMA_VERSION or manifest['predictorInputSchemaVersion'] != PREDICTOR_SCHEMA:
         raise ValueError('paired pilot transition schema mismatch')
     if manifest['predictorInputFieldSchemaHash'] != FIELD_SCHEMA_HASH or manifest['format'] != 'jsonl':
@@ -97,31 +133,115 @@ def validate_pair_corpus(manifest_path: Path):
         if not isinstance(value, str) or len(value) != length or any(c not in '0123456789abcdef' for c in value):
             raise ValueError(f'invalid {key}')
     teacher = manifest['combatTeacher']
-    validate_teacher(teacher)
-    if teacher.get('teacher_id') != 'silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77':
-        raise ValueError('paired pilot is not bound to frozen exact-10k teacher')
+    if historical_teacher is None:
+        validate_teacher(teacher)
+    else:
+        _validate_historical_teacher(manifest, historical_teacher)
+    if not isinstance(teacher.get('teacher_id'), str) or not teacher['teacher_id']:
+        raise ValueError('paired pilot is missing its exact-10k combat teacher identity')
     targets = None
     if targeted:
-        target_file = _resolve_manifest_file(manifest['targetSelection']['path'], manifest_path.parent)
+        target_file = _resolve_manifest_file(
+            manifest['targetSelection']['path'], manifest_path.parent)
         if sha256(target_file) != manifest['targetSelection']['sha256']:
             raise ValueError('target-selection file missing or hash mismatch')
         targets = json.loads(target_file.read_text())
-        if targets.get('schema') != 'lizard_tail_risk_target_selection_v1' or len(targets.get('targets', [])) != int(manifest['seedSpec']['count']):
+        if (targets.get('schema') != 'lizard_tail_risk_target_selection_v1'
+                or not isinstance(targets.get('targets'), list)
+                or (not direct_snapshot
+                    and len(targets.get('targets', [])) != int(manifest['seedSpec']['count']))
+                or (direct_snapshot and len(targets.get('targets', [])) != 128)):
             raise ValueError('invalid risk target selection file')
-    selected_state_policy = targets.get('stateSelection', 'preoutcome_ctm_death_risk_bands') if targeted else None
+    if direct_snapshot:
+        replay_plan_file = _resolve_manifest_file(
+            manifest['directReplayPlan']['path'], manifest_path.parent)
+        if sha256(replay_plan_file) != manifest['directReplayPlan'].get('sha256'):
+            raise ValueError('direct replay plan missing or hash mismatch')
+        replay_plan = json.loads(replay_plan_file.read_text())
+        if (replay_plan.get('schema') != 'lizard_tail_direct_snapshot_replay_plan_v1'
+                or replay_plan.get('replayMode') != 'persistent_snapshot_direct'
+                or replay_plan.get('archivedTargetSelection', {}).get('sha256')
+                    != manifest['targetSelection']['sha256']):
+            raise ValueError('direct replay plan does not bind the target selection')
+        if (manifest['baselineGitSha'] != replay_plan.get('baselineGitSha')
+                or manifest['producerGitSha'] != replay_plan.get('collectorGitSha')
+                or manifest['producerExecutableSha256']
+                    != replay_plan.get('collectorExecutableSha256')):
+            raise ValueError('direct replay producer differs from the frozen plan')
+        teacher_plan = replay_plan.get('nativeTeacherManifest', {})
+        teacher_file = _resolve_manifest_file(teacher_plan.get('path', ''), replay_plan_file.parent)
+        if (sha256(teacher_file) != teacher_plan.get('sha256')
+                or teacher_plan.get('identity') != teacher.get('teacher_id')
+                or json.loads(teacher_file.read_text()) != teacher
+                or teacher.get('git_sha') != replay_plan.get('collectorGitSha')
+                or teacher.get('executable_sha256') != replay_plan.get('collectorExecutableSha256')
+                or teacher.get('environment') != replay_plan.get('executionEnvironment')):
+            raise ValueError('direct replay native teacher differs from the frozen plan')
+        selection_ref = Path(replay_plan['archivedTargetSelection']['path'])
+        if not selection_ref.is_absolute():
+            selection_ref = replay_plan_file.parent / selection_ref
+        selection_ref = selection_ref.resolve()
+        packet_root = manifest_path.parent.parent.resolve()
+        if (packet_root not in selection_ref.parents or not selection_ref.is_file()
+                or sha256(selection_ref) != manifest['targetSelection']['sha256']):
+            raise ValueError('direct replay plan does not resolve to the canonical archived selection')
+        expected_excluded = {
+            (4201016, 12), (4201026, 5), (4201030, 12), (4201031, 20),
+            (4201055, 20), (4201070, 4), (4201089, 16), (4201103, 14),
+            (4201113, 6),
+        }
+        actual_excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in replay_plan.get('excludedBurningEliteTargets', [])}
+        manifest_excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in manifest['directReplayPlan'].get('excludedBurningEliteTargets', [])}
+        if actual_excluded != expected_excluded or manifest_excluded != expected_excluded:
+            raise ValueError('direct replay exclusions differ from the preregistered burning-elite identities')
+        targets_by_key = {
+            (int(row['sourceSeed']), int(row['fightIdx'])): row
+            for row in targets['targets']}
+        if len(targets_by_key) != 128 or any(
+                key not in targets_by_key
+                or not targets_by_key[key]['predictorInput']['globals']['isBurningElite']
+                for key in expected_excluded):
+            raise ValueError('direct replay exclusions are not the exact archived burning-elite targets')
+        if any(row['predictorInput']['globals']['isBurningElite']
+               for key, row in targets_by_key.items() if key not in expected_excluded):
+            raise ValueError('unregistered burning-elite target in direct replay selection')
+    selected_state_policy = (
+        'direct_archived_snapshot_replay_nonburning_subset_v1' if direct_snapshot else
+        targets.get('stateSelection', 'preoutcome_ctm_death_risk_bands') if targeted else None)
     if targeted and selected_state_policy not in (
             'preoutcome_ctm_death_risk_bands',
-            'predeclared_qr_hard96_broad32_hash_v1'):
+            'predeclared_qr_hard96_broad32_hash_v1',
+            'predeclared_mechanical_q_hard288_broad32_hash_v1',
+            'direct_archived_snapshot_replay_nonburning_subset_v1'):
         raise ValueError('unsupported targeted state-selection policy')
     protocol = {
         'samePrecombatContext': True, 'sameSilverSearchRngSeed': True,
         'ordinaryBranchLizard': 'absent', 'interventionBranchLizard': 'active_data_1',
         'stateSelection': (selected_state_policy if targeted
                            else 'uniform_reservoir_without_outcome_filter'),
-        'markOfBloom': 'eligible_states_excluded', 'sourceTrajectory': 'untouched_normal_policy',
+        'markOfBloom': 'eligible_states_excluded', 'sourceTrajectory': (
+            'not_replayed_direct_snapshot' if direct_snapshot else 'untouched_normal_policy'),
     }
     if manifest['protocol'] != protocol:
         raise ValueError('paired pilot protocol mismatch')
+    target_by_seed = ({int(row['sourceSeed']): row for row in targets['targets']}
+                      if targeted else {})
+    selected_by_seed = ({int(seed): target_by_seed.get(int(seed))
+                         for seed in manifest.get('sourceSeeds', [])} if targeted else {})
+    if targeted and any(target is None for target in selected_by_seed.values()):
+        raise ValueError('targeted pair source is absent from frozen target selection')
+    if direct_snapshot:
+        excluded = {
+            (int(row['sourceSeed']), int(row['fightIdx']))
+            for row in manifest['directReplayPlan']['excludedBurningEliteTargets']}
+        expected_seeds = sorted({int(row['sourceSeed']) for row in targets['targets']}
+                                - {seed for seed, _ in excluded})
+        if manifest['sourceSeeds'] != expected_seeds:
+            raise ValueError('direct replay source list is not the exact non-burning archive subset')
     seed_spec = manifest['seedSpec']
     if not isinstance(seed_spec, dict) or set(seed_spec) != {'start', 'count'}:
         raise ValueError('invalid seedSpec')
@@ -152,9 +272,14 @@ def validate_pair_corpus(manifest_path: Path):
         seen.add(seed)
         eligible = int(meta.get('eligibleBattlesInSource', 0))
         ordinal = int(meta.get('selectedEligibleOrdinal', 0))
-        if eligible < 1 or not 1 <= ordinal <= eligible or int(meta.get('fightIdx', -1)) < 0:
+        if direct_snapshot:
+            if (meta.get('replayMode') != 'direct_archived_snapshot'
+                    or eligible != 0 or ordinal != 0
+                    or int(meta.get('fightIdx', -1)) < 0):
+                raise ValueError('invalid direct snapshot replay metadata')
+        elif eligible < 1 or not 1 <= ordinal <= eligible or int(meta.get('fightIdx', -1)) < 0:
             raise ValueError('invalid selected fight metadata')
-        target = targets['targets'][index] if targeted else None
+        target = selected_by_seed.get(seed) if targeted else None
         if targeted and (
                 int(target['sourceSeed']) != seed
                 or int(target['fightIdx']) != int(meta['fightIdx'])

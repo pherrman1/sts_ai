@@ -10,10 +10,35 @@ import tempfile
 
 def assert_sampled_configuration(output):
     prefix = '[ooc-mcts-config] '
-    configs = [json.loads(line[len(prefix):]) for line in output.splitlines()
-               if line.startswith(prefix)]
-    if len(configs) != 1 or configs[0].get('noncombatOutcomes') != 'sampled':
-        raise AssertionError(f'enabled live configuration must sample noncombat outcomes: {configs}')
+    payloads = [line[len(prefix):] for line in output.splitlines()
+                if line.startswith(prefix)]
+    if len(payloads) != 1:
+        raise AssertionError(
+            f'enabled live configuration must emit one config record, got {len(payloads)}')
+    try:
+        config = json.loads(payloads[0])
+    except json.JSONDecodeError as error:
+        raise AssertionError(f'[ooc-mcts-config] payload must be valid JSON: {error}') from error
+    if config.get('noncombatOutcomes') != 'sampled':
+        raise AssertionError(f'enabled live configuration must sample noncombat outcomes: {config}')
+    if config.get('dispatchRule') not in ('single_artifact', 'precombat_entropic_brew_to_standard'):
+        raise AssertionError(f'enabled live configuration has an invalid dispatch rule: {config}')
+    if not isinstance(config.get('activeLizardCorrection'), bool):
+        raise AssertionError(f'enabled live configuration must report active-Lizard state: {config}')
+    return config
+
+
+def assert_promoted_default_configuration(output):
+    config = assert_sampled_configuration(output)
+    expected = {
+        'combatModel': 'selfplay/models/combat_transition_deepsets_lizard_t2.native',
+        'brewFallbackModel': 'selfplay/models/combat_transition_near_full_except_smoke_v2.native',
+        'dispatchRule': 'precombat_entropic_brew_to_standard',
+        'activeLizardCorrection': True,
+    }
+    actual = {key: config.get(key) for key in expected}
+    if actual != expected:
+        raise AssertionError(f'enabled live configuration did not select the promoted default: {actual}')
 
 
 def main():
@@ -24,23 +49,33 @@ def main():
     root = Path(__file__).resolve().parents[2]
     env = {k: v for k, v in os.environ.items() if not k.startswith(('STS_', 'STRATEGIC_'))}
     env.update(STS_NATIVE_OOC='1', STS_OOC_STRATEGIC_TOK_NN=str(root / 'selfplay/models/ooc_strategic_tok_final.native'))
-    command = ['bash', str(root / 'tools/seed_guard.sh'), str(Path(args.binary).resolve()), 'oocmctsselftest']
+    command = [str(Path(args.binary).resolve()), 'oocmctsconfigselftest']
     bad = str(root / 'build/absent-ooc-mcts-startup-artifact.native')
     cases = [
         ('default OFF', {}, True, ''),
-        ('invalid cap rejects ON', {'STS_OOC_MCTS': '1', 'STS_SILVER_REUSE_CAP': '0'}, False, 'must be 32768 or experimental 131072'),
-        ('malformed cap rejects ON', {'STS_OOC_MCTS': '1', 'STS_SILVER_REUSE_CAP': 'invalid'}, False, 'must be a nonnegative integer'),
-        ('experimental cap rejects ON', {'STS_OOC_MCTS': '1', 'STS_SILVER_SEARCH': '1', 'STS_SILVER_REUSE_CAP': '131072'}, False, 'requires frozen Silver reuse cap 32768'),
+        # The reuse cap is fixed; the vendored override was removed (ADR-0022).
+        ('removed cap override rejects', {'STS_OOC_MCTS': '1', 'STS_SILVER_REUSE_CAP': '131072'}, False, 'not supported by the native Silver backend'),
         ('OFF ignores combat artifact and sims', {'STS_OOC_MCTS': '0', 'STS_OOC_MCTS_COMBAT_MODEL': bad, 'STS_OOC_MCTS_SIMS': 'invalid'}, True, ''),
         ('invalid enable flag', {'STS_OOC_MCTS': '2'}, False, 'must be 0 or 1'),
         ('missing V4', {'STS_OOC_MCTS': '1', 'STS_OOC_STRATEGIC_TOK_NN': bad}, False, 'requires native V4'),
         ('missing native win', {'STS_OOC_MCTS': '1', 'STS_NATIVE_OOC': '0'}, False, 'requires native v_win'),
         ('explicit bad win rejects default retry', {'STS_OOC_MCTS': '1', 'STS_WIN_NET': bad}, False, 'explicit STS_WIN_NET failed'),
-        ('missing combat artifact', {'STS_OOC_MCTS': '1'}, False, 'requires STS_OOC_MCTS_COMBAT_MODEL'),
+        ('promoted default stack', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True,
+            'active_lizard_correction=1'),
         ('bad combat artifact', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_COMBAT_MODEL': bad}, False, 'startup failure'),
         ('zero simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '0'}, False, 'must be positive'),
         ('malformed simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '-1'}, False, 'positive integer'),
         ('malformed gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_GAP_STOP_20': 'true'}, False, 'STS_OOC_MCTS_GAP_STOP_20 invalid value'),
+        ('outcome merging off by default', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True, '"mergeOutcomes":false'),
+        ('outcome merging opt-in', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_MERGE_OUTCOMES': '1'},
+            True, '"mergeOutcomes":true'),
+        ('malformed outcome merging', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_MERGE_OUTCOMES': 'yes'}, False,
+            'STS_OOC_MCTS_MERGE_OUTCOMES invalid value'),
+        ('unwritable reuse trace', {'STS_OOC_MCTS': '1',
+            'STS_OOC_MCTS_REUSE_TRACE': str(root / 'build/absent-ooc-mcts-startup-dir/reuse.jsonl')}, False,
+            'STS_OOC_MCTS_REUSE_TRACE cannot open output'),
+        ('reuse trace rejects graph capture', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_REUSE_TRACE': bad,
+            'STS_OOC_MCTS_GRAPH_FILE': bad}, False, 'cannot be combined with STS_OOC_MCTS_GRAPH_FILE'),
     ]
     if args.artifact:
         with tempfile.TemporaryDirectory() as temporary:
@@ -73,7 +108,10 @@ def main():
         if (result.returncode == 0) != success or message not in result.stdout:
             raise AssertionError(f'{name}: rc={result.returncode}\n{result.stdout}')
         if success and override.get('STS_OOC_MCTS') == '1':
-            assert_sampled_configuration(result.stdout)
+            if name == 'promoted default stack':
+                assert_promoted_default_configuration(result.stdout)
+            else:
+                assert_sampled_configuration(result.stdout)
         print(f'PASS {name} rc={result.returncode}')
     print(f'PASS {len(cases)} live OOC MCTS startup cases')
 

@@ -19,6 +19,17 @@ using namespace sts;
 
 namespace {
 
+    // A decision node stores the public posterior, not the first particle that
+    // reached it. Subsequent transitions sample a fresh world from that belief;
+    // the sampled scalar persists throughout each transition/rollout and its
+    // public outcomes update the posterior before the next decision checkpoint.
+    void retainPublicDamageBeliefs(BattleContext &bc) {
+        if(!bc.intentsHidden) return;
+        for(auto &m:bc.monsters.arr) if(m.latentDamageMask) {
+            m.miscInfo=0; m.latentDamageMaterialized=false;
+        }
+    }
+
     // Chance categories for widening: 0 = END_TURN (monster rolls and draws), 1 = other.
     int wideningCategory(const search::Action &a) {
         return a.getActionType() == search::ActionType::END_TURN ? 0 : 1;
@@ -41,6 +52,21 @@ namespace {
             return false;
         }
         return lhs.uniqueId == rhs.uniqueId || (!lhs.usesSpecialData() && !rhs.usesSpecialData());
+    }
+
+    void swapUniqueIds(BattleContext &bc, std::int16_t a, std::int16_t b) {
+        const auto swap = [a, b](CardInstance &c) {
+            if (c.uniqueId == a) c.uniqueId = b;
+            else if (c.uniqueId == b) c.uniqueId = a;
+        };
+        auto &cards = bc.cards;
+        for (int i = 0; i < cards.cardsInHand; ++i) swap(cards.hand[i]);
+        cards.drawPile.mutateAll(swap);
+        for (auto &c : cards.discardPile) swap(c);
+        for (auto &c : cards.exhaustPile) swap(c);
+        for (auto &c : cards.limbo) swap(c);
+        for (auto &c : cards.stasisCards) swap(c);
+        swap(bc.curCardQueueItem.card);
     }
 
     // Single-card selectors where choosing any of several equivalent cards is the
@@ -144,6 +170,7 @@ void search::SilverSearcher::resetForSearch() {
     root = allocNode();
     root->state = allocDecisionState();
     *root->state = *rootState;
+    retainPublicDamageBeliefs(*root->state);
     if (root->state->outcome != Outcome::UNDECIDED) {
         root->evaluationSum = evaluateEndState(*root->state);
         root->simulationCount = 1;
@@ -155,6 +182,27 @@ search::SilverSearcher::Node *search::SilverSearcher::findNode(const BattleConte
     for (std::size_t i = hash & stateToNodeMask; stateToNode[i].node != nullptr; i = (i + 1) & stateToNodeMask) {
         if (stateToNode[i].hash == hash && stateToNode[i].node->state->equalForSearch(state)) {
             return stateToNode[i].node;
+        }
+    }
+    return nullptr;
+}
+
+search::SilverSearcher::Node *search::SilverSearcher::findNodeUpToEquivalentCopy(const BattleContext &state) const {
+    std::vector<CardInstance> cards(state.cards.hand.begin(), state.cards.hand.begin() + state.cards.cardsInHand);
+    cards.insert(cards.end(), state.cards.drawPile.begin(), state.cards.drawPile.end());
+    cards.insert(cards.end(), state.cards.discardPile.begin(), state.cards.discardPile.end());
+    cards.insert(cards.end(), state.cards.exhaustPile.begin(), state.cards.exhaustPile.end());
+    BattleContext candidate;
+    for (std::size_t i = 0; i < cards.size(); ++i) {
+        if (cards[i].usesSpecialData()) continue;
+        for (std::size_t j = i + 1; j < cards.size(); ++j) {
+            if (cards[i].uniqueId == cards[j].uniqueId || !cardsEquivalentForSearch(cards[i], cards[j])) {
+                continue;
+            }
+            candidate = state;
+            swapUniqueIds(candidate, cards[i].uniqueId, cards[j].uniqueId);
+            Node *node = findNode(candidate);
+            if (node != nullptr && !node->isRandomNode) return node;
         }
     }
     return nullptr;
@@ -198,6 +246,8 @@ void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
     }
     root = newRoot;
     *rootState = *newRoot->state;
+    retainPublicDamageBeliefs(*rootState);
+    retainPublicDamageBeliefs(*root->state);
     reseedRollouts();
 }
 
@@ -259,11 +309,56 @@ search::SilverSearcher::Node *search::SilverSearcher::getOrCreateNode(BattleCont
     Node *newNode = allocNode();
     newNode->state = allocDecisionState();
     std::swap(*newNode->state, state);
+    retainPublicDamageBeliefs(*newNode->state);
     stateToNode[i] = {hash, newNode};
     ++stateToNodeUsed;
     lastNodeWasCreated = true;
     ++stats.nodesCreated;
     return newNode;
+}
+
+void search::SilverTreeProfile::record(const BattleContext &state, int treeDepth, int rolloutDepth) {
+    Endpoint kind = NONTERMINAL;
+    if (state.outcome == Outcome::PLAYER_VICTORY) kind = VICTORY;
+    else if (state.outcome == Outcome::PLAYER_LOSS) {
+        // executeActions uses PLAYER_LOSS for safety and no-damage stops too.
+        if (state.turn > 500) kind = TURN_LIMIT;
+        else if (state.player.curHp <= 0) kind = DEATH;
+        else kind = ENGINE_STOP;
+    }
+    ++completed;
+    ++endpoints[kind].tree[treeDepth];
+    ++endpoints[kind].total[treeDepth + rolloutDepth];
+}
+
+void search::SilverOutcomeCapture::Layer::record(const BattleContext &end) {
+    int hp = 0;
+    const bool victory = end.outcome == Outcome::PLAYER_VICTORY && end.player.curHp > 0;
+    // Same death classification as SilverTreeProfile.
+    const bool death = end.outcome == Outcome::PLAYER_LOSS && end.turn <= 500 && end.player.curHp <= 0;
+    if (victory) {
+        hp = end.player.curHp;
+    } else if (death) {
+        ++deaths;
+    } else {
+        ++unresolved;
+        return;
+    }
+    if (hpCounts.size() <= static_cast<std::size_t>(hp)) hpCounts.resize(hp + 1, 0);
+    ++hpCounts[hp];
+    ++count;
+}
+
+void search::SilverOutcomeCapture::record(int rootEdge, const BattleContext &end) {
+    root.record(end);
+    if (rootEdge < 0) return;
+    if (edges.size() <= static_cast<std::size_t>(rootEdge)) edges.resize(rootEdge + 1);
+    edges[rootEdge].record(end);
+}
+
+void search::SilverSearcher::recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth) {
+    if (profile) profile->record(end, treeDepth, rolloutDepth);
+    if (outcomes) outcomes->record(currentRootEdge, end);
 }
 
 void search::SilverSearcher::search(std::int64_t simulations) {
@@ -281,13 +376,16 @@ void search::SilverSearcher::step() {
     auto onPath = [&](Node *n) {
         return std::find(searchStack.begin(), searchStack.end(), n) != searchStack.end();
     };
+    currentRootEdge = -1;
     Node *cur = root;
     Edge *stagedOutcomeEdge = nullptr;  // outcome 0 of a chance node created this iteration
     int depth = 0;
+    int actionDepth = 0;
     while (true) {
         // The transposition graph can cycle (e.g. Entropic Brew re-rolling itself);
         // on-path checks below roll out instead, and this bound is a backstop.
         if (++depth > 5000) {
+            if (profile) ++profile->descentAborts;
             throw std::runtime_error("SilverSearcher::step descent exceeded depth bound");
         }
 
@@ -302,14 +400,15 @@ void search::SilverSearcher::step() {
             ++outcomeEdge->visitCount;
             Node *child = outcomeEdge->node;
             if (onPath(child)) {
+                if (profile) ++profile->cycleRollouts;
                 BattleContext &rollout = (rolloutScratch = *child->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout));
+                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return;
             }
             searchStack.push_back(child);
             if (child->simulationCount == 0) {
                 BattleContext &rollout = (rolloutScratch = *child->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout));
+                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return;
             }
             cur = child;
@@ -317,6 +416,7 @@ void search::SilverSearcher::step() {
         }
 
         if (cur->state->outcome != Outcome::UNDECIDED) {
+            recordEndpoint(*cur->state, actionDepth, 0);
             updateFromPlayout(searchStack, evaluateEndState(*cur->state));
             return;
         }
@@ -324,19 +424,23 @@ void search::SilverSearcher::step() {
         if (cur->edges.empty()) {
             enumerateActionsForNode(*cur, *cur->state);
             if (cur->edges.empty()) {
+                recordEndpoint(*cur->state, actionDepth, 0);
                 updateFromPlayout(searchStack, evaluateEndState(*cur->state));
                 return;
             }
         }
 
         const int selectIdx = selectBestEdgeToSearch(*cur);
+        if (cur == root) currentRootEdge = selectIdx;
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
+        if (profile) ++actionDepth;
 
         if (edge.node != nullptr) {
             if (onPath(edge.node)) {
+                if (profile) ++profile->cycleRollouts;
                 BattleContext &rollout = (rolloutScratch = *edge.node->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout));
+                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return;
             }
             cur = edge.node;
@@ -382,14 +486,15 @@ void search::SilverSearcher::step() {
         edge.node = child;
 
         if (onPath(child)) {
+            if (profile) ++profile->cycleRollouts;
             BattleContext &rollout = (rolloutScratch = *child->state);
-            updateFromPlayout(searchStack, rolloutToEnd(rollout));
+            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
             return;
         }
         searchStack.push_back(child);
         if (child->simulationCount == 0) {
             BattleContext &rollout = (rolloutScratch = *child->state);
-            updateFromPlayout(searchStack, rolloutToEnd(rollout));
+            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
             return;
         }
         cur = child;
@@ -497,19 +602,19 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
     return &chance.edges.back();
 }
 
-double search::SilverSearcher::rolloutToEnd(BattleContext &bc) {
+double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
+    int rolloutDepth = 0;
+    if (profile) {
+        ++profile->rolloutCalls;
+        if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
+    }
     while (bc.outcome == Outcome::UNDECIDED) {
         Action action;
         if (bc.inputState == InputState::PLAYER_NORMAL) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
             // the hidden intent through its END_TURN chance node.
-            for (int i = 0; i < bc.monsters.monsterCount; ++i) {
-                auto &m = bc.monsters.arr[i];
-                if (m.pendingMoveRolls > 0 && !m.isDeadOrEscaped()) {
-                    m.materializePendingMove(bc);
-                }
-            }
+            rolloutAgent.materializeHiddenIntents(bc);
             action = rolloutAgent.chooseBattleCardPlay(bc);
         } else if (bc.inputState == InputState::CARD_SELECT) {
             action = rolloutAgent.chooseBattleCardSelect(bc);
@@ -517,7 +622,9 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc) {
             break;
         }
         action.execute(bc);
+        if (profile) ++rolloutDepth;
     }
+    recordEndpoint(bc, treeDepth, rolloutDepth);
     return evaluateEndState(bc);
 }
 
@@ -534,7 +641,8 @@ void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleCon
             for (const auto &a : Action::enumerateCardSelectActions(bc)) {
                 const CardInstance *card = a.getActionType() == ActionType::SINGLE_CARD_SELECT
                         ? selectableCard(bc, a.getSelectIdx()) : nullptr;
-                if (card != nullptr) {
+                if (card != nullptr && !(bc.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                        && bc.cardSelectInfo.pickCount == 2)) {
                     const bool duplicate = std::any_of(kept.begin(), kept.end(),
                         [&](const CardInstance *k) { return cardsEquivalentForSearch(*card, *k); });
                     if (duplicate) continue;
@@ -657,6 +765,14 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);
+        if (bc.smokeBombUsed) {
+            // Forfeited rewards, capped at half the remaining HP: death also
+            // scores positively, so an uncapped penalty could make a low-HP
+            // escape look worse than dying. The cap keeps emergencies cheap.
+            const double penalty = context.eliteRewards ? evalWeights.eliteEscapePenalty
+                                                        : evalWeights.escapePenalty;
+            score -= std::min(penalty, 0.5 * bc.player.curHp);
+        }
         // An implanted Writhing Mass adds a Parasite unless a charged Omamori absorbs it.
         const auto &wm = bc.monsters.arr[0];
         if (wm.id == MonsterId::WRITHING_MASS && wm.miscInfo
@@ -678,6 +794,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
 }
 
 namespace {
+
 
     template <typename Pile>
     int findCard(const Pile &pile, int count, const CardInstance &card) {
@@ -740,6 +857,12 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
                 case 3: idx = findCard(to.cards.drawPile, to.cards.drawPile.size(), from.cards.drawPile[src]); break;
                 default: break;
             }
+            if (from.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                    && from.cardSelectInfo.pickCount == 2) {
+                const int second = findCard(to.cards.discardPile, static_cast<int>(to.cards.discardPile.size()),
+                    from.cards.discardPile[action.getTargetIdx()-1]);
+                return idx < 0 || second < 0 ? action : Action(ActionType::SINGLE_CARD_SELECT,idx,second+1);
+            }
             return idx < 0 ? action : Action(ActionType::SINGLE_CARD_SELECT, idx);
         }
         case ActionType::MULTI_CARD_SELECT: {
@@ -762,6 +885,13 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
         default:
             return action;
     }
+}
+
+std::size_t search::SilverSearcher::prepareRootActions() {
+    if (root->state->outcome == Outcome::UNDECIDED && root->edges.empty()) {
+        enumerateActionsForNode(*root, *root->state);
+    }
+    return root->edges.size();
 }
 
 search::Action search::SilverSearcher::bestAction() const {

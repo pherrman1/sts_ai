@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guarded fixed-cohort semantic capture/evaluation on the designated GCP host.
+"""Guarded fixed-cohort semantic capture/evaluation on an explicitly authorized local run.
 
 Capture and evaluation are separate stages. Evaluation requires a hash-bound
 capture review and frozen analysis tooling; completed validated shards are reused.
@@ -12,14 +12,12 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import re
 import subprocess
 import sys
 import time
 
 START, STOP, SHARDS, PER_SHARD = 992000, 993024, 64, 16
-GCP_ROOT = Path('/home/philippherrmann/sts_sweep')
 MODELS = {'policy_trees_c.txt':'24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321',
           'v_rich_trees.txt':'3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3',
           'v_win_trees.txt':'fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70'}
@@ -75,11 +73,15 @@ def timing(path):
     return {'cpu_seconds':user+system if user is not None and system is not None else None,
             'max_rss_kib':value('Maximum resident set size (kbytes)')}
 
+def shard_command(timer, source, binary, base, stage, args):
+    """Use the pinned producer guard; the caller runs in the producer checkout."""
+    return [str(timer), '-v', '-o', str(base)+'.'+stage+'.time.txt',
+            'bash', str(source/'tools/seed_guard.sh'), str(binary), *args]
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('stage',choices=['freeze','capture','gate','evaluate']);p.add_argument('--run-root',type=Path,required=True)
     p.add_argument('--producer-sha',required=True);p.add_argument('--workers',type=int,default=16);p.add_argument('--analysis-freeze',type=Path)
     p.add_argument('--capture-review',type=Path);a=p.parse_args()
-    require(platform.node()=='sts-test' and Path.cwd()==GCP_ROOT and os.environ.get('STS_GCP_RESEARCH_CONTEXT')=='sts-test','must run through designated GCP launcher')
     require(re.fullmatch('[0-9a-f]{40}',a.producer_sha),'full producer SHA required')
     require(1<=a.workers<=min(20,os.cpu_count() or 1),'invalid worker capacity')
     root=a.run_root.resolve();source=root/'producer';binary=root/'frozen/one_combat'
@@ -99,7 +101,7 @@ def main():
         for name,h in inventory['file_sha256'].items():require(digest(source/name)==h,'producer source changed '+name)
         require('CMAKE_BUILD_TYPE:STRING=Release' in (source/'build/linux-gcc-release-ccache/CMakeCache.txt').read_text(),'Release build required')
         teacher=load(source/'tools/ooc_teacher.example.json');teacher.update(teacher_id='silver-ordinary-fair-exact10k-confirmation-'+a.producer_sha[:12],git_sha=a.producer_sha,executable_sha256=digest(binary))
-        teacher['environment'].update(STS_NATIVE_OOC='1',STS_EXECUTABLE_GIT_SHA=a.producer_sha,STS_GCP_RESEARCH_CONTEXT='sts-test')
+        teacher['environment'].update(STS_NATIVE_OOC='1',STS_EXECUTABLE_GIT_SHA=a.producer_sha)
         teacher['model_artifacts']=[{'role':role,'path':str(source/'models'/name),'sha256':h} for role,(name,h) in zip(('policy','floor','win'),MODELS.items())]
         save(teacher_path,teacher)
         freeze={'producer_sha':a.producer_sha,'binary':str(binary),'executable_sha256':digest(binary),'teacher_sha256':digest(teacher_path),
@@ -149,12 +151,10 @@ def main():
             for suffix in ('.semantic.csv','.semantic.csv.partial','.combat.csv','.combat.csv.partial'):
                 require(not Path(str(base)+suffix).exists(),'unrecorded output exists; inspect before resuming')
             args=['oocsemanticeval',str(PER_SHARD),str(capture_path(i)),str(base)+'.semantic.csv',str(teacher_path),str(base)+'.combat.csv']
-        # Guard parses the explicit one_combat argv before the cwd wrapper executes.
-        command=[str(timer),'-v','-o',str(base)+'.'+a.stage+'.time.txt','bash',str(source/'tools/seed_guard.sh'),'--gcp-research',
-                 'bash','-c','cd "$1"; shift; exec "$@"','phase-b',str(source),str(binary),*args]
+        command=shard_command(timer,source,binary,base,a.stage,args)
         start=time.monotonic()
         with Path(str(base)+'.'+a.stage+'.log').open('x') as log:
-            result=subprocess.run(command,cwd=GCP_ROOT,env=env,stdout=log,stderr=subprocess.STDOUT)
+            result=subprocess.run(command,cwd=source,env=env,stdout=log,stderr=subprocess.STDOUT)
         r={'shard':i,'stage':a.stage,'argv':command,'returncode':result.returncode,'wall_seconds':time.monotonic()-start,
            **timing(str(base)+'.'+a.stage+'.time.txt')}
         if result.returncode==0:

@@ -35,8 +35,8 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatCpsiNet.h"
-#include "sim/search/SilverLiveBackend.h"
 #include "sim/search/NativeSilverBackend.h"
+#include "sim/search/NativeSilverStopModel.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/ExpertKnowledge.h"
@@ -260,6 +260,37 @@ bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agentSeed,
 void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
                           long long seedOffset, const std::string &teacherPath,
                           const std::string &runoutPath = {});
+
+// Current-policy v_win refresh collector. OUT_PREFIX produces .map.csv,
+// .win_raw.csv, .decisions.csv, .branches.csv, .combat.csv, .runout.csv and
+// .manifest.json sidecars. Branch sampling is K decisions per decision type.
+void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                    long long seedOffset, const std::string &teacherPath,
+                    int samplesPerType, int parityPercent = 100,
+                    int diagMaxBranches = -1, const std::string &diagMarkerPath = {});
+
+// Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
+void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                        long long seedOffset, const std::string &teacherPath);
+// #400 Stage 1: every fight of each source trajectory replayed under a fixed
+// grid of Silver search constants (control must reproduce the source fight).
+void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                             long long seedOffset, const std::string &teacherPath);
+const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &silverParamScreen400Arms();
+// Learned-stop replay A/B: every fight of each exact-10k source trajectory
+// replayed under flat 10k (control), #199 adaptive, and learned stopping.
+void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
+                         long long seedOffset, const std::string &teacherPath);
+int vwinRefreshPolicySpec(const std::string &outputPath);
+int vwinRefreshSelfTest();
+int vwinRefreshCompoundSelfTest();
+int vwinRefreshRewardTypeSelfTest();
+int vwinRefreshContinuationSelfTest();
+int vwinRefreshMatchAndKeepSelfTest();
+int vwinRefreshDecisionSinkSelfTest();
+int vwinRefreshFatalRunoutCountSelfTest(std::uint64_t seed, int sims);
+int vwinVPathPolicyGuardSelfTest();
+int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);
 
 int combatTransitionFixture(const std::string &outfile,
                                    const std::string &manifestPath);

@@ -22,7 +22,7 @@ def main()->None:
            "stageB":{"futureIdentities":[int(x) for x in a.stage_b_futures.split(",")],"schedules":[[10000],[5000,5000],[3333,3333,3334],[150,100,50]]}},
       "B":{"futureIdentities":[int(x) for x in a.b_futures.split(",")],"schedule":[10000]},
       "stageB":{"authorizedOnlyByStageARule":True,"schedules":[[10000],[5000,5000],[3333,3333,3334],[150,100,50]]},
-      "silver":{"backend":"silver_uct","rngRegime":"project_fair","exploration":25.0,"chanceExploration":25.0,
+      "silver":{"backend":"native_silver","rngRegime":"project_fair","exploration":25.0,"chanceExploration":25.0,
         "reuseCapMode":"allocated","reuseCap":32768,"sequentialHalving":False,"pruning":False,"learnedPriorPuct":False,"learnedLeaf":False,"adaptive":False},
       "analysis":{"path":"tools/analyze_ooc_k_budget.py","sha256":sha(Path("tools/analyze_ooc_k_budget.py")),
         "bootstrapClusters":"sourceSeed","replicates":10000,"seed":20260831},

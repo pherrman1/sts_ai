@@ -1,0 +1,117 @@
+{
+  "all_passed": true,
+  "runs": [
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991000,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991000,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991001,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991001,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991002,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991002,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991003,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991003,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991004,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991004,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991005,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991005,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991006,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991006,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "control",
+      "exit_code": 0,
+      "seed": 991007,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "arm": "treatment",
+      "exit_code": 0,
+      "seed": 991007,
+      "stderr": "",
+      "stdout": ""
+    }
+  ]
+}

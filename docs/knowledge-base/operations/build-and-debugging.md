@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-10 against the current working tree.
+Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -333,7 +333,7 @@ use the locked default environment; all test failures remain fatal and CTest
 prints failure output through its preset.
 
 This lane deliberately does not run statistical gameplay seed benchmarks, access
-private GCP resources, use ignored training checkpoints, or deploy. The default
+private cloud resources, use ignored training checkpoints, or deploy. The default
 uv dependency group is sufficient for every registered CTest check and the
 doctor; trained-model parity remains outside CI because it requires a produced
 checkpoint (see [Known limitations](#known-limitations)).
@@ -354,55 +354,43 @@ After pushing, inspect CI with a nonblocking `gh run view` or `gh pr checks`
 query. Do not use an unbounded foreground `--watch`; poll at a bounded interval
 so the session remains responsive while a run is queued or executing.
 
-### Decision-bearing GCP run preflight
+### Decision-bearing research run preflight
 
-For a multi-arm research run, copy
-`tools/agent/research_run_manifest.example.json` to a task-scoped file and fill
-in the frozen full Git SHA, remote checkout/build paths, executable and artifact
-SHA-256 hashes, exact `bestbench` seed block, required environment, and every
-arm's unique result/log path. Keep parameters shared across arms in
-`common_env` and `command`; arm-local `env` should contain only the intended
-treatment. If Silver telemetry is expected, retain both
-`expect_silver_telemetry: true` and `STS_SILVER_TELEMETRY` in `required_env`.
-The validator rejects an absent, empty, or zero telemetry setting before a
-seed can run.
+Use the smallest justified experiment. Larger local runs require explicit
+authorization; record frozen source/model/binary provenance, exact seed
+ranges/counts, budgets, and decision rules before execution. There is no fixed
+local numerical seed ceiling.
 
-Schema version 2 adds `environment_policy` and per-arm `fresh_outputs`.
-Decision-bearing comparisons should use `environment_policy: "clean"` and
-include explicit `HOME` and `PATH` in `common_env`; this launches each process
-with `env -i` so inherited model-routing variables cannot leak between arms.
-List every trace/support/action-trace output in that arm's `fresh_outputs` so
-the launcher refuses to append to stale files. Schema version 1 remains
-accepted with its original inherited-environment behavior for existing
-manifests.
+Before collecting a cohort:
 
-For manifest runs, the launcher invokes `tools/seed_guard.sh` from
-the manifest's exact-SHA checkout, not from the mutable remote root. Exact-SHA
-preflight also requires that guard to be tracked and present in the checkout
-at the manifest's frozen SHA. The launcher keeps its working directory at the
-designated remote root, as required by the guard's GCP host/root/context check.
-Generic non-manifest runs continue to use the remote-root guard.
+1. Freeze the reviewed full source SHA, exact checkout and build paths, binary
+   and model/configuration SHA-256 hashes, complete per-arm command/environment,
+   exact seed ranges/counts, simulation budgets, worker/thread and wall/CPU
+   budgets, outputs, and scientific decision rules in the experiment manifest.
+2. Verify the checkout is clean at that SHA, pinned dependencies match, and the
+   CMake cache belongs to that checkout. Hash the actual executable and every
+   model/configuration artifact. A source SHA alone does not prove binary identity.
+3. Use a clean explicit environment (for example `env -i` with `HOME`, `PATH`
+   and all required settings) so inherited model-routing variables cannot leak
+   between arms. Set `STS_EXECUTABLE_GIT_SHA` to the verified producer SHA.
+4. Invoke `tools/seed_guard.sh` from the frozen checkout. Its `guard-only` mode
+   validates recognized seed counts without executing gameplay. It imposes no
+   general numeric ceiling; semantic capture/evaluation retain their native
+   1..16 source/decision contract. Guard acceptance is not run authorization
+   and does not verify provenance or the scientific design.
+5. Reserve fresh per-arm result, metadata, trace and log paths; reject existing
+   files (including dangling symlinks). Preserve failed attempts. Check active
+   processes and capacity before starting an explicitly authorized larger run.
+6. Run the smallest justified mechanism/provenance canary, then validate its
+   CSV and sidecar with `tools/agent/check_benchmark_canary.py` against the
+   expected source/binary hashes, backend, seed, simulations, threads, fair
+   regime and reuse mode. Use the scientific analyzer for the final cohort.
 
-Use this sequence after CI and before gameplay:
-
-```bash
-python tools/agent/gcp_benchmark.py manifest-check path/to/run-manifest.json
-python tools/agent/gcp_benchmark.py copy-to local/model.txt artifacts/model.txt --expect-sha256 <sha256>
-python tools/agent/gcp_benchmark.py exact-sha-preflight path/to/run-manifest.json
-python tools/agent/gcp_benchmark.py run-manifest path/to/run-manifest.json A --foreground --guard-only
-python tools/agent/gcp_benchmark.py run-manifest path/to/run-manifest.json A
-```
-
-The exact-SHA preflight fails unless the designated checkout has the frozen
-HEAD, no tracked modifications, a CMake cache bound to that checkout, the
-tracked seed guard, and the declared binary/artifact hashes. Manifest runs
-invoke that guard from the pinned checkout while keeping the working directory
-at the designated remote root. The manifest launcher refuses any arm whose
-result, metadata sidecar, log, or declared fresh output already exists. It
-does not replace the experiment-specific post-run canary:
-validate completed results with `tools/agent/check_benchmark_canary.py` and the
-required scientific analyzer before interpreting them.
-
+The old host-specific launcher and its JSON launcher template are retired by
+[ADR-0024](../../../decisions/0024-local-research-execution.md). Frozen historical
+manifests remain evidence, not runnable current workflow templates. Keep
+experiment-specific manifests and validators; do not infer completion from a
+PID disappearing. Verify exit status, logs, output completeness and provenance.
 
 ### Python tooling environment
 
@@ -542,8 +530,7 @@ directory for each experiment; do not mix profiles from different revisions.
 ```bash
 cmake -S . -B build/pgo -DCMAKE_BUILD_TYPE=Release \
   -DSTS_PGO_MODE=GENERATE -DSTS_PGO_PROFILE_DIR="$PWD/build/pgo-profiles"
-cmake --build build/pgo --target one_combat silver-native-test -j2
-bash tools/seed_guard.sh build/pgo/silver_native_test
+cmake --build build/pgo --target one_combat -j2
 # Run the instrumented binary on representative, guarded Silver producer
 # workloads here, preserving the frozen teacher settings and refreshing its
 # executable hash. Wait for normal process exit so GCC writes the profiles.
@@ -554,16 +541,14 @@ cmake --build build/pgo --target one_combat -j2
 
 Collect profiles for every translation unit rebuilt in USE mode, including
 static-library members that `one_combat` does not pull into its final link.
-The `silver_native_test` probe above exercises `SilverSearcherBridge.cpp`,
-whose reference-searcher probe would otherwise have no profile when rebuilding
-the Silver search bridge archive. Building additional targets in USE mode
+Building additional targets in USE mode
 without collecting their profiles intentionally fails. Profile existence alone
 does not establish workload representativeness or a performance improvement.
 Compare the final USE binary against ordinary Release on held-out workloads,
 with separate trace/label parity checks and interleaved CPU-pinned timing;
 never compare throughput against the instrumented collection binary. Refresh
 teacher/producer executable hashes for each binary, and keep all seed-driving
-commands under `tools/seed_guard.sh` (local cap 128).
+commands under `tools/seed_guard.sh` (seed-count validation).
 
 The Release preset produces `build/linux-gcc-release/one_combat`. The path does
 not prove a running producer is optimized: inspect the actual job command,
@@ -583,7 +568,7 @@ malformed artifacts and does not replace real-model parity.
 `one_combat oocmctsselftest` optionally accepts
 `STS_OOC_MCTS_MICROBENCH_MODEL=/absolute/path/to/combat_transition_v1.native`.
 With the normal native V4/win test setup, this runs a fixed 512-simulation,
-depth-one detached native-search fixture. It compares the uncached sampler with
+map-checkpoint detached native-search fixture. It compares the uncached sampler with
 edge preparation, checks all root statistics/tree counters/snapshots/history,
 and prints `MICROBENCH` timing/counters plus `MICROBENCH_PARITY` exact outputs.
 The native regain-control callback isolates searched combat from reward
@@ -651,182 +636,11 @@ as a debugger, not baseline reproduction.
 rows. It is the closest current manual determinism probe
 (`apps/one_combat.cpp::main` `reprobench` branch).
 
-## GCP benchmark server (sts-test)
+## Research execution
 
-Large benchmark sweeps and datagen run on the GCP server
-`sts-test` (preemptible, c4-highcpu-24, 24 threads, zone `europe-west3-c`,
-project `sts-ai-502709`, user `philippherrmann`). Recorded facts about
-reaching it (verified 2026-08-05):
-
-- **Only working client:** the gcloud SDK bundled with the Windows Google
-  Cloud SDK install. It is **not on PATH** in PowerShell or WSL — use the
-  full path:
-  `C:\Users\pherrman\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd`
-  (a second copy exists under `C:\Program Files (x86)\Google\Cloud SDK\...`).
-- Plain `ssh philippherrmann@sts-test` does **not** resolve; WSL has no route
-  to the server IP. `gcloud compute ssh` (bundled plink + IAP tunnel) is the
-  only working route:
-  `gcloud.cmd compute ssh philippherrmann@sts-test --zone=europe-west3-c --command "<cmd>"`
-  (use `--project=sts-ai-502709` if the default project is not set).
-- **Working tree:** `/home/philippherrmann/sts_sweep` is a non-git rsync
-  copy, not a clone. Sync changed sources and model artifacts with
-  `gcloud.cmd compute scp` (same full path), then build with
-  `cmake --build build -j 24`. Tracked `.native` models also come from a
-  `git pull`-style handoff per `AGENTS.md`.
-- **Workflow:** run sweeps on the server with `nohup` (long runs survive the
-  SSH session), pull per-seed CSVs back to `build/` with scp, then analyze
-  with `paired_analysis.py` locally.
-- **Failure modes:** the instance is preemptible — a plink exit code 1 /
-  IAP tunnel error often just means it is down; probe with a trivial
-  `hostname; uptime` command first. Before a long run, check the box is free
-  (`ps aux | wc -l` / leftover `one_combat` processes from another agent).
-
-### Canonical agent workflow
-
-Use the tracked launcher rather than reconstructing raw gcloud commands:
-
-```bash
-python3 tools/agent/gcp_benchmark.py status
-python3 tools/agent/gcp_benchmark.py start-instance
-python3 tools/agent/gcp_benchmark.py probe
-```
-
-The launcher defaults to project `sts-ai-502709`, instance `sts-test`, zone
-`europe-west3-c`, user `philippherrmann`, and remote root
-`/home/philippherrmann/sts_sweep`. Read-only `status`/`probe` options may be
-overridden for troubleshooting. Expensive or mutating `run` and
-`start-instance` operations reject any project, zone, instance, user, or remote
-root other than this designated target. It never creates, deletes, resizes, or
-reconfigures cloud resources.
-
-### Exact-SHA remote worktree and runtime provenance
-
-Do not treat a binary built after copying a few files into the designated
-remote root as frozen-SHA evidence. The root may have an older surrounding
-source/link graph, and a copied CMake cache can retain an absolute source path
-to a different preserved run tree. In non-manifest runs where
-`STS_EXECUTABLE_GIT_SHA` is unset, executable provenance falls back to
-`git rev-parse HEAD` and can therefore describe the launcher's unrelated
-working-directory checkout. Manifest-bound runs avoid that ambiguity by
-requiring the declared executable SHA to equal the frozen SHA.
-
-For a reviewed scientific run, create a clean, uniquely named remote worktree
-at the exact reviewed commit and configure a new cache inside it. Prefer a
-normal fetch when the remote clone can reach the task branch. Some preserved
-run clones intentionally use an offline bundle as `origin`; if the branch is
-absent there, create a local Git bundle for the reviewed branch and upload it
-with `copy-to`, then fetch that bundle into the preserved clone. Example
-placeholders below must be replaced with the recorded task values:
-
-```bash
-# Local: bundle only when the preserved remote clone cannot fetch the branch.
-git bundle create build/<experiment>/<sha>.bundle <task-branch>
-python3 tools/agent/gcp_benchmark.py copy-to \
-  build/<experiment>/<sha>.bundle runs/<sha>.bundle
-
-# Remote through `gcp_benchmark.py run --foreground --`:
-git -C runs/<preserved-clone> fetch \
-  /home/philippherrmann/sts_sweep/runs/<sha>.bundle \
-  <task-branch>:refs/remotes/bundle/<experiment>
-git -C runs/<preserved-clone> worktree add --detach \
-  ../<experiment>-<sha> <full-reviewed-sha>
-cmake -S runs/<experiment>-<sha> \
-  -B runs/<experiment>-<sha>/build-release \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build runs/<experiment>-<sha>/build-release \
-  --target one_combat <focused-test-target> -j 24
-```
-
-Initialize the new worktree's pinned submodules before configuring. If the
-preserved offline clone cannot update them normally, copying their contents
-from the verified baseline clone is a mechanical fallback only after checking
-that the gitlink SHAs match; never use dependency presence as proof of the
-expected revision.
-
-The launcher must still start from the designated root so
-`tools/seed_guard.sh --gcp-research` can verify its host/root context. Supply
-the exact worktree's Git metadata to the benchmark process so runtime sidecars
-resolve the reviewed SHA rather than the designated root's SHA. Obtain the
-absolute git directory from the worktree's `.git` pointer or with
-`git -C runs/<experiment>-<sha> rev-parse --absolute-git-dir`, then include:
-
-```bash
-/usr/bin/env \
-  GIT_DIR=/absolute/path/to/the/worktree/gitdir \
-  GIT_WORK_TREE=/home/philippherrmann/sts_sweep/runs/<experiment>-<sha> \
-  STS_EXECUTABLE_GIT_SHA=<full-reviewed-sha> \
-  runs/<experiment>-<sha>/build-release/one_combat \
-  bestbench <sims> <nSeeds> <asc> <seedOffset> <results.csv>
-```
-
-`STS_EXECUTABLE_GIT_SHA` supplies the reviewed executable identity to training,
-benchmark, and OOC producer provenance, including teacher validation and
-result sidecars. `GIT_DIR` and `GIT_WORK_TREE` remain required for Git-derived
-dirty-state diagnostics and commands other than the executable SHA. Before a
-cohort:
-
-1. run the focused executable test from the exact-SHA build;
-2. hash the exact binary and every model/config artifact;
-3. run one fresh treatment canary through the guarded launcher;
-4. retrieve its CSV, `.meta.json`, and persisted launcher log; and
-5. run `tools/agent/check_benchmark_canary.py` with the expected full Git SHA,
-   binary SHA-256, backend, seed, simulations, thread count, fair regime, and
-   reuse-cap mode.
-
-The canary is invalid if its sidecar names another Git SHA even when the binary
-hash is recorded. Use a fresh output filename for every corrected canary;
-`bestbench` deliberately refuses overlapping rows in an existing result file.
-Keep invalid canary attempts in the evidence record rather than silently
-replacing them.
-
-For a research command, first state the hypothesis/question, baseline and
-treatment, seed regime, simulation/particle budget, fair-vs-known-RNG regime,
-model hashes/configuration, intended seed count, and decision rule. Then launch
-through the helper; it checks for an active `one_combat` process and refuses to
-stack a run unless `--allow-parallel` is explicitly supplied:
-
-```bash
-python3 tools/agent/gcp_benchmark.py run -- \
-  ./build/one_combat bestbench 1000 2000 0
-```
-
-For the non-executing remote acceptance proof, add `--foreground
---guard-only`; this validates the 2,000-seed command and exits without running
-gameplay:
-
-```bash
-python3 tools/agent/gcp_benchmark.py run --foreground --guard-only -- \
-  ./build/one_combat bestbench 1000 2000 0
-```
-
-`run` changes to the remote root and invokes
-`bash tools/seed_guard.sh --gcp-research ...`, so the GCP path retains argument
-validation but has no numeric seed ceiling. Detached runs use `nohup`, print
-`remote_pid` and `remote_log`, and survive SSH disconnects. Inspect the PID and
-retrieve or upload one file through the same designated-target launcher. Remote
-paths are relative to the designated root; absolute and parent-traversing paths
-are rejected. Each path component is limited to ASCII letters, digits, `.`,
-`_`, and `-`, so SCP glob, control, and remote-shell syntax is rejected:
-
-```bash
-python3 tools/agent/gcp_benchmark.py job-status <remote-pid>
-python3 tools/agent/gcp_benchmark.py copy-from logs/<log> ./local-run.log
-python3 tools/agent/gcp_benchmark.py copy-from pilot-artifacts/<run>/summary.json ./summary.json
-python3 tools/agent/gcp_benchmark.py copy-to ./runner.sh pilot-artifacts/<run>/runner.sh
-```
-
-`job-status` reports `running` only while the operating-system PID exists;
-`not_running_or_unknown` means the process is absent, not that it necessarily
-succeeded. Use the fetched log and validated output artifacts for completion.
-Transfer confinement is lexical and assumes the maintained designated checkout
-does not place escaping symlinks in paths supplied to these commands.
-
-There is no repository credential: the helper uses the user's existing local
-gcloud authentication. If gcloud is absent or unauthenticated, report that
-one-time external blocker rather than creating credentials. Large N is not
-scientific evidence by itself; preserve paired common seeds, regime separation,
-budget comparability, provenance, schema validation, raw results, and ledger
-recording.
+The former GCP server is unavailable and its workflow is retired. Do not wait
+for or restore it. Use the local research preflight above and explicit
+larger-run authorization; historical cloud commands are provenance only.
 
 ## Known limitations
 

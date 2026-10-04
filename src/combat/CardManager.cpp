@@ -101,6 +101,12 @@ void CardManager::createTempCardShuffledIntoDrawPile(Random &cardRandomRng, Card
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
 }
 
+void CardManager::createTempCardOnDrawPileTop(CardInstance c) {
+    c.uniqueId = static_cast<std::int16_t>(nextUniqueCardId++);
+    notifyAddCardToCombat(c);
+    moveToDrawPileTop(c);
+}
+
 void CardManager::createTempCardInDiscard(CardInstance c) {
     c.uniqueId = static_cast<std::int16_t>(nextUniqueCardId++);
 #ifdef sts_asserts

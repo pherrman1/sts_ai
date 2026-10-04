@@ -128,7 +128,7 @@ def canonical_payload_suffix(p):
 
 def action_identity(action):
     effect, source = integer(action['semanticEffect']), integer(action['semanticSource'])
-    require(0 <= effect <= 28 and 0 <= source <= 9, 'unknown semantic effect/source')
+    require(0 <= effect <= 29 and 0 <= source <= 9, 'unknown semantic effect/source')
     key = action['semanticKey']
     require(isinstance(key, str) and re.fullmatch(
         rf'ooc:v1:effect={effect}:source={source}:(?:none|card=.+|transaction:event=.+|selector=.+|reward=.+|shop=.+|event=-?\d+:option=-?\d+|relic=-?\d+:occurrence=\d+)', key) is not None,
@@ -150,7 +150,7 @@ def validate_manifest(manifest, verify_csv=True):
     require(teacher['git_sha'] == manifest['producer_git_sha'] and
             teacher['executable_sha256'] == manifest['producer_executable_sha256'],
             'producer and frozen teacher identity mismatch')
-    require(teacher['combat_backend'] == 'silver_uct' and teacher['rng_regime'] == 'project_fair',
+    require(teacher['combat_backend'] == 'native_silver' and teacher['rng_regime'] == 'project_fair',
             'semantic pilot requires frozen project-fair Silver teacher')
     runtime = manifest.get('runtime')
     require(isinstance(runtime, dict), 'missing frozen runtime binding')

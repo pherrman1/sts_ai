@@ -43,9 +43,15 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/MatchAndKeepPolicy.h"
 #include "combat/BattleContextBinary.h"
+#include "combat/PublicDamageBelief.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverUselessAction.h"
+#include "sim/search/SilverWireState.h"
+#include "sim/search/SilverWireJson.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
@@ -248,9 +254,11 @@ namespace {
         int turn = 0;
         int decisions = 0;
         int reroots = 0;
+        std::vector<std::uint32_t> actions;
+        std::vector<search::SearchRngState> rng;
     };
 
-    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims) {
+    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims, bool profileEnabled = false, bool diagnose = false) {
         GameContext gc(CharacterClass::IRONCLAD, seed, 0);
         BattleContext bc;
         bc.init(gc, encounter);
@@ -269,14 +277,22 @@ namespace {
             } else {
                 searcher = std::make_unique<search::SilverSearcher>(root, context);
             }
+            search::SilverTreeProfile profile;
+            searcher->profile = profileEnabled ? &profile : nullptr;
             searcher->search(sims);
+            searcher->profile = nullptr;
+            if (profileEnabled && profile.completed != sims)
+                throw std::runtime_error("profile denominator includes inherited visits or misses simulations");
             const auto action = search::SilverSearcher::translateAction(
                 searcher->bestAction(), searcher->rootSearchState(), bc);
             if (!action.isValidAction(bc)) {
                 std::cerr << "silver_searcher: invalid action chosen\n";
                 break;
             }
+            if (diagnose) (void)search::proveSilverUselessBlock(bc, action);
+            result.actions.push_back(action.bits);
             action.execute(bc);
+            result.rng.push_back(search::captureSearchRng(bc));
             ++result.decisions;
         }
         result.outcome = bc.outcome;
@@ -295,6 +311,138 @@ int testSilverSearcher() {
             ++failures;
         }
     };
+
+    // Final choice is edge visits only; even Q ties keep enumeration order.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        searcher.prepareRootActions();
+        auto *root = &const_cast<search::SilverSearcher::Node &>(searcher.rootNode());
+        check(root && root->edges.size() >= 2, "root selection fixture has two actions");
+        if (root && root->edges.size() >= 2) {
+            root->edges.resize(2);
+            search::SilverSearcher::Node low, high;
+            low.simulationCount = high.simulationCount = 10;
+            low.evaluationSum = 1; high.evaluationSum = 1000;
+            root->edges[0].node = &low; root->edges[1].node = &high;
+            root->edges[0].visitCount = 20; root->edges[1].visitCount = 10;
+            check(searcher.bestAction().bits == root->edges[0].action.bits,
+                  "more visits beats higher mean Q");
+            root->edges[1].visitCount = 20;
+            check(searcher.bestAction().bits == root->edges[0].action.bits,
+                  "visit tie ignores Q and keeps first edge");
+            std::swap(root->edges[0], root->edges[1]);
+            check(searcher.bestAction().bits == root->edges[0].action.bits,
+                  "tie follows enumeration order rather than action identity");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
+        bc.cards.cardsInHand = 1;
+        bc.cards.hand[0] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[0].uniqueId = 81;
+        bc.potionCount = 0;
+        for (auto &p : bc.potions) p = Potion::EMPTY_POTION_SLOT;
+        const search::Action defend(search::ActionType::CARD, 0, 0);
+        const auto before = bc;
+        const auto proof = search::proveSilverUselessBlock(bc, defend);
+        if (!proof.verified) std::cerr << "useless block fixture rejected: " << proof.reason << '\n';
+        check(proof.verified && proof.energySpent == 1 && proof.blockGained == 5
+              && proof.energyWasteDelta == -1 && !proof.snapshot.empty(),
+              "last-card temporary block has an equivalent forced End Turn continuation");
+        check(bc == before, "diagnostic never changes live state or RNG");
+        auto changed = bc;
+        changed.player.setHasStatus<PlayerStatus::BARRICADE>(true);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "retained block fails closed");
+        changed = bc; changed.player.buff<PlayerStatus::JUGGERNAUT>(5);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "block damage trigger fails closed");
+        changed = bc; changed.player.setHasRelic<RelicId::INK_BOTTLE>(true);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "card-play relic fails closed");
+        changed = bc; changed.monsters.arr[0].moveHistory[0] = MMID::CULTIST_DARK_STRIKE;
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "incoming damage fails closed");
+        changed = bc; changed.cards.cardsInHand = 2;
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "unforced continuation fails closed");
+        changed = bc; changed.cards.hand[0] = CardInstance(CardId::SHRUG_IT_OFF);
+        check(!search::proveSilverUselessBlock(changed, defend).verified, "draw effect is outside qualified class");
+        const auto off = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200);
+        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, false, true);
+        check(off.actions == on.actions && off.rng == on.rng && off.hp == on.hp
+            && off.turn == on.turn && off.outcome == on.outcome,
+            "diagnostics preserve every full-fight action, RNG stream, and result");
+
+    }
+
+    // Exact endpoint/depth fixtures and opt-in observational parity.
+    {
+        using Profile = search::SilverTreeProfile;
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.monsters.arr[0].curHp = 1;
+        bc.monsters.arr[0].block = 0;
+        bc.cards.cardsInHand = 1;
+        bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[0].uniqueId = 81;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        check(searcher.profile == nullptr, "profiling defaults off");
+        Profile profile;
+        searcher.profile = &profile;
+        searcher.search(1);
+        check(profile.completed == 1 && profile.endpoints[Profile::VICTORY].tree[1] == 1
+              && profile.endpoints[Profile::VICTORY].total[1] == 1,
+              "one lethal action ends at tree/total depth one");
+        BattleContext stochastic;
+        stochastic.init(gc, MonsterEncounter::CULTIST);
+        stochastic.player.energy = 0;
+        search::SilverSearcher chanceSearcher(silverSearchRoot(stochastic), {});
+        Profile chanceProfile;
+        chanceSearcher.profile = &chanceProfile;
+        chanceSearcher.search(1);
+        std::int64_t depthOne = 0;
+        for (const auto &endpoint : chanceProfile.endpoints) {
+            const auto it = endpoint.tree.find(1);
+            if (it != endpoint.tree.end()) depthOne += it->second;
+        }
+        check(chanceSearcher.stats.chanceOutcomesSampled > 0 && depthOne == 1,
+              "chance outcome edge does not add another action to tree depth");
+        bc.inputState = InputState::CHOOSE_STANCE_ACTION;
+        searcher.setRoot(silverSearchRoot(bc));
+        profile = {};
+        searcher.search(3);
+        searcher.search(4);
+        check(profile.completed == 7 && profile.endpoints[Profile::NONTERMINAL].tree[0] == 7
+              && profile.endpoints[Profile::NONTERMINAL].total[0] == 7,
+              "no-action nonterminal root and chunked denominator are exact");
+        bc.outcome = Outcome::PLAYER_LOSS;
+        bc.player.curHp = 0;
+        profile = {};
+        profile.record(bc, 2, 3);
+        check(profile.endpoints[Profile::DEATH].tree[2] == 1
+              && profile.endpoints[Profile::DEATH].total[5] == 1, "death depths separate tree and rollout");
+        bc.player.curHp = 20;
+        profile.record(bc, 4, 0);
+        check(profile.endpoints[Profile::ENGINE_STOP].tree[4] == 1, "non-death engine loss stays separate");
+        bc.turn = 501;
+        profile.record(bc, 5, 1);
+        check(profile.endpoints[Profile::TURN_LIMIT].total[6] == 1, "turn limit stays separate");
+        searcher.setRoot(silverSearchRoot(bc));
+        profile = {};
+        searcher.search(7);
+        check(profile.completed == 0, "terminal-root initialization is not a completed simulation");
+
+        const auto off = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200);
+        const auto on = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true);
+        check(off.actions == on.actions && off.rng == on.rng && off.hp == on.hp
+              && off.turn == on.turn && off.outcome == on.outcome && off.reroots == on.reroots,
+              "profile on/off preserves every action, all six RNG streams, and final result");
+        check(on.reroots > 0, "profile parity fixture exercises rerooted searches");
+        const auto both = playBattleWithSilverSearcher(123, MonsterEncounter::CULTIST, 200, true, true);
+        check(off.actions == both.actions && off.rng == both.rng && off.hp == both.hp
+              && off.turn == both.turn && off.outcome == both.outcome && off.reroots == both.reroots,
+              "combined tree profiling and useless-action proof preserve fight and RNG");
+    }
 
     // Lethal is found: a nearly dead Cultist and a Strike in hand.
     {
@@ -318,6 +466,76 @@ int testSilverSearcher() {
             searcher.bestAction(), searcher.rootSearchState(), bc);
         check(action.getActionType() == search::ActionType::CARD && action.getSourceIdx() == 1,
               "plays the lethal Strike");
+    }
+
+    // Playing a different physical copy of an equivalent card finds the node
+    // the search expanded for the other copy, and its actions map back.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.cards.cardsInHand = 3;
+        bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[0].uniqueId = 90;
+        bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[1].uniqueId = 91;
+        bc.cards.hand[2] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[2].uniqueId = 92;
+        const BattleContext root = silverSearchRoot(bc);
+        search::SilverSearcher searcher(root, {});
+        searcher.search(400);
+        // The search expanded one Strike (the deduplicated edge); play the other.
+        int expanded = -1;
+        for (const auto &edge : searcher.rootNode().edges) {
+            if (edge.action.getActionType() == search::ActionType::CARD
+                    && root.cards.hand[edge.action.getSourceIdx()].id == CardId::STRIKE_RED) {
+                expanded = edge.action.getSourceIdx();
+            }
+        }
+        check(expanded >= 0, "search expanded a Strike");
+        BattleContext played = root;
+        search::Action(search::ActionType::CARD, expanded == 0 ? 1 : 0, 0).execute(played);
+        check(searcher.findNode(played) == nullptr, "the other copy is a different exact state");
+        auto *node = searcher.findNodeUpToEquivalentCopy(played);
+        check(node != nullptr && node->simulationCount > 0, "equivalent-copy lookup finds the expanded child");
+        if (node != nullptr) {
+            searcher.rerootAt(node, false);
+            searcher.search(50);
+            const auto action = search::SilverSearcher::translateAction(
+                searcher.bestAction(), searcher.rootSearchState(), played);
+            check(action.isValidAction(played), "retained action maps onto the played state");
+        }
+        BattleContext changed = root;
+        search::Action(search::ActionType::CARD, expanded == 0 ? 1 : 0, 0).execute(changed);
+        for (int i = 0; i < changed.cards.cardsInHand; ++i) {
+            if (changed.cards.hand[i].id == CardId::DEFEND_RED) changed.cards.hand[i].costForTurn = 0;
+        }
+        check(searcher.findNodeUpToEquivalentCopy(changed) == nullptr,
+              "a non-equivalent card difference is not remapped");
+    }
+
+    // A root with one legal action exposes it without any simulation.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEEu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.cards.cardsInHand = 0;
+        for (auto &p : bc.potions) p = Potion::EMPTY_POTION_SLOT;
+        bc.potionCount = 0;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        check(searcher.prepareRootActions() == 1, "empty hand leaves one root action");
+        check(searcher.rootNode().simulationCount == 0, "preparing root actions runs no simulation");
+        check(searcher.bestAction().getActionType() == search::ActionType::END_TURN,
+              "the sole root action is END_TURN");
+        searcher.search(50);
+        check(searcher.rootNode().edges.size() == 1 && searcher.rootNode().simulationCount == 50,
+              "search after preparing root actions keeps the same edge");
     }
 
     // Whole battles: the search wins clearly more than the greedy rollout policy alone.
@@ -381,6 +599,599 @@ int testSilverSearcher() {
     }
 
     std::cout << "silver_searcher " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+// Throughput profile of native Silver search (issue #350). Collects the
+// decision roots of a mid-run Ironclad deck fighting encounters from all three
+// acts (played at 100 simulations a decision), then times a search of `sims`
+// simulations from every `stride`-th root, one searcher per combat as in
+// production. Output is deterministic apart from the timings; `digest`
+// fingerprints every root's edge visits.
+int silverProfile(std::int64_t sims, int stride) {
+    const std::pair<MonsterEncounter, int> encounters[] = {
+        {MonsterEncounter::JAW_WORM, 1}, {MonsterEncounter::GREMLIN_NOB, 1},
+        {MonsterEncounter::LAGAVULIN, 1}, {MonsterEncounter::THE_GUARDIAN, 1},
+        {MonsterEncounter::HEXAGHOST, 1}, {MonsterEncounter::CHOSEN, 2},
+        {MonsterEncounter::BOOK_OF_STABBING, 2}, {MonsterEncounter::AUTOMATON, 2},
+        {MonsterEncounter::CHAMP, 2}, {MonsterEncounter::THREE_DARKLINGS, 3},
+        {MonsterEncounter::NEMESIS, 3}, {MonsterEncounter::TIME_EATER, 3},
+    };
+    const CardId extraCards[] = {
+        CardId::INFLAME, CardId::SHRUG_IT_OFF, CardId::POMMEL_STRIKE, CardId::CARNAGE,
+        CardId::BATTLE_TRANCE, CardId::UPPERCUT, CardId::FEEL_NO_PAIN, CardId::TWIN_STRIKE,
+        CardId::HEADBUTT, CardId::TRUE_GRIT, CardId::METALLICIZE, CardId::HEMOKINESIS,
+    };
+    struct Combat {
+        search::SilverSearchContext context;
+        std::vector<BattleContext> roots;
+    };
+    std::vector<Combat> combats;
+    std::size_t rootCount = 0;
+    int decisions = 0;
+    for (const auto &[encounter, act] : encounters) {
+        GameContext gc(CharacterClass::IRONCLAD, 7, 0);
+        gc.act = act;
+        gc.curHp = gc.maxHp = 80;
+        for (const auto id : extraCards) gc.deck.obtainRaw(Card(id));
+        gc.obtainRelic(RelicId::VAJRA);
+        gc.obtainRelic(RelicId::ORICHALCUM);
+        gc.potions[0] = Potion::FIRE_POTION;
+        gc.potions[1] = Potion::BLOCK_POTION;
+        gc.potionCount = 2;
+
+        BattleContext bc;
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        knowledge.beginCombatInitialization();
+        search::g_combatKnowledgeObserver = &knowledge;
+        bc.init(gc, encounter);
+        knowledge.synchronizeAfterCombatInitialization(bc);
+        search::SilverSearchContext context;
+        context.act = act;
+        combats.push_back({context, {}});
+        int steps = 0;
+        while (bc.outcome == Outcome::UNDECIDED && ++steps < 400) {
+            knowledge.reconcilePublicDrawPileCardinality(bc);
+            BattleContext root;
+            if (!search::nativeSilverSearchRoot(bc, knowledge, root).empty()) break;
+            if (decisions++ % stride == 0) {
+                combats.back().roots.push_back(root);
+                ++rootCount;
+            }
+            search::g_combatKnowledgeObserver = nullptr;
+            search::SilverSearcher searcher(root, context);
+            searcher.search(100);
+            search::g_combatKnowledgeObserver = &knowledge;
+            const auto action = search::SilverSearcher::translateAction(
+                searcher.bestAction(), searcher.rootSearchState(), bc);
+            if (!action.isValidAction(bc)) break;
+            action.execute(bc);
+        }
+        search::g_combatKnowledgeObserver = nullptr;
+    }
+
+    // As in production: one searcher per combat, re-rooted at each decision.
+    std::int64_t totalSims = 0;
+    std::int64_t totalNodes = 0;
+    std::uint64_t digest = 0;
+    double seconds = 0.0;
+    for (const auto &combat : combats) {
+        if (combat.roots.empty()) continue;
+        search::SilverSearcher searcher(combat.roots.front(), combat.context);
+        for (const auto &root : combat.roots) {
+            const auto start = std::chrono::steady_clock::now();
+            searcher.setRoot(root);
+            searcher.search(sims);
+            seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+            totalSims += searcher.rootNode().simulationCount;
+            // Search outcome fingerprint: parity checks for speed changes.
+            for (const auto &edge : searcher.rootNode().edges) {
+                digest = digest * 1000003 + static_cast<std::uint64_t>(edge.visitCount);
+            }
+            digest = digest * 1000003 + static_cast<std::uint64_t>(search::hashBattleState(root));
+        }
+        totalNodes += searcher.stats.nodesCreated;
+    }
+    std::cout << "silver_profile roots=" << rootCount << " decisions=" << decisions
+              << " sims=" << totalSims << " nodes=" << totalNodes << " digest=" << digest
+              << " seconds=" << seconds
+              << " sims_per_s=" << (seconds > 0 ? static_cast<double>(totalSims) / seconds : 0.0) << '\n';
+    return 0;
+}
+
+// The wire path used by the live advisor (live state -> wire -> search root)
+// gives the same search state as the native backend's own search root, and
+// actions chosen on it map back onto the live state.
+int testPersistentLatentDamage() {
+    int failures=0;
+    auto check=[&](bool ok,const char *what) { if(!ok) { std::cerr<<"persistent_latent_damage FAIL: "<<what<<'\n'; ++failures; } };
+    const auto lice=Monster::latentDamagePrior(MonsterId::RED_LOUSE,0);
+    check(lice==((1u<<5)|(1u<<6)|(1u<<7)),"constructor uniform louse support");
+    check(Monster::latentDamagePrior(MonsterId::GREEN_LOUSE,2)==((1u<<6)|(1u<<7)|(1u<<8)),"ascended louse support");
+    check(Monster::latentDamagePrior(MonsterId::DARKLING,0)==0xf80,"Darkling support");
+    check(Monster::latentDamagePrior(MonsterId::DARKLING,2)==0x3e00,"ascended Darkling support");
+    GameContext gc(CharacterClass::IRONCLAD,11,0);
+    BattleContext base; base.init(gc,MonsterEncounter::JAW_WORM);
+    base.intentsHidden=true;
+    auto &m=base.monsters.arr[0];
+    m.id=MonsterId::RED_LOUSE; m.latentDamageMask=lice; m.latentDamageMaterialized=false;
+    m.miscInfo=0; m.pendingMoveRolls=0; m.pendingRollInputs={}; m.pendingRollInputHistory.clear();
+    m.moveHistory[0]=MMID::RED_LOUSE_BITE; m.moveHistory[1]=MMID::INVALID;
+    base.actionQueue.clear(); base.cardQueue.clear();
+    base.player.curHp=50; base.player.maxHp=80; base.player.block=0;
+    auto sampled=base; sampled.monsters.arr[0].materializePendingMove(sampled);
+    const int value=sampled.monsters.arr[0].miscInfo;
+    check(value>=5 && value<=7 && sampled.monsters.arr[0].latentDamageMaterialized,"one-time sample in support");
+    std::uint16_t observedSamples=0;
+    for(int k=0;k<64;++k) {
+        auto particle=base; particle.monsterHpRng=Random(k);
+        particle.monsters.arr[0].materializePendingMove(particle);
+        observedSamples|=std::uint16_t(1u<<particle.monsters.arr[0].miscInfo);
+    }
+    check(observedSamples==lice,"fresh worlds retain all prior candidates");
+    search::SilverSearchContext nodeContext;
+    search::SilverSearcher cached(sampled,nodeContext);
+    check(cached.rootSearchState().monsters.arr[0].miscInfo==0 && !cached.rootSearchState().monsters.arr[0].latentDamageMaterialized,
+        "cached root stores public belief rather than first sampled world");
+    cached.setRoot(sampled);
+    check(!cached.rootSearchState().monsters.arr[0].latentDamageMaterialized,"repeated root reuse resamples world from posterior");
+    const auto sampledRng=sampled.monsterHpRng;
+    sampled.monsters.arr[0].halfDead=true;
+    sampled.monsters.arr[0].materializePendingMove(sampled);
+    check(sampled.monsters.arr[0].miscInfo==value && sampled.monsterHpRng==sampledRng,"sample persists through half-dead/revival and repeated moves");
+    auto other=sampled; other.monsters.arr[0].miscInfo=value==5?6:5;
+    check(CombatObservation::fromBattleContext(sampled)==CombatObservation::fromBattleContext(other),"public observation excludes private scalar");
+    check(CombatObservation::fromBattleContext(sampled).visibleHash()==CombatObservation::fromBattleContext(other).visibleHash(),"public observation hash excludes private scalar");
+    check(sampled.equalForSearch(other),"private sampled scalar does not split public node");
+    check(!(sampled==other),"ordinary simulator equality retains private scalar");
+    check(search::hashBattleState(sampled)==search::hashBattleState(other),"public hash excludes sampled scalar");
+    other.monsters.arr[0].latentDamageMask=1u<<5;
+    check(!sampled.equalForSearch(other) && search::hashBattleState(sampled)!=search::hashBattleState(other),"posterior changes public identity");
+    auto hit=[&](BattleContext before,int concrete) {
+        before.monsters.arr[0].miscInfo=concrete; before.monsters.arr[0].latentDamageMaterialized=true;
+        const int damage=before.monsters.arr[0].calculateDamageToPlayer(before,concrete);
+        ActData_AttackPlayer{0,damage}(before);
+        return before;
+    };
+    PublicDamageObservation observation;
+    observation.maxHp=80; observation.beforeHp=50; observation.afterHp=44;
+    check(filterPublicDamageBelief(lice,observation)==(1u<<6),"public scalar history filter matches native clone outcome");
+    observation.afterHp=50; observation.beforeBuffer=1; observation.afterBuffer=1;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar Buffer history retains indistinguishable support");
+    observation.beforeBuffer=0; observation.afterBuffer=0; observation.intangible=true; observation.afterHp=49;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar Intangible history retains indistinguishable support");
+    observation.intangible=false; observation.beforeHp=1; observation.afterHp=0;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar overkill history retains indistinguishable support");
+    observation.reviveHp=40; observation.afterHp=40;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar resurrection history retains indistinguishable support");
+    auto exact=hit(base,6);
+    check(exact.monsters.arr[0].latentDamageMask==(1u<<6),"unblocked hit identifies exact candidate");
+    auto weak=base; weak.monsters.arr[0].buff<MonsterStatus::WEAK>(1);
+    weak=hit(weak,6); check(weak.monsters.arr[0].latentDamageMask==(1u<<6),"Weak floor-conditioned outcome");
+    auto buffer=base; buffer.player.buff<PlayerStatus::BUFFER>(1);
+    buffer=hit(buffer,6); check(buffer.monsters.arr[0].latentDamageMask==lice,"Buffer-censored outcomes retain every candidate");
+    auto intangible=base; intangible.player.buff<PlayerStatus::INTANGIBLE>(1);
+    intangible=hit(intangible,6); check(intangible.monsters.arr[0].latentDamageMask==lice,"Intangible retains indistinguishable candidates");
+    auto overkill=base; overkill.player.curHp=1;
+    overkill=hit(overkill,6); check(overkill.monsters.arr[0].latentDamageMask==lice,"overkill-censored HP retains every candidate");
+    auto fairy=base; fairy.player.curHp=1;
+    fairy.potionCapacity=1; fairy.potionCount=1; fairy.potions[0]=Potion::FAIRY_POTION;
+    const auto fairy5=hit(fairy,5), fairy7=hit(fairy,7);
+    check(fairy5.player.lastAttackUnblockedDamage==1 && fairy7.player.lastAttackUnblockedDamage==1,
+        "public last damage caps lethal loss before Fairy revival");
+    check(fairy5.monsters.arr[0].latentDamageMask==lice && fairy7.monsters.arr[0].latentDamageMask==lice
+        && fairy5.equalForSearch(fairy7),"censored lethal Fairy worlds retain equal public state");
+    auto tail=base; tail.player.curHp=1; tail.player.setHasRelic<RelicId::LIZARD_TAIL>(true);
+    const auto tail5=hit(tail,5), tail7=hit(tail,7);
+    check(tail5.player.curHp==40 && tail5.player.lastAttackUnblockedDamage==1 && tail5.equalForSearch(tail7),
+        "censored lethal Lizard Tail worlds retain equal public state");
+    auto blocked=base; blocked.player.block=20;
+    blocked=hit(blocked,6); check(blocked.monsters.arr[0].latentDamageMask==(1u<<6),"public block consumption conditions exact candidate");
+    search::CombatKnowledgeState knowledge;
+    knowledge.configureHiddenMonsterIntents(true); knowledge.beginCombatInitialization();
+    auto *saved=search::g_combatKnowledgeObserver; search::g_combatKnowledgeObserver=&knowledge;
+    search::emitMonsterOccupantReset(0,1); search::emitMonsterLatentDamagePrior(0,lice);
+    search::emitHiddenMonsterIntentRollStarted(0,{},0,0,6);
+    search::g_combatKnowledgeObserver=saved;
+    check(knowledge.publicMonsterMiscInfo[0]==0 && knowledge.pendingHiddenIntentInputs[0].miscInfo==0,"observer redacts constructor sample at roll site");
+    knowledge.initializationInProgress=false;
+    search::g_combatKnowledgeObserver=&knowledge;
+    search::emitMonsterOccupantReset(0,2);
+    search::g_combatKnowledgeObserver=saved;
+    check(knowledge.monsterOccupantGeneration[0]==2 && knowledge.latentDamageMasks[0]==0 && knowledge.pendingHiddenIntentRolls[0]==0,"replacement clears prior occupant knowledge");
+    search::SilverSearchContext context;
+    const auto wire=search::wireFromSearchState(base,context);
+    auto visible=base; visible.intentsHidden=false;
+    visible.monsters.arr[0].miscInfo=6; visible.monsters.arr[0].latentDamageMaterialized=true;
+    search::CombatKnowledgeState visibleKnowledge;
+    visibleKnowledge.initializeFromLiveBattle(visible);
+    const auto visibleConversion=search::makeSilverBattleStateConversion(visible,visibleKnowledge,search::makeSilverRunContext(gc),11);
+    check(visibleConversion.wire.monsters[0].latentDamageMask==0 && visibleConversion.wire.monsters[0].miscInfo==6,
+        "visible conversion canonicalizes belief metadata while preserving public scalar");
+    const auto visibleWire=search::wireFromSearchState(visible,context);
+    check(visibleWire.monsters[0].latentDamageMask==0 && visibleWire.monsters[0].miscInfo==6,
+        "visible native wire canonicalizes belief metadata while preserving public scalar");
+    BattleContext visibleRoot;
+    check(search::nativeSilverSearchRoot(visible,visibleKnowledge,visibleRoot).empty(),"visible native root is supported");
+    check(visibleRoot.monsters.arr[0].latentDamageMask==0 && !visibleRoot.monsters.arr[0].latentDamageMaterialized
+        && visibleRoot.monsters.arr[0].miscInfo==6 && visibleRoot.equalForSearch(search::battleContextFromWire(visibleConversion.wire)),
+        "visible root and imported wire agree on canonical constructor state");
+    check(visible.monsters.arr[0].latentDamageMask==lice && visible.monsters.arr[0].latentDamageMaterialized,
+        "public conversion preserves raw simulator constructor metadata");
+    const auto restored=search::battleContextFromWire(wire);
+    check(restored.monsters.arr[0].latentDamageMask==lice && !restored.monsters.arr[0].latentDamageMaterialized,"wire restores belief without private sample");
+    nlohmann::json j=wire;
+    const auto jsonWire=j.get<silver_bridge::BattleStateWire>();
+    check(jsonWire.monsters[0].latentDamageMask==lice,"JSON posterior survives roundtrip");
+    auto rejects=[&](silver_bridge::BattleStateWire bad) {
+        try { (void)search::battleContextFromWire(bad); return false; } catch(const std::exception &) { return true; }
+    };
+    auto bad=wire; bad.monsters[0].latentDamageMask=0; check(rejects(bad),"missing latent prior rejects");
+    bad=wire; bad.monsters[0].latentDamageMask=1u<<8; check(rejects(bad),"out-of-prior damage rejects");
+    bad=wire; bad.monsters[0].miscInfo=6; check(rejects(bad),"private scalar rejects");
+    bad=wire; bad.monsters[0].pendingRollInputs.miscInfo=6; check(rejects(bad),"private roll scalar rejects");
+    for(const auto &invalid: {nlohmann::json(-1),nlohmann::json(65536),nlohmann::json(3.5),nlohmann::json(true)}) {
+        auto malformed=j; malformed["monsters"][0]["latentDamageMask"]=invalid;
+        bool rejected=false; try { (void)malformed.get<silver_bridge::BattleStateWire>(); } catch(const std::exception &) { rejected=true; }
+        check(rejected,"malformed JSON damage mask rejects before narrowing");
+    }
+    const auto bytes=serializeBattleContext(sampled);
+    const auto binary=deserializeBattleContext(bytes.data(),bytes.size());
+    check(binary.monsters.arr[0].latentDamageMask==lice && binary.monsters.arr[0].miscInfo==value
+        && binary.monsters.arr[0].latentDamageMaterialized,"binary preserves persistent particle and public belief");
+    auto read32=[](const std::vector<std::uint8_t> &b,std::size_t at) { return std::uint32_t(b[at]) | (std::uint32_t(b[at+1])<<8) | (std::uint32_t(b[at+2])<<16) | (std::uint32_t(b[at+3])<<24); };
+    std::size_t persistentOffset=0;
+    for(std::size_t at=16;at+5<=bytes.size();) {
+        const auto length=read32(bytes,at+1);
+        if(bytes[at]==8) { persistentOffset=at+5; break; }
+        at+=5+length;
+    }
+    check(persistentOffset!=0,"v4 includes required persistent metadata group");
+    if(persistentOffset) {
+        auto malformed=bytes;
+        for(int i=0;i<4;++i) malformed[persistentOffset+4+i]=0;
+        check(!deserializeBattleContext(malformed.data(),malformed.size()).intentsHidden,"binary hidden constructor without posterior rejects");
+        malformed=bytes; malformed[persistentOffset+8]=false;
+        check(!deserializeBattleContext(malformed.data(),malformed.size()).intentsHidden,"binary unmaterialized private scalar rejects");
+    }
+    std::cout<<"persistent_latent_damage "<<(failures?"FAIL":"PASS")<<'\n'; return failures?1:0;
+}
+
+int testSilverWireState() {
+    int failures = 0;
+    auto check = [&](bool ok, const std::string &what) {
+        if (!ok) {
+            if (failures < 20) std::cerr << "silver_wire_state FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    {
+        // Toolbox can stop before opening draws and another relic's effects.
+        // The exact typed tail must survive both public/native wire paths,
+        // preserving order, action parameters and victory flags.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        bc.inputState = InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = CardSelectTask::DISCOVERY;
+        bc.cardSelectInfo.cards = {CardId::FINESSE,CardId::FLASH_OF_STEEL,CardId::PANACEA};
+        bc.cardSelectInfo.pickCount = 1;
+        bc.curCardQueueItem = CardQueueItem{};
+        bc.actionQueue.clear();
+        bc.addToBot(Actions::GainBlock(7));
+        bc.addToBot(Actions::GainEnergy(1));
+        bc.addToBot(Actions::BuffPlayer<PlayerStatus::ARTIFACT>(1));
+        bc.addToBot(Actions::DebuffPlayer<PlayerStatus::LOSE_STRENGTH>(2,false));
+        bc.addToBot(Actions::DamageAllEnemy(3));
+        bc.addToBot(Actions::DamageRandomEnemy(1));
+        bc.addToBot(Actions::UpgradeRandomCardAction());
+        bc.addToBot(Actions::DrawCards(2));
+        bc.addToBot(Actions::GambleAction());
+        bc.addToBot(Actions::DebuffAllEnemy<MonsterStatus::VULNERABLE>(1,false));
+        bc.addToBot(Actions::MakeTempCardInDrawPile(CardInstance(CardId::WOUND),2,true));
+        bc.addToBot(Actions::DebuffPlayer<PlayerStatus::WEAK>(1,false));
+        bc.addToBot(Actions::BuffPlayer<PlayerStatus::PEN_NIB>(1));
+        bc.addToBot(Actions::RemoveStatus<PlayerStatus::PEN_NIB>());
+        bc.addToBot(Actions::RemovePlayerDebuffs());
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        auto wire=search::makeSilverBattleStateWire(bc,knowledge,search::makeSilverRunContext(gc),0x5eedu);
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.size()==15,
+              "typed selector tail must be observed completely");
+        auto restored=search::battleContextFromWire(wire);
+        check(restored.actionQueue==bc.actionQueue,"typed selector tail changed order or parameters");
+        const auto context=search::searchContextFromWire(wire);
+        auto second=search::wireFromSearchState(restored,context);
+        check(second.pendingActionQueueObserved && search::battleContextFromWire(second).actionQueue==bc.actionQueue,
+              "typed selector tail must survive search-state wire round trip");
+        const auto persisted=silver_bridge::battleStateWireFromEnvelope(silver_bridge::battleStateWireEnvelope(wire));
+        check(persisted.pendingActionQueueObserved && search::battleContextFromWire(persisted).actionQueue==bc.actionQueue,
+              "typed selector tail must survive persisted JSON envelope round trip");
+        const auto reject=[&](silver_bridge::BattleStateWire bad,const char *message) {
+            bool threw=false;
+            try { (void)search::battleContextFromWire(bad); }
+            catch(const std::invalid_argument &) { threw=true; }
+            check(threw,message);
+        };
+        auto bad=wire; bad.pendingActionQueue[0].kind=silver_bridge::PendingActionKind::INVALID;
+        reject(bad,"unknown pending action must reject");
+        bad=wire; bad.pendingActionQueue[0].amount=-1; reject(bad,"negative pending amount must reject");
+        bad=wire; bad.pendingActionQueue[0].status=1; reject(bad,"extraneous pending status must reject");
+        bad=wire; bad.pendingActionQueue[2].status=static_cast<int>(PlayerStatus::ARTIFACT)+256;
+        reject(bad,"wrapped status must reject");
+        bad=wire; bad.pendingActionQueue[3].sourceMonster=true; reject(bad,"unqualified debuff source must reject");
+        bad=wire; bad.pendingActionQueue[9].status=static_cast<int>(MonsterStatus::STRENGTH);
+        reject(bad,"unqualified enemy power must reject");
+        bad=wire; bad.pendingActionQueue[10].amount=1; reject(bad,"unqualified Wound count must reject");
+        bad=wire; bad.pendingActionQueue[12].amount=2; reject(bad,"unqualified Pen Nib amount must reject");
+        bad=wire; bad.pendingActionQueue[13].amount=1; reject(bad,"Pen Nib removal cannot carry amount");
+        bad=wire; bad.pendingActionQueue[14].status=static_cast<int>(PlayerStatus::WEAK);
+        reject(bad,"Pellets cleanup cannot carry arbitrary status");
+        bad=wire; bad.pendingActionQueue[0]={silver_bridge::PendingActionKind::USE_CARD,0,0,false};
+        reject(bad,"card cleanup without physical owner must reject");
+        bad=wire; bad.pendingActionQueue.resize(129); reject(bad,"oversized pending queue must reject");
+        bad=wire; bad.pendingActionQueueObserved=false; reject(bad,"unobserved nonempty pending queue must reject");
+        bad=wire; bad.inputState=static_cast<int>(InputState::PLAYER_NORMAL); reject(bad,"normal root cannot carry selector tail");
+        bc.actionQueue.clear(); bc.addToBot(Actions::NoOpRollMove());
+        search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"unknown native tails stay unobserved");
+        bc.actionQueue.clear(); auto block=Actions::GainBlock(2); block.clearOnCombatVictory=true; bc.addToBot(block);
+        search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved,"changed native victory flags cannot be discarded");
+        bc.actionQueue.clear(); search::capturePendingActionQueue(bc,wire);
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"observed empty tail must stay exact");
+        auto envelope=silver_bridge::battleStateWireEnvelope(persisted);
+        envelope["state"]["pendingActionQueue"][0]["kind"]=257;
+        bool invalidKind=false;
+        try { (void)silver_bridge::battleStateWireFromEnvelope(envelope); }
+        catch(const std::invalid_argument &) { invalidKind=true; }
+        check(invalidKind,"JSON pending action kind cannot wrap to a known enum");
+    }
+    {
+        // A Headbutt played under Double Tap stops at its discard selection
+        // with the Double Tap copy in the card queue. The replay cannot
+        // rebuild that copy (the status is spent), so the wire carries the
+        // observed card queue.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        for (int played = 0; played < 2;) {
+            int idx = 0;
+            while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::DEFEND_RED
+                   && bc.cards.hand[idx].id != CardId::STRIKE_RED) ++idx;
+            check(idx < bc.cards.cardsInHand, "double tap fixture: no Strike or Defend in hand");
+            if (idx == bc.cards.cardsInHand) break;
+            search::Action(search::ActionType::CARD, idx, 0).execute(bc);
+            ++played;
+        }
+        CardInstance headbutt(CardId::HEADBUTT);
+        headbutt.uniqueId = 900;
+        bc.cards.moveToHand(headbutt);
+        bc.player.buff<PlayerStatus::DOUBLE_TAP>(1);
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        check(bc.inputState == InputState::CARD_SELECT
+                  && bc.cardSelectInfo.cardSelectTask == CardSelectTask::HEADBUTT
+                  && bc.cardQueue.size == 1 && bc.cardQueue.front().purgeOnUse,
+              "double tap fixture: Headbutt did not stop at its selection with a queued copy");
+
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        const auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        check(wire.valid && wire.pendingCardQueueObserved && wire.pendingCardQueue.size() == 1,
+              "double tap fixture: wire did not observe the card queue");
+        const BattleContext root = search::battleContextFromWire(wire);
+        check(root.cardQueue == bc.cardQueue, "double tap fixture: search root lost the Double Tap copy");
+        check(root.actionQueue.size == bc.actionQueue.size, "double tap fixture: action queue differs");
+        check(search::battleContextFromWire(silver_bridge::battleStateWireFromEnvelope(
+                  silver_bridge::battleStateWireEnvelope(wire))).cardQueue == bc.cardQueue,
+              "double tap fixture: observed card queue lost in JSON envelope");
+        const auto context = search::searchContextFromWire(wire);
+        check(search::battleContextFromWire(search::wireFromSearchState(root, context)).cardQueue == root.cardQueue,
+              "double tap fixture: card queue lost in the search-state wire round trip");
+        auto unobserved = wire;
+        unobserved.pendingCardQueueObserved = false;
+        unobserved.pendingCardQueue.clear();
+        check(search::battleContextFromWire(unobserved).cardQueue.size == 0,
+              "double tap fixture: without an observed queue the replay is expected to miss the copy");
+    }
+
+    {
+        // A Headbutt whose hit exhausts the Guardian's Mode Shift opens its
+        // selection with the shift applied and its 20 block queued behind the
+        // card. Vanilla defers the shift, so the live view at that selection
+        // still shows Mode Shift at or below zero and the pre-hit move; the
+        // search root built from that view must match the engine's.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::THE_GUARDIAN);
+        for (int played = 0; played < 2;) {
+            int idx = 0;
+            while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::DEFEND_RED) ++idx;
+            if (idx == bc.cards.cardsInHand) {
+                idx = 0;
+                while (idx < bc.cards.cardsInHand && bc.cards.hand[idx].id != CardId::STRIKE_RED) ++idx;
+            }
+            check(idx < bc.cards.cardsInHand, "mode shift fixture: no Strike or Defend in hand");
+            if (idx == bc.cards.cardsInHand) break;
+            search::Action(search::ActionType::CARD, idx, 0).execute(bc);
+            ++played;
+        }
+        auto &guardian = bc.monsters.arr[0];
+        guardian.block = 0;
+        guardian.setStatus<MonsterStatus::MODE_SHIFT>(1);
+        const std::array<MonsterMoveId, 2> preHitMoves {guardian.moveHistory[0], guardian.moveHistory[1]};
+        CardInstance headbutt(CardId::HEADBUTT);
+        headbutt.uniqueId = 901;
+        bc.cards.moveToHand(headbutt);
+        const int hpBefore = guardian.curHp;
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        const int damage = hpBefore - bc.monsters.arr[0].curHp;
+        check(bc.inputState == InputState::CARD_SELECT && damage > 0
+                  && !bc.monsters.arr[0].hasStatus<MonsterStatus::MODE_SHIFT>()
+                  && bc.monsters.arr[0].moveHistory[0] == MonsterMoveId::THE_GUARDIAN_DEFENSIVE_MODE
+                  && bc.actionQueue.size == 2,
+              "mode shift fixture: Headbutt did not shift the Guardian at its selection");
+
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        auto &live = wire.monsters[0];
+        live.statusBits |= 1ULL << static_cast<int>(MonsterStatus::MODE_SHIFT);
+        live.uniquePower0 = 1 - damage;
+        live.moveHistory = {static_cast<std::int16_t>(preHitMoves[0]), static_cast<std::int16_t>(preHitMoves[1])};
+        const BattleContext root = search::battleContextFromWire(wire);
+        check(root.actionQueue == bc.actionQueue, "mode shift fixture: Mode Shift block not queued behind the card");
+        check(!root.monsters.arr[0].hasStatus<MonsterStatus::MODE_SHIFT>()
+                  && root.monsters.arr[0].moveHistory[0] == bc.monsters.arr[0].moveHistory[0]
+                  && root.monsters.arr[0].moveHistory[1] == bc.monsters.arr[0].moveHistory[1],
+              "mode shift fixture: deferred shift not settled");
+        BattleContext nativeRoot;
+        check(search::nativeSilverSearchRoot(bc, knowledge, nativeRoot).empty(), "mode shift fixture: native root");
+        nativeRoot.seed = root.seed;
+        std::sort(nativeRoot.cards.discardPile.begin(), nativeRoot.cards.discardPile.end());
+        std::sort(nativeRoot.cards.exhaustPile.begin(), nativeRoot.cards.exhaustPile.end());
+        check(root.equalForSearch(nativeRoot), "mode shift fixture: settled root differs from the native root");
+        auto unshifted = wire;
+        unshifted.monsters[0].uniquePower0 = 5;
+        check(search::battleContextFromWire(unshifted).monsters.arr[0].hasStatus<MonsterStatus::MODE_SHIFT>(),
+              "mode shift fixture: a positive Mode Shift must not be settled");
+    }
+
+    enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE, PLAY_COUNT_RELICS };
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::LOOTER, MonsterEncounter::GREMLIN_NOB,
+        MonsterEncounter::THREE_SENTRIES, MonsterEncounter::THE_GUARDIAN, MonsterEncounter::SLIME_BOSS,
+    };
+    const CardId extraCards[] = {
+        CardId::ARMAMENTS, CardId::HEADBUTT, CardId::TRUE_GRIT, CardId::WARCRY,
+        CardId::BURNING_PACT, CardId::EXHUME, CardId::SECRET_WEAPON, CardId::POMMEL_STRIKE,
+    };
+    int decisions = 0;
+    int hiddenRoots = 0;
+    int edgesChecked = 0;
+    int queuedRoots = 0;
+    int missedReactionRoots = 0;
+    for (const auto variant : {Variant::PLAIN, Variant::RUNIC_DOME, Variant::FROZEN_EYE,
+                               Variant::PLAY_COUNT_RELICS}) {
+        for (std::uint64_t seed = 11; seed <= 12; ++seed) {
+            for (const auto encounter : encounters) {
+                GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+                for (const auto id : extraCards) gc.deck.obtainRaw(Card(id));
+                gc.potions[0] = Potion::FIRE_POTION;
+                gc.potions[1] = Potion::BLOCK_POTION;
+                gc.potionCount = 2;
+                if (variant == Variant::RUNIC_DOME) gc.obtainRelic(RelicId::RUNIC_DOME);
+                if (variant == Variant::FROZEN_EYE) gc.obtainRelic(RelicId::FROZEN_EYE);
+                if (variant == Variant::PLAY_COUNT_RELICS) {
+                    for (const auto relic : {RelicId::KUNAI, RelicId::SHURIKEN, RelicId::PEN_NIB,
+                                             RelicId::NUNCHAKU, RelicId::INK_BOTTLE, RelicId::LETTER_OPENER,
+                                             RelicId::ORNAMENTAL_FAN}) {
+                        gc.obtainRelic(relic);
+                    }
+                }
+
+                BattleContext bc;
+                search::CombatKnowledgeState knowledge;
+                knowledge.configureHiddenMonsterIntents(variant == Variant::RUNIC_DOME);
+                knowledge.initializeFromLiveBattle(bc);
+                knowledge.beginCombatInitialization();
+                search::g_combatKnowledgeObserver = &knowledge;
+                bc.init(gc, encounter);
+                knowledge.synchronizeAfterCombatInitialization(bc);
+
+                const auto runContext = search::makeSilverRunContext(gc);
+                int steps = 0;
+                while (bc.outcome == Outcome::UNDECIDED && ++steps < 400) {
+                    knowledge.reconcilePublicDrawPileCardinality(bc);
+                    BattleContext nativeRoot;
+                    const auto error = search::nativeSilverSearchRoot(bc, knowledge, nativeRoot);
+                    const auto conversion = search::makeSilverBattleStateConversion(
+                        bc, knowledge, runContext, search::nativeSilverBattleSeed(bc));
+                    if (!error.empty() || !conversion.wire.valid) {
+                        check(false, "root not representable: " + error + " / " + conversion.failureReason);
+                        break;
+                    }
+                    const BattleContext wireRoot = search::battleContextFromWire(conversion.wire);
+                    // The wire carries only the public search seed, not the live one.
+                    nativeRoot.seed = wireRoot.seed;
+                    // The wire carries discard and exhaust piles as sorted multisets
+                    // (their order is compared when the draw pile is concrete).
+                    std::sort(nativeRoot.cards.discardPile.begin(), nativeRoot.cards.discardPile.end());
+                    std::sort(nativeRoot.cards.exhaustPile.begin(), nativeRoot.cards.exhaustPile.end());
+                    const std::string where = " seed=" + std::to_string(seed) + " encounter="
+                        + std::to_string(static_cast<int>(encounter)) + " variant="
+                        + std::to_string(static_cast<int>(variant)) + " step=" + std::to_string(steps);
+                    // The wire has no queues; an interrupted card play's pending
+                    // work is rebuilt by replaying the card.
+                    queuedRoots += nativeRoot.actionQueue.size + nativeRoot.cardQueue.size > 1;
+                    // Known limit: monster reactions queued by the card's own
+                    // pre-selection hit (here a Mode Shift, already applied in
+                    // the engine state this wire comes from) are not rebuilt.
+                    // Such a root may lack queued actions but must match
+                    // otherwise.
+                    bool missingReactions = false;
+                    if (!wireRoot.equalForSearch(nativeRoot)) {
+                        BattleContext withNativeQueue = wireRoot;
+                        withNativeQueue.actionQueue = nativeRoot.actionQueue;
+                        std::vector<int> wireTypes, nativeTypes;
+                        for (int k = 0; k < wireRoot.actionQueue.size; ++k) {
+                            wireTypes.push_back(static_cast<int>(wireRoot.actionQueue.arr[(wireRoot.actionQueue.front + k) % 128].type));
+                        }
+                        for (int k = 0; k < nativeRoot.actionQueue.size; ++k) {
+                            nativeTypes.push_back(static_cast<int>(nativeRoot.actionQueue.arr[(nativeRoot.actionQueue.front + k) % 128].type));
+                        }
+                        std::size_t matched = 0;
+                        for (const int type : nativeTypes) {
+                            if (matched < wireTypes.size() && wireTypes[matched] == type) ++matched;
+                        }
+                        missingReactions = withNativeQueue.equalForSearch(nativeRoot)
+                            && matched == wireTypes.size() && wireTypes.size() < nativeTypes.size();
+                        missedReactionRoots += missingReactions;
+                    }
+                    if (!missingReactions) {
+                        check(wireRoot.equalForSearch(nativeRoot), "wire root differs from native root" + where);
+                        check(search::hashBattleState(wireRoot) == search::hashBattleState(nativeRoot),
+                              "wire root hash differs" + where);
+                    }
+                    const auto context = search::searchContextFromWire(conversion.wire);
+                    check(search::battleContextFromWire(search::wireFromSearchState(wireRoot, context))
+                              .equalForSearch(wireRoot), "search-state wire round trip" + where);
+                    hiddenRoots += wireRoot.intentsHidden;
+
+                    search::g_combatKnowledgeObserver = nullptr;
+                    search::SilverSearcher searcher(wireRoot, context);
+                    searcher.search(40);
+                    search::g_combatKnowledgeObserver = &knowledge;
+                    for (const auto &edge : searcher.rootNode().edges) {
+                        const auto semantic = search::semanticFromSearchAction(searcher.rootSearchState(), edge.action);
+                        const auto translated = search::SilverSearcher::translateAction(
+                            edge.action, searcher.rootSearchState(), bc);
+                        check(search::semanticFingerprint(semantic)
+                                  == search::semanticFingerprint(search::semanticFromSearchAction(bc, translated)),
+                              "semantic identity changes under translation" + where);
+                        const auto resolved = search::resolveSilverSemanticAction(bc, semantic);
+                        check(resolved.ok && resolved.action.isValidAction(bc),
+                              "semantic action does not resolve on the live state: " + resolved.error + where);
+                        ++edgesChecked;
+                    }
+                    const auto action = search::SilverSearcher::translateAction(
+                        searcher.bestAction(), searcher.rootSearchState(), bc);
+                    if (!action.isValidAction(bc)) {
+                        check(false, "invalid translated action" + where);
+                        break;
+                    }
+                    action.execute(bc);
+                    ++decisions;
+                }
+                search::g_combatKnowledgeObserver = nullptr;
+                check(bc.outcome != Outcome::UNDECIDED, "battle finished");
+            }
+        }
+    }
+    std::cout << "silver_wire_state decisions=" << decisions << " hiddenRoots=" << hiddenRoots
+              << " edges=" << edgesChecked
+              << " queuedRoots=" << queuedRoots << " missedReactionRoots=" << missedReactionRoots << ' ' << (failures == 0 ? "PASS" : "FAIL") << '\n';
     return failures == 0 ? 0 : 1;
 }
 
@@ -903,6 +1714,1019 @@ static BattleContext simulatorCorrectnessBattle(std::initializer_list<RelicId> r
 
 static void simulatorCorrectnessPlay(BattleContext &bc, int handIdx = 0, int targetIdx = 0) {
     search::Action(search::ActionType::CARD, handIdx, targetIdx).execute(bc);
+}
+
+// Card colors, Dolly's Mirror and Orrery: simulator fidelity fixes for the
+// Ironclad A0 domain.
+int testSimulatorRelicFidelity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "simulator_relic_fidelity FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // Every class transform-pool card carries its class color.
+    const CardColor classColors[4] {CardColor::RED, CardColor::GREEN, CardColor::BLUE, CardColor::PURPLE};
+    for (int cc = 0; cc < 4; ++cc) {
+        for (int i = 0; i < TransformCardPool::cardPoolSize[cc]; ++i) {
+            const CardId id = TransformCardPool::colorCardPool[cc][i];
+            if (getCardColor(id) != classColors[cc]) {
+                return fail(std::string("wrong color for ") + cardEnumStrings[static_cast<int>(id)]);
+            }
+        }
+    }
+
+    // A red card is excluded from its own Ironclad transform.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        Random rng(42);
+        for (int i = 0; i < 500; ++i) {
+            for (CardId exclude : {CardId::BRUTALITY, CardId::COMBUST}) {
+                if (gc.getTransformedCard(rng, exclude, false).getId() == exclude) {
+                    return fail("transform returned its own red source card");
+                }
+            }
+        }
+    }
+
+    // Dolly's Mirror opens a whole-deck duplicate selector and copies the pick.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        const int deckSize = gc.deck.size();
+        if (!gc.obtainRelic(RelicId::DOLLYS_MIRROR)) return fail("Dolly's Mirror opened no screen");
+        if (gc.screenState != ScreenState::CARD_SELECT
+                || gc.info.selectScreenType != CardSelectScreenType::DUPLICATE
+                || gc.info.toSelectCount != 1
+                || static_cast<int>(gc.info.toSelectCards.size()) != deckSize) {
+            return fail("Dolly's Mirror selector is not a one-pick whole-deck duplicate");
+        }
+        const CardId picked = gc.info.toSelectCards[deckSize - 1].card.getId();
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.chooseSelectCardScreenOption(deckSize - 1);
+        if (gc.deck.size() != deckSize + 1 || gc.deck.cards[deckSize].getId() != picked) {
+            return fail("Dolly's Mirror did not add a copy of the picked card");
+        }
+    }
+
+    // Orrery opens five ordinary card rewards.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        gc.curRoom = Room::SHOP;
+        if (!gc.obtainRelic(RelicId::ORRERY)) return fail("Orrery opened no screen");
+        const auto &r = gc.info.rewardsContainer;
+        if (gc.screenState != ScreenState::REWARDS || r.cardRewardCount != 5
+                || r.goldRewardCount != 0 || r.relicCount != 0 || r.potionCount != 0) {
+            return fail("Orrery did not open exactly five card rewards");
+        }
+        for (int i = 0; i < 5; ++i) {
+            if (r.cardRewards[i].size() != 3) return fail("Orrery card reward is not three cards");
+        }
+    }
+
+    // Colosseum: a reward-less slaver fight reopens the event; Victory adds
+    // rare+uncommon relics, 100 gold, a potion roll and a card reward.
+    {
+        auto colosseum = [](GameContext &gc) {
+            gc.act = 2;
+            gc.floorNum = 25;
+            gc.curMapNodeY = 9;
+            gc.curRoom = Room::EVENT;
+            gc.curEvent = Event::COLOSSEUM;
+            gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+            gc.setupEvent();
+            gc.chooseEventOption(0);
+            return gc.screenState == ScreenState::BATTLE
+                && gc.info.encounter == MonsterEncounter::COLOSSEUM_EVENT_SLAVERS;
+        };
+
+        GameContext leave(CharacterClass::IRONCLAD, 123456789, 0);
+        if (!colosseum(leave)) return fail("Colosseum did not enter the slaver fight");
+        leave.regainControl(); // BattleContext::exitBattle hands back control
+        if (leave.screenState != ScreenState::EVENT_SCREEN || leave.info.eventData != 1
+                || search::GameAction::getValidEventSelectBits(leave) != 0x3) {
+            return fail("Colosseum did not reopen with Cowardice/Victory");
+        }
+        leave.chooseEventOption(0);
+        if (leave.screenState != ScreenState::MAP_SCREEN) return fail("Colosseum Cowardice did not leave");
+
+        GameContext fight(CharacterClass::IRONCLAD, 123456789, 0);
+        if (!colosseum(fight)) return fail("Colosseum did not enter the slaver fight");
+        fight.regainControl();
+        fight.chooseEventOption(1);
+        if (fight.screenState != ScreenState::BATTLE
+                || fight.info.encounter != MonsterEncounter::COLOSSEUM_EVENT_NOBS) {
+            return fail("Colosseum Victory did not enter the Nob fight");
+        }
+        fight.regainControl();
+        const auto &r = fight.info.rewardsContainer;
+        if (fight.screenState != ScreenState::REWARDS || r.goldRewardCount != 1 || r.gold[0] != 100
+                || r.relicCount != 2 || getRelicTier(r.relics[0]) != RelicTier::RARE
+                || getRelicTier(r.relics[1]) != RelicTier::UNCOMMON || r.cardRewardCount != 1) {
+            return fail("Colosseum Victory rewards are wrong");
+        }
+
+        // Black Star adds nothing to Colosseum's fixed two-relic reward.
+        GameContext star(CharacterClass::IRONCLAD, 123456789, 0);
+        star.obtainRelic(RelicId::BLACK_STAR);
+        if (!colosseum(star)) return fail("Colosseum did not enter the slaver fight");
+        star.regainControl();
+        star.chooseEventOption(1);
+        star.regainControl();
+        if (star.info.rewardsContainer.relicCount != 2) return fail("Black Star changed Colosseum rewards");
+
+        // eliteTrigger: the Nob and Dead Adventurer fights are elites for
+        // combat relics; the slaver fight and ordinary event fights are not.
+        auto slingStrength = [](Room room, Event event, MonsterEncounter encounter) {
+            GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+            gc.obtainRelic(RelicId::SLING_OF_COURAGE);
+            gc.curRoom = room;
+            gc.curEvent = event;
+            gc.info.encounter = encounter;
+            BattleContext bc;
+            bc.init(gc, encounter);
+            return bc.player.strength;
+        };
+        if (slingStrength(Room::EVENT, Event::COLOSSEUM, MonsterEncounter::COLOSSEUM_EVENT_NOBS) != 2
+                || slingStrength(Room::EVENT, Event::DEAD_ADVENTURER, MonsterEncounter::GREMLIN_NOB) != 2
+                || slingStrength(Room::ELITE, Event::INVALID, MonsterEncounter::GREMLIN_NOB) != 2) {
+            return fail("Sling of Courage did not trigger in an elite-trigger fight");
+        }
+        if (slingStrength(Room::EVENT, Event::COLOSSEUM, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS) != 0
+                || slingStrength(Room::EVENT, Event::MASKED_BANDITS, MonsterEncounter::MASKED_BANDITS_EVENT) != 0) {
+            return fail("Sling of Courage triggered outside an elite-trigger fight");
+        }
+
+        // Dead Adventurer's fight gets the Black Star relic.
+        auto adventurerRelics = [](bool blackStar) {
+            GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+            if (blackStar) gc.obtainRelic(RelicId::BLACK_STAR);
+            gc.curRoom = Room::EVENT;
+            gc.curEvent = Event::DEAD_ADVENTURER;
+            gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+            gc.setupEvent();
+            for (int i = 0; i < 3 && gc.screenState == ScreenState::EVENT_SCREEN; ++i) {
+                gc.chooseEventOption(0);
+            }
+            if (gc.screenState != ScreenState::BATTLE) return -1;
+            gc.regainControl();
+            return gc.screenState == ScreenState::REWARDS ? gc.info.rewardsContainer.relicCount : -1;
+        };
+        const int withoutStar = adventurerRelics(false);
+        if (withoutStar < 0 || adventurerRelics(true) != withoutStar + 1) {
+            return fail("Dead Adventurer fight did not add the Black Star relic");
+        }
+
+        // The Nob fight continues the same-floor streams; other fights reseed.
+        GameContext a(CharacterClass::IRONCLAD, 123456789, 0);
+        GameContext b = a;
+        b.aiRng = Random(777, 5);
+        b.monsterHpRng = Random(778, 6);
+        b.shuffleRng = Random(779, 7);
+        b.cardRandomRng = Random(780, 8);
+        BattleContext nobsA, nobsB, slaversA, slaversB;
+        nobsA.init(a, MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        nobsB.init(b, MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        slaversA.init(a, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+        slaversB.init(b, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS);
+        if (nobsA.shuffleRng == nobsB.shuffleRng || nobsA.cardRandomRng == nobsB.cardRandomRng
+                || nobsA.aiRng == nobsB.aiRng) {
+            return fail("Colosseum Nob fight reseeded same-floor streams");
+        }
+        if (!(slaversA.shuffleRng == slaversB.shuffleRng) || !(slaversA.aiRng == slaversB.aiRng)
+                || !(slaversA.cardRandomRng == slaversB.cardRandomRng)) {
+            return fail("ordinary fight did not reseed from seed+floor");
+        }
+    }
+
+    std::cout << "simulator_relic_fidelity PASS\n";
+    return 0;
+}
+
+// Ironclad card properties and effects audited against the pinned STS1 V2.3.4
+// reference: each case is a card where the simulator differed.
+int testIroncladCardJavaParity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "ironclad_card_java_parity FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // Costs: Rage is 0; Infernal Blade is 1, 0 when upgraded.
+    if (CardInstance(CardId::RAGE).cost != 0 || CardInstance(CardId::RAGE, true).cost != 0) {
+        return fail("Rage does not cost 0");
+    }
+    if (CardInstance(CardId::INFERNAL_BLADE).cost != 1 || CardInstance(CardId::INFERNAL_BLADE, true).cost != 0) {
+        return fail("Infernal Blade cost is not 1/0");
+    }
+
+    // Seeing Red exhausts when played.
+    if (!CardInstance(CardId::SEEING_RED).doesExhaust() || !CardInstance(CardId::SEEING_RED, true).doesExhaust()) {
+        return fail("Seeing Red does not exhaust");
+    }
+
+    // Disarm+ removes 3 Strength.
+    {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DISARM, 1), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        const int strengthBefore = bc.monsters.arr[0].strength;
+        simulatorCorrectnessPlay(bc, 0, 0);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        if (bc.monsters.arr[0].strength != strengthBefore - 3) return fail("Disarm+ did not remove 3 Strength");
+    }
+
+    // Brutality and Pain lose HP as self-damage, which triggers Rupture.
+    for (const bool pain : {false, true}) {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.player.buff<PS::RUPTURE>(1);
+        const int strengthBefore = bc.player.getStatus<PS::STRENGTH>();
+        if (pain) {
+            bc.cards.handPainCount = 1;
+            bc.triggerOnOtherCardPlayed(CardInstance(CardId::DEFEND_RED));
+        } else {
+            bc.player.buff<PS::BRUTALITY>(1);
+            bc.player.applyStartOfTurnPostDrawPowers(bc);
+        }
+        while (!bc.actionQueue.isEmpty()) bc.actionQueue.popFront()(bc);
+        if (bc.player.getStatus<PS::STRENGTH>() != strengthBefore + 1) {
+            return fail(pain ? "Pain HP loss did not trigger Rupture" : "Brutality HP loss did not trigger Rupture");
+        }
+    }
+
+    // Monster Intangible (Nemesis) caps card damage at 1, keeps 0 at 0, and
+    // also caps thorns-type damage (Nemesis.damage override).
+    {
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
+        Monster &m = bc.monsters.arr[0];
+        m.buff<MS::INTANGIBLE>(1);
+        m.block = 0;
+        if (bc.calculateCardDamage(CardInstance(CardId::STRIKE_RED), 0, 10) != 1
+                || bc.calculateCardDamage(CardInstance(CardId::STRIKE_RED), 0, 0) != 0) {
+            return fail("Intangible card damage is not capped at 1 (with 0 kept)");
+        }
+        const int hpBefore = m.curHp;
+        Actions::DamageAllEnemy(5)(bc);
+        if (hpBefore - m.curHp != 1) return fail("Intangible did not cap thorns-type damage at 1");
+    }
+
+    // Save loading retains both Wing Boots charges and the Tea Set's charged
+    // sentinel when the relics are present together.
+    for (int teaCounter : {-2, -1}) {
+        SaveFile save;
+        save.relics = {RelicId::WING_BOOTS, RelicId::ANCIENT_TEA_SET};
+        save.relic_counters = {2, teaCounter};
+        GameContext restored(CharacterClass::IRONCLAD, 100123, 0);
+        restored.initRelicsFromSave(save);
+        if (restored.wingBootsCharges != 2
+                || restored.relics.getRelicValue(RelicId::WING_BOOTS) != 0
+                || restored.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != (teaCounter == -2 ? 1 : 0)) {
+            return fail("save loading lost Wing Boots or Ancient Tea Set state");
+        }
+    }
+
+    // Ancient Tea Set: charged on entering any rest site, spent by the next
+    // combat's first turn, even with other rooms in between.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, 0);
+        gc.relics.add({RelicId::ANCIENT_TEA_SET, 0});
+        gc.map->getNode(0, gc.curMapNodeY + 1).room = Room::REST;
+        gc.transitionToMapNode(0);
+        if (gc.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != 1) {
+            return fail("Ancient Tea Set was not charged by a rest site");
+        }
+        gc.curRoom = Room::MONSTER;
+        gc.lastRoom = Room::EVENT;
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        if (bc.player.energy != bc.player.energyPerTurn + 2) {
+            return fail("charged Ancient Tea Set did not give 2 energy after a non-rest room");
+        }
+        bc.updateRelicsOnExit(gc);
+        if (gc.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != 0) {
+            return fail("Ancient Tea Set charge was not spent by combat");
+        }
+        BattleContext again;
+        again.init(gc, MonsterEncounter::JAW_WORM);
+        if (again.player.energy != again.player.energyPerTurn) {
+            return fail("spent Ancient Tea Set still gave energy");
+        }
+    }
+
+    std::cout << "ironclad_card_java_parity PASS\n";
+    return 0;
+}
+
+// Act 1 monster behavior audited against the pinned STS1 V2.3.4 reference
+// (#348): each case reproduces a move roll or monster turn where the simulator differed.
+int testMonsterAiJavaParity() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "monster_ai_java_parity FAIL: " << msg << '\n';
+        return 1;
+    };
+    auto roll = [](int ascension, MonsterEncounter encounter, MonsterId id,
+                   MMID last, MMID beforeLast, int miscInfo, int r) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, ascension);
+        gc.curRoom = Room::MONSTER;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        Monster &m = bc.monsters.arr[0];
+        m.id = id;
+        m.miscInfo = miscInfo;
+        m.moveHistory[0] = last;
+        m.moveHistory[1] = beforeLast;
+        int monsterData = miscInfo;
+        return m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, r);
+    };
+
+    // Red Slaver repeats Stab after Entangle only on a roll of at least 55.
+    for (const int asc : {0, 20}) {
+        if (roll(asc, MonsterEncounter::RED_SLAVER, MonsterId::RED_SLAVER,
+                 MMID::RED_SLAVER_STAB, MMID::RED_SLAVER_SCRAPE, 1, 52) != MMID::RED_SLAVER_SCRAPE) {
+            return fail("Red Slaver stabbed on a roll below 55");
+        }
+    }
+
+    // A17 slavers never repeat Scrape/Rake; below A17 only a third repeat is blocked.
+    const struct { MonsterEncounter enc; MonsterId id; MMID repeat; MMID other; int misc; } slavers[] {
+        {MonsterEncounter::RED_SLAVER, MonsterId::RED_SLAVER, MMID::RED_SLAVER_SCRAPE, MMID::RED_SLAVER_STAB, 1},
+        {MonsterEncounter::BLUE_SLAVER, MonsterId::BLUE_SLAVER, MMID::BLUE_SLAVER_RAKE, MMID::BLUE_SLAVER_STAB, 0},
+    };
+    for (const auto &s : slavers) {
+        if (roll(17, s.enc, s.id, s.repeat, s.other, s.misc, 10) != s.other) {
+            return fail("A17 slaver repeated its debuff attack");
+        }
+        if (roll(16, s.enc, s.id, s.repeat, s.other, s.misc, 10) != s.repeat) {
+            return fail("A16 slaver did not repeat its debuff attack once");
+        }
+    }
+
+    // A18 Gremlin Nob: Skull Bash whenever neither of the last two moves was one.
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_BELLOW, MMID::INVALID, 0, 50) != MMID::GREMLIN_NOB_SKULL_BASH) {
+        return fail("A18 Nob did not Skull Bash after Bellow");
+    }
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_RUSH, MMID::GREMLIN_NOB_SKULL_BASH, 0, 50) != MMID::GREMLIN_NOB_RUSH) {
+        return fail("A18 Nob Skull Bashed with one in its last two moves");
+    }
+    if (roll(18, MonsterEncounter::GREMLIN_NOB, MonsterId::GREMLIN_NOB,
+             MMID::GREMLIN_NOB_RUSH, MMID::GREMLIN_NOB_RUSH, 0, 50) != MMID::GREMLIN_NOB_SKULL_BASH) {
+        return fail("A18 Nob did not Skull Bash after two Rushes");
+    }
+
+    // A17 Acid Slime (L) never uses Corrosive Spit three times in a row.
+    for (int r = 0; r < 40; ++r) {
+        if (roll(17, MonsterEncounter::LARGE_SLIME, MonsterId::ACID_SLIME_L,
+                 MMID::ACID_SLIME_L_CORROSIVE_SPIT, MMID::ACID_SLIME_L_CORROSIVE_SPIT, 0, r)
+                == MMID::ACID_SLIME_L_CORROSIVE_SPIT) {
+            return fail("A17 Acid Slime (L) used Corrosive Spit three times in a row");
+        }
+    }
+
+    // Monster turns (takeTurn) checked against the same reference.
+    auto battle = [](MonsterEncounter encounter, int ascension = 0) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, ascension);
+        gc.curRoom = Room::MONSTER;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        return bc;
+    };
+    auto drain = [](BattleContext &bc) {
+        while (!bc.actionQueue.isEmpty()) {
+            bc.actionQueue.popFront()(bc);
+        }
+    };
+
+    // Entangle marks the Red Slaver so it never entangles again.
+    {
+        BattleContext bc = battle(MonsterEncounter::RED_SLAVER);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::RED_SLAVER_ENTANGLE;
+        m.miscInfo = 0;
+        m.takeTurn(bc);
+        drain(bc);
+        m.moveHistory[0] = MMID::RED_SLAVER_STAB;
+        m.moveHistory[1] = MMID::RED_SLAVER_ENTANGLE;
+        int monsterData = m.miscInfo;
+        if (m.miscInfo != 1
+                || m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::RED_SLAVER_STAB) {
+            return fail("Red Slaver did not record its Entangle");
+        }
+    }
+
+    // Lagavulin waking on its third sleeping turn loses Metallicize.
+    {
+        BattleContext bc = battle(MonsterEncounter::LAGAVULIN);
+        Monster &m = bc.monsters.arr[0];
+        if (!m.hasStatus<MS::ASLEEP>() || m.getStatus<MS::METALLICIZE>() != 8) {
+            return fail("Lagavulin did not start asleep with Metallicize 8");
+        }
+        bc.turn = 2;
+        m.moveHistory[0] = MMID::LAGAVULIN_SLEEP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.hasStatus<MS::ASLEEP>() || m.getStatus<MS::METALLICIZE>() != 0
+                || !m.lastMove(MMID::LAGAVULIN_ATTACK)) {
+            return fail("Lagavulin kept its sleeping Metallicize after waking");
+        }
+    }
+
+    // Hexaghost Inferno upgrades Burns in the draw and discard piles (not the
+    // hand) and adds three upgraded Burns to the discard pile.
+    {
+        BattleContext bc = battle(MonsterEncounter::HEXAGHOST);
+        Monster &m = bc.monsters.arr[0];
+        bc.cards.drawPile.addToTop(CardInstance(CardId::BURN));
+        bc.cards.discardPile.clear();
+        bc.cards.discardPile.push_back(CardInstance(CardId::BURN));
+        bc.cards.hand[bc.cards.cardsInHand++] = CardInstance(CardId::BURN);
+        m.moveHistory[0] = MMID::HEXAGHOST_INFERNO;
+        m.takeTurn(bc);
+        drain(bc);
+        int discardBurns = 0;
+        for (const auto &c : bc.cards.discardPile) {
+            if (c.getId() != CardId::BURN) continue;
+            ++discardBurns;
+            if (!c.isUpgraded()) return fail("Inferno left a discard-pile Burn unupgraded");
+        }
+        for (const auto &c : bc.cards.drawPile) {
+            if (c.getId() == CardId::BURN && !c.isUpgraded()) {
+                return fail("Inferno left a draw-pile Burn unupgraded");
+            }
+        }
+        if (discardBurns != 4) return fail("Inferno did not add three Burns to the discard pile");
+        if (bc.cards.hand[bc.cards.cardsInHand - 1].isUpgraded()) {
+            return fail("Inferno upgraded a Burn in hand");
+        }
+    }
+
+    // ---- Act 2 (monsters.city) ----
+
+    // Mystic heals on the summed missing HP of living monsters (> 15 at A0),
+    // but not after healing on each of its last two moves.
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        Monster &mystic = bc.monsters.arr[1];
+        centurion.curHp = centurion.maxHp - 10;
+        mystic.curHp = mystic.maxHp - 10;
+        int monsterData = 0;
+        mystic.moveHistory[0] = MMID::MYSTIC_BUFF;
+        mystic.moveHistory[1] = MMID::MYSTIC_ATTACK_DEBUFF;
+        if (mystic.getMoveForRoll(bc, mystic.captureRollInputs(bc), monsterData, 10) != MMID::MYSTIC_HEAL) {
+            return fail("Mystic did not heal on 20 combined missing HP");
+        }
+        mystic.moveHistory[0] = MMID::MYSTIC_HEAL;
+        mystic.moveHistory[1] = MMID::MYSTIC_HEAL;
+        if (mystic.getMoveForRoll(bc, mystic.captureRollInputs(bc), monsterData, 10) == MMID::MYSTIC_HEAL) {
+            return fail("Mystic healed three times in a row");
+        }
+    }
+
+    // Centurion Defend gives a random other monster block, or itself if none.
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        bc.monsters.arr[1].curHp = 0;
+        bc.monsters.monstersAlive = 1;
+        const int blockBefore = centurion.block;
+        centurion.moveHistory[0] = MMID::CENTURION_DEFEND;
+        centurion.takeTurn(bc);
+        drain(bc);
+        if (centurion.block != blockBefore + 15) {
+            return fail("Centurion Defend did not fall back to blocking itself");
+        }
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::CENTURION_AND_HEALER);
+        Monster &centurion = bc.monsters.arr[0];
+        Monster &mystic = bc.monsters.arr[1];
+        const int blockBefore = mystic.block;
+        const auto counterBefore = bc.aiRng.counter;
+        centurion.moveHistory[0] = MMID::CENTURION_DEFEND;
+        centurion.takeTurn(bc);
+        drain(bc);
+        // One draw picks the block target, one rolls the next move.
+        if (mystic.block != blockBefore + 15 || bc.aiRng.counter != counterBefore + 2) {
+            return fail("Centurion Defend did not pick its target with aiRng");
+        }
+    }
+
+    // Book of Stabbing at A18 counts a single stab toward the multi-stab.
+    for (const int asc : {0, 18}) {
+        BattleContext bc = battle(MonsterEncounter::BOOK_OF_STABBING, asc);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::BOOK_OF_STABBING_MULTI_STAB;
+        m.moveHistory[1] = MMID::BOOK_OF_STABBING_MULTI_STAB;
+        int stabCount = 2;
+        const auto move = m.getMoveForRoll(bc, m.captureRollInputs(bc), stabCount, 50);
+        if (move != MMID::BOOK_OF_STABBING_SINGLE_STAB || stabCount != (asc >= 18 ? 3 : 2)) {
+            return fail("Book of Stabbing single stab miscounted at A" + std::to_string(asc));
+        }
+    }
+
+    // Gremlin Leader with one gremlin after a Stab re-rolls 0..80, and 80 rolls again.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 100000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.random(0, 80) == 80 && r.random(0, 80) < 50) seed = s;
+        }
+        if (seed == 0) return fail("no Gremlin Leader test seed");
+        BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER);
+        Monster &leader = bc.monsters.arr[3];
+        bc.monsters.arr[2].curHp = 0;
+        leader.moveHistory[0] = MMID::GREMLIN_LEADER_STAB;
+        leader.moveHistory[1] = MMID::GREMLIN_LEADER_ENCOURAGE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (leader.getMoveForRoll(bc, leader.captureRollInputs(bc), monsterData, 90) != MMID::GREMLIN_LEADER_RALLY
+                || bc.aiRng.counter != 2) {
+            return fail("Gremlin Leader did not re-roll a nested 80");
+        }
+    }
+
+    // Gremlin Leader Encourage gives minions 6 block below A18.
+    {
+        BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER, 3);
+        Monster &leader = bc.monsters.arr[3];
+        const int blockBefore = bc.monsters.arr[1].block;
+        leader.moveHistory[0] = MMID::GREMLIN_LEADER_ENCOURAGE;
+        leader.takeTurn(bc);
+        drain(bc);
+        if (bc.monsters.arr[1].block != blockBefore + 6) {
+            return fail("A3 Gremlin Leader Encourage did not give 6 block");
+        }
+    }
+
+    // Shelled Parasite: the re-roll after Fell decides the rest of the choice.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.random(20, 99) >= 60) seed = s;
+        }
+        if (seed == 0) return fail("no Shelled Parasite test seed");
+        BattleContext bc = battle(MonsterEncounter::SHELL_PARASITE);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::SHELLED_PARASITE_FELL;
+        m.moveHistory[1] = MMID::SHELLED_PARASITE_DOUBLE_STRIKE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 10) != MMID::SHELLED_PARASITE_SUCK) {
+            return fail("Shelled Parasite ignored its re-roll after Fell");
+        }
+    }
+
+    // A17 Snake Plant never Spores with Spores in either of its last two moves.
+    if (roll(17, MonsterEncounter::SNAKE_PLANT, MonsterId::SNAKE_PLANT,
+             MMID::SNAKE_PLANT_CHOMP, MMID::SNAKE_PLANT_ENFEEBLING_SPORES, 0, 80) != MMID::SNAKE_PLANT_CHOMP) {
+        return fail("A17 Snake Plant used Spores one move after Spores");
+    }
+
+    // A19 Bronze Automaton: the Boost after Hyper Beam does not advance the cycle.
+    {
+        BattleContext bc = battle(MonsterEncounter::AUTOMATON, 19);
+        Monster &m = bc.monsters.arr[1];
+        m.moveHistory[0] = MMID::BRONZE_AUTOMATON_BOOST;
+        m.moveHistory[1] = MMID::BRONZE_AUTOMATON_HYPER_BEAM;
+        m.miscInfo = 0;
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::BRONZE_AUTOMATON_FLAIL) || m.miscInfo != 1) {
+            return fail("A19 Automaton next Flail counter is not one");
+        }
+    }
+
+    // Champ Gloat gains 2 Strength at A0.
+    {
+        BattleContext bc = battle(MonsterEncounter::CHAMP);
+        Monster &m = bc.monsters.arr[0];
+        const int strengthBefore = m.strength;
+        m.moveHistory[0] = MMID::THE_CHAMP_GLOAT;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.strength != strengthBefore + 2) return fail("Champ Gloat Strength is not 2 at A0");
+    }
+
+    // Collector Buff block is 15 below A9; Mega Debuff applies 5 at A19.
+    {
+        BattleContext bc = battle(MonsterEncounter::COLLECTOR, 4);
+        Monster &m = bc.monsters.arr[2];
+        const int blockBefore = m.block;
+        m.moveHistory[0] = MMID::THE_COLLECTOR_BUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.block != blockBefore + 15) return fail("A4 Collector Buff block is not 15");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::COLLECTOR, 19);
+        Monster &m = bc.monsters.arr[2];
+        m.moveHistory[0] = MMID::THE_COLLECTOR_MEGA_DEBUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        if (bc.player.getStatus<PS::WEAK>() != 5 || bc.player.getStatus<PS::FRAIL>() != 5) {
+            return fail("A19 Collector Mega Debuff is not 5");
+        }
+    }
+
+    // A17 Romeo repeats Cross Slash once before Agonizing Slash.
+    {
+        BattleContext bc = battle(MonsterEncounter::MASKED_BANDITS_EVENT, 17);
+        Monster &m = bc.monsters.arr[1];
+        m.moveHistory[0] = MMID::ROMEO_CROSS_SLASH;
+        m.moveHistory[1] = MMID::ROMEO_AGONIZING_SLASH;
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::ROMEO_CROSS_SLASH)) return fail("A17 Romeo did not repeat Cross Slash");
+        m.takeTurn(bc);
+        drain(bc);
+        if (!m.lastMove(MMID::ROMEO_AGONIZING_SLASH)) return fail("A17 Romeo used Cross Slash three times");
+    }
+
+    // Torch Head consumes a discarded HP roll before its real one.
+    {
+        Random actual(7), expected(7);
+        Monster m;
+        m.id = MonsterId::TORCH_HEAD;
+        m.initHp(actual, 0);
+        expected.random(38, 40);
+        const int hp = expected.random(38, 40);
+        if (m.curHp != hp || actual.counter != expected.counter) {
+            return fail("Torch Head HP did not discard the constructor roll");
+        }
+    }
+
+    // HP ranges.
+    if (monsterHpRange[static_cast<int>(MonsterId::BEAR)][0][1] != 42
+            || monsterHpRange[static_cast<int>(MonsterId::CENTURION)][1][0] != 78) {
+        return fail("Bear or Centurion HP range differs from the game");
+    }
+
+    // ---- Act 3 (monsters.beyond) ----
+
+    // Spire Growth falls through to Constrict after two Quick Tackles.
+    if (roll(0, MonsterEncounter::SPIRE_GROWTH, MonsterId::SPIRE_GROWTH,
+             MMID::SPIRE_GROWTH_QUICK_TACKLE, MMID::SPIRE_GROWTH_QUICK_TACKLE, 0, 30)
+            != MMID::SPIRE_GROWTH_CONSTRICT) {
+        return fail("Spire Growth did not Constrict after two Quick Tackles");
+    }
+
+    // Writhing Mass after Flail on a high roll re-rolls 0..69.
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            const int v = r.random(0, 69);
+            if (v >= 40) seed = s;
+        }
+        if (seed == 0) return fail("no Writhing Mass test seed");
+        BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
+        m.moveHistory[1] = MMID::WRITHING_MASS_WITHER;
+        m.miscInfo = 1;
+        bc.aiRng = Random(seed);
+        int monsterData = 1;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::WRITHING_MASS_MULTI_STRIKE) {
+            return fail("Writhing Mass did not re-roll after Flail");
+        }
+    }
+
+    // Writhing Mass Flail block equals its damage (15 at A0).
+    {
+        BattleContext bc = battle(MonsterEncounter::WRITHING_MASS);
+        Monster &m = bc.monsters.arr[0];
+        const int blockBefore = m.block;
+        m.moveHistory[0] = MMID::WRITHING_MASS_FLAIL;
+        m.takeTurn(bc);
+        drain(bc);
+        if (m.block != blockBefore + 15) return fail("Writhing Mass Flail block is not 15 at A0");
+    }
+
+    // Nemesis may Scythe again once a different move came in between.
+    if (roll(0, MonsterEncounter::NEMESIS, MonsterId::NEMESIS,
+             MMID::NEMESIS_ATTACK, MMID::NEMESIS_SCYTHE, 0, 10) != MMID::NEMESIS_SCYTHE) {
+        return fail("Nemesis Scythe was blocked two moves after the last Scythe");
+    }
+    {
+        std::uint64_t seed = 0;
+        for (std::uint64_t s = 1; s < 1000 && seed == 0; ++s) {
+            Random r(s);
+            if (r.randomBoolean()) seed = s;
+        }
+        if (seed == 0) return fail("no Nemesis test seed");
+        BattleContext bc = battle(MonsterEncounter::NEMESIS);
+        Monster &m = bc.monsters.arr[0];
+        m.moveHistory[0] = MMID::NEMESIS_DEBUFF;
+        m.moveHistory[1] = MMID::NEMESIS_SCYTHE;
+        bc.aiRng = Random(seed);
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 80) != MMID::NEMESIS_SCYTHE) {
+            return fail("Nemesis high-roll Scythe was blocked two moves after the last Scythe");
+        }
+    }
+
+    // Nemesis Debuff adds 3 Burns below A18.
+    {
+        BattleContext bc = battle(MonsterEncounter::NEMESIS, 3);
+        Monster &m = bc.monsters.arr[0];
+        bc.cards.discardPile.clear();
+        m.moveHistory[0] = MMID::NEMESIS_DEBUFF;
+        m.takeTurn(bc);
+        drain(bc);
+        int burns = 0;
+        for (const auto &c : bc.cards.discardPile) burns += c.getId() == CardId::BURN;
+        if (burns != 3) return fail("A3 Nemesis Debuff did not add 3 Burns");
+    }
+
+    // Reptomancer can summon with three daggers alive; at A18 it fills the one free slot.
+    {
+        for (const int asc : {0, 18}) {
+            BattleContext bc = battle(MonsterEncounter::REPTOMANCER, asc);
+            Monster &repto = bc.monsters.arr[2];
+            bc.monsters.arr[0] = Monster();
+            bc.monsters.arr[0].construct(bc, MonsterId::DAGGER, 0);
+            ++bc.monsters.monstersAlive;
+            repto.moveHistory[0] = MMID::REPTOMANCER_SNAKE_STRIKE;
+            repto.moveHistory[1] = MMID::REPTOMANCER_BIG_BITE;
+            int monsterData = 0;
+            if (repto.getMoveForRoll(bc, repto.captureRollInputs(bc), monsterData, 50) != MMID::REPTOMANCER_SUMMON) {
+                return fail("Reptomancer did not summon with three daggers alive");
+            }
+            repto.moveHistory[0] = MMID::REPTOMANCER_SUMMON;
+            repto.takeTurn(bc);
+            drain(bc);
+            if (bc.monsters.monstersAlive != 5 || bc.monsters.arr[3].id != MonsterId::DAGGER
+                    || !bc.monsters.arr[3].isAlive()) {
+                return fail("Reptomancer did not fill the last free dagger slot");
+            }
+        }
+    }
+
+    // Darkling Chomp hits twice; Nip hits for its rolled damage.
+    {
+        BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS);
+        Monster &m = bc.monsters.arr[0];
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.moveHistory[0] = MMID::DARKLING_CHOMP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != 16) return fail("Darkling Chomp did not hit 8 twice");
+        m.moveHistory[0] = MMID::DARKLING_CHOMP;
+        const auto intent = m.getMoveBaseDamage(bc);
+        if (intent.damage != 8 || intent.attackCount != 2) return fail("Darkling Chomp intent is not 8x2");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::THREE_DARKLINGS, 2);
+        Monster &m = bc.monsters.arr[0];
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.moveHistory[0] = MMID::DARKLING_NIP;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != m.miscInfo || m.miscInfo < 9 || m.miscInfo > 13) {
+            return fail("A2 Darkling Nip did not hit for its rolled damage");
+        }
+    }
+
+    // A18 Giant Head counts down one turn sooner.
+    {
+        BattleContext bc = battle(MonsterEncounter::GIANT_HEAD, 18);
+        Monster &m = bc.monsters.arr[0];
+        bc.turn = 2;
+        m.moveHistory[0] = MMID::GIANT_HEAD_COUNT;
+        m.moveHistory[1] = MMID::GIANT_HEAD_GLARE;
+        int monsterData = 0;
+        if (m.getMoveForRoll(bc, m.captureRollInputs(bc), monsterData, 10) != MMID::GIANT_HEAD_IT_IS_TIME) {
+            return fail("A18 Giant Head did not start It Is Time on turn 4");
+        }
+        bc.turn = 3;
+        m.moveHistory[0] = MMID::GIANT_HEAD_IT_IS_TIME;
+        if (m.getMoveBaseDamage(bc).damage != 40) return fail("A18 Giant Head first It Is Time is not 40");
+        bc.player.block = 0;
+        const int hpBefore = bc.player.curHp;
+        m.takeTurn(bc);
+        drain(bc);
+        if (hpBefore - bc.player.curHp != 40) return fail("A18 Giant Head first It Is Time did not hit for 40");
+    }
+
+    // Deca and Donu end each turn with a move roll (one aiRng draw).
+    {
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA);
+        Monster &donu = bc.monsters.arr[1];
+        donu.moveHistory[0] = MMID::DONU_CIRCLE_OF_POWER;
+        const auto counterBefore = bc.aiRng.counter;
+        donu.takeTurn(bc);
+        drain(bc);
+        if (bc.aiRng.counter != counterBefore + 1 || !donu.lastMove(MMID::DONU_BEAM)) {
+            return fail("Donu did not roll at the end of its turn");
+        }
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA);
+        Monster &deca = bc.monsters.arr[0];
+        for (const MMID move : {MMID::DECA_BEAM, MMID::DECA_SQUARE_OF_PROTECTION}) {
+            deca.moveHistory[0] = move;
+            const auto counterBefore = bc.aiRng.counter;
+            deca.takeTurn(bc);
+            drain(bc);
+            if (bc.aiRng.counter != counterBefore + 1) return fail("Deca did not roll at the end of its turn");
+        }
+    }
+
+    // Awakened One A9 HP is exactly 320; Jaw Worm Horde Bellow block is 6 at A0.
+    if (monsterHpRange[static_cast<int>(MonsterId::AWAKENED_ONE)][1][0] != 320) {
+        return fail("Awakened One A9 HP range differs from the game");
+    }
+    {
+        BattleContext bc = battle(MonsterEncounter::JAW_WORM_HORDE);
+        if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
+    }
+
+    // ---- Act 4 (monsters.ending) ----
+
+    // A18 Spire Spear Burn Strike puts two Burns on top of the draw pile.
+    {
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 18);
+        Monster &spear = bc.monsters.arr[1];
+        const int drawBefore = bc.cards.drawPile.size();
+        spear.moveHistory[0] = MMID::SPIRE_SPEAR_BURN_STRIKE;
+        spear.takeTurn(bc);
+        drain(bc);
+        const auto &pile = bc.cards.drawPile;
+        if (pile.size() != drawBefore + 2 || pile[pile.size() - 1].getId() != CardId::BURN
+                || pile[pile.size() - 2].getId() != CardId::BURN) {
+            return fail("A18 Spire Spear did not put two Burns on top of the draw pile");
+        }
+    }
+
+    std::cout << "monster_ai_java_parity PASS\n";
+    return 0;
+}
+
+// Silver escape valuation (#370): a Smoke Bomb escape forfeits rewards.
+int testSilverEscapePenalty() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_escape_penalty FAIL: " << msg << '\n';
+        return 1;
+    };
+    // Whether Silver's first action is to drink the Smoke Bomb in slot 0.
+    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty) {
+        GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
+        gc.curRoom = elite ? Room::ELITE : Room::MONSTER;
+        gc.curHp = hp;
+        gc.potions[0] = Potion::SMOKE_BOMB;
+        gc.potionCount = 1;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        search::SilverSearchContext context;
+        context.act = 1;
+        context.eliteRewards = elite;
+        search::SilverSearcher searcher(silverSearchRoot(bc), context);
+        searcher.evalWeights.escapePenalty = elite ? 0 : penalty;
+        searcher.evalWeights.eliteEscapePenalty = elite ? penalty : 0;
+        searcher.search(3000);
+        const auto action = searcher.bestAction();
+        return action.getActionType() == search::ActionType::POTION && action.getSourceIdx() == 0;
+    };
+    // Historical valuation: an escape counts as a full victory, so Silver
+    // flees even an easy normal fight at full HP.
+    if (!flees(80, MonsterEncounter::CULTIST, false, 0)) return fail("fixture: no escape without penalty");
+    // Forfeited rewards make Silver fight easy normal fights with HP to spare.
+    for (auto encounter : {MonsterEncounter::CULTIST, MonsterEncounter::JAW_WORM}) {
+        for (int hp : {40, 80}) {
+            if (flees(hp, encounter, false, 15)) return fail("penalty still flees an easy fight");
+        }
+    }
+    // The HP cap keeps a low-HP emergency escape preferred.
+    if (!flees(10, MonsterEncounter::GREMLIN_NOB, true, 40)) return fail("low-HP elite escape suppressed");
+    if (!flees(10, MonsterEncounter::JAW_WORM, false, 15)) return fail("low-HP escape suppressed");
+    std::cout << "silver_escape_penalty PASS\n";
+    return 0;
+}
+
+// Match and Keep: one click per action, pair resolution, and a fair
+// fixed-pattern chooser that never reads unseen slots.
+int testMatchAndKeep() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "match_and_keep FAIL: " << msg << '\n';
+        return 1;
+    };
+    auto start = [](std::uint64_t seed) {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::MATCH_AND_KEEP;
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.setupEvent();
+        return gc;
+    };
+    using GC = GameContext;
+    auto slotActions = [](const GameContext &gc) {
+        return static_cast<int>(search::GameAction::getAllActionsInState(gc).size());
+    };
+
+    // Mechanics: the first click only turns a card face up.
+    {
+        auto gc = start(123456789);
+        if (gc.info.toSelectCards.size() != 12 || gc.info.eventData != 5 || slotActions(gc) != 12) {
+            return fail("setup is not 12 unseen slots with 5 attempts");
+        }
+        for (const auto &s : gc.info.toSelectCards) {
+            if (s.deckIdx != GC::MATCH_AND_KEEP_UNSEEN) return fail("slot not unseen at setup");
+        }
+        const int deckSize = gc.deck.size();
+        search::GameAction(0).execute(gc);
+        if (gc.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_FACE_UP || gc.info.eventData != 5
+                || slotActions(gc) != 11 || search::GameAction(0).isValidAction(gc)) {
+            return fail("first click did not only turn slot 0 face up");
+        }
+        int twin = -1, other = -1;
+        for (int i = 1; i < 12; ++i) {
+            if (gc.info.toSelectCards[i].card.id == gc.info.toSelectCards[0].card.id) twin = i;
+            else if (other < 0) other = i;
+        }
+        GameContext mismatch = gc;
+        search::GameAction(twin).execute(gc);
+        if (gc.deck.size() != deckSize + 1 || gc.info.eventData != 4
+                || gc.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_MATCHED
+                || gc.info.toSelectCards[twin].deckIdx != GC::MATCH_AND_KEEP_MATCHED
+                || slotActions(gc) != 10) {
+            return fail("matching pair was not added and removed");
+        }
+        search::GameAction(other).execute(mismatch);
+        if (mismatch.deck.size() != deckSize || mismatch.info.eventData != 4
+                || mismatch.info.toSelectCards[0].deckIdx != GC::MATCH_AND_KEEP_SEEN
+                || mismatch.info.toSelectCards[other].deckIdx != GC::MATCH_AND_KEEP_SEEN) {
+            return fail("mismatch did not leave both cards seen face down");
+        }
+    }
+
+    // Five attempts end the event on the map.
+    {
+        auto gc = start(987654321);
+        for (int click = 0; click < 10; ++click) {
+            if (gc.screenState != ScreenState::EVENT_SCREEN) return fail("event ended early");
+            search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        }
+        if (gc.screenState != ScreenState::MAP_SCREEN || !gc.info.toSelectCards.empty()) {
+            return fail("event did not end after five attempts");
+        }
+    }
+
+    // Fairness: permuting the hidden cards of unseen slots never changes a click.
+    for (std::uint64_t seed : {11ULL, 22ULL, 33ULL, 44ULL}) {
+        for (bool wantAll : {false, true}) {
+            auto gc = start(seed);
+            const auto want = [wantAll](const Card &) { return wantAll; };
+            while (gc.screenState == ScreenState::EVENT_SCREEN) {
+                auto shuffled = gc;
+                std::vector<int> unseen;
+                for (int i = 0; i < 12; ++i) {
+                    if (shuffled.info.toSelectCards[i].deckIdx == GC::MATCH_AND_KEEP_UNSEEN) unseen.push_back(i);
+                }
+                for (std::size_t k = 1; k < unseen.size(); ++k) {
+                    std::swap(shuffled.info.toSelectCards[unseen[0]].card, shuffled.info.toSelectCards[unseen[k]].card);
+                }
+                const int slot = search::chooseMatchAndKeepSlot(gc, want);
+                if (search::chooseMatchAndKeepSlot(shuffled, want) != slot) {
+                    return fail("chooser read a hidden card");
+                }
+                search::GameAction(slot).execute(gc);
+            }
+        }
+    }
+
+    // Declining: after the first attempt, an unwanted card is never matched.
+    // Wanting: every pair seen before the last attempt is completed.
+    for (std::uint64_t seed = 1; seed <= 40; ++seed) {
+        auto gc = start(seed);
+        search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        const int afterFirst = gc.deck.size();
+        while (gc.screenState == ScreenState::EVENT_SCREEN) {
+            search::GameAction(search::chooseMatchAndKeepSlot(gc, [](const Card &) { return false; })).execute(gc);
+        }
+        if (gc.deck.size() != afterFirst) return fail("declining policy matched an unwanted card");
+
+        auto greedy = start(seed);
+        const int before = greedy.deck.size();
+        while (greedy.screenState == ScreenState::EVENT_SCREEN) {
+            search::GameAction(search::chooseMatchAndKeepSlot(greedy, [](const Card &) { return true; })).execute(greedy);
+        }
+        if (greedy.deck.size() < before + 1) return fail("wanting policy matched nothing in five attempts");
+    }
+
+    std::cout << "match_and_keep PASS\n";
+    return 0;
 }
 
 // Focused semantic regressions for upstream gamerpuppy/sts_lightspeed PRs #9-#19.
@@ -1607,6 +3431,197 @@ static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool 
     return bc;
 }
 
+// Violence scans the whole draw pile for attacks. The draw pile is unbounded,
+// so the attack index list must not have the old 64-entry fixed capacity
+// (#334 seed 13001491 stack overflow inside a native Silver rollout).
+static std::string violenceDrawPileDigest(int attackCount, int skillCount) {
+    GameContext gc(CharacterClass::IRONCLAD, 13001491, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    bc.cards.cardsInHand = 0;
+    bc.cards.drawPile.clear();
+    std::int16_t uid = 1000;
+    int attacksLeft = attackCount, skillsLeft = skillCount;
+    while (attacksLeft + skillsLeft > 0) {
+        // Interleave skills so attack indices are not contiguous.
+        const bool attack = attacksLeft > 0 && (skillsLeft == 0 || uid % 3 != 2);
+        --(attack ? attacksLeft : skillsLeft);
+        CardInstance c(attack ? CardId::STRIKE_RED : CardId::DEFEND_RED);
+        c.uniqueId = uid++;
+        bc.cards.drawPile.concreteCards().push_back(c);
+    }
+    const int before = bc.cards.drawPile.size();
+    const Action violence = Actions::ViolenceAction(3);
+    violence(bc);
+    std::ostringstream o;
+    o << "hand=" << bc.cards.cardsInHand << ':';
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        if (bc.cards.hand[i].getType() != CardType::ATTACK) return "non-attack-in-hand";
+        o << bc.cards.hand[i].uniqueId << ',';
+    }
+    // The remaining draw pile must be the original order minus the drawn cards.
+    std::int16_t expectedUid = 1000;
+    for (const auto &c : bc.cards.drawPile) {
+        auto drawn = [&](std::int16_t id) {
+            for (int i = 0; i < bc.cards.cardsInHand; ++i)
+                if (bc.cards.hand[i].uniqueId == id) return true;
+            return false;
+        };
+        while (drawn(expectedUid)) ++expectedUid;
+        if (c.uniqueId != expectedUid++) return "draw-pile-order-changed";
+    }
+    o << ";draw=" << before << '>' << bc.cards.drawPile.size() << ";discard=" << bc.cards.discardPile.size()
+      << ";card=" << bc.cardRandomRng.counter << ";shuffle=" << bc.shuffleRng.counter;
+    return o.str();
+}
+
+static int testViolenceLargeDrawPile() {
+    // Golden digests captured from the pre-fix fixed_list implementation (65
+    // survived in the release layout); card choice and RNG use must not change.
+    const std::pair<int, const char *> golden[] = {
+        {40, "hand=3:1027,1056,1042,;draw=60>57;discard=0;card=39;shuffle=4"},
+        {64, "hand=3:1002,1044,1024,;draw=74>71;discard=0;card=63;shuffle=4"},
+        {65, "hand=3:1015,1006,1033,;draw=75>72;discard=0;card=64;shuffle=4"},
+    };
+    for (const auto &[attacks, expected] : golden) {
+        const std::string d = violenceDrawPileDigest(attacks, attacks == 40 ? 20 : 10);
+        if (d != expected) {
+            std::cout << "violence_large_draw_pile: FAIL golden attacks=" << attacks << ' ' << d << '\n';
+            return 1;
+        }
+    }
+    for (const int attacks : {66, 70, 128, 200}) {
+        const std::string d = violenceDrawPileDigest(attacks, 10);
+        const std::string expected = "hand=3:";
+        if (d.rfind(expected, 0) != 0) {
+            std::cout << "violence_large_draw_pile: FAIL attacks=" << attacks << ' ' << d << '\n';
+            return 1;
+        }
+        const auto drawPos = d.find(";draw=" + std::to_string(attacks + 10) + '>'
+                                    + std::to_string(attacks + 7) + ';');
+        if (drawPos == std::string::npos) {
+            std::cout << "violence_large_draw_pile: FAIL draw count attacks=" << attacks << ' ' << d << '\n';
+            return 1;
+        }
+    }
+    std::cout << "violence_large_draw_pile: PASS\n";
+    return 0;
+}
+
+// Bronze Orb Stasis picks one card of the highest rarity present from the draw
+// pile (or the discard pile when the draw pile is empty). Like Violence, the
+// candidate list must not have the old 64-entry fixed capacity.
+static std::string stasisDigest(const std::vector<CardId> &pile, bool fromDiscard,
+                                int *expectedPick = nullptr) {
+    GameContext gc(CharacterClass::IRONCLAD, 13001491, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    bc.cards.drawPile.clear();
+    bc.cards.discardPile.clear();
+    std::vector<CardInstance> cards;
+    std::int16_t uid = 2000;
+    for (const CardId id : pile) {
+        CardInstance c(id);
+        c.uniqueId = uid++;
+        cards.push_back(c);
+    }
+    if (fromDiscard) {
+        for (const auto &c : cards) bc.cards.discardPile.push_back(c);
+    } else {
+        bc.cards.drawPile.assignConcrete(cards);
+    }
+    if (expectedPick) {
+        // Single-id target sets keep source order under the stable sort, so
+        // the pick is the k-th target card for k drawn from a copied RNG.
+        Random rng = bc.cardRandomRng;
+        const CardRarity target = getCardRarity(pile[*expectedPick]);
+        int targets = 0;
+        for (const CardId id : pile) targets += getCardRarity(id) == target;
+        int k = rng.random(targets - 1);
+        for (int i = 0; i < static_cast<int>(pile.size()); ++i) {
+            if (getCardRarity(pile[i]) == target && k-- == 0) { *expectedPick = i; break; }
+        }
+    }
+    bc.monsters.arr[0].stasisAction(bc);
+    const CardInstance taken = bc.cards.stasisCards[0];
+    std::ostringstream o;
+    o << "taken=" << taken.uniqueId << ':' << static_cast<int>(taken.id);
+    // The remaining pile must be the original order minus the taken card.
+    std::vector<std::int16_t> remaining;
+    if (fromDiscard) for (const auto &c : bc.cards.discardPile) remaining.push_back(c.uniqueId);
+    else for (const auto &c : bc.cards.drawPile) remaining.push_back(c.uniqueId);
+    std::int16_t expectedUid = 2000;
+    for (const auto id : remaining) {
+        if (expectedUid == taken.uniqueId) ++expectedUid;
+        if (id != expectedUid++) return "pile-order-changed";
+    }
+    o << ";left=" << remaining.size() << ";card=" << bc.cardRandomRng.counter;
+    return o.str();
+}
+
+static int testStasisLargePile() {
+    using C = CardId;
+    std::vector<C> mixed;  // rares of several ids among uncommons/commons/basics
+    const C rares[] = {C::BLUDGEON, C::IMPERVIOUS, C::OFFERING, C::DEMON_FORM, C::REAPER};
+    const C uncommons[] = {C::CARNAGE, C::UPPERCUT, C::WHIRLWIND, C::SHOCKWAVE};
+    const C commons[] = {C::CLEAVE, C::IRON_WAVE, C::ANGER, C::POMMEL_STRIKE};
+    for (int i = 0; i < 40; ++i)
+        mixed.push_back(i % 8 == 3 ? rares[i % 5] : i % 3 == 0 ? uncommons[i % 4]
+                        : i % 3 == 1 ? commons[i % 4] : C::STRIKE_RED);
+    std::vector<C> uncommonTop;  // no rares: uncommons of several ids
+    for (int i = 0; i < 50; ++i) uncommonTop.push_back(i % 2 ? uncommons[i % 4] : commons[i % 4]);
+    std::vector<C> common64;     // exactly the old capacity of commons
+    for (int i = 0; i < 64; ++i) common64.push_back(commons[i % 4]);
+    std::vector<C> basics(20, C::STRIKE_RED);  // no C/U/R: uniform random index
+    std::vector<C> discardMix(uncommonTop.begin(), uncommonTop.begin() + 30);
+
+    // Golden digests captured from the pre-fix fixed_list implementation.
+    const std::tuple<const std::vector<C> *, bool, const char *> golden[] = {
+        {&mixed, false, "taken=2003:107;left=39;card=1"},
+        {&uncommonTop, false, "taken=2047:300;left=49;card=1"},
+        {&common64, false, "taken=2013:198;left=63;card=1"},
+        {&basics, false, "taken=2011:321;left=19;card=1"},
+        {&discardMix, true, "taken=2017:349;left=29;card=1"},
+    };
+    bool goldenOk = true;
+    for (const auto &[pile, discard, expected] : golden) {
+        const std::string d = stasisDigest(*pile, discard);
+        if (d != expected) {
+            std::cout << "stasis_large_pile: FAIL golden " << d << '\n';
+            goldenOk = false;
+        }
+    }
+    if (!goldenOk) return 1;
+    // More than 64 cards of the selected rarity: safe, and the pick matches
+    // an independent computation of the same rule.
+    for (const int targets : {65, 66, 100, 200}) {
+        for (const bool discard : {false, true}) {
+            std::vector<C> pile;  // `targets` rares with 10 commons interleaved
+            int commonsLeft = 10;
+            for (int i = 0; i < targets + 10; ++i) {
+                const bool common = commonsLeft > 0 && i % 7 == 5;
+                commonsLeft -= common;
+                pile.push_back(common ? C::CLEAVE : C::DEMON_FORM);
+            }
+            int first = -1;
+            for (int i = 0; i < static_cast<int>(pile.size()); ++i)
+                if (pile[i] == C::DEMON_FORM) { first = i; break; }
+            int pick = first;
+            const std::string d = stasisDigest(pile, discard, &pick);
+            const std::string want = "taken=" + std::to_string(2000 + pick) + ':'
+                + std::to_string(static_cast<int>(C::DEMON_FORM)) + ";left="
+                + std::to_string(pile.size() - 1) + ';';
+            if (d.rfind(want, 0) != 0) {
+                std::cout << "stasis_large_pile: FAIL targets=" << targets << " discard="
+                          << discard << ' ' << d << " want " << want << '\n';
+                return 1;
+            }
+        }
+    }
+    std::cout << "stasis_large_pile: PASS\n";
+    return 0;
+}
+
 static BattleContext playerNormalFixture(std::uint64_t seed, int energy) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -1802,7 +3817,7 @@ int testCombatKnowledgeBoundary() {
           == search::makeSilverCardPile(permuted, permutedKnowledge),
           "unobserved concrete draw permutations must construct the same Silver CardPile");
     auto sampledUnknown = search::makeSilverCardPile(first, firstKnowledge);
-    silver::Random silverRng(0x9001u);
+    Random silverRng(0x9001u);
     (void)sampledUnknown.drawTop(silverRng);
     check(silverRng.counter == 1,
           "Silver unknown draw must consume its isolated single-model RNG exactly once");
@@ -1831,7 +3846,7 @@ int testCombatKnowledgeBoundary() {
           && topView.knownTop[1].uniqueId == topB.uniqueId,
           "multiple known top placements must retain actual stack order");
     auto deterministicTop = search::makeSilverCardPile(topLive, topKnowledge);
-    silver::Random knownTopRng(0x9002u);
+    Random knownTopRng(0x9002u);
     const CardInstance poppedTop = deterministicTop.drawTop(knownTopRng);
     check(poppedTop.uniqueId == topB.uniqueId && knownTopRng.counter == 0,
           "Silver known-top draw must be deterministic and consume no model RNG");
@@ -1924,23 +3939,6 @@ int testCombatKnowledgeBoundary() {
     if (failures == 0) { std::cout << "combat_knowledge PASS\n"; return 0; }
     std::cout << "combat_knowledge FAIL (" << failures << " cases)\n";
     return 1;
-}
-
-int testSilverRandomBridge() {
-    const auto fromBridge = silver_bridge::probeReferenceRandom(0x51A9u);
-    Random reference(0x51A9u);
-    const auto first = reference.random(999);
-    const auto second = reference.random(-3, 7);
-    const auto third = reference.randomLong();
-    const bool equal = fromBridge.firstRange == first && fromBridge.secondRange == second
-        && fromBridge.randomLong == third && fromBridge.counter == reference.counter
-        && fromBridge.seed0 == reference.seed0 && fromBridge.seed1 == reference.seed1;
-    if (!equal) {
-        std::cout << "silver_random_bridge FAIL\n";
-        return 1;
-    }
-    std::cout << "silver_random_bridge PASS\n";
-    return 0;
 }
 
 int testSilverSemanticActionResolution() {
@@ -2690,12 +4688,28 @@ int testDesignerInSpireOptions() {
     gc.deck.obtain(gc, CardId::STRIKE_RED, 3);
     gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
 
-    // Option 3: pay 75 gold, transform 2 cards, regain control immediately.
+    // Option 3: pay 75 gold, then choose two distinct public transform targets.
+    const auto beforeTransform=gc.deck.cards;
     gc.chooseEventOption(3);
     check(gc.gold == 425, "option 3: expected gold 425, got " + std::to_string(gc.gold));
     check(gc.curHp == 80, "option 3: expected hp 80, got " + std::to_string(gc.curHp));
-    check(gc.screenState == ScreenState::MAP_SCREEN,
-          "option 3: expected MAP_SCREEN (regain control), got " + std::to_string((int)gc.screenState));
+    check(gc.screenState == ScreenState::CARD_SELECT
+            && gc.info.selectScreenType == CardSelectScreenType::TRANSFORM
+            && gc.info.toSelectCount == 2 && gc.info.haveSelectedCards.empty(),
+          "option 3: expected an unselected two-card transform grid");
+    check(gc.deck.cards.size() == beforeTransform.size() && std::equal(gc.deck.cards.begin(),gc.deck.cards.end(),beforeTransform.begin()), "option 3: deck changed before target selection");
+    if(gc.screenState == ScreenState::CARD_SELECT && gc.info.toSelectCards.size() >= 2) {
+        const int firstTarget=gc.info.toSelectCards[0].deckIdx;
+        gc.chooseSelectCardScreenOption(0);
+        check(gc.screenState == ScreenState::CARD_SELECT && gc.info.haveSelectedCards.size() == 1,
+              "option 3: first selection must leave one pick outstanding");
+        check(gc.deck.cards.size() == beforeTransform.size() && std::equal(gc.deck.cards.begin(),gc.deck.cards.end(),beforeTransform.begin()), "option 3: deck changed before both targets were selected");
+        check(gc.info.toSelectCards[0].deckIdx != firstTarget, "option 3: selected target remained available");
+        gc.chooseSelectCardScreenOption(0);
+        check(gc.screenState == ScreenState::MAP_SCREEN && gc.deck.cards.size() == beforeTransform.size(),
+              "option 3: completed transforms must preserve deck size and return to map");
+        check(gc.gold == 425 && gc.curHp == 80, "option 3: selection charged extra gold or HP");
+    } else check(false, "option 3: insufficient selectable transform targets");
 
     // Option 4: pay 110 gold, open a REMOVE card select (control not regained).
     gc.gold = 500;
@@ -3320,6 +5334,16 @@ int main(int argc, const char* argv[]) {
         return testIssueFixes();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
+    } else if (command == "silver_escape_penalty") {
+        return testSilverEscapePenalty();
+    } else if (command == "match_and_keep") {
+        return testMatchAndKeep();
+    } else if (command == "simulator_relic_fidelity") {
+        return testSimulatorRelicFidelity();
+    } else if (command == "ironclad_card_java_parity") {
+        return testIroncladCardJavaParity();
+    } else if (command == "monster_ai_java_parity") {
+        return testMonsterAiJavaParity();
     } else if (command == "relic_reward_sapphire") {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
@@ -3362,12 +5386,22 @@ int main(int argc, const char* argv[]) {
         return testCardPileEngine();
     } else if (command == "silver_searcher") {
         return testSilverSearcher();
+    } else if (command == "persistent_latent_damage") {
+        return testPersistentLatentDamage();
+    } else if (command == "silver_wire_state") {
+        return testSilverWireState();
+    } else if (command == "silver_profile") {
+        const std::int64_t sims = argc > 2 ? std::stoll(argv[2]) : 2000;
+        const int stride = argc > 3 ? std::max(1, std::stoi(argv[3])) : 1;
+        return silverProfile(sims, stride);
+    } else if (command == "violence_large_draw_pile") {
+        return testViolenceLargeDrawPile();
+    } else if (command == "stasis_large_pile") {
+        return testStasisLargePile();
     } else if (command == "card_pile") {
         return testCardPile();
     } else if (command == "battle_equality") {
         return testBattleEquality();
-    } else if (command == "silver_random_bridge") {
-        return testSilverRandomBridge();
     } else if (command == "silver_semantic_action") {
         return testSilverSemanticActionResolution();
     } else if (command == "ooc_semantic") {

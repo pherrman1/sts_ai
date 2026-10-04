@@ -905,7 +905,8 @@ void ConsoleSimulator::printEventActions(std::ostream &os) const {
                 const auto &c = gc->info.toSelectCards[i];
                 if (c.deckIdx == 0) {
                     continue;
-                } else if (c.deckIdx == 1) {
+                } else if (c.deckIdx == GameContext::MATCH_AND_KEEP_SEEN
+                           || c.deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP) {
                     os << i << ": " << c.card.getName() << "\n";
                 } else {
                     os << i << ": -Unknown- " << c.card.getName() << "\n";

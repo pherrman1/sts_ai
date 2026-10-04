@@ -7,8 +7,14 @@ import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None):
+    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None, differential=False, ctm_env=None):
         env = os.environ.copy()
+        env.pop("STS_DIFFERENTIAL_TRACE", None)
+        env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
+        env.pop("STS_CTM_ACTIVE_LIZARD", None)
+        env.update(ctm_env or {})
+        if differential:
+            env["STS_DIFFERENTIAL_TRACE"] = "1"
         if model is not None:
             env["STS_CTM_MODEL"] = str(model)
         else:
@@ -26,6 +32,35 @@ class AdvisorProtocolTest(unittest.TestCase):
             capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
+
+    def test_completed_single_selection_is_exact_model_free_confirmation(self):
+        for task, owner in (("WARCRY", "common.PutOnDeckAction"), ("FORETHOUGHT", "unique.ForethoughtAction"),
+                            ("EXHAUST_ONE", "common.ExhaustAction"), ("ARMAMENTS", "unique.ArmamentsAction"),
+                            ("DUAL_WIELD", "unique.DualWieldAction")):
+            select = dict(mechanicalTransition="single_select_confirm", origin="HAND_SELECT",
+                          task=task, actionClass="com.megacrit.cardcrawl.actions." + owner,
+                          pickCount=1, selectedCount=1, liveChoiceCount=0,
+                          canProceed=True, canCancel=False, selectedUuid="selected-card")
+            def request(value):
+                return json.dumps(dict(protocol="sts_model_inspector_v1",kind="observation",
+                    session="confirm",sequence=1,observationHash="confirm",
+                    observation=dict(boundary="combat",combat=dict(cardSelect=value))))
+            response, = self.run_advisor([request(select)])
+            evaluator = response["evaluators"][0]
+            self.assertEqual(response["status"], "OK", response)
+            self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
+            self.assertEqual(evaluator["simulations"], 0)
+            self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+            for key, bad in (("origin","GRID"),("task","UNKNOWN"),("actionClass","unknown"),
+                             ("pickCount",2),("selectedCount",0),("liveChoiceCount",1),
+                             ("canProceed",False),("canCancel",True),("selectedUuid","")):
+                with self.subTest(task=task, key=key):
+                    response, = self.run_advisor([request({**select,key:bad})])
+                    self.assertEqual(response["evaluators"][0]["reason"],
+                                     "silver_unqualified_selection_confirmation")
+            response, = self.run_advisor([request(select)], differential=True)
+            self.assertEqual(response["evaluators"][0]["reason"],
+                             "DIFFERENTIAL_COMBAT_CONFIRMATION_UNREPRESENTABLE")
 
     def test_handshake_and_fail_closed_observation(self):
         rows = self.run_advisor([
@@ -139,6 +174,70 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertGreaterEqual(rows[0]["evaluators"][0]["deathProbability"], 0.0)
         self.assertLessEqual(rows[0]["evaluators"][0]["deathProbability"], 1.0)
 
+    def test_qualified_lizard_stack_forecast_dispatch_and_identity(self):
+        fast = Path(__file__).resolve().parents[1] / "selfplay/models/combat_transition_deepsets_lizard_t2.native"
+        base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                "act": 1, "floor": 7, "hp": 30, "maxHp": 80, "gold": 99,
+                "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",
+                "potionCapacity": 3, "potionKeepValue": 4.0, "isBurningElite": False,
+                "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0, "bottleBinding": 0}],
+                "relics": [{"id": "Lizard Tail", "data": 1}], "potions": ["Potion Slot"] * 5}
+        def wire(entry, sequence=1):
+            return json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "lizard-stack", "sequence": sequence, "observationHash": str(sequence),
+                "observation": dict(entry, combatEntry=entry, combatEntryHash=str(sequence))})
+        hello = json.dumps({"protocol": "sts_model_inspector_v1", "kind": "hello"})
+        variants = [base, dict(base, relics=[]),
+                    dict(base, relics=[{"id": "Lizard Tail", "data": 0}]),
+                    dict(base, potions=["FairyPotion"] + ["Potion Slot"] * 4),
+                    dict(base, potions=["EntropicBrew"] + ["Potion Slot"] * 4),
+                    dict(base, relics=[], potions=["EntropicBrew"] + ["Potion Slot"] * 4),
+                    dict(base, relics=base["relics"] + [{"id": "Mark of the Bloom", "data": 0}])]
+        rows = self.run_advisor([hello] + [wire(entry, i) for i, entry in enumerate(variants, 1)], fast)
+        stack = rows[0]["ctmStack"]
+        self.assertEqual(rows[0]["ctmStatus"], "OK", rows[0])
+        self.assertEqual(stack["kind"], "deepsets_brew")
+        self.assertTrue(stack["activeLizard"])
+        self.assertTrue(stack["lizardProductionQualified"])
+        self.assertNotEqual(stack["primary"], stack["brewFallback"])
+        explicit, = self.run_advisor([hello], fast,
+            ctm_env={"STS_CTM_BREW_FALLBACK_MODEL": str(self.model), "STS_CTM_ACTIVE_LIZARD": "1"})
+        self.assertEqual(explicit["ctmStatus"], "OK", explicit)
+        self.assertEqual(explicit["ctmStack"], stack)
+        for row, expected in zip(rows[1:], ("OK", "OK", "OK", "UNSUPPORTED", "UNSUPPORTED", "OK", "OK")):
+            evaluator = next(e for e in row["evaluators"] if e["id"] == "ctm_combat_entry_v2")
+            self.assertEqual(evaluator["status"], expected, row)
+            self.assertEqual(evaluator["ctmStack"], stack)
+            self.assertEqual(evaluator["modelIdentity"], row["model"])
+            if expected == "OK":
+                self.assertAlmostEqual(sum(evaluator["winningHpHistogram"]), 1, places=4)
+        legacy = self.run_advisor([hello, wire(base)], self.model)
+        self.assertEqual(legacy[0]["ctmStack"]["kind"], "single")
+        self.assertFalse(legacy[0]["ctmStack"]["activeLizard"])
+        self.assertEqual(legacy[1]["evaluators"][0]["reason"], "active_unqualified_lizard")
+        disabled = self.run_advisor([hello, wire(base)], fast, ctm_env={"STS_CTM_ACTIVE_LIZARD": "0"})
+        self.assertFalse(disabled[0]["ctmStack"]["activeLizard"])
+        self.assertNotEqual(disabled[0]["ctmStack"], stack)
+        self.assertEqual(disabled[1]["evaluators"][0]["reason"], "active_unqualified_lizard")
+        candidate = Path(__file__).resolve().parents[1] / "docs/experiments/evidence/lizard_tail_mechanical_q_ctm_integration_2026-09-27/integration_candidate.native"
+        for opt_in in (False, True):
+            env = {"STS_CTM_BREW_FALLBACK_MODEL": str(self.model)}
+            if opt_in:
+                env["STS_CTM_ACTIVE_LIZARD"] = "1"
+            research = self.run_advisor([hello, wire(base)], candidate, ctm_env=env)
+            self.assertEqual(research[0]["ctmStatus"], "OK", research)
+            self.assertEqual(research[0]["ctmStack"]["activeLizard"], opt_in)
+            self.assertFalse(research[0]["ctmStack"]["lizardProductionQualified"])
+            self.assertEqual(research[1]["evaluators"][0]["status"], "OK" if opt_in else "UNSUPPORTED")
+        for model, env in ((fast, {"STS_CTM_BREW_FALLBACK_MODEL": "/missing/fallback"}),
+                           (fast, {"STS_CTM_BREW_FALLBACK_MODEL": str(fast)}),
+                           (fast, {"STS_CTM_ACTIVE_LIZARD": "yes"}),
+                           (self.model, {"STS_CTM_ACTIVE_LIZARD": "1"})):
+            with self.subTest(model=model, env=env):
+                failed, = self.run_advisor([hello], model, ctm_env=env)
+                self.assertEqual(failed["ctmStatus"], "SCHEMA_MISMATCH", failed)
+                self.assertIsNone(failed["ctmStack"])
+
     def test_live_spent_neow_entry_requires_native_zero_charges(self):
         # Floor-12 EXORDIUM_THUGS live capture: Java's spent relic is -2.
         # The Java projection regression covers the exact -2/usedUp -> 0 map;
@@ -243,10 +342,32 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertIn({"kind": "end_turn"}, actions)
         self.assertIn({"kind": "card", "cardUuid": "physical-strike", "targetIndex": 1}, actions)
         self.assertIn({"kind": "potion", "potionSlot": 2, "discard": False, "targetIndex": 1}, actions)
-        self.assertIn({"kind": "potion", "potionSlot": 3, "discard": True}, actions)
+        # Silver discards a potion only to make room for Entropic Brew, and
+        # never drinks Fairy in a Bottle (it procs on lethal).
+        self.assertFalse(any(action.get("potionSlot") == 3 for action in actions))
         selected = next(row for row in summaries
                         if row["fingerprint"] == silver["selectedAction"])
         self.assertEqual(selected["liveAction"], silver["selectedLiveAction"])
+        # Final-HP samples cover every simulation at this root on one shared
+        # 0..axisMaxHp axis (index 0 = deaths) and root actions partition them.
+        for current in silver_results:
+            dist = current["finalHpDistribution"]
+            self.assertEqual(dist["schema"], "silver_final_hp_distribution_v1")
+            self.assertEqual(dist["currentHp"], 80)
+            self.assertEqual(dist["maxHp"], 80)
+            bins = dist["axisMaxHp"] + 1
+            root_layer = dist["root"]
+            self.assertEqual(root_layer["count"] + root_layer["unresolved"],
+                             current["totalSimulations"])
+            layers = [row["finalHp"] for row in current["rootActionSummaries"]]
+            for layer in [root_layer] + layers:
+                self.assertEqual(len(layer["hpCounts"]), bins)
+                self.assertEqual(sum(layer["hpCounts"]), layer["count"])
+                self.assertEqual(layer["hpCounts"][0], layer["deaths"])
+            for key in ("count", "deaths", "unresolved"):
+                self.assertEqual(sum(layer[key] for layer in layers), root_layer[key])
+            self.assertEqual([sum(column) for column in zip(*(l["hpCounts"] for l in layers))],
+                             root_layer["hpCounts"])
         debug_result = self.run_advisor([json.dumps(wires[0])], self.model, tree_debug=True)[0]
         debug_silver = next(row for row in debug_result["evaluators"]
                             if row["id"] == "silver_player_decision_v2")

@@ -1,0 +1,293 @@
+{
+  "benchmark_sink": 2468800.6207026667,
+  "format": "ooc-contextual-native-performance-v1",
+  "measured_passes_per_arm": 5,
+  "metrics": {
+    "deck": {
+      "attention": {
+        "all": {
+          "calls": 31585,
+          "mean_seconds_per_call": 4.122503653632833e-05,
+          "median_seconds_per_call": 4.114700000013016e-05,
+          "p90_seconds_per_call": 6.932000000059446e-05,
+          "p99_seconds_per_call": 9.286400000041439e-05,
+          "total_cpu_seconds": 1.3020927789999304
+        },
+        "by_deck_token_count": {
+          "1-8": {
+            "calls": 6925,
+            "mean_seconds_per_call": 1.272907090251879e-05,
+            "median_seconds_per_call": 1.0920000000247398e-05,
+            "p90_seconds_per_call": 2.1450000000200475e-05,
+            "p99_seconds_per_call": 2.2833000000055392e-05,
+            "total_cpu_seconds": 0.08814881599994262
+          },
+          "17-32": {
+            "calls": 12395,
+            "mean_seconds_per_call": 6.248861871722648e-05,
+            "median_seconds_per_call": 5.9521999999923025e-05,
+            "p90_seconds_per_call": 8.534999999998405e-05,
+            "p99_seconds_per_call": 0.00010077899999982876,
+            "total_cpu_seconds": 0.7745464290000221
+          },
+          "33-64": {
+            "calls": 25,
+            "mean_seconds_per_call": 0.00010356612000002485,
+            "median_seconds_per_call": 0.00010017799999983978,
+            "p90_seconds_per_call": 0.00012036599999998288,
+            "p99_seconds_per_call": 0.00013523299999995686,
+            "total_cpu_seconds": 0.0025891530000006213
+          },
+          "9-16": {
+            "calls": 12240,
+            "mean_seconds_per_call": 3.5686959232023283e-05,
+            "median_seconds_per_call": 3.54659999999285e-05,
+            "p90_seconds_per_call": 4.422300000017643e-05,
+            "p99_seconds_per_call": 5.024499999972676e-05,
+            "total_cpu_seconds": 0.436808380999965
+          }
+        },
+        "source_candidate_calls": 0
+      },
+      "b_over_a_ratio": 1.17610997979443,
+      "contextual": {
+        "all": {
+          "calls": 31585,
+          "mean_seconds_per_call": 4.848517688776576e-05,
+          "median_seconds_per_call": 4.844100000012119e-05,
+          "p90_seconds_per_call": 8.03909999991248e-05,
+          "p99_seconds_per_call": 0.00010597899999975624,
+          "total_cpu_seconds": 1.5314043120000815
+        },
+        "by_deck_token_count": {
+          "1-8": {
+            "calls": 6925,
+            "mean_seconds_per_call": 1.6345541949463615e-05,
+            "median_seconds_per_call": 1.3654999999168638e-05,
+            "p90_seconds_per_call": 2.6349000000092104e-05,
+            "p99_seconds_per_call": 3.179999999991523e-05,
+            "total_cpu_seconds": 0.11319287800003552
+          },
+          "17-32": {
+            "calls": 12395,
+            "mean_seconds_per_call": 7.169561218233588e-05,
+            "median_seconds_per_call": 7.031099999998958e-05,
+            "p90_seconds_per_call": 9.376599999999513e-05,
+            "p99_seconds_per_call": 0.00011483499999975777,
+            "total_cpu_seconds": 0.8886671130000532
+          },
+          "33-64": {
+            "calls": 25,
+            "mean_seconds_per_call": 0.00011118044000001604,
+            "median_seconds_per_call": 0.0001107870000001121,
+            "p90_seconds_per_call": 0.00011873199999978823,
+            "p99_seconds_per_call": 0.00012516500000003816,
+            "total_cpu_seconds": 0.002779511000000401
+          },
+          "9-16": {
+            "calls": 12240,
+            "mean_seconds_per_call": 4.303634068627389e-05,
+            "median_seconds_per_call": 4.2269000000594303e-05,
+            "p90_seconds_per_call": 5.2188000000175094e-05,
+            "p99_seconds_per_call": 6.812799999966757e-05,
+            "total_cpu_seconds": 0.5267648099999924
+          }
+        },
+        "source_candidate_calls": 0
+      },
+      "reduction_percent": -17.61099797944301
+    },
+    "prepare": {
+      "attention": {
+        "all": {
+          "calls": 31585,
+          "mean_seconds_per_call": 8.478185841380145e-05,
+          "median_seconds_per_call": 8.381800000023532e-05,
+          "p90_seconds_per_call": 0.00011505500000019708,
+          "p99_seconds_per_call": 0.00013855000000084772,
+          "total_cpu_seconds": 2.677834997999919
+        },
+        "by_deck_token_count": {
+          "1-8": {
+            "calls": 6925,
+            "mean_seconds_per_call": 5.441018714800669e-05,
+            "median_seconds_per_call": 5.319899999989275e-05,
+            "p90_seconds_per_call": 6.340900000001426e-05,
+            "p99_seconds_per_call": 7.07130000003886e-05,
+            "total_cpu_seconds": 0.3767905459999463
+          },
+          "17-32": {
+            "calls": 12395,
+            "mean_seconds_per_call": 0.00010737115215813089,
+            "median_seconds_per_call": 0.0001051570000001334,
+            "p90_seconds_per_call": 0.0001291420000004706,
+            "p99_seconds_per_call": 0.00014407099999935724,
+            "total_cpu_seconds": 1.3308654310000323
+          },
+          "33-64": {
+            "calls": 25,
+            "mean_seconds_per_call": 0.0001467948799999874,
+            "median_seconds_per_call": 0.00014642500000050518,
+            "p90_seconds_per_call": 0.00014917000000025382,
+            "p99_seconds_per_call": 0.0001531869999986668,
+            "total_cpu_seconds": 0.0036698719999996854
+          },
+          "9-16": {
+            "calls": 12240,
+            "mean_seconds_per_call": 7.896316576796901e-05,
+            "median_seconds_per_call": 7.882800000036383e-05,
+            "p90_seconds_per_call": 8.862600000014709e-05,
+            "p99_seconds_per_call": 0.00010080899999920234,
+            "total_cpu_seconds": 0.9665091489999407
+          }
+        },
+        "source_candidate_calls": 0
+      },
+      "b_over_a_ratio": 1.077212227472769,
+      "contextual": {
+        "all": {
+          "calls": 31585,
+          "mean_seconds_per_call": 9.132805455121198e-05,
+          "median_seconds_per_call": 9.101100000030726e-05,
+          "p90_seconds_per_call": 0.0001231510000003766,
+          "p99_seconds_per_call": 0.00014636499999998165,
+          "total_cpu_seconds": 2.8845966030000305
+        },
+        "by_deck_token_count": {
+          "1-8": {
+            "calls": 6925,
+            "mean_seconds_per_call": 5.7649687075819074e-05,
+            "median_seconds_per_call": 5.619600000095204e-05,
+            "p90_seconds_per_call": 6.829800000041075e-05,
+            "p99_seconds_per_call": 7.49999999998252e-05,
+            "total_cpu_seconds": 0.3992240830000471
+          },
+          "17-32": {
+            "calls": 12395,
+            "mean_seconds_per_call": 0.00011557101895925906,
+            "median_seconds_per_call": 0.00011354300000121498,
+            "p90_seconds_per_call": 0.00013739799999967772,
+            "p99_seconds_per_call": 0.00015042200000081607,
+            "total_cpu_seconds": 1.432502780000016
+          },
+          "33-64": {
+            "calls": 25,
+            "mean_seconds_per_call": 0.000156183880000178,
+            "median_seconds_per_call": 0.00015613200000075267,
+            "p90_seconds_per_call": 0.0001620239999997608,
+            "p99_seconds_per_call": 0.0001633759999997153,
+            "total_cpu_seconds": 0.0039045970000044505
+          },
+          "9-16": {
+            "calls": 12240,
+            "mean_seconds_per_call": 8.569976658496428e-05,
+            "median_seconds_per_call": 8.556100000056688e-05,
+            "p90_seconds_per_call": 9.708199999991507e-05,
+            "p99_seconds_per_call": 0.00010591899999923271,
+            "total_cpu_seconds": 1.048965142999963
+          }
+        },
+        "source_candidate_calls": 0
+      },
+      "reduction_percent": -7.72122274727689
+    },
+    "prior": {
+      "attention": {
+        "all": {
+          "calls": 31585,
+          "mean_seconds_per_call": 0.00014330446971663388,
+          "median_seconds_per_call": 0.0001349130000001253,
+          "p90_seconds_per_call": 0.00019795100000052912,
+          "p99_seconds_per_call": 0.0002418039999998456,
+          "total_cpu_seconds": 4.526271675999881
+        },
+        "by_deck_token_count": {
+          "1-8": {
+            "calls": 6925,
+            "mean_seconds_per_call": 0.00011246370382669339,
+            "median_seconds_per_call": 0.00011096899999962773,
+            "p90_seconds_per_call": 0.00013129700000291677,
+            "p99_seconds_per_call": 0.00019375299999957463,
+            "total_cpu_seconds": 0.7788111489998517
+          },
+          "17-32": {
+            "calls": 12395,
+            "mean_seconds_per_call": 0.0001693509494150795,
+            "median_seconds_per_call": 0.00016672299999953566,
+            "p90_seconds_per_call": 0.00022108399999964945,
+            "p99_seconds_per_call": 0.0002527739999997891,
+            "total_cpu_seconds": 2.0991050179999107
+          },
+          "33-64": {
+            "calls": 25,
+            "mean_seconds_per_call": 0.00017323876000020278,
+            "median_seconds_per_call": 0.0001722930000003231,
+            "p90_seconds_per_call": 0.0001806779999995456,
+            "p99_seconds_per_call": 0.00018466599999911182,
+            "total_cpu_seconds": 0.004330969000005069
+          },
+          "9-16": {
+            "calls": 12240,
+            "mean_seconds_per_call": 0.00013431573039216616,
+            "median_seconds_per_call": 0.0001295729999988282,
+            "p90_seconds_per_call": 0.00016902700000187565,
+            "p99_seconds_per_call": 0.00022352900000122133,
+            "total_cpu_seconds": 1.6440245400001139
+          }
+        },
+        "source_candidate_calls": 189925
+      },
+      "b_over_a_ratio": 1.051711247745267,
+      "contextual": {
+        "all": {
+          "calls": 31585,
+          "mean_seconds_per_call": 0.00015071492265315487,
+          "median_seconds_per_call": 0.00014275800000085326,
+          "p90_seconds_per_call": 0.0002073479999999961,
+          "p99_seconds_per_call": 0.0002516020000022934,
+          "total_cpu_seconds": 4.760330831999896
+        },
+        "by_deck_token_count": {
+          "1-8": {
+            "calls": 6925,
+            "mean_seconds_per_call": 0.00011636455176893305,
+            "median_seconds_per_call": 0.0001143950000006555,
+            "p90_seconds_per_call": 0.0001366060000016489,
+            "p99_seconds_per_call": 0.00020125700000050983,
+            "total_cpu_seconds": 0.8058245209998613
+          },
+          "17-32": {
+            "calls": 12395,
+            "mean_seconds_per_call": 0.00017840816982654756,
+            "median_seconds_per_call": 0.0001755299999999238,
+            "p90_seconds_per_call": 0.00023106299999930968,
+            "p99_seconds_per_call": 0.00026318299999950057,
+            "total_cpu_seconds": 2.211369265000057
+          },
+          "33-64": {
+            "calls": 25,
+            "mean_seconds_per_call": 0.00018576175999974966,
+            "median_seconds_per_call": 0.00018296300000031351,
+            "p90_seconds_per_call": 0.00019338199999907602,
+            "p99_seconds_per_call": 0.00021287999999941576,
+            "total_cpu_seconds": 0.004644043999993741
+          },
+          "9-16": {
+            "calls": 12240,
+            "mean_seconds_per_call": 0.00014203374199346275,
+            "median_seconds_per_call": 0.0001364660000007234,
+            "p90_seconds_per_call": 0.00017863500000103727,
+            "p99_seconds_per_call": 0.00023371800000049348,
+            "total_cpu_seconds": 1.7384930019999842
+          }
+        },
+        "source_candidate_calls": 189925
+      },
+      "reduction_percent": -5.171124774526703
+    }
+  },
+  "order": "alternating A/B and B/A by measured pass; A=attention, B=contextual",
+  "prior_count": 6317,
+  "thread_cpu_clock": "CLOCK_THREAD_CPUTIME_ID",
+  "warmup_passes_per_arm": 1
+}

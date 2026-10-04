@@ -32,10 +32,12 @@ The pinned native boundary has explicit representations for:
   indices are not compacted after a death, escape, summon, or replacement.
 - the ordinary `LARGE_SLIME` split preserves native child slots 0 and 1;
   `SLIME_BOSS` remains the separate 0 and 2 layout.
-- the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla can
-  form that event composition, but this pinned simulator has no
-  `MonsterEncounter` or faithful four-slot layout for it; the live importer
-  reports `silver_unsupported_four_byrds` explicitly;
+- the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla
+  defines a "4 Byrds" encounter, but no normal act pool or event generates it
+  (Act 2 uses "3 Byrds" and "Chosen and Byrds"), so it is not expected in
+  standard runs (**Unverified** against `desktop-1.0.jar`). This pinned
+  simulator has no `MonsterEncounter` or four-slot layout for it; the live
+  importer reports `silver_unsupported_four_byrds` explicitly;
 - exact player damage-event bookkeeping when the observer's post-
   `AbstractPlayer.damage()` boundary is installed; each finalized public damage
   call is one event, and the last such unblocked damage is retained.
@@ -56,11 +58,13 @@ Strength loss).
 - The importer never consumes or accepts live RNG fields.
 - An ordinary draw array is imported as an unordered multiset. Concrete order is
   retained only when `Frozen Eye` is present.
-- `Runic Dome` remains fail-closed at the Java boundary. The observer now
-  omits `nextMove`, `moveHistory`, `intent`, and `intentDamage` while the relic
-  is active; native deferred hidden-intent support exists for native fixtures,
-  but the live producer still does not provide the complete public pre-roll
-  tracker needed to qualify a fair import.
+- `Runic Dome` omits `nextMove`, `moveHistory`, `intent`, and `intentDamage`.
+  Audited monster groups use public executed history and pre-roll state for
+  deferred hidden intents, including Spot Weakness's attack predicate. Small
+  Acid Slime's deterministic continuation uses an explicit public-derived
+  known-next proof. The qualified roster and lifecycle limits are maintained
+  in [live-model-inspector.md](../operations/live-model-inspector.md); other
+  monsters and unaudited overrides remain fail-closed.
 - Java physical UUIDs are assigned monotonically by a battle-lifetime
   `SilverImportContext`. The registry resets only when the protocol session or
   combat instance changes and rejects duplicate UUID claims in one snapshot.
@@ -76,7 +80,9 @@ Strength loss).
   unavailable, only the active-Stasis snapshot is rejected.
 - Hexaghost Divider damage is captured from the public Divider intent and
   retained by monster object identity after that move resolves, matching the
-  native `miscInfo` value until the next public Activate/Divider cycle.
+  native `miscInfo` value until the next public Activate/Divider cycle. Under
+  Runic Dome the tracker instead records public player HP at Activate execution;
+  Divider and the subsequent orb phase are derived without reading intent.
 
 ## Explicit current exclusions
 
@@ -92,15 +98,15 @@ those cards are implemented by `BattleContext`.
 
 These are deliberate boundaries, not silently fabricated defaults:
 
-- live OOC `GameContext + PathHistory` import and OOC MCTS;
-- Runic Dome live import (`silver_hidden_information_required` until the
-  public pre-roll tracker is serialized);
+- Runic Dome outside its audited public-history/lifecycle domain;
 - unknown Java card/relic/potion/power/task IDs;
 - encounter or monster `miscInfo` values that are not present in the public
   runtime or cannot be derived from the current public tracker;
 - combat observations from a producer that does not assert exact damage-event
   tracking; turn-level damage totals are not accepted as a substitute;
-- resolving/action-queue snapshots;
+- ordinary resolving/action-queue snapshots; qualified card selectors instead
+  preserve exact public pending card/action tails, including source cleanup,
+  as described in the inspector contract;
 - selection options that exceed the native `CardSelectWire` public option
   capacity or require unrevealed random choices;
 - native mechanics that are absent from the pinned simulator implementation.

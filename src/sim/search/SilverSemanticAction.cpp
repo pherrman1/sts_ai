@@ -1,4 +1,4 @@
-// Semantic-action lowering at the isolated Silver / live sts_ai boundary.
+// Lowers an index-free Silver semantic action to a live search::Action.
 #include "sim/search/SilverSemanticAction.h"
 
 #include <algorithm>
@@ -107,8 +107,9 @@ SemanticActionResolution resolveSilverSemanticAction(
             return {false, {}, "live card-select task does not match semantic action"};
         }
         if (semantic.skipCardSelect) {
-            if (live.cardSelectInfo.cardSelectTask != CardSelectTask::CODEX)
-                return {false, {}, "semantic skip is only valid for CODEX"};
+            if (live.cardSelectInfo.cardSelectTask != CardSelectTask::CODEX
+                && !(live.cardSelectInfo.cardSelectTask == CardSelectTask::DISCOVERY && live.cardSelectInfo.canPickZero))
+                return {false, {}, "semantic skip is unavailable for this selection"};
             return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, 3));
         }
         std::string error;
@@ -136,6 +137,19 @@ SemanticActionResolution resolveSilverSemanticAction(
         return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, idx));
     }
     case SAT::MULTI_CARD_SELECT: {
+        if (live.inputState == InputState::CARD_SELECT && semantic.source == CS::DISCARD
+                && semantic.cardSelectTask == static_cast<std::int16_t>(CardSelectTask::LIQUID_MEMORIES_POTION)
+                && live.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                && live.cardSelectInfo.pickCount == 2 && semantic.selectedCards.size() == 2) {
+            int indices[2] = {-1,-1};
+            for (int n=0;n<2;++n) for (int i=0;i<live.cards.discardPile.size();++i)
+                if(matches(live.cards.discardPile[i],semantic.selectedCards[n])) {
+                    if(indices[n]!=-1) return {false,{},"ambiguous discard identity"};
+                    indices[n]=i;
+                }
+            if(indices[0]<0 || indices[1]<0 || indices[0]==indices[1]) return {false,{},"invalid ordered discard pair"};
+            return finalise(live,Action(ActionType::SINGLE_CARD_SELECT,indices[0],indices[1]+1));
+        }
         if (live.inputState != InputState::CARD_SELECT
                 || static_cast<std::int16_t>(live.cardSelectInfo.cardSelectTask) != semantic.cardSelectTask
                 || semantic.source != CS::HAND) {

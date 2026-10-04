@@ -77,6 +77,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final Color CYAN_DIM = new Color(0.0f, 0.62f, 0.68f, 1.0f);
     private static final Color MUTED = new Color(0.60f, 0.76f, 0.82f, 1.0f);
     private static final Color WARNING = new Color(1.0f, 0.67f, 0.20f, 1.0f);
+    private static final Color DEATH = new Color(0.86f, 0.24f, 0.24f, 1.0f);
     private static int trackedLastUnblockedDamage;
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
@@ -103,6 +104,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final class TrackedCardQueueItem {
         boolean present;
         String cardJson;
+        AbstractCard physicalCard;
+        CardQueueItem physicalItem;
         int target;
         int energyOnUse;
         boolean isEndTurn;
@@ -118,6 +121,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         void clear() {
             present = false;
             cardJson = null;
+            physicalCard = null;
+            physicalItem = null;
             target = 0;
             energyOnUse = 0;
             isEndTurn = false;
@@ -143,8 +148,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile long responseSequence = -1;
     private volatile String responseHash = "";
     private volatile String advisorResponseJson = "";
-    private volatile String ctmStatus = "";
-    private volatile String ctmReason = "";
     private volatile String silverStatus = "";
     private volatile String silverReason = "";
     private volatile String silverSelectedAction = "";
@@ -161,10 +164,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile long silverRootVisits;
     private long silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
     private String silverBudgetStateFingerprint = "";
-    private volatile double ctmDeath = 0.0;
-    private volatile int ctmHistogramMin = 1;
-    private volatile double[] ctmHistogram = new double[0];
+    private volatile CombatHpOverlay combatHpOverlay;
     private volatile OocOverlay oocOverlay;
+    private OocOverlay.Choice hoveredOocChoice;
     private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
     private volatile boolean showAdvisorPanel = true;
@@ -236,6 +238,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostBattle(AbstractRoom room) {
+        RunicDomeCapture.clear();
         resetSilverBudget();
         monsterSlots.clear();
         replacedMonsterParents.clear();
@@ -243,8 +246,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         liveEncounter = "";
         combatEntry = "";
         combatEntryHash = "";
-        ctmStatus = "";
-        ctmReason = "";
+        combatHpOverlay = null;
         silverStatus = "";
         silverReason = "";
         silverSelectedAction = "";
@@ -264,8 +266,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverInheritedVisits = 0;
         silverTotalSimulations = 0;
         silverRootVisits = 0;
-        ctmDeath = 0.0;
-        ctmHistogram = new double[0];
     }
 
     private STSModelInspector() {}
@@ -316,13 +316,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         responseSequence = -1;
         responseHash = "";
         advisorResponseJson = "";
-        if (!"combat".equals(snapshot.boundary)
-                || !snapshot.combatEntryHash.equals(combatEntryHash)) {
-            ctmStatus = "";
-            ctmReason = "";
-            ctmDeath = 0.0;
-            ctmHistogram = new double[0];
-        }
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
@@ -333,6 +326,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
         float scale = Settings.scale;
+        hoveredOocChoice = null;
         if (showAdvisorPanel) {
             renderAdvisorPanel(sb);
         } else {
@@ -362,7 +356,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         float top = Settings.HEIGHT - 170.0f * scale;
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
-        if (showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale)) {
+        boolean inlineOoc = showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale);
+        if (inlineOoc && (overlay == null || overlay.distribution == null)) {
             graphButtonX = 24.0f * scale;
             graphButtonBottom = 50.0f * scale;
             graphButtonLayoutSequence = newest.sequence;
@@ -371,8 +366,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return;
         }
         float width = (combat ? 500.0f : 420.0f) * scale;
-        int rows = overlay == null ? 0 : overlay.panelChoices().size();
-        float height = (combat ? COMBAT_PANEL_HEIGHT : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
+        int rows = overlay == null || inlineOoc ? 0 : overlay.panelChoices().size();
+        boolean histogram = !combat && overlay != null && overlay.distribution != null;
+        float height = (combat ? COMBAT_PANEL_HEIGHT : histogram ? 292.0f + 54.0f * rows
+                : rows == 0 ? 220.0f : 136.0f + 54.0f * rows) * scale;
         float bottom = top - height;
 
         // Use the game's existing white texture for the glass panels so the mod
@@ -396,7 +393,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             renderCombatPanel(sb, x, top, width, bottom, scale);
             if (showActionRecommendations) renderSilverActionBadges(sb, scale);
         } else {
-            renderNonCombatPanel(sb, x, top, width, bottom, scale);
+            renderNonCombatPanel(sb, x, top, width, bottom, scale, inlineOoc);
         }
         graphButtonX = x + (SILVER_BOOST_BUTTON_X + SILVER_BOOST_BUTTON_WIDTH + 10.0f) * scale;
         graphButtonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
@@ -417,21 +414,36 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         drawCard(sb, leftX, cardBottom, leftWidth, cardHeight, scale);
         drawCard(sb, rightX, cardBottom, rightWidth, cardHeight, scale);
 
-        renderSmallText(sb, "Death chance", leftX + 14.0f * scale,
+        // Silver's end-of-combat samples at the current root, refreshed after
+        // every play; hovering a card or End Turn outlines that action's share.
+        CombatHpOverlay view = currentCombatHpOverlay();
+        String[] hoveredLabel = {""};
+        CombatHpOverlay.Layer hovered = view == null ? null : hoveredCombatLayer(view, hoveredLabel);
+        renderSmallText(sb, "Sampled deaths", leftX + 14.0f * scale,
                 cardTop - 13.0f * scale, Color.WHITE, 0.92f);
-        String death = "OK".equals(ctmStatus)
-                ? String.format(Locale.ROOT, "%.1f%%", 100.0 * ctmDeath) : "—";
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, death,
-                leftX + 14.0f * scale, cardTop - 38.0f * scale,
-                "OK".equals(ctmStatus) ? CYAN : WARNING);
-        renderSmallText(sb, "(this combat)", leftX + 14.0f * scale,
-                cardBottom + 17.0f * scale,
-                "OK".equals(ctmStatus) ? MUTED : WARNING, 0.82f);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
+                view == null ? "—" : view.root.deathLabel(),
+                leftX + 14.0f * scale, cardTop - 38.0f * scale, view == null ? WARNING : CYAN);
+        if (hovered != null) renderFittedText(sb, hoveredLabel[0] + "  " + hovered.deathLabel(),
+                leftX + 14.0f * scale, cardTop - 68.0f * scale, leftWidth - 28.0f * scale, WARNING, 0.72f);
+        String sampleNote = view != null
+                ? "of " + compactSimulations(view.root.count) + " search sims"
+                : "OK".equals(silverStatus) || silverStatus == null || silverStatus.isEmpty()
+                ? "searching…" : silverStatus.toLowerCase(Locale.ROOT);
+        renderFittedText(sb, sampleNote, leftX + 14.0f * scale, cardBottom + 21.0f * scale,
+                leftWidth - 28.0f * scale, view == null ? WARNING : MUTED, 0.72f);
 
-        renderSmallText(sb, "Surviving final HP", rightX + 14.0f * scale,
+        renderSmallText(sb, "HP at combat end", rightX + 14.0f * scale,
                 cardTop - 13.0f * scale, Color.WHITE, 0.92f);
-        renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
-                rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
+        if (view == null || view.root.count == 0) {
+            float textTop = cardBottom + cardHeight - 38.0f * scale;
+            renderFittedText(sb, view == null ? "Awaiting Silver search" : "No resolved simulations",
+                    rightX + 12.0f * scale, textTop, rightWidth - 24.0f * scale, WARNING, 0.78f);
+            if (view == null && silverReason != null && !silverReason.isEmpty()) renderFittedText(sb,
+                    silverReason.replace('_', ' '), rightX + 12.0f * scale, textTop - 24.0f * scale,
+                    rightWidth - 24.0f * scale, MUTED, 0.65f);
+        } else renderHpHistogram(sb, view.axis(), view.root, hovered, rightX + 12.0f * scale,
+                cardBottom + 14.0f * scale, rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
         renderSmallText(sb, silverBudgetSummary(), x + 16.0f * scale, bottom + 68.0f * scale,
                 CYAN_DIM, 0.70f);
@@ -705,12 +717,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             String label = choice == null ? prefix + (view == null ? "Waiting" : "Not scored")
                     : prefix + choice.scoreLabel(view.choices.indexOf(choice) + 1);
             String detail = followUpText(choice);
+            if (choice != null && (anchor.hovered || mouseIn(anchor.x, anchor.bottom - (detail.isEmpty() ? 0 : 22 * scale),
+                    anchor.width, (detail.isEmpty() ? 32 : 54) * scale))) hoveredOocChoice = choice;
             renderInlineBadge(sb, anchor.x, anchor.bottom, anchor.width, label,
                     choice != null && choice.selected, choice != null, scale, detail);
         }
         String status = view == null ? "Waiting for advisor" : "OK".equals(view.status)
-                ? "V4 · amber = recommended" : "UNSUPPORTED".equals(view.status)
-                ? "V4 · no supported recommendation" : "Advisor unavailable";
+                ? "Amber = recommended" : "UNSUPPORTED".equals(view.status)
+                ? "No supported recommendation" : "Advisor unavailable";
         renderSmallText(sb, status + " · " + Keyboard.getKeyName(loadToggleKey()) + " hide",
                 24 * scale, 28 * scale, MUTED, .72f);
         return true;
@@ -725,7 +739,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (choice == null || choice.followUpUuid.isEmpty() || AbstractDungeon.player == null) return "";
         for (AbstractCard card : AbstractDungeon.player.masterDeck.group)
             if (choice.followUpUuid.equals(String.valueOf(card.uuid)))
-                return String.format(Locale.ROOT, "Next: %s · Q %.2f", card.name, choice.followUp.get("q").getAsDouble());
+                return String.format(Locale.ROOT, "Next: %s · V4 score %.2f", card.name, choice.followUp.get("q").getAsDouble());
         return "";
     }
 
@@ -741,99 +755,156 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 width - 16 * scale, MUTED, .65f);
     }
 
+    /**
+     * One rank badge under each combat potion icon: its best-ranked Silver use
+     * or discard action. Hovering the potion (or its open menu) shows that
+     * action's final-HP samples in the combat panel.
+     */
     private void renderPotionBadges(SpriteBatch sb, float scale) {
-        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null) return;
+        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null
+                || newest == null || !"combat".equals(newest.boundary)) return;
         com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
-        if (popup != null && popup.targetMode) return;
+        if (popup != null && !popup.isHidden) return;
         PotionOverlay view = potionOverlay;
-        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) view = null;
-        float width = 220 * scale;
-        float gap = 8 * scale;
-        float groupWidth = AbstractDungeon.player.potions.size() * (width + gap) - gap;
-        float firstX = AbstractDungeon.player.potions.isEmpty() ? 0 : Math.max(8 * scale,
-                Math.min(Math.max(540 * scale, AbstractDungeon.player.potions.get(0).hb.cX - width / 2),
-                        Settings.WIDTH - groupWidth - 8 * scale));
+        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) return;
+        float width = 96 * scale, height = 24 * scale;
         for (int slot = 0; slot < AbstractDungeon.player.potions.size(); ++slot) {
             com.megacrit.cardcrawl.potions.AbstractPotion potion = AbstractDungeon.player.potions.get(slot);
-            if (potion == null || "Potion Slot".equals(potion.ID)) continue;
-            try {
-                // Persistent columns identify the physical slot and stay readable
-                // even when several potions have ranked use/discard actions.
-                float x = firstX + slot * (width + gap);
-                float bottom = Settings.HEIGHT - 190 * scale;
-                if (popup != null && !popup.isHidden) {
-                    com.megacrit.cardcrawl.helpers.Hitbox menuBottom =
-                            (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot");
-                    bottom = Math.min(bottom, menuBottom.y - 74 * scale);
-                }
-                renderFittedText(sb, "P" + (slot + 1) + " · " + potion.name,
-                        x + 8 * scale, bottom + 52 * scale, width - 16 * scale, MUTED, .68f);
-                List<PotionOverlay.Entry> use = view == null ? Collections.emptyList() : view.forSlot(slot + 1, false);
-                List<PotionOverlay.Entry> discard = view == null ? Collections.emptyList() : view.forSlot(slot + 1, true);
-                if (!potion.canUse() || use.isEmpty()) {
-                    renderInlineBadge(sb, x, bottom, width, "Use · " + (potion.canUse() ? "not scored" : "unavailable"),
-                            false, false, scale);
-                    bottom -= 36 * scale;
-                } else for (PotionOverlay.Entry entry : use) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
-                    bottom -= 36 * scale;
-                }
-                if (!potion.canDiscard() || discard.isEmpty())
-                    renderInlineBadge(sb, x, bottom, width, "Discard · " + (potion.canDiscard() ? "not scored" : "unavailable"),
-                            false, false, scale);
-                else for (PotionOverlay.Entry entry : discard) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
-                    bottom -= 36 * scale;
-                }
-            } catch (ReflectiveOperationException | RuntimeException unavailable) { /* Hide unbound UI. */ }
+            if (potion == null || "Potion Slot".equals(potion.ID) || potion.hb == null) continue;
+            PotionOverlay.Entry entry = view.best(slot + 1);
+            if (entry == null) continue;
+            float x = Math.max(0, Math.min(Settings.WIDTH - width, potion.hb.cX - width / 2));
+            float bottom = potion.hb.y - height - 4 * scale;
+            drawRect(sb, x, bottom, width, height, PANEL_INNER);
+            drawBorder(sb, x, bottom, width, height, entry.selected ? WARNING : CARD_BORDER,
+                    (entry.selected ? 2 : 1) * scale);
+            renderFittedText(sb, entry.badge(), x + 6 * scale, bottom + height - 4 * scale,
+                    width - 12 * scale, entry.selected ? CYAN : Color.WHITE, .62f);
         }
     }
 
+    private boolean mouseIn(float x, float bottom, float width, float height) {
+        return InputHelper.mX >= x && InputHelper.mX <= x + width
+                && InputHelper.mY >= bottom && InputHelper.mY <= bottom + height;
+    }
+
     private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
-                                      float bottom, float scale) {
+                                      float bottom, float scale, boolean inline) {
         OocOverlay view = currentOocOverlay();
         String subtitle = view == null ? "Waiting for current choices" :
-                ("v4_q".equals(view.policy) ? "V4" : view.policy.toUpperCase(Locale.ROOT))
-                + "  ·  " + capitalize(view.screen.replace('_', ' '));
-        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
-        if (showActionRecommendations && view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
-            List<OocOverlay.Choice> panelChoices = view.panelChoices();
-            for (int row = 0; row < panelChoices.size(); ++row) {
-                OocOverlay.Choice choice = panelChoices.get(row);
-                int rank = view.choices.indexOf(choice);
-                float rowBottom = top - (122 + 44 * row) * scale;
-                drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 38 * scale, scale);
-                if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
-                        width - 28 * scale, 38 * scale, WARNING, 2 * scale);
-                renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + "  " + choice.label,
-                        x + 23 * scale, rowBottom + 26 * scale, width - 150 * scale,
-                        choice.selected ? CYAN : Color.WHITE, .78f);
-                renderSmallText(sb, String.format(Locale.ROOT, "N %d · Q %.3f", choice.visits, choice.q),
-                        x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
+                (!view.choices.isEmpty() && "forced_no_search".equals(view.choices.get(0).valueSemantics)
+                        ? "Forced choice" : "v4_q".equals(view.policy) ? "V4 action score" : "Mean search value")
+                + " · " + capitalize(view.screen.replace('_', ' '));
+        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .78f);
+        boolean histogram = view != null && view.distribution != null;
+        float listTop = top - (histogram ? 178 : 0) * scale;
+        if (view != null && showActionRecommendations && "OK".equals(view.status)) {
+            if (!inline) {
+                List<OocOverlay.Choice> panelChoices = view.panelChoices();
+                for (int row = 0; row < panelChoices.size(); ++row) {
+                    OocOverlay.Choice choice = panelChoices.get(row);
+                    int rank = view.choices.indexOf(choice);
+                    float rowBottom = listTop - (128 + 54 * row) * scale;
+                    if (mouseIn(x + 14 * scale, rowBottom, width - 28 * scale, 48 * scale))
+                        hoveredOocChoice = choice;
+                    drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 48 * scale, scale);
+                    if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
+                            width - 28 * scale, 48 * scale, WARNING, 2 * scale);
+                    renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + " " + choice.label,
+                            x + 23 * scale, rowBottom + 37 * scale, width - 160 * scale,
+                            choice.selected ? CYAN : Color.WHITE, .74f);
+                    String value = "forced_no_search".equals(choice.valueSemantics) ? "Forced"
+                            : "mean_backed_up_value_0_1".equals(choice.valueSemantics)
+                            ? choice.visits == 0 ? "No samples" : String.format(Locale.ROOT, "Mean %.3f", choice.q)
+                            : String.format(Locale.ROOT, "Score %.3f", choice.q);
+                    renderFittedText(sb, value, x + width - 133 * scale, rowBottom + 37 * scale,
+                            110 * scale, MUTED, .70f);
+                    if ("mean_backed_up_value_0_1".equals(choice.valueSemantics))
+                        renderSmallText(sb, String.format(Locale.ROOT, "N %d · visits %.1f%% · prior %.1f%%",
+                                choice.visits, 100 * choice.visitShare, 100 * choice.prior),
+                                x + 23 * scale, rowBottom + 17 * scale, MUTED, .65f);
+                }
             }
-            if ("card_reward".equals(view.screen))
-                renderSmallText(sb, "Scores below cards", x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
-            else if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
-                    x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
-            renderOocCardBadges(sb, view, scale);
-        } else if (!showActionRecommendations) {
-            renderSmallText(sb, view != null && "OK".equals(view.status)
-                            ? "Recommendations hidden" : view == null ? "Waiting for advisor" : "Advisor unavailable",
-                    x + 18 * scale, top - 105 * scale, MUTED, .86f);
-            renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
-                    x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
-        } else {
-            renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
-                    "UNSUPPORTED".equals(view.status) ? "No supported recommendation" : "Advisor unavailable",
-                    x + 18 * scale, top - 105 * scale, WARNING, .86f);
-            String reason = view == null ? "Scores appear when the current response is ready." : view.reason.replace('_', ' ');
-            renderFittedText(sb, reason, x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
+            renderOocCardBadges(sb, view, scale, !inline);
+        } else if (!histogram) {
+            renderSmallText(sb, !showActionRecommendations ? "Recommendations hidden"
+                    : view == null ? "Waiting for advisor" : "No supported recommendation",
+                    x + 18 * scale, top - 105 * scale, MUTED, .82f);
+            if (view != null) renderFittedText(sb, view.reason.replace('_', ' '),
+                    x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
         }
+        if (histogram) renderOocDistribution(sb, view, hoveredOocChoice, x, top - 96 * scale, width, scale);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
                 x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
     }
 
-    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale) {
+    /**
+     * Two boxes like the combat panel. Left: the search's mean value (a model
+     * estimate, not a calibrated probability) and, on hover, the choice's gap to
+     * the recommended one with its search-noise error. Right: player HP where
+     * each simulation was evaluated, on a fixed 0..max HP axis.
+     */
+    private void renderOocDistribution(SpriteBatch sb, OocOverlay view, OocOverlay.Choice hovered,
+                                       float x, float top, float width, float scale) {
+        float cardTop = top + 4 * scale, cardHeight = 150 * scale, cardBottom = cardTop - cardHeight;
+        float leftX = x + 14 * scale, leftWidth = 172 * scale;
+        float rightX = x + 198 * scale, rightWidth = width - 212 * scale;
+        drawCard(sb, leftX, cardBottom, leftWidth, cardHeight, scale);
+        drawCard(sb, rightX, cardBottom, rightWidth, cardHeight, scale);
+
+        OocOverlay.Distribution all = view.distribution;
+        renderSmallText(sb, "Win estimate", leftX + 14 * scale, cardTop - 13 * scale, Color.WHITE, .92f);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
+                all.mean == null ? "—" : String.format(Locale.ROOT, "%.3f", all.mean),
+                leftX + 14 * scale, cardTop - 38 * scale, CYAN);
+        renderFittedText(sb, "model value · n " + all.count, leftX + 14 * scale, cardTop - 66 * scale,
+                leftWidth - 28 * scale, MUTED, .66f);
+        OocOverlay.Choice best = null;
+        for (OocOverlay.Choice choice : view.choices) if (choice.selected) best = choice;
+        if (hovered != null) {
+            renderFittedText(sb, hovered.label, leftX + 14 * scale, cardTop - 92 * scale,
+                    leftWidth - 28 * scale, WARNING, .70f);
+            renderFittedText(sb, valueGap(hovered, best), leftX + 14 * scale, cardTop - 112 * scale,
+                    leftWidth - 28 * scale, WARNING, .70f);
+            renderFittedText(sb, String.format(Locale.ROOT, "N %d · visits %.0f%%", hovered.visits,
+                    100 * hovered.visitShare), leftX + 14 * scale, cardTop - 131 * scale,
+                    leftWidth - 28 * scale, MUTED, .62f);
+        } else renderFittedText(sb, "Hover a choice to compare", leftX + 14 * scale, cardTop - 92 * scale,
+                leftWidth - 28 * scale, MUTED, .64f);
+
+        renderSmallText(sb, view.hpHorizon.isEmpty() ? "HP ahead" : view.hpHorizon,
+                rightX + 14 * scale, cardTop - 13 * scale, Color.WHITE, .92f);
+        float textTop = cardTop - 44 * scale;
+        if (view.hpRoot == null || view.hpRoot.count == 0) {
+            renderFittedText(sb, view.hpRoot == null ? "No HP samples from this advisor" : "No resolved simulations",
+                    rightX + 12 * scale, textTop, rightWidth - 24 * scale, MUTED, .72f);
+        } else if (view.hpUnchanged() && (hovered == null || hovered.hp == null
+                || hovered.hp.count == 0 || hovered.hp.share(view.hpAxis.currentHp, view.hpAxis.currentHp) == 1.0)) {
+            renderFittedText(sb, "No HP change within the search horizon",
+                    rightX + 12 * scale, textTop, rightWidth - 24 * scale, MUTED, .72f);
+            renderFittedText(sb, "every sample stays at " + view.hpAxis.currentHp + " HP",
+                    rightX + 12 * scale, textTop - 22 * scale, rightWidth - 24 * scale, MUTED, .64f);
+        } else {
+            renderHpHistogram(sb, view.hpAxis, view.hpRoot, hovered == null ? null : hovered.hp,
+                    rightX + 12 * scale, cardBottom + 14 * scale, rightWidth - 24 * scale, cardHeight - 54 * scale, scale);
+            renderFittedText(sb, "Deaths " + view.hpRoot.deathLabel() + (hovered != null && hovered.hp != null
+                    ? "  ·  hover " + hovered.hp.deathLabel() : ""), rightX + 12 * scale, cardTop - 30 * scale,
+                    rightWidth - 90 * scale, MUTED, .60f);
+        }
+    }
+
+    /** "best", or the gap to the recommended choice with ±1 standard error of the difference. */
+    private static String valueGap(OocOverlay.Choice hovered, OocOverlay.Choice best) {
+        if (hovered.distribution == null || hovered.distribution.mean == null) return "No samples";
+        if (best == null || best == hovered) return String.format(Locale.ROOT, "%.3f · recommended", hovered.q);
+        if (best.distribution == null || best.distribution.mean == null) return String.format(Locale.ROOT, "%.3f", hovered.q);
+        double gap = hovered.distribution.mean - best.distribution.mean;
+        double error = Math.hypot(hovered.distribution.standardError(), best.distribution.standardError());
+        if (!Double.isFinite(error)) return String.format(Locale.ROOT, "%+.3f vs #1", gap);
+        return String.format(Locale.ROOT, "%+.3f ± %.3f%s", gap, error, Math.abs(gap) < 2 * error ? "  ≈ tie" : "");
+    }
+
+    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale, boolean drawBadges) {
         if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.CARD_REWARD
                 || AbstractDungeon.cardRewardScreen == null) return;
         List<AbstractCard> cards = AbstractDungeon.cardRewardScreen.rewardGroup;
@@ -842,7 +913,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             OocOverlay.Choice choice = view.choices.get(rank);
             if (!"choose".equals(choice.kind) || choice.index < 1 || choice.index > cards.size()) continue;
             AbstractCard card = cards.get(choice.index - 1);
-            float width = 166 * scale;
+            if (card.hb.hovered) hoveredOocChoice = choice;
+            if (!drawBadges) continue;
+            float width = 206 * scale;
             float x = Math.max(0, Math.min(Settings.WIDTH - width, card.current_x - width / 2));
             float bottom = Math.max(95 * scale, card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - 48 * scale);
             drawRect(sb, x, bottom, width, 34 * scale, PANEL_INNER);
@@ -948,79 +1021,163 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return -1;
     }
 
-    private void renderHistogram(SpriteBatch sb, float x, float bottom, float width,
-                                 float height, float scale) {
-        if (ctmHistogram.length == 0) {
-            renderFittedText(sb, ctmStatus.isEmpty() ? "Awaiting forecast" : "Forecast unavailable",
-                    x, bottom + height - 12.0f * scale, width, WARNING, 0.78f);
-            if (!ctmStatus.isEmpty()) renderFittedText(sb,
-                    (ctmReason.isEmpty() ? ctmStatus : ctmReason).replace('_', ' '),
-                    x, bottom + height - 36.0f * scale, width, MUTED, 0.65f);
-            return;
-        }
-        int first = -1;
-        int last = -1;
-        for (int i = 0; i < ctmHistogram.length; ++i) {
-            if (ctmHistogram[i] > 0.000001) {
-                if (first < 0) first = i;
-                last = i;
+    private CombatHpOverlay currentCombatHpOverlay() {
+        Snapshot snapshot = newest;
+        CombatHpOverlay view = combatHpOverlay;
+        return snapshot != null && view != null && responseReady()
+                && view.matches(snapshot.session, snapshot.sequence, snapshot.hash) ? view : null;
+    }
+
+    /** The hovered hand card (narrowed to the targeted monster while aiming) or End Turn. */
+    private CombatHpOverlay.Layer hoveredCombatLayer(CombatHpOverlay view, String[] label) {
+        com.megacrit.cardcrawl.characters.AbstractPlayer player = AbstractDungeon.player;
+        if (player == null) return null;
+        CombatHpOverlay.Layer potion = hoveredPotionLayer(view, player, label);
+        if (potion != null) return potion;
+        Object dragged = optionalField(player, "hoveredCard");
+        AbstractCard card = dragged instanceof AbstractCard ? (AbstractCard) dragged : null;
+        if (card == null && player.hand != null)
+            for (AbstractCard candidate : player.hand.group)
+                if (candidate.hb != null && candidate.hb.hovered) { card = candidate; break; }
+        if (card != null) {
+            Object aimed = AbstractDungeon.getMonsters() == null ? null
+                    : optionalField(AbstractDungeon.getMonsters(), "hoveredMonster");
+            AbstractMonster monster = aimed instanceof AbstractMonster ? (AbstractMonster) aimed : null;
+            int target = liveTargetIndex(monster);
+            CombatHpOverlay.Layer layer = target > 0 ? view.forCard(String.valueOf(card.uuid), target) : null;
+            if (layer != null) {
+                label[0] = card.name + " → " + monster.name;
+                return layer;
             }
+            label[0] = card.name;
+            return view.forCard(String.valueOf(card.uuid), -1);
         }
-        if (first < 0) return;
-        final int span = last - first + 1;
-        final int buckets = Math.min(14, span);
-        double maximum = 0.0;
-        for (int bucket = 0; bucket < buckets; ++bucket) {
-            int begin = first + bucket * span / buckets;
-            int end = first + (bucket + 1) * span / buckets;
-            double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
-            maximum = Math.max(maximum, probability);
+        Object button = AbstractDungeon.overlayMenu == null ? null : AbstractDungeon.overlayMenu.endTurnButton;
+        Object hb = button == null ? null : optionalField(button, "hb");
+        if (hb instanceof com.megacrit.cardcrawl.helpers.Hitbox && ((com.megacrit.cardcrawl.helpers.Hitbox) hb).hovered) {
+            label[0] = "End Turn";
+            return view.forEndTurn();
         }
-        if (maximum <= 0.0) return;
-        float chartX = x + 8.0f * scale;
-        float chartWidth = width - 58.0f * scale;
-        float chartHeight = height - 5.0f * scale;
-        float chartBottom = bottom + 5.0f * scale;
-        float barWidth = chartWidth / buckets;
+        return null;
+    }
+
+    /** The open potion menu's slot (Discard when its lower button is hovered), else a hovered potion icon. */
+    private CombatHpOverlay.Layer hoveredPotionLayer(CombatHpOverlay view,
+            com.megacrit.cardcrawl.characters.AbstractPlayer player, String[] label) {
+        if (AbstractDungeon.topPanel == null || player.potions == null) return null;
+        com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
+        if (popup != null && !popup.isHidden) {
+            Object slotValue = optionalField(popup, "slot");
+            if (!(slotValue instanceof Integer)) return null;
+            int slot = (Integer) slotValue;
+            if (slot < 0 || slot >= player.potions.size() || player.potions.get(slot) == null) return null;
+            String name = player.potions.get(slot).name;
+            if (popup.targetMode) {
+                Object aimed = optionalField(popup, "hoveredMonster");
+                AbstractMonster monster = aimed instanceof AbstractMonster ? (AbstractMonster) aimed : null;
+                int target = liveTargetIndex(monster);
+                CombatHpOverlay.Layer layer = target > 0 ? view.forPotion(slot + 1, false, target) : null;
+                if (layer != null) {
+                    label[0] = name + " → " + monster.name;
+                    return layer;
+                }
+                label[0] = name;
+                return view.forPotion(slot + 1, false, -1);
+            }
+            Object discard = optionalField(popup, "hbBot");
+            if (discard instanceof com.megacrit.cardcrawl.helpers.Hitbox
+                    && ((com.megacrit.cardcrawl.helpers.Hitbox) discard).hovered) {
+                label[0] = "Discard " + name;
+                return view.forPotion(slot + 1, true, -1);
+            }
+            label[0] = name;
+            return view.forPotion(slot + 1, false, -1);
+        }
+        for (int slot = 0; slot < player.potions.size(); ++slot) {
+            com.megacrit.cardcrawl.potions.AbstractPotion potion = player.potions.get(slot);
+            if (potion == null || potion.hb == null || !potion.hb.hovered) continue;
+            label[0] = potion.name;
+            return view.forPotion(slot + 1, false, -1);
+        }
+        return null;
+    }
+
+    private static Object optionalField(Object object, String name) {
+        try { return InlineChoices.field(object, name); }
+        catch (ReflectiveOperationException | RuntimeException unavailable) { return null; }
+    }
+
+    /** 1-based index among living monsters, as Silver's live actions number targets; -1 if none. */
+    private static int liveTargetIndex(AbstractMonster target) {
+        if (target == null || target.isDeadOrEscaped() || AbstractDungeon.getMonsters() == null) return -1;
+        int index = 0;
+        for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
+            if (monster == null || monster.isDeadOrEscaped()) continue;
+            ++index;
+            if (monster == target) return index;
+        }
+        return -1;
+    }
+
+    /** Cyan root samples on a fixed 0..max HP axis, the hovered layer as an amber outline. */
+    private void renderHpHistogram(SpriteBatch sb, HpAxis view, CombatHpOverlay.Layer root,
+                                   CombatHpOverlay.Layer hovered, float x, float bottom, float width,
+                                   float height, float scale) {
+        final int buckets = view.buckets();
+        final double maximum = Math.max(1e-9, view.maxShare(buckets));
+        float statsWidth = 66.0f * scale;
+        float chartX = x + 4.0f * scale;
+        float chartWidth = width - statsWidth - 8.0f * scale;
+        float chartBottom = bottom + 14.0f * scale;
+        float chartHeight = height - 16.0f * scale;
+        float barWidth = chartWidth / (buckets + 1);
         sb.setColor(0.35f, 0.78f, 0.80f, 0.20f);
-        for (int tick = 1; tick <= 3; ++tick) {
-            float gridY = chartBottom + chartHeight * tick / 4.0f;
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, gridY,
-                    chartWidth, scale);
-        }
+        for (int tick = 1; tick <= 3; ++tick)
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, chartBottom + chartHeight * tick / 4.0f, chartWidth, scale);
         sb.setColor(CYAN_DIM);
         sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, chartBottom, chartWidth, scale);
-        for (int bucket = 0; bucket < buckets; ++bucket) {
-            int begin = first + bucket * span / buckets;
-            int end = first + (bucket + 1) * span / buckets;
-            double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
-            float barHeight = (float) (chartHeight * probability / maximum);
-            sb.setColor(bucket < buckets / 2 ? CYAN_DIM : CYAN);
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX + bucket * barWidth,
-                    chartBottom, Math.max(scale, barWidth - scale), barHeight);
+        for (int bucket = 0; bucket <= buckets; ++bucket) {
+            int[] range = view.bucketRange(bucket, buckets);
+            float bx = chartX + bucket * barWidth;
+            float baseHeight = (float) (chartHeight * root.share(range[0], range[1]) / maximum);
+            if (baseHeight > 0) drawRect(sb, bx + scale * 0.5f, chartBottom,
+                    Math.max(scale, barWidth - scale), baseHeight, bucket == 0 ? DEATH : CYAN_DIM);
+            if (hovered != null && hovered.count > 0) {
+                float overlayHeight = (float) (chartHeight * hovered.share(range[0], range[1]) / maximum);
+                if (overlayHeight > 0) drawBorder(sb, bx + scale * 0.5f, chartBottom,
+                        Math.max(scale, barWidth - scale), overlayHeight, WARNING,
+                        Math.min(1.5f * scale, overlayHeight));
+            }
         }
-        int firstHp = ctmHistogramMin + first;
-        int lastHp = ctmHistogramMin + last;
-        renderSmallText(sb, Integer.toString(firstHp), chartX,
-                bottom + 1.0f * scale, MUTED, 0.70f);
-        renderSmallText(sb, Integer.toString(lastHp), chartX + chartWidth - 12.0f * scale,
-                bottom + 1.0f * scale, MUTED, 0.70f);
-        double mean = 0.0;
-        double mass = 0.0;
-        for (int i = first; i <= last; ++i) {
-            mean += (ctmHistogramMin + i) * ctmHistogram[i];
-            mass += ctmHistogram[i];
+        // Current HP marker.
+        float markerX = chartX + barWidth + (float) (view.currentHp - 1) / Math.max(1, view.axisMaxHp)
+                * (chartWidth - barWidth);
+        sb.setColor(Color.WHITE);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, markerX, chartBottom, scale, chartHeight);
+        renderSmallText(sb, "0", chartX, chartBottom - 1.0f * scale, MUTED, 0.66f);
+        renderSmallText(sb, Integer.toString(view.axisMaxHp), chartX + chartWidth - 18.0f * scale,
+                chartBottom - 1.0f * scale, MUTED, 0.66f);
+        renderSmallText(sb, "now " + view.currentHp, Math.max(chartX + 16.0f * scale, Math.min(
+                markerX - 14.0f * scale, chartX + chartWidth - 70.0f * scale)),
+                chartBottom - 1.0f * scale, Color.WHITE, 0.66f);
+        // Expected final HP (deaths as 0) and its change from now: all, then hover.
+        float statsX = x + width - statsWidth;
+        renderFinalHpStats(sb, root, view.currentHp, statsX, bottom + height, statsWidth, CYAN, scale);
+        if (hovered != null)
+            renderFinalHpStats(sb, hovered, view.currentHp, statsX, bottom + height - 40.0f * scale,
+                    statsWidth, WARNING, scale);
+    }
+
+    private void renderFinalHpStats(SpriteBatch sb, CombatHpOverlay.Layer layer, int currentHp,
+                                    float x, float top, float width, Color color, float scale) {
+        if (layer.count == 0) {
+            renderFittedText(sb, "no samples", x, top, width, color, 0.66f);
+            return;
         }
-        if (mass > 0.0 && newest.maxHp > 0) {
-            renderSmallText(sb, "Mean", x + width - 42.0f * scale,
-                    bottom + height - 12.0f * scale, CYAN, 0.70f);
-            renderSmallText(sb, String.format(Locale.ROOT, "%.0f%%",
-                            100.0 * mean / mass / newest.maxHp),
-                    x + width - 42.0f * scale, bottom + height - 29.0f * scale,
-                    CYAN, 0.88f);
-        }
+        double mean = layer.meanHp();
+        renderFittedText(sb, String.format(Locale.ROOT, "≈%.0f HP", mean), x, top, width, color, 0.80f);
+        renderFittedText(sb, String.format(Locale.ROOT, "%+.0f exp.", mean - currentHp),
+                x, top - 17.0f * scale, width, color, 0.66f);
     }
 
     private void renderStatusPill(SpriteBatch sb, float x, float top, float scale) {
@@ -1178,7 +1335,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
                 deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
                 "combat".equals(boundary) ? combatEntryHash : "", ooc,
-                silverSearchBudget, sha256(raw), capturedNanos);
+                silverSearchBudget, sha256(raw), capturedNanos, DebugRngCapture.json());
     }
 
     private void observeRoomTransition() {
@@ -1468,7 +1625,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return -1;
     }
 
-    private static IdentityHashMap<AbstractMonster, Integer> emittedMonsterSlots(String encounter) {
+    static IdentityHashMap<AbstractMonster, Integer> emittedMonsterSlots(String encounter) {
+        IdentityHashMap<AbstractMonster,Integer> bound=RunicDomeCapture.emittedSlots();
+        if(bound!=null)return bound;
         IdentityHashMap<AbstractMonster, Integer> emitted = new IdentityHashMap<>();
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return emitted;
@@ -1727,19 +1886,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
-    static String ctmResponseJson(String response) {
-        com.google.gson.JsonObject root = new com.google.gson.JsonParser().parse(response).getAsJsonObject();
-        if (root.has("evaluators")) for (com.google.gson.JsonElement item : root.getAsJsonArray("evaluators")) {
-            com.google.gson.JsonObject evaluator = item.getAsJsonObject();
-            if ("ctm_combat_entry_v2".equals(evaluator.get("id").getAsString())) return evaluator.toString();
-        }
-        return "";
-    }
-
     static int combatEntryRelicData(String id, int counter, boolean usedUp) {
-        // Java's spent Neow's Lament uses -2; native CTM stores remaining
-        // charges in [0, 3]. Keep every other value exact and fail closed.
-        return "NeowsBlessing".equals(id) && usedUp && counter == -2 ? 0 : counter;
+        // A spent Neow's Lament or Omamori may report Java's -2 used-up
+        // sentinel; native CTM stores remaining charges (0 when spent).
+        // Keep every other value exact and fail closed.
+        final boolean spentCharges = "NeowsBlessing".equals(id) || "Omamori".equals(id);
+        // Ancient Tea Set is charged (vanilla counter -2) from entering a rest
+        // site until the next combat; native stores 1 when charged, else 0.
+        if ("Ancient Tea Set".equals(id)) return counter == -2 ? 1 : 0;
+        return spentCharges && usedUp && counter == -2 ? 0 : counter;
     }
 
     private static String relicEntryJson() {
@@ -1822,7 +1977,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 ",\"location\":\"" + location + "\"}";
     }
 
-    private static String cardQueueItemJson() {
+    private static String cardQueueItemJson(boolean qualifiedSourceCleanup) {
         if (!trackedLastCardQueueItem.present) return "null";
         TrackedCardQueueItem item = trackedLastCardQueueItem;
         return "{\"card\":" + item.cardJson
@@ -1836,7 +1991,53 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + ",\"autoplay\":" + item.autoplay
                 + ",\"regretCardCount\":" + item.regretCardCount
                 + ",\"purgeOnUse\":" + item.purgeOnUse
-                + ",\"exhaustOnUse\":" + item.exhaustOnUse + "}";
+                + ",\"exhaustOnUse\":" + (qualifiedSourceCleanup?sourceCleanupExhaust():item.exhaustOnUse) + "}";
+    }
+
+    private static List<PendingCardQueueCapture.Item> pendingCardQueueItems(IdentityHashMap<AbstractMonster,Integer> slots) {
+        List<PendingCardQueueCapture.Item> snapshot = new ArrayList<>();
+        for (CardQueueItem item : AbstractDungeon.actionManager.cardQueue) {
+            if (item == null) { snapshot.add(null); continue; }
+            PendingCardQueueCapture.Item observed = new PendingCardQueueCapture.Item();
+            observed.identity = item;
+            observed.vanilla = item.getClass() == CardQueueItem.class;
+            observed.hasMonster = item.monster != null;
+            observed.target = item.monster == null ? null : slots.get(item.monster);
+            observed.endTurnAutoPlay = item.isEndTurnAutoPlay;
+            observed.energyOnUse = item.energyOnUse;
+            observed.ignoreEnergyTotal = item.ignoreEnergyTotal;
+            observed.randomTarget = item.randomTarget;
+            observed.autoplay = item.autoplayCard;
+            if (item.card != null) {
+                AbstractCard card = item.card;
+                observed.cardJson = cardJson(card);
+                observed.cardId = card.cardID;
+                observed.vanillaEndTurnCard = card.getClass() == com.megacrit.cardcrawl.cards.status.Burn.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Decay.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Doubt.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Shame.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Regret.class;
+                if (card.getClass() == com.megacrit.cardcrawl.cards.curses.Regret.class
+                        && card.magicNumber == card.baseMagicNumber)
+                    observed.regretCardCount = card.magicNumber;
+                for(AbstractCard handCard:AbstractDungeon.player.hand.group) if(handCard==card) observed.inHand=true;
+                observed.uuid = card.uuid == null ? null : card.uuid.toString();
+                observed.requiresTarget = card.target == AbstractCard.CardTarget.ENEMY
+                        || card.target == AbstractCard.CardTarget.SELF_AND_ENEMY;
+                observed.triggerOnUse = !card.dontTriggerOnUseCard;
+                observed.freeToPlay = card.freeToPlayOnce;
+                observed.purgeOnUse = card.purgeOnUse;
+                observed.exhaustOnUse = card.exhaust || card.exhaustOnUseOnce || card.exhaustOnFire;
+            }
+            snapshot.add(observed);
+        }
+        return snapshot;
+    }
+
+    private static PendingCardQueueCapture.Result pendingCardQueue(IdentityHashMap<AbstractMonster,Integer> slots,
+                                                                   boolean codexEndTurn) {
+        return PendingCardQueueCapture.capture(pendingCardQueueItems(slots), trackedLastCardQueueItem.physicalItem,
+                codexEndTurn,hasRelic("Unceasing Top"));
     }
 
     private static boolean isPlayerDecisionPoint() {
@@ -1858,7 +2059,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return phase == AbstractRoom.RoomPhase.COMBAT
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
-                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                         || screen == AbstractDungeon.CurrentScreen.CARD_REWARD) && selectionAvailable));
     }
 
     private static boolean isCardSelectionBoundary() {
@@ -1866,7 +2068,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                     && AbstractDungeon.gridSelectScreen != null)
                 || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
-                    && AbstractDungeon.handCardSelectScreen != null);
+                    && AbstractDungeon.handCardSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    && AbstractDungeon.cardRewardScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -1881,6 +2085,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             trackedLastTargetedMonster = item.monster;
 
         trackedLastCardQueueItem.present = true;
+        trackedLastCardQueueItem.physicalCard = item.card;
+        trackedLastCardQueueItem.physicalItem = item;
         trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
         Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
         if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
@@ -1924,6 +2130,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics)
             if (id.equals(relic.relicId)) return true;
         return false;
+    }
+
+    static Integer awakenedNativePhase(Boolean form1, boolean halfDead) {
+        // Vanilla flips form1 in damage(), before the rebirth move executes.
+        // Native remains in phase zero through the half-dead interval.
+        return form1 == null ? null : (form1 || halfDead ? 0 : 1);
+    }
+
+    static Integer guardianNativeThreshold(Integer threshold, Integer increase, Boolean isOpen) {
+        // Vanilla increments on Defensive Mode; native increments on Twin Slam.
+        // The remaining Mode Shift power is exported separately as a status.
+        if (threshold == null || increase == null || isOpen == null || increase != 10)
+            return null;
+        int nativeThreshold = threshold - (isOpen ? 0 : increase);
+        return nativeThreshold > 0 ? nativeThreshold : null;
     }
 
     private static Integer readIntField(Object object, String... names) {
@@ -2020,22 +2241,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
-    private static int bronzeAutomatonMiscInfo(AbstractMonster monster) {
-        Object raw = readObjectField(monster, "moveHistory");
-        if (!(raw instanceof List<?>)) return 0;
-        List<?> history = (List<?>) raw;
-        if (history.size() < 2) return 0;
-        Object current = history.get(history.size() - 1);
-        Object previous = history.get(history.size() - 2);
-        if (!(current instanceof Number) || !(previous instanceof Number)) return 0;
-        int currentByte = ((Number) current).intValue();
-        int previousByte = ((Number) previous).intValue();
-        // Native Silver's miscInfo is lastBoostWasFlail.  It is not a hidden
-        // Java field, but the public move history determines it exactly at a
-        // stable decision boundary: Boost->Flail and Flail->Boost are the two
-        // states in which the native toggle is true.
-        return (currentByte == 1 && previousByte == 5)
-                || (currentByte == 5 && previousByte == 1) ? 1 : 0;
+    static Integer bronzeAutomatonNativeTurns(Integer numTurns) {
+        // Native now follows vanilla's getMove counter directly. Dome reconstructs
+        // its pre-roll counter from public executions and bypasses this accessor.
+        return numTurns == null || numTurns < 0 || numTurns > 4 ? null : numTurns;
+    }
+
+    private static Integer bronzeAutomatonMiscInfo(AbstractMonster monster) {
+        return bronzeAutomatonNativeTurns(readIntField(monster, "numTurns"));
     }
 
     private static Integer monsterUniquePower0(AbstractMonster monster) {
@@ -2063,9 +2276,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return dividerDamage == null ? 0 : dividerDamage;
         }
         if ("TheGuardian".equals(id)) {
-            for (AbstractPower power : monster.powers)
-                if ("Mode Shift".equals(power.ID)) return power.amount;
-            return null;
+            return guardianNativeThreshold(readIntField(monster, "dmgThreshold"),
+                    readIntField(monster, "dmgThresholdIncrease"),
+                    readBooleanField(monster, "isOpen"));
         }
         if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
         if ("SlaverBlue".equals(id)) return 0;
@@ -2092,7 +2305,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if ("AwakenedOne".equals(id)) {
             Boolean form1 = readBooleanField(monster, "form1");
-            return form1 == null ? null : (form1 ? 0 : 1);
+            return awakenedNativePhase(form1, monster.halfDead);
         }
         if ("WrithingMass".equals(id)) {
             Boolean used = readBooleanField(monster, "usedMegaDebuff");
@@ -2159,6 +2372,42 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return task;
     }
 
+    // These vanilla action classes own the selection until its cards are
+    // returned. Their identity is independent of localized prompt text.
+    // null means no qualified override; empty means a known unsupported shape.
+    static String actionSelectionTask(String actionClass, boolean hand, boolean anyNumber, int count) {
+        if ("com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction".equals(actionClass))
+            return !hand && !anyNumber && (count == 1 || count == 2) ? "LIQUID_MEMORIES_POTION" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.DualWieldAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "DUAL_WIELD" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ArmamentsAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "ARMAMENTS" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ExhumeAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "EXHUME" : "";
+        if ("com.megacrit.cardcrawl.actions.common.ExhaustAction".equals(actionClass))
+            return !hand ? "" : !anyNumber && count == 1 ? "EXHAUST_ONE"
+                    : anyNumber && (count == 3 || count == 5 || count == 99) ? "EXHAUST_MANY" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(actionClass))
+            return hand && anyNumber && count == 99 ? "GAMBLE" : "";
+        if ("com.megacrit.cardcrawl.actions.common.DiscardAction".equals(actionClass)) return "";
+        if ("com.megacrit.cardcrawl.actions.unique.DiscardPileToTopOfDeckAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "HEADBUTT" : "";
+        if ("com.megacrit.cardcrawl.actions.common.PutOnDeckAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "WARCRY" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ForethoughtAction".equals(actionClass))
+            return hand && ((!anyNumber && count == 1) || (anyNumber && count == 99)) ? "FORETHOUGHT" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.SkillFromDeckToHandAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "SECRET_TECHNIQUE" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.AttackFromDeckToHandAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "SECRET_WEAPON" : "";
+        return null;
+    }
+
+    private static String currentActionSelectionTask(boolean hand, boolean anyNumber, int count) {
+        Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+        return actionSelectionTask(action == null ? "" : action.getClass().getName(), hand, anyNumber, count);
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
@@ -2180,6 +2429,391 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append("]}").toString();
     }
 
+    static String singleSelectionJson(String task, String origin, boolean canPickZero,
+                                      boolean anyNumber, int count, int selectedCount,
+                                      List<String> uuids, int liveChoiceCount) {
+        boolean hand = "HAND_SELECT".equals(origin);
+        boolean qualified = hand ? "WARCRY".equals(task) || "FORETHOUGHT".equals(task) || "EXHAUST_ONE".equals(task) || "ARMAMENTS".equals(task) || "DUAL_WIELD".equals(task) || "GAMBLE".equals(task) || "EXHAUST_MANY".equals(task)
+                : "GRID".equals(origin) && ("SECRET_TECHNIQUE".equals(task) || "SECRET_WEAPON".equals(task) || "HEADBUTT".equals(task) || "EXHUME".equals(task) || "LIQUID_MEMORIES_POTION".equals(task));
+        boolean multiForethought = hand && canPickZero && anyNumber
+                && (("FORETHOUGHT".equals(task) || "GAMBLE".equals(task)) && count == 99
+                    || "EXHAUST_MANY".equals(task) && (count == 3 || count == 5 || count == 99));
+        boolean liquidPair = !hand && "LIQUID_MEMORIES_POTION".equals(task) && !canPickZero && !anyNumber && count == 2;
+        if (!qualified || (!multiForethought && !liquidPair && (canPickZero || anyNumber || count != 1)) || selectedCount != 0
+                || uuids == null || uuids.isEmpty() || uuids.size() != liveChoiceCount
+                || ("LIQUID_MEMORIES_POTION".equals(task) && uuids.size() <= count)
+                || uuids.contains(null) || uuids.contains("")
+                || new java.util.HashSet<String>(uuids).size() != uuids.size())
+            return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_live_choices\"}";
+        String base = selectionJson(task, canPickZero, anyNumber, count, null);
+        StringBuilder out = new StringBuilder(base.substring(0, base.length() - 1));
+        out.append(",\"origin\":\"").append(origin).append("\",\"selectedCount\":0");
+        if (multiForethought) out.append(",\"actionClass\":\"").append("FORETHOUGHT".equals(task)
+                ? "com.megacrit.cardcrawl.actions.unique.ForethoughtAction" : "GAMBLE".equals(task)
+                ? "com.megacrit.cardcrawl.actions.unique.GamblingChipAction" : "com.megacrit.cardcrawl.actions.common.ExhaustAction").append("\"");
+        out.append(",\"liveChoices\":[");
+        for (int i = 0; i < uuids.size(); ++i) {
+            if (i != 0) out.append(',');
+            out.append("{\"uuid\":\"").append(escapeJson(uuids.get(i)))
+                    .append("\",\"choiceIndex\":").append(i + 1).append('}');
+        }
+        return out.append("]}").toString();
+    }
+
+    static String completedSingleSelectionJson(String task, String actionClass, int pickCount,
+                                                List<String> selected, int choiceCount,
+                                                boolean canProceed, boolean canCancel) {
+        if (!("WARCRY".equals(task) || "FORETHOUGHT".equals(task) || "EXHAUST_ONE".equals(task) || "ARMAMENTS".equals(task) || "DUAL_WIELD".equals(task))
+                || !task.equals(actionSelectionTask(actionClass, true, false, pickCount))
+                || pickCount != 1 || selected == null || selected.size() != 1
+                || selected.get(0) == null || selected.get(0).isEmpty()
+                || choiceCount != 0 || !canProceed || canCancel) return null;
+        return "{\"task\":\"" + task + "\",\"origin\":\"HAND_SELECT\","
+                + "\"mechanicalTransition\":\"single_select_confirm\",\"actionClass\":\"" + escapeJson(actionClass)
+                + "\",\"pickCount\":1,\"selectedCount\":1,\"selectedUuid\":\"" + escapeJson(selected.get(0))
+                + "\",\"liveChoiceCount\":0,\"canProceed\":true,\"canCancel\":false}";
+    }
+
+    private static String liveSingleSelectionJson(String task, boolean hand, boolean canPickZero,
+                                                  boolean anyNumber, int count, int selectedCount) {
+        List<String> uuids = new ArrayList<>();
+        int choiceCount = -1;
+        try {
+            // These are the same list and indices used by MCPTheSpire's choose
+            // implementation. Grid order is not the native draw-pile order.
+            Class<?> choices = Class.forName("mcpthespire.ChoiceScreenUtils");
+            Object labels = choices.getMethod("getCurrentChoiceList").invoke(null);
+            Object cards = hand ? AbstractDungeon.player.hand.group
+                    : choices.getMethod("getGridScreenCards").invoke(null);
+            if (labels instanceof List && cards instanceof List) {
+                choiceCount = ((List<?>) labels).size();
+                if (hand && !canPickZero && !anyNumber && selectedCount == 1) {
+                    List<String> selected = new ArrayList<>();
+                    for (AbstractCard card : AbstractDungeon.handCardSelectScreen.selectedCards.group)
+                        selected.add(card.uuid == null ? null : card.uuid.toString());
+                    Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+                    String confirmation = completedSingleSelectionJson(task, action == null ? "" : action.getClass().getName(),
+                            count, selected, choiceCount,
+                            Boolean.TRUE.equals(choices.getMethod("isConfirmButtonAvailable").invoke(null)),
+                            Boolean.TRUE.equals(choices.getMethod("isCancelButtonAvailable").invoke(null)));
+                    if (confirmation != null) return confirmation;
+                }
+                for (Object value : (List<?>) cards) {
+                    if (!(value instanceof AbstractCard)) { uuids.add(null); continue; }
+                    AbstractCard card = (AbstractCard) value;
+                    uuids.add(card.uuid == null ? null : card.uuid.toString());
+                }
+            }
+        } catch (ReflectiveOperationException | LinkageError error) {
+            // Missing or changed MCP contracts cannot be replaced by pile order.
+        }
+        String result = singleSelectionJson(task, hand ? "HAND_SELECT" : "GRID", canPickZero,
+                anyNumber, count, selectedCount, uuids, choiceCount);
+        if ("LIQUID_MEMORIES_POTION".equals(task)) {
+            Object action = AbstractDungeon.actionManager.currentAction;
+            if (!Integer.valueOf(count).equals(readIntField(action,"numberOfCards"))
+                    || !Boolean.FALSE.equals(readBooleanField(action,"optional"))
+                    || !Boolean.TRUE.equals(readBooleanField(action,"setCost"))
+                    || !Integer.valueOf(0).equals(readIntField(action,"newCost"))
+                    || handMultiContinuation("GAMBLE")==null)
+                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            result = result.substring(0,result.length()-1) + ",\"actionClass\":\"" + action.getClass().getName()
+                    + "\",\"continuation\":\"" + handMultiContinuation("GAMBLE") + "\",\"optional\":false,\"newCost\":0}";
+        }
+        boolean sourceOwned=trackedLastCardQueueItem.physicalCard!=null
+                && sourceSelectionOwner(task,trackedLastCardQueueItem.physicalCard.getClass().getName())
+                && hasPendingUseCard();
+        if ("GAMBLE".equals(task) || "EXHAUST_MANY".equals(task) && !sourceOwned) {
+            String continuation = handMultiContinuation(task);
+            if (continuation == null) return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            result = result.substring(0,result.length()-1) + ",\"continuation\":\"" + continuation + "\"}";
+        }
+        if ("ARMAMENTS".equals(task) || "EXHUME".equals(task) || "DUAL_WIELD".equals(task)) {
+            Object action = AbstractDungeon.actionManager.currentAction;
+            boolean armaments = "ARMAMENTS".equals(task), dualWield = "DUAL_WIELD".equals(task);
+            Integer copies = dualWield ? readIntField(action,"dupeAmount") : 0;
+            Object held = readObjectField(action, armaments ? "cannotUpgrade" : dualWield ? "cannotDuplicate" : "exhumes");
+            if (!(held instanceof List) || (dualWield ? copies == null || copies < 1 || copies > 2
+                    : !Boolean.FALSE.equals(readBooleanField(action, armaments ? "upgraded" : "upgrade"))))
+                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_held_cards\"}";
+            StringBuilder cards = new StringBuilder("[");
+            for (Object item : (List<?>) held) {
+                if (!(item instanceof AbstractCard)) return "{\"task\":\"\"}";
+                AbstractCard card = (AbstractCard)item;
+                if (armaments ? card.canUpgrade() : dualWield ? card.type == AbstractCard.CardType.ATTACK || card.type == AbstractCard.CardType.POWER : !"Exhume".equals(card.cardID)) return "{\"task\":\"\"}";
+                if (cards.length() > 1) cards.append(','); cards.append(cardJson(card));
+            }
+            if (dualWield) result = result.replace("\"data0\":0", "\"data0\":" + copies);
+            result = result.substring(0,result.length()-1) + ",\"actionClass\":\"" + action.getClass().getName()
+                    + "\",\"upgradeVariant\":false,\"heldCards\":" + cards.append(']') + "}";
+        }
+        if(sourceOwned) {
+            if(publicPendingActionsJson(false,task)==null)
+                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            result=result.substring(0,result.length()-1)+",\"continuation\":\"source_card_actions\"}";
+        }
+        return result;
+    }
+
+    static boolean sourceSelectionOwner(String task,String cardClass) {
+        String base="com.megacrit.cardcrawl.cards.";
+        if("WARCRY".equals(task)) return (base+"red.Warcry").equals(cardClass) || (base+"colorless.ThinkingAhead").equals(cardClass);
+        if("EXHAUST_ONE".equals(task)) return (base+"red.TrueGrit").equals(cardClass) || (base+"red.BurningPact").equals(cardClass);
+        String suffix="ARMAMENTS".equals(task)?"red.Armaments":"DUAL_WIELD".equals(task)?"red.DualWield"
+                :"EXHUME".equals(task)?"red.Exhume":"HEADBUTT".equals(task)?"red.Headbutt"
+                :"FORETHOUGHT".equals(task)?"colorless.Forethought":"EXHAUST_MANY".equals(task)?"colorless.Purity"
+                :"SECRET_TECHNIQUE".equals(task)?"colorless.SecretTechnique":"SECRET_WEAPON".equals(task)?"colorless.SecretWeapon"
+                :"DISCOVERY".equals(task)?"colorless.Discovery":null;
+        return suffix!=null && (base+suffix).equals(cardClass);
+    }
+
+    private static boolean hasPendingUseCard() {
+        if(AbstractDungeon.actionManager==null)return false;
+        for(Object action:AbstractDungeon.actionManager.actions)
+            if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(action.getClass().getName()))return true;
+        return false;
+    }
+
+    private static boolean sourceCopyInPendingQueue(AbstractCard card) {
+        if(card==null || card==trackedLastCardQueueItem.physicalCard || !card.purgeOnUse
+                || !card.uuid.equals(trackedLastCardQueueItem.physicalCard.uuid))return false;
+        for(CardQueueItem item:AbstractDungeon.actionManager.cardQueue)
+            if(item.getClass()==CardQueueItem.class && item.card==card && item.autoplayCard
+                    && item.ignoreEnergyTotal && !item.isEndTurnAutoPlay && !card.dontTriggerOnUseCard)return true;
+        return false;
+    }
+
+    static boolean zeroCopyPower(String id,String className,int amount) {
+        return amount==0 && (("Double Tap".equals(id) && "com.megacrit.cardcrawl.powers.DoubleTapPower".equals(className))
+                || ("DuplicationPower".equals(id) && "com.megacrit.cardcrawl.powers.DuplicationPower".equals(className)));
+    }
+
+    private static boolean zeroCopyPowerRemoval(Object action) {
+        if(!"com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(action.getClass().getName())
+                || readObjectField(action,"target")!=AbstractDungeon.player || readObjectField(action,"source")!=AbstractDungeon.player
+                || readObjectField(action,"powerInstance")!=null)return false;
+        String id=readStringField(action,"powerToRemove");
+        AbstractPower power=id==null?null:AbstractDungeon.player.getPower(id);
+        return power!=null && zeroCopyPower(power.ID,power.getClass().getName(),power.amount);
+    }
+
+    private static boolean projectedZeroCopyPower(AbstractPower power,String selection) {
+        if(selection==null || !selection.contains("\"continuation\":\"source_card_actions\"")
+                || !zeroCopyPower(power.ID,power.getClass().getName(),power.amount))return false;
+        for(Object action:AbstractDungeon.actionManager.actions)
+            if(zeroCopyPowerRemoval(action) && power.ID.equals(readStringField(action,"powerToRemove")))return true;
+        return false;
+    }
+
+    static boolean sourceCleanupExhaust(boolean trackedExhaust,boolean skill,String powerClass) {
+        return trackedExhaust || (skill && "com.megacrit.cardcrawl.powers.CorruptionPower".equals(powerClass));
+    }
+
+    private static boolean sourceCleanupExhaust() {
+        AbstractCard card=trackedLastCardQueueItem.physicalCard;
+        AbstractPower corruption=AbstractDungeon.player.getPower("Corruption");
+        return sourceCleanupExhaust(trackedLastCardQueueItem.exhaustOnUse,card!=null && card.type==AbstractCard.CardType.SKILL,
+                corruption==null?null:corruption.getClass().getName());
+    }
+
+    private static String pendingUseCardJson(Object action,String task) {
+        AbstractCard card=trackedLastCardQueueItem.physicalCard;
+        if(!trackedLastCardQueueItem.present || card==null || card.uuid==null || !trackedLastCardQueueItem.triggerOnUse
+                || trackedLastCardQueueItem.isEndTurn || !sourceSelectionOwner(task,card.getClass().getName())
+                || readObjectField(action,"targetCard")!=card
+                || !Float.valueOf(0.15f).equals(readObjectField(action,"duration"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"returnToHand"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"reboundCard"))
+                || !Boolean.valueOf(sourceCleanupExhaust()).equals(readBooleanField(action,"exhaustCard"))
+                || card.purgeOnUse!=trackedLastCardQueueItem.purgeOnUse
+                || AbstractDungeon.player.hand.group.contains(card) || AbstractDungeon.player.drawPile.group.contains(card)
+                || AbstractDungeon.player.discardPile.group.contains(card) || AbstractDungeon.player.exhaustPile.group.contains(card)) return null;
+        for(AbstractCard pending:AbstractDungeon.player.limbo.group)
+            if(pending!=card && !sourceCopyInPendingQueue(pending))return null;
+        return "{\"kind\":\"USE_CARD\",\"uuid\":\""+card.uuid+"\",\"actionClass\":\"com.megacrit.cardcrawl.actions.utility.UseCardAction\","
+                + "\"unstarted\":true,\"returnToHand\":false,\"reboundCard\":false,\"triggerOnUse\":true,\"exhaustOnUse\":"
+                + sourceCleanupExhaust() + ",\"purgeOnUse\":"+trackedLastCardQueueItem.purgeOnUse
+                + ",\"autoplay\":"+trackedLastCardQueueItem.autoplay+"}";
+    }
+
+    // Values here describe unresolved public effects, never an RNG result or a
+    // hidden card. Native samples random upgrade/target effects when executed.
+    static String publicPendingActionJson(String kind, Integer amount, String power) {
+        if (kind == null) return null;
+        if ("GAMBLE".equals(kind) || "UPGRADE_RANDOM".equals(kind)
+                || "REMOVE_PEN_NIB".equals(kind) || "REMOVE_PLAYER_DEBUFFS".equals(kind))
+            return "{\"kind\":\"" + kind + "\"}";
+        if (amount == null || amount < 0 || amount > 999) return null;
+        if ("DRAW".equals(kind) && amount > 10) return null;
+        if ("BUFF_PLAYER".equals(kind)) {
+            if (!java.util.Arrays.asList("Strength","Dexterity","Artifact","Buffer","Plated Armor","Thorns","Vigor","IntangiblePlayer","Pen Nib").contains(power)
+                    || amount == 0 || "Pen Nib".equals(power) && amount!=1) return null;
+        } else if ("DEBUFF_PLAYER".equals(kind)) {
+            if (!("Flex".equals(power) || "Weakened".equals(power) && amount==1) || amount == 0) return null;
+        } else if ("DEBUFF_ALL_ENEMY".equals(kind)) {
+            if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
+        } else if ("SHUFFLE_WOUNDS".equals(kind)) {
+            if (amount != 2) return null;
+        } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
+        return "{\"kind\":\"" + kind + "\",\"amount\":" + amount
+                + (power == null ? "" : ",\"power\":\"" + power + "\",\"sourceMonster\":false") + "}";
+    }
+
+    private static int allEnemyPowerBatch(List<?> actions,int first,String power,int amount) {
+        String relic="Vulnerable".equals(power)?"Bag of Marbles":"Weakened".equals(power)?"Red Mask":"Poison".equals(power)?"TwistedFunnel":"";
+        String className="Vulnerable".equals(power)?"VulnerablePower":"Weakened".equals(power)?"WeakPower":"PoisonPower";
+        if(relic.isEmpty() || !hasRelic(relic) || publicPendingActionJson("DEBUFF_ALL_ENEMY",amount,power)==null
+                || AbstractDungeon.getMonsters()==null || AbstractDungeon.getMonsters().monsters.isEmpty()) return -1;
+        int index=first;
+        for(AbstractMonster target:AbstractDungeon.getMonsters().monsters) {
+            while(index<actions.size() && "com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(actions.get(index).getClass().getName()))++index;
+            if(index>=actions.size())return -1;
+            Object action=actions.get(index++), value=readObjectField(action,"powerToApply");
+            if(!"com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(action.getClass().getName())
+                    || !Boolean.FALSE.equals(readBooleanField(action,"isDone"))
+                    || readObjectField(action,"target")!=target || readObjectField(action,"source")!=AbstractDungeon.player
+                    || !(value instanceof AbstractPower) || !value.getClass().getName().equals("com.megacrit.cardcrawl.powers."+className)
+                    || !Integer.valueOf(amount).equals(readIntField(action,"amount")))return -1;
+            AbstractPower applied=(AbstractPower)value;
+            if(applied.owner!=target || !power.equals(applied.ID) || applied.amount!=amount
+                    || (!"Poison".equals(power) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied"))))return -1;
+        }
+        return index;
+    }
+
+    private static String publicPendingActionsJson(boolean opening) {
+        return publicPendingActionsJson(opening,null);
+    }
+
+    private static String publicPendingActionsJson(boolean opening,String sourceTask) {
+        com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
+        if(manager==null || manager.turnHasEnded || manager.monsterAttacksQueued
+                || !manager.preTurnActions.isEmpty() || !manager.monsterQueue.isEmpty()
+                || (sourceTask==null && (!manager.cardQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()))
+                || manager.actions.size()>128) return null;
+        StringBuilder out=new StringBuilder("["); int draws=0,enables=0,cleanups=0;
+        for(int actionIndex=0;actionIndex<manager.actions.size();++actionIndex) {
+            Object action=manager.actions.get(actionIndex);
+            String name=action.getClass().getName(), kind=null, power=null;
+            Integer amount=readIntField(action,"amount");
+            if(!Boolean.FALSE.equals(readBooleanField(action,"isDone"))) return null;
+            if("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) {++enables;continue;}
+            if("com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)
+                    || "com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)) continue;
+            // Vanilla decrements copy charges synchronously, then queues a
+            // removal with no onRemove override. The zero charge and its
+            // visual removal are jointly omitted from the native projection.
+            if(sourceTask!=null && zeroCopyPowerRemoval(action))continue;
+            if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) {
+                if(sourceTask==null || ++cleanups!=1)return null;
+                String item=pendingUseCardJson(action,sourceTask);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
+            if("com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(name)) {
+                if(readObjectField(action,"target")!=AbstractDungeon.player || readObjectField(action,"source")!=AbstractDungeon.player
+                        || readObjectField(action,"powerInstance")!=null || !"Pen Nib".equals(readStringField(action,"powerToRemove"))
+                        || !hasRelic("Pen Nib"))return null;
+                AbstractPower nib=AbstractDungeon.player.getPower("Pen Nib");
+                if(nib==null || !"com.megacrit.cardcrawl.powers.PenNibPower".equals(nib.getClass().getName()))return null;
+                kind="REMOVE_PEN_NIB";
+            } else if("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction".equals(name)) {
+                if(readObjectField(action,"c")!=AbstractDungeon.player || !hasRelic("OrangePellets"))return null;
+                kind="REMOVE_PLAYER_DEBUFFS";
+            } else if("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                if(!Boolean.FALSE.equals(readBooleanField(action,"shuffleCheck"))
+                        || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))
+                        || readObjectField(action,"followUpAction")!=null) return null;
+                kind="DRAW";if(amount!=null && amount>0)++draws;
+            } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
+                if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
+                kind="GAIN_BLOCK";
+            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
+            else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
+            else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
+            else if("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
+                Object values=readObjectField(action,"damage");
+                if(!(values instanceof int[]) || (readObjectField(action,"source")!=null && readObjectField(action,"source")!=AbstractDungeon.player)
+                        || !Boolean.TRUE.equals(readBooleanField(action,"firstFrame"))
+                        || !Boolean.FALSE.equals(readBooleanField(action,"utilizeBaseDamage"))
+                        || !"THORNS".equals(String.valueOf(readObjectField(action,"damageType")))) return null;
+                int[] damage=(int[])values;
+                if(damage.length!=AbstractDungeon.getMonsters().monsters.size() || damage.length==0) return null;
+                amount=damage[0];for(int value:damage) if(value!=amount) return null;
+                kind="DAMAGE_ALL";
+            } else if("com.megacrit.cardcrawl.actions.common.DamageRandomEnemyAction".equals(name)) {
+                Object info=readObjectField(action,"info");
+                if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type")))) return null;
+                Object owner=readObjectField(info,"owner");
+                if(owner!=null && owner!=AbstractDungeon.player) return null;
+                amount=readIntField(info,"output");
+                if(amount==null || !amount.equals(readIntField(info,"base"))) return null;
+                kind="DAMAGE_RANDOM";
+            } else if("com.megacrit.cardcrawl.actions.common.MakeTempCardInDrawPileAction".equals(name)) {
+                Object value=readObjectField(action,"cardToMake");
+                if(!hasRelic("Mark of Pain") || !(value instanceof AbstractCard)
+                        || !value.getClass().getName().equals("com.megacrit.cardcrawl.cards.status.Wound")
+                        || !Boolean.TRUE.equals(readBooleanField(action,"randomSpot"))
+                        || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return null;
+                AbstractCard card=(AbstractCard)value;
+                if(card.upgraded || card.timesUpgraded!=0 || card.misc!=0 || card.cost!=-2
+                        || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return null;
+                kind="SHUFFLE_WOUNDS";
+            } else if("com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(name)) {
+                Object value=readObjectField(action,"powerToApply");
+                if(!(value instanceof AbstractPower)) return null;
+                AbstractPower applied=(AbstractPower)value;
+                if(readObjectField(action,"target") instanceof AbstractMonster) {
+                    int next=allEnemyPowerBatch(manager.actions,actionIndex,applied.ID,applied.amount);
+                    if(next<0)return null;
+                    String item=publicPendingActionJson("DEBUFF_ALL_ENEMY",applied.amount,applied.ID);
+                    if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
+                }
+                if(readObjectField(action,"target")!=AbstractDungeon.player)return null;
+                if(applied.owner!=AbstractDungeon.player || amount==null || amount!=applied.amount
+                        || !java.util.Arrays.asList("StrengthPower","DexterityPower","ArtifactPower","BufferPower","PlatedArmorPower",
+                            "ThornsPower","VigorPower","IntangiblePlayerPower","LoseStrengthPower","WeakPower","PenNibPower")
+                            .contains(applied.getClass().getSimpleName())
+                        || !applied.getClass().getName().equals("com.megacrit.cardcrawl.powers."+applied.getClass().getSimpleName())) return null;
+                if("Pen Nib".equals(applied.ID) && !hasRelic("Pen Nib"))return null;
+                if("Weakened".equals(applied.ID) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied")))return null;
+                power=applied.ID;kind=applied.type==AbstractPower.PowerType.DEBUFF?"DEBUFF_PLAYER":"BUFF_PLAYER";
+            }
+            Object source=readObjectField(action,"source");
+            if(source!=null && source!=AbstractDungeon.player) return null;
+            String item=publicPendingActionJson(kind,amount,power);
+            if(item==null)return null;
+            if(out.length()>1)out.append(',');out.append(item);
+        }
+        if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
+        return out.append(']').toString();
+    }
+
+    private static String handMultiContinuation(String task) {
+        String publicTail=publicPendingActionsJson(false);
+        if(publicTail!=null) return publicTail.equals("[]") ? "none" : "public_actions";
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.monsterQueue.isEmpty()) return null;
+        int cleanups = 0;
+        for (Object pending : actions.actions) {
+            String name = pending.getClass().getName();
+            if ("com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)
+                    || "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)
+                    || "com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) continue;
+            if (!"EXHAUST_MANY".equals(task) || ++cleanups != 1
+                    || !"com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) return null;
+            Object target = readObjectField(pending,"targetCard");
+            if (!(target instanceof AbstractCard) || target != trackedLastCardQueueItem.physicalCard
+                    || !"Purity".equals(((AbstractCard)target).cardID)
+                    || !Boolean.FALSE.equals(readBooleanField(pending,"returnToHand"))
+                    || !Boolean.FALSE.equals(readBooleanField(pending,"reboundCard"))
+                    || !Boolean.valueOf(trackedLastCardQueueItem.exhaustOnUse).equals(readBooleanField(pending,"exhaustCard"))) return null;
+        }
+        if (cleanups == 0) return AbstractDungeon.player.limbo.isEmpty() && actions.cardQueue.isEmpty() ? "none" : null;
+        return "purity_card";
+    }
+
     private static String stasisJson() {
         StringBuilder out = new StringBuilder("[");
         boolean first = true;
@@ -2189,8 +2823,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 for (AbstractPower power : monster.powers) {
                     if (!"Stasis".equals(power.ID)) continue;
                     Object card = readObjectField(power, "card");
-                    Integer slot = "BronzeOrb".equals(monster.id)
-                            ? readIntField(monster, "count") : null;
+                    Integer physical=emittedMonsterSlots(liveEncounter).get(monster);
+                    Integer slot = "BronzeOrb".equals(monster.id) && physical!=null && (physical==0 || physical==2)?physical/2:null;
                     if (!(card instanceof AbstractCard) || slot == null || slot < 0 || slot > 1)
                         return null;
                     if (!first) out.append(',');
@@ -2204,14 +2838,230 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
+    static String cardRewardSelectionJson(String actionClass, Integer copies, Boolean skippable,
+                                          String continuation, List<String> cards, boolean plainCards) {
+        String reason = "";
+        boolean codex = "com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass);
+        if (codex && (!"codex_end_turn".equals(continuation) || !Boolean.TRUE.equals(skippable)))
+            reason = "silver_card_reward_end_turn_continuation";
+        else if (!codex && !"com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass)
+                && !"com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass))
+            reason = "silver_card_reward_unknown_action";
+        else if (skippable == null)
+            reason = "silver_card_reward_skip_unobserved";
+        else if (!codex && (copies == null || copies < 1 || copies > 2))
+            reason = "silver_card_reward_copy_count";
+        else if (!codex && !"none".equals(continuation) && !"discovery_card".equals(continuation) && !"source_card_actions".equals(continuation)
+                && !(("toolbox_draw".equals(continuation) || "toolbox_actions".equals(continuation))
+                    && "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)))
+            reason = "silver_card_reward_pending_actions";
+        else if (!plainCards || cards == null || cards.size() != 3
+                || new java.util.HashSet<String>(cards).size() != 3 || cards.contains(null)
+                || cards.contains(""))
+            reason = "silver_card_reward_option_state";
+        if (!reason.isEmpty())
+            return "{\"task\":\"\",\"origin\":\"CARD_REWARD\",\"unsupportedReason\":\"" + reason + "\"}";
+        boolean toolbox = "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass);
+        if (toolbox && (copies != 1 || skippable))
+            return "{\"task\":\"\",\"unsupportedReason\":\"silver_card_reward_option_state\"}";
+        StringBuilder out = new StringBuilder("{\"task\":\"" + (codex ? "CODEX" : "DISCOVERY") + "\",\"origin\":\"CARD_REWARD\","
+                + "\"canPickZero\":" + skippable + ",\"canPickAnyNumber\":false,\"pickCount\":1,"
+                + "\"setCostToZero\":" + (!toolbox && !codex) + ",\"selectedBits\":0,\"data0\":");
+        out.append(codex ? 0 : copies).append(",\"continuation\":\"").append(continuation).append("\",\"cards\":[");
+        for (int i = 0; i < cards.size(); ++i) {
+            if (i != 0) out.append(',');
+            out.append('"').append(escapeJson(cards.get(i))).append('"');
+        }
+        return out.append("]}").toString();
+    }
+
+    private static String cardRewardContinuation() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
+                || !actions.monsterQueue.isEmpty()) return "unsupported";
+        if (actions.actions.isEmpty() && AbstractDungeon.player.limbo.isEmpty()) return "none";
+        // The existing native interrupted-card replay can restore this sole
+        // remainder. Other card/action queues need a separate continuation
+        // contract and must not be discarded when a popup is imported.
+        if (actions.actions.size() != 1 || !trackedLastCardQueueItem.present) return "unsupported";
+        Object pending = actions.actions.get(0);
+        if (!"com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(pending.getClass().getName()))
+            return "unsupported";
+        Object target = readObjectField(pending, "targetCard");
+        if (!(target instanceof AbstractCard)) return "unsupported";
+        AbstractCard card = (AbstractCard) target;
+        if (!"Discovery".equals(card.cardID) || trackedLastCardQueueItem.physicalCard != card
+                || AbstractDungeon.player.hand.group.contains(card)
+                || AbstractDungeon.player.drawPile.group.contains(card)
+                || AbstractDungeon.player.discardPile.group.contains(card)
+                || AbstractDungeon.player.exhaustPile.group.contains(card)
+                || AbstractDungeon.player.limbo.size() > 1
+                || (AbstractDungeon.player.limbo.size() == 1 && AbstractDungeon.player.limbo.group.get(0) != card)
+                || !Boolean.FALSE.equals(readBooleanField(pending, "returnToHand"))
+                || !Boolean.FALSE.equals(readBooleanField(pending, "reboundCard"))
+                || !Boolean.valueOf(trackedLastCardQueueItem.exhaustOnUse).equals(readBooleanField(pending, "exhaustCard"))
+                || trackedLastCardQueueItem.purgeOnUse || trackedLastCardQueueItem.autoplay) return "unsupported";
+        return "discovery_card";
+    }
+
+    static int toolboxDrawAfter(List<String> classes, Integer amount, boolean ordinaryDraw) {
+        return classes != null && classes.equals(java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.common.DrawCardAction",
+                "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction"))
+                && ordinaryDraw && amount != null && amount >= 1 && amount <= 10 ? amount : -1;
+    }
+
+    static List<Integer> toolboxDrawsAfter(List<String> classes, List<Integer> amounts, boolean ordinaryDraws) {
+        if (classes == null || amounts == null || !ordinaryDraws || classes.size() > 128) return null;
+        List<Integer> result = new ArrayList<>();
+        int enables = 0;
+        for (String name : classes) {
+            if ("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                if (result.size() >= amounts.size()) return null;
+                Integer amount = amounts.get(result.size());
+                if (amount == null || amount < 1 || amount > 10) return null;
+                result.add(amount);
+            } else if ("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) ++enables;
+            else if (!"com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) return null;
+        }
+        return enables == 1 && !result.isEmpty() && result.size() == amounts.size() ? result : null;
+    }
+    private static List<Integer> toolboxDrawsAfter() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
+                || !actions.monsterQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()) return null;
+        List<String> classes = new ArrayList<>(); List<Integer> amounts = new ArrayList<>();
+        boolean ordinary = true;
+        for (Object action : actions.actions) {
+            String name = action.getClass().getName(); classes.add(name);
+            if ("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                amounts.add(readIntField(action, "amount"));
+                ordinary &= Boolean.FALSE.equals(readBooleanField(action, "shuffleCheck"))
+                        && Boolean.TRUE.equals(readBooleanField(action, "clearDrawHistory"))
+                        && readObjectField(action, "followUpAction") == null;
+            }
+        }
+        return toolboxDrawsAfter(classes, amounts, ordinary);
+    }
+
+    static boolean codexEndTurnContinuation(List<String> classes, boolean endTurnQueued,
+                                            boolean queuesEmpty, boolean noOrbs) {
+        return endTurnQueued && queuesEmpty && noOrbs && classes != null && classes.equals(java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.defect.TriggerEndOfTurnOrbsAction"));
+    }
+
+    private static boolean stoneCalendarDamage(Object action) {
+        Object values = readObjectField(action, "damage");
+        if (!hasRelic("StoneCalendar") || !(values instanceof int[])
+                || readObjectField(action, "source") != null
+                || !Boolean.TRUE.equals(readBooleanField(action, "firstFrame"))
+                || !Boolean.FALSE.equals(readBooleanField(action, "utilizeBaseDamage"))
+                || !"THORNS".equals(String.valueOf(readObjectField(action, "damageType")))) return false;
+        int[] damage = (int[]) values;
+        if (damage.length != AbstractDungeon.getMonsters().monsters.size()) return false;
+        for (int amount : damage) if (amount != 52) return false;
+        return true;
+    }
+
+    private static boolean codexEndTurnContinuation() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null) return false;
+        List<String> classes = new ArrayList<>();
+        boolean damageSeen = false, blockSeen = false;
+        for (Object action : actions.actions) {
+            String name = action.getClass().getName();
+            if ("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
+                if (damageSeen || blockSeen || !classes.isEmpty() || !stoneCalendarDamage(action)) return false;
+                damageSeen = true;
+            } else if ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
+                blockSeen = true;
+                Integer amount = readIntField(action, "amount");
+                if (readObjectField(action, "target") != AbstractDungeon.player
+                        || (readObjectField(action, "source") != null && readObjectField(action, "source") != AbstractDungeon.player)
+                        || amount == null || amount < 0 || amount > 999 || !classes.isEmpty()) return false;
+            } else if (!"com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) classes.add(name);
+        }
+        return actions.actions.size() <= 128 && hasRelic("Nilry's Codex") && codexEndTurnContinuation(classes,
+                AbstractDungeon.player.endTurnQueued && !AbstractDungeon.player.isEndingTurn,
+                !actions.turnHasEnded && !actions.monsterAttacksQueued && actions.preTurnActions.isEmpty()
+                    && pendingCardQueue(new IdentityHashMap<AbstractMonster,Integer>(),true).error==null
+                    && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
+                AbstractDungeon.player.maxOrbs == 0 && AbstractDungeon.player.orbs.isEmpty());
+    }
+
+    private static String combatCardRewardJson() {
+        com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
+        Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+        List<String> ids = new ArrayList<>();
+        boolean plain = screen != null && screen.rewardGroup != null
+                && screen.discoveryCard == null && !hasRelic("PrismaticShard")
+                && !AbstractDungeon.player.hasPower("MasterRealityPower");
+        if (screen != null && screen.rewardGroup != null) for (AbstractCard card : screen.rewardGroup) {
+            if (card == null) { plain = false; continue; }
+            ids.add(card.cardID);
+            plain &= !card.upgraded && card.timesUpgraded == 0 && card.misc == 0
+                    && card.costForTurn == card.cost && !card.freeToPlayOnce && !card.retain;
+        }
+        Boolean skippable = readBooleanField(screen, "skippable");
+        if (Boolean.TRUE.equals(skippable)) {
+            try {
+                if (!Boolean.TRUE.equals(Class.forName("mcpthespire.ChoiceScreenUtils")
+                        .getMethod("isCancelButtonAvailable").invoke(null))) skippable = null;
+            } catch (ReflectiveOperationException | LinkageError error) { skippable = null; }
+        }
+        String actionClass = action == null ? "" : action.getClass().getName();
+        String continuation = cardRewardContinuation();
+        if("com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass)
+                && trackedLastCardQueueItem.physicalCard!=null && hasPendingUseCard()
+                && sourceSelectionOwner("DISCOVERY",trackedLastCardQueueItem.physicalCard.getClass().getName())) {
+            continuation=publicPendingActionsJson(false,"DISCOVERY")!=null?"source_card_actions":"unsupported";
+        }
+        List<Integer> drawsAfter = null;
+        List<Integer> blocksAfter = new ArrayList<>();
+        int damageAllBeforeBlocks = 0;
+        if ("com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass) && codexEndTurnContinuation()) {
+            continuation = "codex_end_turn";
+            for (Object pending : AbstractDungeon.actionManager.actions) {
+                if ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(pending.getClass().getName()))
+                    blocksAfter.add(readIntField(pending, "amount"));
+                else if ("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(pending.getClass().getName()))
+                    damageAllBeforeBlocks = 52;
+            }
+        }
+        if ("com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)
+                && "unsupported".equals(continuation)) {
+            drawsAfter = toolboxDrawsAfter();
+            if (drawsAfter != null) continuation = "toolbox_draw";
+            else if(publicPendingActionsJson(true)!=null) continuation="toolbox_actions";
+        }
+        String selection = cardRewardSelectionJson(actionClass, readIntField(action, "amount"),
+                skippable, continuation, ids, plain);
+        if (drawsAfter != null && "toolbox_draw".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"drawsAfter\":" + drawsAfter + "}";
+        if (!blocksAfter.isEmpty() && "codex_end_turn".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"blocksAfter\":" + blocksAfter + "}";
+        if (damageAllBeforeBlocks > 0 && "codex_end_turn".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"damageAllBeforeBlocks\":" + damageAllBeforeBlocks + "}";
+        return selection;
+    }
+
     private static String cardSelectionJson() {
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                && AbstractDungeon.cardRewardScreen != null) return combatCardRewardJson();
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                 && AbstractDungeon.gridSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
                     AbstractDungeon.gridSelectScreen;
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
-            String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
-            if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            String task = currentActionSelectionTask(false, screen.anyNumber, amount == null ? -1 : amount);
+            if (task != null) return liveSingleSelectionJson(task, false, false, screen.anyNumber,
+                    amount == null ? -1 : amount, screen.selectedCards.size());
+            if (task == null) {
+                task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+                if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            }
             return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
         }
@@ -2221,11 +3071,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     AbstractDungeon.handCardSelectScreen;
             Boolean anyNumber = readBooleanField(screen, "anyNumber");
             boolean canPickAnyNumber = anyNumber != null ? anyNumber : screen.upTo;
-            // DiscardAction(-1), used by Gambler's Brew and Gambling Chip,
-            // opens the hand selector with an empty selection reason and the
-            // vanilla sentinel amount 99.  That is the native GAMBLE task,
-            // not an unknown combat screen.
-            String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
+            // Action ownership distinguishes redraw from ordinary discard.
+            String task = currentActionSelectionTask(true, canPickAnyNumber, screen.numCardsToSelect);
+            if (task != null) return liveSingleSelectionJson(task, true, screen.canPickZero,
+                    canPickAnyNumber, screen.numCardsToSelect, screen.selectedCards.size());
+            if (task == null) task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
@@ -2246,7 +3096,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String encounter = liveEncounter.isEmpty()
                 ? INSTANCE.encounterName(AbstractDungeon.getCurrRoom()) : liveEncounter;
         IdentityHashMap<AbstractMonster, Integer> emittedSlots = emittedMonsterSlots(encounter);
-        int declaredMonsterCount = 0;
+        int declaredMonsterCount = RunicDomeCapture.declaredCapacity();
         int monstersAlive = 0;
         for (Map.Entry<AbstractMonster, Integer> entry : emittedSlots.entrySet()) {
             AbstractMonster monster = entry.getKey();
@@ -2263,10 +3113,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int lastTargetedMonster = targetedSlot == null || targetedSlot < 0 ? 1 : targetedSlot;
         for (AbstractPower power : AbstractDungeon.player.powers)
             if ("Vulnerable".equals(power.ID)) trackedPlayerVulnerableSeen = true;
-        StringBuilder out = new StringBuilder("{\"turn\":");
+        StringBuilder out = new StringBuilder("{");
+        if(RunicDomeCapture.bindingFailure()!=null)out.append("\"occupantBindingError\":\"").append(escapeJson(RunicDomeCapture.bindingFailure())).append("\",");
+        out.append("\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(EnergyPanel.totalCount)
+                // energyMaster includes base/relic energy. Berserk remains a
+                // separate power and is folded into native turn energy there.
+                .append(",\"energyPerTurn\":").append(AbstractDungeon.player.energy.energyMaster)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
                 .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
                 .append(",\"attacksPlayedThisTurn\":").append(attacksPlayed)
@@ -2291,6 +3146,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"playerPowers\":[");
         boolean firstPower = true;
         for (AbstractPower power : AbstractDungeon.player.powers) {
+            if(projectedZeroCopyPower(power,selection))continue;
             if (!firstPower) out.append(',');
             firstPower = false;
             String powerId = power.ID;
@@ -2301,6 +3157,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // can read the actual field; the importer remains fail-closed if
             // a required power does not expose it.
             Boolean justApplied = readBooleanField(power, "justApplied");
+            // Vanilla IntangiblePlayerPower always expires at end of round
+            // and has no justApplied field; native uses a false expiry bit.
+            if ("IntangiblePlayer".equals(powerId)) justApplied = false;
             if (justApplied != null) out.append(",\"justApplied\":").append(justApplied);
             if (powerId.startsWith("TheBomb")) {
                 Integer damage = readIntField(power, "damage");
@@ -2319,7 +3178,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if ("Panache".equals(power.ID)) {
                 Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
                 if (value != null) out.append(",\"panacheCounter\":").append(value);
-            } else if ("Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
+            } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
             } else if ("Orange Pellets".equals(power.ID) || "OrangePelletsPower".equals(power.ID)) {
@@ -2336,6 +3195,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append(",\"cardSelect\":").append(selection == null ? "false" : selection)
                 .append(",\"resolving\":false")
                 .append(",\"runicDome\":").append(hasRunicDome())
+                .append(hasRunicDome() ? ",\"runicDomeKnowledge\":" + RunicDomeCapture.snapshot() : "")
                 .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
                 // At this stable player boundary vanilla has completed all
                 // monster-turn bookkeeping. Make the known zero explicit so
@@ -2381,6 +3241,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append("],\"limbo\":[");
         first = true;
         for (AbstractCard card : AbstractDungeon.player.limbo.group) {
+            // Queued purge copies are represented by pendingCardQueue. Their
+            // shared UUID is not another permanent physical pile occurrence.
+            if(selection!=null && selection.contains("\"continuation\":\"source_card_actions\"")
+                    && (sourceCopyInPendingQueue(card) || (card==trackedLastCardQueueItem.physicalCard
+                        && trackedLastCardQueueItem.purgeOnUse && trackedLastCardQueueItem.autoplay)))continue;
             if (!first) out.append(',');
             first = false;
             out.append(cardJson(card, "LIMBO"));
@@ -2401,6 +3266,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append("{\"id\":\"").append(escapeJson(monster.id))
                         .append("\",\"slot\":").append(slot)
                         .append(",\"idx\":").append(slot)
+                        .append(",\"occupantGeneration\":").append(RunicDomeCapture.occupantGeneration(monster))
                         .append(",\"hp\":").append(monster.currentHealth)
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)
@@ -2434,9 +3300,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     out.append('}');
                 }
                 out.append(']');
-                Integer miscInfo = monsterMiscInfo(monster);
+                // A post-roll private counter can disclose a hidden intent.
+                // Dome counters are reconstructed from the separately captured
+                // public history; never export the live post-roll counter.
+                Integer miscInfo = runicDome ? 0 : monsterMiscInfo(monster);
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
-                Integer uniquePower0 = monsterUniquePower0(monster);
+                Integer uniquePower0 = runicDome ? null : monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
@@ -2446,7 +3315,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('}');
             }
         }
-        out.append("],\"curCardQueueItem\":").append(cardQueueItemJson())
+        out.append(']');
+        if (selection != null) {
+            PendingCardQueueCapture.Result pending = pendingCardQueue(emittedSlots,
+                    selection.contains("\"continuation\":\"codex_end_turn\""));
+            if (pending.error != null) out.append(",\"pendingCardQueueError\":\"")
+                    .append(escapeJson(pending.error)).append('"');
+            else out.append(",\"pendingCardQueue\":").append(pending.json);
+        }
+        if(selection!=null && (selection.contains("\"continuation\":\"public_actions\"")
+                || selection.contains("\"continuation\":\"toolbox_actions\"")
+                || selection.contains("\"continuation\":\"source_card_actions\""))) {
+            String sourceTask=null;
+            if(selection.contains("source_card_actions")) {
+                sourceTask=new com.google.gson.JsonParser().parse(selection).getAsJsonObject().get("task").getAsString();
+            }
+            String pending=publicPendingActionsJson(selection.contains("toolbox_actions"),sourceTask);
+            if(pending==null) out.append(",\"pendingActionQueueError\":\"silver_selection_pending_actions\"");
+            else out.append(",\"pendingActionQueue\":").append(pending);
+        }
+        out.append(",\"curCardQueueItem\":").append(cardQueueItemJson(selection!=null && selection.contains("\"continuation\":\"source_card_actions\"")))
                 .append(",\"lastCard\":");
         AbstractCard lastCard = AbstractDungeon.actionManager.lastCard;
         if (decisionOrdinal > 0 && trackedLastCardQueueItem.present
@@ -2495,6 +3383,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    static String ctmPrimaryModel(Properties properties, String environmentValue) {
+        // Presence is intentional even for an empty/whitespace override: let
+        // the native loader report the invalid artifact instead of substituting.
+        if (environmentValue != null) return environmentValue;
+        String value = properties.getProperty("ctmModel");
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
     private static int loadToggleKey() {
@@ -2550,7 +3446,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     return;
                 }
                 ProcessBuilder builder = new ProcessBuilder(executable);
-                String ctmModel = environmentFirst(p, "STS_CTM_MODEL", "ctmModel");
+                String ctmModel = ctmPrimaryModel(p, System.getenv("STS_CTM_MODEL"));
                 if (ctmModel != null)
                     builder.environment().put("STS_CTM_MODEL", ctmModel);
                 String oocModel = environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel");
@@ -2658,11 +3554,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         Snapshot current = newest;
                         if (current != null && current.session.equals(responseSession)
                                 && seq == current.sequence && current.hash.equals(hash)) {
-                            ctmStatus = "";
-                            ctmReason = "";
-                            ctmDeath = 0.0;
-                            ctmHistogramMin = 1;
-                            ctmHistogram = new double[0];
                             silverStatus = "";
                             silverReason = "";
                             silverSelectedAction = "";
@@ -2683,18 +3574,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             responseHash = hash;
                             advisorResponseJson = line;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
-                            if ("MODEL_UNAVAILABLE".equals(status)
-                                    || "SCHEMA_MISMATCH".equals(status)) {
-                                ctmStatus = status.toLowerCase().replace('_', ' ');
-                                ctmReason = reason == null ? ctmStatus : reason;
-                            }
                             if ("ERROR".equals(status)) {
                                 advisorReason = (code == null ? "UNKNOWN" : code) +
                                         (message == null || message.isEmpty() ? "" : " - " + message);
-                                if ("combat".equals(current.boundary) && ctmStatus.isEmpty()) {
-                                    ctmStatus = code == null ? "error" : code.toLowerCase();
-                                    ctmReason = message == null ? advisorReason : message;
-                                }
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
@@ -2715,18 +3597,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 silverRootVisits = numberField(line, "rootVisits");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
-                            String ctm = ctmResponseJson(line);
-                            if (!ctm.isEmpty()) {
-                                String forecastStatus = field(ctm, "status");
-                                ctmStatus = "OK".equals(forecastStatus) ? "OK" :
-                                        forecastStatus == null ? "error" : forecastStatus.toLowerCase(Locale.ROOT);
-                                String forecastReason = field(ctm, "reason");
-                                ctmReason = forecastReason == null ? ctmStatus : forecastReason;
-                                if ("OK".equals(ctmStatus)) {
-                                    ctmDeath = doubleField(ctm, "deathProbability");
-                                    ctmHistogramMin = (int) numberField(ctm, "winningHpHistogramMin");
-                                    ctmHistogram = numberArrayField(ctm, "winningHpHistogram");
-                                }
+                            if ("combat".equals(current.boundary)) {
+                                try { combatHpOverlay = CombatHpOverlay.parse(line); }
+                                catch (RuntimeException invalidDisplay) { combatHpOverlay = null; }
                             }
                             try { potionOverlay = PotionOverlay.parse(line); }
                             catch (RuntimeException invalidDisplay) { potionOverlay = null; }
@@ -2778,36 +3651,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (start < 0) return false;
             start += needle.length();
             return json.startsWith("true", start);
-        }
-
-        private double[] numberArrayField(String json, String key) {
-            String needle = "\"" + key + "\":[";
-            int start = json.indexOf(needle);
-            if (start < 0) return new double[0];
-            start += needle.length();
-            int end = json.indexOf(']', start);
-            if (end < 0) return new double[0];
-            String values = json.substring(start, end).trim();
-            if (values.isEmpty()) return new double[0];
-            String[] parts = values.split(",");
-            double[] result = new double[parts.length];
-            try {
-                for (int i = 0; i < parts.length; ++i) result[i] = Double.parseDouble(parts[i]);
-                return result;
-            } catch (NumberFormatException error) {
-                return new double[0];
-            }
-        }
-
-        private double doubleField(String json, String key) {
-            String needle = "\"" + key + "\":";
-            int start = json.indexOf(needle);
-            if (start < 0) return 0.0;
-            start += needle.length();
-            int end = start;
-            while (end < json.length() && "0123456789+-.eE".indexOf(json.charAt(end)) >= 0) end++;
-            try { return Double.parseDouble(json.substring(start, end)); }
-            catch (Exception e) { return 0.0; }
         }
     }
 
@@ -2959,8 +3802,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
                     .append("\",\"reason\":\"").append(Snapshot.escape(reason == null ? "" : reason))
                     .append("\",\"advisor\":");
-            return out.append(ready && !advisorResponseJson.isEmpty()
-                    ? advisorResponseJson : "null").append("}}").toString();
+            out.append(ready && !advisorResponseJson.isEmpty()
+                    ? advisorResponseJson : "null").append("}");
+            // Deliberately outside observation/observationHash and advisor
+            // request: hidden state is debug-only and cannot affect policy.
+            String debugRng = snapshot.debugRng;
+            if (!debugRng.isEmpty()) out.append(",\"debugRng\":").append(debugRng);
+            if (DebugRngCapture.enabled())
+                out.append(",\"runtime\":").append(DebugRngCapture.runtimeJson());
+            return out.append("}").toString();
         }
 
         private final class Publication {
@@ -2977,7 +3827,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
-        final String combat, ooc;
+        final String combat, ooc, debugRng;
         final String combatEntry, combatEntryHash;
         final String observationJson;
         final long sequence, capturedNanos;
@@ -2989,9 +3839,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
                  String deck, String candidates, String combat, String combatEntry,
                  String combatEntryHash, String ooc, long silverSearchBudget,
-                 String hash, long capturedNanos) {
+                 String hash, long capturedNanos, String debugRng) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
             this.capturedNanos = capturedNanos;
+            this.debugRng = debugRng;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
@@ -3004,7 +3855,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
                     floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
-                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos);
+                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos, debugRng);
         }
 
         String toJson() {

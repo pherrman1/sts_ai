@@ -1,4 +1,5 @@
-// Observational combat information state for the isolated Silver backend.
+// Observational combat information state for the Silver search: what the
+// player knows about draw-pile positions and hidden monster intents.
 // This metadata never participates in live simulator state, equality, RNG,
 // or action execution.
 #ifndef STS_COMBAT_KNOWLEDGE_H
@@ -30,7 +31,8 @@ enum class CombatKnowledgeEventType : std::uint8_t {
     // this is epistemically hidden from its pre-combat GameContext setup;
     // Monster::rollMove must not infer that from Player during init.
     HIDDEN_MONSTER_INTENT_ROLL_STARTED,
-    // The deferred intent has become public (monster turn or intent-query).
+    // The deferred intent has become public through an executed monster action.
+    // A Spot Weakness query exposes only its separate attack predicate.
     // It consumes the pending chain and records the now-observable state.
     HIDDEN_MONSTER_INTENT_MATERIALIZED,
     // A deterministic setMove after a public monster action. This publishes
@@ -41,6 +43,10 @@ enum class CombatKnowledgeEventType : std::uint8_t {
     // are not yet representable as a deferred root choice. Fail closed rather
     // than copying its concrete result.
     UNREPRESENTABLE_HIDDEN_MONSTER_INTENT,
+    HIDDEN_MONSTER_ATTACK_PREDICATE_OBSERVED,
+    MONSTER_OCCUPANT_RESET,
+    MONSTER_LATENT_DAMAGE_PRIOR,
+    MONSTER_LATENT_DAMAGE_OBSERVED,
 };
 
 // Type-free representation of exactly the mutable values Silver captures at
@@ -56,6 +62,9 @@ struct CombatKnowledgeEvent {
     CardInstance card {};
     bool hasCard = false;
     int monsterIdx = -1;
+    std::uint32_t occupantGeneration = 0;
+    std::uint16_t latentDamageMask = 0;
+    bool attackPredicate = false;
     HiddenIntentRollInputs hiddenIntentInputs {};
     // These fields are snapshots of the public monster state *before* a
     // hidden roll, or immediately after a pending move becomes public. They
@@ -91,6 +100,10 @@ void emitKnownMonsterIntentSet(
     int monsterIdx, std::int16_t publicMove, std::int16_t publicPreviousMove,
     std::int32_t publicMiscInfo);
 void emitUnrepresentableHiddenMonsterIntent(int monsterIdx);
+void emitMonsterAttackPredicateObserved(int monsterIdx, bool attacking);
+void emitMonsterOccupantReset(int monsterIdx, std::uint32_t generation);
+void emitMonsterLatentDamagePrior(int monsterIdx, std::uint16_t mask);
+void emitMonsterLatentDamageObserved(int monsterIdx, std::uint16_t mask);
 
 class CombatKnowledgeMoveRollScope {
 public:
@@ -114,13 +127,15 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::uint64_t consistencyFailureCount = 0;
     // Last semantic observer event, retained only for fail-closed diagnostics.
     CombatKnowledgeEventType lastEvent = CombatKnowledgeEventType::SHUFFLE_OCCURRED;
-    std::array<std::uint32_t, 14> eventCounts {};
+    std::array<std::uint32_t, 18> eventCounts {};
     CardInstance lastExpectedKnownDraw {};
     CardInstance lastObservedDraw {};
     bool hasDrawMismatch = false;
     int lastObservedDrawPileSize = 0;
     std::array<std::uint8_t, 5> pendingHiddenIntentRolls {};
     std::array<HiddenIntentRollInputs, 5> pendingHiddenIntentInputs {};
+    std::array<std::vector<HiddenIntentRollInputs>, 5> pendingHiddenIntentInputHistory;
+    std::array<std::vector<std::pair<int, bool>>, 5> pendingAttackPredicates;
     // Configured from GameContext before BattleContext::init. This is a
     // knowledge-policy fact, not a property read from the already-initialized
     // Player, whose relic list is unavailable during monster initialization.
@@ -130,6 +145,8 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::array<bool, 5> hasPublicMonsterState {};
     std::array<bool, 5> hasUnrepresentableHiddenIntent {};
     bool initializationInProgress = false;
+    std::array<std::uint32_t, 5> monsterOccupantGeneration {};
+    std::array<std::uint16_t, 5> latentDamageMasks {};
 
     // Establishes visibility at a live decision boundary. It reads a concrete
     // draw order only when Frozen Eye makes that order legitimately observable.

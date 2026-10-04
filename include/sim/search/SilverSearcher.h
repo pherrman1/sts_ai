@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <memory>
+#include <array>
+#include <map>
 #include <random>
 #include <vector>
 
@@ -17,6 +19,7 @@ namespace sts::search {
         int act = 1;
         bool actBossRoom = false;     // the fight is the act boss room (act-transition heal follows)
         bool omamoriCharged = false;  // a charged Omamori absorbs Writhing Mass's Parasite
+        bool eliteRewards = false;    // elite-trigger fight: an escape also forfeits the relic
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
@@ -32,6 +35,12 @@ namespace sts::search {
         double goldWeight = 0.25;
         double maxHpWeight = 2.0;
         double parasitePenalty = 12;
+        // A Smoke Bomb escape ends combat as PLAYER_VICTORY but forfeits the
+        // combat rewards. Both default to 0 (the historical escape-as-victory
+        // valuation); STS_SILVER_ESCAPE_PENALTY=<normal>,<elite> enables them.
+        // The applied penalty is capped at half the HP left when escaping.
+        double escapePenalty = 0;
+        double eliteEscapePenalty = 0;
     };
 
     struct SilverSearchStats {
@@ -41,6 +50,46 @@ namespace sts::search {
         std::int64_t chanceOutcomesSampled = 0;
         std::int64_t chanceSiblingReuse = 0;
         std::int64_t chanceTranspositions = 0;
+    };
+
+    // Diagnostic counts for newly executed simulations only. Reset by the
+    // caller at each real decision; retained node visits are never included.
+    struct SilverTreeProfile {
+        enum Endpoint { VICTORY, DEATH, TURN_LIMIT, ENGINE_STOP, NONTERMINAL, COUNT };
+        inline static constexpr const char *names[COUNT] = {
+            "victory", "death", "turn_limit", "engine_stop", "nonterminal"
+        };
+        struct Depths {
+            std::map<int, std::int64_t> tree; // action edges, excluding chance-outcome edges
+            std::map<int, std::int64_t> total; // tree plus rollout actions
+        };
+        std::array<Depths, COUNT> endpoints;
+        std::int64_t completed = 0;
+        std::int64_t rolloutCalls = 0;
+        std::int64_t nonterminalRolloutStarts = 0;
+        std::int64_t cycleRollouts = 0;
+        std::int64_t descentAborts = 0;
+        void record(const BattleContext &state, int treeDepth, int rolloutDepth);
+    };
+
+    // Observational end-of-combat samples of newly executed simulations, at
+    // the root and per root edge. Caller-owned and default off; recording never
+    // changes selection, evaluation or any RNG draw. Retained visits inherited
+    // through a reroot are not included.
+    struct SilverOutcomeCapture {
+        struct Layer {
+            // Index = player HP when the simulated combat ended; index 0 holds
+            // deaths. Victory HP is before post-combat relic heals.
+            std::vector<std::int64_t> hpCounts;
+            std::int64_t count = 0;        // sum of hpCounts: victories + deaths
+            std::int64_t deaths = 0;
+            std::int64_t unresolved = 0;   // turn cap, engine stop or halted rollout
+            void record(const BattleContext &end);
+        };
+        Layer root;
+        std::vector<Layer> edges;   // indexed like the root node's edges
+        void reset() { root = {}; edges.clear(); }
+        void record(int rootEdge, const BattleContext &end);
     };
 
     // Silver's combat search (MCTS over a transposition graph with chance nodes
@@ -84,6 +133,8 @@ namespace sts::search {
         double endTurnWideningAlpha = 0.52389;
         SilverEvalWeights evalWeights;
         SilverSearchStats stats;
+        SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
+        SilverOutcomeCapture *outcomes = nullptr; // optional caller-owned samples; default off
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -93,6 +144,11 @@ namespace sts::search {
 
         // The node for `state` in the current graph, or nullptr.
         [[nodiscard]] Node *findNode(const BattleContext &state) const;
+        // The decision node for `state` with the unique ids of one pair of
+        // search-equivalent cards exchanged, or nullptr: the player used a
+        // different physical copy than the one the search expanded. Actions of
+        // that node still apply to `state` through translateAction.
+        [[nodiscard]] Node *findNodeUpToEquivalentCopy(const BattleContext &state) const;
 
         // Make `node` the root, keeping its subtree. When `compact`, nodes
         // unreachable from it are reclaimed first.
@@ -102,6 +158,9 @@ namespace sts::search {
         [[nodiscard]] const Node &rootNode() const { return *root; }
 
         void search(std::int64_t simulations);
+        // Expands the root's actions if the search has not yet (no simulation is
+        // run) and returns their count; 0 for a terminal root.
+        std::size_t prepareRootActions();
         // Best root action, expressed against the root node's state. Use
         // translateAction to apply it to the real (concrete) state.
         [[nodiscard]] Action bestAction() const;
@@ -130,6 +189,7 @@ namespace sts::search {
         std::size_t stateToNodeMask = 0;
         std::size_t stateToNodeUsed = 0;
         bool lastNodeWasCreated = false;
+        int currentRootEdge = -1;   // root edge of the simulation in progress
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
@@ -159,7 +219,8 @@ namespace sts::search {
         int selectBestEdgeToSearch(const Node &cur) const;
         int wideningCap(int category, std::int64_t visits);
         Edge *selectChanceOutcome(Node &chance);
-        double rolloutToEnd(BattleContext &state);
+        double rolloutToEnd(BattleContext &state, int treeDepth);
+        void recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);

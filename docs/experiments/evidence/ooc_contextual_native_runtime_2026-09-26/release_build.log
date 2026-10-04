@@ -1,0 +1,106 @@
+-- Using the multi-header code from /home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/json/include/
+-- pybind11 v3.1.0
+-- Configuring done (0.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/build/linux-gcc-release
+[  3%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/BattleContext.cpp.o
+[  3%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/Actions.cpp.o
+[  3%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/CardInstance.cpp.o
+[  6%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/CardManager.cpp.o
+[  9%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/Monster.cpp.o
+[  9%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/MonsterGroup.cpp.o
+[ 12%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/MonsterMoveDamage.cpp.o
+[ 12%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/MonsterSpecific.cpp.o
+[ 16%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/Player.cpp.o
+[ 19%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/GameContext.cpp.o
+[ 19%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/BattleSimulator.cpp.o
+[ 19%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/PrintHelpers.cpp.o
+[ 19%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/Action.cpp.o
+[ 22%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatDistValueNet.cpp.o
+[ 22%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatKnowledge.cpp.o
+[ 25%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatObservation.cpp.o
+[ 25%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatValueNet.cpp.o
+[ 29%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/NativeSilverBackend.cpp.o
+[ 29%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/ScumSearchAgent2.cpp.o
+[ 29%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SearchRng.cpp.o
+[ 32%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SearchStateHash.cpp.o
+[ 32%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverConversion.cpp.o
+[ 35%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverRolloutAgent.cpp.o
+[ 35%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverSearcher.cpp.o
+[ 38%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverSemanticAction.cpp.o
+[ 38%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverUselessAction.cpp.o
+[ 41%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverWireState.cpp.o
+[ 41%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SimHealth.cpp.o
+[ 45%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SimpleAgent.cpp.o
+[ 67%] Built target sts_core_objects
+[ 67%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat.cpp.o
+[ 70%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_datasets.cpp.o
+/home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/apps/one_combat.cpp: In function ‘RunResult runFullRun(uint64_t, int, int, bool)’:
+/home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/apps/one_combat.cpp:261:58: warning: narrowing conversion of ‘std::chrono::duration<double>(std::chrono::operator-<_V2::steady_clock, duration<long int, std::ratio<1, 1000000000> >, duration<long int, std::ratio<1, 1000000000> > >(t1, t0)).std::chrono::duration<double>::count()’ from ‘std::chrono::duration<double>::rep’ {aka ‘double’} to ‘int’ [-Wnarrowing]
+  261 |              std::chrono::duration<double>(t1 - t0).count() };
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/apps/one_combat.cpp:261:58: warning: narrowing conversion of ‘std::chrono::duration<double>(std::chrono::operator-<_V2::steady_clock, duration<long int, std::ratio<1, 1000000000> >, duration<long int, std::ratio<1, 1000000000> > >(t1, t0)).std::chrono::duration<double>::count()’ from ‘std::chrono::duration<double>::rep’ {aka ‘double’} to ‘int’ [-Wnarrowing]
+[ 70%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition.cpp.o
+[ 70%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition_native_contract.cpp.o
+[ 70%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition_near_full.cpp.o
+[ 74%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition_runtime.cpp.o
+[ 74%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/counterfactual_gen.cpp.o
+[ 77%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/e2c_capture.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_checkpoint_policy.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_factor_eval.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 83%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_policy.cpp.o
+[ 83%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_driver.cpp.o
+[ 87%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_trace.cpp.o
+[ 87%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/semantic_pilot.cpp.o
+[ 90%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/strategic_gen.cpp.o
+[ 90%] Linking CXX executable one_combat
+lto-wrapper: warning: using serial compilation of 51 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target one_combat
+[ 77%] Built target sts_core_objects
+[ 85%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/combat_transition.cpp.o
+[ 85%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/combat_transition_native_contract.cpp.o
+[ 85%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/combat_transition_near_full.cpp.o
+[ 85%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/combat_transition_runtime.cpp.o
+[ 88%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/live_ooc_policy.cpp.o
+[ 92%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/ooc_checkpoint_policy.cpp.o
+[ 96%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 96%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/test_live_ooc_policy.cpp.o
+[ 96%] Linking CXX executable test_live_ooc_policy
+lto-wrapper: warning: using serial compilation of 13 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target test_live_ooc_policy
+[  0%] Building CXX object CMakeFiles/ooc_contextual_native_probe.dir/tests/ooc_contextual_native_probe.cpp.o
+[100%] Linking CXX executable ooc_contextual_native_probe
+lto-wrapper: warning: using serial compilation of 3 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target ooc_contextual_native_probe
+[ 70%] Built target sts_core_objects
+[ 70%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/combat_transition.cpp.o
+[ 73%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/advisor_stdio.cpp.o
+[ 76%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/combat_transition_native_contract.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/combat_transition_near_full.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/combat_transition_runtime.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/live_ooc_policy.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/live_silver_importer.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/native_silver_advisor.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/ooc_checkpoint_policy.cpp.o
+[ 80%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 80%] Linking CXX executable one_combat_advisor
+lto-wrapper: warning: using serial compilation of 35 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target one_combat_advisor
+[ 77%] Built target sts_core_objects
+[ 77%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/live_ooc_parity_test.cpp.o
+[ 81%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/combat_transition.cpp.o
+[ 81%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/combat_transition_native_contract.cpp.o
+[ 81%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/combat_transition_near_full.cpp.o
+[ 85%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/combat_transition_runtime.cpp.o
+[ 85%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/live_ooc_policy.cpp.o
+[ 85%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/ooc_checkpoint_policy.cpp.o
+[ 88%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 88%] Linking CXX executable live_ooc_parity_test
+lto-wrapper: warning: using serial compilation of 15 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target live_ooc_parity_test

@@ -1,0 +1,42 @@
+{
+  "result": "docs/experiments/evidence/ooc_contextual_native_runtime_2026-09-26/native_runtime_result.json",
+  "semantic_classification": "CONTEXTUAL_SEMANTIC_PRIOR_PASS",
+  "native_parity": {
+    "gates": {
+      "deck_representation": true,
+      "grouped_candidate_logits": true,
+      "normalized_semantic_prior": true,
+      "source_policy_logits": true
+    },
+    "max_abs_error": {
+      "deck_representation": 1.1324882507324219e-06,
+      "grouped_candidate_logits": 3.0517578125e-05,
+      "normalized_semantic_prior": 2.8438970357536064e-06,
+      "source_policy_logits": 3.0517578125e-05
+    },
+    "pass": true,
+    "source_logit_count": 37985,
+    "top_semantic_action_mismatch_examples": [],
+    "top_semantic_action_mismatches": 0,
+    "top_semantic_action_parity": true,
+    "unique_prior_count": 6317
+  },
+  "timing": {
+    "deck": {
+      "attention_seconds": 1.0763749319999927,
+      "contextual_seconds": 1.1493019589999411,
+      "reduction_percent": -6.77524390729205
+    },
+    "prepare": {
+      "attention_seconds": 2.2228719169998916,
+      "contextual_seconds": 2.3013321319998736,
+      "reduction_percent": -3.5296777290648507
+    },
+    "prior": {
+      "attention_seconds": 3.7875506459997297,
+      "contextual_seconds": 3.907124451999831,
+      "reduction_percent": -3.1570219694986967
+    }
+  },
+  "full_prior_speed_gate_pass": false
+}

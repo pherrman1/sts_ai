@@ -1,0 +1,29 @@
+Test project /home/philippherrmann/.codex/worktrees/bcf6/sts_lightspeed/build/linux-gcc-release
+      Start   5: live_ooc_policy
+ 1/10 Test   #5: live_ooc_policy .................................   Passed    0.01 sec
+      Start   6: live_ooc_policy_contextual
+ 2/10 Test   #6: live_ooc_policy_contextual ......................   Passed    0.01 sec
+      Start   7: live_ooc_parity
+ 3/10 Test   #7: live_ooc_parity .................................   Passed    0.04 sec
+      Start   8: live_ooc_protocol
+ 4/10 Test   #8: live_ooc_protocol ...............................   Passed   41.38 sec
+      Start  15: run_profile_analysis
+ 5/10 Test  #15: run_profile_analysis ............................   Passed    0.04 sec
+      Start 111: ooc_mcts_adapter
+ 6/10 Test #111: ooc_mcts_adapter ................................   Passed    0.34 sec
+      Start 112: ooc_strategic_tok_attention_compat
+ 7/10 Test #112: ooc_strategic_tok_attention_compat ..............   Passed    0.00 sec
+      Start 113: ooc_strategic_tok_contextual_load
+ 8/10 Test #113: ooc_strategic_tok_contextual_load ...............   Passed    0.00 sec
+      Start 114: ooc_strategic_tok_contextual_rejects_trailing
+ 9/10 Test #114: ooc_strategic_tok_contextual_rejects_trailing ...   Passed    0.00 sec
+      Start 115: ooc_strategic_tok_contextual_profile
+10/10 Test #115: ooc_strategic_tok_contextual_profile ............   Passed    0.00 sec
+
+100% tests passed out of 10
+
+Label Time Summary:
+integration    =  41.78 sec*proc (9 tests)
+smoke          =  41.44 sec*proc (8 tests)
+
+Total Test time (real) =  41.82 sec

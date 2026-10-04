@@ -47,13 +47,10 @@ std::ostream &search::GameAction::printDesc(std::ostream &os, const GameContext 
 }
 
 bool isValidMatchAndKeepEventAction(const GameContext &gc, const search::GameAction a) {
-//    const auto &m = matchAndKeepCardMap;
-//    const int idx1 = option / m.size();
-//    int idx2 = option % m.size();
-//    if (idx2 == idx1) {
-//        idx2 = idx1+1;
-//    }
-    return true;
+    // One click on a slot that is still on the table and not already face up.
+    const int slot = a.getIdx1();
+    return slot >= 0 && slot < 12
+        && ((search::GameAction::getValidEventSelectBits(gc) >> slot) & 0x1);
 }
 
 bool isValidDesignerInSpireEventAction(const GameContext &gc, const search::GameAction a) {
@@ -160,26 +157,7 @@ bool isValidEventScreenAction(const GameContext &gc, const search::GameAction a)
 }
 
 bool isValidMapAction(const GameContext &gc, const search::GameAction a) {
-    const auto select = a.getIdx1();
-    if (select > 6) {
-        return false;
-    }
-
-    if (gc.curMapNodeY == 14) {
-        return select == 0;
-    }
-
-    if (gc.curMapNodeY == -1) {
-        return gc.map->getNode(select, 0).edgeCount > 0;
-    }
-
-    const auto &curNode = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
-    for (int i = 0; i < curNode.edgeCount; ++i) {
-        if (curNode.edges[i] == select) {
-            return true;
-        }
-    }
-    return false;
+    return gc.mapMoveCost(a.getIdx1()) >= 0;
 }
 
 bool isValidRewardsAction(const GameContext &gc, const search::GameAction a) {
@@ -341,6 +319,15 @@ void executeRewardsAction(GameContext &gc, const search::GameAction a) {
                 gc.obtainCard(r.cardRewards[a.getIdx1()][a.getIdx2()]);
             }
             r.removeCardReward(a.getIdx1());
+            // Completing the last card reward is one decision. Resume through
+            // the room callback: nested rewards may return to a parent screen.
+            if (gc.screenState == ScreenState::REWARDS && r.cardRewardCount == 0
+                    && r.goldRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0
+                    && !r.sapphireKey && !r.emeraldKey && gc.regainControlAction) {
+                // The callback may replace itself while restoring a parent.
+                const auto continuation = gc.regainControlAction;
+                continuation(gc);
+            }
             break;
 
         case search::GameAction::RewardsActionType::GOLD:
@@ -461,6 +448,7 @@ void search::GameAction::execute(GameContext &gc) const {
         } else {
             gc.drinkPotionAtIdx(getIdx1());
         }
+        return;
     }
 
     switch (gc.screenState) {
@@ -634,24 +622,17 @@ std::vector<search::GameAction> getAllRewardActions(const sts::GameContext &gc) 
 
 std::vector<search::GameAction> getAllMapActions(const sts::GameContext &gc) {
     std::vector<search::GameAction> actions;
-
-    if (gc.curMapNodeY == 14) {
-        actions.emplace_back(0);
-
-    } else if (gc.curMapNodeY == -1) {
-        for (const auto &node : gc.map->nodes[0]) {
-            if (node.edgeCount > 0) {
-                actions.emplace_back(node.x);
-            }
-        }
-
+    // Preserve the existing ordinary-edge order; append only new jump choices.
+    if (gc.curMapNodeY >= 0 && gc.curMapNodeY < 14 && gc.map
+            && gc.curMapNodeX >= 0 && gc.curMapNodeX <= 6) {
+        const auto &node = gc.getCurMapNode();
+        for (int i = 0; i < node.edgeCount; ++i) actions.emplace_back(node.edges[i]);
+        for (int x = 0; x < 7; ++x)
+            if (gc.mapMoveCost(x) == 1) actions.emplace_back(x);
     } else {
-        auto node = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
-        for (int i = 0; i < node.edgeCount; ++i) {
-            actions.emplace_back(node.edges[i]);
-        }
+        for (int x = 0; x < 7; ++x)
+            if (gc.mapMoveCost(x) == 0) actions.emplace_back(x);
     }
-
     return actions;
 }
 
@@ -663,11 +644,7 @@ std::vector<search::GameAction> search::GameAction::getAllActionsInState(const s
     switch (gc.screenState) {
 
         case ScreenState::EVENT_SCREEN:
-            if (gc.curEvent == Event::MATCH_AND_KEEP) {
-                return {};
-            } else {
-                return getAllActionsInEventState(gc);
-            }
+            return getAllActionsInEventState(gc);
 
         case ScreenState::REWARDS:
             return getAllRewardActions(gc);
@@ -706,8 +683,17 @@ std::vector<search::GameAction> search::GameAction::getAllActionsInState(const s
 int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
     // given that game outcome is not undecided and screen state is event
     switch (gc.curEvent) {
-        case Event::MATCH_AND_KEEP:
-            return 0; // handle separately
+        case Event::MATCH_AND_KEEP: {
+            int bits = 0;
+            for (int i = 0; i < static_cast<int>(gc.info.toSelectCards.size()); ++i) {
+                const int state = gc.info.toSelectCards[i].deckIdx;
+                if (state != GameContext::MATCH_AND_KEEP_MATCHED
+                        && state != GameContext::MATCH_AND_KEEP_FACE_UP) {
+                    bits |= 1 << i;
+                }
+            }
+            return bits;
+        }
 
         case Event::LAB:
         case Event::WHEEL_OF_CHANGE:
@@ -727,7 +713,6 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
         case Event::NOTE_FOR_YOURSELF:
         case Event::SCRAP_OOZE:
         case Event::SECRET_PORTAL:
-        case Event::SHINING_LIGHT:
         case Event::THE_JOUST:
         case Event::THE_LIBRARY:
         case Event::THE_MAUSOLEUM:
@@ -742,7 +727,12 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
         case Event::WINDING_HALLS:
             return 0x7;
 
-        case Event::NEOW:
+        case Event::NEOW: {
+            int bits = 0;
+            for (int i = 0; i < static_cast<int>(gc.info.neowRewards.size()); ++i)
+                if (gc.info.neowRewards[i].r != Neow::Bonus::INVALID) bits |= 1 << i;
+            return bits;
+        }
         case Event::KNOWING_SKULL:
         case Event::THE_WOMAN_IN_BLUE:
             return 0xF;
@@ -844,7 +834,7 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
             }
 
         case Event::GOLDEN_IDOL:
-            if (!gc.relics.has(sts::RelicId::GOLDEN_IDOL)) { // map these to different selections
+            if (gc.info.phase == 0) { // initial offer precedes the trap
                 return 0b11;
             } else { // phase 2
                 return 0b11100;
@@ -880,11 +870,11 @@ int search::GameAction::getValidEventSelectBits(const GameContext &gc) {
             }
 
         case Event::THE_CLERIC:
-            if (gc.gold >= (gc.ascension >= 15 ? 75 : 50)) {
-                return 0x7;
-            } else {
-                return 0b101;
-            }
+            return 0b100 | (gc.gold >= 35 ? 1 : 0)
+                | (gc.gold >= (gc.ascension >= 15 ? 75 : 50) ? 2 : 0);
+
+        case Event::SHINING_LIGHT:
+            return gc.deck.getUpgradeableCount() > 0 ? 0b11 : 0b10;
 
         case Event::THE_MOAI_HEAD:
             if (gc.hasRelic(sts::RelicId::GOLDEN_IDOL)) {

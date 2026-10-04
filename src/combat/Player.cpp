@@ -70,7 +70,9 @@ void Player::gainBlock(BattleContext &bc, int amount) {
         return;
     }
 
-    block += amount;
+    // Vanilla caps the stored block after notifying gain-block hooks. A
+    // positive gain still triggers Juggernaut when already at the cap.
+    block = static_cast<int>(std::min<long long>(999, static_cast<long long>(block) + amount));
 
     if (hasStatus<PS::JUGGERNAUT>()) {
         bc.addToBot(Actions::DamageRandomEnemy(getStatus<PS::JUGGERNAUT>()));
@@ -241,7 +243,7 @@ void Player::attacked(BattleContext &bc, int enemyIdx, int calculatedDamage) {
     }
 
     if (damage > 0) {
-        lastAttackUnblockedDamage = damage;
+        lastAttackUnblockedDamage = std::min(damage,curHp); // vanilla lastDamageTaken caps the public loss before revival
 
         if (hasStatus<PS::PLATED_ARMOR>()) {
             decrementStatus<PS::PLATED_ARMOR>();
@@ -685,8 +687,8 @@ void Player::applyStartOfTurnPostDrawPowers(BattleContext &bc) {
 
         switch (pair.first) {
             case PS::BRUTALITY:
-                bc.addToBot( Actions::PlayerLoseHp(pair.second) );
                 bc.addToBot( Actions::DrawCards(pair.second) );
+                bc.addToBot( Actions::PlayerLoseHp(pair.second, true) );
                 break;
 
             case PS::DEMON_FORM:
