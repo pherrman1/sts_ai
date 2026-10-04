@@ -6,7 +6,7 @@ qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
 teacher-transfer gate, frozen Stage-C plan and checkpoint recovery, and the
 closed OOC MCTS reroot-opportunity measurement;
-2026-09-25 for the active Lizard frozen q/r qualification (§380), the OOC
+2026-09-25 for the active Lizard frozen q/r qualification (§381), the OOC
 contextual semantic-prior offline qualification,
 the `v_win` terminal-pricing post-review additions,
 the corrected Silver rollout-cost protocol and default-off status, and correction
@@ -1051,7 +1051,7 @@ support promotion, or live seed `13027029` smoke was run. The production
 active Tail. Fairy Potion plus active Tail remains unqualified, and Mark of the
 Bloom retains its existing exact path. If qualification continues, use the
 designated GCP/large-research procedure with the frozen artifact and gates;
-this local 128-source budget is closed. See [ledger §380](../../experiments/ledger-06.md).
+this local 128-source budget is closed. See [ledger §381](../../experiments/ledger-06.md).
 
 A follow-up keeps the PR #326 learned `r` and T2 rule frozen while setting
 `q = 1 - pOrdinaryWin`. On the exact archived 128-row vendored cohort, the

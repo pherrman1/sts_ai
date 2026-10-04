@@ -1,0 +1,35 @@
+--- a/apps/one_combat/ooc_mcts_adapter.cpp
++++ b/apps/one_combat/ooc_mcts_adapter.cpp
+@@ -190,14 +190,30 @@
+     };
+     if (winNetOk()) {
+         // Features only read the state, so no detached copy or t_curPath swap.
+-        dependencies.leafValue = [](const GameContext &source, const PathHistory &path) {
++        struct LeafValueCache { std::unordered_map<std::string, double> values; };
++        dependencies.leafValue = [cache = std::make_shared<LeafValueCache>()](
++                const GameContext &source, const PathHistory &path) {
+             std::vector<float> raw;
++            std::string key;
+             {
+                 OocProfileScope features(OocProfileBucket::LeafFeatures);
+                 raw = richFeatureVec(source, path);
++                const std::uint32_t size = raw.size();
++                key.append(reinterpret_cast<const char *>(&size), sizeof(size));
++                for (std::uint32_t index = 0; index < size; ++index) {
++                    std::uint32_t bits;
++                    std::memcpy(&bits, &raw[index], sizeof(bits));
++                    if (!bits) continue;
++                    key.append(reinterpret_cast<const char *>(&index), sizeof(index));
++                    key.append(reinterpret_cast<const char *>(&bits), sizeof(bits));
++                }
+             }
++            if (const auto hit = cache->values.find(key); hit != cache->values.end()) return hit->second;
+             OocProfileScope predict(OocProfileBucket::LeafPredict);
+-            return vStateWinNativeFeatures(raw);
++            const double value = vStateWinNativeFeatures(raw);
++            if (cache->values.size() >= 65536) cache->values.clear();
++            cache->values.emplace(std::move(key), value);
++            return value;
+         };
+     }
+     dependencies.continuationStep = [](GameContext &gc, PathHistory &, std::mt19937_64 &) {

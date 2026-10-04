@@ -368,18 +368,15 @@ OocMctsDependencies defaultOocMctsDependencies() {
         return result;
     };
     if (winNetOk()) {
+        // Features only read the state, so no detached copy or t_curPath swap.
         dependencies.leafValue = [](const GameContext &source, const PathHistory &path) {
-            auto gc = detachedCopy(source);
-            const auto *saved = t_curPath;
-            t_curPath = &path;
-            try {
-                const double value = vStateWinNative(gc);
-                t_curPath = saved;
-                return value;
-            } catch (...) {
-                t_curPath = saved;
-                throw;
+            std::vector<float> raw;
+            {
+                OocProfileScope features(OocProfileBucket::LeafFeatures);
+                raw = richFeatureVec(source, path);
             }
+            OocProfileScope predict(OocProfileBucket::LeafPredict);
+            return vStateWinNativeFeatures(raw);
         };
     }
     dependencies.continuationStep = [](GameContext &gc, PathHistory &, std::mt19937_64 &) {
@@ -1967,7 +1964,7 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     if (oocProfileEnabled()) {
         static const char *names[] = {"mcts", "real_combat", "metadata", "policy_logits",
             "policy_prepare", "policy_predict", "successor", "combat_prepare", "combat_resolve",
-            "evaluate_leaf", "leaf_value", "v4_state_network", "v4_encode_deck",
+            "evaluate_leaf", "leaf_value", "leaf_features", "leaf_predict", "v4_state_network", "v4_encode_deck",
             "v4_encode_rel", "v4_encode_pot", "v4_state_fusion", "v4_action_value",
             "prior_build", "singleton_prior"};
         nlohmann::json counters = nlohmann::json::object();
