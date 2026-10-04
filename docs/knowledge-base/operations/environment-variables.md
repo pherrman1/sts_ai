@@ -14,7 +14,7 @@ These control the default executing configuration; they are always parsed.
 |----------|--------|---------|------------|
 | `VPORT` | v_server TCP port | 5555 | `main` L9210 |
 | `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode) | `1` (ON) | `main` ~L9470 |
-| `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt` | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
+| `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt`. An explicitly supplied path (including empty) that fails validation exits nonzero before any fallback | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
 | `STS_FAIR` | Accepted for compatibility; combat is always project-fair Silver. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_SEARCHER3` | Removed (ADR-0019). A non-zero value makes `one_combat` exit with an error; `0` is accepted | `0` | `main` |
 | `STS_SIMS_NORMAL` | Per-fight sim budget, normal encounters | unset (uses caller argument) | `main` ~L9530 |

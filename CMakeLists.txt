@@ -412,6 +412,7 @@ set_tests_properties(vwin_derived_rooms_397_analysis_selftest PROPERTIES
 add_test(NAME vwin_mlp_397_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_mlp_397.py --self-test)
 set_tests_properties(vwin_mlp_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
 add_test(NAME silver_learned_stop_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/silver_learned_stop.py selftest)
 set_tests_properties(silver_learned_stop_selftest PROPERTIES
@@ -686,6 +687,11 @@ add_test(NAME combat_transition_runtime_loader COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_combat_transition_runtime_loader.py
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(combat_transition_runtime_loader PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+
+add_test(NAME vwin_override COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tools/test_vwin_override.py $<TARGET_FILE:one_combat>)
+set_tests_properties(vwin_override PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
 add_test(NAME ooc_mcts_live_startup COMMAND python3

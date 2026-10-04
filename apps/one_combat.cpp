@@ -3069,8 +3069,10 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_WIN_NET")) {       // native V_win tree-walk (no v_server socket)
         const std::string path = std::string(d) == "1" ? "models/v_win_trees.txt" : d;
-        if (!g_winNet.load(path, richIdxMap()))
-            std::cerr << "[STS_WIN_NET] failed to load win tree: " << path << "\n";
+        if (!g_winNet.load(path, richIdxMap())) {
+            std::cerr << "[STS_WIN_NET] explicit STS_WIN_NET failed to load win tree: " << path << "\n";
+            return 1;
+        }
     }
     if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL")) {
         if (!one_combat::loadE2cRawModel(d))

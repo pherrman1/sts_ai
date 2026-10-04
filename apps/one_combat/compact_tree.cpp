@@ -19,7 +19,7 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
     std::ifstream f(path); if (!f) { std::cerr << kind << ": cannot open " << path << "\n"; return false; }
     std::string tok; int nfeat = 0, ntrees = 0; double baseScore = 0.5;
     f >> tok >> nfeat;
-    if (tok != "nfeat" || nfeat < 1) { std::cerr << kind << ": invalid feature count\n"; return false; }
+    if (!f || tok != "nfeat" || nfeat < 1 || static_cast<std::size_t>(nfeat) > featureIdx.size()) { std::cerr << kind << ": invalid feature count\n"; return false; }
     sel.resize(nfeat); featureNames.resize(nfeat);
     std::unordered_set<std::string> seenFeatures;
     for (int i = 0; i < nfeat; ++i) { std::string kw, name; f >> kw >> name;
@@ -28,7 +28,9 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
             std::cerr << kind << ": unknown or duplicate feature: " << name << "\n"; return false; }
         sel[i] = it->second; featureNames[i] = name; }
     f >> tok >> logistic;
+    if (!f || tok != "logistic") { std::cerr << kind << ": invalid logistic header\n"; return false; }
     f >> tok >> baseScore;
+    if (!f || tok != "base_score" || !std::isfinite(baseScore)) { std::cerr << kind << ": invalid base score\n"; return false; }
     f >> tok >> ntrees;
     if (tok != "ntrees" || !f.good() || ntrees < 1 || (logistic && !(baseScore > 0.0 && baseScore < 1.0))) {
         std::cerr << kind << ": truncated/missing tree count in " << path << "\n"; return false;
@@ -42,10 +44,15 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
         for (int i = 0; i < nn; ++i) {
             std::string type; f >> type;
             Node nd = { -1, 0.0f, 0, 0 };
-            if (type == "L") { double v; f >> v; nd = { -1, (float)v, 0, 0 }; }
-            else if (type == "S") { int fi = 0, y = 0, no = 0; float th = 0.0f; f >> fi >> th >> y >> no; nd = { fi, th, y, no }; }
+            if (type == "L") { double v = 0.0; f >> v; nd = { -1, (float)v, 0, 0 }; }
+            else if (type == "S") {
+                int fi = 0, y = 0, no = 0; float th = 0.0f; f >> fi >> th >> y >> no;
+                if (fi < 0) { std::cerr << kind << ": negative split feature in tree " << t << "\n"; return false; }
+                nd = { fi, th, y, no };
+            }
             else { std::cerr << kind << ": invalid node tag in tree " << t << "\n"; return false; }
             if (!f.good()) { std::cerr << kind << ": truncated node in tree " << t << " of " << path << "\n"; return false; }
+            if (!std::isfinite(nd.thr)) { std::cerr << kind << ": non-finite node in tree " << t << "\n"; return false; }
             tr[i] = nd;
         }
         for (const Node &nd : tr) if (nd.feat >= 0 &&
@@ -72,8 +79,8 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
         nodes.insert(nodes.end(), tr.begin(), tr.end());
     }
     roots.push_back(nodes.size());
-    f >> tok;
-    if (!f.eof()) { std::cerr << kind << ": trailing data after " << ntrees << " trees in " << path << "\n"; return false; }
+    if (f >> tok) { std::cerr << kind << ": trailing data after " << ntrees << " trees in " << path << "\n"; return false; }
+    if (!f.eof()) { std::cerr << kind << ": read failure in " << path << "\n"; return false; }
     ok = true;
     std::cout << "[" << kind << ": " << ntrees << " trees, " << nfeat << " feats from " << path << "]\n";
     return true;
