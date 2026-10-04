@@ -567,6 +567,56 @@ native/in-context speed work. WIN_RAW resource qualification is reported
 separately. Neither verdict grants terminal-pricing readiness or promotion.
 The tooling PR and synthetic tests are not a full experiment result.
 
+### Rich `v_win` information boundary (#397)
+
+`tools/analyze_vwin_public_info_397.py` is the maintained classification of
+every `richStateHeader` feature; unknown names fail closed. Only four fields
+expose the simulator's realized future queue and are **HIDDEN_FUTURE**:
+`nextEliteId`, `nextFight0`, `nextFight1`, `nextFight2`. The other four
+V4-excluded fields are public: `monOffset`/`eliteOffset` count hallway/elite
+combats already entered this act (`GameContext::getMonsterForRoomCreation`,
+`getEliteForRoomCreation`; reset at act transition), and `remFights`/
+`remElites` are the fixed act queue length (hallway 16/15/15/0, elite
+10/10/10/1 for acts 1-4) minus that count. The identity held on every #334
+TRAIN/VALIDATION MAP row. `potionChance`, `cardRarityFactor` and `pv*` are
+public history; `deckSize`, `potionCount`, `remFights`, `remElites` are
+redundant. Relic columns store `1 + counter`; every counter observed in the
+#334 corpus is an in-game visible counter.
+
+The public-safe allowlist for future `v_win` training is the TRAIN-variable
+mask minus the four HIDDEN_FUTURE fields (457 of the A3 461). Removing them
+did not measurably hurt the A3 X1 recipe (ledger-06 §371, `INCONCLUSIVE`
+because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
+`models/v_win_trees.txt` still reads all eight V4-excluded fields.
+
+`tools/analyze_rich_domain_397.py` derives the reachable Ironclad master-deck
+card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
+39 colorless, 13 curses, Necronomicurse kept as live-only because the simulator
+omits its Necronomicon obtain). The #334 TRAIN variance mask already excludes
+every unreachable card, other-class relic and other-class potion column
+(ledger-06 §373), so model inputs need no domain filter; the producer keeps the
+broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.
+
+Raw public-history families (relics seen but not owned, events seen,
+encounters fought), reconstructed from #334 `combat.csv`/`decision.csv` by
+`tools/analyze_vwin_history_397.py`, each made a 5-seed X1 ensemble slightly
+worse on VALIDATION (ledger-06 §374, preregistered `INCONCLUSIVE`); none is
+part of the feature contract. The decision sink leaves 3.2% of event visits
+without an `eventId` (first screen single-option or not enumerable).
+Rule-derived public probabilities, each checked against the V2.3.4 Java
+reference, also gave no held-out gain (ledger-06 §§375–376):
+`tools/analyze_vwin_derived_397.py` (potion drop, card rarity, next elite,
+next hallway encounter) and `tools/analyze_vwin_derived_rooms_397.py` (?-room
+outcome odds, next remove price). Adding a monotone duplicate of
+`potionChance` alone moved the 5-seed X1 ensemble by +0.0056 NLL, so feature
+changes below about ±0.005 are not resolvable on the #334 TRAIN/VALIDATION
+split. The derived-feature code is the reference if a later value model wants
+these public quantities.
+With the A3 M1 MLP instead of XGBoost (ledger-06 §378,
+`tools/analyze_vwin_mlp_397.py`) no family qualified either; relics seen but
+not owned improved every MLP seed but the gain came from a few sources, and
+the MLP stays well behind the XGBoost baseline.
+
 ### Mixed-producer v_win refresh corpus
 
 `tools/vwin_refresh_corpus.py` validates a read-only index of existing producer

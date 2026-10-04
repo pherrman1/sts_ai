@@ -13650,6 +13650,82 @@ thinking about a fifth less.
 **Knowledge impact:** `evaluation/current-research.md` (retained-root adaptive
 section) and `operations/environment-variables.md`. No default changed.
 
+## §371 — #397 Stage 1 `v_win` information-boundary audit and hidden-future ablation (2026-10-03)
+
+**Question:** which rich `v_win` features could a real player not know, and
+how much of the #334 A3 X1 VALIDATION score depends on them?
+
+**Protocol:** preregistered in `tools/analyze_vwin_public_info_397.py`
+(committed `f86119dc` before any arm was trained). Offline only: frozen #334
+corpus `corpus-mixed-512.json` (SHA-256 `ca4b6e2b…cd87f`), TRAIN 333,367 /
+VALIDATION 68,903 MAP rows, no gameplay seeds, no C++ build, no TEST rows read.
+Frozen A3 X1 recipe (depth 6, eta 0.06, min_child_weight 30, CPU hist, early
+stopping on VALIDATION, 4 threads), XGBoost seeds 0/1/2. Arms: **A** the 461
+TRAIN-variable A3 features; **B** A minus the four verified hidden-future
+fields; **C** A minus all eight V4-excluded fields (diagnostic). Rule:
+`HIDDEN_FUTURE_LEAK_MATERIAL` if the mean B−A NLL delta is ≥ 0.002 and every
+seed's source-clustered CI lower bound is > 0; `NOT_MATERIAL` if the mean is
+< 0.002 and every CI upper bound is < 0.002; else `INCONCLUSIVE`.
+
+**Classification (all 1,017 rich features):** HIDDEN_FUTURE 4
+(`nextEliteId`, `nextFight0..2`: realized queue entries); PUBLIC_HISTORY 10
+(`pv*`, `potionChance`, `cardRarityFactor`, `monOffset`, `eliteOffset`);
+REDUNDANT 4 (`remFights`, `remElites`, `deckSize`, `potionCount`);
+PUBLIC_CURRENT 999. `monOffset`/`eliteOffset` count combats already entered
+this act and `remFights`/`remElites` equal the fixed act queue length minus
+them: the identity `offset + remaining = {16,15,15,0}` (hallway) /
+`{10,10,10,1}` (elite) held on **all** 333,367 TRAIN and 68,903 VALIDATION
+rows (0 violations). Of the V4 "leak" eight, only four are hidden. All 12
+relic columns carrying counters (Happy Flower, Incense Burner, Ink Bottle,
+Lizard Tail, Nunchaku, Omamori, Pen Nib, Sundial, Girya, Neow's Lament,
+Maw Bank, Tiny Chest) are in-game visible counters.
+
+**Sanity gate:** A seed 0 reproduced the frozen X1 exactly (NLL
+`0.44453298345900494`, 290 trees).
+
+**Results (VALIDATION NLL / Brier / AUC; pooled sibling accuracy):**
+
+| arm | seed 0 | seed 1 | seed 2 | mean NLL |
+| --- | --- | --- | --- | ---: |
+| A (461) | 0.44453 / 0.14563 / 0.8024; 0.559 | 0.44905 / 0.14701 / 0.8003; 0.571 | 0.45195 / 0.14808 / 0.7961; 0.582 | 0.44851 |
+| B (457) | 0.44959 / 0.14712 / 0.7978; 0.549 | 0.44793 / 0.14685 / 0.8014; 0.568 | 0.43996 / 0.14425 / 0.8082; 0.554 | 0.44583 |
+| C (453) | 0.45072 / 0.14831 / 0.7997; 0.558 | 0.44890 / 0.14700 / 0.8009; 0.577 | 0.44774 / 0.14685 / 0.8027; 0.567 | 0.44912 |
+
+Paired B−A NLL [source-clustered 95% CI]: seed 0 +0.00506 [−0.00243,
++0.01289]; seed 1 −0.00112 [−0.00888, +0.00617]; seed 2 −0.01199
+[−0.02010, −0.00373]; mean **−0.00268**. C−A: +0.00619, −0.00015, −0.00421;
+mean +0.00061. Every sibling-accuracy CI overlaps across arms.
+
+**Verdict:** **`INCONCLUSIVE`** under the preregistered rule (B and C as well).
+No evidence that the hidden-future fields help held-out prediction: removing
+them did not worsen the 3-seed mean, and the only CI excluding zero favors B.
+The 0.002 materiality cannot be certified because **XGBoost seed noise alone
+is ~0.007–0.010 NLL** within one feature set — larger than the leak question
+and comparable to the whole A3 X1 grid spread (0.4445–0.4578). B is the
+public-safe baseline (`PUBLIC_SAFE_BASELINE_ESTABLISHED` as a contract, not as
+a measured equivalence).
+
+**Implication for #334:** A3 X1/X2 checkpoint selection by single-seed
+VALIDATION NLL is within subsampling-seed noise; selection-level comparisons
+need multiple seeds (or deterministic subsampling) before they are interpreted.
+Not tested here: a deployed model's dependence on these fields under fair-play
+sampled queues (B0 `models/v_win_trees.txt` also reads all eight).
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage1-20261003-f86119dc/`
+(`report.json` SHA-256 `61193b03da6e5c8c3d7d71d0d86f341be46954e16bdf030a2843eb5806c6b854`,
+`validation_predictions.npz` `c415e0e3c29d98345d4acbb6b443a025371d91936075e63b98bd1c86d59f0d06`,
+sibling stdout/stderr/time logs). 15 min wall, 1,194 CPU-s, 5.5 GB peak RSS.
+
+**ELI5:** Four of the model's inputs peek at which monsters are coming next,
+which a player can't see. We trained the same model with and without them three
+times each. Dropping them didn't make it worse on average, but the model's own
+random wiggle between training runs is bigger than the effect we were trying to
+measure, so the honest answer is "no sign it matters, not proven tiny".
+
+**Knowledge impact:** information-boundary classification and public-safe
+allowlist in `operations/ooc-label-pipeline.md`; status in
+`evaluation/current-research.md`.
+
 ## §372 — Learned Silver stopping v2: retrained model and fresh confirmation with a lock-only arm (2026-10-03)
 
 (§371 is left to the parallel #397 audit, PR #404.)
@@ -13720,6 +13796,224 @@ well as the current rule while thinking about a fifth less, and the simple
 section) and `operations/environment-variables.md` (v2 default threshold). No
 default changed.
 
+## §373 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
+
+**Question:** of the 744 rich card columns (`d0..d371`, `u0..u371`), which
+card IDs can an Ironclad run actually hold, and does the #334 A3 TRAIN
+variance mask already exclude the rest?
+
+**Method:** `tools/analyze_rich_domain_397.py` derives the master-deck domain
+from the simulator's own tables and obtain sites (Ironclad Transform/
+TrulyRandom/Rarity pools, colorless pools, curse pool, every literal
+`deck.obtain`/`obtainCard` `CardId` in `src/`, the Note For Yourself default)
+and compares it with the frozen A3 `preflight.json` mask. No corpus rows,
+seeds, or builds. Prismatic Shard is compile-time disabled
+(`GameContext::disablePrismaticShard`), so `AnyColorTypeCardPool` is
+unreachable; in-combat generated cards never enter the master deck.
+
+**Result:** 127 reachable IDs of 371 enum values: 75 red (starters + 72-card
+class pool), 39 colorless (35-card pool + event cards Apparition, Bite,
+J.A.X., Ritual Dagger), 13 curses (10-card pool + Ascender's Bane, Curse of
+the Bell, and live-only Necronomicurse). Column 371 is beyond the 371-value
+enum and is always empty. **No TRAIN-variable `d`/`u` column is unreachable**
+(125 `d`, 114 `u` variable). Reachable but TRAIN-constant: `d` Ascender's Bane
+(asc 0 corpus) and Necronomicurse; `u` all 13 curses. Relics: no TRAIN-variable
+column belongs to the 16 other-class-only relics; potions: no TRAIN-variable
+column belongs to the 9 other-class potions.
+
+**Finding (simulator fidelity, not fixed here):** the Cursed Tome event grants
+Necronomicon, but the simulator never adds Necronomicurse (`grep
+NECRONOMICURSE src/` finds only `Card.cpp` transformability). The real game
+does, so the allowlist keeps it as `live_game_only`.
+
+**Decision:** per #397 Stage 1b, the TRAIN variance mask already removes every
+unreachable card, relic and potion column, so no model-input change is needed.
+The broad 1,017-column producer schema stays for compatibility. 490 of the 744
+card columns (and `d371`/`u371`) are structurally zero, which matters only if
+producer storage or feature preparation becomes a measured cost.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage1b-card-domain.json`
+(SHA-256 `934206626d71f8348955a6a3df2b1c96901c34a4b61d82473051bbba22702404`):
+reachable list with sources and every literal obtain site.
+
+**ELI5:** About two thirds of the card slots in the state are for cards an
+Ironclad can never own. The training pipeline already ignores them because
+they are always zero, so nothing needs changing.
+
+**Knowledge impact:** reachable-domain summary added to the rich `v_win`
+information-boundary section of `operations/ooc-label-pipeline.md`.
+
+## §374 — #397 Stage 2 public-history families on the public-safe `v_win` baseline (2026-10-03)
+
+**Question:** do raw public-history features (relics seen but not owned,
+events seen, encounters fought) improve held-out run-win prediction beyond
+the 457-feature public-safe baseline (§371)?
+
+**Protocol:** preregistered in `tools/analyze_vwin_history_397.py` (committed
+`69e17093` before any arm was trained; `a095ca79` fixed a crash on purchased
+shop slots with null relic ids, found while loading history and before any
+training; the crashed attempt's empty output directory is kept with suffix
+`-FAILED-null-relic`). Frozen #334 corpus (SHA-256 `ca4b6e2b…cd87f`),
+TRAIN 333,367 / VALIDATION 68,903 MAP rows, no gameplay seeds, no C++ build,
+no TEST rows. History is rebuilt per trajectory from `combat.csv` encounters,
+`decision.csv` event ids and offered relics (shop, boss relic, rewards);
+branches inherit the source prefix before their deviating screen; a MAP row at
+floor F sees items at floor ≤ F. New columns kept only if TRAIN-variable:
+H1 128 `relicSeenNotOwned_*`, H2 47 `eventSeen_*`, H3 58 `fought_*`. Frozen
+A3 X1 recipe, XGBoost seeds 0–4, arm prediction = 5-seed mean probability.
+Rule: `USEFUL` if ensemble ΔNLL ≤ −0.002 and CI upper < 0; `LOW_VALUE` if CI
+lower > −0.002; else `INCONCLUSIVE`.
+
+**Coverage:** 15,067 trajectories (14,632 branches), 0 ambiguous branch fight
+prefixes, every MAP row joined. Event identities are incomplete: the decision
+sink writes only screens with more than one option, so 15,462 TRAIN/VALIDATION
+event screens have no recorded `eventId` against 57,405 captured. Most are
+later pages of an identified event; per event visit (consecutive event
+screens, all 512 sources) 1,959 of 61,173 (3.2%) have no captured screen —
+1,048 whose first screen failed option enumeration and 911 with a single
+option.
+
+**Results (5-seed ensemble, VALIDATION):**
+
+| arm | features | NLL | Brier | AUC | ECE | pooled sibling acc. |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| P (public-safe) | 457 | 0.44338 | 0.14534 | 0.8062 | 0.0481 | 0.570 [0.522, 0.617] |
+| P+H1 relics | 585 | 0.45094 | 0.14842 | 0.8002 | 0.0571 | 0.557 [0.509, 0.605] |
+| P+H2 events | 504 | 0.44635 | 0.14595 | 0.8015 | 0.0470 | 0.540 [0.490, 0.590] |
+| P+H3 encounters | 515 | 0.44995 | 0.14747 | 0.7902 | 0.0489 | 0.563 [0.522, 0.604] |
+
+Ensemble ΔNLL vs P [source-clustered 95% CI]: H1 +0.00756 [−0.00267,
++0.01971]; H2 +0.00297 [−0.00430, +0.01093]; H3 +0.00657 [−0.00677,
++0.02197]. Per-seed paired ΔNLL: H1 all five positive (+0.0017…+0.0117);
+H2 four of five positive; H3 four of five positive.
+
+**Verdict:** `H1/H2/H3_HISTORY_INCONCLUSIVE` under the preregistered rule.
+Descriptively every family made the ensemble worse on NLL, Brier and AUC, and
+no CI reaches the −0.002 usefulness threshold on its favorable side by more
+than ~0.005. Per #397's decision rule (add a family only with clear held-out
+signal) none is added. H4/Stage 2b–2d derived public probabilities remain a
+separate question; raw history shows no signal for them to compress.
+
+**Side observation:** the 5-seed ensemble of P (0.44338) beats every single P
+seed (0.43996–0.44959, mean 0.44664), which supports seed-averaging in #334.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage2-history-20261003-a095ca79/`
+(`report.json` SHA-256 `b38f681be2003a1c4af9339140ab19b94a16f3f7935eb92a41d29b9b8f666dce`,
+`validation_predictions.npz` `ed6439992c228d2cc7bd462fddeefaf1fed3629d8dd240a8775ca965c9bcf4ad`,
+sibling logs). 20:52 wall, 2,153 CPU-s, 8.1 GB peak RSS.
+
+**ELI5:** We told the model which relics it had passed up, which events it had
+already seen, and which monsters it had already fought. On runs it had never
+seen, it predicted wins slightly worse with each of these, not better.
+
+**Knowledge impact:** history-family outcome in the rich `v_win`
+information-boundary section of `operations/ooc-label-pipeline.md` and in
+`evaluation/current-research.md`.
+
+## §375 — #397 Stages 2b–2c rule-derived public probabilities (2026-10-03)
+
+**Question:** do public-rule probabilities (potion-drop chance, card-rarity
+odds, next-elite and next-hallway-encounter distributions) predict run wins
+better than the raw counters/history on the public-safe `v_win` baseline?
+
+**Protocol:** preregistered in `tools/analyze_vwin_derived_397.py` (committed
+`c7ff841a` before any arm was trained). The report's `tooling.git_sha` reads
+`5cc739d3` because that commit, which only adds
+`tools/analyze_vwin_derived_rooms_397.py` and its CMake test, landed during
+the run; the analysis file is identical. Rules were checked with `javap`
+against STS1 V2.3.4 `desktop-1.0.jar`: `AbstractRoom.addPotionToRewards`,
+`AbstractDungeon.rollRarity`/`AbstractRoom.getCardRarity`/`MonsterRoomElite`
+(factor start 5, −1 per common to −40, reset on rare; N'loth's Gift ×3),
+`AbstractDungeon.populateMonsterList`/`populateFirstStrongEnemy` and the
+`Exordium`/`TheCity`/`TheBeyond` weights and exclusions. Frozen #334 corpus,
+TRAIN/VALIDATION only, no seeds, no build; frozen A3 X1 recipe, XGBoost seeds
+0–4, 5-seed ensemble vs P (457 public-safe features). Arms: F1d (P −
+`potionChance` + `pPotionDrop`), F1b (P + `pPotionDrop`), F2d/F2b (same with
+`cardRarityFactor` and a 14-column per-card and per-reward rarity block), F3
+(P + next-elite distribution), F4 (P + next-hallway distribution + entropy).
+
+**Integrity:** the observed hallway/elite prefix lengths matched `monOffset`
+and `eliteOffset` on every TRAIN/VALIDATION row (0 mismatches), confirming
+that the observed fights are exactly the consumed queue prefix.
+
+**Findings (simulator, not fixed here):** native `populateFirstStrongEnemy`
+applies the first-strong exclusions only in act 1; Java also excludes in acts
+2–3 (#407). The derived F4 features use the Java rule.
+
+**Results (5-seed ensemble, VALIDATION; P NLL 0.44338):**
+
+| arm | features | NLL | ΔNLL vs P [95% CI] | label |
+| --- | ---: | ---: | --- | --- |
+| F1d potion derived only | 457 | 0.44555 | +0.0022 [−0.0013, +0.0058] | DERIVED_NOT_SHOWN_EQUIVALENT |
+| F1b potion raw + derived | 458 | 0.44900 | +0.0056 [+0.0023, +0.0090] | DERIVED_ADDS_NO_CLEAR_SIGNAL |
+| F2d rarity derived only | 470 | 0.44889 | +0.0055 [−0.0003, +0.0111] | DERIVED_NOT_SHOWN_EQUIVALENT |
+| F2b rarity raw + derived | 471 | 0.44588 | +0.0025 [−0.0007, +0.0063] | DERIVED_ADDS_NO_CLEAR_SIGNAL |
+| F3 next elite | 466 | 0.44715 | +0.0038 [+0.0006, +0.0072] | F3_LOW_VALUE |
+| F4 next hallway fight | 495 | 0.44387 | +0.0005 [−0.0045, +0.0051] | F4_INCONCLUSIVE |
+
+**Interpretation:** no derived family improved prediction; none is adopted.
+F1b is a calibration of the method's resolution: `pPotionDrop` is a monotone
+transform of `potionChance` (it differs only with White Beast Statue), yet
+adding it worsened the ensemble by +0.0056 with a CI excluding zero. The
+source-clustered CI holds the fitted models fixed and does not include
+training-procedure variance, so feature-set perturbations of about ±0.005 are
+within what retraining alone produces here. Effects smaller than that cannot
+be resolved on this 358-source TRAIN / 77-source VALIDATION corpus.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage2bc-derived-20261003-c7ff841a/`
+(`report.json` SHA-256 `0e6434b1cac71c6d8fbad48c760f1fcb16ac3d926da0ec74aabeb508939b9f75`,
+`validation_predictions.npz` `83314aa8752af64799efe3e87380453d6a1ed02a82250983ad0ebdf2bef2be72`).
+21:56 wall, 2,585 CPU-s, 6.7 GB peak RSS.
+
+**ELI5:** We handed the model the actual odds the game uses (chance of a
+potion, of a rare card, of which elite or monster comes next) instead of
+making it learn them. It did not get better; even adding a copy of a number it
+already had moved the score about as much.
+
+**Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
+and `evaluation/current-research.md`.
+
+## §376 — #397 Stage 2d unknown-room odds and next remove price (2026-10-03)
+
+**Question:** do the next ? room outcome odds and the next card-remove price,
+derived from public history and verified rules, improve held-out run-win
+prediction over the public-safe baseline?
+
+**Protocol:** preregistered in `tools/analyze_vwin_derived_rooms_397.py`
+(committed `5cc739d3` before training). Rules checked with `javap`:
+`EventHelper.roll`/`resetProbabilities` (0.1/0.03/0.02 float chances, slot
+order monster→shop→treasure→event, shop 0 from a shop room, Tiny Chest every
+fourth ?, Juzu Bracelet monster→event, reset-on-hit else +base) and
+`ShopScreen` (`purgeCost` 75 +25 per paid removal; Courier ×0.8, Membership
+×0.5, Smiling Mask 50 at shop open). Native `getEventRoomOutcomeHelper`
+matches. ? nodes come from `pvEvent` increments between MAP rows; outcomes
+from the same floor's NORMAL fight / shop / treasure screen. Limitation: with
+Juzu Bracelet a rolled monster appears as an event. Same corpus, recipe and
+5-seed ensemble design as §375. Arms: F5 (P + `pQMonster`, `pQShop`,
+`pQTreasure`, `pQEvent`), F6 (P + `nextRemoveCost`).
+
+**Integrity:** the reconstructed remove price matched the displayed
+`removeCost` on 106,975 of 107,900 shop screens (99.14%, above the 99% stop
+threshold); the residual 0.86% is unexplained.
+
+**Results (5-seed ensemble, VALIDATION; P NLL 0.44338):** F5 0.44457, ΔNLL
++0.0012 [−0.0021, +0.0045], `F5_INCONCLUSIVE`; F6 0.44859, ΔNLL +0.0052
+[−0.0001, +0.0102], `F6_LOW_VALUE`. Neither improves; neither is adopted.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/stage2d-rooms-20261003-5cc739d3/`
+(`report.json` SHA-256 `56f56d4c94efaf26ba1dd379c9c4312329285798ae7b4865b29840521db8b5a3`,
+`validation_predictions.npz` `8a3c88a165e4fb47cc7479beda8c5cd49c0212d9c03b75f265701476e640e9af`).
+17:03 wall, 1,515 CPU-s, 6.4 GB peak RSS. Event-eligibility distributions
+(Stage 2d item 4) and chest/relic summaries (item 5) were not built: 3.2% of
+event visits lack an identity (§374) and the eligibility rules were not
+verified.
+
+**ELI5:** Knowing what the next ? room is likely to be, or what card removal
+will cost at the next shop, did not help the model predict wins.
+
+**Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
+and `evaluation/current-research.md`.
+
 ## §377 — Learned Silver stopping v3: 1,024-pair live promotion run with boss variants (2026-10-03)
 
 (§373–§376 are used by the parallel #397 work.)
@@ -13781,3 +14075,69 @@ the current rule. Giving bosses extra thinking time did not help.
 
 **Knowledge impact:** `evaluation/current-research.md` and
 `operations/environment-variables.md` (the boss options). No default changed.
+
+## §378 — #397 follow-up: history and derived families with the A3 M1 MLP (2026-10-03)
+
+**Question:** §§374–376 tested every family with XGBoost only, which is
+invariant to monotone rescaling. Does the frozen A3 M1 network gain from the
+same families?
+
+**Protocol:** preregistered in `tools/analyze_vwin_mlp_397.py` (committed
+`2ab1bd81` before training). `47203156` added `--skip-corpus-validation`
+(user request); it checks only the frozen index SHA-256 and builds the
+component view from the manifests instead of re-hashing every table already
+validated by §§371–376. Frozen M1 recipe (457→64→32 GELU MLP, AdamW lr 1e-4,
+weight decay 1e-3, dropout 0.1, TRAIN normalization, batch 8192, ≤60 epochs,
+patience 8 on VALIDATION, deterministic CUDA on the RTX 3060 Ti, 4 threads),
+seeds 0–2, 3-seed ensemble vs P (457 public-safe features). Arms: H1–H3
+(§374), F1–F6 (§§375–376), ALL (F1–F6), N0 (one standard-normal noise
+column, null control). `USEFUL` additionally requires beating N0's delta by
+0.002. Two earlier attempts were stopped by the user before any result
+(directories suffixed `-ABORTED-*`); a third was stopped after 21 of 37 fits
+(`-STOPPED-partial`), and the complete rerun reproduced those 21 lines
+exactly.
+
+**Gate:** the 461-feature A3 set at seed 0 reproduced the frozen M1 exactly
+(NLL `0.47669561245471703`, best epoch 10).
+
+**Results (3-seed ensemble, VALIDATION; P NLL 0.46886, still far behind the
+XGBoost P at 0.44338):**
+
+| arm | NLL | ΔNLL vs P [95% CI] | label |
+| --- | ---: | --- | --- |
+| N0 noise control | 0.47190 | +0.0030 [−0.0043, +0.0100] | NULL_CONTROL |
+| H1 relics seen not owned | 0.45721 | −0.0117 [−0.0356, +0.0126] | INCONCLUSIVE |
+| H2 events seen | 0.47943 | +0.0106 [−0.0042, +0.0284] | INCONCLUSIVE |
+| H3 encounters fought | 0.47569 | +0.0068 [−0.0083, +0.0234] | INCONCLUSIVE |
+| F1 potion drop | 0.47155 | +0.0027 [−0.0047, +0.0098] | INCONCLUSIVE |
+| F2 rarity block | 0.47463 | +0.0058 [−0.0014, +0.0138] | LOW_VALUE |
+| F3 next elite | 0.46980 | +0.0009 [−0.0060, +0.0083] | INCONCLUSIVE |
+| F4 next hallway | 0.47327 | +0.0044 [−0.0049, +0.0145] | INCONCLUSIVE |
+| F5 ?-room odds | 0.46916 | +0.0003 [−0.0053, +0.0059] | INCONCLUSIVE |
+| F6 remove price | 0.47184 | +0.0030 [−0.0046, +0.0104] | INCONCLUSIVE |
+| ALL F1–F6 | 0.47302 | +0.0042 [−0.0051, +0.0142] | INCONCLUSIVE |
+
+**H1 diagnostic (not preregistered):** every H1 seed (0.4640, 0.4568, 0.4642)
+beat every P seed (0.4731, 0.4702, 0.4771), and act 2 improved most (0.5251 →
+0.5034). The gain is concentrated, though: 43 of 77 VALIDATION sources
+improved, and the five most-improved sources account for 114% of the net
+log-loss reduction, hence the wide source-clustered CI. Even with H1 the MLP
+(0.4572) stays behind the plain XGBoost baseline (0.4434).
+
+**Verdict:** no family is `USEFUL` for the MLP either. H1 relic history is the
+only direction with a consistent seed-level gain and a plausible mechanism (the
+tree arm worsened instead); it is a candidate to re-test on a larger corpus or
+inside the replacement model, not a contract change.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-public-info-397/mlp-20261003-47203156-run2/`
+(`report.json` SHA-256 `f6f56f3fe27ac2463479380c814d525f1425bce1161afc596ee290391cde50fc`,
+`validation_predictions.npz` `a5d16bdef8e27e0f296b5511116cbd195043bab0d13f379d9d6053dd2ddc4a2b`).
+9:42 wall, 11.5 GB peak RSS.
+
+**ELI5:** We tried the extra features with the small neural network instead
+of trees. Knowing which relics it passed up seemed to help a little, but the
+gain came from a handful of runs, and the network is still worse than the
+tree model without any extras.
+
+**Knowledge impact:** summary added to `operations/ooc-label-pipeline.md` and
+`evaluation/current-research.md`.

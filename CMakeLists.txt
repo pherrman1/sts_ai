@@ -389,6 +389,29 @@ add_test(NAME silver_param_screen_400_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_param_screen_400.py --self-test)
 set_tests_properties(silver_param_screen_400_analysis_selftest PROPERTIES
     LABELS "research-repro;tooling")
+add_test(NAME vwin_public_info_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_public_info_397.py --self-test)
+set_tests_properties(vwin_public_info_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME rich_domain_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_rich_domain_397.py --self-test)
+set_tests_properties(rich_domain_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_history_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_history_397.py --self-test)
+set_tests_properties(vwin_history_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_derived_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_derived_397.py --self-test)
+set_tests_properties(vwin_derived_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_derived_rooms_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_derived_rooms_397.py --self-test)
+set_tests_properties(vwin_derived_rooms_397_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
+add_test(NAME vwin_mlp_397_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_mlp_397.py --self-test)
+set_tests_properties(vwin_mlp_397_analysis_selftest PROPERTIES
 add_test(NAME silver_learned_stop_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/silver_learned_stop.py selftest)
 set_tests_properties(silver_learned_stop_selftest PROPERTIES
