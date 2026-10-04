@@ -136,6 +136,18 @@ std::string entityKey(const OocEntity &entity) {
     return out.str();
 }
 
+void addReplacementDiscards(Bindings &out, const GameContext &gc, Source source) {
+    if (gc.potionCount < gc.potionCapacity || gc.potionCapacity == 0 || gc.hasRelic(RelicId::SOZU)) return;
+    for (int slot=0;slot<gc.potionCapacity;++slot) {
+        const auto potion=gc.potions[slot];
+        if (potion==Potion::EMPTY_POTION_SLOT || potion==Potion::INVALID) continue;
+        OocRewardTarget target;
+        target.entity=potion;
+        for (int prior=0;prior<slot;++prior) if (gc.potions[prior]==potion) ++target.occurrence;
+        out.add(gc,Effect::DISCARD_POTION,source,target,GameAction(0xc0000000u|static_cast<unsigned>(slot)));
+    }
+}
+
 void addRewards(Bindings &out, const GameContext &gc) {
     const auto &r = gc.info.rewardsContainer;
     if (r.goldRewardCount < 0 || r.goldRewardCount > 2 || r.cardRewardCount < 0 || r.cardRewardCount > 5
@@ -158,9 +170,7 @@ void addRewards(Bindings &out, const GameContext &gc) {
     for (int i = 0; i < r.goldRewardCount; ++i) item(Effect::TAKE_GOLD, r.gold[i], RT::GOLD, i);
     for (int i = 0; i < r.relicCount; ++i)
         item(Effect::TAKE_RELIC, r.relics[i], RT::RELIC, i, r.sapphireKey && i == r.relicCount-1);
-    // The live MCP reward boundary has no discard-potion command.  Do not
-    // present a potion take that cannot execute with a full inventory; leave
-    // the reward available for another reward or the screen skip action.
+    // A full belt must first discard a held potion before taking a reward.
     if (gc.potionCount < gc.potionCapacity) {
         for (int i = 0; i < r.potionCount; ++i)
             item(Effect::TAKE_POTION, r.potions[i], RT::POTION, i);
@@ -190,11 +200,16 @@ void addRewards(Bindings &out, const GameContext &gc) {
         out.add(gc, gc.hasRelic(RelicId::SINGING_BOWL) ? Effect::SINGING_BOWL : Effect::SKIP_CARD_REWARD,
                 Source::REWARDS, target, GameAction(RT::CARD, group, 5));
     }
+    if (r.potionCount > 0) addReplacementDiscards(out,gc,Source::REWARDS);
     out.add(gc, Effect::LEAVE_REWARDS, Source::REWARDS, OocNoTarget{}, GameAction(RT::SKIP));
 }
 
 void addShop(Bindings &out, const GameContext &gc) {
     const auto &shop = gc.info.shop;
+    for (int slot=0;slot<3;++slot) if (shop.potionPrice(slot)>=0 && shop.potionPrice(slot)<=gc.gold) {
+        addReplacementDiscards(out,gc,Source::SHOP);
+        break;
+    }
     for (const auto primitive : GameAction::getAllActionsInState(gc)) {
         const int i = primitive.getIdx1();
         Effect effect;

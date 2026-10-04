@@ -1,0 +1,12 @@
+=== Paired comparison (1024 seeds) ===
+Metric                          #199    learned      Delta
+Win rate                       78.3%      80.3%      +2.0pp
+  Win diff 95% CI: [-0.6pp, +4.5pp]
+Avg floor                      49.1      49.6      +0.5
+  Floor diff 95% CI: [+0.1, +0.8]
+Avg HP end                     33.0      33.2      +0.2
+Avg sec/run                   29.29     23.66     -5.62
+  Discordant: 178/1024 (17%)
+  Both win: 723, both lose: 123, #199-only: 79, learned-only: 99
+  #199 Wilson 95% CI: [75.7%, 80.7%]
+  learned Wilson 95% CI: [77.7%, 82.6%]

@@ -9,6 +9,10 @@ import csv
 import hashlib
 import json
 import subprocess
+import re
+from dataclasses import dataclass
+from types import MappingProxyType
+from collections.abc import Mapping
 from collections import Counter
 from pathlib import Path
 
@@ -18,6 +22,7 @@ from tools.vwin_refresh_contract import ContractError, MAP_PREFIX, _sha256
 from tools.vwin_refresh_corpus import validate_corpus
 
 REAL_INDEX_SHA256 = "ca4b6e2bbcb29d10f83bd90944b991dd7f19eebdf5e19029e7ffac5a049cd87f"
+SPLIT_NAMES = ("TRAIN", "VALIDATION", "TEST")
 REAL_SPLIT_COUNTS = {"TRAIN": 358, "VALIDATION": 77, "TEST": 77}
 SPLIT_RULE = 'sha256("vwin-refresh-334-v1:{seed}")[:8] / 2^32; <0.70 TRAIN; <0.85 VALIDATION; else TEST'
 HALF_TRAIN_RULE = "lowest floor(N/2) TRAIN seeds ranked by (sha256('vwin-refresh-334-half-train-v1:{seed}'), seed)"
@@ -61,17 +66,57 @@ def _require(ok, message):
         raise ContractError(message)
 
 
+@dataclass(frozen=True)
+class CorpusBinding:
+    """Caller-declared expectations; never derived from the input corpus.
+
+    Zero counts remain supported for the legacy small synthetic Dataset API.
+    The production CLI requires all three splits to have positive counts.
+    """
+    index_sha256: str
+    split_counts: Mapping[str, int]
+
+    def __post_init__(self):
+        _require(isinstance(self.index_sha256, str) and
+                 re.fullmatch(r"[0-9a-fA-F]{64}", self.index_sha256) is not None,
+                 "expected index SHA-256 must be 64 hex characters")
+        _require(isinstance(self.split_counts, Mapping) and
+                 set(self.split_counts) == set(SPLIT_NAMES) and
+                 all(type(v) is int and v >= 0 for v in self.split_counts.values()) and
+                 sum(self.split_counts.values()) > 0,
+                 "expected split counts must name TRAIN, VALIDATION, TEST with nonnegative integers")
+        object.__setattr__(self, "index_sha256", self.index_sha256.lower())
+        object.__setattr__(self, "split_counts", MappingProxyType(dict(self.split_counts)))
+
+    def to_dict(self):
+        return {"index_sha256": self.index_sha256, "split_counts": dict(self.split_counts)}
+
+    @classmethod
+    def from_dict(cls, value):
+        _require(isinstance(value, dict) and set(value) == {"index_sha256", "split_counts"},
+                 "missing or invalid corpus binding")
+        return cls(value["index_sha256"], value["split_counts"])
+
+
+DEFAULT_CORPUS_BINDING = CorpusBinding(REAL_INDEX_SHA256, REAL_SPLIT_COUNTS)
+
+
 class Dataset:
-    def __init__(self, index, expected_sha=REAL_INDEX_SHA256, expected_counts=None):
+    def __init__(self, index, expected_sha=None, expected_counts=None, *, binding=None):
+        _require(binding is None or (expected_sha is None and expected_counts is None),
+                 "supply either corpus binding or legacy expectations, not both")
+        self.binding = binding if binding is not None else CorpusBinding(
+            REAL_INDEX_SHA256 if expected_sha is None else expected_sha,
+            REAL_SPLIT_COUNTS if expected_counts is None else expected_counts)
+        _require(isinstance(self.binding, CorpusBinding), "invalid corpus binding")
         path = Path(index).resolve()
         self.index_sha256 = _sha256(path)
-        _require(self.index_sha256 == expected_sha, "corpus index SHA-256 mismatch")
+        _require(self.index_sha256 == self.binding.index_sha256, "corpus index SHA-256 mismatch")
         self.corpus = validate_corpus(path)  # Sole corpus entry point; full strict validation.
         _require(_sha256(path) == self.index_sha256, "corpus index changed during validation")
         self.split_counts = dict(Counter(source_split(s) for s in self.corpus.source_seeds))
-        self.split_counts = {s: self.split_counts.get(s, 0) for s in REAL_SPLIT_COUNTS}
-        expected_counts = REAL_SPLIT_COUNTS if expected_counts is None else expected_counts
-        _require(self.split_counts == expected_counts, f"source split counts mismatch: {self.split_counts}")
+        self.split_counts = {s: self.split_counts.get(s, 0) for s in SPLIT_NAMES}
+        _require(self.split_counts == self.binding.split_counts, f"source split counts mismatch: {self.split_counts}")
         first = json.loads(self.corpus.components[0].manifest_path.read_text())["stateFeatures"]
         self.feature_names = tuple(first["header"].split(","))
         _require(len(set(self.feature_names)) == len(self.feature_names), "duplicate state feature names")
@@ -88,7 +133,7 @@ class Dataset:
             self._runouts[table.component.manifest_path] = joins
 
     def _access(self, split, allow_test):
-        _require(split in REAL_SPLIT_COUNTS, f"unknown split: {split}")
+        _require(split in SPLIT_NAMES, f"unknown split: {split}")
         _require(split != "TEST" or allow_test, "TEST access blocked before freeze")
 
     def _rows(self, kind, splits, numerical=True):
@@ -156,7 +201,7 @@ class Dataset:
         count = 0
         mean = np.zeros(len(self.feature_names), dtype=np.float64)
         m2 = np.zeros_like(mean)
-        counts = {s: 0 for s in REAL_SPLIT_COUNTS}
+        counts = {s: 0 for s in SPLIT_NAMES}
         for _, x, _, _ in self._rows("MAP", {"TRAIN"}):
             count += 1
             delta = x - mean
@@ -173,6 +218,7 @@ class Dataset:
         component_hashes = [c.manifest_sha256 for c in self.corpus.components]
         git_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[1], text=True).strip()
         return {
+            "corpus_binding": self.binding.to_dict(),
             "corpus_index_sha256": self.index_sha256,
             "component_manifest_sha256": component_hashes,
             "component_manifests_aggregate_sha256": _digest(component_hashes),
@@ -191,5 +237,5 @@ class Dataset:
         }
 
 
-def validated_dataset(index, expected_sha=REAL_INDEX_SHA256, expected_counts=None):
-    return Dataset(index, expected_sha=expected_sha, expected_counts=expected_counts)
+def validated_dataset(index, expected_sha=None, expected_counts=None, *, binding=None):
+    return Dataset(index, expected_sha=expected_sha, expected_counts=expected_counts, binding=binding)

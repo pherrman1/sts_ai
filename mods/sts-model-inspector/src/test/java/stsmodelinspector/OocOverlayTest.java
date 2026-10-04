@@ -155,6 +155,7 @@ public final class OocOverlayTest {
         if (sole.distribution.count != 0 || !sole.choices.get(0).scoreLabel(1).contains("No samples"))
             throw new AssertionError("sole-choice shortcut invented samples");
         mapEvaluator.addProperty("valueSemantics","forced_no_search");
+        mapCandidate.addProperty("visitShare",0);
         mapEvaluator.remove("valueDistribution"); mapCandidate.remove("valueDistribution");
         if (!OocOverlay.parse(mapResponse.toString(), observation).choices.get(0).scoreLabel(1).contains("Forced"))
             throw new AssertionError("pass-through placeholder displayed as score");

@@ -80,12 +80,21 @@ namespace sts::search {
         for (int i = 0; i < bc.monsters.monsterCount; ++i) {
             const auto &m = bc.monsters.arr[i];
             hashCombine(hash, static_cast<int>(m.id));
+            hashCombine(hash, static_cast<std::uint64_t>(m.occupantGeneration));
+            hashCombine(hash, m.latentDamageMask);
             hashCombine(hash, m.curHp);
             hashCombine(hash, m.maxHp);
             hashCombine(hash, m.block);
             hashCombine(hash, m.statusBits);
             hashCombine(hash, static_cast<int>(m.moveHistory[0]));
             hashCombine(hash, static_cast<int>(m.moveHistory[1]));
+            // Predicate knowledge changes the posterior, so it must not reuse
+            // an unconditioned root's cache identity. Empty preserves old keys.
+            for (const auto &[step, attack] : m.pendingAttackPredicates) {
+                hashCombine(hash, std::uint64_t{0x53504f54u});
+                hashCombine(hash, step);
+                hashCombine(hash, attack);
+            }
         }
 
         // The hand is a multiset for search: fold its cards in commutatively.

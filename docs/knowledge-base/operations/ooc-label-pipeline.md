@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -429,8 +429,8 @@ does not replace a tracked model, and does not establish gameplay quality.
 
 1. `preflight INDEX --output NEW_REPORT.json` enters through
    `validate_corpus()` and verifies the frozen index identity and exact
-   358/77/77 source split. It checks every MAP/runout label join and the B0
-   feature-name contract, and computes variance only on TRAIN MAP rows.
+   source split (358/77/77 by default). It checks every MAP/runout label join
+   and the B0 feature-name contract, and computes variance only on TRAIN MAP rows.
    It produces no model predictions. Strict validation necessarily reads all
    component tables, including TEST metadata/labels; TEST prediction access
    remains closed.
@@ -463,6 +463,45 @@ does not replace a tracked model, and does not establish gameplay quality.
    source-cluster bootstrap (2,000 replicates), resources and sibling joins.
    A failed evaluation leaves the latch consumed. Recovery requires a
    separately reviewed decision; the CLI never automatically reopens TEST.
+
+Both `preflight` and `tune` accept paired explicit inputs
+`--expected-index-sha SHA256 --expected-split-counts TRAIN,VALIDATION,TEST`.
+For the final 1,024-source corpus, use SHA-256
+`ae56f9633ce8da8a72e341978d707c9f145c1f1b6479afa438067af5570dfa00`
+and counts `696,155,173`. The CLI requires a 64-hex SHA and exactly three
+positive integer counts; neither expectation is inferred from the corpus.
+Omitting both flags retains the original 512 SHA and 358/77/77 contract.
+The Python `CorpusBinding(index_sha256, split_counts)` copies the named count
+mapping into immutable storage. `Dataset` retains its legacy explicit
+`expected_sha`/`expected_counts` interface, including empty synthetic splits;
+legacy expectations cannot be combined with a binding.
+
+The exact `corpus_binding` is saved in preflight, tuning, VALIDATION resource
+qualification, freeze, TEST opening and TEST result records. Qualification,
+freeze and verification cross-check the persisted binding and existing SHA/count
+fields. TEST opening passes the frozen binding to strict corpus validation.
+Missing or inconsistent saved bindings fail closed before corpus access; old
+saved runs without bindings must not be silently upgraded or opened. Newly
+started 512 runs retain the existing default semantics. The final baseline
+feature mask derives from all 696 TRAIN sources; the old scaling experiment's
+461-feature mask is not forced, and VALIDATION/TEST variance is never used.
+
+Each overall and breakdown predictive population retains model `nll`, `brier`,
+ROC-AUC, ECE and stable equal-mass reliability bins. Descriptive additions are
+observed row win rate, a constant predictor equal to that population's row win
+rate and its NLL/Brier, plus `outcome_probability_rmse = sqrt(brier)`.
+This RMSE is against observed binary outcomes, not an unobserved true state
+probability. Unique-source win rate weights each represented source once and
+is reported only when labels are constant within every source in that
+population; otherwise it is null with an explicit status (also null when source
+IDs are unavailable). Constant-baseline NLL uses the same probability clipping
+as model NLL, including all-win/all-loss populations. These diagnostics do not
+participate in hyperparameter or checkpoint selection.
+
+The reviewed X1/X2 grids and M1 recipes/64-32 GELU architecture remain unchanged.
+The categorical encoding and MLP capacity screens are deferred until the final
+696/155 baseline rerun makes M1 decision-relevant; they are not unconditional
+extensions of `tune`.
 
 Sibling ranking joins `(sourceSeed, branchId)` and scores the first recorded MAP
 state after the branch option executes. For `type=MAP`, the producer records

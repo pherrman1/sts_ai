@@ -12,6 +12,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["combatevalgen"]=2 ["ooccfaudit"]=2 ["vwinrefreshgen"]=2 ["vwinrefreshcrashdiag"]=2
   ["bossheadroom347gen"]=2
   ["silverparams400gen"]=2
+  ["silverstopreplaygen"]=2
   ["vwinrefreshbranchselftest"]=2
   ["vwinrefreshfatalcountselftest"]=2
   ["oocnextgen"]=2

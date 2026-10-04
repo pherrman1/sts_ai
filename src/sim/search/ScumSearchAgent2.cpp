@@ -346,7 +346,7 @@ void search::ScumSearchAgent2::stepEventPolicy(GameContext &gc) {
             break;
 
         case Event::GOLDEN_IDOL: {
-            if (gc.hasRelic(RelicId::GOLDEN_IDOL)) {
+            if (gc.info.phase == 1) {
                 takeAction(gc, 4);
             } else {
                 takeAction(gc, 0);

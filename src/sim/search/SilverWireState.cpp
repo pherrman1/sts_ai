@@ -19,6 +19,60 @@ namespace sts::search {
         using silver_bridge::SemanticAction;
         using silver_bridge::SemanticActionType;
 
+        sts::Action pendingActionFromWire(const silver_bridge::PendingActionWire &in) {
+            using K = silver_bridge::PendingActionKind;
+            if (in.amount < 0 || in.amount > 999
+                    || ((in.kind != K::BUFF_PLAYER && in.kind != K::DEBUFF_PLAYER && in.kind != K::DEBUFF_ALL_ENEMY)
+                        && (in.status != 0 || in.sourceMonster))
+                    || (in.kind == K::BUFF_PLAYER && in.sourceMonster)
+                    || ((in.kind == K::GAMBLE || in.kind == K::UPGRADE_RANDOM || in.kind == K::USE_CARD
+                        || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS) && in.amount != 0))
+                throw std::invalid_argument("invalid Silver pending action fields");
+            switch (in.kind) {
+                case K::DRAW: return Actions::DrawCards(in.amount);
+                case K::GAIN_BLOCK: return Actions::GainBlock(in.amount);
+                case K::GAIN_ENERGY: return Actions::GainEnergy(in.amount);
+                case K::DAMAGE_ALL: return Actions::DamageAllEnemy(in.amount);
+                case K::DAMAGE_RANDOM: return Actions::DamageRandomEnemy(in.amount);
+                case K::GAMBLE: return Actions::GambleAction();
+                case K::UPGRADE_RANDOM: return Actions::UpgradeRandomCardAction();
+                case K::USE_CARD: return Actions::OnAfterCardUsed();
+                case K::REMOVE_PEN_NIB: return Actions::RemoveStatus<PlayerStatus::PEN_NIB>();
+                case K::REMOVE_PLAYER_DEBUFFS: return Actions::RemovePlayerDebuffs();
+                case K::BUFF_PLAYER: {
+                    const auto status = static_cast<PlayerStatus>(in.status);
+                    switch (status) {
+                        case PlayerStatus::PEN_NIB:
+                            if(in.amount!=1)throw std::invalid_argument("invalid Silver pending Pen Nib amount");
+                            [[fallthrough]];
+                        case PlayerStatus::STRENGTH: case PlayerStatus::DEXTERITY:
+                        case PlayerStatus::ARTIFACT: case PlayerStatus::BUFFER:
+                        case PlayerStatus::PLATED_ARMOR: case PlayerStatus::THORNS:
+                        case PlayerStatus::VIGOR: case PlayerStatus::INTANGIBLE:
+                            if (in.status == static_cast<int>(status)) return makeAction(ActData_BuffPlayer{status,in.amount});
+                            break;
+                        default: break;
+                    }
+                    throw std::invalid_argument("unsupported Silver pending player buff");
+                }
+                case K::DEBUFF_PLAYER:
+                    if ((in.status != static_cast<int>(PlayerStatus::LOSE_STRENGTH)
+                            && !(in.status == static_cast<int>(PlayerStatus::WEAK) && in.amount == 1)) || in.sourceMonster)
+                        throw std::invalid_argument("unsupported Silver pending player debuff");
+                    return makeAction(ActData_DebuffPlayer{static_cast<PlayerStatus>(in.status),in.amount,false});
+                case K::DEBUFF_ALL_ENEMY:
+                    if ((in.status != static_cast<int>(MonsterStatus::WEAK)
+                            && in.status != static_cast<int>(MonsterStatus::VULNERABLE)
+                            && in.status != static_cast<int>(MonsterStatus::POISON)) || in.sourceMonster || in.amount == 0)
+                        throw std::invalid_argument("unsupported Silver pending enemy debuff");
+                    return makeAction(ActData_DebuffAllEnemy{static_cast<MonsterStatus>(in.status),in.amount,false});
+                case K::SHUFFLE_WOUNDS:
+                    if (in.amount != 2) throw std::invalid_argument("unsupported Silver pending Wound generation");
+                    return Actions::MakeTempCardInDrawPile(CardInstance(CardId::WOUND),2,true);
+                default: throw std::invalid_argument("unsupported Silver pending action kind");
+            }
+        }
+
         CardInstance fromWire(const CardWire &in) {
             CardInstance out;
             out.id = static_cast<CardId>(in.id);
@@ -268,13 +322,66 @@ namespace sts::search {
 
     }
 
+    void capturePendingActionQueue(const BattleContext &state, BattleStateWire &wire) {
+        using K = silver_bridge::PendingActionKind;
+        wire.pendingActionQueueObserved = false;
+        wire.pendingActionQueue.clear();
+        if (state.inputState != InputState::CARD_SELECT) return;
+        std::vector<silver_bridge::PendingActionWire> captured;
+        for (const auto &action : queuedActions(state.actionQueue)) {
+            silver_bridge::PendingActionWire item;
+            switch (action.type) {
+                case CombatActionType::DrawCards: item.kind=K::DRAW; item.amount=action.v_DrawCards.amount; break;
+                case CombatActionType::GainBlock: item.kind=K::GAIN_BLOCK; item.amount=action.v_GainBlock.amount; break;
+                case CombatActionType::GainEnergy: item.kind=K::GAIN_ENERGY; item.amount=action.v_GainEnergy.amount; break;
+                case CombatActionType::DamageAllEnemy: item.kind=K::DAMAGE_ALL; item.amount=action.v_DamageAllEnemy.damage; break;
+                case CombatActionType::DamageRandomEnemy: item.kind=K::DAMAGE_RANDOM; item.amount=action.v_DamageRandomEnemy.damage; break;
+                case CombatActionType::GambleAction: item.kind=K::GAMBLE; break;
+                case CombatActionType::UpgradeRandomCardAction: item.kind=K::UPGRADE_RANDOM; break;
+                case CombatActionType::OnAfterCardUsed: item.kind=K::USE_CARD; break;
+                case CombatActionType::RemoveStatus:
+                    if(action.v_RemoveStatus.s!=PlayerStatus::PEN_NIB)return;
+                    item.kind=K::REMOVE_PEN_NIB;break;
+                case CombatActionType::RemovePlayerDebuffs: item.kind=K::REMOVE_PLAYER_DEBUFFS;break;
+                case CombatActionType::BuffPlayer:
+                    item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
+                case CombatActionType::DebuffPlayer:
+                    item.kind=K::DEBUFF_PLAYER; item.status=static_cast<int>(action.v_DebuffPlayer.s);
+                    item.amount=action.v_DebuffPlayer.amount; item.sourceMonster=action.v_DebuffPlayer.isSourceMonster; break;
+                case CombatActionType::DebuffAllEnemy:
+                    item.kind=K::DEBUFF_ALL_ENEMY; item.status=static_cast<int>(action.v_DebuffAllEnemy.s);
+                    item.amount=action.v_DebuffAllEnemy.amount; item.sourceMonster=action.v_DebuffAllEnemy.isSourceMonster; break;
+                case CombatActionType::MakeTempCardInDrawPile:
+                    item.kind=K::SHUFFLE_WOUNDS; item.amount=action.v_MakeTempCardInDrawPile.amount; break;
+                default: return;
+            }
+            // Nondefault victory flags or unsupported parameterizations must
+            // not silently become a different action through this wire.
+            try { if (!(pendingActionFromWire(item) == action)) return; }
+            catch (const std::invalid_argument &) { return; }
+            captured.push_back(item);
+        }
+        wire.pendingActionQueueObserved = true;
+        wire.pendingActionQueue = std::move(captured);
+    }
+
     BattleContext battleContextFromWire(const BattleStateWire &in) {
-        if (in.version != BattleStateWire::kVersion || !in.valid) {
+        if ((in.version != BattleStateWire::kVersion && !(in.version == 2 && !in.intentsHidden)) || !in.valid) {
             throw std::invalid_argument("invalid or incompatible Silver state wire");
         }
         if (in.hand.size() > static_cast<std::size_t>(CardManager::MAX_HAND_SIZE)) {
             throw std::invalid_argument("Silver hand exceeds capacity");
         }
+        if (in.pendingActionQueue.size() > 128
+                || (!in.pendingActionQueueObserved && !in.pendingActionQueue.empty())
+                || (in.pendingActionQueueObserved && in.inputState != static_cast<int>(InputState::CARD_SELECT)))
+            throw std::invalid_argument("invalid Silver pending action queue boundary or capacity");
+        const auto cleanupCount=std::count_if(in.pendingActionQueue.begin(),in.pendingActionQueue.end(),[](const auto &item) {
+            return item.kind==silver_bridge::PendingActionKind::USE_CARD;
+        });
+        if (cleanupCount>1 || (cleanupCount && (in.curCardQueueItem.card.id==static_cast<int>(CardId::INVALID)
+                || in.curCardQueueItem.isEndTurn)))
+            throw std::invalid_argument("invalid Silver pending card cleanup owner");
         BattleContext out;
         out.seed = in.isolatedSearchSeed;
         out.floorNum = in.floorNum;
@@ -328,6 +435,8 @@ namespace sts::search {
         for (std::size_t i = 0; i < out.monsters.arr.size(); ++i) {
             const auto &wm = in.monsters[i];
             auto &m = out.monsters.arr[i];
+            m.occupantGeneration = wm.occupantGeneration;
+            m.latentDamageMask = in.intentsHidden ? wm.latentDamageMask : 0; m.latentDamageMaterialized = false;
             m.idx = wm.idx; m.id = static_cast<MonsterId>(wm.id); m.curHp = wm.curHp;
             m.maxHp = wm.maxHp; m.block = wm.block; m.isEscapingB = wm.isEscapingB;
             m.halfDead = wm.halfDead; m.escapeNext = wm.escapeNext;
@@ -347,9 +456,36 @@ namespace sts::search {
             m.shackled = static_cast<std::int8_t>(wm.smallPowers[10]);
             m.strength = wm.strength; m.vulnerable = wm.vulnerable; m.weak = wm.weak;
             m.uniquePower0 = wm.uniquePower0; m.uniquePower1 = wm.uniquePower1; m.miscInfo = wm.miscInfo;
+            const auto prior = Monster::latentDamagePrior(m.id, out.ascension);
+            if ((wm.latentDamageMask && (!prior || (wm.latentDamageMask & ~prior) || (in.intentsHidden && wm.miscInfo != 0)
+                    || (!in.intentsHidden && (wm.miscInfo<0 || wm.miscInfo>=16 || !(wm.latentDamageMask&(1u<<wm.miscInfo))))))
+                    || (in.intentsHidden && m.idx>=0 && prior && !wm.latentDamageMask)) {
+                throw std::runtime_error("invalid persistent damage posterior");
+            }
+            if (in.intentsHidden && wm.latentDamageMask) {
+                if (wm.pendingRollInputs.miscInfo != 0) { throw std::runtime_error("private latent roll input"); }
+                for (const auto &r:wm.pendingRollInputHistory) if(r.miscInfo!=0) { throw std::runtime_error("private latent roll history"); }
+            }
             if (in.intentsHidden) {
                 m.pendingMoveRolls = wm.pendingMoveRolls;
                 m.pendingDirectMoveChoice = wm.pendingDirectMoveChoice;
+                m.pendingAttackPredicates = wm.pendingAttackPredicates;
+                const int steps = wm.pendingMoveRolls + (wm.pendingDirectMoveChoice != 0 ? 1 : 0);
+                if (!wm.hasPredicateKnowledgeFields ||
+                        ((!wm.pendingRollInputHistory.empty() || wm.pendingMoveRolls > 1)
+                         && wm.pendingRollInputHistory.size() != wm.pendingMoveRolls)) {
+                    throw std::runtime_error("hidden intent roll input history size mismatch");
+                }
+                int previousStep = 0;
+                for (const auto &[step, attack] : wm.pendingAttackPredicates) {
+                    if (step <= previousStep || step > steps) throw std::runtime_error("invalid hidden intent predicate step");
+                    previousStep = step;
+                }
+                for (const auto &r : wm.pendingRollInputHistory) {
+                    m.pendingRollInputHistory.push_back({r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp,
+                        r.monsterTurnNumber, r.miscInfo, r.aliveCount, r.monstersAlive,
+                        r.knightAlive, r.playerConstricted, r.asleep, r.halfDead});
+                }
                 const auto &r = wm.pendingRollInputs;
                 m.pendingRollInputs = {r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp,
                                        r.monsterTurnNumber, r.miscInfo, r.aliveCount, r.monstersAlive,
@@ -381,6 +517,11 @@ namespace sts::search {
 
         auto &select = out.cardSelectInfo;
         for (std::size_t i = 0; i < select.cards.size(); ++i) select.cards[i] = static_cast<CardId>(in.cardSelect.cards[i]);
+        select.setCostToZero = in.cardSelect.setCostToZero;
+        select.drawAfter = in.cardSelect.drawAfter;
+        select.drawsAfter = in.cardSelect.drawsAfter;
+        select.blocksAfter = in.cardSelect.blocksAfter;
+        select.damageAllBeforeBlocks = in.cardSelect.damageAllBeforeBlocks;
         select.canPickZero = in.cardSelect.canPickZero;
         select.canPickAnyNumber = in.cardSelect.canPickAnyNumber;
         select.pickCount = in.cardSelect.pickCount;
@@ -414,11 +555,14 @@ namespace sts::search {
 
         // A selection made while a card is being played (Headbutt, Warcry,
         // Burning Pact, ...) interrupts that play: the card is in no pile and
-        // the rest of its work is still queued. The wire carries no queues, so
-        // rebuild them by replaying the card; if the replay does not reach the
+        // the rest of its work is still queued. Unless an exact action tail
+        // was observed, rebuild it by replaying the card; if replay does not reach the
         // same selection, restore at least the OnAfterCardUsed that moves the
         // card to its destination.
-        if (out.inputState == InputState::CARD_SELECT && out.curCardQueueItem.card.id != CardId::INVALID
+        if (in.pendingActionQueueObserved) {
+            out.actionQueue.clear();
+            for (const auto &item : in.pendingActionQueue) out.addToBot(pendingActionFromWire(item));
+        } else if (out.inputState == InputState::CARD_SELECT && out.curCardQueueItem.card.id != CardId::INVALID
                 && !cardIsInAnyPile(out, out.curCardQueueItem.card.uniqueId)
                 && !restoreInterruptedPlayQueues(out)) {
             out.addToBot(Actions::OnAfterCardUsed());
@@ -496,6 +640,8 @@ namespace sts::search {
         for (std::size_t i = 0; i < out.monsters.size(); ++i) {
             const auto &m = state.monsters.arr[i];
             auto &wm = out.monsters[i];
+            wm.occupantGeneration = m.occupantGeneration;
+            wm.latentDamageMask = state.intentsHidden ? m.latentDamageMask : 0;
             wm.idx = m.idx; wm.id = static_cast<std::int16_t>(m.id); wm.curHp = m.curHp;
             wm.maxHp = m.maxHp; wm.block = m.block; wm.isEscapingB = m.isEscapingB;
             wm.halfDead = m.halfDead; wm.escapeNext = m.escapeNext;
@@ -506,9 +652,15 @@ namespace sts::search {
                               static_cast<std::int16_t>(m.mark), m.metallicize, m.platedArmor,
                               m.poison, m.regen, m.shackled};
             wm.strength = m.strength; wm.vulnerable = m.vulnerable; wm.weak = m.weak;
-            wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = m.miscInfo;
+            wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = state.intentsHidden && wm.latentDamageMask ? 0 : m.miscInfo;
             wm.pendingMoveRolls = m.pendingMoveRolls;
             wm.pendingDirectMoveChoice = m.pendingDirectMoveChoice;
+            wm.pendingAttackPredicates = m.pendingAttackPredicates;
+            for (const auto &r : m.pendingRollInputHistory) {
+                wm.pendingRollInputHistory.push_back({r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp,
+                    r.monsterTurnNumber, r.miscInfo, r.aliveCount, r.monstersAlive,
+                    r.knightAlive, r.playerConstricted, r.asleep, r.halfDead});
+            }
             const auto &r = m.pendingRollInputs;
             wm.pendingRollInputs = {r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp, r.monsterTurnNumber,
                                     r.miscInfo, r.aliveCount, r.monstersAlive, r.knightAlive,
@@ -538,10 +690,15 @@ namespace sts::search {
         out.cardSelect.pickCount = select.pickCount;
         out.cardSelect.data0 = select.data0;
         out.cardSelect.task = static_cast<std::int16_t>(select.cardSelectTask);
-        out.cardSelect.setCostToZero = true;
+        out.cardSelect.setCostToZero = select.setCostToZero;
+        out.cardSelect.drawAfter = select.drawAfter;
+    out.cardSelect.drawsAfter = select.drawsAfter;
+    out.cardSelect.blocksAfter = select.blocksAfter;
+    out.cardSelect.damageAllBeforeBlocks = select.damageAllBeforeBlocks;
         out.cardSelect.selectedBits = 0;
 
         out.curCardQueueItem = toWire(state.curCardQueueItem);
+        capturePendingActionQueue(state,out);
         if (state.inputState == InputState::CARD_SELECT) {
             out.pendingCardQueueObserved = true;
             const auto &queue = state.cardQueue;
@@ -595,12 +752,20 @@ namespace sts::search {
                 return out;
 
             case ActionType::SINGLE_CARD_SELECT: {
+                if (task == CardSelectTask::LIQUID_MEMORIES_POTION && state.cardSelectInfo.pickCount == 2) {
+                    out.type = SemanticActionType::MULTI_CARD_SELECT;
+                    out.source = CardSource::DISCARD;
+                    out.cardSelectTask = static_cast<std::int16_t>(task);
+                    out.selectedCards.push_back(cardAt(state,CardSource::DISCARD,action.getSelectIdx()));
+                    out.selectedCards.push_back(cardAt(state,CardSource::DISCARD,action.getTargetIdx()-1));
+                    return out;
+                }
                 const int idx = action.getSelectIdx();
                 out.type = SemanticActionType::SINGLE_CARD_SELECT;
                 out.cardSelectTask = static_cast<std::int16_t>(task);
                 if (task == CardSelectTask::CODEX || task == CardSelectTask::DISCOVERY) {
                     out.source = CardSource::CARD_SELECT_OPTION;
-                    if (task == CardSelectTask::CODEX && idx == 3) {
+                    if (idx == 3 && (task == CardSelectTask::CODEX || state.cardSelectInfo.canPickZero)) {
                         out.skipCardSelect = true;
                         return out;
                     }

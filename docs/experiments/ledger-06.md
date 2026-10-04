@@ -13569,6 +13569,87 @@ and the default setting was already as good as any alternative.
 allocation section); the research-only mode is recorded here and in its
 evidence packet. No default changed.
 
+## §370 — Learned Silver stopping: fight-replay and live A/B against #199 (2026-10-03)
+
+**Question:** can a learned stop/continue model at fixed search checkpoints
+save native Silver compute against the production #199 rule without making
+fights worse? This revisits §285, where a logistic model was rejected because
+it almost never stopped.
+
+**Policy:** `STS_SILVER_LEARNED_STOP=1` (research-only, default off).
+- Each multi-action root is searched to the checkpoints
+  250/500/1k/2k/4k/8k/10k new simulations.
+- Search stops at the first strict visit lock (`N1 − N2 > 10k − used`) or
+  when the risk from model `gbt-b91dcfea64e1` is below 0.03.
+- The model is a 300-tree histogram GBT over 18 root features, compiled into
+  the binary.
+- It was trained on native exact-10k checkpoint traces
+  (`STS_SILVER_STOP_TRACE`), seeds `41000000..41000023`. The threshold was
+  chosen on `41000024..41000031`. Held-out offline result: 58.1% saving
+  against flat 10k at 0.76% disagreement with the 10k action; #199 gets
+  42.5% at 0.99%.
+
+**Protocol:** frozen [PLAN.md](evidence/silver_learned_stop/PLAN.md).
+- Code `ae7a6d79` (PR #403). The independent pre-run review returned GO WITH
+  FIXES, and the fixes were applied in plan commit `885987d`.
+- Part A (primary): `one_combat silverstopreplaygen` on seeds
+  `42000000..42000095`. Every real fight of exact-10k source runs was replayed
+  under three arms: flat 10k (control, which must reproduce the source),
+  #199, and learned stopping.
+- Gate:
+  - S = 1 − sims(learned)/sims(#199) ≥ 10%;
+  - the 95% seed-clustered CI lower bound of the per-fight signedOutcome
+    difference above −0.005;
+  - no more learned-only than #199-only invalid fights.
+- Part B (descriptive): 128 paired `bestbench` runs on seeds
+  `43000000..43000127`, production default against learned stopping.
+
+**Integrity:** 96/96 valid sources and 2,445 fights. The control replay
+reproduced 2,437; all 8 exclusions were Smoke Bomb escapes. No arm had an
+invalid result in a counted fight. All shards exited 0. One launch was stopped
+by the operator about 40 seconds in, before any seed finished (waiter timeout
+risk), and restarted unchanged. About 3.5 replay CPU-hours plus 1.5 live
+CPU-hours.
+
+**Result:** **`LEARNED_STOP_PASS`**.
+- Learned − #199: **+0.0019 signedOutcome/fight, 95% CI [−0.0009, +0.0048]**,
+  with **19.4% fewer simulations** [18.3, 20.5] and a CPU ratio of 0.80.
+- Against flat 10k:
+  - #199: −0.0029 [−0.0054, −0.0004] at a 46.4% saving;
+  - learned: −0.0010 [−0.0040, +0.0021] at a 56.8% saving.
+- No room class showed a negative point estimate.
+- Live, descriptive (#199 → learned):
+  - wins 70.3% → 75.8%, +5.5 pp [−3.1, +14.1], with 13 #199-only and 20
+    learned-only wins;
+  - floor −1.1 [−2.4, +0.0];
+  - ending HP +1.8;
+  - CPU-seconds per run −23%.
+
+**Review notes, not blocking:**
+- Offline, the strict lock alone saves 38.2% with zero disagreements. The
+  model adds about 20 pp and causes all held-out disagreements. The runtime
+  counter does not split lock and model stops.
+- Fresh-root held-out disagreement was 1.25%; #199 never stops fresh roots.
+- Train vs held-out disagreement (0.06% vs 0.76%) indicates overfitting.
+- **Inference:** P(PASS | true D = 0) is about 80%. This is non-inferiority
+  evidence, not superiority.
+
+**Decision:** the learned stopper passes its pre-registered gate as a
+compute-saving candidate: about 19% fewer simulations than #199 with no
+detectable fight-quality loss. It stays default-off. Promotion to the
+production default is a separate decision, which should come with a lock-only
+control arm and a fresh confirmation.
+
+**Evidence:** [packet](evidence/silver_learned_stop/README.md).
+
+**ELI5:** At a few points during each search, a small learned model checks
+whether more thinking would still change the move, and stops if not. Over
+about 2,400 replayed fights it played as well as the current rule while
+thinking about a fifth less.
+
+**Knowledge impact:** `evaluation/current-research.md` (retained-root adaptive
+section) and `operations/environment-variables.md`. No default changed.
+
 ## §371 — #397 Stage 1 `v_win` information-boundary audit and hidden-future ablation (2026-10-03)
 
 **Question:** which rich `v_win` features could a real player not know, and
@@ -13644,6 +13725,76 @@ measure, so the honest answer is "no sign it matters, not proven tiny".
 **Knowledge impact:** information-boundary classification and public-safe
 allowlist in `operations/ooc-label-pipeline.md`; status in
 `evaluation/current-research.md`.
+
+## §372 — Learned Silver stopping v2: retrained model and fresh confirmation with a lock-only arm (2026-10-03)
+
+(§371 is left to the parallel #397 audit, PR #404.)
+
+**Question:** does a learned stopper retrained on more seeds pass the §370
+gate again on fresh seeds, and how much does the model add over the strict
+visit lock alone?
+
+**Model selection:** 128 more exact-10k trace seeds
+(`41000032..41000159`), 160 seeds and 66,930 multi-action decisions in total.
+5-fold seed-grouped cross-validation of GBT, regularized, monotone and
+logistic variants (`tools/silver_learned_stop_cv.py`). The best variant was
+the v1 hyperparameters plus 4 trend features (change of gap share, top share,
+Q gap and entropy since the previous checkpoint): 58.1% out-of-fold saving
+against flat 10k at 0.72% disagreement, against 41.0% at 1.03% for #199.
+The chosen model `gbt-770201c31f7b` uses threshold 0.0323, with 0.31% train
+vs 0.72% out-of-fold disagreement (v1: 0.06% vs 0.76%).
+
+**Protocol:** frozen [v2/PLAN.md](evidence/silver_learned_stop/v2/PLAN.md),
+code `adbcae75` (PR #403). The independent pre-run review returned GO.
+- Part A (primary): `silverstopreplaygen` on seeds `44000000..44000127`, with
+  four arms: flat 10k control, #199, lock-only, learned. The gate is the §370
+  gate unchanged.
+- Part B (descriptive): 128 paired `bestbench` runs on `45000000..45000127`.
+- Split over 4 cloud containers into disjoint 32-seed parts
+  (`launch_part.sh`, commit `0fa711e`, which runs a hash-checked local copy of
+  the binary because the shared folder is not executable).
+
+**Integrity:** 128/128 valid sources and 3,412 fights. The control replay
+reproduced 3,385; all 27 exclusions were escapes. No arm had an invalid
+result in a counted fight. All 48 shards exited 0, each run once. About 6.1
+replay plus 1.6 live CPU-hours.
+
+**Result:** **`LEARNED_STOP_PASS`**.
+- Learned − #199: **−0.0007 signedOutcome/fight, 95% CI [−0.0031, +0.0018]**,
+  with **21.3% fewer simulations** [20.3, 22.3] and a CPU ratio of 0.79.
+- Learned − lock-only: +0.0006 [−0.0017, +0.0030] with 30.2% fewer
+  simulations.
+- Lock-only − #199: −0.0013 [−0.0036, +0.0008], using 12.7% more
+  simulations than #199.
+- Against flat 10k: #199 +0.0013, lock-only −0.0000, learned +0.0006; all
+  CIs include zero. Savings 45.1%, 38.1% and 56.8%.
+- Learned stopping stopped 35,598 roots by model and 9,629 by lock.
+- By room, learned − #199: normal +0.0002, elite −0.0005, boss −0.0074
+  [−0.0246, +0.0101] on 367 fights, other +0.0037.
+- Live, descriptive (#199 → learned): wins 76.6% → 77.3%, +0.8 pp
+  [−7.0, +8.6]; floor −1.0 [−2.1, +0.0]; ending HP +0.0; seconds per run −25%.
+
+**Notes:**
+- **Inference:** the boss estimate is negative with a wide CI. The live floor
+  difference was about −1 in both §370 and here, each CI touching zero. Not
+  evidence of harm, but worth tracking in a promotion run.
+- The gate is non-inferiority with about 80% pass probability at zero true
+  effect; this is not a superiority claim.
+
+**Decision:** v2 passes the fresh confirmation, and the lock-only arm shows
+that the model, not the lock, carries the saving over #199. It stays
+default-off. Whether to make it the production default is a separate
+decision.
+
+**Evidence:** [v2 packet](evidence/silver_learned_stop/v2/README.md).
+
+**ELI5:** The retrained stopper was tested on new games. It again played as
+well as the current rule while thinking about a fifth less, and the simple
+"the answer can no longer change" check alone would not have saved that much.
+
+**Knowledge impact:** `evaluation/current-research.md` (learned stopping
+section) and `operations/environment-variables.md` (v2 default threshold). No
+default changed.
 
 ## §373 — #397 Stage 1b reachable rich card/relic/potion domain (2026-10-03)
 
@@ -13862,6 +14013,68 @@ will cost at the next shop, did not help the model predict wins.
 
 **Knowledge impact:** maintained summary in `operations/ooc-label-pipeline.md`
 and `evaluation/current-research.md`.
+
+## §377 — Learned Silver stopping v3: 1,024-pair live promotion run with boss variants (2026-10-03)
+
+(§373–§376 are used by the parallel #397 work.)
+
+**Question:** do the about −1 floor leans in the §370/§372 live runs reflect a
+real strength cost of learned stopping against #199? Do boss fights benefit
+from falling back to #199, or from a cap above 10k? Philipp asked the second
+question.
+
+**Protocol:** frozen [v3/PLAN.md](evidence/silver_learned_stop/v3/PLAN.md).
+- Code `8c7da1d0`, which adds research-only `STS_SILVER_LEARNED_STOP_BOSS_FALLBACK`
+  and `STS_SILVER_LEARNED_STOP_BOSS_MAX`.
+- The pre-run review required three fixes, applied in `4a5e1a5`: Bonferroni,
+  full-precision analysis, and correct v1/v2 attribution.
+- Run after Philipp's go.
+- 1,024 paired `bestbench` seeds `46000000..46001023`, four arms:
+  - #199;
+  - v2 learned (`gbt-770201c31f7b`);
+  - v2 with boss rooms on #199;
+  - v2 with boss roots that reach 10k unstopped continuing to 30k unless
+    strictly locked.
+- Rule: a variant qualifies when the 98.33% bootstrap CI lower bound of the
+  paired floor difference ΔF against #199 is above −0.75 and its mean
+  seconds per run are below #199's. The qualifier with the highest ΔF is
+  recommended.
+
+**Integrity:** 4 parts on 4 cloud containers, 64 shards, all exit 0, each run
+once. All sidecars name executable `8c7da1d0` and the arm settings.
+`analyze.py` reproduces `report.json`. 30.7 CPU-hours (planned 26–28).
+
+**Result:** **`PROMOTE_learned`**.
+- learned − #199: **ΔF +0.49 floors, 98.33% CI [+0.08, +0.91]**; wins 80.3%
+  vs 78.3% (+2.0 pp, 95% CI [−0.6, +4.5]); 23.7 vs 29.3 s per run (ratio
+  0.81).
+- bossfallback − #199: +0.33 [−0.03, +0.71], qualifies, ratio 0.87.
+- bossmax30k − #199: +0.32 [−0.08, +0.75], ratio 1.05, so it fails the time
+  criterion.
+- Against plain v2, both boss variants were slightly worse:
+  - fallback: −0.2 floors, −1.5 pp wins;
+  - 30k: −0.2 floors, −1.1 pp wins, +7.1 s per run.
+- Deaths on an act-boss floor: #199 163, learned 157.
+
+**Notes (Inference):**
+- The negative live floor lean of §370/§372 (128 pairs each) did not
+  replicate at 8× the sample size.
+- More boss search than 10k showed no benefit here, so the 10k cap stays.
+- The design is non-inferiority. The positive ΔF and the CI excluding 0 are
+  reported, but superiority was not pre-registered.
+
+**Decision:** learned stopping v2 is recommended as the production Silver
+budget policy, replacing #199. The flip needs its own ADR and PR, and
+Philipp's decision. The boss options stay research-only.
+
+**Evidence:** [v3 packet](evidence/silver_learned_stop/v3/README.md).
+
+**ELI5:** On 1,024 new games, the learned stopper reached half a floor further
+on average, won slightly more often and used about a fifth less time than
+the current rule. Giving bosses extra thinking time did not help.
+
+**Knowledge impact:** `evaluation/current-research.md` and
+`operations/environment-variables.md` (the boss options). No default changed.
 
 ## §378 — #397 follow-up: history and derived families with the A3 M1 MLP (2026-10-03)
 

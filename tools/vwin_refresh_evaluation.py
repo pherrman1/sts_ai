@@ -21,7 +21,7 @@ def _vectors(labels, predictions):
     return y, p
 
 
-def predictive_metrics(labels, predictions):
+def predictive_metrics(labels, predictions, source_seeds=None):
     """Row-weighted metrics, stable equal-mass bins (ties retain input order)."""
     y, p = _vectors(labels, predictions)
     clipped = np.clip(p, 1e-15, 1 - 1e-15)
@@ -37,8 +37,30 @@ def predictive_metrics(labels, predictions):
     below = np.cumsum(negatives) - negatives
     denom = y.sum() * (len(y) - y.sum())
     auc = float(np.sum(positives * (below + .5 * negatives)) / denom) if denom else None
-    return {'n': len(y), 'nll': float(-(y * np.log(clipped) + (1-y)*np.log1p(-clipped)).mean()),
-            'brier': float(np.mean((p-y)**2)), 'roc_auc': auc,
+    rate = float(y.mean())
+    constant = np.clip(rate, 1e-15, 1 - 1e-15)
+    brier = float(np.mean((p-y)**2))
+    source_rate, source_status = None, 'source_ids_unavailable'
+    if source_seeds is not None:
+        seeds = np.asarray(source_seeds)
+        if seeds.shape != y.shape:
+            raise ValueError('source seeds length mismatch')
+        _, inverse = np.unique(seeds, return_inverse=True)
+        totals = np.bincount(inverse)
+        wins = np.bincount(inverse, weights=y)
+        constant_labels = np.all((wins == 0) | (wins == totals))
+        source_status = 'constant_labels_per_source' if constant_labels else 'labels_vary_within_source'
+        if constant_labels:
+            source_rate = float(np.mean(wins / totals))
+    return {'observed_row_win_rate': rate,
+            'observed_unique_source_win_rate': source_rate,
+            'unique_source_win_rate_status': source_status,
+            'constant_predictor_probability': rate,
+            'constant_baseline_nll': float(-(y * np.log(constant) + (1-y) * np.log1p(-constant)).mean()),
+            'constant_baseline_brier': float(np.mean((rate-y)**2)),
+            'outcome_probability_rmse': float(np.sqrt(brier)),
+            'n': len(y), 'nll': float(-(y * np.log(clipped) + (1-y)*np.log1p(-clipped)).mean()),
+            'brier': brier, 'roc_auc': auc,
             'ece': sum(b['n'] * abs(b['prediction']-b['observed']) for b in reliability)/len(y),
             'reliability': reliability}
 
@@ -56,8 +78,11 @@ def evaluate_predictions(labels, predictions, metadata):
             if str(row['preBoss']) not in ('0', '1'):
                 raise ValueError('preBoss must be binary')
             groups['preBoss:' + str(row['preBoss'])].append(i)
-    return {'overall': predictive_metrics(y, p),
-            'breakdowns': {key: predictive_metrics(y[ids], p[ids]) for key, ids in sorted(groups.items())},
+    def population(ids):
+        sources = [metadata[i]['sourceSeed'] for i in ids] if all('sourceSeed' in metadata[i] for i in ids) else None
+        return predictive_metrics(y[ids], p[ids], sources)
+    return {'overall': population(list(range(len(y)))),
+            'breakdowns': {key: population(ids) for key, ids in sorted(groups.items())},
             'preboss_status': 'explicit_metadata' if all('preBoss' in r for r in metadata) else 'not_identifiable_for_all_rows',
             'preboss_rules': sorted({r.get('preBossRule', 'supplied_explicit_flag') for r in metadata if 'preBoss' in r})}
 

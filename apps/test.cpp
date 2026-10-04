@@ -45,10 +45,12 @@
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/MatchAndKeepPolicy.h"
 #include "combat/BattleContextBinary.h"
+#include "combat/PublicDamageBelief.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
 #include "sim/search/SilverWireState.h"
+#include "sim/search/SilverWireJson.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
@@ -701,6 +703,161 @@ int silverProfile(std::int64_t sims, int stride) {
 // The wire path used by the live advisor (live state -> wire -> search root)
 // gives the same search state as the native backend's own search root, and
 // actions chosen on it map back onto the live state.
+int testPersistentLatentDamage() {
+    int failures=0;
+    auto check=[&](bool ok,const char *what) { if(!ok) { std::cerr<<"persistent_latent_damage FAIL: "<<what<<'\n'; ++failures; } };
+    const auto lice=Monster::latentDamagePrior(MonsterId::RED_LOUSE,0);
+    check(lice==((1u<<5)|(1u<<6)|(1u<<7)),"constructor uniform louse support");
+    check(Monster::latentDamagePrior(MonsterId::GREEN_LOUSE,2)==((1u<<6)|(1u<<7)|(1u<<8)),"ascended louse support");
+    check(Monster::latentDamagePrior(MonsterId::DARKLING,0)==0xf80,"Darkling support");
+    check(Monster::latentDamagePrior(MonsterId::DARKLING,2)==0x3e00,"ascended Darkling support");
+    GameContext gc(CharacterClass::IRONCLAD,11,0);
+    BattleContext base; base.init(gc,MonsterEncounter::JAW_WORM);
+    base.intentsHidden=true;
+    auto &m=base.monsters.arr[0];
+    m.id=MonsterId::RED_LOUSE; m.latentDamageMask=lice; m.latentDamageMaterialized=false;
+    m.miscInfo=0; m.pendingMoveRolls=0; m.pendingRollInputs={}; m.pendingRollInputHistory.clear();
+    m.moveHistory[0]=MMID::RED_LOUSE_BITE; m.moveHistory[1]=MMID::INVALID;
+    base.actionQueue.clear(); base.cardQueue.clear();
+    base.player.curHp=50; base.player.maxHp=80; base.player.block=0;
+    auto sampled=base; sampled.monsters.arr[0].materializePendingMove(sampled);
+    const int value=sampled.monsters.arr[0].miscInfo;
+    check(value>=5 && value<=7 && sampled.monsters.arr[0].latentDamageMaterialized,"one-time sample in support");
+    std::uint16_t observedSamples=0;
+    for(int k=0;k<64;++k) {
+        auto particle=base; particle.monsterHpRng=Random(k);
+        particle.monsters.arr[0].materializePendingMove(particle);
+        observedSamples|=std::uint16_t(1u<<particle.monsters.arr[0].miscInfo);
+    }
+    check(observedSamples==lice,"fresh worlds retain all prior candidates");
+    search::SilverSearchContext nodeContext;
+    search::SilverSearcher cached(sampled,nodeContext);
+    check(cached.rootSearchState().monsters.arr[0].miscInfo==0 && !cached.rootSearchState().monsters.arr[0].latentDamageMaterialized,
+        "cached root stores public belief rather than first sampled world");
+    cached.setRoot(sampled);
+    check(!cached.rootSearchState().monsters.arr[0].latentDamageMaterialized,"repeated root reuse resamples world from posterior");
+    const auto sampledRng=sampled.monsterHpRng;
+    sampled.monsters.arr[0].halfDead=true;
+    sampled.monsters.arr[0].materializePendingMove(sampled);
+    check(sampled.monsters.arr[0].miscInfo==value && sampled.monsterHpRng==sampledRng,"sample persists through half-dead/revival and repeated moves");
+    auto other=sampled; other.monsters.arr[0].miscInfo=value==5?6:5;
+    check(CombatObservation::fromBattleContext(sampled)==CombatObservation::fromBattleContext(other),"public observation excludes private scalar");
+    check(CombatObservation::fromBattleContext(sampled).visibleHash()==CombatObservation::fromBattleContext(other).visibleHash(),"public observation hash excludes private scalar");
+    check(sampled.equalForSearch(other),"private sampled scalar does not split public node");
+    check(!(sampled==other),"ordinary simulator equality retains private scalar");
+    check(search::hashBattleState(sampled)==search::hashBattleState(other),"public hash excludes sampled scalar");
+    other.monsters.arr[0].latentDamageMask=1u<<5;
+    check(!sampled.equalForSearch(other) && search::hashBattleState(sampled)!=search::hashBattleState(other),"posterior changes public identity");
+    auto hit=[&](BattleContext before,int concrete) {
+        before.monsters.arr[0].miscInfo=concrete; before.monsters.arr[0].latentDamageMaterialized=true;
+        const int damage=before.monsters.arr[0].calculateDamageToPlayer(before,concrete);
+        ActData_AttackPlayer{0,damage}(before);
+        return before;
+    };
+    PublicDamageObservation observation;
+    observation.maxHp=80; observation.beforeHp=50; observation.afterHp=44;
+    check(filterPublicDamageBelief(lice,observation)==(1u<<6),"public scalar history filter matches native clone outcome");
+    observation.afterHp=50; observation.beforeBuffer=1; observation.afterBuffer=1;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar Buffer history retains indistinguishable support");
+    observation.beforeBuffer=0; observation.afterBuffer=0; observation.intangible=true; observation.afterHp=49;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar Intangible history retains indistinguishable support");
+    observation.intangible=false; observation.beforeHp=1; observation.afterHp=0;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar overkill history retains indistinguishable support");
+    observation.reviveHp=40; observation.afterHp=40;
+    check(filterPublicDamageBelief(lice,observation)==lice,"scalar resurrection history retains indistinguishable support");
+    auto exact=hit(base,6);
+    check(exact.monsters.arr[0].latentDamageMask==(1u<<6),"unblocked hit identifies exact candidate");
+    auto weak=base; weak.monsters.arr[0].buff<MonsterStatus::WEAK>(1);
+    weak=hit(weak,6); check(weak.monsters.arr[0].latentDamageMask==(1u<<6),"Weak floor-conditioned outcome");
+    auto buffer=base; buffer.player.buff<PlayerStatus::BUFFER>(1);
+    buffer=hit(buffer,6); check(buffer.monsters.arr[0].latentDamageMask==lice,"Buffer-censored outcomes retain every candidate");
+    auto intangible=base; intangible.player.buff<PlayerStatus::INTANGIBLE>(1);
+    intangible=hit(intangible,6); check(intangible.monsters.arr[0].latentDamageMask==lice,"Intangible retains indistinguishable candidates");
+    auto overkill=base; overkill.player.curHp=1;
+    overkill=hit(overkill,6); check(overkill.monsters.arr[0].latentDamageMask==lice,"overkill-censored HP retains every candidate");
+    auto fairy=base; fairy.player.curHp=1;
+    fairy.potionCapacity=1; fairy.potionCount=1; fairy.potions[0]=Potion::FAIRY_POTION;
+    const auto fairy5=hit(fairy,5), fairy7=hit(fairy,7);
+    check(fairy5.player.lastAttackUnblockedDamage==1 && fairy7.player.lastAttackUnblockedDamage==1,
+        "public last damage caps lethal loss before Fairy revival");
+    check(fairy5.monsters.arr[0].latentDamageMask==lice && fairy7.monsters.arr[0].latentDamageMask==lice
+        && fairy5.equalForSearch(fairy7),"censored lethal Fairy worlds retain equal public state");
+    auto tail=base; tail.player.curHp=1; tail.player.setHasRelic<RelicId::LIZARD_TAIL>(true);
+    const auto tail5=hit(tail,5), tail7=hit(tail,7);
+    check(tail5.player.curHp==40 && tail5.player.lastAttackUnblockedDamage==1 && tail5.equalForSearch(tail7),
+        "censored lethal Lizard Tail worlds retain equal public state");
+    auto blocked=base; blocked.player.block=20;
+    blocked=hit(blocked,6); check(blocked.monsters.arr[0].latentDamageMask==(1u<<6),"public block consumption conditions exact candidate");
+    search::CombatKnowledgeState knowledge;
+    knowledge.configureHiddenMonsterIntents(true); knowledge.beginCombatInitialization();
+    auto *saved=search::g_combatKnowledgeObserver; search::g_combatKnowledgeObserver=&knowledge;
+    search::emitMonsterOccupantReset(0,1); search::emitMonsterLatentDamagePrior(0,lice);
+    search::emitHiddenMonsterIntentRollStarted(0,{},0,0,6);
+    search::g_combatKnowledgeObserver=saved;
+    check(knowledge.publicMonsterMiscInfo[0]==0 && knowledge.pendingHiddenIntentInputs[0].miscInfo==0,"observer redacts constructor sample at roll site");
+    knowledge.initializationInProgress=false;
+    search::g_combatKnowledgeObserver=&knowledge;
+    search::emitMonsterOccupantReset(0,2);
+    search::g_combatKnowledgeObserver=saved;
+    check(knowledge.monsterOccupantGeneration[0]==2 && knowledge.latentDamageMasks[0]==0 && knowledge.pendingHiddenIntentRolls[0]==0,"replacement clears prior occupant knowledge");
+    search::SilverSearchContext context;
+    const auto wire=search::wireFromSearchState(base,context);
+    auto visible=base; visible.intentsHidden=false;
+    visible.monsters.arr[0].miscInfo=6; visible.monsters.arr[0].latentDamageMaterialized=true;
+    search::CombatKnowledgeState visibleKnowledge;
+    visibleKnowledge.initializeFromLiveBattle(visible);
+    const auto visibleConversion=search::makeSilverBattleStateConversion(visible,visibleKnowledge,search::makeSilverRunContext(gc),11);
+    check(visibleConversion.wire.monsters[0].latentDamageMask==0 && visibleConversion.wire.monsters[0].miscInfo==6,
+        "visible conversion canonicalizes belief metadata while preserving public scalar");
+    const auto visibleWire=search::wireFromSearchState(visible,context);
+    check(visibleWire.monsters[0].latentDamageMask==0 && visibleWire.monsters[0].miscInfo==6,
+        "visible native wire canonicalizes belief metadata while preserving public scalar");
+    BattleContext visibleRoot;
+    check(search::nativeSilverSearchRoot(visible,visibleKnowledge,visibleRoot).empty(),"visible native root is supported");
+    check(visibleRoot.monsters.arr[0].latentDamageMask==0 && !visibleRoot.monsters.arr[0].latentDamageMaterialized
+        && visibleRoot.monsters.arr[0].miscInfo==6 && visibleRoot.equalForSearch(search::battleContextFromWire(visibleConversion.wire)),
+        "visible root and imported wire agree on canonical constructor state");
+    check(visible.monsters.arr[0].latentDamageMask==lice && visible.monsters.arr[0].latentDamageMaterialized,
+        "public conversion preserves raw simulator constructor metadata");
+    const auto restored=search::battleContextFromWire(wire);
+    check(restored.monsters.arr[0].latentDamageMask==lice && !restored.monsters.arr[0].latentDamageMaterialized,"wire restores belief without private sample");
+    nlohmann::json j=wire;
+    const auto jsonWire=j.get<silver_bridge::BattleStateWire>();
+    check(jsonWire.monsters[0].latentDamageMask==lice,"JSON posterior survives roundtrip");
+    auto rejects=[&](silver_bridge::BattleStateWire bad) {
+        try { (void)search::battleContextFromWire(bad); return false; } catch(const std::exception &) { return true; }
+    };
+    auto bad=wire; bad.monsters[0].latentDamageMask=0; check(rejects(bad),"missing latent prior rejects");
+    bad=wire; bad.monsters[0].latentDamageMask=1u<<8; check(rejects(bad),"out-of-prior damage rejects");
+    bad=wire; bad.monsters[0].miscInfo=6; check(rejects(bad),"private scalar rejects");
+    bad=wire; bad.monsters[0].pendingRollInputs.miscInfo=6; check(rejects(bad),"private roll scalar rejects");
+    for(const auto &invalid: {nlohmann::json(-1),nlohmann::json(65536),nlohmann::json(3.5),nlohmann::json(true)}) {
+        auto malformed=j; malformed["monsters"][0]["latentDamageMask"]=invalid;
+        bool rejected=false; try { (void)malformed.get<silver_bridge::BattleStateWire>(); } catch(const std::exception &) { rejected=true; }
+        check(rejected,"malformed JSON damage mask rejects before narrowing");
+    }
+    const auto bytes=serializeBattleContext(sampled);
+    const auto binary=deserializeBattleContext(bytes.data(),bytes.size());
+    check(binary.monsters.arr[0].latentDamageMask==lice && binary.monsters.arr[0].miscInfo==value
+        && binary.monsters.arr[0].latentDamageMaterialized,"binary preserves persistent particle and public belief");
+    auto read32=[](const std::vector<std::uint8_t> &b,std::size_t at) { return std::uint32_t(b[at]) | (std::uint32_t(b[at+1])<<8) | (std::uint32_t(b[at+2])<<16) | (std::uint32_t(b[at+3])<<24); };
+    std::size_t persistentOffset=0;
+    for(std::size_t at=16;at+5<=bytes.size();) {
+        const auto length=read32(bytes,at+1);
+        if(bytes[at]==8) { persistentOffset=at+5; break; }
+        at+=5+length;
+    }
+    check(persistentOffset!=0,"v4 includes required persistent metadata group");
+    if(persistentOffset) {
+        auto malformed=bytes;
+        for(int i=0;i<4;++i) malformed[persistentOffset+4+i]=0;
+        check(!deserializeBattleContext(malformed.data(),malformed.size()).intentsHidden,"binary hidden constructor without posterior rejects");
+        malformed=bytes; malformed[persistentOffset+8]=false;
+        check(!deserializeBattleContext(malformed.data(),malformed.size()).intentsHidden,"binary unmaterialized private scalar rejects");
+    }
+    std::cout<<"persistent_latent_damage "<<(failures?"FAIL":"PASS")<<'\n'; return failures?1:0;
+}
+
 int testSilverWireState() {
     int failures = 0;
     auto check = [&](bool ok, const std::string &what) {
@@ -709,6 +866,88 @@ int testSilverWireState() {
             ++failures;
         }
     };
+    {
+        // Toolbox can stop before opening draws and another relic's effects.
+        // The exact typed tail must survive both public/native wire paths,
+        // preserving order, action parameters and victory flags.
+        GameContext gc(CharacterClass::IRONCLAD, 11, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        bc.inputState = InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = CardSelectTask::DISCOVERY;
+        bc.cardSelectInfo.cards = {CardId::FINESSE,CardId::FLASH_OF_STEEL,CardId::PANACEA};
+        bc.cardSelectInfo.pickCount = 1;
+        bc.curCardQueueItem = CardQueueItem{};
+        bc.actionQueue.clear();
+        bc.addToBot(Actions::GainBlock(7));
+        bc.addToBot(Actions::GainEnergy(1));
+        bc.addToBot(Actions::BuffPlayer<PlayerStatus::ARTIFACT>(1));
+        bc.addToBot(Actions::DebuffPlayer<PlayerStatus::LOSE_STRENGTH>(2,false));
+        bc.addToBot(Actions::DamageAllEnemy(3));
+        bc.addToBot(Actions::DamageRandomEnemy(1));
+        bc.addToBot(Actions::UpgradeRandomCardAction());
+        bc.addToBot(Actions::DrawCards(2));
+        bc.addToBot(Actions::GambleAction());
+        bc.addToBot(Actions::DebuffAllEnemy<MonsterStatus::VULNERABLE>(1,false));
+        bc.addToBot(Actions::MakeTempCardInDrawPile(CardInstance(CardId::WOUND),2,true));
+        bc.addToBot(Actions::DebuffPlayer<PlayerStatus::WEAK>(1,false));
+        bc.addToBot(Actions::BuffPlayer<PlayerStatus::PEN_NIB>(1));
+        bc.addToBot(Actions::RemoveStatus<PlayerStatus::PEN_NIB>());
+        bc.addToBot(Actions::RemovePlayerDebuffs());
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        auto wire=search::makeSilverBattleStateWire(bc,knowledge,search::makeSilverRunContext(gc),0x5eedu);
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.size()==15,
+              "typed selector tail must be observed completely");
+        auto restored=search::battleContextFromWire(wire);
+        check(restored.actionQueue==bc.actionQueue,"typed selector tail changed order or parameters");
+        const auto context=search::searchContextFromWire(wire);
+        auto second=search::wireFromSearchState(restored,context);
+        check(second.pendingActionQueueObserved && search::battleContextFromWire(second).actionQueue==bc.actionQueue,
+              "typed selector tail must survive search-state wire round trip");
+        const auto persisted=silver_bridge::battleStateWireFromEnvelope(silver_bridge::battleStateWireEnvelope(wire));
+        check(persisted.pendingActionQueueObserved && search::battleContextFromWire(persisted).actionQueue==bc.actionQueue,
+              "typed selector tail must survive persisted JSON envelope round trip");
+        const auto reject=[&](silver_bridge::BattleStateWire bad,const char *message) {
+            bool threw=false;
+            try { (void)search::battleContextFromWire(bad); }
+            catch(const std::invalid_argument &) { threw=true; }
+            check(threw,message);
+        };
+        auto bad=wire; bad.pendingActionQueue[0].kind=silver_bridge::PendingActionKind::INVALID;
+        reject(bad,"unknown pending action must reject");
+        bad=wire; bad.pendingActionQueue[0].amount=-1; reject(bad,"negative pending amount must reject");
+        bad=wire; bad.pendingActionQueue[0].status=1; reject(bad,"extraneous pending status must reject");
+        bad=wire; bad.pendingActionQueue[2].status=static_cast<int>(PlayerStatus::ARTIFACT)+256;
+        reject(bad,"wrapped status must reject");
+        bad=wire; bad.pendingActionQueue[3].sourceMonster=true; reject(bad,"unqualified debuff source must reject");
+        bad=wire; bad.pendingActionQueue[9].status=static_cast<int>(MonsterStatus::STRENGTH);
+        reject(bad,"unqualified enemy power must reject");
+        bad=wire; bad.pendingActionQueue[10].amount=1; reject(bad,"unqualified Wound count must reject");
+        bad=wire; bad.pendingActionQueue[12].amount=2; reject(bad,"unqualified Pen Nib amount must reject");
+        bad=wire; bad.pendingActionQueue[13].amount=1; reject(bad,"Pen Nib removal cannot carry amount");
+        bad=wire; bad.pendingActionQueue[14].status=static_cast<int>(PlayerStatus::WEAK);
+        reject(bad,"Pellets cleanup cannot carry arbitrary status");
+        bad=wire; bad.pendingActionQueue[0]={silver_bridge::PendingActionKind::USE_CARD,0,0,false};
+        reject(bad,"card cleanup without physical owner must reject");
+        bad=wire; bad.pendingActionQueue.resize(129); reject(bad,"oversized pending queue must reject");
+        bad=wire; bad.pendingActionQueueObserved=false; reject(bad,"unobserved nonempty pending queue must reject");
+        bad=wire; bad.inputState=static_cast<int>(InputState::PLAYER_NORMAL); reject(bad,"normal root cannot carry selector tail");
+        bc.actionQueue.clear(); bc.addToBot(Actions::NoOpRollMove());
+        search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"unknown native tails stay unobserved");
+        bc.actionQueue.clear(); auto block=Actions::GainBlock(2); block.clearOnCombatVictory=true; bc.addToBot(block);
+        search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved,"changed native victory flags cannot be discarded");
+        bc.actionQueue.clear(); search::capturePendingActionQueue(bc,wire);
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"observed empty tail must stay exact");
+        auto envelope=silver_bridge::battleStateWireEnvelope(persisted);
+        envelope["state"]["pendingActionQueue"][0]["kind"]=257;
+        bool invalidKind=false;
+        try { (void)silver_bridge::battleStateWireFromEnvelope(envelope); }
+        catch(const std::invalid_argument &) { invalidKind=true; }
+        check(invalidKind,"JSON pending action kind cannot wrap to a known enum");
+    }
     {
         // A Headbutt played under Double Tap stops at its discard selection
         // with the Double Tap copy in the card queue. The replay cannot
@@ -744,6 +983,9 @@ int testSilverWireState() {
         const BattleContext root = search::battleContextFromWire(wire);
         check(root.cardQueue == bc.cardQueue, "double tap fixture: search root lost the Double Tap copy");
         check(root.actionQueue.size == bc.actionQueue.size, "double tap fixture: action queue differs");
+        check(search::battleContextFromWire(silver_bridge::battleStateWireFromEnvelope(
+                  silver_bridge::battleStateWireEnvelope(wire))).cardQueue == bc.cardQueue,
+              "double tap fixture: observed card queue lost in JSON envelope");
         const auto context = search::searchContextFromWire(wire);
         check(search::battleContextFromWire(search::wireFromSearchState(root, context)).cardQueue == root.cardQueue,
               "double tap fixture: card queue lost in the search-state wire round trip");
@@ -1731,6 +1973,21 @@ int testIroncladCardJavaParity() {
         if (hpBefore - m.curHp != 1) return fail("Intangible did not cap thorns-type damage at 1");
     }
 
+    // Save loading retains both Wing Boots charges and the Tea Set's charged
+    // sentinel when the relics are present together.
+    for (int teaCounter : {-2, -1}) {
+        SaveFile save;
+        save.relics = {RelicId::WING_BOOTS, RelicId::ANCIENT_TEA_SET};
+        save.relic_counters = {2, teaCounter};
+        GameContext restored(CharacterClass::IRONCLAD, 100123, 0);
+        restored.initRelicsFromSave(save);
+        if (restored.wingBootsCharges != 2
+                || restored.relics.getRelicValue(RelicId::WING_BOOTS) != 0
+                || restored.relics.getRelicValue(RelicId::ANCIENT_TEA_SET) != (teaCounter == -2 ? 1 : 0)) {
+            return fail("save loading lost Wing Boots or Ancient Tea Set state");
+        }
+    }
+
     // Ancient Tea Set: charged on entering any rest site, spent by the next
     // combat's first turn, even with other rooms in between.
     {
@@ -2043,8 +2300,8 @@ int testMonsterAiJavaParity() {
         m.miscInfo = 0;
         m.takeTurn(bc);
         drain(bc);
-        if (!m.lastMove(MMID::BRONZE_AUTOMATON_FLAIL) || m.miscInfo != 0) {
-            return fail("A19 Automaton counted its post-Hyper Beam Boost");
+        if (!m.lastMove(MMID::BRONZE_AUTOMATON_FLAIL) || m.miscInfo != 1) {
+            return fail("A19 Automaton next Flail counter is not one");
         }
     }
 
@@ -4431,12 +4688,28 @@ int testDesignerInSpireOptions() {
     gc.deck.obtain(gc, CardId::STRIKE_RED, 3);
     gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
 
-    // Option 3: pay 75 gold, transform 2 cards, regain control immediately.
+    // Option 3: pay 75 gold, then choose two distinct public transform targets.
+    const auto beforeTransform=gc.deck.cards;
     gc.chooseEventOption(3);
     check(gc.gold == 425, "option 3: expected gold 425, got " + std::to_string(gc.gold));
     check(gc.curHp == 80, "option 3: expected hp 80, got " + std::to_string(gc.curHp));
-    check(gc.screenState == ScreenState::MAP_SCREEN,
-          "option 3: expected MAP_SCREEN (regain control), got " + std::to_string((int)gc.screenState));
+    check(gc.screenState == ScreenState::CARD_SELECT
+            && gc.info.selectScreenType == CardSelectScreenType::TRANSFORM
+            && gc.info.toSelectCount == 2 && gc.info.haveSelectedCards.empty(),
+          "option 3: expected an unselected two-card transform grid");
+    check(gc.deck.cards.size() == beforeTransform.size() && std::equal(gc.deck.cards.begin(),gc.deck.cards.end(),beforeTransform.begin()), "option 3: deck changed before target selection");
+    if(gc.screenState == ScreenState::CARD_SELECT && gc.info.toSelectCards.size() >= 2) {
+        const int firstTarget=gc.info.toSelectCards[0].deckIdx;
+        gc.chooseSelectCardScreenOption(0);
+        check(gc.screenState == ScreenState::CARD_SELECT && gc.info.haveSelectedCards.size() == 1,
+              "option 3: first selection must leave one pick outstanding");
+        check(gc.deck.cards.size() == beforeTransform.size() && std::equal(gc.deck.cards.begin(),gc.deck.cards.end(),beforeTransform.begin()), "option 3: deck changed before both targets were selected");
+        check(gc.info.toSelectCards[0].deckIdx != firstTarget, "option 3: selected target remained available");
+        gc.chooseSelectCardScreenOption(0);
+        check(gc.screenState == ScreenState::MAP_SCREEN && gc.deck.cards.size() == beforeTransform.size(),
+              "option 3: completed transforms must preserve deck size and return to map");
+        check(gc.gold == 425 && gc.curHp == 80, "option 3: selection charged extra gold or HP");
+    } else check(false, "option 3: insufficient selectable transform targets");
 
     // Option 4: pay 110 gold, open a REMOVE card select (control not regained).
     gc.gold = 500;
@@ -5113,6 +5386,8 @@ int main(int argc, const char* argv[]) {
         return testCardPileEngine();
     } else if (command == "silver_searcher") {
         return testSilverSearcher();
+    } else if (command == "persistent_latent_damage") {
+        return testPersistentLatentDamage();
     } else if (command == "silver_wire_state") {
         return testSilverWireState();
     } else if (command == "silver_profile") {

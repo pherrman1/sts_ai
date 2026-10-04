@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include "live_ooc_importer.h"
 #include "run_features.h"
+#include "question_room_belief.h"
 #include "game/GameContext.h"
 #include <optional>
 
@@ -13,6 +14,26 @@ struct LiveOocStateV1 {
     sts::GameContext projected{};
     PathHistory path;
     nlohmann::json ooc;
+    // Verified one-button Java dialogue transitions have no native policy
+    // choice. Never evaluate or execute the projected event for these states.
+    bool mechanicalEventTransition = false;
+    // A verified sole boss-node click or post-selection result confirmation.
+    // These UI boundaries must bypass policy/model evaluation as well.
+    bool forcedOocTransition = false;
+    // Only chest size is public before opening. MCTS samples contents from
+    // its existing correlated prior; direct scoring/trace cannot assume them.
+    bool hiddenTreasureContents = false;
+    // Library's unseen card offers depend on latent rarity pity. Search may
+    // sample the existing public belief; a differential trace cannot equate
+    // this root with the live game's hidden counter.
+    bool hiddenEventRewardPity = false;
+    // Public event progress qualifies a posterior, but does not reveal the
+    // pre-shuffled unseen Dead Adventurer reward order.
+    bool hiddenEventState = false;
+    // The public memory policy must never simulate unknown board identities.
+    bool matchAndKeep = false;
+    bool selectorPreview = false;
+    int selectorPreviewDeckIndex = -1;
     // Java does not expose the private reward pity counters. Synthetic parity
     // fixtures may opt in when they provide an exact public reconstruction;
     // real live captures remain false and must not use a fabricated midpoint.
@@ -24,6 +45,11 @@ struct LiveOocStateV1 {
         sts::GameContext state{};
         PathHistory path;
         int currentActEventVisits = 0;
+        // Complete means qualified under public history; posterior size >1
+        // remains latent and is sampled once per root particle.
+        bool questionHistoryComplete = false;
+        QuestionChancePosterior questionChancePosterior;
+        bool mapHistoryComplete = false;
         bool supported = true;
         std::string reason;
     } mctsRoot;
@@ -36,4 +62,5 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state, const std::vector<std
                               bool allowEquivalentChoices = false);
 std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardGoldLiveAction(const LiveOocStateV1 &state);
+std::optional<nlohmann::json> forcedRewardPotionLiveAction(const LiveOocStateV1 &state);
 } // namespace one_combat::advisor

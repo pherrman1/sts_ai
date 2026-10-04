@@ -210,23 +210,25 @@ std::uint64_t outcomeEquivalenceKeyOf(const GameContext &g, const PathHistory &p
 }
 
 void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
-                                     int priorEventRooms) {
+                                     int priorEventRooms, bool questionHistoryComplete) {
     // Only '?' room transitions change these room chances. Bound increments
     // by the number of rooms already visited in this act, and reproduce the
     // native float-addition lattice (including Juzu's >1 monster chance).
-    const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
-    const int priorRooms = std::clamp(std::min(gc.floorNum - actStart, priorEventRooms), 0, 16);
-    gc.monsterChance = 0.1f;
-    gc.shopChance = 0.03f;
-    gc.treasureChance = 0.02f;
-    // Draw one latent outcome per observed '?' room, then update all three
-    // counters together by the native room-outcome rule. Independent lattice
-    // draws create counter triples that no room history could have produced.
-    for (int i = 0; i < priorRooms; ++i) {
-        const int outcome = std::uniform_int_distribution<int>(0, 3)(rng);
-        gc.monsterChance = outcome == 0 ? 0.1f : gc.monsterChance + 0.1f;
-        gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
-        gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
+    if (!questionHistoryComplete) {
+        const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
+        const int priorRooms = std::clamp(std::min(gc.floorNum - actStart, priorEventRooms), 0, 16);
+        gc.monsterChance = 0.1f;
+        gc.shopChance = 0.03f;
+        gc.treasureChance = 0.02f;
+        // Draw one latent outcome per observed '?' room, then update all three
+        // counters together by the native room-outcome rule. Independent lattice
+        // draws create counter triples that no room history could have produced.
+        for (int i = 0; i < priorRooms; ++i) {
+            const int outcome = std::uniform_int_distribution<int>(0, 3)(rng);
+            gc.monsterChance = outcome == 0 ? 0.1f : gc.monsterChance + 0.1f;
+            gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
+            gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
+        }
     }
     gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
     gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
@@ -334,8 +336,8 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
 }
 }
 void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng,
-                                 int priorEventRooms) {
-    sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms);
+                                 int priorEventRooms, bool questionHistoryComplete) {
+    sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms, questionHistoryComplete);
 }
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {
@@ -476,7 +478,7 @@ std::string graphActionLabel(const OocGameContextModel &model, const sts::search
         "Collect gold", "Take potion", "Take key", "Skip card reward", "Use Singing Bowl",
         "Leave rewards", "Open chest", "Leave treasure", "Rest", "Take Ruby Key",
         "Lift", "Dig", "Leave campfire", "Buy card", "Buy relic", "Buy potion",
-        "Leave shop", "Choose event option", "Take boss relic", "Skip boss relic"
+        "Leave shop", "Choose event option", "Take boss relic", "Skip boss relic", "Discard potion"
     };
     const auto effect = static_cast<unsigned>(action.semantic->effect);
     std::string label = effect < std::size(effects) ? effects[effect] : "OOC action";
@@ -634,8 +636,8 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
     return mutableMetadata(id);
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
-    if (options.stopAtMapCheckpoint
-            && id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+    if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
+            && options.stopAtMapCheckpoint)
         return true;
     return metadata(id).boundary;
 }
@@ -915,8 +917,8 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     if (!options.sampleNoncombat && edge.deterministic) return *edge.deterministic;
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
     // A live MAP root is searchable.  The hidden room outcome must be sampled
-    // before transitionToMapNode consumes monster/shop/treasure chances; a
-    // downstream MAP checkpoint is still evaluated as a leaf.
+    // before transitionToMapNode consumes monster/shop/treasure chances.
+    // Qualified successors retain their updated room counters.
     if (options.sampleNoncombat) {
         sampleNoncombatFuture(child.gc, rng);
         if (id == 0 && dependencies.sampleHiddenCounters)
@@ -1144,8 +1146,8 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     terminal = terminalValue(id).has_value();
     endpoint = endpointOf(state(id));
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
-    if (options.stopAtMapCheckpoint && id != 0
-            && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+    if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
+            && options.stopAtMapCheckpoint)
         return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
@@ -1177,7 +1179,8 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
-        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN && additionalCombats >= options.leafCombats) {
+        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN
+                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint)) {
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);

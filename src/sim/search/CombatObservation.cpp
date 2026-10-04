@@ -14,6 +14,8 @@ namespace sts {
 // ---- MonsterVisibleState ---------------------------------------------------
 void MonsterVisibleState::fromMonster(const Monster &m, const BattleContext &bc) {
     id = m.id;
+    occupantGeneration=m.occupantGeneration;
+    latentDamageMask=bc.intentsHidden?m.latentDamageMask:0;
     curHp = m.curHp;
     maxHp = m.maxHp;
     block = m.block;
@@ -27,7 +29,7 @@ void MonsterVisibleState::fromMonster(const Monster &m, const BattleContext &bc)
     lastMove = m.moveHistory[0] != MMID::INVALID ? m.moveHistory[0] : m.moveHistory[1];
     if (isAttacking) {
         const auto di = m.getMoveBaseDamage(bc);
-        incomingDamage = m.calculateDamageToPlayer(bc, di.damage) * di.attackCount;
+        incomingDamage = m.publicIncomingDamage(bc);
         incomingHits = di.attackCount;
     }
 }
@@ -153,6 +155,8 @@ std::uint64_t CombatObservation::visibleHash() const {
 
     for (const auto &m : monsters) {
         hashMix(h, static_cast<std::uint64_t>(m.id));
+        hashMix(h, m.occupantGeneration);
+        hashMix(h, m.latentDamageMask);
         hashMix(h, static_cast<std::uint64_t>(m.curHp));
         hashMix(h, static_cast<std::uint64_t>(m.maxHp));
         hashMix(h, static_cast<std::uint64_t>(m.block));
@@ -218,7 +222,7 @@ bool CombatObservation::operator==(const CombatObservation &o) const {
     if (monsters.size() != o.monsters.size()) return false;
     for (size_t i = 0; i < monsters.size(); ++i) {
         const auto &a = monsters[i], &b = o.monsters[i];
-        if (a.id != b.id || a.curHp != b.curHp || a.maxHp != b.maxHp
+        if (a.id != b.id || a.occupantGeneration!=b.occupantGeneration || a.latentDamageMask!=b.latentDamageMask || a.curHp != b.curHp || a.maxHp != b.maxHp
             || a.block != b.block || a.strength != b.strength
             || a.vulnerable != b.vulnerable || a.weak != b.weak
             || a.poison != b.poison || a.artifact != b.artifact

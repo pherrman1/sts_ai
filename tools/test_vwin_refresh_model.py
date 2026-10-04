@@ -12,14 +12,20 @@ import numpy as np
 
 from tools import vwin_refresh_model as pipeline
 from tools import vwin_refresh_training as training
-from tools.vwin_refresh_dataset import source_split
+from tools.vwin_refresh_dataset import source_split, CorpusBinding, DEFAULT_CORPUS_BINDING
 
 
 class SyntheticDataset:
     feature_names = ('curHp', 'maxHp', 'gold', 'potionCount', 'pot1')
 
+    def __init__(self, binding=DEFAULT_CORPUS_BINDING):
+        self.binding = binding
+
     def preflight(self, features):
-        return {'selected_feature_names': list(self.feature_names)}
+        return {'selected_feature_names': list(self.feature_names),
+                'corpus_binding': self.binding.to_dict(),
+                'corpus_index_sha256': self.binding.index_sha256,
+                'split_counts': dict(self.binding.split_counts)}
 
     def read(self, split, kind='MAP', allow_test=False, row_limit=None):
         if split == 'TEST' and not allow_test:
@@ -93,11 +99,53 @@ class ModelTests(unittest.TestCase):
                         pipeline.main(args)
             access.assert_not_called()
 
+    def test_cli_binding_requires_strict_paired_inputs(self):
+        for command in ('preflight', 'tune'):
+            base = [command, 'index', '--output', 'output']
+            if command == 'tune':
+                base += ['--authorize-full-training']
+            invalid = [
+                ['--expected-index-sha', 'a' * 64],
+                ['--expected-split-counts', '696,155,173'],
+                ['--expected-index-sha', 'z' * 64, '--expected-split-counts', '696,155,173'],
+                ['--expected-index-sha', 'a' * 63, '--expected-split-counts', '696,155,173'],
+            ]
+            invalid += [['--expected-index-sha', 'a' * 64, '--expected-split-counts', counts]
+                        for counts in ('1,2', '1,2,3,4', '0,2,3', '-1,2,3', '1.0,2,3', 'True,2,3', '1, 2,3')]
+            with patch.object(pipeline, command) as action:
+                for flags in invalid:
+                    with self.subTest(command=command, flags=flags), contextlib.redirect_stderr(io.StringIO()):
+                        with self.assertRaises(SystemExit):
+                            pipeline.main(base + flags)
+                action.assert_not_called()
+            with patch.object(pipeline, command, return_value={}) as action, contextlib.redirect_stdout(io.StringIO()):
+                pipeline.main(base)
+                self.assertEqual(action.call_args.kwargs['binding'], DEFAULT_CORPUS_BINDING)
+                pipeline.main(base + ['--expected-index-sha', 'A' * 64,
+                                      '--expected-split-counts', '696,155,173'])
+                self.assertEqual(action.call_args.kwargs['binding'].to_dict(),
+                                 {'index_sha256': 'a' * 64, 'split_counts': {'TRAIN': 696, 'VALIDATION': 155, 'TEST': 173}})
+
+    def test_preflight_propagates_binding_without_predictions(self):
+        binding = CorpusBinding('a' * 64, {'TRAIN': 696, 'VALIDATION': 155, 'TEST': 173})
+        output = self.root / 'preflight.json'
+        with patch.object(pipeline, 'validated_dataset', return_value=SyntheticDataset(binding)) as access, \
+             patch.object(pipeline, 'B0', self.b0), \
+             patch.object(pipeline.Baseline, 'predict', side_effect=AssertionError('no predictions')):
+            report = pipeline.preflight('synthetic-index', output, binding=binding)
+        access.assert_called_once_with('synthetic-index', binding=binding)
+        self.assertEqual(report['corpus_binding'], binding.to_dict())
+        self.assertFalse(report['real_test_predictions_opened'])
+        self.assertFalse(report['full_candidate_training_run'])
+        self.assertEqual(json.loads(output.read_text())['corpus_binding'], binding.to_dict())
+
     def test_bounded_smoke_qualifies_path_but_cannot_freeze(self):
         index = self.root / 'index.json'
         index.write_text('{}')
         run = self.root / 'smoke'
-        with patch.object(pipeline, 'validated_dataset', return_value=SyntheticDataset()), \
+        original_sha = pipeline.sha256
+        with patch.object(pipeline, 'sha256', side_effect=lambda p: DEFAULT_CORPUS_BINDING.index_sha256 if Path(p) == index else original_sha(p)), \
+             patch.object(pipeline, 'validated_dataset', return_value=SyntheticDataset()), \
              patch.object(pipeline, 'B0', self.b0):
             report = pipeline.validation_smoke(index, run)
         self.assertEqual(report['status'], 'complete')
@@ -109,7 +157,13 @@ class ModelTests(unittest.TestCase):
             pipeline.freeze(run)
 
     def test_synthetic_complete_lifecycle_and_tampering(self):
-        dataset = SyntheticDataset()
+        self.complete_lifecycle(DEFAULT_CORPUS_BINDING)
+
+    def test_explicit_1024_complete_lifecycle_and_tampering(self):
+        self.complete_lifecycle(CorpusBinding('a' * 64, {'TRAIN': 696, 'VALIDATION': 155, 'TEST': 173}))
+
+    def complete_lifecycle(self, binding):
+        dataset = SyntheticDataset(binding)
         index = self.root / 'index.json'
         index.write_text('{}')
         run = self.root / 'run'
@@ -122,12 +176,18 @@ class ModelTests(unittest.TestCase):
             return original_fixed(*args, **kwargs)
         def small_mlp(*args, **kwargs):
             return original_mlp(*args, **kwargs, recipes=[dict(lr=.001,weight_decay=.0001,dropout=0.)], max_epochs=2, patience=1, batch_size=32)
-        with patch.object(pipeline, 'validated_dataset', return_value=dataset), \
+        original_sha = pipeline.sha256
+        with patch.object(pipeline, 'sha256', side_effect=lambda p: binding.index_sha256 if Path(p) == index else original_sha(p)), \
+             patch.object(pipeline, 'validated_dataset', return_value=dataset) as corpus_access, \
              patch.object(pipeline, 'B0', self.b0), \
              patch.object(training, 'train_xgb', side_effect=small_xgb), \
              patch.object(training, 'train_xgb_fixed', side_effect=small_fixed), \
              patch.object(training, 'train_mlp', side_effect=small_mlp):
-            pipeline.tune(index, run)
+            kwargs = {} if binding == DEFAULT_CORPUS_BINDING else {'binding': binding}
+            pipeline.tune(index, run, **kwargs)
+            corpus_access.assert_called_with(index, binding=binding)
+            for name in ('preflight.json', 'tuning.json', 'validation-resources.json'):
+                self.assertEqual(json.loads((run / name).read_text())['corpus_binding'], binding.to_dict())
             self.assertFalse((run / 'freeze.json').exists())
             self.assertFalse((run / 'test-opened.json').exists())
             tuning_path = run / 'tuning.json'
@@ -145,6 +205,18 @@ class ModelTests(unittest.TestCase):
             qualification.unlink()
             with self.assertRaises(FileNotFoundError):
                 pipeline.freeze(run)
+            # Standalone qualification must reload the exact saved binding.
+            pipeline.qualify_validation(run)
+            corpus_access.assert_called_with(str(index.resolve()), binding=binding)
+            qualification.unlink()
+            altered = json.loads(original_tuning)
+            altered['corpus_binding']['split_counts']['TRAIN'] += 1
+            tuning_path.write_text(json.dumps(altered))
+            with patch.object(pipeline, 'validated_dataset') as access:
+                with self.assertRaisesRegex(ValueError, 'binding disagrees'):
+                    pipeline.qualify_validation(run)
+                access.assert_not_called()
+            tuning_path.write_text(original_tuning)
             # Failure is recorded but does not burn TEST or create a qualification.
             with patch.object(pipeline, 'resource_evaluation', side_effect=ValueError('real-state-edge')):
                 with self.assertRaisesRegex(ValueError, 'real-state-edge'):
@@ -163,6 +235,15 @@ class ModelTests(unittest.TestCase):
             qualification.write_text(json.dumps(changed))
             with self.assertRaisesRegex(ValueError, 'incomplete VALIDATION'):
                 pipeline.freeze(run)
+            changed = json.loads(original_qualification)
+            changed['corpus_binding']['split_counts']['TRAIN'] += 1
+            qualification.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, 'corpus binding mismatch'):
+                pipeline.freeze(run)
+            qualification.unlink()
+            wrong_data = SyntheticDataset(CorpusBinding('b' * 64, dict(binding.split_counts)))
+            with self.assertRaisesRegex(ValueError, 'dataset corpus binding mismatch'):
+                pipeline.qualify_validation(run, data=wrong_data)
             qualification.write_text(original_qualification)
             checkpoint = run / 'X1/predictor.json'
             original_checkpoint = checkpoint.read_text()
@@ -178,8 +259,28 @@ class ModelTests(unittest.TestCase):
             with patch.object(training, 'runtime_fingerprint', return_value=changed_runtime):
                 with self.assertRaisesRegex(ValueError, 'runtime changed since tuning'):
                     pipeline.freeze(run)
-            pipeline.freeze(run)
+            frozen = pipeline.freeze(run)
+            self.assertEqual(frozen['corpus_binding'], binding.to_dict())
             pipeline.verify_freeze(run)
+            # Every persisted binding is mandatory and must agree before corpus access.
+            for filename in ('preflight.json', 'tuning.json', 'validation-resources.json', 'freeze.json'):
+                target_binding = run / filename
+                saved_binding = target_binding.read_text()
+                for mutation in ('missing', 'sha', 'counts'):
+                    altered = json.loads(saved_binding)
+                    if mutation == 'missing':
+                        del altered['corpus_binding']
+                    elif mutation == 'sha':
+                        altered['corpus_binding']['index_sha256'] = 'b' * 64
+                    else:
+                        altered['corpus_binding']['split_counts']['TRAIN'] += 1
+                    target_binding.write_text(json.dumps(altered))
+                    with patch.object(pipeline, 'validated_dataset') as access:
+                        with self.assertRaises(ValueError):
+                            pipeline.open_test(run, 'OPEN_REAL_TEST_ONCE')
+                        access.assert_not_called()
+                    self.assertFalse((run / 'test-opened.json').exists())
+                target_binding.write_text(saved_binding)
             target = run / 'X1/predictor.json'
             original = target.read_text()
             target.write_text(original + '\n')
@@ -209,6 +310,9 @@ class ModelTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'already opened'):
                 pipeline.open_test(failed_run, 'OPEN_REAL_TEST_ONCE')
             result = pipeline.open_test(run, 'OPEN_REAL_TEST_ONCE')
+            corpus_access.assert_called_with(str(index.resolve()), binding=binding)
+            self.assertEqual(result['corpus_binding'], binding.to_dict())
+            self.assertEqual(json.loads((run / 'test-opened.json').read_text())['corpus_binding'], binding.to_dict())
             self.assertEqual(set(result['arms']), {'B0','X1','X2','M1'})
             self.assertFalse(result['terminal_pricing_ready'])
             with self.assertRaisesRegex(ValueError, 'already opened'):

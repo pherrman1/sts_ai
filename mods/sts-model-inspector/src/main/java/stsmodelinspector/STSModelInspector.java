@@ -104,6 +104,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final class TrackedCardQueueItem {
         boolean present;
         String cardJson;
+        AbstractCard physicalCard;
+        CardQueueItem physicalItem;
         int target;
         int energyOnUse;
         boolean isEndTurn;
@@ -119,6 +121,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         void clear() {
             present = false;
             cardJson = null;
+            physicalCard = null;
+            physicalItem = null;
             target = 0;
             energyOnUse = 0;
             isEndTurn = false;
@@ -234,6 +238,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostBattle(AbstractRoom room) {
+        RunicDomeCapture.clear();
         resetSilverBudget();
         monsterSlots.clear();
         replacedMonsterParents.clear();
@@ -1620,7 +1625,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return -1;
     }
 
-    private static IdentityHashMap<AbstractMonster, Integer> emittedMonsterSlots(String encounter) {
+    static IdentityHashMap<AbstractMonster, Integer> emittedMonsterSlots(String encounter) {
+        IdentityHashMap<AbstractMonster,Integer> bound=RunicDomeCapture.emittedSlots();
+        if(bound!=null)return bound;
         IdentityHashMap<AbstractMonster, Integer> emitted = new IdentityHashMap<>();
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return emitted;
@@ -1970,7 +1977,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 ",\"location\":\"" + location + "\"}";
     }
 
-    private static String cardQueueItemJson() {
+    private static String cardQueueItemJson(boolean qualifiedSourceCleanup) {
         if (!trackedLastCardQueueItem.present) return "null";
         TrackedCardQueueItem item = trackedLastCardQueueItem;
         return "{\"card\":" + item.cardJson
@@ -1984,7 +1991,53 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + ",\"autoplay\":" + item.autoplay
                 + ",\"regretCardCount\":" + item.regretCardCount
                 + ",\"purgeOnUse\":" + item.purgeOnUse
-                + ",\"exhaustOnUse\":" + item.exhaustOnUse + "}";
+                + ",\"exhaustOnUse\":" + (qualifiedSourceCleanup?sourceCleanupExhaust():item.exhaustOnUse) + "}";
+    }
+
+    private static List<PendingCardQueueCapture.Item> pendingCardQueueItems(IdentityHashMap<AbstractMonster,Integer> slots) {
+        List<PendingCardQueueCapture.Item> snapshot = new ArrayList<>();
+        for (CardQueueItem item : AbstractDungeon.actionManager.cardQueue) {
+            if (item == null) { snapshot.add(null); continue; }
+            PendingCardQueueCapture.Item observed = new PendingCardQueueCapture.Item();
+            observed.identity = item;
+            observed.vanilla = item.getClass() == CardQueueItem.class;
+            observed.hasMonster = item.monster != null;
+            observed.target = item.monster == null ? null : slots.get(item.monster);
+            observed.endTurnAutoPlay = item.isEndTurnAutoPlay;
+            observed.energyOnUse = item.energyOnUse;
+            observed.ignoreEnergyTotal = item.ignoreEnergyTotal;
+            observed.randomTarget = item.randomTarget;
+            observed.autoplay = item.autoplayCard;
+            if (item.card != null) {
+                AbstractCard card = item.card;
+                observed.cardJson = cardJson(card);
+                observed.cardId = card.cardID;
+                observed.vanillaEndTurnCard = card.getClass() == com.megacrit.cardcrawl.cards.status.Burn.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Decay.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Doubt.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Shame.class
+                        || card.getClass() == com.megacrit.cardcrawl.cards.curses.Regret.class;
+                if (card.getClass() == com.megacrit.cardcrawl.cards.curses.Regret.class
+                        && card.magicNumber == card.baseMagicNumber)
+                    observed.regretCardCount = card.magicNumber;
+                for(AbstractCard handCard:AbstractDungeon.player.hand.group) if(handCard==card) observed.inHand=true;
+                observed.uuid = card.uuid == null ? null : card.uuid.toString();
+                observed.requiresTarget = card.target == AbstractCard.CardTarget.ENEMY
+                        || card.target == AbstractCard.CardTarget.SELF_AND_ENEMY;
+                observed.triggerOnUse = !card.dontTriggerOnUseCard;
+                observed.freeToPlay = card.freeToPlayOnce;
+                observed.purgeOnUse = card.purgeOnUse;
+                observed.exhaustOnUse = card.exhaust || card.exhaustOnUseOnce || card.exhaustOnFire;
+            }
+            snapshot.add(observed);
+        }
+        return snapshot;
+    }
+
+    private static PendingCardQueueCapture.Result pendingCardQueue(IdentityHashMap<AbstractMonster,Integer> slots,
+                                                                   boolean codexEndTurn) {
+        return PendingCardQueueCapture.capture(pendingCardQueueItems(slots), trackedLastCardQueueItem.physicalItem,
+                codexEndTurn,hasRelic("Unceasing Top"));
     }
 
     private static boolean isPlayerDecisionPoint() {
@@ -2006,7 +2059,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return phase == AbstractRoom.RoomPhase.COMBAT
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
-                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                         || screen == AbstractDungeon.CurrentScreen.CARD_REWARD) && selectionAvailable));
     }
 
     private static boolean isCardSelectionBoundary() {
@@ -2014,7 +2068,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                     && AbstractDungeon.gridSelectScreen != null)
                 || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
-                    && AbstractDungeon.handCardSelectScreen != null);
+                    && AbstractDungeon.handCardSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    && AbstractDungeon.cardRewardScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -2029,6 +2085,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             trackedLastTargetedMonster = item.monster;
 
         trackedLastCardQueueItem.present = true;
+        trackedLastCardQueueItem.physicalCard = item.card;
+        trackedLastCardQueueItem.physicalItem = item;
         trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
         Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
         if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
@@ -2072,6 +2130,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics)
             if (id.equals(relic.relicId)) return true;
         return false;
+    }
+
+    static Integer awakenedNativePhase(Boolean form1, boolean halfDead) {
+        // Vanilla flips form1 in damage(), before the rebirth move executes.
+        // Native remains in phase zero through the half-dead interval.
+        return form1 == null ? null : (form1 || halfDead ? 0 : 1);
     }
 
     static Integer guardianNativeThreshold(Integer threshold, Integer increase, Boolean isOpen) {
@@ -2177,19 +2241,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
-    static Integer bronzeAutomatonNativeFlag(Integer nextMove, Integer numTurns) {
-        // Native Silver's miscInfo is lastBoostWasFlail. Vanilla numTurns
-        // counts Flail(1)/Boost(5) intents since the last Hyper Beam: 1..4,
-        // and 0 for the A19 Boost right after Hyper Beam. The native toggle is
-        // set from the second Flail (3) through the second Boost (4). Two moves
-        // of history cannot tell the first Boost from the second.
-        if (nextMove == null || numTurns == null || numTurns < 0 || numTurns > 4) return null;
-        boolean flailOrBoost = nextMove == 1 || nextMove == 5;
-        return flailOrBoost && numTurns >= 3 ? 1 : 0;
+    static Integer bronzeAutomatonNativeTurns(Integer numTurns) {
+        // Native now follows vanilla's getMove counter directly. Dome reconstructs
+        // its pre-roll counter from public executions and bypasses this accessor.
+        return numTurns == null || numTurns < 0 || numTurns > 4 ? null : numTurns;
     }
 
     private static Integer bronzeAutomatonMiscInfo(AbstractMonster monster) {
-        return bronzeAutomatonNativeFlag((int) monster.nextMove, readIntField(monster, "numTurns"));
+        return bronzeAutomatonNativeTurns(readIntField(monster, "numTurns"));
     }
 
     private static Integer monsterUniquePower0(AbstractMonster monster) {
@@ -2246,7 +2305,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if ("AwakenedOne".equals(id)) {
             Boolean form1 = readBooleanField(monster, "form1");
-            return form1 == null ? null : (form1 ? 0 : 1);
+            return awakenedNativePhase(form1, monster.halfDead);
         }
         if ("WrithingMass".equals(id)) {
             Boolean used = readBooleanField(monster, "usedMegaDebuff");
@@ -2313,6 +2372,42 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return task;
     }
 
+    // These vanilla action classes own the selection until its cards are
+    // returned. Their identity is independent of localized prompt text.
+    // null means no qualified override; empty means a known unsupported shape.
+    static String actionSelectionTask(String actionClass, boolean hand, boolean anyNumber, int count) {
+        if ("com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction".equals(actionClass))
+            return !hand && !anyNumber && (count == 1 || count == 2) ? "LIQUID_MEMORIES_POTION" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.DualWieldAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "DUAL_WIELD" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ArmamentsAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "ARMAMENTS" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ExhumeAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "EXHUME" : "";
+        if ("com.megacrit.cardcrawl.actions.common.ExhaustAction".equals(actionClass))
+            return !hand ? "" : !anyNumber && count == 1 ? "EXHAUST_ONE"
+                    : anyNumber && (count == 3 || count == 5 || count == 99) ? "EXHAUST_MANY" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(actionClass))
+            return hand && anyNumber && count == 99 ? "GAMBLE" : "";
+        if ("com.megacrit.cardcrawl.actions.common.DiscardAction".equals(actionClass)) return "";
+        if ("com.megacrit.cardcrawl.actions.unique.DiscardPileToTopOfDeckAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "HEADBUTT" : "";
+        if ("com.megacrit.cardcrawl.actions.common.PutOnDeckAction".equals(actionClass))
+            return hand && !anyNumber && count == 1 ? "WARCRY" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.ForethoughtAction".equals(actionClass))
+            return hand && ((!anyNumber && count == 1) || (anyNumber && count == 99)) ? "FORETHOUGHT" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.SkillFromDeckToHandAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "SECRET_TECHNIQUE" : "";
+        if ("com.megacrit.cardcrawl.actions.unique.AttackFromDeckToHandAction".equals(actionClass))
+            return !hand && !anyNumber && count == 1 ? "SECRET_WEAPON" : "";
+        return null;
+    }
+
+    private static String currentActionSelectionTask(boolean hand, boolean anyNumber, int count) {
+        Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+        return actionSelectionTask(action == null ? "" : action.getClass().getName(), hand, anyNumber, count);
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
@@ -2334,6 +2429,391 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append("]}").toString();
     }
 
+    static String singleSelectionJson(String task, String origin, boolean canPickZero,
+                                      boolean anyNumber, int count, int selectedCount,
+                                      List<String> uuids, int liveChoiceCount) {
+        boolean hand = "HAND_SELECT".equals(origin);
+        boolean qualified = hand ? "WARCRY".equals(task) || "FORETHOUGHT".equals(task) || "EXHAUST_ONE".equals(task) || "ARMAMENTS".equals(task) || "DUAL_WIELD".equals(task) || "GAMBLE".equals(task) || "EXHAUST_MANY".equals(task)
+                : "GRID".equals(origin) && ("SECRET_TECHNIQUE".equals(task) || "SECRET_WEAPON".equals(task) || "HEADBUTT".equals(task) || "EXHUME".equals(task) || "LIQUID_MEMORIES_POTION".equals(task));
+        boolean multiForethought = hand && canPickZero && anyNumber
+                && (("FORETHOUGHT".equals(task) || "GAMBLE".equals(task)) && count == 99
+                    || "EXHAUST_MANY".equals(task) && (count == 3 || count == 5 || count == 99));
+        boolean liquidPair = !hand && "LIQUID_MEMORIES_POTION".equals(task) && !canPickZero && !anyNumber && count == 2;
+        if (!qualified || (!multiForethought && !liquidPair && (canPickZero || anyNumber || count != 1)) || selectedCount != 0
+                || uuids == null || uuids.isEmpty() || uuids.size() != liveChoiceCount
+                || ("LIQUID_MEMORIES_POTION".equals(task) && uuids.size() <= count)
+                || uuids.contains(null) || uuids.contains("")
+                || new java.util.HashSet<String>(uuids).size() != uuids.size())
+            return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_live_choices\"}";
+        String base = selectionJson(task, canPickZero, anyNumber, count, null);
+        StringBuilder out = new StringBuilder(base.substring(0, base.length() - 1));
+        out.append(",\"origin\":\"").append(origin).append("\",\"selectedCount\":0");
+        if (multiForethought) out.append(",\"actionClass\":\"").append("FORETHOUGHT".equals(task)
+                ? "com.megacrit.cardcrawl.actions.unique.ForethoughtAction" : "GAMBLE".equals(task)
+                ? "com.megacrit.cardcrawl.actions.unique.GamblingChipAction" : "com.megacrit.cardcrawl.actions.common.ExhaustAction").append("\"");
+        out.append(",\"liveChoices\":[");
+        for (int i = 0; i < uuids.size(); ++i) {
+            if (i != 0) out.append(',');
+            out.append("{\"uuid\":\"").append(escapeJson(uuids.get(i)))
+                    .append("\",\"choiceIndex\":").append(i + 1).append('}');
+        }
+        return out.append("]}").toString();
+    }
+
+    static String completedSingleSelectionJson(String task, String actionClass, int pickCount,
+                                                List<String> selected, int choiceCount,
+                                                boolean canProceed, boolean canCancel) {
+        if (!("WARCRY".equals(task) || "FORETHOUGHT".equals(task) || "EXHAUST_ONE".equals(task) || "ARMAMENTS".equals(task) || "DUAL_WIELD".equals(task))
+                || !task.equals(actionSelectionTask(actionClass, true, false, pickCount))
+                || pickCount != 1 || selected == null || selected.size() != 1
+                || selected.get(0) == null || selected.get(0).isEmpty()
+                || choiceCount != 0 || !canProceed || canCancel) return null;
+        return "{\"task\":\"" + task + "\",\"origin\":\"HAND_SELECT\","
+                + "\"mechanicalTransition\":\"single_select_confirm\",\"actionClass\":\"" + escapeJson(actionClass)
+                + "\",\"pickCount\":1,\"selectedCount\":1,\"selectedUuid\":\"" + escapeJson(selected.get(0))
+                + "\",\"liveChoiceCount\":0,\"canProceed\":true,\"canCancel\":false}";
+    }
+
+    private static String liveSingleSelectionJson(String task, boolean hand, boolean canPickZero,
+                                                  boolean anyNumber, int count, int selectedCount) {
+        List<String> uuids = new ArrayList<>();
+        int choiceCount = -1;
+        try {
+            // These are the same list and indices used by MCPTheSpire's choose
+            // implementation. Grid order is not the native draw-pile order.
+            Class<?> choices = Class.forName("mcpthespire.ChoiceScreenUtils");
+            Object labels = choices.getMethod("getCurrentChoiceList").invoke(null);
+            Object cards = hand ? AbstractDungeon.player.hand.group
+                    : choices.getMethod("getGridScreenCards").invoke(null);
+            if (labels instanceof List && cards instanceof List) {
+                choiceCount = ((List<?>) labels).size();
+                if (hand && !canPickZero && !anyNumber && selectedCount == 1) {
+                    List<String> selected = new ArrayList<>();
+                    for (AbstractCard card : AbstractDungeon.handCardSelectScreen.selectedCards.group)
+                        selected.add(card.uuid == null ? null : card.uuid.toString());
+                    Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+                    String confirmation = completedSingleSelectionJson(task, action == null ? "" : action.getClass().getName(),
+                            count, selected, choiceCount,
+                            Boolean.TRUE.equals(choices.getMethod("isConfirmButtonAvailable").invoke(null)),
+                            Boolean.TRUE.equals(choices.getMethod("isCancelButtonAvailable").invoke(null)));
+                    if (confirmation != null) return confirmation;
+                }
+                for (Object value : (List<?>) cards) {
+                    if (!(value instanceof AbstractCard)) { uuids.add(null); continue; }
+                    AbstractCard card = (AbstractCard) value;
+                    uuids.add(card.uuid == null ? null : card.uuid.toString());
+                }
+            }
+        } catch (ReflectiveOperationException | LinkageError error) {
+            // Missing or changed MCP contracts cannot be replaced by pile order.
+        }
+        String result = singleSelectionJson(task, hand ? "HAND_SELECT" : "GRID", canPickZero,
+                anyNumber, count, selectedCount, uuids, choiceCount);
+        if ("LIQUID_MEMORIES_POTION".equals(task)) {
+            Object action = AbstractDungeon.actionManager.currentAction;
+            if (!Integer.valueOf(count).equals(readIntField(action,"numberOfCards"))
+                    || !Boolean.FALSE.equals(readBooleanField(action,"optional"))
+                    || !Boolean.TRUE.equals(readBooleanField(action,"setCost"))
+                    || !Integer.valueOf(0).equals(readIntField(action,"newCost"))
+                    || handMultiContinuation("GAMBLE")==null)
+                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            result = result.substring(0,result.length()-1) + ",\"actionClass\":\"" + action.getClass().getName()
+                    + "\",\"continuation\":\"" + handMultiContinuation("GAMBLE") + "\",\"optional\":false,\"newCost\":0}";
+        }
+        boolean sourceOwned=trackedLastCardQueueItem.physicalCard!=null
+                && sourceSelectionOwner(task,trackedLastCardQueueItem.physicalCard.getClass().getName())
+                && hasPendingUseCard();
+        if ("GAMBLE".equals(task) || "EXHAUST_MANY".equals(task) && !sourceOwned) {
+            String continuation = handMultiContinuation(task);
+            if (continuation == null) return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            result = result.substring(0,result.length()-1) + ",\"continuation\":\"" + continuation + "\"}";
+        }
+        if ("ARMAMENTS".equals(task) || "EXHUME".equals(task) || "DUAL_WIELD".equals(task)) {
+            Object action = AbstractDungeon.actionManager.currentAction;
+            boolean armaments = "ARMAMENTS".equals(task), dualWield = "DUAL_WIELD".equals(task);
+            Integer copies = dualWield ? readIntField(action,"dupeAmount") : 0;
+            Object held = readObjectField(action, armaments ? "cannotUpgrade" : dualWield ? "cannotDuplicate" : "exhumes");
+            if (!(held instanceof List) || (dualWield ? copies == null || copies < 1 || copies > 2
+                    : !Boolean.FALSE.equals(readBooleanField(action, armaments ? "upgraded" : "upgrade"))))
+                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_held_cards\"}";
+            StringBuilder cards = new StringBuilder("[");
+            for (Object item : (List<?>) held) {
+                if (!(item instanceof AbstractCard)) return "{\"task\":\"\"}";
+                AbstractCard card = (AbstractCard)item;
+                if (armaments ? card.canUpgrade() : dualWield ? card.type == AbstractCard.CardType.ATTACK || card.type == AbstractCard.CardType.POWER : !"Exhume".equals(card.cardID)) return "{\"task\":\"\"}";
+                if (cards.length() > 1) cards.append(','); cards.append(cardJson(card));
+            }
+            if (dualWield) result = result.replace("\"data0\":0", "\"data0\":" + copies);
+            result = result.substring(0,result.length()-1) + ",\"actionClass\":\"" + action.getClass().getName()
+                    + "\",\"upgradeVariant\":false,\"heldCards\":" + cards.append(']') + "}";
+        }
+        if(sourceOwned) {
+            if(publicPendingActionsJson(false,task)==null)
+                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            result=result.substring(0,result.length()-1)+",\"continuation\":\"source_card_actions\"}";
+        }
+        return result;
+    }
+
+    static boolean sourceSelectionOwner(String task,String cardClass) {
+        String base="com.megacrit.cardcrawl.cards.";
+        if("WARCRY".equals(task)) return (base+"red.Warcry").equals(cardClass) || (base+"colorless.ThinkingAhead").equals(cardClass);
+        if("EXHAUST_ONE".equals(task)) return (base+"red.TrueGrit").equals(cardClass) || (base+"red.BurningPact").equals(cardClass);
+        String suffix="ARMAMENTS".equals(task)?"red.Armaments":"DUAL_WIELD".equals(task)?"red.DualWield"
+                :"EXHUME".equals(task)?"red.Exhume":"HEADBUTT".equals(task)?"red.Headbutt"
+                :"FORETHOUGHT".equals(task)?"colorless.Forethought":"EXHAUST_MANY".equals(task)?"colorless.Purity"
+                :"SECRET_TECHNIQUE".equals(task)?"colorless.SecretTechnique":"SECRET_WEAPON".equals(task)?"colorless.SecretWeapon"
+                :"DISCOVERY".equals(task)?"colorless.Discovery":null;
+        return suffix!=null && (base+suffix).equals(cardClass);
+    }
+
+    private static boolean hasPendingUseCard() {
+        if(AbstractDungeon.actionManager==null)return false;
+        for(Object action:AbstractDungeon.actionManager.actions)
+            if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(action.getClass().getName()))return true;
+        return false;
+    }
+
+    private static boolean sourceCopyInPendingQueue(AbstractCard card) {
+        if(card==null || card==trackedLastCardQueueItem.physicalCard || !card.purgeOnUse
+                || !card.uuid.equals(trackedLastCardQueueItem.physicalCard.uuid))return false;
+        for(CardQueueItem item:AbstractDungeon.actionManager.cardQueue)
+            if(item.getClass()==CardQueueItem.class && item.card==card && item.autoplayCard
+                    && item.ignoreEnergyTotal && !item.isEndTurnAutoPlay && !card.dontTriggerOnUseCard)return true;
+        return false;
+    }
+
+    static boolean zeroCopyPower(String id,String className,int amount) {
+        return amount==0 && (("Double Tap".equals(id) && "com.megacrit.cardcrawl.powers.DoubleTapPower".equals(className))
+                || ("DuplicationPower".equals(id) && "com.megacrit.cardcrawl.powers.DuplicationPower".equals(className)));
+    }
+
+    private static boolean zeroCopyPowerRemoval(Object action) {
+        if(!"com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(action.getClass().getName())
+                || readObjectField(action,"target")!=AbstractDungeon.player || readObjectField(action,"source")!=AbstractDungeon.player
+                || readObjectField(action,"powerInstance")!=null)return false;
+        String id=readStringField(action,"powerToRemove");
+        AbstractPower power=id==null?null:AbstractDungeon.player.getPower(id);
+        return power!=null && zeroCopyPower(power.ID,power.getClass().getName(),power.amount);
+    }
+
+    private static boolean projectedZeroCopyPower(AbstractPower power,String selection) {
+        if(selection==null || !selection.contains("\"continuation\":\"source_card_actions\"")
+                || !zeroCopyPower(power.ID,power.getClass().getName(),power.amount))return false;
+        for(Object action:AbstractDungeon.actionManager.actions)
+            if(zeroCopyPowerRemoval(action) && power.ID.equals(readStringField(action,"powerToRemove")))return true;
+        return false;
+    }
+
+    static boolean sourceCleanupExhaust(boolean trackedExhaust,boolean skill,String powerClass) {
+        return trackedExhaust || (skill && "com.megacrit.cardcrawl.powers.CorruptionPower".equals(powerClass));
+    }
+
+    private static boolean sourceCleanupExhaust() {
+        AbstractCard card=trackedLastCardQueueItem.physicalCard;
+        AbstractPower corruption=AbstractDungeon.player.getPower("Corruption");
+        return sourceCleanupExhaust(trackedLastCardQueueItem.exhaustOnUse,card!=null && card.type==AbstractCard.CardType.SKILL,
+                corruption==null?null:corruption.getClass().getName());
+    }
+
+    private static String pendingUseCardJson(Object action,String task) {
+        AbstractCard card=trackedLastCardQueueItem.physicalCard;
+        if(!trackedLastCardQueueItem.present || card==null || card.uuid==null || !trackedLastCardQueueItem.triggerOnUse
+                || trackedLastCardQueueItem.isEndTurn || !sourceSelectionOwner(task,card.getClass().getName())
+                || readObjectField(action,"targetCard")!=card
+                || !Float.valueOf(0.15f).equals(readObjectField(action,"duration"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"returnToHand"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"reboundCard"))
+                || !Boolean.valueOf(sourceCleanupExhaust()).equals(readBooleanField(action,"exhaustCard"))
+                || card.purgeOnUse!=trackedLastCardQueueItem.purgeOnUse
+                || AbstractDungeon.player.hand.group.contains(card) || AbstractDungeon.player.drawPile.group.contains(card)
+                || AbstractDungeon.player.discardPile.group.contains(card) || AbstractDungeon.player.exhaustPile.group.contains(card)) return null;
+        for(AbstractCard pending:AbstractDungeon.player.limbo.group)
+            if(pending!=card && !sourceCopyInPendingQueue(pending))return null;
+        return "{\"kind\":\"USE_CARD\",\"uuid\":\""+card.uuid+"\",\"actionClass\":\"com.megacrit.cardcrawl.actions.utility.UseCardAction\","
+                + "\"unstarted\":true,\"returnToHand\":false,\"reboundCard\":false,\"triggerOnUse\":true,\"exhaustOnUse\":"
+                + sourceCleanupExhaust() + ",\"purgeOnUse\":"+trackedLastCardQueueItem.purgeOnUse
+                + ",\"autoplay\":"+trackedLastCardQueueItem.autoplay+"}";
+    }
+
+    // Values here describe unresolved public effects, never an RNG result or a
+    // hidden card. Native samples random upgrade/target effects when executed.
+    static String publicPendingActionJson(String kind, Integer amount, String power) {
+        if (kind == null) return null;
+        if ("GAMBLE".equals(kind) || "UPGRADE_RANDOM".equals(kind)
+                || "REMOVE_PEN_NIB".equals(kind) || "REMOVE_PLAYER_DEBUFFS".equals(kind))
+            return "{\"kind\":\"" + kind + "\"}";
+        if (amount == null || amount < 0 || amount > 999) return null;
+        if ("DRAW".equals(kind) && amount > 10) return null;
+        if ("BUFF_PLAYER".equals(kind)) {
+            if (!java.util.Arrays.asList("Strength","Dexterity","Artifact","Buffer","Plated Armor","Thorns","Vigor","IntangiblePlayer","Pen Nib").contains(power)
+                    || amount == 0 || "Pen Nib".equals(power) && amount!=1) return null;
+        } else if ("DEBUFF_PLAYER".equals(kind)) {
+            if (!("Flex".equals(power) || "Weakened".equals(power) && amount==1) || amount == 0) return null;
+        } else if ("DEBUFF_ALL_ENEMY".equals(kind)) {
+            if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
+        } else if ("SHUFFLE_WOUNDS".equals(kind)) {
+            if (amount != 2) return null;
+        } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
+        return "{\"kind\":\"" + kind + "\",\"amount\":" + amount
+                + (power == null ? "" : ",\"power\":\"" + power + "\",\"sourceMonster\":false") + "}";
+    }
+
+    private static int allEnemyPowerBatch(List<?> actions,int first,String power,int amount) {
+        String relic="Vulnerable".equals(power)?"Bag of Marbles":"Weakened".equals(power)?"Red Mask":"Poison".equals(power)?"TwistedFunnel":"";
+        String className="Vulnerable".equals(power)?"VulnerablePower":"Weakened".equals(power)?"WeakPower":"PoisonPower";
+        if(relic.isEmpty() || !hasRelic(relic) || publicPendingActionJson("DEBUFF_ALL_ENEMY",amount,power)==null
+                || AbstractDungeon.getMonsters()==null || AbstractDungeon.getMonsters().monsters.isEmpty()) return -1;
+        int index=first;
+        for(AbstractMonster target:AbstractDungeon.getMonsters().monsters) {
+            while(index<actions.size() && "com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(actions.get(index).getClass().getName()))++index;
+            if(index>=actions.size())return -1;
+            Object action=actions.get(index++), value=readObjectField(action,"powerToApply");
+            if(!"com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(action.getClass().getName())
+                    || !Boolean.FALSE.equals(readBooleanField(action,"isDone"))
+                    || readObjectField(action,"target")!=target || readObjectField(action,"source")!=AbstractDungeon.player
+                    || !(value instanceof AbstractPower) || !value.getClass().getName().equals("com.megacrit.cardcrawl.powers."+className)
+                    || !Integer.valueOf(amount).equals(readIntField(action,"amount")))return -1;
+            AbstractPower applied=(AbstractPower)value;
+            if(applied.owner!=target || !power.equals(applied.ID) || applied.amount!=amount
+                    || (!"Poison".equals(power) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied"))))return -1;
+        }
+        return index;
+    }
+
+    private static String publicPendingActionsJson(boolean opening) {
+        return publicPendingActionsJson(opening,null);
+    }
+
+    private static String publicPendingActionsJson(boolean opening,String sourceTask) {
+        com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
+        if(manager==null || manager.turnHasEnded || manager.monsterAttacksQueued
+                || !manager.preTurnActions.isEmpty() || !manager.monsterQueue.isEmpty()
+                || (sourceTask==null && (!manager.cardQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()))
+                || manager.actions.size()>128) return null;
+        StringBuilder out=new StringBuilder("["); int draws=0,enables=0,cleanups=0;
+        for(int actionIndex=0;actionIndex<manager.actions.size();++actionIndex) {
+            Object action=manager.actions.get(actionIndex);
+            String name=action.getClass().getName(), kind=null, power=null;
+            Integer amount=readIntField(action,"amount");
+            if(!Boolean.FALSE.equals(readBooleanField(action,"isDone"))) return null;
+            if("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) {++enables;continue;}
+            if("com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)
+                    || "com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)) continue;
+            // Vanilla decrements copy charges synchronously, then queues a
+            // removal with no onRemove override. The zero charge and its
+            // visual removal are jointly omitted from the native projection.
+            if(sourceTask!=null && zeroCopyPowerRemoval(action))continue;
+            if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) {
+                if(sourceTask==null || ++cleanups!=1)return null;
+                String item=pendingUseCardJson(action,sourceTask);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
+            if("com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(name)) {
+                if(readObjectField(action,"target")!=AbstractDungeon.player || readObjectField(action,"source")!=AbstractDungeon.player
+                        || readObjectField(action,"powerInstance")!=null || !"Pen Nib".equals(readStringField(action,"powerToRemove"))
+                        || !hasRelic("Pen Nib"))return null;
+                AbstractPower nib=AbstractDungeon.player.getPower("Pen Nib");
+                if(nib==null || !"com.megacrit.cardcrawl.powers.PenNibPower".equals(nib.getClass().getName()))return null;
+                kind="REMOVE_PEN_NIB";
+            } else if("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction".equals(name)) {
+                if(readObjectField(action,"c")!=AbstractDungeon.player || !hasRelic("OrangePellets"))return null;
+                kind="REMOVE_PLAYER_DEBUFFS";
+            } else if("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                if(!Boolean.FALSE.equals(readBooleanField(action,"shuffleCheck"))
+                        || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))
+                        || readObjectField(action,"followUpAction")!=null) return null;
+                kind="DRAW";if(amount!=null && amount>0)++draws;
+            } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
+                if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
+                kind="GAIN_BLOCK";
+            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
+            else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
+            else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
+            else if("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
+                Object values=readObjectField(action,"damage");
+                if(!(values instanceof int[]) || (readObjectField(action,"source")!=null && readObjectField(action,"source")!=AbstractDungeon.player)
+                        || !Boolean.TRUE.equals(readBooleanField(action,"firstFrame"))
+                        || !Boolean.FALSE.equals(readBooleanField(action,"utilizeBaseDamage"))
+                        || !"THORNS".equals(String.valueOf(readObjectField(action,"damageType")))) return null;
+                int[] damage=(int[])values;
+                if(damage.length!=AbstractDungeon.getMonsters().monsters.size() || damage.length==0) return null;
+                amount=damage[0];for(int value:damage) if(value!=amount) return null;
+                kind="DAMAGE_ALL";
+            } else if("com.megacrit.cardcrawl.actions.common.DamageRandomEnemyAction".equals(name)) {
+                Object info=readObjectField(action,"info");
+                if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type")))) return null;
+                Object owner=readObjectField(info,"owner");
+                if(owner!=null && owner!=AbstractDungeon.player) return null;
+                amount=readIntField(info,"output");
+                if(amount==null || !amount.equals(readIntField(info,"base"))) return null;
+                kind="DAMAGE_RANDOM";
+            } else if("com.megacrit.cardcrawl.actions.common.MakeTempCardInDrawPileAction".equals(name)) {
+                Object value=readObjectField(action,"cardToMake");
+                if(!hasRelic("Mark of Pain") || !(value instanceof AbstractCard)
+                        || !value.getClass().getName().equals("com.megacrit.cardcrawl.cards.status.Wound")
+                        || !Boolean.TRUE.equals(readBooleanField(action,"randomSpot"))
+                        || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return null;
+                AbstractCard card=(AbstractCard)value;
+                if(card.upgraded || card.timesUpgraded!=0 || card.misc!=0 || card.cost!=-2
+                        || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return null;
+                kind="SHUFFLE_WOUNDS";
+            } else if("com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(name)) {
+                Object value=readObjectField(action,"powerToApply");
+                if(!(value instanceof AbstractPower)) return null;
+                AbstractPower applied=(AbstractPower)value;
+                if(readObjectField(action,"target") instanceof AbstractMonster) {
+                    int next=allEnemyPowerBatch(manager.actions,actionIndex,applied.ID,applied.amount);
+                    if(next<0)return null;
+                    String item=publicPendingActionJson("DEBUFF_ALL_ENEMY",applied.amount,applied.ID);
+                    if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
+                }
+                if(readObjectField(action,"target")!=AbstractDungeon.player)return null;
+                if(applied.owner!=AbstractDungeon.player || amount==null || amount!=applied.amount
+                        || !java.util.Arrays.asList("StrengthPower","DexterityPower","ArtifactPower","BufferPower","PlatedArmorPower",
+                            "ThornsPower","VigorPower","IntangiblePlayerPower","LoseStrengthPower","WeakPower","PenNibPower")
+                            .contains(applied.getClass().getSimpleName())
+                        || !applied.getClass().getName().equals("com.megacrit.cardcrawl.powers."+applied.getClass().getSimpleName())) return null;
+                if("Pen Nib".equals(applied.ID) && !hasRelic("Pen Nib"))return null;
+                if("Weakened".equals(applied.ID) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied")))return null;
+                power=applied.ID;kind=applied.type==AbstractPower.PowerType.DEBUFF?"DEBUFF_PLAYER":"BUFF_PLAYER";
+            }
+            Object source=readObjectField(action,"source");
+            if(source!=null && source!=AbstractDungeon.player) return null;
+            String item=publicPendingActionJson(kind,amount,power);
+            if(item==null)return null;
+            if(out.length()>1)out.append(',');out.append(item);
+        }
+        if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
+        return out.append(']').toString();
+    }
+
+    private static String handMultiContinuation(String task) {
+        String publicTail=publicPendingActionsJson(false);
+        if(publicTail!=null) return publicTail.equals("[]") ? "none" : "public_actions";
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.monsterQueue.isEmpty()) return null;
+        int cleanups = 0;
+        for (Object pending : actions.actions) {
+            String name = pending.getClass().getName();
+            if ("com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)
+                    || "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)
+                    || "com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) continue;
+            if (!"EXHAUST_MANY".equals(task) || ++cleanups != 1
+                    || !"com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) return null;
+            Object target = readObjectField(pending,"targetCard");
+            if (!(target instanceof AbstractCard) || target != trackedLastCardQueueItem.physicalCard
+                    || !"Purity".equals(((AbstractCard)target).cardID)
+                    || !Boolean.FALSE.equals(readBooleanField(pending,"returnToHand"))
+                    || !Boolean.FALSE.equals(readBooleanField(pending,"reboundCard"))
+                    || !Boolean.valueOf(trackedLastCardQueueItem.exhaustOnUse).equals(readBooleanField(pending,"exhaustCard"))) return null;
+        }
+        if (cleanups == 0) return AbstractDungeon.player.limbo.isEmpty() && actions.cardQueue.isEmpty() ? "none" : null;
+        return "purity_card";
+    }
+
     private static String stasisJson() {
         StringBuilder out = new StringBuilder("[");
         boolean first = true;
@@ -2343,8 +2823,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 for (AbstractPower power : monster.powers) {
                     if (!"Stasis".equals(power.ID)) continue;
                     Object card = readObjectField(power, "card");
-                    Integer slot = "BronzeOrb".equals(monster.id)
-                            ? readIntField(monster, "count") : null;
+                    Integer physical=emittedMonsterSlots(liveEncounter).get(monster);
+                    Integer slot = "BronzeOrb".equals(monster.id) && physical!=null && (physical==0 || physical==2)?physical/2:null;
                     if (!(card instanceof AbstractCard) || slot == null || slot < 0 || slot > 1)
                         return null;
                     if (!first) out.append(',');
@@ -2358,14 +2838,230 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
+    static String cardRewardSelectionJson(String actionClass, Integer copies, Boolean skippable,
+                                          String continuation, List<String> cards, boolean plainCards) {
+        String reason = "";
+        boolean codex = "com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass);
+        if (codex && (!"codex_end_turn".equals(continuation) || !Boolean.TRUE.equals(skippable)))
+            reason = "silver_card_reward_end_turn_continuation";
+        else if (!codex && !"com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass)
+                && !"com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass))
+            reason = "silver_card_reward_unknown_action";
+        else if (skippable == null)
+            reason = "silver_card_reward_skip_unobserved";
+        else if (!codex && (copies == null || copies < 1 || copies > 2))
+            reason = "silver_card_reward_copy_count";
+        else if (!codex && !"none".equals(continuation) && !"discovery_card".equals(continuation) && !"source_card_actions".equals(continuation)
+                && !(("toolbox_draw".equals(continuation) || "toolbox_actions".equals(continuation))
+                    && "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)))
+            reason = "silver_card_reward_pending_actions";
+        else if (!plainCards || cards == null || cards.size() != 3
+                || new java.util.HashSet<String>(cards).size() != 3 || cards.contains(null)
+                || cards.contains(""))
+            reason = "silver_card_reward_option_state";
+        if (!reason.isEmpty())
+            return "{\"task\":\"\",\"origin\":\"CARD_REWARD\",\"unsupportedReason\":\"" + reason + "\"}";
+        boolean toolbox = "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass);
+        if (toolbox && (copies != 1 || skippable))
+            return "{\"task\":\"\",\"unsupportedReason\":\"silver_card_reward_option_state\"}";
+        StringBuilder out = new StringBuilder("{\"task\":\"" + (codex ? "CODEX" : "DISCOVERY") + "\",\"origin\":\"CARD_REWARD\","
+                + "\"canPickZero\":" + skippable + ",\"canPickAnyNumber\":false,\"pickCount\":1,"
+                + "\"setCostToZero\":" + (!toolbox && !codex) + ",\"selectedBits\":0,\"data0\":");
+        out.append(codex ? 0 : copies).append(",\"continuation\":\"").append(continuation).append("\",\"cards\":[");
+        for (int i = 0; i < cards.size(); ++i) {
+            if (i != 0) out.append(',');
+            out.append('"').append(escapeJson(cards.get(i))).append('"');
+        }
+        return out.append("]}").toString();
+    }
+
+    private static String cardRewardContinuation() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
+                || !actions.monsterQueue.isEmpty()) return "unsupported";
+        if (actions.actions.isEmpty() && AbstractDungeon.player.limbo.isEmpty()) return "none";
+        // The existing native interrupted-card replay can restore this sole
+        // remainder. Other card/action queues need a separate continuation
+        // contract and must not be discarded when a popup is imported.
+        if (actions.actions.size() != 1 || !trackedLastCardQueueItem.present) return "unsupported";
+        Object pending = actions.actions.get(0);
+        if (!"com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(pending.getClass().getName()))
+            return "unsupported";
+        Object target = readObjectField(pending, "targetCard");
+        if (!(target instanceof AbstractCard)) return "unsupported";
+        AbstractCard card = (AbstractCard) target;
+        if (!"Discovery".equals(card.cardID) || trackedLastCardQueueItem.physicalCard != card
+                || AbstractDungeon.player.hand.group.contains(card)
+                || AbstractDungeon.player.drawPile.group.contains(card)
+                || AbstractDungeon.player.discardPile.group.contains(card)
+                || AbstractDungeon.player.exhaustPile.group.contains(card)
+                || AbstractDungeon.player.limbo.size() > 1
+                || (AbstractDungeon.player.limbo.size() == 1 && AbstractDungeon.player.limbo.group.get(0) != card)
+                || !Boolean.FALSE.equals(readBooleanField(pending, "returnToHand"))
+                || !Boolean.FALSE.equals(readBooleanField(pending, "reboundCard"))
+                || !Boolean.valueOf(trackedLastCardQueueItem.exhaustOnUse).equals(readBooleanField(pending, "exhaustCard"))
+                || trackedLastCardQueueItem.purgeOnUse || trackedLastCardQueueItem.autoplay) return "unsupported";
+        return "discovery_card";
+    }
+
+    static int toolboxDrawAfter(List<String> classes, Integer amount, boolean ordinaryDraw) {
+        return classes != null && classes.equals(java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.common.DrawCardAction",
+                "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction"))
+                && ordinaryDraw && amount != null && amount >= 1 && amount <= 10 ? amount : -1;
+    }
+
+    static List<Integer> toolboxDrawsAfter(List<String> classes, List<Integer> amounts, boolean ordinaryDraws) {
+        if (classes == null || amounts == null || !ordinaryDraws || classes.size() > 128) return null;
+        List<Integer> result = new ArrayList<>();
+        int enables = 0;
+        for (String name : classes) {
+            if ("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                if (result.size() >= amounts.size()) return null;
+                Integer amount = amounts.get(result.size());
+                if (amount == null || amount < 1 || amount > 10) return null;
+                result.add(amount);
+            } else if ("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) ++enables;
+            else if (!"com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) return null;
+        }
+        return enables == 1 && !result.isEmpty() && result.size() == amounts.size() ? result : null;
+    }
+    private static List<Integer> toolboxDrawsAfter() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+                || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
+                || !actions.monsterQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()) return null;
+        List<String> classes = new ArrayList<>(); List<Integer> amounts = new ArrayList<>();
+        boolean ordinary = true;
+        for (Object action : actions.actions) {
+            String name = action.getClass().getName(); classes.add(name);
+            if ("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
+                amounts.add(readIntField(action, "amount"));
+                ordinary &= Boolean.FALSE.equals(readBooleanField(action, "shuffleCheck"))
+                        && Boolean.TRUE.equals(readBooleanField(action, "clearDrawHistory"))
+                        && readObjectField(action, "followUpAction") == null;
+            }
+        }
+        return toolboxDrawsAfter(classes, amounts, ordinary);
+    }
+
+    static boolean codexEndTurnContinuation(List<String> classes, boolean endTurnQueued,
+                                            boolean queuesEmpty, boolean noOrbs) {
+        return endTurnQueued && queuesEmpty && noOrbs && classes != null && classes.equals(java.util.Arrays.asList(
+                "com.megacrit.cardcrawl.actions.defect.TriggerEndOfTurnOrbsAction"));
+    }
+
+    private static boolean stoneCalendarDamage(Object action) {
+        Object values = readObjectField(action, "damage");
+        if (!hasRelic("StoneCalendar") || !(values instanceof int[])
+                || readObjectField(action, "source") != null
+                || !Boolean.TRUE.equals(readBooleanField(action, "firstFrame"))
+                || !Boolean.FALSE.equals(readBooleanField(action, "utilizeBaseDamage"))
+                || !"THORNS".equals(String.valueOf(readObjectField(action, "damageType")))) return false;
+        int[] damage = (int[]) values;
+        if (damage.length != AbstractDungeon.getMonsters().monsters.size()) return false;
+        for (int amount : damage) if (amount != 52) return false;
+        return true;
+    }
+
+    private static boolean codexEndTurnContinuation() {
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        if (actions == null) return false;
+        List<String> classes = new ArrayList<>();
+        boolean damageSeen = false, blockSeen = false;
+        for (Object action : actions.actions) {
+            String name = action.getClass().getName();
+            if ("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
+                if (damageSeen || blockSeen || !classes.isEmpty() || !stoneCalendarDamage(action)) return false;
+                damageSeen = true;
+            } else if ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
+                blockSeen = true;
+                Integer amount = readIntField(action, "amount");
+                if (readObjectField(action, "target") != AbstractDungeon.player
+                        || (readObjectField(action, "source") != null && readObjectField(action, "source") != AbstractDungeon.player)
+                        || amount == null || amount < 0 || amount > 999 || !classes.isEmpty()) return false;
+            } else if (!"com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)) classes.add(name);
+        }
+        return actions.actions.size() <= 128 && hasRelic("Nilry's Codex") && codexEndTurnContinuation(classes,
+                AbstractDungeon.player.endTurnQueued && !AbstractDungeon.player.isEndingTurn,
+                !actions.turnHasEnded && !actions.monsterAttacksQueued && actions.preTurnActions.isEmpty()
+                    && pendingCardQueue(new IdentityHashMap<AbstractMonster,Integer>(),true).error==null
+                    && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
+                AbstractDungeon.player.maxOrbs == 0 && AbstractDungeon.player.orbs.isEmpty());
+    }
+
+    private static String combatCardRewardJson() {
+        com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
+        Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
+        List<String> ids = new ArrayList<>();
+        boolean plain = screen != null && screen.rewardGroup != null
+                && screen.discoveryCard == null && !hasRelic("PrismaticShard")
+                && !AbstractDungeon.player.hasPower("MasterRealityPower");
+        if (screen != null && screen.rewardGroup != null) for (AbstractCard card : screen.rewardGroup) {
+            if (card == null) { plain = false; continue; }
+            ids.add(card.cardID);
+            plain &= !card.upgraded && card.timesUpgraded == 0 && card.misc == 0
+                    && card.costForTurn == card.cost && !card.freeToPlayOnce && !card.retain;
+        }
+        Boolean skippable = readBooleanField(screen, "skippable");
+        if (Boolean.TRUE.equals(skippable)) {
+            try {
+                if (!Boolean.TRUE.equals(Class.forName("mcpthespire.ChoiceScreenUtils")
+                        .getMethod("isCancelButtonAvailable").invoke(null))) skippable = null;
+            } catch (ReflectiveOperationException | LinkageError error) { skippable = null; }
+        }
+        String actionClass = action == null ? "" : action.getClass().getName();
+        String continuation = cardRewardContinuation();
+        if("com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass)
+                && trackedLastCardQueueItem.physicalCard!=null && hasPendingUseCard()
+                && sourceSelectionOwner("DISCOVERY",trackedLastCardQueueItem.physicalCard.getClass().getName())) {
+            continuation=publicPendingActionsJson(false,"DISCOVERY")!=null?"source_card_actions":"unsupported";
+        }
+        List<Integer> drawsAfter = null;
+        List<Integer> blocksAfter = new ArrayList<>();
+        int damageAllBeforeBlocks = 0;
+        if ("com.megacrit.cardcrawl.actions.unique.CodexAction".equals(actionClass) && codexEndTurnContinuation()) {
+            continuation = "codex_end_turn";
+            for (Object pending : AbstractDungeon.actionManager.actions) {
+                if ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(pending.getClass().getName()))
+                    blocksAfter.add(readIntField(pending, "amount"));
+                else if ("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(pending.getClass().getName()))
+                    damageAllBeforeBlocks = 52;
+            }
+        }
+        if ("com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)
+                && "unsupported".equals(continuation)) {
+            drawsAfter = toolboxDrawsAfter();
+            if (drawsAfter != null) continuation = "toolbox_draw";
+            else if(publicPendingActionsJson(true)!=null) continuation="toolbox_actions";
+        }
+        String selection = cardRewardSelectionJson(actionClass, readIntField(action, "amount"),
+                skippable, continuation, ids, plain);
+        if (drawsAfter != null && "toolbox_draw".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"drawsAfter\":" + drawsAfter + "}";
+        if (!blocksAfter.isEmpty() && "codex_end_turn".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"blocksAfter\":" + blocksAfter + "}";
+        if (damageAllBeforeBlocks > 0 && "codex_end_turn".equals(continuation))
+            selection = selection.substring(0, selection.length() - 1) + ",\"damageAllBeforeBlocks\":" + damageAllBeforeBlocks + "}";
+        return selection;
+    }
+
     private static String cardSelectionJson() {
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                && AbstractDungeon.cardRewardScreen != null) return combatCardRewardJson();
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                 && AbstractDungeon.gridSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
                     AbstractDungeon.gridSelectScreen;
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
-            String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
-            if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            String task = currentActionSelectionTask(false, screen.anyNumber, amount == null ? -1 : amount);
+            if (task != null) return liveSingleSelectionJson(task, false, false, screen.anyNumber,
+                    amount == null ? -1 : amount, screen.selectedCards.size());
+            if (task == null) {
+                task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+                if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            }
             return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
         }
@@ -2375,11 +3071,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     AbstractDungeon.handCardSelectScreen;
             Boolean anyNumber = readBooleanField(screen, "anyNumber");
             boolean canPickAnyNumber = anyNumber != null ? anyNumber : screen.upTo;
-            // DiscardAction(-1), used by Gambler's Brew and Gambling Chip,
-            // opens the hand selector with an empty selection reason and the
-            // vanilla sentinel amount 99.  That is the native GAMBLE task,
-            // not an unknown combat screen.
-            String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
+            // Action ownership distinguishes redraw from ordinary discard.
+            String task = currentActionSelectionTask(true, canPickAnyNumber, screen.numCardsToSelect);
+            if (task != null) return liveSingleSelectionJson(task, true, screen.canPickZero,
+                    canPickAnyNumber, screen.numCardsToSelect, screen.selectedCards.size());
+            if (task == null) task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
@@ -2400,7 +3096,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String encounter = liveEncounter.isEmpty()
                 ? INSTANCE.encounterName(AbstractDungeon.getCurrRoom()) : liveEncounter;
         IdentityHashMap<AbstractMonster, Integer> emittedSlots = emittedMonsterSlots(encounter);
-        int declaredMonsterCount = 0;
+        int declaredMonsterCount = RunicDomeCapture.declaredCapacity();
         int monstersAlive = 0;
         for (Map.Entry<AbstractMonster, Integer> entry : emittedSlots.entrySet()) {
             AbstractMonster monster = entry.getKey();
@@ -2417,10 +3113,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int lastTargetedMonster = targetedSlot == null || targetedSlot < 0 ? 1 : targetedSlot;
         for (AbstractPower power : AbstractDungeon.player.powers)
             if ("Vulnerable".equals(power.ID)) trackedPlayerVulnerableSeen = true;
-        StringBuilder out = new StringBuilder("{\"turn\":");
+        StringBuilder out = new StringBuilder("{");
+        if(RunicDomeCapture.bindingFailure()!=null)out.append("\"occupantBindingError\":\"").append(escapeJson(RunicDomeCapture.bindingFailure())).append("\",");
+        out.append("\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(EnergyPanel.totalCount)
+                // energyMaster includes base/relic energy. Berserk remains a
+                // separate power and is folded into native turn energy there.
+                .append(",\"energyPerTurn\":").append(AbstractDungeon.player.energy.energyMaster)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
                 .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
                 .append(",\"attacksPlayedThisTurn\":").append(attacksPlayed)
@@ -2445,6 +3146,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"playerPowers\":[");
         boolean firstPower = true;
         for (AbstractPower power : AbstractDungeon.player.powers) {
+            if(projectedZeroCopyPower(power,selection))continue;
             if (!firstPower) out.append(',');
             firstPower = false;
             String powerId = power.ID;
@@ -2455,6 +3157,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // can read the actual field; the importer remains fail-closed if
             // a required power does not expose it.
             Boolean justApplied = readBooleanField(power, "justApplied");
+            // Vanilla IntangiblePlayerPower always expires at end of round
+            // and has no justApplied field; native uses a false expiry bit.
+            if ("IntangiblePlayer".equals(powerId)) justApplied = false;
             if (justApplied != null) out.append(",\"justApplied\":").append(justApplied);
             if (powerId.startsWith("TheBomb")) {
                 Integer damage = readIntField(power, "damage");
@@ -2473,7 +3178,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if ("Panache".equals(power.ID)) {
                 Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
                 if (value != null) out.append(",\"panacheCounter\":").append(value);
-            } else if ("Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
+            } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
             } else if ("Orange Pellets".equals(power.ID) || "OrangePelletsPower".equals(power.ID)) {
@@ -2490,6 +3195,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append(",\"cardSelect\":").append(selection == null ? "false" : selection)
                 .append(",\"resolving\":false")
                 .append(",\"runicDome\":").append(hasRunicDome())
+                .append(hasRunicDome() ? ",\"runicDomeKnowledge\":" + RunicDomeCapture.snapshot() : "")
                 .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
                 // At this stable player boundary vanilla has completed all
                 // monster-turn bookkeeping. Make the known zero explicit so
@@ -2535,6 +3241,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append("],\"limbo\":[");
         first = true;
         for (AbstractCard card : AbstractDungeon.player.limbo.group) {
+            // Queued purge copies are represented by pendingCardQueue. Their
+            // shared UUID is not another permanent physical pile occurrence.
+            if(selection!=null && selection.contains("\"continuation\":\"source_card_actions\"")
+                    && (sourceCopyInPendingQueue(card) || (card==trackedLastCardQueueItem.physicalCard
+                        && trackedLastCardQueueItem.purgeOnUse && trackedLastCardQueueItem.autoplay)))continue;
             if (!first) out.append(',');
             first = false;
             out.append(cardJson(card, "LIMBO"));
@@ -2555,6 +3266,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append("{\"id\":\"").append(escapeJson(monster.id))
                         .append("\",\"slot\":").append(slot)
                         .append(",\"idx\":").append(slot)
+                        .append(",\"occupantGeneration\":").append(RunicDomeCapture.occupantGeneration(monster))
                         .append(",\"hp\":").append(monster.currentHealth)
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)
@@ -2588,9 +3300,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     out.append('}');
                 }
                 out.append(']');
-                Integer miscInfo = monsterMiscInfo(monster);
+                // A post-roll private counter can disclose a hidden intent.
+                // Dome counters are reconstructed from the separately captured
+                // public history; never export the live post-roll counter.
+                Integer miscInfo = runicDome ? 0 : monsterMiscInfo(monster);
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
-                Integer uniquePower0 = monsterUniquePower0(monster);
+                Integer uniquePower0 = runicDome ? null : monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
@@ -2600,7 +3315,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('}');
             }
         }
-        out.append("],\"curCardQueueItem\":").append(cardQueueItemJson())
+        out.append(']');
+        if (selection != null) {
+            PendingCardQueueCapture.Result pending = pendingCardQueue(emittedSlots,
+                    selection.contains("\"continuation\":\"codex_end_turn\""));
+            if (pending.error != null) out.append(",\"pendingCardQueueError\":\"")
+                    .append(escapeJson(pending.error)).append('"');
+            else out.append(",\"pendingCardQueue\":").append(pending.json);
+        }
+        if(selection!=null && (selection.contains("\"continuation\":\"public_actions\"")
+                || selection.contains("\"continuation\":\"toolbox_actions\"")
+                || selection.contains("\"continuation\":\"source_card_actions\""))) {
+            String sourceTask=null;
+            if(selection.contains("source_card_actions")) {
+                sourceTask=new com.google.gson.JsonParser().parse(selection).getAsJsonObject().get("task").getAsString();
+            }
+            String pending=publicPendingActionsJson(selection.contains("toolbox_actions"),sourceTask);
+            if(pending==null) out.append(",\"pendingActionQueueError\":\"silver_selection_pending_actions\"");
+            else out.append(",\"pendingActionQueue\":").append(pending);
+        }
+        out.append(",\"curCardQueueItem\":").append(cardQueueItemJson(selection!=null && selection.contains("\"continuation\":\"source_card_actions\"")))
                 .append(",\"lastCard\":");
         AbstractCard lastCard = AbstractDungeon.actionManager.lastCard;
         if (decisionOrdinal > 0 && trackedLastCardQueueItem.present
@@ -2649,6 +3383,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    static String ctmPrimaryModel(Properties properties, String environmentValue) {
+        // Presence is intentional even for an empty/whitespace override: let
+        // the native loader report the invalid artifact instead of substituting.
+        if (environmentValue != null) return environmentValue;
+        String value = properties.getProperty("ctmModel");
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
     private static int loadToggleKey() {
@@ -2704,7 +3446,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     return;
                 }
                 ProcessBuilder builder = new ProcessBuilder(executable);
-                String ctmModel = environmentFirst(p, "STS_CTM_MODEL", "ctmModel");
+                String ctmModel = ctmPrimaryModel(p, System.getenv("STS_CTM_MODEL"));
                 if (ctmModel != null)
                     builder.environment().put("STS_CTM_MODEL", ctmModel);
                 String oocModel = environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel");

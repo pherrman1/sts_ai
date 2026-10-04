@@ -1267,6 +1267,12 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.silverExactRootBudgets = search::nativeSilverExactRootBudgets();
         meta.silverExactVisitLock = false;
         meta.silverRhoRacing = false;
+        if (search::nativeSilverLearnedStopEnabled()) {
+            meta.silverLearnedStopModel = search::nativeSilverStopModelId();
+            meta.silverLearnedStopThreshold = search::nativeSilverLearnedStopThreshold();
+            meta.silverLearnedStopBossFallback = search::nativeSilverLearnedStopBossFallback();
+            meta.silverLearnedStopBossMax = search::nativeSilverLearnedStopBossMax();
+        }
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2790,6 +2796,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
+        {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
+        {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -2837,15 +2845,22 @@ int main(int argc, char **argv) {
     }
     setenv("STS_SILVER_SEARCH", "1", 0);
     setenv("STS_FAIR", "1", 0);
-    // Adaptive Silver ignores the caller's budget. Only whole-run modes called
-    // without a sims argument keep it by default (ADR-0018); every other call
-    // searches the flat caller budget unless adaptive stopping is configured.
+    // Budgeted Silver policies ignore the caller's budget. Only whole-run modes
+    // called without a sims argument use one by default: learned stopping
+    // (ADR-0026, replacing the #199 adaptive default of ADR-0018). Every other
+    // call searches the flat caller budget unless a policy is configured.
     {
         const bool wholeRunDefault = argc <= 2
             && (mode == "run" || mode == "bestbench" || mode == "reprobench");
-        if (!wholeRunDefault && !std::getenv("STS_SILVER_ADAPTIVE")
-                && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
-                && !std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
+        const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
+            || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
+            || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
+        const char *learned = std::getenv("STS_SILVER_LEARNED_STOP");
+        const bool learnedRequested = learned && std::atoi(learned) != 0;
+        if (wholeRunDefault && !adaptiveConfigured && !learned && !std::getenv("STS_SILVER_STOP_TRACE")) {
+            setenv("STS_SILVER_LEARNED_STOP", "1", 0);
+            setenv("STS_SILVER_ADAPTIVE", "0", 0);
+        } else if (learnedRequested || (!wholeRunDefault && !adaptiveConfigured)) {
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
         }
     }
@@ -3266,7 +3281,12 @@ int main(int argc, char **argv) {
     }
     search::installNativeSilverBackend();
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
-              << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+              << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
+                  : search::nativeSilverLearnedStopEnabled()
+                      ? (search::nativeSilverLearnedStopBossFallback() ? "; learned stop, bosses #199"
+                         : search::nativeSilverLearnedStopBossMax() > 0 ? "; learned stop, boss cap raised"
+                         : "; learned stop")
+                      : "; flat budget")
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
@@ -3674,6 +3694,18 @@ int main(int argc, char **argv) {
         try {
             silverParamScreen400Gen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
                                     std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "silverstopreplaygen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat silverstopreplaygen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";
+            return 2;
+        }
+        try {
+            silverStopReplayGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
+                                std::stoll(argv[6]), argv[7]);
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;
