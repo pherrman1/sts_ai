@@ -162,3 +162,11 @@ HP +/-5 (denominator 10), gold +/-25 (actual clipped interval), Feed-like +1 HP
 and maxHP, maxHP-only +1, and one removal per distinct held potion ID preserve
 exogenous offers. Duplicated inventory and derived legal actions are regenerated;
 paired S0 keeps original identity-based RNG. No probe is a qualification gate.
+
+The first full-cohort launcher preflight stopped before creating its output
+directory or running any seed: 26 cloud-source manifests retain cloud teacher
+paths. Their teacher SHA is identical to the preserved local second-producer
+teacher. The repaired resolver permits only the two known frozen teacher hashes
+and verifies identical bytes before relocating a missing path. Existing paths
+with changed bytes still fail. Original paths remain in receipts; model and
+runtime-environment hash checks remain mandatory. No original manifest changes.

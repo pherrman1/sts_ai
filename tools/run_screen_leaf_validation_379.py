@@ -16,7 +16,7 @@ import time
 from threading import Event
 
 from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
-from run_screen_leaf_replay_379 import run as replay_source, verify_temporal
+from run_screen_leaf_replay_379 import run as replay_source, verify_temporal, resolve_teacher
 from run_screen_leaf_s0_pilot_379 import X2B
 
 REPO = Path(__file__).resolve().parents[1]
@@ -201,7 +201,7 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
     original_teachers = {}
     for source in sources:
         manifest = load(Path(source['manifest']))
-        teacher_path = Path(manifest['teacherPath'])
+        teacher_path = resolve_teacher(manifest)
         runtime_hashes[str(teacher_path)] = manifest['teacherManifestSha256']
         if str(teacher_path) in original_teachers:
             continue

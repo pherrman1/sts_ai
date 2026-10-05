@@ -16,6 +16,26 @@ import time
 from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
 
 
+def resolve_teacher(manifest):
+    original = Path(manifest['teacherPath'])
+    expected = manifest['teacherManifestSha256']
+    if original.exists():
+        if digest(original) != expected: raise ValueError('original teacher custody mismatch')
+        return original
+    # Cloud shards contain deployment paths. Only the exact preserved artifact
+    # with the same teacher bytes may relocate that path; never rewrite data.
+    copies = {
+        '31b98a4c3efe259f335eda7ba49897fda938b9a1e747b87eeb9525db9801f116':
+            '/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/teacher.json',
+        '7d60fe564663928dc2ff81da3897d1d5c5e87b556018ebee7f31883310c98939':
+            '/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/teacher.json',
+    }
+    if expected not in copies: raise ValueError('no hash-bound preserved teacher copy')
+    resolved = Path(copies[expected])
+    if digest(resolved) != expected: raise ValueError('preserved teacher copy differs')
+    return resolved
+
+
 def verify_temporal(output, seed):
     """Bind new temporal observations to byte-identical original MAP rows."""
     maps = {}
@@ -136,7 +156,7 @@ def run(index, seed, derived, output, coordinator_sha, budget):
     for relative, expected in derived_manifest['derived_files'].items():
         if digest(derived / relative) != expected:
             raise ValueError(f'derived source changed: {relative}')
-    original_teacher = Path(manifest['teacherPath'])
+    original_teacher = resolve_teacher(manifest)
     if digest(original_teacher) != manifest['teacherManifestSha256']:
         raise ValueError('original teacher custody mismatch')
     teacher = json.loads(original_teacher.read_text())
@@ -178,6 +198,7 @@ def run(index, seed, derived, output, coordinator_sha, budget):
                'wall_budget_seconds': budget, 'source_manifest': str(path),
                'source_manifest_sha256': manifest_hash,
                'original_teacher_sha256': manifest['teacherManifestSha256'],
+               'original_teacher_path': manifest['teacherPath'], 'resolved_teacher_path': str(original_teacher),
                'original_runtime_environment_sha256': digest(runtime_path),
                'derived_teacher_sha256': digest(teacher_path), 'derived': derived_manifest,
                'binary_sha256': digest(executable), 'model_hashes': model_hashes,
