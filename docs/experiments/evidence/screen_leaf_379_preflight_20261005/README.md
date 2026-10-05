@@ -120,3 +120,45 @@ pre-rolled contents and future Dream Catcher/dig rewards are not public input.
 The fallback mask was chosen before training, with independent scientific
 review confirming the handoff permits multiple problematic fallback families.
 No rows, splits or labels are altered. No numerical TEST access has occurred.
+
+
+## Temporal reconstruction and fixed training preparation
+
+The temporal-export revision passed new canaries on the same two VALIDATION
+sources in 216.19 and 293.18 seconds. Original seven-file CSV hashes remain
+identical. It records all observed screen states, links the last captured
+supported non-singleton decision across all families to the next observed MAP,
+and captures actual post-forced-action states for potential sibling joins.
+Python independently rechecks the timeline against the original MAP table.
+Only the documented forced initial MAP-branch row is outside the observation
+hook. Prior snapshots without temporal evidence cannot qualify this new gate.
+
+Eligible calibration counts in these two canaries are: boss relic 30/24,
+shop 44/35, rest 1/12 and treasure 1/1. Later captured reward or selector pages
+exclude earlier decisions; no nearest-row or last-qualified-family substitution
+is permitted. Full VALIDATION coverage still needs verification.
+
+The reviewed fixed training run started at `28969b6e` with the four-family
+mask, seeds 0/1/2 for each arm, TRAIN-only normalization, BCE/AdamW 1e-4,
+weight decay 1e-3, batch 8,192, max 60 epochs and patience 8. The common small
+embedding/pooling encoder feeds a 64/32 GELU trunk with dropout 0.1. S1 uses
+four linear heads; S2 one. Their encoder/trunk initialization matches per seed.
+Historical/current shop candidate sets are canonicalized using exact public
+potion-discard rules; no hidden inputs, selected actions or source IDs enter
+the model. Frozen feature ordering and cache/source/row custody are enforced.
+Training is not model selection or offline qualification.
+
+The full S0 recovery resource protocol is 155 fixed VALIDATION sources, one
+S0 replicate/state, at most six source workers, at most 3,600 seconds/source
+and 12 hours overall. No retry or output overwrite is allowed. Existing temporal
+canaries are reused only after rehashing their CSVs, snapshots and links. Every
+source replay uses the original producer/model/runtime identities and exact
+seven-file parity. Failure stops further scheduling and preserves active jobs.
+Independent reviews approved this bounded scope and the pretraining tools.
+
+Resource diagnostics will use 1,024 VALIDATION states: 256 per candidate family,
+covering all 155 sources per family before additional deterministic hashed rows.
+HP +/-5 (denominator 10), gold +/-25 (actual clipped interval), Feed-like +1 HP
+and maxHP, maxHP-only +1, and one removal per distinct held potion ID preserve
+exogenous offers. Duplicated inventory and derived legal actions are regenerated;
+paired S0 keeps original identity-based RNG. No probe is a qualification gate.

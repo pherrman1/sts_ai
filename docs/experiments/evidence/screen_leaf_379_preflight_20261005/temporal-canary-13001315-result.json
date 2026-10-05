@@ -1,0 +1,51 @@
+{
+  "exit_code": 0,
+  "wall_seconds": 216.18639703999906,
+  "csv_parity": {
+    "branches.csv": {
+      "expected": "57a54d2d643726b7075938e9dad1a015591f47cf330e55ab0a0b3a976d53ed78",
+      "actual": "57a54d2d643726b7075938e9dad1a015591f47cf330e55ab0a0b3a976d53ed78",
+      "equal": true
+    },
+    "combat.csv": {
+      "expected": "759f2b44dd6702d5c00a7540140bb5d52e05a39fcd52c8b99db7a6e349510c02",
+      "actual": "759f2b44dd6702d5c00a7540140bb5d52e05a39fcd52c8b99db7a6e349510c02",
+      "equal": true
+    },
+    "decision.csv": {
+      "expected": "da5c5c8d1401ec34deacf061babb4c49e8e41d0e1c3b56e2fb75effbc85486b6",
+      "actual": "da5c5c8d1401ec34deacf061babb4c49e8e41d0e1c3b56e2fb75effbc85486b6",
+      "equal": true
+    },
+    "decisions.csv": {
+      "expected": "c65c37ce19be251defac4fdddcf8e767e00595c87b3de1d9746fc8d87ee75d79",
+      "actual": "c65c37ce19be251defac4fdddcf8e767e00595c87b3de1d9746fc8d87ee75d79",
+      "equal": true
+    },
+    "map.csv": {
+      "expected": "6abbc9fd705fd567cbad688426adbc0cef1f3a5e4ec66346d1efefb231e34089",
+      "actual": "6abbc9fd705fd567cbad688426adbc0cef1f3a5e4ec66346d1efefb231e34089",
+      "equal": true
+    },
+    "runout.csv": {
+      "expected": "7b13ea724d7fe3b3c9cda89983b826acd33995f21d417ca78e5470797b03fc47",
+      "actual": "7b13ea724d7fe3b3c9cda89983b826acd33995f21d417ca78e5470797b03fc47",
+      "equal": true
+    },
+    "win_raw.csv": {
+      "expected": "1c9ac19fe6fd77eac8bfd38fbbf827225aa15da2a0aaf1162fb3b8be06cc7f3a",
+      "actual": "1c9ac19fe6fd77eac8bfd38fbbf827225aa15da2a0aaf1162fb3b8be06cc7f3a",
+      "equal": true
+    }
+  },
+  "status": "PASS",
+  "temporal": {
+    "temporal_sha256": "f7ae024cdd4c57a893feae8c814ae89741885f97beafaeb51989c3e8596e4bd0",
+    "map_observations": 758,
+    "map_csv_rows": 760,
+    "map_rows_without_observation": 2,
+    "captured_observations": 1774,
+    "trajectories": 27
+  },
+  "snapshots_sha256": "90327df56420f0745392a28b353efc89d40584c2246a5711d36b890aaa982765"
+}
