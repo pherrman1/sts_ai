@@ -1176,8 +1176,10 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
-        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN
-                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint)) {
+        // Direct probe: value the first non-combat state without a playout.
+        if ((options.directLeaf && child.gc.screenState != sts::ScreenState::BATTLE)
+                || (child.gc.screenState == sts::ScreenState::MAP_SCREEN
+                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint))) {
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);
@@ -1268,9 +1270,10 @@ void applyLiveControl(const std::string &key, const std::string &value,
     };
     if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
-        if (value == "native") { opts.constantLeaf = false; opts.bossLeaf = false; }
-        else if (value == "constant") { opts.constantLeaf = true; opts.bossLeaf = false; }
-        else if (value == "boss") { opts.constantLeaf = false; opts.bossLeaf = true; }
+        if (value == "native") { opts.constantLeaf = false; opts.bossLeaf = false; opts.directLeaf = false; }
+        else if (value == "constant") { opts.constantLeaf = true; opts.bossLeaf = false; opts.directLeaf = false; }
+        else if (value == "boss") { opts.constantLeaf = false; opts.bossLeaf = true; opts.directLeaf = false; }
+        else if (value == "direct") { opts.constantLeaf = false; opts.bossLeaf = false; opts.directLeaf = true; }
         else invalid();
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
@@ -1580,7 +1583,7 @@ void configureLiveOocMcts() {
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
-        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
+        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
@@ -1592,7 +1595,7 @@ void configureLiveOocMcts() {
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
-        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
+        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
@@ -3266,6 +3269,23 @@ void oocMctsAdapterSelfTest() {
         && std::abs(bossCheckpointValue-nativeCheckpointValue)>1e-6,
         "checkpoint boss leaf returns combat expectation instead of native v_win");
     {
+        // Direct probe leaf: a pending non-combat screen is valued by v_win in
+        // place, with no policy-chain projection step.
+        auto pending=detachedCopy(gc); pending.screenState=ScreenState::REST_ROOM;
+        OocAdapterOptions directOptions{true}; directOptions.directLeaf=true;
+        OocGameContextModel direct(pending,path,bossSampler,directOptions);
+        OocGameContextModel playout(pending,path,bossSampler,OocAdapterOptions{true});
+        std::mt19937_64 directRng(20261006);
+        const double expected=vStateWinNative(pending);
+        require(direct.evaluateLeaf(0,directRng)==expected
+            && direct.continuationMetrics().projectionSteps==0
+            && direct.continuationMetrics().pendingLeaves==1,
+            "direct leaf values a pending screen without projection");
+        std::mt19937_64 playoutRng(20261006);
+        (void)playout.evaluateLeaf(0,playoutRng);
+        require(playout.continuationMetrics().projectionSteps>0,"native leaf still projects a pending screen");
+    }
+    {
         OocMctsResult capped; capped.aborted=true;
         capped.abortReason="ooc_depth_safety_cap_512_state_513";
         OocContinuationMetrics capCounters;
@@ -3286,7 +3306,10 @@ void oocMctsAdapterSelfTest() {
         require(!parsed.allowUnqualifiedRootStop,"early-stop rollback parsed");
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","direct",parsed,opts);
+        require(opts.directLeaf && !opts.bossLeaf && !opts.constantLeaf,"direct leaf parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","boss",parsed,opts);
+        require(!opts.directLeaf,"boss leaf clears direct leaf");
         applyLiveControl("STS_OOC_MCTS_CPUCT","0",parsed,opts);
         require(parsed.selectByMeanQ && parsed.cPuct == 0 && opts.leafCombats == 3 && opts.bossLeaf,
             "accepted bounded knobs");

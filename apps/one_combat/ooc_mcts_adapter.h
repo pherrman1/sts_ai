@@ -33,6 +33,9 @@ struct OocAdapterOptions {
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
+    // Research probe: score unresolved non-combat, non-MAP leaves with v_win
+    // directly instead of the bounded policy-chain playout.
+    bool directLeaf = false;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
