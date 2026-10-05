@@ -607,9 +607,15 @@ nlohmann::json one_combat::screenLeafPublicContract(const sts::GameContext &gc) 
     const auto options = vwinOptions(gc, supported, complete, error);
     if (!supported || !complete) throw std::runtime_error("incomplete restored DECISION: " + error);
     std::vector<std::string> keys;
+    std::vector<std::string> replacementDiscards;
     for (const auto &option : options) keys.push_back(option.key);
+    for (const auto &option : options)
+        if (option.semantic && option.semantic->effect == search::OocSemanticEffect::DISCARD_POTION)
+            replacementDiscards.push_back(option.key);
     std::sort(keys.begin(), keys.end());
-    return {{"screenContents", vwinDecisionScreenContents(gc, options)}, {"candidateKeys", keys}};
+    std::sort(replacementDiscards.begin(), replacementDiscards.end());
+    return {{"screenContents", vwinDecisionScreenContents(gc, options)}, {"candidateKeys", keys},
+            {"replacementDiscardKeys", replacementDiscards}};
 }
 
 static bool vwinIsCardRewardChoice(const VwinOption &option) {

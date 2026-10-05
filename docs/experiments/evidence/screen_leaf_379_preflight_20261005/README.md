@@ -59,3 +59,29 @@ Estimated VALIDATION reconstruction cost from historical metadata: 44.11 branch 
 Review repaired exclusive snapshot output creation and an inactive Dead Adventurer relic read. Full snapshot roundtrip and all 17 callback-family comparisons passed constructed-state tests. These do not replace replay parity.
 
 Knowledge impact: exact reconstruction and current timing evidence are recorded here; no model qualification, default promotion, or gameplay conclusion.
+
+
+## Replay and current-candidate compatibility
+
+VALIDATION source 13001315 was reconstructed with the derived first frozen
+producer in 212.56 seconds. All seven CSV outputs match their original hashes
+byte-for-byte. Snapshot SHA-256:
+`dbc972012225ea72542035c25255d9a040ab50d9783984a31e0292711cd145c3`.
+The first startup-only replay attempt failed because the launcher omitted
+`STS_REST_WIN=0`; the repaired launcher uses the exact preserved runtime
+environment with its frozen hash. Original data and failed attempts are preserved.
+
+The first S0 pilot stopped after five states on a shop candidate-set mismatch.
+Physical screen contents and rich features were identical. Current-main commit
+`a666d719` added public potion replacement/discard choices after the frozen
+producer: this full-belt shop state has exactly three added discard keys for
+its three held potions, with no removed historical actions. Independent science
+review approved only that known compatibility case: keep physical-screen and
+rich-feature parity; independently construct exact legal discard additions
+from public state; reject all other candidate changes. Log both candidate sets.
+No rows, labels or splits are filtered or changed. The candidate predictive
+representation may omit historical candidate-key strings, as allowed by the
+handoff, while preserving visible choices/targets and held-potion state.
+Historical labels remain outcomes of the historical policy, not evidence about
+new discard-action trajectories. This is a VALIDATION implementation repair;
+TEST remains sealed.

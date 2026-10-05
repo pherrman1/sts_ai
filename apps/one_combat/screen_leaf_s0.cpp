@@ -66,9 +66,52 @@ int screenLeafS0(const std::string &input, const std::string &output,
         if (richRow(state.gc, state.path) != row.at("features").get<std::string>())
             throw std::runtime_error("snapshot rich-feature parity failed: " + identity);
         const auto contract = screenLeafPublicContract(state.gc);
+        const auto originalKeys = row.at("candidateKeys").get<std::set<std::string>>();
+        const auto currentKeys = contract.at("candidateKeys").get<std::set<std::string>>();
+        std::set<std::string> additions, removals;
+        std::set_difference(currentKeys.begin(), currentKeys.end(), originalKeys.begin(), originalKeys.end(),
+                            std::inserter(additions, additions.end()));
+        std::set_difference(originalKeys.begin(), originalKeys.end(), currentKeys.begin(), currentKeys.end(),
+                            std::inserter(removals, removals.end()));
+        bool visibleReplacement = false;
+        if (state.gc.potionCount == state.gc.potionCapacity && state.gc.potionCapacity > 0
+            && !state.gc.hasRelic(sts::RelicId::SOZU)) {
+            if (state.gc.screenState == sts::ScreenState::REWARDS)
+                visibleReplacement = state.gc.info.rewardsContainer.potionCount > 0;
+            if (state.gc.screenState == sts::ScreenState::SHOP_ROOM)
+                for (int slot = 0; slot < 3; ++slot) {
+                    const int price = state.gc.info.shop.potionPrice(slot);
+                    visibleReplacement = visibleReplacement || (price >= 0 && price <= state.gc.gold);
+                }
+        }
+        std::set<std::string> expectedDiscards;
+        if (visibleReplacement) {
+            if (state.gc.potionCapacity > int(state.gc.potions.size()))
+                throw std::runtime_error("invalid restored potion capacity");
+            for (int slot = 0; slot < state.gc.potionCapacity; ++slot) {
+                const auto potion = state.gc.potions[slot];
+                if (potion == sts::Potion::EMPTY_POTION_SLOT || potion == sts::Potion::INVALID) continue;
+                sts::search::OocRewardTarget target;
+                target.entity = potion;
+                for (int prior = 0; prior < slot; ++prior)
+                    if (state.gc.potions[prior] == potion) ++target.occurrence;
+                sts::search::OocSemanticAction action;
+                action.effect = sts::search::OocSemanticEffect::DISCARD_POTION;
+                action.source = state.gc.screenState == sts::ScreenState::SHOP_ROOM
+                    ? sts::search::OocSemanticSource::SHOP : sts::search::OocSemanticSource::REWARDS;
+                action.target = target;
+                expectedDiscards.insert(sts::search::canonicalOocSemanticActionKey(action));
+            }
+        }
+        const bool allowedDiscardAddition = visibleReplacement && removals.empty()
+            && additions == expectedDiscards
+            && additions == contract.at("replacementDiscardKeys").get<std::set<std::string>>();
         if (contract.at("screenContents") != row.at("screenContents")
-            || contract.at("candidateKeys") != row.at("candidateKeys"))
-            throw std::runtime_error("snapshot public-screen/candidate parity failed: " + identity);
+            || (!additions.empty() && !allowedDiscardAddition) || !removals.empty())
+            throw std::runtime_error("snapshot public-screen/candidate parity failed: " + identity
+                + "\n" + Json({{"actual", contract}, {"expected", {
+                    {"screenContents", row.at("screenContents")},
+                    {"candidateKeys", row.at("candidateKeys")}}}}).dump());
         Json values = Json::array(), seeds = Json::array();
         double elapsed = 0;
         std::uint64_t steps = 0;
@@ -93,7 +136,10 @@ int screenLeafS0(const std::string &input, const std::string &output,
             {"rowIdx", row.at("rowIdx")}, {"decisionIdx", row.at("decisionIdx")},
             {"screen", row.at("screenContents").at("screen")}, {"act", state.gc.act},
             {"values", values}, {"rngSeeds", seeds}, {"leafCpuSeconds", elapsed},
-            {"projectionSteps", steps}};
+            {"projectionSteps", steps},
+            {"candidateCompatibility", additions.empty() ? "exact" : "public_potion_discard_additions"},
+            {"historicalCandidateKeys", originalKeys}, {"currentCandidateKeys", currentKeys},
+            {"addedPublicDiscardKeys", additions}};
         const auto encoded = result.dump() + "\n";
         if (std::fwrite(encoded.data(), 1, encoded.size(), file) != encoded.size()
             || std::fflush(file)) throw std::runtime_error("S0 output write failure");
