@@ -3062,6 +3062,40 @@ int testIssueFixes() {
             return fail("Smoke Bomb skipped normal combat-exit bookkeeping");
         }
     }
+    // Colosseum's fight continuations bypass afterBattle(): a slaver escape
+    // must still clear smokeBombUsed and reopen the event, and a Nob escape
+    // must forfeit the Victory rewards and return to the map.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        gc.act = 2;
+        gc.floorNum = 25;
+        gc.curMapNodeY = 9;
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::COLOSSEUM;
+        gc.setupEvent();
+        auto escape = [&](MonsterEncounter encounter) {
+            gc.chooseEventOption(encounter == MonsterEncounter::COLOSSEUM_EVENT_SLAVERS ? 0 : 1);
+            if (gc.screenState != ScreenState::BATTLE || gc.info.encounter != encounter) return false;
+            BattleContext bc;
+            bc.init(gc, encounter);
+            bc.potions[0] = Potion::SMOKE_BOMB;
+            bc.potionCount = 1;
+            const search::Action useSmoke(search::ActionType::POTION, 0);
+            if (!useSmoke.isValidAction(bc)) return false;
+            useSmoke.execute(bc);
+            bc.exitBattle(gc);
+            return !gc.smokeBombUsed && gc.outcome == GameOutcome::UNDECIDED;
+        };
+        if (!escape(MonsterEncounter::COLOSSEUM_EVENT_SLAVERS)
+                || gc.screenState != ScreenState::EVENT_SCREEN || gc.info.eventData != 1) {
+            return fail("Colosseum slaver Smoke Bomb escape left smokeBombUsed or skipped the event");
+        }
+        const int goldBefore = gc.gold;
+        if (!escape(MonsterEncounter::COLOSSEUM_EVENT_NOBS)
+                || gc.screenState != ScreenState::MAP_SCREEN || gc.gold != goldBefore) {
+            return fail("Colosseum Nob Smoke Bomb escape left smokeBombUsed or granted rewards");
+        }
+    }
     // Boss and SURROUNDED fights reject use, preserve the potion on direct
     // execution, and still expose the independent discard action.
     {

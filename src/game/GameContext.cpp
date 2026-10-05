@@ -2670,6 +2670,10 @@ void GameContext::chooseEventOption(int idx) {
                 // false, then reopens the event after the slaver fight.
                 info.eventData = 1;
                 regainControlAction = [](GameContext &gc) {
+                    // This continuation replaces afterBattle(), so it must
+                    // clear a Smoke Bomb escape marker itself. With
+                    // rewardAllowed false an escape still reopens the event.
+                    gc.smokeBombUsed = false;
                     gc.screenState = ScreenState::EVENT_SCREEN;
                     gc.regainControlAction = returnToMapAction;
                 };
@@ -2692,6 +2696,13 @@ void GameContext::chooseEventOption(int idx) {
                 }
                 info.eventData = 2;
                 regainControlAction = [=](GameContext &gc) {
+                    if (gc.smokeBombUsed) {
+                        // A Smoke Bomb escape forfeits the Victory rewards
+                        // like any other escape; afterBattle() clears the
+                        // marker and returns to the map.
+                        gc.afterBattle();
+                        return;
+                    }
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(rareRelic);
