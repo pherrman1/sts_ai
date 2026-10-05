@@ -71,14 +71,14 @@ def run(index, seed, derived, output, coordinator_sha, budget):
     teacher_path = output / 'derived-teacher.json'
     teacher_path.write_text(json.dumps(teacher, indent=2) + '\n')
     prefix = output / 'replay'
-    env = {'HOME': os.environ['HOME'], 'PATH': os.environ['PATH'], 'OMP_NUM_THREADS': '1',
+    runtime_path = cwd / 'runtime-environment.json'
+    freeze = json.loads((cwd / 'freeze.json').read_text())
+    if digest(runtime_path) != freeze['artifacts']['runtime-environment.json']:
+        raise ValueError('frozen runtime environment changed')
+    frozen_runtime = json.loads(runtime_path.read_text())
+    env = {'HOME': os.environ['HOME'], 'PATH': os.environ['PATH'], **frozen_runtime,
            **teacher['environment'], 'STS_VWIN_DECISION_SINK': '1',
-           'STS_SCREEN_LEAF_SNAPSHOT_OUT': str(output / 'snapshots.jsonl'),
-           'STS_NATIVE_OOC': '1', 'STS_COLLECT_KEYS': '0',
-           'STS_OOC_STRATEGIC_TOK_NN': 'selfplay/models/ooc_strategic_tok_final.native',
-           'STS_OOC_STRATEGIC_SHOP': '1', 'STS_OOC_STRATEGIC_EVENT': '1',
-           'STS_OOC_STRATEGIC_REST': '1', 'STS_OOC_STRATEGIC_TREASURE': '1',
-           'STS_OOC_STRATEGIC_BOSS_RELIC': '1', 'STS_OOC_STRATEGIC_MARGIN': '1.0'}
+           'STS_SCREEN_LEAF_SNAPSHOT_OUT': str(output / 'snapshots.jsonl')}
     sampling = manifest['sampling']
     k = sampling['samplesPerType']
     parity = manifest['branchParity']['percent']
@@ -90,6 +90,7 @@ def run(index, seed, derived, output, coordinator_sha, budget):
                'wall_budget_seconds': budget, 'source_manifest': str(path),
                'source_manifest_sha256': manifest_hash,
                'original_teacher_sha256': manifest['teacherManifestSha256'],
+               'original_runtime_environment_sha256': digest(runtime_path),
                'derived_teacher_sha256': digest(teacher_path), 'derived': derived_manifest,
                'binary_sha256': digest(executable), 'model_hashes': model_hashes,
                'coordinator_sha': coordinator_sha, 'cwd': str(cwd), 'argv': argv, 'env': env,
