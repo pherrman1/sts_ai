@@ -1,0 +1,44 @@
+{
+  "exit_code": 0,
+  "wall_seconds": 2.5174013080004443,
+  "status": "PASS",
+  "completed_rows": 1024,
+  "by_screen": {
+    "boss_relic": {
+      "states": 54,
+      "leaf_cpu_seconds": 0.01182040999999992,
+      "projection_steps": 54
+    },
+    "event": {
+      "states": 176,
+      "leaf_cpu_seconds": 0.07997463399999993,
+      "projection_steps": 341
+    },
+    "rest": {
+      "states": 176,
+      "leaf_cpu_seconds": 0.10172289799999998,
+      "projection_steps": 366
+    },
+    "rewards": {
+      "states": 175,
+      "leaf_cpu_seconds": 0.06377252199999918,
+      "projection_steps": 312
+    },
+    "selector": {
+      "states": 175,
+      "leaf_cpu_seconds": 0.13701062600000224,
+      "projection_steps": 244
+    },
+    "shop": {
+      "states": 175,
+      "leaf_cpu_seconds": 1.2660331279999983,
+      "projection_steps": 686
+    },
+    "treasure": {
+      "states": 93,
+      "leaf_cpu_seconds": 0.019291833000001035,
+      "projection_steps": 328
+    }
+  },
+  "predictions_sha256": "d952e49c0ba77b227cc707a7b1eccac7b407102a9e310856a3b0547522d0328d"
+}

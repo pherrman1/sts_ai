@@ -14313,11 +14313,20 @@ source/setup extrapolation, before S0. A derived exporter and current-main
 import/evaluation bridge are being gated by exact frozen-output parity;
 constructed-state roundtrip/callback tests do not qualify that replay.
 
+Both producer-version canaries subsequently passed all seven original CSV
+hashes (VALIDATION sources 13001315 and 13001638). The two-producer 1,024-state
+S0 pilot passed in 2.52 wall seconds, with 1.68 inclusive leaf CPU seconds.
+Public-input review limits the provisional direct model to boss relic, rest,
+shop and treasure; events, selectors and rewards have omitted public parent
+or offer context. A temporal sidecar records exact resulting MAP links for
+calibration. The fixed Python S1/S2 tools are gated before training; all three
+excluded families remain audited and use the original fallback.
+
 **Status:** no S1/S2 training, candidate freeze, DECISION TEST opening, native
 screen-leaf integration or gameplay qualification. Defaults unchanged.
 `GITHUB_CI_NOT_USED_BILLING_LIMIT`.
 
 **Evidence:** [profile receipts, raw logs and audit](evidence/screen_leaf_379_preflight_20261005/README.md).
 
-**Knowledge impact:** current experiment evidence only; no qualified model or
-runtime/default claim.
+**Knowledge impact:** experiment evidence and maintained current research
+status; no qualified model or runtime/default claim.

@@ -49,13 +49,104 @@ def prepare(repo, revision, destination):
     text = path.read_text()
     text = '#include "screen_leaf_snapshot.h"\n' + text
     text = replace_once(text, 'struct VwinDecisionSinkRow {',
-                        'struct VwinDecisionSinkRow {\n    nlohmann::json fullSnapshot379;')
+                        'struct VwinDecisionSinkRow {\n    nlohmann::json fullSnapshot379;\n    int observationSeq379 = -1;')
     text = replace_once(text, '    VwinDecisionSinkRow row;\n',
                         '    VwinDecisionSinkRow row;\n'
+                        '    row.observationSeq379 = capture.observationSeq379 - 1;\n'
                         '    if (std::getenv("STS_SCREEN_LEAF_SNAPSHOT_OUT"))\n'
                         '        row.fullSnapshot379 = one_combat::encodeScreenLeafSnapshot(gc, path);\n')
+    text = replace_once(text, 'struct VwinCollector {',
+                        'struct VwinCollector {\n    int observationSeq379 = 0;\n'
+                        '    nlohmann::json observations379 = nlohmann::json::array();\n'
+                        '    nlohmann::json forcedPostAction379;')
+    text = replace_once(text,
+        '    if (gc.screenState == ScreenState::MAP_SCREEN) return;\n'
+        '    bool supported = false, complete = false;',
+        '    if (gc.screenState == ScreenState::MAP_SCREEN) {\n'
+        '        if (std::getenv("STS_SCREEN_LEAF_SNAPSHOT_OUT"))\n'
+        '            capture.observations379.push_back({{"observationSeq", capture.observationSeq379++},\n'
+        '                {"kind", "map"}, {"act", gc.act}, {"floor", gc.floorNum},\n'
+        '                {"mapX", gc.curMapNodeX}, {"mapY", gc.curMapNodeY},\n'
+        '                {"decisionIdx", decisionIdx}, {"mapRowIdx", capture.mapRowIdx},\n'
+        '                {"features", richRow(gc, path)}});\n'
+        '        return;\n'
+        '    }\n'
+        '    bool supported = false, complete = false;')
+    text = replace_once(text,
+        '    const auto logIndex = capture.decisionSinkLog.size();\n',
+        '    const auto logIndex = capture.decisionSinkLog.size();\n'
+        '    if (std::getenv("STS_SCREEN_LEAF_SNAPSHOT_OUT"))\n'
+        '        capture.observations379.push_back({{"observationSeq", capture.observationSeq379++},\n'
+        '            {"kind", "decision"}, {"act", gc.act}, {"floor", gc.floorNum},\n'
+        '            {"screen", vwinDecisionScreenName(gc)}, {"decisionIdx", decisionIdx},\n'
+        '            {"supported", supported}, {"complete", complete},\n'
+        '            {"optionCount", options.size()}, {"sinkLogIndex", logIndex}});\n')
+    text = replace_once(text,
+        '    if (branch && vwin)\n        vwinResumeContinuation',
+        '    if (branch && vwin && std::getenv("STS_SCREEN_LEAF_SNAPSHOT_OUT")) {\n'
+        '        PathHistory postPath379 = path; postPath379.update(gc);\n'
+        '        vwin->forcedPostAction379 = {{"observationSeq", vwin->observationSeq379++},\n'
+        '            {"sourceDecisionIdx", branch->decision->decisionIdx},\n'
+        '            {"branchId", vwin->branchId}, {"act", gc.act}, {"floor", gc.floorNum},\n'
+        '            {"screenState", static_cast<int>(gc.screenState)},\n'
+        '            {"features", richRow(gc, postPath379)},\n'
+        '            {"snapshot", one_combat::encodeScreenLeafSnapshot(gc, postPath379)},\n'
+        '            {"definition", "after_forced_semantic_action_before_resumeContinuation"}};\n'
+        '    }\n'
+        '    if (branch && vwin)\n        vwinResumeContinuation')
     anchor = '        for (const auto &row : capture.decisionSinkRows) {\n'
-    code = '''        for (const auto &row : capture.decisionSinkRows) {
+    code = '''        std::map<int, int> observationRows379;
+        std::map<int, nlohmann::json> calibrationLinks379;
+        for (const auto &saved : capture.decisionSinkRows)
+            observationRows379.emplace(saved.observationSeq379, saved.rowIdx);
+        if (const char *snapshotFile = std::getenv("STS_SCREEN_LEAF_SNAPSHOT_OUT")) {
+            auto events = capture.observations379;
+            for (auto &event : events) {
+                const auto found = observationRows379.find(event.at("observationSeq").get<int>());
+                if (event.at("kind") == "decision") {
+                    event["finalRowIdx"] = found == observationRows379.end() ? -1 : found->second;
+                    const auto logIndex = event.at("sinkLogIndex").get<std::size_t>();
+                    event["finalCaptureLog"] = capture.decisionSinkLog.at(logIndex);
+                }
+            }
+            for (const auto &saved : capture.decisionSinkRows) {
+                nlohmann::json link = {{"status", "NO_SUBSEQUENT_OBSERVED_MAP"},
+                    {"definition", "last_captured_supported_nonsingleton_across_all_screen_families"},
+                    {"interveningSingletons", 0}, {"interveningUnsupported", 0}};
+                bool laterCaptured = false, unresolved = false;
+                for (const auto &event : events) {
+                    if (event.at("observationSeq").get<int>() <= saved.observationSeq379) continue;
+                    if (event.at("kind") == "map") {
+                        link["status"] = laterCaptured ? "LATER_CAPTURED_DECISION" :
+                            (unresolved ? "INTERVENING_UNRESOLVED_SUPPORTED_DECISION" :
+                             "EXACT_LAST_CAPTURED_TO_OBSERVED_MAP");
+                        link["map"] = event;
+                        break;
+                    }
+                    if (event.at("finalRowIdx").get<int>() >= 0) laterCaptured = true;
+                    else if (event.at("supported").get<bool>() && event.at("complete").get<bool>()) {
+                        if (event.at("optionCount").get<int>() > 1) unresolved = true;
+                        else link["interveningSingletons"] = link["interveningSingletons"].get<int>() + 1;
+                    } else link["interveningUnsupported"] = link["interveningUnsupported"].get<int>() + 1;
+                }
+                // Unsupported intervening states are visible in the receipt and
+                // excluded: they cannot certify a supported calibration chain.
+                if (link["interveningUnsupported"].get<int>() > 0 &&
+                    link["status"] == "EXACT_LAST_CAPTURED_TO_OBSERVED_MAP")
+                    link["status"] = "INTERVENING_UNSUPPORTED_DECISION";
+                calibrationLinks379[saved.observationSeq379] = std::move(link);
+            }
+            const char *configured = std::getenv("STS_SCREEN_LEAF_TEMPORAL_OUT");
+            const std::string temporalPath = configured ? configured : std::string(snapshotFile) + ".temporal.jsonl";
+            static std::FILE *temporalFile = std::fopen(temporalPath.c_str(), "wx");
+            if (!temporalFile) throw std::runtime_error("cannot open #379 temporal output");
+            const std::string temporal = nlohmann::json({{"schema", "screen_leaf_temporal_v1"},
+                {"sourceSeed", sourceSeed}, {"branchId", capture.branchId},
+                {"observations", events}, {"forcedPostAction", capture.forcedPostAction379}}).dump() + "\\n";
+            if (std::fwrite(temporal.data(), 1, temporal.size(), temporalFile) != temporal.size()
+                || std::fflush(temporalFile) != 0) throw std::runtime_error("failed #379 temporal output");
+        }
+        for (const auto &row : capture.decisionSinkRows) {
             if (const char *file = std::getenv("STS_SCREEN_LEAF_SNAPSHOT_OUT")) {
                 if (row.fullSnapshot379.is_null()) throw std::runtime_error("missing #379 snapshot");
                 static std::FILE *snapshots = std::fopen(file, "wx");
@@ -63,6 +154,8 @@ def prepare(repo, revision, destination):
                 const std::string encoded = nlohmann::json({{"sourceSeed", sourceSeed},
                     {"branchId", row.branchId}, {"rowIdx", row.rowIdx},
                     {"decisionIdx", row.decisionIdx}, {"features", row.features},
+                    {"observationSeq", row.observationSeq379},
+                    {"calibrationLink", calibrationLinks379.at(row.observationSeq379)},
                     {"screenContents", nlohmann::json::parse(row.screenContentsJson)},
                     {"candidateKeys", row.candidateKeys}, {"snapshot", row.fullSnapshot379}}).dump() + "\\n";
                 if (std::fwrite(encoded.data(), 1, encoded.size(), snapshots) != encoded.size()

@@ -5,6 +5,7 @@ Does not run S0, fit models, open TEST, or reuse/overwrite an output directory.
 Derived source/binary and teacher identities are recorded before seed execution.
 """
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -13,6 +14,93 @@ import subprocess
 import time
 
 from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
+
+
+def verify_temporal(output, seed):
+    """Bind new temporal observations to byte-identical original MAP rows."""
+    maps = {}
+    with (output / 'replay.map.csv').open(newline='') as stream:
+        reader = csv.reader(stream)
+        header = next(reader)
+        if header[:9] != ['sourceSeed', 'branchId', 'deviationIdx', 'rowIdx', 'act', 'floor', 'mapX', 'mapY', 'teacherId'] or len(header) != 1026:
+            raise ValueError('temporal MAP schema mismatch')
+        if hashlib.sha256(','.join(header[9:]).encode()).hexdigest() != 'd8fdd003636fc00e537320f0406a2c36f890d8ba16edc10cc7c2b0fbdf7ed836':
+            raise ValueError('temporal MAP rich header mismatch')
+        for row in reader:
+            if len(row) != len(header): raise ValueError('temporal MAP row width mismatch')
+            key = (int(row[0]), row[1], int(row[3]))
+            if key in maps: raise ValueError('duplicate MAP identity')
+            maps[key] = {'features': ','.join(row[9:]), 'act': int(row[4]), 'floor': int(row[5]),
+                         'mapX': int(row[6]), 'mapY': int(row[7])}
+    temporal_path = output / 'snapshots.jsonl.temporal.jsonl'
+    observed, branches, captures, timelines = set(), set(), {}, {}
+    with temporal_path.open() as stream:
+        for line in stream:
+            trajectory = json.loads(line)
+            if trajectory['sourceSeed'] != seed or trajectory['schema'] != 'screen_leaf_temporal_v1':
+                raise ValueError('temporal source/schema mismatch')
+            branch = trajectory['branchId']
+            if branch in branches: raise ValueError('duplicate temporal trajectory')
+            branches.add(branch)
+            timelines[branch] = trajectory['observations']
+            previous = -1
+            for event in trajectory['observations']:
+                if event['observationSeq'] <= previous: raise ValueError('nonmonotone observation order')
+                previous = event['observationSeq']
+                if event['kind'] == 'map':
+                    key = (seed, branch, event['mapRowIdx'])
+                    if key in observed or key not in maps or any(event[k] != v for k, v in maps[key].items()):
+                        raise ValueError('temporal MAP observation differs from original CSV')
+                    observed.add(key)
+                elif event['finalRowIdx'] >= 0:
+                    key = (seed, branch, event['finalRowIdx'])
+                    if key in captures: raise ValueError('duplicate temporal captured row')
+                    captures[key] = event['observationSeq']
+    # Forced MAP branches append their initial MAP row outside the observation
+    # hook. They are not eligible temporal endpoints without an observed link.
+    with (output / 'replay.branches.csv').open(newline='') as stream:
+        allowed_missing = {(seed, r['branchId'], 0) for r in csv.DictReader(stream)
+                           if int(r['sourceSeed']) == seed and r['type'] == 'MAP'}
+    if not (set(maps) - observed) <= allowed_missing:
+        raise ValueError('unexplained missing temporal MAP observation')
+    snapshots = set()
+    with (output / 'snapshots.jsonl').open() as stream:
+        for line in stream:
+            row = json.loads(line)
+            key = (row['sourceSeed'], row['branchId'], row['rowIdx'])
+            if key in snapshots or captures.get(key) != row['observationSeq']:
+                raise ValueError('temporal snapshot mapping differs')
+            snapshots.add(key)
+            link = row['calibrationLink']
+            expected = {'status': 'NO_SUBSEQUENT_OBSERVED_MAP',
+                        'definition': 'last_captured_supported_nonsingleton_across_all_screen_families',
+                        'interveningSingletons': 0, 'interveningUnsupported': 0}
+            later_captured, unresolved = False, False
+            for event in timelines[row['branchId']]:
+                if event['observationSeq'] <= row['observationSeq']: continue
+                if event['kind'] == 'map':
+                    expected['map'] = event
+                    expected['status'] = ('LATER_CAPTURED_DECISION' if later_captured else
+                                          'INTERVENING_UNRESOLVED_SUPPORTED_DECISION' if unresolved else
+                                          'EXACT_LAST_CAPTURED_TO_OBSERVED_MAP')
+                    break
+                if event['finalRowIdx'] >= 0: later_captured = True
+                elif event['supported'] and event['complete']:
+                    if event['optionCount'] > 1: unresolved = True
+                    else: expected['interveningSingletons'] += 1
+                else: expected['interveningUnsupported'] += 1
+            if expected['interveningUnsupported'] and expected['status'] == 'EXACT_LAST_CAPTURED_TO_OBSERVED_MAP':
+                expected['status'] = 'INTERVENING_UNSUPPORTED_DECISION'
+            if link != expected: raise ValueError('calibration link does not match observed timeline')
+            if 'map' in link:
+                event = link['map']
+                key_map = (seed, row['branchId'], event['mapRowIdx'])
+                if key_map not in maps or any(event[k] != v for k, v in maps[key_map].items()):
+                    raise ValueError('calibration MAP differs from original CSV')
+    if snapshots != set(captures): raise ValueError('temporal captured row coverage differs')
+    return {'temporal_sha256': digest(temporal_path), 'map_observations': len(observed),
+            'map_csv_rows': len(maps), 'map_rows_without_observation': len(set(maps) - observed),
+            'captured_observations': len(captures), 'trajectories': len(branches)}
 
 
 def run(index, seed, derived, output, coordinator_sha, budget):
@@ -109,8 +197,12 @@ def run(index, seed, derived, output, coordinator_sha, budget):
             summary['csv_parity'][suffix] = {'expected': expected, 'actual': actual,
                                             'equal': actual == expected}
         if all(v['equal'] for v in summary['csv_parity'].values()):
-            summary['status'] = 'PASS'
-            summary['snapshots_sha256'] = digest(output / 'snapshots.jsonl')
+            try:
+                summary['temporal'] = verify_temporal(output, seed)
+                summary['status'] = 'PASS'
+                summary['snapshots_sha256'] = digest(output / 'snapshots.jsonl')
+            except Exception as error:
+                summary['temporal_error'] = f'{type(error).__name__}: {error}'
     (output / 'result.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary, indent=2))
     if summary['status'] != 'PASS':

@@ -85,3 +85,38 @@ handoff, while preserving visible choices/targets and held-potion state.
 Historical labels remain outcomes of the historical policy, not evidence about
 new discard-action trajectories. This is a VALIDATION implementation repair;
 TEST remains sealed.
+
+
+## Reviewed public-state coverage and S0 pilot
+
+Both frozen-producer canaries PASS all seven CSV hashes: first source 13001315
+in 212.56 seconds; second source 13001638 in 285.69 seconds. Full state recovery
+is now demonstrated for both frozen producer versions, not universally proven
+for all sources. Any later replay mismatch remains a hard stop.
+
+The repaired first-source 512-state pilot PASS used 0.7991 leaf CPU seconds.
+The two-producer 1,024-state pilot PASS used 1.6796 leaf CPU seconds in 2.5174
+wall seconds; every observed screen family is represented. Shops averaged
+7.234 ms/state; other families averaged 0.208–0.783 ms/state. Full VALIDATION
+leaf evaluation is cheap compared with trajectory reconstruction. Receipts and
+raw result summaries are adjacent. These are cost measurements, not quality.
+
+Independent public-input audit fixes the provisional candidate families to
+`boss_relic`, `rest`, `shop`, and `treasure`. All still require numerical
+qualification. `event`, `selector`, and `rewards` retain the old continuation:
+
+- Event rows omit public random offers/costs (for example Falling card targets,
+  N'loth relic targets and We Meet Again demands), despite complete option IDs.
+- Selector rows omit publicly promised parent effects. Designer's removal-only
+  and removal-plus-upgrade choices can yield identical active REMOVE rows.
+- Reward rows omit suspended known parent rewards or shop inventory. Cauldron
+  can open five potions while the callback preserves unclaimed original rewards;
+  shop Cauldron/Orrery reward pages similarly hide the known remaining shop.
+
+These are representation limitations, not sparse data or model quality results.
+The remaining four families' active screen contents cover their public offers
+and actions under the accepted X2-B rich-state approximation. Closed-chest
+pre-rolled contents and future Dream Catcher/dig rewards are not public input.
+The fallback mask was chosen before training, with independent scientific
+review confirming the handoff permits multiple problematic fallback families.
+No rows, splits or labels are altered. No numerical TEST access has occurred.

@@ -41,6 +41,23 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
 
+## Screen-aware OOC leaf value (#379) — offline preparation
+
+At current-main baseline `a59d7e47`, the frozen 1,024-source DECISION corpus
+passes its narrow custody audit; DECISION TEST remains numerically unopened.
+Exact current S0 uses the actual adapter continuation with explicit X2-B.
+Both historical producer versions pass seven-file byte-identical reconstruction
+canaries. A 1,024-state VALIDATION S0 pilot passes; reconstruction dominates cost.
+
+The provisional direct-value mask is `boss_relic`, `rest`, `shop`, `treasure`.
+Events, selectors and rewards retain fallback because the frozen public screen
+schema omits some visible offers or known suspended parent effects. This is a
+representation decision, not a predictive-quality verdict. S1/S2 tooling uses
+one fixed small typed encoder and changes only per-screen versus shared heads.
+No model is qualified or integrated, and no default or gameplay claim changes.
+See [ledger §382](../../experiments/ledger-06.md) and the
+[evidence packet](../../experiments/evidence/screen_leaf_379_preflight_20261005/README.md).
+
 ## OOC MCTS tree reuse / rerooting (#339) — closed after measurement
 
 **Closed (2026-09-26, §361).** On the representative 2-seed OOC 2048 workload:
