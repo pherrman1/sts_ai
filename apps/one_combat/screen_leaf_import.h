@@ -73,6 +73,27 @@ inline Snapshot importEnvelope(Json &row) {
             {"historicalOptionIds", expected},
             {"originalPublicOptionsPresent", row.contains("screenContents")}});
     }
+    if (historical && state.gc.smokeBombUsed) {
+        // A Smoke Bomb escape from the Colosseum slaver fight reopens the event
+        // through its own callback, bypassing afterBattle(), so the producer
+        // left smokeBombUsed set. BattleContext::init resets it; only the CTM
+        // contract reads it (pre_smoke_bomb_used). Clear exactly this flag.
+        if (state.gc.screenState != sts::ScreenState::EVENT_SCREEN ||
+            state.gc.curEvent != sts::Event::COLOSSEUM)
+            throw std::runtime_error("historical smokeBombUsed outside the Colosseum escape state");
+        auto expectedSnapshot = snapshotJson(state.gc, state.path, state.policy);
+        if (expectedSnapshot.at("game").at("smokeBombUsed") != true)
+            throw std::runtime_error("historical smokeBombUsed snapshot field disagrees");
+        expectedSnapshot["game"]["smokeBombUsed"] = false;
+        state.gc.smokeBombUsed = false;
+        if (snapshotJson(state.gc, state.path, state.policy) != expectedSnapshot)
+            throw std::runtime_error("Smoke Bomb adapter changed fields beyond smokeBombUsed");
+        if (!row.contains("snapshotImportHistory")) row["snapshotImportHistory"] = Json::array();
+        row.at("snapshotImportHistory").push_back({
+            {"rule", "frozen334_colosseum_stale_smoke_bomb_flag_clear_v1"},
+            {"context", context}, {"originalSmokeBombUsed", true},
+            {"adaptedSmokeBombUsed", false}, {"changed", true}});
+    }
     return state;
 }
 inline void markCurrentEnvelope(Json &row) {

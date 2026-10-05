@@ -210,3 +210,32 @@ Compute every eligible subset's limits on its own exact matched population
 before inspecting learned calibration. Paired uncertainty and act-family
 cells remain diagnostics. Full S0 evidence is still missing, so no numerical
 subset limits or calibration PASS exists yet.
+
+## Second full-recovery failure: stale Colosseum Smoke Bomb flag
+
+The repaired recovery (`full-validation-import-v1`, source `22c2be2c`) reused
+16 replays, passed the regression barrier, and finished with FAIL: 58 sources
+scheduled, 57 PASS. Source 13001297's replay passed exact seven-file parity,
+but S0 aborted after 1,683 of 2,476 rows with the CTM support exclusion
+`pre_smoke_bomb_used`. Raw failure: `full-validation-smoke-bomb-failure.txt`.
+
+All seven affected rows are the Colosseum event (event 12, screen state 1)
+at floor 27 with `smokeBombUsed=true`; no other completed source has the flag.
+The Colosseum slaver fight installs its own regain-control callback that
+reopens the event without `afterBattle()`, the only place that clears the flag
+(`GameContext.cpp` Colosseum case vs `afterBattle`). `BattleContext::init`
+resets the flag, so it has no simulator effect outside combat; only the CTM
+contract reads it. Current main has the same behavior, so live OOC MCTS can
+reach this state too; that is tracked as a separate main fix, not changed here.
+
+Philipp approved a narrow import normalization: for historical frozen-334
+rows only, clear `smokeBombUsed` on the Colosseum event screen, require that
+no other snapshot field changes, record rule
+`frozen334_colosseum_stale_smoke_bomb_flag_clear_v1` in
+`snapshotImportHistory`, and reject the flag on any other historical screen.
+The Python projection oracle mirrors the rule. Constructed self-test:
+`smoke-bomb-import-selftest.txt`. Rerunning S0 on the preserved 13001297 input
+gives 2,476 rows; the first 1,683 match the failed run's partial predictions
+exactly apart from CPU timing and audit metadata, and seven rows carry the new
+audit record. Recovery resumes in a new protocol directory reusing all
+verified replays. No TEST numerical content has been opened.
