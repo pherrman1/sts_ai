@@ -53,8 +53,8 @@ def run(recovered, output):
                 family = row['screenContents']['screen']
                 if family not in PROVISIONAL_MASK: continue
                 if row['sourceSeed'] != seed: raise ValueError('snapshot source mismatch')
-                identity = f"{seed}:{row['branchId']}:{row['rowIdx']}"
-                rank = hashlib.sha256(('screen-leaf-379-resource-v1:' + identity).encode()).hexdigest()
+                identity_material = f"{seed}:{row['branchId']}:{row['rowIdx']}"
+                rank = hashlib.sha256(('screen-leaf-379-resource-v1:' + identity_material).encode()).hexdigest()
                 candidates[family][seed].append((rank, line))
     selected = []
     for family in PROVISIONAL_MASK:
