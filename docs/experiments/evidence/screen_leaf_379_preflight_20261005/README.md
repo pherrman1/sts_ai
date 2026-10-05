@@ -275,3 +275,38 @@ before TEST access. Rerunning S0 on the preserved 13001949 input gives 1,964
 rows; the first 803 match exactly apart from CPU timing, and two Act 3 event
 rows (both `hp_envelope`) are fail-closed. Whether 174 max HP is legitimate is
 being investigated separately.
+
+## Full VALIDATION result (S0 vs S1/S2)
+
+`full-validation-import-v5` PASS: 155/155 sources, exact replay parity and S0
+for every source. Only two rows are fail-closed (`hp_envelope`, Act 3 events),
+both outside the four candidate families. All observed fail-closed reasons are
+CTM support refusals; the staged calibration freeze also rejects any non-CTM
+reason. Review follow-up: every `OocSearchUnsupported` reason is caught by the
+harness, and only the recovery checker and VALIDATION evaluator report counts
+by screen and reason; the diagnostics report by variant or decision type.
+
+The S0-only calibration freeze (`validation-s0-calibration-freeze.json`) found
+all four families eligible (all subsets with treasure-only or boss-relic-only
+act coverage are insufficient). Per-act S0 limits are tight because S0 ends
+at X2-B: pooled S0-vs-X2-B MAE is 0.005 and p95 0.023.
+
+On VALIDATION both learned arms are worse than S0 on NLL in every family and
+act, and both fail the frozen calibration gate in every usable subset (pooled
+candidate MAE about 0.08 and p95 about 0.26 against X2-B, versus S0 limits of
+about 0.013-0.018 and 0.03-0.065). S1 is slightly better than S2 on NLL. Summary
+with hashes: `validation-comparison-summary.json`.
+
+| VALIDATION NLL | S0 | S1 | S2 |
+|---|---:|---:|---:|
+| overall | 0.4257 | 0.4407 | 0.4429 |
+| boss_relic | 0.4445 | 0.4493 | 0.4525 |
+| rest | 0.4214 | 0.4346 | 0.4355 |
+| shop | 0.4224 | 0.4453 | 0.4474 |
+| treasure | 0.4333 | 0.4404 | 0.4455 |
+
+Proposed classification before any TEST access: no candidate can satisfy the
+frozen TEST rule (better NLL than S0 in every replaced family plus the
+calibration gate), so #379 stops as `SCREEN_LEAF_VALIDATION_NOT_QUALIFIED`
+and the DECISION TEST stays sealed for a future candidate. No native
+integration or gameplay run follows.
