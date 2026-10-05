@@ -54,6 +54,12 @@ Events, selectors and rewards retain fallback because the frozen public screen
 schema omits some visible offers or known suspended parent effects. This is a
 representation decision, not a predictive-quality verdict. S1/S2 tooling uses
 one fixed small typed encoder and changes only per-screen versus shared heads.
+All three fixed initializations for each arm have completed, without selection.
+The first full VALIDATION recovery stopped after 14 exact replays: 13 S0 passes
+and one strict Golden Idol public-state mismatch. Historical producers infer
+that event's trap phase from relic possession; current main uses `info.phase`.
+The original snapshots are preserved. A version-bound offline import adaptation
+must pass review and regression before a new protocol reuses qualified replays.
 No model is qualified or integrated, and no default or gameplay claim changes.
 See [ledger §382](../../experiments/ledger-06.md) and the
 [evidence packet](../../experiments/evidence/screen_leaf_379_preflight_20261005/README.md).

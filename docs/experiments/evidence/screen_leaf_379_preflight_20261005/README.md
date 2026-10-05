@@ -170,3 +170,43 @@ teacher. The repaired resolver permits only the two known frozen teacher hashes
 and verifies identical bytes before relocating a missing path. Existing paths
 with changed bytes still fail. Original paths remain in receipts; model and
 runtime-environment hash checks remain mandatory. No original manifest changes.
+
+## Fixed fits and first full-recovery failure
+
+All six fixed training fits completed; checkpoint and training-code hashes
+were verified. `fixed-training-completed.json` records their identities and
+individual VALIDATION NLLs. No candidate has been selected or qualified.
+
+The first actual full recovery used source `39f8d681` and finished with FAIL
+after 3,104.47 seconds. All 14 scheduled source replays passed exact seven-file
+parity; 13 S0 evaluations passed, and source 13001065 failed strict public
+parity at branch `s13001065-d25-e4060641b190`, row 1. Scheduling stopped and
+active workers finished normally. The protocol, aggregate result and raw
+failure are preserved beside this document.
+
+Golden Idol's frozen option enumeration uses held relic ID 143 to distinguish
+offer `[0,1]` from trap `[2,3,4]`. Current main uses `info.phase`, introduced
+by `a666d719`. The recorded branch moves from no Idol to held Idol while its
+historical phase remains zero. Current import therefore sees the initial
+offer. Independent diagnosis confirms field-semantic drift, not an omitted
+snapshot field. A bounded repair must explicitly bind the historical producer,
+translate only this phase, retain original bytes and require exact public,
+candidate and rich-feature parity. No generic legality relaxation is allowed.
+
+The reviewed recovery design uses a new binary/protocol/output directory and
+rehashes reusable replays, including the failed S0 source's successful replay.
+The first 12 successful S0 jobs cost 55.79 wall seconds collectively; repeating
+S0 once under the repaired binary is regression evidence, while the expensive
+historical replay remains reusable. Compare existing values, RNG seeds and
+projection steps exactly wherever adaptation is inactive. No retry occurs
+inside the failed run, and no TEST numerical content has been opened.
+
+Before learned calibration inspection, independent review selected per-act
+point limits `min(absolute_cap, S0_statistic + margin)` with absolute caps
+0.05 signed-mean magnitude / 0.10 MAE / 0.25 p95 and margins 0.01 / 0.01 /
+0.025. These are explicit materiality judgments, not empirical facts. Require
+at least 30 sources and 200 exact links per act and pooled replacement family.
+Compute every eligible subset's limits on its own exact matched population
+before inspecting learned calibration. Paired uncertainty and act-family
+cells remain diagnostics. Full S0 evidence is still missing, so no numerical
+subset limits or calibration PASS exists yet.

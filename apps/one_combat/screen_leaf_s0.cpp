@@ -1,6 +1,7 @@
 #include "screen_leaf_s0.h"
 #include "screen_leaf_snapshot.h"
 #include "screen_leaf_continuations.h"
+#include "screen_leaf_import.h"
 #include "ooc_mcts_adapter.h"
 #include "combat_transition_runtime.h"
 #include <cstdio>
@@ -55,11 +56,11 @@ int screenLeafS0(const std::string &input, const std::string &output,
     std::string line;
     unsigned count = 0;
     while (count < limit && std::getline(in, line)) {
-        const Json row = Json::parse(line);
+        Json row = Json::parse(line);
         const std::string identity = std::to_string(row.at("sourceSeed").get<std::uint64_t>())
             + ":" + row.at("branchId").get<std::string>() + ":" + std::to_string(row.at("rowIdx").get<int>());
         if (!seen.insert(identity).second) throw std::runtime_error("duplicate snapshot identity");
-        auto state = screen_leaf::snapshotFromJson(row.at("snapshot"), screen_leaf::importContinuation);
+        auto state = screen_leaf::importEnvelope(row);
         if (state.gc.screenState == sts::ScreenState::MAP_SCREEN
             || state.gc.screenState == sts::ScreenState::BATTLE)
             throw std::runtime_error("S0 input is not a DECISION screen");
@@ -139,7 +140,9 @@ int screenLeafS0(const std::string &input, const std::string &output,
             {"projectionSteps", steps},
             {"candidateCompatibility", additions.empty() ? "exact" : "public_potion_discard_additions"},
             {"historicalCandidateKeys", originalKeys}, {"currentCandidateKeys", currentKeys},
-            {"addedPublicDiscardKeys", additions}};
+            {"addedPublicDiscardKeys", additions},
+            {"snapshotSemantics", row.at("snapshotSemantics")},
+            {"snapshotImportHistory", row.value("snapshotImportHistory", Json::array())}};
         const auto encoded = result.dump() + "\n";
         if (std::fwrite(encoded.data(), 1, encoded.size(), file) != encoded.size()
             || std::fflush(file)) throw std::runtime_error("S0 output write failure");

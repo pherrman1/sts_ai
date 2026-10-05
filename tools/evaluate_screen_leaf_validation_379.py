@@ -17,6 +17,7 @@ import numpy as np
 from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
 from screen_leaf_data_379 import DecisionCorpus, PROVISIONAL_MASK
 from run_screen_leaf_replay_379 import verify_temporal
+from screen_leaf_import_379 import verify_decoration
 from tools.screen_leaf_metrics_379 import predictive_report, transition_report
 from tools.vwin_refresh_evaluation import predictive_metrics
 
@@ -83,7 +84,20 @@ def run(training, recovered, output):
         source_dir = recovered / str(seed)
         result_path = source_dir / 'result.json'
         if load(result_path) != result: raise ValueError('aggregate/source result differs')
+        receipt_path = source_dir / 's0-receipt.json'
+        if digest(receipt_path) != result['s0_receipt_sha256']:
+            raise ValueError('S0 execution receipt changed')
+        receipt = load(receipt_path)
+        if receipt['input_decoration'] != result['input_decoration']:
+            raise ValueError('S0 decoration binding differs')
+        imported = verify_decoration(result['input_decoration'])
+        if imported['source'] != source or imported['replay'] != result['replay'] or imported['kind'] != 'snapshots':
+            raise ValueError('S0 input not bound to original source replay')
         predictions = source_dir / 'predictions.jsonl'
+        expected_argv = ['bash', str(ROOT / 'tools/seed_guard.sh'), protocol['s0_binary'], 'screenleafs0',
+                         imported['decorated'], str(predictions), str(result['rows']), '1']
+        if receipt['argv'] != expected_argv or receipt['env'] != protocol['s0_environment'] or receipt['protocol_sha256'] != final['protocol_sha256']:
+            raise ValueError('S0 execution protocol differs')
         if digest(predictions) != result['predictions_sha256']: raise ValueError('S0 predictions changed')
         replay = Path(result['replay']['directory'])
         if digest(replay / 'receipt.json') != result['replay']['receipt_sha256'] or digest(replay / 'result.json') != result['replay']['result_sha256']:

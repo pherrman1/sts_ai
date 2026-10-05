@@ -1,0 +1,71 @@
+{
+  "status": "TRAINING_COMPLETE_NOT_QUALIFIED",
+  "source_result_sha256": "cc197b1ca2a4e865fbbf791979636811f1758b6b0238d29721ec39d7c720344f",
+  "training_preregistered_sha256": "29175a5777ae0ae1b2ec9b258b0eb8cdf33a7203280c88bb635cdb79868c0d81",
+  "arms": {
+    "S1": {
+      "individual": [
+        {
+          "seed": 0,
+          "parameters": 42108,
+          "best_epoch": 16,
+          "best_validation_nll": 0.44117328076732754,
+          "checkpoint_sha256": "d558a4b8f18b350fe33fe5c1bd072fdaa16a4423580ea5c75b2b2f057b1a4517",
+          "predictions_sha256": "d5ccc7ea49be68bf670680c7b0b5c443cb6898c251b9645486c43bb44fb4d95a"
+        },
+        {
+          "seed": 1,
+          "parameters": 42108,
+          "best_epoch": 16,
+          "best_validation_nll": 0.4407075869972004,
+          "checkpoint_sha256": "f0869ca46f39d0470c91905dacfb2ef46089e67395ebda5b5072402c3c81ff79",
+          "predictions_sha256": "2aeeccf877b9ea4eae9ba6ca235d2670ebccc8a995e950ee342c535b37dc4e97"
+        },
+        {
+          "seed": 2,
+          "parameters": 42108,
+          "best_epoch": 14,
+          "best_validation_nll": 0.4488774577723782,
+          "checkpoint_sha256": "7bad90521abf1c377d2608dddedc2b0c08a3fb2dae192d3e8756f01f6a14db19",
+          "predictions_sha256": "661831c9fed8f1afba72d49d9250da4f91c5e52aa4722981853172911f20ba9b"
+        }
+      ],
+      "ensemble_predictions_sha256": "4856d40e16dc7f87943a35df9173df0f9f2bb3f14ab92d9a317696f180adca93"
+    },
+    "S2": {
+      "individual": [
+        {
+          "seed": 0,
+          "parameters": 42009,
+          "best_epoch": 13,
+          "best_validation_nll": 0.44367067325183,
+          "checkpoint_sha256": "c2a2dd37c480e367b7cbb0d3414fb5fe64bdf3f25cda3689daa1744ab26b0837",
+          "predictions_sha256": "02cd5ba019a1ed3aceeb47544b1cea505458ee7d9a6d577e1c4f7312c428423d"
+        },
+        {
+          "seed": 1,
+          "parameters": 42009,
+          "best_epoch": 16,
+          "best_validation_nll": 0.4444104198100973,
+          "checkpoint_sha256": "f5638a28bd1f17f599511eabf4c21f65abbf637a2aa333b40f304536a7614ead",
+          "predictions_sha256": "9d6dc9ad7dc263d27c67f3d8f130e3ccb7a7999e96e2109f76b031533c8cb40a"
+        },
+        {
+          "seed": 2,
+          "parameters": 42009,
+          "best_epoch": 11,
+          "best_validation_nll": 0.4495292121982659,
+          "checkpoint_sha256": "5bdb61e27d202d742a80251c956acfacebd75aa05d993275adf4f3b52c034795",
+          "predictions_sha256": "b0a0a171e4631c77d452af5d71364d13781a039b8dff88bba3994a26f62090f0"
+        }
+      ],
+      "ensemble_predictions_sha256": "4356ebfab5d1333c08c95f506add1850998cb983c34ed2849f80c75e57439c30"
+    }
+  },
+  "pending": [
+    "S0 comparison",
+    "calibration",
+    "candidate freeze",
+    "sealed TEST"
+  ]
+}

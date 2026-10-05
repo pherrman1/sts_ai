@@ -14322,8 +14322,18 @@ or offer context. A temporal sidecar records exact resulting MAP links for
 calibration. The fixed Python S1/S2 tools are gated before training; all three
 excluded families remain audited and use the original fallback.
 
-**Status:** no S1/S2 training, candidate freeze, DECISION TEST opening, native
-screen-leaf integration or gameplay qualification. Defaults unchanged.
+All six fixed training fits completed (`TRAINING_COMPLETE_NOT_QUALIFIED`). The
+first full VALIDATION protocol stopped scheduling on a Golden Idol import
+semantic mismatch in source 13001065. All 14 scheduled replays passed original
+seven-file parity; 13 S0 evaluations passed and one failed. The historical
+producer infers the trap stage from held Golden Idol while current main uses
+`info.phase`; the faithfully preserved old phase remains zero. This is not a
+model verdict. The failed run and partial outputs remain immutable. Independent
+review permits a narrow version-bound phase adaptation and a new protocol that
+reuses the exact replay artifacts, with current public/candidate parity intact.
+
+**Status:** training complete; no candidate freeze, DECISION TEST opening,
+native screen-leaf integration or gameplay qualification. Defaults unchanged.
 `GITHUB_CI_NOT_USED_BILLING_LIMIT`.
 
 **Evidence:** [profile receipts, raw logs and audit](evidence/screen_leaf_379_preflight_20261005/README.md).

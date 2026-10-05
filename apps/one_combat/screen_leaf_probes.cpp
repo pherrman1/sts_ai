@@ -2,6 +2,7 @@
 #include "screen_leaf_s0.h"
 #include "screen_leaf_snapshot.h"
 #include "screen_leaf_continuations.h"
+#include "screen_leaf_import.h"
 #include <openssl/sha.h>
 #include <algorithm>
 #include <cstdio>
@@ -54,10 +55,10 @@ struct OutputFiles {
     }
 };
 
-Snapshot restore(const Json &row) {
+Snapshot restore(Json &row) {
     const auto seed = row.at("sourceSeed").get<std::uint64_t>();
     require(validationSource(seed), "only frozen source-hash VALIDATION permitted");
-    auto state = screen_leaf::snapshotFromJson(row.at("snapshot"), screen_leaf::importContinuation);
+    auto state = screen_leaf::importEnvelope(row);
     require(state.gc.seed == seed, "source and snapshot seed differ");
     require(richRow(state.gc, state.path) == row.at("features").get<std::string>(), "input rich-feature parity");
     return state;
@@ -68,6 +69,7 @@ Json publicProjection(Json row, const Snapshot &state) {
     t_curPath = &state.path;
     row["features"] = richRow(state.gc, state.path);
     row["snapshot"] = encodeScreenLeafSnapshot(state.gc, state.path);
+    screen_leaf::markCurrentEnvelope(row);
     row["act"] = state.gc.act;
     row["floor"] = state.gc.floorNum;
     row["screenState"] = static_cast<int>(state.gc.screenState);
@@ -179,7 +181,7 @@ int screenLeafProbes(const std::string &input, const std::string &outputDirector
     unsigned rows = 0;
     std::string line;
     while (rows < limit && std::getline(in, line)) {
-        const auto row = Json::parse(line);
+        auto row = Json::parse(line);
         const auto identity = Json::array({row.at("sourceSeed"), row.at("branchId"), row.at("rowIdx")}).dump();
         require(row.at("rowIdx").get<int>() >= 0 && seen.insert(identity).second, "duplicate/invalid DECISION identity");
         const auto original = restore(row);
@@ -230,7 +232,8 @@ int screenLeafProject(const std::string &input, const std::string &output, unsig
             require(post.at("branchId") == row.at("branchId"), "post-action branch mismatch");
             post["sourceSeed"] = row.at("sourceSeed"); row = std::move(post);
         }
-        files.write(output, publicProjection(row, restore(row)));
+        const auto state = restore(row);
+        files.write(output, publicProjection(row, state));
         ++count;
     }
     require(count > 0, "empty projection input");
@@ -270,7 +273,8 @@ int screenLeafProbesSelfTest() {
     base.gc.info.shop.potionPrice(0) = 10;
     Json row = {{"sourceSeed", base.gc.seed}, {"branchId", "synthetic-fixture"}, {"rowIdx", 7},
         {"decisionIdx", 3}, {"features", richRow(base.gc, base.path)},
-        {"snapshot", screen_leaf::snapshotJson(base.gc, base.path, base.policy)}};
+        {"snapshot", screen_leaf::snapshotJson(base.gc, base.path, base.policy)},
+        {"snapshotSemantics", screen_leaf::currentImportContext()}};
     const auto checked = restore(row);
     const auto baseline = publicProjection(row, checked);
     require(baseline.at("projectionStatus") == "SUPPORTED_DECISION", "synthetic shop projection");
@@ -290,7 +294,101 @@ int screenLeafProbesSelfTest() {
     projectedState.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
     const auto terminal = publicProjection(row, projectedState);
     require(terminal.at("projectionStatus") == "TERMINAL" && terminal.at("terminalValue") == 0, "terminal projection");
-    std::puts("screen leaf probes PASS: resource mutations, clipping, identity, public shop contract, projection statuses, split guard");
+    // Constructed version-bound imports only: no GameContext seed constructor,
+    // generation, hidden sampling, policy action or model evaluation occurs.
+    const std::vector<std::string> producers{
+        "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+        "0665747164ca3914c229546ad13f4f26a3a4a23c"};
+    auto historicalRow = [&](const std::string &producer, bool held, bool withOptions) {
+        auto fixture = base;
+        fixture.gc.screenState = sts::ScreenState::EVENT_SCREEN;
+        fixture.gc.curEvent = sts::Event::GOLDEN_IDOL;
+        fixture.gc.info.phase = 0;
+        if (held) fixture.gc.relics.add({sts::RelicId::GOLDEN_IDOL, 0});
+        Json envelope = {{"sourceSeed", fixture.gc.seed}, {"branchId", "constructed-golden-idol"},
+            {"rowIdx", 0}, {"decisionIdx", 0}, {"features", richRow(fixture.gc, fixture.path)},
+            {"snapshot", screen_leaf::snapshotJson(fixture.gc, fixture.path, fixture.policy)},
+            {"snapshotSemantics", {{"schema", "screen-leaf-import-context-v1"},
+                {"domain", "frozen-334"}, {"producerGitSha", producer},
+                {"snapshotSchema", "screen-leaf-full-state-v1"}, {"sourceSeed", fixture.gc.seed},
+                {"sourceManifestSha256", std::string(64, 'a')},
+                {"inputArtifactSha256", std::string(64, 'b')}}}};
+        if (withOptions) {
+            // Manufacture the known original public contract with current
+            // equivalent phase, retaining historical phase0 in the snapshot.
+            fixture.gc.info.phase = held ? 1 : 0;
+            const auto contract = screenLeafPublicContract(fixture.gc);
+            envelope["screenContents"] = contract.at("screenContents");
+            envelope["candidateKeys"] = contract.at("candidateKeys");
+        }
+        return envelope;
+    };
+    for (const auto &producer : producers) {
+        for (bool held : {false, true}) {
+            auto envelope = historicalRow(producer, held, true);
+            const auto originalSnapshot = envelope.at("snapshot");
+            const auto imported = screen_leaf::importEnvelope(envelope);
+            auto expected = originalSnapshot;
+            expected["game"]["info"]["phase"] = held ? 1 : 0;
+            require(screen_leaf::snapshotJson(imported.gc, imported.path, imported.policy) == expected,
+                    "historical adapter must change phase only");
+            require(envelope.at("snapshot") == originalSnapshot, "historical input snapshot preserved");
+            require(richRow(imported.gc, imported.path) == envelope.at("features"), "historical rich parity");
+            const auto contract = screenLeafPublicContract(imported.gc);
+            require(contract.at("screenContents") == envelope.at("screenContents") &&
+                    contract.at("candidateKeys") == envelope.at("candidateKeys"), "historical exact public/candidate parity");
+            const auto &history = envelope.at("snapshotImportHistory");
+            require(history.size() == 1 && history[0].at("originalPhase") == 0 &&
+                    history[0].at("adaptedPhase") == (held ? 1 : 0) &&
+                    history[0].at("changed") == held &&
+                    history[0].at("context") == envelope.at("snapshotSemantics"), "historical audit record");
+            auto projected = publicProjection(envelope, imported);
+            require(projected.at("snapshotSemantics") == screen_leaf::currentImportContext() &&
+                    projected.at("snapshotOrigin") == envelope.at("snapshotSemantics"), "current export custody");
+            const auto currentSnapshot = projected.at("snapshot");
+            const auto repeated = screen_leaf::importEnvelope(projected);
+            require(screen_leaf::snapshotJson(repeated.gc, repeated.path, repeated.policy) == currentSnapshot &&
+                    projected.at("snapshotImportHistory") == history, "current re-import idempotent");
+        }
+        // A forced post-action snapshot has no stored public options. The
+        // known-producer historical relic contract still determines the phase.
+        auto forced = historicalRow(producer, true, false);
+        const auto imported = screen_leaf::importEnvelope(forced);
+        require(imported.gc.info.phase == 1 &&
+                forced.at("snapshotImportHistory")[0].at("originalPublicOptionsPresent") == false,
+                "historical forced post-action contract");
+    }
+    auto nativeHeldOffer = historicalRow(producers[0], true, false);
+    nativeHeldOffer["snapshotSemantics"] = screen_leaf::currentImportContext();
+    const auto nativeOriginal = nativeHeldOffer.at("snapshot");
+    const auto nativeImported = screen_leaf::importEnvelope(nativeHeldOffer);
+    require(nativeImported.gc.info.phase == 0 &&
+            screen_leaf::snapshotJson(nativeImported.gc, nativeImported.path, nativeImported.policy) == nativeOriginal &&
+            !nativeHeldOffer.contains("snapshotImportHistory"), "current held-idol offer must not become historical trap");
+    auto rejectImport = [&](Json invalid, const std::string &why) {
+        bool rejected = false;
+        try { (void)screen_leaf::importEnvelope(invalid); }
+        catch (const std::exception &) { rejected = true; }
+        require(rejected, "invalid import accepted: " + why);
+    };
+    auto invalid = historicalRow(producers[0], true, true);
+    invalid.erase("snapshotSemantics"); rejectImport(invalid, "untagged");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["snapshotSemantics"]["producerGitSha"] = std::string(40, '0'); rejectImport(invalid, "unknown producer");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["snapshotSemantics"]["sourceSeed"] = 13001026; rejectImport(invalid, "wrong source context");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["sourceSeed"] = 13001026; invalid["snapshotSemantics"]["sourceSeed"] = 13001026;
+    rejectImport(invalid, "wrong snapshot seed");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["snapshotSemantics"]["inputArtifactSha256"] = "bad"; rejectImport(invalid, "bad artifact hash");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["snapshotSemantics"]["sourceManifestSha256"] = std::string(64, 'G'); rejectImport(invalid, "bad manifest hash");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["snapshotSemantics"]["snapshotSchema"] = "unknown"; rejectImport(invalid, "unknown snapshot schema");
+    invalid = historicalRow(producers[0], true, true);
+    invalid["screenContents"]["optionIds"] = Json::array({0, 1}); rejectImport(invalid, "contradictory public options");
+    std::puts("screen leaf probes PASS: resource mutations, clipping, identity, public shop contract, projection statuses, split guard, version-bound Golden Idol imports");
     return 0;
 }
 }

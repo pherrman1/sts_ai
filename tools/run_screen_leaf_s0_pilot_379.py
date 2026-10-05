@@ -10,6 +10,7 @@ import subprocess
 import time
 
 from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
+from screen_leaf_import_379 import decorate_replay, verify_decoration, bind_selection, verify_selection
 
 X2B = 'a251b33d4f71c1aa3fca529801da23ea9740dd0ded58abfb1a90fe69da7c9acf'
 
@@ -27,7 +28,11 @@ def run(index, replays, output, count, replicates, wall_budget):
     manifest_hashes = {str((index.parent / c['manifest']).resolve()): c['sha256']
                        for c in corpus['components']}
     split, _ = source_split_function()
+    from run_screen_leaf_validation_379 import frozen_sources, verify_replay
+    approved = {s['seed']: s for s in frozen_sources(index)}
+    output.mkdir(parents=True, exist_ok=False)
     sources = []
+    decorations = []
     # Verify all source split identities and receipts before parsing snapshots.
     for replay in replays:
         receipt = json.loads((replay / 'receipt.json').read_text())
@@ -52,7 +57,11 @@ def run(index, replays, output, count, replicates, wall_budget):
             raise ValueError('replay parity not bound to original outputs')
         if any(not v['equal'] or v['actual'] != v['expected'] for v in result['csv_parity'].values()):
             raise ValueError('reconstruction output mismatch')
-        sources.append((receipt['seed'], snapshot))
+        source = approved[receipt['seed']]
+        custody = verify_replay(replay, source)
+        binding = decorate_replay(index, source, custody, output / (str(source['seed']) + '-snapshots.jsonl'))
+        decorations.append(binding)
+        sources.append((receipt['seed'], Path(verify_decoration(binding)['decorated'])))
     model = repo / 'models/candidates/v_win_x2b_trees.txt'
     if digest(model) != X2B:
         raise ValueError('X2-B identity mismatch')
@@ -83,9 +92,9 @@ def run(index, replays, output, count, replicates, wall_budget):
         if len(selected) == previous:
             raise ValueError('not enough recovered states for pilot')
         offset += 1
-    output.mkdir(parents=True, exist_ok=False)
     selected_path = output / 'selected.jsonl'
     selected_path.write_text(''.join(selected))
+    input_binding = bind_selection(selected_path, decorations)
     by_screen = Counter(json.loads(s)['screenContents']['screen'] for s in selected)
     profile = json.loads((repo / 'docs/experiments/evidence/screen_leaf_379_preflight_20261005/current-default-receipt.json').read_text())
     for model_path, model_hash in profile['models'].items():
@@ -102,17 +111,23 @@ def run(index, replays, output, count, replicates, wall_budget):
     receipt = {'purpose': 'Exact current evaluateLeaf S0 CPU pilot, no model selection',
                'source_sha': sha, 'binary_sha256': digest(binary), 'x2b_sha256': X2B,
                'auxiliary_models': profile['models'], 'corpus_sha256': EXPECTED,
+               'input_selection': input_binding, 'helper_sha256': digest(repo / 'tools/screen_leaf_import_379.py'),
                'replays': [str(p) for p in replays], 'selected_sha256': digest(selected_path),
                'selected_by_screen': dict(by_screen), 'states': count, 'replicates': replicates,
                'threads': 1, 'wall_budget_seconds': wall_budget, 'env': env, 'argv': argv,
                'test_access': 'forbidden before any snapshot numerical parsing',
                'decision_rule': 'Stop on any custody, state/candidate parity, or evaluator failure; report cost separately from reconstruction'}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    verify_selection(input_binding)
     start = time.monotonic()
-    with (output / 'stdout').open('x') as stdout, (output / 'stderr').open('x') as stderr:
-        result = subprocess.run(['timeout', '-k', '10', str(wall_budget), '/usr/bin/time', '-v', *argv],
-                                cwd=repo, env=env, stdout=stdout, stderr=stderr)
-    summary = {'exit_code': result.returncode, 'wall_seconds': time.monotonic() - start,
+    try:
+        with (output / 'stdout').open('x') as stdout, (output / 'stderr').open('x') as stderr:
+            result = subprocess.run(['timeout', '-k', '10', str(wall_budget), '/usr/bin/time', '-v', *argv],
+                                    cwd=repo, env=env, stdout=stdout, stderr=stderr)
+    finally:
+        verify_selection(input_binding)
+        if digest(binary) != receipt['binary_sha256']: raise ValueError('native binary changed')
+    summary = {'input_selection': input_binding, 'exit_code': result.returncode, 'wall_seconds': time.monotonic() - start,
                'status': 'FAIL', 'completed_rows': 0}
     predictions = output / 'predictions.jsonl'
     if predictions.exists():

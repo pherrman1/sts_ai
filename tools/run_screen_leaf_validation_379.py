@@ -18,6 +18,7 @@ from threading import Event
 from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
 from run_screen_leaf_replay_379 import run as replay_source, verify_temporal, resolve_teacher
 from run_screen_leaf_s0_pilot_379 import X2B
+from screen_leaf_import_379 import decorate_replay, verify_decoration
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = REPO / 'build/issue379-replay'
@@ -113,6 +114,68 @@ def snapshot_identities(path, source):
     return identities
 
 
+def regression_sources(directory, sources, pilot, reuse):
+    """Pin prior successful S0 evidence; a failed aggregate stays failed."""
+    if directory is None: return {}, {}
+    directory = Path(directory).resolve()
+    old_protocol_path, old_final_path = directory / 'protocol.json', directory / 'result.json'
+    old, final = load(old_protocol_path), load(old_final_path)
+    require(final['protocol_sha256'] == digest(old_protocol_path), 'regression aggregate protocol differs')
+    require(old['sources'] == sources and old['corpus_sha256'] == EXPECTED and old['replicates'] == 1,
+            'regression frozen cohort differs')
+    require(old['runtime_hashes'][str(REPO / 'models/candidates/v_win_x2b_trees.txt')] == X2B,
+            'regression X2-B differs')
+    old_pilot_path = Path(old['pilot_receipt'])
+    require(digest(old_pilot_path) == old['runtime_hashes'][str(old_pilot_path)], 'old pilot changed')
+    old_pilot = load(old_pilot_path)
+    require(old_pilot['auxiliary_models'] == pilot['auxiliary_models'], 'regression auxiliary models differ')
+    ignored_env = {'STS_EXECUTABLE_GIT_SHA'}
+    new_env = dict(pilot['env']); new_env.update(STS_WIN_NET=str(REPO / 'models/candidates/v_win_x2b_trees.txt'),
+                                               OMP_NUM_THREADS='1', STS_OOC_MCTS='0')
+    new_env.pop('STS_OOC_MCTS_TRACE', None)
+    require({k:v for k,v in old['s0_environment'].items() if k not in ignored_env} ==
+            {k:v for k,v in new_env.items() if k not in ignored_env}, 'regression S0 environment differs')
+    files = {str(old_protocol_path): digest(old_protocol_path), str(old_final_path): digest(old_final_path),
+             str(old_pilot_path): digest(old_pilot_path)}
+    references = {}; by_seed = {r['seed']: r for r in sources}; seen = set()
+    for result in final['results']:
+        seed = result['seed']
+        require(seed in by_seed and seed not in seen, 'regression duplicate/foreign source'); seen.add(seed)
+        source_dir = directory / str(seed); result_path = source_dir / 'result.json'
+        require(load(result_path) == result, 'regression source/aggregate differs')
+        files[str(result_path)] = digest(result_path)
+        if result['status'] != 'PASS': continue
+        require(str(seed) in reuse and reuse[str(seed)] == result['replay'],
+                'successful regression source must reuse same qualified replay')
+        receipt_path = source_dir / 's0-receipt.json'; receipt = load(receipt_path)
+        require(receipt['source'] == by_seed[seed] and receipt['replay'] == result['replay'] and
+                receipt['protocol_sha256'] == digest(old_protocol_path) and receipt['replicates'] == 1 and
+                receipt['env'] == old['s0_environment'], 'regression source receipt differs')
+        predictions = source_dir / 'predictions.jsonl'
+        require(digest(predictions) == result['predictions_sha256'], 'regression predictions changed')
+        files[str(receipt_path)] = digest(receipt_path); files[str(predictions)] = result['predictions_sha256']
+        references[str(seed)] = {'predictions': str(predictions), 'predictions_sha256': result['predictions_sha256'],
+                                 'source_result_sha256': digest(result_path), 'rows': result['rows']}
+    require(references, 'empty prior-success regression population')
+    return references, files
+
+
+def compare_regression(reference, predictions):
+    ignored = {'leafCpuSeconds', 'snapshotSemantics', 'snapshotImportHistory'}
+    def read(path):
+        rows = {}
+        for line in Path(path).open():
+            row = json.loads(line); key = (row['sourceSeed'], row['branchId'], row['rowIdx'])
+            require(key not in rows, 'duplicate regression prediction')
+            rows[key] = {k:v for k,v in row.items() if k not in ignored}
+        return rows
+    require(digest(Path(reference['predictions'])) == reference['predictions_sha256'], 'regression reference changed')
+    old, new = read(reference['predictions']), read(predictions)
+    require(len(old) == reference['rows'] and old == new, 'prior-success S0 semantic regression')
+    return {'status': 'EXACT_SEMANTIC_PASS', 'rows': len(new), 'reference': reference,
+            'ignored_fields': sorted(ignored)}
+
+
 def one_source(source, protocol, deadline, failed):
     started = time.monotonic()
     source_deadline = min(deadline, started + protocol['per_source_seconds'])
@@ -134,19 +197,27 @@ def one_source(source, protocol, deadline, failed):
             require(custody == protocol['reuse'][str(source['seed'])], 'reuse evidence changed after freeze')
         snapshot = replay / 'snapshots.jsonl'
         identities = snapshot_identities(snapshot, source)
+        decoration = decorate_replay(Path(protocol['corpus']), source, custody, directory / 's0-input.jsonl')
+        imported = verify_decoration(decoration)
+        s0_input = Path(imported['decorated'])
         clean_sha(protocol['code_sha'])
         check_hashes(protocol['runtime_hashes'])
         remaining = int(source_deadline - time.monotonic())
         require(remaining > 0, 'source/global budget exhausted before S0')
         env = dict(protocol['s0_environment'])
         argv = ['bash', str(REPO / 'tools/seed_guard.sh'), protocol['s0_binary'], 'screenleafs0',
-                str(snapshot), str(directory / 'predictions.jsonl'), str(len(identities)), '1']
+                str(s0_input), str(directory / 'predictions.jsonl'), str(len(identities)), '1']
         write_new(directory / 's0-receipt.json', {'source': source, 'replay': custody,
-                  'protocol_sha256': protocol['protocol_sha256'], 'argv': argv, 'env': env,
+                  'protocol_sha256': protocol['protocol_sha256'], 'input_decoration': decoration, 'argv': argv, 'env': env,
                   'wall_budget_seconds': remaining, 'replicates': 1})
-        with (directory / 'stdout').open('x') as out, (directory / 'stderr').open('x') as err:
-            process = subprocess.run(['timeout', '-k', '10', str(remaining), '/usr/bin/time', '-v', *argv],
-                                     cwd=REPO, env=env, stdout=out, stderr=err)
+        verify_decoration(decoration)
+        try:
+            with (directory / 'stdout').open('x') as out, (directory / 'stderr').open('x') as err:
+                process = subprocess.run(['timeout', '-k', '10', str(remaining), '/usr/bin/time', '-v', *argv],
+                                         cwd=REPO, env=env, stdout=out, stderr=err)
+        finally:
+            verify_decoration(decoration)
+            check_hashes(protocol['runtime_hashes'])
         result['s0_exit_code'] = process.returncode
         require(process.returncode == 0, 'S0 evaluator failed; preserve partial predictions')
         observed = set()
@@ -166,8 +237,12 @@ def one_source(source, protocol, deadline, failed):
         require(observed == identities, 'S0 missing predictions')
         require(digest(snapshot) == custody['snapshots_sha256'], 'snapshot changed during S0')
         check_hashes(protocol['runtime_hashes'])
+        reference = protocol['regression_references'].get(str(source['seed']))
+        if reference is not None:
+            result['regression'] = compare_regression(reference, directory / 'predictions.jsonl')
         result.update(status='PASS', rows=len(observed), by_screen=by_screen,
-                      predictions_sha256=digest(directory / 'predictions.jsonl'), replay=custody)
+                      predictions_sha256=digest(directory / 'predictions.jsonl'), replay=custody,
+                      input_decoration=decoration, s0_receipt_sha256=digest(directory / 's0-receipt.json'))
     except (Exception, SystemExit) as error:
         failed.set()
         result['error'] = f'{type(error).__name__}: {error}'
@@ -176,7 +251,7 @@ def one_source(source, protocol, deadline, failed):
     return result
 
 
-def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_source_seconds, global_seconds):
+def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_source_seconds, global_seconds, regression_reference=None):
     require(1 <= workers <= 6 and workers <= (os.cpu_count() or 1), 'workers must be 1..6')
     require(0 < per_source_seconds <= 3600 and 0 < global_seconds <= 43200, 'resource budget exceeds frozen maximum')
     sha = clean_sha()
@@ -225,6 +300,8 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
     require(pilot_result['status'] == 'PASS' and pilot_result['exit_code'] == 0, 'S0 pilot did not pass')
     require(pilot['corpus_sha256'] == EXPECTED and pilot['x2b_sha256'] == X2B and pilot['replicates'] == 1,
             'pilot protocol identity mismatch')
+    regression, reference_files = regression_sources(regression_reference, sources, pilot, reuse)
+    runtime_hashes.update(reference_files)
     binary = REPO / 'build/linux-gcc-release/one_combat'
     require(digest(binary) == pilot['binary_sha256'], 'S0 binary changed since qualified pilot')
     runtime_hashes[str(binary)] = pilot['binary_sha256']
@@ -234,7 +311,7 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
     runtime_hashes[str(model)] = X2B
     runtime_hashes[str(pilot_receipt)] = digest(pilot_receipt)
     runtime_hashes[str(REPO / 'tools/seed_guard.sh')] = digest(REPO / 'tools/seed_guard.sh')
-    for name in ('audit_screen_leaf_379.py', 'run_screen_leaf_replay_379.py', 'run_screen_leaf_validation_379.py'):
+    for name in ('audit_screen_leaf_379.py', 'run_screen_leaf_replay_379.py', 'run_screen_leaf_validation_379.py', 'screen_leaf_import_379.py'):
         runtime_hashes[str(REPO / 'tools' / name)] = digest(REPO / 'tools' / name)
     check_hashes(runtime_hashes)
     env = dict(pilot['env'])
@@ -243,7 +320,10 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
     output.mkdir(parents=True, exist_ok=False)
     protocol = {'schema': 'screen_leaf_379_full_validation_v1', 'code_sha': sha,
                 'corpus': str(index), 'corpus_sha256': EXPECTED, 'sources': sources,
-                'source_count': 155, 'original_teachers': original_teachers, 'workers': workers, 'logical_cpus': os.cpu_count(),
+                'source_count': 155, 'regression_references': regression,
+                'regression_reference': str(regression_reference) if regression_reference else None,
+                'scheduling': 'All reused sources must pass before any new expensive replay is dispatched',
+                'original_teachers': original_teachers, 'workers': workers, 'logical_cpus': os.cpu_count(),
                 'per_source_seconds': per_source_seconds, 'global_seconds': global_seconds,
                 'replicates': 1, 'output': str(output), 'derived': derived, 'reuse': reuse,
                 's0_binary': str(binary), 's0_environment': env, 'runtime_hashes': runtime_hashes,
@@ -253,6 +333,7 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
                 'deadline_note': 'Source timeouts share the remaining global budget; timeout may take up to 10 extra seconds to kill its own child group.'}
     write_new(output / 'protocol.json', protocol)
     protocol['protocol_sha256'] = digest(output / 'protocol.json')
+    schedule = [s for s in sources if str(s['seed']) in reuse] + [s for s in sources if str(s['seed']) not in reuse]
     start = time.monotonic()
     deadline = start + global_seconds
     results, pending, next_source, stopped = [], {}, 0, False
@@ -262,7 +343,9 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
             if time.monotonic() >= deadline or failed.is_set():
                 stopped = True
             while not stopped and not failed.is_set() and len(pending) < workers and next_source < len(sources):
-                source = sources[next_source]
+                if next_source == len(reuse) and pending:
+                    break  # Reused-source/regression barrier before expensive fresh replay.
+                source = schedule[next_source]
                 pending[executor.submit(one_source, source, protocol, deadline, failed)] = source['seed']
                 next_source += 1
             if not pending:
@@ -280,7 +363,7 @@ def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_sou
                     stopped = True
     summary = {'status': 'PASS' if len(results) == 155 and all(r['status'] == 'PASS' for r in results) else 'FAIL',
                'protocol_sha256': protocol['protocol_sha256'], 'results': sorted(results, key=lambda r: r['seed']),
-               'unscheduled_sources': [s['seed'] for s in sources[next_source:]], 'wall_seconds': time.monotonic() - start}
+               'unscheduled_sources': [s['seed'] for s in schedule[next_source:]], 'wall_seconds': time.monotonic() - start}
     write_new(output / 'result.json', summary)
     require(summary['status'] == 'PASS', 'VALIDATION qualification incomplete; see preserved results')
 
@@ -292,10 +375,12 @@ if __name__ == '__main__':
     parser.add_argument('--derived', action='append', type=Path, required=True)
     parser.add_argument('--reuse', action='append', type=Path, default=[])
     parser.add_argument('--pilot-receipt', type=Path, default=ROOT / 's0-pilot-two-producers/receipt.json')
+    parser.add_argument('--regression-reference', type=Path)
     parser.add_argument('--workers', type=int, default=6)
     parser.add_argument('--per-source-seconds', type=int, default=3600)
     parser.add_argument('--global-seconds', type=int, default=43200)
     args = parser.parse_args()
     run(args.index.resolve(), args.output.resolve(), [p.resolve() for p in args.derived],
         [p.resolve() for p in args.reuse], args.pilot_receipt.resolve(), args.workers,
-        args.per_source_seconds, args.global_seconds)
+        args.per_source_seconds, args.global_seconds,
+        args.regression_reference.resolve() if args.regression_reference else None)
