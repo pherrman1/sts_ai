@@ -27,11 +27,18 @@ combat rewards, cannot escape a boss, and cannot be used while `SURROUNDED`.
 - `BattleContext::exitBattle` transfers the escape marker to `GameContext`.
   `GameContext::afterBattle` performs exit processing, grants no combat reward,
   skips event-specific victory continuation, and returns to the map.
+- Colosseum's two fight continuations replace `afterBattle`, so they handle
+  the marker themselves: a slaver-fight escape clears it and reopens the event
+  (the fight has no rewards either way); a Nob-fight escape calls
+  `afterBattle`, forfeiting the Victory rewards and returning to the map.
+  **Inference:** Java's smoked-room handling only changes the reward screen,
+  which the reward-less slaver fight never opens; not verified against the
+  live game.
 - Searcher2, Searcher3, SimpleAgent, and shared action validity expose eligible
   use and reject blocked use. Potion discard remains independently legal.
 - `apps/test.cpp::testIssueFixes` covers eligible escape, boss and
   `SURROUNDED` blocking, discard, search enumeration, post-combat relic
-  processing, and unchanged ordinary potion behavior.
+  processing, Colosseum escapes, and unchanged ordinary potion behavior.
 
 ## Relevant code
 
