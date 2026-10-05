@@ -129,7 +129,7 @@ def regression_sources(directory, sources, pilot, reuse):
     require(digest(old_pilot_path) == old['runtime_hashes'][str(old_pilot_path)], 'old pilot changed')
     old_pilot = load(old_pilot_path)
     require(old_pilot['auxiliary_models'] == pilot['auxiliary_models'], 'regression auxiliary models differ')
-    ignored_env = {'STS_EXECUTABLE_GIT_SHA'}
+    ignored_env = {'STS_EXECUTABLE_GIT_SHA', 'PATH'}  # PATH differs by launching agent shell only
     new_env = dict(pilot['env']); new_env.update(STS_WIN_NET=str(REPO / 'models/candidates/v_win_x2b_trees.txt'),
                                                OMP_NUM_THREADS='1', STS_OOC_MCTS='0')
     new_env.pop('STS_OOC_MCTS_TRACE', None)
