@@ -245,3 +245,8 @@ failed run's partial predictions exactly apart from CPU timing and audit
 metadata, and seven rows carry the new audit record. Recovery resumes in a new
 protocol directory reusing all verified replays. No TEST numerical content has
 been opened.
+
+Philipp raised the source-worker cap from six to ten for the resumed run
+(`full-validation-import-v2`). Workers are independent single-threaded source
+jobs, so this changes wall time only; per-source and global budgets are
+unchanged.

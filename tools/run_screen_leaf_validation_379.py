@@ -252,7 +252,7 @@ def one_source(source, protocol, deadline, failed):
 
 
 def run(index, output, derived_dirs, reuse_dirs, pilot_receipt, workers, per_source_seconds, global_seconds, regression_reference=None):
-    require(1 <= workers <= 6 and workers <= (os.cpu_count() or 1), 'workers must be 1..6')
+    require(1 <= workers <= 10 and workers <= (os.cpu_count() or 1), 'workers must be 1..10')
     require(0 < per_source_seconds <= 3600 and 0 < global_seconds <= 43200, 'resource budget exceeds frozen maximum')
     sha = clean_sha()
     sources = frozen_sources(index)
