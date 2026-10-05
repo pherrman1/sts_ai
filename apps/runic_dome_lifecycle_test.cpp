@@ -405,6 +405,54 @@ void testPredicatePosteriorAndSnapshots() {
 }
 
 
+void testLeaderRollTimeMinionCount() {
+    LiveFixture fixture(MonsterEncounter::GREMLIN_LEADER, 0xD009u);
+    auto *observer = g_combatKnowledgeObserver;
+    g_combatKnowledgeObserver = nullptr;
+    auto &bc = fixture.bc;
+    auto &leader = bc.monsters.arr[3];
+    leader.cancelPendingMove();
+    leader.moveHistory[0] = MMID::GREMLIN_LEADER_RALLY;
+    leader.moveHistory[1] = MMID::GREMLIN_LEADER_STAB;
+    bc.intentsHidden = true;
+    leader.rollMove(bc);
+    check(leader.pendingRollInputs.aliveCount == 3,
+          "leader must capture two minions plus itself at roll time");
+    leader.pendingAttackPredicates = {{1, false}};
+    // The hidden nonattack was chosen before both minions died. Replaying
+    // against zero current minions after RALLY would force STAB incorrectly.
+    bc.monsters.arr[1].curHp = bc.monsters.arr[2].curHp = 0;
+    bc.monsters.monstersAlive = 1;
+    leader.materializePendingMove(bc);
+    check(leader.moveHistory[0] == MMID::GREMLIN_LEADER_ENCOURAGE,
+          "observed nonattack must remain possible after minions die");
+
+    // Every initial roll and each count branch must use the captured count;
+    // with unchanged state the result and any secondary RNG draws match.
+    for (int count = 0; count <= 3; ++count) {
+        for (int slot = 0; slot < 3; ++slot) bc.monsters.arr[slot].curHp = slot < count ? 10 : 0;
+        bc.monsters.monstersAlive = count + 1;
+        const auto inputs = leader.captureRollInputs(bc);
+        for (auto previous : {MMID::GREMLIN_LEADER_RALLY, MMID::GREMLIN_LEADER_ENCOURAGE,
+                              MMID::GREMLIN_LEADER_STAB}) {
+            leader.moveHistory[0] = previous;
+            for (int roll = 0; roll < 100; ++roll) {
+                auto changed = bc;
+                for (int slot = 0; slot < 3; ++slot) changed.monsters.arr[slot].curHp = 10;
+                changed.monsters.monstersAlive = 4;
+                int beforeMisc = leader.miscInfo, afterMisc = leader.miscInfo;
+                auto baseline = bc;
+                auto expected = leader.getMoveForRoll(baseline, inputs, beforeMisc, roll);
+                auto actual = changed.monsters.arr[3].getMoveForRoll(changed, inputs, afterMisc, roll);
+                check(expected == actual && baseline.aiRng == changed.aiRng && beforeMisc == afterMisc,
+                      "leader roll and RNG must depend on frozen minion count");
+            }
+        }
+    }
+    g_combatKnowledgeObserver = observer;
+}
+
+
 void checkFreshOccupant(const Monster &m, MonsterId id, int slot, std::uint32_t generation) {
     check(m.id == id && m.idx == slot && m.occupantGeneration == generation,
           "replacement must preserve canonical slot and advance occupant generation");
@@ -617,6 +665,7 @@ void testNewFamilyRollTables() {
 } // namespace
 
 int main() {
+    testLeaderRollTimeMinionCount();
     testNewFamilyRollTables();
     testReplacementEpochsAndSplitChildren();
     testSummonReplacementEpochs();

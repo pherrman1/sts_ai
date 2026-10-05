@@ -69,7 +69,10 @@ state, and conditions later materialization on all indexed observations.
 Repeated queries of the same pending roll consume no further draw. Rejection
 sampling preserves the conditional latent-chain distribution; exhausting its
 bound fails explicitly instead of substituting a move. These constraints and
-per-roll public inputs survive Silver wire and hidden binary snapshot v3.
+per-roll public inputs survive Silver wire v3 and hidden binary snapshot v4.
+Gremlin Leader uses the captured living-monster total minus the leader for its
+roll-time minion count. Later minion deaths or summons must not change the
+distribution of an already-pending hidden move.
 
 Live opt-in OOC MCTS separately samples unknown native futures in
 `apps/one_combat/ooc_mcts_adapter.cpp::sampleNoncombatFuture`. Before search

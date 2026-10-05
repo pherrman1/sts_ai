@@ -2243,6 +2243,7 @@ int testMonsterAiJavaParity() {
         BattleContext bc = battle(MonsterEncounter::GREMLIN_LEADER);
         Monster &leader = bc.monsters.arr[3];
         bc.monsters.arr[2].curHp = 0;
+        --bc.monsters.monstersAlive;
         leader.moveHistory[0] = MMID::GREMLIN_LEADER_STAB;
         leader.moveHistory[1] = MMID::GREMLIN_LEADER_ENCOURAGE;
         bc.aiRng = Random(seed);

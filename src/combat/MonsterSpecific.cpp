@@ -2369,7 +2369,9 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             // 2 RALLY
             // 3 ENCOURAGE
             // 4 STAB
-            const auto numAliveGremlins = Monster::getAliveGremlinCount(bc);
+            // The leader is included in the captured total. Minions may die
+            // between a hidden roll and its later materialization.
+            const auto numAliveGremlins = in.aliveCount - 1;
             if (numAliveGremlins == 0) {
 
                 if (roll < 75) {
