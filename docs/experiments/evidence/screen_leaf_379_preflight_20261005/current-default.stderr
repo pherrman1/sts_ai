@@ -1,0 +1,25 @@
+[ooc-cpu-profile] {"combatTransitionHybrid":{"activeLizardEnabled":true,"fallbackRate":0.0,"fallbackSamples":0,"fallbackSupportFailures":0,"fastPreparations":23227,"fastSamples":23804,"fastSupportFailures":1,"lizardBoundaryExclusions":1,"lizardConsumedLosses":0,"lizardConsumedWins":0,"lizardOrdinaryWins":0,"lizardPreparations":0,"lizardSamples":0,"lizardSupportFailures":0,"preparations":23227,"standardBrewFallbackPreparations":0,"uniqueBrewPredictorStates":0},"counters":{"combat_prepare":{"calls":23227,"exclusiveCpuSec":9.401651101000585,"inclusiveCpuSec":9.401651101000585},"combat_resolve":{"calls":23805,"exclusiveCpuSec":1.2022257510001015,"inclusiveCpuSec":1.2022257510001015},"evaluate_leaf":{"calls":121894,"exclusiveCpuSec":16.98183034400426,"inclusiveCpuSec":33.61692173199852},"leaf_features":{"calls":121891,"exclusiveCpuSec":0.24957981800176154,"inclusiveCpuSec":0.24957981800176154},"leaf_predict":{"calls":121891,"exclusiveCpuSec":1.1860166800009315,"inclusiveCpuSec":1.1860166800009315},"leaf_value":{"calls":121891,"exclusiveCpuSec":0.2345726729982585,"inclusiveCpuSec":1.6701691710009516},"mcts":{"calls":125,"exclusiveCpuSec":0.728418907999479,"inclusiveCpuSec":62.663419684},"metadata":{"calls":117909,"exclusiveCpuSec":3.7108315760005093,"inclusiveCpuSec":3.7108315760005093},"policy_logits":{"calls":70297,"exclusiveCpuSec":0.1349434159999981,"inclusiveCpuSec":10.17832629800062},"policy_predict":{"calls":70297,"exclusiveCpuSec":3.203712855999888,"inclusiveCpuSec":10.043382882000621},"policy_prepare":{"calls":70297,"exclusiveCpuSec":0.3922193899999831,"inclusiveCpuSec":0.3922193899999831},"prior_build":{"calls":113932,"exclusiveCpuSec":0.1933934039984837,"inclusiveCpuSec":10.391273509999357},"real_combat":{"calls":26,"exclusiveCpuSec":39.26733231900001,"inclusiveCpuSec":39.26733231900001},"singleton_prior":{"calls":33346,"exclusiveCpuSec":0.019553808000252637,"inclusiveCpuSec":0.019553808000252637},"successor":{"calls":117812,"exclusiveCpuSec":4.020577943001601,"inclusiveCpuSec":14.215973958002134},"v4_action_value":{"calls":425112,"exclusiveCpuSec":6.7741529889928,"inclusiveCpuSec":6.7741529889928},"v4_encode_deck":{"calls":154893,"exclusiveCpuSec":7.40466047200116,"inclusiveCpuSec":7.40466047200116},"v4_encode_pot":{"calls":154893,"exclusiveCpuSec":0.13085877899951653,"inclusiveCpuSec":0.13085877899951653},"v4_encode_rel":{"calls":154893,"exclusiveCpuSec":0.4391553759997019,"inclusiveCpuSec":0.4391553759997019},"v4_state_fusion":{"calls":154893,"exclusiveCpuSec":5.784255675000459,"inclusiveCpuSec":5.784255675000459},"v4_state_network":{"calls":154893,"exclusiveCpuSec":0.47080872500026993,"inclusiveCpuSec":14.229739027001107}},"expandedNodesByActionCount":{"0":0,"1":33346,"2":19974,"3+":60612},"mctsCpuSec":62.66368959900004,"processCpuAtReportSec":102.065180334,"realCombats":26,"seed":12002033,"singletonPolicyInferenceCalls":0,"singletonPolicyLogitCalls":0}
+[ooc-combat-transition] {"activeLizardEnabled":true,"fallbackSupportFailures":0,"fastSupportFailures":1,"lizardBoundaryExclusions":1,"lizardConsumedLosses":0,"lizardConsumedWins":0,"lizardOrdinaryWins":0,"lizardPreparations":0,"lizardSamples":0,"lizardSupportFailures":0,"seed":12002033,"standardBrewFallbackPreparations":0}
+	Command being timed: "bash tools/seed_guard.sh /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/linux-gcc-release/one_combat bestbench 10000 1 0 12002033 /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/docs/experiments/evidence/screen_leaf_379_preflight_20261005/current-default.csv"
+	User time (seconds): 99.45
+	System time (seconds): 2.64
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:42.13
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 374296
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 172674
+	Voluntary context switches: 21
+	Involuntary context switches: 1079
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 136
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

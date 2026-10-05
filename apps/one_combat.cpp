@@ -3,6 +3,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/differential_replay_native.h"
+#include "one_combat/screen_leaf_s0.h"
 
 OocCheckpointNet g_oocCheckpointNet;
 OocStrategicNet g_oocStrategicNet;
@@ -3652,6 +3653,13 @@ int main(int argc, char **argv) {
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");
+    } else if (mode == "screenleafs0") {
+        if (argc != 6) {
+            std::cerr << "usage: one_combat screenleafs0 SNAPSHOTS OUTPUT LIMIT REPLICATES\n";
+            return 2;
+        }
+        try { return one_combat::screenLeafS0(argv[2], argv[3], std::stoul(argv[4]), std::stoul(argv[5])); }
+        catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 2; }
     } else if (mode == "vwinrefreshgen") {
         if (argc < 9 || argc > 10) {
             std::cerr << "usage: one_combat vwinrefreshgen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json K [PARITY_PERCENT]\n";

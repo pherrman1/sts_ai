@@ -14282,3 +14282,42 @@ and [analysis JSON](evidence/lizard_tail_minimal_ctm_qualification_2026-09-25/fr
 
 **Knowledge impact:** current research status and experiment evidence updated;
 runtime behavior, model interfaces, and support remain unchanged.
+
+
+## §382 — #379 sealed DECISION audit and current-main leaf profile (2026-10-05)
+
+**Purpose:** establish the screen-leaf experiment baseline without opening
+DECISION TEST or interpreting timing runs as gameplay quality.
+
+Baseline `a59d7e47f7fc0faee3015e824b267f6bf2961adc`; explicit qualified X2-B
+native hash `a251b33d4f71c1aa3fca529801da23ea9740dd0ded58abfb1a90fe69da7c9acf`.
+All 1,024 frozen component manifests and DECISION hashes pass the narrow audit.
+Original split: 696 TRAIN / 155 VALIDATION / 173 TEST. TRAIN has 1,509,014
+DECISION rows; VALIDATION 329,425. All seven observed screen families cover
+every TRAIN/VALIDATION source. Event enumeration omits 14,370/3,930 captures;
+all emitted rows have supported complete candidates. TEST files were hashed
+as opaque bytes, with no headers or numerical rows parsed.
+
+Two bounded historical-seed profiles used one thread, exact-10k Silver and
+OOC2048. Seed 12002032 with historical explicit attention CTM consumed 225.67
+process CPU seconds, 170.5306 MCTS seconds and 52.9275 inclusive leaf seconds.
+Seed 12002033 with current default hybrid CTM consumed about 102.1 process
+CPU seconds, 62.6637 MCTS seconds and 33.6169 inclusive leaf seconds. These
+are different seeds/configurations, not an A/B comparison. Leaf features and
+prediction on the default-stack seed took 0.2496 and 1.1860 seconds.
+
+Exact S0 requires frozen trajectory reconstruction because the DECISION sink
+omits complete RNG/pool/map state and callback continuations. Historical
+VALIDATION branch time is 44.11 core-hours, approximately 45.87 including
+source/setup extrapolation, before S0. A derived exporter and current-main
+import/evaluation bridge are being gated by exact frozen-output parity;
+constructed-state roundtrip/callback tests do not qualify that replay.
+
+**Status:** no S1/S2 training, candidate freeze, DECISION TEST opening, native
+screen-leaf integration or gameplay qualification. Defaults unchanged.
+`GITHUB_CI_NOT_USED_BILLING_LIMIT`.
+
+**Evidence:** [profile receipts, raw logs and audit](evidence/screen_leaf_379_preflight_20261005/README.md).
+
+**Knowledge impact:** current experiment evidence only; no qualified model or
+runtime/default claim.
