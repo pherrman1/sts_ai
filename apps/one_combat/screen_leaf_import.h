@@ -74,13 +74,15 @@ inline Snapshot importEnvelope(Json &row) {
             {"originalPublicOptionsPresent", row.contains("screenContents")}});
     }
     if (historical && state.gc.smokeBombUsed) {
-        // A Smoke Bomb escape from the Colosseum slaver fight reopens the event
-        // through its own callback, bypassing afterBattle(), so the producer
-        // left smokeBombUsed set. BattleContext::init resets it; only the CTM
-        // contract reads it (pre_smoke_bomb_used). Clear exactly this flag.
-        if (state.gc.screenState != sts::ScreenState::EVENT_SCREEN ||
-            state.gc.curEvent != sts::Event::COLOSSEUM)
-            throw std::runtime_error("historical smokeBombUsed outside the Colosseum escape state");
+        // Event fights that reopen their event through their own callback
+        // (Colosseum slavers, Dead Adventurer, Masked Bandits, Mushrooms) skip
+        // afterBattle(), so a Smoke Bomb escape leaves smokeBombUsed set until
+        // the next battle. BattleContext::init resets it, and rich features
+        // ignore it; outside combat it only disables CTM support
+        // (pre_smoke_bomb_used) and initial Smoke Bomb masking. Clear exactly
+        // this flag on any non-combat historical screen.
+        if (state.gc.screenState == sts::ScreenState::BATTLE)
+            throw std::runtime_error("historical smokeBombUsed inside combat");
         auto expectedSnapshot = snapshotJson(state.gc, state.path, state.policy);
         if (expectedSnapshot.at("game").at("smokeBombUsed") != true)
             throw std::runtime_error("historical smokeBombUsed snapshot field disagrees");
@@ -90,9 +92,10 @@ inline Snapshot importEnvelope(Json &row) {
             throw std::runtime_error("Smoke Bomb adapter changed fields beyond smokeBombUsed");
         if (!row.contains("snapshotImportHistory")) row["snapshotImportHistory"] = Json::array();
         row.at("snapshotImportHistory").push_back({
-            {"rule", "frozen334_colosseum_stale_smoke_bomb_flag_clear_v1"},
-            {"context", context}, {"originalSmokeBombUsed", true},
-            {"adaptedSmokeBombUsed", false}, {"changed", true}});
+            {"rule", "frozen334_stale_smoke_bomb_flag_clear_v1"},
+            {"context", context}, {"screenState", static_cast<int>(state.gc.screenState)},
+            {"curEvent", static_cast<int>(state.gc.curEvent)},
+            {"originalSmokeBombUsed", true}, {"adaptedSmokeBombUsed", false}, {"changed", true}});
     }
     return state;
 }

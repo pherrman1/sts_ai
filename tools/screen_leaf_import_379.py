@@ -192,11 +192,11 @@ def verify_projected(original, projected):
                     'changed': game['info']['phase'] != phase, 'historicalOptionIds': options,
                     'originalPublicOptionsPresent': 'screenContents' in original}]
         game['info']['phase'] = phase
-    # Stale Smoke Bomb flag left by a Colosseum slaver-fight escape (event 12).
+    # Stale Smoke Bomb flag left by an event-fight escape that skipped afterBattle().
     if game.get('smokeBombUsed'):
-        require(game['screenState'] == 1 and game['curEvent'] == 12,
-                'historical smokeBombUsed outside the Colosseum escape state')
-        history.append({'rule': 'frozen334_colosseum_stale_smoke_bomb_flag_clear_v1', 'context': context,
+        require(game['screenState'] != 9, 'historical smokeBombUsed inside combat')
+        history.append({'rule': 'frozen334_stale_smoke_bomb_flag_clear_v1', 'context': context,
+                        'screenState': game['screenState'], 'curEvent': game['curEvent'],
                         'originalSmokeBombUsed': True, 'adaptedSmokeBombUsed': False, 'changed': True})
         game['smokeBombUsed'] = False
     require(projected['snapshot'] == expected, 'projection changed fields beyond exact approved migrations')

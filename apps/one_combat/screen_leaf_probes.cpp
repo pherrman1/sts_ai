@@ -388,37 +388,52 @@ int screenLeafProbesSelfTest() {
     invalid["snapshotSemantics"]["snapshotSchema"] = "unknown"; rejectImport(invalid, "unknown snapshot schema");
     invalid = historicalRow(producers[0], true, true);
     invalid["screenContents"]["optionIds"] = Json::array({0, 1}); rejectImport(invalid, "contradictory public options");
-    // Stale Smoke Bomb flag after a Colosseum slaver-fight escape: cleared
-    // with an audit record, nothing else changes, and only on that screen.
-    auto smokeRow = [&](bool colosseum) {
+    // Stale Smoke Bomb flag after an event-fight escape that skipped
+    // afterBattle(): cleared with an audit record on any non-combat screen,
+    // nothing else changes, and a clean control row is left untouched.
+    auto smokeRow = [&](sts::ScreenState screen, sts::Event event, bool flag) {
         auto envelope = historicalRow(producers[0], false, false);
         auto fixture = screen_leaf::snapshotFromJson(envelope.at("snapshot"), screen_leaf::importContinuation);
-        if (colosseum) { fixture.gc.curEvent = sts::Event::COLOSSEUM; fixture.gc.info.eventData = 1; }
-        else fixture.gc.screenState = base.gc.screenState;
-        fixture.gc.smokeBombUsed = true;
+        fixture.gc.screenState = screen; fixture.gc.curEvent = event;
+        if (event == sts::Event::COLOSSEUM) fixture.gc.info.eventData = 1;
+        fixture.gc.smokeBombUsed = flag;
         envelope["features"] = richRow(fixture.gc, fixture.path);
         envelope["snapshot"] = screen_leaf::snapshotJson(fixture.gc, fixture.path, fixture.policy);
         return envelope;
     };
-    auto smoke = smokeRow(true);
-    const auto smokeOriginal = smoke.at("snapshot");
-    const auto smokeImported = screen_leaf::importEnvelope(smoke);
-    auto smokeExpected = smokeOriginal;
-    smokeExpected["game"]["smokeBombUsed"] = false;
-    require(!smokeImported.gc.smokeBombUsed &&
-            screen_leaf::snapshotJson(smokeImported.gc, smokeImported.path, smokeImported.policy) == smokeExpected &&
-            smoke.at("snapshot") == smokeOriginal, "historical smoke adapter must clear the flag only");
-    require(richRow(smokeImported.gc, smokeImported.path) == smoke.at("features"), "historical smoke rich parity");
-    const auto &smokeHistory = smoke.at("snapshotImportHistory");
-    require(smokeHistory.size() == 1 &&
-            smokeHistory[0].at("rule") == "frozen334_colosseum_stale_smoke_bomb_flag_clear_v1" &&
-            smokeHistory[0].at("context") == smoke.at("snapshotSemantics"), "historical smoke audit record");
-    auto smokeProjected = publicProjection(smoke, smokeImported);
-    const auto smokeRepeated = screen_leaf::importEnvelope(smokeProjected);
-    require(!smokeRepeated.gc.smokeBombUsed && smokeProjected.at("snapshotImportHistory") == smokeHistory,
-            "current smoke re-import idempotent");
-    rejectImport(smokeRow(false), "smokeBombUsed outside Colosseum");
-    std::puts("screen leaf probes PASS: resource mutations, clipping, identity, public shop contract, projection statuses, split guard, version-bound Golden Idol and Colosseum Smoke Bomb imports");
+    for (const auto &[screen, event] : std::vector<std::pair<sts::ScreenState, sts::Event>>{
+             {sts::ScreenState::EVENT_SCREEN, sts::Event::COLOSSEUM},
+             {sts::ScreenState::EVENT_SCREEN, sts::Event::HYPNOTIZING_COLORED_MUSHROOMS},
+             {base.gc.screenState, sts::Event::GOLDEN_IDOL}}) {
+        auto control = smokeRow(screen, event, false);
+        const auto controlOriginal = control.at("snapshot");
+        const auto controlImported = screen_leaf::importEnvelope(control);
+        require(screen_leaf::snapshotJson(controlImported.gc, controlImported.path, controlImported.policy) == controlOriginal &&
+                !control.contains("snapshotImportHistory"), "clean historical smoke control untouched");
+        auto smoke = smokeRow(screen, event, true);
+        const auto smokeOriginal = smoke.at("snapshot");
+        const auto smokeImported = screen_leaf::importEnvelope(smoke);
+        require(!smokeImported.gc.smokeBombUsed && smoke.at("snapshot") == smokeOriginal &&
+                screen_leaf::snapshotJson(smokeImported.gc, smokeImported.path, smokeImported.policy) == controlOriginal,
+                "historical smoke adapter must clear the flag only");
+        require(richRow(smokeImported.gc, smokeImported.path) == smoke.at("features"), "historical smoke rich parity");
+        const auto &smokeHistory = smoke.at("snapshotImportHistory");
+        require(smokeHistory.size() == 1 &&
+                smokeHistory[0].at("rule") == "frozen334_stale_smoke_bomb_flag_clear_v1" &&
+                smokeHistory[0].at("screenState") == static_cast<int>(screen) &&
+                smokeHistory[0].at("curEvent") == static_cast<int>(event) &&
+                smokeHistory[0].at("context") == smoke.at("snapshotSemantics"), "historical smoke audit record");
+        auto smokeProjected = publicProjection(smoke, smokeImported);
+        const auto smokeRepeated = screen_leaf::importEnvelope(smokeProjected);
+        require(!smokeRepeated.gc.smokeBombUsed && smokeProjected.at("snapshotImportHistory") == smokeHistory,
+                "current smoke re-import idempotent");
+    }
+    bool combatRejected = false;
+    auto combatSmoke = smokeRow(sts::ScreenState::BATTLE, sts::Event::COLOSSEUM, true);
+    try { (void)screen_leaf::importEnvelope(combatSmoke); }
+    catch (const std::exception &e) { combatRejected = std::string(e.what()) == "historical smokeBombUsed inside combat"; }
+    require(combatRejected, "historical smokeBombUsed inside combat must be rejected");
+    std::puts("screen leaf probes PASS: resource mutations, clipping, identity, public shop contract, projection statuses, split guard, version-bound Golden Idol and stale Smoke Bomb imports");
     return 0;
 }
 }

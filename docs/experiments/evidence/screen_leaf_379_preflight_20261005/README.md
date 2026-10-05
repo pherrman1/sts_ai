@@ -228,14 +228,20 @@ resets the flag, so it has no simulator effect outside combat; only the CTM
 contract reads it. Current main has the same behavior, so live OOC MCTS can
 reach this state too; that is tracked as a separate main fix, not changed here.
 
-Philipp approved a narrow import normalization: for historical frozen-334
-rows only, clear `smokeBombUsed` on the Colosseum event screen, require that
-no other snapshot field changes, record rule
-`frozen334_colosseum_stale_smoke_bomb_flag_clear_v1` in
-`snapshotImportHistory`, and reject the flag on any other historical screen.
-The Python projection oracle mirrors the rule. Constructed self-test:
-`smoke-bomb-import-selftest.txt`. Rerunning S0 on the preserved 13001297 input
-gives 2,476 rows; the first 1,683 match the failed run's partial predictions
-exactly apart from CPU timing and audit metadata, and seven rows carry the new
-audit record. Recovery resumes in a new protocol directory reusing all
-verified replays. No TEST numerical content has been opened.
+Philipp approved clearing the stale flag outside combat. Independent review
+found the same callback pattern in three more event fights (Dead Adventurer,
+Masked Bandits, Mushrooms) and that the flag survives Colosseum Cowardice into
+later rooms, so unreplayed sources may carry it on other screens. Outside
+combat the flag also disables initial Smoke Bomb masking in the OOC adapter;
+rich features ignore it. The rule therefore applies to historical frozen-334
+rows on every non-BATTLE screen: clear `smokeBombUsed`, require that no other
+snapshot field changes, record rule `frozen334_stale_smoke_bomb_flag_clear_v1`
+with screen state and event in `snapshotImportHistory`, and reject the flag
+inside BATTLE. The Python projection oracle mirrors the rule. Constructed
+self-test (`smoke-bomb-import-selftest.txt`) covers Colosseum, Mushrooms and a
+shop, clean controls, idempotent re-import and the BATTLE rejection. Rerunning
+S0 on the preserved 13001297 input gives 2,476 rows; the first 1,683 match the
+failed run's partial predictions exactly apart from CPU timing and audit
+metadata, and seven rows carry the new audit record. Recovery resumes in a new
+protocol directory reusing all verified replays. No TEST numerical content has
+been opened.

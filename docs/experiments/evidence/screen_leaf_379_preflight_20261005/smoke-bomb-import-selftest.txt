@@ -1,1 +1,1 @@
-screen leaf probes PASS: resource mutations, clipping, identity, public shop contract, projection statuses, split guard, version-bound Golden Idol and Colosseum Smoke Bomb imports
+screen leaf probes PASS: resource mutations, clipping, identity, public shop contract, projection statuses, split guard, version-bound Golden Idol and stale Smoke Bomb imports
