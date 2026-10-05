@@ -19,7 +19,15 @@ from audit_screen_leaf_379 import EXPECTED, digest, source_split_function
 def resolve_teacher(manifest):
     original = Path(manifest['teacherPath'])
     expected = manifest['teacherManifestSha256']
-    if original.exists():
+    remote_deployments = {
+        '/home/user/cloud1/vwin334-cloud/fixed-producer/teacher.json',
+        '/home/user/cloud2/vwin334-cloud/fixed-producer/teacher.json',
+        '/home/user/cloud3/vwin334-cloud/fixed-producer/teacher.json',
+        '/root/cloud4/vwin334-cloud/fixed-producer/teacher.json',
+    }
+    # These are paths on the original cloud hosts, not this host. In particular
+    # do not try to traverse this host's unrelated /root for a cloud4 artifact.
+    if str(original) not in remote_deployments and original.exists():
         if digest(original) != expected: raise ValueError('original teacher custody mismatch')
         return original
     # Cloud shards contain deployment paths. Only the exact preserved artifact
