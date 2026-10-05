@@ -250,3 +250,28 @@ Philipp raised the source-worker cap from six to ten for the resumed run
 (`full-validation-import-v2`). Workers are independent single-threaded source
 jobs, so this changes wall time only; per-source and global budgets are
 unchanged.
+
+## Third full-recovery failure: CTM HP envelope (fail-closed S0 rows)
+
+Runs `full-validation-import-v2`/`-v3` were interrupted by agent-session exit
+and a machine restart (all finished sources PASS; no protocol change). Run
+`full-validation-import-v4` reused 134 sources and finished FAIL with 148 PASS:
+source 13001949's replay passed exact parity, but S0 aborted after 803 of
+1,964 rows with `hp_envelope`. The row is an Act 3 event at floor 36 with HP
+169/174. Its policy-chain playout enters an imagined fight and the near-full
+CTM supports max HP 24..172 only (`combat_transition_native_contract.cpp:91`,
+tracked in issue #369). The OOC adapter throws `OocSearchUnsupported`; live
+OOC MCTS catches it, discards the whole search and the decision falls back.
+Raw failure: `full-validation-hp-envelope-failure.txt`.
+
+Philipp approved recording such rows as fail-closed instead of aborting: the S0
+harness catches `OocSearchUnsupported` around `evaluateLeaf`, writes the row
+with `values: []`, `s0Status: S0_UNSUPPORTED` and `unsupportedReason`, and
+leaves supported rows byte-identical. Every consumer excludes these rows
+pairwise from S0, S1 and S2 and reports counts by screen and reason: the
+recovery checker, the VALIDATION evaluator, the resource and sibling
+diagnostics, and the probe runner. The same rule applies to TEST and is fixed
+before TEST access. Rerunning S0 on the preserved 13001949 input gives 1,964
+rows; the first 803 match exactly apart from CPU timing, and two Act 3 event
+rows (both `hp_envelope`) are fail-closed. Whether 174 max HP is legitimate is
+being investigated separately.

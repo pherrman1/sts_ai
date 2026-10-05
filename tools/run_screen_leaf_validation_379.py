@@ -227,11 +227,22 @@ def one_source(source, protocol, deadline, failed):
                 row = json.loads(line)
                 identity = (row['sourceSeed'], row['branchId'], row['rowIdx'])
                 require(identity in identities and identity not in observed, 'S0 prediction identity mismatch')
-                require(len(row['values']) == 1 and math.isfinite(row['values'][0]) and 0 <= row['values'][0] <= 1,
-                        'invalid S0 prediction')
+                unsupported = row.get('s0Status') == 'S0_UNSUPPORTED'
+                if unsupported:
+                    # Live search fails closed here; S0 has no leaf value.
+                    require(row['values'] == [] and len(row['rngSeeds']) == 1 and
+                            isinstance(row.get('unsupportedReason'), str) and row['unsupportedReason'],
+                            'invalid S0 fail-closed row')
+                else:
+                    require('s0Status' not in row and len(row['values']) == 1 and
+                            math.isfinite(row['values'][0]) and 0 <= row['values'][0] <= 1,
+                            'invalid S0 prediction')
                 observed.add(identity)
                 stats = by_screen.setdefault(row['screen'], {'rows': 0, 'leaf_cpu_seconds': 0, 'projection_steps': 0})
                 stats['rows'] += 1
+                if unsupported:
+                    stats.setdefault('s0_unsupported', {})
+                    stats['s0_unsupported'][row['unsupportedReason']] = stats['s0_unsupported'].get(row['unsupportedReason'], 0) + 1
                 stats['leaf_cpu_seconds'] += row['leafCpuSeconds']
                 stats['projection_steps'] += row['projectionSteps']
         require(observed == identities, 'S0 missing predictions')

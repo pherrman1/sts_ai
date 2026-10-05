@@ -67,7 +67,7 @@ def run(training, recovered, output):
     original = {identity(r['identity']): (r['label'], dict(r['identity'], screen=r['screen'])) for r in corpus.iter_rows('VALIDATION')}
     if list(original) != ids or any(original[key] != (int(labels[i]), metadata[i]) for i, key in enumerate(ids)):
         raise ValueError('saved VALIDATION labels/identities differ from corpus')
-    s0, links, exclusions, evidence = {}, {}, Counter(), []
+    s0, links, exclusions, evidence, unsupported = {}, {}, Counter(), [], {}
     expected_components = {c['sourceSeed']: c for c in corpus.components if c['split'] == 'VALIDATION'}
     protocol_sources = {s['seed']: s for s in protocol['sources']}
     if set(protocol_sources) != set(expected_components) or len(protocol['sources']) != 155:
@@ -111,9 +111,16 @@ def run(training, recovered, output):
         with predictions.open() as stream:
             for line in stream:
                 row = json.loads(line)
-                if row['sourceSeed'] != seed or len(row['values']) != 1: raise ValueError('S0 protocol differs')
                 key = identity(row)
                 if key in s0: raise ValueError('duplicate S0 identity')
+                if row.get('s0Status') == 'S0_UNSUPPORTED':
+                    # Fail-closed: no S0 value; excluded pairwise from every arm.
+                    if row['sourceSeed'] != seed or row['values'] != [] or not row.get('unsupportedReason'):
+                        raise ValueError('S0 protocol differs')
+                    s0[key] = None; unsupported[key] = row['unsupportedReason']
+                    continue
+                if row['sourceSeed'] != seed or len(row['values']) != 1 or 's0Status' in row:
+                    raise ValueError('S0 protocol differs')
                 s0[key] = row['values'][0]
         with (replay / 'snapshots.jsonl').open() as stream:
             for line in stream:
@@ -125,6 +132,10 @@ def run(training, recovered, output):
                 if link['status'] == 'EXACT_LAST_CAPTURED_TO_OBSERVED_MAP': links[key] = link['map']
         evidence.append({'seed': seed, 'result_sha256': digest(result_path), 'predictions_sha256': digest(predictions)})
     if not set(ids) <= set(s0): raise ValueError('S0 missing model-evaluation rows')
+    # Pairwise exclusion of S0 fail-closed rows for S0, S1 and S2 alike.
+    keep = np.array([i for i, key in enumerate(ids) if s0[key] is not None], dtype=np.int64)
+    excluded = Counter(f"{metadata[i]['screen']}/{unsupported[key]}" for i, key in enumerate(ids) if s0[key] is None)
+    ids, labels, metadata = [ids[i] for i in keep], labels[keep], [metadata[i] for i in keep]
     baseline = np.array([s0[key] for key in ids])
     if digest(UBJ) != UBJ_SHA: raise ValueError('X2-B source UBJ changed')
     import xgboost as xgb
@@ -151,6 +162,8 @@ def run(training, recovered, output):
               'matched_coverage': dict(Counter(r['screen'] for r in matched_metadata)),
               'decision_act_to_map_act': dict(Counter(f"{metadata[i]['act']}->{links[ids[i]]['act']}" for i in matched_ids)),
               'link_status_counts': {screen + '/' + status: count for (screen, status), count in exclusions.items()},
+              's0_unsupported_excluded_rows': dict(excluded),
+              's0_unsupported_all_screens': len(unsupported),
               'test_access': 'NONE; VALIDATION only; no selection or frozen tolerance is implied'})
     np.savez(output / 'aligned-validation.npz', s0=baseline, matched_indices=matched_ids, map_values=map_values)
     write_new(output / 'S0.json', {'predictive': predictive_report(labels, baseline, metadata),
@@ -159,7 +172,7 @@ def run(training, recovered, output):
         path = training / f'{arm}-ensemble-validation.npy'
         if digest(path) != training_final['arms'][arm]['ensemble_predictions_sha256']:
             raise ValueError('ensemble predictions changed')
-        prediction = np.load(path, allow_pickle=False)
+        prediction = np.load(path, allow_pickle=False)[keep]
         individual = {}
         for seed in (0, 1, 2):
             seed_path = training / f'{arm}-seed{seed}-validation.npy'
@@ -167,7 +180,7 @@ def run(training, recovered, output):
             if record != training_final['arms'][arm]['individual'][seed]:
                 raise ValueError('seed receipt differs from completed training evidence')
             if digest(seed_path) != record['predictions_sha256']: raise ValueError('seed prediction changed')
-            p = np.load(seed_path, allow_pickle=False)
+            p = np.load(seed_path, allow_pickle=False)[keep]
             individual[str(seed)] = {'overall': predictive_metrics(labels, p)}
             for family in PROVISIONAL_MASK:
                 family_ids = np.array([i for i, r in enumerate(metadata) if r['screen'] == family])

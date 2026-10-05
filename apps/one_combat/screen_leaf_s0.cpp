@@ -116,7 +116,8 @@ int screenLeafS0(const std::string &input, const std::string &output,
         Json values = Json::array(), seeds = Json::array();
         double elapsed = 0;
         std::uint64_t steps = 0;
-        for (unsigned replicate = 0; replicate < replicates; ++replicate) {
+        std::string unsupported;
+        for (unsigned replicate = 0; replicate < replicates && unsupported.empty(); ++replicate) {
             restoreOocPolicyThreadState(state.policy);
             t_curPath = &state.path;
             OocGameContextModel model(state.gc, state.path, sampler, options, deps);
@@ -126,13 +127,25 @@ int screenLeafS0(const std::string &input, const std::string &output,
             // root-specific callback is absent (asserted above), and the MAP
             // special-case cannot apply. Calls the actual current implementation.
             const double start = cpuSeconds();
-            const double value = model.evaluateLeaf(0, rng);
+            double value = 0;
+            try {
+                value = model.evaluateLeaf(0, rng);
+            } catch (const sts::search::OocSearchUnsupported &error) {
+                // Live OOC MCTS aborts the whole search on this exception and
+                // the decision falls back; S0 has no leaf value. Record the row
+                // as fail-closed so comparisons exclude it pairwise.
+                unsupported = error.what();
+                if (unsupported.empty()) unsupported = "unspecified";
+            }
             elapsed += cpuSeconds() - start;
+            seeds.push_back(seed);
+            steps += model.continuationMetrics().projectionSteps;
+            if (!unsupported.empty()) break;
             if (!std::isfinite(value) || value < 0 || value > 1)
                 throw std::runtime_error("invalid S0 prediction");
-            values.push_back(value); seeds.push_back(seed);
-            steps += model.continuationMetrics().projectionSteps;
+            values.push_back(value);
         }
+        if (!unsupported.empty()) values = Json::array();
         Json result = {{"sourceSeed", row.at("sourceSeed")}, {"branchId", row.at("branchId")},
             {"rowIdx", row.at("rowIdx")}, {"decisionIdx", row.at("decisionIdx")},
             {"screen", row.at("screenContents").at("screen")}, {"act", state.gc.act},
@@ -143,6 +156,10 @@ int screenLeafS0(const std::string &input, const std::string &output,
             {"addedPublicDiscardKeys", additions},
             {"snapshotSemantics", row.at("snapshotSemantics")},
             {"snapshotImportHistory", row.value("snapshotImportHistory", Json::array())}};
+        if (!unsupported.empty()) {
+            result["s0Status"] = "S0_UNSUPPORTED";
+            result["unsupportedReason"] = unsupported;
+        }
         const auto encoded = result.dump() + "\n";
         if (std::fwrite(encoded.data(), 1, encoded.size(), file) != encoded.size()
             || std::fflush(file)) throw std::runtime_error("S0 output write failure");

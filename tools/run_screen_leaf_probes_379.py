@@ -164,7 +164,11 @@ def run(recovered, output):
             key = identity(row)
             if key not in states or key in observed: raise ValueError('incorrect S0 probe identity')
             observed.add(key)
-            if len(row['values']) != 1 or len(row['rngSeeds']) != 1 or not math.isfinite(row['values'][0]) or not 0 <= row['values'][0] <= 1:
+            if row.get('s0Status') == 'S0_UNSUPPORTED':
+                # Fail-closed S0 probe row; diagnostics exclude it pairwise.
+                if row['values'] != [] or len(row['rngSeeds']) != 1 or not row.get('unsupportedReason'):
+                    raise ValueError('invalid S0 fail-closed probe row')
+            elif 's0Status' in row or len(row['values']) != 1 or len(row['rngSeeds']) != 1 or not math.isfinite(row['values'][0]) or not 0 <= row['values'][0] <= 1:
                 raise ValueError('invalid S0 probe prediction')
             if name == 'identity': paired_seeds[key] = row['rngSeeds']
             elif row['rngSeeds'] != paired_seeds[key]: raise ValueError('unpaired S0 RNG')

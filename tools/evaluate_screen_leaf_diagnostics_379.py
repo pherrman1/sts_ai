@@ -67,7 +67,13 @@ def predictions(path, identities):
     require(set(rows) == set(identities), 'prediction identity population mismatch')
     values, seeds = {}, {}
     for identity, row in rows.items():
-        require(len(row['values']) == len(row['rngSeeds']) == 1, 'expected one paired S0 draw')
+        if row.get('s0Status') == 'S0_UNSUPPORTED':
+            # Fail-closed S0 row: no value; callers exclude it pairwise.
+            require(row['values'] == [] and len(row['rngSeeds']) == 1 and row.get('unsupportedReason'),
+                    'invalid S0 fail-closed row')
+            seeds[identity] = row['rngSeeds'][0]; continue
+        require('s0Status' not in row and len(row['values']) == len(row['rngSeeds']) == 1,
+                'expected one paired S0 draw')
         v = row['values'][0]
         require(isinstance(v, (int, float)) and math.isfinite(v) and 0 <= v <= 1,
                 'invalid S0 probability')
@@ -253,19 +259,26 @@ def resource_report(probes, recovered_protocol_path, scorer, output, reps):
         for arm in ('S1', 'S2'): values[arm][name] = direct[arm]
         variant_states[name] = rows
     reports = {}
+    s0 = values['S0']
+    def s0_ok(identity, *names):  # Pairwise: an S0 fail-closed variant drops the state from every arm.
+        return all(identity in s0[name] for name in names)
+    unsupported = {name: sum(1 for k in variant_states[name] if k not in s0[name]) for name in s0}
     for arm, v in values.items():
         baseline = v['identity']
         hp, gold, feed, maximum, potion = {}, {}, {}, {}, {}
         for identity in selected:
-            hp[identity] = (v['hp_plus'][identity] - v['hp_minus'][identity]) / 10.0
+            if s0_ok(identity, 'hp_plus', 'hp_minus'):
+                hp[identity] = (v['hp_plus'][identity] - v['hp_minus'][identity]) / 10.0
             distance = variant_states['gold_plus'][identity]['probe']['actualPairDistance']
             require(distance > 0 and distance == variant_states['gold_minus'][identity]['probe']['actualPairDistance'],
                     'invalid gold denominator')
-            gold[identity] = (v['gold_plus'][identity] - v['gold_minus'][identity]) / distance
-            feed[identity] = v['feed_like'][identity] - baseline[identity]
-            maximum[identity] = v['max_only'][identity] - baseline[identity]
+            if s0_ok(identity, 'gold_plus', 'gold_minus'):
+                gold[identity] = (v['gold_plus'][identity] - v['gold_minus'][identity]) / distance
+            if not s0_ok(identity, 'identity'): continue
+            if s0_ok(identity, 'feed_like'): feed[identity] = v['feed_like'][identity] - baseline[identity]
+            if s0_ok(identity, 'max_only'): maximum[identity] = v['max_only'][identity] - baseline[identity]
             losses = [baseline[identity] - score[identity] for name, score in v.items()
-                      if name.startswith('remove_potion_') and identity in score]
+                      if name.startswith('remove_potion_') and identity in score and s0_ok(identity, name)]
             if losses: potion[identity] = float(np.mean(losses))
         reports[arm] = {name: summaries(data, selected, reps) for name, data in
                        [('hp_local_slope_fixed_denominator_10', hp), ('gold_slope_per_actual_gold', gold),
@@ -277,7 +290,8 @@ def resource_report(probes, recovered_protocol_path, scorer, output, reps):
         'gold_contract': 'clamped plus/minus25 divided by actual pair distance',
         'potion_contract': 'mean over distinct held potion IDs within state, then source-cluster bootstrap',
         'exogenous_offers': 'preserved by reviewed native exporter; legal actions and duplicated inventory recomputed',
-        'states_without_potions': sum(not any(k in values['S0'][n] for n in values['S0'] if n.startswith('remove_potion_')) for k in selected),
+        's0_unsupported_rows_by_variant': {k: n for k, n in unsupported.items() if n},
+        'states_without_potions': sum(not any(k in variant_states[n] for n in variant_states if n.startswith('remove_potion_')) for k in selected),
         'probe_result_sha256': digest(probes / 'result.json'), 'bootstrap_replicates': reps})
     return {'resource_result_sha256': digest(output / 'resource-diagnostics.json')}
 
@@ -387,6 +401,9 @@ def sibling_report(protocol, sources, scorer, output, reps, native_seconds, maxi
         s0_path = output / 'sibling-S0.jsonl'
         native_call(protocol, 'screenleafs0', [s0_input, s0_path, len(supported), 1], output, deadline)
         baseline, _ = predictions(s0_path, supported)
+        for identity in supported:
+            if identity not in baseline:  # S0 fail-closed: drop from every arm's pairs.
+                excluded[(branch_records[identity[:2]]['type'], 'S0_UNSUPPORTED')] += 1
     baseline.update(scorer.map(maps)); baseline.update(exact)
     direct_rows = {k: r for k, r in supported.items() if r['screenContents']['screen'] in PROVISIONAL_MASK}
     direct = scorer.direct(direct_rows)
