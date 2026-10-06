@@ -90,12 +90,22 @@ std::vector<float> screenGbmFeatures(const Json &c, const std::vector<std::strin
     return f;
 }
 
-ScreenLeafGbm::ScreenLeafGbm(const std::string &path, std::unordered_map<std::string, int> featureIdx, int screenOffset)
+ScreenLeafGbm::ScreenLeafGbm(const std::string &path, std::unordered_map<std::string, int> featureIdx, int screenOffset,
+                             const std::string &anchorPath)
         : offset_(screenOffset) {
+    if (!anchorPath.empty() && (!anchor_.load(anchorPath, featureIdx, "ScreenLeafGbm anchor") || !anchor_.logistic))
+        throw std::runtime_error("screen gbm: cannot load X2-B anchor " + anchorPath);
     const auto &names = screenGbmFeatureNames();
     for (std::size_t i = 0; i < names.size(); ++i) featureIdx[names[i]] = screenOffset + int(i);
     if (!net_.load(path, featureIdx, "ScreenLeafGbm") || net_.logistic)
         throw std::runtime_error("screen gbm: cannot load margin model " + path);
+}
+
+double ScreenLeafGbm::anchor(const std::vector<float> &raw) const {
+    if (!anchor_.ok) throw std::runtime_error("screen gbm: no pinned anchor");
+    const double value = anchor_.predict(raw);
+    if (!std::isfinite(value) || value < 0 || value > 1) throw std::runtime_error("screen gbm: invalid anchor value");
+    return value;
 }
 
 int screenLeafGbmParity(const std::string &model, const std::string &input) {

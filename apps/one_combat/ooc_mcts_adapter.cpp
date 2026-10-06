@@ -1023,7 +1023,7 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     if (options.checkpointLeaves && options.constantLeaf) return 0.5;
     if (options.bossLeaf) return bossLeafValue(state(id));
     OocProfileScope inference(OocProfileBucket::LeafValue);
-    return dependencies.leafValue(state(id), states.at(id).path);
+    return anchorValue(state(id), states.at(id).path);
 }
 std::optional<std::uint64_t> OocGameContextModel::outcomeEquivalenceKey(sts::search::OocStateId id) const {
     // Without sampled futures a successor's concrete RNG is its future.
@@ -1153,12 +1153,16 @@ std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc
     if (options.screenLeafNet && !options.screenLeafNet->covers(contents.at("screen").get<std::string>())) {
         ++continuation_.screenLeafFallbacks; return std::nullopt;
     }
-    const std::string row = richRow(gc, path);
-    std::vector<float> rich; rich.reserve(1017);
-    for (const char *p = row.c_str(); *p;) {
-        char *end = nullptr; rich.push_back(std::strtof(p, &end));
-        if (end == p) throw std::runtime_error("screen leaf rich row parse");
-        p = *end == ',' ? end + 1 : end;
+    std::vector<float> rich;
+    if (options.screenLeafGbm) rich = richFeatureVec(gc, path);
+    else {
+        const std::string row = richRow(gc, path);
+        rich.reserve(1017);
+        for (const char *p = row.c_str(); *p;) {
+            char *end = nullptr; rich.push_back(std::strtof(p, &end));
+            if (end == p) throw std::runtime_error("screen leaf rich row parse");
+            p = *end == ',' ? end + 1 : end;
+        }
     }
     OocProfileScope inference(OocProfileBucket::LeafValue);
     ++continuation_.screenLeafEvaluations;
@@ -1167,12 +1171,21 @@ std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc
         static const int goldIndex = richIdxMap().at("gold");
         const auto screenFeatures = screenGbmFeatures(contents, keys, rich.at(goldIndex));
         rich.insert(rich.end(), screenFeatures.begin(), screenFeatures.end());
-        const double x2b = std::clamp(dependencies.leafValue(gc, path), 1e-7, 1 - 1e-7);
+        const double x2b = std::clamp(anchorValue(gc, path), 1e-7, 1 - 1e-7);
         const double margin = std::log(x2b / (1 - x2b)) + options.screenLeafGbm->residual(rich);
         return 1.0 / (1.0 + std::exp(-margin));
     }
     return options.screenLeafNet->predictFromRich(rich, contents, keys);
 #endif
+}
+double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory &path) const {
+#ifndef STS_LIVE_ADVISOR
+    if (options.screenLeafGbm && options.screenLeafGbm->hasAnchor()) {
+        OocProfileScope predict(OocProfileBucket::LeafPredict);
+        return options.screenLeafGbm->anchor(richFeatureVec(gc, path));
+    }
+#endif
+    return dependencies.leafValue(gc, path);
 }
 // `endpoint` receives the player state that was actually evaluated: the node
 // itself, or the detached continuation where it stopped.
@@ -1199,7 +1212,7 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
         return options.bossLeaf ? bossLeafValue(child.gc)
-            : dependencies.leafValue(child.gc, child.path);
+            : anchorValue(child.gc, child.path);
     }
 #ifndef STS_LIVE_ADVISOR
     ImaginedScope scope;
@@ -1224,7 +1237,7 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);
-            return dependencies.leafValue(child.gc, child.path);
+            return anchorValue(child.gc, child.path);
         }
         return std::nullopt;
     };
@@ -1311,13 +1324,13 @@ void applyLiveControl(const std::string &key, const std::string &value,
     };
     if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
-        opts.constantLeaf = opts.bossLeaf = opts.directLeaf = opts.screenLeaf = false;
+        opts.constantLeaf = opts.bossLeaf = opts.directLeaf = opts.screenLeaf = opts.screenGbm = false;
         if (value == "native") {}
         else if (value == "constant") opts.constantLeaf = true;
         else if (value == "boss") opts.bossLeaf = true;
         else if (value == "direct") opts.directLeaf = true;
         else if (value == "screen") opts.screenLeaf = true;
-        else if (value == "screengbm") opts.screenLeaf = true;
+        else if (value == "screengbm") opts.screenLeaf = opts.screenGbm = true;
         else invalid();
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
@@ -1563,15 +1576,18 @@ void configureLiveOocMcts() {
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
+    // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
+    if (!std::getenv("STS_OOC_MCTS_LEAF_VALUE")) applyLiveControl("STS_OOC_MCTS_LEAF_VALUE", "screengbm", liveConfig, liveOptions);
     if (liveOptions.screenLeaf) {
         const char *model = std::getenv("STS_OOC_MCTS_SCREEN_LEAF_MODEL");
+        if (liveOptions.screenGbm && (!model || !*model)) model = kDefaultScreenGbmModel;
         if (!model || !*model) throw std::runtime_error("STS_OOC_MCTS_LEAF_VALUE=screen requires STS_OOC_MCTS_SCREEN_LEAF_MODEL");
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_LEAF_VALUE=screen is unavailable in the live advisor");
 #else
-        const char *mode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
-        if (mode && std::string(mode) == "screengbm")
-            liveOptions.screenLeafGbm = std::make_shared<const ScreenLeafGbm>(model, richIdxMap(), int(richIdxMap().size()));
+        if (liveOptions.screenGbm)
+            liveOptions.screenLeafGbm = std::make_shared<const ScreenLeafGbm>(model, richIdxMap(),
+                int(richIdxMap().size()), kScreenGbmAnchor);
         else liveOptions.screenLeafNet = std::make_shared<const ScreenLeafNet>(model);
 #endif
     }

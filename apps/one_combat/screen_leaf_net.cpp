@@ -375,7 +375,7 @@ int screenLeafGbmLiveParity(const std::string &input, const std::string &output)
         while (std::getline(ss, item, ',')) v.push_back(std::stof(item));
         return v;
     };
-    std::string line; unsigned rows = 0, mismatches = 0;
+    std::string line; unsigned rows = 0, mismatches = 0, richMismatches = 0;
     while (std::getline(in, line)) {
         auto row = Json::parse(line);
         const auto recordedKeys = row.at("candidateKeys").get<std::vector<std::string>>();
@@ -389,10 +389,12 @@ int screenLeafGbmLiveParity(const std::string &input, const std::string &output)
         auto a = recorded, b = live; const int nopt = 1, eff29 = 18 + 29;
         a[nopt] = b[nopt] = 0; a[eff29] = b[eff29] = 0;
         mismatches += a != b; ++rows;
+        richMismatches += richFeatureVec(state.gc, state.path) != parse(richRow(state.gc, state.path));
         out << Json{{"features", recorded}}.dump() << "\n";
     }
-    std::cout << Json{{"rows", rows}, {"liveMismatches", mismatches}, {"pass", rows > 0 && !mismatches}}.dump() << "\n";
-    return rows > 0 && !mismatches ? 0 : 1;
+    std::cout << Json{{"rows", rows}, {"liveMismatches", mismatches}, {"richVecMismatches", richMismatches},
+                      {"pass", rows > 0 && !mismatches && !richMismatches}}.dump() << "\n";
+    return rows > 0 && !mismatches && !richMismatches ? 0 : 1;
 }
 }
 

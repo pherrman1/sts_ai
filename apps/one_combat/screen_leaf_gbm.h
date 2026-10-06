@@ -17,12 +17,18 @@ class ScreenLeafGbm {
 public:
     // featureIdx maps run-feature names to raw indices; screen features are
     // appended after `screenOffset`.
-    ScreenLeafGbm(const std::string &path, std::unordered_map<std::string, int> featureIdx, int screenOffset);
+    ScreenLeafGbm(const std::string &path, std::unordered_map<std::string, int> featureIdx, int screenOffset,
+                  const std::string &anchorPath = "");
     double residual(const std::vector<float> &raw) const { return net_.predict(raw); }
+    // Pinned X2-B anchor the residual was trained on (raw = run features).
+    bool hasAnchor() const { return anchor_.ok; }
+    double anchor(const std::vector<float> &raw) const;
     int screenOffset() const { return offset_; }
 private:
-    CompactTreeNet net_;
+    CompactTreeNet net_, anchor_;
     int offset_;
 };
+constexpr const char *kDefaultScreenGbmModel = "models/candidates/screen_leaf_gbm_v1.trees";
+constexpr const char *kScreenGbmAnchor = "models/candidates/v_win_x2b_trees.txt";
 int screenLeafGbmParity(const std::string &model, const std::string &input);
 }

@@ -45,6 +45,7 @@ struct OocAdapterOptions {
     bool screenLeaf = false;
     std::shared_ptr<const ScreenLeafNet> screenLeafNet;
     std::shared_ptr<const ScreenLeafGbm> screenLeafGbm;
+    bool screenGbm = false;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
@@ -132,6 +133,8 @@ private:
         const std::vector<sts::search::OocPlannerAction> &) const;
     double bossLeafValue(const GameContext &) const;
     std::optional<double> screenLeafValue(const GameContext &, const PathHistory &);
+    // v_win anchor: the screen GBM's pinned X2-B when present, else the global v_win.
+    double anchorValue(const GameContext &, const PathHistory &) const;
     double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                             sts::search::OocEndpoint &endpoint);
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
