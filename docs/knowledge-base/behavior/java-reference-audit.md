@@ -400,6 +400,12 @@ exclusion with probability 9/145 (about 6%), an act 3 queue with probability
 `monsterRng` counter against a Java-rule reimplementation for every act and
 last weak encounter.
 
+Consequence for evidence: corpora and runs generated before this fix follow the
+act-1-only rule, so paired seeds across the fix boundary (for example a new run
+against the #417 pilot or older ledger runs) are not seed-for-seed comparable
+past act 1 for roughly 6–14% of seeds. Comparisons within one SHA are
+unaffected.
+
 ## Ambiguous or not yet inspected
 
 - Gremlin `escapeNext` (resolved: unreachable in vanilla). Java's gremlin
