@@ -1,5 +1,9 @@
 #include "run_profile.h"
 #include "ooc_mcts_adapter.h"
+#ifndef STS_LIVE_ADVISOR
+#include "screen_leaf_net.h"
+#include "screen_leaf_s0.h"
+#endif
 #include "ooc_profile.h"
 #include "combat_transition_runtime.h"
 #include <chrono>
@@ -1136,6 +1140,31 @@ sts::search::OocLeafEvaluation OocGameContextModel::evaluateLeafWithOutcome(
     const double value = evaluateLeafImpl(id, rng, terminal, endpoint);
     return {value, terminal, endpoint};
 }
+std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc, const PathHistory &path) {
+#ifdef STS_LIVE_ADVISOR
+    (void)gc; (void)path; throw std::runtime_error("screen leaf is unavailable in the live advisor");
+#else
+    if (!options.screenLeafNet) throw std::runtime_error("screen leaf requested without a loaded network");
+    nlohmann::json contract;
+    try { contract = screenLeafPublicContract(gc); }
+    catch (const std::exception &) { ++continuation_.screenLeafFallbacks; return std::nullopt; }
+    const auto &contents = contract.at("screenContents");
+    if (!options.screenLeafNet->covers(contents.at("screen").get<std::string>())) {
+        ++continuation_.screenLeafFallbacks; return std::nullopt;
+    }
+    const std::string row = richRow(gc, path);
+    std::vector<float> rich; rich.reserve(1017);
+    for (const char *p = row.c_str(); *p;) {
+        char *end = nullptr; rich.push_back(std::strtof(p, &end));
+        if (end == p) throw std::runtime_error("screen leaf rich row parse");
+        p = *end == ',' ? end + 1 : end;
+    }
+    OocProfileScope inference(OocProfileBucket::LeafValue);
+    ++continuation_.screenLeafEvaluations;
+    return options.screenLeafNet->predictFromRich(rich, contents,
+        contract.at("candidateKeys").get<std::vector<std::string>>());
+#endif
+}
 // `endpoint` receives the player state that was actually evaluated: the node
 // itself, or the detached continuation where it stopped.
 double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
@@ -1176,8 +1205,11 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
+        if (options.screenLeaf && child.gc.screenState != sts::ScreenState::BATTLE
+                && child.gc.screenState != sts::ScreenState::MAP_SCREEN)
+            if (const auto value = screenLeafValue(child.gc, child.path)) return value;
         // Direct probe: value the first non-combat state without a playout.
-        if ((options.directLeaf && child.gc.screenState != sts::ScreenState::BATTLE)
+        if (((options.directLeaf || options.screenLeaf) && child.gc.screenState != sts::ScreenState::BATTLE)
                 || (child.gc.screenState == sts::ScreenState::MAP_SCREEN
                 && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint))) {
             if (options.constantLeaf) return 0.5;
@@ -1270,10 +1302,12 @@ void applyLiveControl(const std::string &key, const std::string &value,
     };
     if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
-        if (value == "native") { opts.constantLeaf = false; opts.bossLeaf = false; opts.directLeaf = false; }
-        else if (value == "constant") { opts.constantLeaf = true; opts.bossLeaf = false; opts.directLeaf = false; }
-        else if (value == "boss") { opts.constantLeaf = false; opts.bossLeaf = true; opts.directLeaf = false; }
-        else if (value == "direct") { opts.constantLeaf = false; opts.bossLeaf = false; opts.directLeaf = true; }
+        opts.constantLeaf = opts.bossLeaf = opts.directLeaf = opts.screenLeaf = false;
+        if (value == "native") {}
+        else if (value == "constant") opts.constantLeaf = true;
+        else if (value == "boss") opts.bossLeaf = true;
+        else if (value == "direct") opts.directLeaf = true;
+        else if (value == "screen") opts.screenLeaf = true;
         else invalid();
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
@@ -1519,6 +1553,15 @@ void configureLiveOocMcts() {
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
+    if (liveOptions.screenLeaf) {
+        const char *model = std::getenv("STS_OOC_MCTS_SCREEN_LEAF_MODEL");
+        if (!model || !*model) throw std::runtime_error("STS_OOC_MCTS_LEAF_VALUE=screen requires STS_OOC_MCTS_SCREEN_LEAF_MODEL");
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_VALUE=screen is unavailable in the live advisor");
+#else
+        liveOptions.screenLeafNet = std::make_shared<const ScreenLeafNet>(model);
+#endif
+    }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
@@ -1583,7 +1626,7 @@ void configureLiveOocMcts() {
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
-        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : "native")
+        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? "screen" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
@@ -1595,7 +1638,7 @@ void configureLiveOocMcts() {
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
-        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : "native")
+        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? "screen" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
@@ -1876,6 +1919,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.preparedCombats+=continuation.preparedCombats; c.combatEdgeSamples+=continuation.combatEdgeSamples;
     c.singletonPolicyLogitCalls+=continuation.singletonPolicyLogitCalls;
     c.singletonPolicyInferenceCalls+=continuation.singletonPolicyInferenceCalls;
+    c.screenLeafEvaluations+=continuation.screenLeafEvaluations; c.screenLeafFallbacks+=continuation.screenLeafFallbacks;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
     auto &m = metrics.search;
@@ -2049,7 +2093,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     std::ofstream reasons(liveTrace+".support.jsonl",std::ios::app);
     reasons << nlohmann::json{{"seed",seed},{"reasons",m.continuation.supportReasons},
         {"continuation_reasons",m.continuation.continuationReasons},
-        {"continuation_limit_aborts",m.continuation.continuationLimitAborts}}.dump() << '\n';
+        {"continuation_limit_aborts",m.continuation.continuationLimitAborts},
+        {"screen_leaf_evaluations",m.continuation.screenLeafEvaluations},
+        {"screen_leaf_fallbacks",m.continuation.screenLeafFallbacks}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
@@ -3308,6 +3354,8 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","direct",parsed,opts);
         require(opts.directLeaf && !opts.bossLeaf && !opts.constantLeaf,"direct leaf parsed");
+        applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","screen",parsed,opts);
+        require(opts.screenLeaf && !opts.directLeaf && !opts.bossLeaf,"screen leaf parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","boss",parsed,opts);
         require(!opts.directLeaf,"boss leaf clears direct leaf");
         applyLiveControl("STS_OOC_MCTS_CPUCT","0",parsed,opts);

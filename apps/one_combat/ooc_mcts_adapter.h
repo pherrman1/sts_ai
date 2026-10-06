@@ -3,6 +3,7 @@
 #include <deque>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <set>
 #include <string>
@@ -23,7 +24,9 @@ struct OocContinuationMetrics {
     std::uint64_t metadataBuilds = 0, priorBuilds = 0, preparedCombats = 0, combatEdgeSamples = 0;
     std::uint64_t singletonPolicyLogitCalls = 0, singletonPolicyInferenceCalls = 0;
     std::map<std::string, std::uint64_t> continuationReasons;
+    std::uint64_t screenLeafEvaluations = 0, screenLeafFallbacks = 0;
 };
+class ScreenLeafNet;
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
     // Live histories must qualify both room chances and future relic pools
@@ -36,6 +39,10 @@ struct OocAdapterOptions {
     // Research probe: score unresolved non-combat, non-MAP leaves with v_win
     // directly instead of the bounded policy-chain playout.
     bool directLeaf = false;
+    // Research probe: score covered non-MAP screens with the #379 screen-aware
+    // leaf network; other non-combat leaves use v_win directly.
+    bool screenLeaf = false;
+    std::shared_ptr<const ScreenLeafNet> screenLeafNet;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
@@ -122,6 +129,7 @@ private:
     void tracePrior(sts::search::OocStateId, Metadata &,
         const std::vector<sts::search::OocPlannerAction> &) const;
     double bossLeafValue(const GameContext &) const;
+    std::optional<double> screenLeafValue(const GameContext &, const PathHistory &);
     double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                             sts::search::OocEndpoint &endpoint);
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,

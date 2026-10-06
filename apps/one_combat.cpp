@@ -4,6 +4,7 @@
 #include "one_combat/driver_shared.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
+#include "one_combat/screen_leaf_net.h"
 #include "one_combat/screen_leaf_probes.h"
 
 OocCheckpointNet g_oocCheckpointNet;
@@ -3667,6 +3668,14 @@ int main(int argc, char **argv) {
                 ? one_combat::screenLeafProbes(argv[2], argv[3], std::stoul(argv[4]))
                 : one_combat::screenLeafProject(argv[2], argv[3], std::stoul(argv[4]));
         } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 2; }
+    } else if (mode == "screenleafnetliveparity") {
+        if (argc != 5) { std::cerr << "usage: one_combat screenleafnetliveparity MODEL SNAPSHOTS.jsonl LIMIT\n"; return 2; }
+        try { return one_combat::screenLeafNetLiveParity(argv[2], argv[3], std::stoul(argv[4])); }
+        catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 2; }
+    } else if (mode == "screenleafnetparity") {
+        if (argc != 4) { std::cerr << "usage: one_combat screenleafnetparity MODEL PARITY.jsonl\n"; return 2; }
+        try { return one_combat::screenLeafNetParity(argv[2], argv[3]); }
+        catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 2; }
     } else if (mode == "screenleafs0") {
         if (argc != 6) {
             std::cerr << "usage: one_combat screenleafs0 SNAPSHOTS OUTPUT LIMIT REPLICATES\n";
