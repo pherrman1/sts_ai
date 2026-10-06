@@ -94,6 +94,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/screen_leaf_probes.cpp
     apps/one_combat/screen_leaf_net.cpp
     apps/one_combat/screen_leaf_gbm.cpp
+    apps/one_combat/silver_vwin_pricer.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
@@ -356,6 +357,9 @@ add_test(NAME vwin_refresh_policy_export
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshpolicyspec ${CMAKE_CURRENT_BINARY_DIR}/vwin_policy_export.json)
 set_tests_properties(vwin_refresh_policy_export PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "vwin policy export: PASS")
+add_test(NAME silver_vwin_leaf COMMAND $<TARGET_FILE:one_combat> silvervwinleafselftest)
+set_tests_properties(silver_vwin_leaf PROPERTIES
+    LABELS "core" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} PASS_REGULAR_EXPRESSION "\"pass\":true")
 add_test(NAME vwin_refresh_producer_contract COMMAND $<TARGET_FILE:one_combat> vwinrefreshselftest)
 set_tests_properties(vwin_refresh_producer_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

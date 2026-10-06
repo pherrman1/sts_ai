@@ -6,6 +6,7 @@
 #include "one_combat/screen_leaf_s0.h"
 #include "one_combat/screen_leaf_net.h"
 #include "one_combat/screen_leaf_gbm.h"
+#include "one_combat/silver_vwin_pricer.h"
 #include "one_combat/screen_leaf_probes.h"
 
 OocCheckpointNet g_oocCheckpointNet;
@@ -430,6 +431,7 @@ void evalCardRewardPolicy(GameContext &gc, bool allowSkip) {
 
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 thread_local const PathHistory *t_curPath = nullptr;
+static std::string g_silverVwinLeaf = "off"; // #367 terminal pricing label for sidecars
 thread_local PathHistory t_emptyPath;    // pv* = 0 when no run path is set
 std::string vFeatCsv(const GameContext &gc);                          // defined below
 
@@ -1283,6 +1285,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverLearnedStopBossFallback = search::nativeSilverLearnedStopBossFallback();
             meta.silverLearnedStopBossMax = search::nativeSilverLearnedStopBossMax();
         }
+        meta.silverVwinLeaf = g_silverVwinLeaf;
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2808,6 +2811,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
+        {"STS_SILVER_VWIN_LEAF", ""}, {"STS_SILVER_VWIN_LEAF_SAMPLES", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3292,6 +3296,22 @@ int main(int argc, char **argv) {
         return 2;
     }
     search::installNativeSilverBackend();
+    try {
+        g_silverVwinLeaf = one_combat::configureSilverVwinLeaf();
+    } catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << "\n";
+        return 2;
+    }
+    if (g_silverVwinLeaf != "off") {
+        std::cout << "[Silver v_win terminal pricing (#367): " << g_silverVwinLeaf << "]\n";
+        std::atexit([] {
+            const auto t = one_combat::silverVwinLeafTotals();
+            std::cerr << "[silver vwin leaf] combats=" << t.combats << " flat=" << t.flatCombats << " unsupported=" << t.unsupported
+                      << " prices=" << t.prices << " lookups=" << t.lookups << " screenGbm=" << t.screenGbm
+                      << " anchor=" << t.anchor << " fallbacks=" << t.fallbacks << " decided=" << t.decided
+                      << " cpuSeconds=" << t.seconds << "\n";
+        });
+    }
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -3804,6 +3824,12 @@ int main(int argc, char **argv) {
     } else if (mode == "vwinrefreshcontinuationselftest") {
         if (argc != 2) return 2;
         try { return vwinRefreshContinuationSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "silvervwinleafselftest") {
+        try { return one_combat::silverVwinLeafSelfTest(); }
         catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 1;

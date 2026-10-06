@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-25 for native-only Silver (ADR-0022), the native default
+Last verified: 2026-10-06 for #367 v_win terminal pricing (default off); 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
 ## Purpose
@@ -219,7 +219,47 @@ action is revalidated against the live battle.
 
 Silver evaluates leaves by rolling out with `SilverRolloutAgent` and scoring
 the terminal state with Silver's evaluation weights (`SilverEvalWeights`).
-`one_combat` loads no learned combat model for play. `CombatValueNet` remains
+`one_combat` loads no learned combat model for play unless the research-only
+`STS_SILVER_VWIN_LEAF=1` (#367) is set.
+
+### v_win terminal pricing (#367, default off)
+
+With `STS_SILVER_VWIN_LEAF=1`, `apps/one_combat/silver_vwin_pricer.cpp`
+attaches a `SilverTerminalPricer` to each combat's searcher through
+`g_nativeSilverTerminalPricerFactory`. A won terminal (a Smoke Bomb escape
+included) scores `winBonus + price - turn * victoryTurnPenalty`; the price
+replaces the HP, potion, gold, max-HP, death-save, Parasite and escape terms.
+Losses keep Silver's shaping.
+
+- **State priced.** The terminal's exit fields (HP, max HP, gold, stolen gold,
+  potions, Writhing Mass Parasite or Omamori, spent Lizard Tail, Burning/Black
+  Blood) are written into a copy of the run as `exitBattle` would, and the
+  room's own continuation runs: combat rewards, an event's continuation, the
+  map after an escape, or the Act 3/4 boss end. Act 1-2 boss wins get the act
+  transition heal first. Rewards come from `sampleOocNoncombatFuture` copies,
+  never from the real RNG; each price averages
+  `STS_SILVER_VWIN_LEAF_SAMPLES` futures (default 4), shared by every price
+  of the combat (common random numbers). Colosseum's Victory relics are rolled
+  when the fight is chosen and are therefore the real ones.
+- **Model.** DECISION screens use the ADR-0027 screen GBM
+  (`sigmoid(logit(X2-B) + residual)`); the map, a following battle and
+  screens the public contract cannot encode use pinned X2-B
+  (`models/candidates/v_win_x2b_trees.txt`); a decided run is 0 or 1.
+- **Scale.** Per combat, with the root's resources and no act heal,
+  `v(1 HP)` and `v(max HP)` give an HP slope `s` (at least 0.0005); the price
+  is `1 + 11 * rootPotions + (v - v(1 HP)) / s`, clamped to `[0, 3 * maxHp +
+  offset]`, so a win keeps Silver's point scale (c=25 and the learned-stop
+  features stay in range) while potions, gold and rewards trade in the
+  combat's own HP units. When `v(max HP) - v(1 HP) <= 1e-6` (a run-ending
+  boss win) the combat keeps the handcrafted formula.
+- **Cost.** Prices are memoized per combat by exit fields; process totals
+  print to stderr at exit. `one_combat silvervwinleafselftest` (ctest
+  `silver_vwin_leaf`) checks normal, elite, Dead Adventurer and boss prices.
+
+The engine's Dead Adventurer continuation opens its combat rewards even after
+a Smoke Bomb escape (Colosseum's Victory fight forfeits them), so the pricer,
+following the engine, values such an escape like a win. **Open question:**
+whether that matches Java. `CombatValueNet` remains
 for `vnettest`, and `CombatDistValueNet` only for `parity_test`.
 
 Feature ordering and counts are model-interface invariants. Native PV/dist

@@ -50,6 +50,8 @@ diagnostics.
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | Accepted only as `1` (adaptive Silver is always retained-only) | `1` | `main` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier) and one-action roots are searched; used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
 | `STS_SILVER_ESCAPE_PENALTY` | `<normal>,<elite>`: Silver score penalty (HP-equivalent) for a Smoke Bomb escape in normal and elite-trigger fights, capped at half the HP left; see combat-search.md | unset (`0,0`, escape scored as a win) | `NativeSilverBackend` |
+| `STS_SILVER_VWIN_LEAF` | Research-only (#367): `1` prices every won or escaped fight with the new v_win instead of Silver's handcrafted win formula: the state right after the fight (reward screen, map, event or boss chest, with Burning Blood and the act 1-2 boss heal applied) is scored by the ADR-0027 screen GBM on its pinned X2-B anchor, or by X2-B at the map, then mapped to HP points per combat; see combat-search.md. Exclusive with `STS_SILVER_ESCAPE_PENALTY` | unset/off | `apps/one_combat/silver_vwin_pricer.cpp`, `NativeSilverBackend` |
+| `STS_SILVER_VWIN_LEAF_SAMPLES` | Re-drawn noncombat futures averaged by each `STS_SILVER_VWIN_LEAF` price (`1..64`) | `4` | `apps/one_combat/silver_vwin_pricer.cpp` |
 | `STS_SILVER_SEARCH_SINGLETON_ROOTS` | `1`: search roots with one legal action instead of committing that action without search | off (one-action roots unsearched) | `NativeSilverBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Accepted only as `allocated` (the native cap) so frozen environments stay valid | `allocated` | `main` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Accepted only as `0`; no leaf VNet exists | `0` | `main` |
