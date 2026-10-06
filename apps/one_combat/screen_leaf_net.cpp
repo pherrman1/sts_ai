@@ -397,4 +397,3 @@ int screenLeafGbmLiveParity(const std::string &input, const std::string &output)
     return rows > 0 && !mismatches && !richMismatches ? 0 : 1;
 }
 }
-
