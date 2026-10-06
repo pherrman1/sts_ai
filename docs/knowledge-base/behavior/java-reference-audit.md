@@ -1,7 +1,7 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-01 against `desktop-1.0.jar` V2.3.4 and the
-`monster_ai_java_parity` unit test.
+Last verified: 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+`monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
 
@@ -364,6 +364,41 @@ was compared with the native references.
 classes, and relic hooks that act purely out of combat beyond the
 upgrade/transform relics listed above.
 
+
+## Encounter generation
+
+Java `AbstractDungeon.populateFirstStrongEnemy` draws the act's first strong
+hallway encounter from the strong weights and re-rolls `monsterRng` while the
+draw is in the act's `generateExclusions()`, which depends only on the last
+weak encounter. Native `GameContext::populateFirstStrongEnemy`
+(`src/game/GameContext.cpp`) uses the same re-roll loop.
+
+| Act (Java class) | Last weak encounter | Excluded as first strong |
+|---|---|---|
+| 1 (`Exordium`) | Small Slimes | Large Slime, Lots of Slimes |
+| 1 | 2 Louse | 3 Louse |
+| 2 (`TheCity`) | Spheric Guardian | Sentry and Sphere |
+| 2 | 3 Byrds | Chosen and Byrds |
+| 2 | Chosen | Chosen and Byrds, Cultist and Chosen |
+| 3 (`TheBeyond`) | 3 Darklings | 3 Darklings |
+| 3 | Orb Walker | Orb Walker (not in the strong pool, so never fires) |
+| 3 | 3 Shapes | 4 Shapes |
+
+`Exordium` also has Looter and Blue Slaver cases, which never fire because
+those are strong encounters, so the last weak encounter is never one of them.
+
+### Mismatch, fixed
+
+Until #407, native applied only the act 1 rows. In acts 2 and 3 it could
+produce a first strong fight the game never would. Java consumes an extra
+`monsterRng` draw per re-roll and `monsterRng` is not reseeded between acts, so
+from that point the rest of the run's `monsterRng` sequence (the act's strong
+queue, elites and boss, then every later act) diverged from the game for the
+same seed. **Inference** from the pool weights: an act 2 queue hits an
+exclusion with probability 9/145 (about 6%), an act 3 queue with probability
+1/12. Covered by `first_strong_exclusions`, which checks the result and the
+`monsterRng` counter against a Java-rule reimplementation for every act and
+last weak encounter.
 
 ## Ambiguous or not yet inspected
 

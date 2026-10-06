@@ -329,6 +329,8 @@ add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spi
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
+add_test(NAME first_strong_exclusions COMMAND $<TARGET_FILE:unit-test> first_strong_exclusions)
+set_tests_properties(first_strong_exclusions PROPERTIES LABELS "core")
 add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simulator_correctness_pr9_19)
 add_test(NAME simulator_relic_fidelity COMMAND $<TARGET_FILE:unit-test> simulator_relic_fidelity)
 set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")

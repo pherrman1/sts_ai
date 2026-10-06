@@ -5296,6 +5296,88 @@ int testOocSemanticSmith() {
     return 0;
 }
 
+// #407: Java AbstractDungeon.populateFirstStrongEnemy re-rolls monsterRng
+// until the draw is not in the act's generateExclusions() for the last weak
+// encounter (STS1 V2.3.4 Exordium/TheCity/TheBeyond). The simulator must
+// produce the same encounter and leave monsterRng at the same counter.
+int testFirstStrongExclusions() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "first_strong_exclusions FAIL: " << msg << '\n';
+        return 1;
+    };
+    typedef MonsterEncounter ME;
+    struct Exclusion { ME lastWeak; ME excluded; };
+    static const Exclusion javaTable[] = {
+            {ME::SMALL_SLIMES, ME::LARGE_SLIME},
+            {ME::SMALL_SLIMES, ME::LOTS_OF_SLIMES},
+            {ME::TWO_LOUSE, ME::THREE_LOUSE},
+            {ME::SPHERIC_GUARDIAN, ME::SENTRY_AND_SPHERE},
+            {ME::THREE_BYRDS, ME::CHOSEN_AND_BYRDS},
+            {ME::CHOSEN, ME::CHOSEN_AND_BYRDS},
+            {ME::CHOSEN, ME::CULTIST_AND_CHOSEN},
+            {ME::THREE_DARKLINGS, ME::THREE_DARKLINGS},
+            {ME::ORB_WALKER, ME::ORB_WALKER},
+            {ME::THREE_SHAPES, ME::FOUR_SHAPES},
+    };
+    auto excluded = [&](ME lastWeak, ME draw) {
+        for (const auto &e : javaTable) {
+            if (e.lastWeak == lastWeak && e.excluded == draw) return true;
+        }
+        return false;
+    };
+    auto javaRoll = [](float roll, const float *weights, int count) {
+        float cur = 0.0f;
+        for (int i = 0; i < count; ++i) {
+            cur += weights[i];
+            if (roll < cur) return i;
+        }
+        return count - 1;
+    };
+
+    int rerolls = 0;
+    for (int act = 1; act <= 3; ++act) {
+        const ME *strong = MonsterEncounterPool::strongEnemies[act-1];
+        const float *weights = MonsterEncounterPool::strongWeights[act-1];
+        const int count = MonsterEncounterPool::strongCount[act-1];
+        for (int w = 0; w < MonsterEncounterPool::weakCount[act-1]; ++w) {
+            const ME lastWeak = MonsterEncounterPool::weakEnemies[act-1][w];
+            for (std::uint64_t s = 1; s <= 400; ++s) {
+                GameContext gc(CharacterClass::IRONCLAD, 0x407u, 0);
+                gc.act = act;
+                gc.monsterList.clear();
+                gc.monsterList.push_back(lastWeak);
+                gc.monsterRng = Random(s * 7919u + act * 31u + w);
+                Random ref = gc.monsterRng;
+
+                ME expected;
+                int draws = 0;
+                do {
+                    expected = strong[javaRoll(ref.random(), weights, count)];
+                    ++draws;
+                } while (excluded(lastWeak, expected));
+                rerolls += draws - 1;
+
+                gc.populateFirstStrongEnemy(strong, weights, count);
+                if (gc.monsterList.size() != 2 || gc.monsterList.back() != expected) {
+                    return fail(std::string("act ") + std::to_string(act) + " after "
+                        + monsterEncounterStrings[static_cast<int>(lastWeak)] + ": got "
+                        + monsterEncounterStrings[static_cast<int>(gc.monsterList.back())] + ", Java "
+                        + monsterEncounterStrings[static_cast<int>(expected)]);
+                }
+                if (gc.monsterRng.counter != ref.counter) {
+                    return fail(std::string("monsterRng counter diverged in act ") + std::to_string(act)
+                        + " after " + monsterEncounterStrings[static_cast<int>(lastWeak)]);
+                }
+            }
+        }
+    }
+    if (rerolls == 0) {
+        return fail("no exclusion re-roll exercised");
+    }
+    std::cout << "first_strong_exclusions PASS (" << rerolls << " re-rolls)\n";
+    return 0;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -5367,6 +5449,8 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "issue_fixes") {
         return testIssueFixes();
+    } else if (command == "first_strong_exclusions") {
+        return testFirstStrongExclusions();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
     } else if (command == "silver_escape_penalty") {
