@@ -1,0 +1,10 @@
+[
+ {"name": "win", "label_weight": 1.0},
+ {"name": "td", "label_weight": 0.0},
+ {"name": "mix50", "label_weight": 0.5},
+ {"name": "mix25", "label_weight": 0.25},
+ {"name": "td_d4", "label_weight": 0.0, "params": {"max_depth": 4}},
+ {"name": "td_d8", "label_weight": 0.0, "params": {"max_depth": 8}},
+ {"name": "td_mcw200", "label_weight": 0.0, "params": {"min_child_weight": 200}},
+ {"name": "td_eta01", "label_weight": 0.0, "params": {"eta": 0.01}}
+]
