@@ -17,7 +17,7 @@ simulator's own tables and obtain sites, not from a hand-written color list:
 - `curseCardPool` (events, curse transforms, Writhing Mass Parasite).
 - Every literal `deck.obtain(..., CardId::X` / `obtainCard(CardId::X` in
   `src/` (event cards such as Bite, J.A.X., Apparition, Ritual Dagger;
-  starter cards; Ascender's Bane; Curse of the Bell), excluding other
+  starter cards; Ascender's Bane; Curse of the Bell; Necronomicurse), excluding other
   classes' starter literals from `GameContext::initFromSeed`'s class switch.
 - `noteForYourselfCard`'s default from `GameContext.h`.
 - Live-game-only additions (`LIVE_ONLY`): cards the real game can put in the
@@ -43,9 +43,9 @@ POOLS = ROOT / "include/constants/CardPools.h"
 GC_HEADER = ROOT / "include/game/GameContext.h"
 N_CARD_COLUMNS = 372  # one_combat::kNumCardIds
 OTHER_CLASS = {"GREEN", "BLUE", "PURPLE"}
-# STS1 adds Necronomicurse when Necronomicon is obtained (Cursed Tome); the
-# simulator grants the relic (GameContext.cpp Cursed Tome) but never the curse.
-LIVE_ONLY = {"NECRONOMICURSE": "Necronomicon pickup in the real game; missing simulator obtain"}
+# Cards reachable only in the real game. Empty since #406: the simulator now
+# obtains Necronomicurse with Necronomicon (a literal obtain site).
+LIVE_ONLY = {}
 
 
 class DomainError(ValueError):
