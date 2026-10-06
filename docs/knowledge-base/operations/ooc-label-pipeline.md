@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -34,6 +34,19 @@ upgrade/misc/bottle metadata, and all six RNG streams synchronized by
 `BattleContext::exitBattle` (`ai`, `cardRandom`, `misc`, `monsterHp`, `potion`,
 `shuffle`). Other GameContext fields are copy-through continuation state and
 are intentionally not overwritten by `applyCombatTransitionState`.
+
+`combattransitiongen` (not the Lizard candidate mode or other teacher
+consumers) also accepts a learned-stop teacher (#418): `search_configuration`
+sets `"budget_policy": "learned_stop"` with `learned_stop_model` and
+`learned_stop_threshold` equal to the compiled stop model
+(`gbt-770201c31f7b`, `0.0323`). The frozen environment then requires
+`STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`, and the
+process must run plain learned stopping (no adaptive, searched one-action
+roots, boss fallback or boss max). The remaining search constants and the 10,000 cap are unchanged. An absent
+`budget_policy` keeps the frozen exact-10k contract, which now also refuses a
+process with learned stopping enabled. `one_combat learnedstopteacherselftest`
+(CTest `learned_stop_teacher_contract`) checks the loader without running
+seeds.
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and

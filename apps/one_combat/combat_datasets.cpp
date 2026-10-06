@@ -14,6 +14,7 @@
 #include <set>
 #ifndef _WIN32
 #include <sys/file.h>
+#include <unistd.h>
 #endif
 
 // ---------------------------------------------------------------------------
@@ -137,7 +138,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
 
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance,
-                                                 bool requireOocPolicy) {
+                                                 bool requireOocPolicy,
+                                                 bool allowLearnedStop) {
     std::ifstream in(path); if (!in) throw std::runtime_error("wholecombatgen: cannot open teacher " + path);
     nlohmann::json t; in >> t;
     auto req = [&](const char *key) { if (!t.contains(key) || !t[key].is_string() || t[key].get<std::string>().empty()) throw std::runtime_error(std::string("wholecombatgen: teacher missing ")+key); return t[key].get<std::string>(); };
@@ -149,6 +151,13 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (req("combat_backend")!="native_silver" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
     if (!t.contains("search_configuration") || !t["search_configuration"].is_object()) throw std::runtime_error("wholecombatgen: missing search_configuration");
     const auto &s=t["search_configuration"];
+    // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
+    // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
+    // that opt in; it pins the compiled stop model and threshold.
+    const std::string budgetPolicy=s.value("budget_policy",std::string{"flat_exact"});
+    const bool learnedStopTeacher=budgetPolicy=="learned_stop";
+    if (!learnedStopTeacher && budgetPolicy!="flat_exact") throw std::runtime_error("wholecombatgen: unknown budget_policy "+budgetPolicy);
+    if (learnedStopTeacher && !allowLearnedStop) throw std::runtime_error("wholecombatgen: this mode accepts only the frozen exact-10k teacher");
     if (s.value("simulation_budgets",std::vector<int>{})!=std::vector<int>{10000} || sims!=10000
         || s.value("exploration_parameter",-1.0)!=25.0 || s.value("exploration_parameter_chance",-1.0)!=25.0
         || s.value("chance_widening_c",-1.0)!=3.7028 || s.value("chance_widening_alpha",-1.0)!=0.52389
@@ -156,7 +165,20 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
         || s.value("reuse_cap_mode",std::string{})!="allocated" || s.value("reuse_cap",-1)!=32768
         || s.value("sequential_halving",true) || s.value("pruning",true) || s.value("learned_visit_puct",true)
         || s.value("direct_learned_leaf",true) || s.value("adaptive",true))
-        throw std::runtime_error("wholecombatgen: not the frozen exact-10k ordinary Silver contract");
+        throw std::runtime_error(learnedStopTeacher ? "wholecombatgen: not the learned-stop ordinary Silver contract"
+                                                    : "wholecombatgen: not the frozen exact-10k ordinary Silver contract");
+    if (learnedStopTeacher) {
+        if (s.value("learned_stop_model",std::string{})!=search::nativeSilverStopModelId()
+            || s.value("learned_stop_threshold",-1.0)!=search::nativeSilverLearnedStopThreshold())
+            throw std::runtime_error("wholecombatgen: learned-stop model/threshold mismatch with the compiled stop model");
+        if (!search::nativeSilverLearnedStopEnabled() || search::nativeSilverAdaptiveEnabled()
+            || search::nativeSilverExactRootBudgets() || search::nativeSilverSearchesSingletonRoots()
+            || search::nativeSilverLearnedStopBossFallback()
+            || search::nativeSilverLearnedStopBossMax()!=0)
+            throw std::runtime_error("wholecombatgen: effective Silver is not plain learned stopping");
+    } else if (search::nativeSilverLearnedStopEnabled()) {
+        throw std::runtime_error("wholecombatgen: exact-10k teacher with learned stopping enabled");
+    }
     if (search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
@@ -166,7 +188,8 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
         if (!expected.is_string() || !actual || expected.get<std::string>()!=actual)
             throw std::runtime_error("wholecombatgen: environment mismatch for "+name);
     }
-    const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"}};
+    std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"}};
+    if (learnedStopTeacher) { required["STS_SILVER_EXACT_ROOT_BUDGETS"]="0"; required["STS_SILVER_LEARNED_STOP"]="1"; }
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
     for (const auto &a:t["model_artifacts"]) { const std::string role=a.value("role",std::string{}), p=a.value("path",std::string{}), h=a.value("sha256",std::string{}); if(role.empty()||p.empty()||h.size()!=64||fileSha256(p)!=h) throw std::runtime_error("wholecombatgen: artifact hash mismatch for "+role); }
@@ -1492,6 +1515,94 @@ int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc) {
     return 0;
 }
 
+
+// Loader-only checks for the learned-stop teacher contract (#418). Runs no
+// seeds: it installs Silver with production learned stopping and verifies
+// which teacher specifications loadWholeCombatTeacher accepts.
+int learnedStopTeacherSelfTest() {
+    for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
+             {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+             {"STS_SILVER_EXACT_ROOT_BUDGETS", "0"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+             {"STS_SILVER_LEARNED_STOP", "1"}})
+        setenv(name, value, 1);
+    unsetenv("STS_SILVER_LEARNED_STOP_THRESHOLD");
+    unsetenv("STS_SILVER_LEARNED_STOP_BOSS_FALLBACK");
+    unsetenv("STS_SILVER_LEARNED_STOP_BOSS_MAX");
+    search::installNativeSilverBackend();
+    const std::filesystem::path teacherPath = std::filesystem::temp_directory_path()
+        / ("sts_learned_stop_teacher_" + trainingExecutableGitSha() + "_"
+           + std::to_string(::getpid()) + ".json");
+    const nlohmann::json base = {
+        {"teacher_id", "learned-stop-selftest"},
+        {"git_sha", trainingExecutableGitSha()},
+        {"executable_sha256", fileSha256(g_mainBinaryPath)},
+        {"combat_backend", "native_silver"},
+        {"rng_regime", "project_fair"},
+        {"search_configuration", {
+            {"budget_policy", "learned_stop"},
+            {"learned_stop_model", search::nativeSilverStopModelId()},
+            {"learned_stop_threshold", search::nativeSilverLearnedStopThreshold()},
+            {"simulation_budgets", {10000}}, {"exploration_parameter", 25.0},
+            {"exploration_parameter_chance", 25.0}, {"chance_widening_c", 3.7028},
+            {"chance_widening_alpha", 0.52389}, {"end_turn_widening_c", 3.7028},
+            {"end_turn_widening_alpha", 0.52389}, {"reuse_cap_mode", "allocated"},
+            {"reuse_cap", 32768}, {"sequential_halving", false}, {"pruning", false},
+            {"learned_visit_puct", false}, {"direct_learned_leaf", false}, {"adaptive", false},
+        }},
+        {"environment", {
+            {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+            {"STS_SILVER_EXACT_ROOT_BUDGETS", "0"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+            {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+            {"STS_SILVER_LEARNED_STOP", "1"},
+        }},
+        {"model_artifacts", nlohmann::json::array()},
+    };
+    const auto loads = [&](const nlohmann::json &teacher, bool allowLearnedStop) {
+        { std::ofstream out(teacherPath); out << teacher.dump(); }
+        try {
+            loadWholeCombatTeacher(teacherPath.string(), 10000, false, false, allowLearnedStop);
+            return true;
+        } catch (const std::runtime_error &) {
+            return false;
+        }
+    };
+    int failures = 0;
+    const auto expect = [&](const char *name, bool actual, bool expected) {
+        if (actual != expected) {
+            ++failures;
+            std::cerr << "learnedstopteacherselftest FAIL: " << name << '\n';
+        }
+    };
+    expect("accepts learned-stop teacher when allowed", loads(base, true), true);
+    expect("rejects learned-stop teacher when not allowed", loads(base, false), false);
+    auto wrongModel = base;
+    wrongModel["search_configuration"]["learned_stop_model"] = "gbt-000000000000";
+    expect("rejects stop-model mismatch", loads(wrongModel, true), false);
+    auto wrongThreshold = base;
+    wrongThreshold["search_configuration"]["learned_stop_threshold"] = 0.5;
+    expect("rejects threshold mismatch", loads(wrongThreshold, true), false);
+    auto unknownPolicy = base;
+    unknownPolicy["search_configuration"]["budget_policy"] = "adaptive";
+    expect("rejects unknown budget policy", loads(unknownPolicy, true), false);
+    auto exactEnv = base;
+    exactEnv["environment"]["STS_SILVER_EXACT_ROOT_BUDGETS"] = "1";
+    expect("rejects exact-root-budget environment", loads(exactEnv, true), false);
+    auto exactTeacher = base;
+    exactTeacher["search_configuration"].erase("budget_policy");
+    exactTeacher["environment"].erase("STS_SILVER_LEARNED_STOP");
+    expect("rejects exact-10k teacher under learned-stop Silver", loads(exactTeacher, true), false);
+    // Searching one-action roots changes play but not the teacher spec.
+    setenv("STS_SILVER_SEARCH_SINGLETON_ROOTS", "1", 1);
+    search::installNativeSilverBackend();
+    expect("rejects searched singleton roots", loads(base, true), false);
+    unsetenv("STS_SILVER_SEARCH_SINGLETON_ROOTS");
+    search::installNativeSilverBackend();
+    std::error_code ignored;
+    std::filesystem::remove(teacherPath, ignored);
+    if (failures == 0) std::cout << "learnedstopteacherselftest PASS\n";
+    return failures == 0 ? 0 : 1;
+}
 
 int teacherSchemaCompatibilitySelfTest() {
     for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
@@ -3804,7 +3915,11 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &teacherPath,
                                 bool allowStaleProvenance) {
     trainingCampaignStart();
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance);
+    // Only the Lizard candidate mode passes stale provenance; it keeps the
+    // frozen exact-10k teacher.
+    const bool lizardCandidateMode = allowStaleProvenance;
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
+                                                false, !lizardCandidateMode);
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;

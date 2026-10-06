@@ -226,7 +226,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         std::vector<CombatEvalFight> *combatCapture = nullptr);
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance = false,
-                                                 bool requireOocPolicy = false);
+                                                 bool requireOocPolicy = false,
+                                                 bool allowLearnedStop = false);
 void resampleRemainingActEncounters(GameContext &gc, std::uint64_t branchSeed);
 void stepCounterfactualAuditSource(GameContext &gc,
                                            search::ScumSearchAgent2 &agent);
@@ -377,6 +378,7 @@ int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc);
 void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent);
 
 int teacherSchemaCompatibilitySelfTest();
+int learnedStopTeacherSelfTest();
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath);
 
