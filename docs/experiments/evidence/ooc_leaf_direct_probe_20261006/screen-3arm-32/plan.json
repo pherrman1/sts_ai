@@ -1,0 +1,72 @@
+{
+  "purpose": "3-arm online leaf probe at equal sims (2048): playout vs direct X2-B vs screen-aware S1 leaf. Descriptive pilot, 32 paired seeds.",
+  "authorized_by": "Philipp, 2026-10-06T07:55Z (thread: wants a screen-aware leaf model; 32-seed pilots approved earlier)",
+  "code_sha": "0584480e451dabad3af6ab7f139ea526f11b9bbc",
+  "binary_sha256": "c69ad6206732785095482d32c02fea4672077ddb62423b3361bb0f3c1a36007a",
+  "models": {
+    "models/candidates/v_win_x2b_trees.txt": "a251b33d4f71c1aa3fca529801da23ea9740dd0ded58abfb1a90fe69da7c9acf",
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "selfplay/models/combat_transition_near_full_except_smoke_v2.native": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "selfplay/models/combat_transition_deepsets_lizard_t2.native": "abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321",
+    "models/candidates/screen_leaf_s1_379.native": "f605ba408e6cc2ebfaeaf2654efd97899a2b9d1f8e2688fc9e6489053954d3a3"
+  },
+  "seeds": [
+    47001024,
+    47001055
+  ],
+  "count": 32,
+  "asc": 0,
+  "silver_sims": 10000,
+  "base_env": {
+    "OMP_NUM_THREADS": "1",
+    "STS_COLLECT_KEYS": "0",
+    "STS_EXECUTABLE_GIT_SHA": "0584480e451dabad3af6ab7f139ea526f11b9bbc",
+    "STS_FAIR": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_OOC_MCTS": "1",
+    "STS_OOC_MCTS_CPUCT": "1.5",
+    "STS_OOC_MCTS_EARLY_STOP": "1",
+    "STS_OOC_MCTS_LEAF_COMBATS": "0",
+    "STS_OOC_MCTS_LEAF_POLICY": "v4",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_MAX_DEPTH": "32",
+    "STS_OOC_MCTS_PRIOR": "policy",
+    "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+    "STS_OOC_MCTS_SIMS": "2048",
+    "STS_OOC_MCTS_TEMPERATURE": "1",
+    "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+    "STS_OOC_MCTS_WIDEN_K": "2",
+    "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+    "STS_OOC_STRATEGIC_EVENT": "1",
+    "STS_OOC_STRATEGIC_MARGIN": "1.0",
+    "STS_OOC_STRATEGIC_REST": "1",
+    "STS_OOC_STRATEGIC_SHOP": "1",
+    "STS_OOC_STRATEGIC_TOK_NN": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+    "STS_OOC_STRATEGIC_TREASURE": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_STOP_AFTER_ACT": "3",
+    "STS_OOC_CPU_PROFILE": "1",
+    "STS_WIN_NET": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/v_win_x2b_trees.txt"
+  },
+  "workers": 10,
+  "arms": {
+    "A_playout": {
+      "STS_OOC_MCTS_LEAF_VALUE": "native"
+    },
+    "B_direct": {
+      "STS_OOC_MCTS_LEAF_VALUE": "direct"
+    },
+    "C_screen": {
+      "STS_OOC_MCTS_LEAF_VALUE": "screen",
+      "STS_OOC_MCTS_SCREEN_LEAF_MODEL": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/screen_leaf_s1_379.native"
+    }
+  },
+  "decision_rule": "Descriptive only at n=32: paired win/floor deltas vs A and C vs B with bootstrap CIs, seconds per run, screen-leaf evaluation counts."
+}

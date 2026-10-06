@@ -1,0 +1,979 @@
+{
+  "S0_relative_margins": {
+    "absolute_signed_mean": 0.01,
+    "mae": 0.01,
+    "p95_absolute_delta": 0.025
+  },
+  "absolute_caps": {
+    "absolute_signed_mean": 0.05,
+    "mae": 0.1,
+    "p95_absolute_delta": 0.25
+  },
+  "act_coverage": {
+    "1": {
+      "rows": 5002,
+      "sources": 155
+    },
+    "2": {
+      "rows": 12412,
+      "sources": 155
+    },
+    "3": {
+      "rows": 11163,
+      "sources": 154
+    }
+  },
+  "act_family_cells": "diagnostic only; limited below 20 sources or 100 rows",
+  "candidate_verdict": "NOT_EVALUATED",
+  "eligible_mask": [
+    "boss_relic",
+    "rest",
+    "shop",
+    "treasure"
+  ],
+  "estimand": "row-weighted exact links restricted to each named eligible subset; all-four-family coverage determines initial eligibility",
+  "fallback_mask": [],
+  "judgment_provenance": "Root adopted bounded independent-review revisions before learned calibration inspection; materiality and coverage are explicit judgments, not estimated truths or power guarantees.",
+  "later_mask_reduction": "Requires explicit pre-TEST receipt naming selected subset and its precomputed hashes; no new cap or margin choices",
+  "minimum_exact_links": 200,
+  "minimum_sources": 30,
+  "no_candidate_or_test_authorization": true,
+  "paired_CI": "diagnostic only; future paired whole-source 5000 bootstrap draws, seed 379",
+  "per_act_limits": {
+    "1": {
+      "absolute_signed_mean": 0.011866097050566182,
+      "mae": 0.01847379633825256,
+      "p95_absolute_delta": 0.0650326714067117
+    },
+    "2": {
+      "absolute_signed_mean": 0.011146233409980576,
+      "mae": 0.015602599613987644,
+      "p95_absolute_delta": 0.05300025106305054
+    },
+    "3": {
+      "absolute_signed_mean": 0.012789154166616815,
+      "mae": 0.013356130351150255,
+      "p95_absolute_delta": 0.030847127025141637
+    }
+  },
+  "pooled_family_coverage": {
+    "boss_relic": {
+      "rows": 5901,
+      "sources": 155
+    },
+    "rest": {
+      "rows": 14871,
+      "sources": 154
+    },
+    "shop": {
+      "rows": 7445,
+      "sources": 155
+    },
+    "treasure": {
+      "rows": 360,
+      "sources": 155
+    }
+  },
+  "precomputed_subsets": {
+    "boss_relic": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0008057170906492618,
+          "mae": 0.0112432965867008,
+          "p90_absolute_delta": 0.028564285924064476,
+          "p95_absolute_delta": 0.053821058769675655,
+          "signed_mean": 0.0008057170906492618
+        },
+        "2": {
+          "absolute_signed_mean": 0.0018233404507860833,
+          "mae": 0.010282230053708784,
+          "p90_absolute_delta": 0.03090051829673046,
+          "p95_absolute_delta": 0.046917989873231564,
+          "signed_mean": 0.0018233404507860833
+        },
+        "3": null
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 2268,
+          "sources": 154
+        },
+        "2": {
+          "rows": 3633,
+          "sources": 154
+        },
+        "3": {
+          "rows": 0,
+          "sources": 0
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic"
+      ],
+      "npz_matched_index_array": "subset_boss_relic",
+      "per_act_limits": null,
+      "status": "INSUFFICIENT_ACT_COVERAGE"
+    },
+    "boss_relic+rest": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0021635541929174167,
+          "mae": 0.009631211437466446,
+          "p90_absolute_delta": 0.022425857219208867,
+          "p95_absolute_delta": 0.04735947866441688,
+          "signed_mean": 0.0021635541929174167
+        },
+        "2": {
+          "absolute_signed_mean": 0.0015293011594065392,
+          "mae": 0.006420227007684532,
+          "p90_absolute_delta": 0.01571050532203753,
+          "p95_absolute_delta": 0.03307914604352785,
+          "signed_mean": 0.0015293011594065392
+        },
+        "3": {
+          "absolute_signed_mean": 0.004037379279974427,
+          "mae": 0.004558180485622297,
+          "p90_absolute_delta": 0.0017856690410419055,
+          "p95_absolute_delta": 0.006628055303717876,
+          "signed_mean": 0.004037379279974427
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 3857,
+          "sources": 155
+        },
+        "2": {
+          "rows": 9283,
+          "sources": 155
+        },
+        "3": {
+          "rows": 7632,
+          "sources": 147
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "rest"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+rest",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.012163554192917416,
+          "mae": 0.019631211437466448,
+          "p95_absolute_delta": 0.07235947866441689
+        },
+        "2": {
+          "absolute_signed_mean": 0.011529301159406539,
+          "mae": 0.016420227007684533,
+          "p95_absolute_delta": 0.05807914604352785
+        },
+        "3": {
+          "absolute_signed_mean": 0.014037379279974428,
+          "mae": 0.014558180485622296,
+          "p95_absolute_delta": 0.03162805530371788
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "boss_relic+rest+shop": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.001802123327546042,
+          "mae": 0.008322732273156944,
+          "p90_absolute_delta": 0.017982203384211193,
+          "p95_absolute_delta": 0.037698548947619925,
+          "signed_mean": 0.001802123327546042
+        },
+        "2": {
+          "absolute_signed_mean": 0.0011084705197118524,
+          "mae": 0.005535354206406814,
+          "p90_absolute_delta": 0.012687124881918388,
+          "p95_absolute_delta": 0.027385832381909947,
+          "signed_mean": 0.0011084705197118524
+        },
+        "3": {
+          "absolute_signed_mean": 0.002813357391747995,
+          "mae": 0.0033374434498238516,
+          "p90_absolute_delta": 0.0014948658605930662,
+          "p95_absolute_delta": 0.005726793272174513,
+          "signed_mean": 0.002813357391747995
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 4931,
+          "sources": 155
+        },
+        "2": {
+          "rows": 12283,
+          "sources": 155
+        },
+        "3": {
+          "rows": 11003,
+          "sources": 154
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "rest",
+        "shop"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+rest+shop",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.011802123327546042,
+          "mae": 0.018322732273156943,
+          "p95_absolute_delta": 0.06269854894761992
+        },
+        "2": {
+          "absolute_signed_mean": 0.011108470519711852,
+          "mae": 0.015535354206406813,
+          "p95_absolute_delta": 0.05238583238190995
+        },
+        "3": {
+          "absolute_signed_mean": 0.012813357391747996,
+          "mae": 0.013337443449823853,
+          "p95_absolute_delta": 0.030726793272174514
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "boss_relic+rest+shop+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0018660970505661823,
+          "mae": 0.008473796338252557,
+          "p90_absolute_delta": 0.01852746346879909,
+          "p95_absolute_delta": 0.0400326714067117,
+          "signed_mean": 0.0018660970505661823
+        },
+        "2": {
+          "absolute_signed_mean": 0.001146233409980575,
+          "mae": 0.0056025996139876435,
+          "p90_absolute_delta": 0.012968410639002746,
+          "p95_absolute_delta": 0.02800025106305054,
+          "signed_mean": 0.001146233409980575
+        },
+        "3": {
+          "absolute_signed_mean": 0.0027891541666168144,
+          "mae": 0.003356130351150256,
+          "p90_absolute_delta": 0.0015761692112324008,
+          "p95_absolute_delta": 0.005847127025141637,
+          "signed_mean": 0.0027891541666168144
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 5002,
+          "sources": 155
+        },
+        "2": {
+          "rows": 12412,
+          "sources": 155
+        },
+        "3": {
+          "rows": 11163,
+          "sources": 154
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "rest",
+        "shop",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+rest+shop+treasure",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.011866097050566182,
+          "mae": 0.01847379633825256,
+          "p95_absolute_delta": 0.0650326714067117
+        },
+        "2": {
+          "absolute_signed_mean": 0.011146233409980576,
+          "mae": 0.015602599613987644,
+          "p95_absolute_delta": 0.05300025106305054
+        },
+        "3": {
+          "absolute_signed_mean": 0.012789154166616815,
+          "mae": 0.013356130351150255,
+          "p95_absolute_delta": 0.030847127025141637
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "boss_relic+rest+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0022384867212028987,
+          "mae": 0.009799928451962953,
+          "p90_absolute_delta": 0.023213766568129016,
+          "p95_absolute_delta": 0.04935822522112256,
+          "signed_mean": 0.0022384867212028987
+        },
+        "2": {
+          "absolute_signed_mean": 0.0015733328042742368,
+          "mae": 0.006496778368450411,
+          "p90_absolute_delta": 0.016052283614359286,
+          "p95_absolute_delta": 0.03373481665430822,
+          "signed_mean": 0.0015733328042742368
+        },
+        "3": {
+          "absolute_signed_mean": 0.003977571258381049,
+          "mae": 0.004559885305152444,
+          "p90_absolute_delta": 0.001954463783386151,
+          "p95_absolute_delta": 0.007137562939886988,
+          "signed_mean": 0.003977571258381049
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 3928,
+          "sources": 155
+        },
+        "2": {
+          "rows": 9412,
+          "sources": 155
+        },
+        "3": {
+          "rows": 7792,
+          "sources": 151
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "rest",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+rest+treasure",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.0122384867212029,
+          "mae": 0.019799928451962955,
+          "p95_absolute_delta": 0.07435822522112256
+        },
+        "2": {
+          "absolute_signed_mean": 0.011573332804274236,
+          "mae": 0.016496778368450413,
+          "p95_absolute_delta": 0.05873481665430822
+        },
+        "3": {
+          "absolute_signed_mean": 0.01397757125838105,
+          "mae": 0.014559885305152443,
+          "p95_absolute_delta": 0.03213756293988699
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "boss_relic+shop": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0007087995115618144,
+          "mae": 0.008794616093137713,
+          "p90_absolute_delta": 0.02024337589709526,
+          "p95_absolute_delta": 0.0413657509003865,
+          "signed_mean": 0.0007087995115618144
+        },
+        "2": {
+          "absolute_signed_mean": 0.0009110563227130442,
+          "mae": 0.006896898867794869,
+          "p90_absolute_delta": 0.020223818855756154,
+          "p95_absolute_delta": 0.035221753286178444,
+          "signed_mean": 0.0009110563227130442
+        },
+        "3": {
+          "absolute_signed_mean": 4.215150300752414e-05,
+          "mae": 0.0005736745215492353,
+          "p90_absolute_delta": 0.000855996369797718,
+          "p95_absolute_delta": 0.0034965621524351564,
+          "signed_mean": 4.215150300752414e-05
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 3342,
+          "sources": 155
+        },
+        "2": {
+          "rows": 6633,
+          "sources": 155
+        },
+        "3": {
+          "rows": 3371,
+          "sources": 144
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "shop"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+shop",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.010708799511561815,
+          "mae": 0.018794616093137713,
+          "p95_absolute_delta": 0.0663657509003865
+        },
+        "2": {
+          "absolute_signed_mean": 0.010911056322713044,
+          "mae": 0.01689689886779487,
+          "p95_absolute_delta": 0.060221753286178445
+        },
+        "3": {
+          "absolute_signed_mean": 0.010042151503007524,
+          "mae": 0.010573674521549236,
+          "p95_absolute_delta": 0.028496562152435158
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "boss_relic+shop+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0008253018712106929,
+          "mae": 0.009006194968727992,
+          "p90_absolute_delta": 0.021500393654903617,
+          "p95_absolute_delta": 0.04278665461524555,
+          "signed_mean": 0.0008253018712106929
+        },
+        "2": {
+          "absolute_signed_mean": 0.000984138166165903,
+          "mae": 0.0069943568295775084,
+          "p90_absolute_delta": 0.020488488800189497,
+          "p95_absolute_delta": 0.035912578910962514,
+          "signed_mean": 0.000984138166165903
+        },
+        "3": {
+          "absolute_signed_mean": 9.120625805116685e-05,
+          "mae": 0.0007579863051885977,
+          "p90_absolute_delta": 0.0010582082589966069,
+          "p95_absolute_delta": 0.004039906052743458,
+          "signed_mean": 9.120625805116685e-05
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 3413,
+          "sources": 155
+        },
+        "2": {
+          "rows": 6762,
+          "sources": 155
+        },
+        "3": {
+          "rows": 3531,
+          "sources": 150
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "shop",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+shop+treasure",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.010825301871210693,
+          "mae": 0.01900619496872799,
+          "p95_absolute_delta": 0.06778665461524555
+        },
+        "2": {
+          "absolute_signed_mean": 0.010984138166165903,
+          "mae": 0.01699435682957751,
+          "p95_absolute_delta": 0.060912578910962516
+        },
+        "3": {
+          "absolute_signed_mean": 0.010091206258051167,
+          "mae": 0.010757986305188597,
+          "p95_absolute_delta": 0.02903990605274346
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "boss_relic+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.000972771988197963,
+          "mae": 0.01147769692331758,
+          "p90_absolute_delta": 0.02911406309137473,
+          "p95_absolute_delta": 0.05568266891819244,
+          "signed_mean": 0.000972771988197963
+        },
+        "2": {
+          "absolute_signed_mean": 0.001923418806157378,
+          "mae": 0.010341321764126462,
+          "p90_absolute_delta": 0.031621515863534365,
+          "p95_absolute_delta": 0.04737676471099228,
+          "signed_mean": 0.001923418806157378
+        },
+        "3": {
+          "absolute_signed_mean": 0.001124728628376914,
+          "mae": 0.0046412051967404154,
+          "p90_absolute_delta": 0.012915095055991732,
+          "p95_absolute_delta": 0.02585415800684959,
+          "signed_mean": 0.001124728628376914
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 2339,
+          "sources": 154
+        },
+        "2": {
+          "rows": 3762,
+          "sources": 155
+        },
+        "3": {
+          "rows": 160,
+          "sources": 70
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "boss_relic",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_boss_relic+treasure",
+      "per_act_limits": null,
+      "status": "INSUFFICIENT_ACT_COVERAGE"
+    },
+    "rest": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.00410161243580236,
+          "mae": 0.007330261709043837,
+          "p90_absolute_delta": 0.014598204944155512,
+          "p95_absolute_delta": 0.03173040245565153,
+          "signed_mean": 0.00410161243580236
+        },
+        "2": {
+          "absolute_signed_mean": 0.0013402312929318696,
+          "mae": 0.003936924872072835,
+          "p90_absolute_delta": 0.00730386549817344,
+          "p95_absolute_delta": 0.011916008958945068,
+          "signed_mean": 0.0013402312929318696
+        },
+        "3": {
+          "absolute_signed_mean": 0.004037379279974427,
+          "mae": 0.004558180485622297,
+          "p90_absolute_delta": 0.0017856690410419055,
+          "p95_absolute_delta": 0.006628055303717876,
+          "signed_mean": 0.004037379279974427
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 1589,
+          "sources": 143
+        },
+        "2": {
+          "rows": 5650,
+          "sources": 145
+        },
+        "3": {
+          "rows": 7632,
+          "sources": 147
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "rest"
+      ],
+      "npz_matched_index_array": "subset_rest",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.014101612435802359,
+          "mae": 0.017330261709043837,
+          "p95_absolute_delta": 0.05673040245565153
+        },
+        "2": {
+          "absolute_signed_mean": 0.011340231292931869,
+          "mae": 0.013936924872072834,
+          "p95_absolute_delta": 0.03691600895894507
+        },
+        "3": {
+          "absolute_signed_mean": 0.014037379279974428,
+          "mae": 0.014558180485622296,
+          "p95_absolute_delta": 0.03162805530371788
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "rest+shop": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0026507336712493453,
+          "mae": 0.0058353722043933435,
+          "p90_absolute_delta": 0.012590077526426355,
+          "p95_absolute_delta": 0.02165577805773836,
+          "signed_mean": 0.0026507336712493453
+        },
+        "2": {
+          "absolute_signed_mean": 0.0008082251486606755,
+          "mae": 0.0035416663505399865,
+          "p90_absolute_delta": 0.007514620867956573,
+          "p95_absolute_delta": 0.012517382956483825,
+          "signed_mean": 0.0008082251486606755
+        },
+        "3": {
+          "absolute_signed_mean": 0.002813357391747995,
+          "mae": 0.0033374434498238516,
+          "p90_absolute_delta": 0.0014948658605930662,
+          "p95_absolute_delta": 0.005726793272174513,
+          "signed_mean": 0.002813357391747995
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 2663,
+          "sources": 155
+        },
+        "2": {
+          "rows": 8650,
+          "sources": 154
+        },
+        "3": {
+          "rows": 11003,
+          "sources": 154
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "rest",
+        "shop"
+      ],
+      "npz_matched_index_array": "subset_rest+shop",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.012650733671249345,
+          "mae": 0.015835372204393343,
+          "p95_absolute_delta": 0.046655778057738365
+        },
+        "2": {
+          "absolute_signed_mean": 0.010808225148660675,
+          "mae": 0.013541666350539987,
+          "p95_absolute_delta": 0.037517382956483825
+        },
+        "3": {
+          "absolute_signed_mean": 0.012813357391747996,
+          "mae": 0.013337443449823853,
+          "p95_absolute_delta": 0.030726793272174514
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "rest+shop+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0027457392411629547,
+          "mae": 0.006176346973409611,
+          "p90_absolute_delta": 0.013176834744273582,
+          "p95_absolute_delta": 0.02432578611140608,
+          "signed_mean": 0.0027457392411629547
+        },
+        "2": {
+          "absolute_signed_mean": 0.0008660272499114998,
+          "mae": 0.0036660353825823696,
+          "p90_absolute_delta": 0.007644634924963919,
+          "p95_absolute_delta": 0.012976759233226694,
+          "signed_mean": 0.0008660272499114998
+        },
+        "3": {
+          "absolute_signed_mean": 0.0027891541666168144,
+          "mae": 0.003356130351150256,
+          "p90_absolute_delta": 0.0015761692112324008,
+          "p95_absolute_delta": 0.005847127025141637,
+          "signed_mean": 0.0027891541666168144
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 2734,
+          "sources": 155
+        },
+        "2": {
+          "rows": 8779,
+          "sources": 154
+        },
+        "3": {
+          "rows": 11163,
+          "sources": 154
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "rest",
+        "shop",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_rest+shop+treasure",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.012745739241162955,
+          "mae": 0.01617634697340961,
+          "p95_absolute_delta": 0.04932578611140608
+        },
+        "2": {
+          "absolute_signed_mean": 0.0108660272499115,
+          "mae": 0.01366603538258237,
+          "p95_absolute_delta": 0.037976759233226694
+        },
+        "3": {
+          "absolute_signed_mean": 0.012789154166616815,
+          "mae": 0.013356130351150255,
+          "p95_absolute_delta": 0.030847127025141637
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "rest+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.004196029806802687,
+          "mae": 0.007827905000405457,
+          "p90_absolute_delta": 0.015741065377696064,
+          "p95_absolute_delta": 0.03539306550616479,
+          "signed_mean": 0.004196029806802687
+        },
+        "2": {
+          "absolute_signed_mean": 0.0014161641280711675,
+          "mae": 0.004117033434630776,
+          "p90_absolute_delta": 0.007452738122910779,
+          "p95_absolute_delta": 0.012468472487450593,
+          "signed_mean": 0.0014161641280711675
+        },
+        "3": {
+          "absolute_signed_mean": 0.003977571258381049,
+          "mae": 0.004559885305152444,
+          "p90_absolute_delta": 0.001954463783386151,
+          "p95_absolute_delta": 0.007137562939886988,
+          "signed_mean": 0.003977571258381049
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 1660,
+          "sources": 148
+        },
+        "2": {
+          "rows": 5779,
+          "sources": 149
+        },
+        "3": {
+          "rows": 7792,
+          "sources": 151
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "rest",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_rest+treasure",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.014196029806802686,
+          "mae": 0.01782790500040546,
+          "p95_absolute_delta": 0.06039306550616479
+        },
+        "2": {
+          "absolute_signed_mean": 0.011416164128071168,
+          "mae": 0.014117033434630777,
+          "p95_absolute_delta": 0.037468472487450596
+        },
+        "3": {
+          "absolute_signed_mean": 0.01397757125838105,
+          "mae": 0.014559885305152443,
+          "p95_absolute_delta": 0.03213756293988699
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "shop": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0005041355736006124,
+          "mae": 0.0036236595201385637,
+          "p90_absolute_delta": 0.00916634310033895,
+          "p95_absolute_delta": 0.013915174950504882,
+          "signed_mean": 0.0005041355736006124
+        },
+        "2": {
+          "absolute_signed_mean": 0.0001937197563834066,
+          "mae": 0.0027972628016531224,
+          "p90_absolute_delta": 0.007896891208620103,
+          "p95_absolute_delta": 0.014431267267608572,
+          "signed_mean": -0.0001937197563834066
+        },
+        "3": {
+          "absolute_signed_mean": 4.215150300752414e-05,
+          "mae": 0.0005736745215492353,
+          "p90_absolute_delta": 0.000855996369797718,
+          "p95_absolute_delta": 0.0034965621524351564,
+          "signed_mean": 4.215150300752414e-05
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 1074,
+          "sources": 131
+        },
+        "2": {
+          "rows": 3000,
+          "sources": 148
+        },
+        "3": {
+          "rows": 3371,
+          "sources": 144
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "shop"
+      ],
+      "npz_matched_index_array": "subset_shop",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.010504135573600613,
+          "mae": 0.013623659520138564,
+          "p95_absolute_delta": 0.03891517495050488
+        },
+        "2": {
+          "absolute_signed_mean": 0.010193719756383408,
+          "mae": 0.012797262801653123,
+          "p95_absolute_delta": 0.03943126726760857
+        },
+        "3": {
+          "absolute_signed_mean": 0.010042151503007524,
+          "mae": 0.010573674521549236,
+          "p95_absolute_delta": 0.028496562152435158
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "shop+treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.0008640951308729854,
+          "mae": 0.004574975344656085,
+          "p90_absolute_delta": 0.01142396558606807,
+          "p95_absolute_delta": 0.017720779397159412,
+          "signed_mean": 0.0008640951308729854
+        },
+        "2": {
+          "absolute_signed_mean": 9.762359190793918e-06,
+          "mae": 0.003176893287465358,
+          "p90_absolute_delta": 0.008617317551868044,
+          "p95_absolute_delta": 0.016435124860077872,
+          "signed_mean": 9.762359190793918e-06
+        },
+        "3": {
+          "absolute_signed_mean": 9.120625805116685e-05,
+          "mae": 0.0007579863051885977,
+          "p90_absolute_delta": 0.0010582082589966069,
+          "p95_absolute_delta": 0.004039906052743458,
+          "signed_mean": 9.120625805116685e-05
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 1145,
+          "sources": 141
+        },
+        "2": {
+          "rows": 3129,
+          "sources": 148
+        },
+        "3": {
+          "rows": 3531,
+          "sources": 150
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "shop",
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_shop+treasure",
+      "per_act_limits": {
+        "1": {
+          "absolute_signed_mean": 0.010864095130872985,
+          "mae": 0.014574975344656085,
+          "p95_absolute_delta": 0.04272077939715942
+        },
+        "2": {
+          "absolute_signed_mean": 0.010009762359190794,
+          "mae": 0.013176893287465359,
+          "p95_absolute_delta": 0.041435124860077874
+        },
+        "3": {
+          "absolute_signed_mean": 0.010091206258051167,
+          "mae": 0.010757986305188597,
+          "p95_absolute_delta": 0.02903990605274346
+        }
+      },
+      "status": "USABLE_S0_LIMITS"
+    },
+    "treasure": {
+      "S0_by_act": {
+        "1": {
+          "absolute_signed_mean": 0.00630911716623254,
+          "mae": 0.01896530204228732,
+          "p90_absolute_delta": 0.05554678099764987,
+          "p95_absolute_delta": 0.06518448596369958,
+          "signed_mean": 0.00630911716623254
+        },
+        "2": {
+          "absolute_signed_mean": 0.004741904581846621,
+          "mae": 0.012005509236587124,
+          "p90_absolute_delta": 0.04674843115187901,
+          "p95_absolute_delta": 0.04948726268092096,
+          "signed_mean": 0.004741904581846621
+        },
+        "3": {
+          "absolute_signed_mean": 0.001124728628376914,
+          "mae": 0.0046412051967404154,
+          "p90_absolute_delta": 0.012915095055991732,
+          "p95_absolute_delta": 0.02585415800684959,
+          "signed_mean": 0.001124728628376914
+        }
+      },
+      "act_coverage": {
+        "1": {
+          "rows": 71,
+          "sources": 52
+        },
+        "2": {
+          "rows": 129,
+          "sources": 61
+        },
+        "3": {
+          "rows": 160,
+          "sources": 70
+        }
+      },
+      "index_basis": "matched-identities.json; aligned-S0-MAP.npz s0_matched/map_values",
+      "mask": [
+        "treasure"
+      ],
+      "npz_matched_index_array": "subset_treasure",
+      "per_act_limits": null,
+      "status": "INSUFFICIENT_ACT_COVERAGE"
+    }
+  },
+  "primary_gate": "all three point limits in each act; coverage eligibility",
+  "quantile_interpolation": "linear",
+  "review_note": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/staging/calibration-protocol-review-379.md",
+  "review_note_sha256": "0dba33a85f3b1a88f6670e13a4d8840251c8eeb201eb485c10cce2cef34cce7a",
+  "root_decision_note": "Root adopted review point limits, per-act and pooled-family 30-source/200-link eligibility, diagnostic-only paired CIs/cells; then fixed eligible-subset estimand and requested every nonempty eligible subset frozen candidate-blind. No subsequent mask can change caps, margins or matching.",
+  "schema": "screen_leaf_379_S0_calibration_freeze_v1",
+  "status": "S0_LIMITS_USABLE"
+}

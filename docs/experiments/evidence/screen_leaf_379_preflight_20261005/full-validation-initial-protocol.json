@@ -1,0 +1,2842 @@
+{
+  "code_sha": "39f8d681d880f734231cbe88ca69aca3262e6e6a",
+  "corpus": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/corpus-mixed-1024.json",
+  "corpus_sha256": "ae56f9633ce8da8a72e341978d707c9f145c1f1b6479afa438067af5570dfa00",
+  "deadline_note": "Source timeouts share the remaining global budget; timeout may take up to 10 extra seconds to kill its own child group.",
+  "derived": {
+    "0665747164ca3914c229546ad13f4f26a3a4a23c": {
+      "binary_sha256": "8947bc9755af9f02374590bc6d2393d668685e54204a8b8885da625f4a6f6e7e",
+      "directory": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5",
+      "manifest": {
+        "callback_patcher_sha256": "4319c618e58f23723d4992dd58ca51bf90cba525f1cda21d1793ee764b73d8a2",
+        "dependency_shas": {
+          "json": "2222d386c905e6a6ebf73c61571a8a2cf196e843",
+          "pybind11": "63d627c5747befad7720a43ebbe5614fd5d83247"
+        },
+        "derived_files": {
+          "CMakeLists.txt": "267f655517ef91756aed735cecb8f9703f0e35c4cf15ce790dc16b75b89fbdf9",
+          "apps/one_combat/combat_datasets.cpp": "6311a7b928308e84e79c6e8f1742d64c435d10b6780e0f482a4d430ed2e19c93",
+          "apps/one_combat/screen_leaf_continuations.cpp": "ddf7192907ba6bbe17289732df8cdcb17302ce97ccf7b1d85845c3b6cd78eec4",
+          "apps/one_combat/screen_leaf_continuations.h": "b887832c22289f1cd4785e8fa2e5685d429bec91ee4706f0c8b5d7a45b990f24",
+          "apps/one_combat/screen_leaf_snapshot.cpp": "6c4c15c3d90ec69903511af8c40d9a62bfdb5c36ea8b719ed3ad85b646e7b11d",
+          "apps/one_combat/screen_leaf_snapshot.h": "04f2a7c1c84b26b90e73a42efee8169838d2f5b384a92e9f42083e47a702c355",
+          "src/game/GameContext.cpp": "58e21725b59d8d3698c19709403ab705cea6124407b3b9039a5004ce217559a7",
+          "src/game/Shop.cpp": "bd7a5a93cad73f0ae399edf55d6b42c5240cf3b08c11c3c75f0bf89ec930a449",
+          "src/sim/search/GameAction.cpp": "76501fcc0b41d13370ccbbe885a1a3bd263b32c2e050fd311e4570f6211b1b9a"
+        },
+        "original_source_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+        "preparer_sha256": "5329e41af6f76b151660265bc0466024af5a6da1accc5859b06a962004e36608",
+        "purpose": "Exact frozen trajectory recovery only, never current-main S0",
+        "schema": "screen_leaf_379_derived_producer_v1"
+      },
+      "manifest_sha256": "d079d11ce7637716bc27342f372dbafd1fadae28a6c86588be5ceba328f28024"
+    },
+    "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935": {
+      "binary_sha256": "d210132164ce8baa5d1454cd5c5d7154e78e46e8b3c67a9409cf89996784890e",
+      "directory": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4",
+      "manifest": {
+        "callback_patcher_sha256": "4319c618e58f23723d4992dd58ca51bf90cba525f1cda21d1793ee764b73d8a2",
+        "dependency_shas": {
+          "json": "2222d386c905e6a6ebf73c61571a8a2cf196e843",
+          "pybind11": "63d627c5747befad7720a43ebbe5614fd5d83247"
+        },
+        "derived_files": {
+          "CMakeLists.txt": "5e00c895bceafc858e478d608f2d10f2c9017b09ff2d7989409203ef786ba91e",
+          "apps/one_combat/combat_datasets.cpp": "45e9dd5583fc2faac5a1eafff1085ecd17ce0bb37975ce4329d01cdf33e68e11",
+          "apps/one_combat/screen_leaf_continuations.cpp": "ddf7192907ba6bbe17289732df8cdcb17302ce97ccf7b1d85845c3b6cd78eec4",
+          "apps/one_combat/screen_leaf_continuations.h": "b887832c22289f1cd4785e8fa2e5685d429bec91ee4706f0c8b5d7a45b990f24",
+          "apps/one_combat/screen_leaf_snapshot.cpp": "6c4c15c3d90ec69903511af8c40d9a62bfdb5c36ea8b719ed3ad85b646e7b11d",
+          "apps/one_combat/screen_leaf_snapshot.h": "04f2a7c1c84b26b90e73a42efee8169838d2f5b384a92e9f42083e47a702c355",
+          "src/game/GameContext.cpp": "58e21725b59d8d3698c19709403ab705cea6124407b3b9039a5004ce217559a7",
+          "src/game/Shop.cpp": "bd7a5a93cad73f0ae399edf55d6b42c5240cf3b08c11c3c75f0bf89ec930a449",
+          "src/sim/search/GameAction.cpp": "76501fcc0b41d13370ccbbe885a1a3bd263b32c2e050fd311e4570f6211b1b9a"
+        },
+        "original_source_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+        "preparer_sha256": "5329e41af6f76b151660265bc0466024af5a6da1accc5859b06a962004e36608",
+        "purpose": "Exact frozen trajectory recovery only, never current-main S0",
+        "schema": "screen_leaf_379_derived_producer_v1"
+      },
+      "manifest_sha256": "f95504d93c4065b1dad50e94bdc7d60e4fdf8e1ca7561a874b1cdba1cc7962c1"
+    }
+  },
+  "failure_rule": "No retry. Stop scheduling on first failure or deadline; preserve active source jobs and all outputs.",
+  "global_seconds": 43200,
+  "logical_cpus": 12,
+  "original_teachers": {
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/teacher.json": {
+      "freeze_sha256": "26a8aea9074c1af5742735e2b567e0c851cd16c3f09d4bc3a9313063305a6fb4",
+      "runtime_sha256": "9dd7b4f4071366a15fdf5947f2cbf89711483de867f43aba8fbd247e48a466de",
+      "teacher_sha256": "7d60fe564663928dc2ff81da3897d1d5c5e87b556018ebee7f31883310c98939"
+    },
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/teacher.json": {
+      "freeze_sha256": "e8f50bd01ca6ba47d677a40cbb0e6be8a48e004e540f74106f2d936254b6324b",
+      "runtime_sha256": "02dad92d3c24f9eda65f0fc684fda72bc6393f96fdb66792ccb6f2411265a423",
+      "teacher_sha256": "31b98a4c3efe259f335eda7ba49897fda938b9a1e747b87eeb9525db9801f116"
+    }
+  },
+  "output": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/full-validation",
+  "per_source_seconds": 3600,
+  "pilot_receipt": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/s0-pilot-final-binary/receipt.json",
+  "pilot_source_sha": "b8d296192cf706f899ad312be8e2fb052d0a6873",
+  "replicates": 1,
+  "reuse": {
+    "13001315": {
+      "directory": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/temporal-canary-13001315",
+      "receipt_sha256": "a8390acbe246cb0722807ec9c167e35087b427585360d260edb4198236511df4",
+      "result_sha256": "dedee80229b99bd700c30991057f77fa4106d324e9e7d43594a790a60c53f434",
+      "snapshots_sha256": "90327df56420f0745392a28b353efc89d40584c2246a5711d36b890aaa982765",
+      "temporal": {
+        "captured_observations": 1774,
+        "map_csv_rows": 760,
+        "map_observations": 758,
+        "map_rows_without_observation": 2,
+        "temporal_sha256": "f7ae024cdd4c57a893feae8c814ae89741885f97beafaeb51989c3e8596e4bd0",
+        "trajectories": 27
+      }
+    },
+    "13001638": {
+      "directory": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/temporal-canary-13001638",
+      "receipt_sha256": "24c180d62885b067a2b66f7be769aaa9deca42695d9ddcbab9e4094905de880a",
+      "result_sha256": "f2b4e0d445998f30f0e065d16962775173982ddba45e5e7298b341861927df23",
+      "snapshots_sha256": "44ea07dae78fbd5ae784df71d1d54ebf0d727447fbe66ecb4937fa376f1ce1b2",
+      "temporal": {
+        "captured_observations": 1552,
+        "map_csv_rows": 644,
+        "map_observations": 642,
+        "map_rows_without_observation": 2,
+        "temporal_sha256": "aebf7c1b868d5f30c0e410cbe37c532adbb264b4207177f1f6cadb777922a439",
+        "trajectories": 26
+      }
+    }
+  },
+  "runtime_hashes": {
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/CMakeLists.txt": "5e00c895bceafc858e478d608f2d10f2c9017b09ff2d7989409203ef786ba91e",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/apps/one_combat/combat_datasets.cpp": "45e9dd5583fc2faac5a1eafff1085ecd17ce0bb37975ce4329d01cdf33e68e11",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/apps/one_combat/screen_leaf_continuations.cpp": "ddf7192907ba6bbe17289732df8cdcb17302ce97ccf7b1d85845c3b6cd78eec4",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/apps/one_combat/screen_leaf_continuations.h": "b887832c22289f1cd4785e8fa2e5685d429bec91ee4706f0c8b5d7a45b990f24",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/apps/one_combat/screen_leaf_snapshot.cpp": "6c4c15c3d90ec69903511af8c40d9a62bfdb5c36ea8b719ed3ad85b646e7b11d",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/apps/one_combat/screen_leaf_snapshot.h": "04f2a7c1c84b26b90e73a42efee8169838d2f5b384a92e9f42083e47a702c355",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/build/one_combat": "d210132164ce8baa5d1454cd5c5d7154e78e46e8b3c67a9409cf89996784890e",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/derived-producer.json": "f95504d93c4065b1dad50e94bdc7d60e4fdf8e1ca7561a874b1cdba1cc7962c1",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/src/game/GameContext.cpp": "58e21725b59d8d3698c19709403ab705cea6124407b3b9039a5004ce217559a7",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/src/game/Shop.cpp": "bd7a5a93cad73f0ae399edf55d6b42c5240cf3b08c11c3c75f0bf89ec930a449",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/src/sim/search/GameAction.cpp": "76501fcc0b41d13370ccbbe885a1a3bd263b32c2e050fd311e4570f6211b1b9a",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/CMakeLists.txt": "267f655517ef91756aed735cecb8f9703f0e35c4cf15ce790dc16b75b89fbdf9",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/apps/one_combat/combat_datasets.cpp": "6311a7b928308e84e79c6e8f1742d64c435d10b6780e0f482a4d430ed2e19c93",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/apps/one_combat/screen_leaf_continuations.cpp": "ddf7192907ba6bbe17289732df8cdcb17302ce97ccf7b1d85845c3b6cd78eec4",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/apps/one_combat/screen_leaf_continuations.h": "b887832c22289f1cd4785e8fa2e5685d429bec91ee4706f0c8b5d7a45b990f24",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/apps/one_combat/screen_leaf_snapshot.cpp": "6c4c15c3d90ec69903511af8c40d9a62bfdb5c36ea8b719ed3ad85b646e7b11d",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/apps/one_combat/screen_leaf_snapshot.h": "04f2a7c1c84b26b90e73a42efee8169838d2f5b384a92e9f42083e47a702c355",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/build/one_combat": "8947bc9755af9f02374590bc6d2393d668685e54204a8b8885da625f4a6f6e7e",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/derived-producer.json": "d079d11ce7637716bc27342f372dbafd1fadae28a6c86588be5ceba328f28024",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/src/game/GameContext.cpp": "58e21725b59d8d3698c19709403ab705cea6124407b3b9039a5004ce217559a7",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/src/game/Shop.cpp": "bd7a5a93cad73f0ae399edf55d6b42c5240cf3b08c11c3c75f0bf89ec930a449",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/src/sim/search/GameAction.cpp": "76501fcc0b41d13370ccbbe885a1a3bd263b32c2e050fd311e4570f6211b1b9a",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/s0-pilot-final-binary/receipt.json": "fc2b6255a62b98069150d7052c3c4a6390a60252b8cae7ccc9e5b23646ed622e",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/linux-gcc-release/one_combat": "17df506a9f830af6fb6c6a7660fd19e31e228cd3463488a61e88403276897d26",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/v_win_x2b_trees.txt": "a251b33d4f71c1aa3fca529801da23ea9740dd0ded58abfb1a90fe69da7c9acf",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/selfplay/models/combat_transition_deepsets_lizard_t2.native": "abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/selfplay/models/combat_transition_near_full_except_smoke_v2.native": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/tools/audit_screen_leaf_379.py": "4030958d61d024f86b8d6f6c7f95ebdf6133e5f1feae09c0045b6addeb166a68",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/tools/run_screen_leaf_replay_379.py": "030ec8181d2eed10852c841d8774213a6dbf25a4ee3ec06c67b027dd09dad15d",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/tools/run_screen_leaf_validation_379.py": "4ef99f04f6579791b4415aec52d6a81926c4f795bfa9b7ece5c23ee982dfa741",
+    "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/tools/seed_guard.sh": "65cbab58fdc1bf3929686828f9703763d0a348cc59f56b3e411b13b8a72385c0",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/freeze.json": "26a8aea9074c1af5742735e2b567e0c851cd16c3f09d4bc3a9313063305a6fb4",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/models/silver_leaf_m10_10k.txt": "e51c7ed435ff22cb44134bf5f2d9ca745ae2b04785402ccfb1f5d0925e9401fe",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/runtime-environment.json": "9dd7b4f4071366a15fdf5947f2cbf89711483de867f43aba8fbd247e48a466de",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/fixed-producer/teacher.json": "7d60fe564663928dc2ff81da3897d1d5c5e87b556018ebee7f31883310c98939",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/freeze.json": "e8f50bd01ca6ba47d677a40cbb0e6be8a48e004e540f74106f2d936254b6324b",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/models/silver_leaf_m10_10k.txt": "e51c7ed435ff22cb44134bf5f2d9ca745ae2b04785402ccfb1f5d0925e9401fe",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/runtime-environment.json": "02dad92d3c24f9eda65f0fc684fda72bc6393f96fdb66792ccb6f2411265a423",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-freeze-1e93bd66/teacher.json": "31b98a4c3efe259f335eda7ba49897fda938b9a1e747b87eeb9525db9801f116"
+  },
+  "s0_binary": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/linux-gcc-release/one_combat",
+  "s0_environment": {
+    "HOME": "/home/philippherrmann",
+    "OMP_NUM_THREADS": "1",
+    "PATH": "/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/usr/games:/home/philippherrmann/.codex/tmp/arg0/codex-arg0yqusGj:/home/philippherrmann/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.nvm/versions/node/v24.19.0/bin:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/usr/games:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/usr/games:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/usr/games:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/philippherrmann/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/usr/lib/chatgpt/resources",
+    "STS_COLLECT_KEYS": "0",
+    "STS_EXECUTABLE_GIT_SHA": "39f8d681d880f734231cbe88ca69aca3262e6e6a",
+    "STS_FAIR": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_OOC_CPU_PROFILE": "1",
+    "STS_OOC_MCTS": "0",
+    "STS_OOC_MCTS_CPUCT": "1.5",
+    "STS_OOC_MCTS_EARLY_STOP": "1",
+    "STS_OOC_MCTS_LEAF_COMBATS": "0",
+    "STS_OOC_MCTS_LEAF_POLICY": "v4",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_MAX_DEPTH": "32",
+    "STS_OOC_MCTS_PRIOR": "policy",
+    "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+    "STS_OOC_MCTS_SIMS": "2048",
+    "STS_OOC_MCTS_TEMPERATURE": "1",
+    "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+    "STS_OOC_MCTS_WIDEN_K": "2",
+    "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+    "STS_OOC_STRATEGIC_EVENT": "1",
+    "STS_OOC_STRATEGIC_MARGIN": "1.0",
+    "STS_OOC_STRATEGIC_REST": "1",
+    "STS_OOC_STRATEGIC_SHOP": "1",
+    "STS_OOC_STRATEGIC_TOK_NN": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+    "STS_OOC_STRATEGIC_TREASURE": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_STOP_AFTER_ACT": "3",
+    "STS_WIN_NET": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/v_win_x2b_trees.txt"
+  },
+  "schema": "screen_leaf_379_full_validation_v1",
+  "source_count": 155,
+  "sources": [
+    {
+      "decision_rows": 1875,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001025.manifest.json",
+      "manifest_sha256": "eeee07ee539b329ee8d8a8d6eda8ad0611ab6fe508f3c16039e187b53af98aae",
+      "outputs": {
+        "branches.csv": "354e177ee97fc94ecfb89cf8a49c70c6a4f9e59349e9a57e345f4df123b1bc74",
+        "combat.csv": "7c34f317ff5b1e85a7fca921c0bf9901c6507f2cbfbc9a58f04749189403ce0e",
+        "decision.csv": "87a0af64af63ce46f3bf1634150b4e8699401bf66944766946c9d171d9fd9a88",
+        "decisions.csv": "d2a0e2061a55267bbed02696d2cb07167535cc2732ae8a900f891fd97a86ada9",
+        "map.csv": "7c6a66af8dc9318379204ef99d6f87660fd83f9805fd3e2f4dd9ba7758a0e5f3",
+        "runout.csv": "f4f5a1e7eb5b47802679d117a6d4ce79fb2754cb3285493725c0cc10f2c50932",
+        "win_raw.csv": "370d073ce8d28c10e47a5232d3499ae42b903434af5e19c0bd9621851bfbb2e4"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001025,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 3068,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001026.manifest.json",
+      "manifest_sha256": "ca49583766e61fbeccf03919393b16f605f4bbd1352fc2d5a8a31f84a77466a4",
+      "outputs": {
+        "branches.csv": "538175ba951745b3146be3f7bd5e4c10d17c3001c996972f2722a17da5b969b1",
+        "combat.csv": "ee3209c3759ce0bb4894dff28309ae458980f145d41a89294d305c97e9e498fa",
+        "decision.csv": "ec4eb812c030dcc2df4b573939b4c6f0a8def2ccf9cdd5da7b74f0754fd3ece2",
+        "decisions.csv": "990cf2d52e115f9b12a669bdaf993a9d5315f5888dd60fae01097539b1a7d07d",
+        "map.csv": "eb8567e35210261e2d293409369b4aa82973ee59fc26a0e0e22e7f4b98442311",
+        "runout.csv": "bb0d7168edcd45f0965798003e8055bea731555dbfd7ccf0c655db5e24bd9ef6",
+        "win_raw.csv": "b379a67d45f5949974b4cb0c9a99812c47a45ab148fa55fdf9299cc39572b87e"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001026,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2707,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001028.manifest.json",
+      "manifest_sha256": "37a82907684c0342158d9a4c0d3d65fe23bb4b08ed0003a8e9e929b44b92f717",
+      "outputs": {
+        "branches.csv": "ab23a83007b34f5fcfbb8d2b1fcb693cc5ed1002d12566f6c132654bf223cbb7",
+        "combat.csv": "270770c3a3eb9df9362d5cd3ae88cc80bb24c6b0d9a2e7a8aa82d0d718b719e7",
+        "decision.csv": "79851c63b52f9c914be33be31cac66d2d67cfbb50b831cc7a4303fafc32fe507",
+        "decisions.csv": "2e97a5773a956e90da589e93eb6da71ba11217c802779566f91cfd474dc7a9c1",
+        "map.csv": "67751271ab7d6624e2248f3581744e92ac57c5c2432f5ac9daa6f2a1ab0211bd",
+        "runout.csv": "62cf3a77f2d2894458a32d65cd3c8c07da84ad69c7e1fe97343be839ba1c4f0a",
+        "win_raw.csv": "af51209f9b9a49c4c5e94d760fdff7795fc811f9d26ef7d78b97f61ed1d90924"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001028,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1792,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001033.manifest.json",
+      "manifest_sha256": "4d3e7dd3ef45f9c3fbd269905df86c5cdaaedbc58404e86e1186da12d2691799",
+      "outputs": {
+        "branches.csv": "ee75e22297f7b5417636687dd0c1611d5b72ed145d8a66417e40c8d1dfc9d5a8",
+        "combat.csv": "2d680ddab88f54b6d4ba572a86714c2f28f2413f69c6a74c4230006cd381f6f9",
+        "decision.csv": "373d2dbaba6c3c3762ef617c8c1814ff3a1eb6115bd3a4fb7c8034b401f5b1a2",
+        "decisions.csv": "8ab121c1704e40e6a743101fd4d517ebc145271218a0e863834cdcf3891f6759",
+        "map.csv": "d20fbf804c6e6c819760bbc0aaf6214938533c3c44d5de152e4965c0d728a6d3",
+        "runout.csv": "50fa4e4a1729c1bb5b1afc0350e0601fac63f96880348e625d023128ee10bab2",
+        "win_raw.csv": "d6a6f5024e6a26fa20c45534719429202d10874467334776cd47da7b188834ac"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001033,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1858,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001040.manifest.json",
+      "manifest_sha256": "682a1188b570b8bdeccc7db76fe13a04e96e236f45932839ed50287b46914843",
+      "outputs": {
+        "branches.csv": "d6f78b5900ca75c1da5dd12362beb4dd213a88713930d2812d7d58d9106408f3",
+        "combat.csv": "053ec23e8ec197cab354b2236f0ff67b3f235dfd88f0b2b2af83d977b6840699",
+        "decision.csv": "bce8489f41aed464b1bc2c2e3574efca01a85e4000af9835b4d55a4b672f341f",
+        "decisions.csv": "aff82102ee7ce58fb837128d86c3a82e3753dc75b4b1678628e04ae859346101",
+        "map.csv": "9a10673e6ac57fae10282587593406f467089a4a7f2758a52a96dc951e7dc5e0",
+        "runout.csv": "b4bd5045d92a094afbebe5465bd40ca0d79c1b2e87dfae323ae021a52f4e2dd6",
+        "win_raw.csv": "c5f8cc506b2c4a9cdef19efb3fcfa9cf4e588e7eb947ec107765f32587ed2a65"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001040,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1967,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001042.manifest.json",
+      "manifest_sha256": "dea3272aacc938c8764132d9661c51bcf3f0c12bbba0842eed35244915f81f4f",
+      "outputs": {
+        "branches.csv": "a0700eedaf660c5cc2cc4bdbf7bc035672fe9affa96eee40c49ef0cb3acb7668",
+        "combat.csv": "243e9b676eaf04dd223182ed06298928d39fb92575dca681e2522d07c6847eac",
+        "decision.csv": "9db4ca32d0fa96cb17c3f8b259b30ff3b7c3f83effa937ee82e77da291d4d94c",
+        "decisions.csv": "5e6829e224fd675eb7cf5a8fa2f0965609a800ac941d7f294112f8b4b1750eec",
+        "map.csv": "dd08c3fb14365012418c378ab2fb22edec91701e2e0aebaf0e52229867f2638a",
+        "runout.csv": "07f0330d74e41b25eaedcf66c449957b2e9016b017b24211561be18046a1041f",
+        "win_raw.csv": "4f765f2708dc48d824dead1085c5e6ce4d86d16a3ed4a718c838cf58ad8ad963"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001042,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2526,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001048.manifest.json",
+      "manifest_sha256": "4ea9a2ed79e509ebb2b36c6b176a3d1aaf5cf9eda44dbe1adfa5f284e6b2c89a",
+      "outputs": {
+        "branches.csv": "23c8d72b7b494bb2ac4f178d8ee763bbcd892343b479920ceca571beed7d597d",
+        "combat.csv": "60f404afa8bc20394867c3ecbe7894022667270c813bffe9ed15512eb7949492",
+        "decision.csv": "a72a7db238ebd5bf39c2c9b6dd352d6331bec01a8d9e703c5f05a7f59cbe30c2",
+        "decisions.csv": "9cf3271188bcb342b1143be12e5e6946700149a3bfafbbc13cd354e64e10459d",
+        "map.csv": "bda6dc69465ce88dab1a0b05fb9aa12bcff6bd8383c4302eff1161423da129f7",
+        "runout.csv": "434bd2ba6b6e4a6e1e2984dea33042be886a31a05d1af005378b09e1138297b8",
+        "win_raw.csv": "fe093754249bf01d7cee73f3ef458ad74b1cc217435eae8400dcadca5aae12a1"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001048,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2691,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001065.manifest.json",
+      "manifest_sha256": "298565a054b898de52d118e2440dffd460f39f6e8ea229fcc28c8f443f73a607",
+      "outputs": {
+        "branches.csv": "7f6a0aa827aae9aebc38b13914642dac4ed14a31012b908d48dea529d6ff2966",
+        "combat.csv": "c276e7dca51c12f2056203cdb138e513dac94d718c480aecbebdbdce77801351",
+        "decision.csv": "1be3229e8b5063f54db7b0593f025ea74bca8f7b58827bdf6097ae79a5f0a94f",
+        "decisions.csv": "a278026bca2508f7a57e3c30c2865ca3a3836b9d4cbcdb7d6b243c6a8da9a300",
+        "map.csv": "1010a32fed51b108b418964796114fa5d23c53f3f79335e9f3c8641bcf678ad6",
+        "runout.csv": "8f13f84bf4a17a40bec9515b5fb867b8c23be7a81d90fd7a4c20c222c7ef4c5c",
+        "win_raw.csv": "7edfd43bdba4ff9d816e72c53339a38281523b08d85a1415e42936116c580371"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001065,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2308,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001071.manifest.json",
+      "manifest_sha256": "ccf0ca7c07a7bb4bb42d4b6b9a9f7f8920bc6a7125789675d5a52a5e19e88647",
+      "outputs": {
+        "branches.csv": "5561f6cdee981b804cef81476539bdda9967ae6fc3d6d5100d960901e77410c8",
+        "combat.csv": "454ac27c0c943eacfee93ed3236ebe5ba237eee5997031fcf7115190a6889968",
+        "decision.csv": "acd97b6cc8ece2d04e8593ef1a7d9bf0c792bc2994090017b387bb1e706aa681",
+        "decisions.csv": "12383b1b57a088d98fd170fcef013163063bd7adaa95eebededaaee69441c64a",
+        "map.csv": "3bfd60563ba6068f30a5e168314477232c5e57eedeb5f89710cd1fee7a1fff5d",
+        "runout.csv": "db3377184518f09085615f227192a3d47e81ae24fad9d998c5ec54a969e49d9f",
+        "win_raw.csv": "5d919008ff697ba324ec8e0ebd11f1df9287da43b066a2605a865b76522c7c41"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001071,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1927,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001076.manifest.json",
+      "manifest_sha256": "7bf12b8a45b762c79ec0bec35481f8fc2fdc041d2aa9169fb090e4e36f366e8a",
+      "outputs": {
+        "branches.csv": "293d0f428567dfb688c9c53246bd8d944a1f2fcc0b0ed0ca1e8548c9841f6d45",
+        "combat.csv": "c36b57fab9b76b273f702a1dd2257e61b078075e15371e1d50f68fd92c6bb9eb",
+        "decision.csv": "441a290317c86f09dfa1b9fadf1b4df4613c3236b851dc7ee94b4ba6a4824ecc",
+        "decisions.csv": "f1398cd500d2a4b1b5dc13f955a7530aeba543032c4cdda0863da37cfb77777b",
+        "map.csv": "1abeef11b6ff1a72e39338e539a3aab13ee27d44ee822d0da7c4184d06dd7cdb",
+        "runout.csv": "69b050f8064bc250652502bb46427fba430e56ec0616598f3ab577586ab74831",
+        "win_raw.csv": "f71426cd519d745f6818b1bc096526c69d38d4044ce53b8589ef33a31d6c3f6b"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001076,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1693,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001078.manifest.json",
+      "manifest_sha256": "f6661a66e8795ea5a41996086432502b1087f05a5e9b334afe62a09104e54021",
+      "outputs": {
+        "branches.csv": "a21d2bdad9840673c7b882dcd3e48b4a51933051f02ee47c95107e27a358f640",
+        "combat.csv": "42dd8d183d483eebe2dfc04ebc7fb7c4cd453aa9d82985009796f713826dacb8",
+        "decision.csv": "6c8b9e7f0dc445c6802e1f0d0fe29e02575180910c02ec7d95d2bfef43a119e3",
+        "decisions.csv": "f3023daf0dedb59113691404343135abc31ff44e29104ee99049537341be545d",
+        "map.csv": "83b29ac1b227d1edca2bf1cf46ced9c80c7851c04404617a03c5df04bc0d5f8d",
+        "runout.csv": "e6dfe515ca4613e8d0279f6866e4b951011f7ec9196ee4f605267a8277edf406",
+        "win_raw.csv": "7d45eae3af04bb98d7cbccc5867cab08e94f51e963e390c92bccd967a4d31312"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001078,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1713,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001080.manifest.json",
+      "manifest_sha256": "c5464aa83366a4420c71d018677d05e0cf74041b9231df1c91c8948e0daa6337",
+      "outputs": {
+        "branches.csv": "a8d374f99013b1182359779dffa4aaf9a0fb2ec33943151db70dd26f9a7c69a7",
+        "combat.csv": "48588be82d91771b115b6e257707356c5cd5c9911848d5014d0be767931928a1",
+        "decision.csv": "46b164057fdc7a7e2c08939217c3afd4b5d988dcb82e49a414db26bcb810ff26",
+        "decisions.csv": "e4f038f780df09e20dd86ae36fa1318ea334051be41928ab90e28296cb20d79f",
+        "map.csv": "4cbea52e402c38710f22b2a765747cfe233b42730d369872b586d87b0deb87fb",
+        "runout.csv": "4946d9259972967f8757fa223fd45beac74fb3ed0af27bb501cb2d7307820586",
+        "win_raw.csv": "95de12c91b51757cdec6bf2f0827687c17a4fd2041fb827912ad2c088ac59136"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001080,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2153,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001085.manifest.json",
+      "manifest_sha256": "1b39c15377796e910ef83c0d6f1574fe166cb9539fcd2194880a6b54b6effc75",
+      "outputs": {
+        "branches.csv": "6184f26895c6add5d540880a371b476c11b2745099e69ded5bacb0751c526144",
+        "combat.csv": "e4192f62760c892d42f1f026bc668468e945ac00bb06a83552ad41059a3cb0fa",
+        "decision.csv": "e4a6560d480d66ec1b0c7d7d17fbb24f007a0d2660f7eff078a67edc5ec7cbe7",
+        "decisions.csv": "1cd0c86f5fa53f5669977e8ff3d9d6b797140e47f2435e6e607ef3b2bfcd2a65",
+        "map.csv": "8c681b0d00d4df10914d07fc3eca73b6a7e9d54cd4675e6c68319c897046bd60",
+        "runout.csv": "9dfe45ef27d714e318eaddba9dc4da997a35d897e105e6580e1d8b8b16d4a5e1",
+        "win_raw.csv": "0051a34b437e9894e1d7914b0821ae0d217d648ec263417db3d125c1ba09b0c2"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001085,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1657,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001090.manifest.json",
+      "manifest_sha256": "7e528653d0d424ed45b6c8c03b80e40af61317705dfdc7e646fa41190b1e7c6c",
+      "outputs": {
+        "branches.csv": "c32f60d2db771b6062ca6b1ad3d19e2d51b5ae20f2456793a4eb4053a3dc47ed",
+        "combat.csv": "bafea2dba974eebe24411ff33897b1eb738e33884e1546585a5fc85251b0d498",
+        "decision.csv": "b879959242823bb4e924a7b96ff4bca0495baf04f9ab0f8d58b00ed046d6c0b8",
+        "decisions.csv": "db18becf00fed057cd4d2ffed5c37090bc3817803bf916b2987caac954243d9d",
+        "map.csv": "9230be156128303ae402fc52a4b8cd183b25561019f76eff8ba95a6372772cb0",
+        "runout.csv": "b0158f526f07c03d6f1e047e272eadcb7b29c5ec0981806f9d3b00b21e248413",
+        "win_raw.csv": "f604bfbb3772b092460230a12cd1b80814ec524fd8367d3b50e5803c528acf1d"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001090,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2509,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001092.manifest.json",
+      "manifest_sha256": "c23ee7bc914bf2d99ea068cb3abe88d7594d06eff9a59d350dcba6127e827c3d",
+      "outputs": {
+        "branches.csv": "23f9fbdf44491ea69c6daa1b0bad1d9644990e0b0d941a7640b2bf217a15bf3a",
+        "combat.csv": "6323648301395a9d04544c91a00fb43b6f7ce694bcb1a48360c61adcbe2e5953",
+        "decision.csv": "324fc283cbf0011c1cca6c2987644f8800e2612cd0f93efef033b636563aa842",
+        "decisions.csv": "2386fd05ee8ea21de0553765b55951a8ec1e7db9f8daa31fd9dac6539df45b00",
+        "map.csv": "3ee765c986a5ae174574f185efc6ef47383f491b66a4f7e1dd8903afc1c0e4b2",
+        "runout.csv": "26271d0b3a8f835a65bc90b4625caf8e9f6254e3fe64d90bd56b0e8e7ef15b39",
+        "win_raw.csv": "8ae64c7eaad61f74b18905505f7b431a18b428d17d20ab427e8facedc89f09cb"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001092,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2135,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001097.manifest.json",
+      "manifest_sha256": "2c0436f52051168cee5a1b57011333c384784ce4577db2dce6ccc45366f44c5a",
+      "outputs": {
+        "branches.csv": "f794b60bc05d6f2bf3ea9f5bec2c1d7f8bf3faf6568cbbbf582d9275eb6226aa",
+        "combat.csv": "583b92e77f6ea6d5788cceb40b19f052ac1c1653c2a7b3bac66b944cca779c32",
+        "decision.csv": "142f7ff7ada6ea071c5755e629842ad393a9e90f77185a74fc47915c9fc9f33c",
+        "decisions.csv": "71c4eb8e05228202ff2361ac6ff9821349d0d95f02653b6f2d6d46dd11b85bc3",
+        "map.csv": "170105fdc32f5c9c36a77757292210cd37b0b4237052cdaf34200cc75f83f824",
+        "runout.csv": "f15255b98ee92387195aa7df9e77eb0900345ed1daea8ac09149b5be9103021f",
+        "win_raw.csv": "012096655cfee506fa4cfe3c0f0e024ede776f0563d64ef6d89ec2fe55e07e3f"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001097,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2360,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001110.manifest.json",
+      "manifest_sha256": "7f4c766fa015a52316e8062f30f1d2424d6942e59500d37e38d3c5289557c8f5",
+      "outputs": {
+        "branches.csv": "bcc24978b012caad6c75e5258f827d2e852d17636523c100feec5c1c3c525031",
+        "combat.csv": "dcabedc05a1e833b21e0420a5e7db9c528b24790da559ebdde8e5f16c3542b72",
+        "decision.csv": "44704e11a7e8ace7049f77df5a5367e025ac24e14d9c0ebc35b3f99f809839f6",
+        "decisions.csv": "5f5a74bb6b5dc39d22e6185db5608fc605f2809cfaad5381e7744fdafe632301",
+        "map.csv": "cf60b749c9da28506dec610e3a492cec20624e28729e99d07676b7f9535ca0b8",
+        "runout.csv": "f8d9773e649e9e26b9a2213e3420d7e6f63501666699d5b453828e18bd9eeac6",
+        "win_raw.csv": "d47834d3c6b88346e384e1e5ebccacfd1d2c97c680cba8ef10e05c396c123aaf"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001110,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2400,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001115.manifest.json",
+      "manifest_sha256": "c0fff489b65979a616e3a1afdbdaef9b469dfe8d83a5d2d916deccf4a0a0c05e",
+      "outputs": {
+        "branches.csv": "00ec6bc2c77c27dd5c2a1233e846a2a2d302e00482c4fc80e55f3c9aa4674215",
+        "combat.csv": "460fbd3321baf5b85f15bd37588a9017ae4e8bc909b744224c8a87985d6c1868",
+        "decision.csv": "e753b069ece4ed3bfd695f886a5c9e5da0224dc5bdef5965220a078dd75b2984",
+        "decisions.csv": "e324a452372c982550eea3be05b50ec4717c11f44e8b38aa8913afdb61e17102",
+        "map.csv": "4d9aefb94d83f34659dc63b0a6dfa772ac03a10057cedb0add0771275ed46176",
+        "runout.csv": "97885a17cc901891ec582b41c428382507c89d016f3b27dde8a43e48bc0e2a6d",
+        "win_raw.csv": "7841a50004bf1a44dd839902f83f0a043cae67f6cf0b0720c0092fa6ffd3c906"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001115,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2596,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001119.manifest.json",
+      "manifest_sha256": "3934604a1e121d1cc721d915fa3c4ec22cf4b6f10c12699ddeef935068145329",
+      "outputs": {
+        "branches.csv": "eb6c5d1ac78451cdbaf9fab97003dcda3ccd81cbe58d4f75191edb8f14f706de",
+        "combat.csv": "266590a4b5fa2613a4351f8ee7b65f4f2b4e18ca000ffc5bf936d98ae008844e",
+        "decision.csv": "7b3590c5c5ff495653104b12ec6bb7c31ba96a6863ae674b8617b0f075aa54de",
+        "decisions.csv": "44dd6e8a9e63554fed8c80a5ccd68609eb45d3f06aa093d6733df197a56e91c3",
+        "map.csv": "44a2e0bad1948eda4a9022798a76ff4ed9099a4ad43179b98abc5545521b3355",
+        "runout.csv": "26bb88a0130a34d0dff07f34f2a659165faf1d4f764e66f41a86f0933d9d4045",
+        "win_raw.csv": "6ed0ded82f545517cb78202dc75fb0b2f23b223351a092e8df5077cb0923e483"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001119,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1789,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001124.manifest.json",
+      "manifest_sha256": "dc6dbf3d25a3bc3243fa505b817bea8ee3a5ac56778a82586694be4cf4f2b2ed",
+      "outputs": {
+        "branches.csv": "e4fde97391863c6cb79cf2336601ba4ec2c3b52110b172225eeedd8d492545d5",
+        "combat.csv": "d28e7c1a105cabd82b6414c83ebb2bbd81cf8bab83b15686924b7a53acc1442d",
+        "decision.csv": "99fdb0f2c0df2f1ab43684a83d3077809a1de88a0469551c9a101e86d87047ed",
+        "decisions.csv": "0d3dfe0d3bffd31854d69e5ceff8735970f8dc3556681123fe4c7305e206943a",
+        "map.csv": "3e47c4c5eed25f9aae7e59c23f921677d5f8a25f98cde8542136021eeae297cd",
+        "runout.csv": "6476ef56f8e459e762ab15aa941cefbce318d3a730504dd6df6c30be9c1b9de7",
+        "win_raw.csv": "ead8729783bdadfa05d7e4992100fcd7857780f29bda9375e36ee457d2655f7b"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001124,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1664,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001129.manifest.json",
+      "manifest_sha256": "f476fec4d200c448ce5c823487f94d83800f1242cef81894fb8893d4d2e04c52",
+      "outputs": {
+        "branches.csv": "a05cc496ed59bb24ebd3acb7a6d349138475555a2eec75e1adca1a10e2426d12",
+        "combat.csv": "74c34f7d2bfdd17f54177867b68fafda86bf24383db343762cb90c2cfeba7856",
+        "decision.csv": "1d1d5ae4fa13c99a08c791f9f652a7df8c293661cc93a6286c1837485edf6846",
+        "decisions.csv": "1e17fb3e368a368aeb21658a59cae0a7d2a9719984c51684b82e7b0b7eb215fc",
+        "map.csv": "8365d1561612521686cfa45261504fe09c249760f068bf5335582b8ba82007b1",
+        "runout.csv": "bebca327c71e8b2cfa71f39c15c44454f68bf828569ba950c2039865bedcd716",
+        "win_raw.csv": "71800039d7f3b17a14e518e9629f8cdbcd6fe779eaa438fd03852ae10702b25d"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001129,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1589,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001136.manifest.json",
+      "manifest_sha256": "81879d7148066cae685896049754df5d379f400ecc4d55f7594b0f0989a45037",
+      "outputs": {
+        "branches.csv": "7c9cb8a02388c76096714dbc8fa6a460c2eaf19797ea1d021e4ca249f4d4bf35",
+        "combat.csv": "ee6b07b607a7f46a65eaa5543ed4d08f4c3e2837ff6150d33a4616e3739fcde2",
+        "decision.csv": "20652694714d79924ffa6618f1223f6fdb61a6b5e577c48de0596852ad609206",
+        "decisions.csv": "bbbc409810ecf0e8448b2980e63c2f7f54bacc8dd46180f3d702f8422cd9f4c4",
+        "map.csv": "e7688d7a8e51907383290bb9af088bd26313070f9930bb65011c08fde76abf54",
+        "runout.csv": "9fb8b1e53879216063f8e269ee5374f87d69f396ae31574fe409782357e681a9",
+        "win_raw.csv": "c4db7dba5ce0577b0ab710924672da2bcb982e23b332a46bb3920c97dbdadf34"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001136,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2200,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001139.manifest.json",
+      "manifest_sha256": "07b13c1f1cc53d476a9c10987a0285a23cc6b8debb46d4391ed49a44ea4e3793",
+      "outputs": {
+        "branches.csv": "b5c7fda115606f8369fa1ed057e593a1a89aae26f1346e0847dffac5d9082140",
+        "combat.csv": "8046f1c7fb5c95052d6218aade74d44ea10e95b0264b8188e585a4ee03a67b86",
+        "decision.csv": "d710f5d7918cc8efcac05e8af0143da2ead72335c5c5437a7b01189cc0253c9e",
+        "decisions.csv": "e02f889aabb4008ba99286e9779983c585790d963ed162b4bc0388facc4d5cfb",
+        "map.csv": "5f5877c6e06d81764a49d2d11580136d78f8fb6aa3b062d58cbcf22f0603eeda",
+        "runout.csv": "c0be811036adaa4581a07f8af8c67f55c3c200413bf0384d2a80e45e3a73a472",
+        "win_raw.csv": "12bfade5f4af0d25efac51af6c6c479f67792c9c95903e4b3535d37bdc6dfe18"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001139,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2110,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001140.manifest.json",
+      "manifest_sha256": "ac5649d670d2ddd6d5c0247c0279cbcee817773c50ae2eab2ad76bd4653ebf05",
+      "outputs": {
+        "branches.csv": "2e988b14ddb3d7d0edcd6ecc89a2fc6f2599d66b33836bed5cbb5f10911ce161",
+        "combat.csv": "cc478c57397403b11211d0a517efe51ce8b0eb68379a0690430eb282d44d3ff3",
+        "decision.csv": "0d2b2e1c27ed2c080aa61f73af5c4e91b3be318e0a7f4bb26ce7425fdb551e79",
+        "decisions.csv": "de4a200a1fad12bf97aa695fa98dfa2ea14d9b8c5c791080c5898cd84b7d9923",
+        "map.csv": "4f2f7abd08e64babe7f758b55400c43df759a2878501311814a5ef8d1b6986d1",
+        "runout.csv": "4f9ad8af487efcfa8c7480e91322f3248fc94a4be6f0fc498610a641e0bb930b",
+        "win_raw.csv": "1e0fe97e48447c31e1c7be732bc7255ec058754f56ce0dcfdf3a33cb8ac3a0ca"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001140,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1077,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001145.manifest.json",
+      "manifest_sha256": "dd425ec4533971d4c023eeca32961864aacad5436f54506ebac0946f2434f9b0",
+      "outputs": {
+        "branches.csv": "ea242995195d93574b9069df11871ad13dee01afa0b8a12c28c5bd68d15eebb8",
+        "combat.csv": "207df9971556a7dd9918d3e05ce998fd497c641e973fbc6e8e60b33a7f0daf89",
+        "decision.csv": "e2575b531242a2aba73b3c54ae230a0f47f75262622e8069f034e7ccc1669102",
+        "decisions.csv": "fe65d0fadc6c94e911488329a2072a24dd809cb247873a468a6eeb95f32d65e6",
+        "map.csv": "ba84fd03ba163bd9581aa8d6ca06a65b8be9c6d2f53ca9dd8510b5decdbc0b0d",
+        "runout.csv": "a49fe2b39ee6583219fadb176ca7f60ec280669abc3582537a0eaa978fedbe31",
+        "win_raw.csv": "99e493acec9449df1474ee87d7ae6f8593f66dba9a6dbcce68eb7e5d2d148cea"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001145,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2425,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001149.manifest.json",
+      "manifest_sha256": "f470dc59463e07a46f4e3ad41a4ce26950aa41cd6cd73bf75dcfe80b6b449d5d",
+      "outputs": {
+        "branches.csv": "e855a695edf0ee9f76bcfd251fc2e25811b1ed4d81c5b34d6499ff2095f7a44a",
+        "combat.csv": "62d4acff61862cc6c56579aff7ec6f4c2e9a757c62447344ed564e43cbf7886f",
+        "decision.csv": "03a5200a78c88250aaca5cf780bdb22a8745193e6f1dbaba45a6c481d72c52e7",
+        "decisions.csv": "a7e353a57adf51aa2b70a355ccb5ad377e81ec24250bb0e6ce22d6af6a994f10",
+        "map.csv": "eb0b4e0deb07cf2c72501baa4f538141318aed644b0615504f733f8b07ca88f7",
+        "runout.csv": "6a5056f0693f093768ee5c9e6944df205bc17341a49a8c3ac5806a689cf1c546",
+        "win_raw.csv": "ee3654ed687e1570f331ff0a9b80ce59e5a1c586416586ed48bfef2044006a99"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001149,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1900,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001152.manifest.json",
+      "manifest_sha256": "6dceef46b858d66f8baddd11f3576cedc764f1622b8d082f65e28623ee2b8a03",
+      "outputs": {
+        "branches.csv": "d68b83a88e6fe68f8a9c28a3c56d5e3e93464de7f7fa0c09fb77dbb06ac2fc9a",
+        "combat.csv": "6e0866dceaa45d7004da0291f26919a5375b1bdb77880da066713efa5b3803ed",
+        "decision.csv": "e309e0b3d23fe1e8efcae23ed462562c743f7ae5528518e8fa4ed43a5d1850af",
+        "decisions.csv": "644fe595bb6c5c7c992c2a78ceb11b374356820be9610f612f4483f9816372ea",
+        "map.csv": "1f3c2f3b7ac6947ea1113bda81a3665c6b1e1aa8c24b1a766cdcc89817a88903",
+        "runout.csv": "9c851a9ea80043fa15e073fe548d11beaf4bba33a3691aed621da703980d4fc8",
+        "win_raw.csv": "26bfa7236493ea7cdb5bf2ee72841359aeeafb0fabf32801f0bcfc0c312425cf"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001152,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1955,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001159.manifest.json",
+      "manifest_sha256": "1c69eba675cc36949888734ab66fdf624b80f5dbeaf13589182e4ece51663529",
+      "outputs": {
+        "branches.csv": "bd24d6359cde992e38bfc567a29ba31f16101fee3efce5afd17551cc9c97db83",
+        "combat.csv": "0825ddbd317a38e67902ab3b1d1b4e4f400ac255557204848b8a72e57398963a",
+        "decision.csv": "aa65133fcbba49cad1206ec055eadf5eb261c8647b849a31484731d8014f5b1c",
+        "decisions.csv": "fd1a07d4ee33ab1f889165b335ec4eb832da30deee4149fb18563bdb07b246e7",
+        "map.csv": "7eab4f86692d44ea408fbe4c7112a44f59e9df939d122dcdc237ac40c18fdb68",
+        "runout.csv": "a8d8a17fa0e38a696d12a1cbcac7aab1877b21dfe99ec614bca08217a05134f9",
+        "win_raw.csv": "1aab0efcbda80cd3ef7d2b20c85dce226008f9f25e18ec2a228394540af45179"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001159,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1933,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001172.manifest.json",
+      "manifest_sha256": "b15cc300864e8fcbdc6b479a1a69d7e922167d3b30d2127262d449406f6ee5b0",
+      "outputs": {
+        "branches.csv": "bc183c4ad7501e543a70ad6e3f637244f9f24e766c5e68b57bdfb1e0e52126da",
+        "combat.csv": "efadc8edb04340e207b473261d1a080238236c3124731ab2be754cf91c77b4bb",
+        "decision.csv": "189723d84eedb97f74fa508e998a04716e8e400cd8f0045fb5c094144b0bebe9",
+        "decisions.csv": "739504458ecbe87da6f6e2826b75cce8aed0367721e05128c85acde1947cbfa2",
+        "map.csv": "e5f140e3cbfd9308cc76b8affa248a2cd35c60c69105413b6e303a74e2002a16",
+        "runout.csv": "4ef780d81429307c440d743aa1e8cad198deb99c5405b93e39c8e68df3b8b13e",
+        "win_raw.csv": "e2bb25472f42ad370d8d077ccec9caefeadf3be8085d2bac6f2f9121d4fbcc21"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001172,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2295,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001178.manifest.json",
+      "manifest_sha256": "9f22e58c0e17c35dde1e80236697528507ef3bcbfe4147a1d442cec48efb712b",
+      "outputs": {
+        "branches.csv": "d0256f0875a98f31ef0df11d709e02903200f0023333bb8e7d14d6b765290cbd",
+        "combat.csv": "f00266bd1022ef5a6d65579c907ae70c9cd6384e16a3bf8883d36fb76c359517",
+        "decision.csv": "3a8ac9aa0cc197a80356702ac16913a44df8667e0f17a58fece179cf170402fa",
+        "decisions.csv": "731e74c6ad1675ef1e2e9b18b1002ce2602eb7489ec6352768f657c81f71e572",
+        "map.csv": "13a17c56d393a53202d31110863799402fa8946b1a2d27ae84cb36d3d0538fab",
+        "runout.csv": "6a6dc196c933875c45bf0d3189b45619d8828767e64cc923b535c7e2c9b10e36",
+        "win_raw.csv": "635801fcce56a21290d617c5a8ab0d02cfad5bf01b15d6445f5c18d5a5f9268a"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001178,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2686,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001179.manifest.json",
+      "manifest_sha256": "5c7d5c7781c7dc4ec68acb4720ebae8893c7def6fb8130193174afe90cea14aa",
+      "outputs": {
+        "branches.csv": "dba85ca0f2561734ac4ff55d7dec5b10f386b8271d018c1b5d0fa3ea9b486286",
+        "combat.csv": "8c668d286560c4dcbc432ef76a610b15f6c88590e6e6a76f456382265aa08d97",
+        "decision.csv": "643670163f9842407dee23a75c2c8517376f2155926142a2a0835ed5edfc3f83",
+        "decisions.csv": "e342438a2e9cd7e0264a40f536a4a87095c7fcdf04d81b4ca32fa13a5aaf2b17",
+        "map.csv": "0abb76cb4bb30ee5e6639e478ea10db819b7901ff664e47ccd7f9095600a14a7",
+        "runout.csv": "49c8de054ecb533279bb7ac798c59ecf6fc75e8703577c3340ffa56e8d4de5c6",
+        "win_raw.csv": "2e2912baa2553a51df6fd55f97c21c2e9598331ed3d65eb976470134749294e0"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001179,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1877,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001186.manifest.json",
+      "manifest_sha256": "ab65cb8b7d4a7f6271976c78439a1e6bf396ddb73ce186ea724c2ff57a5739a9",
+      "outputs": {
+        "branches.csv": "4c10feccd6ebc3a6b984e848f445568299418d8dc109b82c164f4abb7e39bb4d",
+        "combat.csv": "d3d039c316bedd60e1bc7b6148ae1bf58aea9a6763b0c7e54e034a613718c130",
+        "decision.csv": "05303943f1a2655a3619cb6e41ef046a86bfd43d0b5f20bae273420e159b8de7",
+        "decisions.csv": "89d6b6fcf3730fc11f32956978dcb2b2059071b0444e1b67d93f24cb5e0e41a8",
+        "map.csv": "4fb601ffcec870b8d4fd5aa71129299508d3fd071076bfc25d98d9780e7f5430",
+        "runout.csv": "9ae5ff27d49724ce088f14e23afecba89b20e4f46823231de4dcf89b0dc8cfaf",
+        "win_raw.csv": "0b24416120581153056edf56983c9fe471a50617a8bafa5b9b2d58cef7d87c14"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001186,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2425,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001198.manifest.json",
+      "manifest_sha256": "58f548eec58968fb3b863fd172b9621bb4695a011402bb474dffca49f8734a2b",
+      "outputs": {
+        "branches.csv": "54abf8d77bcdb392f1cefe7f9091056094d427fa7ed7c941e7a02d4ec789dd99",
+        "combat.csv": "2e2ce074c3ce08d48257ac1721773cded5cef1c2c79f17104e86d489f4d38a5e",
+        "decision.csv": "08bb43f0b7917d604f76f8ad20c775ab7064fc44585c30b4c4284e79b80c6e6a",
+        "decisions.csv": "22b161580d6fa84b088f08adca53e6a1a79e8e1e8e28d26d2aadb24d4b6eefb2",
+        "map.csv": "da3be5ce2e1ae81488dff922cd60c649876f26b3c59cf6dec08a7d6d67675049",
+        "runout.csv": "629e2413ffd0589e30952a8321a82b899b9e34af22311bd361f30af4e99e0325",
+        "win_raw.csv": "d1b1b672ac8db93b8aab9032988f3ed4d5d1a6c7a08c3510dce63de66b68df64"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001198,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1426,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001204.manifest.json",
+      "manifest_sha256": "0bba3da12a9b686b25bb43b74875b785e500c6dae212ee8f95a4b74e3bf4979a",
+      "outputs": {
+        "branches.csv": "d610983a515fe0d0701ea589cc4125501f08e40cfe3d1e6358f8f04365f816f3",
+        "combat.csv": "ed7db09456ae95ab7eed294177bc430399de52cf927b1fa25b24e42fd64981f4",
+        "decision.csv": "4ba299ef89172bd2cd970eff3b7bf9f9e3baa80405f1d9738987c1db529e5a76",
+        "decisions.csv": "695834fe2828bfa6f3d21279de8bae73b829ebc8788440f5477ff809c7735307",
+        "map.csv": "0373f825ee1203c84bef39a75c2ff28a4b7897dd6e48e5b419e09adb21430038",
+        "runout.csv": "9c4a1811b3e9955c73bd8ad8a89b93bdcbca2aa54f3f01b0a6103f561a18a0dc",
+        "win_raw.csv": "7781d41c1bcc74f544f68c529a26b5f24de5b6df41aa1a601207525e884507c9"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001204,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1246,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001206.manifest.json",
+      "manifest_sha256": "921fd977cb7517b9a0b7d266e16a6f81c780df05c6dbf4f2ed594dd497beb037",
+      "outputs": {
+        "branches.csv": "30021a6cea1f616b7d725f6b0520baa63213265b5812234e2ef56ca664f10216",
+        "combat.csv": "54803d93424637bc1b44a920a2a0a060d02ec03c6a5c781f30bb4f540d2b014b",
+        "decision.csv": "25aa4d7c398bf5b0f6d1184a6966214b17d76403074eaae8a5243259816c804a",
+        "decisions.csv": "6ab574d043b6c1fb264d62bf43d0080166131dcf23d4a2ce98024f56b927fc3d",
+        "map.csv": "2455a0ede2a2ba9ba685a7bd577127b097a4ae3e500e550310bb5c2661c3ebed",
+        "runout.csv": "db53bcdc11c45d9f4ee78c29d696cc7336db8f30f8e5f362d2157620aa6c76d8",
+        "win_raw.csv": "86181b53db1bb1312f7cd9cca782c7427bad238378240c8f8052af58a50de3f8"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001206,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2174,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001233.manifest.json",
+      "manifest_sha256": "5d52f0f9d0f293959ea47db88292a99d4c322fbdd850a92829cb1f5d3117fe54",
+      "outputs": {
+        "branches.csv": "c363c83f31c94af638295c347e9bc4048a749f7ceef3a99c487c43fb7c169088",
+        "combat.csv": "c4c3efc41c1d93883e5281ffbfa16122dab094a1fe99417b301b89644f9e0394",
+        "decision.csv": "f719945288cd6d61a218a4ead2eb1535ff7e8d2246e66e473bc96e56d93ab755",
+        "decisions.csv": "deca49794169a7f57d4cb8caacc21789166b88dc53ce9a2169aa39b96c82f635",
+        "map.csv": "b5683b4cf9f228d5373386aa5e7e7fe1ff1879a7c0112f4cfcb197583528aa26",
+        "runout.csv": "431294ab86e96871db5d731fc412a0858ab2bd2965f1be9eb340cbcbb7c2fcf9",
+        "win_raw.csv": "4ec7be2e95b0251397462089d7c6c4e4c3a5e16f7bad7cf83badeeda119ecda4"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001233,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2168,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001234.manifest.json",
+      "manifest_sha256": "b5f979c7d0cc6c628009f546745c53bd11412abb15ca8df0065d3585b7ce0496",
+      "outputs": {
+        "branches.csv": "d00183d41cddfe74d5003040bc53e3ce215da3012b576a3ffe1643f5da78f9cf",
+        "combat.csv": "f351af92ed3c61523e544bf9de613441d936ffd21a050f40ea6dfcf63f1b6ee7",
+        "decision.csv": "a9a7b6c0d1d761d2e8ef7cd0addbe875aff0066c5afaad1880fc3176b3496048",
+        "decisions.csv": "9e649977955fe704454e528e65b327f3c9c11d330422085e2eecb7ed034b7d53",
+        "map.csv": "56f07a092696fa8d0bd35ccbc9dcd097b88827f601f1aa9f9ce8f53f64878be4",
+        "runout.csv": "ec2c02a5cd4a9923dc367b94bade61b2f6367ec046f9ab39e0968cd852292780",
+        "win_raw.csv": "768d05c08fec0a52823de91e3bae58fe87d446237b9b2e09b714f55d7297bb0f"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001234,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2461,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001238.manifest.json",
+      "manifest_sha256": "85481a346613bbb21f7a76872321cba88422da06b75551ac70027d7f9e679ad9",
+      "outputs": {
+        "branches.csv": "50312f96adc56f20f1ec8704eb8a663d23798d32d06c9cfcb69e0f268d56a6de",
+        "combat.csv": "fde0dc08288409b9d705aa233da6eb503b6aed458881c7874b7377d9977ff4ae",
+        "decision.csv": "f3e8e1fd383020a5842cae3db5ee3717286a0ce5f19612e49f20adb90b07fec9",
+        "decisions.csv": "675df9013ccf5bdacd2e248ae86c257489cd72b11a585ee4e2cfd0e12b46beab",
+        "map.csv": "4b51ad7a5768bd7dc00f7c65d25e88636d99936ac22cf042083341b21985b8f9",
+        "runout.csv": "dbfa028f58fc3d315d1b3e0303f1c64e8985f9513cacef69bf36eadb005e9bc5",
+        "win_raw.csv": "7c26c05f07ce5d622103ea9fc9a2dc0e909c1e9cdab847ff02e1d224ee955792"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001238,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 3039,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001242.manifest.json",
+      "manifest_sha256": "c5ad78914755d1f896839ffa1aba6a7fdf97488d35de2a3091d2300ff62b4fb1",
+      "outputs": {
+        "branches.csv": "41c4c18afae7dba6f85e6b4238adf4d92ce3e0c5e578f6b1ee33271647ccee51",
+        "combat.csv": "17f2e0a5ab78262fbc9399d1d72ed708e49334daa31a07d3b3612e4650f25f64",
+        "decision.csv": "ff60986e97bbbfbcf1bbc2c026107e2c321c7bd89d4276640771e18a41dd497b",
+        "decisions.csv": "42acb29490bb805be8d643269131e3576ce80f531f91850b5c158a7ca769079a",
+        "map.csv": "fa85b14a69b9e4dbed9b38fef4313956488ac8a1194c798ca4a268a610e0da39",
+        "runout.csv": "5c46157602b2102846c203bb73ac169f55f781686baf83b3a855a38f3729b7d2",
+        "win_raw.csv": "3f492dfa80cb5471c8a967479d3318fb05e2eeef85ac94aea27a30ef33062b45"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001242,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2218,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001251.manifest.json",
+      "manifest_sha256": "254ff3ed8d83c92278d91d328ae26df7cb2fac62711f274e36530e44811a188a",
+      "outputs": {
+        "branches.csv": "dd7bcf31265f5c573565bc64135b2d99ecf9782b184a320140425066513d8cd9",
+        "combat.csv": "07aa52f5fc7374373a03c8aeb9ee899137edce7dcf06c56f462a430ff101498d",
+        "decision.csv": "4445404fd045cbe257b618b6b2191cd2bf33bc52336f6dc08bb5c93658f8e0f9",
+        "decisions.csv": "97b4b09a2fecb0180b1ff797bfea7dd56ae472b2fcd3b1c002fd9f912257555f",
+        "map.csv": "e853f5f2eec0961a002c5b17c741c8db786f3c93a256c08e245ddc7900b3bfc3",
+        "runout.csv": "75437bc87f901bb884f4b543ba94df64d21e618d4d605d46ac5e27f53d09cf32",
+        "win_raw.csv": "52cb0ed8a59eeda94ccb0fd413ed206985d0cd7257e091ff7a4375c3f3838a04"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001251,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1471,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001255.manifest.json",
+      "manifest_sha256": "e61426a92a769ca79814db8e6ff2c79b8f0de6e40729b0bdf02f368626ee4479",
+      "outputs": {
+        "branches.csv": "713d5bb5330c82a861a845e574611fd1a2c9f74bcb41f822ea83cefb4ab9e9f9",
+        "combat.csv": "3ab2e93b7cab0a1f0b220decc0cb4385828329ccc3cd9852ea9c95bab2611b8f",
+        "decision.csv": "34219e13ea9ad4aa4c174edb5b855f90bfb081960c0cf4b98a3d537aec2a3508",
+        "decisions.csv": "88a63fc6175fc9cde9332d0ee5dfd9c137da942e5f7b842087df35dd0ba95eb0",
+        "map.csv": "e91e1d7690203930620b3509bfa69d672d05afc48b0f28758fabb8ed48875033",
+        "runout.csv": "37f2ca13659fa948195831da2fd995ee228b3dbb9b785c09d431eb780a3151a5",
+        "win_raw.csv": "8f0b2c995e070c2217bc7870d913f4d715ad02aa89fae693ead5dec250273536"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001255,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2502,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001257.manifest.json",
+      "manifest_sha256": "88577d96fdb022d4de64de3b4b99fdbac722f5a1c8b3a97c7e78ecf239ef86e0",
+      "outputs": {
+        "branches.csv": "86eb6007edf721780979db06fb5a8c7b2ffa9db8a64fc0cc6d5f5f00bb176a59",
+        "combat.csv": "863a0ef956dab3720178fa4c12d1a061903a8624950b7412f72f12e7f0b1b97d",
+        "decision.csv": "87ce416aba935c1c9364511ecb6ea96922c9565bfd58039ac77b26d844c633b5",
+        "decisions.csv": "6a7c22f793f9a7dd7d5000e267f683d0b8b4db20d7391e23a1fc3ac36755388e",
+        "map.csv": "094d5dc1f514ef190846752813bccebdd0d3a22fd9b3e48c960250d28acbb91f",
+        "runout.csv": "30e14408dc03be4bb764562d441ab705e352702f01311ab1dd91da6cf12d1b1c",
+        "win_raw.csv": "9705e731d98acdd458570633a5d5bd916797b28ce4804dd83eb043dc044dfe1a"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001257,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2496,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001258.manifest.json",
+      "manifest_sha256": "359e0a83e242a64da0d2b6e14f1ec402be137febe38db08cf6a56e2cb7101bd3",
+      "outputs": {
+        "branches.csv": "041a4f678b8be05544b84ca9d4166b1925fa1922b6a8e34bf52034135bbca151",
+        "combat.csv": "d33a44182f8a976e055c737cfcedaf1bb00f8a830c3dabbfb88ecc8694a5258b",
+        "decision.csv": "1d335b3713357ac793a00255670f40ae8e5f8033a30748d75c660e7e648e6055",
+        "decisions.csv": "be1e93aaa638e0799622a0387ee676909fe75b976a45b119f1aece6292f07dd2",
+        "map.csv": "889e7d490fba5adc2635e9f6ac3e453e04ebccdc78b504ce9a42ff9246c2b3cc",
+        "runout.csv": "f6eef1c9686977cea23c4905dbc42c8096ed6357852994d1d4f3c8741aff7342",
+        "win_raw.csv": "87e709bacb4622e5b17e77327c8917181e49d551242698327e59d37d9534efd3"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001258,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2135,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001266.manifest.json",
+      "manifest_sha256": "e09c467d3e56439acd9a477d6e36fb3b267e5c9c0f3a84fbf056cd3175498cfc",
+      "outputs": {
+        "branches.csv": "124ed2139cddb48cae77f5695daf12c120bc120e44990b1269f6e957bb543a41",
+        "combat.csv": "ba10bbf1fdba3218326e639e763306785ccc3ecb75321c60dbad4f1942938c37",
+        "decision.csv": "0422ccf39f1ce313ed5216e79649222fc992b7646d6c5240ab6895fc58c42359",
+        "decisions.csv": "2294476e343393082d06662d66b08bfaeeef4cb206b9a6ae3df91a03aa5e97ec",
+        "map.csv": "8a9e93d1c283f1faa94af4d9977c275d454a2a39a834a418de99f5c2c0234a61",
+        "runout.csv": "ddc3479560dfc5d224604dc0d7a945023d772027d7c6a40b9ff1239bf6598100",
+        "win_raw.csv": "f4bd7b5adc5f9179dffcfadeb006f9979e9bf980f898818968c50e532a9cc1e6"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001266,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1795,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001269.manifest.json",
+      "manifest_sha256": "c557e26e41092dde2cda7d0b0eea4fb00e275168196943d0d635f41960336eec",
+      "outputs": {
+        "branches.csv": "dea56bdc24995d2e5186a007304e0afdba33d5d4c2cd3417a6f2c510dc728923",
+        "combat.csv": "b73b5bc0895e9ed10f6c260ee97abb4514353c83fa36ddb88ecf7307f17735e7",
+        "decision.csv": "04ff2e564f41259be99c2ff9a9b6f84a9be559d297099bd353f78eeb2f07a6f3",
+        "decisions.csv": "cc73c78e2f37058a6745d987647a8645cfa1f4674b5e8f4a4dbbc0662d8b8d13",
+        "map.csv": "2105784f1ee71caf241229a5a6496d27a99e00d6d8a0fe4b277552cabd42b3f2",
+        "runout.csv": "d4a7122b3e5df5def5aeea2b77683acf362fb3f810b02398881558517a60b4eb",
+        "win_raw.csv": "71e871cce78ea032efdd56bd74e1ce38b8b0b94b87def232f8ee146ef1b12de0"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001269,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2518,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001270.manifest.json",
+      "manifest_sha256": "6f448e60b24b49040e4bd73f608d28c172ebd199c45b40b2c12c61226e154a91",
+      "outputs": {
+        "branches.csv": "c9629b03417fdf0af57dfb1d459bc1e3891db483365f76669420d432bca00e29",
+        "combat.csv": "3e459baaec0dcc300e28caf9d173ebf8e29e69f523f1e56be5963506731a983c",
+        "decision.csv": "5035943f3ac80caa34b1c30adeffbd799efd887e93b5e9c04b3cd660a094f31b",
+        "decisions.csv": "ca50803ba4e07dabd5885cf75d68e7a43b4fb40ad2f01584d4e774c90aa217f5",
+        "map.csv": "69997875edcec3d7d34a98b82bd3f17c1dfa5be3e8534134444398922ed49d82",
+        "runout.csv": "0c512786a2883759602edaa0b86902c527995811bf501dab45c3b7514578de7e",
+        "win_raw.csv": "a6415e73d771bace969b0023194b38903dfd3d2f447984c82b17b4a827fed0d4"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001270,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1847,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001275.manifest.json",
+      "manifest_sha256": "d435134098188b838fab6558ad257351a356ddc1dab8dbad32dd384c17a18213",
+      "outputs": {
+        "branches.csv": "a44082e69e08cad90ee052cc78b073ffaa5098595be7ece2b5c94127386c4db0",
+        "combat.csv": "0d9ccdc3010f80800eb08703d15637cabca038c9125170e0d44fa590011561f4",
+        "decision.csv": "97a9dab12d5b6479ff57dacce8e02e5f75c5a33edd8b4f42f60ba3d262e128b0",
+        "decisions.csv": "f029d45c74a57c2a7d3b51921691d88e27fa3cbe2bb992623444eaf44f26c0f3",
+        "map.csv": "6c25738f2e3d0406a86075d21c6235685b2823cd6091168e4c89b50a9580244c",
+        "runout.csv": "f55da7eb8a2b49a9a511d2f79832fc7326b2c7ccb9283d8d23306a82700cae03",
+        "win_raw.csv": "292f0ce81e8d2330f956b708174c76fab911b81152fa9fba816bbb0615a6ec38"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001275,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2061,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001277.manifest.json",
+      "manifest_sha256": "9a9eef05d7c2493210ad5245fa5c3668e758e8e338a3cd2ff68831f907ae6fc1",
+      "outputs": {
+        "branches.csv": "f7db6fc3760a269f191f87a5e14ddfd3145b750d9b9652dcad564838d07edce0",
+        "combat.csv": "907b1acf3eaa4771a5610d8a4fab2f256295b359de27233430a3c959dedec1cd",
+        "decision.csv": "3bce59fbaa564a95ec666256878a7dbda5638a60d2d46ca13cfcbd7a19657654",
+        "decisions.csv": "d5e42d015e8b24a369f369f8739869e572fbc866705207f5a1f68780cfa68262",
+        "map.csv": "0862b63a9a47111d98746df7dbff29a2c8d7fe6ad58c15a0b66552676016c4cd",
+        "runout.csv": "cbf0b0d6af925e56e26d3c21ceaac2d0c234db732809f2115af869f1c1cc6b2b",
+        "win_raw.csv": "772a2d30f5fbe2ac664ac1d03ce4ed9df3d70db190fd217c37b60be8b1165e42"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001277,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2047,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001292.manifest.json",
+      "manifest_sha256": "105df7d1d9118db8e82a4c388043acc50b00053f27864fe3dfb389e5b91f6bf3",
+      "outputs": {
+        "branches.csv": "4e5cbb9fd4573a688ce4163f33fae5e83c818d134b0dd7032a20ad57f62c42f5",
+        "combat.csv": "3e67ac013015ba71b546b12ef60e689dedc3391c77ed92526eae9884aa93370e",
+        "decision.csv": "0284b758037fc8f8d365e7f3df1a44cfe4f4f55f3ffd3f1f67e9e25125841406",
+        "decisions.csv": "d7039b777651c2e84917c3f3266ae9d6e4b33a55b4eccd8ed741f049d75da0fe",
+        "map.csv": "a86c1a30937f8a0d281807e4ba90904bcb3f41bf840269595b884b742211ba77",
+        "runout.csv": "ea8919c2f013da87c21ecaae0645b09a2705869eb50aca682c8eabad2e9b1f54",
+        "win_raw.csv": "2f0cf68b052ff3bf0f079d5180d75f546446dd3ebb178abaf999d40231277cff"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001292,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1366,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001295.manifest.json",
+      "manifest_sha256": "814d2f39a6c2d0c10617af41e0dbf0a40ef843aa043a453c087cc9c3e281d500",
+      "outputs": {
+        "branches.csv": "b954c6535685d2bee3bf40b7744be733ae52b35711830413456c49c58fc6f870",
+        "combat.csv": "3623baeeb24fbf0fd3abb8712deedcb81b4f5ae01577f34c266808684803ff6e",
+        "decision.csv": "d8c248d53da9741b56942e7894e7d4391708b54b35fde4ec8896843a9070fb4f",
+        "decisions.csv": "546005f25f29728e053e27c77004a5806f41b48877ea0c35f99fd844153b8e68",
+        "map.csv": "3543c596b267120f7bd6836def52ce04af1457690da160401b2738f40e138700",
+        "runout.csv": "5bc4a3567cbf29dcf47b89b5cebb4af74503cd22c306a6c0c3b7dd445cc0eea6",
+        "win_raw.csv": "1319ab2ef5b820613fdfcf8c5df9cc2667a7a37790d583b554f02ec5d84d87e0"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001295,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2476,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001297.manifest.json",
+      "manifest_sha256": "69f6f9b8be803873533deda4f5965a9f93d23715375cf9281de5a63ff2f63967",
+      "outputs": {
+        "branches.csv": "60290aa08f84abe9788a21fcd4819ae1ff13c2194c913568226df4d3c64b1c86",
+        "combat.csv": "ee587edbcac50ea75e8da1c23d52ae313d5e3ee76e4c68881b3011eb0a741b04",
+        "decision.csv": "cd6ab73802cd5486157a4a037fe333c08961dd9049f80d6c4121bad5430d6eba",
+        "decisions.csv": "463db48b36e7119b7072cc08f3631a224ad523af3cdf737c978f5ae8764313ab",
+        "map.csv": "fd823378078f960451c1170fa95cff731228ac4d485e20e05da06703eb1013ae",
+        "runout.csv": "4fda5274776e5da5590a1c354df6170561e95a76cb94a840936fe4ed8c9c8e43",
+        "win_raw.csv": "39870960cb1a4940fabd5ee7a564689e8313f596d41bb1b9c658ffdcae572dbb"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001297,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2588,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001298.manifest.json",
+      "manifest_sha256": "1c19cb0831352dfe2910717c51df4b6710bb4a87a638abb3502b66cf48878ffb",
+      "outputs": {
+        "branches.csv": "0721bfbc18e809227d864f009c8223dad7718edb298ee8921c79147e64f220d4",
+        "combat.csv": "321d453a81abb70211598d681a363c18a5ef970c6e0722cc20dffe20d386486b",
+        "decision.csv": "8e290145e28785683c354817b7475ee46a6e958367d52240f0c4611e5d363009",
+        "decisions.csv": "15f291af6344cee003381600ce3714bb76f4e4f418c97456b814643cb52f6c12",
+        "map.csv": "a6c5dca8c9e24359d1e4d33527db719c2d6c9d2e0f41a55ec044109466724e4b",
+        "runout.csv": "ee09191a5b95b7ada507f222757884024d944cfcc788bafb858601b3b50970d5",
+        "win_raw.csv": "ce9812585f9b7f039bf51a8bea82194b2fbf5ab043a1795fb7fa22dd4dc0c3b5"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001298,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2763,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001312.manifest.json",
+      "manifest_sha256": "89588f8c456b2368e169fb845a67d4d51543aac7187bb769205a069d0c05a453",
+      "outputs": {
+        "branches.csv": "a32cb35ea15dbdd229cfae7569cf387317ff2d2741f9d2259f061392d158374c",
+        "combat.csv": "44e28cdd21f810b2f6f4f153090596326e9984490c01abb63ddab89c7efe01b8",
+        "decision.csv": "40e23893b9543ad9087006a27cf73aa4952c20d2a7a9c33010ce0517c0c0f4a0",
+        "decisions.csv": "62eae75e7382bef60907c581b6d7569e929f297ed5fb99f1a6db05f8d505f736",
+        "map.csv": "fb6377dde58fa82e7fc3cb27458804afcef7c34361ae09f5ac1ef0aa7490b437",
+        "runout.csv": "8cd38a520729d61e5de90a1af6423cae9b96f8847992e3fcbefea6f780c27acb",
+        "win_raw.csv": "660b66da02e985ecfa8753090226a95df8327606fe3b9c98bc67dcb15b50710d"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001312,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1774,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001315.manifest.json",
+      "manifest_sha256": "56b80b146ba38ef7505102ef465ce34886453f07c18904b6678143bbb79491ee",
+      "outputs": {
+        "branches.csv": "57a54d2d643726b7075938e9dad1a015591f47cf330e55ab0a0b3a976d53ed78",
+        "combat.csv": "759f2b44dd6702d5c00a7540140bb5d52e05a39fcd52c8b99db7a6e349510c02",
+        "decision.csv": "da5c5c8d1401ec34deacf061babb4c49e8e41d0e1c3b56e2fb75effbc85486b6",
+        "decisions.csv": "c65c37ce19be251defac4fdddcf8e767e00595c87b3de1d9746fc8d87ee75d79",
+        "map.csv": "6abbc9fd705fd567cbad688426adbc0cef1f3a5e4ec66346d1efefb231e34089",
+        "runout.csv": "7b13ea724d7fe3b3c9cda89983b826acd33995f21d417ca78e5470797b03fc47",
+        "win_raw.csv": "1c9ac19fe6fd77eac8bfd38fbbf827225aa15da2a0aaf1162fb3b8be06cc7f3a"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001315,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2214,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001329.manifest.json",
+      "manifest_sha256": "4da3f107663ad2b2d12bbcef7e2444956988ee90f06c95e8309bb49fb8acd9bd",
+      "outputs": {
+        "branches.csv": "99ba0d7a6331f8f64469831681f4b81ea3f173ca293422b4513511459aede2cf",
+        "combat.csv": "5b76da7389037565733edb873d79d58dad16b3d4e370abd7181caf4dc3055227",
+        "decision.csv": "205ce349483325174038b2b39ea434727fd1e6f178afa1040120c8c11e04aa06",
+        "decisions.csv": "48bd61fb268cab47e06852f9cc5988fa4dc9fd937be26ad210fcc6116d45bc42",
+        "map.csv": "f685c0ee9783c9c81dd5b436af92ea92e6fc9d48fc7d28b3ebe4771c98bbb6bd",
+        "runout.csv": "453ec8ef91017bdf2a348f2ad6bc376696702ee93b3d2df24b3d0e40d6c4ef6f",
+        "win_raw.csv": "987d16479b117807a1583c66653a81ff0e5cf0dd365cf4a45ac7a37a2b112b97"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001329,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1790,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001341.manifest.json",
+      "manifest_sha256": "a4557b0b7a9d76e418adbd6f5ff21ec05024b339ddb02cd7e75ed13c83a5a15c",
+      "outputs": {
+        "branches.csv": "9e4dea5d4a95964210ec40c7f3cfd110930734fd15473a5876ccfd14fc75027c",
+        "combat.csv": "984d81eafae7de8f545131f1d3fdf0afa3a0098b70a0867796e8e3d248f7cf6d",
+        "decision.csv": "14baeae6e767a2c486819af44a15a97c9f2505df8218ed1b2058c1aa593a90b9",
+        "decisions.csv": "55634db7fa2c3c7f76b3bfb0b050e2e6b4b1602942f881f0b3723fe5b1fd5d44",
+        "map.csv": "21728ba7941f8ec6c6eb058b32fcbedff02b7320cd68e423ea1cbd3ae0a8c52b",
+        "runout.csv": "5a02791c322e23f3dd333f2e9537d3f4b06b742797c916b051113b3e70d26800",
+        "win_raw.csv": "7ce18577dd95cef2b89806b3a71b22e2ea24c9fca53b39f46e3f207788798490"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001341,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1987,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001352.manifest.json",
+      "manifest_sha256": "5396bcfa6ec9c8ca0c390fe39dccec18def0b02b85e9a0f253825d00f68649a9",
+      "outputs": {
+        "branches.csv": "bbf709b87551ab66800894e157027c111385879eb9f21ba74073f88f0bb89a66",
+        "combat.csv": "27de6483ba5e47a74a8257b14d0ef042b84178830c4c0a7f38af1259ad6a086f",
+        "decision.csv": "9e4713b460b462e65da8e23d9639e2f01f4f99b5e84443fa4e2a078b3107ba3d",
+        "decisions.csv": "c0c395d7144cd8c632dcff6e4a8b3cdadff3dae0f518965d162b7312343d2770",
+        "map.csv": "8c54505bbbe2bdf25e8445c1c9263fd5b3f08e436553b351f271b0c9bb90e606",
+        "runout.csv": "68adf9f941f64f7d26ed578939c6a29b9d95f7015ca50e69db75c9ce127149b6",
+        "win_raw.csv": "62fc7efe3d88139de88508b0869932b71cf1d4b20223f7aa5cf4bb2d1bdfedcf"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001352,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2183,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001353.manifest.json",
+      "manifest_sha256": "76c4ad6b192bf2628b8194f7769b7639064c3592e2bca4dcb9297ff72089f6f3",
+      "outputs": {
+        "branches.csv": "15ac838650e6b93beb27cae5d7371bfa350ead81791940700253766c1920127f",
+        "combat.csv": "dcba57b0a71dea4e8ac11a5daa35edc16416b0e3127dc4d681ac8bd30c413c5a",
+        "decision.csv": "9517e05d7ff1f348728c4aa7eec8ef3b7b35971c87fdd415ec39e9439c58a204",
+        "decisions.csv": "e819d298d6ed8627984a81bed20c3d5986d689eb6c08804b34a810105e221e78",
+        "map.csv": "28221ad21e0a376f74a2b98f7e52784fc1da591118267b31cba99cb07732ea51",
+        "runout.csv": "d9129b6d8c0f1ee6afa1a228571d1c9a390f9ec3baf7fb2f17ab28845f5dff89",
+        "win_raw.csv": "2af78087679159144f9ed8405f11207525e84545fca47cb0c514332c0c3baffc"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001353,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2861,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001366.manifest.json",
+      "manifest_sha256": "a7f28493edcc7c90a435064a264a0ec89c8b93506045c7286d3aaf0b55370284",
+      "outputs": {
+        "branches.csv": "c5d4052df56341671b8ecab00fccb2d0e4fab9f35204565a93d0f815e6afc987",
+        "combat.csv": "73b2fb37224498d0a4680a313b16ae8f39988a19f774804c29265532d7ac9ce0",
+        "decision.csv": "74e823b8b0916b9595744830822d1d45c188ea75966b10d19fc6c40be3285b65",
+        "decisions.csv": "922603cc216ff9490a618ecab82584d9677bde51c5783b791eb29ba061a05cef",
+        "map.csv": "d5bd6af765f90973629f926f183d19102f73789d2387c1ebf5c4418984248374",
+        "runout.csv": "574e362f72bf53a8ef1dba6cd1169ebd0149532143ab079ffdaa3c497c3d6e60",
+        "win_raw.csv": "2e87eb1379b51a82aa4a8a48b97ffb56f69bc1a6aeafc3f3c379d86a458b0d2a"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001366,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2451,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001372.manifest.json",
+      "manifest_sha256": "d0091c79d48a64c17e410b4832560ce79c455baa80d0010592d6e57bc6ea9603",
+      "outputs": {
+        "branches.csv": "bcdba0eb06034e67091722535b75fc991ca71d01514ae7c9377691b145e28421",
+        "combat.csv": "8b708ef03b9e17fa77ac3ec612f7150e0a62ce4c73f2e9854fca35b27c848382",
+        "decision.csv": "064684486675d265b3ed6d80ee53b9da5977ed142f82de31ab5d2aa3f9d50c29",
+        "decisions.csv": "9cc60727b6c22c72c17c36fcf4e539af19229f46f4ac516394ab06c45270d4ff",
+        "map.csv": "73fcbdd87bcbca855e74f37ad004848379f0fb99270a51d8c0845f452e14fac8",
+        "runout.csv": "c58dcfe9502724b48e83ecb06e8efef639952c114f8c13507ca6e79e3b225b29",
+        "win_raw.csv": "39227e8f55bf264c99f24684b189c53bf0a03dc2a6b7c8fb51b5c01ee7b40c40"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001372,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2909,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001375.manifest.json",
+      "manifest_sha256": "3c5f7b3b26e6253cc8ad054b01d350b5c9328c0dab5a1d9491f4f44f0c004386",
+      "outputs": {
+        "branches.csv": "9d7123c0591e4b791358dc59536119ea6e8d2c3a2c659ceb6298ed8fade45de0",
+        "combat.csv": "fc9cf7acbffce983f3a31f9a9ad6cc076c1f52f2327bf62091f42fbb89366e02",
+        "decision.csv": "347b3e80fd59a364b5c0324335dc8f213fe1e178af9087ab9525b0e16a0b37e7",
+        "decisions.csv": "4c15ec6675027c84fa4147ae2264948052a64501d775e2e651ec15467ed1f328",
+        "map.csv": "41aa3da7bbf610848ab89953814657e2b1d2b61e66a3878f97c553515f86f5ab",
+        "runout.csv": "069dd1c18092fb53da180284b836f8d74e20931ffe033e09d21b3dfe4f254ea0",
+        "win_raw.csv": "e75e239f238de217baf4da969200bfca0d3cd33b4e4d6cadecf3d8800ea24483"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001375,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2216,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001380.manifest.json",
+      "manifest_sha256": "913dbf38bcc5c92e8d637a9bd490ee36314993b397fcee849ef50171dbc2e56f",
+      "outputs": {
+        "branches.csv": "a49d6c75bbca1fb0a9a3700fd0d17ffa6e82ea1ad8d72d0e77999f62bf49e152",
+        "combat.csv": "c75acdaae322d1c04cd784f58a6c770ef4d2a3003b128c524ad2fa71112668f4",
+        "decision.csv": "3e2368090274edcf4d8b739b1d844b98a165940186c723410fc8c9043171a7f6",
+        "decisions.csv": "e23d6367ab0e0c366981a5bc5e06f4d2d8e6eddb295082d6dc14683674751886",
+        "map.csv": "adf1527fa62711e3ea3e9330735363f01a476226f2a191cc8c61ea10f14c6755",
+        "runout.csv": "161129c50b8ebed11149da9378841233f279ca6a47d1be18121ffd50be3591a7",
+        "win_raw.csv": "fb7e3531f3f9eb10a88b9cce1e16a98f26427105c21d6cdf91fc259d5410c5ac"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001380,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1531,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001385.manifest.json",
+      "manifest_sha256": "fb65673b5852a09383fbfe6179c6c2157952290034b48151e7fcfca76595b078",
+      "outputs": {
+        "branches.csv": "7955c2a419e2cda3d76b8f81fd1cab48d253fc071ca0f7012ecb6a5e5ddd183f",
+        "combat.csv": "a5ad55a6b4b0d5ce5086bfb15f13b84217b3b97928c07ef0e3f5d58279ee41d6",
+        "decision.csv": "a08b3fa443fddd9937259dbad6f03abb79fbfbb9050b35a1eb4a4c3311329588",
+        "decisions.csv": "32c83da14181bc88370a96854cb11b275cf505f5acdd5fede452604c680d0005",
+        "map.csv": "af091e2b5493266d04b4fff1f12c961debaa6df198c4a1ac4546c79473eff511",
+        "runout.csv": "06112ba777bfb46b2e59871bea489394549d736cd689992d04ffe91535bf4f02",
+        "win_raw.csv": "1ad93d0c4cc1d2bfd367aa62e5b5940188562d00b0f2f1fd0dbecb1c43fb56ee"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001385,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1162,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001393.manifest.json",
+      "manifest_sha256": "df6f18d62a87d2d32c9904e5dc53edeb8d20b41a0441da3b3d560ce1e4bce4d3",
+      "outputs": {
+        "branches.csv": "9940318e8c6c7fd242c0d33d7a73fdb21ce66192a391848923b0cfe1c5d53f40",
+        "combat.csv": "328597545c253518872cfc4cb11a5e8e881325cf36152d1ade651dc25954ae78",
+        "decision.csv": "1df17e596b351caca865d280d419c9d8c09cdd85a50ae1376944ed8d6bb3bf9c",
+        "decisions.csv": "c3cdc28fea729ebae30d0c7967528fc71e22ea9636dabd12118a08463f8836ea",
+        "map.csv": "7dff5f2a97bb697b795febc235cec14cfce64262310be0b0f21df6b1fdf6fb19",
+        "runout.csv": "42984aef71e7525208b49194bb17a55603d07ba63c938f2f73359e5d325ea260",
+        "win_raw.csv": "db6c78f0ae27e1a7da0afefa51ac39c3d90665aea807390a1e7c6022fa5d246a"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001393,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2616,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001424.manifest.json",
+      "manifest_sha256": "e2d83ab2596cc22a99b243c66363c93c3ad85f55590293027d0af24b4ca1c173",
+      "outputs": {
+        "branches.csv": "02e3694a98e0566d4e0357aaac8e8d2dfd2ff22f23e6be298e943740d01cde36",
+        "combat.csv": "15397426ac71e476ba9048fcb05dd4036387e85a46406c5940fbcc7e7c94de93",
+        "decision.csv": "16f170858cf1252186b6a52ca5ce3704073c07c9c7524339e4d86bdfa0c3f9f0",
+        "decisions.csv": "c87af686c66e2441f0e2c269231f20e5e33804127e6a44470f7c913b948bd773",
+        "map.csv": "1e0547591f83886653f13d1115dd603c32c5b68ee17a0a09575eb4b63c9d6a79",
+        "runout.csv": "574b4b005c6684a1293b39335b06ff7059807df493adddbeb4cd567d0d3f17aa",
+        "win_raw.csv": "26b45e3270c55bd92a58c6b2b430adaa85829be07c85b4e19d3f75a254907902"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001424,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1444,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001440.manifest.json",
+      "manifest_sha256": "63a5ddb1d93913d695ccb8973626fa9afa661bc35755dbfafaf8c822f38767fc",
+      "outputs": {
+        "branches.csv": "23790a9359cdd868735b0bc1c8aeb5020f8622e2f6d93714b94bcc1ec9f89501",
+        "combat.csv": "4218c8de83bc61427693693ae57c0ee5fe555d6e38770a33452047fb5032640c",
+        "decision.csv": "09e6e861f205b0e15cf2d250a43651b8c874c8b2c61ebd4457e196ff231a3cc7",
+        "decisions.csv": "d6360a92cc07edbf4c87724f28bc06ce552b966aeb04663c77aa7877b42df5d0",
+        "map.csv": "a7a50349547dcf3ac4751a9d2e1693be72fe402390741d4a9d7cdfd2c53cfae2",
+        "runout.csv": "fe3276048af3c68085438dfbc7d4a406353f0430619652164045b92ab01caa7a",
+        "win_raw.csv": "3daf9c672d1fe113a2fbff43ee3c4c12530c76195d7d8b59fbf8a6eb5b71ceee"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001440,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1326,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001441.manifest.json",
+      "manifest_sha256": "d84397aafb7035c96f113f75d6a3ad8acaa7e7d77237cec7132457fe7928bce9",
+      "outputs": {
+        "branches.csv": "7ae7b4300248d90a15cb216c39f4c7f22fa750e6340dc20b4c1fe4a65fadcc5e",
+        "combat.csv": "d5bb92ff99037c102b88133e3cd8aeefdc55273a82e1725ea4afec21d60f59c2",
+        "decision.csv": "a3acf5a61a5c19e34f163a731c9699d0f299047f864dd1326ad1bb2945744df7",
+        "decisions.csv": "7dce8a57f4663db21dc208a47800b69c3ca953ee1665a978d4ad1c317072fc86",
+        "map.csv": "f029d813c19e1310af5b1c1a37a02af00d96d95f3bcad30dbdc034ab826697e2",
+        "runout.csv": "cbc1820eab3a4de765b31be6330e29cd79e201364fec302ccec5558bc345d06f",
+        "win_raw.csv": "7794082f75f87f6c681a9c90949fabd0349799d6342eb2563847dee328a986a5"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001441,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1595,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001444.manifest.json",
+      "manifest_sha256": "dd6ff22c532427afbc738f31b0c92021dd680e4773738dd0889c6d17ab748c68",
+      "outputs": {
+        "branches.csv": "a574a56fcf8732d9d149a32e7e504ec7facb8c6dedfecb7b0f9c910559e9b69b",
+        "combat.csv": "9ccf39a779ee116b2570f4cd311897433506bb56c89190b863435d614d15b0af",
+        "decision.csv": "202a0eddecf1cb6456522be003e79ab37b467484613795e0368148a3a8d1f6ef",
+        "decisions.csv": "c7e65335704eff573c2fb24ebda17287d96d6299c1115f4a66e894000f42804d",
+        "map.csv": "b9aab0434cd026781a6471530648265c87d4da7722cbae5203ecf40920d8de63",
+        "runout.csv": "9aa854ae284075161748a417fb3c19c44ad0535aea911ce45da2d3e3272a96c9",
+        "win_raw.csv": "61b4ee472d177f3fc1c21fb9c8d65a79223f42c62614a24960d5d43388a7c332"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001444,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2195,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001447.manifest.json",
+      "manifest_sha256": "f7f6add970851bd0c648d788e6cade4af9a21e351895e672373b10c8c662da22",
+      "outputs": {
+        "branches.csv": "91fea8aac76b3e381ab109433cbfa4638143888c27f791a6d69fc2a28ca240da",
+        "combat.csv": "bf654c1e6655acdb145c7261a290f44d8d7176aa7bb8f2680a5fd7b88f90cace",
+        "decision.csv": "6858a73830fb19d76588cb39b4ab37e6bb33aa3f74ebdfbf537a66bfe87bc3ba",
+        "decisions.csv": "7e18d902a035c15968a2ab6bc7cd990af00a8a3238613c0db78e6324bf48d096",
+        "map.csv": "378fe92a0fd6cf4e4341511fbe87d3f11ff488fd1d6e51a85fb1126f90dd22f6",
+        "runout.csv": "60c5343cb25cf603a39e2bdd23366a037bea459860f17780aaec1ccfc1b0028a",
+        "win_raw.csv": "043062e4958b9ed0aa0824ddac476c84b554d607293149743d497dd2cd3288a4"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001447,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1779,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001461.manifest.json",
+      "manifest_sha256": "d926f8cfa24736a0940e99741df3d639ea145697722dffdd93af2f113fec406e",
+      "outputs": {
+        "branches.csv": "4a9af55e531079f6323d8d287bdbb9944e6b81e21e582a8549d5d40338d65e18",
+        "combat.csv": "13b40e41d1d599dca2bab5a7393472c6b4eab208a3787d23b444ee814e8a9b32",
+        "decision.csv": "ec4489e4e86c03a394c63841a7280a513c8c0f89d531464c070a7fb28998fe94",
+        "decisions.csv": "8eace3cd3f0fd846802cf058779ef309d8e5dcc2144042d35ff8e3c5f888903f",
+        "map.csv": "0a5d40f2ad041a00cb2bbb061a876218f881c29215b498b81292209d51c05ba8",
+        "runout.csv": "b8ac06798fc795354b7919279f66d1c64f2e95f2d3a018aca9686ac555228f3a",
+        "win_raw.csv": "aaee6241f47d192a0d9934b4bd03d5e912adf5e41afb11121808a540b40f26a2"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001461,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2996,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001468.manifest.json",
+      "manifest_sha256": "b7081eb5197cb1a5a19c94a6dbcd89774843507bd612fe5f7b151642b871ca45",
+      "outputs": {
+        "branches.csv": "3f0dff4cac8f22d48455fd3a15a214401cbad9079a89ab0dc11e498eff295a1c",
+        "combat.csv": "ffde7a29b9d69600b4a5fdbdce3197c4c3123574745fd8fe6ad631a76fd974b7",
+        "decision.csv": "1f045b8cb48850ead2cc4b8a9d3713c522fe54a5476a22543be08770257babdf",
+        "decisions.csv": "4d7e03193e527e3abe3bcaf647cd4311e622de30b8ddebe89cb51097facfe0fc",
+        "map.csv": "244b3289cd760727185443e713bffd5503a8cf14d99e8f24725747f2c7b477e3",
+        "runout.csv": "23c38f1d05814ce21a2d037104663ca24edbc7320b6b22a5e8ee722ec9b8af89",
+        "win_raw.csv": "c9184dee0f6fb6d1882b3ac71e846fd07e2d77fc43d5864f11ce58f11c9c7230"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001468,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1547,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001479.manifest.json",
+      "manifest_sha256": "812a62bb29fc2e8457d08bc3780d9f7d84546f2c3a493de2de75286ff5a7895e",
+      "outputs": {
+        "branches.csv": "4a594d1be29da28f11bc5b904bc5c42b23772a5aa08215be8ca22881edf668e5",
+        "combat.csv": "a94ecc4f5ae9c315de7ad825b30079f66283c47acd001c80e5c8b04a448170fc",
+        "decision.csv": "adc493a246d9d71f2a7f0ec352211ef49b087058e1b1ca2e99d728eb6507984c",
+        "decisions.csv": "1f327ba31d321e28733d8a60600841355ac57e14122ccff9de2788b0f36a775d",
+        "map.csv": "4c165c58a547c949b36b41611cab33eb1a0db3509b6162f82dfec42cf6ad9a74",
+        "runout.csv": "a37fff53a4771688c954373cf6ceaaf543cf86259af214118cf5bad7d460d39b",
+        "win_raw.csv": "44af6e945260e6182b3e827803705a027e41153c30e71669e0bf7b47b341ecc6"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001479,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1379,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001480.manifest.json",
+      "manifest_sha256": "06876cbb2827bce6ed89199ac607660dd3e3b2a2be73a867f466cf1dc2fd7e89",
+      "outputs": {
+        "branches.csv": "1850b5b84a87c8753a81fb150438ccc40fbb61ca80e50d9c9347d4b25ce8df80",
+        "combat.csv": "b5599971d1fb8ef6bdb0330373002da2ed2dd4894ea797b85d7bd7e7ee4c114d",
+        "decision.csv": "16d71f9c70dec84b9ade8db8a240882cee2e813a835a9eb66cdb48c28bf0537a",
+        "decisions.csv": "b6cadcfb8508228d79edd5def9353822ca3c5d42e887376a41d2e4aa2f754955",
+        "map.csv": "6d8994d0f81b4291e9c8bff0f26d7e1be679f0fe3fd3f7211c8e2d38b0fa7043",
+        "runout.csv": "879862943b55ebdf633963fe5c65271d40e69a2215e9e207ffbe5df8899bdaa7",
+        "win_raw.csv": "17fb3264ce619ce94f1a89aa03b5e47bcdfa36abb60db05d7c193672d7d285d1"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001480,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1946,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001483.manifest.json",
+      "manifest_sha256": "9221718f921c9a3c5334c196cf95ec49c909000724bf3afdb78267bdba8ccc38",
+      "outputs": {
+        "branches.csv": "9d34b8d6686737cc487e5cfcac287775343102f7d361071b98e7f5decdb494db",
+        "combat.csv": "9b9451ff21e0d8b2568a12ef215fd90d7b818dbd27985bf52e25f0e664d3225d",
+        "decision.csv": "1ddad52e1aa4f37830c7b45f221e80a17e8e48867b20cd7bb7b0a9f72e1aebbe",
+        "decisions.csv": "d12ef7237a4b9bdb98da5a87287a513bf75e45e852c7dab5f40d2170bd6bdf9a",
+        "map.csv": "ed7b11405b70142aca0de53b22aa0dec0980c04e76a8caddcb9b6f3b7ef8f30c",
+        "runout.csv": "6035d3bae19fbb5b6de822701df7fd66b9dd1272a94f0ff3badb681a98d9ba6f",
+        "win_raw.csv": "f3f847d8899f3b7370384b89696ac9d10ccfcf821cd8509c7a2540d7d7ded4a7"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001483,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2413,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001485.manifest.json",
+      "manifest_sha256": "5149c5f8e680fafac011a7f309752bd40920e22e3e4f220a42b4f5e83a0e1fb4",
+      "outputs": {
+        "branches.csv": "9ca0482b5ee2b7b19872ad375a2745f8a102fb718e851700f1e0f0d000496678",
+        "combat.csv": "4a026592f2117cec7b5788528ba34abe84081cf0b98f3c27e0b64dcaddcbf0df",
+        "decision.csv": "82cc30cf44038f9463ae9fe620fb8b0b282528b76c96e23c19cf4b6b7e40a18b",
+        "decisions.csv": "7b7cf1ef512116bea6c8548b6517de6303c2691439b07e6ceeb8a73a92599ff7",
+        "map.csv": "0a4c1387af49c2fa450663f6980bd6d4416127a1ebf7010e6e3f03da370eaa20",
+        "runout.csv": "a40c65f8f6868f960179941b62dc9d172c2ace2fc34755eae39af32e589f6975",
+        "win_raw.csv": "7730fd8fea218212ddefa2633913326c9df431659a77b9bb52d37d9c605d35c6"
+      },
+      "producer_sha": "1e93bd66cb5ef489028f1a06c22d5f12bd2ca935",
+      "seed": 13001485,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1512,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/shards/seed-13001493.manifest.json",
+      "manifest_sha256": "3256a92e2e42722e4eed3cca3ebf21e30a94498c0da32d7ef5c87dc5c6af5186",
+      "outputs": {
+        "branches.csv": "71dede294b46abb28c139d272afade5e4f28acd35a4f61a8019cb40802957300",
+        "combat.csv": "c4bc2cc8e6f2a95a9a5ccaf06e13a3918748af62ebfae4883380e4b92c77d38b",
+        "decision.csv": "a4741636bd31e4d069dabb9ae3dac01e76be39f0a9b79a174b40efa59229ae3d",
+        "decisions.csv": "e2885ac56abbcab3122927894977068c1e1fc355d6cbf4fa992e11aea471f33c",
+        "map.csv": "6465a47ade6f7df7172b4b54344de88f1cdf51765762e75d3c59fc47fbc9f53f",
+        "runout.csv": "07d145b985c17e87efed01ca56df50eb69ef679e6f9be845bad951003f0d8154",
+        "win_raw.csv": "079813799b6593c92cdfd71f76eaa6299afd3410568878d326dcab641432b5de"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001493,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1507,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-continuation-20261001-8175c9dc/shards/seed-13001510.manifest.json",
+      "manifest_sha256": "8f65131a36fd2d3a93224ff9e6ee75c5375db7f63d416ca5fb138a79b69d6b61",
+      "outputs": {
+        "branches.csv": "0fa3947b186a72733f539fc174327e99957535ac1d90e3411435468d55e7ef44",
+        "combat.csv": "63b15f84cc795d826220ae3df60e33726c4d7612f5762becb240ee499b2a81df",
+        "decision.csv": "58dc1bddb7a6bb58c1471050fb798efee3ed240b102022f54321cbeab220f2f7",
+        "decisions.csv": "79d87f81d46403e123502091a3776c4e65ca3bb6b11de7cdb318fdd7f4c385aa",
+        "map.csv": "27cd794e21a75a552d789a5b513d81392b83fe96abbdde1c79af904e47ef56ce",
+        "runout.csv": "0971fe0f70c54fc1f47d381b5343b7e7a7a8c49424cc135b1150b1dd96500082",
+        "win_raw.csv": "9f0e4aeada8f40fb8bc26e15c1e3873fdd10bdfc4e7d9823a4242987363c3303"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001510,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2030,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001529.manifest.json",
+      "manifest_sha256": "c536a812d62c4c47dddaf03d152e9c4bedcec0a26f5a67df1ad8e178b92c367a",
+      "outputs": {
+        "branches.csv": "4f51205b6a81a2b2376c6bd179181bc486158af9cc1f202266419299d66a0e61",
+        "combat.csv": "98c793a160d5cad8719384937fbe9f18dd5c012420c319db778c53a50f036d5c",
+        "decision.csv": "f61683d8b72a0f4b3489977c010a1bccb0a135ad4c0aae67fba85b7c1f9cbc9b",
+        "decisions.csv": "30c577df5d7d1c6f247e4baab08dd4122aade093df2ebcc19faa0737c94c61f6",
+        "map.csv": "6100cc43b5b485a8c92d8fb13a9ae5d2fd274f3d8281fbfd66a8fc5638ea69a3",
+        "runout.csv": "9542b5995ac6ffe88396bd9d50207ed23e7156c384475cf0b2019f066ed4cac6",
+        "win_raw.csv": "f2c065744b5f3d32057614c1fb8d0952b07ad0af68a8d1fd4cd624e5b89396c4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001529,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1780,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001532.manifest.json",
+      "manifest_sha256": "0afad16fe5ea3744cd2136ae1cb97f97eb6f7a1e73758a882e73ea2fda433efa",
+      "outputs": {
+        "branches.csv": "43c0c4755d4d85f24930bbe0b8db7aa2dd9ddd998a81c2f2dccca2f58fdf7ed6",
+        "combat.csv": "26d7acefe9b7b317d917029292a7954336071bae8002d90125afc9b36d7b20f6",
+        "decision.csv": "7868923aad3b9a02ef0ade5aaa7c2ee17b4daef57da1d91fdf826c068932efd8",
+        "decisions.csv": "0610e9d4db46531bf0a13f1c42f49c66ea44e93045767fed80701c22956c8e02",
+        "map.csv": "6e4255dc3c754b8d7807403272878def18707b7496cefd058cfc3c3bd6644a0a",
+        "runout.csv": "c44ceae2e726c418aad457c522ba64a590da4182d854d977ebf3d96abc885fd2",
+        "win_raw.csv": "ba9b1c20ea101728b08ce5e782c302222011faabf6fcc71179cd7aac82921c8d"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001532,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1939,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001539.manifest.json",
+      "manifest_sha256": "9098e2121ebba06420b4c431a3d6295ae4f1edd08a7e085b6949be58a1cc5447",
+      "outputs": {
+        "branches.csv": "834168b2c547db8c7944df59eae9758798af1f426e1995a847d444b1f7f4e7d0",
+        "combat.csv": "37bf22fa98e316b64c2a8cceea34d5e85007eb76f7c29e8c5ae99d66fbb54393",
+        "decision.csv": "70608576e3d12a906ad0e8cd4c3985bffa97c2049f2bf2337aeb70a698a53a78",
+        "decisions.csv": "2e2ab0011ec5ed537396fb73f8a75198b9d085e1b6527a7e1e34ed0c8f31c1b0",
+        "map.csv": "440faff2b8dcf10196010775409c165f9a7ddfa17aa2d924407cad774893e148",
+        "runout.csv": "f8fef61142f14c23fada284ce06c66fe34512a079ee986b7f975b151364b4223",
+        "win_raw.csv": "48a12a7f589b2fe2fa19976a8740908930d2d06298c4e548471d23c87ddbaee8"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001539,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2030,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001542.manifest.json",
+      "manifest_sha256": "ee3795c2166f1734a92207c07c22846a0dbfac75c57219d77eee7d677514ed42",
+      "outputs": {
+        "branches.csv": "403fb5e8a452306d1d9133afe899a0504155cee175c617943094dfe537b531c2",
+        "combat.csv": "049bf73a1892785ea7f6b43a6e4c1dc2c636b6125174901011dfb196e4ecdb9b",
+        "decision.csv": "1af2492c35cba3ab57287b87faed2aa588a9d6750d8ddddc2484f386df736793",
+        "decisions.csv": "e1b7e80d5bd172f85c7758deaced9a318716104154bb8c966f7e15f81dad63c7",
+        "map.csv": "210b50bd7b1298d6736101fb86de9f6d24d0644ade0fb35d6dae4b38a80593a9",
+        "runout.csv": "25604afd70a81439fe560ac6b310db9ab70697c1bd68bfd9dccbe1903bd66c88",
+        "win_raw.csv": "850e5d2ef22563607fc64faea08a9232c8d4191fc188510689a21dba6235f695"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001542,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2594,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001550.manifest.json",
+      "manifest_sha256": "a2c97dd34a96fc880c2f046a877f7ae15979240ead8b5238e99c8e2f444509d9",
+      "outputs": {
+        "branches.csv": "a8a2c99bba999507bb05696d302c7b2a462cb196466a687720ae0191f86cfaa2",
+        "combat.csv": "9b2fa2c72ccd283eb0fb3e364956f68503dc48eca7347a462f95de5aa04bf943",
+        "decision.csv": "a9889d967a406b36d1a99ebcc96288f66baad466d389354943f0818e322779db",
+        "decisions.csv": "257212e2a320c363907ee1c545af7380ed794bf3ca32f72d4fa7f4217f6bbb58",
+        "map.csv": "bff906065dbfaf81261e60f12902fd0822467e4f558be6587935d35e731badce",
+        "runout.csv": "c94a737426709008bb9699e61262fcee46f157eaa4e040243eea2d1a9912a018",
+        "win_raw.csv": "50321f70dfc79a7d66d822e5d7a9327e5398c84dc82c80077bbfb01591fbb7d2"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001550,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2143,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001564.manifest.json",
+      "manifest_sha256": "d8908e70d366b5eca08a7e7a647d6a09f9649cb980a65faac531f7b0ac8a21fa",
+      "outputs": {
+        "branches.csv": "f8b83eefe4428b83b65b87a437b76f4be1e640455e28fec89a5687e2f15281e2",
+        "combat.csv": "57d0a8ede94633f8736babcf0c68767ad4f72012dedfe0ddafb2607959f79956",
+        "decision.csv": "dc5a93ba0897d50a95523ec87e0215fc3e46e146609c9e11dd1c438bc6b016ef",
+        "decisions.csv": "d7891db59fc9005ea9b12b2a04efa578ff93de7691352ed348c7b3787b511969",
+        "map.csv": "ebcd4cbfb388cfd46b14720b310fcca2e9df21ee893db8d2f2bc608c51fe7aad",
+        "runout.csv": "ef294f0eed5f127576c865d3266d788d9f0f67224741fdb09374e92cbf543f21",
+        "win_raw.csv": "be213e9ab04be64c5cb553f126382612e753b66687e2037adb955a94d1c3dd5b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001564,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2437,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001575.manifest.json",
+      "manifest_sha256": "bd728579843e522703af0bb119239585584df72f7b6bd1c35e62e45343d708cc",
+      "outputs": {
+        "branches.csv": "53bf933658c7971c1566c95c2e30d510c2b1e0f608417f7566709a687b5ea48e",
+        "combat.csv": "7e2ce7b4c19bc5f81b9da383eac540d90ba15ac490338e7fe16411610bebc60c",
+        "decision.csv": "7f0c71cd1ac552be4364d044c37f572e17a620ad7286d0cdfafb14f970a82cb6",
+        "decisions.csv": "84b548a43e606318927520a012f9cc9abb9fe81473c28f9a98fd674d687aee21",
+        "map.csv": "544ef9f1f2a63013bd6e4d2f6165a4edfd4fa14054ae5a7591f6732d00763134",
+        "runout.csv": "35793bbe0ca70fc007c23ea0bb21014121141a3bfb8506cd0add3f70724fef6a",
+        "win_raw.csv": "f30644774e12d965d78b87eccd9ccb6d17e0870226508843cdf6c759f01acf77"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001575,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2858,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001576.manifest.json",
+      "manifest_sha256": "0506aed06012065786f1e89adff59e0ee8d26007934372945639e5c359cb176c",
+      "outputs": {
+        "branches.csv": "723335c38cf6af5416822caea1051922218f6fb3c6eeb37ae0e548141669e0be",
+        "combat.csv": "c9cf085c65cb111dcf5264f722cbb37de642cbfcd52731776dc368ef2b9bdcf3",
+        "decision.csv": "8b1efb54cb9bda74f4cac9160c55d6125d40df86609a70c83e37cd9b9cc01583",
+        "decisions.csv": "06cd92f6615ea7d3583e0488341cb20c178a4efe16d4afb7f559df32875951c9",
+        "map.csv": "b9c55334a56bd7c16d87a1014cae7ab915634f2516226429056a632f65089ada",
+        "runout.csv": "b9aa8a1a754534c563feefb246c2fb22fa616f523673e4c38dbf9b9da03aa940",
+        "win_raw.csv": "418e3a128c57964c6e583021f7239c394b3f7c0acd1a917e817209884a90e687"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001576,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2029,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001581.manifest.json",
+      "manifest_sha256": "75f3867224c84a7c1343598e839a49d1c319d4a434d09759479e10e0d2e89b9c",
+      "outputs": {
+        "branches.csv": "0ec1d562b0578ecc32fae675e58b2d32d62b207861d39d176dd5e0ff8a074b4a",
+        "combat.csv": "308a81ae1b672201ff151cf62d72bb949a3d9d8931c8028ccb58e9e7ac03740e",
+        "decision.csv": "9166be5cd090d5316ee3cf60d125206dbb732f595a218dcc0c1cc95f7b9a1611",
+        "decisions.csv": "8001257ae17ac465c325212b9142e60a608b6d45c6a39dcc6c05b109a1fcb340",
+        "map.csv": "ac5936c360f3a4ab9fb862f3b3a6306195d22a0ae5150ca8433d49b030ed7184",
+        "runout.csv": "f46c4af1893205acbdff8c3504a36c13538789526dc1dd223f4b2bc14e42ff7a",
+        "win_raw.csv": "2abdffb3cc66e935a953ac029550a3e46a8ff393245b5a962275731fef225359"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001581,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1942,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001582.manifest.json",
+      "manifest_sha256": "97dd16a02d8ae4dbe342250fe7245f0c1a878794d319f0971210b15134c8a2ea",
+      "outputs": {
+        "branches.csv": "8d90f4c031504af1355bb84e88bddbca4e0a9035a015ccc65bf9114aaebfcdbe",
+        "combat.csv": "51115a6fefff2057145add638eef4c0a07fc230dbff65de94049b3de35b24c04",
+        "decision.csv": "71e0f9736177edb908260b2aa709d64320e3cd2abc909a6630e6df4f884cf3d9",
+        "decisions.csv": "e616ced58cbe102920d842fbde70b389ff0d502431431fa962a8d498d74f7d35",
+        "map.csv": "bb97f49f901614cd26dc9ecdfebcee7d45d8b1012ca4a37554a60e22baf446e3",
+        "runout.csv": "8b7659880d318fe67a69bf202f2b2372a6578ee0af625c68d657f4b29aa89846",
+        "win_raw.csv": "2d1ddc68ca2a0d9340be959c13dd6a50b2ee3b8332a676259d91632f243bdf5a"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001582,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2587,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001589.manifest.json",
+      "manifest_sha256": "39316eb0e7f14ef8bfe489d9de16eda89e62d8e2e5ae2c058d7aa048a52e6fe5",
+      "outputs": {
+        "branches.csv": "a709df315d1e1b0aa64effac9bf25284bc34361ccd20d79f340bb7c78f02fe04",
+        "combat.csv": "6d59118c544f90cc19b73dab0e0118b7c82ffd9882ae85959d52e5a0cd934c58",
+        "decision.csv": "0617620a6caf9d05f011319d74f45268669a4e0345ec4c21cff79ad3eb9dc538",
+        "decisions.csv": "f7f0af0c1325ee0866855ebb29dd5ef4ececaf8d35ba6c8987c266c3a0e6ed8b",
+        "map.csv": "e447d411701f82e3f4272cee786e6cd3cc078332a1959baab8a2ec519591f67a",
+        "runout.csv": "d59c3fb50906e4b51d5e52c48fca2d3517f98a7f8075ed0e65cce8b532d4c270",
+        "win_raw.csv": "463a2c085a3cb66f578aac666e60ab3114770b86c83c7fb58598357029c87ae3"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001589,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2755,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001600.manifest.json",
+      "manifest_sha256": "333f86a784c08eb7155cb9e9c6accdbb010d5319da7619b801682ef0a83bc2db",
+      "outputs": {
+        "branches.csv": "5baaff0e24cdf434d91c5de31869c271267aadc30965984d4afdf8d9172989aa",
+        "combat.csv": "8bacc9e6d051a00d4b84a84ff2be528bf6bd55e79a28670af5a4ad0e6824f055",
+        "decision.csv": "5da8bc9e099a03fe1f017adaf5c7d7b1e58b391970d556478d1a872051f2ac82",
+        "decisions.csv": "3c425467d58a90c5724603155ef91b8ef014d7195a901b7b87a8a33ad77ec623",
+        "map.csv": "13d0a9b651efeb076fd76e6d285f95707a7ea87ef52abcb7f393bbb211c7c7c6",
+        "runout.csv": "3f8b580659b9699379671e135f82b6244ab521921d7ff551b334fe6a2bcd0832",
+        "win_raw.csv": "ab337447872d7245c6ade7b3bbabcb04c1d45d6184a788cf54074c09eb36c0e0"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001600,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1912,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001605.manifest.json",
+      "manifest_sha256": "1d3435b5b22bdac0ab21c7c4326b0a25cfb0f8efcfc887b48603e9652800384b",
+      "outputs": {
+        "branches.csv": "52bd832524ce6478ce34a62736587e45447a91b78c3821caed7056ad51b90590",
+        "combat.csv": "eef13ac6eff099e0bf1707fefd0053ef3463bc9bba037cbb24afae3bcabeb620",
+        "decision.csv": "f1f85fe9e0c5b48d35f383d885a3b0f630708bdfa6b33c85697bd55febbc5ac6",
+        "decisions.csv": "a43410f966c24d75c2a74c5cfafadbc9c753051aa49ff1d853031589bf9c35ce",
+        "map.csv": "1033f214180d3591094d9109e1eb8b85181185ec8b97ef62d440d1ec5a112f0e",
+        "runout.csv": "8fee08dfa177ab4b6a79a48560c300d159c851498a9a1ab70b2e5d05b12cc000",
+        "win_raw.csv": "f645ccab6e4c70f27f75ff1feca7ef12a76ed667c7e30c58c3e664381182cc62"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001605,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1973,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001628.manifest.json",
+      "manifest_sha256": "5244082efe070aaa4288112d6b71271d294a69dac9b099f9f5aa516273fcc030",
+      "outputs": {
+        "branches.csv": "490d0326b7e37b88b2cf17ff3c48ba7c3b00cb53fdc784410c14b77139fbfa54",
+        "combat.csv": "a35d6f19e254a8987492d44413ce441fff2105dada2c73bbf110099df1890739",
+        "decision.csv": "f1912b9411213b417dfafd3e69beb4e3f44e7823b5ea984780bf59740d171797",
+        "decisions.csv": "db2f56105161cac8adc15d33550d99c18af544f9a519d52d32b8ff08b2eecb65",
+        "map.csv": "ce3b1bb23fa23ea54a949b5721eaed1136a356f99fe58804b5ce9fee59e2b9a7",
+        "runout.csv": "f9305a3c13af8ae682789c602ed4133cb2af0ba32da03c91c458014711f78991",
+        "win_raw.csv": "7262f93d7fae9d48e17cbe9b065d725f6f1e0802cfcb3dafbc5136393ccc2122"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001628,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1552,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001638.manifest.json",
+      "manifest_sha256": "f15699bd594bb201b26b2cdb0eea59bbfb5b547c58015fd0b9bb53f87c6a6151",
+      "outputs": {
+        "branches.csv": "60a6abbafd5cb100816b5d23395f4da3cb57ae56efb3836268c30ff9d7ee518c",
+        "combat.csv": "ef5f34314bae6c2da5b4642d0c3a1953a90568d0952c4fd4dbeb5ed37f605d2e",
+        "decision.csv": "592a3ab64717537d3dbf701cd9dba11845eebac54a2f0f49546d25735309acac",
+        "decisions.csv": "9a37ce43c34adb7a296b08190068269a30329a38f09b008198fe887bf143bc3b",
+        "map.csv": "514f35b7bdd87e1c838273ee06f6900eb85de92b6a487a24f25f5ece12d7a7ab",
+        "runout.csv": "d3d0bb8a5bf047815693302eed64541b78f4ea469154878ead6ab3e24d3c30f3",
+        "win_raw.csv": "a21092ec95de982712b05391ac9f6599a0ec3e9c4e3364f18ad961e65e1c70a4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001638,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2536,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001642.manifest.json",
+      "manifest_sha256": "ce4fed25ea4f9cf0515ace35cee4f28a1c9925f87ca569f86bbefec647a51b19",
+      "outputs": {
+        "branches.csv": "5b9126d065ffc6a9d50ac7e6de4d330f3ff703df75f65b3855411de4d79a2b31",
+        "combat.csv": "752ee32fe4a9324814642943748410e4ccea99cc0b6883f5160989da1c9d1f90",
+        "decision.csv": "f8c15818ecbd5496fb17800bd290eb7faff99526cf4cb9b7cb304c00a4bbb67e",
+        "decisions.csv": "acc9db423031873a95ba78d71e388ad07b1a538522c9530a88f0f8554fa38b5a",
+        "map.csv": "ea974fdd1f6f111a8f8870837f6fbc80b8fa5052c284fdac5cd345d3b49c989e",
+        "runout.csv": "9d0d3335a6de9fd7bb337aba0143a3ba763b5e7743844b2fd1733d2d8fd148b2",
+        "win_raw.csv": "d4de9c9c1333c125b30f57277397a42c1c19d1ad00250cab1ef37dd80c484ea1"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001642,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2075,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001643.manifest.json",
+      "manifest_sha256": "75348636494ad91f371a6ef0e24daba2de770767e053e3a6f3ab0008364b879f",
+      "outputs": {
+        "branches.csv": "4b7b8d852680ec210481c52a21d79c387a3af342d1dccb624d488482a5f3dc97",
+        "combat.csv": "3d5535f61adbbe3749a1fc308a1eb93ae99b8271f00f591018a7df8f5d02957c",
+        "decision.csv": "85fe49f1fec49ff4d69ca8b1d89b88adb98bf9ec63eb9b4b434a571d2d82574c",
+        "decisions.csv": "fea5460cf340e2cc92d315d4c77225523d7179155849f99c47aaf4ceaa4d880d",
+        "map.csv": "ecbc2faa9fedb7f7ce69cc7d655eb02d27d3fe25e83957fbb23144345668bb41",
+        "runout.csv": "4fe1035ef7f8df00c58fa5d72727551f9e121cca08009cfbaacf1d4a5d3a5ee1",
+        "win_raw.csv": "da766f1d91f516d2855dd7f7339a424abc8e5677255d233c68af49860862641f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001643,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1800,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001645.manifest.json",
+      "manifest_sha256": "6edc056ecb2bfb86f7375cc78e1a8a32257419c44c6fe2b6b61e9b00d20c6ee2",
+      "outputs": {
+        "branches.csv": "932d2e1294a4d8c6343a8232c444ecd7b8037fa35260c42a870a0ae418bd13af",
+        "combat.csv": "9af8b6666c789b0d52b4a8328e20591eb9441cd486eb97be74f4d6214d56afcc",
+        "decision.csv": "c0f36c859f491616c19802e0d67423b3f4758dc2fdd578e757c975d539c481e8",
+        "decisions.csv": "3a6806a046240ba06e0c2c38d3db15ff655956e976bd83cab55ca632aa240ede",
+        "map.csv": "286969402c3a31bb26abcf6f92d4856de8af8616a6675086c5b381ec174c33c5",
+        "runout.csv": "958239cfbf52a5fef2abaf66c724b70d23ff98a2530d9aa95bcd9e824e21250a",
+        "win_raw.csv": "e2f99f9dfe0cc5e0194c02b98261f3e969147ac5eb66946274fc5f3b098cb95c"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001645,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1599,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001648.manifest.json",
+      "manifest_sha256": "df24aee4518369a2d5dc09dfb0fa730befc87c31ae118a622c02239b49a61440",
+      "outputs": {
+        "branches.csv": "c8aa0b587f31c6076f83eb360025f182bb88a4c9bb9346a749c0ccdbad061352",
+        "combat.csv": "975fa2ba208c9441032f3e6b10aef444dc8dd8e3923a5153319c43d6ca3f878b",
+        "decision.csv": "0d872f985476dc24c77e0639c6f29765d333d9ee9b7189e9ba69dd1e03cf0047",
+        "decisions.csv": "2490224d3beaa41c6aa104edd95402258c7da8e14370c58c8d8369ffb72d6b7c",
+        "map.csv": "a9b73ddefdd80ac5d93a53ff8d877a5112dd9b75db6eb8386d7c0ad140e06f53",
+        "runout.csv": "937a7322d7501fbef1459473479cc889645b19edd68b3e25a99bbeae763d1573",
+        "win_raw.csv": "d74b13931a9294c588079ad1f761e84826cd6da264b13de5d2b847ef9f79269d"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001648,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2417,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001654.manifest.json",
+      "manifest_sha256": "f7d39584919d0da285ad95ae5083033195f19af110ad610681978f68bf5230ee",
+      "outputs": {
+        "branches.csv": "cf148eb97b03ba4be87fb866b1e23f55d58835831a2a29472aae67291270117b",
+        "combat.csv": "6b1893913d019094dc9f041079f727d97ee353cf65af34c56fcd475e8ddce662",
+        "decision.csv": "3e992f98c1677fc49d17e6e18e056afce76468799556ce937c709c13e5e2ccaa",
+        "decisions.csv": "df4b90fd6063bcfd63ea172498abe67eed488cfc034d9f405c9b0c5420a60aae",
+        "map.csv": "698597c31d48282e10fefb8faf88ccc9c703602b33f8281430fe35f40aa7b723",
+        "runout.csv": "e39335d352c23eea469d94053a08eeb8ccc5b73f20853cfb05011307f2cfc163",
+        "win_raw.csv": "cb2f019aaeab370851867203043ea4655c13c876b40e654b9d2b7a2c99339a1c"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001654,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1729,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001657.manifest.json",
+      "manifest_sha256": "0fbce4e55b3d39dc8f84caeae7f6dce61f2e115f3b477dc9b532df32e65d439f",
+      "outputs": {
+        "branches.csv": "1337df98088202c21ae9f2d3587c9a7eb201e5627252530b6b66ba8d6fa5c983",
+        "combat.csv": "8e6198187fb5a955e54ffa16a7f02dbef2ac5894b3f7a3e760b3994b608f23c2",
+        "decision.csv": "892fcb1ebf9bf671c50f7f2dada30c074219e3c3a7a7d639d18d8df49c64cb34",
+        "decisions.csv": "8fce630b32fdd18cfbb56bd4e3664a81e67c206531cfb4d95c874417629f59fc",
+        "map.csv": "c48ffb727346fcde3131f2164dfcb273f9a4cb33c36d09fa8525ffb946746e9e",
+        "runout.csv": "ae3d651f0f0b9ee5d7186c2f45022a49c166f045210a1156e9ae962596b3c500",
+        "win_raw.csv": "f0a47cef53f2d35d7957ecd816c07e5282891857d848d9e8a5b3856b721ee18b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001657,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1368,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001664.manifest.json",
+      "manifest_sha256": "a3ab228afaf16a2d9c5fdcb53813a3692308faeac6f672851468cd01f8da23fb",
+      "outputs": {
+        "branches.csv": "fe82e849c75a5af5bd9ba438075ecbe81d3b839acdb49e4cef0421c10f866e1a",
+        "combat.csv": "04d99bc3e47f267cbd373eb8788279ce092f6b76a7c48318950a406795cb11f2",
+        "decision.csv": "bf25740f8d934f1e710f64b94130372089e19d70b1e803a39415737a9cb614ac",
+        "decisions.csv": "550a37049cfd1b796156f949c554809d3234378545edb2936b951943264e243b",
+        "map.csv": "734a2cc8a5a621dfa29fc7b431910036910d402bcc07563c0e4c92fc5d13ee00",
+        "runout.csv": "64bdf722a5339ff3b24b64efff301d186109ad15c11a7db98b7979f3258e6be0",
+        "win_raw.csv": "951f39c367801ad0f4607325ea4197627b83d4ab52267bcabe521d5bf6fcdffd"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001664,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2481,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001674.manifest.json",
+      "manifest_sha256": "da25a333afa882e58487daee7b0e159633f9301568650f219f184fab486631e4",
+      "outputs": {
+        "branches.csv": "923ba240aa27b9f301c0fcf6cffaeabe7b1b5aca0bc108a25bf0e89f5aa27f1e",
+        "combat.csv": "298dcb7db3b4697f5a70710627c5d648425eba04d2653a1e2bb7b9fef46b09fa",
+        "decision.csv": "c3e8bd3bd4c0a34103a988cd12f66f765b80938583797f092379e45a7580b510",
+        "decisions.csv": "cfcb37f2fa9b6a23ab311ff2522f02a5d9e6d352a874bd836a56f2457a0580b0",
+        "map.csv": "9a9f6e6a3d663c2dc50f2c62317a5896aeaa59cc651a9b7e1f1ac9e340bc1c0d",
+        "runout.csv": "25978055b55d6a3582fe7ecffd8f6b481d34bae53a63f640b7fc3040c38acf2a",
+        "win_raw.csv": "98eb943814e7d7517ae9d6f936fb114a6bf31d3b95506345d7d1cf3493ad7e75"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001674,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2523,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001680.manifest.json",
+      "manifest_sha256": "202bc76b29019a474592e870f596789b9e5cf280df7a0462241339046851e00c",
+      "outputs": {
+        "branches.csv": "33c81e882adbdf542398a29114a2bccaa1b932a11e0ca7d1a4e034b6d5f139ed",
+        "combat.csv": "22c21d884229b29fe199857034e46cf1707f47f590fe9a60023e8540bff32873",
+        "decision.csv": "62ecdf6e82d9ec811ed11a1329a475960c41a52ad3e889f2815ea6a65f942d52",
+        "decisions.csv": "8a5be47b3adad1ddea988c6f37fb00552e9f175ab03ed85f0c5c28b8346f31bb",
+        "map.csv": "6dcaef41c3619efeeb1fb7bb216ed615a8a9802c39ff5b2a57992476e8a47293",
+        "runout.csv": "d0e79d13b1c3d1d0be81836a4affbb686d0b6f7278056f1f6c44dcd7cedfb762",
+        "win_raw.csv": "3c257f84fdfa55b94e3961db183104d3014273e02bca01b7708c3118d1a0928f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001680,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1832,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001688.manifest.json",
+      "manifest_sha256": "f57d6813c5b9bf2ef43852aa12061c3a5bd8b5831c1ffa63f072b2ad1e92f38a",
+      "outputs": {
+        "branches.csv": "abefa041df8c941b659903011a654fbda5dd96f9b9aab49c0406840f8bd8926f",
+        "combat.csv": "f202ebb482c7ac48dd8c288ed8042e2a0115a76b4a0e6ee81d424b234758d3dc",
+        "decision.csv": "234e8fec94fa7319360a67beaad2575f892c91e64c5d3d6dbd3a5efa6eca65cf",
+        "decisions.csv": "de48b3040c029bbff6ae85f9a678f77aa2f3cd5bd3c3fbb27f8075a703dd4290",
+        "map.csv": "26d741782aeb31666d773fe25f84babe81c380b5d656bfc17e7af0388e111a4a",
+        "runout.csv": "615a74b8e72673a0ff6776cc012b31b110305ecfc19988037ab87c6511c7bcf1",
+        "win_raw.csv": "891b281bbef34893f6146e49400150adea8ad4c59d779e1356ae9061d7d1c5d7"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001688,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2049,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001690.manifest.json",
+      "manifest_sha256": "40b797a78995c4e9af24b56e6910acbad09b8b78afce9ba28c28f0bf66937fe8",
+      "outputs": {
+        "branches.csv": "0e565a85521ee81acf38a26c99b95c7bc00309360e22d1390e3a2dd957cbd0ec",
+        "combat.csv": "1d0c1b7a8b60fd430285e0705152a7fe7982cf88a450e3ea51ec5386521aa406",
+        "decision.csv": "cfc119554e0221214e2da533a80b3c691dd4813959331294fac143145d305542",
+        "decisions.csv": "297f0abbe99041c4dfd0616798abc566fbff25112362cee260a8c2930a2f4d3e",
+        "map.csv": "967f12c6039be1ae2985f07781ae235c678bcb93bb6dd20307a57b7ec1433ffc",
+        "runout.csv": "43f1484df608180044e93f4a3b059e0d49e19dea1fdfed37b2edfd7ace9b114b",
+        "win_raw.csv": "feffd5347b53059a4fab9369293a5486d50fc4e0c47ee536e5dfdae77945ff2f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001690,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1778,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001702.manifest.json",
+      "manifest_sha256": "328cb7184475012f3c917e2e5dc2d4eb4852a9db591a50eaa57ec6ce7e509a23",
+      "outputs": {
+        "branches.csv": "2b0159dc42060f4641e416a33217792f8e56f13e81a6bed6004779bb736002e3",
+        "combat.csv": "b4f9cc3cccd9695ead021c8fac63faed400bc1091d60e5c32eac2dfb4eae1d04",
+        "decision.csv": "773a0a7acfad7db049cfd5485105a11457b185f2205dac76c4c9bf68edba3f8e",
+        "decisions.csv": "aa8d93cfd1255b5b2282790dd732a429da42fc4666141681cbf4f461859a7458",
+        "map.csv": "01c0f3e29fc7ccc77917467059e20528f498061272b089f9ccbebc538781fa03",
+        "runout.csv": "873db5afa4c6e01d7ca583c194ba3565244e7f177dd6decb8af1889c2183321d",
+        "win_raw.csv": "3c2dd8d8e83440cb3dac3c9ed17390a86c855a51cbc8ef28d7c7bef0fcfba07b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001702,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2453,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001713.manifest.json",
+      "manifest_sha256": "322f344ad52e1b7e8f05249f910c6cd41f07725283efbce68054372620637f87",
+      "outputs": {
+        "branches.csv": "ca1b26339f0e40f281360c23d7d91226536a89ba2c45914e6d311a6e08f2fcca",
+        "combat.csv": "7daa4d528a68d3b28ed6fedba913613cdf740421944c94bb409d8fa59bd5ae11",
+        "decision.csv": "f46c1ab9fbc16e69b242af661e073346e5ebdc0042a13785dc407039ac3c37ba",
+        "decisions.csv": "42740217db4477284f3c194e35dc878ef289f20c1ce0cb111f8ed1f7f420133e",
+        "map.csv": "7f6a7da0728a718eced7dbfc44399498f9ad0416808afebd920bc6486394cafe",
+        "runout.csv": "adc74e80fb5055f348a11e50d07f289e16236417a96e4c9fb3dbb1092aee3704",
+        "win_raw.csv": "e7619df322fc14688098b3ab5fa0db861f7db3b39132cef145cb9c12bba0324b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001713,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1468,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001726.manifest.json",
+      "manifest_sha256": "84ccca0d69a7d7e20bbffb2a082f68701c7f183e596d7c7a2aef429196a32b2c",
+      "outputs": {
+        "branches.csv": "8f8d2ac0106f0f1c46cc020a4a75134c77bf0a098e4c065ecd582382d4743e73",
+        "combat.csv": "3dbd8a794868d44148f75347a488c587810d496d998e5e43a97ed55fb832c90d",
+        "decision.csv": "4ed0f906da49c6fa21f7b7667d4202ca03f76e865ed437ffb51b76511a57501d",
+        "decisions.csv": "4470aea87738862eee4e1e56df1fff1bb1b875ce23b98e31b1f29c7ce320ad0a",
+        "map.csv": "dfaddda23f0990d0b6a15f1e64068766619284cb70b68c7e17fb68a24b981a76",
+        "runout.csv": "d543f2364dd8f7976a3ca042b502800d783405b09353e1437ba057243da048b3",
+        "win_raw.csv": "a660c6492ddc293282b8c50f470c6b86cdf48a8616df22eea3442f9c1e82650c"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001726,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2642,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001745.manifest.json",
+      "manifest_sha256": "613831e62e77bee240249f8e1700980c5aa5feb5fd6d21304c52c759c6c7791c",
+      "outputs": {
+        "branches.csv": "102d9dc15698d1303c880db2b957fde5879e2deb54d386a7068fe165cabc654d",
+        "combat.csv": "0fb7a27139859093252a4d3f3c6a5e5318667b83ebc24497068144207912e01f",
+        "decision.csv": "bde62c4f1f70be1c708bf5f3b797b4f3ea462804f2d9645e839ba4248f2f959b",
+        "decisions.csv": "514c1dd32cefd80727d7ec53d27cc5820d2f17c9d16f53662c17c9de80ec85b9",
+        "map.csv": "6257732ac3472cc1e49e3ff17e50d6bea0a0b7fa0b84b6a6361ba741c6a2ed98",
+        "runout.csv": "3495b885616af90e77a77e8c33a84d25455fad6cee623382ae7bb0ced30762e2",
+        "win_raw.csv": "46105fe0a337b6e1b76e5f9c06c0858ee2faa8f649d12dbd4b98ddc87096c637"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001745,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1938,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001757.manifest.json",
+      "manifest_sha256": "0beabd4c4bf7d47a9200b798931a29854a558064a2eefb9895e9b32b6873d1d9",
+      "outputs": {
+        "branches.csv": "762a1fa222e6e346f3a9986ff77125c6afe60e5c28f2f44f50c0ae1a9c7c7e2c",
+        "combat.csv": "5001bd085eabb2d3dd626d5ebdb3b6f57abd58f10b0783544961fc10fe96c692",
+        "decision.csv": "1881adc3d01c6fa48e2df318ffd4ac1db625ed3e515a0336937b521f3cf1cf57",
+        "decisions.csv": "e3ed279b2d8933190fc3b05bc1ac855afd4df6a48b9af24b7705f6d851ce3f3b",
+        "map.csv": "333febfdf0669cad88674b082e7848ab014b1c5f8829e97c73456f4807e8b0d8",
+        "runout.csv": "dd2fb480f611d0a8a2c1a0eedd3c027acb2cf865039ec31db5cf73f4a37e4021",
+        "win_raw.csv": "9c5e4d4c50f86c326c8c593d459a0b0d3e612bcb9b454d4271ced3ed18affaeb"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001757,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1879,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001760.manifest.json",
+      "manifest_sha256": "2de219c6cc9a428cb7520bd58fee30f7a43da9ef4cf7e7064c8997b5a9e9ed01",
+      "outputs": {
+        "branches.csv": "d9b0660229a46049809e0a4ad44c822716e92afd39b96f49e8bcdea848c99ec0",
+        "combat.csv": "821004d3bcb2dbd806133c7f16284171ac850cf11950150a0a4a3bce4744ae04",
+        "decision.csv": "f709e931be562aab15e2f4ffc865f9743e295616cca86fd4b0eda9918cd4e4d4",
+        "decisions.csv": "d52cd836d50de3f5dcaf8727e91e1f39a5bbe4314ac1e6ed8c056a4b30a2598a",
+        "map.csv": "54675d6edd7ecfc56ea76e13901e041dfa40b594d4eb966934765b6a807bff51",
+        "runout.csv": "29ef0d70e0bbd3029077b78520b4768970e012c6faea7b3fdf1a92a43649eab0",
+        "win_raw.csv": "86f3bf87dbe5765625d5b04352827da63f83fca4ed5a18014e02388e008cc776"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001760,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1699,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001767.manifest.json",
+      "manifest_sha256": "14d048956c5b2a236f50e1b962b13a8180e95913893ca0cd4905cbe73f6ac35f",
+      "outputs": {
+        "branches.csv": "af5015352dae55757217729c844686fb9f3d156ff6bdf7d6e1e9e412e1db5b38",
+        "combat.csv": "27fcfa2065db77b45dc37882df2c807f20aa31d22fe256fc5cd6095d4b7be5b0",
+        "decision.csv": "3f73dbc64c4f1037b8f07c7ab4efa4453ea0ab8383e4f7b0ede10a0179b073f4",
+        "decisions.csv": "21dc539afe5f11e9918b2eefc4ecab89c952a06591114d3949bf9bfe757845e2",
+        "map.csv": "3c15af819e8f634f809636cc42cc578f1857c905a8b11a064fbbe2dfd7bc114c",
+        "runout.csv": "f9b918da9bee453f660860d28e97d612f7d08c2d51ca456c07f1f6b486cfc491",
+        "win_raw.csv": "324515c0a9370c1415f6d6386bc0d2150098c3a453ecd6b9b03ccccbd9071518"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001767,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1726,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001768.manifest.json",
+      "manifest_sha256": "cda067beaa61f1683317d69cc05b8a6d8e487d84e39b321ac196041a036177ba",
+      "outputs": {
+        "branches.csv": "7479b4c89bb77b581c46c0bbb74d6729246cecf7872f61e934e7db799aa8e336",
+        "combat.csv": "37a5ff5d7d8bb3d22fa0af2b757b678524ad619f77c86a9141e477643e8ab14f",
+        "decision.csv": "282c89e2fbb040fe242aabb6150ca64f69486271e6fe6739be21093f919b38c5",
+        "decisions.csv": "0c3010922d122be1dadab7b796dfa6b98c0458a80a4b2b4b6b103ca358154900",
+        "map.csv": "d291f10679f8b46aaf1a57a3e1af4354642b4e84f405311c66f3d50bdf33989f",
+        "runout.csv": "bc83af0f534a4ab5f234dcdf095143ab307f5e3e003f7d3fb10f85a39833a05e",
+        "win_raw.csv": "5f8b60a6868b607d4733af001dbbea822fdac7f323b063de43b36085ce9009d5"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001768,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2086,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001778.manifest.json",
+      "manifest_sha256": "b9a4fa73af332b02c688c7a25d09b7f6f219d995844cdb328b7af34faaeb9c72",
+      "outputs": {
+        "branches.csv": "7b57777abf5d3dc86705cfb3fc2c0f94ac8937d290f2f48fa8e0a7206b0ab563",
+        "combat.csv": "372dcd16fe8005edce0cabbad0ce22b0e0e159ee14ffe16130250a930a3ebda2",
+        "decision.csv": "d21076089524a6839ecae724ab6d016dee4da83111f3e44fc98c8212d0212820",
+        "decisions.csv": "dc341d3be25811e05632cbae1d3c9a67d213ba82b1759bad98b7b8791814e23d",
+        "map.csv": "ea105a6af97aab5962d683cb8ac53b07b200110b93aca1b450fe29ffb6a21a79",
+        "runout.csv": "301df350a6872b761f01612e713ae59b0aa6c70dc6291597a0d7cd7992378262",
+        "win_raw.csv": "aafb9978d1a79cd1c0a68d43b8a536cfe3e45ff6193e82543a9899fc936ce2dd"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001778,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2413,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001781.manifest.json",
+      "manifest_sha256": "37eb58fcba4977023e8960c79801f3df96f311a641270451f85d1984e2d29757",
+      "outputs": {
+        "branches.csv": "8f41be29ff93803e3d01e13cb4c70951c9cf8595ee4669f084a5b421c11af499",
+        "combat.csv": "8babd9906766e6c138a702114d41cd9dfbf5039d289ad0a40bffbcbb489b53c4",
+        "decision.csv": "9943f6cdc398bb5cc90282f7d3014b30187c18ad35167e8d88b52dceb4f72713",
+        "decisions.csv": "3dc35c94ddac5a58d48476a62ce4634db359fdb49af708bbd158c026d2f98f80",
+        "map.csv": "fdb116fc34b99c8996049a4d41313b7cc4a4fac33022e14f523f8103de50b63a",
+        "runout.csv": "174217c1cbf1287cf8e150bcbf939bf0750cf5fbf51b6a5125d20f9273650395",
+        "win_raw.csv": "7c947eb00cb37272fcf7fb2871b85c2cd6e37782a7e63a2b26ebcf56e42dbe9c"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001781,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2677,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001791.manifest.json",
+      "manifest_sha256": "609c7cc0295a1619b898ac236ad3190530ddcdbb55237980b94798eb268615f9",
+      "outputs": {
+        "branches.csv": "3943c8a54f04edbab2a47274e670bb2addce2096ef47abaf6942e8c8260aa7de",
+        "combat.csv": "82a2df7345dfec35bb1c707ce071c98962d6c054f960c24ad1d227fe089c1695",
+        "decision.csv": "49ffec09e00ebf623b5ce71ebdd410aac421c18a27f1d03e64221c18a244334b",
+        "decisions.csv": "cdc0a80f44e4de882f7065a5805879751d412c81584dc1c1705056f4bb389a77",
+        "map.csv": "bbb4ef9a26dfa2d958cecc7051407460bbfe0c872e343392fe123665f120dda2",
+        "runout.csv": "75e8c5b433b71222974cc7fa66356b841e80b2f0676ee1be40fe32e752820cef",
+        "win_raw.csv": "88eea382a8428972a01c42a19ec38453b14742c2ebaf1e18503740768e5089e4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001791,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1280,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001795.manifest.json",
+      "manifest_sha256": "6250363eabe07e67a82a7421ac8e7a022fd5ec6701899c90c8a684a9bc14839c",
+      "outputs": {
+        "branches.csv": "b3e90d950b465507dc64677ffabdc248860ec419dbf139be2f339328e0c45536",
+        "combat.csv": "07a6a24fc20d8a2cc5b91c00eea2cd3bf024e4f77074747c42f1d515175ee9e8",
+        "decision.csv": "6db99ad19e898049209194fd94213b82bd5e2e8b2a181c44cb6ab81a7e842c6d",
+        "decisions.csv": "78360b4d21d24a8ff16d786d03badd145162ed0f6217eeebdbbd8c2aac12885c",
+        "map.csv": "6b7479fe3b27fc9589895408fe2b9a255acf6bbb7d8e5478bcd9396ad50935ad",
+        "runout.csv": "25cf28724b68fd8ef67a34694f3355ba3dbe07ed2d7398b2b8ed7c05baf2016d",
+        "win_raw.csv": "7a0e50b701ba60eee5a1c18ef8bb36bde04c41feb352bc665d1600a7e233adf1"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001795,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2515,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001796.manifest.json",
+      "manifest_sha256": "52783089ed0742b884f11d31c57a34da0208c6c9e565cca1500283f8c35efddb",
+      "outputs": {
+        "branches.csv": "156fc0bd035f20ddd34afb00e88b5cc4b77525d6c01dcdba1f6d9c086c727597",
+        "combat.csv": "41b995e88911f51408eb8bc5fb01d02c26e7c47441037c43f9563fea080ac422",
+        "decision.csv": "285af18583fd6b99991b8bf8e3a7c1c6f9105b06d778e1855907abf17db603b6",
+        "decisions.csv": "2ce93e0b3f02441b4edd945278329c72e97f95ea885e329bb5da87b3dd04648c",
+        "map.csv": "366394700cba3b605953785467dc9525dfec02e0f94a2e269e23e0695a77ea26",
+        "runout.csv": "aae7f0b689d5e822dcf623e4cbcab341609f56d1fc6f0658066d3bfb66511d63",
+        "win_raw.csv": "171a3c679fcfd61cf396945592a73b6f08dbf32cab6d7f85fd4a1a8330512acc"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001796,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1778,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001806.manifest.json",
+      "manifest_sha256": "b47ded3e58df29a1f9d8bd82f0f58ca4577e9683258435b4172d2b4260c0e28b",
+      "outputs": {
+        "branches.csv": "0fbff85c5da375a22e6d1f40dd53b7679a11e2aed340552af1042ad6594cd9c3",
+        "combat.csv": "f448f6c0cff2c17163b7fac3d262e91e70c328662d469c850711ec7587a8eaca",
+        "decision.csv": "11e71d81cb76f377f8bf12970d0e7d26dbe3e5f50f5a98db69a20df5472270f9",
+        "decisions.csv": "5364e711ddf8ce597137af7d75d3380766f376e147f4f19f1da1a4fcf3ea7574",
+        "map.csv": "8983c488ec7f3f09057469acea464f5dc127703ace8ad9394330960aae5c7099",
+        "runout.csv": "c7034e7091e45f597b80f0785849200dffa28235afc8dd8f47f0534301077bbb",
+        "win_raw.csv": "2906a0a90a3ed91fc31c28987b1ea95d25647357d4dc8b1d211435540c09e0d5"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001806,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2201,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001807.manifest.json",
+      "manifest_sha256": "4ed9107e258f64485c5d802ee36466e39f1b57a2f2265c0cf4a2c361da066b8b",
+      "outputs": {
+        "branches.csv": "93eb31b37665adde8d824a02cdb2bc2191deeb9bcc7ab4e0a21180e66e5d59d0",
+        "combat.csv": "8bfc79cea1545a9ea848664636558133dfa7299a8b1d143782593509399748d3",
+        "decision.csv": "f22bbd03cd626f7d0ed2dc1d6620689d22c3aed35da5c4d912e46e267574ba9d",
+        "decisions.csv": "8cc47d90b0a7c9b24cecd509f87acaf564ce597b55802f3d0907d8c1dbbed3cf",
+        "map.csv": "2d01ebbc7f73e0d14a00c921f076a11dfa6c42c74540e67182a2a7bd9a485b09",
+        "runout.csv": "c89bd3b4bcf72e6631717571540c1c57e93b47753aa4b59ec4eef68ab2509f10",
+        "win_raw.csv": "a0f5592c95973a521c74c437d4e1a10dc7c39087900bbc2c6a014f5c617454b1"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001807,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2116,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001812.manifest.json",
+      "manifest_sha256": "72d0246604cd34d19fcd908c8219b6345df4ca37f98f79d2d1c455849ed3ae4c",
+      "outputs": {
+        "branches.csv": "0ee72aa19f841515c1b1bc28cca7e16a734fd971dc67d9e789729950603d3868",
+        "combat.csv": "356be98634562347048fe212f019517ae2823e293d85e1c6572346edd2158c4c",
+        "decision.csv": "c7546824d9b7434c9c328fe1c1b491d4f24d4b3b16e385c7b982eaf341ed39d0",
+        "decisions.csv": "c67231c61bc4420aa818e705e37def6ddb79e6e516723ab1d1054c67596e7e39",
+        "map.csv": "145e72c22e9ed88dc675172c5bf6b1ef6f6863e6316059b1b027605ddc3e5d8c",
+        "runout.csv": "92c03cbe0a6a06981e99461632a15db95a80e2fa4e9c563aba80bb006565d3cd",
+        "win_raw.csv": "8f44fc8aa4f0c31fd377e97acb20ab5efc6761c19add019a4cdd5fb49e22c59f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001812,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2642,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001815.manifest.json",
+      "manifest_sha256": "5aca427cf8d8bb866e64d997c705e01e0e9d317c6be09cbc0c1712212f0df171",
+      "outputs": {
+        "branches.csv": "4a3a40b1fd82aaebb84d81658e74d242c50402ffb660903c3dc327ef858eb655",
+        "combat.csv": "1c2aeb6dd1f941af39cd109acb7d5295ff27c49c1418a16023165f92415e20c4",
+        "decision.csv": "07c01762742f0b425351932354c015bcad865770844a7e17b63f81b73a452a4c",
+        "decisions.csv": "b0aa44f413b54504dc2061da35057c439fa62a57d249e47e4afadc18bcbe3ded",
+        "map.csv": "790b8a295637e8a520a35463de9c0b00c8210cdabf85da3a416106eeef693d8f",
+        "runout.csv": "da82c60c67e49f133024c4e953ee01364d7c54fc49c0a57fc8241970fa54bb99",
+        "win_raw.csv": "a8d376008442af2bff1d90d2d578cc8ae9a1a9678cf6e9aa8d5342dca3ec8deb"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001815,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2372,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001816.manifest.json",
+      "manifest_sha256": "856a1f145463f0c9213c200cb711e96bb2303cc138abdfdd59a1453108199ea3",
+      "outputs": {
+        "branches.csv": "d313fd05d47c04252b892dc1b690853482f576eb53979e0a23e0a38b6c687f26",
+        "combat.csv": "021aed66530337e57418ddcb873b01c031e6cf168949e197115ce14925e4eeba",
+        "decision.csv": "a7e5403679cb3daecc50b1a734a6bfc90dd8292dd34bce04bf5f0165de9ada5f",
+        "decisions.csv": "1affde608cf9226c9f0acf9233f59a908706055971d7d09402672a071bac8adf",
+        "map.csv": "326baeebc0303160ac6643d2337d04bc9c845c2f3378d703a4d9d7cbe1614aae",
+        "runout.csv": "99980bbbffe2887d402bcbb963eae6bf752573717fe5f185c8e6f28daed5c205",
+        "win_raw.csv": "79f459f73913abb31a5d6a13d6734cc8375dbd1f0ea1f672c1fc839adcad4b7d"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001816,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2613,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001818.manifest.json",
+      "manifest_sha256": "c5d3b980802d0f2f0511430f5c78297a59b2f5e3ca135d7cd037f013f8970258",
+      "outputs": {
+        "branches.csv": "a744ce1b8761440b069360330aa3458249f357a74411746262039023a36a9080",
+        "combat.csv": "b51fdcc2bafbd48a82e07a732f5afb817c85b98f06dc257a034215fc0ecb865e",
+        "decision.csv": "c376920a4ccea9322220574f496c58267cc1678ff66a9b955da9ab1a12958147",
+        "decisions.csv": "ad44afbf769e75217f8e5f74bc54b3c7ec20bc5c0ba2250e02732a9832adfd26",
+        "map.csv": "be64fa998763820e2153ca65c03abfc77415f3c38d170145a1302e0fb7176ae2",
+        "runout.csv": "d033e701aa3bea31121d1ed4198f1b14d62c63bf7d099e03a93e964f2eca7140",
+        "win_raw.csv": "75ef86446bc3118021277b40c2b21a061a6e2976566d7aecaa9354c6551ad422"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001818,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2297,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001820.manifest.json",
+      "manifest_sha256": "34721500982a0a99d78891dce208c6a1857c2026b0e4dec75232dd9f02f7d171",
+      "outputs": {
+        "branches.csv": "aacc772a8fd57cf7478f454976c60a087671042f0063df3d03e7f084da2dc635",
+        "combat.csv": "1e0c4af185f4f7f604a3eb0a275ff1bf739ed1dcc31b25923097221b8c8f561b",
+        "decision.csv": "a60d27b08d01e46519060ab83192b15e69d40ec2b8381e27ee0c23aa6f7ceaaf",
+        "decisions.csv": "6594c238aac8ada497231f9d1d926ae44b30b4e67aaa79130b63720d62c5cd0e",
+        "map.csv": "f05ba475f68e48ce477917d98a91b1f19bfe10398a6474b037348ea2f6ebfe01",
+        "runout.csv": "6e3a1f858138c954add69a0bc2a3b1e0d75362d5f334cf23a89d13cf187c02f2",
+        "win_raw.csv": "23092f2f88af00875855e93fd0703292d24b32e86f66a0a64ff59ed2563150a4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001820,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2245,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001827.manifest.json",
+      "manifest_sha256": "7d61c79252e1ad4dc2261f7db0b08306777c8a23df18f9c1217fd31c6dfd0dbb",
+      "outputs": {
+        "branches.csv": "6faacf3e650b1343e34309b824f1bb551fe415ae976d661362c541d414f4ea86",
+        "combat.csv": "fa3bc1e4804bd1007e14ce5d944275cf4c1569cb9682e81ca9ad8291fc6aa389",
+        "decision.csv": "1631b83d6647bc39f8e8768f5f81cd37fbcc8ef2f49145ee7f8caefe75dc8a9d",
+        "decisions.csv": "d10a18c561aeb674bf4eb76f81b6a845be2a2b801b66e6397f73c758f4d1f45e",
+        "map.csv": "72707bb741936a33800a2fb97c5776e8e4bc2ecffc1eb4b079f563e051e1a01e",
+        "runout.csv": "b209373e48c74561d2a847c27418e9202a8c3364558d3c8052876cf3380c3523",
+        "win_raw.csv": "f53eb6b127cfec2353f31e4077d784756bfe164d33e80c7873b83c33b1aba69b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001827,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2685,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001831.manifest.json",
+      "manifest_sha256": "6c24bb9c71cd6bc76c2fc05c1cfca9545e5e04b1252c9bf6b73e1991edb1a0a1",
+      "outputs": {
+        "branches.csv": "69b592983bfff2076332e9ca49cea25c54260b7471db6d8842170d8dcbda765f",
+        "combat.csv": "279de19e021c692f27fbc156e098bfbea4f0b43355ba96f1f938efcd9f84a760",
+        "decision.csv": "a2c8b0db783604e434d19244e659d20a0b146f717d5e99b194180ad535a25267",
+        "decisions.csv": "0095b7a5e2d92ad871531c4124c1720970ad73ed1247048c4c78f3bdc819b9c7",
+        "map.csv": "38dfd01bbdc1de30c3bcba72136282fa8b8cb89ee6cb4ab642c7807eb86d46ca",
+        "runout.csv": "a36b19523e42994d86783660d7dd57e75a1b9dc78af503edd569ae5bb88083e0",
+        "win_raw.csv": "520c878e79026fb516de8ce76ce168a556bf1d54ea15380490259be135502a6f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001831,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1625,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001834.manifest.json",
+      "manifest_sha256": "453baae0f4947b4072b58a9ca7394e6131a42defbacbfae9a6a9a7628fba4abc",
+      "outputs": {
+        "branches.csv": "61fa53f9cdd37e7de2c7e813b8093a035708607bb0d399dd5197ab273442c07f",
+        "combat.csv": "5f37c03eedfb14dd49fefae5418020982dec3774b59419ab0a3e3cfc26bf0b9c",
+        "decision.csv": "40310ca4b3fb59df31aa0e7d568658ba68ec46779221004471fb3eec79d44441",
+        "decisions.csv": "a777d60da5e769d15897a66c28160731c76b44cbf59025211f8f6a5f2a69e9e8",
+        "map.csv": "21df011742399bac072a0615cd08d53c90564fce611cc5a4452a7945919fe700",
+        "runout.csv": "f166132b12d3ddc37dd7c61d6673ac3a2e6bec180fef9781e8a640516f82c233",
+        "win_raw.csv": "9586efe2212d9548f974f0c4f6bf3bc866f05951afb23be5eb7a616d34a84caf"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001834,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2265,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001851.manifest.json",
+      "manifest_sha256": "bf35fe4a293f82904e94ee5d5f6842453440a87ae3f53c00ba0efc46fd41e2c8",
+      "outputs": {
+        "branches.csv": "1c7154f4d92c9fa5416c1a2c5a8c94290c19fff9038af5b39f8b6f6ed34dfcfc",
+        "combat.csv": "44dadfb2050a994f78b6cb6595cf31b5139f29fcd6105f590989d06bc73e11fb",
+        "decision.csv": "71184e0dd54ae5434797b422717a7efc149c836606786a0b91400e9644c3a5e6",
+        "decisions.csv": "1b4eedddd99324f19b5baeaf0511603e2e2f7b6275f31c63cc752616c45dc536",
+        "map.csv": "9226665c9b3fbe2d2e0398a3177f749587c187d165d6d42b434baef9cc6b4731",
+        "runout.csv": "5369e31433c9fe50efb06802347163de70b9b90105b845adb390551b81c1322e",
+        "win_raw.csv": "02defe326ed458d97f728446173a53916224c869b62f81475f03df7d1140665f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001851,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1527,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001862.manifest.json",
+      "manifest_sha256": "c289cc8bb10da7e0ddf00b0f67e20efc067d701408dedb358a66ba8c6b206cd0",
+      "outputs": {
+        "branches.csv": "e73f407d8ee3aafde9c389d8216c814956a27043819b7f100e94c10ceca1b41b",
+        "combat.csv": "3904b99d7c4772ea8b7e485703ce4a9342f71019455588350af855d2e2fb80d6",
+        "decision.csv": "9ad8baa0bbe3cf716b2353ac219770281b96f4d5f8e59a9f4e8f7caacdda5cce",
+        "decisions.csv": "20137fa525d28070b23b444d7f4702988c8d73239901e934916e9416721a829d",
+        "map.csv": "89eaa3ee97f9b1448307a73c046cd287af38089263ee386dbd0e18db0b83db15",
+        "runout.csv": "2bdfdb9217c6cb5f254c0cc4ba68a78af60cd8b9fa3abff2a3666669bf1f8f63",
+        "win_raw.csv": "5562f17a35e3b5988ed88bbd6023a43b5cd210fa42f9922e3be4a6a1e6a23f2f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001862,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2119,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001869.manifest.json",
+      "manifest_sha256": "16c1397418e3a57c964d182824c525a45e08e3265029bc34838160c474e7635c",
+      "outputs": {
+        "branches.csv": "06ce017fb066dcdebabcf41a31087993500d5f0ad32be3b73dcf6b80e043389c",
+        "combat.csv": "643e297fcada459a80abdaf3d2527dc31f0c00df1d7824b0609fb4468895f91e",
+        "decision.csv": "352505728933528fda4061603158f5563bdc6f20caca64fac5389d8df60de624",
+        "decisions.csv": "195aa00938343f3758eea7f92c41ae80c6c1b7150a63312b51d62a2d12d332bb",
+        "map.csv": "caef8a8730672e6a7d5c3fc6ed5638595c0b92ac20bc7c3f44f95327de8a0bf6",
+        "runout.csv": "778b32d949bedc6bf131fb3aebaabb04836726d5cae41dd876c798db29164644",
+        "win_raw.csv": "9425fbf9765ed5d8332bea973cdc256808f3d147b1db257e03fdd1df74334646"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001869,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2660,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001873.manifest.json",
+      "manifest_sha256": "256295095e1aa1694827ab1ef12849934d50522b9ef67d0f5024a5e234ea5618",
+      "outputs": {
+        "branches.csv": "c69449e1ad883c095e9e2b6bbc90d6e7ec1a7097eec11001035c15797812f3bb",
+        "combat.csv": "962531cfe5dcbec2edd6e815e913f884f558490ba87eed47c585c713be35c1dd",
+        "decision.csv": "9a1c77de6abfa1f4aa234fd2ec96dab4206fb247de871d0d810832f025128640",
+        "decisions.csv": "05bacd34c8d4ad3dca6c9408edaa626252ffc88d818942c6b5caddd9b2b915dc",
+        "map.csv": "014f44520a76134429568b6e8a94ae1435767cd45fb38e646398c22d1e8c9146",
+        "runout.csv": "7e41e2e876773db31cf100dcd98f25e208f8647b2a8b821e3225dc91817c1ebf",
+        "win_raw.csv": "82b88ff43aee982a1521d65d783a83e59477157927b9eab38a898abe708a0469"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001873,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2289,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001880.manifest.json",
+      "manifest_sha256": "0a03b8373fdc82d04eefec4ab3135b942f9380b0dccd2c0fd8fe3d7bc46caaa1",
+      "outputs": {
+        "branches.csv": "b893e91401fe474b66fc97b8168ff9c195e897b61b5b82974d5dc96e2ba1619f",
+        "combat.csv": "3c42367afcc30a7fffc942f5e4230fbde54a214cfcf3a5d328ae836ab92fe3af",
+        "decision.csv": "15043e768cebaa869b636a342e1bcede9c526cf91c980484266878316cc75090",
+        "decisions.csv": "12f9f6db6af32e13baa0507482ed4eb4383260727a4f024878b44349682c3f05",
+        "map.csv": "d34952502d2cc7cee6b16ea04b75262e6f9f46b1807d80d86b025945a5d74035",
+        "runout.csv": "512ce1ae23db718716dbf39f2420efe5792b256a3c2020aaef0bf789e8a577cd",
+        "win_raw.csv": "562ff504f5eeee7612524d6d7f122b0ca63e3892c9b04eb1f8a0d1360fd92503"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001880,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1708,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001881.manifest.json",
+      "manifest_sha256": "7640155d5f1391c6f81e270fa2b20afc5c43763f4409ea0e87e89e4ea25e5b85",
+      "outputs": {
+        "branches.csv": "033fb8f1fedfc5e5060030ee81fc667bbcd0c28ab0edafd359b33714a44760d3",
+        "combat.csv": "f6f3cf324086f6ff3a7154b37301fb24e2e828d9cd3fa5093c3d6621b3c0117d",
+        "decision.csv": "c312238ba4ed59daffddaa2da0d57a3adfc530cf5392098cc01402a9371f0b17",
+        "decisions.csv": "290aa959d964592acbaac6779cf4b3903065d2b888a17a668b880e716f8fed14",
+        "map.csv": "262c079cade1cf291dfa2afcc920440bb36476bade106c3362d113b2634a3769",
+        "runout.csv": "32cd79412c7e1b6dcadc634296b0ff07cbb7391f9bd5e57c7ab10e93cf63e9a4",
+        "win_raw.csv": "a2e49699892601f8ade78c86d62b908cf11f5f0cba758d1bf61ce12252087cc3"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001881,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2099,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001883.manifest.json",
+      "manifest_sha256": "4676afcd6c4a7f6b0ef169885e347526d146e254f6c7ce21a13a15a5a1ee4332",
+      "outputs": {
+        "branches.csv": "a01f62ed70e0d2c43ab67202274ff3c1cb1c8cd79c66f43a3fa18c1e0119be4d",
+        "combat.csv": "6005e49cd061c73efad453e19d18d074cbd8c4bd8f1b8e08d2a54d7674e66376",
+        "decision.csv": "d58782c11de2614b04758009d95d84da6e163769f8c6ec9f56e88e6c0afae80a",
+        "decisions.csv": "143b02429d1afc53cdb14c6aea6b280ad661770a6251b599501e0e4562b93145",
+        "map.csv": "47ce32cee634bf3bffae3b11c56af0c3df9f1102fbbfc013a6e78d6baf3fe007",
+        "runout.csv": "f22cd1c48f0be0f4da89aa5cd6cf63c40f0b9f40d415f4781b567bf19e0f996d",
+        "win_raw.csv": "4d4933d4454df8548589c12d99ff94716d25384e0dbd89808b0a596f3a1cdc3f"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001883,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1712,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001891.manifest.json",
+      "manifest_sha256": "0ebcdff674688f9800ab885da334a0ca739af676eabb2c9bcb1e850b9ca23e4b",
+      "outputs": {
+        "branches.csv": "cbcdcf613a951fd6960345de5e87e554c96ea54ff120cba0d02ce516249f0478",
+        "combat.csv": "a4c66b748fc06a0040a1f555debf6fa8dc5d1780fdfdf5bfae850c734fe43625",
+        "decision.csv": "ed74dcf551099281f588ac3a2ddde514a95de83e33885c63c385b08fc3e59862",
+        "decisions.csv": "ed69dddc20d731a388cd974acdfc99983b83a55ea74574ce7e7e381a43a9e128",
+        "map.csv": "efe306384d0ec10913e524990a25794454344b25410854bbe2f0d9d33c977824",
+        "runout.csv": "be96bcadfc6419cdeb520faef8a7330d5c1431b73f43bb553c24a5f4e45fcbf3",
+        "win_raw.csv": "23b7c6f9b79c7d6c31911b13db7fcd66ce066707e76f7c5bb5e4c9019de9cdcc"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001891,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2433,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001899.manifest.json",
+      "manifest_sha256": "d22b339d55858b4e161973903b58e2a1e597c5db9b50ca6af62360ec8151f0b2",
+      "outputs": {
+        "branches.csv": "18f709ab17fd0d22cec8653fd91a3b09268db04721442971fb6278b5a5e1a962",
+        "combat.csv": "99fc3448585d12199a811e3ce524e9d7b8662829522eee74ecdce3d92b567e30",
+        "decision.csv": "71e49c50344ca162cac089da0f48978cef69c28d190a7f1c05e4deb8991ce219",
+        "decisions.csv": "4e9c62aaae4217dcca7c23f920b47009a66bc43ec7c8a086601b804306771d1b",
+        "map.csv": "489815c1576f3ccb1b00c3229628f89057e74d38b8e7bdd0375577d8f1a88609",
+        "runout.csv": "75d43e144d0884fae145951566fc6f9b61061fbcd06d1546449803bed9daae3d",
+        "win_raw.csv": "6e614d5e693cc64f5c6ca4670deb1c9d1a92e8d2a4bdefa729f85e4c52640bd8"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001899,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2879,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001904.manifest.json",
+      "manifest_sha256": "b8d782fa20dd022bad124e6affba3e4a8bd8d0e76e0700fbc90f2d2d511d7cd1",
+      "outputs": {
+        "branches.csv": "6f95fccbd41fc7be41bdb878b3c5429cda1bdfe9638fcdfcb76718301238d414",
+        "combat.csv": "8086363db61771e93092508a7443b44e58e98d61edb8fb7c14dd6f7f28f8aeb9",
+        "decision.csv": "c3569b69a69e46fc3a0d330ec94f355dab691b3ed6529a289354ecf59aa54e6c",
+        "decisions.csv": "c906ae558f21f8294853e66bf1c8026fbfd378ef1c14464bdb57ac03a72fbe5a",
+        "map.csv": "4ce0484843ca3eec419f62dbf836c44dc539a70f1cb3bcaa34af20d67682a2b3",
+        "runout.csv": "4ec973245425e2f5c2463635b5c428d9387fa5fad4435c3c91fa35ef3bcccf1b",
+        "win_raw.csv": "877c87dc85962a4cb5620c6fc06a18c12a50a2cfb2165bdaa5db704092dcd621"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001904,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2693,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001908.manifest.json",
+      "manifest_sha256": "d5d1ffe3e22fc115b51489f3c1c82dc19be1106069d21ca1995958c4cb0647c0",
+      "outputs": {
+        "branches.csv": "345c36b8fedf9137d0d8bfd7535aae435a198cc2dedfaef6ea5f13d658a8ead4",
+        "combat.csv": "c01039b7ad26c6831588cd0898a996e329353911b47a54ede3ab9f7fd1cd8163",
+        "decision.csv": "6f06eabffaaa446e70b5c7e6ba73dcec3a53c14bcb64b413cc2e7b37f08263c8",
+        "decisions.csv": "c8cb5be98d189018bf58af800b5e78a4ddabeaf46308c41762692f60be69a792",
+        "map.csv": "6742ffef649a2796e138ad8f18677ad713ba556e2c81ee22c5195ad40c6d589e",
+        "runout.csv": "2020397c9310f157143d489ab06956b973756a657c65de6f67cab3f74c58a821",
+        "win_raw.csv": "f41a5034a8586ea6d567361903520fcbaa8acce14332913c9079afef82fe212a"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001908,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2585,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001921.manifest.json",
+      "manifest_sha256": "7a4d9fa016faaeb222adf724872a43301445b6a893aea2ac7d7bd26418ac4e37",
+      "outputs": {
+        "branches.csv": "2261b5c6746684c354377966987fc9ca18768d5e836039fb4cb77d3bc61d2bf0",
+        "combat.csv": "f9bb87c213fae944daaa15982ad9cb74e87b9acb37a6656f8fcf25e52a66fa32",
+        "decision.csv": "f3f891f169070f581ab07df38a15dfa9270f57b7e838d135197dfedec402d412",
+        "decisions.csv": "502907dea15819f4bea4e3bb1f6cfd025d3b92273e364aa19c8e6db339ff6481",
+        "map.csv": "bcc20017d2b2080871bbecf71ccf0f6bbdcb66ce3b78aade5cc91200b9217b5a",
+        "runout.csv": "ed1f0f15851ee96aa6df4a032a11250bb7c72187ed2a6f77c1f49e53bb4c45ec",
+        "win_raw.csv": "07ac0c76b36c24477d9248daae480761a35386838da26a1b652e279753bac08b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001921,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2665,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001935.manifest.json",
+      "manifest_sha256": "691d1a89c54e444dd4d2a88374c47bc38e662c00bee70ad1aab4cee2075af9c8",
+      "outputs": {
+        "branches.csv": "9ad490a11a6375b03dac7627e698aa38764fe60d27d8361ca23cd6710b074a4f",
+        "combat.csv": "dde57d6dcf48ff1523576095689883d1b97ad7dcde7c54be646eee1854ff0537",
+        "decision.csv": "49d0d9b8cd2f7432579be322f999b1587f1893331a352918810c68eec5ab20ae",
+        "decisions.csv": "80a9def621e527364658a19c0fe657e357c0264cf998cb345ddd87c13ef6d79f",
+        "map.csv": "088210c195e08578836a675b3a4350e0f1a9f72614a65e4ded8f6dd307f6398e",
+        "runout.csv": "a20275039b25fe14d2bad6d8add69f3f09a3245efe5ea678b9ef4d7a8a51c189",
+        "win_raw.csv": "45c32b10b1e4fe6dc358764c8093dda21d39ee11f0c7fa58074b0fc29744a132"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001935,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2110,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001936.manifest.json",
+      "manifest_sha256": "a76b1fa23a8148f478747dba4a141a23d68fa2a9e16ac6531a1186b0bd624c09",
+      "outputs": {
+        "branches.csv": "6e8731e4484f03944634292aa3f5c376cbaca9db2cea72b44ddf11f7bc4c0386",
+        "combat.csv": "b75207a6e9f5db266a2dec71e75c1cabf230b02a0904cc4dd19078be5fc2ba30",
+        "decision.csv": "9c303b7b2355e8ef33028210a30921be44ecf84b05d4bdf84f2c809d7e79cf2f",
+        "decisions.csv": "d2d1f6fedec222a1925b7e8ec18efd62e2a7512a46a5b5e29d82a0bbefc9e691",
+        "map.csv": "37455fc7da8b49fd943c0726b36076a7a63575b4399e10ade05cba474ba9dfff",
+        "runout.csv": "0d9e493701eab8429631b0784d3a8757c660e9211c412de14591d3a2e76737a3",
+        "win_raw.csv": "72035183d686850b2e46e98dc70060c953ec3ac201f993e9420968045d2a7762"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001936,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 3042,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001937.manifest.json",
+      "manifest_sha256": "1c29e3bb291a115d263eaa4dd0f6bc00ae5f3b162455b93fa74ad404809d7049",
+      "outputs": {
+        "branches.csv": "004a292ca6eebb6a917904be0f1f612ffae8c611c2f7b966a38e889f3829e75a",
+        "combat.csv": "3e635a1285a6ead1155e219e376dd55c6fd9db4822eb12c4388d90416c6d1963",
+        "decision.csv": "5f85c76238efbef43b9611c6c6a816c3d7a522ced07d38c8725700ee0b6c595f",
+        "decisions.csv": "3d7caac230b7409fc857969994536b8577984fa0da4194fef863f0c1d7d20b56",
+        "map.csv": "3ebba819dd8ede617b1d661c369b430889603be35b7b5f26c9e32528f9c0a362",
+        "runout.csv": "08a2a7ee21f14ce64789de6adc7045238f5df9a85eafc1f27f503680c79f6458",
+        "win_raw.csv": "442a313888cd7a50eb052f664a19dc69df1fe09c9d1063e4d110ca53749e60f4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001937,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1964,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001949.manifest.json",
+      "manifest_sha256": "69e8f8996354c469021c00d510488ea3968dd7d9e08fd1c2a7d704a60d7883fe",
+      "outputs": {
+        "branches.csv": "98e1e23072284df50584746ded54b2659777306cee5f938dff8b589592494fed",
+        "combat.csv": "dca52951cd3f6e7b87953c24e0404b5f506e0c282265f01d2acb5455ea3256af",
+        "decision.csv": "310d470f05ccc8b9952df318a40ca189c40ddbc385556d334fd444d15d77112a",
+        "decisions.csv": "eda501a87ccb252b809fe0cb3d0335d068edf28a6bba78cdb737859a96696a25",
+        "map.csv": "d1fd69b4c24ddb0dfb8f9c7870ac4278f9f6d4a292791cf5043f85658d93d6e3",
+        "runout.csv": "7b3fb700bd631649ef4c0af1c12bf5ddc5a2db4b895b1b43c8e7980fd4bfa38e",
+        "win_raw.csv": "e06ba4269133fad4351b56680ae30664a1af903004ec6011ec7e34a4d4ce7ca4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001949,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1566,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001958.manifest.json",
+      "manifest_sha256": "e845fd706ec47c5c8e3bb9363679c9a8b659ad46b6a66a27b3e84b3792577e98",
+      "outputs": {
+        "branches.csv": "4d7216f0745ee920cf53e77a93f3459b2368bf52c6d827bf5007c56d83b1d309",
+        "combat.csv": "ef24ae88401f94ad17d6b66c5ef729e4bbacc53444f44e0fbfc61ca046036633",
+        "decision.csv": "6ea5eae8a166f580bfae6408d4d419b89a457dc8f4ff1bcbbcba8a7d2c678d4d",
+        "decisions.csv": "434ace7a15e1eac18ccd357bd1c3761690f05e01928e06f4fbaa6a011b32053b",
+        "map.csv": "59fc39c10ced41dd5ba840acf5507612b8f82ca543c66ec01d186cb827e8f2ff",
+        "runout.csv": "313982aa1bc57347b3f478c3682fb38a268a47e5d2092aec3706174c4235d596",
+        "win_raw.csv": "31dff35f1519a305ef77492166cffaa9ba57f063487474acc8d2f49778beee72"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001958,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1894,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001960.manifest.json",
+      "manifest_sha256": "1e44189bd53c2214b901cf151ca001059e895197077d255be12f88d99179399d",
+      "outputs": {
+        "branches.csv": "df350c4b27450eb13e36baf4408a289c4ceeb854abcdca041e1ac3c91aed6577",
+        "combat.csv": "55c6f8a49aed2b64f9eac98f4b7132be15001778785f43b3792255353eb8f227",
+        "decision.csv": "cb12dc1031c0a6e215622824e489a080f10b15bfa0abea8684a80715111742e6",
+        "decisions.csv": "9c83d9c93fba5f34a333e5d470e71765b6a943ad72ca70d39d31e2e93213fc4c",
+        "map.csv": "93667f8fda4dfc2f9c3185e65ddcdc3322d882efdccd7213a2e2849f260c7b04",
+        "runout.csv": "1ba1cdedc4c6a33ba9aba149e8c2493f076447e010a414e70fc66b6fa8280f29",
+        "win_raw.csv": "d6d7093613b0f326349c8ed526034b11a7a296754292eec080fc4e317cd555da"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001960,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2548,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001964.manifest.json",
+      "manifest_sha256": "6aa36eab89018d57005b412bbc6e6c5eb1e12321ff28b72280273694e7102c78",
+      "outputs": {
+        "branches.csv": "4a38f749714a39e5c769ec34758b05424091b11a7c3cf9fd2f3c412c5fa118db",
+        "combat.csv": "40692ca5c3eff2fa79a580de8bf401bdcd2d0cc674527d2ddee9589a20ddf613",
+        "decision.csv": "4ffa0beaf5604dac1b4f48cfe4b81916b17fcedaf013cbe4674593d4d2500a97",
+        "decisions.csv": "986805904c3106fe032454e8623ae51bc69e97b17c2218c06daae22f4002f6ea",
+        "map.csv": "16dd1f5fd48baa5d3448a4281102e7bd985f9e80a67ed9fe19dddebc9a29e48d",
+        "runout.csv": "aceadc242d167dc9e0d4b318595ed4111f3fa95dc97c087b26e98781f7ce9eee",
+        "win_raw.csv": "ff1b5321a17acf04cbf4974effcd7f6a31b6cef24dbf6044850f4a75cecf4d9d"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001964,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2316,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001965.manifest.json",
+      "manifest_sha256": "3f5214c27b476300b2427bbde91e2e4ed313524baaf1ca926aad683e87943ffe",
+      "outputs": {
+        "branches.csv": "7a86bb70504dfc67e0a162266c010cade8468378b0ae4f965da042df5478b6e7",
+        "combat.csv": "c0d7ed8cbe23b0833d547329ce6b0d108f2dbdf1b223ea3ac2c78b5c3e0e4cbb",
+        "decision.csv": "2e99e2f077bfe01d83ae0020d74565686faa86a21ea0c6eba7dd3d682e931b87",
+        "decisions.csv": "0a5aca221797c53c8c01a4244ca1ab81ead3fe2ce9633b880879f59f652385f7",
+        "map.csv": "6182603856bd1fb8f414038875bbbee65c1482d6440c9f8482e609c9847f0d69",
+        "runout.csv": "679de7b333208abcc85f6c3254fdb0fa9de3ceaefbe929123a4bb77651c72981",
+        "win_raw.csv": "a58bc0f0f6fc876c760dbdfa5abc822a912fb4a5e6c26ad927be73aa82cf1343"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001965,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2870,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001977.manifest.json",
+      "manifest_sha256": "3d0443e43b9b81725e578b6e45e22ffa68eb5fcc02609dacc3f283bc80d38812",
+      "outputs": {
+        "branches.csv": "f2a1021765658890f4678477aedf8b50dafe4fa43bcad31dc138b7e37df1a559",
+        "combat.csv": "0690dbf79d286d688e7b677c7fb57a5368c29b60b27cde9247b49133847ff93c",
+        "decision.csv": "3e729af4bf94d84d6a4b5a03d17e5a2340beab618d1e1d2f6ba8fa561e03f328",
+        "decisions.csv": "f7c6d237c4a7428db3c5de56e230d40995b15f87df5ef2afda1dda8514ae2f86",
+        "map.csv": "2c9ebd88111374c8dd7f0bf404450d509e6de65a3765813b76c9abf279e3c653",
+        "runout.csv": "eed7679adfffd3aca766949c35bde80deea4a1e4df439c9da801786cf5338e58",
+        "win_raw.csv": "d25df05cf5139ff17b7e8c95104f93cf8591e60e43a3477d9692edb4ee9283a4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001977,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1996,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001979.manifest.json",
+      "manifest_sha256": "a3639d1f196ef90b1d855b164232574cf78d4d3d11ad83f49012cd886fb16671",
+      "outputs": {
+        "branches.csv": "468edc1914dbf84dc58cbf9cd802394f0150ccc354876fb626be19a9791ef859",
+        "combat.csv": "4bedc3b921f117704358a16489117429137e71f73fce686ab6aa30d9a3b35dcc",
+        "decision.csv": "62783424054be4ae9e257f7cb20dbe3b0932885373608d40b2017ef3786c4e0e",
+        "decisions.csv": "f4470c2d79545357e8340c673564564ad6a65fe0247edf030e72aa106708f948",
+        "map.csv": "2477b607d60f157c05594d8f9646fff7e94e7c4eea23694bc49d51917d259bf9",
+        "runout.csv": "49f0c3dbc03adf94611b5ea48c394ffb46460d391489fac3cf4b904d29e86555",
+        "win_raw.csv": "eb15690216c9115bb0e87d944b6e2ba5bd0f22f153ba1b1b5a10bbc72b83a3db"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001979,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1560,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001990.manifest.json",
+      "manifest_sha256": "ae18416c94a8919f645fbc4e6c174e5850b1fc28ebf98f04c7331615e3a63e56",
+      "outputs": {
+        "branches.csv": "8976b6c1b10318a36e6362a94699d731ea16ba8ddb779a9c3fb81371a9520586",
+        "combat.csv": "f8010b04fa51eec51e65a1ec1c48d1f7246238e57476fd05cee210711c10d248",
+        "decision.csv": "f3a0f49d7b26e758183e4cd96efe122db9cd013886d606a0d8adedbcd5f04c26",
+        "decisions.csv": "9bc6a69ccc333ee58d63c96c109d19e6591063fb3f199730ba0b3cf7ded38636",
+        "map.csv": "515af96bbb83d773921c8f97f0cd60e734274fa81798e27e8c67c29dfd4d9fcd",
+        "runout.csv": "938aca3412aff3ed9dca6b8b7a5ee1aad4ce646a211d5dbacc59060429aed13b",
+        "win_raw.csv": "60be37d76921e00feb2f3a801e80d959700457b897f30b19f830aba7237e52f4"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001990,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2320,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001993.manifest.json",
+      "manifest_sha256": "72b2f983ab0783df8478bb4b23e6bc5d7918c179a2f2b6c79ed83deec8785cd8",
+      "outputs": {
+        "branches.csv": "34ca1696dfe17a9e66f27c85d0ac4cadf2601623bad6ff078b6b6b55b057d355",
+        "combat.csv": "e4b747b5d5a3690c957480633616c367281896529fd412e0b1122e68debf8eac",
+        "decision.csv": "b54825d02f6d54ed149695b0f0436add417015bbd41a7c2e94f8cb1eb8b87447",
+        "decisions.csv": "5359331ccd27ab200eab09ddd943d4a9aa067781b2f28131c167ecd53d46fd52",
+        "map.csv": "35ec5b4f2b4216383a4f8e96f2a81f52cd5e28e3d53494241a5414f650c6fa7c",
+        "runout.csv": "2b125cac35db25b6813804d95098f06a28a997ab3838871f7b1e990f9a69b4ea",
+        "win_raw.csv": "b2daefae91f298471380ab90a5c9ee37825e4f5914a44eba05d4be5941db9b31"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001993,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2519,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13001997.manifest.json",
+      "manifest_sha256": "a8356310716df40b39951e1b183c374c2f0c4a0f266a328bf6615ee16eef5a59",
+      "outputs": {
+        "branches.csv": "1040c6d8b0f269195c42fcacf8c55908c16d073531d4f2427201719ebb57e22f",
+        "combat.csv": "57a59840a362e733a909d6467002ad34c301fa1e8868103784385a2a802c62af",
+        "decision.csv": "60ea735e47257ddfd5b22f85aeeec65c369c4acde7c47e620edaad4d26df5dce",
+        "decisions.csv": "6cf00703bf8feddd0d615b0b68ace8bab0716cf3618b17ada1203ce0f680f8f2",
+        "map.csv": "6aa38f8ae61791ca803b10a06c2dfb2dd9ffa91192d2e17f2a8f0d4e55d44035",
+        "runout.csv": "932d5e8a6ba0d86dc14c2b0c2cc165f585c48fdbe9d6a9d4d4adb6b00402d343",
+        "win_raw.csv": "3831acb3a280d301bc636dab306242683595186e8f5f78a8b59bc4bdc6955169"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13001997,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1975,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13002005.manifest.json",
+      "manifest_sha256": "af3da92e53277e301b484ee7efbee3a8bafc3b00c4736ff711319fda3600ae21",
+      "outputs": {
+        "branches.csv": "de22fb0bb2970fccf45213097f623c4aa49b71f775a90a64175651317c657d8b",
+        "combat.csv": "8ea9ed6c23e644426ba9bc520ffce16a53082424fea5dfd5334269ac0774378a",
+        "decision.csv": "3d4d4a1972a4d31e95311ad259df23783b353cf361917ebdca69cc6ef971e01a",
+        "decisions.csv": "2fb397712aef4487fec24657a0e09b6fd4653afaa4e59441e6977b0d900387f1",
+        "map.csv": "68f8124f923fb33c7c9322664dfb7f086d1ce5716f899f6804203b63ce00c97f",
+        "runout.csv": "03f9158a9eeca95417af07276fb832c305b6c3f930814d4832b17418158910da",
+        "win_raw.csv": "acf4f68d98263139ec7cab4e8892a337782e509b11a078ad3332cb83be1caf9a"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13002005,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2606,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13002010.manifest.json",
+      "manifest_sha256": "8cead305ef38ba2bc35edac64799d83681d98952a528d20e2e103efc0be6cb29",
+      "outputs": {
+        "branches.csv": "e10a802e01d7f4837a51c0d990d71899560848e7dc304198237e24f715c67d30",
+        "combat.csv": "37f385563c397ec15a9dfeeffa8639cfe94be58f02eb65f5e01688c696257678",
+        "decision.csv": "2d4dc3a92f90511d8d7fec97442dc8e780d84057f938c1e3564137036e4a109b",
+        "decisions.csv": "1fc624128852ad2443c24ad353db2d78e7de3c1d778ba1298d06cfcd85e0b280",
+        "map.csv": "645f428fb38b0575bb1f553a631eca31fc5aa0b7f27a95613fdaeafbdf6ea370",
+        "runout.csv": "dc151a7a8c24a2252f55b1884501589b912f1813d0afdcfcb4522dac880a0b3b",
+        "win_raw.csv": "2c583b405afa450a705e6aad52b9e675b2703c80396db07281aeae45ce84aae5"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13002010,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 1956,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13002015.manifest.json",
+      "manifest_sha256": "f3880348318daafbffc3d08fcba78f843b73fe5deec379c62c3b9bcf47451b47",
+      "outputs": {
+        "branches.csv": "ae91474db7dd0158369c05c5c3cd4403f30ccbacb1d30be5d6bbc4035be9c6dc",
+        "combat.csv": "db61f6cfdfc7242dcae9d85f2b66eef2f6b30afe42aa594a5a2d24338d026720",
+        "decision.csv": "ff6dd247761512be9f7d72f75e6a195be3d70ed9e4c6500573ebda731a055d72",
+        "decisions.csv": "da5dd236e95b646706bb33258ee0348feea318d29c0deb203bf8e4b774d4aa43",
+        "map.csv": "fab98e6efbe23b150b14bef4b5e244d3626f039d4b1d46c7fd14502c6529a7b9",
+        "runout.csv": "5be8c88aa3f07976d74460ed247f79a9628d2e2e9ab99c5543d24c09c4ac08b3",
+        "win_raw.csv": "9d45bd6038e2c41e494834fb1a14a497d1e45f9cb6375bdf5cf3ea364209677b"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13002015,
+      "split": "VALIDATION"
+    },
+    {
+      "decision_rows": 2461,
+      "manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/shards/seed-13002021.manifest.json",
+      "manifest_sha256": "1387e3b435322e2bb698f1829c352d9881c9a41e7c333a8a6547ce3c2e173b37",
+      "outputs": {
+        "branches.csv": "acc604a2669c5d9338e27c46c36c23fec1f60eda595da2be8daff6efc5e5dc20",
+        "combat.csv": "64eb353a2836e48115d61bb20ec31a45aba6eeeec23d92553e0c9adb5b2a16ba",
+        "decision.csv": "b80ea25b8fc1be17b063ace8937287277c4e3ed330af51f3523082552c740515",
+        "decisions.csv": "d9ae8e0b8e617419d3c4003a5cfff480b639699c5f377fb13b71b21f2871e0f5",
+        "map.csv": "d851778781db7972cdb6ce842b0767bb48b2501f1e8e9a55346a4796db601f45",
+        "runout.csv": "9c0927c494b583d44c8d29ea9c6319061aed038670a3c3ead2bb9e2eb0b48fc3",
+        "win_raw.csv": "a7609c7e24451bdee9f9354b794c6a02e435fc948027fa302acdf8c4dbb39981"
+      },
+      "producer_sha": "0665747164ca3914c229546ad13f4f26a3a4a23c",
+      "seed": 13002021,
+      "split": "VALIDATION"
+    }
+  ],
+  "test_access": "No TEST or TRAIN numerical rows; only VALIDATION reconstruction and S0.",
+  "workers": 6
+}

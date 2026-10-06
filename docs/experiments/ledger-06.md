@@ -14282,3 +14282,99 @@ and [analysis JSON](evidence/lizard_tail_minimal_ctm_qualification_2026-09-25/fr
 
 **Knowledge impact:** current research status and experiment evidence updated;
 runtime behavior, model interfaces, and support remain unchanged.
+
+
+## §382 — #379 sealed DECISION audit and current-main leaf profile (2026-10-05)
+
+**Purpose:** establish the screen-leaf experiment baseline without opening
+DECISION TEST or interpreting timing runs as gameplay quality.
+
+Baseline `a59d7e47f7fc0faee3015e824b267f6bf2961adc`; explicit qualified X2-B
+native hash `a251b33d4f71c1aa3fca529801da23ea9740dd0ded58abfb1a90fe69da7c9acf`.
+All 1,024 frozen component manifests and DECISION hashes pass the narrow audit.
+Original split: 696 TRAIN / 155 VALIDATION / 173 TEST. TRAIN has 1,509,014
+DECISION rows; VALIDATION 329,425. All seven observed screen families cover
+every TRAIN/VALIDATION source. Event enumeration omits 14,370/3,930 captures;
+all emitted rows have supported complete candidates. TEST files were hashed
+as opaque bytes, with no headers or numerical rows parsed.
+
+Two bounded historical-seed profiles used one thread, exact-10k Silver and
+OOC2048. Seed 12002032 with historical explicit attention CTM consumed 225.67
+process CPU seconds, 170.5306 MCTS seconds and 52.9275 inclusive leaf seconds.
+Seed 12002033 with current default hybrid CTM consumed about 102.1 process
+CPU seconds, 62.6637 MCTS seconds and 33.6169 inclusive leaf seconds. These
+are different seeds/configurations, not an A/B comparison. Leaf features and
+prediction on the default-stack seed took 0.2496 and 1.1860 seconds.
+
+Exact S0 requires frozen trajectory reconstruction because the DECISION sink
+omits complete RNG/pool/map state and callback continuations. Historical
+VALIDATION branch time is 44.11 core-hours, approximately 45.87 including
+source/setup extrapolation, before S0. A derived exporter and current-main
+import/evaluation bridge are being gated by exact frozen-output parity;
+constructed-state roundtrip/callback tests do not qualify that replay.
+
+Both producer-version canaries subsequently passed all seven original CSV
+hashes (VALIDATION sources 13001315 and 13001638). The two-producer 1,024-state
+S0 pilot passed in 2.52 wall seconds, with 1.68 inclusive leaf CPU seconds.
+Public-input review limits the provisional direct model to boss relic, rest,
+shop and treasure; events, selectors and rewards have omitted public parent
+or offer context. A temporal sidecar records exact resulting MAP links for
+calibration. The fixed Python S1/S2 tools are gated before training; all three
+excluded families remain audited and use the original fallback.
+
+All six fixed training fits completed (`TRAINING_COMPLETE_NOT_QUALIFIED`). The
+first full VALIDATION protocol stopped scheduling on a Golden Idol import
+semantic mismatch in source 13001065. All 14 scheduled replays passed original
+seven-file parity; 13 S0 evaluations passed and one failed. The historical
+producer infers the trap stage from held Golden Idol while current main uses
+`info.phase`; the faithfully preserved old phase remains zero. This is not a
+model verdict. The failed run and partial outputs remain immutable. Independent
+review permits a narrow version-bound phase adaptation and a new protocol that
+reuses the exact replay artifacts, with current public/candidate parity intact.
+
+**Status:** training complete; no candidate freeze, DECISION TEST opening,
+native screen-leaf integration or gameplay qualification. Defaults unchanged.
+`GITHUB_CI_NOT_USED_BILLING_LIMIT`.
+
+**Evidence:** [profile receipts, raw logs and audit](evidence/screen_leaf_379_preflight_20261005/README.md).
+
+**Knowledge impact:** experiment evidence and maintained current research
+status; no qualified model or runtime/default claim.
+
+## §383 — #379 outcome: offline S0 comparison, online leaf probes, GBM screen leaf default (2026-10-06)
+
+**Offline (VALIDATION, TEST sealed):** full S0 recovery passed on all 155
+sources (two fail-closed `hp_envelope` rows, outside the four candidate
+families; Smoke Bomb and Golden Idol import normalizations are audited). Both
+#379 MLP arms were worse than S0 on NLL in every family and failed the frozen
+calibration gate. Classification `SCREEN_LEAF_VALIDATION_NOT_QUALIFIED`; the
+DECISION TEST was not opened.
+
+**Online probes (2048 OOC sims, exact 10k Silver, X2-B):**
+- 512 pairs, seeds 47000000..47000511: direct X2-B at the decision state vs
+  the playout leaf: wins +1.4 pp (95% CI −3.3 to +6.1), floor +0.3, 0.56x time.
+- 32 pairs: direct X2-B at 4096 sims vs playout at 2048: wins −25 pp
+  (CI −47 to −3); inconclusive sample.
+- 128 pairs, seeds 47001024..47001151, four arms: GBM screen leaf vs playout
+  wins +3.1 pp (CI −7.8 to +14), floor +0.3 (CI −1.2 to +1.8); vs direct X2-B
+  wins 0, floor +1.0 (CI −0.4 to +2.5); vs #379 MLP wins +10 pp (CI 0 to +20).
+
+**GBM screen leaf:** XGBoost residual on X2-B's margin over the 461 X2-B run
+features plus fixed-width public screen features (all seven families). VALIDATION
+NLL 0.418 vs 0.423 for X2-B at the decision state; boss relic 0.527 to 0.454,
+rewards 0.422 to 0.416. Native trees match Python to 1.1e-6; screen features
+match exactly across Python, C++ and the live game state. Follow-ups on
+VALIDATION: next-MAP X2-B (TD) labels, label mixes and tree parameters all within
+±0.0003 NLL; deck-fit features plus all 372 deck counts −0.0008 (below the
+0.002 go bar). Inference: this corpus is near its ceiling for the screen leaf;
+fresh on-policy data is #415.
+
+**Decision:** Philipp made `screengbm` the default OOC MCTS leaf (ADR-0027);
+`native` restores the playout. `STS_OOC_MCTS` stays off by default.
+`GITHUB_CI_NOT_USED_BILLING_LIMIT`; focused local Release build and tests.
+
+**Evidence:** [leaf probes, GBM training and sweeps](evidence/ooc_leaf_direct_probe_20261006/README.md);
+[#379 preflight and VALIDATION](evidence/screen_leaf_379_preflight_20261005/README.md).
+
+**Knowledge impact:** ADR-0027 and the environment-variable table record the
+new default.

@@ -88,6 +88,12 @@ target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
+    apps/one_combat/screen_leaf_snapshot.cpp
+    apps/one_combat/screen_leaf_continuations.cpp
+    apps/one_combat/screen_leaf_s0.cpp
+    apps/one_combat/screen_leaf_probes.cpp
+    apps/one_combat/screen_leaf_net.cpp
+    apps/one_combat/screen_leaf_gbm.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
@@ -115,6 +121,21 @@ target_include_directories(one_combat PUBLIC json/include)
 target_include_directories(one_combat PRIVATE apps)
 link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
+
+# Offline full-state transport for frozen #379 replay; no generated game seeds.
+add_executable(screen_leaf_snapshot_test
+    apps/one_combat/screen_leaf_snapshot.cpp
+    apps/one_combat/screen_leaf_snapshot_test.cpp)
+target_include_directories(screen_leaf_snapshot_test PRIVATE include json/include apps/one_combat)
+add_test(NAME screen_leaf_snapshot COMMAND screen_leaf_snapshot_test)
+add_executable(screen_leaf_continuations_test
+    apps/one_combat/screen_leaf_snapshot.cpp
+    apps/one_combat/screen_leaf_continuations.cpp
+    apps/one_combat/screen_leaf_continuations_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(screen_leaf_continuations_test PRIVATE include json/include apps/one_combat)
+add_test(NAME screen_leaf_continuations
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh $<TARGET_FILE:screen_leaf_continuations_test>)
 
 # Read-only newline-delimited JSON endpoint for the private live-model
 # inspector.  Keep it separate from the simulator driver until a proven

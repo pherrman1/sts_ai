@@ -6,6 +6,7 @@
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
 #include "ooc_strategic_tok_net.h"
+#include "screen_leaf_s0.h"
 
 #include <cstdio>
 #include <iomanip>
@@ -598,6 +599,23 @@ static std::optional<VwinDecisionSnapshot> vwinMakeDecisionSnapshot(
     for (const auto &option : options) snapshot.candidateKeys.push_back(option.key);
     std::sort(snapshot.candidateKeys.begin(), snapshot.candidateKeys.end());
     return snapshot;
+}
+
+nlohmann::json one_combat::screenLeafPublicContract(const sts::GameContext &gc) {
+    bool supported = false, complete = false;
+    std::string error;
+    const auto options = vwinOptions(gc, supported, complete, error);
+    if (!supported || !complete) throw std::runtime_error("incomplete restored DECISION: " + error);
+    std::vector<std::string> keys;
+    std::vector<std::string> replacementDiscards;
+    for (const auto &option : options) keys.push_back(option.key);
+    for (const auto &option : options)
+        if (option.semantic && option.semantic->effect == search::OocSemanticEffect::DISCARD_POTION)
+            replacementDiscards.push_back(option.key);
+    std::sort(keys.begin(), keys.end());
+    std::sort(replacementDiscards.begin(), replacementDiscards.end());
+    return {{"screenContents", vwinDecisionScreenContents(gc, options)}, {"candidateKeys", keys},
+            {"replacementDiscardKeys", replacementDiscards}};
 }
 
 static bool vwinIsCardRewardChoice(const VwinOption &option) {
