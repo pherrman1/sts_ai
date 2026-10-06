@@ -172,7 +172,8 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
             || s.value("learned_stop_threshold",-1.0)!=search::nativeSilverLearnedStopThreshold())
             throw std::runtime_error("wholecombatgen: learned-stop model/threshold mismatch with the compiled stop model");
         if (!search::nativeSilverLearnedStopEnabled() || search::nativeSilverAdaptiveEnabled()
-            || search::nativeSilverExactRootBudgets() || search::nativeSilverLearnedStopBossFallback()
+            || search::nativeSilverExactRootBudgets() || search::nativeSilverSearchesSingletonRoots()
+            || search::nativeSilverLearnedStopBossFallback()
             || search::nativeSilverLearnedStopBossMax()!=0)
             throw std::runtime_error("wholecombatgen: effective Silver is not plain learned stopping");
     } else if (search::nativeSilverLearnedStopEnabled()) {
@@ -1591,6 +1592,12 @@ int learnedStopTeacherSelfTest() {
     exactTeacher["search_configuration"].erase("budget_policy");
     exactTeacher["environment"].erase("STS_SILVER_LEARNED_STOP");
     expect("rejects exact-10k teacher under learned-stop Silver", loads(exactTeacher, true), false);
+    // Searching one-action roots changes play but not the teacher spec.
+    setenv("STS_SILVER_SEARCH_SINGLETON_ROOTS", "1", 1);
+    search::installNativeSilverBackend();
+    expect("rejects searched singleton roots", loads(base, true), false);
+    unsetenv("STS_SILVER_SEARCH_SINGLETON_ROOTS");
+    search::installNativeSilverBackend();
     std::error_code ignored;
     std::filesystem::remove(teacherPath, ignored);
     if (failures == 0) std::cout << "learnedstopteacherselftest PASS\n";
@@ -3908,8 +3915,11 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &teacherPath,
                                 bool allowStaleProvenance) {
     trainingCampaignStart();
+    // Only the Lizard candidate mode passes stale provenance; it keeps the
+    // frozen exact-10k teacher.
+    const bool lizardCandidateMode = allowStaleProvenance;
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
-                                                false, !allowStaleProvenance);
+                                                false, !lizardCandidateMode);
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
