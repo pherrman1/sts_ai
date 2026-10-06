@@ -130,8 +130,9 @@ def train(cache, output, drop_card_flags):
               'max_depth': 6, 'eta': 0.03, 'subsample': 0.8, 'colsample_bytree': 0.8, 'min_child_weight': 50,
               'lambda': 5.0, 'seed': 379}
     kn = [names[i] for i in keep]
-    dtrain = xgb.QuantileDMatrix(np.asarray(x[:, keep]), t['y'], base_margin=m, feature_names=kn, max_bin=256)
-    dval = xgb.QuantileDMatrix(np.asarray(vx[:, keep]), v['y'], base_margin=vm, feature_names=kn, ref=dtrain, max_bin=256)
+    full = len(keep) == len(names)  # avoid copying the ~10 GB TRAIN matrix when no column is dropped
+    dtrain = xgb.QuantileDMatrix(x if full else np.asarray(x[:, keep]), t['y'], base_margin=m, feature_names=kn, max_bin=256)
+    dval = xgb.QuantileDMatrix(vx if full else np.asarray(vx[:, keep]), v['y'], base_margin=vm, feature_names=kn, ref=dtrain, max_bin=256)
     start = time.monotonic()
     b = xgb.train(params, dtrain, num_boost_round=4000, evals=[(dval, 'validation')], early_stopping_rounds=100, verbose_eval=100)
     b.save_model(output / 'residual.ubj')
