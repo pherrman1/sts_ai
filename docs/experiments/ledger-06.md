@@ -14378,3 +14378,41 @@ fresh on-policy data is #415.
 
 **Knowledge impact:** ADR-0027 and the environment-variable table record the
 new default.
+
+## §385 — #367 v_win (X2-B) terminal pricing for Silver wins: 128-pair pilot, negative (2026-10-06)
+
+(§384 is left to the concurrent #417 OOC MCTS pilot.)
+
+**Question:** does pricing Silver's won and escaped fights with the new v_win
+(X2-B; screen GBM at the post-fight reward/event screen, X2-B at the map, per
+combat mapped to HP points; PR #422, `STS_SILVER_VWIN_LEAF=1`, 4 sampled
+futures) beat the handcrafted win formula under production learned-stop Silver?
+
+**Setup:** candidate `b6710750`, seeds 49000001..49000128 (fresh), A0, fair,
+`bestbench 10000`, `STS_SILVER_LEARNED_STOP=1`, OOC MCTS off, 4 cloud cores.
+Pre-registered rule: Δwins ≥ 0 with floors not worse → 512-pair confirmation;
+Δwins ≤ −5 pp → stop. Pre-run review skipped on Philipp's instruction.
+
+**Result (paired, 128 seeds):** wins 75.0% → 66.4%, **−8.6 pp (95% CI −17.2 to
+0.0)**; discordant 22 control-only vs 11 v_win-only wins. Mean floor 49.0 →
+47.6 (−1.4, CI −3.0 to +0.2); end HP 27.5 → 24.0. Losses by act: control
+1/8/23, v_win 4/11/28; 13 of the 22 v_win-only losses are at the Act 2 (floor
+33) or Act 3 (floor 50) boss. Mean run time 125.9 vs 127.0 s (4 concurrent
+processes). Pricer: 3,195 combats, 111 flat (run-ending wins, handcrafted),
+0 unsupported, 0 contract fallbacks, ~537k distinct prices, ~203 s pricing CPU
+over 128 runs (~1.6 s/run).
+
+**Decision:** STOP under the pre-registered rule; the option stays default off
+and is not promoted. Classification `NEGATIVE` at pilot size (the CI touches 0).
+
+**Inference (unverified):** the losses concentrate at bosses, i.e. the run
+reaches them weaker; the per-combat HP scale and the screen GBM's small reward
+and HP prices (self-test: escape gap ≈3.7 HP normal, ≈2.5 elite) may trade HP
+and potions worse than the handcrafted weights. No mechanism was isolated.
+
+**Evidence:** [pilot packet](evidence/silver_vwin_leaf_pilot_20261006/README.md).
+`GITHUB_CI_NOT_USED_BILLING_LIMIT`.
+
+**Knowledge impact:** combat-search.md records the pilot result next to the
+option.
+

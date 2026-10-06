@@ -1,0 +1,4 @@
+[silver vwin leaf] combats=776 flat=28 unsupported=0 prices=138639 lookups=67431602 screenGbm=560276 anchor=264 fallbacks=0 decided=224 cpuSeconds=51.301
+[silver vwin leaf] combats=792 flat=28 unsupported=0 prices=141803 lookups=63318219 screenGbm=573216 anchor=108 fallbacks=0 decided=224 cpuSeconds=56.229
+[silver vwin leaf] combats=818 flat=26 unsupported=0 prices=136329 lookups=61693579 screenGbm=551464 anchor=204 fallbacks=0 decided=192 cpuSeconds=51.7928
+[silver vwin leaf] combats=809 flat=29 unsupported=0 prices=120489 lookups=69510710 screenGbm=488068 anchor=136 fallbacks=0 decided=224 cpuSeconds=43.508

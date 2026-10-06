@@ -256,6 +256,9 @@ Losses keep Silver's shaping.
   print to stderr at exit. `one_combat silvervwinleafselftest` (ctest
   `silver_vwin_leaf`) checks normal, elite, Dead Adventurer and boss prices.
 
+Pilot (ledger-06 §385, 128 pairs, learned-stop Silver): wins −8.6 pp (95% CI
+−17.2 to 0.0) against the handcrafted formula; stopped, default off.
+
 The engine's Dead Adventurer continuation opens its combat rewards even after
 a Smoke Bomb escape (Colosseum's Victory fight forfeits them), so the pricer,
 following the engine, values such an escape like a win. **Open question:**
