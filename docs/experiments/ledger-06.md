@@ -14340,3 +14340,41 @@ native screen-leaf integration or gameplay qualification. Defaults unchanged.
 
 **Knowledge impact:** experiment evidence and maintained current research
 status; no qualified model or runtime/default claim.
+
+## §383 — #379 outcome: offline S0 comparison, online leaf probes, GBM screen leaf default (2026-10-06)
+
+**Offline (VALIDATION, TEST sealed):** full S0 recovery passed on all 155
+sources (two fail-closed `hp_envelope` rows, outside the four candidate
+families; Smoke Bomb and Golden Idol import normalizations are audited). Both
+#379 MLP arms were worse than S0 on NLL in every family and failed the frozen
+calibration gate. Classification `SCREEN_LEAF_VALIDATION_NOT_QUALIFIED`; the
+DECISION TEST was not opened.
+
+**Online probes (2048 OOC sims, exact 10k Silver, X2-B):**
+- 512 pairs, seeds 47000000..47000511: direct X2-B at the decision state vs
+  the playout leaf: wins +1.4 pp (95% CI −3.3 to +6.1), floor +0.3, 0.56x time.
+- 32 pairs: direct X2-B at 4096 sims vs playout at 2048: wins −25 pp
+  (CI −47 to −3); inconclusive sample.
+- 128 pairs, seeds 47001024..47001151, four arms: GBM screen leaf vs playout
+  wins +3.1 pp (CI −7.8 to +14), floor +0.3 (CI −1.2 to +1.8); vs direct X2-B
+  wins 0, floor +1.0 (CI −0.4 to +2.5); vs #379 MLP wins +10 pp (CI 0 to +20).
+
+**GBM screen leaf:** XGBoost residual on X2-B's margin over the 461 X2-B run
+features plus fixed-width public screen features (all seven families). VALIDATION
+NLL 0.418 vs 0.423 for X2-B at the decision state; boss relic 0.527 to 0.454,
+rewards 0.422 to 0.416. Native trees match Python to 1.1e-6; screen features
+match exactly across Python, C++ and the live game state. Follow-ups on
+VALIDATION: next-MAP X2-B (TD) labels, label mixes and tree parameters all within
+±0.0003 NLL; deck-fit features plus all 372 deck counts −0.0008 (below the
+0.002 go bar). Inference: this corpus is near its ceiling for the screen leaf;
+fresh on-policy data is #415.
+
+**Decision:** Philipp made `screengbm` the default OOC MCTS leaf (ADR-0027);
+`native` restores the playout. `STS_OOC_MCTS` stays off by default.
+`GITHUB_CI_NOT_USED_BILLING_LIMIT`; focused local Release build and tests.
+
+**Evidence:** [leaf probes, GBM training and sweeps](evidence/ooc_leaf_direct_probe_20261006/README.md);
+[#379 preflight and VALIDATION](evidence/screen_leaf_379_preflight_20261005/README.md).
+
+**Knowledge impact:** ADR-0027 and the environment-variable table record the
+new default.
