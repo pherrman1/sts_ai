@@ -360,6 +360,21 @@ was compared with the native references.
 - Snapshots recorded before this change replay without the old `lastRoom` energy. The CTM relic legality and native contract model the post-combat data as 0. Covered by `ironclad_card_java_parity` and `CombatBoundaryTest`. |
 | All other Ironclad-pool and red relics | Parity | Includes the counter relics (Pen Nib's −1 encodes "9 with the power active"; Sundial, Happy Flower, Incense Burner and Nunchaku are offset but equivalent); turn-indexed relics (Captain's Wheel, Horn Cleat, Stone Calendar); Art of War and Pocketwatch from turn 2 only; Orichalcum (its `trigger` flag is never set); Boot and Torii (after block, attack damage only); Preserved Insect; Magic Flower's rounding; Gremlin Horn on Darkling half-death; Mummified Hand's filters and `cardRandomRng`; Strange Spoon's `cardRandomRng`; Whetstone, War Paint and Tiny House with `java.util.Random(miscRng.randomLong())`; Slaver's Collar (elite or boss); Brimstone on turn 1; the Burning and Black Blood victory heals. |
 
+### Necronomicon and Necronomicurse
+
+Issue #406 inspected these classes in the pinned JAR (`javap -c -p`):
+
+| Java hook | Native path | Status |
+|---|---|---|
+| `relics.Necronomicon.onEquip` obtains a new `Necronomicurse` through `ShowCardAndObtainEffect` | `GameContext::obtainRelic` `NECRONOMICON` case calls `Deck::obtain`, so Omamori, Darkstone Periapt and Ceramic Fish apply as for any curse | **Mismatch, fixed** (#406): native added no curse |
+| `cards.curses.Necronomicurse.onRemoveFromMasterDeck` queues a `NecronomicurseEffect` with a new copy | `Deck::remove` puts the curse back | **Mismatch, fixed** (#406). Unreachable natively by code reading: every native removal screen and event filters out untransformable curses |
+| `Necronomicurse.triggerOnExhaust` adds a copy to hand | `BattleContext` exhaust handler queues `MakeTempCardInHand(NECRONOMICURSE)` | Parity |
+
+**Unverified:** whether `NecronomicurseEffect` re-obtains through the
+obtain hooks (Omamori, Darkstone, Ceramic Fish); native re-adds the card
+without them. The Necronomicon combat effect (the first 2+-cost attack each
+turn plays twice) was not audited.
+
 **Not inspected:** relics only reachable through events, Neow or other
 classes, and relic hooks that act purely out of combat beyond the
 upgrade/transform relics listed above.

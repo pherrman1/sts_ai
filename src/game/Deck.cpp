@@ -241,6 +241,10 @@ void Deck::remove(GameContext &gc, int idx) {
             gc.loseMaxHp(3);
         }
         cards.remove(idx);
+        if (c.getId() == CardId::NECRONOMICURSE) {
+            // Java onRemoveFromMasterDeck returns a new copy of the curse.
+            cards.push_back(c);
+        }
         return;
     }
 

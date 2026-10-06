@@ -1444,6 +1444,12 @@ bool GameContext::obtainRelic(RelicId r) {
             break;
         }
 
+        case RelicId::NECRONOMICON: {
+            // Java onEquip obtains a Necronomicurse (ShowCardAndObtainEffect).
+            deck.obtain(*this, CardId::NECRONOMICURSE);
+            break;
+        }
+
         case RelicId::NEOWS_LAMENT: {
             relicData = 3;
             break;

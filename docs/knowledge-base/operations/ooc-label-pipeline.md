@@ -591,8 +591,7 @@ because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
 
 `tools/analyze_rich_domain_397.py` derives the reachable Ironclad master-deck
 card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
-39 colorless, 13 curses, Necronomicurse kept as live-only because the simulator
-omits its Necronomicon obtain). The #334 TRAIN variance mask already excludes
+39 colorless, 13 curses; Necronomicurse is a literal obtain since #406). The #334 TRAIN variance mask already excludes
 every unreachable card, other-class relic and other-class potion column
 (ledger-06 §373), so model inputs need no domain filter; the producer keeps the
 broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.

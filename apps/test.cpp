@@ -1767,6 +1767,33 @@ int testSimulatorRelicFidelity() {
         }
     }
 
+    // Necronomicon adds Necronomicurse on equip (#406); Omamori blocks it, and
+    // removing the curse from the master deck returns it.
+    {
+        auto countCurse = [](const GameContext &gc) {
+            int n = 0;
+            for (const auto &c : gc.deck.cards) n += c.getId() == CardId::NECRONOMICURSE;
+            return n;
+        };
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        const int deckSize = gc.deck.size();
+        if (gc.obtainRelic(RelicId::NECRONOMICON)) return fail("Necronomicon opened a screen");
+        if (gc.deck.size() != deckSize + 1 || countCurse(gc) != 1) {
+            return fail("Necronomicon did not add exactly one Necronomicurse");
+        }
+        gc.deck.remove(gc, gc.deck.size() - 1);
+        if (gc.deck.size() != deckSize + 1 || countCurse(gc) != 1) {
+            return fail("removing Necronomicurse did not return it to the deck");
+        }
+
+        GameContext warded(CharacterClass::IRONCLAD, 123456789, 0);
+        warded.obtainRelic(RelicId::OMAMORI);
+        warded.obtainRelic(RelicId::NECRONOMICON);
+        if (countCurse(warded) != 0 || warded.relics.getRelicValue(RelicId::OMAMORI) != 1) {
+            return fail("Omamori did not block Necronomicurse");
+        }
+    }
+
     // Orrery opens five ordinary card rewards.
     {
         GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
