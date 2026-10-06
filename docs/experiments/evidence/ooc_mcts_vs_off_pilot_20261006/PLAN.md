@@ -1,8 +1,8 @@
 # Pilot: live OOC MCTS on vs off (frozen plan, 2026-10-06)
 
-Status: **plan only; not authorized to run yet.** Philipp authorizes the run in
-the project thread. The run thread then records the binary hash below before any
-pooled seed runs.
+Status: frozen after an independent pre-run review (one blocking finding, an
+unmeetable smoke check, fixed). Philipp authorized the run on 4 cloud cores on
+2026-10-06 once the review was clean.
 
 ## Question
 
@@ -45,9 +45,10 @@ off this does not change real play.
 
 - Code: `main` at `5e9583cc` (#416 merge) plus this evidence directory. The
   plan commit carries no source change.
-- Binary: Release GCC build of that commit. The run thread records the SHA-256
-  here and in the launch command before the smoke seed runs:
-  `BINARY_SHA256 = <filled at freeze>`.
+- Binary: `cmake --preset linux-gcc-release`, target `one_combat`, GCC 13.3,
+  built from `aa000e8a` (source identical to `5e9583cc`).
+  `BINARY_SHA256 = fcaeec61840b88d8f0449c118a553291a8ae0339f4616509d1fd6f1a6bec51ab`.
+  `STS_EXECUTABLE_GIT_SHA` is set to the build commit.
 - Models (all tracked, SHA-256 prefix):
   - `selfplay/models/ooc_strategic_tok_final.native` `e62abd833fc8cb90`
   - `models/v_win_trees.txt` (B0) `fc52c14cb7239a33`
@@ -63,15 +64,23 @@ off this does not change real play.
 ## Execution
 
 1. Build the Release binary and record its hash above.
-2. Smoke: `launch.sh BIN SHA OUT smoke`. Each arm must exit 0, and its
-   `.meta.json` sidecar must record the arm's settings: `STS_OOC_MCTS=1` and
-   the unset leaf only in `mcts`, and learned stopping only in `learned`. If anything fails,
-   stop and report; do not fix and rerun under this plan.
-3. Run: `launch.sh BIN SHA OUT` on one 4-CPU container: 4 shards of 32 seeds,
+2. Smoke: `launch.sh BIN SHA BUILD_SHA OUT smoke`. Every arm must exit 0.
+   - `learned`: the `.meta.json` sidecar has a non-empty `silverLearnedStopModel`
+     and `silverExactRootBudgets` false.
+   - `flat10k` and `mcts`: an empty `silverLearnedStopModel` and
+     `silverExactRootBudgets` true.
+   - `mcts` only: the log has `[live OOC MCTS ON sims=2048` with
+     `leaf_value=screengbm`. The other two logs have no such line.
+
+   If any check fails, stop and report; do not fix and rerun under this plan.
+3. Run: `launch.sh BIN SHA BUILD_SHA OUT` on one 4-CPU container: 4 shards of 32 seeds,
    one CPU each. Each shard runs all three arms, with shard k starting the arm
    list at position k mod 3. Per-seed results do not depend on order.
 4. A shard that exits nonzero is kept and not retried. The analysis uses the
-   seeds present in all arms and says so.
+   seeds present in all arms and reports failed seeds per arm. The verdict is
+   provisional if any `mcts` or `flat10k` seed failed.
+5. `launch.sh` refuses to start if any `STS_*` variable is already exported,
+   so arms inherit nothing from the launching shell.
 
 Budget estimate: about 24 s (`learned`, §377), roughly 35–40 s (`flat10k`,
 **Inference** from §377's 29 s for #199) and 89 s (`mcts`, §383) per seed.

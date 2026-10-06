@@ -35,6 +35,13 @@ def pooled(run_dir, arm):
     return rows
 
 
+def failed_seeds(run_dir, arm):
+    n = 0
+    for path in glob.glob(os.path.join(run_dir, f"{arm}[0-9].log")):
+        n += sum(1 for line in open(path, errors="replace") if line.startswith("[bestbench-seed-failure]"))
+    return n
+
+
 def ci(x):
     return list(pa.bootstrap_ci(np.asarray(x, dtype=float), ci=0.95, rng=np.random.default_rng(SEED)))
 
@@ -60,7 +67,10 @@ def main():
             "discordant": [sum(a > b for a, b in zip(wx, wy)), sum(b > a for a, b in zip(wx, wy))],
             "secRatio": report["arms"][x]["sec"] / report["arms"][y]["sec"]}
     _, lo, hi = report["diffs"]["mcts-flat10k"]["win"]
+    report["failedSeeds"] = {a: failed_seeds(args.run_dir, a) for a in ARMS}
     report["verdict"] = "MCTS_BETTER" if lo > 0 else "MCTS_WORSE" if hi < 0 else "INCONCLUSIVE"
+    if report["failedSeeds"]["mcts"] or report["failedSeeds"]["flat10k"]:
+        report["verdict"] += "_PROVISIONAL"
     if report["seedsMissingInSomeArm"]:
         report["note"] = "partial: computed on the intersection of all arms"
     text = json.dumps(report, indent=1)

@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Pilot run (PLAN.md): seeds 48000000..48000127, 4 shards of 32 seeds, one CPU each.
 # Each shard runs the three arms; shard k starts the arm list at position k mod 3.
-# Usage: launch.sh BINARY BINARY_SHA256 OUT   (run from a checkout of the plan commit)
-#        launch.sh BINARY BINARY_SHA256 OUT smoke   (seed 48009000, every arm, not pooled)
+# Usage: launch.sh BINARY BINARY_SHA256 BUILD_GIT_SHA OUT   (run from a checkout of the plan commit)
+#        launch.sh BINARY BINARY_SHA256 BUILD_GIT_SHA OUT smoke   (seed 48009000, every arm, not pooled)
 set -u
-SRC=$1 SHA=$2 OUT=$3 MODE=${4:-run}
+SRC=$1 SHA=$2 BUILD_SHA=$3 OUT=$4 MODE=${5:-run}
+if env | grep -q '^STS_'; then echo "refusing: STS_* already exported" >&2; exit 1; fi
 cd "$(git rev-parse --show-toplevel)"
 EV=docs/experiments/evidence/ooc_mcts_vs_off_pilot_20261006
 mkdir -p "$OUT"
 BIN=$(mktemp -d)/one_combat   # /mnt/project-files is noexec: run a hash-checked local copy
 cp "$SRC" "$BIN" && chmod +x "$BIN"
 echo "$SHA  $BIN" | sha256sum -c - || exit 1
-export STS_EXECUTABLE_GIT_SHA=$(git rev-parse HEAD)
+export STS_EXECUTABLE_GIT_SHA=$BUILD_SHA
 ARMS=(learned flat10k mcts)
 run_arm() {   # run_arm NAME CPU SEED_START COUNT TAG
   ( source $EV/arm_env.sh && arm_env $1 || exit 1
