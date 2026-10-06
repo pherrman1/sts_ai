@@ -27,6 +27,7 @@ struct OocContinuationMetrics {
     std::uint64_t screenLeafEvaluations = 0, screenLeafFallbacks = 0;
 };
 class ScreenLeafNet;
+class ScreenLeafGbm;
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
     // Live histories must qualify both room chances and future relic pools
@@ -43,6 +44,7 @@ struct OocAdapterOptions {
     // leaf network; other non-combat leaves use v_win directly.
     bool screenLeaf = false;
     std::shared_ptr<const ScreenLeafNet> screenLeafNet;
+    std::shared_ptr<const ScreenLeafGbm> screenLeafGbm;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.

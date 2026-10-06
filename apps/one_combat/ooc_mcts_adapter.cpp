@@ -2,6 +2,7 @@
 #include "ooc_mcts_adapter.h"
 #ifndef STS_LIVE_ADVISOR
 #include "screen_leaf_net.h"
+#include "screen_leaf_gbm.h"
 #include "screen_leaf_s0.h"
 #endif
 #include "ooc_profile.h"
@@ -1144,12 +1145,12 @@ std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc
 #ifdef STS_LIVE_ADVISOR
     (void)gc; (void)path; throw std::runtime_error("screen leaf is unavailable in the live advisor");
 #else
-    if (!options.screenLeafNet) throw std::runtime_error("screen leaf requested without a loaded network");
+    if (!options.screenLeafNet && !options.screenLeafGbm) throw std::runtime_error("screen leaf requested without a loaded model");
     nlohmann::json contract;
     try { contract = screenLeafPublicContract(gc); }
     catch (const std::exception &) { ++continuation_.screenLeafFallbacks; return std::nullopt; }
     const auto &contents = contract.at("screenContents");
-    if (!options.screenLeafNet->covers(contents.at("screen").get<std::string>())) {
+    if (options.screenLeafNet && !options.screenLeafNet->covers(contents.at("screen").get<std::string>())) {
         ++continuation_.screenLeafFallbacks; return std::nullopt;
     }
     const std::string row = richRow(gc, path);
@@ -1161,8 +1162,16 @@ std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc
     }
     OocProfileScope inference(OocProfileBucket::LeafValue);
     ++continuation_.screenLeafEvaluations;
-    return options.screenLeafNet->predictFromRich(rich, contents,
-        contract.at("candidateKeys").get<std::vector<std::string>>());
+    const auto keys = contract.at("candidateKeys").get<std::vector<std::string>>();
+    if (options.screenLeafGbm) {
+        static const int goldIndex = richIdxMap().at("gold");
+        const auto screenFeatures = screenGbmFeatures(contents, keys, rich.at(goldIndex));
+        rich.insert(rich.end(), screenFeatures.begin(), screenFeatures.end());
+        const double x2b = std::clamp(dependencies.leafValue(gc, path), 1e-7, 1 - 1e-7);
+        const double margin = std::log(x2b / (1 - x2b)) + options.screenLeafGbm->residual(rich);
+        return 1.0 / (1.0 + std::exp(-margin));
+    }
+    return options.screenLeafNet->predictFromRich(rich, contents, keys);
 #endif
 }
 // `endpoint` receives the player state that was actually evaluated: the node
@@ -1308,6 +1317,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
         else if (value == "boss") opts.bossLeaf = true;
         else if (value == "direct") opts.directLeaf = true;
         else if (value == "screen") opts.screenLeaf = true;
+        else if (value == "screengbm") opts.screenLeaf = true;
         else invalid();
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
@@ -1559,7 +1569,10 @@ void configureLiveOocMcts() {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_LEAF_VALUE=screen is unavailable in the live advisor");
 #else
-        liveOptions.screenLeafNet = std::make_shared<const ScreenLeafNet>(model);
+        const char *mode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (mode && std::string(mode) == "screengbm")
+            liveOptions.screenLeafGbm = std::make_shared<const ScreenLeafGbm>(model, richIdxMap(), int(richIdxMap().size()));
+        else liveOptions.screenLeafNet = std::make_shared<const ScreenLeafNet>(model);
 #endif
     }
     if (liveConfig.stopAt512VisitGap20
@@ -1626,7 +1639,7 @@ void configureLiveOocMcts() {
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
-        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? "screen" : "native")
+        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
@@ -1638,7 +1651,7 @@ void configureLiveOocMcts() {
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
-        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? "screen" : "native")
+        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"

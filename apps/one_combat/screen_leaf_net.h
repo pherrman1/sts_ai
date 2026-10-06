@@ -28,5 +28,6 @@ private:
     std::vector<Seed> seeds_;
 };
 int screenLeafNetParity(const std::string &model, const std::string &input);
+int screenLeafGbmLiveParity(const std::string &input, const std::string &output);
 int screenLeafNetLiveParity(const std::string &model, const std::string &input, unsigned limit);
 }

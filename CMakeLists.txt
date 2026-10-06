@@ -93,6 +93,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/screen_leaf_s0.cpp
     apps/one_combat/screen_leaf_probes.cpp
     apps/one_combat/screen_leaf_net.cpp
+    apps/one_combat/screen_leaf_gbm.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp

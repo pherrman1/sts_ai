@@ -2,6 +2,7 @@
 #include "screen_leaf_import.h"
 #include "screen_leaf_s0.h"
 #include "run_features.h"
+#include "screen_leaf_gbm.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -360,6 +361,38 @@ int screenLeafNetLiveParity(const std::string &model, const std::string &input, 
     }
     std::cout << Json{{"rows", rows}, {"maxAbsError", maxError}, {"pass", rows > 0 && maxError < 1e-6}}.dump() << "\n";
     return rows > 0 && maxError < 1e-6 ? 0 : 1;
+}
+
+// GBM screen-feature parity: features from the live GameContext contract must
+// equal those from the recorded DECISION row; recorded-row features are also
+// written out for the Python-side comparison.
+int screenLeafGbmLiveParity(const std::string &input, const std::string &output) {
+    std::ifstream in(input); need(bool(in), "cannot open snapshot input");
+    std::ofstream out(output); need(bool(out), "cannot open output");
+    const int gold = richIdxMap().at("gold");
+    auto parse = [](const std::string &text) {
+        std::vector<float> v; std::stringstream ss(text); std::string item;
+        while (std::getline(ss, item, ',')) v.push_back(std::stof(item));
+        return v;
+    };
+    std::string line; unsigned rows = 0, mismatches = 0;
+    while (std::getline(in, line)) {
+        auto row = Json::parse(line);
+        const auto recordedKeys = row.at("candidateKeys").get<std::vector<std::string>>();
+        const auto recorded = screenGbmFeatures(row.at("screenContents"), recordedKeys,
+                                                parse(row.at("features").get<std::string>()).at(gold));
+        auto state = screen_leaf::importEnvelope(row);
+        const auto contract = screenLeafPublicContract(state.gc);
+        const auto live = screenGbmFeatures(contract.at("screenContents"),
+            contract.at("candidateKeys").get<std::vector<std::string>>(), parse(richRow(state.gc, state.path)).at(gold));
+        // Current main may add public potion-discard keys (effect 29) to historical shops.
+        auto a = recorded, b = live; const int nopt = 1, eff29 = 18 + 29;
+        a[nopt] = b[nopt] = 0; a[eff29] = b[eff29] = 0;
+        mismatches += a != b; ++rows;
+        out << Json{{"features", recorded}}.dump() << "\n";
+    }
+    std::cout << Json{{"rows", rows}, {"liveMismatches", mismatches}, {"pass", rows > 0 && !mismatches}}.dump() << "\n";
+    return rows > 0 && !mismatches ? 0 : 1;
 }
 }
 

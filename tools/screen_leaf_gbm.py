@@ -171,7 +171,8 @@ def export(output, path, parity, parity_rows):
     path.write_text('\n'.join(lines) + '\n')
     vx, vy, vs, _ = load('VALIDATION', output.parent / 'cache' / 'VALIDATION.npz')
     rng = np.random.default_rng(379); pick = np.sort(rng.choice(len(vy), parity_rows, replace=False))
-    margin = booster.predict(xgb.DMatrix(vx[pick], feature_names=names), output_margin=True,
+    # base_margin=0: with base_margin supplied, XGBoost ignores base_score, so the residual has no intercept.
+    margin = booster.predict(xgb.DMatrix(vx[pick], feature_names=names, base_margin=np.zeros(len(pick))), output_margin=True,
                              iteration_range=(0, best + 1))
     with parity.open('w') as stream:
         for i, mg in zip(pick, margin): stream.write(json.dumps({'x': vx[i].tolist(), 'margin': float(mg)}) + '\n')
