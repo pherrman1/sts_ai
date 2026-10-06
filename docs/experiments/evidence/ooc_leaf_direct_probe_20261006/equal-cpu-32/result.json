@@ -1,0 +1,24 @@
+{
+ "pairs": 32,
+ "win_A": 0.65625,
+ "win_B": 0.40625,
+ "floor_A": 46.53125,
+ "floor_B": 45.90625,
+ "sec_A": 139.36394375,
+ "sec_B": 118.67323125,
+ "win_delta_B_minus_A": [
+  -0.25,
+  -0.46875,
+  -0.03125
+ ],
+ "floor_delta_B_minus_A": [
+  -0.625,
+  -5.1875,
+  4.09375
+ ],
+ "sec_ratio_B_over_A": 0.8515346800380712,
+ "discordant_wins": {
+  "A_only": 11,
+  "B_only": 3
+ }
+}
