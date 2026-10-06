@@ -340,6 +340,7 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
     gc.regainControl();
 }
 }
+void sampleOocNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) { sampleNoncombatFuture(gc, rng); }
 void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng,
                                  int priorEventRooms, bool questionHistoryComplete) {
     sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms, questionHistoryComplete);

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <array>
 #include <map>
 #include <random>
@@ -41,6 +42,16 @@ namespace sts::search {
         // The applied penalty is capped at half the HP left when escaping.
         double escapePenalty = 0;
         double eliteEscapePenalty = 0;
+    };
+
+    // Optional terminal price of a won fight (#367), in HP-equivalent points
+    // added to winBonus. Replaces the HP, potion, gold, max-HP, death-save,
+    // Parasite and escape terms of a victory; nullopt keeps Silver's own
+    // formula. Losses are never priced here. Owned per combat by the caller.
+    class SilverTerminalPricer {
+    public:
+        virtual ~SilverTerminalPricer() = default;
+        virtual std::optional<double> victoryHpEquivalent(const BattleContext &end) = 0;
     };
 
     struct SilverSearchStats {
@@ -135,6 +146,7 @@ namespace sts::search {
         SilverSearchStats stats;
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
         SilverOutcomeCapture *outcomes = nullptr; // optional caller-owned samples; default off
+        std::shared_ptr<SilverTerminalPricer> terminalPricer; // optional; default off (handcrafted wins)
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();

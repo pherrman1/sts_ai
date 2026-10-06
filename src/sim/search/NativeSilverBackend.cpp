@@ -368,6 +368,12 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    if (g_nativeSilverTerminalPricerFactory) {
+                        searcher->terminalPricer = g_nativeSilverTerminalPricerFactory(gc, bc);
+                        if (searcher->terminalPricer
+                                && (g_options.escapePenalty != 0 || g_options.eliteEscapePenalty != 0))
+                            fail(gc, bc, "v_win terminal pricing and STS_SILVER_ESCAPE_PENALTY are exclusive");
+                    }
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -690,6 +696,7 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
+    NativeSilverTerminalPricerFactory g_nativeSilverTerminalPricerFactory;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),

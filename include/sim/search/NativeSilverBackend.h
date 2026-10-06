@@ -2,11 +2,14 @@
 #define STS_LIGHTSPEED_NATIVESILVERBACKEND_H
 
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 
 namespace sts {
     class BattleContext;
+    struct GameContext;
 }
 
 namespace sts::search {
@@ -84,6 +87,15 @@ namespace sts::search {
     extern thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
+
+    // Research-only (#367 v_win terminal pricing): when set, called once per
+    // combat, with the run state and the initialized battle, before the
+    // first search; a non-null result becomes that combat's
+    // SilverSearcher::terminalPricer. Process-wide: set before parallel runs.
+    class SilverTerminalPricer;
+    using NativeSilverTerminalPricerFactory =
+        std::function<std::shared_ptr<SilverTerminalPricer>(const GameContext &, const BattleContext &)>;
+    extern NativeSilverTerminalPricerFactory g_nativeSilverTerminalPricerFactory;
 
     struct CombatKnowledgeState;
 

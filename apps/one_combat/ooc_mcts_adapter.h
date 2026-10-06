@@ -78,6 +78,9 @@ struct OocMctsDependencies {
 };
 
 OocMctsDependencies defaultOocMctsDependencies();
+// Re-draws a detached hypothetical state's hidden noncombat future (seed, RNG
+// streams, unknown pool and queue order) as live OOC MCTS does.
+void sampleOocNoncombatFuture(GameContext &gc, std::mt19937_64 &rng);
 // Qualified public question-room history fixes the three room probabilities;
 // reward pity remains hidden and is still sampled from its reachable prior.
 void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms,

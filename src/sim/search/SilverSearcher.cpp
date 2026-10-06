@@ -761,6 +761,11 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     }
 
     if (bc.outcome == Outcome::PLAYER_VICTORY) {
+        if (terminalPricer) {
+            if (const auto price = terminalPricer->victoryHpEquivalent(bc)) {
+                return evalWeights.winBonus + *price - (bc.turn * evalWeights.victoryTurnPenalty);
+            }
+        }
         double score = evalWeights.winBonus + postBattleHealedHp(bc, context) + potionScore
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
