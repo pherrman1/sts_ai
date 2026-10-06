@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Pilot run (PLAN.md): seeds 48000000..48000127, 4 shards of 32 seeds, one CPU each.
+# Each shard runs the three arms; shard k starts the arm list at position k mod 3.
+# Usage: launch.sh BINARY BINARY_SHA256 OUT   (run from a checkout of the plan commit)
+#        launch.sh BINARY BINARY_SHA256 OUT smoke   (seed 48009000, every arm, not pooled)
+set -u
+SRC=$1 SHA=$2 OUT=$3 MODE=${4:-run}
+cd "$(git rev-parse --show-toplevel)"
+EV=docs/experiments/evidence/ooc_mcts_vs_off_pilot_20261006
+mkdir -p "$OUT"
+BIN=$(mktemp -d)/one_combat   # /mnt/project-files is noexec: run a hash-checked local copy
+cp "$SRC" "$BIN" && chmod +x "$BIN"
+echo "$SHA  $BIN" | sha256sum -c - || exit 1
+export STS_EXECUTABLE_GIT_SHA=$(git rev-parse HEAD)
+ARMS=(learned flat10k mcts)
+run_arm() {   # run_arm NAME CPU SEED_START COUNT TAG
+  ( source $EV/arm_env.sh && arm_env $1 || exit 1
+    { time taskset -c $2 bash tools/seed_guard.sh $BIN bestbench 10000 $4 0 \
+        $3 $OUT/$1$5.csv ; } > $OUT/$1$5.log 2>&1
+    echo "exit $?" >> $OUT/$1$5.log )
+}
+if [ "$MODE" = smoke ]; then
+  for i in 0 1 2; do run_arm ${ARMS[$i]} $i 48009000 1 smoke & done
+  wait; echo "smoke done" > "$OUT/SMOKE_DONE"; exit 0
+fi
+for k in 0 1 2 3; do
+  s=$((48000000 + 32*k))
+  ( for i in 0 1 2; do run_arm ${ARMS[$(( (i + k) % 3 ))]} $k $s 32 $k; done ) &
+done
+wait
+echo "run done" > "$OUT/DONE"
