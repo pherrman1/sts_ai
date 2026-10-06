@@ -41,6 +41,25 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
 
+## Live OOC MCTS on vs off (§384) — MCTS loses
+
+**Measured (2026-10-06, §384).** This is a paired 128-seed pilot
+(`48000000..48000127`, §377 live profile, act-3 stop). Live OOC MCTS ran at
+2048 sims with the default `screengbm` leaf, against the same flat exact-10k
+Silver pipeline with MCTS off.
+
+MCTS lost **−21.9 pp wins, 95% [−32.0, −11.7]** (56.3% vs 78.1%). Floor was
+−1.46 [−3.16, +0.27], at 2.0x the time. Against learned stopping without MCTS,
+the gap was −17.2 pp [−28.9, −4.7] at 4.7x the time. Flat exact-10k versus
+learned stopping was +4.7 pp [−4.7, +14.1], so the exact-10k precondition
+costs time, not detectable strength.
+
+MCTS losses concentrate on boss floors, and MCTS wins end with less HP. The
+CTM's training on vendored Silver from before ADR-0021 is one candidate cause
+(**Open question**, #418). OOC MCTS stays off, and #399 and #415 have no
+qualified teacher.
+[Evidence](../../experiments/evidence/ooc_mcts_vs_off_pilot_20261006/README.md).
+
 ## Screen-aware OOC leaf value (#379) — offline preparation
 
 At current-main baseline `a59d7e47`, the frozen 1,024-source DECISION corpus
