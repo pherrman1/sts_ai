@@ -14410,7 +14410,19 @@ reaches them weaker; the per-combat HP scale and the screen GBM's small reward
 and HP prices (self-test: escape gap ≈3.7 HP normal, ≈2.5 elite) may trade HP
 and potions worse than the handcrafted weights. No mechanism was isolated.
 
-**Evidence:** [pilot packet](evidence/silver_vwin_leaf_pilot_20261006/README.md).
+**Diagnosis (audit replay, seeds 49000001..49000016, play unchanged and
+reproduced exactly):** HP curves are monotone near the real HP and sampling
+noise is under 1 HP-eq, so neither explains the loss. v_win prices potions far
+below the handcrafted 11 HP (normal fights act 1/2/3 median 1.9/7.9/5.1 HP-eq,
+negative in 35%/8%/15%), gold at about 0, and the forfeited rewards of an
+escape at only 2-6 HP-eq. With v_win on, Silver holds 0.42 fewer potions per
+fight start (1.59 vs 1.97) and reaches the Act 1 boss with 1.40 vs 2.19, at
+equal HP: it spends potions in hallway fights that the bosses then lack.
+**Inference:** X2-B/screen GBM potion prices are too low for in-combat
+trade-offs (they reflect the run policy's later use, not the combat's).
+
+**Evidence:** [pilot packet](evidence/silver_vwin_leaf_pilot_20261006/README.md),
+[diagnosis](evidence/silver_vwin_leaf_pilot_20261006/diagnosis/README.md).
 `GITHUB_CI_NOT_USED_BILLING_LIMIT`.
 
 **Knowledge impact:** combat-search.md records the pilot result next to the

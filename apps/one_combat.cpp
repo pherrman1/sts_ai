@@ -2811,7 +2811,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
-        {"STS_SILVER_VWIN_LEAF", ""}, {"STS_SILVER_VWIN_LEAF_SAMPLES", ""},
+        {"STS_SILVER_VWIN_LEAF", ""}, {"STS_SILVER_VWIN_LEAF_SAMPLES", ""}, {"STS_SILVER_VWIN_LEAF_AUDIT", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {

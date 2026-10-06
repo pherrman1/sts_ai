@@ -257,7 +257,9 @@ Losses keep Silver's shaping.
   `silver_vwin_leaf`) checks normal, elite, Dead Adventurer and boss prices.
 
 Pilot (ledger-06 §385, 128 pairs, learned-stop Silver): wins −8.6 pp (95% CI
-−17.2 to 0.0) against the handcrafted formula; stopped, default off.
+−17.2 to 0.0) against the handcrafted formula; stopped, default off. The
+audit replay (`STS_SILVER_VWIN_LEAF_AUDIT`) traced it to potion prices far
+below 11 HP (often negative in act 1): Silver spends potions before bosses.
 
 The engine's Dead Adventurer continuation opens its combat rewards even after
 a Smoke Bomb escape (Colosseum's Victory fight forfeits them), so the pricer,

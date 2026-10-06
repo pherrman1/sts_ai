@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -114,6 +115,8 @@ struct Exit {
 struct Models {
     std::shared_ptr<const ScreenLeafGbm> gbm;
     int samples = 4;
+    bool price = true;       // false: STS_SILVER_VWIN_LEAF_AUDIT only, Silver keeps its formula
+    std::string auditPath;   // STS_SILVER_VWIN_LEAF_AUDIT: one JSON line per combat
 };
 
 class VwinTerminalPricer final : public sts::search::SilverTerminalPricer {
@@ -145,6 +148,41 @@ public:
         flush(stats);
     }
     ~VwinTerminalPricer() override { flush(pending_); }
+
+    // Diagnostic (#367 follow-up): the combat's price surface at the root,
+    // next to `other`, a pricer built on independent futures (sampling noise).
+    nlohmann::json audit(const BattleContext &bc, VwinTerminalPricer &other) {
+        const auto ended = [&](int hp, bool escape, int dropSlot, int goldDelta) {
+            BattleContext end = bc;
+            end.outcome = sts::Outcome::PLAYER_VICTORY;
+            end.player.curHp = hp; end.smokeBombUsed = escape; end.player.gold += goldDelta;
+            if (dropSlot >= 0) { end.potions[dropSlot] = sts::Potion::EMPTY_POTION_SLOT; --end.potionCount; }
+            return end;
+        };
+        nlohmann::json out{{"flat", flat_ || other.flat_}, {"slope", slope_}, {"vLo", vLo_}};
+        if (flat_ || other.flat_) return out;
+        const int hp = bc.player.curHp, maxHp = bc.player.maxHp;
+        std::vector<double> sweep;
+        for (int h = 1; h <= maxHp; ++h) sweep.push_back(*victoryHpEquivalent(ended(h, false, -1, 0)));
+        out["hpPrices"] = sweep;
+        const double base = *victoryHpEquivalent(ended(hp, false, -1, 0));
+        out["base"] = base;
+        out["baseOther"] = *other.victoryHpEquivalent(ended(hp, false, -1, 0));
+        out["escapeGap"] = base - *victoryHpEquivalent(ended(hp, true, -1, 0));
+        out["escapeGapOther"] = *other.victoryHpEquivalent(ended(hp, false, -1, 0))
+            - *other.victoryHpEquivalent(ended(hp, true, -1, 0));
+        out["gold25"] = *victoryHpEquivalent(ended(hp, false, -1, 25)) - base;
+        nlohmann::json potions = nlohmann::json::array();
+        for (int i = 0; i < bc.potionCapacity; ++i) {
+            if (bc.potions[i] == sts::Potion::EMPTY_POTION_SLOT) continue;
+            potions.push_back({{"potion", static_cast<int>(bc.potions[i])},
+                               {"value", base - *victoryHpEquivalent(ended(hp, false, i, 0))},
+                               {"valueOther", *other.victoryHpEquivalent(ended(hp, false, -1, 0))
+                                    - *other.victoryHpEquivalent(ended(hp, false, i, 0))}});
+        }
+        out["potions"] = potions;
+        return out;
+    }
 
     std::optional<double> victoryHpEquivalent(const BattleContext &end) override {
         if (flat_) return std::nullopt;
@@ -233,9 +271,13 @@ std::uint64_t mix(std::uint64_t x) {
 
 std::string configureSilverVwinLeaf() {
     const char *raw = std::getenv("STS_SILVER_VWIN_LEAF");
-    if (!raw || !*raw || std::strcmp(raw, "0") == 0) return "off";
-    if (std::strcmp(raw, "1") != 0) throw std::runtime_error("STS_SILVER_VWIN_LEAF must be 0 or 1");
+    const char *audit = std::getenv("STS_SILVER_VWIN_LEAF_AUDIT");
+    const bool price = raw && *raw && std::strcmp(raw, "0") != 0;
+    if (price && std::strcmp(raw, "1") != 0) throw std::runtime_error("STS_SILVER_VWIN_LEAF must be 0 or 1");
+    if (!price && !(audit && *audit)) return "off";
     auto models = std::make_shared<Models>();
+    models->price = price;
+    if (audit && *audit) models->auditPath = audit;
     if (const char *k = std::getenv("STS_SILVER_VWIN_LEAF_SAMPLES"); k && *k) {
         char *end = nullptr;
         const long samples = std::strtol(k, &end, 10);
@@ -257,6 +299,20 @@ std::string configureSilverVwinLeaf() {
         const std::uint64_t seed = mix(gc.seed ^ mix(std::uint64_t(gc.floorNum) << 20
             ^ std::uint64_t(static_cast<int>(bc.encounter))));
         try {
+            if (!shared->auditPath.empty()) {
+                const auto &path = t_curPath ? *t_curPath : emptyPath;
+                VwinTerminalPricer a(gc, bc, path, shared, seed), b(gc, bc, path, shared, mix(seed ^ 0x5eed));
+                nlohmann::json row{{"seed", gc.seed}, {"act", gc.act}, {"floor", gc.floorNum},
+                    {"room", static_cast<int>(gc.curRoom)}, {"encounter", static_cast<int>(bc.encounter)},
+                    {"curHp", bc.player.curHp}, {"maxHp", bc.player.maxHp}, {"gold", bc.player.gold},
+                    {"deckSize", gc.deck.size()}};
+                row["audit"] = a.audit(bc, b);
+                {
+                    std::lock_guard<std::mutex> lock(g_totalsMutex);
+                    std::ofstream(shared->auditPath, std::ios::app) << row.dump() << '\n';
+                }
+                if (!shared->price) return nullptr;
+            }
             return std::make_shared<VwinTerminalPricer>(gc, bc, t_curPath ? *t_curPath : emptyPath, shared, seed);
         } catch (const sts::search::OocSearchUnsupported &) {
             // The run's hidden future cannot be re-drawn: keep Silver's formula.
@@ -265,6 +321,7 @@ std::string configureSilverVwinLeaf() {
             return nullptr;
         }
     };
+    if (!price) return "off";  // audit only: play is unchanged
     return std::string("x2b+") + kDefaultScreenGbmModel + ";samples=" + std::to_string(models->samples);
 }
 
