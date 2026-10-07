@@ -50,6 +50,9 @@ struct OocAdapterOptions {
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
+    // False (live runs with STS_COLLECT_KEYS off) drops TAKE_KEY and
+    // TAKE_RUBY_KEY: without act 4 a key only costs the paired relic or a rest.
+    bool collectKeys = true;
     // Optional live-capture root restriction; child states remain semantic.
     std::optional<std::set<std::uint32_t>> rootPrimitiveBits;
     // Strictly opt-in serialization of the exact prior inputs consumed by OOC MCTS.

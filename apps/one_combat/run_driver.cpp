@@ -167,6 +167,39 @@ bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bo
     return true;
 }
 
+// Opening a treasure chest is free unless Cursed Key turns it into a curse,
+// so every OOC policy opens it without Cursed Key (#347: live OOC MCTS left
+// every chest closed). With Cursed Key the ordinary decision runs.
+static bool openTreasureChestRuleStep(GameContext &gc) {
+    if (gc.screenState != ScreenState::TREASURE_ROOM || gc.relics.has(RelicId::CURSED_KEY)) return false;
+    search::GameAction(0).execute(gc);
+    return true;
+}
+
+// Every offered reward relic (elites, event elites, chests) is taken first,
+// except Philipp's listed exceptions (2026-10-07), which go to the ordinary
+// decision. Live OOC MCTS left most chest relics because its leaf value prices
+// them near zero (#347, ledger §390). Keys are off, so a Sapphire pairing is ignored.
+static bool reviewedRewardRelic(RelicId id) {
+    switch (id) {
+        case RelicId::BOTTLED_FLAME: case RelicId::BOTTLED_LIGHTNING: case RelicId::BOTTLED_TORNADO:
+        case RelicId::DEAD_BRANCH: case RelicId::TUNGSTEN_ROD: case RelicId::UNCEASING_TOP:
+        case RelicId::JUZU_BRACELET: return true;
+        default: return false;
+    }
+}
+static bool takeRewardRelicRuleStep(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    const auto &r = gc.info.rewardsContainer;
+    for (int i = 0; i < r.relicCount; ++i) {
+        if (reviewedRewardRelic(r.relics[i]) || !search::GameAction(RT::RELIC, i).isValidAction(gc)) continue;
+        search::GameAction(RT::RELIC, i).execute(gc);
+        return true;
+    }
+    return false;
+}
+
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
@@ -175,6 +208,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                                gc.seed, 0, nullptr);
         return;
     }
+    if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return;
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                 && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     t_shopV = shopV;
@@ -319,7 +353,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             }
         } else {
             const auto index = oocDecisionIndex++;
-            if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
+            if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) {
+            } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
             } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
                 runFullRunOocPolicyStep(gc, agent, restV, shopV);
