@@ -788,9 +788,11 @@ prior source set (`OocAdapterOptions::collectKeys`, set from `g_collectKeys` in
 this, live OOC MCTS could take the sapphire key and lose the chest relic (#347,
 ledger §390). `runFullRunOOC` and `runFullRunOocPolicyStep` open every treasure
 chest without Cursed Key before any policy runs (`openTreasureChestRuleStep`).
-On any reward screen they then take every offered relic first
-(`takeRewardRelicRuleStep`, matching `ScumSearchAgent2::stepRewardsPolicy`):
-the OOC MCTS leaf value prices chest relics near zero (ledger §390 addendum).
+On any reward screen (elites, event elites, chests) they then take every
+offered relic first (`takeRewardRelicRuleStep`), except Bottled Flame,
+Lightning and Tornado, Dead Branch, Tungsten Rod, Unceasing Top and Juzu
+Bracelet, which go to the ordinary decision (Philipp, 2026-10-07). The OOC MCTS
+leaf value prices chest relics near zero (ledger §390 addendum).
 
 `DISCARD_POTION` is append-only effect 29. It identifies a held potion and its
 duplicate occurrence, and is offered only for a full belt with a visible refill

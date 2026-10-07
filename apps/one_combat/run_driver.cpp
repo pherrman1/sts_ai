@@ -251,15 +251,28 @@ static bool openTreasureChestRuleStep(GameContext &gc) {
     return true;
 }
 
-// Every offered reward relic is taken first, as the ordinary reward handler
-// (ScumSearchAgent2::stepRewardsPolicy) does. Live OOC MCTS left most chest
-// relics because its leaf value prices them near zero (#347, ledger §390).
+// Every offered reward relic (elites, event elites, chests) is taken first,
+// except the ones whose value depends on the deck; those go to the ordinary
+// decision. Live OOC MCTS left most chest relics because its leaf value prices
+// them near zero (#347, ledger §390). Keys are off, so a Sapphire pairing is ignored.
+static bool reviewedRewardRelic(RelicId id) {
+    switch (id) {
+        case RelicId::BOTTLED_FLAME: case RelicId::BOTTLED_LIGHTNING: case RelicId::BOTTLED_TORNADO:
+        case RelicId::DEAD_BRANCH: case RelicId::TUNGSTEN_ROD: case RelicId::UNCEASING_TOP:
+        case RelicId::JUZU_BRACELET: return true;
+        default: return false;
+    }
+}
 static bool takeRewardRelicRuleStep(GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
-    if (gc.screenState != ScreenState::REWARDS || gc.info.rewardsContainer.relicCount <= 0
-            || !search::GameAction(RT::RELIC, 0).isValidAction(gc)) return false;
-    search::GameAction(RT::RELIC, 0).execute(gc);
-    return true;
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    const auto &r = gc.info.rewardsContainer;
+    for (int i = 0; i < r.relicCount; ++i) {
+        if (reviewedRewardRelic(r.relics[i]) || !search::GameAction(RT::RELIC, i).isValidAction(gc)) continue;
+        search::GameAction(RT::RELIC, i).execute(gc);
+        return true;
+    }
+    return false;
 }
 
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
