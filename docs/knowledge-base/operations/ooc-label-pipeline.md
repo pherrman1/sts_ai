@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for `ctmscorerows`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -47,6 +47,28 @@ roots, boss fallback or boss max). The remaining search constants and the 10,000
 process with learned stopping enabled. `one_combat learnedstopteacherselftest`
 (CTest `learned_stop_teacher_contract`) checks the loader without running
 seeds.
+
+`one_combat ctmscorerows ROWS.jsonl OUT.csv` scores recorded
+`combat_transition_row_v2` rows offline with the live OOC MCTS combat stack
+(the automatic DeepSets Lizard T2 artifact, Attention V2 Brew fallback and
+active-Lizard correction). It parses the row's `predictorInput` and `pre`
+state, requires both to round-trip through their serializers, and writes per
+row the support reason, `p_death`, expected winning HP and the log probability
+of the observed post-combat HP. It runs no seeds (CTest `ctm_offline_score_rows`).
+
+`one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
+(#418) runs the same producer and learned-stop-capable teacher contract with
+one forced rare state, recorded as `forcedSetup` in the manifest. Its rows are
+a separate slice for training and qualification, not ordinary-distribution
+rows. Setups:
+- `ritual_writhing`: Ritual Dagger is added before the first fight, and every
+  act 3 hallway fight becomes Writhing Mass.
+- `high_maxhp`: max HP is set to 150..220 at full HP, deterministic per seed.
+- `lizard_fairy` and `lizard_brew`: an unused Lizard Tail is added, and while
+  it is unused the Fairy Potion or Entropic Brew is refilled before each fight
+  when a slot is free.
+Mark of the Bloom with an active Tail is already on the exact path, so it has
+no setup.
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and

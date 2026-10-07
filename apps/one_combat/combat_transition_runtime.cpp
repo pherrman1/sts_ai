@@ -799,9 +799,13 @@ void EntropicBrewFallbackCombatTransitionSampler::recordBrewState(const CombatPr
 }
 CombatRuntimeSupport EntropicBrewFallbackCombatTransitionSampler::support(
     const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    return supportState(captureCombatTransitionState(gc),p);
+}
+CombatRuntimeSupport EntropicBrewFallbackCombatTransitionSampler::supportState(
+    const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &p) const {
     recordBrewState(p);
     if(activeLizardEnabled_ && hasActiveLizard(p)) {
-        auto prediction=predictActiveLizard(captureCombatTransitionState(gc),p);
+        auto prediction=predictActiveLizard(pre,p);
         if(prediction.supported)return {true,"supported"};
         if(prediction.reason=="active_lizard_entropic_brew_unsupported") {
             lizardBoundaryExclusions_.fetch_add(1);
@@ -816,7 +820,7 @@ CombatRuntimeSupport EntropicBrewFallbackCombatTransitionSampler::support(
         lizardBoundaryExclusions_.fetch_add(1);
     }
     const bool fallback=useFallback(p);
-    auto result=(fallback?standard_:fast_)->support(gc,p);
+    auto result=(fallback?standard_:fast_)->supportState(pre,p);
     if(!result.supported)(fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
     return result;
 }
@@ -875,9 +879,12 @@ CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::forecas
 }
 CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::expectation(
     const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    return expectationState(captureCombatTransitionState(gc),p);
+}
+CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::expectationState(
+    const CombatTransitionPersistentState &original,const CombatPredictorInputV1 &p) const {
     recordBrewState(p);
     if(activeLizardEnabled_ && hasActiveLizard(p)) {
-        auto original=captureCombatTransitionState(gc);
         auto prediction=predictActiveLizard(original,p);
         if(prediction.supported) {
             auto ordinary=withoutLizard(p);
@@ -900,7 +907,7 @@ CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::expecta
         lizardBoundaryExclusions_.fetch_add(1);
     }
     const bool fallback=useFallback(p);
-    auto result=(fallback?standard_:fast_)->expectation(gc,p);
+    auto result=(fallback?standard_:fast_)->expectationState(original,p);
     if(!result.supported)(fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
     return result;
 }

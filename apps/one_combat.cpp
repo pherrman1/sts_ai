@@ -3633,6 +3633,11 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionforcedgen") {
+        if (argc < 9) { std::cerr << "usage: one_combat combattransitionforcedgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json SETUP\n"
+                                     "  SETUP: ritual_writhing | high_maxhp | lizard_fairy | lizard_brew\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7], false, argv[8]);
     } else if (mode == "combattransitionlizardtargetcandidategen") {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
@@ -3865,6 +3870,11 @@ int main(int argc, char **argv) {
         return teacherSchemaCompatibilitySelfTest();
     } else if (mode == "learnedstopteacherselftest") {
         return learnedStopTeacherSelfTest();
+    } else if (mode == "ctmscorerows") {
+        if (argc < 4) { std::cerr << "usage: one_combat ctmscorerows ROWS.jsonl OUT.csv\n"; return 2; }
+        return ctmScoreRows(argv[2], argv[3]);
+    } else if (mode == "ctmscoreselftest") {
+        return ctmScoreRowsSelfTest();
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

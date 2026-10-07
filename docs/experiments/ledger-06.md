@@ -14378,3 +14378,33 @@ fresh on-policy data is #415.
 
 **Knowledge impact:** ADR-0027 and the environment-variable table record the
 new default.
+
+## §386 — #418 Stage 0: production CTM on learned-stop vs exact-10k teacher rows (2026-10-07)
+
+**Protocol:** frozen in advance ([plan](evidence/ctm_stage0_418_20261007/PLAN.md)), authorized by Philipp at 128 paired seeds instead of the proposed 256. SHA `46153506` (includes #419–#421), `combattransitiongen`, fair RNG, A0, seeds `50000000..50000127`. Each seed ran under both the flat exact-10k teacher and the production learned-stop teacher (ADR-0026) on the same binary. The run used 30 workers in six shards (local 10, five 4-core cloud containers). Result: 128/128 seeds per arm, 0 quarantined, 2,668 and 2,620 rows. The production CTM stack scored every row offline via `ctmscorerows`. CIs are 95% seed-level paired bootstrap.
+
+**Support:** 2,647 / 2,603 rows scored. The rest were unsupported: Smoke Bomb 16 / 11, unqualified active Lizard 5 / 5, Writhing+Ritual Dagger 0 / 1. There were no escapes and no zero-probability HP outcomes.
+
+**Survival is calibrated on both arms.** Mean signed bias (predicted win minus observed) is exact −0.003 (CI −0.009..+0.003) and learned −0.001 (−0.007..+0.005). Boss bias is exact −0.006 (−0.038..+0.027) and learned −0.025 (−0.063..+0.011). Survival NLL is 0.066 / 0.069 nat per fight. The only cell with a significant bias is the exact-arm act 3 boss (+0.087, CI +0.005..+0.177, n=58). The learned arm's act 3 boss is +0.002.
+
+**Boss HP is optimistic on both arms.** Predicted post-combat HP on boss wins is too high by +10.3 HP (CI 8.0..12.7) for exact and +10.0 (7.8..12.4) for learned.
+
+| Learned arm, boss wins | n | pre HP | predicted post | observed post |
+|---|---|---|---|---|
+| act 1 | 113 | 62.1 | 45.8 | 32.9 |
+| act 2 | 70 | 57.9 | 39.6 | 30.3 |
+| act 3 | 39 | 69.4 | 44.0 | 40.9 |
+
+Normal and elite HP bias is within ±1.6 HP in every act. Overall HP NLL is 2.58 / 2.61 nat.
+
+**Teacher transfer (learned minus exact):** survival NLL +0.003 (CI −0.010..+0.016), HP NLL +0.032 (−0.041..+0.107), survival bias +0.002, HP bias +0.02. No teacher effect was detected.
+
+**Frozen decision:** **Path B.** The survival-NLL and HP-NLL delta CI upper bounds (0.016, 0.107) exceed the tolerances (0.01, 0.05). The boss survival-bias condition passed (upper bound +0.011 < +0.05). This is a failed equivalence test at reduced n, not a detected teacher difference. The CTM's boss HP optimism is the same on both arms, so the teacher's budget policy does not cause it.
+
+**Inference (pre-follow-up):** the boss HP gap could come from drift since the CTM corpus or from a CTM miscalibration that was already present. The follow-up below separates the two.
+
+**Follow-up (Philipp chose to check before Path B):** the same scorer was run on the old corpus's TEST split (`split_for_seed`; 51,441 rows from 2,517 seeds, producer `f0bbd77`, 51,036 scored). The predictor and pre-state round-trips held on every row. On its own distribution the CTM has no boss HP gap: predicted minus observed is −0.2 HP for act 1 (CI −0.65..+0.26), +0.4 for act 2 and −0.6 for act 3. Act 1 boss wins went from 63.4 pre-HP to 46.7 post-HP in the old corpus, and from 62.1 to 32.9 in the fresh rows. The model predicts about 46 in both. So the gap comes from **teacher drift**: current native Silver ends boss wins about 13 HP lower than the vendored `f0bbd77` teacher at similar entry HP. It is not a CTM miscalibration. One small pre-existing bias remains: act 3 elites +1.2 HP (CI +0.6..+1.8), and act 3 boss/elite deaths are under-predicted by 2–3 pp. The drift is by design. Native Silver scores an act-boss win at the HP left after the act-transition heal (`postBattleHealedHp`, `src/sim/search/SilverSearcher.cpp`), which is max HP at A0. It therefore spends HP freely at bosses. Stage 0 boss deaths are at or below the CTM's prediction (learned act 1: 10 observed vs 13.3 predicted). **Inference:** the post-boss HP gap is mostly harmless downstream, because the next act starts healed. It is therefore unlikely to explain §384's MCTS boss losses.
+
+**Evidence:** [README, plan, scripts, results.json](evidence/ctm_stage0_418_20261007/README.md).
+
+**Knowledge impact:** `ctmscorerows` is documented in `operations/ooc-label-pipeline.md`. No default changed.
