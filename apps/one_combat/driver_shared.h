@@ -273,6 +273,12 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                         long long seedOffset, const std::string &teacherPath);
+// #347 boss-entry budget rescue pilot: one selected #417 source per process
+// (reconstruct, capture the boss entry, control parity, 4 planner seeds at
+// flat exact 10k and 40k). Returns 0 when every validity check passes.
+int bossRescue347(int nEntries, const std::string &selectionPath, const std::string &stateId,
+                  const std::string &outPrefix);
+int bossRescue347SelfTest(int nSeeds, std::uint64_t seed, int sims);
 // #400 Stage 1: every fight of each source trajectory replayed under a fixed
 // grid of Silver search constants (control must reproduce the source fight).
 void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
