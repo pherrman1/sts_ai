@@ -252,7 +252,7 @@ static bool openTreasureChestRuleStep(GameContext &gc) {
 }
 
 // Every offered reward relic (elites, event elites, chests) is taken first,
-// except the ones whose value depends on the deck; those go to the ordinary
+// except Philipp's listed exceptions (2026-10-07), which go to the ordinary
 // decision. Live OOC MCTS left most chest relics because its leaf value prices
 // them near zero (#347, ledger §390). Keys are off, so a Sapphire pairing is ignored.
 static bool reviewedRewardRelic(RelicId id) {
