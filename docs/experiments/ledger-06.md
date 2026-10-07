@@ -14408,3 +14408,36 @@ Normal and elite HP bias is within ±1.6 HP in every act. Overall HP NLL is 2.58
 **Evidence:** [README, plan, scripts, results.json](evidence/ctm_stage0_418_20261007/README.md).
 
 **Knowledge impact:** `ctmscorerows` is documented in `operations/ooc-label-pipeline.md`. No default changed.
+
+## §387 — #347 boss-entry budget rescue on #417 sources: inconclusive, mixed (2026-10-07)
+
+**Question:** does flat exact 40k Silver (B) win boss fights that flat exact
+10k (A) lost, from the identical boss-entry states the #417 policies reached?
+**Design:** eight #417 boss-loss sources frozen before any challenger run
+(R: four mcts boss losses whose flat10k seed won; C: four flat10k boss losses),
+reconstructed with the live run driver on build `e6b6122a` (research mode on the
+#417 baseline `5e9583cc`), original-seed 10k control parity, then four fresh
+planner seeds per entry paired across A and B. Plan frozen at `946d49d9` after
+independent review; PR #425.
+**Validity:** all eight runs reproduced their historical rows exactly; every
+control reproduced its source fight (outcome, HP, full trace, post-exit digest);
+repeats identical; every root searched exactly its budget.
+**Result:** `BUDGET_HEADROOM_INCONCLUSIVE`, mixed. B 13/32 vs A 12/32 wins,
+3 rescues and 2 regressions (net +1; rule needs >= 4 with >= 3 positive
+entries). R: A 1/16, B 2/16; three R entries lost all eight continuations.
+C: A 11/16, B 11/16; three C sources that lost historically won 11 of 12 fresh
+10k planner repeats. B cost 4.4x CPU.
+**Interpretation:** little budget rescue at this scale. **Inference:** the
+selected C deaths were mostly planner-seed variance on winnable states, while
+most R entries are hard for Silver at either budget. Not a full-run or
+causal-share estimate; preparation is not tested here.
+**Next:** matched-seed OOC-entry comparison on the R seeds (replay each seed's
+flat10k boss entry against the mcts entry with the same 10k planner repeats).
+It fixes the combat policy, not the combat future (RNG-stream states can
+differ), so it measures the total OOC-policy effect, not isolated preparation.
+
+**Evidence:** [packet](evidence/boss_budget_rescue_347_pilot_20261007/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` and `CODE_MAP.md` route the
+research-only `bossrescue347` mode, its run-driver hook and the native Silver
+planner-seed override.

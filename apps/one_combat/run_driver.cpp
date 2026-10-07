@@ -127,6 +127,7 @@ void runFloorProfileSelfTest() {
 }
 
 thread_local bool t_oocHypotheticalStep = false;
+thread_local BossEntryHook *t_bossEntryHook = nullptr;
 
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
 
@@ -287,6 +288,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
             if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000)
                 throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
+            BossEntryHook *const bossHook = battleRoom == Room::BOSS ? t_bossEntryHook : nullptr;
+            if (bossHook) bossHook->before(gc, agent, path);
             BattleContext bc{};
             // Silver initializes the battle itself so its observational
             // Runic-Dome hooks see the initial hidden intent lifecycle.
@@ -309,6 +312,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             if (one_combat::e2cCaptureActive())
                 one_combat::beginE2cFight(fightsTotal - 1, gc, bc);
             one_combat::exitBattleWithE2cRawCapture(bc, gc);
+            if (bossHook) bossHook->after(gc, bc);
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
                 break;

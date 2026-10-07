@@ -11,6 +11,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2
   ["combatevalgen"]=2 ["ooccfaudit"]=2 ["vwinrefreshgen"]=2 ["vwinrefreshcrashdiag"]=2
   ["bossheadroom347gen"]=2
+  ["bossrescue347"]=2 ["bossrescue347selftest"]=2
   ["silverparams400gen"]=2
   ["silverstopreplaygen"]=2
   ["vwinrefreshbranchselftest"]=2
