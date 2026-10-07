@@ -73,6 +73,9 @@ EXPECTED = _pins.value("combat_transition_deepset_potion.EXPECTED", {
     "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
 })
 
+SELECTED_EPOCH = _pins.value("combat_transition_deepset_potion.SELECTED_EPOCH", 40)
+EXPERIMENT_SHA = _pins.value("combat_transition_deepset_potion.EXPERIMENT_SHA", "b192275ca0584a0c1eee8916176613b428a5e1b4")
+
 
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -88,12 +91,12 @@ def verify_candidate(checkpoint: Path, receipt_path: Path) -> dict:
     receipt = load_json(receipt_path)
     if receipt.get("decision") != "SHARED_TRANSITION_ENCODER_GO":
         raise ValueError("DeepSets checkpoint was not qualified")
-    if receipt.get("checkpointSha256") != checkpoint_sha or receipt.get("selectedEpoch") != 40:
+    if receipt.get("checkpointSha256") != checkpoint_sha or receipt.get("selectedEpoch") != SELECTED_EPOCH:
         raise ValueError("DeepSets checkpoint receipt differs")
     if receipt.get("provenance", {}).get("preparationCacheSha256") != EXPECTED["cache"] or receipt.get("testInferenceRows") != 0:
         raise ValueError("DeepSets result provenance differs")
     payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
-    if payload.get("selectedEpoch") != 40 or payload.get("experimentSha") != "b192275ca0584a0c1eee8916176613b428a5e1b4":
+    if payload.get("selectedEpoch") != SELECTED_EPOCH or payload.get("experimentSha") != EXPERIMENT_SHA:
         raise ValueError("DeepSets embedded provenance differs")
     if not {"stateDict", "maxHpHeadStateDict"} <= set(payload):
         raise ValueError("DeepSets checkpoint schema differs")

@@ -11,13 +11,19 @@ semantics: every shard manifest is the unit's own manifest with only
 `csv.path` rewritten to the local file, and seeds the generator skipped
 (STALLED) are listed as quarantined in the merged manifest.
 
-usage: ctm_corpus_adapter.py assemble --index INDEX.json --corpus-root DIR --scope none --out DIR
+`union` then joins assembled scopes into one corpus for the Phase-2 chain,
+dropping rows outside production candidate support (see `union`).
+
+usage:
+  ctm_corpus_adapter.py assemble --index INDEX.json --corpus-root DIR --scope none --out DIR
+  ctm_corpus_adapter.py union --scope-dir none=DIR [--scope-dir high_maxhp=DIR ...] --out DIR
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 
 try:
@@ -117,6 +123,103 @@ def assemble(index_path: Path, corpus_root: Path, scope: str, out: Path) -> dict
     return summary
 
 
+SCOPES = ("none", "ritual_writhing", "high_maxhp", "lizard_fairy", "lizard_brew")
+
+
+def production_support_reasons():
+    """Rows the frozen near-full chain can hold: production candidate-contract support."""
+    try:
+        from tools import combat_transition_composed as c
+        from tools import combat_transition_near_full_support as support
+    except ModuleNotFoundError:  # direct invocation from the tools directory
+        import combat_transition_composed as c
+        import combat_transition_near_full_support as support
+    models = c.FrozenModels("cpu")
+
+    def reasons(row):
+        transition = row["transition"]
+        if transition is None or not row["runValid"]:
+            return ["invalid_row"]
+        with support.candidate_contract():
+            return c.full_support_reasons(transition["pre"], row["predictorInput"], models)
+    return reasons
+
+
+def union(scope_dirs: dict[str, Path], out: Path, reasons=None) -> dict:
+    """Concatenate assembled scopes into one corpus the Phase-2 chain can prepare.
+
+    Scopes are written in SCOPES order, which is also ascending seed order.
+    Rows the frozen support predicate rejects are dropped, so every kept row
+    is a candidate-supported row and later caches satisfy ids == arange(N).
+    `row_scopes.json` records each scope's row range so gates can report
+    forced rows separately from the main corpus.
+    """
+    if out.exists():
+        raise ValueError("refusing overwrite")
+    if not scope_dirs or set(scope_dirs) - set(SCOPES):
+        raise ValueError(f"scopes must be a subset of {SCOPES}")
+    reasons = reasons or production_support_reasons()
+    out.mkdir(parents=True)
+    merged = out / "corpus.jsonl"
+    teacher = shared = None
+    ranges, dropped, seeds, quarantined = {}, {}, set(), []
+    rows = 0
+    last_seed = None
+    with merged.open("w", encoding="utf-8") as sink:
+        for scope in [s for s in SCOPES if s in scope_dirs]:
+            manifest = json.loads((scope_dirs[scope] / "corpus.jsonl.manifest.json").read_text(encoding="utf-8"))
+            validate_manifest(manifest)
+            if manifest.get("forcedSetup") != scope:
+                raise ValueError(f"{scope}: assembled scope has forcedSetup {manifest.get('forcedSetup')!r}")
+            ident = {k: manifest[k] for k in ("schemaVersion", "rowSchemaVersion", "predictorInputSchemaVersion",
+                                              "predictorInputFieldSchemaHash", "format", "producerGitSha",
+                                              "producerExecutableSha256")}
+            if teacher is None:
+                teacher, shared = manifest["combatTeacher"], ident
+            elif _canonical(manifest["combatTeacher"]) != _canonical(teacher) or ident != shared:
+                raise ValueError(f"{scope}: mixed producer/teacher identity")
+            quarantined += manifest.get("quarantined", [])
+            first, kept, drop = rows, 0, Counter()
+            with Path(manifest["csv"]["path"]).open(encoding="utf-8") as src:
+                for line in src:
+                    row = json.loads(line)
+                    seed = int(row["sourceSeed"])
+                    if last_seed is not None and seed < last_seed:
+                        raise ValueError(f"{scope}: rows are not in ascending seed order")
+                    last_seed = seed
+                    rejected = reasons(row)
+                    if rejected:
+                        drop.update(rejected)
+                        continue
+                    sink.write(line if line.endswith("\n") else line + "\n")
+                    seeds.add(seed); rows += 1; kept += 1
+            ranges[scope] = {"firstRow": first, "rows": kept, "seedSpec": manifest["seedSpec"]}
+            dropped[scope] = dict(drop)
+    lo = min(r["seedSpec"]["start"] for r in ranges.values())
+    hi = max(r["seedSpec"]["start"] + r["seedSpec"]["count"] for r in ranges.values())
+    # One seedSpec spans every scope; seeds between scopes, generator stalls
+    # and seeds whose rows were all dropped count as quarantined.
+    union_manifest = dict(shared)
+    union_manifest.update({
+        "combatTeacher": teacher,
+        "seedSpec": {"start": lo, "count": hi - lo},
+        "csv": {"path": str(merged.resolve()), "sha256": sha256(merged)},
+        "integrity": {"requestedSeeds": hi - lo, "completedSeeds": len(seeds),
+                      "quarantinedSeeds": hi - lo - len(seeds), "rows": rows},
+        "quarantined": sorted(quarantined),
+        "forcedSetup": "union",
+        "ctmCorpusAdapter": {"schema": SCHEMA, "union": ranges, "droppedRowReasons": dropped},
+    })
+    validate_manifest(union_manifest)
+    (out / "corpus.jsonl.manifest.json").write_text(
+        json.dumps(union_manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    (out / "row_scopes.json").write_text(json.dumps(ranges, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    summary = {"rows": rows, "scopes": ranges, "droppedRowReasons": dropped,
+               "corpusSha256": union_manifest["csv"]["sha256"]}
+    print(json.dumps(summary, indent=1))
+    return summary
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -124,10 +227,18 @@ def main() -> None:
     p.add_argument("--index", required=True, type=Path)
     p.add_argument("--corpus-root", required=True, type=Path)
     p.add_argument("--scope", required=True,
-                   choices=("none", "ritual_writhing", "high_maxhp", "lizard_fairy", "lizard_brew"))
+                   choices=SCOPES)
+    p.add_argument("--out", required=True, type=Path)
+    p = sub.add_parser("union")
+    p.add_argument("--scope-dir", action="append", required=True, metavar="SCOPE=DIR",
+                   help="an assembled scope; repeat for each scope to include")
     p.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
-    assemble(args.index, args.corpus_root, args.scope, args.out)
+    if args.command == "assemble":
+        assemble(args.index, args.corpus_root, args.scope, args.out)
+    else:
+        dirs = dict(item.split("=", 1) for item in args.scope_dir)
+        union({k: Path(v) for k, v in dirs.items()}, args.out)
 
 
 if __name__ == "__main__":

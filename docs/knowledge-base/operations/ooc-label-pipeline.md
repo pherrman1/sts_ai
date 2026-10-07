@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for the CTM retrain union and refit flags, `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -91,6 +91,24 @@ per-row TEST predictions (`test_predictions.npz`).
 `tools/ctm_survival_compare.py` then compares them with the production stack's
 `ctmscorerows` scores on the same rows (`extract-test`, then `compare`, using a
 paired source-seed bootstrap).
+
+For the full CTM retrain, `ctm_corpus_adapter.py union --scope-dir SCOPE=DIR
+... --out DIR` concatenates assembled scopes, in ascending seed order, into one
+corpus for `combat_transition_surrogate.py prepare`. It drops every row that
+the production candidate-contract support predicate rejects (production
+`FrozenModels`), so later near-full caches keep `ids == arange(N)`. Its
+`row_scopes.json` gives each scope's row range, so main-corpus gates can
+exclude forced rows. Two retrain flags reuse production choices instead of
+searching again:
+- `combat_transition_attention_hpo.py --frozen-winner NAME` tunes and refits
+  only that candidate;
+- `combat_transition_deepset_potion_specialist.py --arms C` refits only the
+  warm-started potion-aware control that the DeepSets export consumes. Its
+  reproduction check is skipped when `STS_CTM_PINS` sets the reference NLL to
+  null. Its decision is `POTION_DEEPSET_CONTROL_REFIT_DONE`; the teacher gate
+  is recorded as a diagnostic only, because production W (71d88a71) was
+  already `TEACHER_FORCED_REJECTED` on recursive Brew and ships with Brew routed
+  to the fallback model, so a rejection is expected and is not a stop.
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and

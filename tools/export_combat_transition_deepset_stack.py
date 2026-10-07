@@ -159,7 +159,7 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
     potion_bundle = torch.load(potion_checkpoint, map_location="cpu", weights_only=False)
     if not {"encoderStateDict", "decoderStateDict", "selectedEpoch"}.issubset(potion_bundle):
         raise ValueError("potion specialist checkpoint schema differs")
-    if potion_bundle["selectedEpoch"] != 27:
+    if potion_bundle["selectedEpoch"] != _pins.value("export_combat_transition_deepset_stack.POTION_SELECTED_EPOCH", 27):
         raise ValueError("potion specialist selected epoch differs")
     for name, value in potion_bundle["encoderStateDict"].items():
         put(tensors, shapes, "potion_encoder.encoder." + name, value)
