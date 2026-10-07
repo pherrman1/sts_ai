@@ -29,8 +29,15 @@ def fresh_wins(path, act_id):
 def trace_checks(trace_path):
     rows = [json.loads(l) for l in open(trace_path)]
     out = {'treasure': 0, 'chestRule': 0, 'treasureWithCursedKey': 0, 'campfireRoots': 0,
-           'campfireByChain': 0, 'campfireByMcts': 0, 'smiths': 0, 'rests': 0}
+           'campfireByChain': 0, 'campfireByMcts': 0, 'smiths': 0, 'rests': 0,
+           'chestRelicsGained': 0, 'sapphireKeyTaken': 0}
+    after_chest = False
     for r in rows:
+        if r['kind'] == 'ooc' and after_chest and r['pre']['screen'] == 'REWARDS':
+            gained = len(r['post']['relics']) - len(r['pre']['relics'])
+            out['chestRelicsGained'] += max(gained, 0)
+        if r['kind'] == 'ooc' and r['pre']['screen'] != 'REWARDS':
+            after_chest = r['by'] == 'chest_rule'
         if r['kind'] != 'ooc': continue
         p, q = r['pre'], r['post']
         if p['screen'] == 'TREASURE':
@@ -64,7 +71,14 @@ def main():
             arms[arm] = {'wins': wins, 'plannerSeeds': seeds, 'entry': entry.get('entryDescriptor'),
                          'reconstruction': entry.get('reconstruction')}
             if arm in ('C', 'CR'):
-                arms[arm]['trace'] = trace_checks(os.path.join(base, sid + '.ooc.jsonl'))
+                t = trace_checks(os.path.join(base, sid + '.ooc.jsonl'))
+                if t['chestRule'] != t['treasure'] - t['treasureWithCursedKey']:
+                    raise SystemExit(f'{sid}: chest rule did not fire at every chest without Cursed Key: {t}')
+                if arm == 'CR' and (t['campfireByChain'] != t['campfireRoots'] or t['campfireByMcts']):
+                    raise SystemExit(f'{sid}: campfire not fully handed to the chain: {t}')
+                if arm == 'C' and t['campfireByChain']:
+                    raise SystemExit(f'{sid}: campfire handed to the chain in C: {t}')
+                arms[arm]['trace'] = t
             tot[arm] += sum(wins)
         ref = [s for s in (arms[a]['plannerSeeds'] for a in arms) if s]
         if any(s != ref[0] for s in ref): raise SystemExit(f'{seed}: planner seeds differ across arms')

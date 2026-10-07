@@ -2,7 +2,7 @@
 # #347 OOC counterfactual (PLAN.md): one bossrescue347 process per selected
 # source, at most four workers, one CPU each, under the #417 mcts arm
 # environment plus the spec's STS_347_* flags and the OOC decision trace.
-# Usage: run.sh BINARY BINARY_SHA256 EXEC_GIT_SHA OUT SELECTION.json [STATE_ID...]
+# Usage (absolute paths): run.sh BINARY BINARY_SHA256 EXEC_GIT_SHA OUT SELECTION.json [STATE_ID...]
 set -u
 SRC=$1 SHA=$2 EXEC_SHA=$3 OUT=$4 SEL=$5; shift 5
 if env | grep -q '^STS_'; then echo "refusing: STS_* already exported" >&2; exit 1; fi
@@ -24,6 +24,7 @@ run_entry() {   # run_entry STATE_ID CPU
   local arm chest camp
   arm=$(field "$1" sourceArm) && chest=$(field "$1" chestRule) && camp=$(field "$1" campfireChain) || return 1
   ( source "$TMP/arm_env.sh" && arm_env "$arm" || exit 1
+    [ -e "$OUT/$1.ooc.jsonl" ] && { echo "refusing: stale trace $OUT/$1.ooc.jsonl" >&2; exit 1; }
     export STS_OOC_DECISION_TRACE="$OUT/$1.ooc.jsonl"
     [ "$chest" = 1 ] && export STS_347_CHEST_RULE=1
     [ "$camp" = 1 ] && export STS_347_CAMPFIRE_CHAIN=1
