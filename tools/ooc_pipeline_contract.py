@@ -45,7 +45,7 @@ def h_plan(total_branches: int, futures: list[int]) -> list[dict]:
              "expensive_branches": (total_branches // h) * h} for h in futures]
 
 
-def validate_teacher(teacher: dict) -> None:
+def validate_teacher(teacher: dict, allow_learned_stop: bool = False) -> None:
     missing = [k for k in TEACHER_REQUIRED if not teacher.get(k)]
     if missing:
         raise ValueError("combat teacher is under-specified; missing: " + ", ".join(missing))
@@ -75,6 +75,22 @@ def validate_teacher(teacher: dict) -> None:
                     "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
                     "STS_SILVER_REUSE_CAP_MODE": "allocated", "STS_SILVER_ADAPTIVE": "0",
                     "STS_SILVER_VNET_LEAF_DIRECT": "0"}
+    # Budget policy mirrors the C++ teacher check (combat_datasets.cpp):
+    # absent/"flat_exact" is the frozen exact-10k contract; "learned_stop"
+    # (ADR-0026) must pin its stop model and run without exact root budgets.
+    # Like the C++ check, only consumers that opt in (the CTM corpus check)
+    # accept a learned-stop teacher; every other consumer stays exact-only.
+    policy = search.get("budget_policy", "flat_exact")
+    if policy not in ("flat_exact", "learned_stop"):
+        raise ValueError(f"combat_teacher.search_configuration.budget_policy {policy!r} is unknown")
+    if policy == "learned_stop" and not allow_learned_stop:
+        raise ValueError("learned_stop teacher is accepted only by consumers that opt in")
+    if policy == "learned_stop":
+        if not search.get("learned_stop_model") or not isinstance(search.get("learned_stop_threshold"), (int, float)):
+            raise ValueError("learned_stop teacher requires learned_stop_model and learned_stop_threshold")
+        required_env |= {"STS_SILVER_EXACT_ROOT_BUDGETS": "0", "STS_SILVER_LEARNED_STOP": "1"}
+    elif (teacher.get("environment") or {}).get("STS_SILVER_LEARNED_STOP", "0") != "0":
+        raise ValueError("exact-10k teacher must not enable STS_SILVER_LEARNED_STOP")
     environment = teacher.get("environment")
     if not isinstance(environment, dict):
         raise ValueError("combat_teacher.environment must be an object")
