@@ -118,7 +118,7 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_REST_V_THRESH` | Rest-site heal-gain threshold | unset | `main` ~L9243 |
-| `STS_REST_WIN` | Win-rate rest policy (heal vs upgrade by P(win)) | `0` (off) | `main` ~L9247 |
+| `STS_REST_WIN` | Win-rate rest policy (heal vs upgrade by P(win)) | `1` (ON, `g_restWin`) | `main` ~L9247 |
 | `STS_CARD_WIN` | Card picks by P(win) instead of V_floor | `0` (off) | `main` ~L9252 |
 | `STS_CARD_WIN_SKIP` | Skip threshold for card-win picks | 0.0 | `main` ~L9254 |
 | `STS_CARD_NN` | Card picks via deck-set NN | `0` (off) | `main` ~L9258 |

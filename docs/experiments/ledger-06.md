@@ -14379,6 +14379,70 @@ fresh on-policy data is #415.
 **Knowledge impact:** ADR-0027 and the environment-variable table record the
 new default.
 
+## §384 — Live OOC MCTS on vs off, paired 128-seed pilot (2026-10-06)
+
+**Question:** with the new default screen leaf (ADR-0027), does live OOC MCTS
+beat the same pipeline with MCTS off? Since §249 there had been no on/off
+comparison; §367 and §383 only compared MCTS variants with each other.
+
+**Protocol:** frozen [PLAN.md](evidence/ooc_mcts_vs_off_pilot_20261006/PLAN.md),
+independently reviewed before the run (one blocking smoke-check bug fixed in
+`614007a4`, re-check clean). Philipp authorized it on 4 cloud cores.
+- Binary from `aa000e8a` (source identical to `5e9583cc`), SHA-256 `fcaeec61…`.
+- Shared §377 live profile (V4 gate stack, B0 `v_win`, keys off,
+  `STS_REST_WIN=0`) plus an act-3 stop.
+- Seeds `48000000..48000127`, Ironclad A0. Three arms, each adding one change:
+  - `learned`: learned Silver stopping;
+  - `flat10k`: flat exact-10k Silver, which MCTS requires;
+  - `mcts`: `flat10k` plus OOC MCTS at 2048 sims with the §383 knobs and the
+    default `screengbm` leaf.
+- The verdict uses the paired win difference `mcts − flat10k` (95% bootstrap).
+
+**Integrity:** all 12 invocations exit 0 and no seed failed. The smoke seed
+`48009000` passed the plan's checks. `analyze.py` reproduces `report.json`.
+A first launch was stopped after about a minute, before any results were
+inspected, because its background timeout was shorter than the run. It was
+relaunched from scratch with identical arguments.
+
+**Result: `MCTS_WORSE`.**
+- **mcts − flat10k: wins −21.9 pp, 95% CI [−32.0, −11.7]** (56.3% vs 78.1%);
+  floor −1.46 [−3.16, +0.27]; discordant 12 vs 40; 2.0x time (114 vs 58 s per
+  run).
+- flat10k − learned: wins +4.7 pp [−4.7, +14.1], floor −0.51 [−2.0, +0.93],
+  2.4x time. The exact-10k precondition does not cost detectable strength
+  here; it only costs time.
+- mcts − learned: wins −17.2 pp [−28.9, −4.7], floor −1.97 [−3.64, −0.32],
+  4.7x time.
+- Descriptive, not pre-registered:
+  - MCTS losses concentrate on boss floors (44 of 56, against 24 of 28 for
+    `flat10k`).
+  - MCTS wins end with less HP (32.2 vs 44.5).
+
+**Interpretation (Inference):**
+- MCTS loses strength on the way to bosses. It enters them weaker and wins
+  with less HP. This fits a planner that over-trusts its imagined combat
+  outcomes.
+- Possible causes, not separated by this pilot:
+  - The CTM was trained on the old vendored Silver from before ADR-0021 and
+    later default changes, so even `flat10k` is not its teacher ([#418
+    comment](https://github.com/pherrman1/sts_ai/issues/418#issuecomment-6019472255)).
+  - The screen leaf was fitted on policy-chain data.
+  - The 2048-sim search itself.
+- The §383 profile (X2-B `v_win`, default `STS_REST_WIN`) is not the profile
+  run here. The −22 pp sits beside §243 (`WINRATE_DOWN`) and §249 (−9.4 pp),
+  which also used the earlier leaf.
+
+**Decision:** OOC MCTS stays off. A distillation student (#399) and fresh
+on-policy screen-leaf data (#415) are not justified by this teacher. Any next
+step needs a new hypothesis, for example a refreshed CTM (#418) followed by a
+repeat of this pilot.
+
+**Evidence:** [README, raw CSVs, sidecars and logs](evidence/ooc_mcts_vs_off_pilot_20261006/README.md).
+
+**Knowledge impact:** the current-research section on OOC MCTS records the
+result. The environment-variable table now shows the actual `STS_REST_WIN`
+default (on).
+
 ## §386 — #418 Stage 0: production CTM on learned-stop vs exact-10k teacher rows (2026-10-07)
 
 **Protocol:** frozen in advance ([plan](evidence/ctm_stage0_418_20261007/PLAN.md)), authorized by Philipp at 128 paired seeds instead of the proposed 256. SHA `46153506` (includes #419–#421), `combattransitiongen`, fair RNG, A0, seeds `50000000..50000127`. Each seed ran under both the flat exact-10k teacher and the production learned-stop teacher (ADR-0026) on the same binary. The run used 30 workers in six shards (local 10, five 4-core cloud containers). Result: 128/128 seeds per arm, 0 quarantined, 2,668 and 2,620 rows. The production CTM stack scored every row offline via `ctmscorerows`. CIs are 95% seed-level paired bootstrap.
