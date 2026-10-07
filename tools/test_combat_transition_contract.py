@@ -255,5 +255,44 @@ class TestCombatTransitionContract(unittest.TestCase):
                 validate_corpus(manifest)
 
 
+class TestLearnedStopTeacherContract(unittest.TestCase):
+    def validate(self, t):
+        try:
+            from tools.ooc_pipeline_contract import validate_teacher
+        except ModuleNotFoundError:
+            from ooc_pipeline_contract import validate_teacher
+        validate_teacher(t)
+
+    def learned(self):
+        t = teacher()
+        t["search_configuration"].update({"budget_policy": "learned_stop",
+                                          "learned_stop_model": "gbt-770201c31f7b",
+                                          "learned_stop_threshold": 0.0323})
+        t["environment"].update({"STS_SILVER_EXACT_ROOT_BUDGETS": "0", "STS_SILVER_LEARNED_STOP": "1"})
+        return t
+
+    def test_exact_and_learned_stop_teachers_pass(self):
+        self.validate(teacher())
+        explicit = teacher(); explicit["search_configuration"]["budget_policy"] = "flat_exact"
+        self.validate(explicit)
+        self.validate(self.learned())
+
+    def test_learned_stop_rejects_inconsistent_declarations(self):
+        bad = self.learned(); bad["environment"]["STS_SILVER_EXACT_ROOT_BUDGETS"] = "1"
+        with self.assertRaisesRegex(ValueError, "EXACT_ROOT_BUDGETS"): self.validate(bad)
+        bad = self.learned(); del bad["environment"]["STS_SILVER_LEARNED_STOP"]
+        with self.assertRaisesRegex(ValueError, "LEARNED_STOP"): self.validate(bad)
+        bad = self.learned(); del bad["search_configuration"]["learned_stop_model"]
+        with self.assertRaisesRegex(ValueError, "learned_stop_model"): self.validate(bad)
+        bad = self.learned(); bad["search_configuration"]["budget_policy"] = "adaptive"
+        with self.assertRaisesRegex(ValueError, "unknown"): self.validate(bad)
+
+    def test_exact_teacher_rejects_learned_stop_environment(self):
+        bad = teacher(); bad["environment"]["STS_SILVER_LEARNED_STOP"] = "1"
+        with self.assertRaisesRegex(ValueError, "must not enable"): self.validate(bad)
+        bad = teacher(); bad["environment"]["STS_SILVER_EXACT_ROOT_BUDGETS"] = "0"
+        with self.assertRaisesRegex(ValueError, "EXACT_ROOT_BUDGETS"): self.validate(bad)
+
+
 if __name__ == "__main__":
     unittest.main()
