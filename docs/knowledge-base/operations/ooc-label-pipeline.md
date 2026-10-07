@@ -809,6 +809,14 @@ leaves the live battle untouched. Native Silver's `NativeSilverCombatStats` now
 also counts search steps per searched root, so a replay can prove its budget.
 `bossrescue347selftest 1 SEED SIMS` checks the replay boundary on one act-1
 boss. See the [#347 rescue pilot packet](../../experiments/evidence/boss_budget_rescue_347_pilot_20261007/PLAN.md).
+A second selection schema, `boss_preparation_rmatch_347_selection_v1`, lets a
+source declare `expectedSourceWon` (0 or 1, so a won boss fight can be a
+source), replays `plannerReps` fresh flat-10k planner seeds keyed by
+`boss-prep-347-planner-v1:{runSeed}:{act}:{rep}` (shared by every source of a
+run seed), and writes a descriptive `entryDescriptor` (HP, gold, potions, deck,
+upgrades, relics, RNG stream counters, `PathHistory.roomVisits`). The #425
+schema is unchanged and refuses `expectedSourceWon`. See the
+[#347 boss-preparation packet](../../experiments/evidence/boss_preparation_rmatch_347_20261007/PLAN.md).
 
 No pilot or Stage-1 cohort is part of implementation verification. The default
 4,096-seed A2 collection still requires explicit authorization; no training,
