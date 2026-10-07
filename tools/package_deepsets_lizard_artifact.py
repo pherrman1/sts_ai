@@ -9,8 +9,12 @@ import struct
 from pathlib import Path
 
 
-FAST_SOURCE_SHA256 = "a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a"
-FAST_PAYLOAD_SHA256 = "429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139"
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+FAST_SOURCE_SHA256 = _pins.value("package_deepsets_lizard_artifact.FAST_SOURCE_SHA256", "a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a")
+FAST_PAYLOAD_SHA256 = _pins.value("package_deepsets_lizard_artifact.FAST_PAYLOAD_SHA256", "429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139")
 CANDIDATE_SHA256 = "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617"
 QR_SHA256 = "9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9"
 R_MODEL_SHA256 = "fbf29bf742e3c40b18a358386509a74ced54e97a2a7e760ff988de5c14a335a8"

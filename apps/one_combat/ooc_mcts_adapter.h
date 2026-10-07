@@ -37,6 +37,9 @@ struct OocAdapterOptions {
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
+    // Research probe (default off): play the V4/CTM continuation until the
+    // first boss fight it resolves and score 1 for a boss win, 0 for a death.
+    bool bossRollout = false;
     // Research probe: score unresolved non-combat, non-MAP leaves with v_win
     // directly instead of the bounded policy-chain playout.
     bool directLeaf = false;
@@ -50,6 +53,9 @@ struct OocAdapterOptions {
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
+    // False (live runs with STS_COLLECT_KEYS off) drops TAKE_KEY and
+    // TAKE_RUBY_KEY: without act 4 a key only costs the paired relic or a rest.
+    bool collectKeys = true;
     // Optional live-capture root restriction; child states remain semantic.
     std::optional<std::set<std::uint32_t>> rootPrimitiveBits;
     // Strictly opt-in serialization of the exact prior inputs consumed by OOC MCTS.

@@ -661,35 +661,43 @@ void GameContext::populateFirstStrongEnemy(const MonsterEncounter monsters[], co
                 }
                 break;
 
-            case MonsterEncounter::CHOSEN_AND_BYRDS:
-                break;
+            // Act 2 (TheCity.generateExclusions)
             case MonsterEncounter::SENTRY_AND_SPHERE:
+                if (lastMonster == MonsterEncounter::SPHERIC_GUARDIAN) {
+                    continue;
+                }
                 break;
-            case MonsterEncounter::SNAKE_PLANT:
+
+            case MonsterEncounter::CHOSEN_AND_BYRDS:
+                if (lastMonster == MonsterEncounter::THREE_BYRDS ||
+                    lastMonster == MonsterEncounter::CHOSEN) {
+                    continue;
+                }
                 break;
-            case MonsterEncounter::SNECKO:
-                break;
-            case MonsterEncounter::CENTURION_AND_HEALER:
-                break;
+
             case MonsterEncounter::CULTIST_AND_CHOSEN:
+                if (lastMonster == MonsterEncounter::CHOSEN) {
+                    continue;
+                }
                 break;
-            case MonsterEncounter::THREE_CULTIST:
+
+            // Act 3 (TheBeyond.generateExclusions)
+            case MonsterEncounter::THREE_DARKLINGS:
+                if (lastMonster == MonsterEncounter::THREE_DARKLINGS) {
+                    continue;
+                }
                 break;
-            case MonsterEncounter::SHELLED_PARASITE_AND_FUNGI:
+
+            case MonsterEncounter::ORB_WALKER: // not in the act 3 strong pool; kept to mirror Java
+                if (lastMonster == MonsterEncounter::ORB_WALKER) {
+                    continue;
+                }
                 break;
-            case MonsterEncounter::SPIRE_GROWTH:
-                break;
-            case MonsterEncounter::TRANSIENT:
-                break;
+
             case MonsterEncounter::FOUR_SHAPES:
-                break;
-            case MonsterEncounter::MAW:
-                break;
-            case MonsterEncounter::SPHERE_AND_TWO_SHAPES:
-                break;
-            case MonsterEncounter::JAW_WORM_HORDE:
-                break;
-            case MonsterEncounter::WRITHING_MASS:
+                if (lastMonster == MonsterEncounter::THREE_SHAPES) {
+                    continue;
+                }
                 break;
 
             default: // should not happen
@@ -1441,6 +1449,12 @@ bool GameContext::obtainRelic(RelicId r) {
         case RelicId::LEES_WAFFLE: {
             playerIncreaseMaxHp(7);
             playerHeal(maxHp);
+            break;
+        }
+
+        case RelicId::NECRONOMICON: {
+            // Java onEquip obtains a Necronomicurse (ShowCardAndObtainEffect).
+            deck.obtain(*this, CardId::NECRONOMICURSE);
             break;
         }
 
@@ -2782,6 +2796,12 @@ void GameContext::chooseEventOption(int idx) {
                     }
 
                     regainControlAction = [=](GameContext &gc) {
+                        if (gc.smokeBombUsed) {
+                            // An escape forfeits the event's combat rewards;
+                            // afterBattle() clears the marker and returns to the map.
+                            gc.afterBattle();
+                            return;
+                        }
                         Rewards reward;
                         reward.addGold(goldAmt);
                         if (addRelic) {
@@ -3166,6 +3186,12 @@ void GameContext::chooseEventOption(int idx) {
             } else if (idx == 1) {
                 const int goldAmt = miscRng.random(25, 35);
                 regainControlAction = [goldAmt](auto &gc) {
+                    if (gc.smokeBombUsed) {
+                        // An escape forfeits the event's combat rewards;
+                        // afterBattle() clears the marker and returns to the map.
+                        gc.afterBattle();
+                        return;
+                    }
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
@@ -3244,6 +3270,12 @@ void GameContext::chooseEventOption(int idx) {
             if (idx == 0) {
                 const int goldAmt = miscRng.random(20, 30);
                 regainControlAction = [=](GameContext &gc) {
+                    if (gc.smokeBombUsed) {
+                        // An escape forfeits the event's combat rewards;
+                        // afterBattle() clears the marker and returns to the map.
+                        gc.afterBattle();
+                        return;
+                    }
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(RelicId::ODD_MUSHROOM);

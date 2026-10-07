@@ -226,7 +226,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         std::vector<CombatEvalFight> *combatCapture = nullptr);
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance = false,
-                                                 bool requireOocPolicy = false);
+                                                 bool requireOocPolicy = false,
+                                                 bool allowLearnedStop = false);
 void resampleRemainingActEncounters(GameContext &gc, std::uint64_t branchSeed);
 void stepCounterfactualAuditSource(GameContext &gc,
                                            search::ScumSearchAgent2 &agent);
@@ -269,9 +270,27 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     int samplesPerType, int parityPercent = 100,
                     int diagMaxBranches = -1, const std::string &diagMarkerPath = {});
 
+// Counterfactual OOC label generation: per source seed up to STATES sampled
+// card reward, campfire, shop or boss-relic decisions; every option is replayed
+// K times with shared re-drawn hidden futures until the next boss fight ends
+// (card rewards: the next CARD_BOSSES boss fights).
+void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
+                               long long seedOffset, const std::string &teacherPath,
+                               int futures, int statesPerSeed = 1, int cardRewardBosses = 1,
+                               int generation = 1, const std::string &typeList = {});
+namespace one_combat {
+void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng);
+}
+
 // Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                         long long seedOffset, const std::string &teacherPath);
+// #347 boss-entry budget rescue pilot: one selected #417 source per process
+// (reconstruct, capture the boss entry, control parity, 4 planner seeds at
+// flat exact 10k and 40k). Returns 0 when every validity check passes.
+int bossRescue347(int nEntries, const std::string &selectionPath, const std::string &stateId,
+                  const std::string &outPrefix);
+int bossRescue347SelfTest(int nSeeds, std::uint64_t seed, int sims);
 // #400 Stage 1: every fight of each source trajectory replayed under a fixed
 // grid of Silver search constants (control must reproduce the source fight).
 void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
@@ -298,7 +317,8 @@ int combatTransitionFixture(const std::string &outfile,
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
                                 const std::string &teacherPath,
-                                bool allowStaleProvenance = false);
+                                bool allowStaleProvenance = false,
+                                const std::string &forcedSetup = "");
 
 void activeLizardCombatTransitionGen(int nSeeds, int sims, int asc,
                                      const std::string &outfile, long long seedOffset,
@@ -377,6 +397,9 @@ int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc);
 void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent);
 
 int teacherSchemaCompatibilitySelfTest();
+int learnedStopTeacherSelfTest();
+int ctmScoreRows(const std::string &inPath, const std::string &outPath);
+int ctmScoreRowsSelfTest();
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath);
 

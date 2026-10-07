@@ -16,8 +16,13 @@ namespace sts {
         bool upgraded = false;
 
         Card() = default;
-        Card(CardId id) : id(id) {}
-        Card(CardId id, int upgraded) : id(id), upgraded(upgraded) {}
+        Card(CardId id) : id(id), misc(initialMisc(id)) {}
+        Card(CardId id, int upgraded) : id(id), misc(initialMisc(id)), upgraded(upgraded) {}
+
+        // A new Ritual Dagger starts at 15 base damage, kept in misc.
+        static constexpr std::int16_t initialMisc(CardId id) {
+            return id == CardId::RITUAL_DAGGER ? 15 : 0;
+        }
 
         [[nodiscard]] CardId getId() const;
         [[nodiscard]] int getUpgraded() const;

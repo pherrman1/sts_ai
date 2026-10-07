@@ -11,6 +11,7 @@ from tools import combat_transition_composed as c,combat_transition_composed_eva
 from tools import combat_transition_sparse_evaluate as sparse
 from tools import combat_transition_near_full_support as support
 from tools import combat_transition_potion_trajectory as t
+from tools import ctm_pins as _pins
 
 RECIPE=dict(seed=20260912,epochs=12,batch=512,lr=.001,weightDecay=.0001,gradientClip=1.,
             selection='earliest strict minimum original VALIDATION conditional trajectory NLL',
@@ -59,7 +60,7 @@ def prepare(folder,sha):
                 counts['specialSurvivors']+=1;counts['brewGenerationRounds']+=graph.rounds;counts['escapeRows']+=post['smokeBombUsed']
             if index%100000==0:print('final candidate census',index,flush=True)
     ids=np.asarray(ids,np.int64)
-    if sum(old)!=413799:raise ValueError('previous #179 support count changed')
+    if sum(old)!=_pins.value('combat_transition_potion_trajectory_evaluate.PREVIOUS_SUPPORT_ROWS',413799):raise ValueError('previous #179 support count changed')
     prehp=arrays['globals_continuous'][ids,c.base.CONTINUOUS_GLOBAL_FIELDS.index('curHp')].astype(np.int64)
     premax=arrays['preMaxHp'][ids].astype(np.int64);postmax=arrays['y_post_max_hp'][ids].astype(np.int64);posthp=arrays['y_post_hp'][ids].astype(np.int64)
     slots=arrays['potions'][ids,:,1].astype(np.int64);capacity=arrays['potionCapacity'][ids].astype(np.int64)

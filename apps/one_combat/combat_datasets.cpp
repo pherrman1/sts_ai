@@ -8,12 +8,14 @@
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
 
+#include <regex>
 #include <cstdio>
 #include <iomanip>
 #include <openssl/evp.h>
 #include <set>
 #ifndef _WIN32
 #include <sys/file.h>
+#include <unistd.h>
 #endif
 
 // ---------------------------------------------------------------------------
@@ -137,7 +139,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
 
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance,
-                                                 bool requireOocPolicy) {
+                                                 bool requireOocPolicy,
+                                                 bool allowLearnedStop) {
     std::ifstream in(path); if (!in) throw std::runtime_error("wholecombatgen: cannot open teacher " + path);
     nlohmann::json t; in >> t;
     auto req = [&](const char *key) { if (!t.contains(key) || !t[key].is_string() || t[key].get<std::string>().empty()) throw std::runtime_error(std::string("wholecombatgen: teacher missing ")+key); return t[key].get<std::string>(); };
@@ -149,6 +152,13 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (req("combat_backend")!="native_silver" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
     if (!t.contains("search_configuration") || !t["search_configuration"].is_object()) throw std::runtime_error("wholecombatgen: missing search_configuration");
     const auto &s=t["search_configuration"];
+    // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
+    // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
+    // that opt in; it pins the compiled stop model and threshold.
+    const std::string budgetPolicy=s.value("budget_policy",std::string{"flat_exact"});
+    const bool learnedStopTeacher=budgetPolicy=="learned_stop";
+    if (!learnedStopTeacher && budgetPolicy!="flat_exact") throw std::runtime_error("wholecombatgen: unknown budget_policy "+budgetPolicy);
+    if (learnedStopTeacher && !allowLearnedStop) throw std::runtime_error("wholecombatgen: this mode accepts only the frozen exact-10k teacher");
     if (s.value("simulation_budgets",std::vector<int>{})!=std::vector<int>{10000} || sims!=10000
         || s.value("exploration_parameter",-1.0)!=25.0 || s.value("exploration_parameter_chance",-1.0)!=25.0
         || s.value("chance_widening_c",-1.0)!=3.7028 || s.value("chance_widening_alpha",-1.0)!=0.52389
@@ -156,7 +166,20 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
         || s.value("reuse_cap_mode",std::string{})!="allocated" || s.value("reuse_cap",-1)!=32768
         || s.value("sequential_halving",true) || s.value("pruning",true) || s.value("learned_visit_puct",true)
         || s.value("direct_learned_leaf",true) || s.value("adaptive",true))
-        throw std::runtime_error("wholecombatgen: not the frozen exact-10k ordinary Silver contract");
+        throw std::runtime_error(learnedStopTeacher ? "wholecombatgen: not the learned-stop ordinary Silver contract"
+                                                    : "wholecombatgen: not the frozen exact-10k ordinary Silver contract");
+    if (learnedStopTeacher) {
+        if (s.value("learned_stop_model",std::string{})!=search::nativeSilverStopModelId()
+            || s.value("learned_stop_threshold",-1.0)!=search::nativeSilverLearnedStopThreshold())
+            throw std::runtime_error("wholecombatgen: learned-stop model/threshold mismatch with the compiled stop model");
+        if (!search::nativeSilverLearnedStopEnabled() || search::nativeSilverAdaptiveEnabled()
+            || search::nativeSilverExactRootBudgets() || search::nativeSilverSearchesSingletonRoots()
+            || search::nativeSilverLearnedStopBossFallback()
+            || search::nativeSilverLearnedStopBossMax()!=0)
+            throw std::runtime_error("wholecombatgen: effective Silver is not plain learned stopping");
+    } else if (search::nativeSilverLearnedStopEnabled()) {
+        throw std::runtime_error("wholecombatgen: exact-10k teacher with learned stopping enabled");
+    }
     if (search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
@@ -166,7 +189,8 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
         if (!expected.is_string() || !actual || expected.get<std::string>()!=actual)
             throw std::runtime_error("wholecombatgen: environment mismatch for "+name);
     }
-    const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"}};
+    std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"}};
+    if (learnedStopTeacher) { required["STS_SILVER_EXACT_ROOT_BUDGETS"]="0"; required["STS_SILVER_LEARNED_STOP"]="1"; }
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
     for (const auto &a:t["model_artifacts"]) { const std::string role=a.value("role",std::string{}), p=a.value("path",std::string{}), h=a.value("sha256",std::string{}); if(role.empty()||p.empty()||h.size()!=64||fileSha256(p)!=h) throw std::runtime_error("wholecombatgen: artifact hash mismatch for "+role); }
@@ -311,6 +335,7 @@ struct VwinCollector {
     bool captureRefresh = false, captureBoss = false, allowSampling = false;
     bool captureAllCombatEntries = false;   // with captureBoss: every fight, not only bosses (#400)
     bool captureDecisionSink = false;
+    bool cfOptionCapV2 = false;             // ooccfpilotgen GEN=2 option cap (see vwinCfLimitOptions)
     int decisionIdx = 0, fightIdx = 0, mapRowIdx = 0, rawRowIdx = 0, decisionSinkRowIdx = 0;
     std::map<std::string, int> eligibleByType;
     std::map<std::string, std::mt19937_64> reservoirRng;
@@ -330,10 +355,32 @@ struct VwinCollector {
     int winCount = 0;
 };
 
+// Counterfactual pilot horizon: the first `bosses` boss fights after the branch
+// (GEN=1), or the whole run (GEN=2, `fullRun`).
+struct CfHorizon {
+    int bosses = 1, bossesBeaten = 0;
+    bool fullRun = false;
+    bool reached = false, diedBeforeBoss = false;
+    int bossWon = -1, hp = -1, maxHp = -1, act = -1, floor = -1, fights = 0;
+    int finalWon = -1;                         // GEN=2 label: run won (1), lost (0)
+    int firstBossWon = -1, firstBossHp = -1, firstBossMaxHp = -1, firstBossAct = -1;
+    std::string afterFeatures;   // rich row right after the forced option
+    // GEN=2: first MAP screen after the branch screen is finished.
+    bool mapRecorded = false;
+    int mapAct = -1, mapFloor = -1;
+    std::string mapFeatures;
+};
+
 struct VwinBranchStart {
     const VwinSampledDecision *decision = nullptr;
     VwinOption option;
     std::string branchId;
+    // Counterfactual pilot only: redraw hidden futures from this seed after the
+    // forced option (before it with `redrawBeforeOption`, GEN=2), and stop at
+    // the horizon. #334 sets neither.
+    std::optional<std::uint64_t> futureSeed;
+    CfHorizon *horizon = nullptr;
+    bool redrawBeforeOption = false;
 };
 
 struct VwinArmResult {
@@ -691,6 +738,58 @@ static std::vector<VwinOption> vwinLimitOptions(const std::vector<VwinOption> &o
     return result;
 }
 
+// ooccfpilotgen GEN=2 option cap. Options that differ only in the deck
+// position of an identical card (same id, misc, upgrade, bottle) are one
+// option; the chosen key represents its class, otherwise the smallest key.
+// The chosen option and every skip/leave option are always kept; the rest
+// fill up to six by sha256 rank.
+static std::string vwinCfCanonicalKey(const std::string &key) {
+    static const std::regex occurrence("occurrence=[0-9]+");
+    return std::regex_replace(key, occurrence, "occurrence=*");
+}
+
+static bool vwinCfAlwaysKeep(const VwinOption &option) {
+    using Effect = search::OocSemanticEffect;
+    if (!option.semantic) return false;
+    const auto effect = option.semantic->effect;
+    return effect == Effect::SKIP_CARD_REWARD || effect == Effect::SKIP_BOSS_RELIC
+        || effect == Effect::LEAVE_SHOP || effect == Effect::LEAVE_CAMPFIRE
+        || effect == Effect::LEAVE_REWARDS;
+}
+
+static std::vector<VwinOption> vwinCfLimitOptions(const std::vector<VwinOption> &options,
+                                                  const std::string &chosenKey,
+                                                  std::uint64_t seed, int decisionIdx) {
+    std::map<std::string, VwinOption> classes;
+    for (const auto &option : options) {
+        const auto canonical = vwinCfCanonicalKey(option.key);
+        auto found = classes.find(canonical);
+        if (found == classes.end()) classes.emplace(canonical, option);
+        else if (option.key == chosenKey
+                 || (found->second.key != chosenKey && option.key < found->second.key))
+            found->second = option;
+    }
+    std::vector<VwinOption> result;
+    std::vector<std::pair<std::string, VwinOption>> ranked;
+    for (const auto &[canonical, option] : classes) {
+        if (option.key == chosenKey || vwinCfAlwaysKeep(option)) result.push_back(option);
+        else ranked.emplace_back(vwinSha256("ooc-cf-option-cap-v2:" + std::to_string(seed)
+            + ":" + std::to_string(decisionIdx) + ":" + canonical), option);
+    }
+    if (std::none_of(result.begin(), result.end(),
+                     [&](const auto &option) { return option.key == chosenKey; }))
+        return {};
+    std::sort(ranked.begin(), ranked.end(), [](const auto &a, const auto &b) {
+        return a.first == b.first ? a.second.key < b.second.key : a.first < b.first;
+    });
+    for (std::size_t i = 0; i < ranked.size() && result.size() < 6; ++i)
+        result.push_back(ranked[i].second);
+    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
+        return a.key < b.key;
+    });
+    return result;
+}
+
 static std::optional<std::size_t> vwinReservoirSlot(std::mt19937_64 &rng, int seen,
                                                      int capacity, std::size_t retained) {
     if (seen < 1 || capacity < 1)
@@ -815,8 +914,9 @@ static void vwinFinishDecision(VwinCollector &capture, VwinPendingDecision pendi
         for (auto &sample : found->second) {
             if (sample.decisionIdx != row.decisionIdx) continue;
             sample.chosenKey = chosenKey;
-            sample.options = vwinLimitOptions(sample.options, chosenKey,
-                                               capture.sourceSeed, sample.decisionIdx);
+            sample.options = capture.cfOptionCapV2
+                ? vwinCfLimitOptions(sample.options, chosenKey, capture.sourceSeed, sample.decisionIdx)
+                : vwinLimitOptions(sample.options, chosenKey, capture.sourceSeed, sample.decisionIdx);
             sample.agentAfter = agent;
             sample.policyAfter = policyState;
             sample.sourceTraceIndex = capture.trace.size();
@@ -1214,6 +1314,34 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
             vwin->trace.push_back("D:" + std::to_string(branch->decision->decisionIdx)
                                   + ":" + branch->option.key);
+            if (branch->futureSeed && branch->redrawBeforeOption) {
+                // GEN=2: the option's own randomness is part of the sampled
+                // future. The redraw must leave the published screen intact.
+                const auto rowBefore = richRow(gc, path);
+                const auto screenBefore = vwinDecisionScreenContents(gc, branch->decision->options).dump();
+                std::mt19937_64 future(*branch->futureSeed);
+                one_combat::resampleCounterfactualFuture(gc, future);
+                // The four HIDDEN_FUTURE rich fields (#397) read the redrawn
+                // queues and may change; every other field must not.
+                const auto split = [](const std::string &row) {
+                    std::vector<std::string> cells;
+                    std::stringstream in(row);
+                    for (std::string cell; std::getline(in, cell, ',');) cells.push_back(cell);
+                    return cells;
+                };
+                const auto names = split(richStateHeader());
+                const auto before = split(rowBefore), after = split(richRow(gc, path));
+                if (before.size() != names.size() || after.size() != names.size())
+                    throw std::runtime_error("ooc cf pilot: rich row width mismatch");
+                static const std::set<std::string> hiddenFuture = {
+                    "nextEliteId", "nextFight0", "nextFight1", "nextFight2"};
+                for (std::size_t i = 0; i < names.size(); ++i)
+                    if (before[i] != after[i] && !hiddenFuture.count(names[i]))
+                        throw std::runtime_error("ooc cf pilot: future redraw changed public feature "
+                                                 + names[i]);
+                if (vwinDecisionScreenContents(gc, branch->decision->options).dump() != screenBefore)
+                    throw std::runtime_error("ooc cf pilot: future redraw changed the published decision screen");
+            }
             const int healthBefore = search::g_simHealthFailureCount;
             auto previous = std::move(search::g_onGameActionExecute);
             search::g_onGameActionExecute = {};
@@ -1239,6 +1367,11 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
             if (healthBefore != search::g_simHealthFailureCount)
                 throw std::runtime_error("vwin refresh: health failure during forced branch action");
+            if (branch->horizon) branch->horizon->afterFeatures = richRow(gc, path);
+            if (branch->futureSeed && !branch->redrawBeforeOption) {
+                std::mt19937_64 future(*branch->futureSeed);
+                one_combat::resampleCounterfactualFuture(gc, future);
+            }
         }
     }
 
@@ -1255,6 +1388,14 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
 
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
+        if (branch && branch->horizon && branch->horizon->fullRun && !branch->horizon->mapRecorded
+            && gc.screenState == ScreenState::MAP_SCREEN) {
+            auto &h = *branch->horizon;
+            h.mapRecorded = true;
+            h.mapAct = gc.act;
+            h.mapFloor = gc.floorNum;
+            h.mapFeatures = richRow(gc, path);
+        }
         if (gc.screenState == ScreenState::BATTLE) {
             const int act = gc.act, floor = gc.floorNum, room = (int)gc.curRoom;
             const MonsterEncounter encounter = gc.info.encounter;
@@ -1399,6 +1540,28 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
             ++fightIdx;
             if (vwin) vwin->fightIdx = fightIdx;
+            if (branch && branch->horizon) {
+                auto &h = *branch->horizon;
+                ++h.fights;
+                if (static_cast<Room>(room) == Room::BOSS) {
+                    const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+                    if (won) ++h.bossesBeaten;
+                    h.hp = gc.curHp; h.maxHp = gc.maxHp; h.act = act; h.floor = floor;
+                    if (h.firstBossWon < 0) {
+                        h.firstBossWon = won ? 1 : 0;
+                        h.firstBossHp = won ? gc.curHp : 0;
+                        h.firstBossMaxHp = gc.maxHp;
+                        h.firstBossAct = act;
+                    }
+                    // Stop after the last horizon boss, on a loss, or when the
+                    // run ends with this boss (act 3, keys off).
+                    if (!won || h.bossesBeaten >= h.bosses || gc.outcome != GameOutcome::UNDECIDED) {
+                        h.reached = true;
+                        h.bossWon = won ? 1 : 0;
+                        break;
+                    }
+                }
+            }
         } else {
             if (!vwin || !vwin->captureRefresh) {
                 runFullRunOocPolicyStep(gc, agent, false, true);
@@ -1411,6 +1574,14 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
     if (vwin) vwinFinishDecisionSink(*vwin, nullptr, true);
     search::g_onCombatDecision = nullptr;
     t_curPath = nullptr;
+    if (branch && branch->horizon && !branch->horizon->reached
+        && gc.outcome == GameOutcome::PLAYER_LOSS) {
+        auto &h = *branch->horizon;
+        h.reached = h.diedBeforeBoss = true;
+        h.bossWon = 0; h.hp = 0; h.maxHp = gc.maxHp; h.act = gc.act; h.floor = gc.floorNum;
+    }
+    if (branch && branch->horizon && branch->horizon->fullRun)
+        branch->horizon->finalWon = combatEvalFinalWon(gc.outcome);
     const bool complete = gc.outcome != GameOutcome::UNDECIDED;
     const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
     const bool trajectoryValid = complete && healthFailures == 0 && !fatalFailure;
@@ -1492,6 +1663,94 @@ int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc) {
     return 0;
 }
 
+
+// Loader-only checks for the learned-stop teacher contract (#418). Runs no
+// seeds: it installs Silver with production learned stopping and verifies
+// which teacher specifications loadWholeCombatTeacher accepts.
+int learnedStopTeacherSelfTest() {
+    for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
+             {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+             {"STS_SILVER_EXACT_ROOT_BUDGETS", "0"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+             {"STS_SILVER_LEARNED_STOP", "1"}})
+        setenv(name, value, 1);
+    unsetenv("STS_SILVER_LEARNED_STOP_THRESHOLD");
+    unsetenv("STS_SILVER_LEARNED_STOP_BOSS_FALLBACK");
+    unsetenv("STS_SILVER_LEARNED_STOP_BOSS_MAX");
+    search::installNativeSilverBackend();
+    const std::filesystem::path teacherPath = std::filesystem::temp_directory_path()
+        / ("sts_learned_stop_teacher_" + trainingExecutableGitSha() + "_"
+           + std::to_string(::getpid()) + ".json");
+    const nlohmann::json base = {
+        {"teacher_id", "learned-stop-selftest"},
+        {"git_sha", trainingExecutableGitSha()},
+        {"executable_sha256", fileSha256(g_mainBinaryPath)},
+        {"combat_backend", "native_silver"},
+        {"rng_regime", "project_fair"},
+        {"search_configuration", {
+            {"budget_policy", "learned_stop"},
+            {"learned_stop_model", search::nativeSilverStopModelId()},
+            {"learned_stop_threshold", search::nativeSilverLearnedStopThreshold()},
+            {"simulation_budgets", {10000}}, {"exploration_parameter", 25.0},
+            {"exploration_parameter_chance", 25.0}, {"chance_widening_c", 3.7028},
+            {"chance_widening_alpha", 0.52389}, {"end_turn_widening_c", 3.7028},
+            {"end_turn_widening_alpha", 0.52389}, {"reuse_cap_mode", "allocated"},
+            {"reuse_cap", 32768}, {"sequential_halving", false}, {"pruning", false},
+            {"learned_visit_puct", false}, {"direct_learned_leaf", false}, {"adaptive", false},
+        }},
+        {"environment", {
+            {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+            {"STS_SILVER_EXACT_ROOT_BUDGETS", "0"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+            {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+            {"STS_SILVER_LEARNED_STOP", "1"},
+        }},
+        {"model_artifacts", nlohmann::json::array()},
+    };
+    const auto loads = [&](const nlohmann::json &teacher, bool allowLearnedStop) {
+        { std::ofstream out(teacherPath); out << teacher.dump(); }
+        try {
+            loadWholeCombatTeacher(teacherPath.string(), 10000, false, false, allowLearnedStop);
+            return true;
+        } catch (const std::runtime_error &) {
+            return false;
+        }
+    };
+    int failures = 0;
+    const auto expect = [&](const char *name, bool actual, bool expected) {
+        if (actual != expected) {
+            ++failures;
+            std::cerr << "learnedstopteacherselftest FAIL: " << name << '\n';
+        }
+    };
+    expect("accepts learned-stop teacher when allowed", loads(base, true), true);
+    expect("rejects learned-stop teacher when not allowed", loads(base, false), false);
+    auto wrongModel = base;
+    wrongModel["search_configuration"]["learned_stop_model"] = "gbt-000000000000";
+    expect("rejects stop-model mismatch", loads(wrongModel, true), false);
+    auto wrongThreshold = base;
+    wrongThreshold["search_configuration"]["learned_stop_threshold"] = 0.5;
+    expect("rejects threshold mismatch", loads(wrongThreshold, true), false);
+    auto unknownPolicy = base;
+    unknownPolicy["search_configuration"]["budget_policy"] = "adaptive";
+    expect("rejects unknown budget policy", loads(unknownPolicy, true), false);
+    auto exactEnv = base;
+    exactEnv["environment"]["STS_SILVER_EXACT_ROOT_BUDGETS"] = "1";
+    expect("rejects exact-root-budget environment", loads(exactEnv, true), false);
+    auto exactTeacher = base;
+    exactTeacher["search_configuration"].erase("budget_policy");
+    exactTeacher["environment"].erase("STS_SILVER_LEARNED_STOP");
+    expect("rejects exact-10k teacher under learned-stop Silver", loads(exactTeacher, true), false);
+    // Searching one-action roots changes play but not the teacher spec.
+    setenv("STS_SILVER_SEARCH_SINGLETON_ROOTS", "1", 1);
+    search::installNativeSilverBackend();
+    expect("rejects searched singleton roots", loads(base, true), false);
+    unsetenv("STS_SILVER_SEARCH_SINGLETON_ROOTS");
+    search::installNativeSilverBackend();
+    std::error_code ignored;
+    std::filesystem::remove(teacherPath, ignored);
+    if (failures == 0) std::cout << "learnedstopteacherselftest PASS\n";
+    return failures == 0 ? 0 : 1;
+}
 
 int teacherSchemaCompatibilitySelfTest() {
     for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
@@ -2074,8 +2333,258 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
               << sourceRawRows + branchRawRows << " -> " << outPrefix << "\n";
 }
 
+// Counterfactual OOC label pilot. The source trajectory and its outcome-blind
+// per-type reservoir are exactly vwinrefreshgen's (K=1). Per seed, one sampled
+// CARD_REWARD, REST, SHOP or BOSS_RELIC decision is selected by hash; every
+// retained option (chosen plus at most five) is forced FUTURES times. Run k of
+// every option redraws the hidden future from the same seed (common random
+// numbers across siblings), then the production chain plays until the first
+// boss fight after the branch ends. Label: boss beaten, HP after it.
+//
+// GEN=2 (after review, ACTION-PLAN E2): the label is the final run outcome;
+// the future is redrawn before the forced option, so the option's own
+// randomness is sampled too; features are also recorded at the first MAP
+// screen after the branch screen is finished (`.map.csv`, one row per run);
+// the option cap deduplicates identical cards at other deck positions and
+// always keeps the chosen and skip/leave options; states are selected only
+// from `types`, sha256-ranked in a v2 domain.
+void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
+                               long long seedOffset, const std::string &teacherPath,
+                               int futures, int statesPerSeed, int cardRewardBosses,
+                               int generation, const std::string &typeList) {
+    constexpr int sims = 10000, asc = 0;
+    if (nSeeds < 1 || futures < 1 || statesPerSeed < 1 || cardRewardBosses < 1 || cardRewardBosses > 2
+        || generation < 1 || generation > 2
+        || seedOffset < 0
+        || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
+        throw std::runtime_error("ooc cf pilot: requires N>0, FUTURES>0, STATES>0, CARD_BOSSES 1..2, GEN 1..2 and a nonnegative seed range");
+    const bool v2 = generation == 2;
+    std::set<std::string> inScope = {"BOSS_RELIC", "CARD_REWARD", "REST", "SHOP"};
+    if (v2 && !typeList.empty()) {
+        std::set<std::string> requested;
+        std::stringstream types(typeList);
+        for (std::string type; std::getline(types, type, ',');) {
+            if (!inScope.count(type)) throw std::runtime_error("ooc cf pilot: unsupported type " + type);
+            requested.insert(type);
+        }
+        if (requested.empty()) throw std::runtime_error("ooc cf pilot: empty TYPES");
+        inScope = requested;
+    } else if (!v2 && !typeList.empty()) {
+        throw std::runtime_error("ooc cf pilot: TYPES requires GEN=2");
+    }
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true, true);
+    vwinRequireProductionPolicy(teacher);
+    search::g_richCombatFeatures = true;
+    std::vector<std::string> suffixes = {".labels.csv", ".options.csv", ".sources.csv",
+                                         ".manifest.json"};
+    if (v2) suffixes.push_back(".map.csv");
+    for (const auto &suffix : suffixes)
+        if (std::filesystem::exists(outPrefix + suffix))
+            throw std::runtime_error("ooc cf pilot: refusing to overwrite " + outPrefix + suffix);
+    std::ofstream labelOut(outPrefix + ".labels.csv"), optionOut(outPrefix + ".options.csv"),
+        sourceOut(outPrefix + ".sources.csv");
+    std::ofstream mapOut;
+    if (v2) mapOut.open(outPrefix + ".map.csv");
+    if (!labelOut || !optionOut || !sourceOut || (v2 && !mapOut))
+        throw std::runtime_error("ooc cf pilot: cannot open outputs");
+    labelOut << "sourceSeed,decisionIdx,type,act,floor,optionIdx,optionKey,chosen,k,futureSeed,"
+                "valid,diedBeforeBoss,bossWon,hp,maxHp,horizonAct,horizonFloor,fights,cpuSeconds,error,"
+                "horizonBosses,bossesBeaten";
+    if (v2) labelOut << ",finalWon,firstBossWon,firstBossHp,firstBossMaxHp,firstBossAct,mapAct,mapFloor";
+    labelOut << '\n';
+    if (v2) mapOut << "sourceSeed,decisionIdx,type,optionIdx,optionKey,chosen,k,mapAct,mapFloor,"
+                   << richStateHeader() << '\n';
+    optionOut << "sourceSeed,decisionIdx,type,optionIdx,optionKey,chosen," << richStateHeader() << '\n';
+    sourceOut << "sourceSeed,outcome,finalFloor,trajectoryValid,inScopeSamples,decisionIdx,type,"
+                 "act,floor,options,sourceCpuSeconds\n";
+    std::uint64_t labelRows = 0, validRows = 0;
+    std::map<std::string, int> statesByTypeAct;
+    int selectedStates = 0;
+    for (int index = 0; index < nSeeds; ++index) {
+        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + index);
+        VwinCollector source;
+        source.sourceSeed = seed;
+        source.samplesPerType = 1;
+        source.branchId = "source";
+        source.captureRefresh = true;
+        source.allowSampling = true;
+        source.cfOptionCapV2 = v2;
+        const auto sourceCpuStart = vwinThreadCpuNanos();
+        const auto generated = runCombatEvalGenSeed(seed, sims, asc, teacher, true, &source);
+        const double sourceCpu = static_cast<double>(vwinThreadCpuNanos() - sourceCpuStart) / 1.0e9;
+        std::vector<VwinSampledDecision *> candidates;
+        for (auto &[type, samples] : source.sampled)
+            if (inScope.count(type))
+                for (auto &sample : samples) candidates.push_back(&sample);
+        // One state keeps the v1 pilot rule; more states take the next
+        // candidates in sha256-ranked order (distinct decision types).
+        std::vector<VwinSampledDecision *> selected;
+        if (v2) {
+            std::vector<std::pair<std::string, VwinSampledDecision *>> ranked;
+            for (auto *candidate : candidates)
+                ranked.emplace_back(vwinSha256("ooc-cf-pilot-v2-select:" + std::to_string(seed) + ":"
+                                               + candidate->type), candidate);
+            std::sort(ranked.begin(), ranked.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+            for (const auto &[hash, candidate] : ranked) {
+                if (static_cast<int>(selected.size()) >= statesPerSeed) break;
+                selected.push_back(candidate);
+            }
+        } else if (!candidates.empty()) {
+            const auto digest = vwinSha256("ooc-cf-pilot-v1-select:" + std::to_string(seed));
+            const std::size_t first = std::stoull(digest.substr(0, 15), nullptr, 16) % candidates.size();
+            selected.push_back(candidates[first]);
+            std::vector<std::pair<std::string, VwinSampledDecision *>> rest;
+            for (std::size_t i = 0; i < candidates.size(); ++i)
+                if (i != first)
+                    rest.emplace_back(vwinSha256("ooc-cf-pilot-v2-select:" + std::to_string(seed) + ":"
+                                                 + candidates[i]->type), candidates[i]);
+            std::sort(rest.begin(), rest.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+            for (const auto &[hash, extra] : rest) {
+                if (static_cast<int>(selected.size()) >= statesPerSeed) break;
+                selected.push_back(extra);
+            }
+        }
+        if (selected.empty())
+            sourceOut << seed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
+                      << generated.finalFloor << ',' << (generated.trajectoryValid ? 1 : 0) << ','
+                      << candidates.size() << ",-1,,-1,-1,0," << sourceCpu << '\n';
+        for (auto *sample : selected) {
+        sourceOut << seed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
+                  << generated.finalFloor << ',' << (generated.trajectoryValid ? 1 : 0) << ','
+                  << candidates.size() << ',';
+        sourceOut << sample->decisionIdx << ',' << sample->type << ',' << sample->pre->act << ','
+                  << sample->pre->floorNum << ',' << sample->options.size() << ',' << sourceCpu << '\n';
+        ++selectedStates;
+        ++statesByTypeAct[sample->type + ":act" + std::to_string(sample->pre->act)];
+        const int bosses = v2 ? 1000 : sample->type == "CARD_REWARD" ? cardRewardBosses : 1;
+        for (std::size_t optionIdx = 0; optionIdx < sample->options.size(); ++optionIdx) {
+            const auto &option = sample->options[optionIdx];
+            const bool chosen = option.key == sample->chosenKey;
+            for (int k = 0; k < futures; ++k) {
+                const auto futureDigest = vwinSha256(std::string(v2 ? "ooc-cf-pilot-v2-future:" : "ooc-cf-pilot-v1-future:") + std::to_string(seed)
+                    + ":" + std::to_string(sample->decisionIdx) + ":" + std::to_string(k));
+                const std::uint64_t futureSeed = std::stoull(futureDigest.substr(0, 16), nullptr, 16);
+                CfHorizon horizon;
+                horizon.bosses = bosses;
+                horizon.fullRun = v2;
+                VwinBranchStart start{sample, option,
+                    "cf" + std::to_string(seed) + "-d" + std::to_string(sample->decisionIdx)
+                    + "-o" + std::to_string(optionIdx) + "-k" + std::to_string(k),
+                    futureSeed, &horizon, v2};
+                VwinCollector branch;
+                branch.sourceSeed = seed;
+                branch.branchId = start.branchId;
+                branch.deviationIdx = 1;
+                branch.captureRefresh = true;
+                branch.allowSampling = false;
+                std::string error;
+                bool valid = false;
+                const auto cpuStart = vwinThreadCpuNanos();
+                try {
+                    const auto branched = runCombatEvalGenSeed(seed, sims, asc, teacher, true,
+                                                               &branch, &start);
+                    valid = horizon.reached && !branched.fatalFailure
+                        && branched.simulatorHealthFailures == 0
+                        && (!v2 || (horizon.finalWon >= 0 && horizon.mapRecorded));
+                    if (!valid)
+                        error = !horizon.reached ? "horizon_not_reached"
+                            : v2 && horizon.finalWon < 0 ? "run_not_finished"
+                            : v2 && !horizon.mapRecorded ? "no_map_after_branch" : "health_or_fatal";
+                } catch (const std::exception &e) {
+                    error = e.what();
+                }
+                const double cpu = static_cast<double>(vwinThreadCpuNanos() - cpuStart) / 1.0e9;
+                if (k == 0)
+                    optionOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
+                              << optionIdx << ',' << csvQuote(option.key) << ',' << (chosen ? 1 : 0)
+                              << ',' << horizon.afterFeatures << '\n';
+                labelOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
+                         << sample->pre->act << ',' << sample->pre->floorNum << ',' << optionIdx << ','
+                         << csvQuote(option.key) << ',' << (chosen ? 1 : 0) << ',' << k << ','
+                         << futureSeed << ',' << (valid ? 1 : 0) << ','
+                         << (horizon.diedBeforeBoss ? 1 : 0) << ',' << horizon.bossWon << ','
+                         << horizon.hp << ',' << horizon.maxHp << ',' << horizon.act << ','
+                         << horizon.floor << ',' << horizon.fights << ',' << cpu << ','
+                         << csvQuote(error) << ',' << bosses << ',' << horizon.bossesBeaten;
+                if (v2)
+                    labelOut << ',' << horizon.finalWon << ',' << horizon.firstBossWon << ','
+                             << horizon.firstBossHp << ',' << horizon.firstBossMaxHp << ','
+                             << horizon.firstBossAct << ',' << horizon.mapAct << ','
+                             << horizon.mapFloor;
+                labelOut << '\n';
+                if (v2 && horizon.mapRecorded)
+                    mapOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
+                           << optionIdx << ',' << csvQuote(option.key) << ',' << (chosen ? 1 : 0)
+                           << ',' << k << ',' << horizon.mapAct << ',' << horizon.mapFloor << ','
+                           << horizon.mapFeatures << '\n';
+                ++labelRows;
+                if (valid) ++validRows;
+            }
+        }
+        }
+        labelOut.flush(); optionOut.flush(); sourceOut.flush();
+        if (v2) mapOut.flush();
+    }
+    labelOut.close(); optionOut.close(); sourceOut.close();
+    if (v2) mapOut.close();
+    nlohmann::json outputs = nlohmann::json::object();
+    for (const auto &suffix : suffixes)
+        if (suffix != ".manifest.json")
+            outputs[suffix.substr(1)] = fileSha256(outPrefix + suffix);
+    nlohmann::json manifest = {
+        {"schemaVersion", v2 ? "ooc_cf_pilot_v2" : "ooc_cf_pilot_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherPath", std::filesystem::absolute(teacherPath).string()},
+        {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification},
+        {"policy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"selection", {{"reservoir", "vwinrefreshgen outcome_blind_reservoir_per_type_v1, K=1"},
+                       {"types", inScope},
+                       {"rule", "sha256(ooc-cf-pilot-v1-select:{seed})[:15] mod in-scope samples"},
+                       {"optionCap", "chosen_plus_five_sha256_ranked (vwin-option-cap-334-v1)"}}},
+        {"futures", {{"count", futures},
+                     {"seedRule", "sha256(ooc-cf-pilot-v1-future:{seed}:{decisionIdx}:{k})[:16]"},
+                     {"redraw", "sampleNoncombatFuture after the forced option, before continuation"}}},
+        {"statesPerSeed", statesPerSeed},
+        {"horizon", {{"rule", "the first N boss fights after the branch, or death or run end before"},
+                     {"cardRewardBosses", cardRewardBosses}, {"otherBosses", 1}}},
+        {"integrity", {{"selectedStates", selectedStates}, {"labelRows", labelRows},
+                       {"validLabelRows", validRows}, {"statesByTypeAct", statesByTypeAct}}},
+        {"outputs", outputs},
+    };
+    if (v2) {
+        manifest["selection"]["rule"] = "candidates of TYPES, sha256(ooc-cf-pilot-v2-select:{seed}:{type}) ascending, first STATES_PER_SEED";
+        manifest["selection"]["optionCap"] = "ooc-cf-option-cap-v2: dedupe by key with occurrence=*, keep chosen and skip/leave, fill to 6 by sha256(ooc-cf-option-cap-v2:{seed}:{decisionIdx}:{canonicalKey})";
+        manifest["futures"]["seedRule"] = "sha256(ooc-cf-pilot-v2-future:{seed}:{decisionIdx}:{k})[:16]";
+        manifest["futures"]["redraw"] = "sampleNoncombatFuture before the forced option; published screen and rich row checked unchanged";
+        manifest["horizon"] = {{"rule", "whole run; label finalWon; first-boss result and HP after it as diagnostics"}};
+        manifest["features"] = {{"options.csv", "rich row right after the forced option (k=0)"},
+                                {"map.csv", "rich row at the first MAP screen after the branch, per run"}};
+    }
+    std::ofstream manifestOut(outPrefix + ".manifest.json");
+    manifestOut << manifest.dump(2) << '\n';
+    if (!manifestOut) throw std::runtime_error("ooc cf pilot: manifest write failed");
+    std::cout << "ooc cf pilot teacher=" << teacher.id << " states=" << selectedStates << '/' << nSeeds
+              << " labels=" << validRows << '/' << labelRows << " -> " << outPrefix << "\n";
+}
+
+// Optional extra observations of one boss arm (#347 boss-entry rescue).
+struct VwinBossArmDetail {
+    std::string startDigest, postExitDigest, postExitSummary;
+    std::vector<int> trace;
+    std::int64_t searchSteps = 0, minRootSteps = -1, maxRootSteps = -1;
+    std::int64_t reroots = 0, freshRoots = 0, singletonSkips = 0;
+    double wallSeconds = 0.0;
+};
+static std::string bossRescueStateDigest(const GameContext &gc, const search::ScumSearchAgent2 *agent);
+static std::string bossRescueStateSummary(const GameContext &gc);
+
 static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
-                                    const search::NativeSilverSearchParams *params = nullptr) {
+                                    const search::NativeSilverSearchParams *params = nullptr,
+                                    VwinBossArmDetail *detail = nullptr) {
     struct ParamScope {
         explicit ParamScope(const search::NativeSilverSearchParams *p) {
             if (p) search::g_nativeSilverSearchParamOverride = *p;
@@ -2086,6 +2595,9 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
     GameContext gc = detachedCounterfactualCopy(*entry.pre);
     PathHistory path = entry.path;
     search::ScumSearchAgent2 agent = entry.agent;
+    if (detail) detail->startDigest = bossRescueStateDigest(gc, &agent);
+    const auto totalsBefore = search::nativeSilverTotals();
+    const auto wallStart = std::chrono::steady_clock::now();
     agent.simulationCountBase = budget;
     agent.recordActions = true;
     agent.gameActionHistory.clear();
@@ -2127,6 +2639,21 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
     result.postAfterBattleHp = gc.curHp;
     result.potionsAfter = gc.potionCount;
     t_curPath = nullptr;
+    if (detail) {
+        const auto totalsAfter = search::nativeSilverTotals();
+        const auto &stats = search::g_nativeSilverCombatStats;
+        detail->wallSeconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - wallStart).count();
+        detail->trace = agent.gameActionHistory;
+        detail->postExitDigest = bossRescueStateDigest(gc, nullptr);
+        detail->postExitSummary = bossRescueStateSummary(gc);
+        detail->searchSteps = stats.searchSteps;
+        detail->minRootSteps = stats.minRootSteps;
+        detail->maxRootSteps = stats.maxRootSteps;
+        detail->reroots = totalsAfter.reroots - totalsBefore.reroots;
+        detail->freshRoots = totalsAfter.freshRoots - totalsBefore.freshRoots;
+        detail->singletonSkips = totalsAfter.singletonSkips - totalsBefore.singletonSkips;
+    }
     return result;
 }
 
@@ -3313,6 +3840,479 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
               << " -> " << outPrefix << "\n";
 }
 
+// #347 boss-entry budget rescue pilot (docs/experiments/evidence/
+// boss_budget_rescue_347_pilot_20261007). One frozen #417 source per process:
+// reconstruct the run with the ordinary live run driver (live OOC MCTS when
+// the arm enables it), capture the act's boss entry, then replay that entry
+// with the original planner seed (control parity) and with four fresh planner
+// seeds at flat exact 10k (A) and 40k (B). The #347 boss-preparation R-match
+// (docs/experiments/evidence/boss_preparation_rmatch_347_20261007) reuses the
+// mode with its own selection schema: the source may be a boss win
+// (expectedSourceWon), and each entry gets fresh 10k planner seeds keyed only
+// by run seed, act and rep, so the M and F entries of a seed share them.
+static std::string bossRescueStateDigest(const GameContext &gc, const search::ScumSearchAgent2 *agent) {
+    std::ostringstream o;
+    o << "boss-rescue-347-state-v1|seed=" << gc.seed;
+    for (const Random *r : {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng, &gc.mathUtilRng,
+                            &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng, &gc.monsterRng, &gc.neowRng,
+                            &gc.potionRng, &gc.relicRng, &gc.shuffleRng, &gc.treasureRng})
+        o << "|rng=" << r->counter << ':' << r->seed0 << ':' << r->seed1;
+    o << "|act=" << gc.act << "|asc=" << gc.ascension << "|floor=" << gc.floorNum
+      << "|room=" << static_cast<int>(gc.curRoom) << "|screen=" << static_cast<int>(gc.screenState)
+      << "|outcome=" << static_cast<int>(gc.outcome)
+      << "|encounter=" << static_cast<int>(gc.info.encounter) << "|boss=" << static_cast<int>(gc.boss)
+      << "|secondBoss=" << static_cast<int>(gc.secondBoss)
+      << "|map=" << gc.curMapNodeX << ',' << gc.curMapNodeY
+      << "|hp=" << gc.curHp << '/' << gc.maxHp << "|gold=" << gc.gold
+      << "|potions=" << gc.potionCount << '/' << gc.potionCapacity << ':';
+    for (const auto p : gc.potions) o << static_cast<int>(p) << ',';
+    o << "|relics=";
+    for (const auto &r : gc.relics.relics) o << static_cast<int>(r.id) << ':' << r.data << ',';
+    o << "|deck=";
+    for (const auto &c : gc.deck.cards) o << static_cast<int>(c.id) << ':' << c.misc << ':' << c.upgraded << ',';
+    o << "|bottles=" << gc.deck.bottleIdxs[0] << ',' << gc.deck.bottleIdxs[1] << ',' << gc.deck.bottleIdxs[2]
+      << "|keys=" << gc.blueKey << gc.greenKey << gc.redKey << gc.keysEnabled
+      << "|smokeBomb=" << gc.smokeBombUsed << "|wingBoots=" << gc.wingBootsCharges
+      << "|lists=" << gc.monsterListOffset << ',' << gc.eliteMonsterListOffset;
+    if (agent) o << "|agent=" << agent->simulationCountBase << ':' << agent->bossSimulationMultiplier
+                 << ':' << agent->rng;
+    return vwinSha256(o.str());
+}
+
+static std::string bossRescueStateSummary(const GameContext &gc) {
+    std::ostringstream o;
+    o << "hp=" << gc.curHp << ";maxHp=" << gc.maxHp << ";gold=" << gc.gold << ";potions=";
+    for (int i = 0; i < gc.potionCapacity && i < static_cast<int>(gc.potions.size()); ++i)
+        o << (i ? "|" : "") << potionEnumNames[static_cast<int>(gc.potions[i])];
+    o << ";relics=";
+    bool first = true;
+    for (const auto &r : gc.relics.relics) {
+        o << (first ? "" : "|") << relicEnumNames[static_cast<int>(r.id)] << ':' << r.data;
+        first = false;
+    }
+    o << ";deck=";
+    first = true;
+    for (const auto &c : gc.deck.cards) {
+        o << (first ? "" : "|") << c.getName() << (c.isUpgraded() ? "+" : "");
+        first = false;
+    }
+    return o.str();
+}
+
+static std::uint64_t bossRescuePlannerSeed(const std::string &stateId, int rep) {
+    return std::stoull(vwinSha256("boss-rescue-347-planner-v1:" + stateId + ":"
+                                  + std::to_string(rep)).substr(0, 16), nullptr, 16);
+}
+
+// Boss-preparation R-match: no preparation arm or stateId in the key.
+static std::uint64_t bossPrepPlannerSeed(std::uint64_t runSeed, int act, int rep) {
+    return std::stoull(vwinSha256("boss-prep-347-planner-v1:" + std::to_string(runSeed) + ":"
+                                  + std::to_string(act) + ":" + std::to_string(rep)).substr(0, 16),
+                       nullptr, 16);
+}
+
+// Cheap descriptive record of a boss entry (no derived score).
+static nlohmann::json bossPrepEntryDescriptor(const GameContext &gc, const PathHistory &path) {
+    nlohmann::json potions = nlohmann::json::array(), relics = nlohmann::json::array(),
+                   deck = nlohmann::json::array(), rng = nlohmann::json::object();
+    for (int i = 0; i < gc.potionCapacity && i < static_cast<int>(gc.potions.size()); ++i)
+        potions.push_back(potionEnumNames[static_cast<int>(gc.potions[i])]);
+    for (const auto &r : gc.relics.relics)
+        relics.push_back({{"relic", relicEnumNames[static_cast<int>(r.id)]}, {"data", r.data}});
+    int upgrades = 0;
+    for (const auto &c : gc.deck.cards) {
+        deck.push_back(std::string(c.getName()) + (c.isUpgraded() ? "+" : ""));
+        upgrades += c.isUpgraded() ? 1 : 0;
+    }
+    const std::vector<std::pair<const char *, const Random *>> streams = {
+        {"aiRng", &gc.aiRng}, {"cardRandomRng", &gc.cardRandomRng}, {"cardRng", &gc.cardRng},
+        {"eventRng", &gc.eventRng}, {"mathUtilRng", &gc.mathUtilRng}, {"merchantRng", &gc.merchantRng},
+        {"miscRng", &gc.miscRng}, {"monsterHpRng", &gc.monsterHpRng}, {"monsterRng", &gc.monsterRng},
+        {"neowRng", &gc.neowRng}, {"potionRng", &gc.potionRng}, {"relicRng", &gc.relicRng},
+        {"shuffleRng", &gc.shuffleRng}, {"treasureRng", &gc.treasureRng}};
+    std::ostringstream rngText;
+    for (const auto &[name, r] : streams) {
+        rng[name] = r->counter;
+        rngText << name << '=' << r->counter << ':' << r->seed0 << ':' << r->seed1 << '|';
+    }
+    nlohmann::json roomVisits = nlohmann::json::array();
+    for (const int v : path.roomVisits) roomVisits.push_back(v);
+    return {{"act", gc.act}, {"floor", gc.floorNum},
+            {"boss", monsterEncounterEnumNames[static_cast<int>(gc.info.encounter)]},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
+            {"potionCapacity", gc.potionCapacity}, {"potionCount", gc.potionCount}, {"potions", potions},
+            {"deckSize", gc.deck.cards.size()}, {"upgrades", upgrades}, {"deck", deck}, {"relics", relics},
+            {"rngCounters", rng}, {"rngDigest", vwinSha256(rngText.str())},
+            {"pathRoomVisits", roomVisits}};
+}
+
+namespace {
+struct BossRescueSource {
+    bool captured = false, finished = false;
+    int bossBattles = 0;
+    VwinBossEntry entry;
+    std::string startDigest, postExitDigest, postExitSummary, encounterEnum;
+    std::vector<int> trace;
+    int won = -1, terminalHp = -1, postExitHp = -1, potionsAfter = -1, budget = -1;
+    std::int64_t decisions = 0, simulations = 0, searchSteps = 0, minRootSteps = -1, maxRootSteps = -1;
+    double cpuSeconds = 0.0;
+    std::uint64_t cpuStart = 0;
+};
+
+struct BossRescueRow {
+    std::string kind, arm;
+    int budget = 0, rep = -1;
+    std::optional<std::uint64_t> plannerSeed;
+    VwinArmResult result;
+    VwinBossArmDetail detail;
+};
+
+class PlannerSeedScope {
+public:
+    explicit PlannerSeedScope(std::optional<std::uint64_t> seed) {
+        search::g_nativeSilverPlannerSeedOverride = seed;
+    }
+    ~PlannerSeedScope() { search::g_nativeSilverPlannerSeedOverride.reset(); }
+};
+
+BossRescueRow bossRescueRun(const VwinBossEntry &entry, const std::string &kind, const std::string &arm,
+                            int budget, int rep, std::optional<std::uint64_t> plannerSeed) {
+    BossRescueRow row;
+    row.kind = kind; row.arm = arm; row.budget = budget; row.rep = rep; row.plannerSeed = plannerSeed;
+    PlannerSeedScope scope(plannerSeed);
+    row.result = vwinRunBossArm(entry, budget, nullptr, &row.detail);
+    return row;
+}
+
+std::string bossRescueTraceText(const std::vector<int> &trace) {
+    std::ostringstream o;
+    for (std::size_t i = 0; i < trace.size(); ++i) o << (i ? " " : "") << trace[i];
+    return o.str();
+}
+
+// Captures the boss entry of `act` from one ordinary runFullRunOOC call.
+BossRescueSource bossRescueCapture(std::uint64_t seed, int sims, int act, RunResult &run) {
+    BossRescueSource source;
+    search::ScumSearchAgent2 *liveAgent = nullptr;
+    BossEntryHook hook;
+    hook.before = [&](const GameContext &gc, search::ScumSearchAgent2 &agent, const PathHistory &path) {
+        ++source.bossBattles;
+        if (gc.act != act) return;
+        if (source.captured) throw std::runtime_error("boss rescue #347: second boss battle in the target act");
+        source.captured = true;
+        source.entry.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+        source.entry.path = path;
+        source.entry.agent = agent;
+        source.entry.policy = one_combat::captureOocPolicyThreadState();
+        source.entry.act = gc.act;
+        source.entry.floor = gc.floorNum;
+        const int encounterIndex = static_cast<int>(gc.info.encounter);
+        source.entry.encounter = monsterEncounterStrings[encounterIndex];
+        source.encounterEnum = monsterEncounterEnumNames[encounterIndex];
+        source.entry.roomClass = combatEvalRoomClass(gc.curRoom);
+        source.startDigest = bossRescueStateDigest(gc, &agent);
+        source.budget = agent.simulationCountBase;
+        // Recording the executed actions does not change any decision.
+        agent.recordActions = true;
+        agent.gameActionHistory.clear();
+        liveAgent = &agent;
+        source.cpuStart = vwinThreadCpuNanos();
+    };
+    hook.after = [&](const GameContext &gc, const BattleContext &bc) {
+        if (!liveAgent || source.finished) return;
+        source.cpuSeconds = static_cast<double>(vwinThreadCpuNanos() - source.cpuStart) / 1.0e9;
+        source.finished = true;
+        source.won = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : bc.outcome == Outcome::PLAYER_LOSS ? 0 : -1;
+        source.terminalHp = bc.player.curHp;
+        source.postExitHp = gc.curHp;
+        source.potionsAfter = gc.potionCount;
+        source.postExitDigest = bossRescueStateDigest(gc, nullptr);
+        source.postExitSummary = bossRescueStateSummary(gc);
+        source.trace = liveAgent->gameActionHistory;
+        const auto &stats = search::g_nativeSilverCombatStats;
+        source.decisions = stats.decisions;
+        source.simulations = stats.simulations;
+        source.searchSteps = stats.searchSteps;
+        source.minRootSteps = stats.minRootSteps;
+        source.maxRootSteps = stats.maxRootSteps;
+        liveAgent->recordActions = false;
+        liveAgent->gameActionHistory.clear();
+        liveAgent = nullptr;
+    };
+    const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
+    t_bossEntryHook = &hook;
+    try {
+        run = runFullRunOOC(seed, sims, 0, restV, true);
+    } catch (...) {
+        t_bossEntryHook = nullptr;
+        throw;
+    }
+    t_bossEntryHook = nullptr;
+    return source;
+}
+
+bool bossRescueSameRun(const BossRescueRow &a, const BossRescueRow &b) {
+    return a.result.won == b.result.won && a.result.terminalHp == b.result.terminalHp
+        && a.detail.trace == b.detail.trace && a.detail.postExitDigest == b.detail.postExitDigest
+        && a.result.simulations == b.result.simulations && a.detail.searchSteps == b.detail.searchSteps;
+}
+} // namespace
+
+int bossRescue347(int nEntries, const std::string &selectionPath, const std::string &stateId,
+                  const std::string &outPrefix) {
+    if (nEntries != 1) throw std::runtime_error("boss rescue #347: one entry per process");
+    const auto selection = nlohmann::json::parse(std::ifstream(selectionPath));
+    const std::string selectionSchema = selection.value("schema", "");
+    // prep: #347 boss-preparation R-match; otherwise the frozen #425 rescue protocol.
+    const bool prep = selectionSchema == "boss_preparation_rmatch_347_selection_v1";
+    if (!prep && selectionSchema != "boss_budget_rescue_347_pilot_selection_v1")
+        throw std::runtime_error("boss rescue #347: unexpected selection schema");
+    const int reps = prep ? selection.at("plannerReps").get<int>() : 4;
+    if (reps < 1 || reps > 8) throw std::runtime_error("boss rescue #347: plannerReps must be 1..8");
+    nlohmann::json spec;
+    for (const auto &candidate : selection.at("selected"))
+        if (candidate.at("stateId") == stateId) spec = candidate;
+    if (spec.is_null()) throw std::runtime_error("boss rescue #347: state " + stateId + " is not selected");
+    const std::uint64_t seed = spec.at("seed").get<std::uint64_t>();
+    const int act = spec.at("act").get<int>();
+    const std::string sourceArm = spec.at("sourceArm"), boss = spec.at("boss");
+    const auto &historical = spec.at("historicalRow");
+    // The #425 protocol requires a lost source fight and has no other option.
+    if (!prep && spec.contains("expectedSourceWon"))
+        throw std::runtime_error("boss rescue #347: expectedSourceWon is not part of the rescue schema");
+    const int expectedSourceWon = prep ? spec.at("expectedSourceWon").get<int>() : 0;
+    if (expectedSourceWon != 0 && expectedSourceWon != 1)
+        throw std::runtime_error("boss rescue #347: expectedSourceWon must be 0 or 1");
+    const auto plannerSeed = [&](int rep) {
+        return prep ? bossPrepPlannerSeed(seed, act, rep) : bossRescuePlannerSeed(stateId, rep);
+    };
+    const std::string freshKind = prep ? "fresh" : "A", repeatKind = prep ? "fresh_repeat" : "A_repeat";
+
+    // The process must run the recorded pilot arm with flat exact-10k Silver.
+    if (one_combat::liveOocMctsEnabled() != (sourceArm == "mcts"))
+        throw std::runtime_error("boss rescue #347: STS_OOC_MCTS does not match source arm " + sourceArm);
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+        || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled()
+        || search::nativeSilverReuseCap() != 32768 || g_stopAfterAct != 3)
+        throw std::runtime_error("boss rescue #347: requires exact-root-budget Silver, adaptive and learned stopping off, reuse cap 32768, STS_STOP_AFTER_ACT=3");
+    const std::string rowsPath = outPrefix + ".rows.csv", entryPath = outPrefix + ".entry.json";
+    for (const auto &path : {rowsPath, entryPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("boss rescue #347: refusing to overwrite " + path);
+
+    RunResult run{};
+    auto source = bossRescueCapture(seed, 10000, act, run);
+    const std::map<std::string, std::pair<long long, long long>> runFields = {
+        {"won", {run.won ? 1 : 0, historical.at("won").get<long long>()}},
+        {"floor", {run.floor, historical.at("floor").get<long long>()}},
+        {"act", {run.act, historical.at("act").get<long long>()}},
+        {"hpEnd", {run.hpEnd, historical.at("hpEnd").get<long long>()}},
+        {"maxHp", {run.maxHp, historical.at("maxHp").get<long long>()}},
+        {"fightsLost", {run.fightsLost, historical.at("fightsLost").get<long long>()}},
+        {"deathCombat", {run.deathCombat, historical.at("deathCombat").get<long long>()}},
+        {"deathEncounter", {run.deathEncounter, historical.at("deathEncounter").get<long long>()}}};
+    std::vector<std::string> failures;
+    nlohmann::json runJson = nlohmann::json::object();
+    for (const auto &[name, values] : runFields) {
+        runJson[name] = {{"reconstructed", values.first}, {"historical", values.second}};
+        if (values.first != values.second) failures.push_back("run_" + name + "_mismatch");
+    }
+    if (!source.captured) failures.push_back("boss_entry_not_reached");
+    if (source.captured && source.encounterEnum != boss) failures.push_back("boss_identity_mismatch");
+    if (source.captured && (!source.finished || source.won != expectedSourceWon))
+        failures.push_back(expectedSourceWon == 0 ? "source_boss_not_lost" : "source_boss_not_won");
+    if (source.captured && source.budget != 10000) failures.push_back("source_budget_not_10000");
+
+    std::vector<BossRescueRow> rows;
+    nlohmann::json checks = nlohmann::json::object();
+    if (source.captured && source.finished) {
+        const std::string preDigest = bossRescueStateDigest(*source.entry.pre, &source.entry.agent);
+        if (preDigest != source.startDigest) failures.push_back("detached_copy_digest_mismatch");
+        rows.push_back(bossRescueRun(source.entry, "control", "A", 10000, -1, std::nullopt));
+        for (int rep = 0; rep < reps; ++rep) {
+            const auto planner = plannerSeed(rep);
+            if (prep) {
+                rows.push_back(bossRescueRun(source.entry, freshKind, "10k", 10000, rep, planner));
+                continue;
+            }
+            const std::vector<std::pair<std::string, int>> order = rep % 2 == 0
+                ? std::vector<std::pair<std::string, int>>{{"A", 10000}, {"B", 40000}}
+                : std::vector<std::pair<std::string, int>>{{"B", 40000}, {"A", 10000}};
+            for (const auto &[arm, budget] : order)
+                rows.push_back(bossRescueRun(source.entry, arm, arm, budget, rep, planner));
+        }
+        rows.push_back(bossRescueRun(source.entry, "control_repeat", "A", 10000, -1, std::nullopt));
+        rows.push_back(bossRescueRun(source.entry, repeatKind, prep ? "10k" : "A", 10000, 0, plannerSeed(0)));
+
+        const auto &control = rows.front();
+        const bool controlParity = control.result.valid && control.result.won == source.won
+            && control.result.terminalHp == source.terminalHp && control.detail.trace == source.trace
+            && control.detail.postExitDigest == source.postExitDigest
+            && static_cast<std::int64_t>(control.result.simulations) == source.simulations;
+        checks["controlParity"] = {{"pass", controlParity},
+            {"won", control.result.won == source.won}, {"terminalHp", control.result.terminalHp == source.terminalHp},
+            {"fullTrace", control.detail.trace == source.trace},
+            {"postExitStateDigest", control.detail.postExitDigest == source.postExitDigest},
+            {"simulations", static_cast<std::int64_t>(control.result.simulations) == source.simulations}};
+        if (!controlParity) failures.push_back("control_parity_failure");
+        const BossRescueRow *aRep0 = nullptr;
+        for (const auto &row : rows) if (row.kind == freshKind && row.rep == 0) aRep0 = &row;
+        const bool controlRepeat = bossRescueSameRun(control, rows[rows.size() - 2]);
+        const bool aRepeat = aRep0 && bossRescueSameRun(*aRep0, rows.back());
+        checks["controlRepeatIdentical"] = controlRepeat;
+        checks["aRep0RepeatIdentical"] = aRepeat;
+        if (!controlRepeat || !aRepeat) failures.push_back("replay_not_deterministic_or_contaminated");
+        bool digests = bossRescueStateDigest(*source.entry.pre, &source.entry.agent) == source.startDigest;
+        bool budgets = true, valid = true;
+        for (const auto &row : rows) {
+            digests = digests && row.detail.startDigest == source.startDigest;
+            budgets = budgets && row.detail.minRootSteps == row.budget && row.detail.maxRootSteps == row.budget
+                && row.detail.searchSteps == static_cast<std::int64_t>(row.result.decisions) * row.budget
+                && static_cast<std::int64_t>(row.result.simulations) == row.detail.searchSteps;
+            valid = valid && row.result.valid;
+        }
+        checks["startDigestIdentical"] = digests;
+        checks["budgetSpentEveryRoot"] = budgets;
+        checks["allRowsValid"] = valid;
+        if (!digests) failures.push_back("start_digest_mismatch");
+        if (!budgets) failures.push_back("budget_not_spent");
+        if (!valid) failures.push_back("invalid_replay_row");
+    }
+
+    std::ofstream out(rowsPath);
+    if (!out) throw std::runtime_error("boss rescue #347: cannot open " + rowsPath);
+    out << "stateId,stratum,sourceArm,seed,act,boss,kind,arm,budget,rep,plannerSeed,startDigest,valid,"
+           "outcome,won,terminalHp,postExitHp,potionsAfter,postExitDigest,decisions,simulations,"
+           "searchSteps,minRootSteps,maxRootSteps,reroots,freshRoots,singletonSkips,cpuSeconds,"
+           "wallSeconds,traceLen,traceSha256,quarantineReason,postExitSummary,trace\n";
+    const auto prefix = [&](std::ostream &o) {
+        o << stateId << ',' << spec.at("stratum").get<std::string>() << ',' << sourceArm << ',' << seed
+          << ',' << act << ',' << boss << ',';
+    };
+    if (source.captured && source.finished) {
+        prefix(out);
+        out << "source,source," << source.budget << ",-1,," << source.startDigest << ",1,"
+            << (source.won == 1 ? "PLAYER_VICTORY" : source.won == 0 ? "PLAYER_LOSS" : "UNDECIDED") << ','
+            << source.won << ',' << source.terminalHp << ',' << source.postExitHp << ',' << source.potionsAfter
+            << ',' << source.postExitDigest << ',' << source.decisions << ',' << source.simulations << ','
+            << source.searchSteps << ',' << source.minRootSteps << ',' << source.maxRootSteps << ",,,,"
+            << std::setprecision(9) << source.cpuSeconds << ",," << source.trace.size() << ','
+            << vwinSha256(bossRescueTraceText(source.trace)) << ",," << csvQuote(source.postExitSummary)
+            << ',' << bossRescueTraceText(source.trace) << '\n';
+    }
+    for (const auto &row : rows) {
+        prefix(out);
+        std::ostringstream planner;
+        if (row.plannerSeed) planner << std::hex << std::setw(16) << std::setfill('0') << *row.plannerSeed;
+        out << row.kind << ',' << row.arm << ',' << row.budget << ',' << row.rep << ',' << planner.str() << ','
+            << row.detail.startDigest << ',' << (row.result.valid ? 1 : 0) << ',' << row.result.outcome << ','
+            << row.result.won << ',' << row.result.terminalHp << ',' << row.result.postAfterBattleHp << ','
+            << row.result.potionsAfter << ',' << row.detail.postExitDigest << ',' << row.result.decisions << ','
+            << row.result.simulations << ',' << row.detail.searchSteps << ',' << row.detail.minRootSteps << ','
+            << row.detail.maxRootSteps << ',' << row.detail.reroots << ',' << row.detail.freshRoots << ','
+            << row.detail.singletonSkips << ',' << std::setprecision(9) << row.result.cpuSeconds << ','
+            << row.detail.wallSeconds << ',' << row.detail.trace.size() << ','
+            << vwinSha256(bossRescueTraceText(row.detail.trace)) << ',' << csvQuote(row.result.quarantineReason)
+            << ',' << csvQuote(row.detail.postExitSummary) << ',' << bossRescueTraceText(row.detail.trace) << '\n';
+    }
+    out.close();
+    if (!out) throw std::runtime_error("boss rescue #347: write failed " + rowsPath);
+
+    nlohmann::json env = nlohmann::json::object();
+    for (char **e = environ; *e; ++e) {
+        const std::string kv = *e;
+        if (kv.rfind("STS_", 0) == 0 || kv.rfind("OMP_", 0) == 0)
+            env[kv.substr(0, kv.find('='))] = kv.substr(kv.find('=') + 1);
+    }
+    nlohmann::json plannerSeeds = nlohmann::json::array();
+    for (int rep = 0; rep < reps; ++rep) {
+        std::ostringstream hex;
+        hex << std::hex << std::setw(16) << std::setfill('0') << plannerSeed(rep);
+        plannerSeeds.push_back(hex.str());
+    }
+    nlohmann::json entryJson = {
+        {"schema", prep ? "boss_preparation_rmatch_347_entry_v1" : "boss_budget_rescue_347_pilot_entry_v1"},
+        {"stateId", stateId}, {"stratum", spec.at("stratum")}, {"sourceArm", sourceArm}, {"seed", seed},
+        {"act", act}, {"expectedBoss", boss},
+        {"capturedBoss", source.encounterEnum}, {"floor", source.captured ? source.entry.floor : -1},
+        {"bossBattlesSeen", source.bossBattles},
+        {"entrySummary", source.captured ? bossRescueStateSummary(*source.entry.pre) : ""},
+        {"startDigest", source.startDigest},
+        {"reconstruction", runJson}, {"sourceFight", {{"won", source.won}, {"terminalHp", source.terminalHp},
+            {"postExitHp", source.postExitHp}, {"postExitDigest", source.postExitDigest},
+            {"decisions", source.decisions}, {"simulations", source.simulations},
+            {"traceLen", source.trace.size()}, {"cpuSeconds", source.cpuSeconds}}},
+        {"plannerSeedDomain", prep ? "boss-prep-347-planner-v1:{runSeed}:{act}:{rep}"
+                                   : "boss-rescue-347-planner-v1:{stateId}:{rep}"},
+        {"plannerSeeds", plannerSeeds}, {"checks", checks},
+        {"status", failures.empty() ? "VALID" : "INVALID"}, {"failures", failures},
+        {"provenance", {{"executableGitSha", trainingExecutableGitSha()},
+            {"executableSha256", fileSha256(g_mainBinaryPath)},
+            {"selectionSha256", fileSha256(selectionPath)},
+            {"policy", effectiveOocPolicySpecification()}, {"environment", env}}},
+        {"outputs", {{"rowsSha256", fileSha256(rowsPath)}}},
+    };
+    if (prep) {
+        entryJson["expectedSourceWon"] = expectedSourceWon;
+        entryJson["checks"]["checkedReps"] = reps;
+        entryJson["entryDescriptor"] = source.captured
+            ? bossPrepEntryDescriptor(*source.entry.pre, source.entry.path) : nlohmann::json();
+    }
+    std::ofstream entryOut(entryPath);
+    if (!entryOut) throw std::runtime_error("boss rescue #347: cannot open " + entryPath);
+    entryOut << entryJson.dump(2) << '\n';
+    std::cout << "boss rescue #347 " << stateId << " status=" << (failures.empty() ? "VALID" : "INVALID");
+    for (const auto &f : failures) std::cout << ' ' << f;
+    std::cout << " -> " << outPrefix << '\n';
+    return failures.empty() ? 0 : 3;
+}
+
+// Fixture checks for the replay boundary on the act-1 boss of one seed at a
+// small budget: control parity, determinism, planner-seed consumption, arm
+// isolation and per-root budgets. Runs whatever arm environment is exported.
+int bossRescue347SelfTest(int nSeeds, std::uint64_t seed, int sims) {
+    if (nSeeds != 1 || sims < 1) throw std::runtime_error("boss rescue #347 selftest: one seed, positive sims");
+    RunResult run{};
+    auto source = bossRescueCapture(seed, sims, 1, run);
+    auto require = [](bool ok, const std::string &what) {
+        if (!ok) throw std::runtime_error("boss rescue #347 selftest: " + what);
+        std::cout << "PASS " << what << '\n';
+    };
+    require(source.captured && source.finished, "act-1 boss entry captured and fought");
+    require(bossRescueStateDigest(*source.entry.pre, &source.entry.agent) == source.startDigest,
+            "detached entry copy has the live entry digest");
+    const auto control = bossRescueRun(source.entry, "control", "A", sims, -1, std::nullopt);
+    require(control.result.won == source.won && control.result.terminalHp == source.terminalHp
+            && control.detail.trace == source.trace && control.detail.postExitDigest == source.postExitDigest,
+            "original-seed control reproduces the source fight (outcome, HP, trace, post-exit state)");
+    const int small = std::max(1, sims / 4);
+    std::set<std::vector<int>> traces;
+    std::vector<BossRescueRow> fresh;
+    for (int rep = 0; rep < 6; ++rep) {
+        fresh.push_back(bossRescueRun(source.entry, "A", "A", small, rep, bossRescuePlannerSeed("selftest", rep)));
+        traces.insert(fresh.back().detail.trace);
+    }
+    require(traces.size() >= 2, "fresh planner seeds change the search (" + std::to_string(traces.size())
+            + " distinct traces of 6)");
+    const auto big = bossRescueRun(source.entry, "B", "B", 4 * small, 0, bossRescuePlannerSeed("selftest", 0));
+    bool budgets = true;
+    for (const auto *row : {&control, &big}) budgets = budgets && row->detail.minRootSteps == row->budget
+        && row->detail.maxRootSteps == row->budget;
+    for (const auto &row : fresh) budgets = budgets && row.detail.minRootSteps == row.budget
+        && row.detail.maxRootSteps == row.budget;
+    require(budgets, "every searched root runs exactly its budget");
+    const auto again = bossRescueRun(source.entry, "A", "A", small, 0, bossRescuePlannerSeed("selftest", 0));
+    require(bossRescueSameRun(fresh.front(), again), "same state, seed and budget reproduce after other arms");
+    const auto controlAgain = bossRescueRun(source.entry, "control", "A", sims, -1, std::nullopt);
+    require(bossRescueSameRun(control, controlAgain), "control repeat identical after other arms");
+    bool digests = bossRescueStateDigest(*source.entry.pre, &source.entry.agent) == source.startDigest;
+    for (const auto &row : fresh) digests = digests && row.detail.startDigest == source.startDigest;
+    require(digests && big.detail.startDigest == source.startDigest, "all arms start from the entry digest");
+    std::cout << "boss rescue #347 selftest PASS seed=" << seed << " sims=" << sims << " decisions="
+              << control.result.decisions << '\n';
+    return 0;
+}
+
 // #400 Stage 1: replay every real fight of each source trajectory under a
 // small fixed grid of Silver search constants. Each arm starts from a detached
 // copy of the pre-battle state with the same agent and hidden future; only the
@@ -3615,8 +4615,63 @@ static nlohmann::json combatTransitionRowJson(
 // Capture one JSONL transition per real fight at the RAW persistent-transfer
 // boundary. This is a data producer only: it never substitutes the snapshot
 // for native continuation and is not part of the default gameplay path.
+// #418 targeted CTM support collections. Each setup forces a rare state the
+// ordinary corpus barely reaches; the manifest names the setup so its rows are
+// qualified as their own slice, never mixed into the ordinary distribution.
+enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW };
+
+static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
+    if (name.empty()) return ForcedCtmSetup::NONE;
+    if (name == "ritual_writhing") return ForcedCtmSetup::RITUAL_WRITHING;
+    if (name == "high_maxhp") return ForcedCtmSetup::HIGH_MAXHP;
+    if (name == "lizard_fairy") return ForcedCtmSetup::LIZARD_FAIRY;
+    if (name == "lizard_brew") return ForcedCtmSetup::LIZARD_BREW;
+    throw std::runtime_error("combattransitionforcedgen: unknown setup " + name);
+}
+
+// Once, before the first fight: the persistent state the setup needs.
+static void applyForcedCtmSetupOnce(ForcedCtmSetup setup, GameContext &gc, std::uint64_t seed) {
+    switch (setup) {
+        case ForcedCtmSetup::RITUAL_WRITHING:
+            gc.deck.obtain(gc, CardId::RITUAL_DAGGER);
+            break;
+        case ForcedCtmSetup::HIGH_MAXHP: {
+            // Max HP 150..220 at full HP, deterministic per seed (SplitMix64).
+            std::uint64_t z = seed + 0x9e3779b97f4a7c15ULL;
+            z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+            z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+            gc.maxHp = 150 + static_cast<int>((z ^ (z >> 31)) % 71);
+            gc.curHp = gc.maxHp;
+            break;
+        }
+        case ForcedCtmSetup::LIZARD_FAIRY:
+        case ForcedCtmSetup::LIZARD_BREW:
+            gc.obtainRelic(RelicId::LIZARD_TAIL);
+            break;
+        case ForcedCtmSetup::NONE:
+            break;
+    }
+}
+
+// Before every fight, ahead of the pre-combat capture.
+static void applyForcedCtmSetupPerFight(ForcedCtmSetup setup, GameContext &gc) {
+    if (setup == ForcedCtmSetup::RITUAL_WRITHING && gc.act == 3 && gc.curRoom == Room::MONSTER) {
+        gc.info.encounter = MonsterEncounter::WRITHING_MASS;
+    } else if (setup == ForcedCtmSetup::LIZARD_FAIRY || setup == ForcedCtmSetup::LIZARD_BREW) {
+        // Keep the potion next to an unused Tail while a slot is free.
+        const Potion potion = setup == ForcedCtmSetup::LIZARD_FAIRY ? Potion::FAIRY_POTION
+                                                                    : Potion::ENTROPIC_BREW;
+        bool held = false;
+        for (int i = 0; i < gc.potionCapacity; ++i) held = held || gc.potions[i] == potion;
+        if (!held && gc.hasRelic(RelicId::LIZARD_TAIL)
+            && gc.relics.getRelicValue(RelicId::LIZARD_TAIL) != 0)
+            gc.obtainPotion(potion);
+    }
+}
+
 static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
-                                              const WholeCombatTeacher &teacher) {
+                                              const WholeCombatTeacher &teacher,
+                                              ForcedCtmSetup setup = ForcedCtmSetup::NONE) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -3630,6 +4685,10 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
+            if (setup != ForcedCtmSetup::NONE) {
+                if (fightIdx == 0) applyForcedCtmSetupOnce(setup, gc, seed);
+                applyForcedCtmSetupPerFight(setup, gc);
+            }
             const GameContext pre = gc;
             const int battleAct = gc.act;
             const int battleFloor = gc.floorNum;
@@ -3802,16 +4861,24 @@ int combatTransitionFixture(const std::string &outfile,
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
                                 const std::string &teacherPath,
-                                bool allowStaleProvenance) {
+                                bool allowStaleProvenance,
+                                const std::string &forcedSetup) {
+    const ForcedCtmSetup setup = parseForcedCtmSetup(forcedSetup);
+    if (setup != ForcedCtmSetup::NONE && allowStaleProvenance)
+        throw std::runtime_error("combattransitionforcedgen: forced setups need a current teacher");
     trainingCampaignStart();
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance);
+    // Only the Lizard candidate mode passes stale provenance; it keeps the
+    // frozen exact-10k teacher.
+    const bool lizardCandidateMode = allowStaleProvenance;
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
+                                                false, !lizardCandidateMode);
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
     int completed = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher);
+        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup);
         #pragma omp critical(combat_transition_write)
         {
             f << generated;
@@ -3829,6 +4896,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"combatTeacher", teacher.specification},
+        {"forcedSetup", forcedSetup.empty() ? "none" : forcedSetup},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
         {"csv", {{"path", std::filesystem::absolute(outfile).string()},
                   {"sha256", fileSha256(outfile)}}},
@@ -3840,11 +4908,13 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     mf << manifest.dump(2) << '\n';
     std::cout << (allowStaleProvenance
                      ? "combattransitionlizardtargetcandidategen teacher="
+                     : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen teacher="
                      : "combattransitiongen teacher=") << teacher.id << " completed="
               << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
               << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, allowStaleProvenance
                                 ? "combattransitionlizardtargetcandidategen"
+                                : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen"
                                 : "combattransitiongen", nSeeds, completed,
                             nSeeds - completed, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);

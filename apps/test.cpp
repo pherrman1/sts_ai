@@ -1767,6 +1767,33 @@ int testSimulatorRelicFidelity() {
         }
     }
 
+    // Necronomicon adds Necronomicurse on equip (#406); Omamori blocks it, and
+    // removing the curse from the master deck returns it.
+    {
+        auto countCurse = [](const GameContext &gc) {
+            int n = 0;
+            for (const auto &c : gc.deck.cards) n += c.getId() == CardId::NECRONOMICURSE;
+            return n;
+        };
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        const int deckSize = gc.deck.size();
+        if (gc.obtainRelic(RelicId::NECRONOMICON)) return fail("Necronomicon opened a screen");
+        if (gc.deck.size() != deckSize + 1 || countCurse(gc) != 1) {
+            return fail("Necronomicon did not add exactly one Necronomicurse");
+        }
+        gc.deck.remove(gc, gc.deck.size() - 1);
+        if (gc.deck.size() != deckSize + 1 || countCurse(gc) != 1) {
+            return fail("removing Necronomicurse did not return it to the deck");
+        }
+
+        GameContext warded(CharacterClass::IRONCLAD, 123456789, 0);
+        warded.obtainRelic(RelicId::OMAMORI);
+        warded.obtainRelic(RelicId::NECRONOMICON);
+        if (countCurse(warded) != 0 || warded.relics.getRelicValue(RelicId::OMAMORI) != 1) {
+            return fail("Omamori did not block Necronomicurse");
+        }
+    }
+
     // Orrery opens five ordinary card rewards.
     {
         GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
@@ -3096,6 +3123,47 @@ int testIssueFixes() {
             return fail("Colosseum Nob Smoke Bomb escape left smokeBombUsed or granted rewards");
         }
     }
+    // Dead Adventurer, Masked Bandits and the Mushrooms set their reward
+    // screen as the fight continuation, bypassing afterBattle(): an escape
+    // must forfeit those rewards, clear smokeBombUsed and return to the map.
+    {
+        struct Case { Event event; int act; int option; const char *name; };
+        for (const Case c : {Case{Event::DEAD_ADVENTURER, 1, 0, "Dead Adventurer"},
+                             Case{Event::MASKED_BANDITS, 2, 1, "Masked Bandits"},
+                             Case{Event::HYPNOTIZING_COLORED_MUSHROOMS, 1, 0, "Mushrooms"}}) {
+            bool fought = false;
+            for (std::uint64_t seed = 123456789; seed < 123456789 + 64 && !fought; ++seed) {
+                GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+                gc.act = c.act;
+                gc.floorNum = c.act == 1 ? 8 : 25;
+                gc.curMapNodeY = 7;
+                gc.curRoom = Room::EVENT;
+                gc.curEvent = c.event;
+                gc.setupEvent();
+                // Dead Adventurer may need several searches before the fight.
+                for (int i = 0; i < 3 && gc.screenState == ScreenState::EVENT_SCREEN; ++i)
+                    gc.chooseEventOption(c.option);
+                if (gc.screenState != ScreenState::BATTLE) continue;
+                fought = true;
+                const int goldBefore = gc.gold;
+                const auto relicsBefore = gc.relics.relics.size();
+                BattleContext bc;
+                bc.init(gc, gc.info.encounter);
+                bc.potions[0] = Potion::SMOKE_BOMB;
+                bc.potionCount = 1;
+                const search::Action useSmoke(search::ActionType::POTION, 0);
+                if (!useSmoke.isValidAction(bc)) return fail("event fight rejected Smoke Bomb");
+                useSmoke.execute(bc);
+                bc.exitBattle(gc);
+                if (gc.smokeBombUsed || gc.outcome != GameOutcome::UNDECIDED
+                        || gc.screenState != ScreenState::MAP_SCREEN || gc.gold != goldBefore
+                        || gc.relics.relics.size() != relicsBefore) {
+                    { std::cerr << c.name << '\n'; return fail("event Smoke Bomb escape granted rewards or kept smokeBombUsed"); }
+                }
+            }
+            if (!fought) { std::cerr << c.name << '\n'; return fail("event Smoke Bomb test found no seed reaching the fight"); }
+        }
+    }
     // Boss and SURROUNDED fights reject use, preserve the potion on direct
     // execution, and still expose the independent discard action.
     {
@@ -3294,6 +3362,41 @@ int testIssueFixes() {
         }
         if (d.isCardBottled(3)) {
             return fail("bottle index stale after removal");
+        }
+    }
+
+    // A new Ritual Dagger starts at 15 base damage (its misc), whether The
+    // Nest or a direct obtain creates it, and a combat copy hits for 15.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::THE_NEST;
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.setupEvent();
+        gc.chooseEventOption(1);
+        const Card nestDagger = gc.deck.cards[gc.deck.size() - 1];
+        if (nestDagger.getId() != CardId::RITUAL_DAGGER || nestDagger.misc != 15) {
+            return fail("The Nest Ritual Dagger does not start at 15 damage");
+        }
+        gc.deck.obtain(gc, CardId::RITUAL_DAGGER);
+        if (gc.deck.cards[gc.deck.size() - 1].misc != 15) {
+            return fail("obtained Ritual Dagger does not start at 15 damage");
+        }
+
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        CardInstance dagger(nestDagger);
+        dagger.uniqueId = 900;
+        bc.cards.moveToHand(dagger);
+        auto &cultist = bc.monsters.arr[0];
+        cultist.block = 0;
+        const int hpBefore = cultist.curHp;
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        if (hpBefore - cultist.curHp != 15) {
+            return fail("new Ritual Dagger does not deal 15 damage");
         }
     }
 
@@ -5296,6 +5399,88 @@ int testOocSemanticSmith() {
     return 0;
 }
 
+// #407: Java AbstractDungeon.populateFirstStrongEnemy re-rolls monsterRng
+// until the draw is not in the act's generateExclusions() for the last weak
+// encounter (STS1 V2.3.4 Exordium/TheCity/TheBeyond). The simulator must
+// produce the same encounter and leave monsterRng at the same counter.
+int testFirstStrongExclusions() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "first_strong_exclusions FAIL: " << msg << '\n';
+        return 1;
+    };
+    typedef MonsterEncounter ME;
+    struct Exclusion { ME lastWeak; ME excluded; };
+    static const Exclusion javaTable[] = {
+            {ME::SMALL_SLIMES, ME::LARGE_SLIME},
+            {ME::SMALL_SLIMES, ME::LOTS_OF_SLIMES},
+            {ME::TWO_LOUSE, ME::THREE_LOUSE},
+            {ME::SPHERIC_GUARDIAN, ME::SENTRY_AND_SPHERE},
+            {ME::THREE_BYRDS, ME::CHOSEN_AND_BYRDS},
+            {ME::CHOSEN, ME::CHOSEN_AND_BYRDS},
+            {ME::CHOSEN, ME::CULTIST_AND_CHOSEN},
+            {ME::THREE_DARKLINGS, ME::THREE_DARKLINGS},
+            {ME::ORB_WALKER, ME::ORB_WALKER},
+            {ME::THREE_SHAPES, ME::FOUR_SHAPES},
+    };
+    auto excluded = [&](ME lastWeak, ME draw) {
+        for (const auto &e : javaTable) {
+            if (e.lastWeak == lastWeak && e.excluded == draw) return true;
+        }
+        return false;
+    };
+    auto javaRoll = [](float roll, const float *weights, int count) {
+        float cur = 0.0f;
+        for (int i = 0; i < count; ++i) {
+            cur += weights[i];
+            if (roll < cur) return i;
+        }
+        return count - 1;
+    };
+
+    int rerolls = 0;
+    for (int act = 1; act <= 3; ++act) {
+        const ME *strong = MonsterEncounterPool::strongEnemies[act-1];
+        const float *weights = MonsterEncounterPool::strongWeights[act-1];
+        const int count = MonsterEncounterPool::strongCount[act-1];
+        for (int w = 0; w < MonsterEncounterPool::weakCount[act-1]; ++w) {
+            const ME lastWeak = MonsterEncounterPool::weakEnemies[act-1][w];
+            for (std::uint64_t s = 1; s <= 400; ++s) {
+                GameContext gc(CharacterClass::IRONCLAD, 0x407u, 0);
+                gc.act = act;
+                gc.monsterList.clear();
+                gc.monsterList.push_back(lastWeak);
+                gc.monsterRng = Random(s * 7919u + act * 31u + w);
+                Random ref = gc.monsterRng;
+
+                ME expected;
+                int draws = 0;
+                do {
+                    expected = strong[javaRoll(ref.random(), weights, count)];
+                    ++draws;
+                } while (excluded(lastWeak, expected));
+                rerolls += draws - 1;
+
+                gc.populateFirstStrongEnemy(strong, weights, count);
+                if (gc.monsterList.size() != 2 || gc.monsterList.back() != expected) {
+                    return fail(std::string("act ") + std::to_string(act) + " after "
+                        + monsterEncounterStrings[static_cast<int>(lastWeak)] + ": got "
+                        + monsterEncounterStrings[static_cast<int>(gc.monsterList.back())] + ", Java "
+                        + monsterEncounterStrings[static_cast<int>(expected)]);
+                }
+                if (gc.monsterRng.counter != ref.counter) {
+                    return fail(std::string("monsterRng counter diverged in act ") + std::to_string(act)
+                        + " after " + monsterEncounterStrings[static_cast<int>(lastWeak)]);
+                }
+            }
+        }
+    }
+    if (rerolls == 0) {
+        return fail("no exclusion re-roll exercised");
+    }
+    std::cout << "first_strong_exclusions PASS (" << rerolls << " re-rolls)\n";
+    return 0;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -5367,6 +5552,8 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "issue_fixes") {
         return testIssueFixes();
+    } else if (command == "first_strong_exclusions") {
+        return testFirstStrongExclusions();
     } else if (command == "simulator_correctness_pr9_19") {
         return testSimulatorCorrectnessPr9To19();
     } else if (command == "silver_escape_penalty") {

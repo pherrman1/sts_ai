@@ -19,6 +19,10 @@ except ModuleNotFoundError:
     import combat_transition_surrogate as base
     import combat_transition_attention_ablation as attention
     import combat_transition_frozen_composition as frozen
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
 
 SALT = 'sts-potion-decoder-nested-v1-20260913'
 RECIPE = {'schema': 'potion_decoder_v1', 'salt': SALT, 'seed': 20260912,
@@ -367,7 +371,7 @@ def fit(args):
     if audit['contradictionCount'] or audit['futureSilverRequired']:
         raise ValueError('native relic gate failed; do not fit')
     certified, potion_audit, _ = frozen.audit_corpus(corpus, arrays, original)
-    if int(arrays['supported'].sum()) != 413799:
+    if int(arrays['supported'].sum()) != _pins.value('combat_transition_potion_decoder.SUPPORTED_ROWS', 413799):
         raise ValueError('global support changed')
     all_certified = np.flatnonzero(arrays['supported'] & certified)
     targets = np.zeros(len(arrays['y_win']), dtype=np.int64)

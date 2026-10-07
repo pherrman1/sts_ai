@@ -30,8 +30,9 @@ Rules were checked against STS1 V2.3.4 `desktop-1.0.jar` (SHA-256
   exactly the queue prefix and the next entry's public distribution is the
   renormalized weights after those rules. The run cross-checks the observed
   prefix lengths against `monOffset`/`eliteOffset` on every row.
-  **Simulator mismatch (not fixed here):** native `populateFirstStrongEnemy`
-  applies the act-1 exclusions only; Java also excludes in acts 2 and 3.
+  Native `populateFirstStrongEnemy` applied the act-1 exclusions only until
+  #407 added the act 2 and 3 exclusions; corpora generated before that fix
+  follow the act-1-only rule at that one queue position.
 
 Preregistered comparison (frozen before any arm was trained):
 - P: the 457-feature public-safe baseline (#397 Stage 1).

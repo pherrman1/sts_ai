@@ -115,6 +115,8 @@ GameContextAction build(const Json &d, unsigned depth) {
             || (addRelic && relic == int(RelicId::INVALID)))
             throw std::runtime_error("screen leaf: invalid reward continuation value");
         action = [kind, gold, rare, uncommon, relic, addRelic] (GameContext &gc) {
+            // Mirrors GameContext: a Smoke Bomb escape forfeits the rewards.
+            if (gc.smokeBombUsed) { gc.afterBattle(); return; }
             Rewards reward; reward.addGold(gold);
             if (kind == "colosseum_rewards") {
                 reward.addRelic(static_cast<RelicId>(rare));

@@ -111,6 +111,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_trace.cpp
     apps/one_combat/semantic_pilot.cpp
     apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/strategic_gen.cpp
     apps/one_combat/counterfactual_gen.cpp
@@ -329,6 +330,8 @@ add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spi
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
+add_test(NAME first_strong_exclusions COMMAND $<TARGET_FILE:unit-test> first_strong_exclusions)
+set_tests_properties(first_strong_exclusions PROPERTIES LABELS "core")
 add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simulator_correctness_pr9_19)
 add_test(NAME simulator_relic_fidelity COMMAND $<TARGET_FILE:unit-test> simulator_relic_fidelity)
 set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
@@ -401,6 +404,10 @@ set_tests_properties(vwin_refresh_validator_selftest PROPERTIES
 add_test(NAME vwin_refresh_corpus_selftest
     COMMAND python3 -m unittest tools.test_vwin_refresh_corpus -q)
 set_tests_properties(vwin_refresh_corpus_selftest PROPERTIES
+    LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_e1_focal_selftest
+    COMMAND python3 -m unittest tools.test_vwin_e1_focal -q)
+set_tests_properties(vwin_e1_focal_selftest PROPERTIES
     LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME boss_headroom_347_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
@@ -492,6 +499,14 @@ add_test(NAME teacher_schema_compat COMMAND $<TARGET_FILE:one_combat> teacher_sc
 set_tests_properties(teacher_schema_compat PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME learned_stop_teacher_contract COMMAND $<TARGET_FILE:one_combat> learnedstopteacherselftest)
+set_tests_properties(learned_stop_teacher_contract PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_offline_score_rows COMMAND $<TARGET_FILE:one_combat> ctmscoreselftest)
+set_tests_properties(ctm_offline_score_rows PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
@@ -548,6 +563,14 @@ set_tests_properties(strategic_tok_state_cache_order_selftest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_model_experiment_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_model_experiment.py)
+add_test(NAME ctm_corpus_adapter_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_corpus_adapter.py)
+add_test(NAME ctm_survival_compare_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_survival_compare.py)
+add_test(NAME ctm_pins_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_pins.py)
+add_test(NAME ctm_near_full_inputs_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
 add_test(NAME combat_transition_attention_hpo_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_attention_hpo.py)
 add_test(NAME combat_transition_attention_hpo_promote_selftest

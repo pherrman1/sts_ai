@@ -3633,6 +3633,11 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionforcedgen") {
+        if (argc < 9) { std::cerr << "usage: one_combat combattransitionforcedgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json SETUP\n"
+                                     "  SETUP: ritual_writhing | high_maxhp | lizard_fairy | lizard_brew\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7], false, argv[8]);
     } else if (mode == "combattransitionlizardtargetcandidategen") {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
@@ -3705,6 +3710,21 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "ooccfpilotgen") {
+        if (argc < 7 || argc > 11) {
+            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]\n";
+            return 2;
+        }
+        try {
+            oocCounterfactualPilotGen(std::stoi(argv[2]), argv[3], std::stoll(argv[4]), argv[5],
+                                      std::stoi(argv[6]), argc > 7 ? std::stoi(argv[7]) : 1,
+                                      argc > 8 ? std::stoi(argv[8]) : 1,
+                                      argc > 9 ? std::stoi(argv[9]) : 1,
+                                      argc > 10 ? argv[10] : std::string{});
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "vwinrefreshcrashdiag") {
         // Diagnostic-only: one source seed, production vwinrefreshgen semantics,
         // stop after MAX_BRANCHES sibling branches; flushed phase markers.
@@ -3730,6 +3750,28 @@ int main(int argc, char **argv) {
         try {
             bossHeadroom347Gen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
                                std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "bossrescue347") {
+        if (argc != 6) {
+            std::cerr << "usage: one_combat bossrescue347 1 SELECTION.json STATE_ID OUT_PREFIX\n";
+            return 2;
+        }
+        try {
+            return bossRescue347(std::stoi(argv[2]), argv[3], argv[4], argv[5]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "bossrescue347selftest") {
+        if (argc != 5) {
+            std::cerr << "usage: one_combat bossrescue347selftest 1 SEED SIMS\n";
+            return 2;
+        }
+        try {
+            return bossRescue347SelfTest(std::stoi(argv[2]), std::stoull(argv[3]), std::stoi(argv[4]));
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;
@@ -3863,6 +3905,13 @@ int main(int argc, char **argv) {
                                        argc > 4 ? std::stoi(argv[4]) : 0);
     } else if (mode == "teacher_schema_compat") {
         return teacherSchemaCompatibilitySelfTest();
+    } else if (mode == "learnedstopteacherselftest") {
+        return learnedStopTeacherSelfTest();
+    } else if (mode == "ctmscorerows") {
+        if (argc < 4) { std::cerr << "usage: one_combat ctmscorerows ROWS.jsonl OUT.csv\n"; return 2; }
+        return ctmScoreRows(argv[2], argv[3]);
+    } else if (mode == "ctmscoreselftest") {
+        return ctmScoreRowsSelfTest();
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

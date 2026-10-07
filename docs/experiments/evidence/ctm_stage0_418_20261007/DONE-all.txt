@@ -1,0 +1,186 @@
+part=cloud1 finished=2026-10-07T00:06:09Z
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=105
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=72
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=68
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=86
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=103
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=81
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=74
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=74
+fbaae3c920b6bac00ae3c87bb8ec65972b6671efb6ca8a0ab341c3813a4f0220  cloud1-w0-exact10k.jsonl
+931e3a122e05e060b477ade827e7b7805d15352d9f5ebb771360f365a418470f  cloud1-w0-learned.jsonl
+0fe5e74fdbc7943aaad391ce911d1787dc6ba00e7e38909044f1a44008a5134e  cloud1-w1-exact10k.jsonl
+04687a8f885c61a738584ed208bcf0f1de3e82b948beb5d4679214425a3c3ea9  cloud1-w1-learned.jsonl
+0c055d797148966b8e414edde85989b7cb64d42e64524c9a79fa1b9c9c3d3d62  cloud1-w2-exact10k.jsonl
+8fa6682363e6e4426cff9c1ff094d78b4ea6e4de174e9f9c03256afbfe9a062e  cloud1-w2-learned.jsonl
+8bb8dc5cb3f2d9f2bab136fda727af867d8a52ef618dec6ec96bb3e2868bce0e  cloud1-w3-exact10k.jsonl
+c65488a6da2c91c097d2b455c990d2fc70365e9c0c020d423c6d3b8caf30b267  cloud1-w3-learned.jsonl
+41024a24b9ac117621342c55a933a9e04073e3a176f05601b7a6ebe5f0a674d0  cloud1-w0-exact10k.jsonl.manifest.json
+f1c52954300ae36372e6b00a693dd959eb6fb79d40ac17b63cac8d570f7390e5  cloud1-w0-learned.jsonl.manifest.json
+15af758e037431e1e546127d3ff497ce5d2bc274ca593236f057bec5580c0a17  cloud1-w1-exact10k.jsonl.manifest.json
+810934a0eb96eecbaaefe350e2729f558890a3d24446d28259c996ae43437537  cloud1-w1-learned.jsonl.manifest.json
+41a09bd89a3a80bc1a04fdf2daad0166219e9056fcfccfde93cba37c419f24ea  cloud1-w2-exact10k.jsonl.manifest.json
+d2a5f97fbb37dcbd88ce92c43b08db9c0f5cb18e9166ebd88c6daa8c9ade6a3a  cloud1-w2-learned.jsonl.manifest.json
+1eb97c9bbfed03c174b56995293022252c43932ec24002038e8cf301fb9789a1  cloud1-w3-exact10k.jsonl.manifest.json
+5ab42a243cf86f1c1fbd002c230642aa59f59db6207dc7d632658093afe8a413  cloud1-w3-learned.jsonl.manifest.json
+part=cloud2 finished=2026-10-07T00:07:13Z
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=115
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=90
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=81
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=78
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=103
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=86
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=91
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=86
+db3a41d3cfe3406ba9b24b30bfd4fa7278c6f39130d32ed8b73926d076a275bb  cloud2-w0-exact10k.jsonl
+99eacf516eacdc0d7fdcc57faba6266ae82680ef6199bd4c1eb1b9bd16439ccf  cloud2-w0-learned.jsonl
+2edb6f05c300f1ffd030d1b0ffed8b7772f015a26fe2d3465ff1e5a4e93bbeee  cloud2-w1-exact10k.jsonl
+f8c9e855845885fb27bfaaed6b3b60221ce2aa4b9f51b40f11fd2fd87331396d  cloud2-w1-learned.jsonl
+df111203c60457b2d1b8aaa9b25ba8f460a8ba6ada8c17b1159764be7177ac95  cloud2-w2-exact10k.jsonl
+c8cc5d63ae873a676114032ffddd2ef4d005a62c665c94312fd40abd775aa8d8  cloud2-w2-learned.jsonl
+f0f21b050774227f0b85492df94db054a585118938ce2cb3aff8ec85837cb1b4  cloud2-w3-exact10k.jsonl
+6514fb953f7692c3bd0fccb04023c7960f733412aa9d285a667dafb44a33f3c7  cloud2-w3-learned.jsonl
+657c68edeb28dcb75d76d9a568061145a30363453148fb64a2150a93e03b186e  cloud2-w0-exact10k.jsonl.manifest.json
+f0d6d9e11e0886e9167005f3906edd043ca819ce9f8ecdb46bd2c6f0c9baa989  cloud2-w0-learned.jsonl.manifest.json
+6a9bb819284443f7c2ca2aa79655e5161ee12cdd5dcf976ff08d0d3be5c78ec2  cloud2-w1-exact10k.jsonl.manifest.json
+353cc709e1ebf6222a6a043b4ca5e5cd79d2f6928114537133b7a0377ca81aa7  cloud2-w1-learned.jsonl.manifest.json
+3ec4c3636affcbda039e62db7eea1f104389411560ac075ec926f27639fc30ee  cloud2-w2-exact10k.jsonl.manifest.json
+b1f912165ce2a578d93e9cec6515c3d424a8fdec84e1a07393deaf3c59d5aeb6  cloud2-w2-learned.jsonl.manifest.json
+2be2df7a66bafea10eef8cf99109a174d9721173cf564385b8a90b8de1bd4886  cloud2-w3-exact10k.jsonl.manifest.json
+39b771802118d4f96cf13489c2b0ceaef3be4ea03afb5159df08e4decfa7e347  cloud2-w3-learned.jsonl.manifest.json
+part=cloud3 finished=2026-10-07T00:07:53Z
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=107
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=106
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=89
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=110
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=102
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=95
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=93
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=92
+08151236169033856bd1bb1ded3d027eda43f37bc19a241b872f795cf51411bd  cloud3-w0-exact10k.jsonl
+e31240682dfb94d5aee63bed8622c6951fd3db91ffd8babbb0ef92cf8277466a  cloud3-w0-learned.jsonl
+9e46cc68e081e19896aa40b3aa2c0f9145fcbb929fe9637194b4f09e1e054496  cloud3-w1-exact10k.jsonl
+8ae43fa6511f1561a1c13f23320403cf90bfe63c8f14caca61ef0e1cac71f1ed  cloud3-w1-learned.jsonl
+5d941623953b2198d0dca2b1b279d810e6b0ffece77a2072415343b3c120c72a  cloud3-w2-exact10k.jsonl
+937b6c0dd8eefc67df999d29af991bd4575507f1979ae77127066635b2b5b2f6  cloud3-w2-learned.jsonl
+fbb877a0f4c8cdc5b4b7317ec136b4bfbd444ef1f7956877bf53f7810f82c908  cloud3-w3-exact10k.jsonl
+c8afe2dad10869d6e6b7e64502bf80c34cfbd894f3b117d5ec3a180d9d5294c0  cloud3-w3-learned.jsonl
+a87f4e42de150b9be077b30802b6c5fede4a78063739462f41b70ab19e6c326d  cloud3-w0-exact10k.jsonl.manifest.json
+2da647497da6dcd47636d17e127dca54bdf3c66b6e3eb0ba7d68f4a66fcb086e  cloud3-w0-learned.jsonl.manifest.json
+9a200c7ac86f141d06f38048e1787ba19a98b58918c2ef2bbdbc1999fe762bb9  cloud3-w1-exact10k.jsonl.manifest.json
+5c74225b79f80068ef25726fbcf8c0d8508f39cd051831d34ee01dc6d1ae1ec1  cloud3-w1-learned.jsonl.manifest.json
+16defcc52361997adb1c59f64bc61246346eddf371fbc24215ec323e7675d942  cloud3-w2-exact10k.jsonl.manifest.json
+ad671712dde3b9892b73424e775a857fbb6db24cf851d47d44ce772b0dd8e873  cloud3-w2-learned.jsonl.manifest.json
+063a73cb4fd9420336df45e5c14bd58923fb796ab960bd23f11e032a049e6e19  cloud3-w3-exact10k.jsonl.manifest.json
+47a28d0a4ae79c0182bd66d968f3c457ed7a450c1752ebae399de5950e5c7a2c  cloud3-w3-learned.jsonl.manifest.json
+part=cloud4 finished=2026-10-07T00:06:26Z
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=90
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=64
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=81
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=53
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=92
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=80
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=76
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=69
+00fad9c895a73423de1443bf2fe5bda8f8650ee59000b74cedc20d58bff421f4  cloud4-w0-exact10k.jsonl
+14a3026ddadfab730dd500320cff8c18b7f6028bebc844194da350397548a1ac  cloud4-w0-learned.jsonl
+4d1990b47b1fdb114ee9deed649bf0b9a4cc2dfc8146e557b0fde1c539dd55a3  cloud4-w1-exact10k.jsonl
+0901d2e80cd2e31eafaaabf7ab61c8b9dd78e898276f132e97ed3b2827bab195  cloud4-w1-learned.jsonl
+acafc0765cd2cf580425baef81096ba7887f9364aa085b9efb716a0164c9424a  cloud4-w2-exact10k.jsonl
+c2da026e65c1896dcf97630b7662283fc3c68975450caab731d17485841216a5  cloud4-w2-learned.jsonl
+173652efda1d08d969e2bcbfbfd0ac6a82a5ee5b3543f6f19ffc88ffbdcbc677  cloud4-w3-exact10k.jsonl
+27a797ab9209f77b601d21d6e37e4a29f0de74f98704393cb853e967ab03e8b9  cloud4-w3-learned.jsonl
+e3cd745bd5ef6ab449d62a3f6a9a192e59cb04d9effa5f90ed030c5bdd35e090  cloud4-w0-exact10k.jsonl.manifest.json
+7dca9a8db5415c3034f010d0b46ed107c87f4216b19501dc03bd0bc83f340366  cloud4-w0-learned.jsonl.manifest.json
+4e8d32fee44b3f78629d86c1fb3b1c0aca1f72a368879f940e7563706d320ecf  cloud4-w1-exact10k.jsonl.manifest.json
+a87e238c6450f1f78bc2024865617b21895756301293560ebdc1ec452f429ab2  cloud4-w1-learned.jsonl.manifest.json
+b1c8b0da82a6a3967fb748a2f8c8733cc4c94b63b1067fc02b22ec8f04f1b6ae  cloud4-w2-exact10k.jsonl.manifest.json
+469130730ff4d0f861d44007e8dda0e38d7f758cc02af0826baf2191dcecf666  cloud4-w2-learned.jsonl.manifest.json
+f8c99537d615a944ae9cf38c2f2a906fa111f70ad927cabddcb64fe794cc21c8  cloud4-w3-exact10k.jsonl.manifest.json
+3b0fb23d0f25db51694a07d6d0c86cb63b795867fd16c42d79025c404e53a0b9  cloud4-w3-learned.jsonl.manifest.json
+part=cloud5 finished=2026-10-07T00:10:35Z
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=130
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=99
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=68
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=68
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=128
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=99
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=70
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=77
+33f4ffc91853bd06361ee9ed28d44add4f6d59f50177c80ef3b0a42d5b08afae  cloud5-w0-exact10k.jsonl
+ea51cd0de3b2dfa762a25ac9ca36dc915d689ccd8f762582069af90530189145  cloud5-w0-learned.jsonl
+2f0ebd55a3b5f02cbbe1da4c7dc11a7c2f4871acbb57113b60e45c71b583dd25  cloud5-w1-exact10k.jsonl
+be49f27eddbabbbb3283a3b19a9494d2b37f474f98d3763073cba3f513f389cb  cloud5-w1-learned.jsonl
+5945ef9ef5da63bae404d1551eb4de8be9e0e8d6faea7a28495252ccfb1cd614  cloud5-w2-exact10k.jsonl
+2f006368057869a8a5d9f5035b865fce4e9e82a104e2c3a9ced2ce125c1c9532  cloud5-w2-learned.jsonl
+1706374db6ff60c8255df964d3344095d20191ebf3ef10ba8a1e124f369cc07d  cloud5-w3-exact10k.jsonl
+ae87ecd949122430a4125e8d962cebc08e808d2c179170d54394ed1cec8443eb  cloud5-w3-learned.jsonl
+041aea1a10720684458361290de7454ff10fed4ae1c3be651eac6148e8dd1ef2  cloud5-w0-exact10k.jsonl.manifest.json
+83ec24dfe7bb6d51cb8db6259dc8b0c9799807d953782d7adecbd3bbdffd44a3  cloud5-w0-learned.jsonl.manifest.json
+217df75e08ba9ba21828fe56ce8154f47a739e4f0cbaa45fa379cae2be9366a7  cloud5-w1-exact10k.jsonl.manifest.json
+ad75452b8a1644ae1799596bc9d83f978ef3a9cf90614818b0390a29eb4011bc  cloud5-w1-learned.jsonl.manifest.json
+387c8f1dedec06f071a45d6c8e3642b1b33bcb2ec1bee9639881729bb8eaf782  cloud5-w2-exact10k.jsonl.manifest.json
+e55a0d0fc508fe80544f24640f9ef823c84ebbea1e6f626a486ea2c70d0bffb0  cloud5-w2-learned.jsonl.manifest.json
+031848c5049adb343b79d7096210478fc28ea2e642f65bfeed940f9066c258c9  cloud5-w3-exact10k.jsonl.manifest.json
+f6d4e3bd56d8108c5e5e1313e71bc1c1f7e60bc3bb3e36c09ca401f4bf8971d7  cloud5-w3-learned.jsonl.manifest.json
+part=local finished=2026-10-07T00:05:34Z
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=105
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=117
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=106
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=80
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=72
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=107
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=94
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=82
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=65
+combattransitiongen teacher=silver-ordinary-fair-exact10k-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=80
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=94
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=107
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=5/5 quarantined=0 rows=85
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=90
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=76
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=95
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=71
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=77
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=57
+combattransitiongen teacher=silver-ordinary-fair-learnedstop-ctm-stage0-46153506 completed=4/4 quarantined=0 rows=97
+176695a72abdfb1a29447fea534fae8ec0aa76cf83f01617bd554171ac816475  local-w0-exact10k.jsonl
+6865a789adbb0050aedeed981aa3eea91859ba31392d02be6233ea8b0e5b86d9  local-w0-learned.jsonl
+5e06acc98f2a2ea22cffd9b6d6d3c2c9c6501e0e4792a5069159cf0091da185e  local-w1-exact10k.jsonl
+4894bd8ca887285d91265399c0b91ad004c06e11d3889fceeb74c5ad9ed012ba  local-w1-learned.jsonl
+69c77add815114c271d33513288011202df36c714a7907620d02eebb7ae2c92f  local-w2-exact10k.jsonl
+ad969da75f5c101fad57b5210ca6dd849a2371281bc2066a969d7553115438fb  local-w2-learned.jsonl
+fb17d3be9492b4d3e883e4a10361b56eec8722bed04e459e81e6be901463baef  local-w3-exact10k.jsonl
+4dd78df02a335d8844a6fad07685b2e65f0cecf831acbe7b992aca509f9d76d3  local-w3-learned.jsonl
+ff305571f13342f9d09fd51da38eccc56a4853c17a33669d1b0ac024497d8f81  local-w4-exact10k.jsonl
+1784d0fc8962de47705d5d1a687c9a42847c50ce56ef97ff6e17b85bf39b983c  local-w4-learned.jsonl
+6156ad014f19b4f75b5fc5ed4be5a6ceb645f5064d7fd6399653a90cac5f8a1d  local-w5-exact10k.jsonl
+31be7b757319bd2e2f2ab68b70c0a7bd7ae131272eb881fc452faaa18dfc2d2a  local-w5-learned.jsonl
+87d1f14cfdffd6c21e003d1758c82002873cfb0ad9acafaac9898591a116c332  local-w6-exact10k.jsonl
+3a6697dae930a4369fe567a855854c4ee0535b60e843880906dc24fa68e4dc10  local-w6-learned.jsonl
+65b95c79da805ef704a71dd12abb0e054c1823de8b2d21bc3621fa6d7c1750fd  local-w7-exact10k.jsonl
+d59b76f3f20503127beb2d650555913dfcfed18d5741efef76a648ae7f9700aa  local-w7-learned.jsonl
+17e065efb1783126d094ef3ed7a707d37326692458aaf4f1b89303a8ec559dc5  local-w8-exact10k.jsonl
+bc55b094bd3a11c3b414e419cce180997d2171ac24a6d4ceba68c5ad3355c2ab  local-w8-learned.jsonl
+769d02500f12f97e856889f96c6410f38060ea82d03c0b29a2ca399321c0ae9c  local-w9-exact10k.jsonl
+58234e31f54455591d98d501bfeb327b0cbca3c580b83a0e56723d9cfc17c9aa  local-w9-learned.jsonl
+002b802d9e42b6620a02269bdf76c7bfe4115d9417ccb6c5a568e733e52ddac3  local-w0-exact10k.jsonl.manifest.json
+74fb3bde17a3abe48085e2800b9daadbd12f5d8a1881db728616c60ad0c02c34  local-w0-learned.jsonl.manifest.json
+80e254c8470a873803bc0a8640f47aaa28269c099f8076b0dac88910f320f48d  local-w1-exact10k.jsonl.manifest.json
+bdb70c3ca1fcab5fcf9d13d5f124c4948dea30f63f93034b6dc70725a3fb1a74  local-w1-learned.jsonl.manifest.json
+1111bc233c047a8b0d99aa61c7a1f8e22622816667bf07ed60ec1a7fd123702f  local-w2-exact10k.jsonl.manifest.json
+206c11fa6412dc7393c9bba92d37773ae6054913c06dbec258bf445d77e38bf8  local-w2-learned.jsonl.manifest.json
+ce0382dea4a76bd978b596f9bf9a77416f73a8c01cd6bde90ba9f8944564e7e9  local-w3-exact10k.jsonl.manifest.json
+10ac67e9a9c6c20ed13d232ad00bceea041e232e8d1d77955eeaa3fa526d24b1  local-w3-learned.jsonl.manifest.json
+351824b720624dcd07a9798d31cc58c62abbe8a58182bc3b7d4ec9cb05477366  local-w4-exact10k.jsonl.manifest.json
+ad8c4cdb3be5e66e2ce1cdb55e35ab84d7df32d62f5922dfb32db67c3616cd53  local-w4-learned.jsonl.manifest.json
+740eeef603e5662b79ae43adae6bfdecc2502e2fa9edd362d29f695f5f85bcbb  local-w5-exact10k.jsonl.manifest.json
+970ed3926f517f1a89c0a4df33be1715bc03701bc4b4f8079aaa381c6560cf38  local-w5-learned.jsonl.manifest.json
+20244848ac8fd0e98e3a053785e82ab22e4909e57892e5fbe598d513d651e68a  local-w6-exact10k.jsonl.manifest.json
+d4ea0322c3ebb3484d64cc30945194ba416ad28e9c56f8a026132d9665dc4389  local-w6-learned.jsonl.manifest.json
+7879c587677e76e9fdd7b2698de85d74ef8782d363f604a5b0155a3fc0430a49  local-w7-exact10k.jsonl.manifest.json
+f5e1cd94e84c5685bc769a5cff9b3cd40f08d8f3be442205365a1c6b6ca1817e  local-w7-learned.jsonl.manifest.json
+54ee3fda7dea777cae5b4ede2f370316f51994da17d99fc7c3769cbfbab085d2  local-w8-exact10k.jsonl.manifest.json
+6e78f6d83acb7a9d08061ded3d0e81af14106c6f4c09bd8ef918cf06e1ef03ea  local-w8-learned.jsonl.manifest.json
+cfa721ea2d8411477a56dfca64eba42547038ba0e77793174a00ef066c31dcc7  local-w9-exact10k.jsonl.manifest.json
+520dbcc369f6d5fc0dc6fb323d951551f62eb4e0d5100b602c54c87f51ee74f0  local-w9-learned.jsonl.manifest.json

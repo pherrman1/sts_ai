@@ -1,0 +1,947 @@
+{
+ "status": "VALID",
+ "verdict": "BUDGET_HEADROOM_INCONCLUSIVE",
+ "shape": "mixed",
+ "validEntries": 8,
+ "problems": {},
+ "aggregate": {
+  "R": {
+   "entries": 4,
+   "pairs": 16,
+   "A_wins": 1,
+   "B_wins": 2,
+   "rescues": 2,
+   "regressions": 1,
+   "netAdditionalWins": 1,
+   "entriesWithPositiveNetRescue": 1,
+   "meanNetRescuePerEntry": 0.25,
+   "entryClusterBootstrap95": [
+    0.0,
+    0.75
+   ]
+  },
+  "C": {
+   "entries": 4,
+   "pairs": 16,
+   "A_wins": 11,
+   "B_wins": 11,
+   "rescues": 1,
+   "regressions": 1,
+   "netAdditionalWins": 0,
+   "entriesWithPositiveNetRescue": 1,
+   "meanNetRescuePerEntry": 0.0,
+   "entryClusterBootstrap95": [
+    -0.75,
+    0.75
+   ]
+  },
+  "all": {
+   "entries": 8,
+   "pairs": 32,
+   "A_wins": 12,
+   "B_wins": 13,
+   "rescues": 3,
+   "regressions": 2,
+   "netAdditionalWins": 1,
+   "entriesWithPositiveNetRescue": 2,
+   "meanNetRescuePerEntry": 0.125,
+   "entryClusterBootstrap95": [
+    -0.25,
+    0.5
+   ]
+  }
+ },
+ "entries": [
+  {
+   "stateId": "R1-48000024-a2",
+   "stratum": "R",
+   "sourceArm": "mcts",
+   "seed": 48000024,
+   "act": 2,
+   "boss": "CHAMP",
+   "entrySummary": "hp=80;maxHp=85;gold=449;potions=EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|TORII:0|PANTOGRAPH:0|SNECKO_EYE:0|MUTAGENIC_STRENGTH:0|CALIPERS:0|STONE_CALENDAR:0;deck=Strike|Strike|Strike|Strike|Strike|Defend|Defend|Defend|Defend|Bash|Blind|Clash|Sentinel|Thunderclap|Spot Weakness+|Barricade|Armaments|Battle Trance|Clash|Pommel Strike|Immolate|Intimidate|Power Through|Writhe|Ghostly Armor+|Warcry+|Carnage|Perfected Strike+|Shrug It Off",
+   "floor": 33,
+   "sourceTerminalHp": 0,
+   "A_wins": 1,
+   "B_wins": 2,
+   "rescues": 2,
+   "regressions": 1,
+   "netRescue": 1,
+   "pairedTerminalHpDiffBothWin": [],
+   "pairedPotionsAfterDiffBothWin": [],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "6cad96b3a920e420",
+     "A_won": 0,
+     "B_won": 1,
+     "A_terminalHp": 0,
+     "B_terminalHp": 3,
+     "A_postExitHp": 0,
+     "B_postExitHp": 9,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 4,
+      "A": 5,
+      "B": 0
+     },
+     "tracePointer": "R1-48000024-a2.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "07a5181c3594c5b0",
+     "A_won": 0,
+     "B_won": 1,
+     "A_terminalHp": 0,
+     "B_terminalHp": 4,
+     "A_postExitHp": 0,
+     "B_postExitHp": 10,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 0,
+      "A": 6,
+      "B": 5
+     },
+     "tracePointer": "R1-48000024-a2.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "4e1297228e7100cb",
+     "A_won": 1,
+     "B_won": 0,
+     "A_terminalHp": 33,
+     "B_terminalHp": 0,
+     "A_postExitHp": 39,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 4,
+      "A": 2,
+      "B": 5
+     },
+     "tracePointer": "R1-48000024-a2.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "d4d751990cc49453",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 14,
+      "A": 3,
+      "B": 2
+     },
+     "tracePointer": "R1-48000024-a2.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 2180000,
+     "decisions": 218,
+     "cpuSeconds": 40.409,
+     "reroots": 144,
+     "freshRoots": 74
+    },
+    "B": {
+     "simulations": 9920000,
+     "decisions": 248,
+     "cpuSeconds": 185.042,
+     "reroots": 48,
+     "freshRoots": 200
+    }
+   }
+  },
+  {
+   "stateId": "R2-48000014-a3",
+   "stratum": "R",
+   "sourceArm": "mcts",
+   "seed": 48000014,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "entrySummary": "hp=80;maxHp=80;gold=0;potions=GAMBLERS_BREW|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|SNECKO_EYE:0|THE_ABACUS:0|PAPER_PHROG:0|WHETSTONE:0|RUNIC_DOME:0|CENTENNIAL_PUZZLE:0|RED_MASK:0;deck=Strike|Strike|Strike|Strike|Strike+|Defend|Defend|Defend|Defend|Bash|Dramatic Entrance|Power Through|Bludgeon|Hemokinesis|Shrug It Off|Thunderclap|Pummel+|Clothesline|Shrug It Off|Uppercut|Metallicize|Impervious|Twin Strike|Shrug It Off|Clothesline+|Armaments|Dark Embrace+|Reaper|Infernal Blade|Shrug It Off|Ghostly Armor+|Heavy Blade|Clash|Parasite|Thunderclap+|Cleave|Havoc",
+   "floor": 50,
+   "sourceTerminalHp": 0,
+   "A_wins": 0,
+   "B_wins": 0,
+   "rescues": 0,
+   "regressions": 0,
+   "netRescue": 0,
+   "pairedTerminalHpDiffBothWin": [],
+   "pairedPotionsAfterDiffBothWin": [],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "9bd90e17d3e415e0",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 4,
+      "A": 3,
+      "B": 1
+     },
+     "tracePointer": "R2-48000014-a3.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "4a16ae19408a2921",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 1,
+     "B_potionsAfter": 1,
+     "firstDifference": {
+      "index": 4,
+      "A": 1073741824,
+      "B": 1073741825
+     },
+     "tracePointer": "R2-48000014-a3.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "0d274a32a85c1af3",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 1,
+     "B_potionsAfter": 1,
+     "firstDifference": {
+      "index": 2,
+      "A": 4,
+      "B": 3
+     },
+     "tracePointer": "R2-48000014-a3.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "399bc18cacfb9bf9",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 1,
+     "B_potionsAfter": 1,
+     "firstDifference": {
+      "index": 0,
+      "A": 6,
+      "B": 3
+     },
+     "tracePointer": "R2-48000014-a3.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 1810000,
+     "decisions": 181,
+     "cpuSeconds": 29.842,
+     "reroots": 144,
+     "freshRoots": 37
+    },
+    "B": {
+     "simulations": 7960000,
+     "decisions": 199,
+     "cpuSeconds": 141.318,
+     "reroots": 64,
+     "freshRoots": 135
+    }
+   }
+  },
+  {
+   "stateId": "R3-48000116-a2",
+   "stratum": "R",
+   "sourceArm": "mcts",
+   "seed": 48000116,
+   "act": 2,
+   "boss": "CHAMP",
+   "entrySummary": "hp=54;maxHp=85;gold=57;potions=EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|PRESERVED_INSECT:0|THE_ABACUS:0|TINY_HOUSE:0|MEAL_TICKET:0|HAND_DRILL:0|BLUE_CANDLE:0|LANTERN:0;deck=Strike|Strike|Strike|Strike+|Strike|Defend|Defend|Defend|Bash|Pummel|Shrug It Off|Thunderclap|Clash|Armaments|Perfected Strike|Perfected Strike|Iron Wave+|Pummel|Carnage+|Power Through|Infernal Blade|Reaper|Flame Barrier|Twin Strike|Shrug It Off|Shrug It Off|Warcry+|Wild Strike|Whirlwind+|True Grit|Pommel Strike|Blood for Blood|Battle Trance+",
+   "floor": 33,
+   "sourceTerminalHp": 0,
+   "A_wins": 0,
+   "B_wins": 0,
+   "rescues": 0,
+   "regressions": 0,
+   "netRescue": 0,
+   "pairedTerminalHpDiffBothWin": [],
+   "pairedPotionsAfterDiffBothWin": [],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "e040eb2e8746fa38",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 1073741824,
+      "B": 1073741826
+     },
+     "tracePointer": "R3-48000116-a2.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "c52547d8aceaebaa",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 31,
+      "A": 4,
+      "B": 0
+     },
+     "tracePointer": "R3-48000116-a2.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "3a45a3b9f139e8e9",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 1073741825,
+      "B": 1073741824
+     },
+     "tracePointer": "R3-48000116-a2.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "80984b29a0be6492",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 1,
+      "B": 3
+     },
+     "tracePointer": "R3-48000116-a2.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 2140000,
+     "decisions": 214,
+     "cpuSeconds": 31.853,
+     "reroots": 177,
+     "freshRoots": 37
+    },
+    "B": {
+     "simulations": 9120000,
+     "decisions": 228,
+     "cpuSeconds": 142.481,
+     "reroots": 108,
+     "freshRoots": 120
+    }
+   }
+  },
+  {
+   "stateId": "R4-48000095-a3",
+   "stratum": "R",
+   "sourceArm": "mcts",
+   "seed": 48000095,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "entrySummary": "hp=80;maxHp=80;gold=16;potions=ANCIENT_POTION|SWIFT_POTION|SWIFT_POTION;relics=BURNING_BLOOD:0|ORICHALCUM:0|TOY_ORNITHOPTER:0|MEAL_TICKET:0|RUNIC_DOME:0|BOTTLED_FLAME:0|PANTOGRAPH:0|ECTOPLASM:0|ART_OF_WAR:0;deck=Strike+|Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Defend+|Bash+|Bludgeon|Iron Wave|Iron Wave|Hemokinesis|Ghostly Armor|Pommel Strike+|Reaper|Uppercut|Perfected Strike|Offering|Headbutt+|Battle Trance+|Combust|Clothesline|Havoc|Armaments+|Immolate|Heavy Blade+|Offering|Carnage+|Sword Boomerang|Mayhem|Finesse|Panic Button|Carnage|Power Through|Thunderclap|Whirlwind|Parasite|Havoc+|Writhe",
+   "floor": 50,
+   "sourceTerminalHp": 0,
+   "A_wins": 0,
+   "B_wins": 0,
+   "rescues": 0,
+   "regressions": 0,
+   "netRescue": 0,
+   "pairedTerminalHpDiffBothWin": [],
+   "pairedPotionsAfterDiffBothWin": [],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "3f5db30abfde5d42",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 3,
+     "B_potionsAfter": 3,
+     "firstDifference": {
+      "index": 4,
+      "A": 3,
+      "B": 2
+     },
+     "tracePointer": "R4-48000095-a3.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "5ec608c5b9bd63f2",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 3,
+     "B_potionsAfter": 3,
+     "firstDifference": {
+      "index": 5,
+      "A": 0,
+      "B": 2
+     },
+     "tracePointer": "R4-48000095-a3.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "0c70988b2a72f159",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 3,
+     "B_potionsAfter": 3,
+     "firstDifference": {
+      "index": 4,
+      "A": 2,
+      "B": 3
+     },
+     "tracePointer": "R4-48000095-a3.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "e20081975b8fee2a",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 3,
+     "B_potionsAfter": 3,
+     "firstDifference": {
+      "index": 5,
+      "A": 0,
+      "B": 2
+     },
+     "tracePointer": "R4-48000095-a3.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 1180000,
+     "decisions": 118,
+     "cpuSeconds": 18.637,
+     "reroots": 87,
+     "freshRoots": 31
+    },
+    "B": {
+     "simulations": 4640000,
+     "decisions": 116,
+     "cpuSeconds": 75.213,
+     "reroots": 30,
+     "freshRoots": 86
+    }
+   }
+  },
+  {
+   "stateId": "C1-48000062-a1",
+   "stratum": "C",
+   "sourceArm": "flat10k",
+   "seed": 48000062,
+   "act": 1,
+   "boss": "SLIME_BOSS",
+   "entrySummary": "hp=68;maxHp=103;gold=88;potions=WEAK_POTION|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|LANTERN:0|STRAWBERRY:0|JUZU_BRACELET:0|FROZEN_EGG:0;deck=Strike|Strike|Strike|Strike|Strike|Defend|Defend|Defend|Defend|Bash|Pommel Strike|Clash|Perfected Strike+|Pommel Strike|Havoc|Shrug It Off",
+   "floor": 16,
+   "sourceTerminalHp": 0,
+   "A_wins": 3,
+   "B_wins": 4,
+   "rescues": 1,
+   "regressions": 0,
+   "netRescue": 1,
+   "pairedTerminalHpDiffBothWin": [
+    5,
+    -10,
+    -17
+   ],
+   "pairedPotionsAfterDiffBothWin": [
+    0,
+    0,
+    0
+   ],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "133800ab3d6bad32",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 13,
+     "B_terminalHp": 18,
+     "A_postExitHp": 19,
+     "B_postExitHp": 24,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 536870912,
+      "B": 0
+     },
+     "tracePointer": "C1-48000062-a1.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "b5bb09ed9fdf462d",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 20,
+     "B_terminalHp": 10,
+     "A_postExitHp": 26,
+     "B_postExitHp": 16,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 5,
+      "A": 2,
+      "B": 3
+     },
+     "tracePointer": "C1-48000062-a1.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "e0e2b271d0337878",
+     "A_won": 0,
+     "B_won": 1,
+     "A_terminalHp": 0,
+     "B_terminalHp": 20,
+     "A_postExitHp": 0,
+     "B_postExitHp": 26,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 3,
+      "A": -2147483648,
+      "B": 536870912
+     },
+     "tracePointer": "C1-48000062-a1.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "dd29b7781fa10bd0",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 27,
+     "B_terminalHp": 10,
+     "A_postExitHp": 33,
+     "B_postExitHp": 16,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 2,
+      "A": 0,
+      "B": 4
+     },
+     "tracePointer": "C1-48000062-a1.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 1330000,
+     "decisions": 133,
+     "cpuSeconds": 22.573,
+     "reroots": 111,
+     "freshRoots": 22
+    },
+    "B": {
+     "simulations": 6600000,
+     "decisions": 165,
+     "cpuSeconds": 112.757,
+     "reroots": 77,
+     "freshRoots": 88
+    }
+   }
+  },
+  {
+   "stateId": "C2-48000039-a2",
+   "stratum": "C",
+   "sourceArm": "flat10k",
+   "seed": 48000039,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "entrySummary": "hp=104;maxHp=104;gold=618;potions=ESSENCE_OF_STEEL|BLESSING_OF_THE_FORGE|SKILL_POTION;relics=BURNING_BLOOD:0|CERAMIC_FISH:0|VAJRA:0|PEN_NIB:0|TINY_HOUSE:0|MUTAGENIC_STRENGTH:0|WAR_PAINT:0|SUNDIAL:2|ANCHOR:0|HAPPY_FLOWER:0;deck=Strike+|Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Defend+|Bash|Pommel Strike+|Shrug It Off+|Iron Wave|Reckless Charge+|Anger|Sword Boomerang|Headbutt|Battle Trance+|Perfected Strike+|Power Through+|Feed|Clash|Havoc|Bash|Headbutt|Reaper|Iron Wave|Battle Trance|Headbutt|Clash",
+   "floor": 33,
+   "sourceTerminalHp": 0,
+   "A_wins": 4,
+   "B_wins": 3,
+   "rescues": 0,
+   "regressions": 1,
+   "netRescue": -1,
+   "pairedTerminalHpDiffBothWin": [
+    -15,
+    -7,
+    27
+   ],
+   "pairedPotionsAfterDiffBothWin": [
+    0,
+    0,
+    0
+   ],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "4969ecf6ed0186ed",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 16,
+     "B_terminalHp": 1,
+     "A_postExitHp": 22,
+     "B_postExitHp": 7,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 2,
+      "A": 2,
+      "B": 536870913
+     },
+     "tracePointer": "C2-48000039-a2.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "a1e5c662bacf45bd",
+     "A_won": 1,
+     "B_won": 0,
+     "A_terminalHp": 1,
+     "B_terminalHp": 0,
+     "A_postExitHp": 7,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 4,
+      "A": 131073,
+      "B": 4
+     },
+     "tracePointer": "C2-48000039-a2.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "47de199d54c6d47b",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 15,
+     "B_terminalHp": 8,
+     "A_postExitHp": 21,
+     "B_postExitHp": 14,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 1073741826,
+      "B": 1073741825
+     },
+     "tracePointer": "C2-48000039-a2.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "1c2d73216b6b4e93",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 6,
+     "B_terminalHp": 33,
+     "A_postExitHp": 12,
+     "B_postExitHp": 39,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 5,
+      "A": 2,
+      "B": 536870912
+     },
+     "tracePointer": "C2-48000039-a2.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 2660000,
+     "decisions": 266,
+     "cpuSeconds": 60.572,
+     "reroots": 200,
+     "freshRoots": 66
+    },
+    "B": {
+     "simulations": 10920000,
+     "decisions": 273,
+     "cpuSeconds": 252.135,
+     "reroots": 75,
+     "freshRoots": 198
+    }
+   }
+  },
+  {
+   "stateId": "C3-48000055-a3",
+   "stratum": "C",
+   "sourceArm": "flat10k",
+   "seed": 48000055,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "entrySummary": "hp=49;maxHp=83;gold=134;potions=EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|POTION_BELT:0|ORNAMENTAL_FAN:0|STRIKE_DUMMY:0|CURSED_KEY:0|STONE_CALENDAR:0|SNECKO_EYE:0|CHARONS_ASHES:0|RED_MASK:0|DU_VU_DOLL:0|THE_BOOT:0|ODDLY_SMOOTH_STONE:0|HAPPY_FLOWER:2|SHURIKEN:0;deck=Strike+|Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Bash|Thunderclap|Perfected Strike+|Inflame+|Clash|Pommel Strike|Shrug It Off+|Anger|Shrug It Off+|Spot Weakness+|Feed|Whirlwind+|Power Through|Discovery|Bludgeon|Dark Embrace|Thunderclap+|Pommel Strike|Seeing Red|Writhe|Inflame+|Iron Wave|Shame|Havoc+|Iron Wave|Swift Strike|Flash of Steel|True Grit",
+   "floor": 50,
+   "sourceTerminalHp": 0,
+   "A_wins": 0,
+   "B_wins": 0,
+   "rescues": 0,
+   "regressions": 0,
+   "netRescue": 0,
+   "pairedTerminalHpDiffBothWin": [],
+   "pairedPotionsAfterDiffBothWin": [],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "4bc477987f6da145",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 65540,
+      "B": 1
+     },
+     "tracePointer": "C3-48000055-a3.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "a9a83b58d88154ba",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 6,
+      "A": 0,
+      "B": 65536
+     },
+     "tracePointer": "C3-48000055-a3.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "fc97de43356fbf39",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 65540,
+      "B": 1
+     },
+     "tracePointer": "C3-48000055-a3.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "a306f01040232eff",
+     "A_won": 0,
+     "B_won": 0,
+     "A_terminalHp": 0,
+     "B_terminalHp": 0,
+     "A_postExitHp": 0,
+     "B_postExitHp": 0,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 65540,
+      "B": 4
+     },
+     "tracePointer": "C3-48000055-a3.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 710000,
+     "decisions": 71,
+     "cpuSeconds": 6.371,
+     "reroots": 53,
+     "freshRoots": 18
+    },
+    "B": {
+     "simulations": 2960000,
+     "decisions": 74,
+     "cpuSeconds": 29.21,
+     "reroots": 25,
+     "freshRoots": 49
+    }
+   }
+  },
+  {
+   "stateId": "C4-48000050-a1",
+   "stratum": "C",
+   "sourceArm": "flat10k",
+   "seed": 48000050,
+   "act": 1,
+   "boss": "SLIME_BOSS",
+   "entrySummary": "hp=33;maxHp=85;gold=233;potions=ENERGY_POTION|GAMBLERS_BREW|FIRE_POTION;relics=BURNING_BLOOD:0|BIRD_FACED_URN:0|LETTER_OPENER:0|VAJRA:0|ORNAMENTAL_FAN:0;deck=Strike|Strike|Strike|Strike|Defend|Defend|Defend|Defend|Perfected Strike+|Shockwave|Shrug It Off|Clothesline|Offering+|Shrug It Off|Havoc",
+   "floor": 16,
+   "sourceTerminalHp": 0,
+   "A_wins": 4,
+   "B_wins": 4,
+   "rescues": 0,
+   "regressions": 0,
+   "netRescue": 0,
+   "pairedTerminalHpDiffBothWin": [
+    7,
+    -2,
+    -6,
+    -4
+   ],
+   "pairedPotionsAfterDiffBothWin": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "91a93b9a13cddc42",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 17,
+     "B_terminalHp": 24,
+     "A_postExitHp": 23,
+     "B_postExitHp": 30,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 2,
+      "A": 536870913,
+      "B": 4
+     },
+     "tracePointer": "C4-48000050-a1.rows.csv kind=A|B rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "d201022720b6193c",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 14,
+     "B_terminalHp": 12,
+     "A_postExitHp": 20,
+     "B_postExitHp": 18,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 2,
+      "A": 0,
+      "B": 8
+     },
+     "tracePointer": "C4-48000050-a1.rows.csv kind=A|B rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "ac7b0ef0a9c04559",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 11,
+     "B_terminalHp": 5,
+     "A_postExitHp": 17,
+     "B_postExitHp": 11,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 2,
+      "A": 536870913,
+      "B": 2
+     },
+     "tracePointer": "C4-48000050-a1.rows.csv kind=A|B rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "64c0673e4a47d13a",
+     "A_won": 1,
+     "B_won": 1,
+     "A_terminalHp": 21,
+     "B_terminalHp": 17,
+     "A_postExitHp": 27,
+     "B_postExitHp": 23,
+     "A_potionsAfter": 0,
+     "B_potionsAfter": 0,
+     "firstDifference": {
+      "index": 1,
+      "A": 536870914,
+      "B": 8
+     },
+     "tracePointer": "C4-48000050-a1.rows.csv kind=A|B rep=3"
+    }
+   ],
+   "cost": {
+    "A": {
+     "simulations": 1350000,
+     "decisions": 135,
+     "cpuSeconds": 20.005,
+     "reroots": 117,
+     "freshRoots": 18
+    },
+    "B": {
+     "simulations": 5640000,
+     "decisions": 141,
+     "cpuSeconds": 83.598,
+     "reroots": 61,
+     "freshRoots": 80
+    }
+   }
+  }
+ ],
+ "rule": "COMBAT_HEADROOM_SIGNAL iff net additional B wins >= 4 over the 32 pairs and >= 3 entries with positive net rescue; otherwise BUDGET_HEADROOM_INCONCLUSIVE (shape flat/mixed/negative); any structural failure EXECUTION_INVALID, reproduction-only or missing failures PARTIAL"
+}

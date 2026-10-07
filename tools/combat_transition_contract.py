@@ -132,8 +132,9 @@ def validate_manifest(manifest: dict, verify_data: bool = True) -> dict:
     else:
         # Keep the production teacher contract unchanged and strict.  The
         # deterministic fixture is accepted only through the explicit,
-        # testFixture-marked branch above.
-        validate_teacher(teacher)
+        # testFixture-marked branch above.  CTM corpora may come from a
+        # learned-stop Silver teacher (#418); other consumers stay exact-only.
+        validate_teacher(teacher, allow_learned_stop=True)
     intervention = manifest.get("lizardIntervention")
     if intervention is None:
         if teacher.get("git_sha") != manifest["producerGitSha"]:

@@ -11,10 +11,11 @@ import time
 import numpy as np
 import torch
 from tools import combat_transition_composed as c
+from tools import ctm_pins as _pins
 
-PREPARED=Path('/tmp/sts-phase2-attention-audit-20260913')
-CORPUS=c.RUNS/'combat-transition-runtime-25k/combat-transition-25k.jsonl'
-SPLIT=c.RUNS/'combat-transition-model-v1/split_manifest.json'
+PREPARED=Path(_pins.value('combat_transition_composed_evaluate.PREPARED','/tmp/sts-phase2-attention-audit-20260913'))
+CORPUS=Path(_pins.value('combat_transition_composed_evaluate.CORPUS',str(c.RUNS/'combat-transition-runtime-25k/combat-transition-25k.jsonl')))
+SPLIT=Path(_pins.value('combat_transition_composed_evaluate.SPLIT',str(c.RUNS/'combat-transition-model-v1/split_manifest.json')))
 # Frozen prepared representation hashes, established before this experiment.
 PREPARED_HASHES={k:v for k,v in c.frozen.EXPECTED_HASHES.items() if not k.endswith('.pt')}
 VALIDITY_KEYS=('hpBelow1','hpAboveSampledMaxHp','invalidMaxHpClassOrState','invalidPotionTransition',

@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -34,6 +34,63 @@ upgrade/misc/bottle metadata, and all six RNG streams synchronized by
 `BattleContext::exitBattle` (`ai`, `cardRandom`, `misc`, `monsterHp`, `potion`,
 `shuffle`). Other GameContext fields are copy-through continuation state and
 are intentionally not overwritten by `applyCombatTransitionState`.
+
+`combattransitiongen` (not the Lizard candidate mode or other teacher
+consumers) also accepts a learned-stop teacher (#418): `search_configuration`
+sets `"budget_policy": "learned_stop"` with `learned_stop_model` and
+`learned_stop_threshold` equal to the compiled stop model
+(`gbt-770201c31f7b`, `0.0323`). The frozen environment then requires
+`STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`, and the
+process must run plain learned stopping (no adaptive, searched one-action
+roots, boss fallback or boss max). The remaining search constants and the 10,000 cap are unchanged. An absent
+`budget_policy` keeps the frozen exact-10k contract, which now also refuses a
+process with learned stopping enabled. `one_combat learnedstopteacherselftest`
+(CTest `learned_stop_teacher_contract`) checks the loader without running
+seeds.
+
+`one_combat ctmscorerows ROWS.jsonl OUT.csv` scores recorded
+`combat_transition_row_v2` rows offline with the live OOC MCTS combat stack
+(the automatic DeepSets Lizard T2 artifact, Attention V2 Brew fallback and
+active-Lizard correction). It parses the row's `predictorInput` and `pre`
+state, requires both to round-trip through their serializers, and writes per
+row the support reason, `p_death`, expected winning HP and the log probability
+of the observed post-combat HP. It runs no seeds (CTest `ctm_offline_score_rows`).
+
+`one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
+(#418) runs the same producer and learned-stop-capable teacher contract with
+one forced rare state, recorded as `forcedSetup` in the manifest. Its rows are
+a separate slice for training and qualification, not ordinary-distribution
+rows. Setups:
+- `ritual_writhing`: Ritual Dagger is added before the first fight, and every
+  act 3 hallway fight becomes Writhing Mass.
+- `high_maxhp`: max HP is set to 150..220 at full HP, deterministic per seed.
+- `lizard_fairy` and `lizard_brew`: an unused Lizard Tail is added, and while
+  it is unused the Fairy Potion or Entropic Brew is refilled before each fight
+  when a slot is free.
+Mark of the Bloom with an active Tail is already on the exact path, so it has
+no setup.
+
+In Python, `validate_teacher` (`tools/ooc_pipeline_contract.py`) treats an
+absent or `flat_exact` `budget_policy` as the exact-10k contract, which must
+not set `STS_SILVER_LEARNED_STOP`. Like the C++ side, it accepts
+`learned_stop` only when the caller opts in with `allow_learned_stop=True`;
+only the CTM corpus check (`tools/combat_transition_contract.py`) does, so the
+OOC label, v_win refresh, evaluator and Lizard consumers stay exact-only.
+`learned_stop` must name its stop model and threshold and set
+`STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`.
+
+`tools/ctm_corpus_adapter.py assemble --index INDEX.json --corpus-root DIR
+--scope SETUP --out DIR` turns a corpus generated in many seed units into the
+layout `combat_transition_model_experiment.py audit` expects. The index is the
+unit-to-file map from the #418 Path B validator. The adapter writes a merged
+`corpus.jsonl` plus one shard manifest per unit file under `blocks/`; each is
+the unit's own manifest with only `csv.path` rewritten. Seeds the generator
+skipped become the merged manifest's `quarantined` list, and one scope
+(`forcedSetup`) is assembled per call. `fit --save-test-predictions` writes
+per-row TEST predictions (`test_predictions.npz`).
+`tools/ctm_survival_compare.py` then compares them with the production stack's
+`ctmscorerows` scores on the same rows (`extract-test`, then `compare`, using a
+paired source-seed bootstrap).
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and
@@ -567,6 +624,19 @@ native/in-context speed work. WIN_RAW resource qualification is reported
 separately. Neither verdict grants terminal-pricing readiness or promotion.
 The tooling PR and synthetic tests are not a full experiment result.
 
+#### Focal retrain and selection gain (E1)
+
+`python3 -m tools.vwin_e1_focal INDEX --x2b-run TUNE_DIR --output NEW_DIR`
+retrains the X2-B recipe on the public 457 features as P0 (all MAP rows), F1
+(focal rows only: the sibling-ranking join row of each branch, per-decision
+balanced weights) and F2 (all rows, focal block upweighted to the non-focal
+total), seeds 0/1/2. It reads only TRAIN/VALIDATION components, re-checks
+index/manifest/table hashes instead of rerunning the bundle validator, and
+requires the frozen X2-B VALIDATION NLL to reproduce exactly. It reports
+NLL/Brier on all and focal rows, sibling ranking, and per-type selection gain
+(the argmax sibling's branch outcome minus the V4 chosen sibling's) with
+source-clustered CIs. Result: ledger-06 §394 (`E1_INCONCLUSIVE`).
+
 ### Rich `v_win` information boundary (#397)
 
 `tools/analyze_vwin_public_info_397.py` is the maintained classification of
@@ -591,8 +661,7 @@ because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
 
 `tools/analyze_rich_domain_397.py` derives the reachable Ironclad master-deck
 card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
-39 colorless, 13 curses, Necronomicurse kept as live-only because the simulator
-omits its Necronomicon obtain). The #334 TRAIN variance mask already excludes
+39 colorless, 13 curses; Necronomicurse is a literal obtain since #406). The #334 TRAIN variance mask already excludes
 every unreachable card, other-class relic and other-class potion column
 (ledger-06 §373), so model inputs need no domain filter; the producer keeps the
 broad schema. Column index 371 lies beyond the `CardId` enum and is always 0.
@@ -758,6 +827,32 @@ The analysis command is:
 python3 tools/analyze_boss_headroom_347.py PREFIX.arms.csv
 ```
 
+`bossheadroom347gen` reconstructs sources through `runCombatEvalGenSeed`, whose
+non-combat step is `runFullRunOocPolicyStep` only: it never runs live OOC MCTS,
+so it cannot reproduce an MCTS-policy source even when `STS_OOC_MCTS=1`.
+`bossrescue347 1 SELECTION.json STATE_ID OUT_PREFIX` (research-only, one source
+per process) instead calls the ordinary `runFullRunOOC` under the source arm's
+environment. A thread-local `t_bossEntryHook` (`run_driver.h`, unset elsewhere)
+captures the selected act's boss entry before Silver initializes the battle and
+records that fight's action trace. The mode requires the reconstructed run to
+match its historical `bestbench` row, replays the entry with the original
+planner seed (control parity: outcome, terminal HP, full trace, post-exit state
+digest), then with fresh planner seeds at two flat exact budgets. Fresh planner
+seeds use the thread-local `g_nativeSilverPlannerSeedOverride`, which replaces
+the game seed in each Silver search root (search RNG streams and rollouts) and
+leaves the live battle untouched. Native Silver's `NativeSilverCombatStats` now
+also counts search steps per searched root, so a replay can prove its budget.
+`bossrescue347selftest 1 SEED SIMS` checks the replay boundary on one act-1
+boss. See the [#347 rescue pilot packet](../../experiments/evidence/boss_budget_rescue_347_pilot_20261007/PLAN.md).
+A second selection schema, `boss_preparation_rmatch_347_selection_v1`, lets a
+source declare `expectedSourceWon` (0 or 1, so a won boss fight can be a
+source), replays `plannerReps` fresh flat-10k planner seeds keyed by
+`boss-prep-347-planner-v1:{runSeed}:{act}:{rep}` (shared by every source of a
+run seed), and writes a descriptive `entryDescriptor` (HP, gold, potions, deck,
+upgrades, relics, RNG stream counters, `PathHistory.roomVisits`). The #425
+schema is unchanged and refuses `expectedSourceWon`. See the
+[#347 boss-preparation packet](../../experiments/evidence/boss_preparation_rmatch_347_20261007/PLAN.md).
+
 No pilot or Stage-1 cohort is part of implementation verification. The default
 4,096-seed A2 collection still requires explicit authorization; no training,
 model export, leaf-runtime routing, Silver terminal pricing or gameplay/default
@@ -903,6 +998,43 @@ future start `10` for each frozen schedule (`10000`; `5000,5000`;
 `3333,3333,3334`; `150,100,50`) and distinct schedule-prefixed shard files.
 Analyze those 96 files together with the unchanged 24 Stage-A A files and 24
 Stage-A B reference files.
+
+### Counterfactual OOC labels (`ooccfpilotgen`)
+
+`one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES
+[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]`
+(`apps/one_combat/combat_datasets.cpp::oocCounterfactualPilotGen`). It is
+seed-guarded, and the launcher is
+`docs/experiments/evidence/ooc_cf_pilot_20261007/run_corpus.sh`. The source
+run and the per-type reservoir are those of `vwinrefreshgen` with K=1. Each
+retained option of a selected CARD_REWARD, BOSS_RELIC, REST or SHOP decision
+is forced FUTURES times. Run k of every sibling redraws the hidden future
+(`sampleNoncombatFuture`) from `sha256(...:{seed}:{decisionIdx}:{k})`, so all
+siblings share common random numbers.
+
+- **GEN=1 (pilot, default):**
+  - The future is redrawn after the forced option.
+  - The horizon is the first boss fight after the branch, or the second for
+    card rewards when CARD_BOSSES=2. The label is HP after that boss.
+  - The cap is #334's: the chosen option plus five, hash-ranked.
+- **GEN=2:**
+  - The future is redrawn *before* the forced option, so randomness the option
+    itself consumes is sampled too. The generator fails closed if the redraw
+    changes the published screen or any rich field other than the four
+    HIDDEN_FUTURE fields (#397).
+  - Every branch plays to the end of the run. The label is `finalWon`;
+    first-boss win and HP after it are diagnostics.
+  - `.options.csv` holds the rich row right after the option (k=0).
+    `.map.csv` holds one rich row per run at the first MAP screen after the
+    branch screen is finished. The map row can differ across k after a boss
+    relic, because the next act's map is generated from the redrawn future.
+  - The option cap first merges keys that differ only in `occurrence=`
+    (identical cards at other deck positions). It always keeps the chosen
+    option and the skip/leave options, then fills up to six by
+    `sha256(ooc-cf-option-cap-v2:...)`.
+  - States are drawn only from TYPES (comma list), ranked by
+    `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
+  - The manifest counts selected states by type and act.
 
 ## Schema examples
 

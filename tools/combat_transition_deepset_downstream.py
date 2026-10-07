@@ -30,7 +30,11 @@ from tools import combat_transition_shared_hp_downstream as shared_eval
 from tools import combat_transition_surrogate as surrogate
 
 
-BASELINE_SHA = "066264dc25bf2046aecd5ca7a94a8e82d5031e7b"
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+BASELINE_SHA = _pins.value("combat_transition_deepset_downstream.BASELINE_SHA", "066264dc25bf2046aecd5ca7a94a8e82d5031e7b")
 DEFAULT_PARENT = Path("/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914")
 DEFAULT_DEEPSET_RUN = Path(
     "/home/philippherrmann/sts_sweep/runs/shared-transition-deepset-distill-corrected-20260916"
@@ -41,19 +45,19 @@ DEFAULT_DEEPSET_EVIDENCE = Path(
     "docs/experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.json"
 )
 
-REFERENCE_CACHE_SHA = "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3"
-REFERENCE_PREPARATION_SHA = "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d"
-REFERENCE_DOWNSTREAM_SHA = "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"
-DEEPSET_CHECKPOINT_SHA = "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"
-DEEPSET_RECEIPT_SHA = "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769"
-DEEPSET_NORMALIZATION_IDS_SHA = "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214"
-SOURCE_SHA = "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"
-ELIGIBLE_VALIDATION_ROWS = 17_950
-DEEPSET_NORMALIZATION_ROWS = 393_677
-TRAIN_ROWS = 150_404
-TRAIN_SOURCES = 18_286
-VALIDATION_ROWS = 17_950
-VALIDATION_SOURCES = 2_276
+REFERENCE_CACHE_SHA = _pins.value("combat_transition_deepset_downstream.REFERENCE_CACHE_SHA", "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3")
+REFERENCE_PREPARATION_SHA = _pins.value("combat_transition_deepset_downstream.REFERENCE_PREPARATION_SHA", "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d")
+REFERENCE_DOWNSTREAM_SHA = _pins.value("combat_transition_deepset_downstream.REFERENCE_DOWNSTREAM_SHA", "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91")
+DEEPSET_CHECKPOINT_SHA = _pins.value("combat_transition_deepset_downstream.DEEPSET_CHECKPOINT_SHA", "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663")
+DEEPSET_RECEIPT_SHA = _pins.value("combat_transition_deepset_downstream.DEEPSET_RECEIPT_SHA", "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769")
+DEEPSET_NORMALIZATION_IDS_SHA = _pins.value("combat_transition_deepset_downstream.DEEPSET_NORMALIZATION_IDS_SHA", "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214")
+SOURCE_SHA = _pins.value("combat_transition_deepset_downstream.SOURCE_SHA", "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae")
+ELIGIBLE_VALIDATION_ROWS = _pins.value("combat_transition_deepset_downstream.ELIGIBLE_VALIDATION_ROWS", 17_950)
+DEEPSET_NORMALIZATION_ROWS = _pins.value("combat_transition_deepset_downstream.DEEPSET_NORMALIZATION_ROWS", 393_677)
+TRAIN_ROWS = _pins.value("combat_transition_deepset_downstream.TRAIN_ROWS", 150_404)
+TRAIN_SOURCES = _pins.value("combat_transition_deepset_downstream.TRAIN_SOURCES", 18_286)
+VALIDATION_ROWS = _pins.value("combat_transition_deepset_downstream.VALIDATION_ROWS", 17_950)
+VALIDATION_SOURCES = _pins.value("combat_transition_deepset_downstream.VALIDATION_SOURCES", 2_276)
 RECIPE = dict(
     seed=20260912,
     epochs=12,
@@ -106,7 +110,7 @@ def load_reference(parent: Path):
     cache, ambiguous, records, meta = downstream.load(parent, folder)
     if meta.get("rawLabels", {}).get("sourceSha") != SOURCE_SHA or meta.get("rows") != len(cache["ids"]):
         raise ValueError("reference downstream provenance differs")
-    if len(cache["ids"]) != 510_030:
+    if len(cache["ids"]) != _pins.value("combat_transition_deepset_downstream.CACHE_ROWS", 510_030):
         raise ValueError("reference downstream row count differs")
     return cache, ambiguous, records, meta, folder
 

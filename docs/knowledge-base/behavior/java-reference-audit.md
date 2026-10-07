@@ -1,7 +1,7 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-01 against `desktop-1.0.jar` V2.3.4 and the
-`monster_ai_java_parity` unit test.
+Last verified: 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+`monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
 
@@ -360,10 +360,79 @@ was compared with the native references.
 - Snapshots recorded before this change replay without the old `lastRoom` energy. The CTM relic legality and native contract model the post-combat data as 0. Covered by `ironclad_card_java_parity` and `CombatBoundaryTest`. |
 | All other Ironclad-pool and red relics | Parity | Includes the counter relics (Pen Nib's −1 encodes "9 with the power active"; Sundial, Happy Flower, Incense Burner and Nunchaku are offset but equivalent); turn-indexed relics (Captain's Wheel, Horn Cleat, Stone Calendar); Art of War and Pocketwatch from turn 2 only; Orichalcum (its `trigger` flag is never set); Boot and Torii (after block, attack damage only); Preserved Insect; Magic Flower's rounding; Gremlin Horn on Darkling half-death; Mummified Hand's filters and `cardRandomRng`; Strange Spoon's `cardRandomRng`; Whetstone, War Paint and Tiny House with `java.util.Random(miscRng.randomLong())`; Slaver's Collar (elite or boss); Brimstone on turn 1; the Burning and Black Blood victory heals. |
 
+### Necronomicon and Necronomicurse
+
+Issue #406 inspected these classes in the pinned JAR (`javap -c -p`):
+
+| Java hook | Native path | Status |
+|---|---|---|
+| `relics.Necronomicon.onEquip` obtains a new `Necronomicurse` through `ShowCardAndObtainEffect` | `GameContext::obtainRelic` `NECRONOMICON` case calls `Deck::obtain`, so Omamori, Darkstone Periapt and Ceramic Fish apply as for any curse | **Mismatch, fixed** (#406): native added no curse |
+| `cards.curses.Necronomicurse.onRemoveFromMasterDeck` queues a `NecronomicurseEffect` with a new copy | `Deck::remove` puts the curse back | **Mismatch, fixed** (#406). Unreachable natively by code reading: every native removal screen and event filters out untransformable curses |
+| `Necronomicurse.triggerOnExhaust` adds a copy to hand | `BattleContext` exhaust handler queues `MakeTempCardInHand(NECRONOMICURSE)` | Parity |
+
+**Unverified:** whether `NecronomicurseEffect` re-obtains through the
+obtain hooks (Omamori, Darkstone, Ceramic Fish); native re-adds the card
+without them. The Necronomicon combat effect (the first 2+-cost attack each
+turn plays twice) was not audited.
+
+### Ritual Dagger
+
+A new Ritual Dagger starts at 15 base damage, stored in the master-deck
+card's `misc`, and gains 3 (5 upgraded) per fatal kill. Native kept `misc`
+at 0 for every new card, so every dagger from The Nest or `Deck::obtain`
+dealt 0 + kill bonuses (**Mismatch, fixed** in #426: the `Card(CardId)`
+constructors set `misc` to 15 for `RITUAL_DAGGER`). Corpora generated
+before the fix carry the 0-based dagger. Covered by `issue_fixes`.
+**Unverified:** the starting value comes from the decompiled card source, not
+from `javap` on the pinned JAR. Genetic Algorithm also starts with a nonzero
+`misc` in Java (1); native leaves it at 0, but it is a Defect card whose
+play is not implemented natively.
+
 **Not inspected:** relics only reachable through events, Neow or other
 classes, and relic hooks that act purely out of combat beyond the
 upgrade/transform relics listed above.
 
+
+## Encounter generation
+
+Java `AbstractDungeon.populateFirstStrongEnemy` draws the act's first strong
+hallway encounter from the strong weights and re-rolls `monsterRng` while the
+draw is in the act's `generateExclusions()`, which depends only on the last
+weak encounter. Native `GameContext::populateFirstStrongEnemy`
+(`src/game/GameContext.cpp`) uses the same re-roll loop.
+
+| Act (Java class) | Last weak encounter | Excluded as first strong |
+|---|---|---|
+| 1 (`Exordium`) | Small Slimes | Large Slime, Lots of Slimes |
+| 1 | 2 Louse | 3 Louse |
+| 2 (`TheCity`) | Spheric Guardian | Sentry and Sphere |
+| 2 | 3 Byrds | Chosen and Byrds |
+| 2 | Chosen | Chosen and Byrds, Cultist and Chosen |
+| 3 (`TheBeyond`) | 3 Darklings | 3 Darklings |
+| 3 | Orb Walker | Orb Walker (not in the strong pool, so never fires) |
+| 3 | 3 Shapes | 4 Shapes |
+
+`Exordium` also has Looter and Blue Slaver cases, which never fire because
+those are strong encounters, so the last weak encounter is never one of them.
+
+### Mismatch, fixed
+
+Until #407, native applied only the act 1 rows. In acts 2 and 3 it could
+produce a first strong fight the game never would. Java consumes an extra
+`monsterRng` draw per re-roll and `monsterRng` is not reseeded between acts, so
+from that point the rest of the run's `monsterRng` sequence (the act's strong
+queue, elites and boss, then every later act) diverged from the game for the
+same seed. **Inference** from the pool weights: an act 2 queue hits an
+exclusion with probability 9/145 (about 6%), an act 3 queue with probability
+1/12. Covered by `first_strong_exclusions`, which checks the result and the
+`monsterRng` counter against a Java-rule reimplementation for every act and
+last weak encounter.
+
+Consequence for evidence: corpora and runs generated before this fix follow the
+act-1-only rule, so paired seeds across the fix boundary (for example a new run
+against the #417 pilot or older ledger runs) are not seed-for-seed comparable
+past act 1 for roughly 6–14% of seeds. Comparisons within one SHA are
+unaffected.
 
 ## Ambiguous or not yet inspected
 
