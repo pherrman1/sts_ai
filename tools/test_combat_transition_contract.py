@@ -256,12 +256,12 @@ class TestCombatTransitionContract(unittest.TestCase):
 
 
 class TestLearnedStopTeacherContract(unittest.TestCase):
-    def validate(self, t):
+    def validate(self, t, allow_learned_stop=True):
         try:
             from tools.ooc_pipeline_contract import validate_teacher
         except ModuleNotFoundError:
             from ooc_pipeline_contract import validate_teacher
-        validate_teacher(t)
+        validate_teacher(t, allow_learned_stop=allow_learned_stop)
 
     def learned(self):
         t = teacher()
@@ -286,6 +286,11 @@ class TestLearnedStopTeacherContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "learned_stop_model"): self.validate(bad)
         bad = self.learned(); bad["search_configuration"]["budget_policy"] = "adaptive"
         with self.assertRaisesRegex(ValueError, "unknown"): self.validate(bad)
+
+    def test_learned_stop_needs_opt_in(self):
+        with self.assertRaisesRegex(ValueError, "opt in"):
+            self.validate(self.learned(), allow_learned_stop=False)
+        self.validate(teacher(), allow_learned_stop=False)
 
     def test_exact_teacher_rejects_learned_stop_environment(self):
         bad = teacher(); bad["environment"]["STS_SILVER_LEARNED_STOP"] = "1"

@@ -70,12 +70,14 @@ rows. Setups:
 Mark of the Bloom with an active Tail is already on the exact path, so it has
 no setup.
 
-Python consumers accept the same two teacher policies. `validate_teacher`
-(`tools/ooc_pipeline_contract.py`) treats an absent or `flat_exact`
-`budget_policy` as the exact-10k contract, which must not set
-`STS_SILVER_LEARNED_STOP`. `learned_stop` must name its stop model and
-threshold and set `STS_SILVER_EXACT_ROOT_BUDGETS=0` and
-`STS_SILVER_LEARNED_STOP=1`.
+In Python, `validate_teacher` (`tools/ooc_pipeline_contract.py`) treats an
+absent or `flat_exact` `budget_policy` as the exact-10k contract, which must
+not set `STS_SILVER_LEARNED_STOP`. Like the C++ side, it accepts
+`learned_stop` only when the caller opts in with `allow_learned_stop=True`;
+only the CTM corpus check (`tools/combat_transition_contract.py`) does, so the
+OOC label, v_win refresh, evaluator and Lizard consumers stay exact-only.
+`learned_stop` must name its stop model and threshold and set
+`STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`.
 
 `tools/ctm_corpus_adapter.py assemble --index INDEX.json --corpus-root DIR
 --scope SETUP --out DIR` turns a corpus generated in many seed units into the
