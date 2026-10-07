@@ -1,0 +1,37 @@
+runs 32  wins 9 (28.1%, Wilson95 16-45%)
+sec/game mean 1297 median 1009 max 4055
+loss floors [21, 23, 23, 24, 24, 25, 25, 30, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 41, 46, 50, 50, 50]
+MCTS decisions {'owned': 3206, 'root_boundary': 68, 'active_unqualified_lizard': 1}
+51000000 {'chest_open': 4, 'rest': 3, 'upgrade': 3}
+51000001 {'chest_leave': 1, 'chest_open': 2, 'rest': 5, 'ruby_key': 1, 'upgrade': 5}
+51000002 {'chest_leave': 1, 'chest_open': 1, 'ruby_key': 1, 'upgrade': 5}
+51000003 {'chest_leave': 1, 'chest_open': 2, 'rest': 5, 'upgrade': 6}
+51000004 {'chest_leave': 1, 'chest_open': 2, 'rest': 2, 'ruby_key': 1, 'upgrade': 6}
+51000005 {'chest_open': 2, 'rest': 1, 'upgrade': 4}
+51000006 {'chest_leave': 2, 'rest': 3, 'upgrade': 3}
+51000007 {'chest_leave': 2, 'chest_open': 2, 'rest': 1, 'upgrade': 7}
+51000008 {'chest_open': 2, 'rest': 2, 'upgrade': 4}
+51000009 {'chest_open': 2, 'rest': 3, 'upgrade': 2}
+51000010 {'chest_open': 2, 'rest': 3, 'upgrade': 4}
+51000011 {'chest_leave': 3, 'chest_open': 2, 'rest': 5, 'upgrade': 6}
+51000012 {'chest_leave': 2, 'chest_open': 1, 'rest': 1, 'ruby_key': 1, 'upgrade': 3}
+51000013 {'chest_open': 3, 'rest': 4, 'upgrade': 2}
+51000014 {'chest_leave': 1, 'chest_open': 1, 'rest': 3, 'upgrade': 3}
+51000015 {'chest_open': 2, 'rest': 1, 'upgrade': 2}
+51000016 {'chest_leave': 1, 'chest_open': 1, 'rest': 2, 'upgrade': 3}
+51000017 {'chest_leave': 1, 'rest': 1, 'upgrade': 4}
+51000018 {'chest_leave': 1, 'chest_open': 2, 'rest': 1, 'upgrade': 7}
+51000019 {'chest_open': 1, 'upgrade': 4}
+51000020 {'chest_open': 1, 'upgrade': 4}
+51000021 {'chest_open': 2, 'rest': 3, 'upgrade': 4}
+51000022 {'chest_open': 3, 'upgrade': 9}
+51000023 {'chest_leave': 1, 'chest_open': 2, 'rest': 1, 'upgrade': 8}
+51000024 {'chest_leave': 1, 'chest_open': 2, 'rest': 5, 'upgrade': 6}
+51000025 {'chest_open': 2, 'upgrade': 4}
+51000026 {'chest_leave': 1, 'upgrade': 3}
+51000027 {'chest_open': 1, 'upgrade': 2}
+51000028 {'chest_leave': 1, 'chest_open': 2, 'rest': 2, 'upgrade': 4}
+51000029 {'chest_leave': 1, 'chest_open': 3, 'rest': 5, 'upgrade': 2}
+51000030 {'chest_open': 3, 'rest': 2, 'upgrade': 6}
+51000031 {'chest_open': 3, 'rest': 1, 'ruby_key': 1, 'upgrade': 6}
+total {'chest_leave': 22, 'chest_open': 58, 'rest': 65, 'ruby_key': 5, 'upgrade': 141}

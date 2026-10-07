@@ -14441,3 +14441,77 @@ differ), so it measures the total OOC-policy effect, not isolated preparation.
 **Knowledge impact:** `ooc-label-pipeline.md` and `CODE_MAP.md` route the
 research-only `bossrescue347` mode, its run-driver hook and the native Silver
 planner-seed override.
+
+## §388 — #347 boss-preparation R-match: flat10k entries win, MCTS entries lose (2026-10-07)
+
+**Question:** for the four #417 seeds where the OOC-MCTS arm died at a boss and
+the flat10k arm won the run (the #425 R seeds 48000024, 48000014, 48000116,
+48000095), does the flat10k-produced boss entry (F) win more often than the
+MCTS-produced entry (M) under fixed flat exact 10k native Silver?
+**Design:** both #417 trajectories of each seed reconstructed on diagnostic build
+`5549a16a` (the #425 research patch on the #417 baseline `5e9583cc`, plus a
+manifest-declared `expectedSourceWon`), boss entry captured, original-seed
+control parity, then eight fresh planner seeds per seed
+(`boss-prep-347-planner-v1:{runSeed}:{act}:{rep}`, identical for M and F).
+Entries keep their own legitimate RNG state: this is the total effect of the
+OOC trajectory, not an isolated preparation effect and not the same combat
+future. Baseline `main` `866e8c32`; plan frozen at `c797c311` after independent
+review; PR #428.
+**Validity:** all eight reconstructions matched their #417 rows; M sources lost
+and F sources won the target boss; every control reproduced its source fight
+(outcome, HP, full trace, post-exit digest, simulations); repeats identical;
+M/F planner seeds identical; every root searched exactly 10,000 steps.
+**Result:** `PREPARATION_HEADROOM_SIGNAL`, shape consistent_positive. F 29/32 vs
+M 1/32 boss wins: 28 F-only, 0 M-only, net +28 (rule: >= 8 with >= 3 positive
+seeds); per seed net +8 (24, Champ), +7 (14, Donu & Deca), +8 (116, Champ),
++5 (95, Time Eater). Descriptive: F entries carried more relics on three seeds
+(+4, +9, +5), more upgrades on two (16 vs 4, 19 vs 6), more HP/max HP on two
+(92/100 vs 54/85, 117/117 vs 80/80) and had visited more elites on three; the
+M entry of 48000024 had 449 unspent gold and no shop visit.
+**Interpretation:** on these selected, failure-enriched seeds the #417 MCTS boss
+deaths were not combat-planner bad luck: the MCTS-produced entries lose under
+almost every fresh planner seed while the flat10k entries win. **Inference:**
+OOC MCTS made these boss entries much weaker; the entry differences above
+suggest elite/relic, upgrade and shop choices, but no decision was isolated.
+Not a full-run or win-rate estimate.
+**Next:** localize the OOC decisions behind the stronger F entries (earliest
+consequential divergence per seed: route/elites, rest vs upgrade, shops, card
+and relic picks), then a counterfactual on one recurring decision family.
+
+**Evidence:** [packet](evidence/boss_preparation_rmatch_347_20261007/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` and `CODE_MAP.md` route the new
+`bossrescue347` selection schema (`expectedSourceWon`, shared planner seeds,
+entry descriptor).
+
+## §391 — OOC MCTS boss-rollout leaf pilot: 9/32, far below rollout3 (2026-10-07)
+
+**Question:** does OOC MCTS with no prior and a model-free leaf (play the V4
+policy chain with CTM fights until the next boss; 1 for beating it, 0 for
+dying) play well? Requested by the user as a 32-seed look.
+**Design:** research-only `STS_OOC_MCTS_LEAF_VALUE=bossrollout` (PR #430,
+default off). Frozen reviewed source `1954f100`, binary `ecb20781…`, #417
+`mcts` arm environment with `PRIOR=uniform`, 2048 sims, exact-10k Silver,
+act-3 stop, X2-B win net for campfires; seeds 51000000–031 (the rollout3
+look's seeds), 1 CPU per seed across four cloud containers.
+**Validity:** all 32 runs exited 0 on the frozen SHA/binary with the
+intended leaf and prior; 1 of 3,207 root searches aborted. Inside rollouts the
+CTM cannot price an active Lizard Tail with Fairy Potion or Entropic Brew, so
+the tail is spent there (9,600 times); without that, smoke searches aborted
+almost every root.
+**Result:** **NEGATIVE.** 9/32 wins (28.1%, Wilson 16–45%), mean floor 38.2,
+1,297 s/game. The rollout3 look on the same seeds (uniform prior, 3 CTM fights
+then X2-B, earlier main) won 25/32 (78.1%, Wilson 61–89%): −50 pp, unpaired.
+Losses: 10 at the act-2 boss and 8 in the act-2 hallway (floors 21–30).
+MCTS opened 58 of 80 chests and chose upgrade 141, rest 65, ruby key 5 at
+campfires, so the prior-driven chest/rest failure seen in #429 does not appear.
+**Interpretation (Inference):** a 0/1 boss-survival signal from long, noisy
+policy rollouts does not rank OOC options well at 2048 simulations; it ignores
+HP and resources after the boss, and act 2 collapses. Not tested: more
+simulations, rollouts that also score post-boss HP, or the refreshed CTM.
+**Decision:** keep the leaf default off as a record; no follow-up queued.
+
+**Evidence:** [packet](evidence/ooc_mcts_boss_rollout_leaf_pilot_20261007/README.md).
+
+**Knowledge impact:** `environment-variables.md` and `out-of-combat.md` list the
+`bossrollout` leaf mode.
