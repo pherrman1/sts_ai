@@ -1105,6 +1105,13 @@ def fit(args: argparse.Namespace) -> None:
     xgb_win.save_model(output/"xgboost_survival.json"); xgb_hp.save_model(output/"xgboost_winning_hp.json")
     torch.save(deepsets.net.state_dict(),output/"deepsets.pt"); torch.save(attention.net.state_dict(),output/"attention.pt")
     np.save(output/"test_source_seeds.npy",arrays["sourceSeed"][te])
+    if getattr(args, "save_test_predictions", False):
+        # Per-row TEST predictions for offline comparison with other predictors;
+        # rowIndex is the corpus line index (prepare keeps every row in order).
+        np.savez(output/"test_predictions.npz",rowIndex=te,sourceSeed=arrays["sourceSeed"][te],
+                 fightIdx=arrays["fightIdx"][te],y_win=arrays["y_win"][te],y_hp=arrays["y_hp"][te],
+                 **{f"{name}_{kind}":values for name,(p,hp) in test_predictions.items()
+                    for kind,values in (("p",p),("hp",hp))})
     bootstrap=_bootstrap_diffs(arrays,te,test_predictions,args.bootstrap_reps,args.training_seed)
     final_fit = {
         "data": "TRAIN+VALIDATION only",
@@ -1132,7 +1139,7 @@ def main() -> None:
     parser=argparse.ArgumentParser(description=__doc__); sub=parser.add_subparsers(dest="command",required=True)
     p=sub.add_parser("audit"); p.add_argument("--corpus-manifest",required=True); p.add_argument("--shard-root",required=True); p.add_argument("--output-dir",required=True); p.set_defaults(func=audit)
     p=sub.add_parser("prepare"); p.add_argument("--audit",required=True); p.add_argument("--output-dir",required=True); p.set_defaults(func=prepare)
-    p=sub.add_parser("fit"); p.add_argument("--prepared-dir",required=True); p.add_argument("--output-dir",required=True); p.add_argument("--device",choices=("auto","cpu","cuda"),default="auto"); p.add_argument("--threads",type=int,default=8); p.add_argument("--xgb-rounds",type=int,default=400); p.add_argument("--nn-batch",type=int,default=2048); p.add_argument("--nn-epochs",type=int,default=12); p.add_argument("--nn-patience",type=int,default=3); p.add_argument("--training-seed",type=int,default=20260911); p.add_argument("--bootstrap-reps",type=int,default=1000); p.set_defaults(func=fit)
+    p=sub.add_parser("fit"); p.add_argument("--prepared-dir",required=True); p.add_argument("--output-dir",required=True); p.add_argument("--device",choices=("auto","cpu","cuda"),default="auto"); p.add_argument("--threads",type=int,default=8); p.add_argument("--xgb-rounds",type=int,default=400); p.add_argument("--nn-batch",type=int,default=2048); p.add_argument("--nn-epochs",type=int,default=12); p.add_argument("--nn-patience",type=int,default=3); p.add_argument("--training-seed",type=int,default=20260911); p.add_argument("--bootstrap-reps",type=int,default=1000); p.add_argument("--save-test-predictions",action="store_true"); p.set_defaults(func=fit)
     args=parser.parse_args(); args.func(args)
 
 

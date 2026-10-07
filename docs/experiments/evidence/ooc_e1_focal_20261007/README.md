@@ -39,6 +39,10 @@ seeds 0/1/2. The primary prediction is the 3-seed probability mean.
 | F1 | focal rows only | each decision's siblings share weight 1, rescaled to mean 1 |
 | F2 | all MAP rows | non-focal 1; focal rows keep F1 shares, scaled so the focal block's total weight equals the non-focal total |
 
+Only the frozen X2B arm reads the four hidden-future fields, so its absolute
+NLL is not a public-information baseline; P0, F1 and F2 are. Compare focal arms
+with P0.
+
 Focal row = sibling_ranking join: the minimum recorded `rowIdx` of the branch
 trajectory (`rowIdx > 0` for MAP branches).
 
@@ -76,12 +80,12 @@ Selection gain vs V4's choice (decisions / discordant decisions in brackets):
 | BOSS_RELIC (153/72) | −0.052 [−0.121, +0.013] | −0.047 [−0.112, +0.013] | −0.050 [−0.113, +0.013] | −0.026 [−0.092, +0.033] | +0.144 |
 | NEOW (155/78) | +0.068 [−0.003, +0.142] | +0.061 [−0.010, +0.136] | +0.071 [−0.003, +0.145] | +0.045 [−0.032, +0.123] | +0.219 |
 | SHOP (153/61) | +0.016 | +0.000 | +0.039 | +0.013 | +0.176 |
-| REST (155/57) | +0.013 | +0.007 | +0.021 | +0.018 | +0.155 |
+| REST (155/57) | +0.013 | +0.006 | +0.021 | +0.018 | +0.155 |
 | EVENT (155/34) | +0.019 | +0.008 | +0.020 | +0.033 | +0.090 |
 | MAP (155/32) | +0.008 | +0.016 | +0.029 | +0.026 | +0.103 |
 | OTHER_SELECTOR (93/31) | −0.065 | −0.070 | −0.001 | −0.006 | +0.086 |
 | TREASURE (155/21) | −0.003 | −0.003 | +0.019 | +0.016 | +0.058 |
-| pooled (1,329/434) | +0.007 [−0.025, +0.037] | +0.003 [−0.028, +0.036] | +0.022 [−0.010, +0.056] | +0.019 [−0.012, +0.050] | +0.134 |
+| pooled (1,329/434) | +0.006 [−0.025, +0.037] | +0.003 [−0.028, +0.036] | +0.022 [−0.010, +0.056] | +0.019 [−0.012, +0.050] | +0.134 |
 
 Paired gain differences vs P0: CARD_REWARD F1 +0.011 [−0.030, +0.050],
 F2 +0.015 [−0.018, +0.045]; BOSS_RELIC F2 +0.021 [+0.000, +0.047];

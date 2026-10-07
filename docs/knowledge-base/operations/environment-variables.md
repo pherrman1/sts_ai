@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-09-27 for the automatic OOC CTM stack, active-Lizard default, and `STS_FORCE_RELIC` Lizard initialization; 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main`.
+Last verified: 2026-10-07 for `STS_CTM_PINS`; 2026-09-27 for the automatic OOC CTM stack, active-Lizard default, and `STS_FORCE_RELIC` Lizard initialization; 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -173,6 +173,7 @@ enable flag:
 | `STS_LEAFDIAG_PER_STRATUM` | Leafdiag reservoir capacity per stratum | varies | `main` ~L9880 |
 | `STS_LEAFDIAG_DEEP_DEPTH` | Leafdiag deep-tree stratum threshold | varies | `main` ~L9885 |
 | `STS_FRONTIERGEN_PER_STRATUM` | Frontiergen reservoir capacity per stratum | varies | `main` ~L9890 |
+| `STS_CTM_PINS` | Python CTM training/export tools only (#418 retrain): a `ctm_retrain_pins_v1` JSON file that replaces their pinned production corpus, split, prepared-array, checkpoint and row-count identities. Every key must be present unless the call site keeps the production default (`required=False`); `python tools/ctm_pins.py` lists the keys and defaults. JSON receipts written through `combat_transition_surrogate.json_dump` record `ctmPinsSha256` | unset (production pins) | `tools/ctm_pins.py` |
 
 ## Benchmark / run control
 

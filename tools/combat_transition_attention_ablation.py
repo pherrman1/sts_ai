@@ -36,9 +36,13 @@ except ModuleNotFoundError:  # direct invocation from tools/
 
 SCRIPT_SCHEMA = "combat_transition_attention_ablation_v1"
 MODEL_SCHEMA = "combat_transition_surrogate_attention_model_v1"
-EXPECTED_CORPUS_SHA256 = "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde"
-EXPECTED_SPLIT_SHA256 = "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32"
-EXPECTED_SUPPORTED_ROWS = 413_799
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED_CORPUS_SHA256 = _pins.value("combat_transition_attention_ablation.EXPECTED_CORPUS_SHA256", "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde")
+EXPECTED_SPLIT_SHA256 = _pins.value("combat_transition_attention_ablation.EXPECTED_SPLIT_SHA256", "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32")
+EXPECTED_SUPPORTED_ROWS = _pins.value("combat_transition_attention_ablation.EXPECTED_SUPPORTED_ROWS", 413_799)
 
 
 class AttentionEncoder:

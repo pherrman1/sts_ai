@@ -781,6 +781,18 @@ as the retained primitive. Singing Bowl, multiple groups and mixed rewards keep
 their distinct choices. Taking a Sapphire-paired relic consumes that key
 choice, and taking Sapphire consumes its paired relic. Treasure `OPEN_CHEST`
 ends at the revealed reward screen; it does not choose a generated reward.
+In live runs with `STS_COLLECT_KEYS` off (the default), the adapter drops
+`TAKE_KEY` and `TAKE_RUBY_KEY` candidates and their primitives from the V4
+prior source set (`OocAdapterOptions::collectKeys`, set from `g_collectKeys` in
+`configureLiveOocMcts`); offline fixtures and the live advisor keep keys. Before
+this, live OOC MCTS could take the sapphire key and lose the chest relic (#347,
+ledger §390). `runFullRunOOC` and `runFullRunOocPolicyStep` open every treasure
+chest without Cursed Key before any policy runs (`openTreasureChestRuleStep`).
+On any reward screen (elites, event elites, chests) they then take every
+offered relic first (`takeRewardRelicRuleStep`), except Bottled Flame,
+Lightning and Tornado, Dead Branch, Tungsten Rod, Unceasing Top and Juzu
+Bracelet, which go to the ordinary decision (Philipp, 2026-10-07). The OOC MCTS
+leaf value prices chest relics near zero (ledger §390 addendum).
 
 `DISCARD_POTION` is append-only effect 29. It identifies a held potion and its
 duplicate occurrence, and is offered only for a full belt with a visible refill
