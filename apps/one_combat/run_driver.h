@@ -2,6 +2,7 @@
 #define STS_ONE_COMBAT_RUN_DRIVER_H
 
 #include <cstdint>
+#include <functional>
 
 #include "game/GameContext.h"
 #include "sim/search/ScumSearchAgent2.h"
@@ -20,6 +21,19 @@ struct RunResult {
 
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV,
                         bool shopV, bool e2cCapture = false);
+
+namespace one_combat { struct PathHistory; }
+// Research-only (#347 boss-entry rescue): when set, runFullRunOOC calls
+// `before` at each boss battle after its budget is set and before Silver
+// initializes the battle, and `after` once the battle has exited. Unset
+// everywhere else; the hooks must not change the run.
+namespace sts { class BattleContext; }
+struct BossEntryHook {
+    std::function<void(const sts::GameContext &, sts::search::ScumSearchAgent2 &,
+                       const one_combat::PathHistory &)> before;
+    std::function<void(const sts::GameContext &, const sts::BattleContext &)> after;
+};
+extern thread_local BossEntryHook *t_bossEntryHook;
 
 // Install the STS_FORCE_RELIC run-start override with native initial relic
 // data, preserving the override's relic-pool removal behavior.

@@ -42,6 +42,10 @@ namespace sts::search {
         std::int64_t simulations = 0;
         std::int64_t lockStops = 0;    // learned-stop/lock-only roots stopped by a strict lock
         std::int64_t modelStops = 0;   // learned-stop roots stopped by model risk
+        // Search iterations actually run (SilverSearcher steps), in total and
+        // the fewest/most at one root (-1 before the first searched root).
+        std::int64_t searchSteps = 0;
+        std::int64_t minRootSteps = -1, maxRootSteps = -1;
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
@@ -58,6 +62,12 @@ namespace sts::search {
     // searcher of the current thread at creation. Unset everywhere else; no
     // environment variable reaches it.
     extern thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
+    // Research-only (#347 boss-entry rescue): when set, this planner seed
+    // replaces the game seed in each search root of the current thread, so it
+    // seeds the search RNG streams and Silver's rollouts. The live battle and
+    // its RNG streams are untouched. Unset everywhere else; no environment
+    // variable reaches it.
+    extern thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
 
     // Research-only learned stopping (NativeSilverStopModel.h):
     // STS_SILVER_LEARNED_STOP=1 with STS_SILVER_ADAPTIVE=0 searches each

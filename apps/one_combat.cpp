@@ -3734,6 +3734,28 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "bossrescue347") {
+        if (argc != 6) {
+            std::cerr << "usage: one_combat bossrescue347 1 SELECTION.json STATE_ID OUT_PREFIX\n";
+            return 2;
+        }
+        try {
+            return bossRescue347(std::stoi(argv[2]), argv[3], argv[4], argv[5]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "bossrescue347selftest") {
+        if (argc != 5) {
+            std::cerr << "usage: one_combat bossrescue347selftest 1 SEED SIMS\n";
+            return 2;
+        }
+        try {
+            return bossRescue347SelfTest(std::stoi(argv[2]), std::stoull(argv[3]), std::stoi(argv[4]));
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "silverparams400gen") {
         if (argc != 8) {
             std::cerr << "usage: one_combat silverparams400gen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json\n";

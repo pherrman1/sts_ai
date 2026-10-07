@@ -2074,8 +2074,20 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
               << sourceRawRows + branchRawRows << " -> " << outPrefix << "\n";
 }
 
+// Optional extra observations of one boss arm (#347 boss-entry rescue).
+struct VwinBossArmDetail {
+    std::string startDigest, postExitDigest, postExitSummary;
+    std::vector<int> trace;
+    std::int64_t searchSteps = 0, minRootSteps = -1, maxRootSteps = -1;
+    std::int64_t reroots = 0, freshRoots = 0, singletonSkips = 0;
+    double wallSeconds = 0.0;
+};
+static std::string bossRescueStateDigest(const GameContext &gc, const search::ScumSearchAgent2 *agent);
+static std::string bossRescueStateSummary(const GameContext &gc);
+
 static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
-                                    const search::NativeSilverSearchParams *params = nullptr) {
+                                    const search::NativeSilverSearchParams *params = nullptr,
+                                    VwinBossArmDetail *detail = nullptr) {
     struct ParamScope {
         explicit ParamScope(const search::NativeSilverSearchParams *p) {
             if (p) search::g_nativeSilverSearchParamOverride = *p;
@@ -2086,6 +2098,9 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
     GameContext gc = detachedCounterfactualCopy(*entry.pre);
     PathHistory path = entry.path;
     search::ScumSearchAgent2 agent = entry.agent;
+    if (detail) detail->startDigest = bossRescueStateDigest(gc, &agent);
+    const auto totalsBefore = search::nativeSilverTotals();
+    const auto wallStart = std::chrono::steady_clock::now();
     agent.simulationCountBase = budget;
     agent.recordActions = true;
     agent.gameActionHistory.clear();
@@ -2127,6 +2142,21 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
     result.postAfterBattleHp = gc.curHp;
     result.potionsAfter = gc.potionCount;
     t_curPath = nullptr;
+    if (detail) {
+        const auto totalsAfter = search::nativeSilverTotals();
+        const auto &stats = search::g_nativeSilverCombatStats;
+        detail->wallSeconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - wallStart).count();
+        detail->trace = agent.gameActionHistory;
+        detail->postExitDigest = bossRescueStateDigest(gc, nullptr);
+        detail->postExitSummary = bossRescueStateSummary(gc);
+        detail->searchSteps = stats.searchSteps;
+        detail->minRootSteps = stats.minRootSteps;
+        detail->maxRootSteps = stats.maxRootSteps;
+        detail->reroots = totalsAfter.reroots - totalsBefore.reroots;
+        detail->freshRoots = totalsAfter.freshRoots - totalsBefore.freshRoots;
+        detail->singletonSkips = totalsAfter.singletonSkips - totalsBefore.singletonSkips;
+    }
     return result;
 }
 
@@ -3311,6 +3341,406 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
               << '/' << nSeeds << " selected=" << selected.size() << " A-replay="
               << sourceReplayMatches << '/' << sourceReplayMatches + sourceReplayMismatches
               << " -> " << outPrefix << "\n";
+}
+
+// #347 boss-entry budget rescue pilot (docs/experiments/evidence/
+// boss_budget_rescue_347_pilot_20261007). One frozen #417 source per process:
+// reconstruct the run with the ordinary live run driver (live OOC MCTS when
+// the arm enables it), capture the act's boss entry, then replay that entry
+// with the original planner seed (control parity) and with four fresh planner
+// seeds at flat exact 10k (A) and 40k (B).
+static std::string bossRescueStateDigest(const GameContext &gc, const search::ScumSearchAgent2 *agent) {
+    std::ostringstream o;
+    o << "boss-rescue-347-state-v1|seed=" << gc.seed;
+    for (const Random *r : {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng, &gc.mathUtilRng,
+                            &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng, &gc.monsterRng, &gc.neowRng,
+                            &gc.potionRng, &gc.relicRng, &gc.shuffleRng, &gc.treasureRng})
+        o << "|rng=" << r->counter << ':' << r->seed0 << ':' << r->seed1;
+    o << "|act=" << gc.act << "|asc=" << gc.ascension << "|floor=" << gc.floorNum
+      << "|room=" << static_cast<int>(gc.curRoom) << "|screen=" << static_cast<int>(gc.screenState)
+      << "|outcome=" << static_cast<int>(gc.outcome)
+      << "|encounter=" << static_cast<int>(gc.info.encounter) << "|boss=" << static_cast<int>(gc.boss)
+      << "|secondBoss=" << static_cast<int>(gc.secondBoss)
+      << "|map=" << gc.curMapNodeX << ',' << gc.curMapNodeY
+      << "|hp=" << gc.curHp << '/' << gc.maxHp << "|gold=" << gc.gold
+      << "|potions=" << gc.potionCount << '/' << gc.potionCapacity << ':';
+    for (const auto p : gc.potions) o << static_cast<int>(p) << ',';
+    o << "|relics=";
+    for (const auto &r : gc.relics.relics) o << static_cast<int>(r.id) << ':' << r.data << ',';
+    o << "|deck=";
+    for (const auto &c : gc.deck.cards) o << static_cast<int>(c.id) << ':' << c.misc << ':' << c.upgraded << ',';
+    o << "|bottles=" << gc.deck.bottleIdxs[0] << ',' << gc.deck.bottleIdxs[1] << ',' << gc.deck.bottleIdxs[2]
+      << "|keys=" << gc.blueKey << gc.greenKey << gc.redKey << gc.keysEnabled
+      << "|smokeBomb=" << gc.smokeBombUsed << "|wingBoots=" << gc.wingBootsCharges
+      << "|lists=" << gc.monsterListOffset << ',' << gc.eliteMonsterListOffset;
+    if (agent) o << "|agent=" << agent->simulationCountBase << ':' << agent->bossSimulationMultiplier
+                 << ':' << agent->rng;
+    return vwinSha256(o.str());
+}
+
+static std::string bossRescueStateSummary(const GameContext &gc) {
+    std::ostringstream o;
+    o << "hp=" << gc.curHp << ";maxHp=" << gc.maxHp << ";gold=" << gc.gold << ";potions=";
+    for (int i = 0; i < gc.potionCapacity && i < static_cast<int>(gc.potions.size()); ++i)
+        o << (i ? "|" : "") << potionEnumNames[static_cast<int>(gc.potions[i])];
+    o << ";relics=";
+    bool first = true;
+    for (const auto &r : gc.relics.relics) {
+        o << (first ? "" : "|") << relicEnumNames[static_cast<int>(r.id)] << ':' << r.data;
+        first = false;
+    }
+    o << ";deck=";
+    first = true;
+    for (const auto &c : gc.deck.cards) {
+        o << (first ? "" : "|") << c.getName() << (c.isUpgraded() ? "+" : "");
+        first = false;
+    }
+    return o.str();
+}
+
+static std::uint64_t bossRescuePlannerSeed(const std::string &stateId, int rep) {
+    return std::stoull(vwinSha256("boss-rescue-347-planner-v1:" + stateId + ":"
+                                  + std::to_string(rep)).substr(0, 16), nullptr, 16);
+}
+
+namespace {
+struct BossRescueSource {
+    bool captured = false, finished = false;
+    int bossBattles = 0;
+    VwinBossEntry entry;
+    std::string startDigest, postExitDigest, postExitSummary, encounterEnum;
+    std::vector<int> trace;
+    int won = -1, terminalHp = -1, postExitHp = -1, potionsAfter = -1, budget = -1;
+    std::int64_t decisions = 0, simulations = 0, searchSteps = 0, minRootSteps = -1, maxRootSteps = -1;
+    double cpuSeconds = 0.0;
+    std::uint64_t cpuStart = 0;
+};
+
+struct BossRescueRow {
+    std::string kind, arm;
+    int budget = 0, rep = -1;
+    std::optional<std::uint64_t> plannerSeed;
+    VwinArmResult result;
+    VwinBossArmDetail detail;
+};
+
+class PlannerSeedScope {
+public:
+    explicit PlannerSeedScope(std::optional<std::uint64_t> seed) {
+        search::g_nativeSilverPlannerSeedOverride = seed;
+    }
+    ~PlannerSeedScope() { search::g_nativeSilverPlannerSeedOverride.reset(); }
+};
+
+BossRescueRow bossRescueRun(const VwinBossEntry &entry, const std::string &kind, const std::string &arm,
+                            int budget, int rep, std::optional<std::uint64_t> plannerSeed) {
+    BossRescueRow row;
+    row.kind = kind; row.arm = arm; row.budget = budget; row.rep = rep; row.plannerSeed = plannerSeed;
+    PlannerSeedScope scope(plannerSeed);
+    row.result = vwinRunBossArm(entry, budget, nullptr, &row.detail);
+    return row;
+}
+
+std::string bossRescueTraceText(const std::vector<int> &trace) {
+    std::ostringstream o;
+    for (std::size_t i = 0; i < trace.size(); ++i) o << (i ? " " : "") << trace[i];
+    return o.str();
+}
+
+// Captures the boss entry of `act` from one ordinary runFullRunOOC call.
+BossRescueSource bossRescueCapture(std::uint64_t seed, int sims, int act, RunResult &run) {
+    BossRescueSource source;
+    search::ScumSearchAgent2 *liveAgent = nullptr;
+    BossEntryHook hook;
+    hook.before = [&](const GameContext &gc, search::ScumSearchAgent2 &agent, const PathHistory &path) {
+        ++source.bossBattles;
+        if (gc.act != act) return;
+        if (source.captured) throw std::runtime_error("boss rescue #347: second boss battle in the target act");
+        source.captured = true;
+        source.entry.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+        source.entry.path = path;
+        source.entry.agent = agent;
+        source.entry.policy = one_combat::captureOocPolicyThreadState();
+        source.entry.act = gc.act;
+        source.entry.floor = gc.floorNum;
+        const int encounterIndex = static_cast<int>(gc.info.encounter);
+        source.entry.encounter = monsterEncounterStrings[encounterIndex];
+        source.encounterEnum = monsterEncounterEnumNames[encounterIndex];
+        source.entry.roomClass = combatEvalRoomClass(gc.curRoom);
+        source.startDigest = bossRescueStateDigest(gc, &agent);
+        source.budget = agent.simulationCountBase;
+        // Recording the executed actions does not change any decision.
+        agent.recordActions = true;
+        agent.gameActionHistory.clear();
+        liveAgent = &agent;
+        source.cpuStart = vwinThreadCpuNanos();
+    };
+    hook.after = [&](const GameContext &gc, const BattleContext &bc) {
+        if (!liveAgent || source.finished) return;
+        source.cpuSeconds = static_cast<double>(vwinThreadCpuNanos() - source.cpuStart) / 1.0e9;
+        source.finished = true;
+        source.won = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : bc.outcome == Outcome::PLAYER_LOSS ? 0 : -1;
+        source.terminalHp = bc.player.curHp;
+        source.postExitHp = gc.curHp;
+        source.potionsAfter = gc.potionCount;
+        source.postExitDigest = bossRescueStateDigest(gc, nullptr);
+        source.postExitSummary = bossRescueStateSummary(gc);
+        source.trace = liveAgent->gameActionHistory;
+        const auto &stats = search::g_nativeSilverCombatStats;
+        source.decisions = stats.decisions;
+        source.simulations = stats.simulations;
+        source.searchSteps = stats.searchSteps;
+        source.minRootSteps = stats.minRootSteps;
+        source.maxRootSteps = stats.maxRootSteps;
+        liveAgent->recordActions = false;
+        liveAgent->gameActionHistory.clear();
+        liveAgent = nullptr;
+    };
+    const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
+    t_bossEntryHook = &hook;
+    try {
+        run = runFullRunOOC(seed, sims, 0, restV, true);
+    } catch (...) {
+        t_bossEntryHook = nullptr;
+        throw;
+    }
+    t_bossEntryHook = nullptr;
+    return source;
+}
+
+bool bossRescueSameRun(const BossRescueRow &a, const BossRescueRow &b) {
+    return a.result.won == b.result.won && a.result.terminalHp == b.result.terminalHp
+        && a.detail.trace == b.detail.trace && a.detail.postExitDigest == b.detail.postExitDigest
+        && a.result.simulations == b.result.simulations && a.detail.searchSteps == b.detail.searchSteps;
+}
+} // namespace
+
+int bossRescue347(int nEntries, const std::string &selectionPath, const std::string &stateId,
+                  const std::string &outPrefix) {
+    if (nEntries != 1) throw std::runtime_error("boss rescue #347: one entry per process");
+    const auto selection = nlohmann::json::parse(std::ifstream(selectionPath));
+    if (selection.value("schema", "") != "boss_budget_rescue_347_pilot_selection_v1")
+        throw std::runtime_error("boss rescue #347: unexpected selection schema");
+    nlohmann::json spec;
+    for (const auto &candidate : selection.at("selected"))
+        if (candidate.at("stateId") == stateId) spec = candidate;
+    if (spec.is_null()) throw std::runtime_error("boss rescue #347: state " + stateId + " is not selected");
+    const std::uint64_t seed = spec.at("seed").get<std::uint64_t>();
+    const int act = spec.at("act").get<int>();
+    const std::string sourceArm = spec.at("sourceArm"), boss = spec.at("boss");
+    const auto &historical = spec.at("historicalRow");
+
+    // The process must run the recorded pilot arm with flat exact-10k Silver.
+    if (one_combat::liveOocMctsEnabled() != (sourceArm == "mcts"))
+        throw std::runtime_error("boss rescue #347: STS_OOC_MCTS does not match source arm " + sourceArm);
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+        || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled()
+        || search::nativeSilverReuseCap() != 32768 || g_stopAfterAct != 3)
+        throw std::runtime_error("boss rescue #347: requires exact-root-budget Silver, adaptive and learned stopping off, reuse cap 32768, STS_STOP_AFTER_ACT=3");
+    const std::string rowsPath = outPrefix + ".rows.csv", entryPath = outPrefix + ".entry.json";
+    for (const auto &path : {rowsPath, entryPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("boss rescue #347: refusing to overwrite " + path);
+
+    RunResult run{};
+    auto source = bossRescueCapture(seed, 10000, act, run);
+    const std::map<std::string, std::pair<long long, long long>> runFields = {
+        {"won", {run.won ? 1 : 0, historical.at("won").get<long long>()}},
+        {"floor", {run.floor, historical.at("floor").get<long long>()}},
+        {"act", {run.act, historical.at("act").get<long long>()}},
+        {"hpEnd", {run.hpEnd, historical.at("hpEnd").get<long long>()}},
+        {"maxHp", {run.maxHp, historical.at("maxHp").get<long long>()}},
+        {"fightsLost", {run.fightsLost, historical.at("fightsLost").get<long long>()}},
+        {"deathCombat", {run.deathCombat, historical.at("deathCombat").get<long long>()}},
+        {"deathEncounter", {run.deathEncounter, historical.at("deathEncounter").get<long long>()}}};
+    std::vector<std::string> failures;
+    nlohmann::json runJson = nlohmann::json::object();
+    for (const auto &[name, values] : runFields) {
+        runJson[name] = {{"reconstructed", values.first}, {"historical", values.second}};
+        if (values.first != values.second) failures.push_back("run_" + name + "_mismatch");
+    }
+    if (!source.captured) failures.push_back("boss_entry_not_reached");
+    if (source.captured && source.encounterEnum != boss) failures.push_back("boss_identity_mismatch");
+    if (source.captured && (!source.finished || source.won != 0)) failures.push_back("source_boss_not_lost");
+    if (source.captured && source.budget != 10000) failures.push_back("source_budget_not_10000");
+
+    std::vector<BossRescueRow> rows;
+    nlohmann::json checks = nlohmann::json::object();
+    if (source.captured && source.finished) {
+        const std::string preDigest = bossRescueStateDigest(*source.entry.pre, &source.entry.agent);
+        if (preDigest != source.startDigest) failures.push_back("detached_copy_digest_mismatch");
+        rows.push_back(bossRescueRun(source.entry, "control", "A", 10000, -1, std::nullopt));
+        for (int rep = 0; rep < 4; ++rep) {
+            const auto planner = bossRescuePlannerSeed(stateId, rep);
+            const std::vector<std::pair<std::string, int>> order = rep % 2 == 0
+                ? std::vector<std::pair<std::string, int>>{{"A", 10000}, {"B", 40000}}
+                : std::vector<std::pair<std::string, int>>{{"B", 40000}, {"A", 10000}};
+            for (const auto &[arm, budget] : order)
+                rows.push_back(bossRescueRun(source.entry, arm, arm, budget, rep, planner));
+        }
+        rows.push_back(bossRescueRun(source.entry, "control_repeat", "A", 10000, -1, std::nullopt));
+        rows.push_back(bossRescueRun(source.entry, "A_repeat", "A", 10000, 0, bossRescuePlannerSeed(stateId, 0)));
+
+        const auto &control = rows.front();
+        const bool controlParity = control.result.valid && control.result.won == source.won
+            && control.result.terminalHp == source.terminalHp && control.detail.trace == source.trace
+            && control.detail.postExitDigest == source.postExitDigest
+            && static_cast<std::int64_t>(control.result.simulations) == source.simulations;
+        checks["controlParity"] = {{"pass", controlParity},
+            {"won", control.result.won == source.won}, {"terminalHp", control.result.terminalHp == source.terminalHp},
+            {"fullTrace", control.detail.trace == source.trace},
+            {"postExitStateDigest", control.detail.postExitDigest == source.postExitDigest},
+            {"simulations", static_cast<std::int64_t>(control.result.simulations) == source.simulations}};
+        if (!controlParity) failures.push_back("control_parity_failure");
+        const BossRescueRow *aRep0 = nullptr;
+        for (const auto &row : rows) if (row.kind == "A" && row.rep == 0) aRep0 = &row;
+        const bool controlRepeat = bossRescueSameRun(control, rows[rows.size() - 2]);
+        const bool aRepeat = aRep0 && bossRescueSameRun(*aRep0, rows.back());
+        checks["controlRepeatIdentical"] = controlRepeat;
+        checks["aRep0RepeatIdentical"] = aRepeat;
+        if (!controlRepeat || !aRepeat) failures.push_back("replay_not_deterministic_or_contaminated");
+        bool digests = bossRescueStateDigest(*source.entry.pre, &source.entry.agent) == source.startDigest;
+        bool budgets = true, valid = true;
+        for (const auto &row : rows) {
+            digests = digests && row.detail.startDigest == source.startDigest;
+            budgets = budgets && row.detail.minRootSteps == row.budget && row.detail.maxRootSteps == row.budget
+                && row.detail.searchSteps == static_cast<std::int64_t>(row.result.decisions) * row.budget
+                && static_cast<std::int64_t>(row.result.simulations) == row.detail.searchSteps;
+            valid = valid && row.result.valid;
+        }
+        checks["startDigestIdentical"] = digests;
+        checks["budgetSpentEveryRoot"] = budgets;
+        checks["allRowsValid"] = valid;
+        if (!digests) failures.push_back("start_digest_mismatch");
+        if (!budgets) failures.push_back("budget_not_spent");
+        if (!valid) failures.push_back("invalid_replay_row");
+    }
+
+    std::ofstream out(rowsPath);
+    if (!out) throw std::runtime_error("boss rescue #347: cannot open " + rowsPath);
+    out << "stateId,stratum,sourceArm,seed,act,boss,kind,arm,budget,rep,plannerSeed,startDigest,valid,"
+           "outcome,won,terminalHp,postExitHp,potionsAfter,postExitDigest,decisions,simulations,"
+           "searchSteps,minRootSteps,maxRootSteps,reroots,freshRoots,singletonSkips,cpuSeconds,"
+           "wallSeconds,traceLen,traceSha256,quarantineReason,postExitSummary,trace\n";
+    const auto prefix = [&](std::ostream &o) {
+        o << stateId << ',' << spec.at("stratum").get<std::string>() << ',' << sourceArm << ',' << seed
+          << ',' << act << ',' << boss << ',';
+    };
+    if (source.captured && source.finished) {
+        prefix(out);
+        out << "source,source," << source.budget << ",-1,," << source.startDigest << ",1,"
+            << (source.won == 1 ? "PLAYER_VICTORY" : source.won == 0 ? "PLAYER_LOSS" : "UNDECIDED") << ','
+            << source.won << ',' << source.terminalHp << ',' << source.postExitHp << ',' << source.potionsAfter
+            << ',' << source.postExitDigest << ',' << source.decisions << ',' << source.simulations << ','
+            << source.searchSteps << ',' << source.minRootSteps << ',' << source.maxRootSteps << ",,,,"
+            << std::setprecision(9) << source.cpuSeconds << ",," << source.trace.size() << ','
+            << vwinSha256(bossRescueTraceText(source.trace)) << ",," << csvQuote(source.postExitSummary)
+            << ',' << bossRescueTraceText(source.trace) << '\n';
+    }
+    for (const auto &row : rows) {
+        prefix(out);
+        std::ostringstream planner;
+        if (row.plannerSeed) planner << std::hex << std::setw(16) << std::setfill('0') << *row.plannerSeed;
+        out << row.kind << ',' << row.arm << ',' << row.budget << ',' << row.rep << ',' << planner.str() << ','
+            << row.detail.startDigest << ',' << (row.result.valid ? 1 : 0) << ',' << row.result.outcome << ','
+            << row.result.won << ',' << row.result.terminalHp << ',' << row.result.postAfterBattleHp << ','
+            << row.result.potionsAfter << ',' << row.detail.postExitDigest << ',' << row.result.decisions << ','
+            << row.result.simulations << ',' << row.detail.searchSteps << ',' << row.detail.minRootSteps << ','
+            << row.detail.maxRootSteps << ',' << row.detail.reroots << ',' << row.detail.freshRoots << ','
+            << row.detail.singletonSkips << ',' << std::setprecision(9) << row.result.cpuSeconds << ','
+            << row.detail.wallSeconds << ',' << row.detail.trace.size() << ','
+            << vwinSha256(bossRescueTraceText(row.detail.trace)) << ',' << csvQuote(row.result.quarantineReason)
+            << ',' << csvQuote(row.detail.postExitSummary) << ',' << bossRescueTraceText(row.detail.trace) << '\n';
+    }
+    out.close();
+    if (!out) throw std::runtime_error("boss rescue #347: write failed " + rowsPath);
+
+    nlohmann::json env = nlohmann::json::object();
+    for (char **e = environ; *e; ++e) {
+        const std::string kv = *e;
+        if (kv.rfind("STS_", 0) == 0 || kv.rfind("OMP_", 0) == 0)
+            env[kv.substr(0, kv.find('='))] = kv.substr(kv.find('=') + 1);
+    }
+    nlohmann::json plannerSeeds = nlohmann::json::array();
+    for (int rep = 0; rep < 4; ++rep) {
+        std::ostringstream hex;
+        hex << std::hex << std::setw(16) << std::setfill('0') << bossRescuePlannerSeed(stateId, rep);
+        plannerSeeds.push_back(hex.str());
+    }
+    nlohmann::json entryJson = {
+        {"schema", "boss_budget_rescue_347_pilot_entry_v1"},
+        {"stateId", stateId}, {"stratum", spec.at("stratum")}, {"sourceArm", sourceArm}, {"seed", seed},
+        {"act", act}, {"expectedBoss", boss},
+        {"capturedBoss", source.encounterEnum}, {"floor", source.captured ? source.entry.floor : -1},
+        {"bossBattlesSeen", source.bossBattles},
+        {"entrySummary", source.captured ? bossRescueStateSummary(*source.entry.pre) : ""},
+        {"startDigest", source.startDigest},
+        {"reconstruction", runJson}, {"sourceFight", {{"won", source.won}, {"terminalHp", source.terminalHp},
+            {"postExitHp", source.postExitHp}, {"postExitDigest", source.postExitDigest},
+            {"decisions", source.decisions}, {"simulations", source.simulations},
+            {"traceLen", source.trace.size()}, {"cpuSeconds", source.cpuSeconds}}},
+        {"plannerSeedDomain", "boss-rescue-347-planner-v1:{stateId}:{rep}"},
+        {"plannerSeeds", plannerSeeds}, {"checks", checks},
+        {"status", failures.empty() ? "VALID" : "INVALID"}, {"failures", failures},
+        {"provenance", {{"executableGitSha", trainingExecutableGitSha()},
+            {"executableSha256", fileSha256(g_mainBinaryPath)},
+            {"selectionSha256", fileSha256(selectionPath)},
+            {"policy", effectiveOocPolicySpecification()}, {"environment", env}}},
+        {"outputs", {{"rowsSha256", fileSha256(rowsPath)}}},
+    };
+    std::ofstream entryOut(entryPath);
+    if (!entryOut) throw std::runtime_error("boss rescue #347: cannot open " + entryPath);
+    entryOut << entryJson.dump(2) << '\n';
+    std::cout << "boss rescue #347 " << stateId << " status=" << (failures.empty() ? "VALID" : "INVALID");
+    for (const auto &f : failures) std::cout << ' ' << f;
+    std::cout << " -> " << outPrefix << '\n';
+    return failures.empty() ? 0 : 3;
+}
+
+// Fixture checks for the replay boundary on the act-1 boss of one seed at a
+// small budget: control parity, determinism, planner-seed consumption, arm
+// isolation and per-root budgets. Runs whatever arm environment is exported.
+int bossRescue347SelfTest(int nSeeds, std::uint64_t seed, int sims) {
+    if (nSeeds != 1 || sims < 1) throw std::runtime_error("boss rescue #347 selftest: one seed, positive sims");
+    RunResult run{};
+    auto source = bossRescueCapture(seed, sims, 1, run);
+    auto require = [](bool ok, const std::string &what) {
+        if (!ok) throw std::runtime_error("boss rescue #347 selftest: " + what);
+        std::cout << "PASS " << what << '\n';
+    };
+    require(source.captured && source.finished, "act-1 boss entry captured and fought");
+    require(bossRescueStateDigest(*source.entry.pre, &source.entry.agent) == source.startDigest,
+            "detached entry copy has the live entry digest");
+    const auto control = bossRescueRun(source.entry, "control", "A", sims, -1, std::nullopt);
+    require(control.result.won == source.won && control.result.terminalHp == source.terminalHp
+            && control.detail.trace == source.trace && control.detail.postExitDigest == source.postExitDigest,
+            "original-seed control reproduces the source fight (outcome, HP, trace, post-exit state)");
+    const int small = std::max(1, sims / 4);
+    std::set<std::vector<int>> traces;
+    std::vector<BossRescueRow> fresh;
+    for (int rep = 0; rep < 6; ++rep) {
+        fresh.push_back(bossRescueRun(source.entry, "A", "A", small, rep, bossRescuePlannerSeed("selftest", rep)));
+        traces.insert(fresh.back().detail.trace);
+    }
+    require(traces.size() >= 2, "fresh planner seeds change the search (" + std::to_string(traces.size())
+            + " distinct traces of 6)");
+    const auto big = bossRescueRun(source.entry, "B", "B", 4 * small, 0, bossRescuePlannerSeed("selftest", 0));
+    bool budgets = true;
+    for (const auto *row : {&control, &big}) budgets = budgets && row->detail.minRootSteps == row->budget
+        && row->detail.maxRootSteps == row->budget;
+    for (const auto &row : fresh) budgets = budgets && row.detail.minRootSteps == row.budget
+        && row.detail.maxRootSteps == row.budget;
+    require(budgets, "every searched root runs exactly its budget");
+    const auto again = bossRescueRun(source.entry, "A", "A", small, 0, bossRescuePlannerSeed("selftest", 0));
+    require(bossRescueSameRun(fresh.front(), again), "same state, seed and budget reproduce after other arms");
+    const auto controlAgain = bossRescueRun(source.entry, "control", "A", sims, -1, std::nullopt);
+    require(bossRescueSameRun(control, controlAgain), "control repeat identical after other arms");
+    bool digests = bossRescueStateDigest(*source.entry.pre, &source.entry.agent) == source.startDigest;
+    for (const auto &row : fresh) digests = digests && row.detail.startDigest == source.startDigest;
+    require(digests && big.detail.startDigest == source.startDigest, "all arms start from the entry digest");
+    std::cout << "boss rescue #347 selftest PASS seed=" << seed << " sims=" << sims << " decisions="
+              << control.result.decisions << '\n';
+    return 0;
 }
 
 // #400 Stage 1: replay every real fight of each source trajectory under a
