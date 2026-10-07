@@ -240,6 +240,12 @@ void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
 }
 
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
+// Bosses beaten so far: a boss counts once its fight is over (rewards, boss chest).
+int bossesCleared(const GameContext &gc) {
+    const bool past = (gc.curRoom == sts::Room::BOSS || gc.curRoom == sts::Room::BOSS_TREASURE)
+        && gc.screenState != sts::ScreenState::BATTLE;
+    return gc.act - 1 + past;
+}
 double bossLeafUtility(const CombatTransitionExpectation &estimate) {
     const double survival = 1.0 - estimate.death;
     return 0.75 * survival + 0.25 * survival * estimate.winningHpFraction;
@@ -1221,15 +1227,18 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     if (child.gc.screenState == sts::ScreenState::BATTLE) ++continuation_.battleLeaves;
     else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
     else ++continuation_.pendingLeaves;
-    // A boss rollout spans up to a whole act of decisions.
+    // A boss rollout spans up to a whole act of decisions. Its target is the
+    // next boss after the searched decision, so a leaf the tree already played
+    // past that boss scores 1 instead of rolling on to a later boss.
     const int maxSteps = options.bossRollout ? 8192 : options.leafCombats ? 1024 : 256;
+    const int targetBosses = bossesCleared(state(0)) + 1;
     unsigned additionalCombats = 0;
-    bool bossWon = false;
     const auto checkpoint = [&]() -> std::optional<double> {
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
-        if (options.bossRollout) return bossWon ? std::optional<double>(1.0) : std::nullopt;
+        if (options.bossRollout)
+            return bossesCleared(child.gc) >= targetBosses ? std::optional<double>(1.0) : std::nullopt;
         if (options.screenLeaf && child.gc.screenState != sts::ScreenState::BATTLE
                 && child.gc.screenState != sts::ScreenState::MAP_SCREEN)
             if (const auto value = screenLeafValue(child.gc, child.path)) return value;
@@ -1247,7 +1256,6 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     return boundedContinuation(maxSteps,checkpoint,[&] {
         ++continuation_.projectionSteps;
         if (child.gc.screenState == sts::ScreenState::BATTLE) {
-            const bool boss = child.gc.curRoom == sts::Room::BOSS;
             try { resolveCombat(child,rng); }
             catch (const sts::search::OocSearchUnsupported &) {
                 // The CTM stack cannot price an active Lizard Tail at some boundaries
@@ -1261,7 +1269,6 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
                 resolveCombat(child,rng);
             }
             ++additionalCombats;
-            if (boss && child.gc.outcome != sts::GameOutcome::PLAYER_LOSS) bossWon = true;
         }
         else {
             if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
@@ -3985,6 +3992,22 @@ void oocMctsAdapterSelfTest() {
             && test::oocStateFingerprint(bossRoot) == before
             && projected.continuationMetrics().supportReasons.count("bossrollout_lizard_spent") == activeTail,
             "boss rollout continues to the act boss and scores its outcome");
+    }
+    {
+        // Boss-rollout target: a boss counts as beaten only after its fight.
+        auto probe = detachedCopy(gc);
+        const auto cleared = [&](int act, Room room, ScreenState screen) {
+            probe.act = act; probe.curRoom = room; probe.screenState = screen;
+            return bossesCleared(probe);
+        };
+        require(cleared(1,Room::MONSTER,ScreenState::MAP_SCREEN) == 0
+            && cleared(1,Room::BOSS,ScreenState::BATTLE) == 0
+            && cleared(1,Room::BOSS,ScreenState::REWARDS) == 1
+            && cleared(1,Room::BOSS_TREASURE,ScreenState::BOSS_RELIC_REWARDS) == 1
+            && cleared(2,Room::MONSTER,ScreenState::MAP_SCREEN) == 1
+            && cleared(2,Room::BOSS,ScreenState::BATTLE) == 1
+            && cleared(3,Room::BOSS,ScreenState::REWARDS) == 3,
+            "boss rollout counts bosses beaten");
     }
     {
         OocMctsConfig parsed; OocAdapterOptions opts{true};

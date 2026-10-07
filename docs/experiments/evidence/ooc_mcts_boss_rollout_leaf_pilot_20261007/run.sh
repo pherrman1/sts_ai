@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OOC MCTS boss-rollout leaf pilot (ledger §389). One bestbench process per seed,
+# OOC MCTS boss-rollout leaf pilot (ledger §390). One bestbench process per seed,
 # WORKERS concurrent processes, one CPU each.
 # Usage (from a clean checkout of the frozen commit):
 #   run.sh BINARY BINARY_SHA256 EXEC_GIT_SHA OUT SEED_LO SEED_HI [WORKERS]
