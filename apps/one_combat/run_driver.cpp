@@ -251,6 +251,17 @@ static bool openTreasureChestRuleStep(GameContext &gc) {
     return true;
 }
 
+// Every offered reward relic is taken first, as the ordinary reward handler
+// (ScumSearchAgent2::stepRewardsPolicy) does. Live OOC MCTS left most chest
+// relics because its leaf value prices them near zero (#347, ledger §390).
+static bool takeRewardRelicRuleStep(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    if (gc.screenState != ScreenState::REWARDS || gc.info.rewardsContainer.relicCount <= 0
+            || !search::GameAction(RT::RELIC, 0).isValidAction(gc)) return false;
+    search::GameAction(RT::RELIC, 0).execute(gc);
+    return true;
+}
+
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
@@ -259,7 +270,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                                gc.seed, 0, nullptr);
         return;
     }
-    if (openTreasureChestRuleStep(gc)) return;
+    if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return;
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                 && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     t_shopV = shopV;
@@ -421,6 +432,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             const char *traceBy = "chain";
             if (openTreasureChestRuleStep(gc)) {
                 traceBy = "chest_rule";
+            } else if (takeRewardRelicRuleStep(gc)) {
+                traceBy = "relic_rule";
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
