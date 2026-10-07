@@ -14548,6 +14548,78 @@ and relic picks), then a counterfactual on one recurring decision family.
 `bossrescue347` selection schema (`expectedSourceWon`, shared planner seeds,
 entry descriptor).
 
+## §389 — #347 OOC divergence on the #428 R seeds: chests and campfires (2026-10-07)
+
+**Question:** which out-of-combat decisions made the flat10k (F) boss entries
+of §388 stronger than the OOC-MCTS (M) entries on seeds 48000024, 48000014,
+48000116 and 48000095?
+**Design:** descriptive replay. The eight frozen #428 sources were rerun on
+diagnostic build `1ed47e5c` (#428 build `5549a16a` plus a read-only
+`STS_OOC_DECISION_TRACE` per-step log); the M sources once more with
+`STS_RUN_PROFILE` for OOC MCTS root priors, visits and Q. No new seeds or arms.
+**Validity:** all sources `VALID`; every row column except CPU/wall time is
+identical to the frozen #428 rows; the traces of both passes are identical.
+**Result:** two families recur on all four seeds. OOC MCTS left all 11
+treasure chests unopened (F opened 11 of 11) and rested at 24 of 27
+campfires, nine times at full HP, smithing 3 times (F smithed 22 of 28). At
+those roots the V4 policy prior put 0.76–0.99 on leaving the chest and
+0.14–0.78 on resting versus 0.01–0.08 per smith target; `OPEN_CHEST` had the
+higher mean Q at 8 of 11 chest roots, yet leaving reached the early-stop lock.
+Over 301 multi-action M roots the executed action was the max-prior action 248
+times and the max-Q action 121 times. Smaller, seed-specific: three skipped
+relic rewards, fewer elites (three seeds), no shop visit on 48000024.
+**Interpretation:** **Inference:** the policy prior, not the search value,
+drives the chest and campfire losses that explain most of the relic and
+upgrade gaps in §388. Not isolated causally: RNG diverges after the first
+different decision.
+**Next (proposed, not run):** hand OOC MCTS treasure and campfire roots to the
+ordinary chain (research flag, default off) and replay the four R seeds with
+the §388 planner-seed schedule; decision rule and cost in PR #429.
+
+**Evidence:** [packet](evidence/ooc_divergence_347_20261007/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes the research-only
+`STS_OOC_DECISION_TRACE` log.
+
+## §390 — #347 counterfactual on the R seeds: chest rule and campfire fallback (2026-10-07)
+
+**Question:** with OOC MCTS forced to open every chest (no Cursed Key), does
+handing its campfire decisions to the ordinary chain (CR) give boss entries
+that fixed flat-10k Silver wins from more often than chest rule alone (C)?
+**Design:** the four §388 R seeds, research flags on diagnostic build
+`1911f044` (#417 mechanics), boss entry of the same act, 8 fresh planner seeds
+per entry shared with §388. Rule fixed before the run: signal at net >= +8 of
+32 with >= 3 of 4 seeds positive. Plan frozen after independent review; PR #429.
+**Validity:** all sources `VALID` (control parity, repeats, budgets); flags off
+reproduce the §388 rows exactly; the chest rule fired at all 11 chests and the
+chain handled every CR campfire.
+**Result:** `CAMPFIRE_CHAIN_INCONCLUSIVE`. CR 13/32, C 9/32, net +4 (per seed
++4, 0, +1, -1). Descriptive: M 1/32, F 29/32 (§388); C vs M net +8.
+**Interpretation:** after the chest opened, OOC MCTS left the relic on the
+reward screen at 8 of 11 chests (C) and 7 of 11 (CR). The chain also made
+no-op full-HP rests in these trajectories (9 in CR) and smithed at 6 of 27
+campfires. **Inference:** forced chest opening and campfire handoff recover
+only part of the gap; relic skipping on reward screens remains.
+**Next:** candidate rules: take every relic offered on a reward screen, and
+never rest at full HP when a card can be upgraded; then a fresh-seed paired
+pilot. Awaiting Philipp's choice.
+
+**Evidence:** [packet](evidence/ooc_counterfactual_347_20261007/README.md).
+
+**Addendum (chest scoring, 2026-10-07):** a read-only hook on the C runs
+scored each of the 11 chest states on the map screen with the run's leaf model
+(X2-B v_win): relic taken minus relic left is 0 at 5 chests, negative at 5
+(Whetstone -0.021), positive at 1 (+0.006); mean -0.003. Gold is priced (+0.016
+for 27 gold on 48000116). **Inference:** the leaf model values these relics at
+about zero, so relic skipping is not a reward-screen artifact. Traces
+byte-identical to the C runs.
+[Packet](evidence/ooc_chest_score_347_20261007/README.md). PR #431 drops
+key actions from live OOC MCTS when keys are off (it could take the sapphire key
+and lose the relic).
+
+**Knowledge impact:** `architecture/out-of-combat.md` records the chest rule
+and the keys-off filter; the research flags live only on diagnostic builds.
+
 ## §391 — OOC MCTS boss-rollout leaf pilot: 9/32, far below rollout3 (2026-10-07)
 
 **Question:** does OOC MCTS with no prior and a model-free leaf (play the V4
@@ -14579,6 +14651,55 @@ simulations, rollouts that also score post-boss HP, or the refreshed CTM.
 
 **Knowledge impact:** `environment-variables.md` and `out-of-combat.md` list the
 `bossrollout` leaf mode.
+
+## §392 — #347 prior cost on the R seeds: root by Q and uniform prior (2026-10-07)
+
+**Question:** on the §390 C entries (OOC MCTS + chest rule), how much does the
+V4 policy prior cost? CQ = final root choice by mean Q
+(`STS_OOC_MCTS_ROOT_SELECTION=q`, no early-stop lock); CU = uniform prior
+(`STS_OOC_MCTS_PRIOR=uniform`). Existing knobs, no code change.
+**Design:** §390 build `1911f044`, same four R seeds, 8 shared planner seeds
+per entry, C rows frozen from §390. Rule per comparison as §390: signal at net
+>= +8 of 32 with >= 3 of 4 seeds positive. Plan frozen after independent
+review; PR #429.
+**Validity:** all 8 sources `VALID`; logged config, chest rule, planner seeds
+and binary hashes checked by `analyze.py`.
+**Result:** CQ 9/32 vs C 9/32, net 0 (+5, +1, 0, -6; CQ died before the act-3
+boss on 48000095): `INCONCLUSIVE`. CU 22/32, net +13 (+6, +7, 0, 0):
+`INCONCLUSIVE` (two seeds unchanged). Descriptive: F 29/32 (§388).
+**Interpretation:** CU entered with smaller decks and more max HP. All arms
+still left most chest relics. **Inference:** the prior's steering of visits,
+not the root choice rule, is where the cost shows; not shown that a learned
+prior over all OOC decisions would beat no prior.
+**Next:** proposed: a fresh-seed paired pilot of uniform vs policy prior with
+chest rule and keys-off filter, on Philipp's word.
+
+**Evidence:** [packet](evidence/ooc_prior_cost_347_20261007/README.md).
+
+**Knowledge impact:** none (existing knobs; no default change).
+
+## §393 — #347 uniform-prior OOC MCTS with chest and relic rules: 32-seed pilot (2026-10-07)
+
+**Question:** how do full runs look with live OOC MCTS on a uniform prior once
+every OOC policy opens chests (no Cursed Key), takes reward relics (except
+Bottled ×3, Dead Branch, Tungsten Rod, Unceasing Top, Juzu Bracelet) and the
+search cannot take keys? One arm, descriptive, as Philipp chose.
+**Design:** seeds 53000000..53000031, #417 `mcts` arm (2048 sims, screengbm,
+flat exact 10k Silver) plus uniform prior, binary from `c2e701d`. Plan frozen
+after independent review; PR #429.
+**Validity:** all shards exit 0, logged config checked, 32/32 seeds.
+**Result:** 18/32 wins (56.3%, Wilson 95% [39.3, 71.8]); 9 of 14 losses at a
+boss (act 1: 1, act 2: 4, act 3: 4). Rules fired as intended: 93/93 chests, 187 relics
+by rule, no non-exception relic left. Context only: #417 (48M, policy prior,
+no rules) MCTS 56.3%, flat10k 78.1%.
+**Interpretation:** **Inference:** the rules plus a uniform prior do not make
+OOC MCTS visibly better than the #417 MCTS arm; a paired comparison against
+flat10k with the same rules is needed to say more.
+**Next:** on Philipp's word.
+
+**Evidence:** [packet](evidence/ooc_mcts_uniform_rules_pilot_20261007/README.md).
+
+**Knowledge impact:** none (no default change; rules recorded in §390/KB).
 
 ## §394 — E1: focal retrain of the #334 X2 family, card-reward selection gain inconclusive (2026-10-07)
 

@@ -1,0 +1,1 @@
+stateId,stratum,sourceArm,seed,act,boss,kind,arm,budget,rep,plannerSeed,startDigest,valid,outcome,won,terminalHp,postExitHp,potionsAfter,postExitDigest,decisions,simulations,searchSteps,minRootSteps,maxRootSteps,reroots,freshRoots,singletonSkips,cpuSeconds,wallSeconds,traceLen,traceSha256,quarantineReason,postExitSummary,trace
