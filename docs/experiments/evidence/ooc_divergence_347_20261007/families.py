@@ -1,6 +1,6 @@
-import json, sys
+import json, os, sys
 from collections import Counter
-sys.path.insert(0, 'a')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from align import load, diff
 
 def screens(T):
