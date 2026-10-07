@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract and the CTM corpus adapter; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -623,6 +623,19 @@ MAP resource qualification; candidates within 0.003 NLL are tied pending
 native/in-context speed work. WIN_RAW resource qualification is reported
 separately. Neither verdict grants terminal-pricing readiness or promotion.
 The tooling PR and synthetic tests are not a full experiment result.
+
+#### Focal retrain and selection gain (E1)
+
+`python3 -m tools.vwin_e1_focal INDEX --x2b-run TUNE_DIR --output NEW_DIR`
+retrains the X2-B recipe on the public 457 features as P0 (all MAP rows), F1
+(focal rows only: the sibling-ranking join row of each branch, per-decision
+balanced weights) and F2 (all rows, focal block upweighted to the non-focal
+total), seeds 0/1/2. It reads only TRAIN/VALIDATION components, re-checks
+index/manifest/table hashes instead of rerunning the bundle validator, and
+requires the frozen X2-B VALIDATION NLL to reproduce exactly. It reports
+NLL/Brier on all and focal rows, sibling ranking, and per-type selection gain
+(the argmax sibling's branch outcome minus the V4 chosen sibling's) with
+source-clustered CIs. Result: ledger-06 §394 (`E1_INCONCLUSIVE`).
 
 ### Rich `v_win` information boundary (#397)
 
