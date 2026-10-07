@@ -1,0 +1,25 @@
+[collect keys OFF]
+[ooc-strat-tok-net] loaded selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 445 trees, 461 feats from models/candidates/v_win_x2b_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[CompactTreeNet: 445 trees, 461 feats from models/candidates/v_win_x2b_trees.txt]
+[live OOC MCTS ON sims=2048 combat_model=selfplay/models/combat_transition_deepsets_lizard_t2.native brew_fallback_model=selfplay/models/combat_transition_near_full_except_smoke_v2.native dispatch=precombat_entropic_brew active_lizard_correction=1 prior=uniform temperature=1 cpuct=1.5 widen_k=2 widen_alpha=0.5 max_depth=32 root_selection=visits early_stop=1 gap_stop_20=0 merge_outcomes=0 leaf_value=bossrollout leaf_combats=0 leaf_policy=v4]
+[ooc-mcts-config] {"noncombatOutcomes":"sampled","prior":"uniform","temperature":1,"cPuct":1.5,"wideningK":2,"wideningAlpha":0.5,"maxDepth":32,"rootSelection":"visits","earlyStop":true,"gapStop20":false,"mergeOutcomes":false,"leafValue":"bossrollout","leafCombats":0,"leafPolicy":"v4","simulations":2048,"combatModel":"selfplay/models/combat_transition_deepsets_lizard_t2.native","brewFallbackModel":"selfplay/models/combat_transition_near_full_except_smoke_v2.native","dispatchRule":"precombat_entropic_brew_to_standard","activeLizardCorrection":true,"priorTrace":""}
+[benchmark stops after Act 3 boss]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+BEST stack config: skip@-0.5  rest=default  shop-V=ON  path=heuristic  shop-beam=off  native-OOC=ON  keys=skip  searcher=Silver  fair-play  seeds 51000003..51000003  asc 0  sims 10000  threads 1
+BEST models: floor=models/v_rich_trees.txt  win=models/candidates/v_win_x2b_trees.txt
+[ooc-combat-transition] {"activeLizardEnabled":true,"fallbackSupportFailures":0,"fastSupportFailures":64,"lizardBoundaryExclusions":112,"lizardConsumedLosses":72,"lizardConsumedWins":381,"lizardOrdinaryWins":3350,"lizardPreparations":3803,"lizardSamples":3803,"lizardSupportFailures":48,"seed":51000003,"standardBrewFallbackPreparations":0}
+BEST                    win%=  0.0   avg_floor= 50.0   avg_hp_end=  0.0   cpu_sec/run=1123.00   wall=1123.0s
+
+real	18m43.258s
+user	18m36.828s
+sys	0m5.306s
+exit 0
