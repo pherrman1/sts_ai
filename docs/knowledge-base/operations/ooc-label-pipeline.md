@@ -956,6 +956,43 @@ future start `10` for each frozen schedule (`10000`; `5000,5000`;
 Analyze those 96 files together with the unchanged 24 Stage-A A files and 24
 Stage-A B reference files.
 
+### Counterfactual OOC labels (`ooccfpilotgen`)
+
+`one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES
+[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]`
+(`apps/one_combat/combat_datasets.cpp::oocCounterfactualPilotGen`). It is
+seed-guarded, and the launcher is
+`docs/experiments/evidence/ooc_cf_pilot_20261007/run_corpus.sh`. The source
+run and the per-type reservoir are those of `vwinrefreshgen` with K=1. Each
+retained option of a selected CARD_REWARD, BOSS_RELIC, REST or SHOP decision
+is forced FUTURES times. Run k of every sibling redraws the hidden future
+(`sampleNoncombatFuture`) from `sha256(...:{seed}:{decisionIdx}:{k})`, so all
+siblings share common random numbers.
+
+- **GEN=1 (pilot, default):**
+  - The future is redrawn after the forced option.
+  - The horizon is the first boss fight after the branch, or the second for
+    card rewards when CARD_BOSSES=2. The label is HP after that boss.
+  - The cap is #334's: the chosen option plus five, hash-ranked.
+- **GEN=2:**
+  - The future is redrawn *before* the forced option, so randomness the option
+    itself consumes is sampled too. The generator fails closed if the redraw
+    changes the published screen or any rich field other than the four
+    HIDDEN_FUTURE fields (#397).
+  - Every branch plays to the end of the run. The label is `finalWon`;
+    first-boss win and HP after it are diagnostics.
+  - `.options.csv` holds the rich row right after the option (k=0).
+    `.map.csv` holds one rich row per run at the first MAP screen after the
+    branch screen is finished. The map row can differ across k after a boss
+    relic, because the next act's map is generated from the redrawn future.
+  - The option cap first merges keys that differ only in `occurrence=`
+    (identical cards at other deck positions). It always keeps the chosen
+    option and the skip/leave options, then fills up to six by
+    `sha256(ooc-cf-option-cap-v2:...)`.
+  - States are drawn only from TYPES (comma list), ranked by
+    `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
+  - The manifest counts selected states by type and act.
+
 ## Schema examples
 
 ```text
