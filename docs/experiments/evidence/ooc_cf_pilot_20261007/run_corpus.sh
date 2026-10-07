@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Counterfactual OOC corpus / timing runs (option 2). Run from inside the repo.
 # usage: run_corpus.sh BINARY BINARY_SHA256 FROZEN_SHA OUT_DIR SEED_START SEEDS_PER_PART PARTS \
-#                      FUTURES STATES_PER_SEED CARD_BOSSES
+#                      FUTURES STATES_PER_SEED CARD_BOSSES [GEN] [TYPES]
+# GEN=2 (generator v2, ACTION-PLAN E2) plays every branch to the end of the run;
+# CARD_BOSSES is then ignored. TYPES is a comma list such as CARD_REWARD,BOSS_RELIC.
 # Part p plays seeds SEED_START + p*SEEDS_PER_PART .. +SEEDS_PER_PART-1 on CPU p mod nproc.
 # Rerunning resumes: finished parts (manifest present) are skipped.
 set -euo pipefail
-BIN_SRC=$1 BIN_SHA=$2 FROZEN=$3 OUT=$4 START=$5 PER=$6 PARTS=$7 FUTURES=$8 STATES=$9 CARDB=${10}
+BIN_SRC=$1 BIN_SHA=$2 FROZEN=$3 OUT=$4 START=$5 PER=$6 PARTS=$7 FUTURES=$8 STATES=$9 CARDB=${10} GEN=${11:-1} TYPES=${12:-}
 REPO=$(git rev-parse --show-toplevel)
 HERE="$REPO/docs/experiments/evidence/ooc_cf_pilot_20261007"
 cd "$REPO"
@@ -30,9 +32,9 @@ NCPU=$(nproc)
 for ((p = 0; p < PARTS; p++)); do
   ( prefix="$OUT/part$p"
     [ -f "$prefix.manifest.json" ] && exit 0
-    rm -f "$prefix".labels.csv "$prefix".options.csv "$prefix".sources.csv
+    rm -f "$prefix".labels.csv "$prefix".options.csv "$prefix".sources.csv "$prefix".map.csv
     { time taskset -c $((p % NCPU)) bash tools/seed_guard.sh "$BIN" ooccfpilotgen "$PER" "$prefix" \
-        $((START + PER * p)) "$OUT/teacher.json" "$FUTURES" "$STATES" "$CARDB" ; } > "$prefix.log" 2>&1
+        $((START + PER * p)) "$OUT/teacher.json" "$FUTURES" "$STATES" "$CARDB" "$GEN" $TYPES ; } > "$prefix.log" 2>&1
     echo "exit $?" >> "$prefix.log" ) &
 done
 wait

@@ -276,7 +276,8 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // (card rewards: the next CARD_BOSSES boss fights).
 void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                long long seedOffset, const std::string &teacherPath,
-                               int futures, int statesPerSeed = 1, int cardRewardBosses = 1);
+                               int futures, int statesPerSeed = 1, int cardRewardBosses = 1,
+                               int generation = 1, const std::string &typeList = {});
 namespace one_combat {
 void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng);
 }
