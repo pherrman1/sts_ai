@@ -7,12 +7,14 @@ from pathlib import Path
 try:
     from tools import combat_transition_model_experiment as experiment
     from tools.combat_transition_contract import ROW_SCHEMA_VERSION, SCHEMA_VERSION, sha256
-    from tools.ctm_corpus_adapter import assemble
+    from tools.ctm_corpus_adapter import assemble, union
+    from tools.combat_transition_contract import validate_corpus
     from tools.test_combat_transition_contract import predictor_input, state, teacher
 except ModuleNotFoundError:  # direct invocation from the tools directory
     import combat_transition_model_experiment as experiment
     from combat_transition_contract import ROW_SCHEMA_VERSION, SCHEMA_VERSION, sha256
-    from ctm_corpus_adapter import assemble
+    from ctm_corpus_adapter import assemble, union
+    from combat_transition_contract import validate_corpus
     from test_combat_transition_contract import predictor_input, state, teacher
 
 try:
@@ -119,6 +121,26 @@ class TestCtmCorpusAdapter(unittest.TestCase):
             data["units"][2]["unit"] = "none-500-2"; index.write_text(json.dumps(data))
             with self.assertRaisesRegex(ValueError, "forcedSetup"):
                 assemble(index, root, "none", root / "x")
+
+    def test_union_drops_unsupported_rows_and_records_scopes(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); index = self.build(root)
+            assemble(index, root, "none", root / "none")
+            assemble(index, root, "high_maxhp", root / "high")
+            drop = lambda row: ["hp_envelope"] if (row["sourceSeed"], row["fightIdx"]) == (101, 1) else []
+            summary = union({"high_maxhp": root / "high", "none": root / "none"}, root / "union", drop)
+            self.assertEqual(summary["rows"], 17)
+            self.assertEqual(summary["droppedRowReasons"], {"none": {"hp_envelope": 1}, "high_maxhp": {}})
+            scopes = json.loads((root / "union" / "row_scopes.json").read_text())
+            self.assertEqual({k: (v["firstRow"], v["rows"]) for k, v in scopes.items()},
+                             {"none": (0, 13), "high_maxhp": (13, 4)})
+            manifest = json.loads((root / "union" / "corpus.jsonl.manifest.json").read_text())
+            self.assertEqual(manifest["seedSpec"], {"start": 100, "count": 402})
+            self.assertEqual(validate_corpus(manifest)["rows"], 17)
+            seeds = [json.loads(l)["sourceSeed"] for l in (root / "union" / "corpus.jsonl").read_text().splitlines()]
+            self.assertEqual(seeds, sorted(seeds))
+            with self.assertRaisesRegex(ValueError, "overwrite"):
+                union({"none": root / "none"}, root / "union", drop)
 
 
 if __name__ == "__main__":
