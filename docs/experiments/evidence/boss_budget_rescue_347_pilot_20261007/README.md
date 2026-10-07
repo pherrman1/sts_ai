@@ -58,9 +58,9 @@ Raw terminal HP where both arms won (B − A, before act-transition healing):
 C1 +5, −10, −17; C2 −15, −7, +27; C4 +7, −2, −6, −4. Potions left were equal in
 every such pair. These survivor-only differences are not an overall benefit.
 
-Cost: A 1.81M simulations per entry on average, 230 CPU-s in total; B 7.29M,
+Cost (four reps per entry): A 13.36M simulations, 230 CPU-s in total; B 57.76M,
 1,022 CPU-s (4.4×). At 40k the 32,768-node reuse cap discards the tree more
-often: fresh roots 1,032 vs 303 (A), reroots 488 vs 1,033.
+often: fresh roots 956 (B) vs 303 (A), reroots 488 (B) vs 1,033 (A).
 
 ## Interpretation (separate from validity)
 
