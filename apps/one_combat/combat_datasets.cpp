@@ -3348,7 +3348,11 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
 // reconstruct the run with the ordinary live run driver (live OOC MCTS when
 // the arm enables it), capture the act's boss entry, then replay that entry
 // with the original planner seed (control parity) and with four fresh planner
-// seeds at flat exact 10k (A) and 40k (B).
+// seeds at flat exact 10k (A) and 40k (B). The #347 boss-preparation R-match
+// (docs/experiments/evidence/boss_preparation_rmatch_347_20261007) reuses the
+// mode with its own selection schema: the source may be a boss win
+// (expectedSourceWon), and each entry gets fresh 10k planner seeds keyed only
+// by run seed, act and rep, so the M and F entries of a seed share them.
 static std::string bossRescueStateDigest(const GameContext &gc, const search::ScumSearchAgent2 *agent) {
     std::ostringstream o;
     o << "boss-rescue-347-state-v1|seed=" << gc.seed;
@@ -3401,6 +3405,48 @@ static std::string bossRescueStateSummary(const GameContext &gc) {
 static std::uint64_t bossRescuePlannerSeed(const std::string &stateId, int rep) {
     return std::stoull(vwinSha256("boss-rescue-347-planner-v1:" + stateId + ":"
                                   + std::to_string(rep)).substr(0, 16), nullptr, 16);
+}
+
+// Boss-preparation R-match: no preparation arm or stateId in the key.
+static std::uint64_t bossPrepPlannerSeed(std::uint64_t runSeed, int act, int rep) {
+    return std::stoull(vwinSha256("boss-prep-347-planner-v1:" + std::to_string(runSeed) + ":"
+                                  + std::to_string(act) + ":" + std::to_string(rep)).substr(0, 16),
+                       nullptr, 16);
+}
+
+// Cheap descriptive record of a boss entry (no derived score).
+static nlohmann::json bossPrepEntryDescriptor(const GameContext &gc, const PathHistory &path) {
+    nlohmann::json potions = nlohmann::json::array(), relics = nlohmann::json::array(),
+                   deck = nlohmann::json::array(), rng = nlohmann::json::object();
+    for (int i = 0; i < gc.potionCapacity && i < static_cast<int>(gc.potions.size()); ++i)
+        potions.push_back(potionEnumNames[static_cast<int>(gc.potions[i])]);
+    for (const auto &r : gc.relics.relics)
+        relics.push_back({{"relic", relicEnumNames[static_cast<int>(r.id)]}, {"data", r.data}});
+    int upgrades = 0;
+    for (const auto &c : gc.deck.cards) {
+        deck.push_back(std::string(c.getName()) + (c.isUpgraded() ? "+" : ""));
+        upgrades += c.isUpgraded() ? 1 : 0;
+    }
+    const std::vector<std::pair<const char *, const Random *>> streams = {
+        {"aiRng", &gc.aiRng}, {"cardRandomRng", &gc.cardRandomRng}, {"cardRng", &gc.cardRng},
+        {"eventRng", &gc.eventRng}, {"mathUtilRng", &gc.mathUtilRng}, {"merchantRng", &gc.merchantRng},
+        {"miscRng", &gc.miscRng}, {"monsterHpRng", &gc.monsterHpRng}, {"monsterRng", &gc.monsterRng},
+        {"neowRng", &gc.neowRng}, {"potionRng", &gc.potionRng}, {"relicRng", &gc.relicRng},
+        {"shuffleRng", &gc.shuffleRng}, {"treasureRng", &gc.treasureRng}};
+    std::ostringstream rngText;
+    for (const auto &[name, r] : streams) {
+        rng[name] = r->counter;
+        rngText << name << '=' << r->counter << ':' << r->seed0 << ':' << r->seed1 << '|';
+    }
+    nlohmann::json roomVisits = nlohmann::json::array();
+    for (const int v : path.roomVisits) roomVisits.push_back(v);
+    return {{"act", gc.act}, {"floor", gc.floorNum},
+            {"boss", monsterEncounterEnumNames[static_cast<int>(gc.info.encounter)]},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
+            {"potionCapacity", gc.potionCapacity}, {"potionCount", gc.potionCount}, {"potions", potions},
+            {"deckSize", gc.deck.cards.size()}, {"upgrades", upgrades}, {"deck", deck}, {"relics", relics},
+            {"rngCounters", rng}, {"rngDigest", vwinSha256(rngText.str())},
+            {"pathRoomVisits", roomVisits}};
 }
 
 namespace {
@@ -3519,8 +3565,13 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
                   const std::string &outPrefix) {
     if (nEntries != 1) throw std::runtime_error("boss rescue #347: one entry per process");
     const auto selection = nlohmann::json::parse(std::ifstream(selectionPath));
-    if (selection.value("schema", "") != "boss_budget_rescue_347_pilot_selection_v1")
+    const std::string selectionSchema = selection.value("schema", "");
+    // prep: #347 boss-preparation R-match; otherwise the frozen #425 rescue protocol.
+    const bool prep = selectionSchema == "boss_preparation_rmatch_347_selection_v1";
+    if (!prep && selectionSchema != "boss_budget_rescue_347_pilot_selection_v1")
         throw std::runtime_error("boss rescue #347: unexpected selection schema");
+    const int reps = prep ? selection.at("plannerReps").get<int>() : 4;
+    if (reps < 1 || reps > 8) throw std::runtime_error("boss rescue #347: plannerReps must be 1..8");
     nlohmann::json spec;
     for (const auto &candidate : selection.at("selected"))
         if (candidate.at("stateId") == stateId) spec = candidate;
@@ -3529,6 +3580,16 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
     const int act = spec.at("act").get<int>();
     const std::string sourceArm = spec.at("sourceArm"), boss = spec.at("boss");
     const auto &historical = spec.at("historicalRow");
+    // The #425 protocol requires a lost source fight and has no other option.
+    if (!prep && spec.contains("expectedSourceWon"))
+        throw std::runtime_error("boss rescue #347: expectedSourceWon is not part of the rescue schema");
+    const int expectedSourceWon = prep ? spec.at("expectedSourceWon").get<int>() : 0;
+    if (expectedSourceWon != 0 && expectedSourceWon != 1)
+        throw std::runtime_error("boss rescue #347: expectedSourceWon must be 0 or 1");
+    const auto plannerSeed = [&](int rep) {
+        return prep ? bossPrepPlannerSeed(seed, act, rep) : bossRescuePlannerSeed(stateId, rep);
+    };
+    const std::string freshKind = prep ? "fresh" : "A", repeatKind = prep ? "fresh_repeat" : "A_repeat";
 
     // The process must run the recorded pilot arm with flat exact-10k Silver.
     if (one_combat::liveOocMctsEnabled() != (sourceArm == "mcts"))
@@ -3561,7 +3622,8 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
     }
     if (!source.captured) failures.push_back("boss_entry_not_reached");
     if (source.captured && source.encounterEnum != boss) failures.push_back("boss_identity_mismatch");
-    if (source.captured && (!source.finished || source.won != 0)) failures.push_back("source_boss_not_lost");
+    if (source.captured && (!source.finished || source.won != expectedSourceWon))
+        failures.push_back(expectedSourceWon == 0 ? "source_boss_not_lost" : "source_boss_not_won");
     if (source.captured && source.budget != 10000) failures.push_back("source_budget_not_10000");
 
     std::vector<BossRescueRow> rows;
@@ -3570,8 +3632,12 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
         const std::string preDigest = bossRescueStateDigest(*source.entry.pre, &source.entry.agent);
         if (preDigest != source.startDigest) failures.push_back("detached_copy_digest_mismatch");
         rows.push_back(bossRescueRun(source.entry, "control", "A", 10000, -1, std::nullopt));
-        for (int rep = 0; rep < 4; ++rep) {
-            const auto planner = bossRescuePlannerSeed(stateId, rep);
+        for (int rep = 0; rep < reps; ++rep) {
+            const auto planner = plannerSeed(rep);
+            if (prep) {
+                rows.push_back(bossRescueRun(source.entry, freshKind, "10k", 10000, rep, planner));
+                continue;
+            }
             const std::vector<std::pair<std::string, int>> order = rep % 2 == 0
                 ? std::vector<std::pair<std::string, int>>{{"A", 10000}, {"B", 40000}}
                 : std::vector<std::pair<std::string, int>>{{"B", 40000}, {"A", 10000}};
@@ -3579,7 +3645,7 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
                 rows.push_back(bossRescueRun(source.entry, arm, arm, budget, rep, planner));
         }
         rows.push_back(bossRescueRun(source.entry, "control_repeat", "A", 10000, -1, std::nullopt));
-        rows.push_back(bossRescueRun(source.entry, "A_repeat", "A", 10000, 0, bossRescuePlannerSeed(stateId, 0)));
+        rows.push_back(bossRescueRun(source.entry, repeatKind, prep ? "10k" : "A", 10000, 0, plannerSeed(0)));
 
         const auto &control = rows.front();
         const bool controlParity = control.result.valid && control.result.won == source.won
@@ -3593,7 +3659,7 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
             {"simulations", static_cast<std::int64_t>(control.result.simulations) == source.simulations}};
         if (!controlParity) failures.push_back("control_parity_failure");
         const BossRescueRow *aRep0 = nullptr;
-        for (const auto &row : rows) if (row.kind == "A" && row.rep == 0) aRep0 = &row;
+        for (const auto &row : rows) if (row.kind == freshKind && row.rep == 0) aRep0 = &row;
         const bool controlRepeat = bossRescueSameRun(control, rows[rows.size() - 2]);
         const bool aRepeat = aRep0 && bossRescueSameRun(*aRep0, rows.back());
         checks["controlRepeatIdentical"] = controlRepeat;
@@ -3662,13 +3728,13 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
             env[kv.substr(0, kv.find('='))] = kv.substr(kv.find('=') + 1);
     }
     nlohmann::json plannerSeeds = nlohmann::json::array();
-    for (int rep = 0; rep < 4; ++rep) {
+    for (int rep = 0; rep < reps; ++rep) {
         std::ostringstream hex;
-        hex << std::hex << std::setw(16) << std::setfill('0') << bossRescuePlannerSeed(stateId, rep);
+        hex << std::hex << std::setw(16) << std::setfill('0') << plannerSeed(rep);
         plannerSeeds.push_back(hex.str());
     }
     nlohmann::json entryJson = {
-        {"schema", "boss_budget_rescue_347_pilot_entry_v1"},
+        {"schema", prep ? "boss_preparation_rmatch_347_entry_v1" : "boss_budget_rescue_347_pilot_entry_v1"},
         {"stateId", stateId}, {"stratum", spec.at("stratum")}, {"sourceArm", sourceArm}, {"seed", seed},
         {"act", act}, {"expectedBoss", boss},
         {"capturedBoss", source.encounterEnum}, {"floor", source.captured ? source.entry.floor : -1},
@@ -3679,7 +3745,8 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
             {"postExitHp", source.postExitHp}, {"postExitDigest", source.postExitDigest},
             {"decisions", source.decisions}, {"simulations", source.simulations},
             {"traceLen", source.trace.size()}, {"cpuSeconds", source.cpuSeconds}}},
-        {"plannerSeedDomain", "boss-rescue-347-planner-v1:{stateId}:{rep}"},
+        {"plannerSeedDomain", prep ? "boss-prep-347-planner-v1:{runSeed}:{act}:{rep}"
+                                   : "boss-rescue-347-planner-v1:{stateId}:{rep}"},
         {"plannerSeeds", plannerSeeds}, {"checks", checks},
         {"status", failures.empty() ? "VALID" : "INVALID"}, {"failures", failures},
         {"provenance", {{"executableGitSha", trainingExecutableGitSha()},
@@ -3688,6 +3755,12 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
             {"policy", effectiveOocPolicySpecification()}, {"environment", env}}},
         {"outputs", {{"rowsSha256", fileSha256(rowsPath)}}},
     };
+    if (prep) {
+        entryJson["expectedSourceWon"] = expectedSourceWon;
+        entryJson["checks"]["checkedReps"] = reps;
+        entryJson["entryDescriptor"] = source.captured
+            ? bossPrepEntryDescriptor(*source.entry.pre, source.entry.path) : nlohmann::json();
+    }
     std::ofstream entryOut(entryPath);
     if (!entryOut) throw std::runtime_error("boss rescue #347: cannot open " + entryPath);
     entryOut << entryJson.dump(2) << '\n';
