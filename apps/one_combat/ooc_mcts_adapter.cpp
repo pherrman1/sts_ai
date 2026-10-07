@@ -1519,6 +1519,11 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
+// Counterfactual label generation: the same hidden-future redraw OOC MCTS
+// applies to its leaves, on a detached branch state.
+void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng) {
+    sampleNoncombatFuture(gc, rng);
+}
 std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
     return splitMix64(seed ^ splitMix64(index));
 }

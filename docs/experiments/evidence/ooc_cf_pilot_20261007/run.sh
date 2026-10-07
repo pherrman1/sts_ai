@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Counterfactual OOC label pilot (PLAN.md). Run from anywhere inside the repo.
+# usage: run.sh BINARY BINARY_SHA256 FROZEN_SHA OUT_DIR [FUTURES]
+# Four parts of eight seeds each (54000000..54000031), one CPU per part.
+set -euo pipefail
+BIN_SRC=$1 BIN_SHA=$2 FROZEN=$3 OUT=$4 FUTURES=${5:-8}
+REPO=$(git rev-parse --show-toplevel)
+HERE="$REPO/docs/experiments/evidence/ooc_cf_pilot_20261007"
+cd "$REPO"
+if env | grep -q '^STS_'; then echo "refusing: STS_* already exported" >&2; exit 1; fi
+mkdir -p "$OUT"
+BIN=$(mktemp -d)/one_combat
+cp "$BIN_SRC" "$BIN" && chmod +x "$BIN"
+echo "$BIN_SHA  $BIN" | sha256sum -c -
+export STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=0 \
+  STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 \
+  STS_SILVER_LEARNED_STOP=1 OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE \
+  STS_EXECUTABLE_GIT_SHA=$FROZEN \
+  STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native \
+  STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 \
+  STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0 \
+  STS_COLLECT_KEYS=0 STS_REST_WIN=0
+[ -f "$OUT/teacher.json" ] || {
+  "$BIN" vwinrefreshpolicyspec "$OUT/policy.json" > /dev/null
+  python3 "$HERE/make_teacher.py" "$FROZEN" "$BIN" "$OUT/policy.json" "$OUT/teacher.json"
+}
+for p in 0 1 2 3; do
+  ( prefix="$OUT/part$p"
+    [ -f "$prefix.manifest.json" ] && exit 0
+    rm -f "$prefix".labels.csv "$prefix".options.csv "$prefix".sources.csv
+    { time taskset -c "$p" bash tools/seed_guard.sh "$BIN" ooccfpilotgen 8 "$prefix" \
+        $((54000000 + 8 * p)) "$OUT/teacher.json" "$FUTURES" ; } > "$prefix.log" 2>&1
+    echo "exit $?" >> "$prefix.log" ) &
+done
+wait
+grep -h "^ooc cf pilot\|^exit" "$OUT"/part*.log
+echo "run done" > "$OUT/DONE"

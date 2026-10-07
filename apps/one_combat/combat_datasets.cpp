@@ -353,10 +353,21 @@ struct VwinCollector {
     int winCount = 0;
 };
 
+// Counterfactual pilot horizon: the first boss fight after the branch.
+struct CfHorizon {
+    bool reached = false, diedBeforeBoss = false;
+    int bossWon = -1, hp = -1, maxHp = -1, act = -1, floor = -1, fights = 0;
+    std::string afterFeatures;   // rich row right after the forced option, before the redraw
+};
+
 struct VwinBranchStart {
     const VwinSampledDecision *decision = nullptr;
     VwinOption option;
     std::string branchId;
+    // Counterfactual pilot only: redraw hidden futures from this seed after the
+    // forced option, and stop when the first boss fight ends. #334 sets neither.
+    std::optional<std::uint64_t> futureSeed;
+    CfHorizon *horizon = nullptr;
 };
 
 struct VwinArmResult {
@@ -1262,6 +1273,11 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
             if (healthBefore != search::g_simHealthFailureCount)
                 throw std::runtime_error("vwin refresh: health failure during forced branch action");
+            if (branch->horizon) branch->horizon->afterFeatures = richRow(gc, path);
+            if (branch->futureSeed) {
+                std::mt19937_64 future(*branch->futureSeed);
+                one_combat::resampleCounterfactualFuture(gc, future);
+            }
         }
     }
 
@@ -1422,6 +1438,16 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
             ++fightIdx;
             if (vwin) vwin->fightIdx = fightIdx;
+            if (branch && branch->horizon) {
+                auto &h = *branch->horizon;
+                ++h.fights;
+                if (static_cast<Room>(room) == Room::BOSS) {
+                    h.reached = true;
+                    h.bossWon = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+                    h.hp = gc.curHp; h.maxHp = gc.maxHp; h.act = act; h.floor = floor;
+                    break;
+                }
+            }
         } else {
             if (!vwin || !vwin->captureRefresh) {
                 runFullRunOocPolicyStep(gc, agent, false, true);
@@ -1434,6 +1460,12 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
     if (vwin) vwinFinishDecisionSink(*vwin, nullptr, true);
     search::g_onCombatDecision = nullptr;
     t_curPath = nullptr;
+    if (branch && branch->horizon && !branch->horizon->reached
+        && gc.outcome == GameOutcome::PLAYER_LOSS) {
+        auto &h = *branch->horizon;
+        h.reached = h.diedBeforeBoss = true;
+        h.bossWon = 0; h.hp = 0; h.maxHp = gc.maxHp; h.act = gc.act; h.floor = gc.floorNum;
+    }
     const bool complete = gc.outcome != GameOutcome::UNDECIDED;
     const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
     const bool trajectoryValid = complete && healthFailures == 0 && !fatalFailure;
@@ -2183,6 +2215,152 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
               << " chosenParity=" << parityChecks << '/' << parityChecks
               << " map=" << sourceMapRows + branchMapRows << " win_raw="
               << sourceRawRows + branchRawRows << " -> " << outPrefix << "\n";
+}
+
+// Counterfactual OOC label pilot. The source trajectory and its outcome-blind
+// per-type reservoir are exactly vwinrefreshgen's (K=1). Per seed, one sampled
+// CARD_REWARD, REST, SHOP or BOSS_RELIC decision is selected by hash; every
+// retained option (chosen plus at most five) is forced FUTURES times. Run k of
+// every option redraws the hidden future from the same seed (common random
+// numbers across siblings), then the production chain plays until the first
+// boss fight after the branch ends. Label: boss beaten, HP after it.
+void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
+                               long long seedOffset, const std::string &teacherPath,
+                               int futures) {
+    constexpr int sims = 10000, asc = 0;
+    if (nSeeds < 1 || futures < 1 || seedOffset < 0
+        || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
+        throw std::runtime_error("ooc cf pilot: requires N>0, FUTURES>0 and a nonnegative seed range");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true, true);
+    vwinRequireProductionPolicy(teacher);
+    search::g_richCombatFeatures = true;
+    const std::vector<std::string> suffixes = {".labels.csv", ".options.csv", ".sources.csv",
+                                               ".manifest.json"};
+    for (const auto &suffix : suffixes)
+        if (std::filesystem::exists(outPrefix + suffix))
+            throw std::runtime_error("ooc cf pilot: refusing to overwrite " + outPrefix + suffix);
+    std::ofstream labelOut(outPrefix + ".labels.csv"), optionOut(outPrefix + ".options.csv"),
+        sourceOut(outPrefix + ".sources.csv");
+    if (!labelOut || !optionOut || !sourceOut)
+        throw std::runtime_error("ooc cf pilot: cannot open outputs");
+    labelOut << "sourceSeed,decisionIdx,type,act,floor,optionIdx,optionKey,chosen,k,futureSeed,"
+                "valid,diedBeforeBoss,bossWon,hp,maxHp,horizonAct,horizonFloor,fights,cpuSeconds,error\n";
+    optionOut << "sourceSeed,decisionIdx,type,optionIdx,optionKey,chosen," << richStateHeader() << '\n';
+    sourceOut << "sourceSeed,outcome,finalFloor,trajectoryValid,inScopeSamples,decisionIdx,type,"
+                 "act,floor,options,sourceCpuSeconds\n";
+    const std::set<std::string> inScope = {"BOSS_RELIC", "CARD_REWARD", "REST", "SHOP"};
+    std::uint64_t labelRows = 0, validRows = 0;
+    int selectedStates = 0;
+    for (int index = 0; index < nSeeds; ++index) {
+        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + index);
+        VwinCollector source;
+        source.sourceSeed = seed;
+        source.samplesPerType = 1;
+        source.branchId = "source";
+        source.captureRefresh = true;
+        source.allowSampling = true;
+        const auto sourceCpuStart = vwinThreadCpuNanos();
+        const auto generated = runCombatEvalGenSeed(seed, sims, asc, teacher, true, &source);
+        const double sourceCpu = static_cast<double>(vwinThreadCpuNanos() - sourceCpuStart) / 1.0e9;
+        std::vector<VwinSampledDecision *> candidates;
+        for (auto &[type, samples] : source.sampled)
+            if (inScope.count(type))
+                for (auto &sample : samples) candidates.push_back(&sample);
+        VwinSampledDecision *sample = nullptr;
+        if (!candidates.empty()) {
+            const auto digest = vwinSha256("ooc-cf-pilot-v1-select:" + std::to_string(seed));
+            sample = candidates[std::stoull(digest.substr(0, 15), nullptr, 16) % candidates.size()];
+        }
+        sourceOut << seed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
+                  << generated.finalFloor << ',' << (generated.trajectoryValid ? 1 : 0) << ','
+                  << candidates.size() << ',';
+        if (!sample) {
+            sourceOut << "-1,,-1,-1,0," << sourceCpu << '\n';
+            continue;
+        }
+        sourceOut << sample->decisionIdx << ',' << sample->type << ',' << sample->pre->act << ','
+                  << sample->pre->floorNum << ',' << sample->options.size() << ',' << sourceCpu << '\n';
+        ++selectedStates;
+        for (std::size_t optionIdx = 0; optionIdx < sample->options.size(); ++optionIdx) {
+            const auto &option = sample->options[optionIdx];
+            const bool chosen = option.key == sample->chosenKey;
+            for (int k = 0; k < futures; ++k) {
+                const auto futureDigest = vwinSha256("ooc-cf-pilot-v1-future:" + std::to_string(seed)
+                    + ":" + std::to_string(sample->decisionIdx) + ":" + std::to_string(k));
+                const std::uint64_t futureSeed = std::stoull(futureDigest.substr(0, 16), nullptr, 16);
+                CfHorizon horizon;
+                VwinBranchStart start{sample, option,
+                    "cf" + std::to_string(seed) + "-d" + std::to_string(sample->decisionIdx)
+                    + "-o" + std::to_string(optionIdx) + "-k" + std::to_string(k),
+                    futureSeed, &horizon};
+                VwinCollector branch;
+                branch.sourceSeed = seed;
+                branch.branchId = start.branchId;
+                branch.deviationIdx = 1;
+                branch.captureRefresh = true;
+                branch.allowSampling = false;
+                std::string error;
+                bool valid = false;
+                const auto cpuStart = vwinThreadCpuNanos();
+                try {
+                    const auto branched = runCombatEvalGenSeed(seed, sims, asc, teacher, true,
+                                                               &branch, &start);
+                    valid = horizon.reached && !branched.fatalFailure
+                        && branched.simulatorHealthFailures == 0;
+                    if (!valid) error = horizon.reached ? "health_or_fatal" : "horizon_not_reached";
+                } catch (const std::exception &e) {
+                    error = e.what();
+                }
+                const double cpu = static_cast<double>(vwinThreadCpuNanos() - cpuStart) / 1.0e9;
+                if (k == 0)
+                    optionOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
+                              << optionIdx << ',' << csvQuote(option.key) << ',' << (chosen ? 1 : 0)
+                              << ',' << horizon.afterFeatures << '\n';
+                labelOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
+                         << sample->pre->act << ',' << sample->pre->floorNum << ',' << optionIdx << ','
+                         << csvQuote(option.key) << ',' << (chosen ? 1 : 0) << ',' << k << ','
+                         << futureSeed << ',' << (valid ? 1 : 0) << ','
+                         << (horizon.diedBeforeBoss ? 1 : 0) << ',' << horizon.bossWon << ','
+                         << horizon.hp << ',' << horizon.maxHp << ',' << horizon.act << ','
+                         << horizon.floor << ',' << horizon.fights << ',' << cpu << ','
+                         << csvQuote(error) << '\n';
+                ++labelRows;
+                if (valid) ++validRows;
+            }
+        }
+        labelOut.flush(); optionOut.flush(); sourceOut.flush();
+    }
+    labelOut.close(); optionOut.close(); sourceOut.close();
+    nlohmann::json outputs = nlohmann::json::object();
+    for (const auto &suffix : {".labels.csv", ".options.csv", ".sources.csv"})
+        outputs[std::string(suffix).substr(1)] = fileSha256(outPrefix + suffix);
+    const nlohmann::json manifest = {
+        {"schemaVersion", "ooc_cf_pilot_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherPath", std::filesystem::absolute(teacherPath).string()},
+        {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification},
+        {"policy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"selection", {{"reservoir", "vwinrefreshgen outcome_blind_reservoir_per_type_v1, K=1"},
+                       {"types", inScope},
+                       {"rule", "sha256(ooc-cf-pilot-v1-select:{seed})[:15] mod in-scope samples"},
+                       {"optionCap", "chosen_plus_five_sha256_ranked (vwin-option-cap-334-v1)"}}},
+        {"futures", {{"count", futures},
+                     {"seedRule", "sha256(ooc-cf-pilot-v1-future:{seed}:{decisionIdx}:{k})[:16]"},
+                     {"redraw", "sampleNoncombatFuture after the forced option, before continuation"}}},
+        {"horizon", "first boss fight after the branch ends, or death before it"},
+        {"integrity", {{"selectedStates", selectedStates}, {"labelRows", labelRows},
+                       {"validLabelRows", validRows}}},
+        {"outputs", outputs},
+    };
+    std::ofstream manifestOut(outPrefix + ".manifest.json");
+    manifestOut << manifest.dump(2) << '\n';
+    if (!manifestOut) throw std::runtime_error("ooc cf pilot: manifest write failed");
+    std::cout << "ooc cf pilot teacher=" << teacher.id << " states=" << selectedStates << '/' << nSeeds
+              << " labels=" << validRows << '/' << labelRows << " -> " << outPrefix << "\n";
 }
 
 // Optional extra observations of one boss arm (#347 boss-entry rescue).

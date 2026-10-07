@@ -3710,6 +3710,18 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "ooccfpilotgen") {
+        if (argc != 7) {
+            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES\n";
+            return 2;
+        }
+        try {
+            oocCounterfactualPilotGen(std::stoi(argv[2]), argv[3], std::stoll(argv[4]), argv[5],
+                                      std::stoi(argv[6]));
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "vwinrefreshcrashdiag") {
         // Diagnostic-only: one source seed, production vwinrefreshgen semantics,
         // stop after MAX_BRANCHES sibling branches; flushed phase markers.
