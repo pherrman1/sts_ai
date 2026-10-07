@@ -105,7 +105,10 @@ searching again:
 - `combat_transition_deepset_potion_specialist.py --arms C` refits only the
   warm-started potion-aware control that the DeepSets export consumes. Its
   reproduction check is skipped when `STS_CTM_PINS` sets the reference NLL to
-  null.
+  null. Its decision is `POTION_DEEPSET_CONTROL_REFIT_DONE`; the teacher gate
+  is recorded as a diagnostic only, because production W (71d88a71) was
+  already `TEACHER_FORCED_REJECTED` on recursive Brew and ships with Brew routed
+  to the fallback model, so a rejection is expected and is not a stop.
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and

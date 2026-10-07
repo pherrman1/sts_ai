@@ -471,9 +471,10 @@ def run(args):
                        for label, value in results.items()}
     if arms == ("C",):
         # Control refit for a retrained stack: the warm-started potion-aware
-        # specialist the DeepSets export consumes, gated against the Attention reference.
-        decision = ("POTION_DEEPSET_CONTROL_REFIT_PASS" if classifications["C"][0] == "TEACHER_FORCED_PASS"
-                    else "POTION_DEEPSET_CONTROL_REFIT_FAIL")
+        # specialist the DeepSets export consumes. The teacher gate is a
+        # diagnostic only: production W (71d88a71) was TEACHER_FORCED_REJECTED on
+        # recursive Brew and ships with Brew routed to the fallback model.
+        decision = "POTION_DEEPSET_CONTROL_REFIT_DONE"
     else:
         decision = "POTION_DEEPSET_POTION_BLIND_REJECTED"
         if classifications["P"][0] == "TEACHER_FORCED_PASS":
@@ -486,6 +487,9 @@ def run(args):
             "cudaDevice": torch.cuda.get_device_name(0),
             "cudaDeviceCount": torch.cuda.device_count(), "torchThreads": torch.get_num_threads()},
         "arms": list(arms),
+        "controlRefitTeacherGate": ({"diagnosticOnly": True, "decision": classifications["C"][0],
+                                     "expected": "TEACHER_FORCED_REJECTED on recursive Brew, as production W"}
+                                    if arms == ("C",) else None),
         "controlReproduction": {"referenceTrajectoryNll": CONTROL_REPRODUCTION_REFERENCE_NLL,
                                 "absoluteTolerance": CONTROL_REPRODUCTION_ABS_TOLERANCE,
                                 "stopsBeforeCandidateOnFailure": True},
