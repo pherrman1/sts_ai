@@ -30,10 +30,14 @@ RECIPE = dict(
     population="exact current final-union source-grouped TRAIN/VALIDATION victories",
 )
 
-EXPECTED = {
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED = _pins.value("combat_transition_shared_encoder_distill.EXPECTED", {
     "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
     "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
-}
+})
 
 
 def digest_array(value):
@@ -157,7 +161,7 @@ def prepare(parent, output):
     max_prob.flush(); hp_prob.flush()
     train = np.flatnonzero(cache["win"] & (cache["split"] == 0)); validation = np.flatnonzero(cache["win"] & (cache["split"] == 1))
     counts = {name: dict(rows=len(selected), sources=len(np.unique(cache["source"][selected]))) for name, selected in (("TRAIN",train),("VALIDATION",validation))}
-    if counts != {"TRAIN":{"rows":393677,"sources":19986},"VALIDATION":{"rows":48590,"sources":2496}}: raise ValueError("final-union population differs")
+    if counts != _pins.value("combat_transition_shared_encoder_distill.UNION_COUNTS", {"TRAIN":{"rows":393677,"sources":19986},"VALIDATION":{"rows":48590,"sources":2496}}): raise ValueError("final-union population differs")
     teacher_validity = dict(allFinite=bool(np.isfinite(max_prob[ids]).all() and np.isfinite(hp_prob[ids]).all()),
                             maxHpNormalizationError=float(np.max(np.abs(max_prob[ids].sum(1)-1))),
                             hpNormalizationError=float(np.max(np.abs(hp_prob[ids].sum(1)-1))))

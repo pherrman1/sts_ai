@@ -20,16 +20,20 @@ except ModuleNotFoundError:
 
 
 SCHEMA = "combat_transition_attention_hpo_promotion_v1"
-EXPECTED_HPO_EVIDENCE_SHA256 = "3a4ac8859f9e31f5912449a6c8a1376e7f4e3306791c7e60508cc7e9d956a24c"
-EXPECTED_HPO_MODEL_SHA256 = "005f860d847a773c363170d2473fc8f3f77b4beab501c5db44833d2ac8e1e987"
-EXPECTED_PREPARED_SHA256 = "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"
-EXPECTED_BASE_COMPONENTS = {
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED_HPO_EVIDENCE_SHA256 = _pins.value("combat_transition_attention_hpo_promote.EXPECTED_HPO_EVIDENCE_SHA256", "3a4ac8859f9e31f5912449a6c8a1376e7f4e3306791c7e60508cc7e9d956a24c")
+EXPECTED_HPO_MODEL_SHA256 = _pins.value("combat_transition_attention_hpo_promote.EXPECTED_HPO_MODEL_SHA256", "005f860d847a773c363170d2473fc8f3f77b4beab501c5db44833d2ac8e1e987")
+EXPECTED_PREPARED_SHA256 = _pins.value("combat_transition_attention_hpo_promote.EXPECTED_PREPARED_SHA256", "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9")
+EXPECTED_BASE_COMPONENTS = _pins.value("combat_transition_attention_hpo_promote.EXPECTED_BASE_COMPONENTS", {
     "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18",
     "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
     "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
     "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
     "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
-}
+})
 
 
 def sha256(path: Path) -> str:
