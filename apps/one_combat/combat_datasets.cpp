@@ -353,8 +353,9 @@ struct VwinCollector {
     int winCount = 0;
 };
 
-// Counterfactual pilot horizon: the first boss fight after the branch.
+// Counterfactual pilot horizon: the first `bosses` boss fights after the branch.
 struct CfHorizon {
+    int bosses = 1, bossesBeaten = 0;
     bool reached = false, diedBeforeBoss = false;
     int bossWon = -1, hp = -1, maxHp = -1, act = -1, floor = -1, fights = 0;
     std::string afterFeatures;   // rich row right after the forced option, before the redraw
@@ -1442,10 +1443,16 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
                 auto &h = *branch->horizon;
                 ++h.fights;
                 if (static_cast<Room>(room) == Room::BOSS) {
-                    h.reached = true;
-                    h.bossWon = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+                    const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+                    if (won) ++h.bossesBeaten;
                     h.hp = gc.curHp; h.maxHp = gc.maxHp; h.act = act; h.floor = floor;
-                    break;
+                    // Stop after the last horizon boss, on a loss, or when the
+                    // run ends with this boss (act 3, keys off).
+                    if (!won || h.bossesBeaten >= h.bosses || gc.outcome != GameOutcome::UNDECIDED) {
+                        h.reached = true;
+                        h.bossWon = won ? 1 : 0;
+                        break;
+                    }
                 }
             }
         } else {
@@ -2226,11 +2233,12 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // boss fight after the branch ends. Label: boss beaten, HP after it.
 void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                long long seedOffset, const std::string &teacherPath,
-                               int futures) {
+                               int futures, int statesPerSeed, int cardRewardBosses) {
     constexpr int sims = 10000, asc = 0;
-    if (nSeeds < 1 || futures < 1 || seedOffset < 0
+    if (nSeeds < 1 || futures < 1 || statesPerSeed < 1 || cardRewardBosses < 1 || cardRewardBosses > 2
+        || seedOffset < 0
         || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
-        throw std::runtime_error("ooc cf pilot: requires N>0, FUTURES>0 and a nonnegative seed range");
+        throw std::runtime_error("ooc cf pilot: requires N>0, FUTURES>0, STATES>0, CARD_BOSSES 1..2 and a nonnegative seed range");
     trainingCampaignStart();
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true, true);
     vwinRequireProductionPolicy(teacher);
@@ -2245,7 +2253,8 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
     if (!labelOut || !optionOut || !sourceOut)
         throw std::runtime_error("ooc cf pilot: cannot open outputs");
     labelOut << "sourceSeed,decisionIdx,type,act,floor,optionIdx,optionKey,chosen,k,futureSeed,"
-                "valid,diedBeforeBoss,bossWon,hp,maxHp,horizonAct,horizonFloor,fights,cpuSeconds,error\n";
+                "valid,diedBeforeBoss,bossWon,hp,maxHp,horizonAct,horizonFloor,fights,cpuSeconds,error,"
+                "horizonBosses,bossesBeaten\n";
     optionOut << "sourceSeed,decisionIdx,type,optionIdx,optionKey,chosen," << richStateHeader() << '\n';
     sourceOut << "sourceSeed,outcome,finalFloor,trajectoryValid,inScopeSamples,decisionIdx,type,"
                  "act,floor,options,sourceCpuSeconds\n";
@@ -2267,21 +2276,36 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         for (auto &[type, samples] : source.sampled)
             if (inScope.count(type))
                 for (auto &sample : samples) candidates.push_back(&sample);
-        VwinSampledDecision *sample = nullptr;
+        // One state keeps the v1 pilot rule; more states take the next
+        // candidates in sha256-ranked order (distinct decision types).
+        std::vector<VwinSampledDecision *> selected;
         if (!candidates.empty()) {
             const auto digest = vwinSha256("ooc-cf-pilot-v1-select:" + std::to_string(seed));
-            sample = candidates[std::stoull(digest.substr(0, 15), nullptr, 16) % candidates.size()];
+            const std::size_t first = std::stoull(digest.substr(0, 15), nullptr, 16) % candidates.size();
+            selected.push_back(candidates[first]);
+            std::vector<std::pair<std::string, VwinSampledDecision *>> rest;
+            for (std::size_t i = 0; i < candidates.size(); ++i)
+                if (i != first)
+                    rest.emplace_back(vwinSha256("ooc-cf-pilot-v2-select:" + std::to_string(seed) + ":"
+                                                 + candidates[i]->type), candidates[i]);
+            std::sort(rest.begin(), rest.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+            for (const auto &[hash, extra] : rest) {
+                if (static_cast<int>(selected.size()) >= statesPerSeed) break;
+                selected.push_back(extra);
+            }
         }
+        if (selected.empty())
+            sourceOut << seed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
+                      << generated.finalFloor << ',' << (generated.trajectoryValid ? 1 : 0) << ','
+                      << candidates.size() << ",-1,,-1,-1,0," << sourceCpu << '\n';
+        for (auto *sample : selected) {
         sourceOut << seed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
                   << generated.finalFloor << ',' << (generated.trajectoryValid ? 1 : 0) << ','
                   << candidates.size() << ',';
-        if (!sample) {
-            sourceOut << "-1,,-1,-1,0," << sourceCpu << '\n';
-            continue;
-        }
         sourceOut << sample->decisionIdx << ',' << sample->type << ',' << sample->pre->act << ','
                   << sample->pre->floorNum << ',' << sample->options.size() << ',' << sourceCpu << '\n';
         ++selectedStates;
+        const int bosses = sample->type == "CARD_REWARD" ? cardRewardBosses : 1;
         for (std::size_t optionIdx = 0; optionIdx < sample->options.size(); ++optionIdx) {
             const auto &option = sample->options[optionIdx];
             const bool chosen = option.key == sample->chosenKey;
@@ -2290,6 +2314,7 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                     + ":" + std::to_string(sample->decisionIdx) + ":" + std::to_string(k));
                 const std::uint64_t futureSeed = std::stoull(futureDigest.substr(0, 16), nullptr, 16);
                 CfHorizon horizon;
+                horizon.bosses = bosses;
                 VwinBranchStart start{sample, option,
                     "cf" + std::to_string(seed) + "-d" + std::to_string(sample->decisionIdx)
                     + "-o" + std::to_string(optionIdx) + "-k" + std::to_string(k),
@@ -2324,10 +2349,11 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                          << (horizon.diedBeforeBoss ? 1 : 0) << ',' << horizon.bossWon << ','
                          << horizon.hp << ',' << horizon.maxHp << ',' << horizon.act << ','
                          << horizon.floor << ',' << horizon.fights << ',' << cpu << ','
-                         << csvQuote(error) << '\n';
+                         << csvQuote(error) << ',' << bosses << ',' << horizon.bossesBeaten << '\n';
                 ++labelRows;
                 if (valid) ++validRows;
             }
+        }
         }
         labelOut.flush(); optionOut.flush(); sourceOut.flush();
     }
@@ -2351,7 +2377,9 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         {"futures", {{"count", futures},
                      {"seedRule", "sha256(ooc-cf-pilot-v1-future:{seed}:{decisionIdx}:{k})[:16]"},
                      {"redraw", "sampleNoncombatFuture after the forced option, before continuation"}}},
-        {"horizon", "first boss fight after the branch ends, or death before it"},
+        {"statesPerSeed", statesPerSeed},
+        {"horizon", {{"rule", "the first N boss fights after the branch, or death or run end before"},
+                     {"cardRewardBosses", cardRewardBosses}, {"otherBosses", 1}}},
         {"integrity", {{"selectedStates", selectedStates}, {"labelRows", labelRows},
                        {"validLabelRows", validRows}}},
         {"outputs", outputs},

@@ -3711,13 +3711,14 @@ int main(int argc, char **argv) {
             return 2;
         }
     } else if (mode == "ooccfpilotgen") {
-        if (argc != 7) {
-            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES\n";
+        if (argc < 7 || argc > 9) {
+            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES]\n";
             return 2;
         }
         try {
             oocCounterfactualPilotGen(std::stoi(argv[2]), argv[3], std::stoll(argv[4]), argv[5],
-                                      std::stoi(argv[6]));
+                                      std::stoi(argv[6]), argc > 7 ? std::stoi(argv[7]) : 1,
+                                      argc > 8 ? std::stoi(argv[8]) : 1);
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;
