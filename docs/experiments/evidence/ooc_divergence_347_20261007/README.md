@@ -61,8 +61,12 @@ family counts by `families.py`; root statistics by `prior_check.py`.
    (Enchiridion after paying 16 HP in Cursed Tome; Regal Pillow at an elite)
    and one on 48000014 (Lantern). Route differences: F took more elites on
    three seeds (6 vs 3, 5 vs 3, 6 vs 4); on 48000024 M never visited a shop.
-   Card picks diverge at the first reward on 48000024 (Neow card pick) and
-   soon after on the others.
+5. **Earliest divergence is at Neow or floor 0 on every seed, but in a
+   different family each time:** 48000024 the Neow card pick (M Blind, F
+   Panacea), 48000014 the first map node, 48000116 the Neow option (M
+   transforms a Defend, F takes 24 damage for a rare card, Demon Form), 48000095 the Neow
+   option (M upgrades Bash, F trades 99 gold for Incense Burner). No single
+   early decision recurs; chests and campfires are the families that do.
 
 **Inference:** the strongest recurring cause in these four entries is the
 policy prior steering 2,048-simulation OOC MCTS (visit-count root selection,
