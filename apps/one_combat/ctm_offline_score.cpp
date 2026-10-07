@@ -51,10 +51,13 @@ CombatPredictorInputV1 predictorInputFromJson(const J &j) {
 
 // Writes one CSV line per row. Rows without a transition (quarantined capture)
 // are kept with scored=0 so the analysis can count them.
-int ctmScoreRows(const std::string &inPath, const std::string &outPath) {
+int ctmScoreRows(const std::string &inPath, const std::string &outPath,
+                 const std::string &fastModel, const std::string &standardModel, bool activeLizard) {
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
-        "selfplay/models/combat_transition_deepsets_lizard_t2.native",
-        "selfplay/models/combat_transition_near_full_except_smoke_v2.native", true);
+        fastModel, standardModel, activeLizard);
+    if (sampler.fastRuntime().researchCandidate())
+        std::cerr << "ctmscorerows research candidate "
+                  << sampler.fastRuntime().identity().at("candidateId").get<std::string>() << '\n';
     std::ifstream in(inPath);
     need(bool(in), "cannot open " + inPath);
     std::ofstream out(outPath);

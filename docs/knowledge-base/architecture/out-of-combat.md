@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -302,6 +302,19 @@ the pinned current-standard artifact
 runtime also checks source/cohort metadata. `STS_OOC_MCTS_BREW_FALLBACK_MODEL`
 overrides the automatic fallback path. Missing or invalid required artifacts
 are fatal.
+
+A retrained stack loads only as a research candidate. When
+`STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and its `_SHA256` are set, an artifact
+whose metadata declares `researchCandidate: {"candidateId": ...}` is checked
+against that `ctm_research_candidate_v1` manifest instead of the production
+pins. The swapped values are artifact bytes, source and checkpoint hashes,
+support-census indices and the active-Lizard q/r identity. Schema, shapes, the
+HP envelope, support exclusions, the qualification class and the Lizard
+definitions stay pinned. A candidate cannot claim the production default or a
+promoted Lizard. The Brew fallback is pinned by the fast artifact's identity, so
+a candidate fast artifact needs its own standard artifact. Without the variables
+nothing changes, and artifacts without the declaration always use the
+production pins (CTest `ctm_research_candidate_loader`).
 
 With the automatic model stack, the qualified active-Lizard correction is
 enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips

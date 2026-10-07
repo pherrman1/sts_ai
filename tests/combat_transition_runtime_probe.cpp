@@ -67,6 +67,20 @@ int main(int argc,char **argv) {
             std::cout << "pinned standard fallback SHA256 PASS\n";
             return 0;
         }
+        // Loads one artifact, or a composed fast+standard pair, and names the identity it was checked against.
+        auto identityName=[](const CombatTransitionRuntime &runtime) {
+            return runtime.researchCandidate()?runtime.identity().at("candidateId").get<std::string>():std::string("production");
+        };
+        if(argc==3 && std::string(argv[1])=="--identity") {
+            NativeCombatTransitionSampler sampler(argv[2]);
+            std::cout << "identity=" << identityName(sampler.runtime()) << "\n";
+            return 0;
+        }
+        if(argc==5 && std::string(argv[1])=="--pair-identity") {
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],std::string(argv[4])=="1");
+            std::cout << "identity=" << identityName(hybrid.fastRuntime()) << "\n";
+            return 0;
+        }
         if(argc==6 && std::string(argv[1])=="--lizard-parity") {
             EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],true);
             NativeCombatTransitionSampler directSampler(argv[2]);

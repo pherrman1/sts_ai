@@ -1680,11 +1680,22 @@ void configureLiveOocMcts() {
     }
     if(activeLizardEnabled && brewFallbackArtifact.empty())
         throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD=1 requires STS_OOC_MCTS_BREW_FALLBACK_MODEL");
-    if(!brewFallbackArtifact.empty())
-        liveSampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
+    std::string researchCandidate;
+    if(!brewFallbackArtifact.empty()) {
+        auto hybrid = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
             artifact,brewFallbackArtifact,activeLizardEnabled);
-    else
-        liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
+        if(hybrid->fastRuntime().researchCandidate())
+            researchCandidate=hybrid->fastRuntime().identity().at("candidateId").get<std::string>();
+        liveSampler = hybrid;
+    } else {
+        auto native = std::make_shared<NativeCombatTransitionSampler>(artifact);
+        if(native->runtime().researchCandidate())
+            researchCandidate=native->runtime().identity().at("candidateId").get<std::string>();
+        liveSampler = native;
+    }
+    // Research candidates are named in the log; production output is unchanged.
+    if(!researchCandidate.empty())
+        std::cout << "[ctm-research-candidate] candidate_id=" << researchCandidate << "\n";
     const auto precision = std::cout.precision();
     std::cout << std::setprecision(17) << "[live OOC MCTS ON sims=" << liveSimulations
         << " combat_model=" << artifact
