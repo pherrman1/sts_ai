@@ -241,9 +241,11 @@ void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
 
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
 // Bosses beaten so far: a boss counts once its fight is over (rewards, boss chest).
+// transitionToAct keeps curRoom at BOSS_TREASURE until the first map node, with
+// curMapNodeY reset to -1, so only a chest still on the old map is past-boss.
 int bossesCleared(const GameContext &gc) {
-    const bool past = (gc.curRoom == sts::Room::BOSS || gc.curRoom == sts::Room::BOSS_TREASURE)
-        && gc.screenState != sts::ScreenState::BATTLE;
+    const bool past = (gc.curRoom == sts::Room::BOSS && gc.screenState != sts::ScreenState::BATTLE)
+        || (gc.curRoom == sts::Room::BOSS_TREASURE && gc.curMapNodeY != -1);
     return gc.act - 1 + past;
 }
 double bossLeafUtility(const CombatTransitionExpectation &estimate) {
@@ -3996,18 +3998,25 @@ void oocMctsAdapterSelfTest() {
     {
         // Boss-rollout target: a boss counts as beaten only after its fight.
         auto probe = detachedCopy(gc);
-        const auto cleared = [&](int act, Room room, ScreenState screen) {
-            probe.act = act; probe.curRoom = room; probe.screenState = screen;
+        const auto cleared = [&](int act, Room room, ScreenState screen, int y = 15) {
+            probe.act = act; probe.curRoom = room; probe.screenState = screen; probe.curMapNodeY = y;
             return bossesCleared(probe);
         };
         require(cleared(1,Room::MONSTER,ScreenState::MAP_SCREEN) == 0
             && cleared(1,Room::BOSS,ScreenState::BATTLE) == 0
             && cleared(1,Room::BOSS,ScreenState::REWARDS) == 1
             && cleared(1,Room::BOSS_TREASURE,ScreenState::BOSS_RELIC_REWARDS) == 1
+            && cleared(1,Room::BOSS_TREASURE,ScreenState::CARD_SELECT) == 1
+            && cleared(2,Room::BOSS_TREASURE,ScreenState::MAP_SCREEN,-1) == 1
+            && cleared(3,Room::BOSS_TREASURE,ScreenState::MAP_SCREEN,-1) == 2
             && cleared(2,Room::MONSTER,ScreenState::MAP_SCREEN) == 1
             && cleared(2,Room::BOSS,ScreenState::BATTLE) == 1
             && cleared(3,Room::BOSS,ScreenState::REWARDS) == 3,
             "boss rollout counts bosses beaten");
+        auto nextAct = detachedCopy(gc);
+        nextAct.curRoom = Room::BOSS_TREASURE; nextAct.curMapNodeY = 15; nextAct.transitionToAct(2);
+        require(bossesCleared(nextAct) == 1 && nextAct.curRoom == Room::BOSS_TREASURE,
+            "act start after a real transition counts only the previous boss");
     }
     {
         OocMctsConfig parsed; OocAdapterOptions opts{true};
