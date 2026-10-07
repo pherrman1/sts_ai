@@ -542,7 +542,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
 | `MAX_DEPTH` |512|integer1..512; fail-closed technical safety cap, not a value horizon|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
-| `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
+| `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
 | `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|

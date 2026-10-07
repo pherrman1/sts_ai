@@ -240,6 +240,14 @@ void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
 }
 
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
+// Bosses beaten so far: a boss counts once its fight is over (rewards, boss chest).
+// transitionToAct keeps curRoom at BOSS_TREASURE until the first map node, with
+// curMapNodeY reset to -1, so only a chest still on the old map is past-boss.
+int bossesCleared(const GameContext &gc) {
+    const bool past = (gc.curRoom == sts::Room::BOSS && gc.screenState != sts::ScreenState::BATTLE)
+        || (gc.curRoom == sts::Room::BOSS_TREASURE && gc.curMapNodeY != -1);
+    return gc.act - 1 + past;
+}
 double bossLeafUtility(const CombatTransitionExpectation &estimate) {
     const double survival = 1.0 - estimate.death;
     return 0.75 * survival + 0.25 * survival * estimate.winningHpFraction;
@@ -1229,12 +1237,18 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     if (child.gc.screenState == sts::ScreenState::BATTLE) ++continuation_.battleLeaves;
     else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
     else ++continuation_.pendingLeaves;
-    const int maxSteps = options.leafCombats ? 1024 : 256;
+    // A boss rollout spans up to a whole act of decisions. Its target is the
+    // next boss after the searched decision, so a leaf the tree already played
+    // past that boss scores 1 instead of rolling on to a later boss.
+    const int maxSteps = options.bossRollout ? 8192 : options.leafCombats ? 1024 : 256;
+    const int targetBosses = bossesCleared(state(0)) + 1;
     unsigned additionalCombats = 0;
     const auto checkpoint = [&]() -> std::optional<double> {
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
+        if (options.bossRollout)
+            return bossesCleared(child.gc) >= targetBosses ? std::optional<double>(1.0) : std::nullopt;
         if (options.screenLeaf && child.gc.screenState != sts::ScreenState::BATTLE
                 && child.gc.screenState != sts::ScreenState::MAP_SCREEN)
             if (const auto value = screenLeafValue(child.gc, child.path)) return value;
@@ -1251,7 +1265,21 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     };
     return boundedContinuation(maxSteps,checkpoint,[&] {
         ++continuation_.projectionSteps;
-        if (child.gc.screenState == sts::ScreenState::BATTLE) { resolveCombat(child,rng); ++additionalCombats; }
+        if (child.gc.screenState == sts::ScreenState::BATTLE) {
+            try { resolveCombat(child,rng); }
+            catch (const sts::search::OocSearchUnsupported &) {
+                // The CTM stack cannot price an active Lizard Tail at some boundaries
+                // (Fairy Potion, Entropic Brew); whole-act boss rollouts reach them
+                // in nearly every search. Play this rollout on with the tail spent.
+                constexpr auto tail = sts::RelicId::LIZARD_TAIL;
+                if (!options.bossRollout || !child.gc.relics.has(tail)
+                        || child.gc.relics.getRelicValue(tail) != 1) throw;
+                child.gc.relics.getRelicValueRef(tail) = 0;
+                ++continuation_.supportReasons["bossrollout_lizard_spent"];
+                resolveCombat(child,rng);
+            }
+            ++additionalCombats;
+        }
         else {
             if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
             bool applied = false;
@@ -1332,8 +1360,9 @@ void applyLiveControl(const std::string &key, const std::string &value,
     };
     if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
-        opts.constantLeaf = opts.bossLeaf = opts.directLeaf = opts.screenLeaf = opts.screenGbm = false;
+        opts.constantLeaf = opts.bossLeaf = opts.bossRollout = opts.directLeaf = opts.screenLeaf = opts.screenGbm = false;
         if (value == "native") {}
+        else if (value == "bossrollout") opts.bossRollout = true;
         else if (value == "constant") opts.constantLeaf = true;
         else if (value == "boss") opts.bossLeaf = true;
         else if (value == "direct") opts.directLeaf = true;
@@ -1664,7 +1693,7 @@ void configureLiveOocMcts() {
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
-        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
+        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
@@ -1676,7 +1705,7 @@ void configureLiveOocMcts() {
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
-        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
+        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
@@ -3976,6 +4005,71 @@ void oocMctsAdapterSelfTest() {
             && projected.continuationMetrics().projectionSteps >= horizon*2
             && test::oocStateFingerprint(horizonRoot) == before,
             "uniform continuation completes exact additional combat horizon and preserves root");
+    }
+    // Boss rollout: continue past map checkpoints to the act boss; win 1, death 0.
+    struct BossOutcomeSampler final : CombatTransitionSampler {
+        bool bossDies = false;
+        mutable unsigned calls = 0, bossCalls = 0;
+        CombatRuntimeSupport support(const GameContext &g, const CombatPredictorInputV1 &) const override {
+            if (g.relics.has(RelicId::LIZARD_TAIL) && g.relics.getRelicValue(RelicId::LIZARD_TAIL) == 1)
+                return {false,"active_unqualified_lizard"};
+            return {true,"supported"};
+        }
+        CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+            ++calls;
+            if (g.curRoom != Room::BOSS) return {CombatRuntimeSample::Outcome::VICTORY,captureCombatTransitionState(g)};
+            ++bossCalls;
+            return {bossDies ? CombatRuntimeSample::Outcome::DEATH : CombatRuntimeSample::Outcome::VICTORY,
+                captureCombatTransitionState(g)};
+        }
+    };
+    for (int variant : {0,1,2}) {
+        const bool bossDies = variant == 1, activeTail = variant == 2;
+        auto bossRoot = detachedCopy(gc);
+        for (auto &row : bossRoot.map->nodes) for (auto &node : row) node.room = Room::MONSTER;
+        if (activeTail) { bossRoot.relics.remove(RelicId::LIZARD_TAIL); bossRoot.relics.add({RelicId::LIZARD_TAIL,1}); }
+        auto sampler = std::make_shared<BossOutcomeSampler>(); sampler->bossDies = bossDies;
+        OocAdapterOptions opts{true}; opts.bossRollout = true; opts.uniformLeafPolicy = true;
+        OocGameContextModel projected(bossRoot,path,sampler,opts);
+        std::mt19937_64 projectionRng(913);
+        const auto before = test::oocStateFingerprint(bossRoot);
+        const auto leaf = projected.evaluateLeafWithOutcome(0,projectionRng);
+        require(leaf.value == (bossDies ? 0.0 : 1.0) && (!bossDies || leaf.terminal)
+            && sampler->bossCalls == 1 && sampler->calls > 3
+            && projected.continuationMetrics().imaginedCombats == sampler->calls + activeTail
+            && test::oocStateFingerprint(bossRoot) == before
+            && projected.continuationMetrics().supportReasons.count("bossrollout_lizard_spent") == activeTail,
+            "boss rollout continues to the act boss and scores its outcome");
+    }
+    {
+        // Boss-rollout target: a boss counts as beaten only after its fight.
+        auto probe = detachedCopy(gc);
+        const auto cleared = [&](int act, Room room, ScreenState screen, int y = 15) {
+            probe.act = act; probe.curRoom = room; probe.screenState = screen; probe.curMapNodeY = y;
+            return bossesCleared(probe);
+        };
+        require(cleared(1,Room::MONSTER,ScreenState::MAP_SCREEN) == 0
+            && cleared(1,Room::BOSS,ScreenState::BATTLE) == 0
+            && cleared(1,Room::BOSS,ScreenState::REWARDS) == 1
+            && cleared(1,Room::BOSS_TREASURE,ScreenState::BOSS_RELIC_REWARDS) == 1
+            && cleared(1,Room::BOSS_TREASURE,ScreenState::CARD_SELECT) == 1
+            && cleared(2,Room::BOSS_TREASURE,ScreenState::MAP_SCREEN,-1) == 1
+            && cleared(3,Room::BOSS_TREASURE,ScreenState::MAP_SCREEN,-1) == 2
+            && cleared(2,Room::MONSTER,ScreenState::MAP_SCREEN) == 1
+            && cleared(2,Room::BOSS,ScreenState::BATTLE) == 1
+            && cleared(3,Room::BOSS,ScreenState::REWARDS) == 3,
+            "boss rollout counts bosses beaten");
+        auto nextAct = detachedCopy(gc);
+        nextAct.curRoom = Room::BOSS_TREASURE; nextAct.curMapNodeY = 15; nextAct.transitionToAct(2);
+        require(bossesCleared(nextAct) == 1 && nextAct.curRoom == Room::BOSS_TREASURE,
+            "act start after a real transition counts only the previous boss");
+    }
+    {
+        OocMctsConfig parsed; OocAdapterOptions opts{true};
+        applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","bossrollout",parsed,opts);
+        require(opts.bossRollout && !opts.bossLeaf && !opts.screenLeaf,"boss rollout leaf parsed");
+        applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","native",parsed,opts);
+        require(!opts.bossRollout,"native leaf clears boss rollout");
     }
     {
         // Inject the bounded-continuation exception after a genuine successful

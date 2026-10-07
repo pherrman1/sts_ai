@@ -37,6 +37,9 @@ struct OocAdapterOptions {
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
+    // Research probe (default off): play the V4/CTM continuation until the
+    // first boss fight it resolves and score 1 for a boss win, 0 for a death.
+    bool bossRollout = false;
     // Research probe: score unresolved non-combat, non-MAP leaves with v_win
     // directly instead of the bounded policy-chain playout.
     bool directLeaf = false;

@@ -1,0 +1,1495 @@
+{
+ "status": "VALID",
+ "verdict": "PREPARATION_HEADROOM_SIGNAL",
+ "shape": "consistent_positive",
+ "plannerReps": 8,
+ "validSeeds": 4,
+ "problems": {},
+ "aggregate": {
+  "seeds": 4,
+  "comparisons": 32,
+  "M_wins": 1,
+  "F_wins": 29,
+  "F_only": 28,
+  "M_only": 0,
+  "net": 28,
+  "seedsWithPositiveNet": 4,
+  "seedsWithNegativeNet": 0,
+  "meanNetPerSeed": 7.0,
+  "seedClusterBootstrap95": [
+   5.75,
+   8.0
+  ]
+ },
+ "seeds": [
+  {
+   "seed": 48000024,
+   "act": 2,
+   "boss": "CHAMP",
+   "stateIds": {
+    "M": "M-48000024-a2",
+    "F": "F-48000024-a2"
+   },
+   "historicalSource": {
+    "M_won": 0,
+    "F_won": 1,
+    "M_terminalHp": 0,
+    "F_terminalHp": 61
+   },
+   "M_wins": 0,
+   "F_wins": 8,
+   "F_only": 8,
+   "M_only": 0,
+   "net": 8,
+   "M_entry": {
+    "hp": 80,
+    "maxHp": 85,
+    "gold": 449,
+    "potions": [
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 29,
+    "upgrades": 4,
+    "floor": 33,
+    "boss": "CHAMP"
+   },
+   "F_entry": {
+    "hp": 80,
+    "maxHp": 80,
+    "gold": 30,
+    "potions": [
+     "EMPTY_POTION_SLOT",
+     "STRENGTH_POTION",
+     "EMPTY_POTION_SLOT"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 31,
+    "upgrades": 16,
+    "floor": 33,
+    "boss": "CHAMP"
+   },
+   "entryDifference": {
+    "hp": 0,
+    "maxHp": -5,
+    "gold": -419,
+    "potionCount": 1,
+    "potionCapacity": 0,
+    "deckSize": 2,
+    "upgrades": 12,
+    "cardsOnlyM": [
+     "Barricade",
+     "Battle Trance",
+     "Blind",
+     "Carnage",
+     "Clash",
+     "Defend",
+     "Defend",
+     "Defend",
+     "Defend",
+     "Ghostly Armor+",
+     "Immolate",
+     "Perfected Strike+",
+     "Power Through",
+     "Sentinel",
+     "Shrug It Off",
+     "Strike",
+     "Strike",
+     "Strike",
+     "Strike",
+     "Strike",
+     "Thunderclap",
+     "Warcry+",
+     "Writhe"
+    ],
+    "cardsOnlyF": [
+     "Anger",
+     "Battle Trance+",
+     "Carnage+",
+     "Clash+",
+     "Defend+",
+     "Defend+",
+     "Defend+",
+     "Defend+",
+     "Discovery",
+     "Enlightenment",
+     "Ghostly Armor",
+     "Heavy Blade",
+     "Immolate+",
+     "Inflame",
+     "Metallicize",
+     "Metallicize+",
+     "Panacea+",
+     "Pommel Strike",
+     "Sentinel+",
+     "Shockwave",
+     "Strike+",
+     "Strike+",
+     "Strike+",
+     "Strike+",
+     "Sword Boomerang"
+    ],
+    "relicsOnlyM": [
+     "MUTAGENIC_STRENGTH"
+    ],
+    "relicsOnlyF": [
+     "BAG_OF_MARBLES",
+     "BIRD_FACED_URN",
+     "CENTENNIAL_PUZZLE",
+     "FROZEN_EGG",
+     "REGAL_PILLOW"
+    ],
+    "relicCountersM": [
+     "BURNING_BLOOD:0",
+     "TORII:0",
+     "PANTOGRAPH:0",
+     "SNECKO_EYE:0",
+     "MUTAGENIC_STRENGTH:0",
+     "CALIPERS:0",
+     "STONE_CALENDAR:0"
+    ],
+    "relicCountersF": [
+     "BURNING_BLOOD:0",
+     "TORII:0",
+     "CALIPERS:0",
+     "PANTOGRAPH:0",
+     "SNECKO_EYE:0",
+     "CENTENNIAL_PUZZLE:0",
+     "STONE_CALENDAR:0",
+     "REGAL_PILLOW:0",
+     "BIRD_FACED_URN:0",
+     "FROZEN_EGG:0",
+     "BAG_OF_MARBLES:0"
+    ],
+    "potionsOnlyM": [],
+    "potionsOnlyF": [
+     "STRENGTH_POTION"
+    ],
+    "floorSame": true,
+    "bossSame": true,
+    "rngCountersDiffer": {
+     "aiRng": [
+      5,
+      6
+     ],
+     "cardRng": [
+      314,
+      339
+     ],
+     "eventRng": [
+      5,
+      4
+     ],
+     "merchantRng": [
+      0,
+      32
+     ],
+     "monsterHpRng": [
+      1,
+      4
+     ],
+     "potionRng": [
+      37,
+      53
+     ],
+     "relicRng": [
+      10,
+      9
+     ],
+     "treasureRng": [
+      20,
+      21
+     ]
+    },
+    "rngDigestSame": false,
+    "pathRoomVisitsM": [
+     0,
+     7,
+     5,
+     4,
+     12,
+     2,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pathRoomVisitsF": [
+     2,
+     6,
+     4,
+     4,
+     12,
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "M_entrySummary": "hp=80;maxHp=85;gold=449;potions=EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|TORII:0|PANTOGRAPH:0|SNECKO_EYE:0|MUTAGENIC_STRENGTH:0|CALIPERS:0|STONE_CALENDAR:0;deck=Strike|Strike|Strike|Strike|Strike|Defend|Defend|Defend|Defend|Bash|Blind|Clash|Sentinel|Thunderclap|Spot Weakness+|Barricade|Armaments|Battle Trance|Clash|Pommel Strike|Immolate|Intimidate|Power Through|Writhe|Ghostly Armor+|Warcry+|Carnage|Perfected Strike+|Shrug It Off",
+   "F_entrySummary": "hp=80;maxHp=80;gold=30;potions=EMPTY_POTION_SLOT|STRENGTH_POTION|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|TORII:0|CALIPERS:0|PANTOGRAPH:0|SNECKO_EYE:0|CENTENNIAL_PUZZLE:0|STONE_CALENDAR:0|REGAL_PILLOW:0|BIRD_FACED_URN:0|FROZEN_EGG:0|BAG_OF_MARBLES:0;deck=Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Defend+|Bash|Panacea+|Clash|Anger|Spot Weakness+|Ghostly Armor|Sentinel+|Battle Trance+|Sword Boomerang|Pommel Strike|Metallicize|Immolate+|Intimidate|Inflame|Enlightenment|Armaments|Shockwave|Heavy Blade|Clash+|Carnage+|Pommel Strike|Discovery|Metallicize+",
+   "terminalHpWhenWon": {
+    "M": [],
+    "F": [
+     57,
+     63,
+     32,
+     22,
+     69,
+     67,
+     78,
+     41
+    ]
+   },
+   "potionsAfterWhenWon": {
+    "M": [],
+    "F": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "901557e2f92c4c7a",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 57,
+     "M_postExitHp": 0,
+     "F_postExitHp": 63,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 56,
+     "F_decisions": 41,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "44c1e91994a6b6c1",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 63,
+     "M_postExitHp": 0,
+     "F_postExitHp": 69,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 62,
+     "F_decisions": 35,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "66bf6f728d34d069",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 32,
+     "M_postExitHp": 0,
+     "F_postExitHp": 38,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 53,
+     "F_decisions": 40,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "2fcfbc78f4b51d66",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 22,
+     "M_postExitHp": 0,
+     "F_postExitHp": 28,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 67,
+     "F_decisions": 45,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=3"
+    },
+    {
+     "rep": 4,
+     "plannerSeed": "63b9e5d91bdb250e",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 69,
+     "M_postExitHp": 0,
+     "F_postExitHp": 75,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 69,
+     "F_decisions": 40,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=4"
+    },
+    {
+     "rep": 5,
+     "plannerSeed": "d36f9d5123371c2a",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 67,
+     "M_postExitHp": 0,
+     "F_postExitHp": 73,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 40,
+     "F_decisions": 35,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=5"
+    },
+    {
+     "rep": 6,
+     "plannerSeed": "dc062b1c3a403a6f",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 78,
+     "M_postExitHp": 0,
+     "F_postExitHp": 80,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 37,
+     "F_decisions": 39,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=6"
+    },
+    {
+     "rep": 7,
+     "plannerSeed": "da93ed81a28c766b",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 41,
+     "M_postExitHp": 0,
+     "F_postExitHp": 47,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 77,
+     "F_decisions": 35,
+     "tracePointer": "M-48000024-a2.rows.csv / F-48000024-a2.rows.csv kind=fresh rep=7"
+    }
+   ],
+   "cost": {
+    "M": {
+     "simulations": 4610000,
+     "cpuSeconds": 95.677
+    },
+    "F": {
+     "simulations": 3100000,
+     "cpuSeconds": 68.557
+    }
+   }
+  },
+  {
+   "seed": 48000014,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "stateIds": {
+    "M": "M-48000014-a3",
+    "F": "F-48000014-a3"
+   },
+   "historicalSource": {
+    "M_won": 0,
+    "F_won": 1,
+    "M_terminalHp": 0,
+    "F_terminalHp": 44
+   },
+   "M_wins": 1,
+   "F_wins": 8,
+   "F_only": 7,
+   "M_only": 0,
+   "net": 7,
+   "M_entry": {
+    "hp": 80,
+    "maxHp": 80,
+    "gold": 0,
+    "potions": [
+     "GAMBLERS_BREW",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 37,
+    "upgrades": 6,
+    "floor": 50,
+    "boss": "DONU_AND_DECA"
+   },
+   "F_entry": {
+    "hp": 80,
+    "maxHp": 80,
+    "gold": 0,
+    "potions": [
+     "BLOOD_POTION",
+     "SPEED_POTION",
+     "ENTROPIC_BREW"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 35,
+    "upgrades": 19,
+    "floor": 50,
+    "boss": "DONU_AND_DECA"
+   },
+   "entryDifference": {
+    "hp": 0,
+    "maxHp": 0,
+    "gold": 0,
+    "potionCount": 2,
+    "potionCapacity": 0,
+    "deckSize": -2,
+    "upgrades": 13,
+    "cardsOnlyM": [
+     "Armaments",
+     "Bludgeon",
+     "Clash",
+     "Cleave",
+     "Dark Embrace+",
+     "Defend",
+     "Dramatic Entrance",
+     "Havoc",
+     "Heavy Blade",
+     "Hemokinesis",
+     "Impervious",
+     "Infernal Blade",
+     "Metallicize",
+     "Parasite",
+     "Power Through",
+     "Pummel+",
+     "Shrug It Off",
+     "Shrug It Off",
+     "Shrug It Off",
+     "Shrug It Off",
+     "Strike",
+     "Thunderclap+",
+     "Uppercut"
+    ],
+    "cardsOnlyF": [
+     "Anger",
+     "Anger+",
+     "Bludgeon+",
+     "Clash+",
+     "Defend+",
+     "Dramatic Entrance+",
+     "Fiend Fire+",
+     "Ghostly Armor",
+     "Havoc+",
+     "Inflame",
+     "Inflame+",
+     "Iron Wave+",
+     "Pommel Strike",
+     "Power Through+",
+     "Reaper+",
+     "Shrug It Off+",
+     "Shrug It Off+",
+     "Strike+",
+     "Twin Strike",
+     "Uppercut+",
+     "Whirlwind+"
+    ],
+    "relicsOnlyM": [
+     "CENTENNIAL_PUZZLE",
+     "RUNIC_DOME",
+     "THE_ABACUS"
+    ],
+    "relicsOnlyF": [
+     "BAG_OF_PREPARATION",
+     "BRIMSTONE",
+     "ECTOPLASM",
+     "GREMLIN_HORN",
+     "LANTERN",
+     "MAW_BANK",
+     "PRAYER_WHEEL",
+     "SHOVEL",
+     "SINGING_BOWL",
+     "SMILING_MASK",
+     "SUNDIAL",
+     "WAR_PAINT"
+    ],
+    "relicCountersM": [
+     "BURNING_BLOOD:0",
+     "SNECKO_EYE:0",
+     "THE_ABACUS:0",
+     "PAPER_PHROG:0",
+     "WHETSTONE:0",
+     "RUNIC_DOME:0",
+     "CENTENNIAL_PUZZLE:0",
+     "RED_MASK:0"
+    ],
+    "relicCountersF": [
+     "BURNING_BLOOD:0",
+     "LANTERN:0",
+     "WHETSTONE:0",
+     "BRIMSTONE:0",
+     "SNECKO_EYE:0",
+     "PAPER_PHROG:0",
+     "GREMLIN_HORN:0",
+     "MAW_BANK:1",
+     "ECTOPLASM:0",
+     "RED_MASK:0",
+     "SHOVEL:0",
+     "PRAYER_WHEEL:0",
+     "SINGING_BOWL:0",
+     "BAG_OF_PREPARATION:0",
+     "SMILING_MASK:0",
+     "SUNDIAL:0",
+     "WAR_PAINT:0"
+    ],
+    "potionsOnlyM": [
+     "GAMBLERS_BREW"
+    ],
+    "potionsOnlyF": [
+     "BLOOD_POTION",
+     "ENTROPIC_BREW",
+     "SPEED_POTION"
+    ],
+    "floorSame": true,
+    "bossSame": true,
+    "rngCountersDiffer": {
+     "aiRng": [
+      21,
+      7
+     ],
+     "cardRng": [
+      587,
+      588
+     ],
+     "eventRng": [
+      7,
+      10
+     ],
+     "merchantRng": [
+      96,
+      64
+     ],
+     "monsterHpRng": [
+      6,
+      5
+     ],
+     "potionRng": [
+      141,
+      124
+     ],
+     "relicRng": [
+      8,
+      12
+     ],
+     "treasureRng": [
+      29,
+      30
+     ]
+    },
+    "rngDigestSame": false,
+    "pathRoomVisitsM": [
+     5,
+     9,
+     7,
+     3,
+     18,
+     3,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pathRoomVisitsF": [
+     3,
+     10,
+     10,
+     6,
+     13,
+     3,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "M_entrySummary": "hp=80;maxHp=80;gold=0;potions=GAMBLERS_BREW|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|SNECKO_EYE:0|THE_ABACUS:0|PAPER_PHROG:0|WHETSTONE:0|RUNIC_DOME:0|CENTENNIAL_PUZZLE:0|RED_MASK:0;deck=Strike|Strike|Strike|Strike|Strike+|Defend|Defend|Defend|Defend|Bash|Dramatic Entrance|Power Through|Bludgeon|Hemokinesis|Shrug It Off|Thunderclap|Pummel+|Clothesline|Shrug It Off|Uppercut|Metallicize|Impervious|Twin Strike|Shrug It Off|Clothesline+|Armaments|Dark Embrace+|Reaper|Infernal Blade|Shrug It Off|Ghostly Armor+|Heavy Blade|Clash|Parasite|Thunderclap+|Cleave|Havoc",
+   "F_entrySummary": "hp=80;maxHp=80;gold=0;potions=BLOOD_POTION|SPEED_POTION|ENTROPIC_BREW;relics=BURNING_BLOOD:0|LANTERN:0|WHETSTONE:0|BRIMSTONE:0|SNECKO_EYE:0|PAPER_PHROG:0|GREMLIN_HORN:0|MAW_BANK:1|ECTOPLASM:0|RED_MASK:0|SHOVEL:0|PRAYER_WHEEL:0|SINGING_BOWL:0|BAG_OF_PREPARATION:0|SMILING_MASK:0|SUNDIAL:0|WAR_PAINT:0;deck=Strike+|Strike|Strike|Strike|Strike+|Defend|Defend+|Defend|Defend|Bash|Dramatic Entrance+|Power Through+|Bludgeon+|Twin Strike|Havoc+|Whirlwind+|Thunderclap|Reaper+|Twin Strike|Ghostly Armor|Shrug It Off+|Clothesline+|Iron Wave+|Clash+|Anger+|Reaper|Anger|Shrug It Off+|Ghostly Armor+|Pommel Strike|Inflame+|Clothesline|Inflame|Fiend Fire+|Uppercut+",
+   "terminalHpWhenWon": {
+    "M": [
+     1
+    ],
+    "F": [
+     45,
+     55,
+     50,
+     38,
+     56,
+     44,
+     51,
+     64
+    ]
+   },
+   "potionsAfterWhenWon": {
+    "M": [
+     0
+    ],
+    "F": [
+     2,
+     0,
+     1,
+     2,
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "7456bdf71c7d2dba",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 45,
+     "M_postExitHp": 0,
+     "F_postExitHp": 51,
+     "M_potionsAfter": 1,
+     "F_potionsAfter": 2,
+     "M_decisions": 35,
+     "F_decisions": 25,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "40cab8e449f1335c",
+     "M_won": 1,
+     "F_won": 1,
+     "M_terminalHp": 1,
+     "F_terminalHp": 55,
+     "M_postExitHp": 7,
+     "F_postExitHp": 61,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 80,
+     "F_decisions": 27,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "4abc39f2fd57a294",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 50,
+     "M_postExitHp": 0,
+     "F_postExitHp": 56,
+     "M_potionsAfter": 1,
+     "F_potionsAfter": 1,
+     "M_decisions": 36,
+     "F_decisions": 30,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "4a6f79a99da50ec5",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 38,
+     "M_postExitHp": 0,
+     "F_postExitHp": 44,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 2,
+     "M_decisions": 44,
+     "F_decisions": 29,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=3"
+    },
+    {
+     "rep": 4,
+     "plannerSeed": "30bae391bac698c8",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 56,
+     "M_postExitHp": 0,
+     "F_postExitHp": 62,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 53,
+     "F_decisions": 34,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=4"
+    },
+    {
+     "rep": 5,
+     "plannerSeed": "2d886e1d39d1e548",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 44,
+     "M_postExitHp": 0,
+     "F_postExitHp": 50,
+     "M_potionsAfter": 1,
+     "F_potionsAfter": 0,
+     "M_decisions": 46,
+     "F_decisions": 30,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=5"
+    },
+    {
+     "rep": 6,
+     "plannerSeed": "cc2b00bf9e464698",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 51,
+     "M_postExitHp": 0,
+     "F_postExitHp": 57,
+     "M_potionsAfter": 1,
+     "F_potionsAfter": 0,
+     "M_decisions": 44,
+     "F_decisions": 30,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=6"
+    },
+    {
+     "rep": 7,
+     "plannerSeed": "66c08a1c2d913d99",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 64,
+     "M_postExitHp": 0,
+     "F_postExitHp": 70,
+     "M_potionsAfter": 1,
+     "F_potionsAfter": 1,
+     "M_decisions": 41,
+     "F_decisions": 30,
+     "tracePointer": "M-48000014-a3.rows.csv / F-48000014-a3.rows.csv kind=fresh rep=7"
+    }
+   ],
+   "cost": {
+    "M": {
+     "simulations": 3790000,
+     "cpuSeconds": 68.349
+    },
+    "F": {
+     "simulations": 2350000,
+     "cpuSeconds": 33.269
+    }
+   }
+  },
+  {
+   "seed": 48000116,
+   "act": 2,
+   "boss": "CHAMP",
+   "stateIds": {
+    "M": "M-48000116-a2",
+    "F": "F-48000116-a2"
+   },
+   "historicalSource": {
+    "M_won": 0,
+    "F_won": 1,
+    "M_terminalHp": 0,
+    "F_terminalHp": 8
+   },
+   "M_wins": 0,
+   "F_wins": 8,
+   "F_only": 8,
+   "M_only": 0,
+   "net": 8,
+   "M_entry": {
+    "hp": 54,
+    "maxHp": 85,
+    "gold": 57,
+    "potions": [
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 33,
+    "upgrades": 6,
+    "floor": 33,
+    "boss": "CHAMP"
+   },
+   "F_entry": {
+    "hp": 92,
+    "maxHp": 100,
+    "gold": 75,
+    "potions": [
+     "WEAK_POTION",
+     "ELIXIR_POTION",
+     "DEXTERITY_POTION",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT"
+    ],
+    "potionCapacity": 5,
+    "deckSize": 35,
+    "upgrades": 9,
+    "floor": 33,
+    "boss": "CHAMP"
+   },
+   "entryDifference": {
+    "hp": 38,
+    "maxHp": 15,
+    "gold": 18,
+    "potionCount": 3,
+    "potionCapacity": 2,
+    "deckSize": 2,
+    "upgrades": 3,
+    "cardsOnlyM": [
+     "Armaments",
+     "Carnage+",
+     "Clash",
+     "Infernal Blade",
+     "Iron Wave+",
+     "Perfected Strike",
+     "Power Through",
+     "Pummel",
+     "Pummel",
+     "Reaper",
+     "Strike+",
+     "Twin Strike",
+     "Warcry+",
+     "Wild Strike"
+    ],
+    "cardsOnlyF": [
+     "Chrysalis",
+     "Clash+",
+     "Cleave",
+     "Demon Form+",
+     "Demon Form+",
+     "Discovery",
+     "Feed+",
+     "Havoc",
+     "Havoc",
+     "Immolate+",
+     "Impervious+",
+     "Pommel Strike",
+     "Sever Soul",
+     "Sever Soul",
+     "Thunderclap",
+     "Whirlwind+"
+    ],
+    "relicsOnlyM": [
+     "BURNING_BLOOD",
+     "HAND_DRILL",
+     "THE_ABACUS",
+     "TINY_HOUSE"
+    ],
+    "relicsOnlyF": [
+     "BAG_OF_MARBLES",
+     "BLACK_BLOOD",
+     "OMAMORI",
+     "POTION_BELT"
+    ],
+    "relicCountersM": [
+     "BURNING_BLOOD:0",
+     "PRESERVED_INSECT:0",
+     "THE_ABACUS:0",
+     "TINY_HOUSE:0",
+     "MEAL_TICKET:0",
+     "HAND_DRILL:0",
+     "BLUE_CANDLE:0",
+     "LANTERN:0"
+    ],
+    "relicCountersF": [
+     "PRESERVED_INSECT:0",
+     "MEAL_TICKET:0",
+     "LANTERN:0",
+     "BLACK_BLOOD:0",
+     "BLUE_CANDLE:0",
+     "BAG_OF_MARBLES:0",
+     "POTION_BELT:0",
+     "OMAMORI:2"
+    ],
+    "potionsOnlyM": [],
+    "potionsOnlyF": [
+     "DEXTERITY_POTION",
+     "ELIXIR_POTION",
+     "WEAK_POTION"
+    ],
+    "floorSame": true,
+    "bossSame": true,
+    "rngCountersDiffer": {
+     "aiRng": [
+      3,
+      7
+     ],
+     "eventRng": [
+      3,
+      5
+     ],
+     "merchantRng": [
+      64,
+      32
+     ],
+     "monsterHpRng": [
+      3,
+      2
+     ],
+     "neowRng": [
+      6,
+      11
+     ],
+     "potionRng": [
+      94,
+      74
+     ],
+     "relicRng": [
+      9,
+      10
+     ],
+     "treasureRng": [
+      21,
+      23
+     ]
+    },
+    "rngDigestSame": false,
+    "pathRoomVisitsM": [
+     4,
+     4,
+     3,
+     3,
+     14,
+     2,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pathRoomVisitsF": [
+     2,
+     6,
+     5,
+     5,
+     10,
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "M_entrySummary": "hp=54;maxHp=85;gold=57;potions=EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|PRESERVED_INSECT:0|THE_ABACUS:0|TINY_HOUSE:0|MEAL_TICKET:0|HAND_DRILL:0|BLUE_CANDLE:0|LANTERN:0;deck=Strike|Strike|Strike|Strike+|Strike|Defend|Defend|Defend|Bash|Pummel|Shrug It Off|Thunderclap|Clash|Armaments|Perfected Strike|Perfected Strike|Iron Wave+|Pummel|Carnage+|Power Through|Infernal Blade|Reaper|Flame Barrier|Twin Strike|Shrug It Off|Shrug It Off|Warcry+|Wild Strike|Whirlwind+|True Grit|Pommel Strike|Blood for Blood|Battle Trance+",
+   "F_entrySummary": "hp=92;maxHp=100;gold=75;potions=WEAK_POTION|ELIXIR_POTION|DEXTERITY_POTION|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=PRESERVED_INSECT:0|MEAL_TICKET:0|LANTERN:0|BLACK_BLOOD:0|BLUE_CANDLE:0|BAG_OF_MARBLES:0|POTION_BELT:0|OMAMORI:2;deck=Strike|Strike|Strike|Strike|Defend|Defend|Defend|Bash|Demon Form+|Shrug It Off|Thunderclap|Feed+|Perfected Strike|Thunderclap|Flame Barrier|Havoc|Cleave|Whirlwind+|Pommel Strike|Immolate+|Sever Soul|Demon Form+|Havoc|Shrug It Off|Shrug It Off|Clash+|Sever Soul|Whirlwind+|Chrysalis|Pommel Strike|Discovery|True Grit|Impervious+|Blood for Blood|Battle Trance+",
+   "terminalHpWhenWon": {
+    "M": [],
+    "F": [
+     12,
+     25,
+     2,
+     16,
+     14,
+     8,
+     7,
+     1
+    ]
+   },
+   "potionsAfterWhenWon": {
+    "M": [],
+    "F": [
+     1,
+     2,
+     1,
+     2,
+     2,
+     2,
+     1,
+     2
+    ]
+   },
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "78629be92b8217d8",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 12,
+     "M_postExitHp": 0,
+     "F_postExitHp": 24,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 1,
+     "M_decisions": 62,
+     "F_decisions": 31,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "e5bbc0eb3fbeaf5d",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 25,
+     "M_postExitHp": 0,
+     "F_postExitHp": 37,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 2,
+     "M_decisions": 56,
+     "F_decisions": 24,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "e3b55efb227f3a96",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 2,
+     "M_postExitHp": 0,
+     "F_postExitHp": 14,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 1,
+     "M_decisions": 58,
+     "F_decisions": 23,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "f53530589ba921a9",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 16,
+     "M_postExitHp": 0,
+     "F_postExitHp": 28,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 2,
+     "M_decisions": 57,
+     "F_decisions": 32,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=3"
+    },
+    {
+     "rep": 4,
+     "plannerSeed": "47689d8446cffae6",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 14,
+     "M_postExitHp": 0,
+     "F_postExitHp": 26,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 2,
+     "M_decisions": 48,
+     "F_decisions": 33,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=4"
+    },
+    {
+     "rep": 5,
+     "plannerSeed": "70614023ba9cf254",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 8,
+     "M_postExitHp": 0,
+     "F_postExitHp": 20,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 2,
+     "M_decisions": 40,
+     "F_decisions": 29,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=5"
+    },
+    {
+     "rep": 6,
+     "plannerSeed": "ee31b1797c71a2fd",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 7,
+     "M_postExitHp": 0,
+     "F_postExitHp": 19,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 1,
+     "M_decisions": 50,
+     "F_decisions": 30,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=6"
+    },
+    {
+     "rep": 7,
+     "plannerSeed": "9677c2aed45d3107",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 1,
+     "M_postExitHp": 0,
+     "F_postExitHp": 13,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 2,
+     "M_decisions": 48,
+     "F_decisions": 28,
+     "tracePointer": "M-48000116-a2.rows.csv / F-48000116-a2.rows.csv kind=fresh rep=7"
+    }
+   ],
+   "cost": {
+    "M": {
+     "simulations": 4190000,
+     "cpuSeconds": 68.111
+    },
+    "F": {
+     "simulations": 2300000,
+     "cpuSeconds": 38.771
+    }
+   }
+  },
+  {
+   "seed": 48000095,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "stateIds": {
+    "M": "M-48000095-a3",
+    "F": "F-48000095-a3"
+   },
+   "historicalSource": {
+    "M_won": 0,
+    "F_won": 1,
+    "M_terminalHp": 0,
+    "F_terminalHp": 5
+   },
+   "M_wins": 0,
+   "F_wins": 5,
+   "F_only": 5,
+   "M_only": 0,
+   "net": 5,
+   "M_entry": {
+    "hp": 80,
+    "maxHp": 80,
+    "gold": 16,
+    "potions": [
+     "ANCIENT_POTION",
+     "SWIFT_POTION",
+     "SWIFT_POTION"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 41,
+    "upgrades": 17,
+    "floor": 50,
+    "boss": "TIME_EATER"
+   },
+   "F_entry": {
+    "hp": 117,
+    "maxHp": 117,
+    "gold": 0,
+    "potions": [
+     "BLOCK_POTION",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT",
+     "EMPTY_POTION_SLOT"
+    ],
+    "potionCapacity": 5,
+    "deckSize": 39,
+    "upgrades": 18,
+    "floor": 50,
+    "boss": "TIME_EATER"
+   },
+   "entryDifference": {
+    "hp": 37,
+    "maxHp": 37,
+    "gold": -16,
+    "potionCount": -2,
+    "potionCapacity": 2,
+    "deckSize": -2,
+    "upgrades": 1,
+    "cardsOnlyM": [
+     "Armaments+",
+     "Bash+",
+     "Bludgeon",
+     "Carnage",
+     "Carnage+",
+     "Clothesline",
+     "Combust",
+     "Defend+",
+     "Finesse",
+     "Ghostly Armor",
+     "Havoc",
+     "Havoc+",
+     "Heavy Blade+",
+     "Hemokinesis",
+     "Immolate",
+     "Mayhem",
+     "Offering",
+     "Offering",
+     "Panic Button",
+     "Parasite"
+    ],
+    "cardsOnlyF": [
+     "Anger",
+     "Bash",
+     "Battle Trance+",
+     "Bludgeon+",
+     "Bludgeon+",
+     "Body Slam+",
+     "Feed",
+     "Fiend Fire+",
+     "Headbutt",
+     "Headbutt+",
+     "Iron Wave",
+     "Perfected Strike",
+     "Pommel Strike",
+     "Pummel",
+     "Shockwave",
+     "Thunderclap",
+     "Twin Strike+",
+     "Uppercut"
+    ],
+    "relicsOnlyM": [
+     "PANTOGRAPH",
+     "TOY_ORNITHOPTER"
+    ],
+    "relicsOnlyF": [
+     "BAG_OF_PREPARATION",
+     "INCENSE_BURNER",
+     "MEAT_ON_THE_BONE",
+     "PEAR",
+     "POTION_BELT",
+     "RED_MASK",
+     "SELF_FORMING_CLAY"
+    ],
+    "relicCountersM": [
+     "BURNING_BLOOD:0",
+     "ORICHALCUM:0",
+     "TOY_ORNITHOPTER:0",
+     "MEAL_TICKET:0",
+     "RUNIC_DOME:0",
+     "BOTTLED_FLAME:0",
+     "PANTOGRAPH:0",
+     "ECTOPLASM:0",
+     "ART_OF_WAR:0"
+    ],
+    "relicCountersF": [
+     "BURNING_BLOOD:0",
+     "INCENSE_BURNER:0",
+     "ORICHALCUM:0",
+     "BOTTLED_FLAME:0",
+     "MEAL_TICKET:0",
+     "RUNIC_DOME:0",
+     "SELF_FORMING_CLAY:0",
+     "MEAT_ON_THE_BONE:0",
+     "ART_OF_WAR:0",
+     "ECTOPLASM:0",
+     "RED_MASK:0",
+     "PEAR:0",
+     "POTION_BELT:0",
+     "BAG_OF_PREPARATION:0"
+    ],
+    "potionsOnlyM": [
+     "ANCIENT_POTION",
+     "SWIFT_POTION",
+     "SWIFT_POTION"
+    ],
+    "potionsOnlyF": [
+     "BLOCK_POTION"
+    ],
+    "floorSame": true,
+    "bossSame": true,
+    "rngCountersDiffer": {
+     "aiRng": [
+      24,
+      3
+     ],
+     "cardRng": [
+      598,
+      576
+     ],
+     "eventRng": [
+      7,
+      8
+     ],
+     "merchantRng": [
+      64,
+      80
+     ],
+     "potionRng": [
+      108,
+      115
+     ],
+     "relicRng": [
+      9,
+      11
+     ]
+    },
+    "rngDigestSame": false,
+    "pathRoomVisitsM": [
+     3,
+     7,
+     7,
+     4,
+     21,
+     3,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pathRoomVisitsF": [
+     2,
+     6,
+     8,
+     6,
+     20,
+     3,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "M_entrySummary": "hp=80;maxHp=80;gold=16;potions=ANCIENT_POTION|SWIFT_POTION|SWIFT_POTION;relics=BURNING_BLOOD:0|ORICHALCUM:0|TOY_ORNITHOPTER:0|MEAL_TICKET:0|RUNIC_DOME:0|BOTTLED_FLAME:0|PANTOGRAPH:0|ECTOPLASM:0|ART_OF_WAR:0;deck=Strike+|Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Defend+|Bash+|Bludgeon|Iron Wave|Iron Wave|Hemokinesis|Ghostly Armor|Pommel Strike+|Reaper|Uppercut|Perfected Strike|Offering|Headbutt+|Battle Trance+|Combust|Clothesline|Havoc|Armaments+|Immolate|Heavy Blade+|Offering|Carnage+|Sword Boomerang|Mayhem|Finesse|Panic Button|Carnage|Power Through|Thunderclap|Whirlwind|Parasite|Havoc+|Writhe",
+   "F_entrySummary": "hp=117;maxHp=117;gold=0;potions=BLOCK_POTION|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|INCENSE_BURNER:0|ORICHALCUM:0|BOTTLED_FLAME:0|MEAL_TICKET:0|RUNIC_DOME:0|SELF_FORMING_CLAY:0|MEAT_ON_THE_BONE:0|ART_OF_WAR:0|ECTOPLASM:0|RED_MASK:0|PEAR:0|POTION_BELT:0|BAG_OF_PREPARATION:0;deck=Strike+|Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Bash|Perfected Strike|Bludgeon+|Iron Wave|Iron Wave|Headbutt|Anger|Pommel Strike|Uppercut|Fiend Fire+|Pummel|Power Through|Feed|Headbutt+|Battle Trance+|Whirlwind|Shockwave|Thunderclap|Body Slam+|Battle Trance+|Bludgeon+|Perfected Strike|Uppercut|Reaper|Pommel Strike+|Sword Boomerang|Writhe|Headbutt+|Iron Wave|Twin Strike+|Thunderclap",
+   "terminalHpWhenWon": {
+    "M": [],
+    "F": [
+     19,
+     4,
+     23,
+     4,
+     8
+    ]
+   },
+   "potionsAfterWhenWon": {
+    "M": [],
+    "F": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "729c0abb2f4207f0",
+     "M_won": 0,
+     "F_won": 0,
+     "M_terminalHp": 0,
+     "F_terminalHp": 0,
+     "M_postExitHp": 0,
+     "F_postExitHp": 0,
+     "M_potionsAfter": 3,
+     "F_potionsAfter": 0,
+     "M_decisions": 29,
+     "F_decisions": 53,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "d96a71cbc46ec9e2",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 19,
+     "M_postExitHp": 0,
+     "F_postExitHp": 37,
+     "M_potionsAfter": 3,
+     "F_potionsAfter": 0,
+     "M_decisions": 29,
+     "F_decisions": 45,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=1"
+    },
+    {
+     "rep": 2,
+     "plannerSeed": "6abfcf8cb17ee7a8",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 4,
+     "M_postExitHp": 0,
+     "F_postExitHp": 22,
+     "M_potionsAfter": 3,
+     "F_potionsAfter": 0,
+     "M_decisions": 29,
+     "F_decisions": 49,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=2"
+    },
+    {
+     "rep": 3,
+     "plannerSeed": "4cd70addffcd1193",
+     "M_won": 0,
+     "F_won": 0,
+     "M_terminalHp": 0,
+     "F_terminalHp": 0,
+     "M_postExitHp": 0,
+     "F_postExitHp": 0,
+     "M_potionsAfter": 3,
+     "F_potionsAfter": 0,
+     "M_decisions": 29,
+     "F_decisions": 48,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=3"
+    },
+    {
+     "rep": 4,
+     "plannerSeed": "22f0708d6eb4ebc3",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 23,
+     "M_postExitHp": 0,
+     "F_postExitHp": 41,
+     "M_potionsAfter": 3,
+     "F_potionsAfter": 0,
+     "M_decisions": 29,
+     "F_decisions": 49,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=4"
+    },
+    {
+     "rep": 5,
+     "plannerSeed": "d2cbd3a961f13355",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 4,
+     "M_postExitHp": 0,
+     "F_postExitHp": 22,
+     "M_potionsAfter": 3,
+     "F_potionsAfter": 0,
+     "M_decisions": 32,
+     "F_decisions": 57,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=5"
+    },
+    {
+     "rep": 6,
+     "plannerSeed": "5b36f6f7317ffdc7",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 8,
+     "M_postExitHp": 0,
+     "F_postExitHp": 26,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 38,
+     "F_decisions": 48,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=6"
+    },
+    {
+     "rep": 7,
+     "plannerSeed": "d48b55df2e5a1ad4",
+     "M_won": 0,
+     "F_won": 0,
+     "M_terminalHp": 0,
+     "F_terminalHp": 0,
+     "M_postExitHp": 0,
+     "F_postExitHp": 0,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 38,
+     "F_decisions": 43,
+     "tracePointer": "M-48000095-a3.rows.csv / F-48000095-a3.rows.csv kind=fresh rep=7"
+    }
+   ],
+   "cost": {
+    "M": {
+     "simulations": 2530000,
+     "cpuSeconds": 41.685
+    },
+    "F": {
+     "simulations": 3920000,
+     "cpuSeconds": 78.586
+    }
+   }
+  }
+ ],
+ "rule": "PREPARATION_HEADROOM_SIGNAL iff F has >= 8 net additional boss wins over M across the matched comparisons and positive net wins on >= 3 of the 4 source seeds; otherwise PREPARATION_HEADROOM_INCONCLUSIVE. Shape: flat (no discordant pair), negative (net < 0), consistent_positive (net > 0, no seed net < 0), else mixed. Any structural failure EXECUTION_INVALID; reproduction-only or missing failures PARTIAL"
+}
