@@ -1,0 +1,401 @@
+{
+  "seeds": {
+    "48000024": {
+      "act": 2,
+      "wins": {
+        "C": 2,
+        "CQ": 7,
+        "CU": 8
+      },
+      "arms": {
+        "C": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 2,
+            "chestRule": 2,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 0,
+            "campfireRoots": 7,
+            "smiths": 1,
+            "rests": 6
+          },
+          "bossReached": true,
+          "hp": 59,
+          "maxHp": 85,
+          "relics": 6,
+          "upgrades": 4,
+          "deckSize": 30
+        },
+        "CQ": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "q",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 2,
+            "chestRule": 2,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 0,
+            "campfireRoots": 4,
+            "smiths": 1,
+            "rests": 3
+          },
+          "bossReached": true,
+          "hp": 74,
+          "maxHp": 110,
+          "relics": 4,
+          "upgrades": 4,
+          "deckSize": 24
+        },
+        "CU": {
+          "config": {
+            "sims": "2048",
+            "prior": "uniform",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 3,
+            "chestRule": 3,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 0,
+            "campfireRoots": 7,
+            "smiths": 2,
+            "rests": 4
+          },
+          "bossReached": true,
+          "hp": 116,
+          "maxHp": 116,
+          "relics": 3,
+          "upgrades": 5,
+          "deckSize": 24
+        }
+      },
+      "CQ_vs_C": [
+        5,
+        0,
+        5
+      ],
+      "CU_vs_C": [
+        6,
+        0,
+        6
+      ]
+    },
+    "48000014": {
+      "act": 3,
+      "wins": {
+        "C": 1,
+        "CQ": 2,
+        "CU": 8
+      },
+      "arms": {
+        "C": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 3,
+            "chestRule": 3,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 0,
+            "campfireRoots": 9,
+            "smiths": 0,
+            "rests": 4
+          },
+          "bossReached": true,
+          "hp": 80,
+          "maxHp": 80,
+          "relics": 8,
+          "upgrades": 5,
+          "deckSize": 37
+        },
+        "CQ": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "q",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 4,
+            "chestRule": 4,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 1,
+            "campfireRoots": 10,
+            "smiths": 3,
+            "rests": 5
+          },
+          "bossReached": true,
+          "hp": 88,
+          "maxHp": 88,
+          "relics": 8,
+          "upgrades": 6,
+          "deckSize": 24
+        },
+        "CU": {
+          "config": {
+            "sims": "2048",
+            "prior": "uniform",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 4,
+            "chestRule": 4,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 1,
+            "campfireRoots": 8,
+            "smiths": 3,
+            "rests": 4
+          },
+          "bossReached": true,
+          "hp": 80,
+          "maxHp": 88,
+          "relics": 10,
+          "upgrades": 11,
+          "deckSize": 29
+        }
+      },
+      "CQ_vs_C": [
+        1,
+        0,
+        1
+      ],
+      "CU_vs_C": [
+        7,
+        0,
+        7
+      ]
+    },
+    "48000116": {
+      "act": 2,
+      "wins": {
+        "C": 0,
+        "CQ": 0,
+        "CU": 0
+      },
+      "arms": {
+        "C": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 2,
+            "chestRule": 2,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 0,
+            "campfireRoots": 4,
+            "smiths": 1,
+            "rests": 3
+          },
+          "bossReached": true,
+          "hp": 70,
+          "maxHp": 85,
+          "relics": 8,
+          "upgrades": 6,
+          "deckSize": 29
+        },
+        "CQ": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "q",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 2,
+            "chestRule": 2,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 1,
+            "campfireRoots": 6,
+            "smiths": 2,
+            "rests": 4
+          },
+          "bossReached": true,
+          "hp": 87,
+          "maxHp": 140,
+          "relics": 3,
+          "upgrades": 3,
+          "deckSize": 27
+        },
+        "CU": {
+          "config": {
+            "sims": "2048",
+            "prior": "uniform",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 2,
+            "chestRule": 2,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 1,
+            "campfireRoots": 5,
+            "smiths": 2,
+            "rests": 3
+          },
+          "bossReached": true,
+          "hp": 98,
+          "maxHp": 104,
+          "relics": 5,
+          "upgrades": 4,
+          "deckSize": 28
+        }
+      },
+      "CQ_vs_C": [
+        0,
+        0,
+        0
+      ],
+      "CU_vs_C": [
+        0,
+        0,
+        0
+      ]
+    },
+    "48000095": {
+      "act": 3,
+      "wins": {
+        "C": 6,
+        "CQ": 0,
+        "CU": 6
+      },
+      "arms": {
+        "C": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 4,
+            "chestRule": 4,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 3,
+            "campfireRoots": 7,
+            "smiths": 0,
+            "rests": 4
+          },
+          "bossReached": true,
+          "hp": 76,
+          "maxHp": 76,
+          "relics": 13,
+          "upgrades": 17,
+          "deckSize": 40
+        },
+        "CQ": {
+          "config": {
+            "sims": "2048",
+            "prior": "policy",
+            "root_selection": "q",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 2,
+            "chestRule": 2,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 1,
+            "campfireRoots": 3,
+            "smiths": 2,
+            "rests": 1
+          },
+          "bossReached": false,
+          "hp": null,
+          "maxHp": null,
+          "relics": 0,
+          "upgrades": null,
+          "deckSize": null
+        },
+        "CU": {
+          "config": {
+            "sims": "2048",
+            "prior": "uniform",
+            "root_selection": "visits",
+            "early_stop": "1",
+            "leaf_value": "screengbm"
+          },
+          "trace": {
+            "treasure": 3,
+            "chestRule": 3,
+            "treasureWithCursedKey": 0,
+            "chestRelicsGained": 3,
+            "campfireRoots": 5,
+            "smiths": 4,
+            "rests": 1
+          },
+          "bossReached": true,
+          "hp": 111,
+          "maxHp": 111,
+          "relics": 9,
+          "upgrades": 19,
+          "deckSize": 28
+        }
+      },
+      "CQ_vs_C": [
+        0,
+        6,
+        -6
+      ],
+      "CU_vs_C": [
+        2,
+        2,
+        0
+      ]
+    }
+  },
+  "totals": {
+    "wins": {
+      "C": 9,
+      "CQ": 9,
+      "CU": 22
+    },
+    "net": {
+      "CQ_vs_C": 0,
+      "CU_vs_C": 13
+    },
+    "perSeedNet": {
+      "CQ_vs_C": [
+        5,
+        1,
+        0,
+        -6
+      ],
+      "CU_vs_C": [
+        6,
+        7,
+        0,
+        0
+      ]
+    },
+    "verdicts": {
+      "CQ_vs_C": "INCONCLUSIVE",
+      "CU_vs_C": "INCONCLUSIVE"
+    }
+  }
+}

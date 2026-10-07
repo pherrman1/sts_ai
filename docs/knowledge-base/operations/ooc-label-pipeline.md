@@ -852,6 +852,14 @@ run seed), and writes a descriptive `entryDescriptor` (HP, gold, potions, deck,
 upgrades, relics, RNG stream counters, `PathHistory.roomVisits`). The #425
 schema is unchanged and refuses `expectedSourceWon`. See the
 [#347 boss-preparation packet](../../experiments/evidence/boss_preparation_rmatch_347_20261007/PLAN.md).
+Research-only `STS_OOC_DECISION_TRACE=<path>` (diagnostic build `1ed47e5c`,
+on the #428 build `5549a16a`) makes `runFullRunOOC` append one JSON line per
+real out-of-combat step (state before and after, what a reward, shop or boss
+relic screen offered, and whether OOC MCTS, the Match and Keep step or the
+ordinary chain decided) and per battle. It only reads state; with it set, the
+eight #428 sources reproduced their frozen rows exactly. `STS_RUN_PROFILE`
+already records each OOC MCTS root's prior, visits and Q. See the
+[#347 OOC divergence packet](../../experiments/evidence/ooc_divergence_347_20261007/README.md).
 
 No pilot or Stage-1 cohort is part of implementation verification. The default
 4,096-seed A2 collection still requires explicit authorization; no training,
