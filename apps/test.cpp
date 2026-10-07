@@ -3365,6 +3365,41 @@ int testIssueFixes() {
         }
     }
 
+    // A new Ritual Dagger starts at 15 base damage (its misc), whether The
+    // Nest or a direct obtain creates it, and a combat copy hits for 15.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        gc.curRoom = Room::EVENT;
+        gc.curEvent = Event::THE_NEST;
+        gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+        gc.setupEvent();
+        gc.chooseEventOption(1);
+        const Card nestDagger = gc.deck.cards[gc.deck.size() - 1];
+        if (nestDagger.getId() != CardId::RITUAL_DAGGER || nestDagger.misc != 15) {
+            return fail("The Nest Ritual Dagger does not start at 15 damage");
+        }
+        gc.deck.obtain(gc, CardId::RITUAL_DAGGER);
+        if (gc.deck.cards[gc.deck.size() - 1].misc != 15) {
+            return fail("obtained Ritual Dagger does not start at 15 damage");
+        }
+
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        CardInstance dagger(nestDagger);
+        dagger.uniqueId = 900;
+        bc.cards.moveToHand(dagger);
+        auto &cultist = bc.monsters.arr[0];
+        cultist.block = 0;
+        const int hpBefore = cultist.curHp;
+        search::Action(search::ActionType::CARD, bc.cards.cardsInHand - 1, 0).execute(bc);
+        if (hpBefore - cultist.curHp != 15) {
+            return fail("new Ritual Dagger does not deal 15 damage");
+        }
+    }
+
     std::cout << "issue_fixes PASS\n";
     return 0;
 }

@@ -375,6 +375,19 @@ obtain hooks (Omamori, Darkstone, Ceramic Fish); native re-adds the card
 without them. The Necronomicon combat effect (the first 2+-cost attack each
 turn plays twice) was not audited.
 
+### Ritual Dagger
+
+A new Ritual Dagger starts at 15 base damage, stored in the master-deck
+card's `misc`, and gains 3 (5 upgraded) per fatal kill. Native kept `misc`
+at 0 for every new card, so every dagger from The Nest or `Deck::obtain`
+dealt 0 + kill bonuses (**Mismatch, fixed** in #426: the `Card(CardId)`
+constructors set `misc` to 15 for `RITUAL_DAGGER`). Corpora generated
+before the fix carry the 0-based dagger. Covered by `issue_fixes`.
+**Unverified:** the starting value comes from the decompiled card source, not
+from `javap` on the pinned JAR. Genetic Algorithm also starts with a nonzero
+`misc` in Java (1); native leaves it at 0, but it is a Defect card whose
+play is not implemented natively.
+
 **Not inspected:** relics only reachable through events, Neow or other
 classes, and relic hooks that act purely out of combat beyond the
 upgrade/transform relics listed above.
