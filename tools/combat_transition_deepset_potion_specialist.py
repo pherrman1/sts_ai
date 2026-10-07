@@ -51,9 +51,13 @@ RECIPE = {
     "population": "frozen final-union source-grouped TRAIN/VALIDATION winning rows",
     "testEncodedRows": 0, "testInferenceRows": 0,
 }
-CONTROL_REPRODUCTION_REFERENCE_NLL = 0.487162724
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+CONTROL_REPRODUCTION_REFERENCE_NLL = _pins.value("combat_transition_deepset_potion_specialist.CONTROL_REPRODUCTION_REFERENCE_NLL", 0.487162724)
 CONTROL_REPRODUCTION_ABS_TOLERANCE = 0.005
-EXPECTED = {
+EXPECTED = _pins.value("combat_transition_deepset_potion_specialist.EXPECTED", {
     "encoder": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
     "decoder": "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
     "component": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
@@ -63,7 +67,7 @@ EXPECTED = {
     "splitSequence": "607782399125f7785c3a33f65934c9461b8b1e86f053637e8110f51a2294f3ca",
     "attentionReferenceReceipt": "1ba8b78524b8b6fc97c00a41eb33fc178cd6f36fa79a6b0af7dcad107ab45363",
     "attentionReferenceDecoder": "dad2df4a0d0d8a31c4707ee21bf92adf9b76c77deb520b49653b5eb789c3d48e",
-}
+})
 ACCESS_COUNTERS = None
 
 
@@ -351,8 +355,9 @@ def run(args):
     train, validation = frozen_population(cache)
     counts = {"TRAIN": {"rows": int(len(train)), "sources": int(len(np.unique(cache["source"][train])))},
               "VALIDATION": {"rows": int(len(validation)), "sources": int(len(np.unique(cache["source"][validation])))}}
-    expected_counts = {"TRAIN": {"rows": 393677, "sources": 19986},
-                       "VALIDATION": {"rows": 48590, "sources": 2496}}
+    expected_counts = _pins.value("combat_transition_deepset_potion_specialist.UNION_COUNTS",
+                                  {"TRAIN": {"rows": 393677, "sources": 19986},
+                                   "VALIDATION": {"rows": 48590, "sources": 2496}})
     if counts != expected_counts:
         raise ValueError(f"frozen population counts differ: {counts}")
     target = np.concatenate((train, validation))

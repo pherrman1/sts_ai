@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for `ctmscorerows` and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -69,6 +69,28 @@ rows. Setups:
   when a slot is free.
 Mark of the Bloom with an active Tail is already on the exact path, so it has
 no setup.
+
+In Python, `validate_teacher` (`tools/ooc_pipeline_contract.py`) treats an
+absent or `flat_exact` `budget_policy` as the exact-10k contract, which must
+not set `STS_SILVER_LEARNED_STOP`. Like the C++ side, it accepts
+`learned_stop` only when the caller opts in with `allow_learned_stop=True`;
+only the CTM corpus check (`tools/combat_transition_contract.py`) does, so the
+OOC label, v_win refresh, evaluator and Lizard consumers stay exact-only.
+`learned_stop` must name its stop model and threshold and set
+`STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`.
+
+`tools/ctm_corpus_adapter.py assemble --index INDEX.json --corpus-root DIR
+--scope SETUP --out DIR` turns a corpus generated in many seed units into the
+layout `combat_transition_model_experiment.py audit` expects. The index is the
+unit-to-file map from the #418 Path B validator. The adapter writes a merged
+`corpus.jsonl` plus one shard manifest per unit file under `blocks/`; each is
+the unit's own manifest with only `csv.path` rewritten. Seeds the generator
+skipped become the merged manifest's `quarantined` list, and one scope
+(`forcedSetup`) is assembled per call. `fit --save-test-predictions` writes
+per-row TEST predictions (`test_predictions.npz`).
+`tools/ctm_survival_compare.py` then compares them with the production stack's
+`ctmscorerows` scores on the same rows (`extract-test`, then `compare`, using a
+paired source-seed bootstrap).
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and
@@ -976,6 +998,43 @@ future start `10` for each frozen schedule (`10000`; `5000,5000`;
 `3333,3333,3334`; `150,100,50`) and distinct schedule-prefixed shard files.
 Analyze those 96 files together with the unchanged 24 Stage-A A files and 24
 Stage-A B reference files.
+
+### Counterfactual OOC labels (`ooccfpilotgen`)
+
+`one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES
+[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]`
+(`apps/one_combat/combat_datasets.cpp::oocCounterfactualPilotGen`). It is
+seed-guarded, and the launcher is
+`docs/experiments/evidence/ooc_cf_pilot_20261007/run_corpus.sh`. The source
+run and the per-type reservoir are those of `vwinrefreshgen` with K=1. Each
+retained option of a selected CARD_REWARD, BOSS_RELIC, REST or SHOP decision
+is forced FUTURES times. Run k of every sibling redraws the hidden future
+(`sampleNoncombatFuture`) from `sha256(...:{seed}:{decisionIdx}:{k})`, so all
+siblings share common random numbers.
+
+- **GEN=1 (pilot, default):**
+  - The future is redrawn after the forced option.
+  - The horizon is the first boss fight after the branch, or the second for
+    card rewards when CARD_BOSSES=2. The label is HP after that boss.
+  - The cap is #334's: the chosen option plus five, hash-ranked.
+- **GEN=2:**
+  - The future is redrawn *before* the forced option, so randomness the option
+    itself consumes is sampled too. The generator fails closed if the redraw
+    changes the published screen or any rich field other than the four
+    HIDDEN_FUTURE fields (#397).
+  - Every branch plays to the end of the run. The label is `finalWon`;
+    first-boss win and HP after it are diagnostics.
+  - `.options.csv` holds the rich row right after the option (k=0).
+    `.map.csv` holds one rich row per run at the first MAP screen after the
+    branch screen is finished. The map row can differ across k after a boss
+    relic, because the next act's map is generated from the redrawn future.
+  - The option cap first merges keys that differ only in `occurrence=`
+    (identical cards at other deck positions). It always keeps the chosen
+    option and the skip/leave options, then fills up to six by
+    `sha256(ooc-cf-option-cap-v2:...)`.
+  - States are drawn only from TYPES (comma list), ranked by
+    `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
+  - The manifest counts selected states by type and act.
 
 ## Schema examples
 

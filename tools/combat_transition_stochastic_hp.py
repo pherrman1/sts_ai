@@ -10,9 +10,10 @@ import time
 import numpy as np
 from tools import combat_transition_hp_targets as hp
 from tools import combat_transition_surrogate as base
+from tools import ctm_pins as _pins
 
 ROOT = hp.ROOT
-CONTROL_HASH = '22b285413bb31caac4dfe23dba79e80437ec91a42ed2ae534105370db6bca184'
+CONTROL_HASH = _pins.value('combat_transition_stochastic_hp.CONTROL_HASH', '22b285413bb31caac4dfe23dba79e80437ec91a42ed2ae534105370db6bca184')
 RECIPE = dict(schema='stochastic_signed_hp_v1', seeds=hp.RECIPE['seeds'], epochs=10,
               batch=2048, lr=1e-3, weightDecay=1e-4, clip=1., precision='amp-fp16',
               initialScale=16384, encoder='AttentionEncoder:64/2/4/128', deltaEmbedding=8,

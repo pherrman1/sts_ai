@@ -20,11 +20,15 @@ except ModuleNotFoundError:
 
 
 SCHEMA = "combat_transition_attention_hpo_v1"
-EXPECTED_CORPUS_SHA256 = "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde"
-EXPECTED_SPLIT_SHA256 = "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32"
-EXPECTED_PREPARED_MANIFEST_SHA256 = "fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"
-EXPECTED_PREPARED_SHA256 = "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"
-EXPECTED_BASELINE_SHA256 = "a4545c54c8b99afb059b64c6ee36523f472e2e636040e166b32ded4218614b6f"
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED_CORPUS_SHA256 = _pins.value("combat_transition_attention_hpo.EXPECTED_CORPUS_SHA256", "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde")
+EXPECTED_SPLIT_SHA256 = _pins.value("combat_transition_attention_hpo.EXPECTED_SPLIT_SHA256", "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32")
+EXPECTED_PREPARED_MANIFEST_SHA256 = _pins.value("combat_transition_attention_hpo.EXPECTED_PREPARED_MANIFEST_SHA256", "fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51")
+EXPECTED_PREPARED_SHA256 = _pins.value("combat_transition_attention_hpo.EXPECTED_PREPARED_SHA256", "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9")
+EXPECTED_BASELINE_SHA256 = _pins.value("combat_transition_attention_hpo.EXPECTED_BASELINE_SHA256", "a4545c54c8b99afb059b64c6ee36523f472e2e636040e166b32ded4218614b6f")
 
 BASELINE_CANDIDATE = {
     "name": "baseline", "width": 64, "heads": 4, "layers": 2,
