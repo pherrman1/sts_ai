@@ -29,6 +29,7 @@ class CombatTransitionRuntime {
     nlohmann::json metadata_;
     nlohmann::json lizardCorrection_;
     nlohmann::json identity_;
+    int hpMin_ = -160;
     const Tensor &tensor(const std::string &) const;
     std::vector<float> linear(const std::string &, const std::vector<float> &) const;
     std::vector<float> embedding(const std::string &, int) const;
@@ -41,6 +42,8 @@ public:
     // Production identity pins, or a research candidate's (STS_CTM_RESEARCH_CANDIDATE_MANIFEST).
     const nlohmann::json &identity() const { return identity_; }
     bool researchCandidate() const { return !identity_.at("candidateId").is_null(); }
+    // Index of a signed HP delta in the artifact's HP class domain.
+    int hpClassIndex(int signedDelta) const { return signedDelta-hpMin_; }
     bool nearFull() const { return metadata_.at("version")==2; }
     bool requiresEntropicBrewFallback() const;
     bool hasActiveLizardCorrection() const { return !lizardCorrection_.is_null(); }

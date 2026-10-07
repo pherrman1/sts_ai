@@ -13,6 +13,13 @@ namespace {
 template<class T, std::size_t N> constexpr int count(const T (&)[N]) { return N; }
 template<class T> int id(T v) { return static_cast<int>(v); }
 using R=sts::RelicId; using C=sts::CardId; using P=sts::Potion; using E=sts::MonsterEncounter;
+// The loader pins the class values; support needs the contiguous signed range whose
+// lowest class reaches HP 1 from the highest enveloped pre HP (production -160..143).
+bool contiguousHpClasses(const NativeComposedDomain &d) {
+    if(d.hpClasses.empty() || d.hpClasses.front()!=1-d.preCurHpRange[1]) return false;
+    for(std::size_t i=1;i<d.hpClasses.size();++i) if(d.hpClasses[i]!=d.hpClasses[i-1]+1) return false;
+    return true;
+}
 std::pair<std::string,int> trajectory(int rid) {
     switch(static_cast<R>(rid)) {
     case R::HAPPY_FLOWER:return {"turns",3}; case R::INCENSE_BURNER:return {"turns",6};
@@ -87,7 +94,7 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
     for(std::size_t i=0;i<pre.relics.size();++i)if(pre.relics[i].id!=pi.relics[i].relicId || pre.relics[i].data!=pi.relics[i].data)return {"visible_relic_mismatch"};
     int active=0;for(int i=0;i<5;++i) {if(pre.potions[i]!=pi.potions[i].potionId)return {"visible_potion_mismatch"};if(pre.potions[i]<1 || pre.potions[i]>=count(sts::potionEnumNames))return {"invalid_pre_state"};active+=pre.potions[i]>1;}
     if(pre.potionCapacity<0 || pre.potionCapacity>5)return {"invalid_pre_state"};if(active!=pre.potionCount)return {"potion_count"};
-    if(d.hpClasses.size()!=304 || pre.curHp<1 || pre.curHp>pre.maxHp)return {"hp_domain"};for(int i=0;i<304;++i)if(d.hpClasses[i]!=i-160)return {"hp_domain"};
+    if(!contiguousHpClasses(d) || pre.curHp<1 || pre.curHp>pre.maxHp)return {"hp_domain"};
     if(pre.curHp<d.preCurHpRange[0] || pre.curHp>d.preCurHpRange[1] || pre.maxHp<d.preMaxHpRange[0] || pre.maxHp>d.preMaxHpRange[1])return {"hp_envelope"};
     if(d.maxHpClasses!=d.maxHpDeltaValues || d.maxHpClasses.empty())return {"max_hp_domain"};for(int delta:d.maxHpClasses) {auto max=static_cast<std::int64_t>(pre.maxHp)+delta;if(max<=0 || max>std::numeric_limits<int>::max())return {"max_hp_state"};}
     bool bloom=std::any_of(pre.relics.begin(),pre.relics.end(),[](auto r){return r.id==id(R::MARK_OF_THE_BLOOM);});
@@ -152,7 +159,7 @@ std::vector<std::string> nativeComposedForecastSupportReasons(
     if (g.curHp < d.preCurHpRange[0] || g.curHp > d.preCurHpRange[1]
         || g.maxHp < d.preMaxHpRange[0] || g.maxHp > d.preMaxHpRange[1])
         return {"hp_envelope"};
-    if (d.hpClasses.size() != 304 || d.maxHpClasses != d.maxHpDeltaValues)
+    if (!contiguousHpClasses(d) || d.maxHpClasses != d.maxHpDeltaValues)
         return {"model_domain"};
     for (int delta : d.maxHpClasses) {
         if (static_cast<std::int64_t>(g.maxHp) + delta <= 0) return {"max_hp_state"};

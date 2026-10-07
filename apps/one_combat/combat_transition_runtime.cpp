@@ -42,6 +42,15 @@ std::string sha256File(const std::string &path) {
     for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
     return result.str();
 }
+std::string sha256Text(const std::string &text) {
+    unsigned char digest[EVP_MAX_MD_SIZE];unsigned int length=0;
+    require(EVP_Digest(text.data(),text.size(),digest,&length,EVP_sha256(),nullptr)==1 && length==32,
+        "cannot compute combat domain SHA256");
+    std::ostringstream result;
+    result << std::hex << std::setfill('0');
+    for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
+    return result.str();
+}
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
     return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
         return p.potionId==int(sts::Potion::ENTROPIC_BREW);
@@ -132,6 +141,7 @@ const std::map<std::string,std::string> sourceHashes={
 const nlohmann::json &productionIdentity() {
     static const nlohmann::json identity={
         {"candidateId",nullptr},
+        {"domainSha256",nullptr},
         {"standard",{{"artifactSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
             {"sources",{
                 {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
@@ -197,9 +207,13 @@ std::unique_ptr<const nlohmann::json> loadResearchCandidateIdentity() {
     auto manifest=std::make_unique<nlohmann::json>(nlohmann::json::parse(file));
     const auto &m=*manifest;
     const char *why="research candidate manifest schema";
-    requireObject(m,{"schema","candidateId","standard","supportCensus","fast","activeLizard"},why);
-    require(m.at("schema")=="ctm_research_candidate_v1" && m.at("candidateId").is_string() &&
-        !m.at("candidateId").get<std::string>().empty(),why);
+    // v1 keeps the production HP domain; v2 also pins a declared domain by its SHA256.
+    const bool v2=m.is_object() && m.value("schema",std::string{})=="ctm_research_candidate_v2";
+    if(v2) requireObject(m,{"schema","candidateId","domainSha256","standard","supportCensus","fast","activeLizard"},why);
+    else requireObject(m,{"schema","candidateId","standard","supportCensus","fast","activeLizard"},why);
+    require((v2 || m.at("schema")=="ctm_research_candidate_v1") && m.at("candidateId").is_string() &&
+        !m.at("candidateId").get<std::string>().empty() && (!v2 || isSha256(m.at("domainSha256"))),why);
+    if(!v2) (*manifest)["domainSha256"]=nullptr;
     requireObject(m.at("standard"),{"artifactSha256","sources"},why);
     require(isSha256(m.at("standard").at("artifactSha256")),why);
     requireShaFields(m.at("standard").at("sources"),{"survival","maxHP","HP","potion","downstream"},why);
@@ -228,6 +242,28 @@ std::unique_ptr<const nlohmann::json> loadResearchCandidateIdentity() {
         requireFiniteArray(model.at("standardizedCoefficients"),2,false,why);
     }
     return manifest;
+}
+// A declared HP domain (tools/ctm_hp_domain.py): the signed classes start where the
+// highest enveloped pre HP reaches 1, the maxHP deltas stay production, and the
+// SHA256 is recomputed over the sorted compact JSON exactly as Python writes it.
+std::vector<int> declaredHpClasses(const nlohmann::json &domain,const nlohmann::json &maxHpClasses) {
+    const char *why="combat runtime declared HP domain";
+    requireObject(domain,{"min","max","classes","envelope","preCurHpRange","preMaxHpRange","maxHpDeltaValues","rule","sha256"},why);
+    for(const char *key:{"min","max","classes"}) require(domain.at(key).is_number_integer(),why);
+    for(const char *key:{"preCurHpRange","preMaxHpRange"}) {
+        const auto &range=domain.at(key);
+        require(range.is_array() && range.size()==2 && range[0].is_number_integer() && range[1].is_number_integer() &&
+            range[0].get<int>()<=range[1].get<int>(),why);
+    }
+    const int low=domain.at("min"),high=domain.at("max"),count=domain.at("classes");
+    const auto cur=domain.at("preCurHpRange").get<std::array<int,2>>(),max=domain.at("preMaxHpRange").get<std::array<int,2>>();
+    require(cur[0]>=1 && cur[1]<=max[1] && max[0]>=1 && low==1-cur[1] && high>=0 && count==high-low+1 && count<=4096 &&
+        domain.at("maxHpDeltaValues")==maxHpClasses && domain.at("envelope").is_string() && domain.at("rule").is_string(),why);
+    auto unsigned_=domain;unsigned_.erase("sha256");
+    require(domain.at("sha256").is_string() && sha256Text(unsigned_.dump())==domain.at("sha256").get<std::string>(),
+        "combat runtime declared HP domain SHA256");
+    std::vector<int> classes;for(int i=low;i<=high;++i) classes.push_back(i);
+    return classes;
 }
 const nlohmann::json *researchCandidateIdentity() {
     static const std::unique_ptr<const nlohmann::json> identity=loadResearchCandidateIdentity();
@@ -394,10 +430,19 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         require(metadata_.at("supportCensus").at("all").at("supportedIndexSha256")==census.at("allSupportedIndexSha256") && metadata_.at("supportCensus").at("TEST").at("supportedIndexSha256")==census.at("testSupportedIndexSha256"),"combat runtime qualified cohort");
     }
     require(metadata_.at("maxHpClasses")==nlohmann::json({0,3,4,5,6,7,8,9,10,11,12}),"combat runtime maxHP classes");
-    std::vector<int> classes;for(int i=-160;i<=143;++i) classes.push_back(i);
-    require(metadata_.at("hpClasses")==classes,"combat runtime HP classes");
     const auto &domain=metadata_.at("domain");
-    require(domain.at("preCurHpRange")==nlohmann::json({1,161}) && domain.at("preMaxHpRange")==nlohmann::json({24,172}) && domain.at("maxHpDeltaValues")==metadata_.at("maxHpClasses") && domain.at("min")==-160 && domain.at("max")==143 && domain.at("classes")==304 && domain.at("sha256")=="f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec","combat runtime frozen envelope");
+    std::vector<int> classes;
+    if(identity_.at("domainSha256").is_null()) {
+        for(int i=-160;i<=143;++i) classes.push_back(i);
+        require(domain.at("preCurHpRange")==nlohmann::json({1,161}) && domain.at("preMaxHpRange")==nlohmann::json({24,172}) && domain.at("maxHpDeltaValues")==metadata_.at("maxHpClasses") && domain.at("min")==-160 && domain.at("max")==143 && domain.at("classes")==304 && domain.at("sha256")=="f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec","combat runtime frozen envelope");
+    } else {
+        classes=declaredHpClasses(domain,metadata_.at("maxHpClasses"));
+        require(domain.at("sha256")==identity_.at("domainSha256"),
+            "combat runtime research candidate HP domain is not listed in its manifest");
+    }
+    require(metadata_.at("hpClasses")==classes,"combat runtime HP classes");
+    hpMin_=classes.front();
+    const int hpClassCount=static_cast<int>(classes.size());
     require(metadata_.at("continuousFields")==nlohmann::json({"ascension","act","floor","curHp","maxHp","gold","potionCount","potionCapacity","potionKeepValue","isBurningElite"}),"combat runtime global fields");
     require(metadata_.at("globalCategoryCounts")==nlohmann::json({4,64,10,10}),"combat runtime global vocab");
     // Exact shape graph, including historical unused heads: reject missing/extra tensors.
@@ -418,7 +463,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             lin(p+"global_mlp.0",64,42);lin(p+"trunk.0",128,256);lin(p+"trunk.2",64,128);
             if(group=="survival") lin("survival.survival",1,64);
             else if(group=="max_hp") lin("max_hp.max_hp_delta",11,64);
-            else if(group=="hp") {shape("hp.delta_embedding.weight",{11,8});lin("hp.hp.0",64,72);lin("hp.hp.2",304,64);}
+            else if(group=="hp") {shape("hp.delta_embedding.weight",{11,8});lin("hp.hp.0",64,72);lin("hp.hp.2",hpClassCount,64);}
             continue;
         }
         shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
@@ -433,7 +478,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             for(auto n:{"norm1","norm2"}) {shape(l+n+".weight",{64});shape(l+n+".bias",{64});}
         }
         lin(p+"trunk.0",64,64);
-        if(group=="hp") {shape(group+".delta_embedding.weight",{11,8});lin(group+".hp.0",64,72);lin(group+".hp.2",304,64);}
+        if(group=="hp") {shape(group+".delta_embedding.weight",{11,8});lin(group+".hp.0",64,72);lin(group+".hp.2",hpClassCount,64);}
         else {lin(group+".survival",1,64);if(group!="max_hp") lin(group+".hp",1,64);}
         if(group=="max_hp") {
             lin(group+".max_hp_delta",11,64);shape(group+".hp_delta_embedding.weight",{11,8});lin(group+".hp.0",64,72);lin(group+".hp.2",101,64);
@@ -444,7 +489,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         }
     }
     shape("potion.delta.weight",{11,8});shape("potion.potion.weight",{kNumPotions,8});shape("potion.slot.weight",{5,4});lin("potion.mlp.0",64,133);lin("potion.mlp.2",full?64:32,64);
-    shape("relic.delta.weight",{304,16});shape("relic.mask.weight",{32,8});lin("relic.shared.0",64,full?90:89);
+    shape("relic.delta.weight",{hpClassCount,16});shape("relic.mask.weight",{32,8});lin("relic.shared.0",64,full?90:89);
     for(auto entry:std::map<std::string,int>{{"turns",6},{"attacks",10},{"cards",10},{"shuffles",3},{"lizard",2}}) lin("relic.heads."+entry.first,entry.second,64);
     if(full) {
         for(std::string g:{"writhing","ritual"}) {lin(g+".context.0",64,80);lin(g+".context.2",32,64);lin(g+".event.0",32,3);}
@@ -560,7 +605,7 @@ Vec CombatTransitionRuntime::maxHpEncoding(const CombatPredictorInputV1 &p) cons
 Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {return softmax(linear("max_hp.max_hp_delta",encode("max_hp",p)));}
 Vec CombatTransitionRuntime::maxHp(const Vec &encoding) const {return softmax(linear("max_hp.max_hp_delta",encoding));}
 Vec CombatTransitionRuntime::hpEncoding(const CombatPredictorInputV1 &p) const {return encode("hp",p);}
-Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maximum) const {auto x=z;append(x,embedding("hp.delta_embedding",delta));auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<304;++i)if(preHp+i-160<1 || preHp+i-160>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
+Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maximum) const {auto x=z;append(x,embedding("hp.delta_embedding",delta));auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<int(logits.size());++i)if(preHp+i+hpMin_<1 || preHp+i+hpMin_>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
 Vec CombatTransitionRuntime::potion(const CombatPredictorInputV1 &p,int delta,float fraction) const {
     return potion(potionEncoding(p),p,delta,fraction);
 }

@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for the CTM retrain union and refit flags, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -103,6 +103,14 @@ the production candidate-contract support predicate rejects (production
 `row_scopes.json` gives each scope's row range, so main-corpus gates can
 exclude forced rows. Two retrain flags reuse production choices instead of
 searching again:
+- `tools/ctm_hp_domain.py` declares a wider HP domain (`declare --pre-cur-max
+  220 --pre-max-max 220` gives classes -219..231, 451 rows) and `expand` widens
+  the production HP and relic warm starts to it. Old classes keep their rows. New
+  HP-head rows get zero weights and bias -30, and new relic-delta rows copy the
+  nearest edge row. The receipt lists the
+  `combat_transition_composed.HP_CLASS_RANGE` pin. With `ARTIFACTS` pinned to
+  the expanded checkpoints, the support predicate (and so `union`) keeps rows up
+  to the declared envelope. The near-full `/160` HP input scale stays fixed.
 - `combat_transition_attention_hpo.py --frozen-winner NAME` tunes and refits
   only that candidate;
 - `combat_transition_deepset_potion_specialist.py --arms C` refits only the

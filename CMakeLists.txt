@@ -571,6 +571,8 @@ add_test(NAME ctm_pins_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_pins.py)
 add_test(NAME ctm_near_full_inputs_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
+add_test(NAME ctm_hp_domain_selftest COMMAND python3 -m unittest tools.test_ctm_hp_domain)
+set_tests_properties(ctm_hp_domain_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_attention_hpo_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_attention_hpo.py)
 add_test(NAME combat_transition_attention_hpo_promote_selftest
