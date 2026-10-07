@@ -14500,5 +14500,16 @@ pilot. Awaiting Philipp's choice.
 
 **Evidence:** [packet](evidence/ooc_counterfactual_347_20261007/README.md).
 
-**Knowledge impact:** none beyond §389's routing (research flags live only on
-the diagnostic build).
+**Addendum (chest scoring, 2026-10-07):** a read-only hook on the C runs
+scored each of the 11 chest states on the map screen with the run's leaf model
+(X2-B v_win): relic taken minus relic left is 0 at 5 chests, negative at 5
+(Whetstone -0.021), positive at 1 (+0.006); mean -0.003. Gold is priced (+0.016
+for 27 gold on 48000116). **Inference:** the leaf model values these relics at
+about zero, so relic skipping is not a reward-screen artifact. Traces
+byte-identical to the C runs.
+[Packet](evidence/ooc_chest_score_347_20261007/README.md). The same PR drops
+key actions from live OOC MCTS when keys are off (it could take the sapphire key
+and lose the relic).
+
+**Knowledge impact:** `architecture/out-of-combat.md` records the chest rule
+and the keys-off filter; the research flags live only on diagnostic builds.
