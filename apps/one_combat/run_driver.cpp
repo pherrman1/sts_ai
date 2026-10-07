@@ -242,6 +242,15 @@ bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bo
     return true;
 }
 
+// Opening a treasure chest is free unless Cursed Key turns it into a curse,
+// so every OOC policy opens it without Cursed Key (#347: live OOC MCTS left
+// every chest closed). With Cursed Key the ordinary decision runs.
+static bool openTreasureChestRuleStep(GameContext &gc) {
+    if (gc.screenState != ScreenState::TREASURE_ROOM || gc.relics.has(RelicId::CURSED_KEY)) return false;
+    search::GameAction(0).execute(gc);
+    return true;
+}
+
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
@@ -250,6 +259,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                                gc.seed, 0, nullptr);
         return;
     }
+    if (openTreasureChestRuleStep(gc)) return;
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                 && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     t_shopV = shopV;
@@ -409,7 +419,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
+            if (openTreasureChestRuleStep(gc)) {
+                traceBy = "chest_rule";
+            } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
             } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
