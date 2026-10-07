@@ -379,6 +379,8 @@ void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent);
 
 int teacherSchemaCompatibilitySelfTest();
 int learnedStopTeacherSelfTest();
+int ctmScoreRows(const std::string &inPath, const std::string &outPath);
+int ctmScoreRowsSelfTest();
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath);
 

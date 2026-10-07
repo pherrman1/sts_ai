@@ -123,6 +123,11 @@ public:
         const CombatPredictorInputV1 &) const override;
     CombatTransitionExpectation expectation(const sts::GameContext &,
         const CombatPredictorInputV1 &) const override;
+    // State-based variants for offline scoring of recorded transition rows.
+    CombatRuntimeSupport supportState(const CombatTransitionPersistentState &,
+        const CombatPredictorInputV1 &) const;
+    CombatTransitionExpectation expectationState(const CombatTransitionPersistentState &,
+        const CombatPredictorInputV1 &) const;
     ActiveLizardPrediction activeLizardPrediction(const sts::GameContext &,
         const CombatPredictorInputV1 &) const;
     CombatRuntimeSample sampleActiveLizardClass(const sts::GameContext &,

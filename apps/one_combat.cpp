@@ -3865,6 +3865,11 @@ int main(int argc, char **argv) {
         return teacherSchemaCompatibilitySelfTest();
     } else if (mode == "learnedstopteacherselftest") {
         return learnedStopTeacherSelfTest();
+    } else if (mode == "ctmscorerows") {
+        if (argc < 4) { std::cerr << "usage: one_combat ctmscorerows ROWS.jsonl OUT.csv\n"; return 2; }
+        return ctmScoreRows(argv[2], argv[3]);
+    } else if (mode == "ctmscoreselftest") {
+        return ctmScoreRowsSelfTest();
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

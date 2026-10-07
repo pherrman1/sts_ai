@@ -14378,3 +14378,31 @@ fresh on-policy data is #415.
 
 **Knowledge impact:** ADR-0027 and the environment-variable table record the
 new default.
+
+## §386 — #418 Stage 0: production CTM on learned-stop vs exact-10k teacher rows (2026-10-07)
+
+**Protocol:** frozen in advance ([plan](evidence/ctm_stage0_418_20261007/PLAN.md)), authorized by Philipp at 128 paired seeds instead of the proposed 256. SHA `46153506` (includes #419–#421), `combattransitiongen`, fair RNG, A0, seeds `50000000..50000127`. Each seed ran under both the flat exact-10k teacher and the production learned-stop teacher (ADR-0026) on the same binary. The run used 30 workers in six shards (local 10, five 4-core cloud containers). Result: 128/128 seeds per arm, 0 quarantined, 2,668 and 2,620 rows. The production CTM stack scored every row offline via `ctmscorerows`. CIs are 95% seed-level paired bootstrap.
+
+**Support:** 2,647 / 2,603 rows scored. The rest were unsupported: Smoke Bomb 16 / 11, unqualified active Lizard 5 / 5, Writhing+Ritual Dagger 0 / 1. There were no escapes and no zero-probability HP outcomes.
+
+**Survival is calibrated on both arms.** Mean signed bias (predicted win minus observed) is exact −0.003 (CI −0.009..+0.003) and learned −0.001 (−0.007..+0.005). Boss bias is exact −0.006 (−0.038..+0.027) and learned −0.025 (−0.063..+0.011). Survival NLL is 0.066 / 0.069 nat per fight. The only cell with a significant bias is the exact-arm act 3 boss (+0.087, CI +0.005..+0.177, n=58). The learned arm's act 3 boss is +0.002.
+
+**Boss HP is optimistic on both arms.** Predicted post-combat HP on boss wins is too high by +10.3 HP (CI 8.0..12.7) for exact and +10.0 (7.8..12.4) for learned.
+
+| Learned arm, boss wins | n | pre HP | predicted post | observed post |
+|---|---|---|---|---|
+| act 1 | 113 | 62.1 | 45.8 | 32.9 |
+| act 2 | 70 | 57.9 | 39.6 | 30.3 |
+| act 3 | 39 | 69.4 | 44.0 | 40.9 |
+
+Normal and elite HP bias is within ±1.6 HP in every act. Overall HP NLL is 2.58 / 2.61 nat.
+
+**Teacher transfer (learned minus exact):** survival NLL +0.003 (CI −0.010..+0.016), HP NLL +0.032 (−0.041..+0.107), survival bias +0.002, HP bias +0.02. No teacher effect was detected.
+
+**Frozen decision:** **Path B.** The survival-NLL and HP-NLL delta CI upper bounds (0.016, 0.107) exceed the tolerances (0.01, 0.05). The boss survival-bias condition passed (upper bound +0.011 < +0.05). This is a failed equivalence test at reduced n, not a detected teacher difference. The CTM's boss HP optimism is the same on both arms, so the teacher's budget policy does not cause it.
+
+**Inference:** the boss HP gap matches §384's observation that MCTS wins end about 12 HP lower. It comes either from drift since the CTM corpus (vendored Silver teacher at `f0bbd77` vs current native Silver) or from a CTM boss-HP miscalibration that was already present. This run cannot separate the two. Scoring the old corpus's TEST boss rows with `ctmscorerows` would.
+
+**Evidence:** [README, plan, scripts, results.json](evidence/ctm_stage0_418_20261007/README.md).
+
+**Knowledge impact:** `ctmscorerows` is documented in `operations/ooc-label-pipeline.md`. No default changed.

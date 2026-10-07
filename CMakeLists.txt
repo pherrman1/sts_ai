@@ -111,6 +111,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_trace.cpp
     apps/one_combat/semantic_pilot.cpp
     apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/strategic_gen.cpp
     apps/one_combat/counterfactual_gen.cpp
@@ -496,6 +497,10 @@ set_tests_properties(teacher_schema_compat PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME learned_stop_teacher_contract COMMAND $<TARGET_FILE:one_combat> learnedstopteacherselftest)
 set_tests_properties(learned_stop_teacher_contract PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_offline_score_rows COMMAND $<TARGET_FILE:one_combat> ctmscoreselftest)
+set_tests_properties(ctm_offline_score_rows PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
