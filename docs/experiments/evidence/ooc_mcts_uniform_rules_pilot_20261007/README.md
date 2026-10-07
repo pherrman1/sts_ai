@@ -8,7 +8,7 @@ commit `d9ee73f`, recorded in `run/PLAN_COMMIT`). Ledger §393.
 - Binary `one_combat` built from `c2e701d`, SHA-256 `ee4fe043…a1e8` (hash
   checked by `launch.sh`); #417 `mcts` arm env at `10e56bd8` plus
   `STS_OOC_MCTS_PRIOR=uniform`. Seeds 53000000..53000031, four shards of 8.
-- Run 16:43–17:05 UTC on one 4-CPU container (shards 13–22 min).
+- Run 16:27–16:49 UTC on one 4-CPU container (shards 13–22 min).
 - All shards exit 0, no seed failures; every log shows sims=2048,
   prior=uniform, root_selection=visits, leaf_value=screengbm; all 32 seeds present.
 
