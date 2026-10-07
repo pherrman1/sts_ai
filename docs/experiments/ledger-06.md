@@ -14474,3 +14474,31 @@ the §388 planner-seed schedule; decision rule and cost in PR #429.
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes the research-only
 `STS_OOC_DECISION_TRACE` log.
+
+## §390 — #347 counterfactual on the R seeds: chest rule and campfire fallback (2026-10-07)
+
+**Question:** with OOC MCTS forced to open every chest (no Cursed Key), does
+handing its campfire decisions to the ordinary chain (CR) give boss entries
+that fixed flat-10k Silver wins from more often than chest rule alone (C)?
+**Design:** the four §388 R seeds, research flags on diagnostic build
+`1911f044` (#417 mechanics), boss entry of the same act, 8 fresh planner seeds
+per entry shared with §388. Rule fixed before the run: signal at net >= +8 of
+32 with >= 3 of 4 seeds positive. Plan frozen after independent review; PR #429.
+**Validity:** all sources `VALID` (control parity, repeats, budgets); flags off
+reproduce the §388 rows exactly; the chest rule fired at all 11 chests and the
+chain handled every CR campfire.
+**Result:** `CAMPFIRE_CHAIN_INCONCLUSIVE`. CR 13/32, C 9/32, net +4 (per seed
++4, 0, +1, -1). Descriptive: M 1/32, F 29/32 (§388); C vs M net +8.
+**Interpretation:** after the chest opened, OOC MCTS left the relic on the
+reward screen at 8 of 11 chests (C) and 7 of 11 (CR). The chain also made
+no-op full-HP rests in these trajectories (9 in CR) and smithed at 6 of 27
+campfires. **Inference:** forced chest opening and campfire handoff recover
+only part of the gap; relic skipping on reward screens remains.
+**Next:** candidate rules: take every relic offered on a reward screen, and
+never rest at full HP when a card can be upgraded; then a fresh-seed paired
+pilot. Awaiting Philipp's choice.
+
+**Evidence:** [packet](evidence/ooc_counterfactual_347_20261007/README.md).
+
+**Knowledge impact:** none beyond §389's routing (research flags live only on
+the diagnostic build).

@@ -1,0 +1,329 @@
+{
+  "seeds": {
+    "48000024": {
+      "act": 2,
+      "wins": {
+        "M": 0,
+        "F": 8,
+        "C": 2,
+        "CR": 6
+      },
+      "CR_vs_C": [
+        4,
+        0,
+        4
+      ],
+      "C_vs_M": [
+        2,
+        0,
+        2
+      ],
+      "CR_vs_M": [
+        6,
+        0,
+        6
+      ],
+      "F_vs_CR": [
+        2,
+        0,
+        2
+      ],
+      "C": {
+        "trace": {
+          "treasure": 2,
+          "chestRule": 2,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 7,
+          "campfireByChain": 0,
+          "campfireByMcts": 7,
+          "smiths": 1,
+          "rests": 6,
+          "chestRelicsGained": 0,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 59,
+        "maxHp": 85,
+        "relics": 6,
+        "upgrades": 4,
+        "deckSize": 30,
+        "gold": 475
+      },
+      "CR": {
+        "trace": {
+          "treasure": 2,
+          "chestRule": 2,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 7,
+          "campfireByChain": 7,
+          "campfireByMcts": 0,
+          "smiths": 2,
+          "rests": 4,
+          "chestRelicsGained": 0,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 80,
+        "maxHp": 80,
+        "relics": 7,
+        "upgrades": 5,
+        "deckSize": 29,
+        "gold": 488
+      }
+    },
+    "48000014": {
+      "act": 3,
+      "wins": {
+        "M": 1,
+        "F": 8,
+        "C": 1,
+        "CR": 1
+      },
+      "CR_vs_C": [
+        1,
+        1,
+        0
+      ],
+      "C_vs_M": [
+        1,
+        1,
+        0
+      ],
+      "CR_vs_M": [
+        1,
+        1,
+        0
+      ],
+      "F_vs_CR": [
+        7,
+        0,
+        7
+      ],
+      "C": {
+        "trace": {
+          "treasure": 3,
+          "chestRule": 3,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 9,
+          "campfireByChain": 0,
+          "campfireByMcts": 9,
+          "smiths": 0,
+          "rests": 4,
+          "chestRelicsGained": 0,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 80,
+        "maxHp": 80,
+        "relics": 8,
+        "upgrades": 5,
+        "deckSize": 37,
+        "gold": 0
+      },
+      "CR": {
+        "trace": {
+          "treasure": 3,
+          "chestRule": 3,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 9,
+          "campfireByChain": 9,
+          "campfireByMcts": 0,
+          "smiths": 2,
+          "rests": 4,
+          "chestRelicsGained": 1,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 70,
+        "maxHp": 80,
+        "relics": 11,
+        "upgrades": 9,
+        "deckSize": 38,
+        "gold": 0
+      }
+    },
+    "48000116": {
+      "act": 2,
+      "wins": {
+        "M": 0,
+        "F": 8,
+        "C": 0,
+        "CR": 1
+      },
+      "CR_vs_C": [
+        1,
+        0,
+        1
+      ],
+      "C_vs_M": [
+        0,
+        0,
+        0
+      ],
+      "CR_vs_M": [
+        1,
+        0,
+        1
+      ],
+      "F_vs_CR": [
+        7,
+        0,
+        7
+      ],
+      "C": {
+        "trace": {
+          "treasure": 2,
+          "chestRule": 2,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 4,
+          "campfireByChain": 0,
+          "campfireByMcts": 4,
+          "smiths": 1,
+          "rests": 3,
+          "chestRelicsGained": 0,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 70,
+        "maxHp": 85,
+        "relics": 8,
+        "upgrades": 6,
+        "deckSize": 29,
+        "gold": 65
+      },
+      "CR": {
+        "trace": {
+          "treasure": 2,
+          "chestRule": 2,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 4,
+          "campfireByChain": 4,
+          "campfireByMcts": 0,
+          "smiths": 2,
+          "rests": 2,
+          "chestRelicsGained": 0,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 82,
+        "maxHp": 85,
+        "relics": 8,
+        "upgrades": 7,
+        "deckSize": 30,
+        "gold": 63
+      }
+    },
+    "48000095": {
+      "act": 3,
+      "wins": {
+        "M": 0,
+        "F": 5,
+        "C": 6,
+        "CR": 5
+      },
+      "CR_vs_C": [
+        2,
+        3,
+        -1
+      ],
+      "C_vs_M": [
+        6,
+        0,
+        6
+      ],
+      "CR_vs_M": [
+        5,
+        0,
+        5
+      ],
+      "F_vs_CR": [
+        1,
+        1,
+        0
+      ],
+      "C": {
+        "trace": {
+          "treasure": 4,
+          "chestRule": 4,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 7,
+          "campfireByChain": 0,
+          "campfireByMcts": 7,
+          "smiths": 0,
+          "rests": 4,
+          "chestRelicsGained": 3,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 76,
+        "maxHp": 76,
+        "relics": 13,
+        "upgrades": 17,
+        "deckSize": 40,
+        "gold": 33
+      },
+      "CR": {
+        "trace": {
+          "treasure": 4,
+          "chestRule": 4,
+          "treasureWithCursedKey": 0,
+          "campfireRoots": 7,
+          "campfireByChain": 7,
+          "campfireByMcts": 0,
+          "smiths": 1,
+          "rests": 1,
+          "chestRelicsGained": 3,
+          "sapphireKeyTaken": 0
+        },
+        "bossReached": true,
+        "hp": 80,
+        "maxHp": 80,
+        "relics": 13,
+        "upgrades": 18,
+        "deckSize": 40,
+        "gold": 33
+      }
+    }
+  },
+  "totals": {
+    "wins": {
+      "M": 1,
+      "F": 29,
+      "C": 9,
+      "CR": 13
+    },
+    "net": {
+      "CR_vs_C": 4,
+      "C_vs_M": 8,
+      "CR_vs_M": 12,
+      "F_vs_CR": 16
+    },
+    "perSeedNet": {
+      "CR_vs_C": [
+        4,
+        0,
+        1,
+        -1
+      ],
+      "C_vs_M": [
+        2,
+        0,
+        0,
+        6
+      ],
+      "CR_vs_M": [
+        6,
+        0,
+        1,
+        5
+      ],
+      "F_vs_CR": [
+        2,
+        7,
+        7,
+        0
+      ]
+    },
+    "primaryVerdict": "CAMPFIRE_CHAIN_INCONCLUSIVE"
+  }
+}
