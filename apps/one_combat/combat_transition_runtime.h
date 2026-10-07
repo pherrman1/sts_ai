@@ -28,6 +28,7 @@ class CombatTransitionRuntime {
     std::map<std::string, Tensor> weights;
     nlohmann::json metadata_;
     nlohmann::json lizardCorrection_;
+    nlohmann::json identity_;
     const Tensor &tensor(const std::string &) const;
     std::vector<float> linear(const std::string &, const std::vector<float> &) const;
     std::vector<float> embedding(const std::string &, int) const;
@@ -37,6 +38,9 @@ public:
     static void requireCurrentStandardFallbackArtifact(const std::string &path);
     explicit CombatTransitionRuntime(const std::string &path);
     const nlohmann::json &metadata() const { return metadata_; }
+    // Production identity pins, or a research candidate's (STS_CTM_RESEARCH_CANDIDATE_MANIFEST).
+    const nlohmann::json &identity() const { return identity_; }
+    bool researchCandidate() const { return !identity_.at("candidateId").is_null(); }
     bool nearFull() const { return metadata_.at("version")==2; }
     bool requiresEntropicBrewFallback() const;
     bool hasActiveLizardCorrection() const { return !lizardCorrection_.is_null(); }
@@ -133,6 +137,7 @@ public:
     CombatRuntimeSample sampleActiveLizardClass(const sts::GameContext &,
         const CombatPredictorInputV1 &, std::mt19937_64 &, int outcomeClass) const;
     bool activeLizardEnabled() const { return activeLizardEnabled_; }
+    const CombatTransitionRuntime &fastRuntime() const { return fast_->runtime(); }
     Metrics takeMetrics() const;
 };
 }
