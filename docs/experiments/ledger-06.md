@@ -14441,3 +14441,35 @@ differ), so it measures the total OOC-policy effect, not isolated preparation.
 **Knowledge impact:** `ooc-label-pipeline.md` and `CODE_MAP.md` route the
 research-only `bossrescue347` mode, its run-driver hook and the native Silver
 planner-seed override.
+
+## §391 — OOC MCTS boss-rollout leaf pilot: 9/32, far below rollout3 (2026-10-07)
+
+**Question:** does OOC MCTS with no prior and a model-free leaf (play the V4
+policy chain with CTM fights until the next boss; 1 for beating it, 0 for
+dying) play well? Requested by the user as a 32-seed look.
+**Design:** research-only `STS_OOC_MCTS_LEAF_VALUE=bossrollout` (PR #430,
+default off). Frozen reviewed source `1954f100`, binary `ecb20781…`, #417
+`mcts` arm environment with `PRIOR=uniform`, 2048 sims, exact-10k Silver,
+act-3 stop, X2-B win net for campfires; seeds 51000000–031 (the rollout3
+look's seeds), 1 CPU per seed across four cloud containers.
+**Validity:** all 32 runs exited 0 on the frozen SHA/binary with the
+intended leaf and prior; 1 of 3,207 root searches aborted. Inside rollouts the
+CTM cannot price an active Lizard Tail with Fairy Potion or Entropic Brew, so
+the tail is spent there (9,600 times); without that, smoke searches aborted
+almost every root.
+**Result:** **NEGATIVE.** 9/32 wins (28.1%, Wilson 16–45%), mean floor 38.2,
+1,297 s/game. The rollout3 look on the same seeds (uniform prior, 3 CTM fights
+then X2-B, earlier main) won 25/32 (78.1%, Wilson 61–89%): −50 pp, unpaired.
+Losses: 10 at the act-2 boss and 8 in the act-2 hallway (floors 21–30).
+MCTS opened 58 of 80 chests and chose upgrade 141, rest 65, ruby key 5 at
+campfires, so the prior-driven chest/rest failure seen in #429 does not appear.
+**Interpretation (Inference):** a 0/1 boss-survival signal from long, noisy
+policy rollouts does not rank OOC options well at 2048 simulations; it ignores
+HP and resources after the boss, and act 2 collapses. Not tested: more
+simulations, rollouts that also score post-boss HP, or the refreshed CTM.
+**Decision:** keep the leaf default off as a record; no follow-up queued.
+
+**Evidence:** [packet](evidence/ooc_mcts_boss_rollout_leaf_pilot_20261007/README.md).
+
+**Knowledge impact:** `environment-variables.md` and `out-of-combat.md` list the
+`bossrollout` leaf mode.
