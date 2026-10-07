@@ -14513,3 +14513,29 @@ and lose the relic).
 
 **Knowledge impact:** `architecture/out-of-combat.md` records the chest rule
 and the keys-off filter; the research flags live only on diagnostic builds.
+
+## §392 — #347 prior cost on the R seeds: root by Q and uniform prior (2026-10-07)
+
+**Question:** on the §390 C entries (OOC MCTS + chest rule), how much does the
+V4 policy prior cost? CQ = final root choice by mean Q
+(`STS_OOC_MCTS_ROOT_SELECTION=q`, no early-stop lock); CU = uniform prior
+(`STS_OOC_MCTS_PRIOR=uniform`). Existing knobs, no code change.
+**Design:** §390 build `1911f044`, same four R seeds, 8 shared planner seeds
+per entry, C rows frozen from §390. Rule per comparison as §390: signal at net
+>= +8 of 32 with >= 3 of 4 seeds positive. Plan frozen after independent
+review; PR #429.
+**Validity:** all 8 sources `VALID`; logged config, chest rule, planner seeds
+and binary hashes checked by `analyze.py`.
+**Result:** CQ 9/32 vs C 9/32, net 0 (+5, +1, 0, -6; CQ died before the act-3
+boss on 48000095): `INCONCLUSIVE`. CU 22/32, net +13 (+6, +7, 0, 0):
+`INCONCLUSIVE` (two seeds unchanged). Descriptive: F 29/32 (§388).
+**Interpretation:** CU entered with smaller decks and more max HP. All arms
+still left most chest relics. **Inference:** the prior's steering of visits,
+not the root choice rule, is where the cost shows; not shown that a learned
+prior over all OOC decisions would beat no prior.
+**Next:** proposed: a fresh-seed paired pilot of uniform vs policy prior with
+chest rule and keys-off filter, on Philipp's word.
+
+**Evidence:** [packet](evidence/ooc_prior_cost_347_20261007/README.md).
+
+**Knowledge impact:** none (existing knobs; no default change).
