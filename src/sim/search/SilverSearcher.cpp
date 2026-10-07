@@ -604,6 +604,13 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
 
 double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     int rolloutDepth = 0;
+    int leafSample = -1;
+    if (leafSamples && bc.outcome == Outcome::UNDECIDED && leafSamples->stride > 0
+            && ++leafSamples->counter % leafSamples->stride == 0
+            && leafSamples->samples.size() < leafSamples->max) {
+        leafSample = static_cast<int>(leafSamples->samples.size());
+        leafSamples->samples.push_back({bc, 0.0, static_cast<int>(searchStack.size())});
+    }
     if (profile) {
         ++profile->rolloutCalls;
         if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
@@ -625,7 +632,9 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         if (profile) ++rolloutDepth;
     }
     recordEndpoint(bc, treeDepth, rolloutDepth);
-    return evaluateEndState(bc);
+    const double value = evaluateEndState(bc);
+    if (leafSample >= 0) leafSamples->samples[leafSample].value = value;
+    return value;
 }
 
 void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleContext &bc) {

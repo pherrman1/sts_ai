@@ -379,6 +379,7 @@ namespace sts::search {
                 }
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
+                searcher->leafSamples = g_nativeSilverLeafSamples;
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -481,6 +482,11 @@ namespace sts::search {
                     fail(gc, bc, "selected action is not valid on the live state");
                 }
                 traceUselessAction(gc, bc, decision, *searcher, action, configured, simulations);
+                if (g_nativeSilverRootObserver) {
+                    KnowledgeObserverSuspension observing;
+                    g_nativeSilverRootObserver({gc, bc, *searcher, decision, inheritedVisits, simulations,
+                                                skipSearch, action});
+                }
                 if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
                     inheritedVisits, configured, skipSearch, action.bits);
                 agent.takeAction(bc, action);
@@ -704,6 +710,8 @@ namespace sts::search {
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
+    thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
+    thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),

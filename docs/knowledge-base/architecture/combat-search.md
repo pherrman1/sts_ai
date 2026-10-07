@@ -244,6 +244,23 @@ The profile is flat, with no function above about 6% exclusive.
 `ActionQueue` copies only its queued slots. The 128-slot ring is 6.2 KB of
 `BattleContext`, and slots outside the queue are never read.
 
+`one_combat silversynthgen N SIMS ASC OUT_PREFIX SEED TEACHER natural|perturbed`
+is a research-only corpus producer for a learned Silver root prior and leaf
+value (flat exact-10k teacher from `tools/silver_synth_teacher.py`). Two
+default-off thread-local hooks in `NativeSilverBackend.h` carry it:
+`g_nativeSilverRootObserver` sees every root after its search and before the
+action is committed, and `g_nativeSilverLeafSamples` attaches a
+`SilverLeafSamples` sampler that copies every 2,503rd nonterminal rollout start
+with its rollout value. Neither changes selection, evaluation or any RNG draw
+(`test silver_searcher`); a natural seed's rows are byte-identical across runs.
+Each root row holds the search-state wire and the root edges' visits and Q. On
+one root in four, a fresh independent 10k search is added. On one in eight,
+two Silver continuation labels per root action are added (2,000 simulations
+per decision, with planner randomness independent of the sampled world). The
+labels are scored by the root's own terminal evaluation. `perturbed` records
+a detached copy of each fight with a random HP, card, upgrade and potion
+change, while the run continues through the unperturbed fight.
+
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.

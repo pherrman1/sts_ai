@@ -92,6 +92,24 @@ namespace sts::search {
         void record(int rootEdge, const BattleContext &end);
     };
 
+    // Research-only (silversynthgen): copies of nonterminal rollout start
+    // states with the value their rollout returned. Every `stride`-th
+    // nonterminal rollout start is kept while fewer than `max` samples are
+    // held; the caller clears `samples`. Caller-owned and default off;
+    // sampling counts rollouts only, so it never changes selection,
+    // evaluation or any RNG draw.
+    struct SilverLeafSamples {
+        struct Sample {
+            BattleContext start;
+            double value = 0;
+            int pathNodes = 0;   // nodes on the search path, chance nodes included
+        };
+        std::uint64_t stride = 0;
+        std::uint64_t counter = 0;
+        std::size_t max = 0;
+        std::vector<Sample> samples;
+    };
+
     // Silver's combat search (MCTS over a transposition graph with chance nodes
     // and double progressive widening), ported from the Silver fork's
     // BattleSearcher to run directly on the main engine. Only the production
@@ -135,6 +153,7 @@ namespace sts::search {
         SilverSearchStats stats;
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
         SilverOutcomeCapture *outcomes = nullptr; // optional caller-owned samples; default off
+        SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -173,6 +192,11 @@ namespace sts::search {
                                       const BattleContext &to);
         // Top-two root visit share gap in [0, 1]; 1 with a single root edge.
         [[nodiscard]] double topTwoVisitShareGap() const;
+
+        // Silver's terminal evaluation of `end`, relative to this searcher's
+        // root (gold and max HP deltas) and run context.
+        [[nodiscard]] double scoreEndState(const BattleContext &end) const { return evaluateEndState(end); }
+        [[nodiscard]] const SilverSearchContext &searchContext() const { return context; }
 
     private:
         SilverSearchContext context;
