@@ -1,4 +1,5 @@
 {"permissions": {"allow": [
   "Bash(bash /mnt/project-files/ctm-pathb/bin/run_part.sh:*)",
-  "Bash(setsid nohup bash /mnt/project-files/ctm-pathb/bin/run_part.sh:*)"
+  "Bash(setsid nohup bash /mnt/project-files/ctm-pathb/bin/run_part.sh:*)",
+  "Bash(bash /mnt/project-files/ctm-pathb/bin/resume_stall.sh:*)"
 ]}}
