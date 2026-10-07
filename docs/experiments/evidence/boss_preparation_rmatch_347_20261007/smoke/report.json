@@ -1,0 +1,327 @@
+{
+ "status": "VALID",
+ "verdict": "PREPARATION_HEADROOM_INCONCLUSIVE",
+ "shape": "consistent_positive",
+ "plannerReps": 2,
+ "validSeeds": 1,
+ "problems": {},
+ "aggregate": {
+  "seeds": 1,
+  "comparisons": 2,
+  "M_wins": 0,
+  "F_wins": 2,
+  "F_only": 2,
+  "M_only": 0,
+  "net": 2,
+  "seedsWithPositiveNet": 1,
+  "seedsWithNegativeNet": 0,
+  "meanNetPerSeed": 2.0,
+  "seedClusterBootstrap95": [
+   2.0,
+   2.0
+  ]
+ },
+ "seeds": [
+  {
+   "seed": 48000117,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "stateIds": {
+    "M": "smokeM-48000117-a3",
+    "F": "smokeF-48000117-a3"
+   },
+   "historicalSource": {
+    "M_won": 0,
+    "F_won": 1,
+    "M_terminalHp": 0,
+    "F_terminalHp": 45
+   },
+   "M_wins": 0,
+   "F_wins": 2,
+   "F_only": 2,
+   "M_only": 0,
+   "net": 2,
+   "M_entry": {
+    "hp": 69,
+    "maxHp": 85,
+    "gold": 13,
+    "potions": [
+     "COLORLESS_POTION",
+     "EXPLOSIVE_POTION",
+     "BLESSING_OF_THE_FORGE"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 35,
+    "upgrades": 12,
+    "floor": 50,
+    "boss": "AWAKENED_ONE"
+   },
+   "F_entry": {
+    "hp": 96,
+    "maxHp": 96,
+    "gold": 0,
+    "potions": [
+     "ELIXIR_POTION",
+     "FIRE_POTION",
+     "WEAK_POTION"
+    ],
+    "potionCapacity": 3,
+    "deckSize": 39,
+    "upgrades": 12,
+    "floor": 50,
+    "boss": "AWAKENED_ONE"
+   },
+   "entryDifference": {
+    "hp": 27,
+    "maxHp": 11,
+    "gold": -13,
+    "potionCount": 0,
+    "potionCapacity": 0,
+    "deckSize": 4,
+    "upgrades": 0,
+    "cardsOnlyM": [
+     "Armaments",
+     "Clash+",
+     "Corruption",
+     "Defend+",
+     "Defend+",
+     "Defend+",
+     "Demon Form+",
+     "Impervious",
+     "Injury",
+     "Iron Wave",
+     "Iron Wave",
+     "Iron Wave",
+     "Juggernaut",
+     "Power Through",
+     "Pummel",
+     "Second Wind",
+     "Sever Soul",
+     "Shrug It Off",
+     "Shrug It Off",
+     "Spot Weakness",
+     "Strike+",
+     "Strike+",
+     "Strike+",
+     "Strike+",
+     "Strike+",
+     "Sword Boomerang",
+     "Uppercut"
+    ],
+    "cardsOnlyF": [
+     "Anger",
+     "Anger",
+     "Blood for Blood",
+     "Bludgeon",
+     "Body Slam",
+     "Decay",
+     "Defend",
+     "Defend",
+     "Defend",
+     "Fire Breathing",
+     "Immolate",
+     "Immolate+",
+     "Immolate+",
+     "Impatience+",
+     "Impervious+",
+     "Inflame+",
+     "Perfected Strike",
+     "Power Through+",
+     "Second Wind+",
+     "Spot Weakness+",
+     "Strike",
+     "Strike",
+     "Strike",
+     "Strike",
+     "Strike",
+     "Sword Boomerang+",
+     "Thunderclap",
+     "True Grit",
+     "Twin Strike",
+     "Twin Strike",
+     "Whirlwind+"
+    ],
+    "relicsOnlyM": [
+     "BUSTED_CROWN",
+     "INK_BOTTLE"
+    ],
+    "relicsOnlyF": [
+     "BLOOD_VIAL",
+     "BLUE_CANDLE",
+     "CENTENNIAL_PUZZLE",
+     "CURSED_KEY",
+     "GREMLIN_HORN",
+     "INCENSE_BURNER",
+     "MANGO",
+     "MEMBERSHIP_CARD",
+     "PEN_NIB",
+     "RED_MASK",
+     "VAJRA"
+    ],
+    "relicCountersM": [
+     "BURNING_BLOOD:0",
+     "WHITE_BEAST_STATUE:0",
+     "PRESERVED_INSECT:0",
+     "BUSTED_CROWN:0",
+     "MUTAGENIC_STRENGTH:0",
+     "ECTOPLASM:0",
+     "AKABEKO:0",
+     "INK_BOTTLE:0"
+    ],
+    "relicCountersF": [
+     "BURNING_BLOOD:0",
+     "MEMBERSHIP_CARD:0",
+     "WHITE_BEAST_STATUE:0",
+     "PRESERVED_INSECT:0",
+     "BLOOD_VIAL:0",
+     "AKABEKO:0",
+     "CURSED_KEY:0",
+     "MUTAGENIC_STRENGTH:0",
+     "CENTENNIAL_PUZZLE:0",
+     "PEN_NIB:4",
+     "VAJRA:0",
+     "ECTOPLASM:0",
+     "RED_MASK:0",
+     "MANGO:0",
+     "BLUE_CANDLE:0",
+     "GREMLIN_HORN:0",
+     "INCENSE_BURNER:2"
+    ],
+    "potionsOnlyM": [
+     "BLESSING_OF_THE_FORGE",
+     "COLORLESS_POTION",
+     "EXPLOSIVE_POTION"
+    ],
+    "potionsOnlyF": [
+     "ELIXIR_POTION",
+     "FIRE_POTION",
+     "WEAK_POTION"
+    ],
+    "floorSame": true,
+    "bossSame": true,
+    "rngCountersDiffer": {
+     "aiRng": [
+      14,
+      4
+     ],
+     "cardRng": [
+      551,
+      575
+     ],
+     "eventRng": [
+      12,
+      10
+     ],
+     "merchantRng": [
+      32,
+      48
+     ],
+     "monsterHpRng": [
+      6,
+      4
+     ],
+     "neowRng": [
+      6,
+      5
+     ],
+     "potionRng": [
+      112,
+      150
+     ],
+     "relicRng": [
+      9,
+      11
+     ],
+     "treasureRng": [
+      30,
+      28
+     ]
+    },
+    "rngDigestSame": false,
+    "pathRoomVisitsM": [
+     1,
+     8,
+     12,
+     4,
+     17,
+     3,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pathRoomVisitsF": [
+     3,
+     10,
+     10,
+     6,
+     13,
+     3,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "M_entrySummary": "hp=69;maxHp=85;gold=13;potions=COLORLESS_POTION|EXPLOSIVE_POTION|BLESSING_OF_THE_FORGE;relics=BURNING_BLOOD:0|WHITE_BEAST_STATUE:0|PRESERVED_INSECT:0|BUSTED_CROWN:0|MUTAGENIC_STRENGTH:0|ECTOPLASM:0|AKABEKO:0|INK_BOTTLE:0;deck=Strike+|Strike+|Strike+|Strike+|Strike+|Defend+|Defend+|Defend+|Bash|Second Wind|Clothesline|Pommel Strike+|Corruption|Sever Soul|Shrug It Off|Uppercut|Injury|Demon Form+|Spot Weakness|Impervious|Thunderclap|Power Through|Armaments|Sword Boomerang|Juggernaut|Pommel Strike|Sword Boomerang|Pummel|Clash+|Iron Wave|Iron Wave|Havoc|Shrug It Off|Iron Wave|Sword Boomerang+",
+   "F_entrySummary": "hp=96;maxHp=96;gold=0;potions=ELIXIR_POTION|FIRE_POTION|WEAK_POTION;relics=BURNING_BLOOD:0|MEMBERSHIP_CARD:0|WHITE_BEAST_STATUE:0|PRESERVED_INSECT:0|BLOOD_VIAL:0|AKABEKO:0|CURSED_KEY:0|MUTAGENIC_STRENGTH:0|CENTENNIAL_PUZZLE:0|PEN_NIB:4|VAJRA:0|ECTOPLASM:0|RED_MASK:0|MANGO:0|BLUE_CANDLE:0|GREMLIN_HORN:0|INCENSE_BURNER:2;deck=Strike|Strike|Strike|Strike|Strike|Defend|Defend|Defend|Bash|Clothesline|Twin Strike|Anger|Havoc|Inflame+|Immolate+|Pommel Strike|Anger|Blood for Blood|Impatience+|Sword Boomerang|Impervious+|Thunderclap|Thunderclap|Pommel Strike+|Spot Weakness+|Body Slam|Immolate+|Twin Strike|True Grit|Bludgeon|Sword Boomerang+|Fire Breathing|Power Through+|Whirlwind+|Immolate|Decay|Sword Boomerang+|Perfected Strike|Second Wind+",
+   "terminalHpWhenWon": {
+    "M": [],
+    "F": [
+     1,
+     10
+    ]
+   },
+   "potionsAfterWhenWon": {
+    "M": [],
+    "F": [
+     0,
+     0
+    ]
+   },
+   "pairs": [
+    {
+     "rep": 0,
+     "plannerSeed": "73db6a027ccffa44",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 1,
+     "M_postExitHp": 0,
+     "F_postExitHp": 7,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 61,
+     "F_decisions": 47,
+     "tracePointer": "smokeM-48000117-a3.rows.csv / smokeF-48000117-a3.rows.csv kind=fresh rep=0"
+    },
+    {
+     "rep": 1,
+     "plannerSeed": "42673263efb84a75",
+     "M_won": 0,
+     "F_won": 1,
+     "M_terminalHp": 0,
+     "F_terminalHp": 10,
+     "M_postExitHp": 0,
+     "F_postExitHp": 16,
+     "M_potionsAfter": 0,
+     "F_potionsAfter": 0,
+     "M_decisions": 46,
+     "F_decisions": 46,
+     "tracePointer": "smokeM-48000117-a3.rows.csv / smokeF-48000117-a3.rows.csv kind=fresh rep=1"
+    }
+   ],
+   "cost": {
+    "M": {
+     "simulations": 1070000,
+     "cpuSeconds": 20.508
+    },
+    "F": {
+     "simulations": 930000,
+     "cpuSeconds": 16.763
+    }
+   }
+  }
+ ],
+ "rule": "PREPARATION_HEADROOM_SIGNAL iff F has >= 8 net additional boss wins over M across the matched comparisons and positive net wins on >= 3 of the 4 source seeds; otherwise PREPARATION_HEADROOM_INCONCLUSIVE. Shape: flat (no discordant pair), negative (net < 0), consistent_positive (net > 0, no seed net < 0), else mixed. Any structural failure EXECUTION_INVALID; reproduction-only or missing failures PARTIAL"
+}
