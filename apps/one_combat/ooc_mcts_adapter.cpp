@@ -1248,7 +1248,19 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         ++continuation_.projectionSteps;
         if (child.gc.screenState == sts::ScreenState::BATTLE) {
             const bool boss = child.gc.curRoom == sts::Room::BOSS;
-            resolveCombat(child,rng); ++additionalCombats;
+            try { resolveCombat(child,rng); }
+            catch (const sts::search::OocSearchUnsupported &) {
+                // The CTM stack cannot price an active Lizard Tail at some boundaries
+                // (Fairy Potion, Entropic Brew); whole-act boss rollouts reach them
+                // in nearly every search. Play this rollout on with the tail spent.
+                constexpr auto tail = sts::RelicId::LIZARD_TAIL;
+                if (!options.bossRollout || !child.gc.relics.has(tail)
+                        || child.gc.relics.getRelicValue(tail) != 1) throw;
+                child.gc.relics.getRelicValueRef(tail) = 0;
+                ++continuation_.supportReasons["bossrollout_lizard_spent"];
+                resolveCombat(child,rng);
+            }
+            ++additionalCombats;
             if (boss && child.gc.outcome != sts::GameOutcome::PLAYER_LOSS) bossWon = true;
         }
         else {
@@ -3943,7 +3955,11 @@ void oocMctsAdapterSelfTest() {
     struct BossOutcomeSampler final : CombatTransitionSampler {
         bool bossDies = false;
         mutable unsigned calls = 0, bossCalls = 0;
-        CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override { return {true,"supported"}; }
+        CombatRuntimeSupport support(const GameContext &g, const CombatPredictorInputV1 &) const override {
+            if (g.relics.has(RelicId::LIZARD_TAIL) && g.relics.getRelicValue(RelicId::LIZARD_TAIL) == 1)
+                return {false,"active_unqualified_lizard"};
+            return {true,"supported"};
+        }
         CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
             ++calls;
             if (g.curRoom != Room::BOSS) return {CombatRuntimeSample::Outcome::VICTORY,captureCombatTransitionState(g)};
@@ -3952,9 +3968,11 @@ void oocMctsAdapterSelfTest() {
                 captureCombatTransitionState(g)};
         }
     };
-    for (bool bossDies : {false,true}) {
+    for (int variant : {0,1,2}) {
+        const bool bossDies = variant == 1, activeTail = variant == 2;
         auto bossRoot = detachedCopy(gc);
         for (auto &row : bossRoot.map->nodes) for (auto &node : row) node.room = Room::MONSTER;
+        if (activeTail) { bossRoot.relics.remove(RelicId::LIZARD_TAIL); bossRoot.relics.add({RelicId::LIZARD_TAIL,1}); }
         auto sampler = std::make_shared<BossOutcomeSampler>(); sampler->bossDies = bossDies;
         OocAdapterOptions opts{true}; opts.bossRollout = true; opts.uniformLeafPolicy = true;
         OocGameContextModel projected(bossRoot,path,sampler,opts);
@@ -3963,8 +3981,9 @@ void oocMctsAdapterSelfTest() {
         const auto leaf = projected.evaluateLeafWithOutcome(0,projectionRng);
         require(leaf.value == (bossDies ? 0.0 : 1.0) && (!bossDies || leaf.terminal)
             && sampler->bossCalls == 1 && sampler->calls > 3
-            && projected.continuationMetrics().imaginedCombats == sampler->calls
-            && test::oocStateFingerprint(bossRoot) == before,
+            && projected.continuationMetrics().imaginedCombats == sampler->calls + activeTail
+            && test::oocStateFingerprint(bossRoot) == before
+            && projected.continuationMetrics().supportReasons.count("bossrollout_lizard_spent") == activeTail,
             "boss rollout continues to the act boss and scores its outcome");
     }
     {
