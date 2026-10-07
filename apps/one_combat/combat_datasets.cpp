@@ -3726,8 +3726,63 @@ static nlohmann::json combatTransitionRowJson(
 // Capture one JSONL transition per real fight at the RAW persistent-transfer
 // boundary. This is a data producer only: it never substitutes the snapshot
 // for native continuation and is not part of the default gameplay path.
+// #418 targeted CTM support collections. Each setup forces a rare state the
+// ordinary corpus barely reaches; the manifest names the setup so its rows are
+// qualified as their own slice, never mixed into the ordinary distribution.
+enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW };
+
+static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
+    if (name.empty()) return ForcedCtmSetup::NONE;
+    if (name == "ritual_writhing") return ForcedCtmSetup::RITUAL_WRITHING;
+    if (name == "high_maxhp") return ForcedCtmSetup::HIGH_MAXHP;
+    if (name == "lizard_fairy") return ForcedCtmSetup::LIZARD_FAIRY;
+    if (name == "lizard_brew") return ForcedCtmSetup::LIZARD_BREW;
+    throw std::runtime_error("combattransitionforcedgen: unknown setup " + name);
+}
+
+// Once, before the first fight: the persistent state the setup needs.
+static void applyForcedCtmSetupOnce(ForcedCtmSetup setup, GameContext &gc, std::uint64_t seed) {
+    switch (setup) {
+        case ForcedCtmSetup::RITUAL_WRITHING:
+            gc.deck.obtain(gc, CardId::RITUAL_DAGGER);
+            break;
+        case ForcedCtmSetup::HIGH_MAXHP: {
+            // Max HP 150..220 at full HP, deterministic per seed (SplitMix64).
+            std::uint64_t z = seed + 0x9e3779b97f4a7c15ULL;
+            z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+            z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+            gc.maxHp = 150 + static_cast<int>((z ^ (z >> 31)) % 71);
+            gc.curHp = gc.maxHp;
+            break;
+        }
+        case ForcedCtmSetup::LIZARD_FAIRY:
+        case ForcedCtmSetup::LIZARD_BREW:
+            gc.obtainRelic(RelicId::LIZARD_TAIL);
+            break;
+        case ForcedCtmSetup::NONE:
+            break;
+    }
+}
+
+// Before every fight, ahead of the pre-combat capture.
+static void applyForcedCtmSetupPerFight(ForcedCtmSetup setup, GameContext &gc) {
+    if (setup == ForcedCtmSetup::RITUAL_WRITHING && gc.act == 3 && gc.curRoom == Room::MONSTER) {
+        gc.info.encounter = MonsterEncounter::WRITHING_MASS;
+    } else if (setup == ForcedCtmSetup::LIZARD_FAIRY || setup == ForcedCtmSetup::LIZARD_BREW) {
+        // Keep the potion next to an unused Tail while a slot is free.
+        const Potion potion = setup == ForcedCtmSetup::LIZARD_FAIRY ? Potion::FAIRY_POTION
+                                                                    : Potion::ENTROPIC_BREW;
+        bool held = false;
+        for (int i = 0; i < gc.potionCapacity; ++i) held = held || gc.potions[i] == potion;
+        if (!held && gc.hasRelic(RelicId::LIZARD_TAIL)
+            && gc.relics.getRelicValue(RelicId::LIZARD_TAIL) != 0)
+            gc.obtainPotion(potion);
+    }
+}
+
 static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
-                                              const WholeCombatTeacher &teacher) {
+                                              const WholeCombatTeacher &teacher,
+                                              ForcedCtmSetup setup = ForcedCtmSetup::NONE) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -3741,6 +3796,10 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
+            if (setup != ForcedCtmSetup::NONE) {
+                if (fightIdx == 0) applyForcedCtmSetupOnce(setup, gc, seed);
+                applyForcedCtmSetupPerFight(setup, gc);
+            }
             const GameContext pre = gc;
             const int battleAct = gc.act;
             const int battleFloor = gc.floorNum;
@@ -3913,7 +3972,11 @@ int combatTransitionFixture(const std::string &outfile,
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
                                 const std::string &teacherPath,
-                                bool allowStaleProvenance) {
+                                bool allowStaleProvenance,
+                                const std::string &forcedSetup) {
+    const ForcedCtmSetup setup = parseForcedCtmSetup(forcedSetup);
+    if (setup != ForcedCtmSetup::NONE && allowStaleProvenance)
+        throw std::runtime_error("combattransitionforcedgen: forced setups need a current teacher");
     trainingCampaignStart();
     // Only the Lizard candidate mode passes stale provenance; it keeps the
     // frozen exact-10k teacher.
@@ -3926,7 +3989,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     int completed = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher);
+        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup);
         #pragma omp critical(combat_transition_write)
         {
             f << generated;
@@ -3944,6 +4007,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"combatTeacher", teacher.specification},
+        {"forcedSetup", forcedSetup.empty() ? "none" : forcedSetup},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
         {"csv", {{"path", std::filesystem::absolute(outfile).string()},
                   {"sha256", fileSha256(outfile)}}},
@@ -3955,11 +4019,13 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     mf << manifest.dump(2) << '\n';
     std::cout << (allowStaleProvenance
                      ? "combattransitionlizardtargetcandidategen teacher="
+                     : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen teacher="
                      : "combattransitiongen teacher=") << teacher.id << " completed="
               << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
               << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, allowStaleProvenance
                                 ? "combattransitionlizardtargetcandidategen"
+                                : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen"
                                 : "combattransitiongen", nSeeds, completed,
                             nSeeds - completed, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);

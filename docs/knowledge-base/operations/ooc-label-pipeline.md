@@ -56,6 +56,20 @@ state, requires both to round-trip through their serializers, and writes per
 row the support reason, `p_death`, expected winning HP and the log probability
 of the observed post-combat HP. It runs no seeds (CTest `ctm_offline_score_rows`).
 
+`one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
+(#418) runs the same producer and learned-stop-capable teacher contract with
+one forced rare state, recorded as `forcedSetup` in the manifest. Its rows are
+a separate slice for training and qualification, not ordinary-distribution
+rows. Setups:
+- `ritual_writhing`: Ritual Dagger is added before the first fight, and every
+  act 3 hallway fight becomes Writhing Mass.
+- `high_maxhp`: max HP is set to 150..220 at full HP, deterministic per seed.
+- `lizard_fairy` and `lizard_brew`: an unused Lizard Tail is added, and while
+  it is unused the Fairy Potion or Entropic Brew is refilled before each fight
+  when a slot is free.
+Mark of the Bloom with an active Tail is already on the exact path, so it has
+no setup.
+
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and
 unresolved exits. It is null by default, composes with an existing observer,

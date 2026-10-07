@@ -299,7 +299,8 @@ int combatTransitionFixture(const std::string &outfile,
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
                                 const std::string &teacherPath,
-                                bool allowStaleProvenance = false);
+                                bool allowStaleProvenance = false,
+                                const std::string &forcedSetup = "");
 
 void activeLizardCombatTransitionGen(int nSeeds, int sims, int asc,
                                      const std::string &outfile, long long seedOffset,
