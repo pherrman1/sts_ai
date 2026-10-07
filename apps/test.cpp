@@ -3123,6 +3123,47 @@ int testIssueFixes() {
             return fail("Colosseum Nob Smoke Bomb escape left smokeBombUsed or granted rewards");
         }
     }
+    // Dead Adventurer, Masked Bandits and the Mushrooms set their reward
+    // screen as the fight continuation, bypassing afterBattle(): an escape
+    // must forfeit those rewards, clear smokeBombUsed and return to the map.
+    {
+        struct Case { Event event; int act; int option; const char *name; };
+        for (const Case c : {Case{Event::DEAD_ADVENTURER, 1, 0, "Dead Adventurer"},
+                             Case{Event::MASKED_BANDITS, 2, 1, "Masked Bandits"},
+                             Case{Event::HYPNOTIZING_COLORED_MUSHROOMS, 1, 0, "Mushrooms"}}) {
+            bool fought = false;
+            for (std::uint64_t seed = 123456789; seed < 123456789 + 64 && !fought; ++seed) {
+                GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+                gc.act = c.act;
+                gc.floorNum = c.act == 1 ? 8 : 25;
+                gc.curMapNodeY = 7;
+                gc.curRoom = Room::EVENT;
+                gc.curEvent = c.event;
+                gc.setupEvent();
+                // Dead Adventurer may need several searches before the fight.
+                for (int i = 0; i < 3 && gc.screenState == ScreenState::EVENT_SCREEN; ++i)
+                    gc.chooseEventOption(c.option);
+                if (gc.screenState != ScreenState::BATTLE) continue;
+                fought = true;
+                const int goldBefore = gc.gold;
+                const auto relicsBefore = gc.relics.relics.size();
+                BattleContext bc;
+                bc.init(gc, gc.info.encounter);
+                bc.potions[0] = Potion::SMOKE_BOMB;
+                bc.potionCount = 1;
+                const search::Action useSmoke(search::ActionType::POTION, 0);
+                if (!useSmoke.isValidAction(bc)) return fail("event fight rejected Smoke Bomb");
+                useSmoke.execute(bc);
+                bc.exitBattle(gc);
+                if (gc.smokeBombUsed || gc.outcome != GameOutcome::UNDECIDED
+                        || gc.screenState != ScreenState::MAP_SCREEN || gc.gold != goldBefore
+                        || gc.relics.relics.size() != relicsBefore) {
+                    { std::cerr << c.name << '\n'; return fail("event Smoke Bomb escape granted rewards or kept smokeBombUsed"); }
+                }
+            }
+            if (!fought) { std::cerr << c.name << '\n'; return fail("event Smoke Bomb test found no seed reaching the fight"); }
+        }
+    }
     // Boss and SURROUNDED fights reject use, preserve the potion on direct
     // execution, and still expose the independent discard action.
     {
