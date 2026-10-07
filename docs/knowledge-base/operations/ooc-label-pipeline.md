@@ -770,6 +770,24 @@ The analysis command is:
 python3 tools/analyze_boss_headroom_347.py PREFIX.arms.csv
 ```
 
+`bossheadroom347gen` reconstructs sources through `runCombatEvalGenSeed`, whose
+non-combat step is `runFullRunOocPolicyStep` only: it never runs live OOC MCTS,
+so it cannot reproduce an MCTS-policy source even when `STS_OOC_MCTS=1`.
+`bossrescue347 1 SELECTION.json STATE_ID OUT_PREFIX` (research-only, one source
+per process) instead calls the ordinary `runFullRunOOC` under the source arm's
+environment. A thread-local `t_bossEntryHook` (`run_driver.h`, unset elsewhere)
+captures the selected act's boss entry before Silver initializes the battle and
+records that fight's action trace. The mode requires the reconstructed run to
+match its historical `bestbench` row, replays the entry with the original
+planner seed (control parity: outcome, terminal HP, full trace, post-exit state
+digest), then with fresh planner seeds at two flat exact budgets. Fresh planner
+seeds use the thread-local `g_nativeSilverPlannerSeedOverride`, which replaces
+the game seed in each Silver search root (search RNG streams and rollouts) and
+leaves the live battle untouched. Native Silver's `NativeSilverCombatStats` now
+also counts search steps per searched root, so a replay can prove its budget.
+`bossrescue347selftest 1 SEED SIMS` checks the replay boundary on one act-1
+boss. See the [#347 rescue pilot packet](../../experiments/evidence/boss_budget_rescue_347_pilot_20261007/PLAN.md).
+
 No pilot or Stage-1 cohort is part of implementation verification. The default
 4,096-seed A2 collection still requires explicit authorization; no training,
 model export, leaf-runtime routing, Silver terminal pricing or gameplay/default
