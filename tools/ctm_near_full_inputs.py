@@ -56,7 +56,6 @@ LABELS = "full-union-downstream-labels-v1"
 TEST_STATES = "full-union-test-states-v1"
 BREW_AUDIT = "brew-native-label-audit-v1.json"
 BREW = c.base._POTION_IDS["ENTROPIC_BREW"]
-SMOKE = c.base._POTION_IDS["SMOKE_BOMB"]
 DAGGER = c.base._CARD_IDS["RITUAL_DAGGER"]
 BLOOM = c.base._RELIC_IDS["MARK_OF_THE_BLOOM"]
 OMAMORI = c.base._RELIC_IDS["OMAMORI"]
@@ -66,6 +65,11 @@ def produce(parent: Path, out: Path, sha: str) -> dict:
     sparse.frozen(sha)
     _, _, meta = trajectory.load(parent / "potion-trajectory-v2")  # verifies the frozen source data
     return build(parent, e.CORPUS, out, sha)
+
+
+def needs_joint_target(reasons) -> bool:
+    """Winning rows whose gold or Brew outcome needs a joint native target (besides Writhing/Dagger)."""
+    return "entropic_brew" in reasons or any(r.startswith("gold_mutating_") for r in reasons)
 
 
 def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
@@ -97,26 +101,29 @@ def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
             if win != bool(cache["win"][index]):
                 raise ValueError(f"win label differs at {index}")
             escaped[index] = bool(post["smokeBombUsed"])
-            writhing[index] = pi["globals"]["encounter"] == c.base.WRITHING_MASS_ID
-            dagger[index] = any(card["id"] == DAGGER for card in pre["deck"])
-            bloom = any(r["id"] == BLOOM for r in pre["relics"])
-            # Omamori is the Writhing Mass event's target, not a trajectory
-            # relic; strip it as combat_transition_sparse_validity does.
-            strip = lambda relics: [r for r in relics if r["id"] != OMAMORI]
-            constraints = relic.trajectory_constraints(strip(pre["relics"]), strip(post["relics"]),
-                                                       pi["globals"]["encounter"], bloom)
-            for j, g in enumerate(c.TRAINED_GROUPS):
-                if g in constraints:
-                    observed[index, j] = True
-                    compatible[g][index] = np.isin(np.arange(relic.HEAD_CLASSES[g]), list(constraints[g]))
             reasons = original(pi, pre)
-            if win and (writhing[index] or dagger[index] or any(gold.gold_reason(r) for r in reasons)):
-                affected.append(dict(index=index, pre=pre, post=post, pi=pi))
+            if win:
+                # Downstream labels exist only for wins; deaths keep the
+                # unobserved defaults (no constraint, no event).
+                writhing[index] = pi["globals"]["encounter"] == c.base.WRITHING_MASS_ID
+                dagger[index] = any(card["id"] == DAGGER for card in pre["deck"])
+                bloom = any(r["id"] == BLOOM for r in pre["relics"])
+                # Omamori is the Writhing Mass event's target, not a trajectory
+                # relic; strip it as combat_transition_sparse_validity does.
+                strip = lambda relics: [r for r in relics if r["id"] != OMAMORI]
+                constraints = relic.trajectory_constraints(strip(pre["relics"]), strip(post["relics"]),
+                                                           pi["globals"]["encounter"], bloom)
+                for j, g in enumerate(c.TRAINED_GROUPS):
+                    if g in constraints:
+                        observed[index, j] = True
+                        compatible[g][index] = np.isin(np.arange(relic.HEAD_CLASSES[g]), list(constraints[g]))
+                if writhing[index] or dagger[index] or needs_joint_target(reasons):
+                    affected.append(dict(index=index, pre=pre, post=post, pi=pi))
             if int(cache["split"][index]) == 2:
                 old = not reasons and certified(pi)
                 tests.append(dict(index=index, pre=pre, post=post, pi=pi, outcome=outcome, old=old))
                 test_counts["rows"] += 1; test_counts["previous179" if old else "recovered"] += 1
-            if BREW in pre["potions"] or SMOKE in pre["potions"]:
+            if BREW in pre["potions"]:
                 state = dict(pre["combatRng"][4]); target = post["combatRng"][4]; generated = []
                 while state["counter"] < target["counter"]:
                     generated.append(t.brew.draw_native(state))
@@ -139,7 +146,8 @@ def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
         raise ValueError("population differs from the trajectory cache")
     labels_dir = out / LABELS
     labels_dir.mkdir(parents=True)
-    np.savez_compressed(labels_dir / "labels.npz", escaped=escaped, writhing=writhing, dagger=dagger, observed=observed,
+    np.savez_compressed(labels_dir / "labels.npz", ids=np.arange(n), affected=np.asarray([r["index"] for r in affected], np.int64),
+                        escaped=escaped, writhing=writhing, dagger=dagger, observed=observed,
                         **{f"compatible_{g}": v for g, v in compatible.items()})
     with (labels_dir / "affected_rows.jsonl").open("x") as stream:
         for record in affected:
@@ -210,7 +218,8 @@ def compare(old: Path, new: Path) -> dict:
             problems.append(d["name"])
     if not tests["sameOrder"]:
         problems.append("test_states order")
-    # Consumers read only recursiveExamples; the counts are reported, not gated.
+    if a["counts"] != b["counts"] or a["generationRounds"] != b["generationRounds"]:
+        problems.append("brew counts")
     result = dict(problems=problems, labels=arrays, affectedRows=affected, testStates=tests, brewAudit=brew)
     print(json.dumps(result, indent=1))
     return result
