@@ -405,6 +405,10 @@ add_test(NAME vwin_refresh_corpus_selftest
     COMMAND python3 -m unittest tools.test_vwin_refresh_corpus -q)
 set_tests_properties(vwin_refresh_corpus_selftest PROPERTIES
     LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_e1_focal_selftest
+    COMMAND python3 -m unittest tools.test_vwin_e1_focal -q)
+set_tests_properties(vwin_e1_focal_selftest PROPERTIES
+    LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME boss_headroom_347_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
 set_tests_properties(boss_headroom_347_analysis_selftest PROPERTIES
@@ -563,6 +567,10 @@ add_test(NAME ctm_corpus_adapter_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_corpus_adapter.py)
 add_test(NAME ctm_survival_compare_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_survival_compare.py)
+add_test(NAME ctm_pins_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_pins.py)
+add_test(NAME ctm_near_full_inputs_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
 add_test(NAME combat_transition_attention_hpo_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_attention_hpo.py)
 add_test(NAME combat_transition_attention_hpo_promote_selftest

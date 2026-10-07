@@ -270,6 +270,18 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                     int samplesPerType, int parityPercent = 100,
                     int diagMaxBranches = -1, const std::string &diagMarkerPath = {});
 
+// Counterfactual OOC label generation: per source seed up to STATES sampled
+// card reward, campfire, shop or boss-relic decisions; every option is replayed
+// K times with shared re-drawn hidden futures until the next boss fight ends
+// (card rewards: the next CARD_BOSSES boss fights).
+void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
+                               long long seedOffset, const std::string &teacherPath,
+                               int futures, int statesPerSeed = 1, int cardRewardBosses = 1,
+                               int generation = 1, const std::string &typeList = {});
+namespace one_combat {
+void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng);
+}
+
 // Bounded #347 Stage 1 replay on the fixed 128-seed #334 pilot cohort.
 void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                         long long seedOffset, const std::string &teacherPath);

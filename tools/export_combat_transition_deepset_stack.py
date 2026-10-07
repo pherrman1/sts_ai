@@ -16,15 +16,19 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
-CONTROL_SHA = "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"
-SURVIVAL_SHA = "328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3"
-TRANSITION_SHA = "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"
-DOWNSTREAM_SHA = "c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"
-POTION_SPECIALIST_SHA = "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"
-CORPUS_SHA = "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde"
-SPLIT_MANIFEST_SHA = "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32"
-PREPARED_SHA = "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"
-PREPARED_MANIFEST_SHA = "fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+CONTROL_SHA = _pins.value("export_combat_transition_deepset_stack.CONTROL_SHA", "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd")
+SURVIVAL_SHA = _pins.value("export_combat_transition_deepset_stack.SURVIVAL_SHA", "328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3")
+TRANSITION_SHA = _pins.value("export_combat_transition_deepset_stack.TRANSITION_SHA", "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663")
+DOWNSTREAM_SHA = _pins.value("export_combat_transition_deepset_stack.DOWNSTREAM_SHA", "c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a")
+POTION_SPECIALIST_SHA = _pins.value("export_combat_transition_deepset_stack.POTION_SPECIALIST_SHA", "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace")
+CORPUS_SHA = _pins.value("export_combat_transition_deepset_stack.CORPUS_SHA", "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde")
+SPLIT_MANIFEST_SHA = _pins.value("export_combat_transition_deepset_stack.SPLIT_MANIFEST_SHA", "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32")
+PREPARED_SHA = _pins.value("export_combat_transition_deepset_stack.PREPARED_SHA", "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9")
+PREPARED_MANIFEST_SHA = _pins.value("export_combat_transition_deepset_stack.PREPARED_MANIFEST_SHA", "fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51")
 MAGIC = b"COMBAT_TRANSITION_RUNTIME_V2\0"
 
 
@@ -99,7 +103,7 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
         raise ValueError("Phase-1 prepared manifest identity mismatch")
     prepared_manifest = json.loads(prepared_manifest_path.read_text())
     if (prepared_manifest.get("corpusSha256") != CORPUS_SHA or
-            prepared_manifest.get("rows") != 510030 or
+            prepared_manifest.get("rows") != _pins.value("export_combat_transition_deepset_stack.PREPARED_ROWS", 510030) or
             digest(split_manifest_path) != SPLIT_MANIFEST_SHA):
         raise ValueError("Phase-1 prepared corpus/split identity mismatch")
     with np.load(prepared, allow_pickle=False) as archive:
@@ -110,7 +114,7 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
         # Match NumPy's default float32 accumulation used by the Phase-1 fit.
         mean = fit.mean(axis=0)
         std = fit.std(axis=0)
-    if fit.shape != (458589, 10) or not np.isfinite(mean).all() or not np.isfinite(std).all():
+    if fit.shape != (_pins.value("export_combat_transition_deepset_stack.SCALAR_FIT_ROWS", 458589), 10) or not np.isfinite(mean).all() or not np.isfinite(std).all():
         raise ValueError("Phase-1 TRAIN+VALIDATION normalization population differs")
     inv = (1.0 / np.maximum(std, 1e-6)).astype(np.float32)
     mean_sha = hashlib.sha256(mean.astype("<f4", copy=False).tobytes()).hexdigest()

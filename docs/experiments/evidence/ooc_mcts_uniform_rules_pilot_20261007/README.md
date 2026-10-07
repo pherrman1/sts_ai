@@ -17,7 +17,7 @@ commit `d9ee73f`, recorded in `run/PLAN_COMMIT`). Ledger §393.
 - **Wins 18/32 (56.3%), Wilson 95% [39.3%, 71.8%].** Mean final floor 44.6,
   mean 125 s per run.
 - Losses (14): act 1 boss 1, act 2 boss 4, act 2 other 3, act 3 boss 4,
-  act 3 other 2. Eight of 14 at a boss.
+  act 3 other 2. Nine of 14 at a boss.
 - Rules worked as intended: 93 of 93 chests opened by the chest rule; 187
   reward relics taken by the relic rule; the 10 exception relics offered were
   all taken by the owning policy anyway; no non-exception relic left behind.

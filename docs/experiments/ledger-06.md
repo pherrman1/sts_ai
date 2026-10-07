@@ -14549,7 +14549,7 @@ scored each of the 11 chest states on the map screen with the run's leaf model
 for 27 gold on 48000116). **Inference:** the leaf model values these relics at
 about zero, so relic skipping is not a reward-screen artifact. Traces
 byte-identical to the C runs.
-[Packet](evidence/ooc_chest_score_347_20261007/README.md). The same PR drops
+[Packet](evidence/ooc_chest_score_347_20261007/README.md). PR #431 drops
 key actions from live OOC MCTS when keys are off (it could take the sapphire key
 and lose the relic).
 
@@ -14624,8 +14624,8 @@ search cannot take keys? One arm, descriptive, as Philipp chose.
 flat exact 10k Silver) plus uniform prior, binary from `c2e701d`. Plan frozen
 after independent review; PR #429.
 **Validity:** all shards exit 0, logged config checked, 32/32 seeds.
-**Result:** 18/32 wins (56.3%, Wilson 95% [39.3, 71.8]); 8 of 14 losses at a
-boss (act 2: 4, act 3: 4). Rules fired as intended: 93/93 chests, 187 relics
+**Result:** 18/32 wins (56.3%, Wilson 95% [39.3, 71.8]); 9 of 14 losses at a
+boss (act 1: 1, act 2: 4, act 3: 4). Rules fired as intended: 93/93 chests, 187 relics
 by rule, no non-exception relic left. Context only: #417 (48M, policy prior,
 no rules) MCTS 56.3%, flat10k 78.1%.
 **Interpretation:** **Inference:** the rules plus a uniform prior do not make
@@ -14636,3 +14636,34 @@ flat10k with the same rules is needed to say more.
 **Evidence:** [packet](evidence/ooc_mcts_uniform_rules_pilot_20261007/README.md).
 
 **Knowledge impact:** none (no default change; rules recorded in §390/KB).
+
+## §394 — E1: focal retrain of the #334 X2 family, card-reward selection gain inconclusive (2026-10-07)
+
+**Question:** were the #334 counterfactual sibling comparisons diluted among
+later trajectory rows, so that training on the first MAP row after each
+sampled option (focal rows) prices picks, especially card rewards, better?
+**Design:** offline on the frozen 1,024-source corpus (`ae56f963…`), unchanged
+696/155 TRAIN/VALIDATION split, TEST closed. Frozen X2-B as is, plus three arms
+with the X2-B recipe on the 457 public features (four #397 HIDDEN_FUTURE fields
+removed), seeds 0/1/2, 3-seed mean: P0 all rows; F1 focal rows only with
+per-decision balanced weights; F2 all rows with the focal block upweighted to
+equal the non-focal total weight. Selection gain = branch outcome of the
+model's argmax sibling minus the V4 chosen sibling's, source-clustered bootstrap.
+Tooling `36b5b14f`; X2-B VALIDATION NLL reproduced exactly (0.4226084).
+**Result:** `E1_INCONCLUSIVE`. VALIDATION NLL all/focal: X2B 0.4226/0.4884,
+P0 0.4237/0.4923, F1 0.4369/0.4958, F2 0.4263/0.4869. Card-reward selection
+gain vs V4 (155 decisions, 48 discordant): P0 +0.027 [−0.019, +0.079], F1
++0.039 [−0.014, +0.096], F2 +0.042 [−0.009, +0.090]; oracle +0.155. Boss relic
+gains are negative for every arm (F2 −0.026 [−0.092, +0.033]). Pooled over
+1,329 decisions, F1/F2 beat P0 by +0.019 [+0.005, +0.032] / +0.016 [+0.004,
++0.027]. X2B − P0 all-row NLL −0.0011 [−0.0059, +0.0041].
+**Interpretation:** focal training does not clearly improve card-reward picks on
+this corpus; the direction is positive but 48 discordant comparisons cannot
+resolve it. The pooled gain was not the preregistered criterion. F2 keeps
+all-row calibration within noise and slightly improves focal Brier, so it is a
+cheap training default for E3; F1 alone loses calibration. Dropping the
+hidden-future fields is again free (§371). Per the plan, E3 decides.
+
+**Evidence:** [packet](evidence/ooc_e1_focal_20261007/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e1_focal`.

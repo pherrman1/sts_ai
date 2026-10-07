@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract and the CTM corpus adapter; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -624,6 +624,19 @@ native/in-context speed work. WIN_RAW resource qualification is reported
 separately. Neither verdict grants terminal-pricing readiness or promotion.
 The tooling PR and synthetic tests are not a full experiment result.
 
+#### Focal retrain and selection gain (E1)
+
+`python3 -m tools.vwin_e1_focal INDEX --x2b-run TUNE_DIR --output NEW_DIR`
+retrains the X2-B recipe on the public 457 features as P0 (all MAP rows), F1
+(focal rows only: the sibling-ranking join row of each branch, per-decision
+balanced weights) and F2 (all rows, focal block upweighted to the non-focal
+total), seeds 0/1/2. It reads only TRAIN/VALIDATION components, re-checks
+index/manifest/table hashes instead of rerunning the bundle validator, and
+requires the frozen X2-B VALIDATION NLL to reproduce exactly. It reports
+NLL/Brier on all and focal rows, sibling ranking, and per-type selection gain
+(the argmax sibling's branch outcome minus the V4 chosen sibling's) with
+source-clustered CIs. Result: ledger-06 §394 (`E1_INCONCLUSIVE`).
+
 ### Rich `v_win` information boundary (#397)
 
 `tools/analyze_vwin_public_info_397.py` is the maintained classification of
@@ -993,6 +1006,43 @@ future start `10` for each frozen schedule (`10000`; `5000,5000`;
 `3333,3333,3334`; `150,100,50`) and distinct schedule-prefixed shard files.
 Analyze those 96 files together with the unchanged 24 Stage-A A files and 24
 Stage-A B reference files.
+
+### Counterfactual OOC labels (`ooccfpilotgen`)
+
+`one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES
+[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]`
+(`apps/one_combat/combat_datasets.cpp::oocCounterfactualPilotGen`). It is
+seed-guarded, and the launcher is
+`docs/experiments/evidence/ooc_cf_pilot_20261007/run_corpus.sh`. The source
+run and the per-type reservoir are those of `vwinrefreshgen` with K=1. Each
+retained option of a selected CARD_REWARD, BOSS_RELIC, REST or SHOP decision
+is forced FUTURES times. Run k of every sibling redraws the hidden future
+(`sampleNoncombatFuture`) from `sha256(...:{seed}:{decisionIdx}:{k})`, so all
+siblings share common random numbers.
+
+- **GEN=1 (pilot, default):**
+  - The future is redrawn after the forced option.
+  - The horizon is the first boss fight after the branch, or the second for
+    card rewards when CARD_BOSSES=2. The label is HP after that boss.
+  - The cap is #334's: the chosen option plus five, hash-ranked.
+- **GEN=2:**
+  - The future is redrawn *before* the forced option, so randomness the option
+    itself consumes is sampled too. The generator fails closed if the redraw
+    changes the published screen or any rich field other than the four
+    HIDDEN_FUTURE fields (#397).
+  - Every branch plays to the end of the run. The label is `finalWon`;
+    first-boss win and HP after it are diagnostics.
+  - `.options.csv` holds the rich row right after the option (k=0).
+    `.map.csv` holds one rich row per run at the first MAP screen after the
+    branch screen is finished. The map row can differ across k after a boss
+    relic, because the next act's map is generated from the redrawn future.
+  - The option cap first merges keys that differ only in `occurrence=`
+    (identical cards at other deck positions). It always keeps the chosen
+    option and the skip/leave options, then fills up to six by
+    `sha256(ooc-cf-option-cap-v2:...)`.
+  - States are drawn only from TYPES (comma list), ranked by
+    `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
+  - The manifest counts selected states by type and act.
 
 ## Schema examples
 

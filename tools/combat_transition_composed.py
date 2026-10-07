@@ -17,8 +17,12 @@ from tools import combat_transition_relic_trajectory as trajectory
 from tools import combat_transition_rng_audit as native_rng
 from tools.combat_transition_contract import validate_state
 
-BASELINE = '7316c715bac7fe4559ead59cde1eb374d3437b5b'
-RUNS = Path('/home/philippherrmann/sts_sweep/runs')
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+BASELINE = _pins.value("combat_transition_composed.BASELINE", '7316c715bac7fe4559ead59cde1eb374d3437b5b')
+RUNS = Path(_pins.value('combat_transition_composed.RUNS', '/home/philippherrmann/sts_sweep/runs', required=False))
 ARTIFACTS = {
     'survival': (RUNS/'frozen-survival-potion-20260913/point_control_attention.pt', '2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef'),
     'max_hp': (RUNS/'frozen-survival-potion-20260913/phase2_attention.pt', '66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479'),
@@ -27,6 +31,8 @@ ARTIFACTS = {
     'potion_encoder': (RUNS/'joint-potion-mask-20260913/encoder.pt', trajectory.ENCODER_HASH),
     'relic': (RUNS/'relic-trajectory-20260914/relic-20260912-0.pt', 'e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71'),
 }
+# Pinned artifacts are [path, sha256] pairs.
+ARTIFACTS = {k: (Path(v[0]), v[1]) for k, v in _pins.value('combat_transition_composed.ARTIFACTS', ARTIFACTS).items()}
 CLASSES = np.arange(-160, 144, dtype=np.int64)
 TRAINED_GROUPS = ('turns', 'attacks', 'cards', 'shuffles')
 INPUT_KEYS = ('globals_continuous', 'global_categories', 'cards', 'relics', 'potions', 'card_mask', 'relic_mask')

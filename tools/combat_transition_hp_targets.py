@@ -14,10 +14,11 @@ import numpy as np
 from tools import combat_transition_attention_ablation as attention
 from tools import combat_transition_surrogate as base
 from tools import combat_transition_frozen_composition as frozen
+from tools import ctm_pins as _pins
 
 ROOT = Path(__file__).resolve().parents[1]
-SPLIT = ROOT / 'docs/experiments/evidence/potion_decoder_v1/nested_split.json'
-SPLIT_HASH = '58e35f9f85eefd7617e616ddbfa7ee227c429ed4d312f7dacd470828f9a09094'
+SPLIT = Path(_pins.value('combat_transition_hp_targets.SPLIT', str(ROOT / 'docs/experiments/evidence/potion_decoder_v1/nested_split.json')))
+SPLIT_HASH = _pins.value('combat_transition_hp_targets.SPLIT_HASH', '58e35f9f85eefd7617e616ddbfa7ee227c429ed4d312f7dacd470828f9a09094')
 RECIPE = dict(schema='hp_target_comparison_v1', seeds=[20260912, 20260913, 20260914],
               epochs=10, batch=2048, lr=1e-3, weightDecay=1e-4, clip=1.0,
               precision='amp-fp16', bootstrapReps=1000, bootstrapSeed=20260914,
