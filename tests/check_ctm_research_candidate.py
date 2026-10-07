@@ -28,6 +28,38 @@ def write(path, version, header, body):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def widen(header, body, domain):
+    """Expand the HP-class tensors as tools/ctm_hp_domain.py does: old rows keep their
+    place, new HP-head rows get zero weights and bias -30, new relic rows copy an edge."""
+    header = json.loads(json.dumps(header))
+    old = header['hpClasses']
+    offset, count = old[0] - domain['min'], domain['classes']
+    floats = struct.unpack(f'<{len(body) // 4}f', body)
+    out, position = [], 0
+    for name, shape in header['tensors'].items():
+        size = 1
+        for dim in shape:
+            size *= dim
+        values = list(floats[position:position + size]); position += size
+        if name in ('hp.hp.2.weight', 'hp.hp.2.bias', 'relic.delta.weight'):
+            width = shape[1] if len(shape) == 2 else 1
+            rows = [values[i * width:(i + 1) * width] for i in range(shape[0])]
+            if name == 'relic.delta.weight':
+                wide = [rows[min(max(i - offset, 0), len(old) - 1)] for i in range(count)]
+            else:
+                fill = [0.0] * width if len(shape) == 2 else [-30.0]
+                wide = [fill] * count
+                wide[offset:offset + len(old)] = rows
+            values = [v for row in wide for v in row]
+            header['tensors'][name] = [count] + shape[1:]
+        out.extend(values)
+    if position != len(floats):
+        raise RuntimeError('tensor graph does not cover the body')
+    header['hpClasses'] = list(range(domain['min'], domain['max'] + 1))
+    header['domain'] = domain
+    return header, struct.pack(f'<{len(out)}f', *out)
+
+
 def probe(args, env=None):
     clean = {k: v for k, v in os.environ.items() if not k.startswith('STS_CTM_RESEARCH_CANDIDATE')}
     return subprocess.run([sys.argv[1], *map(str, args)], text=True, capture_output=True,
@@ -159,6 +191,42 @@ def main():
         case_env = manifest(directory / 'nolizard.json', activeLizard=None)
         expect('candidate_lizard_not_in_manifest', probe(['--identity', fast_path], case_env),
                error='active-Lizard candidate identity')
+
+        # v2 manifests pin a declared, wider HP domain (max HP 220: classes -219..231).
+        sys.path.insert(0, str(ROOT))
+        from tools.ctm_hp_domain import declared_domain
+        domain = declared_domain(220, 220)
+        wide_std_header, wide_std_body = widen(standard_header(), std_body, domain)
+        wide_std_path = directory / 'wide-standard.native'
+        wide_std_sha = write(wide_std_path, std_version, wide_std_header, wide_std_body)
+        wide_fast_header, wide_fast_body = widen(fast_header_for(wide_std_sha), fast_body, domain)
+        wide_fast_path = directory / 'wide-fast.native'
+        wide_fast_sha = write(wide_fast_path, fast_version, wide_fast_header, wide_fast_body)
+        wide_manifest = json.loads(Path(env['STS_CTM_RESEARCH_CANDIDATE_MANIFEST']).read_text())
+        wide_fast = dict(wide_manifest['fast'], artifactSha256=wide_fast_sha)
+        wide_standard = dict(wide_manifest['standard'], artifactSha256=wide_std_sha)
+        v2 = dict(schema='ctm_research_candidate_v2', domainSha256=domain['sha256'], standard=wide_standard, fast=wide_fast)
+        case_env = manifest(directory / 'wide.json', **v2)
+        expect('declared_domain_pair', probe(['--pair-identity', wide_fast_path, wide_std_path, 1], case_env),
+               identity=CANDIDATE)
+        expect('declared_domain_under_v1_manifest', probe(['--identity', wide_std_path],
+               manifest(directory / 'wide-v1.json', standard=wide_standard)), error='frozen envelope')
+        expect('declared_domain_not_in_manifest', probe(['--identity', wide_std_path],
+               manifest(directory / 'wide-othersha.json', **dict(v2, domainSha256='ab' * 32))),
+               error='HP domain is not listed in its manifest')
+        expect('declared_domain_missing_sha', probe(['--identity', wide_std_path],
+               manifest(directory / 'wide-nosha.json', **dict(v2, domainSha256=None))), error='manifest schema')
+        tampered_header = json.loads(json.dumps(wide_std_header))
+        tampered_header['domain']['rule'] = 'edited'
+        tampered_path = directory / 'wide-tampered.native'
+        tampered_sha = write(tampered_path, std_version, tampered_header, wide_std_body)
+        expect('declared_domain_hash_recomputed', probe(['--identity', tampered_path],
+               manifest(directory / 'wide-tampered.json', **dict(v2, standard=dict(wide_standard, artifactSha256=tampered_sha)))),
+               error='declared HP domain SHA256')
+        # The C++ recomputation reproduces the production domain hash, so v2 also accepts it.
+        expect('declared_production_domain', probe(['--identity', standard_path],
+               manifest(directory / 'v2-production.json', schema='ctm_research_candidate_v2',
+                        domainSha256=std_header['domain']['sha256'])), identity=CANDIDATE)
     if production_standard_sha != hashlib.sha256(STANDARD.read_bytes()).hexdigest():
         raise RuntimeError('production artifact changed')
     print('research candidate loader PASS')

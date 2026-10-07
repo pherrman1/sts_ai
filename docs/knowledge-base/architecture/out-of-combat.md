@@ -314,7 +314,13 @@ definitions stay pinned. A candidate cannot claim the production default or a
 promoted Lizard. The Brew fallback is pinned by the fast artifact's identity, so
 a candidate fast artifact needs its own standard artifact. Without the variables
 nothing changes, and artifacts without the declaration always use the
-production pins (CTest `ctm_research_candidate_loader`).
+production pins (CTest `ctm_research_candidate_loader`). A
+`ctm_research_candidate_v2` manifest also pins `domainSha256`, a declared HP
+domain from `tools/ctm_hp_domain.py`. The runtime then derives the signed HP
+classes and the HP-head and relic-delta row counts from that domain. It also
+recomputes the domain hash, and it requires the lowest class to equal
+`1 - preCurHpRange[1]` and the maxHP deltas to stay production. Production keeps
+the literal -160..143 domain.
 
 With the automatic model stack, the qualified active-Lizard correction is
 enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips

@@ -64,7 +64,7 @@ EXPECTED_COUNTS = _pins.value("combat_transition_deepset_distill.EXPECTED_COUNTS
     "TRAIN": {"rows": 393677, "sources": 19986},
     "VALIDATION": {"rows": 48590, "sources": 2496},
 })
-EXPECTED_HP_CLASS_COUNT = 304
+EXPECTED_HP_CLASS_COUNT = _pins.value("combat_transition_deepset_distill.EXPECTED_HP_CLASS_COUNT", 304)
 EXPECTED_CONTROL = _pins.value("combat_transition_deepset_distill.EXPECTED_CONTROL", {
     "experimentSha": "b58a03920fb84aee84f7fcde3ef300366221feb8",
     "resultSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
