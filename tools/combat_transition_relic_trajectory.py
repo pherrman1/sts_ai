@@ -14,11 +14,12 @@ from tools import combat_transition_stochastic_hp as stochastic
 from tools import combat_transition_potion_decoder as potion
 from tools import combat_transition_frozen_composition as frozen
 from tools import combat_transition_relic_legality as relic
+from tools import ctm_pins as _pins
 
 HEADS = tuple(relic.HEAD_CLASSES)
-HP_HASH = 'a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9'
-POTION_HASH = '8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6'
-ENCODER_HASH = '2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef'
+HP_HASH = _pins.value('combat_transition_relic_trajectory.HP_HASH', 'a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9')
+POTION_HASH = _pins.value('combat_transition_relic_trajectory.POTION_HASH', '8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6')
+ENCODER_HASH = _pins.value('combat_transition_relic_trajectory.ENCODER_HASH', '2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef')
 RECIPE = dict(schema='relic_trajectory_v1', seeds=[20260912,20260913,20260914],
               epochs=10, optimizer='AdamW', lr=1e-3, weightDecay=1e-4,
               batch=2048, clip=1., precision='fp32', hpSeedConvention=20260912,

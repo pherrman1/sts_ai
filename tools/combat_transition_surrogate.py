@@ -1085,11 +1085,15 @@ def _resolve_device(torch, requested: str) -> str:
     return "cpu"
 
 
+FROZEN_CORPUS_SHA256 = _pins.value("combat_transition_surrogate.FROZEN_CORPUS_SHA256", "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde")
+FROZEN_SPLIT_SHA256 = _pins.value("combat_transition_surrogate.FROZEN_SPLIT_SHA256", "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32")
+
+
 def _load_prepared(prepared_dir: Path) -> tuple[dict, dict]:
     manifest = json.loads((prepared_dir / "prepared_manifest.json").read_text(encoding="utf-8"))
     if manifest.get("schemaVersion") != PREPARED_SCHEMA:
         raise ValueError("unsupported Phase-2 prepared schema")
-    if manifest.get("corpusSha256") != "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde":
+    if manifest.get("corpusSha256") != FROZEN_CORPUS_SHA256:
         raise ValueError("prepared corpus is not the frozen Phase-2 corpus")
     target_spec = json.loads((prepared_dir / "target_spec.json").read_text(encoding="utf-8"))
     arrays = {key: value for key, value in np.load(prepared_dir / "prepared.npz", allow_pickle=False).items()}
@@ -1778,8 +1782,8 @@ def fit(args: argparse.Namespace) -> None:
     evidence = {
         "schemaVersion": MODEL_SCHEMA,
         "baselineHeadSha": args.baseline_head_sha,
-        "frozenCorpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
-        "frozenSourceSplitSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "frozenCorpusSha256": FROZEN_CORPUS_SHA256,
+        "frozenSourceSplitSha256": FROZEN_SPLIT_SHA256,
         "preparedManifest": str((Path(args.prepared_dir) / "prepared_manifest.json").resolve()),
         "preparedManifestSha256": sha256(Path(args.prepared_dir) / "prepared_manifest.json"),
         "support": json.loads((Path(args.prepared_dir) / "support_audit.json").read_text(encoding="utf-8")),
@@ -1841,7 +1845,7 @@ def main() -> None:
     p = sub.add_parser("prepare")
     p.add_argument("--corpus-manifest", required=True)
     p.add_argument("--output-dir", required=True)
-    p.add_argument("--expected-corpus-sha256", default="74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde")
+    p.add_argument("--expected-corpus-sha256", default=FROZEN_CORPUS_SHA256)
     p.set_defaults(func=prepare)
     p = sub.add_parser("fit")
     p.add_argument("--prepared-dir", required=True)

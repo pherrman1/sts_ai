@@ -367,7 +367,7 @@ def run(args) -> None:
     arrays, spec = base._load_prepared(prepared)
     base._prepare_target_indices(arrays, spec)
     groups = [np.flatnonzero((arrays["split_id"] == i) & arrays["supported"]) for i in range(3)]
-    if [len(x) for x in groups] != [331225, 41120, 41454]:
+    if [len(x) for x in groups] != _pins.value("combat_transition_frozen_composition.SUPPORTED_SPLIT_COUNTS", [331225, 41120, 41454]):
         raise ValueError("supported split counts differ")
     # Independently verify source bucket rule against the actual frozen split.
     split = json.loads(split_path.read_text())
