@@ -303,8 +303,9 @@ def main():
     del data["TRAIN"]["X"]
     focal_val = f1["VALIDATION"] > 0
     preds = {"X2B": x2b.predict(va["X"])}
-    check = float(np.mean(-(va["y"] * np.log(np.clip(preds["X2B"], 1e-15, 1)) +
-                            (1 - va["y"]) * np.log(np.clip(1 - preds["X2B"], 1e-15, 1)))))
+    p64, y64 = preds["X2B"].astype(np.float64), va["y"].astype(np.float64)
+    check = float(np.mean(-(y64 * np.log(np.clip(p64, 1e-15, 1)) +
+                            (1 - y64) * np.log(np.clip(1 - p64, 1e-15, 1)))))
     log["x2b_validation_nll_recomputed"] = check
     if args.smoke is None and (abs(check - X2B_VALIDATION_NLL) > 1e-9 or len(va["y"]) != 141566):
         raise ValueError(f"X2-B VALIDATION anchor mismatch: {check}")
