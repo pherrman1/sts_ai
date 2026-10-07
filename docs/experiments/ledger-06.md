@@ -14515,3 +14515,34 @@ simulations, rollouts that also score post-boss HP, or the refreshed CTM.
 
 **Knowledge impact:** `environment-variables.md` and `out-of-combat.md` list the
 `bossrollout` leaf mode.
+
+## §394 — E1: focal retrain of the #334 X2 family, card-reward selection gain inconclusive (2026-10-07)
+
+**Question:** were the #334 counterfactual sibling comparisons diluted among
+later trajectory rows, so that training on the first MAP row after each
+sampled option (focal rows) prices picks, especially card rewards, better?
+**Design:** offline on the frozen 1,024-source corpus (`ae56f963…`), unchanged
+696/155 TRAIN/VALIDATION split, TEST closed. Frozen X2-B as is, plus three arms
+with the X2-B recipe on the 457 public features (four #397 HIDDEN_FUTURE fields
+removed), seeds 0/1/2, 3-seed mean: P0 all rows; F1 focal rows only with
+per-decision balanced weights; F2 all rows with the focal block upweighted to
+equal the non-focal total weight. Selection gain = branch outcome of the
+model's argmax sibling minus the V4 chosen sibling's, source-clustered bootstrap.
+Tooling `36b5b14f`; X2-B VALIDATION NLL reproduced exactly (0.4226084).
+**Result:** `E1_INCONCLUSIVE`. VALIDATION NLL all/focal: X2B 0.4226/0.4884,
+P0 0.4237/0.4923, F1 0.4369/0.4958, F2 0.4263/0.4869. Card-reward selection
+gain vs V4 (155 decisions, 48 discordant): P0 +0.027 [−0.019, +0.079], F1
++0.039 [−0.014, +0.096], F2 +0.042 [−0.009, +0.090]; oracle +0.155. Boss relic
+gains are negative for every arm (F2 −0.026 [−0.092, +0.033]). Pooled over
+1,329 decisions, F1/F2 beat P0 by +0.019 [+0.005, +0.032] / +0.016 [+0.004,
++0.027]. X2B − P0 all-row NLL −0.0011 [−0.0059, +0.0041].
+**Interpretation:** focal training does not clearly improve card-reward picks on
+this corpus; the direction is positive but 48 discordant comparisons cannot
+resolve it. The pooled gain was not the preregistered criterion. F2 keeps
+all-row calibration within noise and slightly improves focal Brier, so it is a
+cheap training default for E3; F1 alone loses calibration. Dropping the
+hidden-future fields is again free (§371). Per the plan, E3 decides.
+
+**Evidence:** [packet](evidence/ooc_e1_focal_20261007/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e1_focal`.
