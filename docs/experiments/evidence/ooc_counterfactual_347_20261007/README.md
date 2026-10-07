@@ -4,7 +4,7 @@ Frozen plan: [PLAN.md](PLAN.md) (independent pre-run review clear). Ledger §390
 
 - Diagnostic build `1911f044` (research flags on `1ed47e5c`, #417 mechanics),
   binary SHA-256 `6fa4bf5c…5ff51677`. Run `run.sh` on one 4-CPU cloud
-  container, 11:20–11:35 UTC; all eight sources `VALID`, exit 0.
+  container, finished 11:20–11:26 UTC; all eight sources `VALID`, exit 0.
   `analyze.py run ../ooc_divergence_347_20261007/run --out report.json`
   reproduces [report.json](report.json) (M/F rows there are identical to #428).
 - Pre-run checks: flags off reproduces the frozen #428 `M-48000024-a2` rows and
