@@ -2831,11 +2831,13 @@ void oocMctsAdapterSelfTest() {
             "singleton root keeps its action identity and exact prior without another V4 score");
     }
     {
-        // Keys off: a chest's sapphire key must not compete with its relic.
+        // Keys off: a sapphire key must not compete with its paired relic.
         auto chest=detachedCopy(gc); chest.screenState=ScreenState::REWARDS;
         chest.info.rewardsContainer.clear();
         chest.info.rewardsContainer.addRelic(RelicId::ANCHOR);
         chest.info.rewardsContainer.sapphireKey=true;
+        CardReward cards; cards.push_back(Card(CardId::ANGER)); cards.push_back(Card(CardId::BASH));
+        chest.info.rewardsContainer.addCardReward(cards); // V4 scores only screens with cards
         const auto effects=[&](const OocGameContextModel &m) {
             std::vector<OocSemanticEffect> out;
             for(auto a:m.legalActions(0)) out.push_back(m.candidate(0,a.id).semantic->effect);
@@ -2862,7 +2864,7 @@ void oocMctsAdapterSelfTest() {
         const auto priors=withoutKeys.legalActions(0);
         require(!has(filtered,OocSemanticEffect::TAKE_KEY) && has(filtered,OocSemanticEffect::TAKE_RELIC)
             && has(filtered,OocSemanticEffect::LEAVE_REWARDS) && !scoredKey
-            && priors.size()==2 && priors[0].prior!=priors[1].prior,
+            && std::any_of(priors.begin(),priors.end(),[&](auto a){return a.prior!=priors.front().prior;}),
             "keys-off chest drops only the key and keeps the policy prior");
     }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::SHOP_ROOM;
