@@ -34,11 +34,18 @@ combat rewards, cannot escape a boss, and cannot be used while `SURROUNDED`.
   **Inference:** Java's smoked-room handling only changes the reward screen,
   which the reward-less slaver fight never opens; not verified against the
   live game.
+- Dead Adventurer, Masked Bandits and Hypnotizing Colored Mushrooms also set
+  their reward screen as the fight continuation. Since 2026-10-07 each one
+  calls `afterBattle` on an escape, so the escape forfeits the event's gold,
+  relic, potion and card rewards and clears the marker, like any other escape.
+  Before that fix these escapes paid the full rewards and left
+  `smokeBombUsed` set outside combat. Mind Bloom's fight is a boss, where
+  Smoke Bomb is blocked.
 - Searcher2, Searcher3, SimpleAgent, and shared action validity expose eligible
   use and reject blocked use. Potion discard remains independently legal.
 - `apps/test.cpp::testIssueFixes` covers eligible escape, boss and
   `SURROUNDED` blocking, discard, search enumeration, post-combat relic
-  processing, Colosseum escapes, and unchanged ordinary potion behavior.
+  processing, Colosseum and event-fight escapes, and unchanged ordinary potion behavior.
 
 ## Relevant code
 

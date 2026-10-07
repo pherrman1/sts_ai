@@ -84,4 +84,7 @@ often: fresh roots 956 (B) vs 303 (A), reroots 488 (B) vs 1,033 (A).
 Preparation counterfactual on the R seeds: for 48000014, 48000024, 48000095
 and 48000116 the flat10k arm won. Capture each seed's flat10k boss entry with
 the same mode and replay both arms' entries with the same 10k planner repeats.
-This holds combat fixed and varies only the OOC policy that produced the entry.
+This holds the combat policy and search fixed, not the combat future: the two
+OOC policies can reach the boss with different RNG-stream states. It is a
+matched-seed OOC-entry comparison (total OOC-policy effect), not a clean
+isolated preparation effect.

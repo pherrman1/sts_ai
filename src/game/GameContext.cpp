@@ -2796,6 +2796,12 @@ void GameContext::chooseEventOption(int idx) {
                     }
 
                     regainControlAction = [=](GameContext &gc) {
+                        if (gc.smokeBombUsed) {
+                            // An escape forfeits the event's combat rewards;
+                            // afterBattle() clears the marker and returns to the map.
+                            gc.afterBattle();
+                            return;
+                        }
                         Rewards reward;
                         reward.addGold(goldAmt);
                         if (addRelic) {
@@ -3180,6 +3186,12 @@ void GameContext::chooseEventOption(int idx) {
             } else if (idx == 1) {
                 const int goldAmt = miscRng.random(25, 35);
                 regainControlAction = [goldAmt](auto &gc) {
+                    if (gc.smokeBombUsed) {
+                        // An escape forfeits the event's combat rewards;
+                        // afterBattle() clears the marker and returns to the map.
+                        gc.afterBattle();
+                        return;
+                    }
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
@@ -3258,6 +3270,12 @@ void GameContext::chooseEventOption(int idx) {
             if (idx == 0) {
                 const int goldAmt = miscRng.random(20, 30);
                 regainControlAction = [=](GameContext &gc) {
+                    if (gc.smokeBombUsed) {
+                        // An escape forfeits the event's combat rewards;
+                        // afterBattle() clears the marker and returns to the map.
+                        gc.afterBattle();
+                        return;
+                    }
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(RelicId::ODD_MUSHROOM);

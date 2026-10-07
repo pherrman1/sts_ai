@@ -40,7 +40,9 @@ def validate_entry(spec, entry, rows):
         problems.append((STRUCTURAL, "entry schema or stateId mismatch"))
     reproduction_failure = False
     for f in entry.get("failures", []):
-        cls = REPRODUCTION if f.startswith(("run_", "boss_", "source_", "control_parity")) else STRUCTURAL
+        # A source budget other than 10k is a budget failure, not a reproduction one.
+        cls = REPRODUCTION if f.startswith(("run_", "boss_", "source_", "control_parity")) \
+            and f != "source_budget_not_10000" else STRUCTURAL
         reproduction_failure = reproduction_failure or cls == REPRODUCTION
         problems.append((cls, f"producer: {f}"))
     if not rows and reproduction_failure:
@@ -263,6 +265,8 @@ def self_test():
     assert unreached["status"] == "PARTIAL" and unreached["validEntries"] == 0, unreached
     unfinished = run([], lambda e: e.update(failures=["source_boss_not_lost"]))
     assert unfinished["status"] == "PARTIAL", unfinished
+    budget = run(base, lambda e: e.update(failures=["source_budget_not_10000"]))
+    assert budget["status"] == "EXECUTION_INVALID", budget
     norows = run([])
     assert norows["status"] == "EXECUTION_INVALID", norows
     mixed = run([], lambda e: e.update(failures=["boss_entry_not_reached", "budget_not_spent"]))
