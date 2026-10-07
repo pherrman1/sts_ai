@@ -59,6 +59,7 @@ BREW = c.base._POTION_IDS["ENTROPIC_BREW"]
 SMOKE = c.base._POTION_IDS["SMOKE_BOMB"]
 DAGGER = c.base._CARD_IDS["RITUAL_DAGGER"]
 BLOOM = c.base._RELIC_IDS["MARK_OF_THE_BLOOM"]
+OMAMORI = c.base._RELIC_IDS["OMAMORI"]
 
 
 def produce(parent: Path, out: Path, sha: str) -> dict:
@@ -99,7 +100,11 @@ def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
             writhing[index] = pi["globals"]["encounter"] == c.base.WRITHING_MASS_ID
             dagger[index] = any(card["id"] == DAGGER for card in pre["deck"])
             bloom = any(r["id"] == BLOOM for r in pre["relics"])
-            constraints = relic.trajectory_constraints(pre["relics"], post["relics"], pi["globals"]["encounter"], bloom)
+            # Omamori is the Writhing Mass event's target, not a trajectory
+            # relic; strip it as combat_transition_sparse_validity does.
+            strip = lambda relics: [r for r in relics if r["id"] != OMAMORI]
+            constraints = relic.trajectory_constraints(strip(pre["relics"]), strip(post["relics"]),
+                                                       pi["globals"]["encounter"], bloom)
             for j, g in enumerate(c.TRAINED_GROUPS):
                 if g in constraints:
                     observed[index, j] = True
