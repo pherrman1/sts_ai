@@ -38,9 +38,15 @@ def validate_entry(spec, entry, rows):
     problems = []
     if entry.get("schema") != "boss_budget_rescue_347_pilot_entry_v1" or entry.get("stateId") != sid:
         problems.append((STRUCTURAL, "entry schema or stateId mismatch"))
+    reproduction_failure = False
     for f in entry.get("failures", []):
         cls = REPRODUCTION if f.startswith(("run_", "boss_", "source_", "control_parity")) else STRUCTURAL
+        reproduction_failure = reproduction_failure or cls == REPRODUCTION
         problems.append((cls, f"producer: {f}"))
+    if not rows and reproduction_failure:
+        # The source never reached or finished its boss fight, so the producer
+        # wrote no replay rows: a reproduction failure, not a pairing failure.
+        return problems, {}
     by_kind = {}
     for r in rows:
         if r["stateId"] != sid:
@@ -253,6 +259,14 @@ def self_test():
     assert run(parity)["status"] == "PARTIAL"
     tampered = run(base, lambda e: e["outputs"].update(rowsSha256="0"))
     assert tampered["status"] == "EXECUTION_INVALID"
+    unreached = run([], lambda e: e.update(failures=["boss_entry_not_reached", "run_floor_mismatch"]))
+    assert unreached["status"] == "PARTIAL" and unreached["validEntries"] == 0, unreached
+    unfinished = run([], lambda e: e.update(failures=["source_boss_not_lost"]))
+    assert unfinished["status"] == "PARTIAL", unfinished
+    norows = run([])
+    assert norows["status"] == "EXECUTION_INVALID", norows
+    mixed = run([], lambda e: e.update(failures=["boss_entry_not_reached", "budget_not_spent"]))
+    assert mixed["status"] == "EXECUTION_INVALID", mixed
     empty = analyze({"selected": [spec]}, tempfile.mkdtemp())
     assert empty["status"] == "PARTIAL" and empty["validEntries"] == 0
     print("analyze.py self-test PASS")
