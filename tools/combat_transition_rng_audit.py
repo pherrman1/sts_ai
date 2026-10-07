@@ -13,7 +13,11 @@ except ModuleNotFoundError:  # direct invocation from tools/
     from combat_transition_contract import validate_corpus, sha256
     from combat_transition_surrogate import iter_rows, supported_for_surrogate
 
-FROZEN_SHA = '74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde'
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+FROZEN_SHA = _pins.value("combat_transition_rng_audit.FROZEN_SHA", '74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde')
 STREAMS = ('aiRng', 'cardRandomRng', 'miscRng', 'monsterHpRng', 'potionRng', 'shuffleRng')
 MASK = (1 << 64) - 1
 

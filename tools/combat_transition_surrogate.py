@@ -35,6 +35,11 @@ from typing import Iterable, Iterator
 import numpy as np
 
 try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+
+try:
     from tools.combat_predictor_input_contract import (
         validate_predictor_input,
     )
@@ -185,6 +190,10 @@ def sha256(path: Path) -> str:
 
 def json_dump(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # A retrain on another corpus records which STS_CTM_PINS file produced
+    # each JSON object; without pins the output is unchanged.
+    if isinstance(value, dict) and _pins.active():
+        value = {**value, **_pins.receipt()}
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 

@@ -24,13 +24,17 @@ except ModuleNotFoundError:
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_HASHES = {
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED_HASHES = _pins.value("combat_transition_frozen_composition.EXPECTED_HASHES", {
     "phase2_attention.pt": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
     "point_control_attention.pt": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
     "prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
     "prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
     "target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
-}
+})
 
 
 def potion_consumption_only(predictor_input: dict) -> bool:

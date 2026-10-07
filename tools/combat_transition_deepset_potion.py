@@ -55,7 +55,11 @@ RECIPE = {
     "ancestralBoundaryNat": 0.1,
 }
 
-EXPECTED = {
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED = _pins.value("combat_transition_deepset_potion.EXPECTED", {
     "baseline": "b0704c755a78fc139c6859781ce899c230919a44",
     "candidateCheckpoint": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
     "candidateReceipt": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
@@ -67,7 +71,7 @@ EXPECTED = {
     "dedicatedPotionComponent": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
     "cache": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
     "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
-}
+})
 
 
 def load_json(path: Path) -> dict:
@@ -250,7 +254,7 @@ def run(args):
         "TRAIN": {"rows": int(len(train)), "sources": int(len(np.unique(cache["source"][train])))},
         "VALIDATION": {"rows": int(len(validation)), "sources": int(len(np.unique(cache["source"][validation])))},
     }
-    expected_counts = {"TRAIN": {"rows": 393677, "sources": 19986}, "VALIDATION": {"rows": 48590, "sources": 2496}}
+    expected_counts = _pins.value("combat_transition_deepset_potion.UNION_COUNTS", {"TRAIN": {"rows": 393677, "sources": 19986}, "VALIDATION": {"rows": 48590, "sources": 2496}})
     if counts != expected_counts:
         raise ValueError(f"final-union population differs: {counts}")
     target = np.concatenate((train, validation))

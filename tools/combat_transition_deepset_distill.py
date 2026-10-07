@@ -48,25 +48,29 @@ RECIPE = dict(
     population="exact current final-union source-grouped TRAIN/VALIDATION victories",
 )
 
-EXPECTED_TEACHERS = {
+try:
+    from tools import ctm_pins as _pins
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_pins as _pins
+EXPECTED_TEACHERS = _pins.value("combat_transition_deepset_distill.EXPECTED_TEACHERS", {
     "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
     "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
-}
-EXPECTED_TEACHER_OUTPUTS = {
+})
+EXPECTED_TEACHER_OUTPUTS = _pins.value("combat_transition_deepset_distill.EXPECTED_TEACHER_OUTPUTS", {
     "maxHP": "10404b3e1de4f033667e4be62aefc24d9b4a3920cf1ddcd563408aeef17583d7",
     "HP": "6244ca5e8c196bbfe32094f5113416c7b31cdfb8a084d3ff46d160141d252759",
-}
-EXPECTED_COUNTS = {
+})
+EXPECTED_COUNTS = _pins.value("combat_transition_deepset_distill.EXPECTED_COUNTS", {
     "TRAIN": {"rows": 393677, "sources": 19986},
     "VALIDATION": {"rows": 48590, "sources": 2496},
-}
+})
 EXPECTED_HP_CLASS_COUNT = 304
-EXPECTED_CONTROL = {
+EXPECTED_CONTROL = _pins.value("combat_transition_deepset_distill.EXPECTED_CONTROL", {
     "experimentSha": "b58a03920fb84aee84f7fcde3ef300366221feb8",
     "resultSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
     "bestCheckpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
     "selectedEpoch": 37,
-}
+})
 
 
 def digest_array(value):
