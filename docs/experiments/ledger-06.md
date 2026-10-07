@@ -14539,3 +14539,26 @@ chest rule and keys-off filter, on Philipp's word.
 **Evidence:** [packet](evidence/ooc_prior_cost_347_20261007/README.md).
 
 **Knowledge impact:** none (existing knobs; no default change).
+
+## §393 — #347 uniform-prior OOC MCTS with chest and relic rules: 32-seed pilot (2026-10-07)
+
+**Question:** how do full runs look with live OOC MCTS on a uniform prior once
+every OOC policy opens chests (no Cursed Key), takes reward relics (except
+Bottled ×3, Dead Branch, Tungsten Rod, Unceasing Top, Juzu Bracelet) and the
+search cannot take keys? One arm, descriptive, as Philipp chose.
+**Design:** seeds 53000000..53000031, #417 `mcts` arm (2048 sims, screengbm,
+flat exact 10k Silver) plus uniform prior, binary from `c2e701d`. Plan frozen
+after independent review; PR #429.
+**Validity:** all shards exit 0, logged config checked, 32/32 seeds.
+**Result:** 18/32 wins (56.3%, Wilson 95% [39.3, 71.8]); 8 of 14 losses at a
+boss (act 2: 4, act 3: 4). Rules fired as intended: 93/93 chests, 187 relics
+by rule, no non-exception relic left. Context only: #417 (48M, policy prior,
+no rules) MCTS 56.3%, flat10k 78.1%.
+**Interpretation:** **Inference:** the rules plus a uniform prior do not make
+OOC MCTS visibly better than the #417 MCTS arm; a paired comparison against
+flat10k with the same rules is needed to say more.
+**Next:** on Philipp's word.
+
+**Evidence:** [packet](evidence/ooc_mcts_uniform_rules_pilot_20261007/README.md).
+
+**Knowledge impact:** none (no default change; rules recorded in §390/KB).
