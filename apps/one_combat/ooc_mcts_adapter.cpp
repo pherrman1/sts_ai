@@ -591,8 +591,14 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 std::set<std::string> cardChoices;
                 std::set<std::uint32_t> sources;
                 std::map<std::string, std::vector<GameAction>> groups;
+                std::set<std::uint32_t> droppedKeys;
                 for (const auto &binding : enumeration.bindings) {
                     if (!GameAction(binding.primitiveBits).isValidAction(gc)) continue;
+                    if (!options.collectKeys && (binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_KEY
+                            || binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_RUBY_KEY)) {
+                        droppedKeys.insert(binding.primitiveBits);
+                        continue;
+                    }
                     if (id == 0 && options.rootPrimitiveBits
                             && !options.rootPrimitiveBits->count(binding.primitiveBits)) continue;
                     const auto key = sts::search::canonicalOocSemanticActionKey(binding.semantic);
@@ -610,7 +616,9 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                             sts::search::canonicalOocMctsChoiceKey(*candidate.semantic, &gc)));
                 if (v4DecisionSupported(gc)) {
                     std::set<std::uint32_t> qualified;
-                    const auto primitives = v4CandidateActions(gc);
+                    auto primitives = v4CandidateActions(gc);
+                    primitives.erase(std::remove_if(primitives.begin(), primitives.end(),
+                        [&](auto action) { return droppedKeys.count(action.bits) != 0; }), primitives.end());
                     for (auto action : primitives)
                         if (id != 0 || !options.rootPrimitiveBits || options.rootPrimitiveBits->count(action.bits))
                             qualified.insert(action.bits);
@@ -1597,6 +1605,7 @@ void configureLiveOocMcts() {
     }
     liveConfig = {}; liveOptions = {true};
     liveOptions.sampleNoncombat = true;
+    liveOptions.collectKeys = g_collectKeys;
     if (const char *trace = std::getenv("STS_OOC_MCTS_PRIOR_TRACE"); trace && *trace) {
         liveOptions.priorTracePath = trace;
         std::ofstream out(liveOptions.priorTracePath, std::ios::app);
@@ -2849,6 +2858,43 @@ void oocMctsAdapterSelfTest() {
             && secondCopy.candidate(0,restrictedActions.front().id).primitive.bits
                 ==*restricted.rootPrimitiveBits->begin(),
             "singleton root keeps its action identity and exact prior without another V4 score");
+    }
+    {
+        // Keys off: a sapphire key must not compete with its paired relic.
+        auto chest=detachedCopy(gc); chest.screenState=ScreenState::REWARDS;
+        chest.info.rewardsContainer.clear();
+        chest.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        chest.info.rewardsContainer.sapphireKey=true;
+        CardReward cards; cards.push_back(Card(CardId::ANGER)); cards.push_back(Card(CardId::BASH));
+        chest.info.rewardsContainer.addCardReward(cards); // V4 scores only screens with cards
+        const auto effects=[&](const OocGameContextModel &m) {
+            std::vector<OocSemanticEffect> out;
+            for(auto a:m.legalActions(0)) out.push_back(m.candidate(0,a.id).semantic->effect);
+            return out;
+        };
+        const auto has=[](const std::vector<OocSemanticEffect> &v,OocSemanticEffect e) {
+            return std::find(v.begin(),v.end(),e)!=v.end();
+        };
+        OocGameContextModel withKeys(chest,path,{},{},defaultOocMctsDependencies());
+        require(has(effects(withKeys),OocSemanticEffect::TAKE_KEY),"keys-on chest offers the sapphire key");
+        OocAdapterOptions noKeys; noKeys.collectKeys=false;
+        auto deps=defaultOocMctsDependencies();
+        bool scoredKey=false;
+        deps.policyLogits=[&](const GameContext &, const PathHistory &, const std::vector<GameAction> &actions) {
+            std::vector<double> logits;
+            for(auto a:actions) {
+                scoredKey=scoredKey || a.getRewardsActionType()==GameAction::RewardsActionType::KEY;
+                logits.push_back(double(logits.size()));
+            }
+            return logits;
+        };
+        OocGameContextModel withoutKeys(chest,path,{},noKeys,deps);
+        const auto filtered=effects(withoutKeys);
+        const auto priors=withoutKeys.legalActions(0);
+        require(!has(filtered,OocSemanticEffect::TAKE_KEY) && has(filtered,OocSemanticEffect::TAKE_RELIC)
+            && has(filtered,OocSemanticEffect::LEAVE_REWARDS) && !scoredKey
+            && std::any_of(priors.begin(),priors.end(),[&](auto a){return a.prior!=priors.front().prior;}),
+            "keys-off chest drops only the key and keeps the policy prior");
     }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::SHOP_ROOM;
     fixture.gold=500; fixture.info.shop.setup(fixture);
