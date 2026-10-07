@@ -14441,3 +14441,36 @@ differ), so it measures the total OOC-policy effect, not isolated preparation.
 **Knowledge impact:** `ooc-label-pipeline.md` and `CODE_MAP.md` route the
 research-only `bossrescue347` mode, its run-driver hook and the native Silver
 planner-seed override.
+
+## §389 — #347 OOC divergence on the #428 R seeds: chests and campfires (2026-10-07)
+
+**Question:** which out-of-combat decisions made the flat10k (F) boss entries
+of §388 stronger than the OOC-MCTS (M) entries on seeds 48000024, 48000014,
+48000116 and 48000095?
+**Design:** descriptive replay. The eight frozen #428 sources were rerun on
+diagnostic build `1ed47e5c` (#428 build `5549a16a` plus a read-only
+`STS_OOC_DECISION_TRACE` per-step log); the M sources once more with
+`STS_RUN_PROFILE` for OOC MCTS root priors, visits and Q. No new seeds or arms.
+**Validity:** all sources `VALID`; every row column except CPU/wall time is
+identical to the frozen #428 rows; the traces of both passes are identical.
+**Result:** two families recur on all four seeds. OOC MCTS left all 11
+treasure chests unopened (F opened 11 of 11) and rested at 24 of 27
+campfires, nine times at full HP, smithing 3 times (F smithed 22 of 28). At
+those roots the V4 policy prior put 0.76–0.99 on leaving the chest and
+0.14–0.78 on resting versus 0.01–0.08 per smith target; `OPEN_CHEST` had the
+higher mean Q at 8 of 11 chest roots, yet leaving reached the early-stop lock.
+Over 301 multi-action M roots the executed action was the max-prior action 248
+times and the max-Q action 121 times. Smaller, seed-specific: three skipped
+relic rewards, fewer elites (three seeds), no shop visit on 48000024.
+**Interpretation:** **Inference:** the policy prior, not the search value,
+drives the chest and campfire losses that explain most of the relic and
+upgrade gaps in §388. Not isolated causally: RNG diverges after the first
+different decision.
+**Next (proposed, not run):** hand OOC MCTS treasure and campfire roots to the
+ordinary chain (research flag, default off) and replay the four R seeds with
+the §388 planner-seed schedule; decision rule and cost in PR #429.
+
+**Evidence:** [packet](evidence/ooc_divergence_347_20261007/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes the research-only
+`STS_OOC_DECISION_TRACE` log.
