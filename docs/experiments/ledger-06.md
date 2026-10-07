@@ -14403,6 +14403,8 @@ Normal and elite HP bias is within ±1.6 HP in every act. Overall HP NLL is 2.58
 
 **Inference:** the boss HP gap matches §384's observation that MCTS wins end about 12 HP lower. It comes either from drift since the CTM corpus (vendored Silver teacher at `f0bbd77` vs current native Silver) or from a CTM boss-HP miscalibration that was already present. This run cannot separate the two. Scoring the old corpus's TEST boss rows with `ctmscorerows` would.
 
+**Follow-up (Philipp chose to check before Path B):** the same scorer was run on the old corpus's TEST split (`split_for_seed`; 51,441 rows from 2,517 seeds, producer `f0bbd77`, 51,036 scored). The predictor and pre-state round-trips held on every row. On its own distribution the CTM has no boss HP gap: predicted minus observed is −0.2 HP for act 1 (CI −0.65..+0.26), +0.4 for act 2 and −0.6 for act 3. Act 1 boss wins went from 63.4 pre-HP to 46.7 post-HP in the old corpus, and from 62.1 to 32.9 in the fresh rows. The model predicts about 46 in both. So the gap comes from **teacher drift**: current native Silver ends boss wins about 13 HP lower than the vendored `f0bbd77` teacher at similar entry HP. It is not a CTM miscalibration. One small pre-existing bias remains: act 3 elites +1.2 HP (CI +0.6..+1.8), and act 3 boss/elite deaths are under-predicted by 2–3 pp. Path B (regenerate with the current teacher) addresses the drift.
+
 **Evidence:** [README, plan, scripts, results.json](evidence/ctm_stage0_418_20261007/README.md).
 
 **Knowledge impact:** `ctmscorerows` is documented in `operations/ooc-label-pipeline.md`. No default changed.
