@@ -1,0 +1,119 @@
+{
+  "schema": "boss_prep_counterfactual_347_selection_v1",
+  "source": "#428 R seeds; arms CQ = C (OOC MCTS + chest rule, ledger \u00a7390) with final root choice by mean Q, CU = C with a uniform prior. mctsEnv is exported by run.sh after the #417 mcts arm env; the binary ignores the field and analyze.py checks the logged OOC MCTS config.",
+  "plannerReps": 8,
+  "selected": [
+    {
+      "stateId": "CQ-48000024-a2",
+      "stratum": "CQ",
+      "prepArm": "CQ",
+      "sourceArm": "mcts",
+      "seed": 48000024,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_ROOT_SELECTION": "q"
+      }
+    },
+    {
+      "stateId": "CU-48000024-a2",
+      "stratum": "CU",
+      "prepArm": "CU",
+      "sourceArm": "mcts",
+      "seed": 48000024,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_PRIOR": "uniform"
+      }
+    },
+    {
+      "stateId": "CQ-48000014-a3",
+      "stratum": "CQ",
+      "prepArm": "CQ",
+      "sourceArm": "mcts",
+      "seed": 48000014,
+      "act": 3,
+      "boss": "DONU_AND_DECA",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_ROOT_SELECTION": "q"
+      }
+    },
+    {
+      "stateId": "CU-48000014-a3",
+      "stratum": "CU",
+      "prepArm": "CU",
+      "sourceArm": "mcts",
+      "seed": 48000014,
+      "act": 3,
+      "boss": "DONU_AND_DECA",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_PRIOR": "uniform"
+      }
+    },
+    {
+      "stateId": "CQ-48000116-a2",
+      "stratum": "CQ",
+      "prepArm": "CQ",
+      "sourceArm": "mcts",
+      "seed": 48000116,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_ROOT_SELECTION": "q"
+      }
+    },
+    {
+      "stateId": "CU-48000116-a2",
+      "stratum": "CU",
+      "prepArm": "CU",
+      "sourceArm": "mcts",
+      "seed": 48000116,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_PRIOR": "uniform"
+      }
+    },
+    {
+      "stateId": "CQ-48000095-a3",
+      "stratum": "CQ",
+      "prepArm": "CQ",
+      "sourceArm": "mcts",
+      "seed": 48000095,
+      "act": 3,
+      "boss": "TIME_EATER",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_ROOT_SELECTION": "q"
+      }
+    },
+    {
+      "stateId": "CU-48000095-a3",
+      "stratum": "CU",
+      "prepArm": "CU",
+      "sourceArm": "mcts",
+      "seed": 48000095,
+      "act": 3,
+      "boss": "TIME_EATER",
+      "chestRule": true,
+      "campfireChain": false,
+      "mctsEnv": {
+        "STS_OOC_MCTS_PRIOR": "uniform"
+      }
+    }
+  ]
+}
