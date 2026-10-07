@@ -56,6 +56,7 @@ LABELS = "full-union-downstream-labels-v1"
 TEST_STATES = "full-union-test-states-v1"
 BREW_AUDIT = "brew-native-label-audit-v1.json"
 BREW = c.base._POTION_IDS["ENTROPIC_BREW"]
+COLORLESS = c.base._POTION_IDS["COLORLESS_POTION"]
 DAGGER = c.base._CARD_IDS["RITUAL_DAGGER"]
 BLOOM = c.base._RELIC_IDS["MARK_OF_THE_BLOOM"]
 OMAMORI = c.base._RELIC_IDS["OMAMORI"]
@@ -67,9 +68,23 @@ def produce(parent: Path, out: Path, sha: str) -> dict:
     return build(parent, e.CORPUS, out, sha)
 
 
-def needs_joint_target(reasons) -> bool:
-    """Winning rows whose gold or Brew outcome needs a joint native target (besides Writhing/Dagger)."""
-    return "entropic_brew" in reasons or any(r.startswith("gold_mutating_") for r in reasons)
+def needs_joint_target(pi, pre, reasons) -> bool:
+    """Winning rows whose gold or Brew outcome needs a joint native target (besides Writhing/Dagger).
+
+    Recovered by the reproduce-old gate: Brew rows and potion or encounter
+    gold mutations always count; relic or card gold mutations count only
+    when native gold has more than one possible post value (all potions
+    consumed, a held Brew possibly yielding a Colorless Potion); stolen gold
+    alone never counts.
+    """
+    if "entropic_brew" in reasons or {"gold_mutating_potion", "gold_mutating_encounter"} & set(reasons):
+        return True
+    if not {"gold_mutating_relic", "gold_mutating_card"} & set(reasons):
+        return False
+    consumed = set(pre["potions"]) | ({COLORLESS} if BREW in pre["potions"] else set())
+    mode, _ = gold.mechanics(pi, pre, 31, consumed)
+    name = gold.encounter_name(pi["globals"]["encounter"])
+    return len(gold.native_posts(pre["gold"], name, pi["globals"]["ascension"], mode)) > 1
 
 
 def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
@@ -117,7 +132,7 @@ def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
                     if g in constraints:
                         observed[index, j] = True
                         compatible[g][index] = np.isin(np.arange(relic.HEAD_CLASSES[g]), list(constraints[g]))
-                if writhing[index] or dagger[index] or needs_joint_target(reasons):
+                if writhing[index] or dagger[index] or needs_joint_target(pi, pre, reasons):
                     affected.append(dict(index=index, pre=pre, post=post, pi=pi))
             if int(cache["split"][index]) == 2:
                 old = not reasons and certified(pi)
