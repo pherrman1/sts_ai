@@ -405,6 +405,8 @@ int ctmScoreRows(const std::string &inPath, const std::string &outPath,
                  bool activeLizard = true);
 int ctmScoreRowsSelfTest();
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
+int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
+                      const std::string &standardModel, const std::string &outPath);
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath);
 

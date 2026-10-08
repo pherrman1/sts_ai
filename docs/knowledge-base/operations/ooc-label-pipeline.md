@@ -81,6 +81,25 @@ Attention and the DeepSets artifacts:
   `NearFullSampler(escape=...)` sample the same factorization in Python (the
   potion trajectory takes `escape=` too), so the Smoke-row relic exposure that
   failed in production can be re-run under it.
+- `tools/ctm_capabilities.py writhing-ritual --artifact IN.native --out
+  OUT.native` adds the `writhingRitual` capability to a research candidate and
+  drops the `writhing_ritual_intersection` exclusion. The exposure script's
+  `--writhing-ritual` flag makes the Writhing Mass + Ritual Dagger cohort a
+  gated one (it is diagnostic otherwise) and keeps those rows under
+  `--final-support`; `--escape` likewise keeps Smoke Bomb rows.
+- `one_combat ctmlizardfeatures ROWS.jsonl FAST.native STANDARD.native OUT.csv`
+  writes one line per row whose pre-state has an active Lizard Tail: the label
+  (0 a win with the Tail unused, 1 a win after it fired, 2 a loss), the routed
+  child (standard for Entropic Brew), the Fairy/Brew flags and the child's
+  ordinary and reserve survivals. It ignores whether the fast artifact already
+  has the Lizard capabilities.
+- `tools/ctm_lizard.py fit --features OUT.csv... --out DIR` refits r per child
+  on the Tail-fired rows (L2 chosen on VALIDATION) and reports r NLL against the
+  TRAIN base rate, q calibration and the three-class NLL by split and cohort
+  (plain, fairy, brew). `extend --artifact FAST --fit DIR/fit.json --out NEW
+  [--fast-r] [--brew] [--fairy]` writes the capabilities (and the refitted fast
+  r) into a candidate fast artifact's header and prints the manifest entries.
+  Path B has few Tail-fired rows: about 46 with Brew and 160 with Fairy.
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with

@@ -116,6 +116,26 @@ void restoreLizard(CombatTransitionPersistentState &post,
     constexpr int id=static_cast<int>(R::LIZARD_TAIL);
     post.relicBits.at(id/64)|=(std::uint64_t{1}<<(id%64));
 }
+// Every Fairy Potion fires before the Tail (Player::wouldDie), so the Tail-consumed branch has none.
+void withoutFairy(CombatPredictorInputV1 &input) {
+    for(auto &potion:input.potions) if(potion.potionId==static_cast<int>(P::FAIRY_POTION)) {
+        potion.potionId=static_cast<int>(P::EMPTY_POTION_SLOT);
+        --input.globals.potionCount;
+    }
+}
+void withoutFairy(CombatTransitionPersistentState &state) {
+    for(auto &potion:state.potions) if(potion==static_cast<int>(P::FAIRY_POTION)) {
+        potion=static_cast<int>(P::EMPTY_POTION_SLOT);
+        --state.potionCount;
+    }
+}
+std::pair<CombatTransitionPersistentState,CombatPredictorInputV1> consumedBranch(
+    const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &input,
+    const ActiveLizardPrediction &prediction) {
+    auto branch=withHeadInputHp(pre,input,prediction.t2HeadInputHp);
+    if(prediction.fairy) { withoutFairy(branch.first); withoutFairy(branch.second); }
+    return branch;
+}
 void append(Vec &a,const Vec &b) { a.insert(a.end(),b.begin(),b.end()); }
 Vec relu(Vec x) { for(auto &v:x) v=std::max(0.f,v); return x; }
 void add(Vec &a,const Vec &b) { require(a.size()==b.size(),"runtime add dimensions"); for(size_t i=0;i<a.size();++i) a[i]+=b[i]; }
@@ -194,13 +214,36 @@ void requireFiniteArray(const nlohmann::json &value,size_t size,bool positive,co
     for(const auto &x:value)
         require(x.is_number() && std::isfinite(x.get<double>()) && (!positive || x.get<double>()>0),why);
 }
-// Per-artifact capabilities a v3 manifest may list. Only "escape" exists; its value names
-// the escape fit checkpoint (tools/ctm_escape.py) that the artifact was extended with.
+// The frozen one-feature logistic r model: r = sigmoid(b0 + b1 * (pReserveWin - mean) / scale).
+void requireRModel(const nlohmann::json &model,const char *why) {
+    requireObject(model,{"featureMean","featureScale","standardizedCoefficients"},why);
+    requireFiniteArray(model.at("featureMean"),1,false,why);
+    requireFiniteArray(model.at("featureScale"),1,true,why);
+    requireFiniteArray(model.at("standardizedCoefficients"),2,false,why);
+}
+double reserveProbability(const nlohmann::json &model,double pReserveWin) {
+    require(std::isfinite(pReserveWin) && pReserveWin>=0.0 && pReserveWin<=1.0,
+        "invalid active-Lizard reserve survival probability");
+    const auto mean=model.at("featureMean").at(0).get<double>();
+    const auto scale=model.at("featureScale").at(0).get<double>();
+    const auto &beta=model.at("standardizedCoefficients");
+    require(std::isfinite(mean) && std::isfinite(scale) && scale>0.0 && beta.size()==2,
+        "malformed frozen active-Lizard r model");
+    const double z=std::clamp(beta.at(0).get<double>()+
+        beta.at(1).get<double>()*((pReserveWin-mean)/scale),-40.0,40.0);
+    return 1.0/(1.0+std::exp(-z));
+}
+// Per-artifact capabilities a v3 manifest may list. "escape" names the escape fit checkpoint
+// (tools/ctm_escape.py) the artifact was extended with; "writhingRitual" ({}) lifts the
+// Writhing Mass + Ritual Dagger exclusion (tools/ctm_capabilities.py). On an active-Lizard
+// artifact, "lizardFairy" ({}) composes a Fairy Potion before the Tail and "lizardBrew"
+// ({"rModel": ...}) routes Brew states to the standard child with that r model (tools/ctm_lizard.py).
 void requireCapabilities(const nlohmann::json &value,const char *why) {
     require(value.is_object(),why);
     for(const auto &[name,spec]:value.items()) {
-        require(name=="escape",why);
-        requireShaFields(spec,{"checkpointSha256"},why);
+        if(name=="writhingRitual" || name=="lizardFairy") require(spec==nlohmann::json::object(),why);
+        else if(name=="lizardBrew") {requireObject(spec,{"rModel"},why);requireRModel(spec.at("rModel"),why);}
+        else {require(name=="escape",why);requireShaFields(spec,{"checkpointSha256"},why);}
     }
 }
 // Off by default. STS_CTM_RESEARCH_CANDIDATE_MANIFEST names a ctm_research_candidate_v1
@@ -254,11 +297,7 @@ std::unique_ptr<const nlohmann::json> loadResearchCandidateIdentity() {
         require(lizard.at("candidateId").is_string() && !lizard.at("candidateId").get<std::string>().empty(),why);
         for(const char *key:{"candidateManifestSha256","frozenQrArtifactSha256","rModelSha256"})
             require(isSha256(lizard.at(key)),why);
-        const auto &model=lizard.at("rModel");
-        requireObject(model,{"featureMean","featureScale","standardizedCoefficients"},why);
-        requireFiniteArray(model.at("featureMean"),1,false,why);
-        requireFiniteArray(model.at("featureScale"),1,true,why);
-        requireFiniteArray(model.at("standardizedCoefficients"),2,false,why);
+        requireRModel(lizard.at("rModel"),why);
     }
     return manifest;
 }
@@ -329,7 +368,10 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     require(metadata_.value("capabilities",nlohmann::json::object())==capabilities,
         "combat runtime capabilities are not listed in its manifest");
     escape_=capabilities.contains("escape");
-    require(!escape_ || full,"combat runtime escape capability requires a near-full artifact");
+    writhingRitual_=capabilities.contains("writhingRitual");
+    lizardFairy_=capabilities.contains("lizardFairy");
+    if(capabilities.contains("lizardBrew")) lizardBrewRModel_=capabilities.at("lizardBrew").at("rModel");
+    require(!(escape_ || writhingRitual_) || full,"combat runtime capabilities require a near-full artifact");
     const auto &standardIdentity=identity_.at("standard");
     const auto &fastIdentity=identity_.at("fast");
     const auto phase1Survival=fastIdentity.is_null()?nlohmann::json():nlohmann::json({
@@ -420,6 +462,8 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
                 "combat runtime candidate cannot claim production default");
         lizardCorrection_=c;
     }
+    require(!(lizardFairy_ || lizardBrewCapable()) || lizardCandidate,
+        "combat runtime Lizard capabilities require an active-Lizard artifact");
     if(deepsetStack) require(full && ((!candidate && metadata_.at("experimentalDeepSets")==legacyDeepSets) ||
         metadata_.at("experimentalDeepSets")==specialistDeepSets ||
         (promotedLizard && metadata_.at("experimentalDeepSets")==qualifiedDeepSets)),
@@ -445,7 +489,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             hashes["downstream"]=fastIdentity.at("downstreamCheckpointSha256").get<std::string>();
         }
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
-        require(metadata_.at("supportExclusions")==supportExclusions(escape_),"combat runtime support exclusions");
+        require(metadata_.at("supportExclusions")==supportExclusions(escape_,writhingRitual_),"combat runtime support exclusions");
         const auto qualification=metadata_.at("qualification").value("classification",std::string{});
         require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" ||
             (promotedLizard && qualification=="DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED"),
@@ -615,17 +659,11 @@ bool CombatTransitionRuntime::requiresEntropicBrewFallback() const {
 }
 double CombatTransitionRuntime::activeLizardReserveProbability(double pReserveWin) const {
     require(hasActiveLizardCorrection(),"active-Lizard parameters missing from combat artifact");
-    require(std::isfinite(pReserveWin) && pReserveWin>=0.0 && pReserveWin<=1.0,
-        "invalid active-Lizard reserve survival probability");
-    const auto &model=lizardCorrection_.at("rModel");
-    const auto mean=model.at("featureMean").at(0).get<double>();
-    const auto scale=model.at("featureScale").at(0).get<double>();
-    const auto &beta=model.at("standardizedCoefficients");
-    require(std::isfinite(mean) && std::isfinite(scale) && scale>0.0 && beta.size()==2,
-        "malformed frozen active-Lizard r model");
-    const double z=std::clamp(beta.at(0).get<double>()+
-        beta.at(1).get<double>()*((pReserveWin-mean)/scale),-40.0,40.0);
-    return 1.0/(1.0+std::exp(-z));
+    return reserveProbability(lizardCorrection_.at("rModel"),pReserveWin);
+}
+double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin) const {
+    require(lizardBrewCapable(),"Brew r model on an artifact without the lizardBrew capability");
+    return reserveProbability(lizardBrewRModel_,pReserveWin);
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {float logit=linear("survival.survival",encode("survival",p))[0];require(std::isfinite(logit),"nonfinite survival");return 1/(1+std::exp(-logit));}
 Vec CombatTransitionRuntime::maxHpEncoding(const CombatPredictorInputV1 &p) const {return encode("max_hp",p);}
@@ -637,9 +675,12 @@ bool CombatTransitionRuntime::escapeEligible(const std::array<int,5> &potions,in
     for(int slot=0;slot<5 && slot<capacity;++slot) if(potions[slot]==int(sts::Potion::SMOKE_BOMB)) return true;
     return false;
 }
-nlohmann::json CombatTransitionRuntime::supportExclusions(bool escape) {
-    return escape?nlohmann::json({"pre_smoke_bomb_used","writhing_ritual_intersection"})
-                 :nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"});
+nlohmann::json CombatTransitionRuntime::supportExclusions(bool escape,bool writhingRitual) {
+    auto out=nlohmann::json::array();
+    if(!escape) out.push_back("smoke_bomb");
+    out.push_back("pre_smoke_bomb_used");
+    if(!writhingRitual) out.push_back("writhing_ritual_intersection");
+    return out;
 }
 float CombatTransitionRuntime::escapeProbability(const Vec &z) const {
     require(escape_,"escape head on an artifact without the escape capability");
@@ -776,7 +817,7 @@ NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &
     domain_.preMaxHpRange=d.at("preMaxHpRange").get<std::array<int,2>>();
     domain_.hpClasses=m.at("hpClasses").get<std::vector<int>>();domain_.maxHpClasses=m.at("maxHpClasses").get<std::vector<int>>();
     domain_.maxHpDeltaValues=d.at("maxHpDeltaValues").get<std::vector<int>>();
-    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.escape=runtime_.escapeCapable();domain_.ready=true;
+    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.escape=runtime_.escapeCapable();domain_.writhingRitual=runtime_.writhingRitualCapable();domain_.ready=true;
 }
 CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     return supportState(captureCombatTransitionState(gc),p);
@@ -910,14 +951,22 @@ EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitio
         !standardMetadata.contains("experimentalSurvival") &&
         !standardMetadata.contains("experimentalDeepSets") &&
         standardMetadata.at("sources")==currentStandardSources &&
-        standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable()) &&
+        standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable(),standard_->runtime().writhingRitualCapable()) &&
         standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
         "Brew fallback must be the current standard Attention CTM artifact");
     // A Brew state with a Smoke Bomb falls back to the standard artifact, so both must agree.
     require(fast_->runtime().escapeCapable()==standard_->runtime().escapeCapable(),
         "fast and Brew fallback artifacts disagree on the escape capability");
+    require(fast_->runtime().writhingRitualCapable()==standard_->runtime().writhingRitualCapable(),
+        "fast and Brew fallback artifacts disagree on the writhingRitual capability");
     require(!activeLizardEnabled_ || fast_->runtime().hasActiveLizardCorrection(),
         "active-Lizard correction enabled without its frozen artifact metadata");
+    require(!standard_->runtime().lizardFairyCapable() && !standard_->runtime().lizardBrewCapable(),
+        "Lizard capabilities belong to the fast artifact, not the Brew fallback");
+}
+const NativeCombatTransitionSampler &EntropicBrewFallbackCombatTransitionSampler::lizardChild(
+    const ActiveLizardPrediction &prediction) const {
+    return prediction.brew?*standard_:*fast_;
 }
 bool EntropicBrewFallbackCombatTransitionSampler::hasActiveLizard(
     const CombatPredictorInputV1 &p) const {
@@ -925,7 +974,7 @@ bool EntropicBrewFallbackCombatTransitionSampler::hasActiveLizard(
 }
 ActiveLizardPrediction EntropicBrewFallbackCombatTransitionSampler::predictActiveLizard(
     const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &p,
-    bool forecastOnly) const {
+    bool forecastOnly,bool featuresOnly) const {
     ActiveLizardPrediction result;
     if(!activeLizardEnabled_)return result;
     if(!fast_->runtime().hasActiveLizardCorrection()) {
@@ -952,17 +1001,21 @@ ActiveLizardPrediction EntropicBrewFallbackCombatTransitionSampler::predictActiv
     const bool bloom=hasRelic(p,bloomId());
     const bool fairy=hasFairyPotion(p) ||
         (!forecastOnly && std::find(pre.potions.begin(),pre.potions.end(),static_cast<int>(P::FAIRY_POTION))!=pre.potions.end());
+    const auto &lizardRuntime=fast_->runtime();
     if(bloom) { result.reason="mark_of_bloom_exact_path"; return result; }
-    if(fairy) { result.reason="fairy_potion_exact_boundary"; return result; }
-    if(hasEntropicBrew(p)) { result.reason="active_lizard_entropic_brew_unsupported"; return result; }
+    if(fairy && !featuresOnly && !lizardRuntime.lizardFairyCapable()) { result.reason="fairy_potion_exact_boundary"; return result; }
+    if(hasEntropicBrew(p) && !featuresOnly && !lizardRuntime.lizardBrewCapable()) { result.reason="active_lizard_entropic_brew_unsupported"; return result; }
+    result.fairy=fairy;
+    result.brew=hasEntropicBrew(p);
+    const auto &child=lizardChild(result);
 
     auto ordinaryInput=withoutLizard(p);
     CombatRuntimeSupport ordinarySupport;
     CombatTransitionPersistentState ordinaryState;
-    if(forecastOnly) ordinarySupport=fast_->forecastSupport(ordinaryInput);
+    if(forecastOnly) ordinarySupport=child.forecastSupport(ordinaryInput);
     else {
         ordinaryState=withoutLizard(pre).first;
-        ordinarySupport=fast_->supportState(ordinaryState,ordinaryInput);
+        ordinarySupport=child.supportState(ordinaryState,ordinaryInput);
     }
     if(!ordinarySupport.supported) {
         result.reason="unsupported:"+ordinarySupport.reason;
@@ -973,10 +1026,10 @@ ActiveLizardPrediction EntropicBrewFallbackCombatTransitionSampler::predictActiv
     auto reserveInput=ordinaryInput;
     reserveInput.globals.curHp=reserveHp;
     CombatRuntimeSupport reserveSupport;
-    if(forecastOnly) reserveSupport=fast_->forecastSupport(reserveInput);
+    if(forecastOnly) reserveSupport=child.forecastSupport(reserveInput);
     else {
         auto reserveHead=withHeadInputHp(ordinaryState,ordinaryInput,reserveHp);
-        reserveSupport=fast_->supportState(reserveHead.first,reserveHead.second);
+        reserveSupport=child.supportState(reserveHead.first,reserveHead.second);
     }
     if(!reserveSupport.supported) {
         result.reason="reserve_unsupported:"+reserveSupport.reason;
@@ -987,22 +1040,30 @@ ActiveLizardPrediction EntropicBrewFallbackCombatTransitionSampler::predictActiv
         result.reason="t2_revive_hp_outside_legal_domain";
         return result;
     }
-    auto consumedInput=ordinaryInput;
-    consumedInput.globals.curHp=result.t2HeadInputHp;
     CombatRuntimeSupport consumedSupport;
-    if(forecastOnly) consumedSupport=fast_->forecastSupport(consumedInput);
-    else {
-        auto consumedHead=withHeadInputHp(ordinaryState,ordinaryInput,result.t2HeadInputHp);
-        consumedSupport=fast_->supportState(consumedHead.first,consumedHead.second);
+    if(forecastOnly) {
+        auto consumedInput=ordinaryInput;
+        consumedInput.globals.curHp=result.t2HeadInputHp;
+        if(result.fairy) withoutFairy(consumedInput);
+        consumedSupport=child.forecastSupport(consumedInput);
+    } else {
+        auto consumedHead=consumedBranch(ordinaryState,ordinaryInput,result);
+        consumedSupport=child.supportState(consumedHead.first,consumedHead.second);
     }
     if(!consumedSupport.supported) {
         result.reason="t2_unsupported:"+consumedSupport.reason;
         return result;
     }
-    result.pOrdinaryWin=fast_->runtime().survival(ordinaryInput);
-    result.pReserveWin=fast_->runtime().survival(reserveInput);
+    result.pOrdinaryWin=child.runtime().survival(ordinaryInput);
+    result.pReserveWin=child.runtime().survival(reserveInput);
     result.qTailConsumed=1.0-result.pOrdinaryWin;
-    result.rWinGivenConsumed=fast_->runtime().activeLizardReserveProbability(result.pReserveWin);
+    if(featuresOnly) {
+        result.reason="supported";
+        result.supported=true;
+        return result;
+    }
+    result.rWinGivenConsumed=result.brew?lizardRuntime.lizardBrewReserveProbability(result.pReserveWin):
+        lizardRuntime.activeLizardReserveProbability(result.pReserveWin);
     result.classProbabilities={result.pOrdinaryWin,
         result.qTailConsumed*result.rWinGivenConsumed,
         result.qTailConsumed*(1.0-result.rWinGivenConsumed)};
@@ -1085,11 +1146,13 @@ CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::forecas
     if(activeLizardEnabled_ && hasActiveLizard(p)) {
         auto prediction=predictActiveLizard({},p,true);
         if(prediction.supported) {
+            const auto &child=lizardChild(prediction);
             auto ordinaryInput=withoutLizard(p);
-            auto ordinary=fast_->forecastExpectation(ordinaryInput);
+            auto ordinary=child.forecastExpectation(ordinaryInput);
             auto consumedInput=ordinaryInput;
             consumedInput.globals.curHp=prediction.t2HeadInputHp;
-            auto consumed=fast_->forecastExpectation(consumedInput);
+            if(prediction.fairy) withoutFairy(consumedInput);
+            auto consumed=child.forecastExpectation(consumedInput);
             return combineLizardExpectation(ordinary,consumed,prediction);
         }
         if(prediction.reason=="active_lizard_entropic_brew_unsupported") {
@@ -1119,11 +1182,12 @@ CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::expecta
     if(activeLizardEnabled_ && hasActiveLizard(p)) {
         auto prediction=predictActiveLizard(original,p);
         if(prediction.supported) {
+            const auto &child=lizardChild(prediction);
             auto ordinary=withoutLizard(p);
             auto stripped=withoutLizard(original);
-            auto ordinaryExpected=fast_->expectationState(stripped.first,ordinary);
-            auto consumedHead=withHeadInputHp(stripped.first,ordinary,prediction.t2HeadInputHp);
-            auto consumedExpected=fast_->expectationState(consumedHead.first,consumedHead.second);
+            auto ordinaryExpected=child.expectationState(stripped.first,ordinary);
+            auto consumedHead=consumedBranch(stripped.first,ordinary,prediction);
+            auto consumedExpected=child.expectationState(consumedHead.first,consumedHead.second);
             return combineLizardExpectation(ordinaryExpected,consumedExpected,prediction);
         }
         if(prediction.reason=="active_lizard_entropic_brew_unsupported") {
@@ -1184,15 +1248,16 @@ std::unique_ptr<PreparedCombatTransition> EntropicBrewFallbackCombatTransitionSa
         if(prediction.supported) {
             preparations_.fetch_add(1);
             lizardPreparations_.fetch_add(1);
-            fastPreparations_.fetch_add(1);
+            (prediction.brew?fallbackPreparations_:fastPreparations_).fetch_add(1);
+            const auto &child=lizardChild(prediction);
             auto stripped=withoutLizard(original);
             auto ordinaryInput=withoutLizard(p);
-            auto ordinaryChild=fast_->prepareState(stripped.first,ordinaryInput);
-            auto consumedHead=withHeadInputHp(stripped.first,ordinaryInput,prediction.t2HeadInputHp);
-            auto consumedChild=fast_->prepareState(consumedHead.first,consumedHead.second);
+            auto ordinaryChild=child.prepareState(stripped.first,ordinaryInput);
+            auto consumedHead=consumedBranch(stripped.first,ordinaryInput,prediction);
+            auto consumedChild=child.prepareState(consumedHead.first,consumedHead.second);
             if(!ordinaryChild->support().supported || !consumedChild->support().supported) {
                 lizardSupportFailures_.fetch_add(1);
-                fastSupportFailures_.fetch_add(1);
+                (prediction.brew?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
                 class RejectedPrepared final : public PreparedCombatTransition {
                     CombatRuntimeSupport support_;
                 public:
@@ -1244,8 +1309,10 @@ std::unique_ptr<PreparedCombatTransition> EntropicBrewFallbackCombatTransitionSa
                         consumedLosses_.fetch_add(1);
                         return {CombatRuntimeSample::Outcome::DEATH,{}};
                     }
+                    // A Brew-generated Smoke Bomb can end a conditioned victory in an escape.
                     auto result=(outcome==1?consumedChild_:ordinaryChild_)->sampleConditionedVictory(rng);
-                    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY) {
+                    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY &&
+                        result.outcome!=CombatRuntimeSample::Outcome::ESCAPE) {
                         supportFailures_.fetch_add(1);
                         return {};
                     }
@@ -1257,7 +1324,7 @@ std::unique_ptr<PreparedCombatTransition> EntropicBrewFallbackCombatTransitionSa
             };
             return std::make_unique<LizardPrepared>(std::move(ordinaryChild),
                 std::move(consumedChild),original,stripped.second,
-                prediction.classProbabilities,fastSamples_,lizardSamples_,lizardOrdinaryWins_,
+                prediction.classProbabilities,prediction.brew?fallbackSamples_:fastSamples_,lizardSamples_,lizardOrdinaryWins_,
                 lizardConsumedWins_,lizardConsumedLosses_,lizardSupportFailures_);
         }
         lizardBoundaryExclusions_.fetch_add(1);
@@ -1282,6 +1349,10 @@ std::unique_ptr<PreparedCombatTransition> EntropicBrewFallbackCombatTransitionSa
     };
     return std::make_unique<HybridPrepared>(std::move(child),fallback?fallbackSamples_:fastSamples_);
 }
+ActiveLizardPrediction EntropicBrewFallbackCombatTransitionSampler::activeLizardFeatures(
+    const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &p) const {
+    return predictActiveLizard(pre,p,false,true);
+}
 ActiveLizardPrediction EntropicBrewFallbackCombatTransitionSampler::activeLizardPrediction(
     const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     return predictActiveLizard(captureCombatTransitionState(gc),p);
@@ -1296,13 +1367,13 @@ CombatRuntimeSample EntropicBrewFallbackCombatTransitionSampler::sampleActiveLiz
     if(outcomeClass==2)return {CombatRuntimeSample::Outcome::DEATH,{}};
     auto stripped=withoutLizard(original);
     auto ordinaryInput=withoutLizard(p);
-    auto branch=outcomeClass==1?
-        withHeadInputHp(stripped.first,ordinaryInput,prediction.t2HeadInputHp):
+    auto branch=outcomeClass==1?consumedBranch(stripped.first,ordinaryInput,prediction):
         std::make_pair(stripped.first,ordinaryInput);
-    auto child=fast_->prepareState(branch.first,branch.second);
+    auto child=lizardChild(prediction).prepareState(branch.first,branch.second);
     if(!child->support().supported)return {};
     auto result=child->sampleConditionedVictory(rng);
-    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY)return {};
+    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY &&
+        result.outcome!=CombatRuntimeSample::Outcome::ESCAPE)return {};
     restoreLizard(result.rawPost,original,stripped.second,outcomeClass==0?1:0);
     return result;
 }

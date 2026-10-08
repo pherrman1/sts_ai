@@ -324,9 +324,15 @@ the literal -160..143 domain.
 
 A `ctm_research_candidate_v3` manifest also lists each artifact's
 `capabilities` (`{"standard": {...}, "fast": {...}}`), and an artifact's
-metadata `capabilities` must equal its role's entry; production has none. The
-only capability is `escape` (`{"checkpointSha256": ...}`, written by
-`tools/ctm_escape.py extend`). An escape-capable near-full artifact has a 1x64
+metadata `capabilities` must equal its role's entry; production has none.
+Capabilities need a near-full artifact. Two lift support exclusions. `writhingRitual` (`{}`,
+written by `tools/ctm_capabilities.py writhing-ritual`) changes no tensors and
+drops the `writhing_ritual_intersection` exclusion: the sampler already draws
+the Writhing event and the Ritual Dagger payouts jointly, so the capability only
+declares that the candidate was trained and gated on that cohort (CTests
+`ctm_writhing_ritual_runtime`, `ctm_capabilities_selftest`). The other is
+`escape` (`{"checkpointSha256": ...}`, written by
+`tools/ctm_escape.py extend`); both can be applied in either order. An escape-capable near-full artifact has a 1x64
 escape head on the HP encoding and the escape bit as the HP head's 73rd input,
 and it drops the `smoke_bomb` exclusion (`pre_smoke_bomb_used` stays). The
 sampler draws the escape after maxHP and before HP, but only for an eligible
@@ -353,6 +359,16 @@ Its metadata is pinned to Gate 2 PASS report SHA-256
 `1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
 Active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom remain
 explicit boundaries that use the existing fail-closed or exact-path behavior.
+A research-candidate fast artifact can lift the first two with v3 capabilities
+(written by `tools/ctm_lizard.py extend`; the artifact needs its own
+active-Lizard correction). `lizardBrew` (`{"rModel": ...}`) routes a Brew state's
+three classes to the standard child, whose survival gives q and the reserve
+feature, and uses that r model. `lizardFairy` (`{}`) composes a Fairy Potion
+before the Tail, as `Player::wouldDie` does: the ordinary and reserve inputs
+keep the Fairy, and the Tail-consumed branch drops every Fairy Potion. A
+Brew-generated Smoke Bomb can end either winning branch in an escape. Bloom
+stays on its exact path. The capabilities are fast-role only; the Brew fallback
+artifact may not carry them (CTests `ctm_lizard_runtime`, `ctm_lizard_selftest`).
 Explicit model paths keep the correction off unless
 `STS_OOC_MCTS_ACTIVE_LIZARD=1` is also set and a Brew fallback is available.
 The correction changes only OOC CTM handling; it does not enable OOC MCTS.

@@ -69,7 +69,9 @@ def heads(nets,z,rows,ending,maximum,traces,rng,cache,teacher=False):
     return dict(residues=residues,writhing=writhing_event,dagger=dagger,pairs=pairs,target=target)
 
 
-def load(parent,final_support=False):
+def load(parent,final_support=False,escape=False,writhing_ritual=False):
+    """escape/writhing_ritual: candidate capabilities that lift final exclusions. The
+    production census then no longer applies; the filtered index hash is recorded."""
     cache,graphs,meta=te.load(parent/'potion-trajectory-v2');dc,ambiguous,records,dm=d.load(parent,parent/'full-union-downstream-v1');cache.update(dc)
     snapshot=json.loads((parent/'full-union-test-states-v1.json').read_text());file=parent/'full-union-test-states-v1.jsonl'
     if c.base.sha256(file)!=snapshot['snapshotSha256'] or snapshot['corpusSha256']!=c.base.sha256(e.CORPUS):raise ValueError('TEST snapshot differs')
@@ -82,12 +84,12 @@ def load(parent,final_support=False):
     test={k:v[ids] for k,v in cache.items() if isinstance(v,np.ndarray) and v.shape and v.shape[0]==len(cache['ids'])}
     test['writhingTarget']=np.asarray(target_writhing);test['daggerTarget']=target_dagger;test['goldTarget']=[(r['post']['gold'],r['post']['stolenGold']) for r in rows]
     if final_support:
-        chosen=np.flatnonzero(s.support.final_mask(rows));rows=[rows[i] for i in chosen];ids=ids[chosen];test=subset(test,chosen)
+        chosen=np.flatnonzero(s.support.final_mask(rows,escape,writhing_ritual));rows=[rows[i] for i in chosen];ids=ids[chosen];test=subset(test,chosen)
         import hashlib
         digest=hashlib.sha256(''.join(f'{int(i)}\n' for i in ids).encode()).hexdigest()
         census=json.loads((parent/'final-support-census-v1.json').read_text())
-        if digest!=census['groups']['TEST']['supportedIndexSha256']:raise ValueError('qualification filter differs from full support predicate')
-        snapshot={**snapshot,'finalSupportIndexSha256':digest,'finalSupportRows':len(ids)}
+        if not (escape or writhing_ritual) and digest!=census['groups']['TEST']['supportedIndexSha256']:raise ValueError('qualification filter differs from full support predicate')
+        snapshot={**snapshot,'finalSupportIndexSha256':digest,'finalSupportRows':len(ids),'capabilities':dict(escape=bool(escape),writhingRitual=bool(writhing_ritual))}
     return cache,graphs,ambiguous,records,dm,rows,ids,test,snapshot
 
 

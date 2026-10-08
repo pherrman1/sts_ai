@@ -9,6 +9,7 @@ struct NativeComposedDomain {
     bool ready = false;
     bool nearFull = false;
     bool escape = false; // escape-capable artifact: an initial Smoke Bomb is supported
+    bool writhingRitual = false; // Writhing Mass with Ritual Dagger is supported
     std::array<int,2> preCurHpRange{};
     std::array<int,2> preMaxHpRange{};
     std::vector<int> hpClasses;
