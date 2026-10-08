@@ -763,6 +763,11 @@ add_test(NAME ctm_writhing_ritual_runtime COMMAND python3
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(ctm_writhing_ritual_runtime PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_candidate_tool COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_candidate.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_candidate_tool PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 add_test(NAME ctm_lizard_runtime COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_ctm_lizard_runtime.py
     $<TARGET_FILE:combat_transition_runtime_probe>)

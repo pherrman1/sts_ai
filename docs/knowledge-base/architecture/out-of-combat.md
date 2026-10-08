@@ -307,7 +307,7 @@ A retrained stack loads only as a research candidate. When
 `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and its `_SHA256` are set, an artifact
 whose metadata declares `researchCandidate: {"candidateId": ...}` is checked
 against that `ctm_research_candidate_v1` manifest instead of the production
-pins. The swapped values are artifact bytes, source and checkpoint hashes,
+pins (`tools/ctm_candidate.py` stamps exports and writes the manifest). The swapped values are artifact bytes, source and checkpoint hashes,
 support-census indices and the active-Lizard q/r identity. Schema, shapes, the
 HP envelope, support exclusions, the qualification class and the Lizard
 definitions stay pinned. A candidate cannot claim the production default or a
