@@ -28,6 +28,7 @@ struct OocContinuationMetrics {
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
+struct CompactTreeNet;
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
     // Live histories must qualify both room chances and future relic pools
@@ -49,6 +50,10 @@ struct OocAdapterOptions {
     std::shared_ptr<const ScreenLeafNet> screenLeafNet;
     std::shared_ptr<const ScreenLeafGbm> screenLeafGbm;
     bool screenGbm = false;
+    // Research option (default unset): win model for native/direct leaves in
+    // place of the process v_win (STS_OOC_MCTS_LEAF_WIN_MODEL).
+    std::shared_ptr<const CompactTreeNet> leafWinNet;
+    std::string leafWinPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
