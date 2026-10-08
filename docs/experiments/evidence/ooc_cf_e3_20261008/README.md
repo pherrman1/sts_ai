@@ -38,7 +38,9 @@ Plan: [ACTION-PLAN.md](ACTION-PLAN.md). Worker brief: [BRIEF-cloud.md](BRIEF-clo
   Philipp's machine: `--corpus334 …/corpus-mixed-1024.json` (sha256
   ae56f963…), 4 CPU threads, 6m47s. Output is in
   `/home/philippherrmann/Documents/sts/build/e3-f2-dc6fd330/`. The cloud arms
-  in that run reproduce the cloud report exactly.
+  in that run reproduce the cloud report exactly. That output is not archived
+  here; [report-f2-validation-excerpt.json](report-f2-validation-excerpt.json)
+  is a verbatim copy of its VALIDATION results for the F2 and F2_334 arms.
 
 Arms:
 
@@ -92,7 +94,9 @@ Agreement with V4 and skip choice:
 - **Rule outcome:** `E3_NEGATIVE` for the card-reward criterion. No online A/B
   follows.
 
-Descriptive findings outside the decision rule:
+Descriptive findings outside the decision rule. These are VALIDATION results,
+one of several contrasts reported, and slightly optimistic because the
+retrained arms early-stop on VALIDATION:
 
 1. **Card rewards:** a uniformly random option ties V4. Inference: under the
    V4 + Silver continuation, the win-rate effect of the card-reward choice is
@@ -103,3 +107,6 @@ Descriptive findings outside the decision rule:
    - F2 matches V4 and beats X2-B by 6 pp.
    - E3 data adds to #334 (pooled F2 − F2_334 +2.4 pp, CI above zero).
    - F2 also has the best map-row NLL and Brier.
+   - Robustness (independent review): dropping all 14 future-dependent
+     boss-relic fields (the 4 masked plus `bossId` and the `fm*` map counts)
+     keeps E3 − X2B at +0.051 [+0.008, +0.095].

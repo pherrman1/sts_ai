@@ -14769,10 +14769,18 @@ and better than V4?
 - Card-reward choices move win rate by less than about ±3 pp per decision
   under the V4 + Silver continuation. Even a random card pick ties V4, so
   better card-reward pricing is not a lever at this scale (inference).
-- Boss relics matter. X2-B misprices them; the counterfactual-trained F2
-  matches V4 and fixes X2-B's relic deficit.
+- Boss relics: this is a descriptive VALIDATION result outside the decision
+  rule, one of several contrasts reported. It is slightly optimistic because
+  the retrained arms early-stop on the same VALIDATION split.
+  - X2-B prices relics worse than V4, and F2 matches V4 (F2 − X2B +0.060).
+  - The independent review re-checked this with all 14 future-dependent
+    boss-relic fields dropped (the 4 masked plus `bossId` and the `fm*` map
+    counts). E3 − X2B stays at +0.051 [+0.008, +0.095].
 - No online A/B follows from the pre-registered rule. A boss-relic-only leaf
   or one-ply use of F2 would be a new hypothesis.
+- The F2 and F2_334 numbers were copied from a local run on Philipp's machine.
+  Its full report.json is not archived; a verbatim VALIDATION excerpt is in
+  the evidence packet.
 
 **Evidence:** [packet](evidence/ooc_cf_e3_20261008/README.md).
 
