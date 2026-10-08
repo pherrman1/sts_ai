@@ -3722,8 +3722,8 @@ int main(int argc, char **argv) {
             return 2;
         }
     } else if (mode == "ooccfpilotgen") {
-        if (argc < 7 || argc > 11) {
-            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]\n";
+        if (argc < 7 || argc > 13) {
+            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES] [TARGET.json|-] [FUTURE_START]\n";
             return 2;
         }
         try {
@@ -3731,7 +3731,9 @@ int main(int argc, char **argv) {
                                       std::stoi(argv[6]), argc > 7 ? std::stoi(argv[7]) : 1,
                                       argc > 8 ? std::stoi(argv[8]) : 1,
                                       argc > 9 ? std::stoi(argv[9]) : 1,
-                                      argc > 10 ? argv[10] : std::string{});
+                                      argc > 10 ? argv[10] : std::string{},
+                                      argc > 11 && std::string(argv[11]) != "-" ? argv[11] : std::string{},
+                                      argc > 12 ? std::stoi(argv[12]) : 0);
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;

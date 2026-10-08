@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-08 for targeted GEN2 REST preflight and future ranges; 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -1039,7 +1039,7 @@ Stage-A B reference files.
 ### Counterfactual OOC labels (`ooccfpilotgen`)
 
 `one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES
-[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]`
+[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES] [TARGET.json|-] [FUTURE_START]`
 (`apps/one_combat/combat_datasets.cpp::oocCounterfactualPilotGen`). It is
 seed-guarded, and the launcher is
 `docs/experiments/evidence/ooc_cf_pilot_20261007/run_corpus.sh`. The source
@@ -1061,7 +1061,8 @@ siblings share common random numbers.
     HIDDEN_FUTURE fields (#397).
   - Every branch plays to the end of the run. The label is `finalWon`;
     first-boss win and HP after it are diagnostics.
-  - `.options.csv` holds the rich row right after the option (k=0).
+  - `.options.csv` holds the rich row right after the option at the first
+    requested k (zero by default).
     `.map.csv` holds one rich row per run at the first MAP screen after the
     branch screen is finished. The map row can differ across k after a boss
     relic, because the next act's map is generated from the redrawn future.
@@ -1072,6 +1073,56 @@ siblings share common random numbers.
   - States are drawn only from TYPES (comma list), ranked by
     `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
   - The manifest counts selected states by type and act.
+
+GEN2 accepts a nonnegative `FUTURE_START` (default zero), with each actual
+future index `k=FUTURE_START+j` recorded in the existing SHA256 domain and
+output rows. The start plus count must fit an integer. Use `-` for an absent
+target file when supplying only the start. Omission of both new arguments
+preserves the existing state reservoir, six-option cap and future identities.
+The native producer accepts the frozen exact-root teacher or an explicitly
+validated learned-stop teacher; its nominal simulation count of 10,000 is a
+cap, not an override forcing learned-stop roots to exact 10k. Source and
+continuation share that configured teacher. Bind the effective policy and
+verify actual search usage in the experiment receipt; other producers and
+Python corpus validators retain their own teacher support boundaries.
+
+#### Targeted REST diagnostics
+
+`TARGET.json` is opt-in producer instrumentation, limited to GEN2,
+`N_SEEDS=1`, `STATES_PER_SEED=1` and `TYPES=REST`. Schema
+`ooc_cf_target_v1` requires `sourceSeed`, `act`, `floor`, `screen` equal to
+`REST`, and an `optionKeys` array. The target selects the initial campfire
+screen before reservoir sampling, not its following upgrade/removal selector.
+No matching root, repeated matching roots or an invalid source trajectory
+fails closed.
+
+A target with `FUTURES=0` performs one complete, seed-guarded source run and
+no continuations. Its `.target.json` receipt records the exact observer
+`decisionIdx`, public-state SHA256, actual chosen semantic key, full legal
+keys, retained keys and producer/binary/teacher/effective-policy binding.
+The public fingerprint masks all eight legacy encounter-queue fields and
+adds the visible deck metadata, relic counters, potion slots, map and screen
+contents. Empty `optionKeys` inventories every legal key in this preflight;
+optional expected decision and public hash can additionally constrain it.
+This preflight still has source execution cost and is not a no-seed check.
+
+Positive futures require the preflight's `decisionIdx` and
+`publicStateSha256`, its `preflightReceiptPath` and SHA256 in
+`preflightReceiptSha256`, plus explicit nonempty `optionKeys`. Receipt schema,
+preflight status, file hash and producer/binary/teacher/effective-policy
+binding must match before replay. The replayed root identity, public hash and
+actual baseline key must match before any continuation. The captured baseline
+is always retained alongside every requested legal key; this targeted set
+bypasses the ordinary six-option cap. Duplicate or unknown requested keys are
+errors. The receipt and manifest bind the exact retained set and k range.
+
+Freeze named alternatives before their labels, and preregister disjoint
+selection and evaluation future ranges. Repeated futures are a paired local
+counterfactual diagnostic at one source state, not independent source runs
+or population win-rate evidence. `vwinrefreshselftest` (CTest
+`vwin_refresh_producer_contract`) covers parsing, binding requirements,
+selection, hidden-invariant public fingerprints and ordinary cap behavior;
+actual target replay fidelity still needs a frozen guarded preflight/canary.
 
 ## Schema examples
 

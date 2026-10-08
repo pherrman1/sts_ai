@@ -1,0 +1,19 @@
+{
+  "schema": "targeted_rest_checks_v1",
+  "reviewed_diff_sha256": "f84b6c9becb1cf16d364e62296e272c5b7e9aa31e80a4b19152aa466e5fa21a1",
+  "checks": [
+    {
+      "command": "cmake --build build/linux-gcc-release --target one_combat -j2",
+      "exit_code": 0,
+      "log": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/targeted-rest-build.log"
+    },
+    {
+      "command": "bash tools/seed_guard.sh build/linux-gcc-release/one_combat vwinrefreshselftest",
+      "exit_code": 0,
+      "log": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/targeted-rest-selftest.log"
+    }
+  ],
+  "seed_runs": 0,
+  "runtime_target_preflight": "pending",
+  "positive_future_gate": "pending"
+}
