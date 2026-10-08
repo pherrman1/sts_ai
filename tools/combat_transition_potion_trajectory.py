@@ -46,7 +46,22 @@ def new_decoder(delta_count,warm=None):
     return net
 
 
-def log_probabilities(net,z,inventory,capacity,delta,hp,boss):
+def escape_condition(legal,slots,escape):
+    """Condition the 64 actions on an escape drawn earlier (#418 escape capability).
+
+    escape 0 forbids using a Smoke Bomb. escape 1 forbids stopping (mask 0) and
+    discarding a Smoke Bomb, so the trajectory ends with its use. Mirrors
+    CombatTransitionRuntime::potionInventory.
+    """
+    device=legal.device;bits=torch.as_tensor(decoder.BITS,device=device)
+    smoke=torch.any(bits[None]&(slots==SMOKE)[:,None],-1).repeat(1,2)
+    use=torch.arange(64,device=device)[None]>=32
+    escape=torch.as_tensor(escape,device=device)[:,None].bool()
+    forbidden=torch.where(escape,(smoke&~use)|(torch.arange(64,device=device)[None]%32==0),smoke&use)
+    return legal&~forbidden
+
+
+def log_probabilities(net,z,inventory,capacity,delta,hp,boss,escape=None):
     """Same shared joint-mask architecture; exact native trigger restrictions."""
     device=next(net.parameters()).device
     values=[torch.as_tensor(v,device=device) for v in (z,inventory,delta,np.asarray(hp,np.float32))]
@@ -65,6 +80,10 @@ def log_probabilities(net,z,inventory,capacity,delta,hp,boss):
     use=legal&trigger_selected
     use &= ~torch.any(bits[None]&(slots==SMOKE)[:,None],-1)|~torch.as_tensor(boss,device=device)[:,None]
     legal=torch.cat((legal,use),-1)
+    if escape is not None:
+        # A graph node the condition makes unreachable has no legal action; it scores zero mass.
+        legal=escape_condition(legal,slots,escape)
+        return torch.log_softmax(logits.masked_fill(~legal,-torch.inf),-1).masked_fill(~legal.any(-1,keepdim=True),-torch.inf)
     return torch.log_softmax(logits.masked_fill(~legal,-torch.inf),-1)
 
 
@@ -134,8 +153,12 @@ def target_log_probability(logp,graph,include_generation=True):
     return torch.log(mass)+(graph.generation_log_prior if include_generation else 0.)
 
 
-def batch_target_log_probabilities(net,graphs,z,capacity,delta,hp,boss,include_generation=True):
-    """One network call and level-wise differentiable DAG marginal per batch."""
+def batch_target_log_probabilities(net,graphs,z,capacity,delta,hp,boss,include_generation=True,escape=None):
+    """One network call and level-wise differentiable DAG marginal per batch.
+
+    With an escape condition an observed trajectory can have zero mass; it then
+    scores -inf instead of raising.
+    """
     owners=[];inventories=[];roots=[];edges=[];terminals=[];priors=[];offset=0
     for row,graph in enumerate(graphs):
         count=len(graph.inventories);owners.extend([row]*count);inventories.extend(graph.inventories);roots.append(offset)
@@ -145,7 +168,8 @@ def batch_target_log_probabilities(net,graphs,z,capacity,delta,hp,boss,include_g
         terminals.extend((a+offset,m,row) for a,m in graph.target_edges);priors.append(graph.generation_log_prior);offset+=count
     owners=np.asarray(owners,np.int64);device=next(net.parameters()).device
     z=torch.as_tensor(z,device=device)[torch.as_tensor(owners,device=device)]
-    lp=log_probabilities(net,z,np.asarray(inventories),np.asarray(capacity)[owners],np.asarray(delta)[owners],np.asarray(hp)[owners],np.asarray(boss)[owners])
+    lp=log_probabilities(net,z,np.asarray(inventories),np.asarray(capacity)[owners],np.asarray(delta)[owners],np.asarray(hp)[owners],np.asarray(boss)[owners],
+                         None if escape is None else np.asarray(escape)[owners])
     probability=lp.exp();mass=lp.new_zeros(offset).index_fill(0,torch.as_tensor(roots,device=device),1.)
     if edges:
         raw=np.asarray(edges,np.int64)
@@ -155,7 +179,7 @@ def batch_target_log_probabilities(net,graphs,z,capacity,delta,hp,boss,include_g
             mass=mass.index_add(0,b,mass[a]*probability[a,m])
     terminal=np.asarray(terminals,np.int64);a,m,row=(torch.as_tensor(terminal[:,i],device=device) for i in range(3))
     target=lp.new_zeros(len(graphs)).index_add(0,row,mass[a]*probability[a,m])
-    if not torch.isfinite(target).all() or (target<=0).any():raise ValueError('zero/nonfinite exact trajectory target probability')
+    if not torch.isfinite(target).all() or (escape is None and (target<=0).any()):raise ValueError('zero/nonfinite exact trajectory target probability')
     return target.log()+(torch.as_tensor(priors,device=device) if include_generation else 0.)
 
 
@@ -193,11 +217,12 @@ def trace_posterior(logp,graph):
     return target/total,total
 
 
-def sample(net,z,pre,delta,hp,planner,boss=False):
+def sample(net,z,pre,delta,hp,planner,boss=False,escape=None):
     inventory=tuple(pre['potions']);capacity=pre['potionCapacity'];sozu=any(r['id']==base._RELIC_IDS['SOZU'] for r in pre['relics'])
     origin=None;state=None;body=[];uses=[];discards=[];initial_mask=0
     while True:
-        lp=log_probabilities(net,np.asarray(z)[None],np.asarray(inventory)[None],np.asarray([capacity]),np.asarray([delta]),np.asarray([hp]),np.asarray([boss]))
+        lp=log_probabilities(net,np.asarray(z)[None],np.asarray(inventory)[None],np.asarray([capacity]),np.asarray([delta]),np.asarray([hp]),np.asarray([boss]),
+                             None if escape is None else np.asarray([escape]))
         probability=lp[0].detach().exp().cpu().numpy().astype(float)
         action=int(planner.choice(64,p=probability/probability.sum()));mask=action&31;use=action>=32
         for slot,potion in enumerate(inventory):
