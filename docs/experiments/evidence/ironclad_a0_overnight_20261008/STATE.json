@@ -1,6 +1,6 @@
 {
   "schema": "campaign_state_v1",
-  "updated_epoch": 1791431355.5516212,
+  "updated_epoch": 1791431485.1813297,
   "start_local": "2026-10-08 01:47 Europe/Berlin",
   "deadline_local": "2026-10-08 09:47 Europe/Berlin",
   "reserve_starts_local": "2026-10-08 07:23 Europe/Berlin",
@@ -77,8 +77,9 @@
   },
   "max_game_processes": 6,
   "next": [
-    "Finish scoped evidence/docs commit, repository-health and virtual mergeability checks, then permitted draft PR.",
-    "No additional game seeds, retries, retuning, default changes or merge. Preserve ignored raw artifacts."
+    "Review the draft PR; authoritative Linux GCC CI and any merged-source checks remain review-stage requirements.",
+    "No further campaign games, retries, extensions, retuning, production-default changes or merge.",
+    "Retain this worktree and its ignored raw artifacts; publication details live in build/overnight_20261008/draft_pr_publication.json and the attached PR."
   ],
   "combat_probe": {
     "status": "COMPLETE62evalpairs124validbranches; END51,Shrug50;INCONCLUSIVE",
@@ -246,10 +247,13 @@
   "main_movement": {
     "observed_main_sha": "dd308d3d89e6dde49b80468f66c6b0fe8e714136",
     "assessment": "audit/MAIN_MOVEMENT_REVIEW.json",
-    "status": "No identified active-path impact to frozen non-CTM producer; documentation metadata relocation prepared; no merged-source validation claim"
+    "status": "No identified active-path impact to frozen producer; three documentation header conflicts resolved; virtual merge passes; no merged-source validation claim"
   },
   "attempt_accounting": "learning/ATTEMPT_ACCOUNTING_v3.json",
   "runtime_invocations_completed": 799,
   "active_game_workers": 0,
-  "campaign_status": "CONFIRMED_IMPROVEMENT"
+  "campaign_status": "CONFIRMED_IMPROVEMENT",
+  "campaign_phase": "RESEARCH_COMPLETE_REVIEW_HANDOFF",
+  "packaging_checks": "audit/FINAL_PACKAGING_CHECKS.json",
+  "evidence_review_commit": "426ea4050193592fbf91dc2b3cb49b36bb295ef5"
 }

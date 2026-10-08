@@ -207,6 +207,12 @@ is a reviewed conditional approximation, not an exact posterior over every
 hidden history. Historical model/controller mismatch and approximate action
 features remain limitations.
 
+Final task-scope, local-link, whitespace, worktree/submodule and repository-health
+checks passed. A virtual merge with observed main `dd308d3d` has no textual
+conflicts after relocating three documentation verification dates; no merged
+source was built or used for the experiment. See the
+[packaging receipt](audit/FINAL_PACKAGING_CHECKS.json).
+
 GitHub Actions `Linux GCC` is the authoritative repository gate. Its workflow
 skips draft PRs; local passes do not establish a CI pass. No live-game
 qualification, default promotion, merge or automatic follow-up experiment is
