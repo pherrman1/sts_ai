@@ -126,9 +126,11 @@ def main():
 
         def dispatch(fast, env=None):
             result = probe(['--lizard-dispatch', fast, standard_path if env else STANDARD, directory / 'dispatch.jsonl'], env)
-            if result.returncode != 0:
+            # The probe exits 1 unless it saw the parity script's 8 fixtures; check it finished instead.
+            lines = result.stdout.splitlines()
+            if len(lines) != len(rows) or not result.stderr.startswith('{"dispatchFixtures":'):
                 raise RuntimeError(result.stderr)
-            return {r['name']: r for r in map(json.loads, result.stdout.splitlines())}
+            return {r['name']: r for r in map(json.loads, lines)}
 
         capabilities = extended['manifest']['capabilities']['fast']
         env = manifest('capable.json', extended['artifactSha256'], capabilities)
@@ -175,7 +177,7 @@ def main():
                     raise RuntimeError(f'{name}: plain active Lizard changed: {row} vs {base}')
                 continue
             brew, fairy = 'brew' in kind, 'fair' in kind
-            expected_old = 'active_lizard_entropic_brew_unsupported' if brew else 'fairy_potion_exact_boundary'
+            expected_old = 'fairy_potion_exact_boundary' if fairy else 'active_lizard_entropic_brew_unsupported'
             if old['predictionReason'] != expected_old or old['supported']:
                 raise RuntimeError(f'{name}: production must keep the boundary: {old}')
             only = fairy_run[name]
@@ -197,8 +199,9 @@ def main():
                 raise RuntimeError(f'{name}: expectation {row["expectation"]}')
             post = row.get('consumedPost')
             if post is None:
-                raise RuntimeError(f'{name}: no consumed victory')
-            if FAIRY in post['potions'] or [r['data'] for r in post['relics'] if r['id'] == TAIL] != [0]:
+                raise RuntimeError(f'{name}: no consumed victory {row}')
+            # Brew can generate a new Fairy Potion; otherwise the consumed branch has none.
+            if (FAIRY in post['potions'] and not brew) or [r['data'] for r in post['relics'] if r['id'] == TAIL] != [0]:
                 raise RuntimeError(f'{name}: consumed branch kept a Fairy or the Tail: {post["potions"]}')
             counted[kind] += 1
         if min(counted[k] for k in counted if k != 'plain') < 3:

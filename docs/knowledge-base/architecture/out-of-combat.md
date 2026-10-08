@@ -365,7 +365,8 @@ active-Lizard correction). `lizardBrew` (`{"rModel": ...}`) routes a Brew state'
 three classes to the standard child, whose survival gives q and the reserve
 feature, and uses that r model. `lizardFairy` (`{}`) composes a Fairy Potion
 before the Tail, as `Player::wouldDie` does: the ordinary and reserve inputs
-keep the Fairy, and the Tail-consumed branch drops every Fairy Potion. Bloom
+keep the Fairy, and the Tail-consumed branch drops every Fairy Potion. A
+Brew-generated Smoke Bomb can end either winning branch in an escape. Bloom
 stays on its exact path. The capabilities are fast-role only; the Brew fallback
 artifact may not carry them (CTests `ctm_lizard_runtime`, `ctm_lizard_selftest`).
 Explicit model paths keep the correction off unless

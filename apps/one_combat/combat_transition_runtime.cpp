@@ -1309,8 +1309,10 @@ std::unique_ptr<PreparedCombatTransition> EntropicBrewFallbackCombatTransitionSa
                         consumedLosses_.fetch_add(1);
                         return {CombatRuntimeSample::Outcome::DEATH,{}};
                     }
+                    // A Brew-generated Smoke Bomb can end a conditioned victory in an escape.
                     auto result=(outcome==1?consumedChild_:ordinaryChild_)->sampleConditionedVictory(rng);
-                    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY) {
+                    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY &&
+                        result.outcome!=CombatRuntimeSample::Outcome::ESCAPE) {
                         supportFailures_.fetch_add(1);
                         return {};
                     }
@@ -1370,7 +1372,8 @@ CombatRuntimeSample EntropicBrewFallbackCombatTransitionSampler::sampleActiveLiz
     auto child=lizardChild(prediction).prepareState(branch.first,branch.second);
     if(!child->support().supported)return {};
     auto result=child->sampleConditionedVictory(rng);
-    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY)return {};
+    if(result.outcome!=CombatRuntimeSample::Outcome::VICTORY &&
+        result.outcome!=CombatRuntimeSample::Outcome::ESCAPE)return {};
     restoreLizard(result.rawPost,original,stripped.second,outcomeClass==0?1:0);
     return result;
 }

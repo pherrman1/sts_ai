@@ -127,7 +127,8 @@ int main(int argc,char **argv) {
                     const bool hpLegal=post.curHp>=1 && post.curHp<=post.maxHp;
                     const int hpDelta=consumed?post.curHp-prediction.t2HeadInputHp:0;
                     const bool t2HeadInput=prediction.t2HeadInputHp==p.globals.maxHp/2;
-                    const bool hpClassLegal=!consumed || (hpDelta>=-160 && hpDelta<=143);
+                    const auto &hpClasses=hybrid.fastRuntime().metadata().at("hpClasses");
+                    const bool hpClassLegal=!consumed || (hpDelta>=hpClasses.front().get<int>() && hpDelta<=hpClasses.back().get<int>());
                     bool t2ConditionalIdentity=true;
                     if(consumed) {
                         auto directPre=stripTail(pre);
@@ -211,7 +212,9 @@ int main(int argc,char **argv) {
                         {"pOrdinaryWin",prediction.pOrdinaryWin},{"pReserveWin",prediction.pReserveWin},
                         {"rWinGivenConsumed",prediction.rWinGivenConsumed},
                         {"classProbabilities",prediction.classProbabilities},{"t2HeadInputHp",prediction.t2HeadInputHp}};
-                    if(consumed.outcome==CombatRuntimeSample::Outcome::VICTORY)
+                    out["consumedOutcome"]=static_cast<int>(consumed.outcome);
+                    if(consumed.outcome==CombatRuntimeSample::Outcome::VICTORY ||
+                        consumed.outcome==CombatRuntimeSample::Outcome::ESCAPE)
                         out["consumedPost"]=combatTransitionStateJson(consumed.rawPost);
                     const auto expected=hybrid.expectation(gc,p),forecasted=hybrid.forecastExpectation(p);
                     out["expectation"]={{"supported",expected.supported},{"death",expected.death},
