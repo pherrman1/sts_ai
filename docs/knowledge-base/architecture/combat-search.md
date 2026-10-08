@@ -277,6 +277,16 @@ computes the pilot's Gate A/B. On the 89 smoke roots with a second teacher, a
 plain 10k replay from the wire picked the recorded top action on 69, and the
 independent second teacher on 66.
 
+The same bonus runs in live play as a research-only option (default off):
+`STS_SILVER_ROOT_PRIOR=<model>` with `STS_SILVER_ROOT_PRIOR_WEIGHT=<w>` makes the
+native backend score every searched root's actions with a
+`combat_policy_trees_v1` tree ensemble (`CombatValueNet`, policy layout). The
+model is exported from LightGBM by `silver_synth_gates.py export`. Its sigmoid
+outputs, normalized over the root, become `rootPrior`; roots with one action
+get none. The prior is recomputed after every reroot, so inherited visits damp
+it. `bestbench` sidecars record the model path, SHA-256 and weight. Learned
+stopping was not retrained for it.
+
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.

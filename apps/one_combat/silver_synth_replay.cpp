@@ -14,6 +14,9 @@
 // silversynthreplay: one task per line ({id, wire, bits, prior|null, weight,
 // budgets, seeds}); for each seed a fresh native Silver root search, with the
 // optional root prior bonus, reports the most visited action at each budget.
+// "prior": "native" uses the backend's STS_SILVER_ROOT_PRIOR model (its
+// normalized prior is echoed). `silversynthreplay names OUT.json` instead
+// writes the policy feature names (for the model exporter) and exits.
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/silver_synth_keys.h"
@@ -199,7 +202,11 @@ void silverSynthFeatures(const std::string &outPrefix) {
     std::cout << summary.dump() << '\n';
 }
 
-void silverSynthReplay() {
+void silverSynthReplay(const std::string &namesPath) {
+    if (!namesPath.empty()) {
+        std::ofstream(namesPath) << nlohmann::json(search::combatPolicyFeatureNames()).dump() << '\n';
+        return;
+    }
     std::string line;
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
@@ -218,7 +225,12 @@ void silverSynthReplay() {
                     result["error"] = "edge_mismatch";
                     break;
                 }
-                if (!task.at("prior").is_null()) {
+                if (task.at("prior").is_string()) {
+                    // "native": the backend's STS_SILVER_ROOT_PRIOR model.
+                    searcher.rootPrior = search::nativeSilverRootPrior(searcher);
+                    if (searcher.rootPrior.empty()) throw std::runtime_error("native root prior is off");
+                    searcher.rootPriorWeight = task.at("weight").get<double>();
+                } else if (!task.at("prior").is_null()) {
                     searcher.rootPrior = task.at("prior").get<std::vector<double>>();
                     searcher.rootPriorWeight = task.at("weight").get<double>();
                 }
@@ -228,6 +240,8 @@ void silverSynthReplay() {
                     done = budget;
                     std::vector<std::int32_t> visits;
                     for (const auto &edge : searcher.rootNode().edges) visits.push_back(edge.visitCount);
+                    if (budget == budgets.front() && seed == task.at("seeds").at(0) && task.at("prior").is_string())
+                        result["prior"] = searcher.rootPrior;
                     result["runs"].push_back({{"seed", seed}, {"budget", budget},
                                               {"chosen", searcher.bestAction().bits}, {"visits", visits}});
                 }
