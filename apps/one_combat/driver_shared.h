@@ -308,7 +308,7 @@ void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // Offline harness for the silversynthgen corpus (apps/one_combat/silver_synth_replay.cpp):
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);
-void silverSynthReplay();
+void silverSynthReplay(const std::string &namesPath = "");
 int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();

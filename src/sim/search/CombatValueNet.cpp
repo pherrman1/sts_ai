@@ -572,6 +572,12 @@ bool CombatValueNet::load(const std::string &path) {
         return true;
     } else if (tok == "nfeat") {
         f >> nfeat;                          // legacy tree model
+    } else if (tok == "combat_policy_trees_v1") {
+        // Tree ensemble over the POLICY layout (state ++ action), e.g. the
+        // synthetic Silver root prior (tools/silver_synth_gates.py export).
+        isPolicy = true;
+        f >> tok >> nfeat;
+        if (tok != "nfeat") return false;
     } else {
         return false;
     }

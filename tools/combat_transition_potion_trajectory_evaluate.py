@@ -60,7 +60,9 @@ def prepare(folder,sha):
                 counts['specialSurvivors']+=1;counts['brewGenerationRounds']+=graph.rounds;counts['escapeRows']+=post['smokeBombUsed']
             if index%100000==0:print('final candidate census',index,flush=True)
     ids=np.asarray(ids,np.int64)
-    if sum(old)!=_pins.value('combat_transition_potion_trajectory_evaluate.PREVIOUS_SUPPORT_ROWS',413799):raise ValueError('previous #179 support count changed')
+    # The #179 production support count; a retrain on a new corpus pins null (recorded only).
+    previous=_pins.value('combat_transition_potion_trajectory_evaluate.PREVIOUS_SUPPORT_ROWS',413799)
+    if previous is not None and sum(old)!=previous:raise ValueError('previous #179 support count changed')
     prehp=arrays['globals_continuous'][ids,c.base.CONTINUOUS_GLOBAL_FIELDS.index('curHp')].astype(np.int64)
     premax=arrays['preMaxHp'][ids].astype(np.int64);postmax=arrays['y_post_max_hp'][ids].astype(np.int64);posthp=arrays['y_post_hp'][ids].astype(np.int64)
     slots=arrays['potions'][ids,:,1].astype(np.int64);capacity=arrays['potionCapacity'][ids].astype(np.int64)
@@ -69,7 +71,7 @@ def prepare(folder,sha):
                preHp=prehp,preMax=premax,trueHp=posthp,trueMax=postmax,delta=arrays['delta_index'][ids].astype(np.int64),
                potions=slots,capacity=capacity,mask=mask,boss=np.asarray(boss),old=np.asarray(old),z=np.zeros((len(ids),64),np.float32))
     alive=cache['win'];normal=np.asarray([str(i) not in graphs for i in range(len(ids))])&alive
-    if np.any(cache['delta'][alive]<0) or np.any((posthp[alive]-prehp[alive]<-160)|(posthp[alive]-prehp[alive]>143)):raise ValueError('target outside existing HP/maxHP class domain')
+    if np.any(cache['delta'][alive]<0) or np.any((posthp[alive]-prehp[alive]<c.CLASSES[0])|(posthp[alive]-prehp[alive]>c.CLASSES[-1])):raise ValueError('target outside existing HP/maxHP class domain')
     if np.any((arrays['y_potions'][ids[normal]]!=slots[normal])&(arrays['y_potions'][ids[normal]]!=1)):raise ValueError('unexplained normal potion creation')
     torch.set_num_threads(4);m.to('cuda')
     with torch.inference_mode():

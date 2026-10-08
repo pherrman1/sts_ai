@@ -18,6 +18,11 @@ from tools import combat_transition_composed as c
 from tools import combat_transition_composed_evaluate as e
 from tools import combat_transition_gold as g
 from tools.combat_transition_gold_audit import audit_without_gold_gate
+from tools import ctm_pins as _pins
+
+# corpusRows, gold cohort and TEST rows of the frozen production cohort. A
+# retrain on a new corpus pins null: the cohort is new and only recorded.
+FROZEN_COUNTS = _pins.value('combat_transition_gold_evaluate.FROZEN_COUNTS', [510030, 71367, 7301])
 
 RECIPE = dict(schema='shared_native_gold_v1', seed=20260912, epochs=12,
               batch=512, lr=.001, weightDecay=.0001, gradientClip=1.,
@@ -105,8 +110,9 @@ def prepare(folder):
                                   pre=pre, post=post, predictorInput=pi, win=win, reasons=reasons,
                                   transmutationPlus=any(x['cardId'] == g.b._CARD_IDS['TRANSMUTATION'] and x['upgraded'] for x in pi['cards'])))
         if len(selected) % 10000 == 0:
-            print(f'gold native audit {len(selected)}/71367', flush=True)
-    if counts['corpusRows'] != 510030 or len(selected) != 71367 or len(test_rows) != 7301:
+            print(f'gold native audit {len(selected)}', flush=True)
+    cohort = [counts['corpusRows'], len(selected), len(test_rows)]
+    if FROZEN_COUNTS is not None and cohort != list(FROZEN_COUNTS):
         raise ValueError('frozen gold cohort counts differ')
     n = len(selected); width = max(len(v[0]) for v in native_rows)
     cache = {key: np.asarray([r[key] for r in records]) for key in records[0]}
@@ -144,7 +150,7 @@ def prepare(folder):
 
 def load_cache(folder):
     metadata = json.loads((folder / 'preflight.json').read_text())
-    if e.verify_data() != metadata['hashes'] or c.base.sha256(folder / 'cache.npz') != metadata['cacheSha256'] or c.base.sha256(folder / 'test_rows.jsonl') != metadata['testRowsSha256'] or json.loads((folder / 'recipe.json').read_text()) != json.loads(json.dumps(RECIPE)):
+    if e.verify_data() != metadata['hashes'] or c.base.sha256(folder / 'cache.npz') != metadata['cacheSha256'] or c.base.sha256(folder / 'test_rows.jsonl') != metadata['testRowsSha256'] or _pins.strip(json.loads((folder / 'recipe.json').read_text())) != json.loads(json.dumps(RECIPE)):
         raise ValueError('frozen gold inputs changed')
     with np.load(folder / 'cache.npz') as raw:
         cache = {k: raw[k] for k in raw.files}

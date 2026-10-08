@@ -97,8 +97,19 @@ def parameter_count(module):
     return int(sum(value.numel() for value in module.parameters()))
 
 
-def _load_control(control_dir: Path):
-    result_path = control_dir / "results.json"
+def _load_control(control_dir):
+    """The shared-Attention control receipt (comparison only, never trained on).
+
+    A retrain pins EXPECTED_CONTROL to null: production already chose the
+    DeepSets student, so no control is run and the receipts record none.
+    """
+    if EXPECTED_CONTROL is None:
+        if control_dir is not None:
+            raise ValueError("EXPECTED_CONTROL is null; omit --control-dir")
+        return None, None
+    if control_dir is None:
+        raise ValueError("--control-dir is required")
+    result_path = Path(control_dir) / "results.json"
     actual_result_sha = c.base.sha256(result_path)
     result = json.loads(result_path.read_text())
     if actual_result_sha != EXPECTED_CONTROL["resultSha256"]:
@@ -113,6 +124,13 @@ def _load_control(control_dir: Path):
     if result.get("counts") != EXPECTED_COUNTS:
         raise ValueError("shared-Attention control population differs")
     return result, actual_result_sha
+
+
+def _control_receipt(control_dir, control, control_sha):
+    if control is None:
+        return None
+    return dict(path=str(Path(control_dir).resolve()), resultSha256=control_sha, experimentSha=control["experimentSha"],
+                bestCheckpointSha256=control["bestCheckpointSha256"], selectedEpoch=control["selectedEpoch"])
 
 
 def _load_teacher_cache(reference_dir: Path, cache: dict, meta: dict):
@@ -257,7 +275,7 @@ def run(args, *, recipe=RECIPE, student_factory=_student_model,
     torch.set_num_threads(4)
     torch.manual_seed(RECIPE["seed"])
     torch.cuda.manual_seed_all(RECIPE["seed"])
-    control, control_sha = _load_control(Path(args.control_dir))
+    control, control_sha = _load_control(args.control_dir)
     cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash, _ = _prepare(args)
     scalar_mean, scalar_std, normalization_ids = normalization_stats(cache, arrays, train)
     student = student_factory(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
@@ -375,7 +393,7 @@ def run(args, *, recipe=RECIPE, student_factory=_student_model,
     torch.save(dict(stateDict=student_state, maxHpHeadStateDict=max_state, recipe=RECIPE, experimentSha=current, selectedEpoch=selected), checkpoint)
     result = dict(
         baselineSha=args.baseline_sha, experimentSha=current, recipe=RECIPE,
-        control=dict(path=str(Path(args.control_dir).resolve()), resultSha256=control_sha, experimentSha=control["experimentSha"], bestCheckpointSha256=control["bestCheckpointSha256"], selectedEpoch=control["selectedEpoch"]),
+        control=_control_receipt(args.control_dir, control, control_sha),
         parameterCount=dict(encoder=encoder_parameters, studentWithoutMaxHpHead=student_parameters, maxHpHead=parameter_count(max_head), complete=student_parameters + parameter_count(max_head)),
         scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist(), rows=int(len(normalization_ids)), rowIdsSha256=digest_array(normalization_ids)),
         hpBranchInitialization=hp_initialization,
@@ -385,7 +403,7 @@ def run(args, *, recipe=RECIPE, student_factory=_student_model,
         initialStudentSha256=initial_student_hash, initialMaxHpHeadSha256=initial_max_hash,
         batchOrderSha256=batch_digest.hexdigest(), history=history, selectedEpoch=selected,
         studentToTeacherKl={"maxHP": max_kl, "HP": hp_kl}, specialistTeachers=teacher_metrics,
-        deepSetsStudent=student_metrics, sharedAttentionControl=control["student"], gates=gates,
+        deepSetsStudent=student_metrics, sharedAttentionControl=control and control["student"], gates=gates,
         validity=validity, skippedUpdates=skipped_updates, trainingSeconds=time.monotonic() - started,
         checkpointSha256=c.base.sha256(checkpoint), decision=decision,
     )
@@ -404,7 +422,7 @@ def finalize_existing(args):
     best_path = output / "best_epoch.pt"
     if not output.is_dir() or not best_path.is_file() or (output / "results.json").exists():
         raise ValueError("finalize requires an existing incomplete fit directory")
-    control, control_sha = _load_control(Path(args.control_dir))
+    control, control_sha = _load_control(args.control_dir)
     cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash, _ = _prepare(args)
     scalar_mean, scalar_std, normalization_ids = normalization_stats(cache, arrays, train)
     student = _student_model(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
@@ -453,7 +471,7 @@ def finalize_existing(args):
     torch.save(dict(stateDict=saved["stateDict"], maxHpHeadStateDict=saved["maxHpHeadStateDict"], recipe=RECIPE, experimentSha=args.experiment_sha, selectedEpoch=selected), checkpoint)
     result = dict(
         baselineSha=args.baseline_sha, experimentSha=args.experiment_sha, recipe=RECIPE,
-        control=dict(path=str(Path(args.control_dir).resolve()), resultSha256=control_sha, experimentSha=control["experimentSha"], bestCheckpointSha256=control["bestCheckpointSha256"], selectedEpoch=control["selectedEpoch"]),
+        control=_control_receipt(args.control_dir, control, control_sha),
         parameterCount=dict(encoder=parameter_count(student.encoder), studentWithoutMaxHpHead=parameter_count(student), maxHpHead=parameter_count(max_head), complete=parameter_count(student) + parameter_count(max_head)),
         scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist(), rows=int(len(normalization_ids)), rowIdsSha256=digest_array(normalization_ids)),
         hpBranchInitialization=hp_initialization,
@@ -462,7 +480,7 @@ def finalize_existing(args):
         testInferenceRows=0, testMetricsComputed=False, validationInGradientUpdates=False,
         initialStudentSha256=initial_student_hash, initialMaxHpHeadSha256=initial_max_hash,
         history=history, selectedEpoch=selected, studentToTeacherKl={"maxHP": max_kl, "HP": hp_kl},
-        specialistTeachers=teacher_metrics, deepSetsStudent=student_metrics, sharedAttentionControl=control["student"],
+        specialistTeachers=teacher_metrics, deepSetsStudent=student_metrics, sharedAttentionControl=control and control["student"],
         gates=gates, validity=validity, skippedUpdates=int(json.loads((output / "progress.json").read_text())["skippedUpdates"]),
         overflowEventsSha256=c.base.sha256(output / "overflow-events.jsonl"), overflowHandling=RECIPE["overflowHandling"],
         trainingSeconds=float(history[-1]["seconds"]), checkpointSha256=c.base.sha256(checkpoint), decision=decision,
@@ -477,7 +495,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact-root", required=True)
     parser.add_argument("--reference-dir", required=True)
-    parser.add_argument("--control-dir", required=True)
+    parser.add_argument("--control-dir", help="shared-Attention control; omit when EXPECTED_CONTROL is pinned null")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--baseline-sha", required=True)
     parser.add_argument("--experiment-sha", required=True)

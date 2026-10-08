@@ -8,12 +8,17 @@
 // continuation labels, each root action's child states: the generator's two
 // label children (same keys, so each pairs with its recorded continuation
 // value) and a probe child with four independent SilverRolloutAgent rollouts.
+// Every root action row is followed by an "after" row: the state features of
+// one sampled outcome of that action.
 // Rows are sparse: OUT.nnz (uint32 per row), OUT.idx (uint16 per value),
 // OUT.val (float32 per value) and one OUT.meta.jsonl line per row.
 //
 // silversynthreplay: one task per line ({id, wire, bits, prior|null, weight,
 // budgets, seeds}); for each seed a fresh native Silver root search, with the
 // optional root prior bonus, reports the most visited action at each budget.
+// "prior": "native" uses the backend's STS_SILVER_ROOT_PRIOR model (its
+// normalized prior is echoed). `silversynthreplay names OUT.json` instead
+// writes the policy feature names (for the model exporter) and exits.
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/silver_synth_keys.h"
@@ -130,6 +135,11 @@ void featurizeRoot(const nlohmann::json &row, SparseRows &out, std::map<std::str
                 if (s.at("bits").get<std::uint64_t>() == bits[e]) a["visits2"] = s.at("visits");
         }
         out.writeAction(state.bc, edges[e].action, a);
+        // Post-action state (one sampled outcome), for afterstate-based priors.
+        BattleContext after = state.bc;
+        search::seedSearchRng(after, key(rootKey, 11, e));
+        edges[e].action.execute(after);
+        out.writeState(after, {{"k", "after"}, {"e", e}, {"terminal", after.outcome != Outcome::UNDECIDED}});
     }
     ++counts["roots"];
     if (!hasCont) return;
@@ -199,7 +209,11 @@ void silverSynthFeatures(const std::string &outPrefix) {
     std::cout << summary.dump() << '\n';
 }
 
-void silverSynthReplay() {
+void silverSynthReplay(const std::string &namesPath) {
+    if (!namesPath.empty()) {
+        std::ofstream(namesPath) << nlohmann::json(search::combatPolicyFeatureNames()).dump() << '\n';
+        return;
+    }
     std::string line;
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
@@ -218,7 +232,12 @@ void silverSynthReplay() {
                     result["error"] = "edge_mismatch";
                     break;
                 }
-                if (!task.at("prior").is_null()) {
+                if (task.at("prior").is_string()) {
+                    // "native": the backend's STS_SILVER_ROOT_PRIOR model.
+                    searcher.rootPrior = search::nativeSilverRootPrior(searcher);
+                    if (searcher.rootPrior.empty()) throw std::runtime_error("native root prior is off");
+                    searcher.rootPriorWeight = task.at("weight").get<double>();
+                } else if (!task.at("prior").is_null()) {
                     searcher.rootPrior = task.at("prior").get<std::vector<double>>();
                     searcher.rootPriorWeight = task.at("weight").get<double>();
                 }
@@ -228,6 +247,8 @@ void silverSynthReplay() {
                     done = budget;
                     std::vector<std::int32_t> visits;
                     for (const auto &edge : searcher.rootNode().edges) visits.push_back(edge.visitCount);
+                    if (budget == budgets.front() && seed == task.at("seeds").at(0) && task.at("prior").is_string())
+                        result["prior"] = searcher.rootPrior;
                     result["runs"].push_back({{"seed", seed}, {"budget", budget},
                                               {"chosen", searcher.bestAction().bits}, {"visits", visits}});
                 }

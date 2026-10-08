@@ -15066,3 +15066,99 @@ addressing per-source compute tails; no automatic continuation is authorized.
 **Knowledge impact:** current research records a failed fixed-allocation
 experiment and unresolved selection precision. Production defaults, model
 artifacts and the closed §395 qualification are unchanged.
+
+## §399 — Synthetic Silver root prior online screen: negative (2026-10-08)
+
+**Question:** does the §397 root prior (Gate B pass offline) win more full runs
+at a flat 2k budget, and does prior + 2k approach plain 10k?
+
+**Design:** pre-registered after Philipp's go (evidence `PREREG.md`, written at
+launch before any seed result, not committed beforehand).
+- **Build:** commit 51937c6a (#449), a research-only `STS_SILVER_ROOT_PRIOR`
+  option (default off). The §397 nat+pert prior was exported to
+  `combat_policy_trees_v1` with exact margin parity. Native vs offline replay
+  was identical on 300 test roots.
+- **Arms:** bestbench, seeds 56003000..031 (never used for training), A0, fair,
+  flat exact budgets, no learned stopping. A plain 2k; B prior w = 400 + 2k;
+  C plain 10k.
+- **Rule:** SCREEN_PASS if B − A ≥ +3 wins and B ≥ C − 2; SCREEN_NEGATIVE if
+  B − A ≤ 0.
+
+**Result:** `SCREEN_NEGATIVE`.
+
+| arm | wins | mean floor | CPU s/run |
+|---|---|---|---|
+| A plain 2k | 21/32 | 50.2 | 12.8 |
+| B prior + 2k | 21/32 | 49.5 | 12.4 |
+| C plain 10k | 28/32 | 50.2 | 72.7 |
+
+- B vs A: 3 seeds won only by B and 3 only by A.
+- B vs C: 7 seeds won only by C, 0 only by B.
+
+**Interpretation:**
+- The offline gain (prior + 256 ≈ plain 1,000 in root regret) did not show up
+  as whole-run wins at 2k. Inference: per-root regret gains of about 0.3 points
+  are too small to move run outcomes at this scale, or the root-only prior
+  helps where it matters least. The screen cannot tell these apart.
+- 10k clearly beats 2k on these seeds (+7 wins). The budget matters, and the
+  prior does not substitute for it.
+- The prior's CPU cost is negligible (B ran as fast as A).
+- Per the rule, variant (b) stops here unless a new target definition
+  appears. Together with §397 Gate A, the synthetic-corpus route to a Silver
+  prior or leaf is closed for now.
+- `STS_SILVER_ROOT_PRIOR` stays research-only and off.
+
+**Evidence:** [packet](evidence/silver_root_prior_screen_20261008/README.md).
+
+**Knowledge impact:** `combat-search.md` documents the option. The ledger
+records the negative screen.
+
+## §400 — Synthetic Silver root prior v2: offline replay, no gain at 2k (2026-10-08)
+
+**Question:** after §399, is the prior model the bottleneck? Does a richer
+prior (post-action state features, per-root ranking loss, more rounds, wider
+weight grid) recover more of the visit-share oracle's root-regret gain,
+especially at the 2k budget the online screen used?
+
+**Design:** offline only, on Philipp's request to look further into the model
+training. Same corpus, folds, teacher and replay harness as §397; adds a
+2,000-sim budget. The prior v2 recipe and the weight rule (best validation
+regret at 1,000 sims) were fixed before the test replay. Arms on 4,094 test
+roots x 2 replay seeds: plain, v1 (§397 prior, w = 400), v2 (w = 1600, picked;
+w = 400 secondary), oracle visit shares (w = 400 and 1600).
+
+**Result:** root regret (Silver points; mean, and difference vs plain with 95%
+seed-clustered CI).
+
+| budget | plain | v1 w400 | v2 w1600 | oracle w1600 |
+|---|---|---|---|---|
+| 256 | 2.04 | 1.71 (−0.33 [−0.45, −0.22]) | 1.59 (−0.45 [−0.59, −0.32]) | 0.57 |
+| 1,000 | 1.68 | 1.53 (−0.14 [−0.27, −0.03]) | 1.47 (−0.21 [−0.33, −0.10]) | 0.64 |
+| 2,000 | 1.55 | 1.46 (−0.09 [−0.23, +0.04]) | 1.44 (−0.11 [−0.23, +0.01]) | 0.73 |
+
+- v2 − v1: −0.12 [−0.21, −0.04] at 256, −0.07 [−0.17, +0.05] at 1,000,
+  −0.02 [−0.11, +0.09] at 2,000.
+- Secondary arm v2 at w = 400: −0.10 [−0.22, +0.02] vs plain at 2,000, the
+  same as w = 1600, so the tie does not depend on the weight pick.
+- Share of the oracle gain captured at 2,000: v1 11%, v2 13%.
+- Fit (validation fold, also the early-stopping fold, so slightly optimistic):
+  top action equals the 10k top action for v1 55.1%, v2 58.5%; a second
+  independent 10k search agrees 75.0%, a lower bound on what a perfect prior
+  could reach. On roots where both 10k searches agree, v2 matches 66.8%.
+
+**Interpretation:**
+- The richer prior is better only at low budgets. At 2k it ties v1 and neither
+  clearly beats plain, which matches §399.
+- Model fit improved only modestly (55% → 59%, while two 10k searches agree
+  75%). Inference: the post-action features and the ranking loss were not the
+  main limit. Label noise is not the main limit either, since v2 misses a third
+  of the roots where both 10k searches agree.
+- The oracle numbers overstate the reachable gain: the oracle's visit shares
+  come from the same 10k searches whose Q values form the teacher.
+- No new online screen is proposed. The v2 recipe stays offline (no native
+  scorer for afterstate features exists).
+
+**Evidence:** [packet](evidence/silver_prior_v2_offline_20261008/README.md).
+
+**Knowledge impact:** the ledger records the result. `silversynthfeatures`
+now writes `after` rows; no maintained KB page describes that row layout.

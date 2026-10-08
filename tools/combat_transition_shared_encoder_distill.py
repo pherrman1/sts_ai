@@ -61,7 +61,7 @@ def verify_component(folder, component, cache_meta):
     if "original VALIDATION" not in fit["recipe"]["selection"] or "original source-grouped TRAIN" not in fit["recipe"]["population"]:
         raise ValueError(f"{component} TRAIN/VALIDATION provenance differs")
     payload = torch.load(path, map_location="cpu", weights_only=False)
-    if payload["metadata"] != {k: v for k, v in fit.items() if k != "artifactSha256"}:
+    if payload["metadata"] != _pins.strip({k: v for k, v in fit.items() if k != "artifactSha256"}):
         raise ValueError(f"{component} embedded metadata differs")
     return fit, payload, actual
 
@@ -194,6 +194,10 @@ def run(args):
     if output.exists(): raise ValueError("refusing overwrite")
     output.mkdir(parents=True); torch.set_num_threads(4); torch.manual_seed(RECIPE["seed"]); torch.cuda.manual_seed_all(RECIPE["seed"])
     cache, arrays, teachers, train, validation, counts, provenance = prepare(Path(args.artifact_root), output)
+    if args.teachers_only:
+        # Retrain (#418): the DeepSets distill needs only the frozen teacher cache, not the shared-Attention control.
+        result=dict(baselineSha=args.baseline_sha,experimentSha=current,counts=counts,provenance=provenance,testInferenceRows=0,decision="TEACHER_CACHE_ONLY")
+        c.base.json_dump(output/"results.json",result);print(json.dumps(dict(decision=result["decision"],counts=counts)),flush=True);return
     width = len(c.base.CONTINUOUS_GLOBAL_FIELDS)
     student = stochastic_hp.new_model(torch, np.zeros(width,np.float32), np.ones(width,np.float32),
                                       len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
@@ -245,4 +249,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument("--artifact-root",required=True);parser.add_argument("--output-dir",required=True);parser.add_argument("--baseline-sha",required=True);parser.add_argument("--experiment-sha",required=True);run(parser.parse_args())
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument("--artifact-root",required=True);parser.add_argument("--output-dir",required=True);parser.add_argument("--baseline-sha",required=True);parser.add_argument("--experiment-sha",required=True)
+    parser.add_argument("--teachers-only",action="store_true",help="write the teacher cache and its receipt; skip the shared-Attention control fit");run(parser.parse_args())

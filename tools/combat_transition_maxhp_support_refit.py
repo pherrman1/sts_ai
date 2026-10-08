@@ -17,11 +17,13 @@ RECIPE=dict(seed=20260912,epochs=12,batch=512,lr=.001,weightDecay=.0001,
             population='historical prepared supported rows plus gold-only and Stage-2 consumption-only candidates')
 
 
-def run(folder,sha,refit_encoder=False):
+PARENT=Path('/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914')
+
+
+def run(folder,sha,refit_encoder=False,parent=PARENT):
     sparse.frozen(sha)
     if folder.exists():raise ValueError('refusing overwrite')
     hashes=e.verify_data();arrays,spec=c.base._load_prepared(e.PREPARED);c.base._prepare_target_indices(arrays,spec)
-    parent=Path('/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914')
     gc,gm=gold.load_cache(parent/'shared-gold-v1')
     eligible=arrays['supported'].copy();eligible[gc['ids']]=True;bindings={'gold':gm['cacheSha256']}
     for mechanism in ('writhing','ritual'):
@@ -69,4 +71,5 @@ def run(folder,sha,refit_encoder=False):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--output-dir',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--refit-encoder',action='store_true');a=p.parse_args();run(a.output_dir,a.source_sha,a.refit_encoder)
+    p=argparse.ArgumentParser();p.add_argument('--output-dir',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--refit-encoder',action='store_true')
+    p.add_argument('--parent',type=Path,default=PARENT,help='folder holding shared-gold-v1, writhing-v1 and ritual-v1');a=p.parse_args();run(a.output_dir,a.source_sha,a.refit_encoder,a.parent)

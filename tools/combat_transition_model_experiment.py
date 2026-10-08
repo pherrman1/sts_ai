@@ -306,6 +306,42 @@ def shard_inventory(shard_root: Path, final_manifest: dict) -> tuple[list[dict],
     return entries, covered, quarantined
 
 
+def union_inventory(final_manifest: dict) -> tuple[list[dict], set[int], set[int]]:
+    """Validate the scopes of a `ctm_corpus_adapter.py union` corpus (#418 retrain).
+
+    A union has no shards of its own: each assembled scope keeps its shard
+    manifests under its own blocks/. Requested sources are the scopes' seed
+    ranges (not the gaps between scopes); covered sources are the seeds the
+    scopes' shards completed. `audit` derives the completed sources from the
+    union rows, since the union drops unsupported rows, and quarantines every
+    other requested source (generator stalls and seeds whose rows were all
+    dropped).
+    """
+    entries: list[dict] = []
+    requested: set[int] = set()
+    covered: set[int] = set()
+    identity = (final_manifest["producerGitSha"], final_manifest["producerExecutableSha256"],
+                final_manifest["combatTeacher"]["teacher_id"])
+    for scope, info in sorted(final_manifest["ctmCorpusAdapter"]["union"].items()):
+        path = Path(info["manifest"])
+        if sha256(path) != info["manifestSha256"]:
+            raise ValueError(f"union scope {scope} manifest changed")
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        if manifest.get("forcedSetup") != scope or manifest["seedSpec"] != info["seedSpec"]:
+            raise ValueError(f"union scope {scope} manifest differs from the union record")
+        if (manifest["producerGitSha"], manifest["producerExecutableSha256"],
+                manifest["combatTeacher"]["teacher_id"]) != identity:
+            raise ValueError(f"union scope {scope} has another producer/teacher identity")
+        scope_entries, scope_covered, _ = shard_inventory(path.parent, manifest)
+        seeds = _range_set(manifest["seedSpec"])
+        if seeds & requested:
+            raise ValueError(f"union scope {scope} overlaps another scope")
+        requested |= seeds
+        covered |= scope_covered
+        entries += [dict(entry, scope=scope) for entry in scope_entries]
+    return entries, requested, covered
+
+
 def _band(value: float, edges: tuple[float, ...], labels: tuple[str, ...]) -> str:
     for edge, label in zip(edges, labels):
         if value < edge:
@@ -399,11 +435,17 @@ def audit(args: argparse.Namespace) -> None:
     corpus_path = Path(final_manifest["csv"]["path"])
     if not corpus_path.is_file():
         raise ValueError(f"corpus does not exist: {corpus_path}")
-    shard_entries, completed_seeds, quarantined = shard_inventory(Path(args.shard_root), final_manifest)
-    expected = _range_set(final_manifest["seedSpec"])
-    if completed_seeds | quarantined != expected or completed_seeds & quarantined:
-        raise ValueError("final source accounting does not reconcile")
-    split = split_manifest(completed_seeds, final_manifest | {"quarantined": sorted(quarantined)})
+    union = final_manifest.get("forcedSetup") == "union"
+    if union:
+        # Each union scope names its own shards; --shard-root is not used.
+        shard_entries, expected, covered = union_inventory(final_manifest)
+    else:
+        if not args.shard_root:
+            raise ValueError("--shard-root is required")
+        shard_entries, completed_seeds, quarantined = shard_inventory(Path(args.shard_root), final_manifest)
+        expected = _range_set(final_manifest["seedSpec"])
+        if completed_seeds | quarantined != expected or completed_seeds & quarantined:
+            raise ValueError("final source accounting does not reconcile")
     source_rows: Counter = Counter()
     source_changes: dict[str, set[int]] = defaultdict(set)
     coverage = {name: Counter() for name in (
@@ -463,6 +505,12 @@ def audit(args: argparse.Namespace) -> None:
         card_changes.update(card_ids)
     if rows != int(final_manifest["integrity"]["rows"]):
         raise ValueError(f"merged row count mismatch {rows}")
+    if union:
+        completed_seeds = set(source_rows)
+        if not completed_seeds <= covered or len(completed_seeds) != int(final_manifest["integrity"]["completedSeeds"]):
+            raise ValueError("union rows do not reconcile with the scopes' validated shards")
+        quarantined = expected - completed_seeds
+    split = split_manifest(completed_seeds, final_manifest | {"quarantined": sorted(quarantined)})
     if set(source_rows) != completed_seeds:
         raise ValueError("merged corpus sources do not equal validated shard sources")
     if max_cards > MAX_CARDS or max_relics > MAX_RELICS:
@@ -1137,7 +1185,7 @@ def fit(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser=argparse.ArgumentParser(description=__doc__); sub=parser.add_subparsers(dest="command",required=True)
-    p=sub.add_parser("audit"); p.add_argument("--corpus-manifest",required=True); p.add_argument("--shard-root",required=True); p.add_argument("--output-dir",required=True); p.set_defaults(func=audit)
+    p=sub.add_parser("audit"); p.add_argument("--corpus-manifest",required=True); p.add_argument("--shard-root",help="required unless the corpus is a ctm_corpus_adapter union"); p.add_argument("--output-dir",required=True); p.set_defaults(func=audit)
     p=sub.add_parser("prepare"); p.add_argument("--audit",required=True); p.add_argument("--output-dir",required=True); p.set_defaults(func=prepare)
     p=sub.add_parser("fit"); p.add_argument("--prepared-dir",required=True); p.add_argument("--output-dir",required=True); p.add_argument("--device",choices=("auto","cpu","cuda"),default="auto"); p.add_argument("--threads",type=int,default=8); p.add_argument("--xgb-rounds",type=int,default=400); p.add_argument("--nn-batch",type=int,default=2048); p.add_argument("--nn-epochs",type=int,default=12); p.add_argument("--nn-patience",type=int,default=3); p.add_argument("--training-seed",type=int,default=20260911); p.add_argument("--bootstrap-reps",type=int,default=1000); p.add_argument("--save-test-predictions",action="store_true"); p.set_defaults(func=fit)
     args=parser.parse_args(); args.func(args)

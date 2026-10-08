@@ -16,6 +16,7 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/CombatValueNet.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
 #include "sim/search/SilverConversion.h"
@@ -48,8 +49,12 @@ namespace sts::search {
             bool learnedStopBossFallback = false;   // boss rooms use the #199 rule
             std::int64_t learnedStopBossMax = 0;    // > 10k: hard boss roots continue to this cap
             std::string stopTrace;
+            // Research-only root prior bonus (SilverSearcher::rootPrior).
+            std::string rootPriorPath;
+            double rootPriorWeight = 0;
         };
         Options g_options;
+        CombatValueNet g_rootPriorNet;
         std::mutex g_stopTraceMutex;
         std::ofstream g_stopTraceFile;
         std::string g_uselessTrace;
@@ -443,6 +448,8 @@ namespace sts::search {
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
                 searcher->leafSamples = g_nativeSilverLeafSamples;
+                searcher->rootPrior = nativeSilverRootPrior(*searcher);
+                searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -720,6 +727,18 @@ namespace sts::search {
             if (g_options.learnedStopBossMax != 0 && g_options.learnedStopBossFallback)
                 throw std::runtime_error("STS_SILVER_LEARNED_STOP_BOSS_MAX and _BOSS_FALLBACK are exclusive");
         }
+        if (const char *path = std::getenv("STS_SILVER_ROOT_PRIOR"); path && *path) {
+            const char *weight = std::getenv("STS_SILVER_ROOT_PRIOR_WEIGHT");
+            if (!weight || !*weight) throw std::runtime_error("STS_SILVER_ROOT_PRIOR requires STS_SILVER_ROOT_PRIOR_WEIGHT");
+            char *end = nullptr;
+            g_options.rootPriorWeight = std::strtod(weight, &end);
+            if (end == weight || *end != '\0' || !(g_options.rootPriorWeight > 0))
+                throw std::runtime_error("STS_SILVER_ROOT_PRIOR_WEIGHT must be a positive number");
+            g_rootPriorNet = CombatValueNet{};
+            if (!g_rootPriorNet.load(path) || !g_rootPriorNet.isPolicy || g_rootPriorNet.trees.empty())
+                throw std::runtime_error(std::string("STS_SILVER_ROOT_PRIOR: cannot load policy trees from ") + path);
+            g_options.rootPriorPath = path;
+        }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
         }
@@ -757,6 +776,34 @@ namespace sts::search {
             }
         }
         g_externalCombatBackend = runNativeSilverCombat;
+    }
+
+    std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher) {
+        if (g_options.rootPriorPath.empty() || searcher.prepareRootActions() < 2) return {};
+        const auto &state = searcher.rootSearchState();
+        thread_local std::vector<float> features;
+        features.resize(combatPolicyFeatureCount());
+        combatExtractFeatures(state, features.data());
+        float *action = features.data() + combatFeatureCount();
+        std::vector<double> prior;
+        double total = 0;
+        for (const auto &edge : searcher.rootNode().edges) {
+            combatFillActionFeatures(state, edge.action, action);
+            // Trained with cross-entropy on root visit shares: sigmoid(margin).
+            const double p = 1.0 / (1.0 + std::exp(-g_rootPriorNet.predictVec(features.data())));
+            prior.push_back(p);
+            total += p;
+        }
+        for (auto &p : prior) p /= total;
+        return prior;
+    }
+
+    const std::string &nativeSilverRootPriorPath() {
+        return g_options.rootPriorPath;
+    }
+
+    double nativeSilverRootPriorWeight() {
+        return g_options.rootPriorWeight;
     }
 
     bool nativeSilverBackendInstalled() {

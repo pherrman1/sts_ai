@@ -31,7 +31,7 @@ Gate on the production corpus (no clean tree needed):
   ctm_near_full_inputs.py compare --old PARENT --new OUT
 
 usage:
-  ctm_near_full_inputs.py produce --parent DIR --out DIR --sha GIT_SHA
+  ctm_near_full_inputs.py produce --parent DIR --out DIR --sha GIT_SHA   (--out DIR may equal --parent)
   ctm_near_full_inputs.py compare --old DIR --new DIR
 """
 from __future__ import annotations
@@ -88,8 +88,11 @@ def needs_joint_target(pi, pre, reasons) -> bool:
 
 
 def build(parent: Path, corpus: Path, out: Path, sha: str) -> dict:
-    """Produce the inputs without the clean-tree and source-data checks (used by the reproduce-old gate)."""
-    if out.exists():
+    """Produce the inputs without the clean-tree and source-data checks (used by the reproduce-old gate).
+
+    `out` may be the parent itself: only the three outputs must not exist yet.
+    """
+    if any((out / name).exists() for name in (LABELS, f"{TEST_STATES}.json", f"{TEST_STATES}.jsonl", BREW_AUDIT)):
         raise ValueError("refusing overwrite")
     folder = parent / "potion-trajectory-v2"
     meta = json.loads((folder / "preparation.json").read_text())

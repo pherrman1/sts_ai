@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <csignal>
+#include <filesystem>
 #include <fstream>
 #include <initializer_list>
 #include <sstream>
@@ -489,6 +490,24 @@ int testSilverSearcher() {
         bool tried = true;
         for (const auto v : pushed) tried = tried && v >= 1;
         check(tried, "root prior bonus still tries every root action");
+
+        // combat_policy_trees_v1 (the exported root prior) reads the policy layout.
+        const auto path = std::filesystem::temp_directory_path() / "silver_root_prior_test.txt";
+        std::ofstream(path) << "combat_policy_trees_v1\nnfeat 1\nfeat aIsEndTurn\nbase_score 0.25\n"
+                               "ntrees 1\ntree 0 3\nS 0 0.5 1 2\nL -1\nL 2\n";
+        search::CombatValueNet net;
+        check(net.load(path.string()) && net.isPolicy, "policy trees load against the policy layout");
+        search::SilverSearcher s(silverSearchRoot(bc), {});
+        s.prepareRootActions();
+        bool sawEnd = false, sawOther = false;
+        for (const auto &e : s.rootNode().edges) {
+            const double v = net.predictAction(s.rootSearchState(), e.action);
+            const bool end = e.action.getActionType() == search::ActionType::END_TURN;
+            sawEnd = sawEnd || (end && v == 2.25);
+            sawOther = sawOther || (!end && v == -0.75);
+        }
+        check(sawEnd && sawOther, "policy trees score each root action from its action features");
+        std::filesystem::remove(path);
     }
 
     // Exact endpoint/depth fixtures and opt-in observational parity.
