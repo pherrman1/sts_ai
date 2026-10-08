@@ -127,7 +127,8 @@ int main(int argc,char **argv) {
                     const bool hpLegal=post.curHp>=1 && post.curHp<=post.maxHp;
                     const int hpDelta=consumed?post.curHp-prediction.t2HeadInputHp:0;
                     const bool t2HeadInput=prediction.t2HeadInputHp==p.globals.maxHp/2;
-                    const bool hpClassLegal=!consumed || (hpDelta>=-160 && hpDelta<=143);
+                    const auto &hpClasses=hybrid.fastRuntime().metadata().at("hpClasses");
+                    const bool hpClassLegal=!consumed || (hpDelta>=hpClasses.front().get<int>() && hpDelta<=hpClasses.back().get<int>());
                     bool t2ConditionalIdentity=true;
                     if(consumed) {
                         auto directPre=stripTail(pre);
@@ -198,11 +199,29 @@ int main(int argc,char **argv) {
                     outcome=static_cast<int>(prepared->sample(rng).outcome);
                 }
                 auto prediction=hybrid.activeLizardPrediction(gc,p);
-                std::cout<<json{{"name",fixture.at("name")},{"supported",support.supported},
+                json out{{"name",fixture.at("name")},{"supported",support.supported},
                     {"reason",support.reason},{"forecastSupported",forecast.supported},
                     {"forecastReason",forecast.reason},{"preparedSupported",prepared->support().supported},
                     {"predictionSupported",prediction.supported},{"predictionReason",prediction.reason},
-                    {"sampleOutcome",outcome}}.dump()<<'\n';
+                    {"sampleOutcome",outcome}};
+                if(prediction.supported) {
+                    // The composed classes and one forced Tail-consumed victory per supported state.
+                    std::mt19937_64 rng(881100+rows);
+                    const auto consumed=hybrid.sampleActiveLizardClass(gc,p,rng,1);
+                    out["prediction"]={{"brew",prediction.brew},{"fairy",prediction.fairy},
+                        {"pOrdinaryWin",prediction.pOrdinaryWin},{"pReserveWin",prediction.pReserveWin},
+                        {"rWinGivenConsumed",prediction.rWinGivenConsumed},
+                        {"classProbabilities",prediction.classProbabilities},{"t2HeadInputHp",prediction.t2HeadInputHp}};
+                    out["consumedOutcome"]=static_cast<int>(consumed.outcome);
+                    if(consumed.outcome==CombatRuntimeSample::Outcome::VICTORY ||
+                        consumed.outcome==CombatRuntimeSample::Outcome::ESCAPE)
+                        out["consumedPost"]=combatTransitionStateJson(consumed.rawPost);
+                    const auto expected=hybrid.expectation(gc,p),forecasted=hybrid.forecastExpectation(p);
+                    out["expectation"]={{"supported",expected.supported},{"death",expected.death},
+                        {"winningHpFraction",expected.winningHpFraction},{"forecastSupported",forecasted.supported},
+                        {"forecastDeath",forecasted.death}};
+                }
+                std::cout<<out.dump()<<'\n';
                 ++rows;
             }
             const auto metrics=hybrid.takeMetrics();
@@ -276,6 +295,53 @@ int main(int argc,char **argv) {
                 {"hybridMetrics",{{"preparations",metrics.preparations},
                     {"fastPreparations",metrics.fastPreparations},{"fallbackPreparations",metrics.fallbackPreparations},
                     {"fallbackRate",metrics.fallbackRate},{"uniqueBrewPredictorStates",metrics.uniqueBrewPredictorStates}}}}.dump(2)<<'\n';
+            return index?0:1;
+        }
+        // Escape capability (#418 PR7): the escape head, both escape-conditioned HP heads, the
+        // conditioned potion masks, and sampled escapes against their invariants.
+        if(argc==4 && std::string(argv[1])=="--escape") {
+            NativeCombatTransitionSampler sampler(argv[2]);const auto &net=sampler.runtime();
+            std::ifstream file(argv[3]);if(!file)throw std::runtime_error("fixture file");
+            std::string line;int index=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));auto pre=persistent(j.at("pre"));
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const auto support=sampler.support(gc,p);
+                json out={{"index",index++},{"escapeCapable",net.escapeCapable()},{"supported",support.supported},{"reason",support.reason}};
+                if(support.supported && net.escapeCapable()) {
+                    const bool boss=sts::isBossEncounter(static_cast<sts::MonsterEncounter>(p.globals.encounter));
+                    const bool eligible=CombatTransitionRuntime::escapeEligible(pre.potions,pre.potionCapacity,boss);
+                    const int d=j.value("delta",0),maximum=pre.maxHp+net.metadata().at("maxHpClasses")[d].get<int>();
+                    const auto z=net.hpEncoding(p),zp=net.potionEncoding(p);
+                    const float fraction=j.value("fraction",.5f);
+                    out["eligible"]=eligible;out["boss"]=boss;out["z"]=z;out["escape"]=net.escapeProbability(z);out["maxHp"]=net.maxHp(p);
+                    out["hp0"]=net.signedHp(z,d,pre.curHp,maximum,0);out["hp1"]=net.signedHp(z,d,pre.curHp,maximum,1);
+                    json potion=json::object();
+                    for(int e:{-1,0,1}) {
+                        const bool smoke=std::any_of(pre.potions.begin(),pre.potions.begin()+std::min(pre.potionCapacity,5),[](int v){return v==int(sts::Potion::SMOKE_BOMB);});
+                        if(e==1 && !smoke)continue;
+                        potion[std::to_string(e)]=net.potionInventory(zp,pre.potions,pre.potionCapacity,d,fraction,boss,e);
+                    }
+                    out["potion"]=potion;
+                    const auto expectation=sampler.expectation(gc,p);
+                    out["expectation"]={{"death",expectation.death},{"winningHpFraction",expectation.winningHpFraction}};
+                    auto prepared=sampler.prepare(gc,p);int escapes=0,victories=0,deaths=0;
+                    for(int draw=0;draw<j.value("draws",64);++draw) {
+                        std::mt19937_64 random(20261007+draw),cached=random;
+                        auto sample=sampler.sample(gc,p,random),other=prepared->sample(cached);
+                        if(sample.outcome!=other.outcome||combatTransitionStateJson(sample.rawPost)!=combatTransitionStateJson(other.rawPost)||random!=cached)
+                            throw std::runtime_error("escape prepared/reference parity");
+                        if(sample.outcome==CombatRuntimeSample::Outcome::DEATH){++deaths;continue;}
+                        const auto &post=sample.rawPost;const bool escaped=sample.outcome==CombatRuntimeSample::Outcome::ESCAPE;
+                        if(post.smokeBombUsed!=escaped || (escaped && !eligible) || post.curHp<1 || post.curHp>post.maxHp ||
+                            post.potionCount!=static_cast<int>(std::count_if(post.potions.begin(),post.potions.end(),[](int v){return v>1;})))
+                            throw std::runtime_error("sampled escape violates its invariants");
+                        escapes+=escaped;victories+=!escaped;
+                    }
+                    out["samples"]={{"death",deaths},{"victory",victories},{"escape",escapes}};
+                }
+                std::cout<<out.dump()<<'\n';
+            }
             return index?0:1;
         }
         if(argc==4 && std::string(argv[1])=="--potion-parity") {

@@ -84,11 +84,11 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
         ritual|=c.cardId==id(C::RITUAL_DAGGER);goldCard|=c.cardId==id(C::HAND_OF_GREED)||c.cardId==id(C::JACK_OF_ALL_TRADES)||c.cardId==id(C::TRANSMUTATION);
         certified&=c.cardId!=id(C::ALCHEMIZE);
     }
-    add(!d.nearFull && ritual,"ritual_dagger");add(!d.nearFull && goldCard,"gold_mutating_card");add(d.nearFull && ritual && g.encounter==id(E::WRITHING_MASS),"writhing_ritual_intersection");bool toolbox=false;
+    add(!d.nearFull && ritual,"ritual_dagger");add(!d.nearFull && goldCard,"gold_mutating_card");add(d.nearFull && !d.writhingRitual && ritual && g.encounter==id(E::WRITHING_MASS),"writhing_ritual_intersection");bool toolbox=false;
     for(std::size_t i=0;i<pi.relics.size();++i) {auto r=pi.relics[i];if(r.relicId<0 || r.relicId>=count(sts::relicEnumNames) || r.orderIndex!=static_cast<int>(i))return {"invalid_pre_state"};toolbox|=r.relicId==id(R::TOOLBOX);}
     add(!d.nearFull && toolbox,"gold_mutating_relic");bool smoke=false,entropic=false,goldPotion=false;
     for(int i=0;i<5;++i) {auto p=pi.potions[i];if(p.slot!=i || p.potionId<0 || p.potionId>=count(sts::potionEnumNames))return {"invalid_pre_state"};smoke|=p.potionId==id(P::SMOKE_BOMB);entropic|=p.potionId==id(P::ENTROPIC_BREW);goldPotion|=p.potionId==id(P::COLORLESS_POTION);}
-    add(smoke,"smoke_bomb");add(!d.nearFull && entropic,"entropic_brew");add(!d.nearFull && goldPotion,"gold_mutating_potion");add(pre.smokeBombUsed,"pre_smoke_bomb_used");add(!d.nearFull && pre.stolenGold!=0,"pre_stolen_gold_nonzero");add(!certified || (!d.nearFull && entropic),"potion_not_certified");if(!reasons.empty())return reasons;
+    add(smoke && !d.escape,"smoke_bomb");add(!d.nearFull && entropic,"entropic_brew");add(!d.nearFull && goldPotion,"gold_mutating_potion");add(pre.smokeBombUsed,"pre_smoke_bomb_used");add(!d.nearFull && pre.stolenGold!=0,"pre_stolen_gold_nonzero");add(!certified || (!d.nearFull && entropic),"potion_not_certified");if(!reasons.empty())return reasons;
     if(pre.curHp!=g.curHp || pre.maxHp!=g.maxHp || pre.potionCapacity!=g.potionCapacity || pre.potionCount!=g.potionCount)return {"visible_pre_mismatch"};
     if(pre.relics.size()!=pi.relics.size())return {"visible_relic_mismatch"};
     for(std::size_t i=0;i<pre.relics.size();++i)if(pre.relics[i].id!=pi.relics[i].relicId || pre.relics[i].data!=pi.relics[i].data)return {"visible_relic_mismatch"};
@@ -119,7 +119,7 @@ std::vector<std::string> nativeComposedForecastSupportReasons(
     std::vector<std::string> reasons;
     auto add = [&](bool test, const char *reason) { if (test) reasons.emplace_back(reason); };
     add(g.characterClass != id(sts::CharacterClass::IRONCLAD), "non_ironclad");
-    add(d.nearFull && g.encounter == id(E::WRITHING_MASS)
+    add(d.nearFull && !d.writhingRitual && g.encounter == id(E::WRITHING_MASS)
         && std::any_of(pi.cards.begin(), pi.cards.end(), [](const auto &c) {
             return c.cardId == id(C::RITUAL_DAGGER);
         }), "writhing_ritual_intersection");
@@ -153,7 +153,7 @@ std::vector<std::string> nativeComposedForecastSupportReasons(
         smoke |= p.potionId == id(P::SMOKE_BOMB);
         entropic |= p.potionId == id(P::ENTROPIC_BREW);
     }
-    add(smoke, "smoke_bomb");
+    add(smoke && !d.escape, "smoke_bomb");
     add(!d.nearFull && entropic, "entropic_brew");
     add(!certified, "potion_not_certified");
     if (g.curHp < d.preCurHpRange[0] || g.curHp > d.preCurHpRange[1]

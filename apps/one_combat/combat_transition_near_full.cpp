@@ -130,11 +130,20 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
     if(!survivalAlreadyWon && uniform()>=survival)return {CombatRuntimeSample::Outcome::DEATH,{}};
     auto maximumProb=givenMaximum.empty()?net.maxHp(pi):givenMaximum;auto z=givenZ.empty()?net.hpEncoding(pi):givenZ;auto zp=givenZp.empty()?net.potionEncoding(pi):givenZp;
     auto post=pre;int d=category(maximumProb);post.maxHp+=domain.maxHpClasses.at(d);
-    int h=category(net.signedHp(z,d,pre.curHp,post.maxHp));
+    const bool bossFight=boss(pi.globals.encounter);
+    // Escape capability: the escape is drawn before HP, and HP and the potion trajectory are
+    // conditioned on it. A conditioned victory (the Lizard branches) never escapes.
+    int e=-1;
+    if(net.escapeCapable()) {
+        e=0;
+        if(!survivalAlreadyWon && CombatTransitionRuntime::escapeEligible(pre.potions,pre.potionCapacity,bossFight))
+            e=uniform()<net.escapeProbability(z)?1:0;
+    }
+    int h=category(net.signedHp(z,d,pre.curHp,post.maxHp,e));
     post.curHp+=domain.hpClasses.at(h);
     float fraction=float(post.curHp)/post.maxHp;int initialMask=0,originalBits=0;for(int slot=0;slot<5;++slot)if(pre.potions[slot]>1)originalBits|=1<<slot;
     std::vector<int> consumed;bool escaped=false,origin=false;sts::Random potionRng;bool sozu=has(pre,R::SOZU);
-    for(;;){int action=category(net.potionInventory(zp,post.potions,pre.potionCapacity,d,fraction,boss(pi.globals.encounter))),mask=action&31;bool use=action>=32;initialMask|=mask&originalBits;std::vector<int> cleared;
+    for(;;){int action=category(net.potionInventory(zp,post.potions,pre.potionCapacity,d,fraction,bossFight,e)),mask=action&31;bool use=action>=32;initialMask|=mask&originalBits;std::vector<int> cleared;
         for(int slot=0;slot<5;++slot)if(mask&(1<<slot)){int p=post.potions[slot];cleared.push_back(p);if((p!=int(P::ENTROPIC_BREW)&&p!=int(P::SMOKE_BOMB))||use)consumed.push_back(p);post.potions[slot]=1;}
         auto selected=[&](P p){return std::find(cleared.begin(),cleared.end(),int(p))!=cleared.end();};
         if(selected(P::SMOKE_BOMB)&&use){escaped=true;break;}
@@ -145,6 +154,7 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
         bool triggerCleared=selected(P::ENTROPIC_BREW)||selected(P::SMOKE_BOMB),triggerRemaining=std::any_of(post.potions.begin(),post.potions.end(),[](int p){return p==int(P::ENTROPIC_BREW)||p==int(P::SMOKE_BOMB);});
         if(mask==0||(!triggerCleared&&!triggerRemaining))break;
     }
+    require(e==-1 || escaped==(e==1),"escape draw and potion trajectory disagree");
     post.potionCount=int(std::count_if(post.potions.begin(),post.potions.end(),[](int p){return p>1;}));post.smokeBombUsed=escaped;
     if(origin)post.combatRng[4]={potionRng.counter,potionRng.seed0,potionRng.seed1};
     auto probabilities=net.relic(z,h,fraction,initialMask,escaped);std::map<std::string,int> residues;for(auto name:{"turns","attacks","cards","shuffles"})residues[name]=category(probabilities.at(name));
