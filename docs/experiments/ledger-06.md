@@ -14731,3 +14731,49 @@ hidden-future fields is again free (§371). Per the plan, E3 decides.
 **Evidence:** [packet](evidence/ooc_e1_focal_20261007/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e1_focal`.
+
+## §396 — E3: first counterfactual OOC tranche, card-reward criterion negative, boss relics priced (2026-10-08)
+
+**Question:** do whole-run counterfactual labels (same state, each option,
+shared futures) let a GBM pick card rewards and boss relics better than X2-B,
+and better than V4?
+
+**Design:** pre-registered in E3-PREREG (2026-10-07).
+- **Data:** `ooccfpilotgen` GEN=2 (#434, git 8edf724c, binary `224a1a42…`),
+  learned-stop V4 teacher. 1,000 seeds (55000000..999) on 25 cloud workers,
+  K=2, card-reward and boss-relic states, whole-run `finalWon` labels.
+- **Data rules:** the four HIDDEN_FUTURE fields are masked; a (state, k) group
+  with any invalid sibling is dropped; the split is `source_split`, with TEST
+  closed.
+- **Arms:** X2B (masked); E3 (E3 rows only); F2_334 (#334 TRAIN with E1 F2
+  weights); F2 (F2_334 plus E3 TRAIN, the primary arm).
+- **Metric:** per-state selection gain against V4's choice, with
+  source-clustered CIs.
+
+**Result:** `E3_NEGATIVE` for the card-reward criterion.
+- **Data:** 1,983 states. 15,667 of 15,668 runs valid; one Silver stall
+  (55000830..834) excluded.
+- **F2 on VALIDATION:**
+  - Card-reward gain +0.017 [−0.018, +0.051], boss relic +0.012 [−0.027,
+    +0.050].
+  - NLL 0.4788 against X2B 0.4957.
+  - F2 − X2B: boss relic +0.060 [+0.020, +0.104], pooled +0.038 [+0.015,
+    +0.062].
+  - F2 − F2_334: pooled +0.024 [+0.003, +0.046].
+- **X2B:** boss-relic gain −0.048 [−0.093, −0.003].
+- **Uniform-random option:** card reward −0.001 [−0.027, +0.026], boss relic
+  −0.090.
+- **E3 learning curve:** not rising.
+
+**Interpretation:**
+- Card-reward choices move win rate by less than about ±3 pp per decision
+  under the V4 + Silver continuation. Even a random card pick ties V4, so
+  better card-reward pricing is not a lever at this scale (inference).
+- Boss relics matter. X2-B misprices them; the counterfactual-trained F2
+  matches V4 and fixes X2-B's relic deficit.
+- No online A/B follows from the pre-registered rule. A boss-relic-only leaf
+  or one-ply use of F2 would be a new hypothesis.
+
+**Evidence:** [packet](evidence/ooc_cf_e3_20261008/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e3_cf`.
