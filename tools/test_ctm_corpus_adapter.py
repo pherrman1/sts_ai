@@ -151,7 +151,7 @@ class TestCtmCorpusAdapter(unittest.TestCase):
             drop = lambda row: ["x"] if row["sourceSeed"] == 102 or (row["sourceSeed"], row["fightIdx"]) == (101, 1) else []
             union({"high_maxhp": root / "high", "none": root / "none"}, root / "union", drop)
             experiment.audit(argparse.Namespace(corpus_manifest=str(root / "union" / "corpus.jsonl.manifest.json"),
-                                                shard_root=str(root / "union"), output_dir=str(root / "audit")))
+                                                shard_root=None, output_dir=str(root / "audit")))
             audit = json.loads((root / "audit" / "corpus_audit.json").read_text())
             # Requested sources are the scope ranges (100..107, 500..501), not the gap between them.
             self.assertEqual(audit["sourcesRows"]["requestedSources"], 10)

@@ -247,7 +247,8 @@ def run(args):
     if cache_meta["cacheSha256"] != EXPECTED["cache"]:
         raise ValueError("current final-union potion cache hash differs")
     candidate_payload = verify_candidate(Path(args.candidate_checkpoint), Path(args.candidate_receipt))
-    potion_receipt, potion_payload = shared.verify_potion_component(Path(args.dedicated_component), cache_meta)
+    potion_receipt, potion_payload = shared.verify_potion_component(
+        Path(args.dedicated_component), cache_meta, EXPECTED["dedicatedPotionComponent"], EXPECTED["sourceSha"])
     arrays, spec = composed.base._load_prepared(composed_evaluate.PREPARED)
     composed.base._prepare_target_indices(arrays, spec)
     train = np.flatnonzero(cache["win"] & (cache["split"] == 0))

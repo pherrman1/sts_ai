@@ -115,12 +115,25 @@ def load_reference(parent: Path):
     return cache, ambiguous, records, meta, folder
 
 
-def load_deepset_encoder(run: Path, evidence_path: Path):
+def receipt_evidence(receipt: Path) -> dict:
+    """The evidence fields read from the distill receipt itself (#418 retrain).
+
+    Production bound a hand-written evidence JSON; a retrain has only the
+    `combat_transition_deepset_distill.py` results.json, whose hash is pinned.
+    """
+    result = json.loads(receipt.read_text())
+    return dict(artifacts=dict(studentCheckpointSha256=result["checkpointSha256"], resultsSha256=digest(receipt)),
+                architecture=dict(normalizationRows=result["scalarNormalization"]["rows"],
+                                  normalizationRowIdsSha256=result["scalarNormalization"]["rowIdsSha256"]),
+                stageA=dict(decision=result["decision"]))
+
+
+def load_deepset_encoder(run: Path, evidence_path: Path | None):
     checkpoint = run / "student.pt"
     receipt = run / "results.json"
     require_digest(checkpoint, DEEPSET_CHECKPOINT_SHA)
     require_digest(receipt, DEEPSET_RECEIPT_SHA)
-    evidence = json.loads(evidence_path.read_text())
+    evidence = receipt_evidence(receipt) if evidence_path is None else json.loads(evidence_path.read_text())
     if evidence.get("artifacts", {}).get("studentCheckpointSha256") != DEEPSET_CHECKPOINT_SHA:
         raise ValueError("DeepSets evidence does not bind the expected checkpoint")
     if evidence.get("artifacts", {}).get("resultsSha256") != DEEPSET_RECEIPT_SHA:
@@ -351,22 +364,24 @@ def train_candidate(args: argparse.Namespace) -> None:
     if int(RECIPE["testInferenceRows"]) != 0:
         raise ValueError("TEST inference is not permitted")
 
-    reference_expected = json.loads(args.expected.read_text())
     reference_nets = downstream.models(args.parent)
     reference_state = torch.load(folder / "downstream.pt", map_location="cpu", weights_only=False)["stateDict"]
     reference_nets.load_state_dict(reference_state, strict=True)
     reference_metrics = shared_eval.evaluate(
         reference_nets, reference_cache, ambiguous, records, validation_ids
     )
-    tracked_reference = reference_expected["stageA"]["reference"]
-    max_reference_difference = max(
-        abs(float(reference_metrics[name][key]) - float(tracked_reference[name][key]))
-        for name in (*composed.TRAINED_GROUPS, "writhing", "ritual", "gold", "joint")
-        for key in reference_metrics[name]
-        if key in tracked_reference[name]
-    )
-    if max_reference_difference > NLL_TOLERANCE:
-        raise ValueError(f"reference validation metrics differ by {max_reference_difference}")
+    # A retrain (--no-reference-check) has no recorded reference metrics to reproduce; they are recorded instead.
+    max_reference_difference = None
+    if args.expected is not None:
+        tracked_reference = json.loads(args.expected.read_text())["stageA"]["reference"]
+        max_reference_difference = max(
+            abs(float(reference_metrics[name][key]) - float(tracked_reference[name][key]))
+            for name in (*composed.TRAINED_GROUPS, "writhing", "ritual", "gold", "joint")
+            for key in reference_metrics[name]
+            if key in tracked_reference[name]
+        )
+        if max_reference_difference > NLL_TOLERANCE:
+            raise ValueError(f"reference validation metrics differ by {max_reference_difference}")
 
     torch.set_num_threads(4)
     torch.manual_seed(RECIPE["seed"])
@@ -626,11 +641,19 @@ if __name__ == "__main__":
     parser.add_argument("--deepset-evidence", type=Path, default=ROOT / DEFAULT_DEEPSET_EVIDENCE)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--expected", type=Path, default=ROOT / DEFAULT_EXPECTED)
+    parser.add_argument("--evidence-from-receipt", action="store_true",
+                        help="bind the DeepSets run through its pinned results.json instead of --deepset-evidence")
+    parser.add_argument("--no-reference-check", action="store_true",
+                        help="fit: record the reference downstream metrics instead of reproducing --expected")
     parser.add_argument("--evidence-json", type=Path)
     parser.add_argument("--evidence-md", type=Path)
     parser.add_argument("--implementation-sha")
     parser.add_argument("--final-head-sha")
     parsed = parser.parse_args()
+    if parsed.evidence_from_receipt:
+        parsed.deepset_evidence = None
+    if parsed.no_reference_check:
+        parsed.expected = None
     if parsed.command == "write-evidence":
         for name in ("evidence_json", "evidence_md", "implementation_sha", "final_head_sha"):
             if getattr(parsed, name) is None:
