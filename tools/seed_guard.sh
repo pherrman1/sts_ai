@@ -14,6 +14,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["bossrescue347"]=2 ["bossrescue347selftest"]=2
   ["silverparams400gen"]=2
   ["silverstopreplaygen"]=2
+  ["silversynthgen"]=2
   ["vwinrefreshbranchselftest"]=2
   ["vwinrefreshfatalcountselftest"]=2
   ["oocnextgen"]=2

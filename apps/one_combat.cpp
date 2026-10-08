@@ -3707,6 +3707,16 @@ int main(int argc, char **argv) {
                                      "  SETUP: ritual_writhing | high_maxhp | lizard_fairy | lizard_brew\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7], false, argv[8]);
+    } else if (mode == "silversynthgen") {
+        if (argc < 9) { std::cerr << "usage: one_combat silversynthgen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET TEACHER.json VARIANT\n"
+                                     "  VARIANT: natural | perturbed (flat exact-10k teacher)\n"; return 2; }
+        silverSynthGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                       argv[5], std::stoll(argv[6]), argv[7], argv[8]);
+    } else if (mode == "silversynthfeatures") {
+        if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
+        silverSynthFeatures(argv[2]);
+    } else if (mode == "silversynthreplay") {
+        silverSynthReplay();
     } else if (mode == "combattransitionlizardtargetcandidategen") {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
