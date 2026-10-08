@@ -198,11 +198,27 @@ int main(int argc,char **argv) {
                     outcome=static_cast<int>(prepared->sample(rng).outcome);
                 }
                 auto prediction=hybrid.activeLizardPrediction(gc,p);
-                std::cout<<json{{"name",fixture.at("name")},{"supported",support.supported},
+                json out{{"name",fixture.at("name")},{"supported",support.supported},
                     {"reason",support.reason},{"forecastSupported",forecast.supported},
                     {"forecastReason",forecast.reason},{"preparedSupported",prepared->support().supported},
                     {"predictionSupported",prediction.supported},{"predictionReason",prediction.reason},
-                    {"sampleOutcome",outcome}}.dump()<<'\n';
+                    {"sampleOutcome",outcome}};
+                if(prediction.supported) {
+                    // The composed classes and one forced Tail-consumed victory per supported state.
+                    std::mt19937_64 rng(881100+rows);
+                    const auto consumed=hybrid.sampleActiveLizardClass(gc,p,rng,1);
+                    out["prediction"]={{"brew",prediction.brew},{"fairy",prediction.fairy},
+                        {"pOrdinaryWin",prediction.pOrdinaryWin},{"pReserveWin",prediction.pReserveWin},
+                        {"rWinGivenConsumed",prediction.rWinGivenConsumed},
+                        {"classProbabilities",prediction.classProbabilities},{"t2HeadInputHp",prediction.t2HeadInputHp}};
+                    if(consumed.outcome==CombatRuntimeSample::Outcome::VICTORY)
+                        out["consumedPost"]=combatTransitionStateJson(consumed.rawPost);
+                    const auto expected=hybrid.expectation(gc,p),forecasted=hybrid.forecastExpectation(p);
+                    out["expectation"]={{"supported",expected.supported},{"death",expected.death},
+                        {"winningHpFraction",expected.winningHpFraction},{"forecastSupported",forecasted.supported},
+                        {"forecastDeath",forecasted.death}};
+                }
+                std::cout<<out.dump()<<'\n';
                 ++rows;
             }
             const auto metrics=hybrid.takeMetrics();
