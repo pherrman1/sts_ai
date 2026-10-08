@@ -182,8 +182,11 @@ ctest --preset linux-gcc-test
 environment. `linux-gcc-release` uses Unix Makefiles, `g++`, and a Release
 build in `build/linux-gcc-release`; `linux-gcc-build` selects that normal
 build. `linux-gcc-debug` and `linux-gcc-debug-build` create a separate Debug
-build in `build/linux-gcc-debug`; `linux-gcc-debug-build` uses the build tool's
-automatic parallelism (`jobs: 0`).
+build in `build/linux-gcc-debug`. Its `jobs: 0` setting requests parallel
+building without a job count; with GNU Make this permits unlimited jobs.
+CI overrides that preset with `--parallel 2` to bound build concurrency on
+the hosted runner. Local builds should pass an explicit `--parallel N`
+appropriate to the host's available CPU and memory.
 `linux-gcc-test` runs the existing CTest suite there because `cardqueue_overflow`
 intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
