@@ -11,8 +11,9 @@ semantics: every shard manifest is the unit's own manifest with only
 `csv.path` rewritten to the local file, and seeds the generator skipped
 (STALLED) are listed as quarantined in the merged manifest.
 
-`union` then joins assembled scopes into one corpus for the Phase-2 chain,
-dropping rows outside production candidate support (see `union`).
+`union` then joins assembled scopes into one corpus for the Phase-1 and
+Phase-2 chains, dropping rows outside production candidate support (see
+`union`). `audit` validates a union through each scope's shard manifests.
 
 usage:
   ctm_corpus_adapter.py assemble --index INDEX.json --corpus-root DIR --scope none --out DIR
@@ -167,7 +168,8 @@ def union(scope_dirs: dict[str, Path], out: Path, reasons=None) -> dict:
     last_seed = None
     with merged.open("w", encoding="utf-8") as sink:
         for scope in [s for s in SCOPES if s in scope_dirs]:
-            manifest = json.loads((scope_dirs[scope] / "corpus.jsonl.manifest.json").read_text(encoding="utf-8"))
+            manifest_path = scope_dirs[scope] / "corpus.jsonl.manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             validate_manifest(manifest)
             if manifest.get("forcedSetup") != scope:
                 raise ValueError(f"{scope}: assembled scope has forcedSetup {manifest.get('forcedSetup')!r}")
@@ -193,7 +195,9 @@ def union(scope_dirs: dict[str, Path], out: Path, reasons=None) -> dict:
                         continue
                     sink.write(line if line.endswith("\n") else line + "\n")
                     seeds.add(seed); rows += 1; kept += 1
-            ranges[scope] = {"firstRow": first, "rows": kept, "seedSpec": manifest["seedSpec"]}
+            # The scope manifest lets `audit` validate the scope's shards (blocks/).
+            ranges[scope] = {"firstRow": first, "rows": kept, "seedSpec": manifest["seedSpec"],
+                             "manifest": str(manifest_path.resolve()), "manifestSha256": sha256(manifest_path)}
             dropped[scope] = dict(drop)
     lo = min(r["seedSpec"]["start"] for r in ranges.values())
     hi = max(r["seedSpec"]["start"] + r["seedSpec"]["count"] for r in ranges.values())

@@ -51,6 +51,11 @@ class TestCtmPins(unittest.TestCase):
             self.assertEqual(ctm_pins.value("m.Y", 1, required=False), 1)
             self.assertEqual(ctm_pins.receipt(), {"ctmPinsSha256": ctm_pins.hashlib.sha256(path.read_bytes()).hexdigest()})
 
+    def test_strip_removes_only_the_receipt_key(self):
+        self.assertEqual(ctm_pins.strip({"a": 1, "ctmPinsSha256": "x"}), {"a": 1})
+        self.assertEqual(ctm_pins.strip({"a": 1}), {"a": 1})
+        self.assertEqual(ctm_pins.strip([1]), [1])
+
     def test_rejects_unknown_schema(self):
         with tempfile.TemporaryDirectory() as d:
             self.write(d, {"schema": "other", "pins": {}})
