@@ -11,6 +11,7 @@
 // unperturbed fight, so its trajectory equals the natural run of that seed.
 
 #include "one_combat/driver_shared.h"
+#include "one_combat/silver_synth_keys.h"
 
 #include "constants/CardPools.h"
 #include "constants/Potions.h"
@@ -28,17 +29,9 @@ constexpr std::uint64_t kContinuationEvery = 8;
 constexpr std::uint64_t kLeafStride = 2503;  // rollout starts between leaf samples
 constexpr std::size_t kLeavesPerRoot = 4;
 
-std::uint64_t mix(std::uint64_t x) {
-    x += 0x9e3779b97f4a7c15ULL;
-    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
-    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
-    return x ^ (x >> 31);
-}
-
-std::uint64_t key(std::uint64_t a, std::uint64_t b, std::uint64_t c = 0, std::uint64_t d = 0,
-                  std::uint64_t e = 0) {
-    return mix(mix(mix(mix(mix(a) ^ b) ^ c) ^ d) ^ e);
-}
+using silver_synth::key;
+using silver_synth::mix;
+using silver_synth::plannerRoot;
 
 // Deterministic draws for the perturbation; never touches game RNG.
 struct Draws {
@@ -117,14 +110,6 @@ nlohmann::json rootEdges(const search::SilverSearcher &searcher) {
                                     : nlohmann::json(nullptr)}});
     }
     return edges;
-}
-
-// A search root equal to `state` whose search randomness comes from `planner`.
-BattleContext plannerRoot(const BattleContext &state, std::uint64_t planner) {
-    BattleContext root = state;
-    root.seed = planner;   // SilverSearcher seeds its rollouts from root.seed
-    search::seedSearchRng(root, search::nativeSilverBattleSeed(root));
-    return root;
 }
 
 // Silver plays `world` to the end of combat at kContinuationSims per decision.

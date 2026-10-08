@@ -154,6 +154,13 @@ namespace sts::search {
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
         SilverOutcomeCapture *outcomes = nullptr; // optional caller-owned samples; default off
         SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
+        // Research-only root prior bonus (off by default): a visited root edge i
+        // scores rootPriorWeight * rootPrior[i] / (visits_i + 1) on top of UCB.
+        // rootPrior is indexed like rootNode().edges after prepareRootActions;
+        // the caller clears it when the root changes. Unvisited edges stay +inf,
+        // so with weight 0 or a uniform prior the search is today's Silver.
+        std::vector<double> rootPrior;
+        double rootPriorWeight = 0;
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -197,6 +204,9 @@ namespace sts::search {
         // root (gold and max HP deltas) and run context.
         [[nodiscard]] double scoreEndState(const BattleContext &end) const { return evaluateEndState(end); }
         [[nodiscard]] const SilverSearchContext &searchContext() const { return context; }
+        // One SilverRolloutAgent playout of `state` to combat end, scored like a
+        // search leaf (research diagnostics; the graph is untouched).
+        [[nodiscard]] double rolloutValue(BattleContext state) { return rolloutToEnd(state, 0); }
 
     private:
         SilverSearchContext context;

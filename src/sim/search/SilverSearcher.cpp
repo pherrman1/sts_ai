@@ -516,7 +516,11 @@ double search::SilverSearcher::evaluateEdge(const Node &parent, int edgeIdx, dou
     // Value from the (possibly shared) child; exploration from this edge's own visits.
     const double quality = edge.node->evaluationSum / edge.node->simulationCount;
     const double exploration = edge.node->isRandomNode ? explorationParameterChance : explorationParameter;
-    return quality + exploration * std::sqrt(logParentVisits / (edge.visitCount + 1));
+    const double value = quality + exploration * std::sqrt(logParentVisits / (edge.visitCount + 1));
+    if (rootPriorWeight != 0 && &parent == root && edgeIdx < static_cast<int>(rootPrior.size())) {
+        return value + rootPriorWeight * rootPrior[edgeIdx] / (edge.visitCount + 1);
+    }
+    return value;
 }
 
 int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {

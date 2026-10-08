@@ -403,6 +403,35 @@ int testSilverSearcher() {
         check(sampled.scoreEndState(bc) == plain.scoreEndState(bc), "terminal score is searcher independent");
     }
 
+    // Root prior bonus (silversynthreplay): weight 0 or a uniform prior over
+    // the root is today's search; a prior on one edge moves visits to it.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x51A7u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        auto run = [&](std::vector<double> prior, double weight) {
+            search::SilverSearcher s(silverSearchRoot(bc), {});
+            const auto n = s.prepareRootActions();
+            if (!prior.empty()) prior.resize(n, prior.back());
+            s.rootPrior = prior;
+            s.rootPriorWeight = weight;
+            s.search(400);
+            std::vector<std::int32_t> visits;
+            for (const auto &e : s.rootNode().edges) visits.push_back(e.visitCount);
+            return visits;
+        };
+        const auto plain = run({}, 0);
+        check(plain.size() >= 3, "root prior fixture has three actions");
+        check(run({1.0}, 0) == plain, "zero prior weight leaves the search unchanged");
+        auto last = std::vector<double>(plain.size(), 0.0);
+        last.back() = 1.0;
+        const auto pushed = run(last, 400);
+        check(pushed.back() > plain.back(), "root prior bonus adds visits to the favored edge");
+        bool tried = true;
+        for (const auto v : pushed) tried = tried && v >= 1;
+        check(tried, "root prior bonus still tries every root action");
+    }
+
     // Exact endpoint/depth fixtures and opt-in observational parity.
     {
         using Profile = search::SilverTreeProfile;

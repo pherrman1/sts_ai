@@ -3643,6 +3643,11 @@ int main(int argc, char **argv) {
                                      "  VARIANT: natural | perturbed (flat exact-10k teacher)\n"; return 2; }
         silverSynthGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                        argv[5], std::stoll(argv[6]), argv[7], argv[8]);
+    } else if (mode == "silversynthfeatures") {
+        if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
+        silverSynthFeatures(argv[2]);
+    } else if (mode == "silversynthreplay") {
+        silverSynthReplay();
     } else if (mode == "combattransitionlizardtargetcandidategen") {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),

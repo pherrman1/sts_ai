@@ -261,6 +261,21 @@ labels are scored by the root's own terminal evaluation. `perturbed` records
 a detached copy of each fight with a random HP, card, upgrade and potion
 change, while the run continues through the unperturbed fight.
 
+The corpus's offline harness rebuilds each recorded state from its wire and
+plays no game seed. `one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl`
+writes sparse `combatExtractFeatures` rows (plus `combatFillActionFeatures` per
+root action) for leaves, roots and, on continuation roots, each action's child
+states. These are the generator's two label children (same keys in
+`apps/one_combat/silver_synth_keys.h`) and one probe child with four
+independent rollouts. `one_combat silversynthreplay` reads one root task per
+line and reports the most visited action at each budget of a fresh search,
+optionally with the research-only root prior bonus
+(`SilverSearcher::rootPrior`/`rootPriorWeight`, default off): a visited root
+edge scores `weight * P(a) / (visits + 1)` on top of UCB, and unvisited edges
+stay `+inf`. `tools/silver_synth_gates.py` trains the LightGBM models and
+computes the pilot's Gate A/B. A plain replay at 10k from the wire picks the
+recorded top action about as often as the independent second teacher does.
+
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.
