@@ -1,0 +1,59 @@
+{
+  "schema": "scoped_latest_main_relevance_v1",
+  "status": "PASS_RETAIN_REVIEWED_SOURCE_WITH_CLEAN_VIRTUAL_MERGE",
+  "reviewed_at_utc": "2026-10-08T11:45:57.936347+00:00",
+  "reviewed_task_head": "567586eb83db247188d5c117ab4919c8aba10cf7",
+  "tested_publication_source": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "integrated_main_base": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "new_main": "b2639e1b8e2cd6f4d0b98e089cca4b4e960cc0a8",
+  "incoming_diff_sha256": "ce5b30d05b86a895ff217456aacdb07a7ffc96f6ec50f7d87eec9fff1463c2a7",
+  "changed_paths": [
+    "CMakeLists.txt",
+    "docs/knowledge-base/operations/environment-variables.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md",
+    "tools/combat_transition_gold_evaluate.py",
+    "tools/combat_transition_maxhp_support_refit.py",
+    "tools/combat_transition_model_experiment.py",
+    "tools/combat_transition_potion_trajectory_evaluate.py",
+    "tools/combat_transition_shared_encoder_distill.py",
+    "tools/ctm_corpus_adapter.py",
+    "tools/ctm_near_full_inputs.py",
+    "tools/ctm_pins.py",
+    "tools/ctm_retrain_pins.py",
+    "tools/qualify_combat_transition_near_full.py",
+    "tools/test_ctm_corpus_adapter.py",
+    "tools/test_ctm_pins.py",
+    "tools/test_ctm_retrain_pins.py"
+  ],
+  "checks": {
+    "changed_path_count": 16,
+    "cpp_app_include_runtime_paths_changed": [],
+    "model_artifacts_changed": [],
+    "seed_guard_changed": false,
+    "frozen21_artifact_path_intersection": [],
+    "cmake_change": "Two lines register Python-only ctm_retrain_pins_selftest and its working directory; no target sources/options or runtime defaults changed.",
+    "offline_scope": "Python CTM retraining pin staging, union corpus auditing and offline evaluation/refit helpers, tests and maintained tooling docs. No collection/analysis tool used by these closed experiments is changed.",
+    "source_still_equals_tested0734": true
+  },
+  "virtual_merge": {
+    "command": [
+      "git",
+      "merge-tree",
+      "--write-tree",
+      "567586eb83db247188d5c117ab4919c8aba10cf7",
+      "b2639e1b8e2cd6f4d0b98e089cca4b4e960cc0a8"
+    ],
+    "exit_code": 0,
+    "tree_oid": "b031643c5d82ac83d3b214c990aff69a537d7300",
+    "stderr": "",
+    "scope": "Textual virtual merge only; no index/worktree source merge, build or test performed."
+  },
+  "decision": "Retain tested publication source0734 and its exact integrated main75733 for this draft handoff. The unrelated later offline-tool advance does not warrant another integration cycle or experimental rerun.",
+  "limits": [
+    "New main b2639 offline Python changes and new CTest are not incorporated, built, run or independently qualified by this handoff.",
+    "Clean virtual merge is a textual result, not runtime verification or PR merge authorization.",
+    "No full correctness/scientific audit of incoming CTM retraining tools was performed.",
+    "No model/source/default changes, games, efficacy analysis or collection-checkout writes occurred.",
+    "Final PR must keep its exact integrated-base identity and distinguish it from latest main."
+  ]
+}
