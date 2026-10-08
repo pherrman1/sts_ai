@@ -8,7 +8,11 @@ SRC=$1 SHA=$2 BUILD_SHA=$3 OUT=$4 MODE=${5:-run}
 if env | grep -q '^STS_'; then echo "refusing: STS_* already exported" >&2; exit 1; fi
 cd "$(git rev-parse --show-toplevel)"
 EV=docs/experiments/evidence/ooc_mcts_f2_leaf_pilot_20261008
+if [ -n "$(git status --porcelain)" ]; then echo "refusing: dirty checkout" >&2; exit 1; fi
 mkdir -p "$OUT"
+{ echo "plan_commit $(git rev-parse HEAD)"
+  sha256sum models/candidates/v_win_x2b_trees.txt models/candidates/v_win_f2_e3_trees.txt \
+    models/v_win_trees.txt selfplay/models/ooc_strategic_tok_final.native; } > "$OUT/provenance.txt"
 BIN=$(mktemp -d)/one_combat   # /mnt/project-files is noexec: run a hash-checked local copy
 cp "$SRC" "$BIN" && chmod +x "$BIN"
 echo "$SHA  $BIN" | sha256sum -c - || exit 1
