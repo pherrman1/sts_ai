@@ -71,6 +71,9 @@ struct BenchConfigSidecar {
     double silverLearnedStopThreshold = 0.0;
     bool silverLearnedStopBossFallback = false;
     long long silverLearnedStopBossMax = 0;  // 0: boss roots stop at 10k like the others
+    std::string silverRootPrior;            // "" when the research root prior is off
+    std::string silverRootPriorSha256;
+    double silverRootPriorWeight = 0.0;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -172,6 +175,9 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverLearnedStopThreshold\":" << c.silverLearnedStopThreshold;
     o << ",\"silverLearnedStopBossFallback\":" << (c.silverLearnedStopBossFallback ? "true" : "false");
     o << ",\"silverLearnedStopBossMax\":" << c.silverLearnedStopBossMax;
+    o << ",\"silverRootPrior\":\"" << detail::jsonEscape(c.silverRootPrior) << '\"';
+    o << ",\"silverRootPriorSha256\":\"" << detail::jsonEscape(c.silverRootPriorSha256) << '\"';
+    o << ",\"silverRootPriorWeight\":" << c.silverRootPriorWeight;
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

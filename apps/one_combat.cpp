@@ -1283,6 +1283,11 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverLearnedStopBossFallback = search::nativeSilverLearnedStopBossFallback();
             meta.silverLearnedStopBossMax = search::nativeSilverLearnedStopBossMax();
         }
+        if (!search::nativeSilverRootPriorPath().empty()) {
+            meta.silverRootPrior = search::nativeSilverRootPriorPath();
+            meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
+            meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
+        }
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2808,6 +2813,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3292,6 +3298,9 @@ int main(int argc, char **argv) {
         return 2;
     }
     search::installNativeSilverBackend();
+    if (!search::nativeSilverRootPriorPath().empty())
+        std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
+                  << " weight " << search::nativeSilverRootPriorWeight() << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -3647,7 +3656,7 @@ int main(int argc, char **argv) {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);
     } else if (mode == "silversynthreplay") {
-        silverSynthReplay();
+        silverSynthReplay(argc >= 4 && std::string(argv[2]) == "names" ? argv[3] : "");
     } else if (mode == "combattransitionlizardtargetcandidategen") {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),

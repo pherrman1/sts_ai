@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace sts {
     class BattleContext;
@@ -25,7 +26,16 @@ namespace sts::search {
     // legal action is committed without search unless root budgets are exact
     // or STS_SILVER_SEARCH_SINGLETON_ROOTS=1.
     void installNativeSilverBackend();
+    class SilverSearcher;
     bool nativeSilverBackendInstalled();
+    // Research-only root prior bonus (STS_SILVER_ROOT_PRIOR=<combat_policy_trees_v1
+    // model>, STS_SILVER_ROOT_PRIOR_WEIGHT=<w>; default off). The prior is the
+    // model's sigmoid output per root action, normalized over the root, and is
+    // set on every searched root as SilverSearcher::rootPrior. Empty when off
+    // or for a root with fewer than two actions.
+    std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher);
+    const std::string &nativeSilverRootPriorPath();
+    double nativeSilverRootPriorWeight();
     bool nativeSilverAdaptiveEnabled();
     double nativeSilverAdaptiveTopGap();
     // STS_SILVER_EXACT_ROOT_BUDGETS=1: the flat budget applies in boss fights
