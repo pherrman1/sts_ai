@@ -36,8 +36,6 @@ from pathlib import Path
 
 MAGIC = b'COMBAT_TRANSITION_RUNTIME_V2\0'
 SCHEMA = 'ctm_research_candidate_v3'
-# Capabilities both artifacts of a pair must agree on (the loader checks escape; writhingRitual by the plan).
-PAIRED = ('escape', 'writhingRitual')
 
 
 def sha256(path) -> str:
@@ -142,11 +140,9 @@ def build_manifest(standard, fast=None):
     for key in ('domain', 'supportCensus'):
         if head[key] != std[key]:
             raise ValueError(f'fast and standard artifacts differ in {key}')
-    fast_caps = head.get('capabilities', {})
-    for name in PAIRED:
-        if (name in fast_caps) != (name in body['capabilities']['standard']):
-            raise ValueError(f'the pair disagrees on the {name} capability')
-    body['capabilities']['fast'] = fast_caps
+    # No pair-agreement check here: the interim manifest over FAST1 lists a capability-extended STD,
+    # and the loader itself refuses a disagreeing pair (escape, writhingRitual) when both load together.
+    body['capabilities']['fast'] = head.get('capabilities', {})
     body['fast'] = dict(artifactSha256=sha256(fast),
                         survival={k: survival[k] for k in ('checkpointSha256', 'preparedSha256', 'preparedManifestSha256',
                                                            'scalarMeanSha256', 'scalarInvSha256')},

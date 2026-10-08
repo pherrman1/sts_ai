@@ -68,7 +68,14 @@ def main():
         stamped = cc.stamp(fast0, fast1, control=std)
         if stamped['controlSha256'] != cc.sha256(std) or cc.read(fast1)[1] != payload:
             raise RuntimeError('fast stamp did not bind the final standard artifact or changed the payload')
-        refuses('pair_disagrees', lambda: cc.build_manifest(std, fast1), 'writhingRitual')
+        # The interim manifest over FAST1 (ctmescapefeatures on the fast artifact): FAST1 loads alone,
+        # and the loader refuses it paired with the capability-extended STD.
+        interim_fast = cc.manifest(std, d / 'interim-fast.json', fast1)
+        expect('interim_fast_alone', probe(['--identity', fast1], interim_fast['env']), CANDIDATE)
+        paired = probe(['--pair-identity', fast1, std, 1], interim_fast['env'])
+        if paired.returncode == 0 or 'disagree on the writhingRitual' not in paired.stderr:
+            raise RuntimeError(f'interim pair not refused: {paired.stdout!r} {paired.stderr!r}')
+        print('interim_pair_refused PASS')
         fast = d / 'fast.native'
         ctm_capabilities.writhing_ritual(fast1, fast)
         final = cc.manifest(std, d / 'final.json', fast)

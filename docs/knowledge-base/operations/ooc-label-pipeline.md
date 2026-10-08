@@ -112,9 +112,9 @@ Attention and the DeepSets artifacts:
   manifest from the headers and prints the two environment variables. Without
   `--fast` it is the interim manifest that `ctmescapefeatures` on STD1 needs; with
   FAST1 it serves `ctmescapefeatures`/`ctmlizardfeatures` on the fast artifact.
-  It refuses a pair stamped against a different standard artifact or disagreeing
-  on `escape`/`writhingRitual`, and refuses production-promoted inputs (CTest
-  `ctm_candidate_tool`).
+  It refuses a pair stamped against a different standard artifact and
+  production-promoted inputs; the loader refuses a pair that disagrees on
+  `escape`/`writhingRitual` (CTest `ctm_candidate_tool`).
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
