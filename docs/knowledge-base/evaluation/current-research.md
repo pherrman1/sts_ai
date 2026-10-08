@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -64,7 +64,11 @@ development was not pooled, and no live-game or merged-source qualification
 follows automatically. All pairs and runtime gates passed; search safety-limit
 endpoints remain documented diagnostics.
 Card win-head ranking with preserved floor take/skip lost its discovery screen.
-No production policy or model default changed.
+The original campaign changed no production defaults. After reviewing the
+confirmation, the user authorized ascending fallback REMOVE ordering as the
+default in a separate implementation change. `STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=0`
+retains the legacy ordering for rollback and reproduction. This promotion
+does not extend the frozen result to other profiles or qualify live-game parity.
 
 The completed 32-source GEN2 experiment did not establish conditional selection
 gain: rollout-selected −1.171875 pp, source-cluster 95% [−5.46875, +3.125]. The

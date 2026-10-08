@@ -128,7 +128,7 @@ bool search::oocSkipFullHpRestEnabled() {
 
 bool search::oocRemoveLowObtainWeightEnabled() {
     const char *raw = std::getenv("STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT");
-    if (!raw) return false;
+    if (!raw) return true;
     const std::string value(raw);
     if (value == "0") return false;
     if (value == "1") return true;
