@@ -26,3 +26,24 @@ learned encoder thing").
   below v2's 2k mean on the same runs.
 - A Gate 2 pass only justifies proposing native inference and a fresh-seed
   online screen (Philipp's word). Nothing ships before the CTM full retrain.
+
+## Stage 2: 5x corpus (added 2026-10-08 after Gate 1 failed, before any new data)
+
+Gate 1 failed (encoder 63.4% vs v2 67.8% on agree test roots). An exploratory
+learning curve (dropout 0.1, weight decay 0.05, 8 epochs) rose with data:
+validation agree top-1 59.3 / 61.4 / 64.3% at 33k / 67k / 100k training roots.
+Philipp chose "5x corpus" (decision card, 19:02 UTC).
+
+- New data: the same frozen generator (450376c8, one_combat sha256 8906180f…,
+  same teacher.json), 20 cloud workers, seeds natural 58000000-58001079 and
+  perturbed 58002000-58003079 (2,160 runs). Folds: seed % 5 (identical to the
+  §397 rule for both corpora).
+- Training data: folds 0-2 of the old and new corpora; early stopping on fold
+  3 of both. Test: fold 4 of the OLD corpus only (the §400 test roots, so the
+  numbers stay comparable).
+- Arms retrained on the enlarged data with their fixed recipes: encoder (the
+  regularized configuration of the learning curve: d 128, 3 layers, dropout
+  0.1, weight decay 0.05, at most 12 epochs, best val cross-entropy) and v2
+  (§400 recipe). Both are reported; v2-6x is the comparison for the gates.
+- Gate 1': encoder agree top-1 on the old test fold >= v2-6x + 5 points.
+- Gate 2': as Gate 2, against v2-6x, only if Gate 1' passes.
