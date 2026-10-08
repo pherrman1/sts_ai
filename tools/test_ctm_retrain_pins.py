@@ -149,8 +149,17 @@ class TestCtmRetrainPins(unittest.TestCase):
                                              scalarNormalization=dict(rows=2, rowIdsSha256="r"), selectedEpoch=9, experimentSha="e"))
             staged.distill(d / "pins-7.json", s18, d / "pins-8.json")
             s19 = d / "s19"
-            z = write(s19 / "z_deepset.npy", b"z"); write(s19 / "downstream.pt", b"ds")
+            z = write(s19 / "z_deepset.npy", b"z"); head = write(s19 / "downstream.pt", b"ds")
             write(s19 / "representation.json", dict(candidateZSha256=staged.sha256(z), generatedRows=5))
+            write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED",
+                                                   candidate=dict(checkpointSha256=staged.sha256(head))))
+            with self.assertRaisesRegex(ValueError, "require GO"):
+                staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
+            write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_GO", candidate=dict(checkpointSha256="other")))
+            with self.assertRaisesRegex(ValueError, "qualified candidate"):
+                staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
+            write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_GO",
+                                                   candidate=dict(checkpointSha256=staged.sha256(head))))
             staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
             s20 = d / "s20"
             for name in ("A.pt", "B.pt"):

@@ -179,7 +179,8 @@ change (`check --previous`). `near-full` also derives the DeepSets population
 pins (teacher counts, row-id sequences, downstream and recursive-validation
 rows). The DeepSets stages follow `hpo`: `control --artifact STD.native`
 (the STD export without capabilities), `teachers` (S17), `distill` (S18,
-requires `SHARED_TRANSITION_ENCODER_GO`), `downstream` (S19), `potion` (S20),
+requires `SHARED_TRANSITION_ENCODER_GO`), `downstream` (S19 prepare/fit/compare,
+requires `DEEPSET_DOWNSTREAM_GO` for the pinned head), `potion` (S20),
 `specialist` (S21) and `fast --artifact FAST.native`; the last file has an
 empty `pending` list. `init` pins `deepset_distill.EXPECTED_CONTROL` to null:
 the student is already chosen, so S18 runs without `--control-dir` and

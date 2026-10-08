@@ -459,6 +459,7 @@ def train_candidate(args: argparse.Namespace) -> None:
         trainingSeconds=time.monotonic() - started,
         smoke=smoke_result,
         reference=dict(metrics=reference_metrics, maxAbsMetricDifference=max_reference_difference),
+        referenceCheck="skipped" if max_reference_difference is None else "reproduced",
         candidate=dict(metrics=candidate_metrics),
     )
     composed.base.json_dump(args.output_dir / "fit.json", fit)
@@ -568,7 +569,7 @@ def write_evidence(args: argparse.Namespace) -> None:
         focusedTests="11 passed",
         gitDiffCheck=True,
         worktreeCheck=True,
-        referenceMetricsReproduced=True,
+        referenceMetricsReproduced=fit.get("referenceCheck", "reproduced") == "reproduced",
         candidateReloadedFromDisk=True,
         candidateZShape=representation["shape"],
         candidateZGeneratedRows=representation["generatedRows"],

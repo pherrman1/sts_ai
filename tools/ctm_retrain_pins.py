@@ -18,7 +18,7 @@ old one; files are never overwritten. Run the commands in order:
     control    after `export_combat_transition_near_full.py` (STD.native, before any capability)
     teachers   after `combat_transition_shared_encoder_distill.py --teachers-only` (S17)
     distill    after `combat_transition_deepset_distill.py` (S18, no --control-dir)
-    downstream after `combat_transition_deepset_downstream.py prepare/fit` (S19)
+    downstream after `combat_transition_deepset_downstream.py prepare/fit/compare` (S19)
     potion     after `combat_transition_deepset_potion.py` (S20)
     specialist after `combat_transition_deepset_potion_specialist.py --arms C` (S21)
     fast       after `export_combat_transition_deepset_stack.py` (FAST0.native)
@@ -470,9 +470,16 @@ def downstream(pins_path: Path, folder: Path, out: Path) -> dict:
     z = sha256(folder / "z_deepset.npy")
     if representation["candidateZSha256"] != z:
         raise ValueError("DeepSets representation differs from its receipt")
+    head = sha256(folder / "downstream.pt")
+    qualification = _json(folder / "qualification.json")
+    if qualification["decision"] != "DEEPSET_DOWNSTREAM_GO":
+        raise ValueError(f"the DeepSets downstream head must pass compare (require GO, got {qualification['decision']})")
+    if qualification["candidate"]["checkpointSha256"] != head:
+        raise ValueError("downstream.pt differs from the qualified candidate")
     values = {f"{POTION}[candidateZ]": z, f"{POTION}[candidateRows]": representation["generatedRows"],
-              EXPORT + "DOWNSTREAM_SHA": sha256(folder / "downstream.pt")}
-    return _advance(pins_path, "downstream", values, {"representation": sha256(folder / "representation.json")}, out)
+              EXPORT + "DOWNSTREAM_SHA": head}
+    return _advance(pins_path, "downstream", values, {"representation": sha256(folder / "representation.json"),
+                                                      "qualification": sha256(folder / "qualification.json")}, out)
 
 
 def potion(pins_path: Path, folder: Path, out: Path) -> dict:
