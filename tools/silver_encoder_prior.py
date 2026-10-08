@@ -51,7 +51,8 @@ def sl(x):
 
 
 def fold(seed, variant):
-    return (seed - BASE[variant]) % 5
+    # (seed - base) % 5 with base % 5 == 0 for every corpus (56M, 58M seeds).
+    return seed % 5
 
 
 def card_token(c, zone):
@@ -205,7 +206,8 @@ def build_file(args):
 
 def cmd_build(corpus_dir, out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    files = sorted(glob.glob(os.path.join(corpus_dir, "*.jsonl.gz")))
+    files = sorted(glob.glob(os.path.join(corpus_dir, "*.jsonl.gz"))
+                   + glob.glob(os.path.join(corpus_dir, "w*", "*.jsonl.gz")))
     with Pool(4) as pool:
         res = pool.map(build_file, [(f, out_dir) for f in files])
     summary = {"files": len(res), "roots": sum(r[1] for r in res), "rootsWithUnresolvedAction": sum(r[2] for r in res)}
@@ -213,7 +215,68 @@ def cmd_build(corpus_dir, out_dir):
     print(json.dumps(summary))
 
 
+class Packed:
+    """All roots in flat arrays (the per-root dicts do not fit in RAM at 6x)."""
+
+    def __init__(self, path):
+        z = np.load(path, allow_pickle=False)
+        self.__dict__.update({k: z[k] for k in z.files})
+        self.rids = None
+
+    def __len__(self):
+        return len(self.seed)
+
+    def rid(self, i):
+        v = "natural" if self.variant[i] == 0 else "perturbed"
+        return f"{v}|{self.seed[i]}|{self.fight[i]}|{self.decision[i]}"
+
+    def __getitem__(self, i):
+        t0, t1 = self.tok_off[i], self.tok_off[i + 1]
+        a0, a1 = self.act_off[i], self.act_off[i + 1]
+        return {"kind": self.kind[t0:t1], "id": self.id[t0:t1], "sub": self.sub[t0:t1], "num": self.num[t0:t1],
+                "act": self.act[a0:a1], "y": self.y[a0:a1], "y2": self.y2[a0:a1] if self.has2[i] else None,
+                "fold": int(self.fold[i]), "seed": int(self.seed[i]), "rid": self.rid(i)}
+
+    def view(self, mask):
+        return View(self, np.flatnonzero(mask))
+
+
+class View:
+    def __init__(self, packed, idx):
+        self.p, self.idx = packed, idx
+
+    def __len__(self):
+        return len(self.idx)
+
+    def __getitem__(self, j):
+        return self.p[self.idx[j]]
+
+
+def cmd_pack(out_dir):
+    cols = {k: [] for k in ("kind", "id", "sub", "num", "act", "y", "y2")}
+    per = {k: [] for k in ("seed", "variant", "fight", "decision", "fold", "has2", "ntok", "nact")}
+    for f in sorted(glob.glob(os.path.join(out_dir, "*.pkl"))):
+        for r in pickle.load(open(f, "rb")):
+            for k in ("kind", "id", "sub", "num", "act"):
+                cols[k].append(r[k])
+            cols["y"].append(r["y"].astype(np.float32))
+            cols["y2"].append(r["y2"].astype(np.float32) if r["y2"] is not None else np.zeros(len(r["act"]), np.float32))
+            variant, seed, fight, decision = r["rid"].split("|")
+            per["seed"].append(int(seed)); per["variant"].append(0 if variant == "natural" else 1)
+            per["fight"].append(int(fight)); per["decision"].append(int(decision)); per["fold"].append(r["fold"])
+            per["has2"].append(r["y2"] is not None); per["ntok"].append(len(r["kind"])); per["nact"].append(len(r["act"]))
+    out = {k: np.concatenate(v) for k, v in cols.items()}
+    out.update({k: np.array(v) for k, v in per.items()})
+    out["tok_off"] = np.concatenate([[0], np.cumsum(out["ntok"])])
+    out["act_off"] = np.concatenate([[0], np.cumsum(out["nact"])])
+    np.savez(os.path.join(out_dir, "packed.npz"), **out)
+    print({k: v.shape for k, v in out.items()})
+
+
 def load_roots(out_dir):
+    packed = os.path.join(out_dir, "packed.npz")
+    if os.path.exists(packed):
+        return Packed(packed)
     roots = []
     for f in sorted(glob.glob(os.path.join(out_dir, "*.pkl"))):
         roots.extend(pickle.load(open(f, "rb")))
@@ -345,12 +408,16 @@ def cmd_train(out_dir, epochs="30", d="128", layers="3", lr="1e-3", dropout="0",
     torch.set_num_threads(4)
     rng = np.random.default_rng(1)
     roots = load_roots(out_dir)
-    tr = [r for r in roots if r["fold"] in (0, 1, 2)]
+    if isinstance(roots, Packed):
+        tr = roots.view(np.isin(roots.fold, (0, 1, 2)))
+        va = roots.view(roots.fold == VAL)
+    else:
+        tr = [r for r in roots if r["fold"] in (0, 1, 2)]
+        va = [r for r in roots if r["fold"] == VAL]
     if float(frac) < 1:   # learning-curve subsets: whole source seeds
         seeds = sorted({(r["variant"], r["seed"]) for r in tr})
         keep = set(seeds[i] for i in np.random.default_rng(2).permutation(len(seeds))[:int(len(seeds) * float(frac))])
         tr = [r for r in tr if (r["variant"], r["seed"]) in keep]
-    va = [r for r in roots if r["fold"] == VAL]
     model = make_model(int(d), int(layers), dropout=float(dropout))
     opt = torch.optim.AdamW(model.parameters(), lr=float(lr), weight_decay=float(wd))
     steps = int(epochs) * math.ceil(len(tr) / 256)
@@ -381,11 +448,11 @@ def cmd_train(out_dir, epochs="30", d="128", layers="3", lr="1e-3", dropout="0",
                "log": log}, open(os.path.join(out_dir, f"train-encoder{tag}.json"), "w"), indent=2)
 
 
-def encoder_probs(out_dir, roots):
+def encoder_probs(out_dir, roots, tag=""):
     import torch
-    cfg = json.load(open(os.path.join(out_dir, "train-encoder.json")))["config"]
-    model = make_model(cfg["d"], cfg["layers"])
-    model.load_state_dict(torch.load(os.path.join(out_dir, "encoder.pt")))
+    cfg = json.load(open(os.path.join(out_dir, f"train-encoder{tag}.json")))["config"]
+    model = make_model(cfg["d"], cfg["layers"], dropout=cfg.get("dropout", 0.0))
+    model.load_state_dict(torch.load(os.path.join(out_dir, f"encoder{tag}.pt")))
     model.eval()
     probs = {}
     with torch.no_grad():
@@ -397,7 +464,7 @@ def encoder_probs(out_dir, roots):
     return probs
 
 
-def gbm_probs(features_dir, folds):
+def gbm_probs(features_dir, folds, v2_model=None):
     """§400 v1 and v2 normalized priors keyed by root id."""
     import lightgbm as lgb
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -409,7 +476,7 @@ def gbm_probs(features_dir, folds):
     st, sizes = groups_of(owner[sel])
     v1 = lgb.Booster(model_file=V1_MODEL).predict(F[sel][:, :X.shape[1]])
     v1 = v1 / np.repeat(np.add.reduceat(v1, st), sizes)
-    v2 = group_softmax(lgb.Booster(model_file=V2_MODEL).predict(F[sel], raw_score=True), st)
+    v2 = group_softmax(lgb.Booster(model_file=v2_model or V2_MODEL).predict(F[sel], raw_score=True), st)
     out = {}
     for s0, n in zip(st, sizes):
         rid = "|".join(map(str, root_id(metas[owner[sel[s0]]])))
@@ -421,10 +488,14 @@ V1_MODEL = "/mnt/project-files/silver-synthetic-prior/gates-20261008/prior-natpe
 V2_MODEL = "/mnt/project-files/silver-synthetic-prior/prior-v2-20261008/prior-v2.txt"
 
 
-def cmd_fit(out_dir, features_dir):
-    roots = [r for r in load_roots(out_dir) if r["fold"] == TEST]
-    enc = encoder_probs(out_dir, roots)
-    gbm = gbm_probs(features_dir, (TEST,))
+def cmd_fit(out_dir, features_dir, tag="", v2_model=None):
+    # Test roots: fold 4 of the original 56M corpus only (the §400 test fold).
+    all_roots = load_roots(out_dir)
+    if isinstance(all_roots, Packed):
+        all_roots = all_roots.view((all_roots.fold == TEST) & (all_roots.seed < 57000000))
+    roots = [r for r in (all_roots[j] for j in range(len(all_roots))) if r["fold"] == TEST and r["seed"] < 57000000]
+    enc = encoder_probs(out_dir, roots, tag)
+    gbm = gbm_probs(features_dir, (TEST,), v2_model)
     res = {}
     rows = [r for r in roots if r["rid"] in gbm and len(gbm[r["rid"]]["v2"]) == len(r["act"])]
     res["roots"], res["unmatched"] = len(rows), len(roots) - len(rows)
@@ -439,10 +510,10 @@ def cmd_fit(out_dir, features_dir):
     res["searchVsSearch"] = float(np.mean([int(np.argmax(r["y2"])) == int(np.argmax(r["y"])) for r in second]))
     res["gate1"] = {"marginPp": 100 * (res["encoder"]["agreeTop1"] - res["v2"]["agreeTop1"]),
                     "pass": res["encoder"]["agreeTop1"] - res["v2"]["agreeTop1"] >= 0.05}
-    json.dump(res, open(os.path.join(out_dir, "fit-encoder.json"), "w"), indent=2)
+    json.dump(res, open(os.path.join(out_dir, f"fit-encoder{tag}.json"), "w"), indent=2)
     print(json.dumps(res, indent=2))
 
 
 if __name__ == "__main__":
     cmd, *args = sys.argv[1:]
-    {"build": cmd_build, "train": cmd_train, "fit": cmd_fit}[cmd](*args)
+    {"build": cmd_build, "pack": cmd_pack, "train": cmd_train, "fit": cmd_fit}[cmd](*args)

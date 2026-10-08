@@ -88,24 +88,89 @@ def select(metas, acts, owner, roots, folds):
                      and metas[o]["variant"] in VARIANTS and fold(metas[o]) in folds], dtype=np.int64)
 
 
-def cmd_train(features_dir, out):
+def lean_rows(features_dir):
+    """v2 edge rows built file by file with array metadata (6x corpus memory).
+
+    Same rows, labels and folds as v2_rows/select: roots with >= 2 actions.
+    """
+    Fs, ys, owners, folds = [], [], [], []
+    n_roots, n_state = 0, None
+    for nnz_path in sorted(glob.glob(os.path.join(features_dir, "*.nnz"))):
+        prefix = nnz_path[:-4]
+        summary = json.load(open(prefix + ".summary.json"))
+        n_state = summary["stateFeatures"]
+        nnz = np.fromfile(prefix + ".nnz", dtype=np.uint32)
+        indptr = np.concatenate([[0], np.cumsum(nnz, dtype=np.int64)])
+        idx = np.fromfile(prefix + ".idx", dtype=np.uint16).astype(np.int32)
+        val = np.fromfile(prefix + ".val", dtype=np.float32)
+        X = sp.csr_matrix((val, idx, indptr), shape=(len(nnz), summary["policyFeatures"]))
+        del idx, val
+        act_rows, own_rows, after_rows, y, own, fo = [], [], [], [], [], []
+        cur, acts, afters, visits, fold_cur = None, [], {}, [], None
+        def flush():
+            nonlocal n_roots
+            if cur is None or len(acts) < 2:
+                return
+            v = np.array(visits, dtype=float)
+            sh = v / max(v.sum(), 1)
+            for (i, e), share in zip(acts, sh):
+                act_rows.append(i); own_rows.append(cur); after_rows.append(afters[e])
+                y.append(share); own.append(n_roots); fo.append(fold_cur)
+            n_roots += 1
+        with open(prefix + ".meta.jsonl") as f:
+            for i, line in enumerate(f):
+                if '"k":"state"' in line:
+                    flush()
+                    m = json.loads(line)
+                    cur, acts, afters, visits = i, [], {}, []
+                    fold_cur = (m["seed"]) % 5
+                elif '"k":"act"' in line:
+                    m = json.loads(line)
+                    acts.append((i, m["e"])); visits.append(m["visits"])
+                elif '"k":"after"' in line:
+                    m = json.loads(line)
+                    afters[m["e"]] = i
+                elif '"k":"leaf"' in line:
+                    flush()
+                    cur = None
+        flush()
+        if act_rows:
+            E = X[act_rows] + X[own_rows]
+            D = X[after_rows][:, :n_state] - X[own_rows][:, :n_state]
+            Fs.append(sp.hstack([E, D], format="csr"))
+            ys.append(np.array(y)); owners.append(np.array(own)); folds.append(np.array(fo))
+        del X
+    return sp.vstack(Fs, format="csr"), np.concatenate(ys), np.concatenate(owners), np.concatenate(folds)
+
+
+def cmd_train(features_dir, out, lean="0"):
     os.makedirs(out, exist_ok=True)
-    X, metas, n_state = load(features_dir)
-    F, acts, owner, roots = v2_rows(X, metas, n_state)
-    share = visit_shares(metas, roots)
-    y = np.array([share[a] for a in acts])
-    tr, va = select(metas, acts, owner, roots, (0, 1, 2)), select(metas, acts, owner, roots, (VAL,))
+    if lean == "1":
+        F, y, owner, folds = lean_rows(features_dir)
+        tr, va = np.flatnonzero(np.isin(folds, (0, 1, 2))), np.flatnonzero(folds == VAL)
+    else:
+        X, metas, n_state = load(features_dir)
+        F, acts, owner, roots = v2_rows(X, metas, n_state)
+        del X
+        share = visit_shares(metas, roots)
+        y = np.array([share[a] for a in acts])
+        tr, va = select(metas, acts, owner, roots, (0, 1, 2)), select(metas, acts, owner, roots, (VAL,))
     st_tr, _ = groups_of(owner[tr])
     st_va, _ = groups_of(owner[va])
-    dtr = lgb.Dataset(F[tr], y[tr], free_raw_data=False)
-    dva = lgb.Dataset(F[va], y[va], reference=dtr, free_raw_data=False)
+    Ftr, Fva = F[tr], F[va]
+    n_rows, n_width = F.shape
+    del F
+    dtr = lgb.Dataset(Ftr, y[tr], free_raw_data=True)
+    dva = lgb.Dataset(Fva, y[va], reference=dtr, free_raw_data=True)
+    dtr.construct(); dva.construct()
+    del Ftr, Fva
     params = dict(PARAMS, objective=softmax_objective(st_tr), metric="None")
     val_obj = softmax_eval(st_va)
     model = lgb.train(params, dtr, num_boost_round=ROUNDS, valid_sets=[dva],
                       feval=lambda p, d: val_obj(p, d) if d is dva else ("group_xent", 0.0, False),
                       callbacks=[lgb.early_stopping(100, verbose=False), lgb.log_evaluation(200)])
     model.save_model(os.path.join(out, "prior-v2.txt"))
-    report = {"rows": int(F.shape[0]), "width": int(F.shape[1]), "train": len(tr), "val": len(va),
+    report = {"rows": int(n_rows), "width": int(n_width), "train": len(tr), "val": len(va),
               "trainRoots": len(st_tr), "valRoots": len(st_va), "iters": model.best_iteration,
               "valGroupXent": model.best_score["valid_0"]["group_xent"]}
     # Reference: visit-share entropy (the floor) on val.
