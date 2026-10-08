@@ -263,7 +263,7 @@ def collate(batch):
     return t(kind), t(ids), t(sub), t(num), t(pad), t(act), t(amask), t(y)
 
 
-def make_model(d=128, layers=3, heads=4):
+def make_model(d=128, layers=3, heads=4, dropout=0.0):
     import torch
     import torch.nn as nn
 
@@ -274,7 +274,7 @@ def make_model(d=128, layers=3, heads=4):
             self.id = nn.Embedding(N_ID, d)
             self.sub = nn.Embedding(N_SUB, d)
             self.num = nn.Linear(NUM, d)
-            layer = nn.TransformerEncoderLayer(d, heads, 2 * d, dropout=0.0, batch_first=True, norm_first=True)
+            layer = nn.TransformerEncoderLayer(d, heads, 2 * d, dropout=dropout, batch_first=True, norm_first=True)
             self.enc = nn.TransformerEncoder(layer, layers)
             self.norm = nn.LayerNorm(d)
             self.atype = nn.Embedding(8, d)
@@ -338,16 +338,21 @@ def evaluate(model, roots):
             "agreeRoots": int(agree_n)}
 
 
-def cmd_train(out_dir, epochs="30", d="128", layers="3", lr="1e-3"):
+def cmd_train(out_dir, epochs="30", d="128", layers="3", lr="1e-3", dropout="0", wd="0.01", frac="1",
+              tag=""):
     import torch
     torch.manual_seed(1)
     torch.set_num_threads(4)
     rng = np.random.default_rng(1)
     roots = load_roots(out_dir)
     tr = [r for r in roots if r["fold"] in (0, 1, 2)]
+    if float(frac) < 1:   # learning-curve subsets: whole source seeds
+        seeds = sorted({(r["variant"], r["seed"]) for r in tr})
+        keep = set(seeds[i] for i in np.random.default_rng(2).permutation(len(seeds))[:int(len(seeds) * float(frac))])
+        tr = [r for r in tr if (r["variant"], r["seed"]) in keep]
     va = [r for r in roots if r["fold"] == VAL]
-    model = make_model(int(d), int(layers))
-    opt = torch.optim.AdamW(model.parameters(), lr=float(lr), weight_decay=0.01)
+    model = make_model(int(d), int(layers), dropout=float(dropout))
+    opt = torch.optim.AdamW(model.parameters(), lr=float(lr), weight_decay=float(wd))
     steps = int(epochs) * math.ceil(len(tr) / 256)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=float(lr), total_steps=steps, pct_start=0.05)
     best, best_ep, log = None, -1, []
@@ -369,12 +374,75 @@ def cmd_train(out_dir, epochs="30", d="128", layers="3", lr="1e-3"):
         print(json.dumps(ev), flush=True)
         if best is None or ev["ce"] < best:
             best, best_ep = ev["ce"], ep
-            torch.save(model.state_dict(), os.path.join(out_dir, "encoder.pt"))
+            torch.save(model.state_dict(), os.path.join(out_dir, f"encoder{tag}.pt"))
     json.dump({"train": len(tr), "val": len(va), "bestEpoch": best_ep, "bestValCe": best,
-               "config": {"epochs": int(epochs), "d": int(d), "layers": int(layers), "lr": float(lr)},
-               "log": log}, open(os.path.join(out_dir, "train-encoder.json"), "w"), indent=2)
+               "config": {"epochs": int(epochs), "d": int(d), "layers": int(layers), "lr": float(lr),
+                          "dropout": float(dropout), "wd": float(wd), "frac": float(frac)},
+               "log": log}, open(os.path.join(out_dir, f"train-encoder{tag}.json"), "w"), indent=2)
+
+
+def encoder_probs(out_dir, roots):
+    import torch
+    cfg = json.load(open(os.path.join(out_dir, "train-encoder.json")))["config"]
+    model = make_model(cfg["d"], cfg["layers"])
+    model.load_state_dict(torch.load(os.path.join(out_dir, "encoder.pt")))
+    model.eval()
+    probs = {}
+    with torch.no_grad():
+        for batch in batches(roots, 512, False):
+            kind, ids, sub, num, pad, act, amask, y = collate(batch)
+            p = torch.softmax(model(kind, ids, sub, num, pad, act, amask), -1).numpy()
+            for b, r in enumerate(batch):
+                probs[r["rid"]] = p[b, :len(r["act"])]
+    return probs
+
+
+def gbm_probs(features_dir, folds):
+    """§400 v1 and v2 normalized priors keyed by root id."""
+    import lightgbm as lgb
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from silver_prior_v2 import group_softmax, groups_of, load, v2_rows
+    from silver_synth_gates import root_id
+    X, metas, ns = load(features_dir)
+    F, acts, owner, roots = v2_rows(X, metas, ns)
+    sel = np.array([k for k, o in enumerate(owner) if len(roots[o]) >= 2 and fold(metas[o]["seed"], metas[o]["variant"]) in folds])
+    st, sizes = groups_of(owner[sel])
+    v1 = lgb.Booster(model_file=V1_MODEL).predict(F[sel][:, :X.shape[1]])
+    v1 = v1 / np.repeat(np.add.reduceat(v1, st), sizes)
+    v2 = group_softmax(lgb.Booster(model_file=V2_MODEL).predict(F[sel], raw_score=True), st)
+    out = {}
+    for s0, n in zip(st, sizes):
+        rid = "|".join(map(str, root_id(metas[owner[sel[s0]]])))
+        out[rid] = {"v1": v1[s0:s0 + n], "v2": v2[s0:s0 + n]}
+    return out
+
+
+V1_MODEL = "/mnt/project-files/silver-synthetic-prior/gates-20261008/prior-natpert.txt"
+V2_MODEL = "/mnt/project-files/silver-synthetic-prior/prior-v2-20261008/prior-v2.txt"
+
+
+def cmd_fit(out_dir, features_dir):
+    roots = [r for r in load_roots(out_dir) if r["fold"] == TEST]
+    enc = encoder_probs(out_dir, roots)
+    gbm = gbm_probs(features_dir, (TEST,))
+    res = {}
+    rows = [r for r in roots if r["rid"] in gbm and len(gbm[r["rid"]]["v2"]) == len(r["act"])]
+    res["roots"], res["unmatched"] = len(rows), len(roots) - len(rows)
+    for name in ("encoder", "v2", "v1"):
+        get = (lambda r: enc[r["rid"]]) if name == "encoder" else (lambda r, n=name: gbm[r["rid"]][n])
+        top = [int(np.argmax(get(r))) == int(np.argmax(r["y"])) for r in rows]
+        agree = [t for t, r in zip(top, rows) if r["y2"] is not None and int(np.argmax(r["y2"])) == int(np.argmax(r["y"]))]
+        ce = np.mean([-(r["y"] * np.log(np.maximum(get(r), 1e-12))).sum() for r in rows])
+        res[name] = {"top1": float(np.mean(top)), "agreeTop1": float(np.mean(agree)), "agreeRoots": len(agree),
+                     "ce": float(ce)}
+    second = [r for r in rows if r["y2"] is not None]
+    res["searchVsSearch"] = float(np.mean([int(np.argmax(r["y2"])) == int(np.argmax(r["y"])) for r in second]))
+    res["gate1"] = {"marginPp": 100 * (res["encoder"]["agreeTop1"] - res["v2"]["agreeTop1"]),
+                    "pass": res["encoder"]["agreeTop1"] - res["v2"]["agreeTop1"] >= 0.05}
+    json.dump(res, open(os.path.join(out_dir, "fit-encoder.json"), "w"), indent=2)
+    print(json.dumps(res, indent=2))
 
 
 if __name__ == "__main__":
     cmd, *args = sys.argv[1:]
-    {"build": cmd_build, "train": cmd_train}[cmd](*args)
+    {"build": cmd_build, "train": cmd_train, "fit": cmd_fit}[cmd](*args)
