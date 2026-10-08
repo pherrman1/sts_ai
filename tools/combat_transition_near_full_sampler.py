@@ -132,9 +132,10 @@ def assemble(pre,pi,ending,maximum,potion_trace,residues,writhing_event,dagger_d
 
 
 class NearFullSampler:
-    def __init__(self,parent,folder=None,device='cuda',final_support=False,escape=None):
-        """escape: an escape fit checkpoint (tools/ctm_escape.py); draws the escape before HP."""
-        self.final_support=final_support
+    def __init__(self,parent,folder=None,device='cuda',final_support=False,escape=None,writhing_ritual=False):
+        """escape: an escape fit checkpoint (tools/ctm_escape.py); draws the escape before HP.
+        writhing_ritual: support Writhing Mass with Ritual Dagger (the writhingRitual capability)."""
+        self.final_support=final_support;self.writhing_ritual=writhing_ritual
         self.escape=None
         if escape is not None:
             from tools import ctm_escape
@@ -150,7 +151,7 @@ class NearFullSampler:
     def sample_transition(self,pre,pi,planner):
         m=self.models
         escape=getattr(self,'escape',None)
-        if getattr(self,'final_support',False):reasons=support.final_reasons(pi,pre,m,escape=escape is not None)
+        if getattr(self,'final_support',False):reasons=support.final_reasons(pi,pre,m,escape=escape is not None,writhing_ritual=getattr(self,'writhing_ritual',False))
         else:
             with support.candidate_contract():reasons=c.full_support_reasons(pre,pi,m)
         if reasons:return c.Transition('FULL_SURROGATE_FALLBACK',reasons=tuple(reasons))

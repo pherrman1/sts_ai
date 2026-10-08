@@ -31,6 +31,7 @@ class CombatTransitionRuntime {
     nlohmann::json identity_;
     int hpMin_ = -160;
     bool escape_ = false;
+    bool writhingRitual_ = false;
     const Tensor &tensor(const std::string &) const;
     std::vector<float> linear(const std::string &, const std::vector<float> &) const;
     std::vector<float> embedding(const std::string &, int) const;
@@ -50,7 +51,9 @@ public:
     // drawn before HP, with the HP head and the potion trajectory conditioned on it.
     bool escapeCapable() const { return escape_; }
     static bool escapeEligible(const std::array<int,5> &potions, int capacity, bool boss);
-    static nlohmann::json supportExclusions(bool escape);
+    // Writhing Mass with Ritual Dagger is supported (research candidates only).
+    bool writhingRitualCapable() const { return writhingRitual_; }
+    static nlohmann::json supportExclusions(bool escape, bool writhingRitual);
     float escapeProbability(const std::vector<float> &z) const;
     bool requiresEntropicBrewFallback() const;
     bool hasActiveLizardCorrection() const { return !lizardCorrection_.is_null(); }

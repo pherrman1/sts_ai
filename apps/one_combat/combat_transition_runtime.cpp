@@ -194,13 +194,14 @@ void requireFiniteArray(const nlohmann::json &value,size_t size,bool positive,co
     for(const auto &x:value)
         require(x.is_number() && std::isfinite(x.get<double>()) && (!positive || x.get<double>()>0),why);
 }
-// Per-artifact capabilities a v3 manifest may list. Only "escape" exists; its value names
-// the escape fit checkpoint (tools/ctm_escape.py) that the artifact was extended with.
+// Per-artifact capabilities a v3 manifest may list. "escape" names the escape fit checkpoint
+// (tools/ctm_escape.py) the artifact was extended with; "writhingRitual" ({}) lifts the
+// Writhing Mass + Ritual Dagger exclusion (tools/ctm_capabilities.py).
 void requireCapabilities(const nlohmann::json &value,const char *why) {
     require(value.is_object(),why);
     for(const auto &[name,spec]:value.items()) {
-        require(name=="escape",why);
-        requireShaFields(spec,{"checkpointSha256"},why);
+        if(name=="writhingRitual") require(spec==nlohmann::json::object(),why);
+        else {require(name=="escape",why);requireShaFields(spec,{"checkpointSha256"},why);}
     }
 }
 // Off by default. STS_CTM_RESEARCH_CANDIDATE_MANIFEST names a ctm_research_candidate_v1
@@ -329,7 +330,8 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     require(metadata_.value("capabilities",nlohmann::json::object())==capabilities,
         "combat runtime capabilities are not listed in its manifest");
     escape_=capabilities.contains("escape");
-    require(!escape_ || full,"combat runtime escape capability requires a near-full artifact");
+    writhingRitual_=capabilities.contains("writhingRitual");
+    require(!(escape_ || writhingRitual_) || full,"combat runtime capabilities require a near-full artifact");
     const auto &standardIdentity=identity_.at("standard");
     const auto &fastIdentity=identity_.at("fast");
     const auto phase1Survival=fastIdentity.is_null()?nlohmann::json():nlohmann::json({
@@ -445,7 +447,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             hashes["downstream"]=fastIdentity.at("downstreamCheckpointSha256").get<std::string>();
         }
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
-        require(metadata_.at("supportExclusions")==supportExclusions(escape_),"combat runtime support exclusions");
+        require(metadata_.at("supportExclusions")==supportExclusions(escape_,writhingRitual_),"combat runtime support exclusions");
         const auto qualification=metadata_.at("qualification").value("classification",std::string{});
         require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" ||
             (promotedLizard && qualification=="DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED"),
@@ -637,9 +639,12 @@ bool CombatTransitionRuntime::escapeEligible(const std::array<int,5> &potions,in
     for(int slot=0;slot<5 && slot<capacity;++slot) if(potions[slot]==int(sts::Potion::SMOKE_BOMB)) return true;
     return false;
 }
-nlohmann::json CombatTransitionRuntime::supportExclusions(bool escape) {
-    return escape?nlohmann::json({"pre_smoke_bomb_used","writhing_ritual_intersection"})
-                 :nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"});
+nlohmann::json CombatTransitionRuntime::supportExclusions(bool escape,bool writhingRitual) {
+    auto out=nlohmann::json::array();
+    if(!escape) out.push_back("smoke_bomb");
+    out.push_back("pre_smoke_bomb_used");
+    if(!writhingRitual) out.push_back("writhing_ritual_intersection");
+    return out;
 }
 float CombatTransitionRuntime::escapeProbability(const Vec &z) const {
     require(escape_,"escape head on an artifact without the escape capability");
@@ -776,7 +781,7 @@ NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &
     domain_.preMaxHpRange=d.at("preMaxHpRange").get<std::array<int,2>>();
     domain_.hpClasses=m.at("hpClasses").get<std::vector<int>>();domain_.maxHpClasses=m.at("maxHpClasses").get<std::vector<int>>();
     domain_.maxHpDeltaValues=d.at("maxHpDeltaValues").get<std::vector<int>>();
-    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.escape=runtime_.escapeCapable();domain_.ready=true;
+    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.escape=runtime_.escapeCapable();domain_.writhingRitual=runtime_.writhingRitualCapable();domain_.ready=true;
 }
 CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     return supportState(captureCombatTransitionState(gc),p);
@@ -910,12 +915,14 @@ EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitio
         !standardMetadata.contains("experimentalSurvival") &&
         !standardMetadata.contains("experimentalDeepSets") &&
         standardMetadata.at("sources")==currentStandardSources &&
-        standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable()) &&
+        standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable(),standard_->runtime().writhingRitualCapable()) &&
         standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
         "Brew fallback must be the current standard Attention CTM artifact");
     // A Brew state with a Smoke Bomb falls back to the standard artifact, so both must agree.
     require(fast_->runtime().escapeCapable()==standard_->runtime().escapeCapable(),
         "fast and Brew fallback artifacts disagree on the escape capability");
+    require(fast_->runtime().writhingRitualCapable()==standard_->runtime().writhingRitualCapable(),
+        "fast and Brew fallback artifacts disagree on the writhingRitual capability");
     require(!activeLizardEnabled_ || fast_->runtime().hasActiveLizardCorrection(),
         "active-Lizard correction enabled without its frozen artifact metadata");
 }
