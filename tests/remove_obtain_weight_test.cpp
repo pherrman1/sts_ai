@@ -67,7 +67,7 @@ static void ordinaryRemoval(Card wanted, const char *setting) {
     require(GameAction(0).isValidAction(gc), "Living Wall Forget is not legal");
     GameAction(0).execute(gc);
     require(gc.info.selectScreenType == CardSelectScreenType::REMOVE, "Living Wall did not open REMOVE");
-    const bool enabled = setting && std::string(setting) == "1";
+    const bool enabled = !setting || std::string(setting) == "1";
     const auto removed = select(gc, enabled ? 0 : 1);
     require(removed == (enabled ? Card(CardId::STRIKE_RED) : wanted), "removal polarity differs from contract");
     require(deck(gc) == std::vector<Card>{enabled ? wanted : Card(CardId::STRIKE_RED)}, "wrong actual card removed");
@@ -179,7 +179,7 @@ int main() {
             catch (const std::runtime_error &) { rejected = true; }
             require(rejected, "malformed removal flag accepted");
         }
-        flag(nullptr); require(!oocRemoveLowObtainWeightEnabled(), "unset removal flag enabled");
+        flag(nullptr); require(oocRemoveLowObtainWeightEnabled(), "unset removal flag disabled");
         flag("0"); require(!oocRemoveLowObtainWeightEnabled(), "zero removal flag enabled");
         flag("1"); require(oocRemoveLowObtainWeightEnabled(), "one removal flag disabled");
         flag(nullptr);

@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -1473,21 +1473,25 @@ and Eternal Feather apply on campfire entry; Regal Pillow's extra healing is
 clamped at full HP. These facts explain the eligibility predicate, without
 turning a local no-healing observation into a claim of trajectory dominance.
 
-### Fallback card-removal research candidate
+### Default fallback card-removal ordering
 
-`STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=1` changes only the fallback REMOVE selector
-to ascending `Expert::getObtainWeight(cardId)`. The default ranks highest
-acquisition weight first, sharing that ordering with Bonfire sacrifice.
-The opt-in flag leaves Bonfire's distinct reward objective and every other
-selection type unchanged. Native model-based shop removal is a separate
+The fallback REMOVE selector ranks ascending
+`Expert::getObtainWeight(cardId)` by default. Unset and
+`STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=1` select that corrected ordering;
+explicit `0` restores the legacy highest-acquisition-weight-first rule.
+Bonfire's distinct reward objective and every other selection type retain
+their existing ordering. Native model-based shop removal is a separate
 upstream policy. Living Wall and Peace Pipe can reach this fallback.
 
 The selector still uses the simulator's legal menu indices and existing sort;
 it adds no upgrade-aware values, curse priority or tie-breaking rule. Basic
 cards and some specialized cards share weight zero, while upgrades retain
-their base card weight. This is a policy-ranking hypothesis, not an engine
-defect or a dominance argument. The enabled flag enters the effective teacher
-specification; malformed values fail during startup.
+their base card weight. This is a policy-ranking correction, not an engine
+defect or a dominance argument. The effective teacher specification includes
+`remove_low_obtain_weight: true` for unset/`1`; explicit `0` omits it and
+restores the legacy identity. Malformed values fail during startup. The user
+authorized this default change after the frozen §395 confirmation; its
+measured gain remains specific to that experiment's profile.
 
 ### Card reward ranking research candidate
 

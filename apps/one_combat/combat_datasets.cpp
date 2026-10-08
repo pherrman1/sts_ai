@@ -136,8 +136,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
         }},
         {"model_artifacts", std::move(models)},
     };
-    // Preserve the legacy specification byte-for-byte when research flags are
-    // off, while binding enabled treatments into teacher identity checks.
+    // Bind effective policy controls into teacher identity checks. The default
+    // removal correction is included unless explicitly disabled.
     if (const int count = one_combat::nativeOocPublicFutureCount(); count > 0)
         policy["parameters"]["native_ooc_public_futures"] = count;
     if (one_combat::nativeOocShopDeckSizeFixEnabled())
