@@ -175,7 +175,20 @@ NLL); a null check records the count instead. `corpus`, `phase1`, `phase2`,
 `near-full` and `hpo` then each derive the keys that stage's outputs
 determine, into a new file, in chain order. `union` runs with the `init` pins.
 From `phase2` on, the keys `composed_evaluate.verify_data` records must not
-change (`check --previous`). The DeepSets keys stay pending (#418 step 10b).
+change (`check --previous`). `near-full` also derives the DeepSets population
+pins (teacher counts, row-id sequences, downstream and recursive-validation
+rows). The DeepSets stages follow `hpo`: `control --artifact STD.native`
+(the STD export without capabilities), `teachers` (S17), `distill` (S18,
+requires `SHARED_TRANSITION_ENCODER_GO`), `downstream` (S19 prepare/fit/compare,
+requires `DEEPSET_DOWNSTREAM_GO` for the pinned head), `potion` (S20),
+`specialist` (S21) and `fast --artifact FAST.native`; the last file has an
+empty `pending` list. `init` pins `deepset_distill.EXPECTED_CONTROL` to null:
+the student is already chosen, so S18 runs without `--control-dir` and
+records `control: null`. S17 is `combat_transition_shared_encoder_distill.py
+--teachers-only`, which writes only the teacher cache and its receipt. S19
+takes `--evidence-from-receipt` (evidence read from the pinned S18
+results.json) and `--no-reference-check` (reference downstream metrics are
+recorded, not reproduced).
 `audit` accepts a union corpus: it validates each scope's own shards (paths
 recorded in `row_scopes.json`), takes the completed sources from the union
 rows, and quarantines the other sources of the scopes' seed ranges.

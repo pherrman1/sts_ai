@@ -1,4 +1,8 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import torch
@@ -56,6 +60,16 @@ class DeepSetsDistillTests(unittest.TestCase):
         np.testing.assert_array_equal(row_ids, cache["ids"][train])
         np.testing.assert_allclose(mean, [25.0])
         np.testing.assert_allclose(std, [5.0])
+
+
+    def test_null_control_is_skipped_and_recorded_as_none(self):
+        with mock.patch.object(experiment, "EXPECTED_CONTROL", None):
+            self.assertEqual(experiment._load_control(None), (None, None))
+            self.assertIsNone(experiment._control_receipt(None, None, None))
+            with self.assertRaisesRegex(ValueError, "omit --control-dir"):
+                experiment._load_control("somewhere")
+        with self.assertRaisesRegex(ValueError, "--control-dir is required"):
+            experiment._load_control(None)
 
 
 if __name__ == "__main__":

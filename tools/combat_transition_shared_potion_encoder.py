@@ -105,18 +105,23 @@ def verify_checkpoint(path: Path, receipt: dict) -> dict:
     return payload
 
 
-def verify_potion_component(path: Path, cache_meta: dict) -> tuple[dict, dict]:
+def verify_potion_component(path: Path, cache_meta: dict, expected: str | None = None,
+                            source_sha: str | None = None) -> tuple[dict, dict]:
+    """`expected`/`source_sha` default to this screen's production pins; the DeepSets
+    potion stage passes its own (STS_CTM_PINS-able) values."""
+    expected = EXPECTED["dedicatedPotionComponent"] if expected is None else expected
+    source_sha = EXPECTED["sourceSha"] if source_sha is None else source_sha
     receipt = load_json(path.parent / "fit.json")
     actual = composed.base.sha256(path)
     if receipt.get("component") != "potion" or receipt.get("artifactSha256") != actual:
         raise ValueError("dedicated potion component receipt differs")
-    if actual != EXPECTED["dedicatedPotionComponent"]:
+    if actual != expected:
         raise ValueError(f"dedicated potion component hash differs: {actual}")
     if receipt.get("preparationCacheSha256") != cache_meta["cacheSha256"]:
         raise ValueError("dedicated potion/cache provenance differs")
     if receipt.get("hashes") != cache_meta["hashes"]:
         raise ValueError("dedicated potion/source-data provenance differs")
-    if receipt.get("sourceSha") != EXPECTED["sourceSha"]:
+    if receipt.get("sourceSha") != source_sha:
         raise ValueError("dedicated potion source provenance differs")
     payload = torch.load(path, map_location="cpu", weights_only=False)
     if len(payload.get("headStateDicts", [])) != 1 or "encoderStateDict" not in payload:
