@@ -11,3 +11,11 @@ Startup parses the flag and emits the declared banner; enabled-only `skip_full_h
 Analyzer review: the sole delta from frozen pre-full-HP analyzer d89803f0 is a positive-and-negative equality check between the exact startup banner and declared FullHp flag. New analyzer SHA256 `711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5`. Existing complete provenance, pairing and failure accounting remain unchanged. Coordinator reports all ten synthetic analyzer tests PASS.
 
 The maintained KB and strategy candidate note correctly avoid a dominance claim. Limit Break upgrades, downstream target choices and timing changes are counterexamples to inferring whole-run improvement from no immediate healing. Require new producer freeze, off-mode trajectory parity and a public eligible treatment trace before the bounded discovery launch. Existing adaptive discovery sources may be reused only when explicitly labeled adaptive screening; none is fresh confirmation.
+
+## Frozen static and canary launch review
+
+Exact canary manifest `protocols/fullhp_canary.json` SHA256 `0c3ec718578f5f3fb20027bbbdd52e507324f9c0b5eedf46fed3909e56f35653`: **PASS to launch**. Independently rehashed binary `a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a`, all four model/source artifacts and all static logs/policies in receipt `audit/fullhp-build-static-checks.json` SHA256 `a5b58049d9e8cfca48c8c0bd9fb1ead04aa8d239925bc0a5c910c63061f16146`. Compared the seven reviewed source/test/CMake files to their exact committed bytes in `b229f3ff2443b0decaacaa762d2a0c429f7e9d47`.
+
+Unbound/off teacher policies exactly match; enabled adds only `skip_full_hp_rest=true`; invalid2 rejects at startup. The exact five single-run invocations are Fprod/FullHp/ShopOff on smoke610080001 and Fprod/FullHp on named discovery610081015. FullHp changes only its eligibility flag; ShopOff changes only V4 shop ownership. Common public8, Recall1, Act3, learned budget and models match. P1 stays within campaign capacity. Runner SHA256 at review is `fa4b556c0c8ce4f662cc9755725f8b318962c4be9090e6e85307a0537f360ceb`.
+
+This clears bounded runtime canaries only. Before discovery, verify off-mode prior corrected smoke equality and an actually eligible FullHp root's public trace; no quality inference follows from these five runs.

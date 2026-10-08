@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "reviewer": "integrity",
+  "reviewed_epoch": 1791422589.4986787,
+  "inputs": {
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/fullhp_canary.json": "0c3ec718578f5f3fb20027bbbdd52e507324f9c0b5eedf46fed3909e56f35653",
+    "build/overnight_20261008/fullhp_canary/Fprod_0.receipt.json": "ad2c80bec34fb062b828c676053b7a36d0d83edf0c26bd22fcda5a245de2a48e",
+    "build/overnight_20261008/fullhp_canary/FullHp_1.receipt.json": "994312924c16228c9635a91d1586ba6cb76c3118493510c7ee6db32976d491cf",
+    "build/overnight_20261008/fullhp_canary/ShopOff_2.receipt.json": "605f618751f0b586ac37acb20bbce807db829a20e16bf0f131762f3fa2e7c947",
+    "build/overnight_20261008/fullhp_canary/Fprod_3.receipt.json": "8ed6c18d846f9e1fe655013130d411fabc7f90bba03fa1c22d315386990841ec",
+    "build/overnight_20261008/fullhp_canary/FullHp_4.receipt.json": "6aac6afb3e809de7ff8b1e459acea18fac35d399bbdd57861d0103454de596b1",
+    "build/overnight_20261008/corrected_canary/Fprod_0.csv": "a77265c3857cc01e4138d7c59129137dd2fd373ca974a246a0baa717f5ffbd08",
+    "build/overnight_20261008/corrected_canary/Fprod_0.trace.jsonl": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03",
+    "build/overnight_20261008/corrected_canary/Fprod_0.tree.jsonl": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d",
+    "build/overnight_20261008/corrected_canary/Fprod_0.strategic.jsonl": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+  },
+  "all5_receipts_outputs_environment_and_startup_checked": true,
+  "off_reference_parity": {
+    "source_smoke": 610080001,
+    "csv_all_gameplay_fields_equal": true,
+    "public_trace_rows_equal": 177,
+    "strategic_trace_bytes_equal": true,
+    "tree_rows_equal_except_process_combat_id": 454
+  },
+  "activation": {
+    "source_seed": 610081015,
+    "first_divergent_serialized_row_zero_based": 93,
+    "first_divergent_ooc_idx": 80,
+    "act": 2,
+    "floor": 23,
+    "hp": 80,
+    "max_hp": 80,
+    "compact_public_pre_state_equal": true,
+    "all_prior_public_trace_rows_equal": true,
+    "reference_successor": "MAP",
+    "fullhp_successor": "CARD_SELECT",
+    "dream_catcher_absent": true,
+    "strategic_rows": {
+      "Fprod_3": [
+        {
+          "act": "2",
+          "floor": "23",
+          "screen": "7",
+          "nActions": "2",
+          "actionBits": "0|1",
+          "qValues": "60.1227|56.1296",
+          "bestIdx": "0",
+          "bestSecondMargin": "3.993057",
+          "takeIdx": "0",
+          "owned": "1",
+          "rule": "margin"
+        }
+      ],
+      "FullHp_4": [
+        {
+          "act": "2",
+          "floor": "23",
+          "screen": "7",
+          "nActions": "1",
+          "actionBits": "1",
+          "qValues": "56.1296",
+          "bestIdx": "0",
+          "bestSecondMargin": "-1.000000",
+          "takeIdx": "0",
+          "owned": "1",
+          "rule": "margin"
+        },
+        {
+          "act": "2",
+          "floor": "23",
+          "screen": "4",
+          "nActions": "18",
+          "actionBits": "0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17",
+          "qValues": "55.6067|55.9763|55.588|55.91|56.2362|56.5567|56.7501|56.6244|56.8061|56.3564|59.7825|60.6908|58.2046|60.6712|58.2488|61.523|56.5461|58.2441",
+          "bestIdx": "15",
+          "bestSecondMargin": "0.832184",
+          "takeIdx": "-1",
+          "owned": "0",
+          "rule": "margin"
+        }
+      ]
+    },
+    "limitation": "Compact public predecessor parity is not a whole private GameContext fingerprint; source fixture separately establishes legality/purity. Floor44 later has different trajectories and is not an isolated intervention."
+  },
+  "quality_inference": false,
+  "games_launched_by_reviewer": false
+}

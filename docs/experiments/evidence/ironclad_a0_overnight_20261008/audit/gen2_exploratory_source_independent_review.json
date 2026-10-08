@@ -1,0 +1,25 @@
+{
+  "schema": "gen2_post_primary_exploratory_source_review_v1",
+  "status": "PASS",
+  "reviewed_epoch": 1791426802.1401355,
+  "analyzer_sha256": "a160752d20a65ba85d3dd6c144accb73014137bfc479e7dd297b8be3c4fe5879",
+  "test_sha256": "6e1e68fa27d5a797e294d17086e71a554087efe105814980fe99c2c50ab1d8d1",
+  "primary_review": "audit/gen2_tranche32_primary_independent_review.json",
+  "primary_review_sha256": "0c95e30824d47544005d8c1edf8c75183b4566ce7d3c3bdfc73ef963b4504b6a",
+  "checks": [
+    "Exact completed primary, frozen choices, contract, prior protocol, models and input hashes are required before reading all8future blocks.",
+    "No choose/select call or writable primary artifact path; fixed selection-stage choices only. Selection predictions are verified against frozen scores.",
+    "All source clusters resampled together. Family conditional effects exclude unexposed sources; additive contributions retain original total-state denominator and sum back to frozen primary.",
+    "Calibration and reliability use exposed-source/state/option/future weights. Empty bins/no-state calibration remain undefined and bootstrap undefined draws are counted; reliability weights renormalize within bins.",
+    "Within-option and paired-action dispersion preserve sibling future coupling; all8 descriptive statistics are labeled and never used to reselect.",
+    "All intervals pointwise/unadjusted; local empirical maxima and prediction gaps are not attainable oracle estimates or deployment claims.",
+    "Independently ran5 focused synthetic tests successfully in0.030s; no real diagnostic execution performed by reviewer."
+  ],
+  "limitations": [
+    "Four evaluation futures yield coarse noisy local contrasts. Observed zero variance or all-win/all-loss states do not establish certainty/equivalence.",
+    "Post-primary multiple diagnostics are exploratory; no changed primary decision rule, efficacy promotion or adaptive extension follows.",
+    "Existing sampler and historical privileged-teacher/latent-counter model limitations from primary remain."
+  ],
+  "no_new_games_or_selection_changes": true,
+  "exploratory_outputs_not_executed_or_opened": true
+}

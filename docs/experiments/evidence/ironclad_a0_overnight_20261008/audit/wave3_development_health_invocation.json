@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_development_report.json",
+    "--report-sha256",
+    "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723",
+    "--out",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_development_health.json"
+  ],
+  "started_epoch": 1791427920.1692753,
+  "finished_epoch": 1791427927.3290873,
+  "exit_code": 0,
+  "auditor_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+  "report_sha256": "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723",
+  "output_sha256": "1da50cee9a342a08ed2fca0bc53fd0c44249887669b58e13170ecb5f98188d5a",
+  "log_sha256": "49040c406a8e6d1b9433eb060973c063c342640d198bc109142b48530b00c217",
+  "scope": "Coordinator explicitly confirmed all96receipts/two dispatches complete before audit; no holdout access."
+}

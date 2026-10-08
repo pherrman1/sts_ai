@@ -1,0 +1,31 @@
+{
+  "schema": "fullrun_health_auditor_independent_review_v1",
+  "status": "SOURCE_REVIEW_PASS",
+  "reviewer": "strategy",
+  "reviewed_at_utc": "2026-10-08T02:45:35.912127+00:00",
+  "scope": "Supplementary health only on parent-authorized hash-bound completed reports; not efficacy reanalysis, runtime mutation or new games",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/test_fullrun_health.py",
+      "sha256": "af57a9d3aaae0545f1cc04b6445f27118530a09442cd68448f1d533c0f797afc"
+    }
+  ],
+  "checks": [
+    "Actual SilverTreeProfile::record order is victory,thenloss>500turnlimit,thenHPdeath,thenpositive-HPengine_stop,otherwise nonterminal. Auditor matches.",
+    "Endpoint/tree/total histogram conservation uses newly completed simulations; inherited visits are recorded but excluded. Heuristic denominator and neural0 match writer.",
+    "Learned250/500/1000/2000/4000/8000/10000 and exact-flat10000 match backend. Singleton zero allowed onlynonexact andonerootaction; adaptive/bossextensions rejected.",
+    "All reported inputs rehashed; manifest and successful receipt/source/binary identities bound; exact arm/source allocation, CSV seed coverage, tree source membership, unique per-combat decision and output prefix/hash/bytes verified. No outcome field interpreted.",
+    "Cycle fallback and nonterminal rollout starts are legitimate counters; error/descentabort/nonterminal endpoints invalidate health. Engine-stop/turn-limit remain separately reported diagnostics, not invented win/loss thresholds.",
+    "One review finding was fixed before real use: malformed endpoints list/endpoint containers previously could raise uncaught AttributeError. Explicit profile/map/item object checks now produce retained invalid findings."
+  ],
+  "verification": "Read source and syntheticfixtures only. Author reports16 syntheticPASS; reviewer did not rerun them or apply auditor to real data. Native record/writer code read atcurrent source; author separately checked same fragments across fourfrozenproducers.",
+  "limits": [
+    "This extends health diagnostics without revising prior efficacy analyzers or statistical decisions.",
+    "Coverage checks guarantee at least one reported root per allocated seed and no duplicate reported roots; they do not independently reconstruct every expected combat decision or prove no profiler row was omitted before serialization.",
+    "Tree counters alone do not distinguish engine-stop causes, establish actual live health, or prove fair/calibrated action values. Invalid findings require interpretation before any broader qualification claim."
+  ]
+}

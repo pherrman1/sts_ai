@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-08 for fair native OOC decision quality (§395); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -40,6 +40,45 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## Fair native OOC decision quality (§395)
+
+The controlled non-MCTS research reference uses public-eight-future native
+fallback scoring and the optional-Ruby-Recall eligibility correction with keys
+off. Both remain opt-in. At base `a4b3df35`, `STS_FAIR=1` alone does not remove
+actual unrevealed encounter identities from native floor/win fallback inputs;
+historical reference scores cannot qualify this changed profile. The wrapper
+passes hidden-state invariance and source/RNG preservation checks, within its
+documented conditional-sampler scope.
+
+Fresh development rejected broad REST-gate removal, the shop feature correction
+as a strength candidate, and their combination. Narrow full-health REST
+exclusion and shop-gate removal each gained one win in 128 pairs. Reversing
+fallback `REMOVE` acquisition-weight ordering gained two wins in its separate
+128-pair cohort and was selected by the frozen exploratory rule. Its one
+fixed 512-pair confirmation is **CONFIRMED_IMPROVEMENT**: 395/512 versus
+381/512, 27 candidate-only and 13 control-only wins, +2.734375 pp with paired
+95% interval [+0.390625, +5.2734375]. The lower bound and predeclared 2 pp floor
+both pass. This applies to immutable `d35b42b1` and its corrected-fair profile;
+development was not pooled, and no live-game or merged-source qualification
+follows automatically. All pairs and runtime gates passed; search safety-limit
+endpoints remain documented diagnostics.
+Card win-head ranking with preserved floor take/skip lost its discovery screen.
+No production policy or model default changed.
+
+The completed 32-source GEN2 experiment did not establish conditional selection
+gain: rollout-selected −1.171875 pp, source-cluster 95% [−5.46875, +3.125]. The
+large gap between selection and independent evaluation supports concern about
+small-K selection optimism. Queue-blind historical P0/F2 model results do not
+identify a useful replacement. Their retained latent counters and older
+privileged-teacher labels remain scope limits; this conditional diagnostic does
+not qualify the current fair runtime. Calibration bias does not by itself
+explain ranking quality.
+The proposed next discriminator is a fresh source-matched K4-versus-K16
+boss-relic choice comparison with separately frozen choices and independent
+evaluation futures; it is not launched or a training authorization. Exact
+profiles, all alternatives, decision audits and limitations are in the
+[research packet](../../experiments/evidence/ironclad_a0_overnight_20261008/README.md).
 
 ## Live OOC MCTS on vs off (§384) — MCTS loses
 

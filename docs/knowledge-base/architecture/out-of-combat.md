@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-08 for native fallback information-boundary, shop accounting and optional Ruby Recall research controls; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -951,6 +951,9 @@ merely because a shop removal is selected. Server-backed modes retain their
 existing queries. The socket bridge uses a bounded connect wait, so an
 explicitly server-dependent path fails fast when localhost:5555 is unavailable
 instead of stalling the whole run.
+
+The native OOC research controls in this section and the campfire/removal/card
+subsections below were verified on 2026-10-08.
 
 The legacy floor/win fallback rich vector includes realized `nextEliteId` and
 `nextFight0..2`, and both tracked tree ensembles split on these fields. Combat

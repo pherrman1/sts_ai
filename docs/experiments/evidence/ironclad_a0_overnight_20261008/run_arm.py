@@ -23,6 +23,7 @@ def main():
     p.add_argument("--trace", action="store_true")
     p.add_argument("--tree-profile", action="store_true")
     p.add_argument("--combat-audit", action="store_true")
+    p.add_argument("--public-combat", action="store_true")
     p.add_argument("--timeout", type=int, default=3600)
     a = p.parse_args()
     m = json.loads(a.manifest.read_text())
@@ -41,7 +42,7 @@ def main():
         "csv": ".csv", "meta": ".csv.meta.json", "log": ".log",
         "trace": ".trace.jsonl", "tree": ".tree.jsonl", "receipt": ".receipt.json",
         "profile": ".profile.jsonl", "strategic": ".strategic.jsonl",
-        "combat": ".combat.jsonl"}.items()}
+        "combat": ".combat.jsonl", "public": ".public.jsonl"}.items()}
     assert not any(os.path.lexists(v) for v in paths.values()), "refusing existing outputs"
     env = dict(m["profiles"]["common"])
     env.update(m["profiles"]["arms"][a.arm])
@@ -54,6 +55,10 @@ def main():
         env["STS_SILVER_TREE_PROFILE"] = str(paths["tree"])
     if a.combat_audit:
         env["STS_SILVER_USELESS_TRACE"] = str(paths["combat"])
+    if a.public_combat:
+        target = env.get("STS_SILVER_PUBLIC_TARGET", "")
+        assert target and int(target.split(":")[0]) in range(a.seed_lo, a.seed_lo + a.count), "unbound public target"
+        env["STS_SILVER_PUBLIC_TRACE"] = str(paths["public"])
     cmd = ["bash", "tools/seed_guard.sh", str(binary), "bestbench", "10000",
            str(a.count), "0", str(a.seed_lo), str(paths["csv"])]
     receipt = {"manifest": str(a.manifest.resolve()), "manifest_sha256": digest(a.manifest),

@@ -1,0 +1,12 @@
+{
+  "updated_epoch": 1791427431.165794,
+  "previous_design_sha256": "8eff76c147d07f6de29218a6a04c1b4bb3d4b38725cfd5195748534aacd4abc3",
+  "updated_design_sha256": "871899ebddaf0a6b70ac8ed4be284359aa5f65c8a81865f237600a20204cda71",
+  "review_sha256": "7e36d2d8ca9baedffbfeb66c7e4ab7bbe9d02a524806217591a5c80f326a01e5",
+  "changes": [
+    "Bind imported paired_analysis.py, seed guard, exact jobs and Python/NumPy versions before freeze.",
+    "Define positive estimate below either superiority requirement as PROMISING_UNCONFIRMED with failed criterion explicit."
+  ],
+  "champion_selected": false,
+  "holdout_status": "UNOPENED"
+}

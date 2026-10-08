@@ -14731,3 +14731,126 @@ hidden-future fields is again free (§371). Per the plan, E3 decides.
 **Evidence:** [packet](evidence/ooc_e1_focal_20261007/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e1_focal`.
+
+## §395 — Fair native OOC decision quality and fixed removal-ranking confirmation (2026-10-08)
+
+**Question:** which reproducible decision or implementation weaknesses limit
+fair Ironclad A0 Act-3 wins under the non-MCTS native Silver/V4 stack, and does
+one independently selected minimal intervention improve fresh whole runs?
+
+**Reference and design:** campaign base `a4b3df35`; all alternatives default
+off, original floor/win/V4/stop models unchanged. Direct audit reproduced hidden
+unrevealed encounter-identity use by native fallback despite `STS_FAIR=1`.
+The research reference therefore uses reviewed public-eight-future marginalization
+and disables legacy actual-future hypothetical paths. Optional Ruby Recall with
+keys off was separately reproduced and corrected in the common reference from
+`3ed91ab3`. Original Bprod/Bflat and pre-Recall-correction Wave1 are diagnostic;
+their outcomes are not inherited into corrected-reference qualification.
+
+All full-run trials use Ironclad A0, Act-3 stop, keys-off policy, MCTS off,
+default V4 gates/margin 1 except explicitly tested gate ablations, native
+Silver, one OpenMP/BLAS thread and at most six concurrent games. Fprod uses learned stopping, adaptive/exact-root budgets off,
+nominal 10,000 maximum and allocated reuse cap 32,768. Fflat and the final-boss
+binary-utility challenger use exact 10,000 and no learned stopping. Sources,
+binaries, models, environments, per-source allocations and per-wave immutable
+analyzers are in the linked manifests. Every seed command uses the seed guard.
+
+**Discovery:** the first 32-source screen tested exact combat budget, shop
+feature correction, REST/boss/shop gate ablations, zero skip threshold and
+final-boss binary utility. ShopFix and RestOff appeared positive before the
+common Recall correction. FinalBinary matched every Fflat win/loss at about
+2.6% more CPU; this is not equivalence. The later corrected-reference screens
+advanced FullHp, ShopOff and RemoveLow by one net win in 32 pairs each. A separate
+floor-acceptance-preserving win-head card ranker won 22/32 versus 26/32 and did
+not advance. These discovery seeds were adaptively reused and are not fresh
+confirmation.
+
+**Fresh development:** exact 128-source cohorts, no pooling or extension; all
+pairs complete. Intervals are paired bootstrap percentile intervals: 10,000 replicates, 95%, RNG 20261008.
+
+| Intervention | Wins / Fprod | Candidate-only / control-only | Gain and 95% interval, pp | Disposition |
+|---|---|---|---|---|
+| RestOff |97/128 vs101/128|10/14|−3.125 [−10.15625,+4.6875]|Rejected for advancement|
+| ShopFix |99/128 vs101/128|1/3|−1.5625 [−4.6875,+1.5625]|Correctness fix retained; no strength advancement|
+| RestShop |91/128 vs101/128|10/20|−7.8125 [−16.40625,+0.78125]|Rejected for advancement|
+| FullHp |102/128 vs101/128|4/3|+0.78125 [−3.125,+4.6875]|Wave3 nominee by frozen tie rule|
+| ShopOff |102/128 vs101/128|10/9|+0.78125 [−5.46875,+7.8125]|Not selected by tie rule|
+| RemoveLow |106/128 vs104/128|7/5|+1.5625 [−3.90625,+7.03125]|Largest development gain; sole exploratory champion|
+
+**Final confirmation: `CONFIRMED_IMPROVEMENT`.** RemoveLow won 395/512
+(77.1484375%) versus Fprod 381/512 (74.4140625%), with 27 candidate-only wins,
+13 control-only wins and 368 shared wins. Gain +2.734375 pp, paired 95% interval
+[+0.390625, +5.2734375]; both the positive lower bound and 2 pp practical floor
+pass. All 256 jobs completed exit0 with no missing pair, retry, replacement or
+extension, and no remaining campaign game worker. CPU C/R 6,949.0484/6,844.1451 s;
+parallel elapsed 2,332.7000 s (38.88 minutes), 3.83144 game-core-hours total.
+The health audit passes with diagnostic limits: 457,287 roots, 1,965,273,000
+completed simulations, zero root errors/aborts/nonterminal endpoints, 1,689
+cycle rollouts and 339 engine-stop/377 turn-limit endpoints.
+
+Champion RemoveLow and matched Fprod use
+immutable `d35b42b1`, binary SHA256 `1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5`;
+only `STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=0→1` differs. Exactly 512 pairs
+(`610083000..610083511`), 1,024 runs and 256 four-seed jobs were frozen with source,
+models, analysis/helper/runtime hashes and reviewed before the holdout latch
+was written. Final superiority requires positive paired 95% lower bound and
+observed gain >= 2 pp, plus complete execution/information gates. No retry,
+replacement, extension, retuning or automatic combination is permitted.
+
+**Decision audit:** baseline-failing fixtures establish native information
+exposure, optional Recall and shop hypothetical deck-size arithmetic defects.
+These are separate from playing-strength claims. The outcome-unselected
+corrected 128-source reference had 101 wins and 27 losses, including 13 final-boss
+losses. A chronological first 12 atlas includes wins, losses and benign controls.
+At one matched shop, feature correction changes the selected bundle; at Living
+Wall, RemoveLow changes Shrug It Off removal to Strike. FullHp and RemoveLow
+rescued the same discovery source through different long paths, so gains cannot
+be added. No missing-free-treasure hypothesis survived the first 12 audit:
+32/32 free chests and 112/112 ordinary relic offers were collected.
+
+**Conditional experiments:** at one selected REST state reviewed from public
+information with the baseline action known before continuation outcomes, Offering
+upgrade was chosen on 16 futures/action and then won 23/32 independent continuations
+versus 17/32 for REST (8/2 discordances, +18.75 pp,[0,+37.5]); this remains local
+conditional inconclusive under the older teacher. At one outcome-informed
+public Champ root, fresh exact 10k continuation after forced Shrug won 50/62 versus
+END 51/62 (9/10, −1.613 pp,[−14.516,+11.290]); no demonstrated better line or
+whole-run claim. The original potions had already been spent by turn 2.
+
+The corrected GEN2 tranche used 32 fresh sources, 63 CARD/BOSS decisions and 1,968
+valid sibling branches, costing 4.15072 observed game-core-hours. Choices frozen
+from futures 0–3 preceded independent evaluation 4–7: 252 fixed-rule state/future
+pairs, 32 source clusters. Rollout-selected gain −1.171875 pp, 95%[−5.46875,+3.125]:
+`LOCAL_CONDITIONAL_INCONCLUSIVE`. P0 +0.390625 pp[−4.296875,+5.46875] and
+F2 −0.78125 pp[−5.078125,+3.125] are secondary, not a selected winner. Separately
+reviewed exploratory analysis found apparent selection gain +10.55 pp, 47/63 tied
+selection maxima and 17/63 all-option evaluation ceilings. Queue-blind historical
+P0/F2 retain latent counters and older privileged-teacher labels; this diagnostic
+does not qualify a current fair deployment. No training or protected historical
+TEST opening occurred.
+
+**Validity and interpretation:** named binaries and complete output hashes are
+preserved. Prelaunch/build/fixture and verifier failures were retained and
+repaired without replacing game sources. Debug 67/67 core/smoke plus 2/2 extra
+integration passed at `a557ace5`; later FullHp/removal/card-rank changes have
+separate focused/static/runtime checks at `b229f3ff`, `d35b42b1`, and `5add2413`.
+Supplementary tree audits distinguish fatal root/abort/nonterminal failures from
+intentional cycle fallback and recorded simulator safety-limit search endpoints.
+The sampler is a bounded conditional approximation and live-game equivalence
+was not established. The draft workflow skips authoritative Linux GCC CI; local
+checks do not become a CI pass. No merge or production-default change.
+
+**Next:** proposed, not launched: fresh 32-source BOSS-only K4-versus-K16 action
+selection at identical states, both choices frozen before shared independent
+futures 16–31. This isolates selection precision from source mix/model drift;
+projected 8.3 core-hours typically, 12.4 with six options before tail, proposed hard
+four-worker, four-hour cap of 16 core-hours. No automatic extension or training.
+
+**Evidence:** [complete packet](evidence/ironclad_a0_overnight_20261008/README.md),
+[ranked hypotheses](evidence/ironclad_a0_overnight_20261008/HYPOTHESES.md),
+[decision cases](evidence/ironclad_a0_overnight_20261008/DECISION_CASES.md),
+[champion freeze](evidence/ironclad_a0_overnight_20261008/champion_freeze.json).
+
+**Knowledge impact:** maintained OOC/environment/label-pipeline/combat
+interfaces, native information-boundary caveat, current research disposition
+and actual CI routing. No production baseline promotion.

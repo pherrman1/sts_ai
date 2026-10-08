@@ -1,0 +1,81 @@
+{
+  "schema": "wave3_development_arithmetic_and_nomination_review_v1",
+  "status": "ARITHMETIC_AND_PRIOR_RULES_PASS_HEALTH_PENDING",
+  "reviewed_epoch": 1791428004.276025,
+  "wave3_report_sha256": "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723",
+  "frozen_analyzer_sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5",
+  "full_frozen_analyzer_reexecution_exact": true,
+  "all96receipts_complete": true,
+  "wave3_expected_sources": [
+    610082128,
+    610082255
+  ],
+  "wave3_collection_start_epoch": 1791424371.1968174,
+  "wave3_collection_finish_epoch": 1791427848.1830459,
+  "manifest_frozen_epoch": 1791424239.7139828,
+  "wave3_arms": {
+    "Fprod": {
+      "n": 128,
+      "wins": 101
+    },
+    "FullHp": {
+      "n": 128,
+      "wins": 102
+    },
+    "ShopOff": {
+      "n": 128,
+      "wins": 102
+    }
+  },
+  "independent_bootstrap": {
+    "FullHp": {
+      "gain": 0.0078125,
+      "ci95": [
+        -0.03125,
+        0.046875
+      ],
+      "candidate_only": 4,
+      "control_only": 3
+    },
+    "ShopOff": {
+      "gain": 0.0078125,
+      "ci95": [
+        -0.0546875,
+        0.078125
+      ],
+      "candidate_only": 10,
+      "control_only": 9
+    }
+  },
+  "bound_protocols": {
+    "wave3": {
+      "manifest_sha256": "4a3f54d11183d5a864fec8a0ac5f37d4e3a90a0a4b33a46da8fd83f74c46e705",
+      "protocol_sha256": "7308bfe689051ac117d397625a1882295f0ebab2b70a5daf72be222a75f43af0",
+      "rule": "Candidate with mostvalidwins, strictlyaboveFprod; tieFullHp thenShopOff; noextension/no combination. Selection exploratory, finalconfirmation required."
+    },
+    "removal": {
+      "manifest_sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de",
+      "protocol_sha256": "fc3d8a7b0cc991ff6539d6bb37d85d0d8831907c460caffaa19b06d250c554be",
+      "rule": "Strictly more development wins; greatest paired development gain across surviving distinct candidates, then CPU and earlier protocol only for equal gain."
+    }
+  },
+  "selection": {
+    "wave3_winner": "FullHp",
+    "intra_wave_tie_rule_applied": true,
+    "global_winner": "RemoveLow",
+    "gain": 0.015625,
+    "runner_up_gain": 0.0078125,
+    "CPU_tiebreak_needed": false,
+    "combination_selected": false
+  },
+  "other_dispositions": {
+    "RestOff_ShopFix_RestShop": "Failed frozen wave2 development:97,99,91 versus101 reference; no advancement.",
+    "CardWinRank": "Failed fixed32 discovery:22 versus26; no development or extension."
+  },
+  "limitations": [
+    "Exploratory nomination across different fresh cohorts adds selection noise; it is not a statistical claim that RemoveLow is superior to FullHp or Fprod.",
+    "Development gain1.5625pp does not meet or waive final superiority criterion. A single frozen fresh confirmation must independently have positive95%lower bound and observed gain>=2pp.",
+    "Nomination remains conditional on separate completed-wave tree-health review and final champion/config/sample-size/analysis freeze. No holdout opened by reviewer."
+  ],
+  "no_new_games_or_source_changes": true
+}

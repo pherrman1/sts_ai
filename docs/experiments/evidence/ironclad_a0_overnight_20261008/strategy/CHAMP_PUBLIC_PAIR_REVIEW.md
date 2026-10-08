@@ -36,3 +36,21 @@ Any contrast estimates the conditional combat outcome under this fresh exact 10,
 The executable records the supplied producer source SHA and hashes its running binary, specification and extracted row. It does not itself prove that the source SHA produced that binary or rehash the original capture named in the specification. The coordinator's immutable launcher/freeze must enforce those source, binary, specification and capture identities before the contract check, canary and evaluation. Aggregate process capacity and seed-guard execution remain coordinator responsibilities.
 
 Knowledge impact: experimental review evidence only. No gameplay default, production controller, model or maintained engine invariant is changed by this review.
+
+## Frozen runner and analyzer review
+
+Independent source/custody review **PASS**, with no blocking findings, for:
+
+| Artifact | SHA256 |
+|---|---|
+| `audit/run_champ_probe.py` | `4a5239b27a8322185e72b73a69b6a535156e3fb119d5a6b99874d48cd12f6158` |
+| `audit/analyze_champ_probe.py` | `817985e65b649fe4d6de431ca2cf2d5fdcf09781d6bd9f97f496e0c69e01e4f4` |
+| `audit/champ_d13_build_freeze.json` | `8edcc9126e9049b92f574bfce2eccebf2f54a7fe45125dfcbf4e351c6566f259` |
+| `audit/champ_d13_tools_freeze.json` | `ad32cc58f79d97b45c1e8e9c7270f3ebff4f3fe619d971cc430650a4067b0b49` |
+| Immutable helper executable from `a557ace5770f26983db4a55ec2c9318a95bf328d` | `f316bbbb27d86f2628889607c7e7069a26d53f81c2ffef9e436ea1a355a66fbf` |
+
+The reviewer independently rehashed the binary, committed helper and CMake contents, seed guard, and paired-analysis dependency. The runner enforces exact capture extraction/custody, one-worker locking, clean single-thread environment, fixed stage/index bounds, refusal of prior outputs, 60-second check and 600-second pair timeouts, and preserved failure receipts. A passing check receipt precedes either canary; evaluation additionally requires a hashed canary contract report and a separate contract-and-cost authorization that postdates the canaries. Aggregate campaign capacity remains coordinator-owned.
+
+The analyzer accounts for every allocated pair and output attempt, including missing, failed and orphaned files; validates exact context, fixed actions, future coupling, actual 10,000-per-decision denominator and healthy search/terminal endpoints; and refuses a clean contrast when any invocation is invalid. Canary reporting emits contract/cost diagnostics without a win summary. Evaluation uses only the fixed 62 fresh pairs, a deterministic paired bootstrap and the stated single-source conditional limitations. The five synthetic test definitions cover allocation, sibling completeness, health stops, coupling/budget drift and failed receipts. The reviewer did not rerun tests, execute the simulator or open numerical outcome labels.
+
+This review is recorded separately so the tool freeze's original bytes, including its preparation-time pending-review field, remain immutable.

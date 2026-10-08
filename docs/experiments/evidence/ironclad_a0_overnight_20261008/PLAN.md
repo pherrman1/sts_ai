@@ -5,6 +5,12 @@ Objective: actual fair Ironclad Ascension-0 Act-3 victory, keys off.
 Start: 2026-10-08 01:47 Europe/Berlin (2026-10-07 23:47 UTC).
 Execution cap: 2026-10-08 09:47 Europe/Berlin. Confirmation/packaging reserve begins 07:23.
 
+This file preserves the initial allocation and pre-wave decisions. Statements
+about pending inventory, audits or unopened confirmation below describe that
+historical stage. Current execution and results are in [STATE.json](STATE.json)
+and [README.md](README.md); [champion_freeze.json](champion_freeze.json) and the
+[holdout latch](holdout_opened.json) record the later final launch.
+
 ## Frozen campaign baseline
 
 Fresh Codex-app-managed worktree `ironclad-overnight-20261008/sts_lightspeed`; branch `codex/ironclad-overnight-20261008`. Source `a4b3df35d170abba7860e8e854cc24cfd3579075`. Origin `git@github.com:pherrman1/sts_ai.git`. Pinned dependencies repaired through repository helper and verified. Two changes since charter reference are CTM research-candidate loading and declared HP domain; independently auditing their non-MCTS impact.
@@ -35,7 +41,7 @@ Freeze one champion, exact artifacts, fixed sample size and analysis before open
 
 ## Ownership and restart
 
-Coordinator: profiles, manifests, launches, source edits/builds/commits, holdout latch, integration and final PR. Strategy: strategy/ evidence; learning: learning/; integrity: audit/. Workers do not alter shared code without explicit path ownership. Initial specialists investigate independently; integrity reviews protocols and candidate diffs. Coordinator also performs run-decision investigation then delegates bounded public cases. No active game jobs yet. Build process tracked by tool session 47744; build log `build/overnight-build.log`.
+Coordinator: profiles, manifests, launches, source edits/builds/commits, holdout latch, integration and final PR. Strategy: strategy/ evidence; learning: learning/; integrity: audit/. Workers do not alter shared code without explicit path ownership. Initial specialists investigate independently; integrity reviews protocols and candidate diffs. Coordinator also performs run-decision investigation then delegates bounded public cases. Current job IDs, completed outcomes, immutable producers and pending decisions are maintained in `STATE.json`. All experimental binaries remain in distinct named directories.
 
 Durable knowledge impact: benchmark results go to experiment ledger and evidence, research disposition to current-research; any stable implementation facts go to canonical KB. Final README and complete hypothesis/decision tables are required.
 

@@ -1,0 +1,418 @@
+[
+  {
+    "source_seed": 610084100,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084100",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084100"
+    ]
+  },
+  {
+    "source_seed": 610084101,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084101",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084101"
+    ]
+  },
+  {
+    "source_seed": 610084102,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084102",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084102"
+    ]
+  },
+  {
+    "source_seed": 610084103,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084103",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084103"
+    ]
+  },
+  {
+    "source_seed": 610084104,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084104",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084104"
+    ]
+  },
+  {
+    "source_seed": 610084105,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084105",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084105"
+    ]
+  },
+  {
+    "source_seed": 610084106,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084106",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084106"
+    ]
+  },
+  {
+    "source_seed": 610084107,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084107",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084107"
+    ]
+  },
+  {
+    "source_seed": 610084108,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084108",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084108"
+    ]
+  },
+  {
+    "source_seed": 610084109,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084109",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084109"
+    ]
+  },
+  {
+    "source_seed": 610084110,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084110",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084110"
+    ]
+  },
+  {
+    "source_seed": 610084111,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084111",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084111"
+    ]
+  },
+  {
+    "source_seed": 610084112,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084112",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084112"
+    ]
+  },
+  {
+    "source_seed": 610084113,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084113",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084113"
+    ]
+  },
+  {
+    "source_seed": 610084114,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084114",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084114"
+    ]
+  },
+  {
+    "source_seed": 610084115,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084115",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084115"
+    ]
+  },
+  {
+    "source_seed": 610084116,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084116",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084116"
+    ]
+  },
+  {
+    "source_seed": 610084117,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084117",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084117"
+    ]
+  },
+  {
+    "source_seed": 610084118,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084118",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084118"
+    ]
+  },
+  {
+    "source_seed": 610084119,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084119",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084119"
+    ]
+  },
+  {
+    "source_seed": 610084120,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084120",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084120"
+    ]
+  },
+  {
+    "source_seed": 610084121,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084121",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084121"
+    ]
+  },
+  {
+    "source_seed": 610084122,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084122",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084122"
+    ]
+  },
+  {
+    "source_seed": 610084123,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084123",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084123"
+    ]
+  },
+  {
+    "source_seed": 610084124,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084124",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084124"
+    ]
+  },
+  {
+    "source_seed": 610084125,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084125",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084125"
+    ]
+  },
+  {
+    "source_seed": 610084126,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084126",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084126"
+    ]
+  },
+  {
+    "source_seed": 610084127,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084127",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084127"
+    ]
+  },
+  {
+    "source_seed": 610084128,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084128",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084128"
+    ]
+  },
+  {
+    "source_seed": 610084129,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084129",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084129"
+    ]
+  },
+  {
+    "source_seed": 610084130,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084130",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084130"
+    ]
+  },
+  {
+    "source_seed": 610084131,
+    "command": [
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "--freeze",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "--seed",
+      "610084131",
+      "--prefix",
+      "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084131"
+    ]
+  }
+]

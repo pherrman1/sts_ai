@@ -1,6 +1,7 @@
 # Combat search
 
-Last verified: 2026-09-25 for native-only Silver (ADR-0022), the native default
+Last verified: 2026-10-08 for targeted public capture and the bounded public pair probe;
+2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
 ## Purpose
@@ -247,6 +248,28 @@ The profile is flat, with no function above about 6% exclusive.
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.
+
+### Targeted public decision capture and pair probe
+
+The default-off `STS_SILVER_PUBLIC_TRACE` and `STS_SILVER_PUBLIC_TARGET=SEED:FLOOR`
+controls must be supplied together. They record the supported public wire state,
+selected semantic action and existing root alternatives/statistics at the named
+combat. The wire's isolated search seed is zero; the outer source seed is a
+replay locator. Capture adds no simulations and does not export a private
+snapshot. Unsupported public conversion is explicit, and child values can
+include inherited samples rather than newly evaluated independent rollouts.
+
+The separate CMake target `silver-public-pair-probe` builds
+`silver_public_pair_probe SPEC.json check|canary|evaluation [K]`. It is a bounded
+research executable for one hash-bound Champ decision and two declared actions,
+not a general gameplay backend. It samples public-compatible futures, lowers
+semantic actions through the existing bridge, and rebuilds a public planner
+root for every subsequent decision under fresh exact-10,000 search. Supported
+wire round-trip equality is required. It does not reconstruct the original
+retained learned-stop controller, historical private RNG or an arbitrary saved
+combat. Its endpoint is conditional combat survival, not whole-run Act-3
+strength. Source and protocol are routed by
+[the campaign packet](../../experiments/evidence/ironclad_a0_overnight_20261008/README.md).
 
 ## Invariants / failure behavior
 

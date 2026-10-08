@@ -1,0 +1,86 @@
+{
+  "schema": "final_confirmation_design_independent_review_v1",
+  "reviewer": "strategy",
+  "scope": "Design only; not a release of final manifest or holdout; no current efficacy or final outcomes read; no seeds executed",
+  "reviewed_at_utc": "2026-10-08T02:39:25.450977+00:00",
+  "status": "DESIGN_PASS_WITH_PREFREEZE_CLARIFICATIONS",
+  "design_sha256": "8eff76c147d07f6de29218a6a04c1b4bb3d4b38725cfd5195748534aacd4abc3",
+  "checks": {
+    "charter": "512 independent source pairs,1024 runs; exact reserved610083000..511; one frozen champion; corrected fair simulator reference; no merge/default change",
+    "nomination": "Wave3 winner most valid wins strictly above matched Fprod, tie FullHp first; then qualifying distinct cohort nominees by paired gain, lower CPU, earlier protocol; selection explicitly exploratory; invalid/incomplete cohort cannot cleanly advance",
+    "one_factor": "Both final arms use selected candidate immutable producer/original models, symmetric common diagnostics, only selected eligibility/ranking/ownership flag differs; no component combination",
+    "analysis": "Existing analyzers pair by seed and require complete allocation; imported paired_analysis.bootstrap_ci uses10000 paired resamples,NumPy default_rng20261008; final decision exact low>0 and mean>=0.02; Wilson per-arm descriptive only",
+    "holdout": "Champion/config/models/source/binary/sample size/analyzer/jobs frozen before first final game; independent release review and refuse-overwrite latch precede launch; no result peeking, replacement, extension or relabeling after opening",
+    "failures": "All exits, failures, timeouts and missing pairs retained; invalid/incomplete final cannot support clean superiority; any separately reported limited evidence must remain explicitly non-final",
+    "cost": "Completed corrected reports span roughly12.6\u201315.0CPU sec/run for relevant baseline/candidates;1024*14/6=2389sec=39.82min before overhead;90min outer cap and latest07:30 start leave47min after09:00 timeout to09:47deadline; contingent on six available one-thread workers"
+  },
+  "required_before_final_manifest_release": [
+    "Explicitly bind paired_analysis.py imported by the analyzer, seed_guard.sh, immutable job list, selected runner/analyzer and model/source artifacts; record Python/NumPy runtime versions.",
+    "Clarify positive final gain below0.02 with positive lower CI: remains raw NO_CONFIRMED_IMPROVEMENT; map explicitly to PROMISING_UNCONFIRMED (if intended) because material campaign threshold failed, not because statistical sign is unresolved.",
+    "Require exact final analysis and allowed seed sets both equal all512reserved seeds, exactlytwo declared arms, exactlyone primary contrast, exactly256nonoverlapping four-seed jobs.",
+    "Verify frozen eligibility evidence for all candidates considered by the predeclared nomination rule, final information/runtime settings, selected binary default-off equivalence, completion/release gates and globally available capacity before writing latch.",
+    "Verify actual latch creation/refuse-overwrite path, champion/manifest/job hashes and no prior confirmation outputs; launcher process/timeout accounting must leave no untracked descendants. This review does not assert these future artifacts exist."
+  ],
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/final_confirmation_design.md",
+      "sha256": "8eff76c147d07f6de29218a6a04c1b4bb3d4b38725cfd5195748534aacd4abc3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave3_development.md",
+      "sha256": "7308bfe689051ac117d397625a1882295f0ebab2b70a5daf72be222a75f43af0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_development.md",
+      "sha256": "fc3d8a7b0cc991ff6539d6bb37d85d0d8831907c460caffaa19b06d250c554be"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_development_reservation.json",
+      "sha256": "b0f91da044a4a734305cd0e8597447f57661d7509103ba53b5a8949a34e9f3c1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/card_rank_development_reservation.json",
+      "sha256": "e9ab0a8cbbaa6154c4c6fdcae0fed962f33acca9f4945b51f5a5535744b67726"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave2_report.json",
+      "sha256": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_report.json",
+      "sha256": "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave4_removal_report.json",
+      "sha256": "f405de50965522e4cee17cb103a22688ad663f2d2cf8f3c5372439cd44fbf0fd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave.py",
+      "sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_removal.py",
+      "sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_card_rank.py",
+      "sha256": "2e5727f7cb1c5dcef26931950414c721fc284a09f9b0e95842b47b2569ccede3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py",
+      "sha256": "fa4b556c0c8ce4f662cc9755725f8b318962c4be9090e6e85307a0537f360ceb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tools/seed_guard.sh",
+      "sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06"
+    },
+    {
+      "path": "/home/philippherrmann/Downloads/sts_ai_overnight_astra_ultra_campaign.md",
+      "sha256": "59a3b708251166fe22293ad0379550d28029bd677982f602b7c6931a89b3d888"
+    }
+  ]
+}

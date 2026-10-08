@@ -68,6 +68,20 @@ explicitly enables key collection. `STS_STOP_AFTER_ACT=3` additionally makes
 the Act-3 horizon explicit for comparisons.
 ## Baseline table
 
+**Current native OOC information-boundary caveat (2026-10-08).** At campaign
+base `a4b3df35`, `STS_FAIR=1` does not itself sanitize the native fallback's
+four unseen encounter-identity features: the caller can pass the actual
+unrevealed queue identities to the tracked floor/win trees. The overnight
+research reference explicitly uses `STS_OOC_PUBLIC_FUTURES=8` and disables
+legacy actual-RNG hypothetical-action paths. Its reviewed common-scenario
+wrapper is invariant to those hidden identities and preserves source RNG.
+It is scoped to that controlled native profile, not a full posterior claim
+or a retroactive audit of every historical row below. The same campaign also
+uses the opt-in optional-Ruby-Recall eligibility repair with keys off.
+Historical numerical references cannot establish the strength of this changed
+reference. See the [campaign protocol](../../experiments/evidence/ironclad_a0_overnight_20261008/PLAN.md)
+and [current OOC controls](../architecture/out-of-combat.md).
+
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | **Current executable configuration**, verified 2026-10-03 | Caller-selected | Caller-selected | Caller-selected | Project-fair Silver only (ADR-0020), native only (ADR-0021, ADR-0022; the vendored model was removed); learned stopping (ADR-0026, model `gbt-770201c31f7b`) for `run`/`bestbench`/`reprobench` without a sims argument, flat caller budget otherwise | Native tracked floor/win trees; heuristic path; shop-V; win-rest; no Searcher2-era combat models; `STS_OOC_MCTS` remains off unless explicitly enabled | Configuration only; see the Silver reference row below for a measurement. |

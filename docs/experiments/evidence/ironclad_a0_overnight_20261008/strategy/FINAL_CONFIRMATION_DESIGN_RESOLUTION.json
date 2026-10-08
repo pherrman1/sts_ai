@@ -1,0 +1,18 @@
+{
+  "schema": "final_confirmation_design_resolution_v1",
+  "status": "DESIGN_PASS_NOT_HOLDOUT_RELEASE",
+  "reviewed_at_utc": "2026-10-08T02:45:35.911923+00:00",
+  "previous_review": {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/FINAL_CONFIRMATION_DESIGN_REVIEW.json",
+    "sha256": "7e36d2d8ca9baedffbfeb66c7e4ab7bbe9d02a524806217591a5c80f326a01e5"
+  },
+  "design": {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/final_confirmation_design.md",
+    "sha256": "871899ebddaf0a6b70ac8ed4be284359aa5f65c8a81865f237600a20204cda71"
+  },
+  "resolved": [
+    "Imported paired_analysis.py, seed_guard.sh, exact job list and Python/NumPy runtime versions explicitly included in final binding.",
+    "Positive gain below2pp with positive lower CI explicitly remains raw NO_CONFIRMED_IMPROVEMENT and campaign PROMISING_UNCONFIRMED; failed practical criterion must be stated."
+  ],
+  "unchanged": "All earlier nomination,512pair,resource,latch and no-retry review conclusions carry. Final manifest/champion/joblist/latch and independent release remain required. No final outputs or pending efficacy were inspected; no games launched."
+}

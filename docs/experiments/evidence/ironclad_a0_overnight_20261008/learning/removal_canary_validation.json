@@ -1,0 +1,532 @@
+{
+  "schema": "removal_runtime_canary_validation_v1",
+  "status": "RUNTIME_GATE_PASS",
+  "manifest_sha256": "80d32b02f2cabd089b0c0ad638ff425011154b750a91b18698a58daafccf58f7",
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+  "runs": {
+    "Fprod_0": {
+      "arm": "Fprod",
+      "seeds": [
+        610080001
+      ],
+      "receipt_sha256": "bdab041f9a0d70f385b0bb5e618ff021e858b8f12bc2e99feceb5b222e2aa5ca",
+      "public_scorer_calls": 31,
+      "tree_rows": 454,
+      "profile_rows": 48,
+      "trace_rows": 177,
+      "cpu_seconds": 11.432975015999999,
+      "wall_seconds": 11.690079835010692
+    },
+    "RemoveLow_1": {
+      "arm": "RemoveLow",
+      "seeds": [
+        610080001
+      ],
+      "receipt_sha256": "ae5f0b24eccf8822380237541e6a5e1b9ed334442cb2882c719c216ce3de11da",
+      "public_scorer_calls": 31,
+      "tree_rows": 454,
+      "profile_rows": 48,
+      "trace_rows": 177,
+      "cpu_seconds": 10.573163728,
+      "wall_seconds": 10.786043297004653
+    },
+    "Fprod_2": {
+      "arm": "Fprod",
+      "seeds": [
+        610082010
+      ],
+      "receipt_sha256": "a9d8b25115981695b699e8b105ebd03425210232e7f32c487c4039568725fcc4",
+      "public_scorer_calls": 27,
+      "tree_rows": 519,
+      "profile_rows": 53,
+      "trace_rows": 217,
+      "cpu_seconds": 15.044696498000004,
+      "wall_seconds": 15.292354852019344
+    },
+    "RemoveLow_3": {
+      "arm": "RemoveLow",
+      "seeds": [
+        610082010
+      ],
+      "receipt_sha256": "bee0db5b2a9237c8d3b2d183b12864eaa133c9b16df046a3a58e542c9fb0bf6f",
+      "public_scorer_calls": 25,
+      "tree_rows": 513,
+      "profile_rows": 53,
+      "trace_rows": 223,
+      "cpu_seconds": 17.526805405999994,
+      "wall_seconds": 17.79353692897712
+    }
+  },
+  "default_off_parity": [
+    {
+      "seed": 610080001,
+      "old_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0",
+      "new_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0",
+      "gameplay_equal": true,
+      "complete_trace_equal": true,
+      "tree_equal": true,
+      "floor_profile_counts_equal": true,
+      "strategic_trace_equal": true,
+      "trace_rows": 177,
+      "tree_rows": 454,
+      "excluded_csv_fields": [
+        "sec"
+      ],
+      "excluded_tree_fields_actually_present": [
+        "combat_id"
+      ],
+      "excluded_profile_fields": "only keys ending _seconds"
+    },
+    {
+      "seed": 610082010,
+      "old_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2",
+      "new_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2",
+      "gameplay_equal": true,
+      "complete_trace_equal": true,
+      "tree_equal": true,
+      "floor_profile_counts_equal": true,
+      "strategic_trace_equal": true,
+      "trace_rows": 217,
+      "tree_rows": 519,
+      "excluded_csv_fields": [
+        "sec"
+      ],
+      "excluded_tree_fields_actually_present": [
+        "combat_id"
+      ],
+      "excluded_profile_fields": "only keys ending _seconds"
+    }
+  ],
+  "native_shop_smoke_flag_on_parity": {
+    "seed": 610080001,
+    "old_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0",
+    "new_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1",
+    "gameplay_equal": true,
+    "complete_trace_equal": true,
+    "tree_equal": true,
+    "floor_profile_counts_equal": true,
+    "strategic_trace_equal": true,
+    "trace_rows": 177,
+    "tree_rows": 454,
+    "excluded_csv_fields": [
+      "sec"
+    ],
+    "excluded_tree_fields_actually_present": [
+      "combat_id"
+    ],
+    "excluded_profile_fields": "only keys ending _seconds"
+  },
+  "same_state_exposure": {
+    "seed": 610082010,
+    "act": 1,
+    "floor": 2,
+    "event": "Living Wall",
+    "trace_line": 9,
+    "trace_idx": 7,
+    "preceding_complete_trace_rows_equal": 8,
+    "public_pre_exact": true,
+    "public_pre": {
+      "act": 1,
+      "deck": [
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Thinking Ahead",
+        "Shrug It Off"
+      ],
+      "event": "",
+      "floor": 2,
+      "gold": 14,
+      "hp": 80,
+      "maxHp": 80,
+      "potionCapacity": 3,
+      "potions": [],
+      "relics": [
+        "BURNING_BLOOD"
+      ],
+      "room": "EVENT",
+      "screen": "CARD_SELECT",
+      "x": 5,
+      "y": 1
+    },
+    "offer": {
+      "selectType": 4,
+      "toSelect": 1
+    },
+    "baseline_removed": {
+      "Shrug It Off": 1
+    },
+    "candidate_removed": {
+      "Strike": 1
+    },
+    "baseline_row": {
+      "by": "chain",
+      "idx": 7,
+      "kind": "ooc",
+      "offer": {
+        "selectType": 4,
+        "toSelect": 1
+      },
+      "post": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Thinking Ahead"
+        ],
+        "event": "",
+        "floor": 2,
+        "gold": 14,
+        "hp": 80,
+        "maxHp": 80,
+        "potionCapacity": 3,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "EVENT",
+        "screen": "MAP",
+        "x": 5,
+        "y": 1
+      },
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Thinking Ahead",
+          "Shrug It Off"
+        ],
+        "event": "",
+        "floor": 2,
+        "gold": 14,
+        "hp": 80,
+        "maxHp": 80,
+        "potionCapacity": 3,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "EVENT",
+        "screen": "CARD_SELECT",
+        "x": 5,
+        "y": 1
+      },
+      "seed": 610082010
+    },
+    "candidate_row": {
+      "by": "chain",
+      "idx": 7,
+      "kind": "ooc",
+      "offer": {
+        "selectType": 4,
+        "toSelect": 1
+      },
+      "post": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Thinking Ahead",
+          "Shrug It Off"
+        ],
+        "event": "",
+        "floor": 2,
+        "gold": 14,
+        "hp": 80,
+        "maxHp": 80,
+        "potionCapacity": 3,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "EVENT",
+        "screen": "MAP",
+        "x": 5,
+        "y": 1
+      },
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Thinking Ahead",
+          "Shrug It Off"
+        ],
+        "event": "",
+        "floor": 2,
+        "gold": 14,
+        "hp": 80,
+        "maxHp": 80,
+        "potionCapacity": 3,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "EVENT",
+        "screen": "CARD_SELECT",
+        "x": 5,
+        "y": 1
+      },
+      "seed": 610082010
+    },
+    "baseline_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.trace.jsonl:9",
+    "candidate_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.trace.jsonl:9"
+  },
+  "quality_inference": false,
+  "scope": "Reused diagnostic sources establish runtime custody, default-off parity and public same-state action exposure only. No population strength claim. Bonfire isolation is covered by frozen static fixtures, not inferred from later diverged trajectories.",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_canary.json",
+      "sha256": "80d32b02f2cabd089b0c0ad638ff425011154b750a91b18698a58daafccf58f7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.receipt.json",
+      "sha256": "bdab041f9a0d70f385b0bb5e618ff021e858b8f12bc2e99feceb5b222e2aa5ca"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.csv",
+      "sha256": "887eac4ce3244284bf14f9f5dd2e18f7a9af2ee6aaed593aa37cd1c46ec3ac97"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.csv.meta.json",
+      "sha256": "4e1a2da87cf0459c8160d3a99f2e0fac51da9c316e962afae14df86f780e42c2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.log",
+      "sha256": "db59a4c27914bcf291cc6f4afddae6b136a7bec8511f45baccdab143a346a718"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.profile.jsonl",
+      "sha256": "33f7a2fea37b2d679ce9f0c6bffc2f62eb6894a395df464b8a1474ef1c3c3ad2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.receipt.json",
+      "sha256": "ae5f0b24eccf8822380237541e6a5e1b9ed334442cb2882c719c216ce3de11da"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.csv",
+      "sha256": "00c769d9c4de795b30051bb3694f43e1e5e2668211d8fd4c796756aa47270e85"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.csv.meta.json",
+      "sha256": "22e4d5acec870c68cf59b07a8d75491f9799b380553d2f49102c4340e1214660"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.log",
+      "sha256": "bf486957ea8bd6a6b1658b71d2799106087dbdca465dbdb550db25aa27a13d10"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.profile.jsonl",
+      "sha256": "8e8b042517326baf27baf23babb8e83d47fdf3bc33e3b783f617bb43e5ecc8c8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.receipt.json",
+      "sha256": "a9d8b25115981695b699e8b105ebd03425210232e7f32c487c4039568725fcc4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.csv",
+      "sha256": "521e3d1039c0514107cdd882009998bbae83be3e361c2fbf20d07e9a58001cfc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.csv.meta.json",
+      "sha256": "18c2024685ed8e8734e2e7f56daee9473783eee06d4ee72e8b992ee98128b83d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.log",
+      "sha256": "8939a5465c698b22b5bc9ea564fa4df6d93a30692c1c65a7cc7dba22d1e8bf86"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.trace.jsonl",
+      "sha256": "3d13319b6b56405b092bb7ea56c9a44ed259f962443aec8989300e8845c52d13"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.tree.jsonl",
+      "sha256": "ad859e1bd9607f2f32a90dc64c8f96e7b94b81f331d6dbd42490d3efe42c4d1f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.profile.jsonl",
+      "sha256": "47a5716f8d5ec81251366cce6fc47fe40e09eaa26132710a701f1432f506efa8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.strategic.jsonl",
+      "sha256": "bb8dd2f1409478e59f802fb5c1e7508af595e6df55cf3d7a1e7400ab7ef7a91c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.receipt.json",
+      "sha256": "bee0db5b2a9237c8d3b2d183b12864eaa133c9b16df046a3a58e542c9fb0bf6f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.csv",
+      "sha256": "79cd8fab677275b391cad91bb902e13a620b481e8791f6526ae5d622aefad897"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.csv.meta.json",
+      "sha256": "e8dac67c67df199893bba6a45a9b964c6906857cd7caa46a648c2e9180aa36c1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.log",
+      "sha256": "de87e4958267343e7be58ed3192cd6316f49697abbcec06d51156c0710abff72"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.trace.jsonl",
+      "sha256": "e051285aa3fef43ec9fc072dfc379262e68edf21b8e15bc3f4379a64aa6abdd5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.tree.jsonl",
+      "sha256": "e139b6fe314def5f3599c6fc4f96b07e2c36f161b86b475ae052212ebb1827e2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.profile.jsonl",
+      "sha256": "41f6e80373668be77a1201e21dd4d7cd5608c8312cf2ac461965483aa31e23bd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.strategic.jsonl",
+      "sha256": "75794bbe8bbc10c057102006461edd3bc977aee3743ced3762e88a0f1401981f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.receipt.json",
+      "sha256": "ad2c80bec34fb062b828c676053b7a36d0d83edf0c26bd22fcda5a245de2a48e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.csv",
+      "sha256": "b2b22ae700215c41f34f060c694c27a5449c9457c6ffe10cf05178b7d23a1698"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.csv.meta.json",
+      "sha256": "5b4c15b3c4bc857d19f4d1b89dd1d65cadaf88ba86d6b838c85e2489ce227890"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.log",
+      "sha256": "d6f57029fe707e772d1d2d62e767f19fdb06c00fc355e72bce3b2cdea4c63763"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.profile.jsonl",
+      "sha256": "18d59b1e331c0ffe635ebc6fb104f6a988cc28599a9d9a3562ed75888ee00c07"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/fullhp_canary.json",
+      "sha256": "0c3ec718578f5f3fb20027bbbdd52e507324f9c0b5eedf46fed3909e56f35653"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.receipt.json",
+      "sha256": "aa27f6a8fbe519a657b3b915b27ba43c8340e39e8694e67fa2b9ebe35101bff4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.csv",
+      "sha256": "03d4d752b46997bdcabc027f9504ce441ff84bbee6e615049eed9afb7a1180d3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.csv.meta.json",
+      "sha256": "40e46c812eaeebd05ae1a9e09db67d3e32114200382feb1985bc7066928b741b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.log",
+      "sha256": "4e0d829943b03fd8f352e430c0db652f7db2b06ce568c08979354a4768edc29c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.trace.jsonl",
+      "sha256": "eca26c7963abc0b1db073100ce3f0205a67a4ba0ae6bfd20c400be752153bf5c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.tree.jsonl",
+      "sha256": "3656b02a12ec8a76fc5735ad3a33e5cb5fc0c3f0ab8559628dd6dcdfed84ee69"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.profile.jsonl",
+      "sha256": "20d80372ca76e5fe276b88e5d10c59b7c4d59ea8ba72d661c19862c9596d4277"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.strategic.jsonl",
+      "sha256": "97d7b23adbfc8c705ed3964fe3bee52dfa7dfd37c5e6f7ea64e0ffa33a40f1d5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave2.json",
+      "sha256": "397247867ef2097865c9dc008ee84de3e1aa4ab9af865012ff520c1e4ff773b3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/removal-static-checks.json",
+      "sha256": "6b1cd56edfefd0201188982821b637b7b2e7b59da974a393d288fb56eadace90"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_removal.py",
+      "sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42"
+    }
+  ],
+  "validator_sha256": "986b19e60bb9bf7db9e34a1ea9920af34b39a801e73cba9a554d58e89ee7ad54"
+}

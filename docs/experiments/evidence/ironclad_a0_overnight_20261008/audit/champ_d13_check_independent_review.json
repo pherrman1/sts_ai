@@ -1,0 +1,23 @@
+{
+  "schema": "champ_d13_independent_check_review_v1",
+  "status": "PASS",
+  "build_freeze_sha256": "8edcc9126e9049b92f574bfce2eccebf2f54a7fe45125dfcbf4e351c6566f259",
+  "tools_freeze_sha256": "ad32cc58f79d97b45c1e8e9c7270f3ebff4f3fe619d971cc430650a4067b0b49",
+  "receipt_sha256": "79e8482e14a478c7338cb5b1e485ee947ac80ec7dc36b32e2fe686be2a46f63a",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/check.receipt.json",
+      "sha256": "79e8482e14a478c7338cb5b1e485ee947ac80ec7dc36b32e2fe686be2a46f63a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/check.jsonl",
+      "sha256": "7499ebcbab11168b047f2efba4fb26351c0530552685a5aa84b82dd2eb4ab39c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/check.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "games_launched_by_reviewer": false,
+  "canary_outcomes_inspected": false
+}

@@ -1,0 +1,30 @@
+{
+  "scope": "completed adaptive discovery only; never pool with development/confirmation",
+  "same_reference_32_endpoints_ignoring_sec": true,
+  "arms": {
+    "FullHp": {
+      "candidate_only": [
+        610081023
+      ],
+      "control_only": []
+    },
+    "ShopOff": {
+      "candidate_only": [
+        610081002,
+        610081011,
+        610081026
+      ],
+      "control_only": [
+        610081009,
+        610081016
+      ]
+    },
+    "RemoveLow": {
+      "candidate_only": [
+        610081023
+      ],
+      "control_only": []
+    }
+  },
+  "interpretation": "Rescue overlap is descriptive, does not add local gains or authorize a combination. Each candidate must first pass its fixed fresh development."
+}
