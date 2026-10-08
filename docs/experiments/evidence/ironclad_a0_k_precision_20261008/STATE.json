@@ -116,7 +116,13 @@
   "closeout_review_sha256": "c14887f8bc8907702deb25f3ca9692856b59933d8c9daa60e4effabd11ecfe81",
   "interpretation_review_sha256": "300acb67e69fa1a06d4187ed9cd3869784575601056fcd70a569341eabf7bb31",
   "handoff_url": "https://github.com/pherrman1/sts_ai/pull/442",
-  "integrated_source_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "integrated_source_sha": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
   "production_source_changed_after_integration": false,
-  "integration_fixture_repair": "tests/test_combat_transition_native_contract.py standalone compiler flag C++17 to C++20"
+  "integration_fixture_repair": "tests/test_combat_transition_native_contract.py standalone compiler flag C++17 to C++20",
+  "collection_snapshot_sha": "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+  "collection_detached": true,
+  "publication_workspace": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "previous_integrated_source_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "incoming_main_sha": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "frozen_paths_resolve_to": "workspace (retained collection checkout), not publication_workspace"
 }

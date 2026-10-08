@@ -218,6 +218,10 @@ synchronized with main `70f7dfe5` at `61b9616a`. The
 [follow-on integration checks](../ironclad_a0_k_precision_20261008/integration/README.md)
 built that source and resolved one standalone test fixture's C++ standard mismatch.
 Those checks do not relabel or transfer the frozen producers' gameplay evidence.
+A later publication-only sync to main `75733c45` was committed at `0734f3d1`
+in a separate checkout. The collection worktree remains detached at `08863cc6`,
+preserving all raw files and frozen input paths. See the
+[follow-on custody and handoff](../ironclad_a0_k_precision_20261008/HANDOFF.md).
 
 GitHub Actions `Linux GCC` is the authoritative repository gate. Its workflow
 skips draft PRs; local passes do not establish a CI pass. No live-game

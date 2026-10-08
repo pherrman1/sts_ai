@@ -1,0 +1,220 @@
+{
+  "task_snapshot": "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+  "incoming_main": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "merge_base": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+  "virtual_tree_oid": "4e2070db908ca2775bf4a58d41b7ab80ebf0af48",
+  "source_union_files": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "eb6769c58255b5c73029e1e85131c1cd66b1638d753a6d196c3241a965ab989b",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat.cpp",
+      "sha256": "c890625e9778ed11c773dd5089d617d846d690406b9d20947f3aba1e8b2d4982",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/combat_datasets.cpp",
+      "sha256": "f0c5130a37e67e3a40be556637f33ce8d984ccfe6e653f2c88a92abaf3e59e7d",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/driver_shared.h",
+      "sha256": "5bebb229492f929f14a5c4f27b943801e5c7177b46dd7ca914e0fba6dcd08590",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/ooc_native_fallback.cpp",
+      "sha256": "fa649d957d486b28613b3028222bf7ec985aaa255aef1c735f25fc9b197d5c7c",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/ooc_native_fallback.h",
+      "sha256": "d44fba14f4b5d16895c677ead9284e0e26b24163fc5241871dd4cdf760a539f9",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/ooc_policy.cpp",
+      "sha256": "1b00a6e2d7554f5573b9b72681104d02103eb2dea7d7bfa4b45d1ce1d50edf3f",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/run_driver.cpp",
+      "sha256": "fa863e4a65d862185b2edf67bc313d5914d18a36cd8956c5250ddc175517002e",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/silver_synth_gen.cpp",
+      "sha256": "18073862954fc1454e78f5b62c079c966ea3bc0ad4f22f789209f643f36c9a93",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/silver_synth_keys.h",
+      "sha256": "611df84133062d3b17db20719518b3791f3b829d654c2e1dea243a759aa18bf2",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/one_combat/silver_synth_replay.cpp",
+      "sha256": "1f0a7d2c6a38ebad43caa4674d2b905d901a8d96027cb0ee67e1bff2e83f8ab3",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/silver_public_pair_probe.cpp",
+      "sha256": "e78ac9e5d229f48f2e28429855eafaa9e158589b359ad50369d3c10536ffda9a",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/test.cpp",
+      "sha256": "b3ddf9a4bad45d23f37c72de255ec49b48276dfa97d915b0653e05ef961b78e5",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "apps/test_ooc_public_futures.cpp",
+      "sha256": "e3c96dbc789997a019db808b3fdea8466b06a952b85e508fb1107a9b5807be31",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "include/sim/search/NativeSilverBackend.h",
+      "sha256": "1e08ac9ccc2b94c49bb3c6dd30350275f3927e0a5c89b8a06281aa47b6b4fb1e",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "include/sim/search/ScumSearchAgent2.h",
+      "sha256": "f1ae96e2d46fbcf9c14b08026f3bbe8db5ea14e1696d8056c0e76fb60551bd18",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "include/sim/search/SilverSearcher.h",
+      "sha256": "e372eed2a1bbc41bb03940a94801c34855219f196a12f3504311b24fe7276747",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "src/sim/search/NativeSilverBackend.cpp",
+      "sha256": "dded38586e6079dd6f504ae3cda0c276779a7304ad74451f3e07c1c324bb17c2",
+      "matches_virtual_union": true,
+      "manual_resolution": true
+    },
+    {
+      "path": "src/sim/search/ScumSearchAgent2.cpp",
+      "sha256": "226d8d4d5db5554e531a641ab8a8dad69f3223d5458b63fa4b61632610dd7969",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "src/sim/search/SilverSearcher.cpp",
+      "sha256": "e9e3c256d7be33efe2c12e6d4ac2d650ae000da6be33bbaad16e36fee8d0b41c",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    },
+    {
+      "path": "tools/seed_guard.sh",
+      "sha256": "4506d4495283d5b59c037e5f95d2299af39d54db07e8a2300c6135ced9271ca6",
+      "matches_virtual_union": true,
+      "manual_resolution": false
+    }
+  ],
+  "collection_artifact_hashes": [
+    {
+      "path": "models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d"
+    },
+    {
+      "path": "tools/seed_guard.sh",
+      "sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "publication_integration_command_v1",
+  "source_sha": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "command": [
+    "/home/philippherrmann/.local/bin/cmake",
+    "--preset",
+    "linux-gcc-debug"
+  ],
+  "cwd": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "started_epoch": 1791459232.2740228,
+  "finished_epoch": 1791459232.9967682,
+  "exit_code": 0,
+  "log": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/publication-0734f3d1/configure.log",
+  "log_sha256": "bed4e97cd12d82b9371cff153788e638485cd8aeae4b153d106c1a89a9670782",
+  "environment": {
+    "PATH": "/usr/bin:/bin",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONPYCACHEPREFIX": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/publication-pycache"
+  },
+  "environment_policy": "all inherited STS_* removed",
+  "scope": "publication integration build only; collection checkout R untouched; no experimental game cohort"
+}

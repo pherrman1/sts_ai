@@ -81,8 +81,8 @@ See the [frozen protocol](PROTOCOL.md) for the exact estimand and decision rule.
   had a 10,800-second process-group timeout ending by 14:21:54, slightly before
   the protocol's absolute 14:22:24 stop. It finished at 13:02:19, inside both caps.
 - Raw outputs remain under
-  `build/overnight_20261008/learning/gen2-k-precision-3ed9/` in the preserved
-  worktree. Each source receipt binds its command, environment and output hashes.
+  `/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/`
+  in the preserved collection checkout. Each source receipt binds its command, environment and output hashes.
 
 The original reviewed runner invokes every game through `tools/seed_guard.sh`.
 It rejects prior output paths. This dispatch is fixed, with no retry, source
@@ -98,7 +98,14 @@ with main at `61b9616a`; Debug configure/build passed, 21 of 22 selected checks
 passed initially, and a standalone fixture's C++17-to-C++20 flag repair passed
 the remaining test. The failed launcher invocation and compiler check are retained with their repairs.
 The [static reconciliation review](audit/INTEGRATION_RECONCILIATION_REVIEW.md)
-verified preservation of both parents and all frozen artifacts.
+verified preservation of both parents and all frozen artifacts at that first integration.
+Later main movement was integrated separately at `0734f3d1`, in the publication
+checkout, while the collection checkout remains clean and detached at `08863cc6`.
+[Collection custody](COLLECTION_CUSTODY.json) records the two absolute paths and
+the intentional publication-only seed-guard difference. The [publication checks](integration_publication/README.md) passed the clean
+eleven-target Debug build, 27/27 guarded CTests and a separate guarded observer
+neutrality fixture. They are separate from the earlier 22 checks; neither
+transfers gameplay qualification.
 
 [Scientific review](design/SCIENTIFIC_DESIGN_REVIEW.md),
 [source freshness inventory](design/source_freshness_inventory.json),
