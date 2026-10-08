@@ -1415,3 +1415,21 @@ does not fabricate an illegal Skip or alter simulator mechanics. The frozen
 native V4 research profile uses MCTS off and REST_WIN off; this filter is not
 a promise that every alternative policy stack enforces identical eligibility.
 The enabled flag is bound into the effective OOC teacher specification.
+
+### Full-health REST research candidate
+
+`STS_OOC_SKIP_FULL_HP_REST=1` is a separate default-off policy experiment.
+In an unresolved campfire at positive full HP, with Dream Catcher absent and
+both REST and SMITH legal and present in the candidate set, it removes only
+REST. Other actions retain their order. The filter follows optional Recall
+filtering in the V4 gate and random fallback; the direct low-HP heuristic also
+honors it when maximum HP itself is below 15. Damaged players, Dream Catcher,
+unavailable upgrades and forced-action cases preserve their existing choices.
+The enabled policy flag is serialized into the teacher specification.
+
+This does not establish that upgrading always helps. Upgrades can change
+exhaust behavior (for example, Limit Break), draw timing or downstream policy
+choices. The candidate needs independent whole-run evaluation. Ancient Tea Set
+and Eternal Feather apply on campfire entry; Regal Pillow's extra healing is
+clamped at full HP. These facts explain the eligibility predicate, without
+turning a local no-healing observation into a claim of trajectory dominance.

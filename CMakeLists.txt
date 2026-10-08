@@ -101,6 +101,14 @@ add_test(NAME rest_recall_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(rest_recall_filter PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
+add_test(NAME full_hp_rest_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:full_hp_rest_filter_test>)
+set_tests_properties(full_hp_rest_filter PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(native_ooc_shop_features_test tests/native_ooc_shop_features_test.cpp
     apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
     apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)

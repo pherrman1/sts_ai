@@ -144,6 +144,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["native_ooc_shop_deck_size_fix"] = true;
     if (sts::search::oocSkipOptionalRecallEnabled())
         policy["flags"]["skip_optional_recall"] = true;
+    if (sts::search::oocSkipFullHpRestEnabled())
+        policy["flags"]["skip_full_hp_rest"] = true;
     return policy;
 }
 

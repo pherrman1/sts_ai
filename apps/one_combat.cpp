@@ -3115,6 +3115,8 @@ int main(int argc, char **argv) {
     try {
         if (sts::search::oocSkipOptionalRecallEnabled())
             std::cout << "[native OOC optional Ruby Recall excluded when keys off and another action is legal]\n";
+        if (sts::search::oocSkipFullHpRestEnabled())
+            std::cout << "[native OOC full-HP REST excluded when Smith is legal and Dream Catcher is absent]\n";
         if (const int futures = one_combat::nativeOocPublicFutureCount(); futures > 0)
             std::cout << "[native OOC public encounter mixture: " << futures << " futures]\n";
         if (one_combat::nativeOocShopDeckSizeFixEnabled())

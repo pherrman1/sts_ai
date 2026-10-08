@@ -24,6 +24,12 @@ namespace sts::search {
     bool oocSkipOptionalRecallEnabled();
     void filterOptionalRecallActions(const GameContext &gc, std::vector<GameAction> &actions);
 
+    // Experimental eligibility rule, not a claim that every upgrade helps.
+    // Leaves Dream Catcher, damaged players and forced rest actions unchanged.
+    bool oocSkipFullHpRestEnabled();
+    bool oocFullHpRestExclusionApplies(const GameContext &gc);
+    void filterFullHpRestActions(const GameContext &gc, std::vector<GameAction> &actions);
+
     // Thread-local guard for surrogate-only OOC imagination; default false.
     extern thread_local bool g_disallowImaginedCombat;
 
