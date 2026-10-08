@@ -1,6 +1,6 @@
 {
   "schema": "gen2_k_precision_state_v1",
-  "status": "PREPARING_REVIEWED_FREEZE",
+  "status": "EXECUTION_BLOCKED_REVIEWED_PENDING_DRAFT_HANDOFF",
   "authorization": "User accepted a new four-hour continuation with Let\u2019s gooo after the explicit four-hour-cap question.",
   "start_local": "2026-10-08T11:02:24+02:00",
   "deadline_local": "2026-10-08T15:02:24+02:00",
@@ -94,9 +94,26 @@
   "active_game_workers": 0,
   "raw_directory": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9",
   "next": [
-    "Independent scientific/verifier/analysis review.",
-    "Freeze exact source/tools/protocol/runtime, commit reviewed analysis, then authorize single fixed dispatch.",
-    "After complete custody/health gate, freeze choices before evaluation.",
-    "Preserve prior confirmation and all old artifacts; no training/default change/merge."
-  ]
+    "Synchronize task branch documentation with current main, preserve immutable inputs, and run focused integration checks.",
+    "Publish the reviewed blocked result in the existing draft PR; no retry, selection or evaluation."
+  ],
+  "reviewed_commit": "54c97fd0995c043ca584e75ff6af6da2fb032cf3",
+  "dispatch_authorization_sha256": "900af062a8611765ad4d2ede4828c6ff78a93f4c7f145ffe2f7c6fa97c5b4d13",
+  "dispatch_epoch": 1791451314.527943,
+  "effective_collection_stop_epoch": 1791462114.527943,
+  "blocking_sources": [
+    610084217
+  ],
+  "blocking_reason": "Source exceeded preregistered 1800-second cap; no primary inference permitted.",
+  "block_detected_epoch": 1791455607.7507486,
+  "evaluation_outcomes_opened": false,
+  "receipt_status_counts": {
+    "completed": 31,
+    "timeout": 1
+  },
+  "dispatch_exit_code": 123,
+  "finished_collection_epoch": 1791457339.409696,
+  "process_closeout_sha256": "8aa5e35ba1fe226237c99996fbe8805eb32badf54e9619436e5a68ab78e2780c",
+  "closeout_review_sha256": "c14887f8bc8907702deb25f3ca9692856b59933d8c9daa60e4effabd11ecfe81",
+  "interpretation_review_sha256": "300acb67e69fa1a06d4187ed9cd3869784575601056fcd70a569341eabf7bb31"
 }

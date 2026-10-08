@@ -1,0 +1,105 @@
+{
+  "schema": "k_precision_initial_execution_v1",
+  "epoch": 1791451333.9257193,
+  "owned_game_processes": [
+    {
+      "pid": 368628,
+      "ppid": 368623,
+      "threads": 1,
+      "rss_kib": "345548 kB",
+      "source_seed": 610084202,
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "STS_FAIR": "1",
+        "STS_STOP_AFTER_ACT": "3",
+        "STS_SILVER_LEARNED_STOP": "1"
+      }
+    },
+    {
+      "pid": 368629,
+      "ppid": 368621,
+      "threads": 1,
+      "rss_kib": "311812 kB",
+      "source_seed": 610084200,
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "STS_FAIR": "1",
+        "STS_STOP_AFTER_ACT": "3",
+        "STS_SILVER_LEARNED_STOP": "1"
+      }
+    },
+    {
+      "pid": 368630,
+      "ppid": 368625,
+      "threads": 1,
+      "rss_kib": "366096 kB",
+      "source_seed": 610084204,
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "STS_FAIR": "1",
+        "STS_STOP_AFTER_ACT": "3",
+        "STS_SILVER_LEARNED_STOP": "1"
+      }
+    },
+    {
+      "pid": 368631,
+      "ppid": 368624,
+      "threads": 1,
+      "rss_kib": "347272 kB",
+      "source_seed": 610084203,
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "STS_FAIR": "1",
+        "STS_STOP_AFTER_ACT": "3",
+        "STS_SILVER_LEARNED_STOP": "1"
+      }
+    },
+    {
+      "pid": 368634,
+      "ppid": 368622,
+      "threads": 1,
+      "rss_kib": "350820 kB",
+      "source_seed": 610084201,
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "STS_FAIR": "1",
+        "STS_STOP_AFTER_ACT": "3",
+        "STS_SILVER_LEARNED_STOP": "1"
+      }
+    },
+    {
+      "pid": 368669,
+      "ppid": 368626,
+      "threads": 1,
+      "rss_kib": "342708 kB",
+      "source_seed": 610084205,
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "STS_FAIR": "1",
+        "STS_STOP_AFTER_ACT": "3",
+        "STS_SILVER_LEARNED_STOP": "1"
+      }
+    }
+  ],
+  "receipt_statuses": {
+    "610084200": "running",
+    "610084201": "running",
+    "610084202": "running",
+    "610084203": "running",
+    "610084204": "running",
+    "610084205": "running"
+  },
+  "outcomes_read": false
+}

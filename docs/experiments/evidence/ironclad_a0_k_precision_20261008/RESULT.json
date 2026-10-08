@@ -1,0 +1,189 @@
+{
+  "schema": "k_precision_campaign_result_v1",
+  "status": "EXECUTION_BLOCKED",
+  "recorded_epoch": 1791457782.0302343,
+  "primary_estimate": null,
+  "primary_ci95": null,
+  "primary_quality_verdict": null,
+  "source_seeds": [
+    610084200,
+    610084201,
+    610084202,
+    610084203,
+    610084204,
+    610084205,
+    610084206,
+    610084207,
+    610084208,
+    610084209,
+    610084210,
+    610084211,
+    610084212,
+    610084213,
+    610084214,
+    610084215,
+    610084216,
+    610084217,
+    610084218,
+    610084219,
+    610084220,
+    610084221,
+    610084222,
+    610084223,
+    610084224,
+    610084225,
+    610084226,
+    610084227,
+    610084228,
+    610084229,
+    610084230,
+    610084231
+  ],
+  "futures": 32,
+  "selection_k_by_rule": {
+    "K4": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "K16": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ]
+  },
+  "evaluation_k": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31
+  ],
+  "reviewed_tools_commit": "54c97fd0995c043ca584e75ff6af6da2fb032cf3",
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+  "attempts": {
+    "completed": 31,
+    "timeout": 1
+  },
+  "blocking_sources": [
+    610084217
+  ],
+  "blocked_reason": "A fixed allocated source exceeded1800seconds and lacks a complete source/manifest/branch contract. The32-source primary cannot be computed from the completed subset.",
+  "scientific_interpretation": "No evidence-based verdict on K16 superiority, harm or equivalence; selection and evaluation were not invoked on collection data.",
+  "execution_interpretation": "Saved source217 metadata supports costly continuing simulation rather than an observed stall/fatal engine fault; interrupted/unflushed work is uncertified.",
+  "resource_accounting": {
+    "allocated_sources": 32,
+    "receipt_status_counts": {
+      "completed": 31,
+      "timeout": 1
+    },
+    "completed_game_invocations": 31,
+    "incomplete_or_failed_source_seeds": [
+      610084217
+    ],
+    "sources_with_missing_outputs": [
+      610084217
+    ],
+    "observed_retained_states": 31,
+    "observed_branch_rows": 4068,
+    "expected_branches_from_available_options": 4000,
+    "source_cpu_observed_seconds": 412.58427,
+    "source_cpu_unavailable_sources": 1,
+    "branch_cpu_observed_seconds": 32650.585663,
+    "branch_cpu_unavailable_sources": 0,
+    "invocation_wall_seconds_sum": 33290.74718838194,
+    "invocations_with_wall_seconds": 32,
+    "receipt_span_elapsed_seconds": 6024.7903044223785,
+    "dispatcher_elapsed_seconds": 6024.881753206253,
+    "dispatcher_exit_code": 123,
+    "cpu_scope": "observed emitted cost fields only; incomplete work may be absent"
+  },
+  "selection_on_collection_invoked": false,
+  "evaluation_on_collection_invoked": false,
+  "retry_replacement_extension_or_cap_change": false,
+  "new_model_training": false,
+  "production_default_change": false,
+  "pr_merge": false,
+  "prior_confirmation": "Closed and unchanged; separate512-pair RemoveLow CONFIRMED_IMPROVEMENT is not pooled with this attempt.",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+      "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/ready_bundle.json",
+      "sha256": "70976f4af7fcce23720373a3fbac328f4f6251c638e99f6ed434e19d95f3df88"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_authorization.json",
+      "sha256": "900af062a8611765ad4d2ede4828c6ff78a93f4c7f145ffe2f7c6fa97c5b4d13"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_completion.json",
+      "sha256": "656034d8bfdb8e43e7805bdfe9288b3e401f4efdfcbd11baf5f18637d27b22bd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/process_closeout.json",
+      "sha256": "8aa5e35ba1fe226237c99996fbe8805eb32badf54e9619436e5a68ab78e2780c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/execution_block.json",
+      "sha256": "35ce1f1ab31f8549274fd5b41791720895e885d0aa14e76d6c9a11438fcf647b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/blocked_accounting.json",
+      "sha256": "f1bd088ec0c1c7fb6cf09b4fffc9926494ecd9861fb0bb70d4eb27a8165c9c39"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/BLOCKED_RESULT.md",
+      "sha256": "8cc431583bd3297b117b6fb1fa61bd847a852c3ad4f2f48bb4ad8d3793bb7b66"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/contract_receipt.json",
+      "sha256": "33617a4879dc4ef0d2664e7defb0ef07f9dc7f232bd71b7a1e4ca1878b52ae6b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/contract_invocation.json",
+      "sha256": "70e78a8b382af23111511665c3ffaff280c28a67689595398a5eb8b89f2a1713"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/TIMEOUT_610084217_REVIEW.json",
+      "sha256": "f524b1e387abbfa43a565836247e1f55d3f090d388e97b6e2e866263704e3f05"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/TIMEOUT_DISPOSITION_REVIEW.md",
+      "sha256": "fafa6be0642db9817ec5541e7adc87fe39d3c452a67ed8f61a5e158df30918b4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/TIMEOUT_FEASIBILITY_ADDENDUM.md",
+      "sha256": "77b8d39118566e179b62bfdc3ecf999f8afc57bb8db5ac14ec61854646937bc0"
+    }
+  ],
+  "review_status": "Independent closeout and final interpretation reviews recorded separately before branch synchronization/publication."
+}

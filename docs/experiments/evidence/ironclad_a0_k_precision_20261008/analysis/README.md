@@ -1,5 +1,15 @@
 # Fixed K4/K16 analysis
 
+**This allocation is execution-blocked.** Source `610084217` exceeded its
+frozen per-source timeout. Selection and evaluation have not been run and
+must not run on the incomplete allocation. The methods below describe the
+frozen tools; they do not override that gate.
+
+The separate `account_blocked_collection.py` reports receipt status, custody,
+identity/count fields and observed CPU costs after dispatcher/process closeout.
+It never interprets win labels or ranks actions. Its reviewed tests exclude
+unterminated CSV tails and keep missing costs unknown.
+
 This directory implements the separate selection and evaluation stages in
 [`../PROTOCOL.md`](../PROTOCOL.md). It never launches games or trains models.
 The coordinator freezes the analysis source, imported helpers, actual Python

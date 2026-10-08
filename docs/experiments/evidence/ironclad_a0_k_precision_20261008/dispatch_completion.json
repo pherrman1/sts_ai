@@ -1,0 +1,10 @@
+{
+  "schema": "k_precision_dispatch_completion_v1",
+  "exit_code": 123,
+  "started_epoch": 1791451314.527943,
+  "finished_epoch": 1791457339.409696,
+  "authorization_sha256": "900af062a8611765ad4d2ede4828c6ff78a93f4c7f145ffe2f7c6fa97c5b4d13",
+  "log_sha256": "be745fb02c220f8bb7ab5fa49e366ccebc14908a2a58011989d685ab3949c07d",
+  "receipt_files": 32,
+  "status": "DISPATCH_FAILED_NO_RETRY"
+}

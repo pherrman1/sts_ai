@@ -1,0 +1,347 @@
+{
+  "schema": "k_precision_doc_sync_review_v1",
+  "created_utc": "2026-10-08T10:59:24.378803+00:00",
+  "status": "PROPOSAL_ONLY_NO_MERGE_OR_CANONICAL_DOC_EDITS",
+  "base": "a4b3df35d170abba7860e8e854cc24cfd3579075",
+  "head": "54c97fd0995c043ca584e75ff6af6da2fb032cf3",
+  "main": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+  "virtual_conflict_tree": "d93639aea12192eda354ac5ebfc07ce45efe83b1",
+  "conflicting_paths": [
+    "EXPERIMENTS.md",
+    "docs/experiments/ledger-06.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md"
+  ],
+  "blob_bindings": {
+    "EXPERIMENTS.md": {
+      "a4b3df35d170abba7860e8e854cc24cfd3579075": {
+        "git_blob": "4e13380517b3a4c8b0858ddb2a0b45ac38520e0e",
+        "sha256": "b37695c43a6551708c96b08193f8aba07e1e76a7167d58aaa54d04897cded00f"
+      },
+      "54c97fd0995c043ca584e75ff6af6da2fb032cf3": {
+        "git_blob": "3747113a94ee5be5cc54acfe55adb671e0daedef",
+        "sha256": "ad421cd055f3b800e812b1c9aec61c8886141fc314a5b17d6f1cd3cc693f7453"
+      },
+      "70f7dfe5781a25b06caca49ae404b62208a81ad9": {
+        "git_blob": "a7e531eefb2f3f00edd167c3aec13c122c792ef6",
+        "sha256": "5bcf6d492caa69bfc35b9d9491999d9090da53207e55531fce42322bf9167fb0"
+      },
+      "d93639aea12192eda354ac5ebfc07ce45efe83b1": {
+        "git_blob": "5a5f81ac7edfc8915b51c2567043abbc9dc0ccdc",
+        "sha256": "355543a00d613de9cbee18da504bab7d446a6192bb811a5983f2f51d15017467"
+      }
+    },
+    "docs/experiments/ledger-06.md": {
+      "a4b3df35d170abba7860e8e854cc24cfd3579075": {
+        "git_blob": "c23c8b15acf1763625db0b80abd120b24fe0d7e2",
+        "sha256": "9e8c8cdb20bf6dc8d40020d72698df4340b2b504d1e58cf53818a2d4725d81c6"
+      },
+      "54c97fd0995c043ca584e75ff6af6da2fb032cf3": {
+        "git_blob": "e622411d7dd3404dac2b4b2140e69f8625b3e1fe",
+        "sha256": "59958694aa0382f2cd332820649aac2e763a6c6d01e94390918e6cb6928677f0"
+      },
+      "70f7dfe5781a25b06caca49ae404b62208a81ad9": {
+        "git_blob": "c60c5558fb3eabc9632054f5a50bbf4b80135669",
+        "sha256": "d4c98690ae5b1219fa199b19cb097756693d1597c8b65e6ed146d096b845cddb"
+      },
+      "d93639aea12192eda354ac5ebfc07ce45efe83b1": {
+        "git_blob": "1bdfa21749260bcdb32a7e9f54a50b298855ffc1",
+        "sha256": "e194e56e79a5cc761574b3993d44ae1e4d865979167abef9ba9f2413a155f030"
+      }
+    },
+    "docs/knowledge-base/operations/ooc-label-pipeline.md": {
+      "a4b3df35d170abba7860e8e854cc24cfd3579075": {
+        "git_blob": "d71c9af31f4ec1fea31c734823aa7ce263fef92d",
+        "sha256": "a4497c328e859869566aceb16d9f2b91edb8f948647275c78b0e61240df6f34f"
+      },
+      "54c97fd0995c043ca584e75ff6af6da2fb032cf3": {
+        "git_blob": "ad067bb646a1a2e2a527fc2685e2c40b9fd2429f",
+        "sha256": "47031e7b344f6be0eaf3cd3d4deaa4018fd7a832f018af476bc64c0efae935ea"
+      },
+      "70f7dfe5781a25b06caca49ae404b62208a81ad9": {
+        "git_blob": "ec859a55be394e98813f45f18885ac3d0cdb491c",
+        "sha256": "23c5d1fcfb53094f4bdf52c8da762ee00dfd933cbd9dd335263e2392e6dfb071"
+      },
+      "d93639aea12192eda354ac5ebfc07ce45efe83b1": {
+        "git_blob": "1c4280f1e7914c81c1c272a58c2d9c760f26d637",
+        "sha256": "8e6af718d5d238d583039f2b61265dd88e40383842863bb0037484f93313eb71"
+      }
+    }
+  },
+  "main_changed_paths": [
+    "CMakeLists.txt",
+    "EXPERIMENTS.md",
+    "apps/one_combat.cpp",
+    "apps/one_combat/combat_transition_native_contract.cpp",
+    "apps/one_combat/combat_transition_native_contract.h",
+    "apps/one_combat/combat_transition_near_full.cpp",
+    "apps/one_combat/combat_transition_runtime.cpp",
+    "apps/one_combat/combat_transition_runtime.h",
+    "apps/one_combat/combat_transition_sampler.h",
+    "apps/one_combat/ctm_offline_score.cpp",
+    "apps/one_combat/driver_shared.h",
+    "apps/one_combat/ooc_mcts_adapter.cpp",
+    "docs/experiments/evidence/ooc_cf_e3_20261008/ACTION-PLAN.md",
+    "docs/experiments/evidence/ooc_cf_e3_20261008/BRIEF-cloud.md",
+    "docs/experiments/evidence/ooc_cf_e3_20261008/PREREG.md",
+    "docs/experiments/evidence/ooc_cf_e3_20261008/README.md",
+    "docs/experiments/evidence/ooc_cf_e3_20261008/report-cloud.json",
+    "docs/experiments/evidence/ooc_cf_e3_20261008/report-f2-validation-excerpt.json",
+    "docs/experiments/ledger-06.md",
+    "docs/knowledge-base/architecture/out-of-combat.md",
+    "docs/knowledge-base/operations/environment-variables.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md",
+    "tests/check_ctm_escape_runtime.py",
+    "tests/check_ctm_lizard_runtime.py",
+    "tests/check_ctm_research_candidate.py",
+    "tests/check_ctm_writhing_ritual_runtime.py",
+    "tests/combat_transition_runtime_probe.cpp",
+    "tools/combat_transition_near_full_evaluate.py",
+    "tools/combat_transition_near_full_exposure.py",
+    "tools/combat_transition_near_full_sampler.py",
+    "tools/combat_transition_near_full_support.py",
+    "tools/combat_transition_potion_trajectory.py",
+    "tools/ctm_capabilities.py",
+    "tools/ctm_escape.py",
+    "tools/ctm_lizard.py",
+    "tools/test_combat_transition_final_support.py",
+    "tools/test_ctm_capabilities.py",
+    "tools/test_ctm_escape.py",
+    "tools/test_ctm_hp_domain.py",
+    "tools/test_ctm_lizard.py",
+    "tools/test_vwin_e3_cf.py",
+    "tools/vwin_e3_cf.py"
+  ],
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "frozen_artifacts": [
+    {
+      "path": "models/v_rich_trees.txt",
+      "expected_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "actual_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "models/v_win_trees.txt",
+      "expected_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+      "actual_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "selfplay/models/ooc_strategic_tok_final.native",
+      "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "src/sim/search/NativeSilverStopModel.cpp",
+      "expected_sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b",
+      "actual_sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "paired_analysis.py",
+      "expected_sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d",
+      "actual_sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "tools/seed_guard.sh",
+      "expected_sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+      "actual_sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "expected_sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c",
+      "actual_sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "expected_sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+      "actual_sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "expected_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+      "actual_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "expected_sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+      "actual_sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "expected_sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+      "actual_sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "expected_sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380",
+      "actual_sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "expected_sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79",
+      "actual_sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "expected_sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b",
+      "actual_sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "expected_sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db",
+      "actual_sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "expected_sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b",
+      "actual_sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "expected_sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f",
+      "actual_sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "expected_sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789",
+      "actual_sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "expected_sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3",
+      "actual_sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "expected_sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282",
+      "actual_sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "expected_sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c",
+      "actual_sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c",
+      "matches": true,
+      "changed_on_main": false
+    }
+  ],
+  "additional_frozen_inputs": [
+    {
+      "kind": "binary",
+      "path": "build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "expected_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+      "actual_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "kind": "teacher",
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+      "expected_sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040",
+      "actual_sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "kind": "policy",
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "expected_sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+      "actual_sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+      "matches": true,
+      "changed_on_main": false
+    },
+    {
+      "kind": "corrected_runtime_protocol",
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "expected_sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+      "actual_sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+      "matches": true,
+      "changed_on_main": false
+    }
+  ],
+  "main_changed_frozen_artifact_count": 0,
+  "e3_allocation_supplement": {
+    "sources": [
+      {
+        "path": "docs/experiments/evidence/ooc_cf_e3_20261008/PREREG.md",
+        "source": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+        "sha256": "3bb3a87b853436047813de939fa9116afb628e6aec083e4458d4180f84bad82c"
+      },
+      {
+        "path": "docs/experiments/evidence/ooc_cf_e3_20261008/BRIEF-cloud.md",
+        "source": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+        "sha256": "06770c539b4e33d8c0358e56c409a3a0553802b42d415d79fc071d7a771c82d1"
+      }
+    ],
+    "declared_source_range_inclusive": [
+      55000000,
+      55000999
+    ],
+    "worker_brief": {
+      "workers": 25,
+      "sources_per_worker": 40,
+      "first_source_formula": "55000000+40*W",
+      "last_source_formula": "55000000+40*W+39"
+    },
+    "our_source_range_inclusive": [
+      610084200,
+      610084231
+    ],
+    "overlap_count": 0,
+    "evidence_limit": "Declared allocation in merged documentation; no raw E3 source/TEST rows or execution manifests opened. Supplements rather than modifies the frozen 799-receipt/17-job inventory."
+  },
+  "three_way_merge_file_diagnostics": {
+    "base": "a4b3df35d170abba7860e8e854cc24cfd3579075",
+    "all_candidates_temporary_only": true,
+    "natural_395_396_concatenation_conflicts": true,
+    "natural_396_395_concatenation_conflicts": true,
+    "main_index_row_plus_adjacent_note_conflicts": true,
+    "both_GEN2_insert_blocks_at_same_boundary_conflict": true,
+    "conclusion": "Do not distort canonical ordering to avoid a same-boundary conflict. Resolve naturally during a task-branch merge after closeout."
+  },
+  "recommended_merge_preconditions": [
+    "dispatch completion recorded",
+    "all game processes stopped",
+    "hash-bound blocked accounting complete and reviewed",
+    "preserve working changes and old artifacts",
+    "recheck incoming main SHA and all frozen artifact hashes",
+    "synchronize task branch only; no PR merge/default change"
+  ],
+  "post_merge_claim_limit": "Focused integration checks validate merged handoff behavior only. Campaign conclusions remain bound to immutable 3ed/d35 producers; no merged-source quality qualification."
+}
