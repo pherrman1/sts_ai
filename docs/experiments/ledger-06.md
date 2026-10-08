@@ -14785,3 +14785,75 @@ and better than V4?
 **Evidence:** [packet](evidence/ooc_cf_e3_20261008/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e3_cf`.
+
+## §397 — Synthetic Silver corpus: learned leaf fails, root prior bonus passes offline (2026-10-08)
+
+**Question:** can Silver-labelled synthetic states train (a) a leaf value that
+beats one SimpleAgent rollout, or (b) a root prior that improves a low-budget
+Silver search? Assessment in `/mnt/project-files/silver-synthetic-prior/ASSESSMENT.md`.
+
+**Design:** pre-registered (evidence `PREREG.md`), offline only.
+- **Data:** `silversynthgen` (#438, frozen 450376c8), natural seeds
+  56000000..215 and perturbed seeds 56002000..215. Every 10k root's visits and
+  Q, a second independent 10k search on 1 root in 4, two Silver-2k
+  continuation labels per root action on 1 root in 8, and sampled rollout
+  leaves.
+- **Split:** fold = seed offset mod 5; fold 4 test, fold 3 validation. Metrics
+  on natural fold 4 (43 seeds). Arms nat and nat+pert (primary).
+- **Models:** LightGBM on the engine's combat features
+  (`combatExtractFeatures`, plus action features for the prior).
+- **Gate A:** on 2,007 test sibling groups, compare V on a probe child with one
+  rollout from the same child (R1). The judge is the mean of two continuation
+  labels.
+- **Gate B:** root replay from the wire with a bonus
+  `w * P(a) / (1 + n_a)` on visited root edges. Regret is against the mean Q
+  of the two 10k teachers, at 256 and 1,000 simulations. w is picked on
+  validation from {25..400}.
+
+**Result:**
+- **Gate A: FAIL.** V_cont (nat+pert) regret 4.39 vs R1 4.02, difference
+  +0.37 [−0.01, +0.74]; concordance 0.666 vs 0.668.
+  - No secondary model passes. V_roll (nat+pert) ties R1 (−0.05
+    [−0.41, +0.33]).
+  - Four rollouts beat one: −0.47 [−0.78, −0.14], concordance 0.683.
+- **Gate B: PASS** for both arms (w = 400, the top of the grid, for both).
+  ASSESSMENT.md asked for "no new ≥3-regret roots"; the pre-registration made
+  that a count rule (prior count ≤ plain count at each budget). Read
+  literally, Gate B fails: 168 root-seed runs are ≥3 only under the prior at
+  256 sims and 183 at 1,000. Two plain replay seeds already differ by about
+  200 such runs out of 4,094 roots, so the count rule is the fair version.
+
+| prior | regret @256 | vs plain @256 | ≥3-regret runs @256 | regret @1000 | vs plain @1000 | ≥3 @1000 |
+|---|---|---|---|---|---|---|
+| plain UCB | 2.04 | | 1,134 | 1.68 | | 840 |
+| model nat+pert | 1.71 | −0.33 [−0.46, −0.21] | 948 | 1.53 | −0.14 [−0.27, −0.03] | 783 |
+| model nat | 1.75 | −0.29 [−0.40, −0.20] | 960 | 1.60 | −0.08 [−0.18, +0.01] | 799 |
+| oracle (teacher visits) | 0.82 | −1.22 | 411 | 0.96 | −0.72 | 492 |
+
+**Interpretation:**
+- Variant (a) is closed. With about 147k continuation labels, a GBM leaf still
+  ranks siblings no better than one cheap rollout. This matches §181/§182 at
+  65x the data (inference: features, not data volume, are the limit).
+- The prior at 256 sims is about as good as plain UCB at 1,000 (1.71 vs 1.68).
+  This is the compute win the assessment expected, not evidence of play above
+  10k. The perturbed states help only nominally: nat+pert scores better than nat
+  at 1,000, but the two arms were never tested against each other and the
+  nat-only CI at 1,000 crosses 0.
+- The oracle row reuses the teacher's own visits, so it is headroom only.
+- w = 400 sits on the grid edge, so a larger weight might do better. The
+  pre-registered grid was kept.
+- The prior is trained to imitate 10k visits and judged against 10k Q. A pass
+  therefore means "closer to 10k at lower budget", not "stronger than 10k".
+- GBM inference cost is not measured here (prior applied at the root only).
+
+**Next:** the pre-registered follow-up is a 32-pair online screen: prior +
+flat 2k vs plain flat 2k, then prior + 2k vs plain 10k. It uses seeds
+56003000..031, the range reserved when the corpus was resized (the PREREG copy
+still names the older 56001000..031). It needs native GBM inference in the backend and Philipp's go. No Silver
+change ships before the CTM full retrain lands.
+
+**Evidence:** [packet](evidence/silver_synth_gates_20261008/README.md).
+
+**Knowledge impact:** `combat-search.md` documents the corpus harness and the
+research-only root prior bonus.
+

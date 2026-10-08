@@ -2,11 +2,13 @@
 #define STS_LIGHTSPEED_NATIVESILVERBACKEND_H
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 
 namespace sts {
     class BattleContext;
+    struct GameContext;
 }
 
 namespace sts::search {
@@ -94,6 +96,28 @@ namespace sts::search {
     extern thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
+
+    // Research-only (silversynthgen corpus): the current thread's observer of
+    // every root after its search (or its one-action commit) and before the
+    // chosen action is committed, and the leaf sampler attached to each
+    // combat's searcher. The observer may search copies but must not change
+    // `searcher`, `live` or `gc`. Unset everywhere else; no environment
+    // variable reaches them.
+    class SilverSearcher;
+    struct SilverLeafSamples;
+    struct Action;
+    struct NativeSilverRootView {
+        const GameContext &gc;
+        const BattleContext &live;
+        const SilverSearcher &searcher;
+        int decision;
+        std::int64_t inheritedVisits;
+        std::int64_t simulations;
+        bool skipped;
+        const Action &chosen;   // expressed against `live`
+    };
+    extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
+    extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;
 
     struct CombatKnowledgeState;
 

@@ -374,6 +374,64 @@ int testSilverSearcher() {
 
     }
 
+    // Leaf sampling (silversynthgen) is observational: the search is unchanged.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x51A7u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        search::SilverSearcher plain(silverSearchRoot(bc), {});
+        search::SilverSearcher sampled(silverSearchRoot(bc), {});
+        search::SilverLeafSamples leaves;
+        leaves.stride = 7;
+        leaves.max = 5;
+        sampled.leafSamples = &leaves;
+        plain.search(500);
+        sampled.search(500);
+        const auto &a = plain.rootNode(), &b = sampled.rootNode();
+        bool same = a.simulationCount == b.simulationCount && a.evaluationSum == b.evaluationSum
+            && a.edges.size() == b.edges.size();
+        for (std::size_t i = 0; same && i < a.edges.size(); ++i) {
+            same = a.edges[i].visitCount == b.edges[i].visitCount && a.edges[i].action.bits == b.edges[i].action.bits;
+        }
+        check(same && plain.nodeCount() == sampled.nodeCount(), "leaf sampling leaves the search unchanged");
+        check(leaves.samples.size() == 5 && leaves.counter >= 35, "leaf sampling keeps every stride-th start up to max");
+        bool startsValid = true;
+        for (const auto &leaf : leaves.samples) {
+            startsValid = startsValid && leaf.start.outcome == Outcome::UNDECIDED && leaf.pathNodes >= 2;
+        }
+        check(startsValid, "sampled leaves are nonterminal rollout starts below the root");
+        check(sampled.scoreEndState(bc) == plain.scoreEndState(bc), "terminal score is searcher independent");
+    }
+
+    // Root prior bonus (silversynthreplay): weight 0 or a uniform prior over
+    // the root is today's search; a prior on one edge moves visits to it.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x51A7u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        auto run = [&](std::vector<double> prior, double weight) {
+            search::SilverSearcher s(silverSearchRoot(bc), {});
+            const auto n = s.prepareRootActions();
+            if (!prior.empty()) prior.resize(n, prior.back());
+            s.rootPrior = prior;
+            s.rootPriorWeight = weight;
+            s.search(400);
+            std::vector<std::int32_t> visits;
+            for (const auto &e : s.rootNode().edges) visits.push_back(e.visitCount);
+            return visits;
+        };
+        const auto plain = run({}, 0);
+        check(plain.size() >= 3, "root prior fixture has three actions");
+        check(run({1.0}, 0) == plain, "zero prior weight leaves the search unchanged");
+        auto last = std::vector<double>(plain.size(), 0.0);
+        last.back() = 1.0;
+        const auto pushed = run(last, 400);
+        check(pushed.back() > plain.back(), "root prior bonus adds visits to the favored edge");
+        bool tried = true;
+        for (const auto v : pushed) tried = tried && v >= 1;
+        check(tried, "root prior bonus still tries every root action");
+    }
+
     // Exact endpoint/depth fixtures and opt-in observational parity.
     {
         using Profile = search::SilverTreeProfile;

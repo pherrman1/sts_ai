@@ -244,6 +244,39 @@ The profile is flat, with no function above about 6% exclusive.
 `ActionQueue` copies only its queued slots. The 128-slot ring is 6.2 KB of
 `BattleContext`, and slots outside the queue are never read.
 
+`one_combat silversynthgen N SIMS ASC OUT_PREFIX SEED TEACHER natural|perturbed`
+is a research-only corpus producer for a learned Silver root prior and leaf
+value (flat exact-10k teacher from `tools/silver_synth_teacher.py`). Two
+default-off thread-local hooks in `NativeSilverBackend.h` carry it:
+`g_nativeSilverRootObserver` sees every root after its search and before the
+action is committed, and `g_nativeSilverLeafSamples` attaches a
+`SilverLeafSamples` sampler that copies every 2,503rd nonterminal rollout start
+with its rollout value. Neither changes selection, evaluation or any RNG draw
+(`test silver_searcher`); a natural seed's rows are byte-identical across runs.
+Each root row holds the search-state wire and the root edges' visits and Q. On
+one root in four, a fresh independent 10k search is added. On one in eight,
+two Silver continuation labels per root action are added (2,000 simulations
+per decision, with planner randomness independent of the sampled world). The
+labels are scored by the root's own terminal evaluation. `perturbed` records
+a detached copy of each fight with a random HP, card, upgrade and potion
+change, while the run continues through the unperturbed fight.
+
+The corpus's offline harness rebuilds each recorded state from its wire and
+plays no game seed. `one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl`
+writes sparse `combatExtractFeatures` rows (plus `combatFillActionFeatures` per
+root action) for leaves, roots and, on continuation roots, each action's child
+states. These are the generator's two label children (same keys in
+`apps/one_combat/silver_synth_keys.h`) and one probe child with four
+independent rollouts. `one_combat silversynthreplay` reads one root task per
+line and reports the most visited action at each budget of a fresh search,
+optionally with the research-only root prior bonus
+(`SilverSearcher::rootPrior`/`rootPriorWeight`, default off): a visited root
+edge scores `weight * P(a) / (visits + 1)` on top of UCB, and unvisited edges
+stay `+inf`. `tools/silver_synth_gates.py` trains the LightGBM models and
+computes the pilot's Gate A/B. On the 89 smoke roots with a second teacher, a
+plain 10k replay from the wire picked the recorded top action on 69, and the
+independent second teacher on 66.
+
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.

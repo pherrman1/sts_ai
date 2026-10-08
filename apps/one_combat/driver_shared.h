@@ -300,6 +300,14 @@ const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &sil
 // replayed under flat 10k (control), #199 adaptive, and learned stopping.
 void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                          long long seedOffset, const std::string &teacherPath);
+// Research-only corpus for a learned Silver prior / leaf value
+// (apps/one_combat/silver_synth_gen.cpp). VARIANT is natural or perturbed.
+void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
+                    const std::string &teacherPath, const std::string &variant);
+// Offline harness for the silversynthgen corpus (apps/one_combat/silver_synth_replay.cpp):
+// sparse combat features of its rows and child states, and root search replay.
+void silverSynthFeatures(const std::string &outPrefix);
+void silverSynthReplay();
 int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();
