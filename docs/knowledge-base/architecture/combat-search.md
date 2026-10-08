@@ -285,7 +285,7 @@ model is exported from LightGBM by `silver_synth_gates.py export`. Its sigmoid
 outputs, normalized over the root, become `rootPrior`; roots with one action
 get none. The prior is recomputed after every reroot, so inherited visits damp
 it. `bestbench` sidecars record the model path, SHA-256 and weight. Learned
-stopping was not retrained for it.
+stopping was not retrained for it. Its online screen was negative (§399).
 
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records

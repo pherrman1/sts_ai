@@ -14857,3 +14857,48 @@ change ships before the CTM full retrain lands.
 **Knowledge impact:** `combat-search.md` documents the corpus harness and the
 research-only root prior bonus.
 
+## §399 — Synthetic Silver root prior online screen: negative (2026-10-08)
+
+**Question:** does the §397 root prior (Gate B pass offline) win more full runs
+at a flat 2k budget, and does prior + 2k approach plain 10k?
+
+**Design:** pre-registered (evidence `PREREG.md`) after Philipp's go.
+- **Build:** commit 51937c6a (#449), a research-only `STS_SILVER_ROOT_PRIOR`
+  option (default off). The §397 nat+pert prior was exported to
+  `combat_policy_trees_v1` with exact margin parity. Native vs offline replay
+  was identical on 300 test roots.
+- **Arms:** bestbench, seeds 56003000..031 (never used for training), A0, fair,
+  flat exact budgets, no learned stopping. A plain 2k; B prior w = 400 + 2k;
+  C plain 10k.
+- **Rule:** SCREEN_PASS if B − A ≥ +3 wins and B ≥ C − 2; SCREEN_NEGATIVE if
+  B − A ≤ 0.
+
+**Result:** `SCREEN_NEGATIVE`.
+
+| arm | wins | mean floor | CPU s/run |
+|---|---|---|---|
+| A plain 2k | 21/32 | 50.2 | 12.8 |
+| B prior + 2k | 21/32 | 49.5 | 12.4 |
+| C plain 10k | 28/32 | 50.2 | 72.7 |
+
+- B vs A: 3 seeds won only by B and 3 only by A.
+- B vs C: 7 seeds won only by C, 0 only by B.
+
+**Interpretation:**
+- The offline gain (prior + 256 ≈ plain 1,000 in root regret) did not show up
+  as whole-run wins at 2k. Inference: per-root regret gains of about 0.3 points
+  are too small to move run outcomes at this scale, or the root-only prior
+  helps where it matters least. The screen cannot tell these apart.
+- 10k clearly beats 2k on these seeds (+7 wins). The budget matters, and the
+  prior does not substitute for it.
+- The prior's CPU cost is negligible (B ran as fast as A).
+- Per the rule, variant (b) stops here unless a new target definition
+  appears. Together with §397 Gate A, the synthetic-corpus route to a Silver
+  prior or leaf is closed for now.
+- `STS_SILVER_ROOT_PRIOR` stays research-only and off.
+
+**Evidence:** [packet](evidence/silver_root_prior_screen_20261008/README.md).
+
+**Knowledge impact:** `combat-search.md` documents the option. The ledger
+records the negative screen.
+
