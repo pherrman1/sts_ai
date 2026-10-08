@@ -14928,16 +14928,21 @@ seed-clustered CI).
 
 - v2 − v1: −0.12 [−0.21, −0.04] at 256, −0.07 [−0.17, +0.05] at 1,000,
   −0.02 [−0.11, +0.09] at 2,000.
+- Secondary arm v2 at w = 400: −0.10 [−0.22, +0.02] vs plain at 2,000, the
+  same as w = 1600, so the tie does not depend on the weight pick.
 - Share of the oracle gain captured at 2,000: v1 11%, v2 13%.
-- Fit: top action equals the 10k top action for v1 55.1%, v2 58.5%; a second
-  independent 10k search agrees 75.0%.
+- Fit (validation fold, also the early-stopping fold, so slightly optimistic):
+  top action equals the 10k top action for v1 55.1%, v2 58.5%; a second
+  independent 10k search agrees 75.0%, a lower bound on what a perfect prior
+  could reach. On roots where both 10k searches agree, v2 matches 66.8%.
 
 **Interpretation:**
 - The richer prior is better only at low budgets. At 2k it ties v1 and neither
   clearly beats plain, which matches §399.
-- Model fit improved only modestly (55% → 59% against a 75% noise ceiling).
-  Inference: the post-action features and the ranking loss were not the main
-  limit; the GBM on these engine features stays far from the ceiling.
+- Model fit improved only modestly (55% → 59%, while two 10k searches agree
+  75%). Inference: the post-action features and the ranking loss were not the
+  main limit. Label noise is not the main limit either, since v2 misses a third
+  of the roots where both 10k searches agree.
 - The oracle numbers overstate the reachable gain: the oracle's visit shares
   come from the same 10k searches whose Q values form the teacher.
 - No new online screen is proposed. The v2 recipe stays offline (no native

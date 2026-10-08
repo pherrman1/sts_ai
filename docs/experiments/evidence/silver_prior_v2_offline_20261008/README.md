@@ -19,7 +19,9 @@
 - Fit on validation roots (fold 3, 32,342 roots): per-root cross-entropy
   uniform 1.669, v1 1.244, v2 1.192, entropy floor 0.700. Top action equals the
   10k top action: v1 55.1%, v2 58.5%; a second independent 10k search agrees
-  74.99% (8,186 roots with a second search; computed with
-  `compare_v1_v2.py` in the project folder).
+  74.99% (8,186 roots with a second search). On roots where both 10k searches
+  agree, v2 matches them 66.8% (v1 62.8%). Computed with
+  [`compare_v1_v2.py`](compare_v1_v2.py). Fold 3 also served as both models'
+  early-stopping set, so these fit figures are slightly optimistic for both.
 - Model, root files, replay tasks and outputs:
   `/mnt/project-files/silver-synthetic-prior/prior-v2-20261008/`.
