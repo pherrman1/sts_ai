@@ -220,6 +220,7 @@ def main():
     ap.add_argument("--reps", type=int, default=2000)
     ap.add_argument("--open-test", action="store_true")
     ap.add_argument("--smoke", action="store_true", help="tiny data: 20 rounds, no split checks")
+    ap.add_argument("--corpus334", help="#334 corpus index (local): adds the pre-registered F2 arm")
     args = ap.parse_args()
     import xgboost as xgb
     out = Path(args.output)
@@ -263,6 +264,31 @@ def main():
         col = "E3" if frac == 1.0 else f"E3_{int(frac * 100)}"
         df[col] = np.mean(preds, axis=0)
         curve[col] = dict(fraction=frac, sources=len(keep))
+    if args.corpus334:
+        # Pre-registered F2: #334 TRAIN MAP rows with the E1 F2 weights (non-focal
+        # total = focal total) plus E3 TRAIN map rows scaled to the same block
+        # total. F2_334 is the same without E3 rows (E1's F2 refit), to isolate
+        # what E3 adds. Early stopping on E3 VALIDATION map rows, as for E3.
+        from tools.vwin_e1_focal import arm_weights, focal_rows, focal_weights, load_split_tables
+        old = load_split_tables(args.corpus334, names, splits=("TRAIN",))["TRAIN"]
+        Xo = np.ascontiguousarray(old["X"][:, [names.index(n) for n in public]])
+        f1 = focal_weights(old["branches"], focal_rows(old["seed"], old["branch"], old["row"], old["branches"]),
+                           len(old["y"]))
+        wo = arm_weights("F2", f1)
+        block = wo[f1 == 0].sum()
+        we = w[tr] * (block / w[tr].sum())
+        for arm, (Xt, yt, wt) in {"F2_334": (Xo, old["y"], wo),
+                                  "F2": (np.concatenate([Xo, Xp[tr]]), np.concatenate([old["y"], y[tr]]),
+                                         np.concatenate([wo, we]))}.items():
+            preds = []
+            for s in seeds:
+                booster, count = train(Xt, yt, wt, Xp[va], y[va], w[va], public, s, args.threads,
+                                       20 if args.smoke else 2500)
+                preds.append(booster.predict(xgb.DMatrix(Xp, feature_names=public)))
+                trained.append(dict(arm=arm, seed=s, trees=count, rows=int(len(yt)), weight=float(wt.sum())))
+                booster.save_model(out / f"{arm}-s{s}.ubj")
+            df[arm] = np.mean(preds, axis=0)
+            curve[arm] = dict(rows334=int(len(old["y"])), e3_block_weight=float(we.sum()) if arm == "F2" else 0.0)
     report = dict(schema="vwin_e3_cf_v1", root=str(Path(args.root).resolve()), manifests=manifests,
                   producer_git=sorted({m["git"] for m in manifests}),
                   producer_exe=sorted({m["exe"] for m in manifests}),
@@ -276,6 +302,7 @@ def main():
                   seconds=None, results={})
     splits = ["VALIDATION"] + (["TEST"] if args.open_test else [])
     arms = ["X2B", "X2B_raw", "E3"] + [c for c in curve if c != "E3"]
+    primary = "F2" if "F2" in curve else "E3"
     for split in splits:
         part = df[df["split"] == split]
         res = {}
@@ -284,6 +311,9 @@ def main():
             res[arm] = dict(map_rows=metrics(part["finalWon"], part[arm]),
                             selection_gain=summarize(gain_rows[arm], args.reps))
         res["E3_minus_X2B"] = summarize(gain_rows["E3"], args.reps, baseline=gain_rows["X2B"])
+        if primary == "F2":
+            res["F2_minus_X2B"] = summarize(gain_rows["F2"], args.reps, baseline=gain_rows["X2B"])
+            res["F2_minus_F2_334"] = summarize(gain_rows["F2"], args.reps, baseline=gain_rows["F2_334"])
         res["oracle"] = summarize(gain_rows["X2B"], args.reps, key="oracle")
         res["uniform_random"] = summarize(gain_rows["X2B"], args.reps, key="uniform")
         report["results"][split] = res
