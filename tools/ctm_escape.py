@@ -190,8 +190,8 @@ def fit(artifact, features, out, mode='column', epochs=40, lr=1e-3, batch=4096, 
     if out.exists():
         raise ValueError(f'refusing to overwrite {out}')
     metadata, tensors = read_artifact(artifact)
-    if metadata.get('capabilities'):
-        raise ValueError('base artifact already has capabilities')
+    if 'escape' in metadata.get('capabilities', {}):
+        raise ValueError('base artifact already has the escape capability')
     classes = np.asarray(metadata['hpClasses'], np.int64)
     z, col = load_features(features)
     split = np.asarray([split_for_seed(s) for s in col['source_seed']])
@@ -305,8 +305,9 @@ def extend(artifact, checkpoint, out):
         raise ValueError('escape fit was made on a different artifact')
     if 'researchCandidate' not in metadata:
         raise ValueError('only a research candidate may carry a capability')
-    if metadata.get('capabilities') or metadata['supportExclusions'] != EXCLUSIONS:
-        raise ValueError('base artifact already changes capabilities or exclusions')
+    capabilities = metadata.get('capabilities', {})
+    if 'escape' in capabilities or 'smoke_bomb' not in metadata['supportExclusions']:
+        raise ValueError('base artifact already has the escape capability')
     fitted = payload['tensors']
     for name in HP_TENSORS:
         expected = list(tensors[name].shape)
@@ -315,8 +316,8 @@ def extend(artifact, checkpoint, out):
         if list(fitted[name].shape) != expected:
             raise ValueError(f'{name} shape differs')
     tensors.update({name: np.asarray(fitted[name], np.float32) for name in HP_TENSORS + ESCAPE_TENSORS})
-    metadata = dict(metadata, capabilities={'escape': {'checkpointSha256': sha256(checkpoint)}},
-                    supportExclusions=[r for r in EXCLUSIONS if r != 'smoke_bomb'])
+    metadata = dict(metadata, capabilities=dict(capabilities, escape={'checkpointSha256': sha256(checkpoint)}),
+                    supportExclusions=[r for r in metadata['supportExclusions'] if r != 'smoke_bomb'])
     write_artifact(out, metadata, tensors)
     return dict(artifact=str(out), artifactSha256=sha256(out), baseArtifactSha256=sha256(artifact),
                 capabilities=metadata['capabilities'])

@@ -324,9 +324,15 @@ the literal -160..143 domain.
 
 A `ctm_research_candidate_v3` manifest also lists each artifact's
 `capabilities` (`{"standard": {...}, "fast": {...}}`), and an artifact's
-metadata `capabilities` must equal its role's entry; production has none. The
-only capability is `escape` (`{"checkpointSha256": ...}`, written by
-`tools/ctm_escape.py extend`). An escape-capable near-full artifact has a 1x64
+metadata `capabilities` must equal its role's entry; production has none.
+Capabilities need a near-full artifact. There are two. `writhingRitual` (`{}`,
+written by `tools/ctm_capabilities.py writhing-ritual`) changes no tensors and
+drops the `writhing_ritual_intersection` exclusion: the sampler already draws
+the Writhing event and the Ritual Dagger payouts jointly, so the capability only
+declares that the candidate was trained and gated on that cohort (CTests
+`ctm_writhing_ritual_runtime`, `ctm_capabilities_selftest`). The other is
+`escape` (`{"checkpointSha256": ...}`, written by
+`tools/ctm_escape.py extend`); both can be applied in either order. An escape-capable near-full artifact has a 1x64
 escape head on the HP encoding and the escape bit as the HP head's 73rd input,
 and it drops the `smoke_bomb` exclusion (`pre_smoke_bomb_used` stays). The
 sampler draws the escape after maxHP and before HP, but only for an eligible

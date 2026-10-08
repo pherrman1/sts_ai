@@ -20,15 +20,16 @@ def escape_hp(head,m,z,delta,pre,maximum,bit):
     return head.probabilities(z,delta,pre,maximum,bit,m.classes)
 
 
-def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False,escape=None):
+def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False,escape=None,writhing_ritual=False):
     """escape: an escape fit checkpoint (tools/ctm_escape.py). Each draw then samples the
     escape before HP and conditions HP and the potion trajectory on it."""
     requested_cohort=cohort
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,allrows,allids,test,snapshot=q.load(parent,final_support);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp)
+    cache,graphs,ambiguous,records,meta,allrows,allids,test,snapshot=q.load(parent,final_support,escape is not None,writhing_ritual);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp)
     eligible=test['win'].copy()
     if cohort=='smoke':eligible&=np.any(test['potions']==t.SMOKE,-1)
+    if cohort=='writhing_ritual':eligible&=test['writhing']&test['dagger']
     selected=np.flatnonzero(eligible)
     if limit is not None:selected=selected[:limit]
     rows=[allrows[i] for i in selected];ids=allids[selected];test=q.subset(test,selected);n=len(rows)
@@ -81,7 +82,7 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
     teacher_nll=e.nll(teacher);mixture_nll=e.nll(mixture);gap=mixture_nll-teacher_nll
     groups=test['observed'].sum(-1).clip(min=1);teacher_nll[:,2]/=groups;mixture_nll[:,2]/=groups;gap[:,2]/=groups
     recursive_ids={int(r['index']) for r in json.loads((parent/'brew-native-label-audit-v1.json').read_text())['recursiveExamples']}
-    cohorts=dict(entireFinalUnion=np.ones(n,bool),previous179=test['old'],recovered=~test['old'],brew=np.any(test['potions']==t.BREW,-1),smoke=np.any(test['potions']==t.SMOKE,-1),writhing=test['writhing'],ritual=test['dagger'],gold=np.asarray([int(i) in records for i in ids]),recursiveBrew=np.isin(ids,list(recursive_ids)),escape=test['escaped'])
+    cohorts=dict(entireFinalUnion=np.ones(n,bool),previous179=test['old'],recovered=~test['old'],brew=np.any(test['potions']==t.BREW,-1),smoke=np.any(test['potions']==t.SMOKE,-1),writhing=test['writhing'],ritual=test['dagger'],writhingRitual=test['writhing']&test['dagger'],gold=np.asarray([int(i) in records for i in ids]),recursiveBrew=np.isin(ids,list(recursive_ids)),escape=test['escaped'])
     transplus=c.base._CARD_IDS['TRANSMUTATION'];cohorts['transmutationPlus']=np.asarray([any(card['cardId']==transplus and card['upgraded'] for card in r['pi']['cards']) for r in rows])
     names=('hp','potion','relic','writhing','ritual','gold');components={};passes=[]
     for j,name in enumerate(names):
@@ -94,7 +95,7 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
         for cohort,mask in cohorts.items():
             chosen=mask&active
             if not chosen.any():continue
-            gate=bool(np.isfinite(gap[chosen,j]).all() and gap[chosen,j].mean()<=q.RECIPE['threshold']);diagnostic=(not final_support) and cohort in ('recursiveBrew','transmutationPlus')
+            gate=bool(np.isfinite(gap[chosen,j]).all() and gap[chosen,j].mean()<=q.RECIPE['threshold']);diagnostic=((not final_support) and cohort in ('recursiveBrew','transmutationPlus')) or (cohort=='writhingRitual' and not writhing_ritual)
             component[cohort]=dict(rows=int(chosen.sum()),teacherNll=float(teacher_nll[chosen,j].mean()),mixtureNll=float(mixture_nll[chosen,j].mean()),exposure=e.source_gap_bootstrap(test['source'][chosen],gap[chosen,j]),zeroExactMassRows=int((mixture[chosen,j]<=0).sum()),gate=gate,diagnosticOnly=diagnostic)
             if not diagnostic:passes.append(gate)
         components[name]=component
@@ -111,4 +112,4 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke'],default='all');p.add_argument('--final-support',action='store_true');p.add_argument('--escape',type=Path,help='escape fit checkpoint (tools/ctm_escape.py)');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort,a.final_support,a.escape)
+    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke','writhing_ritual'],default='all');p.add_argument('--final-support',action='store_true');p.add_argument('--escape',type=Path,help='escape fit checkpoint (tools/ctm_escape.py)');p.add_argument('--writhing-ritual',action='store_true',help='writhingRitual capability: keep Writhing Mass with Ritual Dagger');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort,a.final_support,a.escape,a.writhing_ritual)

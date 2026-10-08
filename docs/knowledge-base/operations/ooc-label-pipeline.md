@@ -81,6 +81,12 @@ Attention and the DeepSets artifacts:
   `NearFullSampler(escape=...)` sample the same factorization in Python (the
   potion trajectory takes `escape=` too), so the Smoke-row relic exposure that
   failed in production can be re-run under it.
+- `tools/ctm_capabilities.py writhing-ritual --artifact IN.native --out
+  OUT.native` adds the `writhingRitual` capability to a research candidate and
+  drops the `writhing_ritual_intersection` exclusion. The exposure script's
+  `--writhing-ritual` flag makes the Writhing Mass + Ritual Dagger cohort a
+  gated one (it is diagnostic otherwise) and keeps those rows under
+  `--final-support`; `--escape` likewise keeps Smoke Bomb rows.
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with

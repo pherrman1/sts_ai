@@ -48,7 +48,9 @@ class TestCtmHpDomain(unittest.TestCase):
         with torch.no_grad():
             narrow = net.hp[2](hidden)
             widened = wide.hp[2](hidden)
-        self.assertTrue(torch.equal(widened[:, offset:offset + len(old)], narrow))
+        # Weights copy exactly; outputs of layers of different widths may differ by BLAS reduction order.
+        self.assertTrue(torch.equal(wide.hp[2].weight[offset:offset + len(old)], net.hp[2].weight))
+        torch.testing.assert_close(widened[:, offset:offset + len(old)], narrow, rtol=0, atol=1e-6)
         self.assertTrue(torch.all(widened[:, :offset] == h.NEW_CLASS_BIAS))
         # On the old support the probabilities move only by FP32 rounding plus the new e^-30 mass.
         p_old = torch.softmax(narrow, -1)
