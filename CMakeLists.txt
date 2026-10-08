@@ -87,6 +87,24 @@ target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
+add_executable(native_ooc_shop_features_test tests/native_ooc_shop_features_test.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(native_ooc_shop_features_test PRIVATE include json/include apps)
+add_test(NAME native_ooc_shop_features COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:native_ooc_shop_features_test>)
+set_tests_properties(native_ooc_shop_features PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(test_ooc_public_futures apps/test_ooc_public_futures.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(test_ooc_public_futures PRIVATE include json/include apps)
+add_test(NAME ooc_public_futures COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:test_ooc_public_futures>)
+set_tests_properties(ooc_public_futures PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/screen_leaf_snapshot.cpp
     apps/one_combat/screen_leaf_continuations.cpp

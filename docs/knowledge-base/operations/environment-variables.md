@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-10-07 for `STS_CTM_PINS` and the CTM research-candidate manifest; 2026-09-27 for the automatic OOC CTM stack, active-Lizard default, and `STS_FORCE_RELIC` Lizard initialization; 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main`.
+Last verified: 2026-10-08 for default-off overnight research controls; 2026-10-07 for `STS_CTM_PINS` and the CTM research-candidate manifest; 2026-09-27 for the automatic OOC CTM stack, active-Lizard default, and `STS_FORCE_RELIC` Lizard initialization; 2026-09-25 for native-only Silver (ADR-0022); 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -46,6 +46,7 @@ diagnostics.
 | `STS_SILVER_LEARNED_STOP_THRESHOLD` | Risk threshold for `STS_SILVER_LEARNED_STOP` | the compiled model's default (`0.0323` for `gbt-770201c31f7b`) | `NativeSilverBackend` |
 | `STS_SILVER_LEARNED_STOP_BOSS_FALLBACK` | Research-only: with `STS_SILVER_LEARNED_STOP=1`, boss rooms use the #199 retained-root rule instead of learned stopping. Requires `STS_SILVER_LEARNED_STOP=1` | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_LEARNED_STOP_BOSS_MAX` | Research-only: with `STS_SILVER_LEARNED_STOP=1`, a boss root that reached 10,000 simulations without stopping continues in 10,000 steps up to this cap, until its leader is strictly locked against the cap. `0` or unset: off; otherwise must exceed 10,000; exclusive with `_BOSS_FALLBACK` | unset/off | `NativeSilverBackend` |
+| `STS_SILVER_FINAL_BOSS_BINARY` | Research-only A0 Act-3 boss terminal score: victory 100, otherwise 0. Requires `STS_STOP_AFTER_ACT=3`, exact-root budgets, and learned/adaptive/stop-trace off. No strength qualification implied. | unset/off | `NativeSilverBackend`, `SilverSearcher` |
 | `STS_SILVER_STOP_TRACE` | Research-only CSV of root features and leaders at every learned-stop checkpoint; searches each multi-action root to 10,000. Requires `STS_SILVER_ADAPTIVE=0`; exclusive with `STS_SILVER_LEARNED_STOP` | unset/off | `NativeSilverBackend` |
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | Accepted only as `1` (adaptive Silver is always retained-only) | `1` | `main` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | `1`: the flat budget applies in boss fights too (no boss multiplier) and one-action roots are searched; used by the frozen exact-10k research contracts | off | `NativeSilverBackend` |
@@ -77,6 +78,8 @@ enable flag:
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
+| `STS_OOC_PUBLIC_FUTURES` | Research-only native fallback common encounter scenarios (integer 0..256): average predictions after redrawing the four unseen encounter identity fields conditional on observed prefix. Scope is the controlled native V4 fallback profile; does not sanitize legacy server or actual-RNG hypothetical-action paths. | unset/0 (legacy) | `ooc_native_fallback`, main value wrappers |
+| `STS_OOC_SHOP_DECK_SIZE_FIX` | Research-only correction: hypothetical shop deck size increases for cards only and decreases for removal. Strict 0 or 1. | unset/off | `nativeShopPlan` |
 | `STS_OOC_STRATEGIC_NN` | V3 strategic net path | unset (off) | `main` ~L9295 |
 | `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format) | unset (off) | `main` ~L9300 |
 | `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4, a compatible combat artifact, and ordinary exact-10k Silver real combat with effective cap 32768. Native leaf mode requires `v_win`; boss leaf mode does not call it, though the unchanged fallback policy may. | `0` | `configureLiveOocMcts`, `runFullRunOOC` |

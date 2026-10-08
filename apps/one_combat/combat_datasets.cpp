@@ -7,6 +7,7 @@
 #include "one_combat/combat_predictor_input.h"
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
+#include "one_combat/ooc_native_fallback.h"
 
 #include <regex>
 #include <cstdio>
@@ -60,7 +61,7 @@ static nlohmann::json effectiveOocPolicySpecification() {
     if (g_oocMapRoute && g_cpsiNet.loaded()) addModel("cpsi", g_cpsiNet.path);
     if (g_actFightProbeAllOoc && g_actFightProbePredict && g_actFightProbePredictNet.loaded())
         addModel("act_fight_probe_predict", g_actFightProbePredictNet.path);
-    return {
+    nlohmann::json policy = {
         {"schema_version", "runFullRunOOC_policy_v1"},
         {"policy_chain", "runFullRunOOC"},
         {"restV", false},
@@ -135,6 +136,13 @@ static nlohmann::json effectiveOocPolicySpecification() {
         }},
         {"model_artifacts", std::move(models)},
     };
+    // Preserve the legacy specification byte-for-byte when research flags are
+    // off, while binding enabled treatments into teacher identity checks.
+    if (const int count = one_combat::nativeOocPublicFutureCount(); count > 0)
+        policy["parameters"]["native_ooc_public_futures"] = count;
+    if (one_combat::nativeOocShopDeckSizeFixEnabled())
+        policy["flags"]["native_ooc_shop_deck_size_fix"] = true;
+    return policy;
 }
 
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
@@ -152,6 +160,10 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (req("combat_backend")!="native_silver" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
     if (!t.contains("search_configuration") || !t["search_configuration"].is_object()) throw std::runtime_error("wholecombatgen: missing search_configuration");
     const auto &s=t["search_configuration"];
+    const char *binaryObjective = std::getenv("STS_SILVER_FINAL_BOSS_BINARY");
+    const bool binaryObjectiveEnabled = binaryObjective && std::string(binaryObjective) == "1";
+    if (s.value("final_boss_binary", false) != binaryObjectiveEnabled)
+        throw std::runtime_error("wholecombatgen: final-boss objective differs from teacher");
     // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
     // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
     // that opt in; it pins the compiled stop model and threshold.

@@ -312,6 +312,65 @@ int testSilverSearcher() {
         }
     };
 
+    // Campaign opt-in: after the final A0 boss only actual victory matters.
+    // Terminal constructors expose the evaluator through the root's value;
+    // these fixtures do not run combat search or consume a live future.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext ended; ended.init(gc, MonsterEncounter::TIME_EATER);
+        ended.player.curHp = 1;
+        ended.potionCount = 0;
+        ended.turn = 20;
+        ended.outcome = Outcome::PLAYER_VICTORY;
+        search::SilverSearchContext finalBoss;
+        finalBoss.act = 3;
+        finalBoss.actBossRoom = true;
+        finalBoss.finalBossBinary = true;
+        const auto value = [](const BattleContext &bc, const search::SilverSearchContext &ctx) {
+            search::SilverSearcher s(bc, ctx);
+            return s.rootNode().evaluationSum;
+        };
+        const double lowResourceWin = value(ended, finalBoss);
+        check(lowResourceWin == 100.0, "final boss low-HP resource-empty victory scores 100");
+        ended.player.curHp = ended.player.maxHp;
+        ended.potionCount = 3;
+        ended.player.gold += 1000;
+        ended.turn = 1;
+        check(value(ended, finalBoss) == lowResourceWin,
+              "final boss unspent resources and winning speed have no terminal utility");
+        ended.outcome = Outcome::PLAYER_LOSS;
+        ended.player.curHp = 0;
+        ended.turn = 100;
+        ended.cardsDrawn = 10000;
+        for (int i = 0; i < ended.monsters.monsterCount; ++i)
+            ended.monsters.arr[i].curHp = 1;
+        check(value(ended, finalBoss) == 0.0 && lowResourceWin > value(ended, finalBoss),
+              "final boss victory dominates long near-lethal resource-rich loss");
+
+        // Both the context and A0 restriction are checked at the evaluator.
+        for (const auto setting : {std::pair<int, bool>{1, true}, {2, true}, {3, false}}) {
+            auto scoped = finalBoss;
+            scoped.act = setting.first;
+            scoped.actBossRoom = setting.second;
+            auto original = scoped; original.finalBossBinary = false;
+            check(value(ended, scoped) == value(ended, original),
+                  "final-boss opt-in leaves earlier and non-boss combat values unchanged");
+        }
+        ended.ascension = 1;
+        auto original = finalBoss; original.finalBossBinary = false;
+        check(value(ended, finalBoss) == value(ended, original),
+              "final-boss opt-in is restricted to A0");
+        ended.ascension = 0;
+        ended.outcome = Outcome::PLAYER_VICTORY;
+        ended.player.curHp = 1;
+        ended.potionCount = 0;
+        ended.turn = 20;
+        search::SilverSearcher defaultSearcher(ended, original);
+        const double legacyExpected = 53.0 + ended.player.maxHp - 20 * 0.4;
+        check(defaultSearcher.rootNode().evaluationSum == legacyExpected,
+              "default final-boss evaluator retains handcrafted score");
+    }
+
     // Final choice is edge visits only; even Q ties keep enumeration order.
     {
         GameContext gc(CharacterClass::IRONCLAD, 91, 0);

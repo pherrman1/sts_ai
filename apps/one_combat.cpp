@@ -965,7 +965,9 @@ std::vector<float> richFeatureVec(GameContext &gc) {
 }
 
 double nativeFloorValue(GameContext &gc) {
-    return g_floorNet.ok ? g_floorNet.predict(richFeatureVec(gc)) : 0.0;
+    static const PathHistory emptyPath;
+    return g_floorNet.ok ? one_combat::nativeOocValue(gc,
+        t_curPath ? *t_curPath : emptyPath, g_floorNet) : 0.0;
 }
 
 int nativeFloorCardPick(GameContext &gc, int rIdx) {
@@ -994,7 +996,9 @@ double vStateWinNativeFeatures(const std::vector<float> &raw) {
 }
 
 double vStateWin(GameContext &gc) {
-    if (g_winNet.ok) return g_winNet.predict(richFeatureVec(gc));   // native path
+    static const PathHistory emptyPath;
+    if (g_winNet.ok) return one_combat::nativeOocValue(gc,
+        t_curPath ? *t_curPath : emptyPath, g_winNet);
     double v = 0.5;
     std::sscanf(vSendRecv("VW;" + vFeatCsv(gc)).c_str(), "%lf", &v);
     return v;
@@ -2808,6 +2812,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
+        {"STS_SILVER_FINAL_BOSS_BINARY", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3107,7 +3112,13 @@ int main(int argc, char **argv) {
             }
         }
     }
-    try { one_combat::configureLiveOocMcts(); }
+    try {
+        if (const int futures = one_combat::nativeOocPublicFutureCount(); futures > 0)
+            std::cout << "[native OOC public encounter mixture: " << futures << " futures]\n";
+        if (one_combat::nativeOocShopDeckSizeFixEnabled())
+            std::cout << "[native OOC shop deck-size correction ON]\n";
+        one_combat::configureLiveOocMcts();
+    }
     catch (const std::exception &e) {
         std::cerr << "[live OOC MCTS startup failure] " << e.what() << '\n';
         return 1;

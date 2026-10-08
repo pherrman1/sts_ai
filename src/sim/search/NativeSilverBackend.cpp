@@ -35,6 +35,7 @@ namespace sts::search {
             bool adaptive = true;
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
+            bool finalBossBinary = false;
             double topGap = kDefaultTopGap;
             double escapePenalty = 0;
             double eliteEscapePenalty = 0;
@@ -312,10 +313,14 @@ namespace sts::search {
             context.omamoriCharged = gc.relics.has(RelicId::OMAMORI)
                 && gc.relics.getRelicValue(RelicId::OMAMORI) > 0;
             context.eliteRewards = gc.isEliteTriggerCombat();
+            context.finalBossBinary = g_options.finalBossBinary && gc.ascension == 0
+                && gc.act == 3 && gc.curRoom == Room::BOSS;
 
             // Budget policy: the process options, or this thread's override.
             const auto &budgetOverride = g_nativeSilverBudgetOverride;
             using BudgetPolicy = NativeSilverBudgetOverride::Policy;
+            if (context.finalBossBinary && budgetOverride && budgetOverride->policy != BudgetPolicy::Flat)
+                fail(gc, bc, "binary final-boss objective requires a flat budget override");
             // Learned stopping with the boss fallback runs boss rooms under #199.
             const bool bossFallback = !budgetOverride && g_options.learnedStop
                 && g_options.learnedStopBossFallback && gc.curRoom == Room::BOSS;
@@ -625,6 +630,19 @@ namespace sts::search {
         }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
+        }
+        if (const char *raw = std::getenv("STS_SILVER_FINAL_BOSS_BINARY")) {
+            const std::string value(raw);
+            if (value != "0" && value != "1")
+                throw std::runtime_error("STS_SILVER_FINAL_BOSS_BINARY must be 0 or 1");
+            g_options.finalBossBinary = value == "1";
+        }
+        if (g_options.finalBossBinary) {
+            const char *horizon = std::getenv("STS_STOP_AFTER_ACT");
+            if (!horizon || std::string(horizon) != "3" || !g_options.exactRootBudgets
+                || g_options.adaptive || g_options.learnedStop || !g_options.stopTrace.empty())
+                throw std::runtime_error("STS_SILVER_FINAL_BOSS_BINARY requires STS_STOP_AFTER_ACT=3, "
+                    "exact root budgets, adaptive and learned stopping off, and no stop trace");
         }
         if (g_stopTraceFile.is_open()) g_stopTraceFile.close();
         if (g_options.learnedStop || !g_options.stopTrace.empty()) {

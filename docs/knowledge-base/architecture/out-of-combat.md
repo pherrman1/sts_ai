@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-08 for native fallback information-boundary and shop accounting research controls; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -951,6 +951,28 @@ merely because a shop removal is selected. Server-backed modes retain their
 existing queries. The socket bridge uses a bounded connect wait, so an
 explicitly server-dependent path fails fast when localhost:5555 is unavailable
 instead of stalling the whole run.
+
+The legacy floor/win fallback rich vector includes realized `nextEliteId` and
+`nextFight0..2`, and both tracked tree ensembles split on these fields. Combat
+`STS_FAIR=1` does not remove this OOC information dependency. The default-off
+research control `STS_OOC_PUBLIC_FUTURES=K` replaces only those four fields at
+prediction time with K common, public-history-conditioned native encounter
+samples and averages model predictions, including probabilities after the
+logistic link. The same sampled futures score all alternatives within a
+fallback decision; the source state/RNG is unchanged. Its planner seed excludes
+the true run seed, RNG streams and queue-derived feature block. This is a
+bounded repair for the controlled native V4 profile, not a qualification of
+legacy server modes or hypothetical actions already executed with actual RNG.
+The campaign keeps those routes disabled. Enabled treatments enter the
+counterfactual teacher policy specification; disabled settings preserve the
+legacy specification. Per-run public scorer counts prove actual branch use.
+
+`STS_OOC_SHOP_DECK_SIZE_FIX=1` independently corrects hypothetical shop bundle
+features: relics add no cards and removal subtracts one card. The default
+legacy calculation counts each purchased item as a card and omits removal's
+deck-size decrement. Synthetic model regressions distinguish the defect from
+its playing-strength effect. Both controls remain opt-in pending review and
+qualification; evidence is routed through the overnight campaign ledger.
 
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers
