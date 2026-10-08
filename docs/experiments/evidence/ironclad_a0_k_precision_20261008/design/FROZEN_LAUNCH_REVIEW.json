@@ -1,0 +1,64 @@
+{
+  "schema": "k_precision_frozen_launch_review_v1",
+  "status": "PASS_SUBJECT_TO_RECORDED_RELEASE_GATES",
+  "reviewer": "strategy",
+  "reviewed_utc": "2026-10-08T09:19:48.867350+00:00",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+      "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/protocol_scientific_review.json",
+      "sha256": "e5d7450beea5061725015ebbcef2f19b419c5aae06a42793f0ab112147ce2507"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/VERIFIER_IMPLEMENTATION_REVIEW.json",
+      "sha256": "f9d810b89b120481dc0cc3a2d3fe703ee17613fe927b03f6248c21ebe865ee1b"
+    }
+  ],
+  "artifact_hashes_verified": 21,
+  "binary_teacher_policy_environment_verified": true,
+  "exact32source_job_order_and_exclusive_prefixes_verified": true,
+  "source_range": [
+    610084200,
+    610084231
+  ],
+  "raw_directory_absent_at_review": true,
+  "dispatch_latch_absent_at_review": true,
+  "runtime_python_numpy_verified": true,
+  "caps": {
+    "processes": 6,
+    "threads_each": 1,
+    "per_source_seconds": 1800,
+    "collection_seconds": 10800,
+    "absolute_stop_epoch": 1791462144.0,
+    "overall_deadline_epoch": 1791464544.0
+  },
+  "process_group_review": "timeout without --foreground governs xargs descendants; reused Python runner uses subprocess.run without session detachment; seed_guard ends in exec, so per-source timeout targets the game process and outer group timeout covers descendants.",
+  "required_at_actual_release": [
+    "Root must recheck every bound hash, ready-bundle reviewedcommit and absent raw directory/latch.",
+    "Root must compute floor(min(10800,1791462144-dispatch_epoch)) and explicitly reject cap<=0 before creating latch; zero disables GNU timeout.",
+    "Create dispatch_authorization.json exclusively and bind actual positive cap, exact argv, starttime and all release identities.",
+    "Obtain separate analyzer implementation PASS and record no other campaigngame workers before P6.",
+    "Record dispatcher exit/end and verify owned workers ended; any failure/incomplete allocation blocks clean inference without retry."
+  ],
+  "no_new_games_launched_by_reviewer": true,
+  "no_protected_or_final_raw_outcomes_read": true
+}

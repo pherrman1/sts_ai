@@ -1,0 +1,27 @@
+{
+  "status": "EXISTING_IMMUTABLE_PRODUCER_AND_MODELS_MATCH",
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+  "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+  "teacher": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+  "teacher_sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040",
+  "policy": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+  "policy_sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+  "artifacts": {
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "src/sim/search/NativeSilverStopModel.cpp": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+  },
+  "prior_closed_confirmation": {
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/champion_freeze.json": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/holdout_opened.json": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/final_confirmation_report.json": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/campaign_result.json": "0f362274d9b2f7af6db8b30fa05d37ce10a390adfe741a795888e4abce007812"
+  },
+  "reuse_decision": "Reuse binary, teacher, sampler, runner and prior contract/canary evidence; old branches cannot answer fresh32-source K4-vsK16 evaluation and are not pooled.",
+  "existing_sources_experiment": "610084100..610084131 hasK8 and mixedCARD/BOSS; insufficient independentK16selection+K16evaluation; no fresh confirmation reuse.",
+  "historical_TEST": "Not opened",
+  "python": "3.13.15 (main, Aug  7 2026, 02:25:50) [Clang 22.1.3 ]",
+  "recorded_local": "2026-10-08T11:10:24.389778+02:00"
+}
