@@ -163,6 +163,23 @@ searching again:
   already `TEACHER_FORCED_REJECTED` on recursive Brew and ships with Brew routed
   to the fallback model, so a rejection is expected and is not a stop.
 
+The retrain chain runs from one pins file that `tools/ctm_retrain_pins.py`
+stages. Pinned tools read their keys at import time, so each stage needs every
+key, including keys only a later stage determines. `init --domain-dir D`
+writes a complete file: the expanded hp/relic warm starts and HP class range,
+production placeholders for the rest (listed under `pending`), and null for
+the production-cohort count checks a new corpus cannot reproduce
+(`gold_evaluate.FROZEN_COUNTS`,
+`potion_trajectory_evaluate.PREVIOUS_SUPPORT_ROWS`, the specialist reference
+NLL); a null check records the count instead. `corpus`, `phase1`, `phase2`,
+`near-full` and `hpo` then each derive the keys that stage's outputs
+determine, into a new file, in chain order. `union` runs with the `init` pins.
+From `phase2` on, the keys `composed_evaluate.verify_data` records must not
+change (`check --previous`). The DeepSets keys stay pending (#418 step 10b).
+`audit` accepts a union corpus: it validates each scope's own shards (paths
+recorded in `row_scopes.json`), takes the completed sources from the union
+rows, and quarantines the other sources of the scopes' seed ranges.
+
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and
 unresolved exits. It is null by default, composes with an existing observer,

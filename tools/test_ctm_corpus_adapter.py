@@ -142,6 +142,32 @@ class TestCtmCorpusAdapter(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "overwrite"):
                 union({"none": root / "none"}, root / "union", drop)
 
+    def test_audit_accepts_a_union_and_quarantines_dropped_sources(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); index = self.build(root)
+            assemble(index, root, "none", root / "none")
+            assemble(index, root, "high_maxhp", root / "high")
+            # Every row of seed 102 is dropped; seed 101 keeps one of its two rows.
+            drop = lambda row: ["x"] if row["sourceSeed"] == 102 or (row["sourceSeed"], row["fightIdx"]) == (101, 1) else []
+            union({"high_maxhp": root / "high", "none": root / "none"}, root / "union", drop)
+            experiment.audit(argparse.Namespace(corpus_manifest=str(root / "union" / "corpus.jsonl.manifest.json"),
+                                                shard_root=str(root / "union"), output_dir=str(root / "audit")))
+            audit = json.loads((root / "audit" / "corpus_audit.json").read_text())
+            # Requested sources are the scope ranges (100..107, 500..501), not the gap between them.
+            self.assertEqual(audit["sourcesRows"]["requestedSources"], 10)
+            self.assertEqual(audit["split"]["excludedQuarantinedSeeds"], [102, 105])
+            self.assertEqual(audit["sourcesRows"]["totalFights"], 15)
+            self.assertEqual({e["scope"] for e in audit["shards"]["entries"]}, {"none", "high_maxhp"})
+            experiment.prepare(argparse.Namespace(audit=str(root / "audit" / "corpus_audit.json"),
+                                                  output_dir=str(root / "prepared")))
+            self.assertEqual(json.loads((root / "prepared" / "prepared_manifest.json").read_text())["rows"], 15)
+            # A scope manifest changed after the union fails closed.
+            scope = root / "high" / "corpus.jsonl.manifest.json"
+            scope.write_text(scope.read_text() + " ")
+            with self.assertRaisesRegex(ValueError, "manifest changed"):
+                experiment.audit(argparse.Namespace(corpus_manifest=str(root / "union" / "corpus.jsonl.manifest.json"),
+                                                    shard_root=str(root / "union"), output_dir=str(root / "audit2")))
+
 
 if __name__ == "__main__":
     unittest.main()

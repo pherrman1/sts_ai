@@ -61,7 +61,7 @@ def verify_component(folder, component, cache_meta):
     if "original VALIDATION" not in fit["recipe"]["selection"] or "original source-grouped TRAIN" not in fit["recipe"]["population"]:
         raise ValueError(f"{component} TRAIN/VALIDATION provenance differs")
     payload = torch.load(path, map_location="cpu", weights_only=False)
-    if payload["metadata"] != {k: v for k, v in fit.items() if k != "artifactSha256"}:
+    if payload["metadata"] != _pins.strip({k: v for k, v in fit.items() if k != "artifactSha256"}):
         raise ValueError(f"{component} embedded metadata differs")
     return fit, payload, actual
 

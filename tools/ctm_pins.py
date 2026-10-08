@@ -66,6 +66,18 @@ def receipt() -> dict:
     return {} if loaded is None else {"ctmPinsSha256": loaded[1]}
 
 
+def strip(obj):
+    """``obj`` without the receipt key ``json_dump`` adds under pins.
+
+    A tool that re-reads its own JSON output and compares it with the value it
+    wrote (a recipe, or a checkpoint's embedded metadata) compares the
+    stripped object; the pins file may also differ between chain stages.
+    """
+    if isinstance(obj, dict) and "ctmPinsSha256" in obj:
+        return {k: v for k, v in obj.items() if k != "ctmPinsSha256"}
+    return obj
+
+
 def declared_keys(root: Path | None = None) -> dict[str, str]:
     """Map every ``_pins.value`` key in ``tools/`` to its production default's source text."""
     import ast

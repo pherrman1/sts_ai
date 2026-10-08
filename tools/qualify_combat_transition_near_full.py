@@ -68,7 +68,7 @@ def qualify(parent,artifact,probe,fixture,output):
             lp=t.log_probabilities(m.potion_net,zp,[pre['potions']],[pre['potionCapacity']],[d],[ending/maximum],[gold.encounter_name(pi['globals']['encounter']) in t.BOSSES]);compare('potion',lp[0].exp().cpu().numpy(),diag['potion'])
             hp,bits,mechanical,features=s.conditions(pre,pi,ending,maximum,mask,consumed,esc)
             for name,value in [('hpConditions',hp),('bits',bits),('mechanical',mechanical),('eventConditions',features)]:compare(name,value,diag[name])
-            relic=nets['relic'](z,torch.tensor([ending-pre['curHp']+160]),torch.tensor([ending/maximum]),torch.tensor([mask]),torch.tensor([float(esc)]))
+            relic=nets['relic'](z,torch.tensor([ending-pre['curHp']-int(c.CLASSES[0])]),torch.tensor([ending/maximum]),torch.tensor([mask]),torch.tensor([float(esc)]))
             for group in c.TRAINED_GROUPS:compare('relic_'+group,torch.softmax(relic[group],-1)[0].numpy(),diag['relic'][group])
             if 'writhing' in diag:_,prob=s.writhing_probabilities(nets['writhing'],raw_z,pre,pi,ending,maximum,mask,consumed,esc);compare('writhing',prob,diag['writhing'])
             candidates,prob=s.ritual_probabilities(nets['ritual'],raw_z,pre,pi,ending,maximum,mask,consumed,esc)
