@@ -3922,6 +3922,12 @@ int main(int argc, char **argv) {
             return 2;
         }
         return ctmEscapeFeatures(argv[2], argv[3], argv[4]);
+    } else if (mode == "ctmlizardfeatures") {
+        if (argc != 6) {
+            std::cerr << "usage: one_combat ctmlizardfeatures ROWS.jsonl FAST.native STANDARD.native OUT.csv\n";
+            return 2;
+        }
+        return ctmLizardFeatures(argv[2], argv[3], argv[4], argv[5]);
     } else if (mode == "ctmscoreselftest") {
         return ctmScoreRowsSelfTest();
     } else if (mode == "ooccfaudit") {

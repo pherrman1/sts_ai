@@ -182,6 +182,57 @@ int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const
     return 0;
 }
 
+// Active-Lizard q/r fit features for tools/ctm_lizard.py (#418 PR9). For every row whose
+// pre-state has an active Lizard Tail, writes the routed child (standard for Entropic Brew),
+// the Fairy/Brew flags, the child's ordinary and reserve survivals, and the label: 0 a win
+// with the Tail unused, 1 a win after it fired, 2 a loss. Reads rows only; runs no seeds.
+int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
+                      const std::string &standardModel, const std::string &outPath) {
+    const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(fastModel, standardModel, true);
+    constexpr int tail = static_cast<int>(sts::RelicId::LIZARD_TAIL);
+    std::ifstream in(inPath);
+    need(bool(in), "cannot open " + inPath);
+    std::ofstream out(outPath);
+    need(bool(out), "cannot open " + outPath);
+    out << "source_seed,fight_idx,label,child,fairy,brew,supported,reason,p_ordinary,p_reserve\n";
+    out << std::setprecision(9);
+    std::string line;
+    int rows = 0, written = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const J row = J::parse(line);
+        need(row.at("rowSchemaVersion") == "combat_transition_row_v2", "row schema");
+        const auto &t = row.at("transition");
+        if (t.is_null()) continue;
+        const auto pre = one_combat::combatTransitionStateFromJson(t.at("pre"));
+        const auto active = std::find_if(pre.relics.begin(), pre.relics.end(), [](const auto &r) {
+            return r.id == tail;
+        });
+        if (active == pre.relics.end() || active->data != 1) continue;
+        ++rows;
+        const int outcome = t.at("combatOutcome").get<int>();
+        int label = 2;
+        if (outcome == static_cast<int>(sts::Outcome::PLAYER_VICTORY)) {
+            label = 0;
+            for (const auto &r : t.at("post").at("relics"))
+                if (r.at("id").get<int>() == tail && r.at("data").get<int>() == 0) label = 1;
+        } else need(outcome == static_cast<int>(sts::Outcome::PLAYER_LOSS), "combat outcome");
+        const auto input = predictorInputFromJson(row.at("predictorInput"));
+        const auto f = sampler.activeLizardFeatures(pre, input);
+        out << row.at("sourceSeed").get<std::uint64_t>() << ',' << row.at("fightIdx").get<int>() << ','
+            << label << ',' << (f.brew ? "standard" : "fast") << ',' << int(f.fairy) << ',' << int(f.brew) << ','
+            << int(f.supported) << ',' << f.reason << ',';
+        if (f.supported) {
+            out << f.pOrdinaryWin << ',' << f.pReserveWin;
+            ++written;
+        } else out << ',';
+        out << '\n';
+    }
+    need(bool(out), "write failed");
+    std::cerr << "ctmlizardfeatures activeLizardRows=" << rows << " supported=" << written << " -> " << outPath << "\n";
+    return 0;
+}
+
 // Scores the deterministic transition fixture rows and checks the output shape.
 int ctmScoreRowsSelfTest() {
     const auto dir = std::filesystem::temp_directory_path()
