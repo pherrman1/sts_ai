@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-08 for fair native OOC decision quality (§395); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -74,11 +74,34 @@ identify a useful replacement. Their retained latent counters and older
 privileged-teacher labels remain scope limits; this conditional diagnostic does
 not qualify the current fair runtime. Calibration bias does not by itself
 explain ranking quality.
-The proposed next discriminator is a fresh source-matched K4-versus-K16
-boss-relic choice comparison with separately frozen choices and independent
-evaluation futures; it is not launched or a training authorization. Exact
-profiles, all alternatives, decision audits and limitations are in the
-[research packet](../../experiments/evidence/ironclad_a0_overnight_20261008/README.md).
+Exact profiles, alternatives, decision audits and limitations are in the
+[original research packet](../../experiments/evidence/ironclad_a0_overnight_20261008/README.md).
+
+### Boss-relic selection precision (§398) — execution blocked
+
+The separately authorized K4-versus-K16 follow-on attempted all 32 fresh
+sources (`610084200..610084231`) using the unchanged `3ed91ab3` producer,
+at most one boss-relic state per source and common futures. Selection was
+allocated k0–3 versus k0–15, followed by shared independent evaluation k16–31.
+Thirty-one sources completed; source `610084217` exceeded its fixed
+1,800-second cap. The all-source contract is `INVALID` and the primary is
+**`EXECUTION_BLOCKED`**. Neither choices nor efficacy evaluation were produced;
+there is no quality verdict and no completed-31 substitute analysis.
+
+Collection used six one-thread workers for 100.414696 minutes elapsed.
+Observed emitted CPU was 9.184214 core-hours, censored by unavailable timeout
+source and unfinished continuation costs. The timeout's saved branches averaged
+17.4739 CPU seconds, 2.43 times the planning average. Recorded profiles support
+a compute-cost tail without a recorded fatal fault; interrupted work remains
+uncertified. All allocated attempts and partial files were preserved, with no
+retry, replacement, cap change or remaining game worker.
+
+Selection precision remains unresolved. The earlier RemoveLow confirmation
+is unchanged, and no new training, deployment or automatic continuation is
+qualified. Future efficacy use requires a new authorized protocol that
+discloses this failed allocation and addresses per-source runtime tails.
+See [ledger §398](../../experiments/ledger-06.md) and the
+[follow-on evidence and reviews](../../experiments/evidence/ironclad_a0_k_precision_20261008/README.md).
 
 ## Live OOC MCTS on vs off (§384) — MCTS loses
 

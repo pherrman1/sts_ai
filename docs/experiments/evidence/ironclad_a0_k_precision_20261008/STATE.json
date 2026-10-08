@@ -1,6 +1,6 @@
 {
   "schema": "gen2_k_precision_state_v1",
-  "status": "EXECUTION_BLOCKED_REVIEWED_PENDING_DRAFT_HANDOFF",
+  "status": "EXECUTION_BLOCKED_HANDOFF_READY",
   "authorization": "User accepted a new four-hour continuation with Let\u2019s gooo after the explicit four-hour-cap question.",
   "start_local": "2026-10-08T11:02:24+02:00",
   "deadline_local": "2026-10-08T15:02:24+02:00",
@@ -94,8 +94,7 @@
   "active_game_workers": 0,
   "raw_directory": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9",
   "next": [
-    "Synchronize task branch documentation with current main, preserve immutable inputs, and run focused integration checks.",
-    "Publish the reviewed blocked result in the existing draft PR; no retry, selection or evaluation."
+    "Reviewer assessment of draft PR442; no automatic game retry, new experiment, efficacy analysis, production promotion or PR merge."
   ],
   "reviewed_commit": "54c97fd0995c043ca584e75ff6af6da2fb032cf3",
   "dispatch_authorization_sha256": "900af062a8611765ad4d2ede4828c6ff78a93f4c7f145ffe2f7c6fa97c5b4d13",
@@ -115,5 +114,9 @@
   "finished_collection_epoch": 1791457339.409696,
   "process_closeout_sha256": "8aa5e35ba1fe226237c99996fbe8805eb32badf54e9619436e5a68ab78e2780c",
   "closeout_review_sha256": "c14887f8bc8907702deb25f3ca9692856b59933d8c9daa60e4effabd11ecfe81",
-  "interpretation_review_sha256": "300acb67e69fa1a06d4187ed9cd3869784575601056fcd70a569341eabf7bb31"
+  "interpretation_review_sha256": "300acb67e69fa1a06d4187ed9cd3869784575601056fcd70a569341eabf7bb31",
+  "handoff_url": "https://github.com/pherrman1/sts_ai/pull/442",
+  "integrated_source_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "production_source_changed_after_integration": false,
+  "integration_fixture_repair": "tests/test_combat_transition_native_contract.py standalone compiler flag C++17 to C++20"
 }

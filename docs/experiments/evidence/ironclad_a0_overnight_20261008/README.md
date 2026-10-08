@@ -31,7 +31,7 @@ information, and keys off with no optional key detours; forced-only Recall
 remains legal. It began at 01:47 Europe/Berlin on
 2026-10-08 with an eight-hour cap. All work is isolated on
 `codex/ironclad-overnight-20261008`; production defaults and model bytes remain
-unchanged. Nothing is merged.
+unchanged. The PR remains unmerged.
 
 ## Read the evidence
 
@@ -46,10 +46,12 @@ unchanged. Nothing is merged.
 - [Champion freeze](champion_freeze.json), [final protocol](protocols/final_confirmation.json),
   [independent launch review](strategy/FINAL_CONFIRMATION_LAUNCH_REVIEW.json),
   and [holdout latch](holdout_opened.json): the single fixed 512-pair comparison.
-- [Final attempt accounting](learning/ATTEMPT_ACCOUNTING_v3.md): **799 completed
+- [Original overnight attempt accounting](learning/ATTEMPT_ACCOUNTING_v3.md): **799 completed
   runtime invocations**, including **2,687 requested full-run trajectories**,
   39 source/conditional-branch invocations, 64 public-combat pair invocations
-  and one public-state check. No failed, timed-out or pending game jobs.
+  and one public-state check. That original campaign had no failed, timed-out
+  or pending game jobs. The separately authorized §398 follow-on adds 32 source
+  attempts, including one timeout; it is accounted for in its own packet.
   Expected startup failures, build failures, prelaunch rejections and repaired
   validator defects are separately retained.
 - [Primary final report](final_confirmation_report.json),
@@ -207,15 +209,19 @@ is a reviewed conditional approximation, not an exact posterior over every
 hidden history. Historical model/controller mismatch and approximate action
 features remain limitations.
 
-Final task-scope, local-link, whitespace, worktree/submodule and repository-health
-checks passed. A virtual merge with observed main `dd308d3d` has no textual
-conflicts after relocating three documentation verification dates; no merged
-source was built or used for the experiment. See the
-[packaging receipt](audit/FINAL_PACKAGING_CHECKS.json).
+Original task-scope, local-link, whitespace, worktree/submodule and repository-health
+checks passed. At that handoff, the virtual merge with observed main `dd308d3d`
+was textually clean; no merged source was built or used for that experiment.
+The [original packaging receipt](audit/FINAL_PACKAGING_CHECKS.json) remains unchanged.
+After the separately authorized §398 follow-on closed, the task branch was
+synchronized with main `70f7dfe5` at `61b9616a`. The
+[follow-on integration checks](../ironclad_a0_k_precision_20261008/integration/README.md)
+built that source and resolved one standalone test fixture's C++ standard mismatch.
+Those checks do not relabel or transfer the frozen producers' gameplay evidence.
 
 GitHub Actions `Linux GCC` is the authoritative repository gate. Its workflow
 skips draft PRs; local passes do not establish a CI pass. No live-game
-qualification, default promotion, merge or automatic follow-up experiment is
+qualification, default promotion, PR merge or automatic follow-up experiment is
 part of this handoff.
 
 ## Raw evidence and reproduction
@@ -251,19 +257,34 @@ the ignored executable and raw trajectories. No game invocation is needed for
 reanalysis. Per-arm CPU totals sum measured game-thread CPU, and per-arm process
 wall totals sum shard durations; neither is the elapsed parallel campaign time.
 
-## Single best next experiment
+## Follow-on selection-precision attempt (§398)
 
-Run the proposed fresh 32-source, boss-relic-only **K4 versus K16 selection**
-comparison at identical states, freeze both choice sets, then evaluate on shared
-independent futures 16–31. This isolates selection precision from source mix and
-historical model drift. Its estimate is 8.3 game-core-hours typically or 12.4
-with six retained options, before tail cost. The proposed four-worker,
-four-hour limit gives a 16-game-core-hour ceiling, not a completion guarantee;
-it was not launched. The
-[exact proposal](learning/gen2_next_k_experiment_proposal.json) preserves the
-no-training and no-adaptive-extension boundaries.
+The proposed fresh 32-source, boss-relic-only **K4 versus K16 selection**
+comparison was later authorized and attempted in a separate four-hour block.
+It used the unchanged `3ed91ab3` producer and teacher, six one-thread workers and a fixed
+1,800-second cap per source. Of sources `610084200..610084231`, 31 completed and
+one timed out. The complete-cohort contract failed, so the result is
+**EXECUTION_BLOCKED**: no choices or independent efficacy evaluation were
+produced, and there is no K16-versus-K4 quality verdict.
 
-Knowledge impact: experiment outcomes belong in ledger §395; current research
+The attempt consumed 9.184214 observed core-hours, censored, and 100.414696
+minutes elapsed. The interrupted source's saved branches averaged 2.43 times
+the historical per-branch planning cost; aggregate capacity did not guarantee
+that every source fit its cap. All attempts and partial files are preserved,
+with no retry, replacement or cap change. The completed 31 cannot replace the
+fixed primary, and the timeout cannot be converted into a valid no-state zero.
+The earlier RemoveLow confirmation remains closed and unchanged.
+
+The [original proposal](learning/gen2_next_k_experiment_proposal.json) remains
+historical planning evidence. The actual reviewed allocation, execution costs,
+failed contract and independent closeout reviews are in the
+[follow-on packet](../ironclad_a0_k_precision_20261008/README.md) and ledger §398.
+Selection precision remains unresolved; any future efficacy use requires a new
+authorized protocol disclosing this failed allocation and addressing runtime
+tails. No further experiment or training is automatically authorized.
+
+Knowledge impact: original experiment outcomes belong in ledger §395 and the
+separate blocked follow-on in §398; current research
 disposition and the native information-boundary caveat belong in maintained
 evaluation pages. New opt-in controls and diagnostic interfaces are documented
 in the architecture, environment and label-pipeline pages. No production

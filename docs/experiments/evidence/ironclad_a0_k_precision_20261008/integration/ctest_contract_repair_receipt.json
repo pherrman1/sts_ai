@@ -1,0 +1,32 @@
+{
+  "schema": "integration_fixture_repair_v1",
+  "source_base_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "repair_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tests/test_combat_transition_native_contract.py",
+  "before_sha256": "72c5a5f39e234ee187975625b0caf0642cb93ccca2f7690eb5f3326f91e53562",
+  "after_sha256": "8a51043aa1e877574daf8ea623326f6123676ce2d20d1e521df6e8dfce9682c5",
+  "change": "Only standalone fixture compiler flag -std=c++17 -> -std=c++20, matching CMake and included headers",
+  "command": [
+    "bash",
+    "tools/seed_guard.sh",
+    "/home/philippherrmann/.local/bin/ctest",
+    "--test-dir",
+    "build/linux-gcc-debug",
+    "--output-on-failure",
+    "--timeout",
+    "180",
+    "-R",
+    "^combat_transition_native_contract$",
+    "--output-junit",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/integration-61b9616/ctest_contract_repair.xml"
+  ],
+  "started_epoch": 1791458517.107112,
+  "finished_epoch": 1791458521.814676,
+  "exit_code": 0,
+  "log": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/integration-61b9616/ctest_contract_repair.log",
+  "log_sha256": "6fc8a44477b0ce136deafd581301c5fda3ca343c91d54d9d47f0623ba40c8112",
+  "junit": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/integration-61b9616/ctest_contract_repair.xml",
+  "junit_sha256": "25e710527bcb4dd8fd562632129a70b688eabf100e1ba114a786dfbb92a3bb5e",
+  "test_environment_receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_v2_receipt.json",
+  "test_environment_receipt_sha256": "ad4f5ff805eb52375e0b9a92941ec2ecf87da29f922740c17b4b210d7ceef2f0",
+  "scope": "affected seed-free fixture only; no production/model/frozen artifact modification"
+}

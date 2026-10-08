@@ -1,0 +1,215 @@
+{
+  "schema": "research_integration_reconciliation_review_v1",
+  "status": "PASS_STATIC_INTEGRATION_RECONCILIATION",
+  "reviewed_epoch": 1791458417.6397507,
+  "reviewed_merge": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "task_parent": "f88cbbd2d3ff5d327adcd6d2a3c002b7f321347b",
+  "main_parent": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+  "merge_base": "a4b3df35d170abba7860e8e854cc24cfd3579075",
+  "parent_unique_file_checks": {
+    "task_only_files_preserved_exactly": 410,
+    "main_only_files_preserved_exactly": 34,
+    "mismatches": []
+  },
+  "overlapping_paths": [
+    "CMakeLists.txt",
+    "EXPERIMENTS.md",
+    "apps/one_combat.cpp",
+    "apps/one_combat/driver_shared.h",
+    "docs/experiments/ledger-06.md",
+    "docs/knowledge-base/architecture/out-of-combat.md",
+    "docs/knowledge-base/operations/environment-variables.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md"
+  ],
+  "overlap_blob_ids": {
+    "CMakeLists.txt": {
+      "task": "dd85e59d28c8894ef4a2ba79fb314fdc0aac5707",
+      "main": "cb187118a6861a147f24d25ccdb3e245bd13df28",
+      "merged": "bd270f1fcc96ae49819e0ce87029fec0983e5cf9"
+    },
+    "EXPERIMENTS.md": {
+      "task": "3747113a94ee5be5cc54acfe55adb671e0daedef",
+      "main": "a7e531eefb2f3f00edd167c3aec13c122c792ef6",
+      "merged": "9ffc7547faeb993c486dc92760714bc8c03020ed"
+    },
+    "apps/one_combat.cpp": {
+      "task": "b39c623ab2ab687fb004dc879467a59f02307415",
+      "main": "f6e7aa663fc967bfbdf5f26d99c9974adbed11ba",
+      "merged": "9ea2f8049524d7309b1cf0006a5defac85405e07"
+    },
+    "apps/one_combat/driver_shared.h": {
+      "task": "4d64313c8df54841076f3aebdb9cf0a404abae32",
+      "main": "22c5275f438d6f7d2dd190288daef297d7af453c",
+      "merged": "b77955c76ce48127538d12c53e41dbc414be5ff0"
+    },
+    "docs/experiments/ledger-06.md": {
+      "task": "e622411d7dd3404dac2b4b2140e69f8625b3e1fe",
+      "main": "c60c5558fb3eabc9632054f5a50bbf4b80135669",
+      "merged": "652ab856d7b74b77517d9a0c54a3e4f0f9f2a4e2"
+    },
+    "docs/knowledge-base/architecture/out-of-combat.md": {
+      "task": "a48116fae4f00f8cb009e2085218637d5f798718",
+      "main": "2c9cffd352c1f23d802ea6ebd4bb6684d064a0ee",
+      "merged": "94dcc8ba99b167e4eaf58f6f2275ec1a9949af86"
+    },
+    "docs/knowledge-base/operations/environment-variables.md": {
+      "task": "c402fb9658d5590a13053c165482fcfa503b3309",
+      "main": "b8c55efc93e0ca1281ec0a1c979e3f764251e96f",
+      "merged": "2821451acaa735db46e73d2ac7e9cb538fb35f8c"
+    },
+    "docs/knowledge-base/operations/ooc-label-pipeline.md": {
+      "task": "ad067bb646a1a2e2a527fc2685e2c40b9fd2429f",
+      "main": "ec859a55be394e98813f45f18885ac3d0cdb491c",
+      "merged": "bcb1e84771a01a4a1ad51c885637c9c8bc708c1b"
+    }
+  },
+  "source_overlap_added_removed_line_deltas_equal_both_parent_changes": [
+    "CMakeLists.txt",
+    "apps/one_combat.cpp",
+    "apps/one_combat/driver_shared.h"
+  ],
+  "cmake": {
+    "parent_and_merge_counts": {
+      "f88cbbd2d3ff5d327adcd6d2a3c002b7f321347b": {
+        "named_tests": 176,
+        "executable_targets": 27
+      },
+      "70f7dfe5781a25b06caca49ae404b62208a81ad9": {
+        "named_tests": 177,
+        "executable_targets": 20
+      },
+      "61b9616ab2137d9c950f414fb8e162290d83ae5c": {
+        "named_tests": 183,
+        "executable_targets": 27
+      }
+    },
+    "exact_union_of_test_and_executable_names": true,
+    "duplicate_names": []
+  },
+  "manual_conflict_resolution_paths": [
+    "EXPERIMENTS.md",
+    "docs/experiments/ledger-06.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md"
+  ],
+  "doc_checks": {
+    "section395_preserved_from_task": true,
+    "section396_preserved_from_main": true,
+    "experiment_index_contains_both": true,
+    "GEN2_targeted_REST_future_start_text_preserved": true,
+    "incoming_E3_tool_text_preserved_with_separate_heading": true,
+    "conflict_markers_absent": true
+  },
+  "static_interface_assessment": [
+    "Main CLI additions ctmescapefeatures and ctmlizardfeatures retain main arities and matching driver declarations; task GEN2 target/future-start and opt-in guards retain task-parent deltas.",
+    "CMake keeps all seven task-added executable targets, six task tests and seven incoming main tests; crypto helper precedes its research-probe use.",
+    "Incoming ooc_mcts_adapter difference only adjusts Smoke Bomb masking for an explicitly escape-capable CTM and its selftest. Public encounter sampling code is unchanged by that merge.",
+    "Other incoming CTM implementation/feature-tool files are byte-identical to main parent; task gameplay and audit files outside overlaps are byte-identical to task parent."
+  ],
+  "immutable_producers": {
+    "K_precision": {
+      "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+      "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7"
+    },
+    "closed_confirmation": {
+      "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+      "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/removal-d35b42b1/one_combat",
+      "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5"
+    }
+  },
+  "frozen_artifacts_unchanged": [
+    {
+      "path": "models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d"
+    },
+    {
+      "path": "tools/seed_guard.sh",
+      "sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c"
+    }
+  ],
+  "checks_run_by_reviewer": "Read-only Git blob/delta/target inventory and artifact hashes; no builds, tests or experiments.",
+  "limitations": [
+    "This static review is scoped to merge61b9616a. Strategy subsequent maintained-doc updates and final handoff require their own final inspection.",
+    "Merged runtime is a new source identity. Source3ed91ab3 generated K-precision data; sourced35b42b1 generated closed confirmation. Neither result is a new gameplay qualification of61b9616a.",
+    "Focused merged integration build/test results are being produced separately by learning. Historical test receipts are not relabeled as merged-source tests.",
+    "Imported main CTM/E3 research conclusions and entire implementation were not independently re-qualified here; the review verifies integration preservation and relevant interface separation."
+  ],
+  "new_games_or_numerical_analysis": false,
+  "source_mutations_by_reviewer": false
+}

@@ -92,6 +92,14 @@ learned-stop environment. No training or GPU workload is part of this comparison
 
 ## Review and reproduction
 
+The [reviewer handoff](HANDOFF.md) separates scientific custody from the later
+[integration checks](integration/README.md). The task branch was synchronized
+with main at `61b9616a`; Debug configure/build passed, 21 of 22 selected checks
+passed initially, and a standalone fixture's C++17-to-C++20 flag repair passed
+the remaining test. The failed launcher invocation and compiler check are retained with their repairs.
+The [static reconciliation review](audit/INTEGRATION_RECONCILIATION_REVIEW.md)
+verified preservation of both parents and all frozen artifacts.
+
 [Scientific review](design/SCIENTIFIC_DESIGN_REVIEW.md),
 [source freshness inventory](design/source_freshness_inventory.json),
 [independent verifier review](design/VERIFIER_IMPLEMENTATION_REVIEW.json),

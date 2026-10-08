@@ -14855,6 +14855,10 @@ four-worker, four-hour cap of 16 core-hours. No automatic extension or training.
 interfaces, native information-boundary caveat, current research disposition
 and actual CI routing. No production baseline promotion.
 
+**Follow-on:** the proposed selection-precision comparison was later attempted
+under a separate four-hour authorization; see §398 below. It ended
+`EXECUTION_BLOCKED`, without changing this campaign’s closed confirmation.
+
 ## §396 — E3: first counterfactual OOC tranche, card-reward criterion negative, boss relics priced (2026-10-08)
 
 **Question:** do whole-run counterfactual labels (same state, each option,
@@ -14908,3 +14912,86 @@ and better than V4?
 **Evidence:** [packet](evidence/ooc_cf_e3_20261008/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_e3_cf`.
+
+## §398 — Boss-relic selection precision K4 versus K16: execution blocked (2026-10-08)
+
+**Question:** does increasing selection futures from four to sixteen improve
+which retained boss relic is chosen at the same source state, or does the
+small-K optimism seen in §395 persist on independent futures?
+
+**Frozen design:** 32 fresh sources (`610084200..610084231`), at most one
+BOSS_RELIC state each, 32 common futures per retained option. K4 selects on
+k0–3; K16 selects on k0–15. Both use the captured source-policy action to break
+ties, then canonical key order. Both choice sets must be saved and hashed before
+separate evaluation on k16–31. The primary is the equal-weight mean of the 32
+source-level paired K16-minus-K4 differences, with an otherwise valid no-state
+source contributing zero. The 95% interval resamples whole sources 10,000 times
+with RNG 20261008; lower bound above zero supports local conditional gain,
+upper bound below zero supports harm, otherwise inconclusive. Any invalid or
+incomplete source blocks this primary. No replacement, retry, cap change or
+completed-subset substitution is allowed.
+
+The unchanged gameplay producer is `3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0`,
+binary SHA256 `27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7`;
+reviewed collection/analysis tools are at `54c97fd0995c043ca584e75ff6af6da2fb032cf3`.
+The original floor/win/V4 models, corrected public-eight-future/Recall policy
+and native learned-stop teacher are fixed. No gameplay source, model training
+or GPU workload changed. The user authorized a separate 11:02:24–15:02:24
+Europe/Berlin block. Seed-guarded collection used at most six one-thread workers,
+1,800 seconds per source, a 10,800-second process-group cap and an absolute
+14:22:24 collection stop. The actual dispatcher deadline was 14:21:54.
+
+**Result: `EXECUTION_BLOCKED`.** All 32 invocations were attempted exactly once:
+31 completed exit 0; source `610084217` timed out after 1,800.033516 seconds,
+exit 124. Dispatch ran 11:21:54–13:02:19, ended exit 123, and left no game worker.
+The frozen verifier returned `INVALID`, `source subprocess incomplete/failed`.
+Neither selection nor efficacy evaluation ran; the point estimate, interval and
+K16-versus-K4 quality verdict are null. The timeout is not a valid no-state zero.
+
+| Preserved execution metadata | Value |
+| --- | ---: |
+| Complete branch records from the 31 completed sources | 3,968 |
+| Additional complete persisted records from the timed-out source | 100 branches; 97 MAP rows |
+| Observed source CPU | 412.584270 s; timeout source cost unavailable |
+| Observed branch CPU | 32,650.585663 s; interrupted/unflushed work unavailable |
+| Total observed emitted CPU | 33,063.169933 s = 9.184214 core-hours, censored |
+| Sum of invocation process-wall times | 33,290.747188 s |
+| Parallel dispatcher elapsed | 6,024.881753 s = 100.414696 minutes |
+
+All 255 source files and the dispatch log are preserved. Missing cost is not
+imputed as zero, concurrent process-wall sums are not elapsed time, and the
+truncated option table cannot establish a complete expected branch allocation.
+The original §395 inventory of 799 completed invocations excludes these 32
+follow-on attempts and their timeout. The supplemental E3 allocation check
+found its declared `55000000..55000999` range disjoint; the original freshness
+inventory remains unchanged and bounded to the metadata inspected at freeze.
+
+**Diagnosis and limits:** source217's 100 saved complete continuations used
+1,747.39344 CPU seconds, averaging 17.4739 seconds—2.43 times the historical
+branch average used for planning. The saved profile stream was still advancing
+immediately before termination. This supports a compute-cost tail explanation;
+the aggregate forecast did not bound per-source runtime. Across all sources,
+990,256 saved profiles and 3,982,623,750 completed simulations had no recorded
+fatal health finding. The 4,268 cycle fallbacks, 49 engine-stop and 49 turn-limit
+endpoints remain diagnostics. Interrupted/buffered work and per-branch combat
+coverage are not certified by that scan. A timeout establishes no selector
+superiority, harm or equivalence.
+
+The conditional sampler retains latent counters and pool membership; it is not
+an exact posterior over every player-visible history. No online selector,
+population win-rate or merged-source qualification follows. The earlier
+RemoveLow confirmation stays closed and separate, with no pooled labels or
+reopened holdout. Selection precision remains unresolved. Any future efficacy
+use needs a new authorized protocol disclosing this failed allocation and
+addressing per-source compute tails; no automatic continuation is authorized.
+
+**Evidence:** [complete follow-on packet](evidence/ironclad_a0_k_precision_20261008/README.md),
+[frozen protocol](evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md),
+[machine result](evidence/ironclad_a0_k_precision_20261008/RESULT.json),
+[metadata accounting](evidence/ironclad_a0_k_precision_20261008/analysis/BLOCKED_RESULT.md),
+[independent custody/health review](evidence/ironclad_a0_k_precision_20261008/audit/CLOSEOUT_REVIEW.md),
+[independent interpretation review](evidence/ironclad_a0_k_precision_20261008/design/FINAL_INTERPRETATION_REVIEW.md).
+
+**Knowledge impact:** current research records a failed fixed-allocation
+experiment and unresolved selection precision. Production defaults, model
+artifacts and the closed §395 qualification are unchanged.
