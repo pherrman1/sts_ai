@@ -402,8 +402,15 @@ void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent);
 
 int teacherSchemaCompatibilitySelfTest();
 int learnedStopTeacherSelfTest();
-int ctmScoreRows(const std::string &inPath, const std::string &outPath);
+// The default models are the production stack; a research candidate passes its own pair.
+int ctmScoreRows(const std::string &inPath, const std::string &outPath,
+                 const std::string &fastModel = "selfplay/models/combat_transition_deepsets_lizard_t2.native",
+                 const std::string &standardModel = "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+                 bool activeLizard = true);
 int ctmScoreRowsSelfTest();
+int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
+int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
+                      const std::string &standardModel, const std::string &outPath);
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath);
 

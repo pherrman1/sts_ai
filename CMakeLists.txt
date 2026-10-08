@@ -410,6 +410,10 @@ add_test(NAME vwin_e1_focal_selftest
     COMMAND python3 -m unittest tools.test_vwin_e1_focal -q)
 set_tests_properties(vwin_e1_focal_selftest PROPERTIES
     LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_e3_cf_selftest
+    COMMAND python3 -m unittest tools.test_vwin_e3_cf -q)
+set_tests_properties(vwin_e3_cf_selftest PROPERTIES
+    LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME boss_headroom_347_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
 set_tests_properties(boss_headroom_347_analysis_selftest PROPERTIES
@@ -572,6 +576,14 @@ add_test(NAME ctm_pins_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_pins.py)
 add_test(NAME ctm_near_full_inputs_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
+add_test(NAME ctm_hp_domain_selftest COMMAND python3 -m unittest tools.test_ctm_hp_domain)
+set_tests_properties(ctm_hp_domain_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_escape_selftest COMMAND python3 -m unittest tools.test_ctm_escape)
+set_tests_properties(ctm_escape_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_capabilities_selftest COMMAND python3 -m unittest tools.test_ctm_capabilities)
+set_tests_properties(ctm_capabilities_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_lizard_selftest COMMAND python3 -m unittest tools.test_ctm_lizard)
+set_tests_properties(ctm_lizard_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_attention_hpo_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_attention_hpo.py)
 add_test(NAME combat_transition_attention_hpo_promote_selftest
@@ -732,6 +744,26 @@ add_test(NAME combat_transition_runtime_loader COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_combat_transition_runtime_loader.py
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(combat_transition_runtime_loader PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_research_candidate_loader COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_research_candidate.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_research_candidate_loader PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_escape_runtime COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_escape_runtime.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_escape_runtime PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_writhing_ritual_runtime COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_writhing_ritual_runtime.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_writhing_ritual_runtime PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_lizard_runtime COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_lizard_runtime.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_lizard_runtime PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
 add_test(NAME vwin_override COMMAND python3

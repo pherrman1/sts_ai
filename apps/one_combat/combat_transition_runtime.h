@@ -20,6 +20,10 @@ struct ActiveLizardPrediction {
     double rWinGivenConsumed = 0;
     std::array<double,3> classProbabilities{};
     int t2HeadInputHp = 0;
+    // Composed under the lizardBrew / lizardFairy capabilities: Brew states use the standard
+    // child and its r model; a Fairy Potion fires before the Tail, so the consumed branch has none.
+    bool brew = false;
+    bool fairy = false;
 };
 
 // CPU FP32 only. Construction is explicit and throws on any incompatible artifact.
@@ -28,6 +32,12 @@ class CombatTransitionRuntime {
     std::map<std::string, Tensor> weights;
     nlohmann::json metadata_;
     nlohmann::json lizardCorrection_;
+    nlohmann::json identity_;
+    int hpMin_ = -160;
+    bool escape_ = false;
+    bool writhingRitual_ = false;
+    bool lizardFairy_ = false;
+    nlohmann::json lizardBrewRModel_;
     const Tensor &tensor(const std::string &) const;
     std::vector<float> linear(const std::string &, const std::vector<float> &) const;
     std::vector<float> embedding(const std::string &, int) const;
@@ -37,22 +47,42 @@ public:
     static void requireCurrentStandardFallbackArtifact(const std::string &path);
     explicit CombatTransitionRuntime(const std::string &path);
     const nlohmann::json &metadata() const { return metadata_; }
+    // Production identity pins, or a research candidate's (STS_CTM_RESEARCH_CANDIDATE_MANIFEST).
+    const nlohmann::json &identity() const { return identity_; }
+    bool researchCandidate() const { return !identity_.at("candidateId").is_null(); }
+    // Index of a signed HP delta in the artifact's HP class domain.
+    int hpClassIndex(int signedDelta) const { return signedDelta-hpMin_; }
     bool nearFull() const { return metadata_.at("version")==2; }
+    // Escape capability (research candidates only): an escape head on the HP encoding,
+    // drawn before HP, with the HP head and the potion trajectory conditioned on it.
+    bool escapeCapable() const { return escape_; }
+    static bool escapeEligible(const std::array<int,5> &potions, int capacity, bool boss);
+    // Writhing Mass with Ritual Dagger is supported (research candidates only).
+    bool writhingRitualCapable() const { return writhingRitual_; }
+    static nlohmann::json supportExclusions(bool escape, bool writhingRitual);
+    float escapeProbability(const std::vector<float> &z) const;
     bool requiresEntropicBrewFallback() const;
     bool hasActiveLizardCorrection() const { return !lizardCorrection_.is_null(); }
     double activeLizardReserveProbability(double pReserveWin) const;
+    // Active Lizard with a Fairy Potion / Entropic Brew is composed (research candidates only).
+    bool lizardFairyCapable() const { return lizardFairy_; }
+    bool lizardBrewCapable() const { return !lizardBrewRModel_.is_null(); }
+    // r for Brew states, which use the standard child's survival.
+    double lizardBrewReserveProbability(double pReserveWin) const;
     float survival(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHpEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHp(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHp(const std::vector<float> &encoding) const;
     std::vector<float> hpEncoding(const CombatPredictorInputV1 &) const;
-    std::vector<float> signedHp(const std::vector<float> &z, int delta, int preHp, int maximum) const;
+    // escaped is -1 for an artifact without the escape capability, else 0 or 1.
+    std::vector<float> signedHp(const std::vector<float> &z, int delta, int preHp, int maximum, int escaped=-1) const;
     std::vector<float> potionEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> potion(const CombatPredictorInputV1 &, int delta, float fraction) const;
     std::vector<float> potion(const std::vector<float> &encoding,
         const CombatPredictorInputV1 &, int delta, float fraction) const;
     std::map<std::string,std::vector<float>> relic(const std::vector<float> &z, int hpClass, float fraction, int mask, bool escaped=false) const;
-    std::vector<float> potionInventory(const std::vector<float> &, const std::array<int,5> &, int capacity,int delta,float fraction,bool boss) const;
+    // escape -1 leaves the head unconditioned; 0 forbids Smoke use; 1 requires the trajectory to end in it.
+    std::vector<float> potionInventory(const std::vector<float> &, const std::array<int,5> &, int capacity,int delta,float fraction,bool boss,int escape=-1) const;
     std::vector<float> event(const std::string &, const std::vector<float> &context,const std::vector<std::vector<std::vector<float>>> &candidates,const std::vector<bool> &legal) const;
     std::vector<float> gold(const std::vector<float> &context,const std::vector<std::vector<float>> &candidates) const;
 };
@@ -81,6 +111,8 @@ public:
     CombatTransitionExpectation expectation(const sts::GameContext &,
         const CombatPredictorInputV1 &) const override;
     const CombatTransitionRuntime &runtime() const { return runtime_; }
+    const NativeComposedDomain &domain() const { return domain_; }
+    bool modelsSmokeBombEscape() const override { return runtime_.escapeCapable(); }
 };
 
 class EntropicBrewFallbackCombatTransitionSampler final : public CombatTransitionSampler {
@@ -110,7 +142,8 @@ private:
     bool useFallback(const CombatPredictorInputV1 &) const;
     bool hasActiveLizard(const CombatPredictorInputV1 &) const;
     ActiveLizardPrediction predictActiveLizard(const CombatTransitionPersistentState &,
-        const CombatPredictorInputV1 &, bool forecastOnly=false) const;
+        const CombatPredictorInputV1 &, bool forecastOnly=false, bool featuresOnly=false) const;
+    const NativeCombatTransitionSampler &lizardChild(const ActiveLizardPrediction &) const;
     void recordBrewState(const CombatPredictorInputV1 &) const;
 public:
     EntropicBrewFallbackCombatTransitionSampler(std::string fastPath, std::string standardPath,
@@ -130,9 +163,16 @@ public:
         const CombatPredictorInputV1 &) const;
     ActiveLizardPrediction activeLizardPrediction(const sts::GameContext &,
         const CombatPredictorInputV1 &) const;
+    // q/r fit features (tools/ctm_lizard.py): child survivals for the ordinary and reserve
+    // inputs, routed as the lizardBrew / lizardFairy capabilities would, ignoring whether the
+    // artifact has them. r and the class probabilities are not computed.
+    ActiveLizardPrediction activeLizardFeatures(const CombatTransitionPersistentState &,
+        const CombatPredictorInputV1 &) const;
     CombatRuntimeSample sampleActiveLizardClass(const sts::GameContext &,
         const CombatPredictorInputV1 &, std::mt19937_64 &, int outcomeClass) const;
     bool activeLizardEnabled() const { return activeLizardEnabled_; }
+    const CombatTransitionRuntime &fastRuntime() const { return fast_->runtime(); }
+    bool modelsSmokeBombEscape() const override { return fast_->modelsSmokeBombEscape(); }
     Metrics takeMetrics() const;
 };
 }

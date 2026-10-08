@@ -33,7 +33,9 @@ ARTIFACTS = {
 }
 # Pinned artifacts are [path, sha256] pairs.
 ARTIFACTS = {k: (Path(v[0]), v[1]) for k, v in _pins.value('combat_transition_composed.ARTIFACTS', ARTIFACTS).items()}
-CLASSES = np.arange(-160, 144, dtype=np.int64)
+# Signed HP classes [min, max]; a declared retrain domain (tools/ctm_hp_domain.py) replaces them.
+HP_CLASS_RANGE = _pins.value('combat_transition_composed.HP_CLASS_RANGE', [-160, 143])
+CLASSES = np.arange(HP_CLASS_RANGE[0], HP_CLASS_RANGE[1] + 1, dtype=np.int64)
 TRAINED_GROUPS = ('turns', 'attacks', 'cards', 'shuffles')
 INPUT_KEYS = ('globals_continuous', 'global_categories', 'cards', 'relics', 'potions', 'card_mask', 'relic_mask')
 RECIPE = dict(schema='offline_composed_transition_v1', baseline=BASELINE,
@@ -200,7 +202,7 @@ class FrozenModels:
         self.delta_values=np.asarray(spec['maxHpDeltaValues'],dtype=np.int64)
         self.classes=payload['hp']['state_dict']['classes'].numpy()
         self.domain=payload['hp']['metadata']['domain']
-        if not np.array_equal(self.classes,CLASSES) or self.domain['min']!=-160 or self.domain['max']!=143:
+        if not np.array_equal(self.classes,CLASSES) or self.domain['min']!=CLASSES[0] or self.domain['max']!=CLASSES[-1]:
             raise ValueError('frozen HP class domain mismatch')
         self.trained_groups=TRAINED_GROUPS
         self.encounter_names=native_rng.encounter_names()

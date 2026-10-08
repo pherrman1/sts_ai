@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for the CTM retrain union and refit flags, `ctmscorerows`, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -55,6 +55,51 @@ active-Lizard correction). It parses the row's `predictorInput` and `pre`
 state, requires both to round-trip through their serializers, and writes per
 row the support reason, `p_death`, expected winning HP and the log probability
 of the observed post-combat HP. It runs no seeds (CTest `ctm_offline_score_rows`).
+`one_combat ctmscorerows ROWS.jsonl OUT.csv FAST.native STANDARD.native [LIZARD=0|1]`
+scores the same rows with another fast/standard pair, such as a research
+candidate (default `LIZARD=1`).
+
+The escape capability (#418, see `architecture/out-of-combat.md`) is fitted on
+a finished near-full artifact's own HP encoding, so the same steps serve the
+Attention and the DeepSets artifacts:
+- `one_combat ctmescapefeatures ROWS.jsonl BASE.native OUT` writes `OUT.f32`
+  (64 float32 per row) and `OUT.csv` for every surviving row that an
+  escape-capable artifact would support. The CSV holds the maxHP and HP labels,
+  `escaped`, and `eligible` (not a boss, a Smoke Bomb in a usable slot).
+- `tools/ctm_escape.py fit --artifact BASE.native --features OUT --out DIR`
+  fits the escape head (L2 logistic regression on eligible TRAIN rows, L2 chosen
+  on VALIDATION) and the escape bit on the HP head (zero-column warm start). The
+  default `--mode column` fits only the new column, so escape-bit-0 HP stays the
+  base head exactly; `--mode head` refits the whole HP head. `fit.json` reports
+  escape NLL/Brier against the TRAIN base rate and HP NLL before and after, by
+  split. Escapes without an eligible Smoke Bomb (Brew-generated) are counted as
+  unrepresentable.
+- `tools/ctm_escape.py extend --artifact BASE.native --checkpoint DIR/escape.pt
+  --out NEW.native` needs a research-candidate base, writes the escape tensors,
+  `capabilities` and the exclusions without `smoke_bomb`.
+- `combat_transition_near_full_exposure.py --escape DIR/escape.pt` and
+  `NearFullSampler(escape=...)` sample the same factorization in Python (the
+  potion trajectory takes `escape=` too), so the Smoke-row relic exposure that
+  failed in production can be re-run under it.
+- `tools/ctm_capabilities.py writhing-ritual --artifact IN.native --out
+  OUT.native` adds the `writhingRitual` capability to a research candidate and
+  drops the `writhing_ritual_intersection` exclusion. The exposure script's
+  `--writhing-ritual` flag makes the Writhing Mass + Ritual Dagger cohort a
+  gated one (it is diagnostic otherwise) and keeps those rows under
+  `--final-support`; `--escape` likewise keeps Smoke Bomb rows.
+- `one_combat ctmlizardfeatures ROWS.jsonl FAST.native STANDARD.native OUT.csv`
+  writes one line per row whose pre-state has an active Lizard Tail: the label
+  (0 a win with the Tail unused, 1 a win after it fired, 2 a loss), the routed
+  child (standard for Entropic Brew), the Fairy/Brew flags and the child's
+  ordinary and reserve survivals. It ignores whether the fast artifact already
+  has the Lizard capabilities.
+- `tools/ctm_lizard.py fit --features OUT.csv... --out DIR` refits r per child
+  on the Tail-fired rows (L2 chosen on VALIDATION) and reports r NLL against the
+  TRAIN base rate, q calibration and the three-class NLL by split and cohort
+  (plain, fairy, brew). `extend --artifact FAST --fit DIR/fit.json --out NEW
+  [--fast-r] [--brew] [--fairy]` writes the capabilities (and the refitted fast
+  r) into a candidate fast artifact's header and prints the manifest entries.
+  Path B has few Tail-fired rows: about 46 with Brew and 160 with Fairy.
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
@@ -100,6 +145,14 @@ the production candidate-contract support predicate rejects (production
 `row_scopes.json` gives each scope's row range, so main-corpus gates can
 exclude forced rows. Two retrain flags reuse production choices instead of
 searching again:
+- `tools/ctm_hp_domain.py` declares a wider HP domain (`declare --pre-cur-max
+  220 --pre-max-max 220` gives classes -219..231, 451 rows) and `expand` widens
+  the production HP and relic warm starts to it. Old classes keep their rows. New
+  HP-head rows get zero weights and bias -30, and new relic-delta rows copy the
+  nearest edge row. The receipt lists the
+  `combat_transition_composed.HP_CLASS_RANGE` pin. With `ARTIFACTS` pinned to
+  the expanded checkpoints, the support predicate (and so `union`) keeps rows up
+  to the declared envelope. The near-full `/160` HP input scale stays fixed.
 - `combat_transition_attention_hpo.py --frozen-winner NAME` tunes and refits
   only that candidate;
 - `combat_transition_deepset_potion_specialist.py --arms C` refits only the
@@ -1061,6 +1114,15 @@ siblings share common random numbers.
   - States are drawn only from TYPES (comma list), ranked by
     `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
   - The manifest counts selected states by type and act.
+
+`python3 -m tools.vwin_e3_cf ROOT --output NEW_DIR [--corpus334 INDEX]` analyzes
+GEN=2 outputs. It verifies part manifests and hashes, masks the four
+HIDDEN_FUTURE fields for X2-B and drops them for retrained arms, and drops any
+(state, k) group with an invalid sibling. The split is `source_split`, and
+TEST is scored only with `--open-test`. It reports per-state selection gain
+against V4's choice and map-row NLL/Brier. Arms: X2B, an E3-only GBM with a
+learning curve, and, with the local #334 index, F2_334 and F2. Result: ledger-06
+§396.
 
 ## Schema examples
 

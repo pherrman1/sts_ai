@@ -12,8 +12,10 @@ from tools import combat_transition_gold as gold,combat_transition_gold_proc_bud
 from tools import combat_transition_sparse_events as events
 
 
-def sample_potions_batch(net,z,pres,delta,hp,planner,boss):
-    """Batched calls, independent native hypothetical origin per imagined row."""
+def sample_potions_batch(net,z,pres,delta,hp,planner,boss,escape=None):
+    """Batched calls, independent native hypothetical origin per imagined row.
+
+    escape (per row 0/1) conditions the trajectory on an escape drawn earlier."""
     inventory=np.asarray([pre['potions'] for pre in pres],np.int64)
     capacity=np.asarray([pre['potionCapacity'] for pre in pres],np.int64)
     original_bits=((inventory>1)*(1<<np.arange(5))).sum(-1)
@@ -21,7 +23,8 @@ def sample_potions_batch(net,z,pres,delta,hp,planner,boss):
     origins=[None for _ in pres];states=[None for _ in pres];escaped=np.zeros(len(pres),bool);pending=np.arange(len(pres))
     sozu=np.asarray([any(r['id']==c.base._RELIC_IDS['SOZU'] for r in pre['relics']) for pre in pres])
     while len(pending):
-        lp=trajectory.log_probabilities(net,np.asarray(z)[pending],inventory[pending],capacity[pending],np.asarray(delta)[pending],np.asarray(hp)[pending],np.asarray(boss)[pending])
+        lp=trajectory.log_probabilities(net,np.asarray(z)[pending],inventory[pending],capacity[pending],np.asarray(delta)[pending],np.asarray(hp)[pending],np.asarray(boss)[pending],
+                                        None if escape is None else np.asarray(escape)[pending])
         probability=lp.detach().exp().cpu().numpy().astype(np.float64);probability/=probability.sum(-1,keepdims=True)
         actions=(planner.random(len(pending))[:,None]>=probability.cumsum(-1)).sum(-1).clip(max=63)
         next_pending=[]
@@ -129,8 +132,14 @@ def assemble(pre,pi,ending,maximum,potion_trace,residues,writhing_event,dagger_d
 
 
 class NearFullSampler:
-    def __init__(self,parent,folder=None,device='cuda',final_support=False):
-        self.final_support=final_support
+    def __init__(self,parent,folder=None,device='cuda',final_support=False,escape=None,writhing_ritual=False):
+        """escape: an escape fit checkpoint (tools/ctm_escape.py); draws the escape before HP.
+        writhing_ritual: support Writhing Mass with Ritual Dagger (the writhingRitual capability)."""
+        self.final_support=final_support;self.writhing_ritual=writhing_ritual
+        self.escape=None
+        if escape is not None:
+            from tools import ctm_escape
+            self.escape=ctm_escape.TorchEscape.load(escape,device)
         parent=Path(parent);folder=parent/'full-union-downstream-v1' if folder is None else Path(folder)
         self.models,self.bindings=downstream.load_upstream(parent,device)
         import json
@@ -141,7 +150,8 @@ class NearFullSampler:
 
     def sample_transition(self,pre,pi,planner):
         m=self.models
-        if getattr(self,'final_support',False):reasons=support.final_reasons(pi,pre,m)
+        escape=getattr(self,'escape',None)
+        if getattr(self,'final_support',False):reasons=support.final_reasons(pi,pre,m,escape=escape is not None,writhing_ritual=getattr(self,'writhing_ritual',False))
         else:
             with support.candidate_contract():reasons=c.full_support_reasons(pre,pi,m)
         if reasons:return c.Transition('FULL_SURROGATE_FALLBACK',reasons=tuple(reasons))
@@ -149,9 +159,15 @@ class NearFullSampler:
             inputs=m.encode_visible(pi)
             if planner.random()>=m.survival(inputs):return c.Transition('DEATH')
             delta=c.categorical(m.max_hp(inputs),planner);maximum=pre['maxHp']+int(m.delta_values[delta]);z=m.hp_encoding(inputs)
-            signed=c.categorical(m.hp_distribution(z,delta,pre['curHp'],maximum),planner);ending=pre['curHp']+int(m.classes[signed])
+            boss=gold.encounter_name(pi['globals']['encounter']) in trajectory.BOSSES;bit=None
+            if escape is None:signed=c.categorical(m.hp_distribution(z,delta,pre['curHp'],maximum),planner)
+            else:
+                bit=0
+                if escape.eligible(pre['potions'],pre['potionCapacity'],boss):bit=int(planner.random()<escape.probability(z)[0])
+                signed=c.categorical(escape.hp_distribution(z,delta,pre['curHp'],maximum,bit,m.classes),planner)
+            ending=pre['curHp']+int(m.classes[signed])
             zp=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy()[0]
-            trace=trajectory.sample(m.potion_net,zp,pre,delta,ending/maximum,planner,gold.encounter_name(pi['globals']['encounter']) in trajectory.BOSSES)
+            trace=trajectory.sample(m.potion_net,zp,pre,delta,ending/maximum,planner,boss,bit)
             mask=trace['initialMask'];consumed=tuple(trace['consumed']);escaped=trace['outcome']=='ESCAPE';raw_z=z.cpu().numpy()[0]
             logits=self.heads['relic'](z,torch.as_tensor([signed],device=m.device),torch.as_tensor([ending/maximum],device=m.device,dtype=torch.float32),torch.as_tensor([mask],device=m.device),torch.as_tensor([escaped],device=m.device,dtype=torch.float32))
             residues={name:c.categorical(torch.softmax(logits[name],-1)[0].cpu().numpy(),planner) for name in c.TRAINED_GROUPS}

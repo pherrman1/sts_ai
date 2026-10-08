@@ -60,6 +60,8 @@ public:
         const CombatPredictorInputV1 &) const { return {}; }
     virtual CombatRuntimeSample sample(const sts::GameContext &,
         const CombatPredictorInputV1 &, std::mt19937_64 &) const = 0;
+    // True when an initial Smoke Bomb is supported and may end the combat in ESCAPE.
+    virtual bool modelsSmokeBombEscape() const { return false; }
 };
 
 // Compatibility path for samplers that do not implement neural preparation.
