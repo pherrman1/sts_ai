@@ -227,6 +227,44 @@ def main():
         expect('declared_production_domain', probe(['--identity', standard_path],
                manifest(directory / 'v2-production.json', schema='ctm_research_candidate_v2',
                         domainSha256=std_header['domain']['sha256'])), identity=CANDIDATE)
+        # v3 manifests list per-artifact capabilities; the escape capability must agree across the pair.
+        import numpy as np
+        import torch
+        from tools import ctm_escape
+
+        def escape_extend(base, name):
+            _, tensors = ctm_escape.read_artifact(base)
+            fitted = {key: tensors[key] for key in ctm_escape.HP_TENSORS}
+            fitted['hp.hp.0.weight'] = np.concatenate((tensors['hp.hp.0.weight'], np.full((64, 1), 0.1, np.float32)), 1)
+            fitted['escape.escape.weight'] = np.zeros((1, 64), np.float32)
+            fitted['escape.escape.bias'] = np.zeros(1, np.float32)
+            checkpoint = directory / f'{name}.pt'
+            torch.save(dict(tensors=fitted, metadata=dict(baseArtifactSha256=ctm_escape.sha256(base))), checkpoint)
+            out = directory / f'{name}.native'
+            sha = ctm_escape.extend(base, checkpoint, out)['artifactSha256']
+            return out, sha, {'escape': {'checkpointSha256': ctm_escape.sha256(checkpoint)}}
+
+        escape_std_path, escape_std_sha, std_capability = escape_extend(standard_path, 'escape-standard')
+        plain_fast_path = directory / 'plain-fast.native'
+        plain_fast_sha = write(plain_fast_path, fast_version, fast_header_for(escape_std_sha), fast_body)
+        escape_fast_path, escape_fast_sha, fast_capability = escape_extend(plain_fast_path, 'escape-fast')
+        v3 = dict(schema='ctm_research_candidate_v3', domainSha256=std_header['domain']['sha256'],
+                  standard=dict(json.loads(Path(env['STS_CTM_RESEARCH_CANDIDATE_MANIFEST']).read_text())['standard'],
+                                artifactSha256=escape_std_sha))
+        base_fast = json.loads(Path(env['STS_CTM_RESEARCH_CANDIDATE_MANIFEST']).read_text())['fast']
+        case_env = manifest(directory / 'v3-escape.json', **v3, fast=dict(base_fast, artifactSha256=escape_fast_sha),
+                            capabilities={'standard': std_capability, 'fast': fast_capability})
+        expect('v3_escape_pair', probe(['--pair-identity', escape_fast_path, escape_std_path, 1], case_env), identity=CANDIDATE)
+        case_env = manifest(directory / 'v3-mixed.json', **v3, fast=dict(base_fast, artifactSha256=plain_fast_sha),
+                            capabilities={'standard': std_capability, 'fast': {}})
+        expect('v3_escape_pair_disagrees', probe(['--pair-identity', plain_fast_path, escape_std_path, 1], case_env),
+               error='disagree on the escape capability')
+        expect('v3_without_capabilities', probe(['--identity', standard_path],
+               manifest(directory / 'v3-plain.json', schema='ctm_research_candidate_v3', domainSha256=std_header['domain']['sha256'],
+                        capabilities={'standard': {}, 'fast': {}})), identity=CANDIDATE)
+        expect('v3_missing_capabilities', probe(['--identity', standard_path],
+               manifest(directory / 'v3-nocap.json', schema='ctm_research_candidate_v3', domainSha256=std_header['domain']['sha256'])),
+               error='manifest schema')
     if production_standard_sha != hashlib.sha256(STANDARD.read_bytes()).hexdigest():
         raise RuntimeError('production artifact changed')
     print('research candidate loader PASS')

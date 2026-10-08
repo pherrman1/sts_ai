@@ -335,7 +335,8 @@ public:
 };
 std::shared_ptr<const CombatTransitionSampler> maskInitialSmokeBomb(
         std::shared_ptr<const CombatTransitionSampler> sampler) {
-    if (!sampler) return sampler;
+    // An escape-capable CTM supports the Smoke Bomb itself and may sample the escape.
+    if (!sampler || sampler->modelsSmokeBombEscape()) return sampler;
     return std::make_shared<InitialSmokeBombMaskingSampler>(std::move(sampler));
 }
 void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) {
@@ -3764,6 +3765,14 @@ void oocMctsAdapterSelfTest() {
         require(passed.rawPost.potions[1]==static_cast<int>(Potion::FIRE_POTION),
             "states without a Smoke Bomb pass through unchanged");
         std::cout<<"smoke_bomb_mask masked=empty_slot restored=unused generated=dropped\n";
+        struct EscapeSampler final : CombatTransitionSampler {
+            CombatRuntimeSupport support(const GameContext &,const CombatPredictorInputV1 &) const override { return {true,"supported"}; }
+            CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override { return {}; }
+            bool modelsSmokeBombEscape() const override { return true; }
+        };
+        const std::shared_ptr<const CombatTransitionSampler> escapeCapable=std::make_shared<EscapeSampler>();
+        require(maskInitialSmokeBomb(escapeCapable)==escapeCapable,"an escape-capable CTM keeps its Smoke Bomb");
+        std::cout<<"smoke_bomb_mask escape_capable=unmasked\n";
     }
     {
         // Phase-0 masking (#370): the CTM sees an empty slot for an initial

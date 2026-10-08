@@ -4,7 +4,9 @@
 #include "one_combat/combat_predictor_input.h"
 #include "one_combat/combat_transition.h"
 #include "one_combat/combat_transition_runtime.h"
+#include "one_combat/combat_transition_native_contract.h"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -115,6 +117,68 @@ int ctmScoreRows(const std::string &inPath, const std::string &outPath,
         out << '\n';
     }
     std::cerr << "ctmscorerows rows=" << rows << " scored=" << scored << " -> " << outPath << '\n';
+    return 0;
+}
+
+// Escape-fit features for tools/ctm_escape.py (#418 PR7). For every surviving row the
+// escape-capable artifact would support, writes the artifact's own HP encoding z
+// (OUT.f32, little-endian float32, 64 per row) and the labels (OUT.csv). Reads rows
+// only; runs no seeds.
+int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix) {
+    const one_combat::NativeCombatTransitionSampler sampler(model);
+    const auto &runtime = sampler.runtime();
+    need(runtime.nearFull() && !runtime.escapeCapable(), "features need a near-full artifact without the escape capability");
+    auto domain = sampler.domain();
+    domain.escape = true;
+    const auto deltas = runtime.metadata().at("maxHpClasses").get<std::vector<int>>();
+    const int classes = static_cast<int>(runtime.metadata().at("hpClasses").size());
+    std::ifstream in(inPath);
+    need(bool(in), "cannot open " + inPath);
+    std::ofstream features(outPrefix + ".f32", std::ios::binary), out(outPrefix + ".csv");
+    need(bool(features) && bool(out), "cannot open " + outPrefix);
+    out << "source_seed,fight_idx,supported,reason,z_row,delta_class,hp_class,pre_hp,post_max_hp,"
+           "escaped,eligible,boss\n";
+    std::string line;
+    int rows = 0, written = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const J row = J::parse(line);
+        need(row.at("rowSchemaVersion") == "combat_transition_row_v2", "row schema");
+        const auto &t = row.at("transition");
+        if (t.is_null() || t.at("combatOutcome").get<int>() != static_cast<int>(sts::Outcome::PLAYER_VICTORY))
+            continue;
+        ++rows;
+        out << row.at("sourceSeed").get<std::uint64_t>() << ',' << row.at("fightIdx").get<int>() << ',';
+        const auto input = predictorInputFromJson(row.at("predictorInput"));
+        const auto pre = one_combat::combatTransitionStateFromJson(t.at("pre"));
+        const auto &post = t.at("post");
+        auto reasons = one_combat::nativeComposedSupportReasons(input, pre, domain);
+        const bool brew = std::any_of(input.potions.begin(), input.potions.end(), [](const auto &p) {
+            return p.potionId == static_cast<int>(sts::Potion::ENTROPIC_BREW);
+        });
+        if (reasons.empty() && runtime.requiresEntropicBrewFallback() && brew)
+            reasons.push_back("entropic_brew_requires_standard_ctm");
+        const int postMax = post.at("maxHp").get<int>(), postHp = post.at("curHp").get<int>();
+        const auto delta = std::find(deltas.begin(), deltas.end(), postMax - pre.maxHp);
+        const int hpClass = runtime.hpClassIndex(postHp - pre.curHp);
+        if (reasons.empty() && delta == deltas.end()) reasons.push_back("max_hp_label");
+        if (reasons.empty() && (hpClass < 0 || hpClass >= classes || postHp < 1 || postHp > postMax))
+            reasons.push_back("hp_label");
+        if (!reasons.empty()) {
+            out << "0," << reasons.front() << ",-1,,,,,,,\n";
+            continue;
+        }
+        const bool boss = sts::isBossEncounter(static_cast<sts::MonsterEncounter>(input.globals.encounter));
+        const auto z = runtime.hpEncoding(input);
+        need(z.size() == 64, "HP encoding width");
+        features.write(reinterpret_cast<const char *>(z.data()), static_cast<std::streamsize>(z.size() * sizeof(float)));
+        out << "1,supported," << written++ << ',' << (delta - deltas.begin()) << ',' << hpClass << ','
+            << pre.curHp << ',' << postMax << ',' << (post.at("smokeBombUsed").get<bool>() ? 1 : 0) << ','
+            << (one_combat::CombatTransitionRuntime::escapeEligible(pre.potions, pre.potionCapacity, boss) ? 1 : 0)
+            << ',' << (boss ? 1 : 0) << '\n';
+    }
+    need(bool(features) && bool(out), "write failed");
+    std::cerr << "ctmescapefeatures victories=" << rows << " supported=" << written << " -> " << outPrefix << ".{f32,csv}\n";
     return 0;
 }
 

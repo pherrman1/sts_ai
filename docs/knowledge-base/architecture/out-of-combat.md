@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -321,6 +321,24 @@ classes and the HP-head and relic-delta row counts from that domain. It also
 recomputes the domain hash, and it requires the lowest class to equal
 `1 - preCurHpRange[1]` and the maxHP deltas to stay production. Production keeps
 the literal -160..143 domain.
+
+A `ctm_research_candidate_v3` manifest also lists each artifact's
+`capabilities` (`{"standard": {...}, "fast": {...}}`), and an artifact's
+metadata `capabilities` must equal its role's entry; production has none. The
+only capability is `escape` (`{"checkpointSha256": ...}`, written by
+`tools/ctm_escape.py extend`). An escape-capable near-full artifact has a 1x64
+escape head on the HP encoding and the escape bit as the HP head's 73rd input,
+and it drops the `smoke_bomb` exclusion (`pre_smoke_bomb_used` stays). The
+sampler draws the escape after maxHP and before HP, but only for an eligible
+state: not a boss fight, with a Smoke Bomb in a usable slot. HP then uses the
+drawn bit. The potion trajectory is conditioned on it as well: escape 0 forbids
+using a Smoke Bomb, and escape 1 forbids stopping or discarding one, so the
+trajectory ends with its use. A Brew-generated Smoke Bomb therefore never
+escapes. Forecast and expectation mix the two HP heads by the escape
+probability. A conditioned victory (the Lizard branches) never escapes. The
+fast and Brew-fallback artifacts must agree on the capability. CTests
+`ctm_escape_runtime` and `ctm_escape_selftest` cover loading, Python/native
+head parity and sampled escapes.
 
 With the automatic model stack, the qualified active-Lizard correction is
 enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips
@@ -696,7 +714,9 @@ are unsupported; Match and Keep and malformed selector states cannot be
 presented as complete supported decisions.
 
 A combat that starts with a Smoke Bomb is outside the qualified CTM support.
-The OOC model wraps its sampler (`maskInitialSmokeBomb`) so such a combat is
+Unless the sampler models the escape itself (an escape-capable research
+candidate, `modelsSmokeBombEscape()`), the OOC model wraps its sampler
+(`maskInitialSmokeBomb`) so such a combat is
 valued as if the Smoke Bomb slot were empty (no escape) and the Smoke Bomb is
 returned unused afterwards; a potion generated into that slot is dropped. This
 Phase-0 approximation (#370) replaces the former whole-search abort. It is
