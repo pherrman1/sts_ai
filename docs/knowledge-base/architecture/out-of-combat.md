@@ -1433,3 +1433,19 @@ choices. The candidate needs independent whole-run evaluation. Ancient Tea Set
 and Eternal Feather apply on campfire entry; Regal Pillow's extra healing is
 clamped at full HP. These facts explain the eligibility predicate, without
 turning a local no-healing observation into a claim of trajectory dominance.
+
+### Fallback card-removal research candidate
+
+`STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=1` changes only the fallback REMOVE selector
+to ascending `Expert::getObtainWeight(cardId)`. The default ranks highest
+acquisition weight first, sharing that ordering with Bonfire sacrifice.
+The opt-in flag leaves Bonfire's distinct reward objective and every other
+selection type unchanged. Native model-based shop removal is a separate
+upstream policy. Living Wall and Peace Pipe can reach this fallback.
+
+The selector still uses the simulator's legal menu indices and existing sort;
+it adds no upgrade-aware values, curse priority or tie-breaking rule. Basic
+cards and some specialized cards share weight zero, while upgrades retain
+their base card weight. This is a policy-ranking hypothesis, not an engine
+defect or a dominance argument. The enabled flag enters the effective teacher
+specification; malformed values fail during startup.

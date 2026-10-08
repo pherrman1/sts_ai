@@ -30,6 +30,10 @@ namespace sts::search {
     bool oocFullHpRestExclusionApplies(const GameContext &gc);
     void filterFullHpRestActions(const GameContext &gc, std::vector<GameAction> &actions);
 
+    // Experimental REMOVE ranking only; sacrifice and other selectors keep
+    // their legacy ordering. Strict unset/0/1 and default off.
+    bool oocRemoveLowObtainWeightEnabled();
+
     // Thread-local guard for surrogate-only OOC imagination; default false.
     extern thread_local bool g_disallowImaginedCombat;
 

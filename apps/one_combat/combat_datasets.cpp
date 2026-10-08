@@ -146,6 +146,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["skip_optional_recall"] = true;
     if (sts::search::oocSkipFullHpRestEnabled())
         policy["flags"]["skip_full_hp_rest"] = true;
+    if (sts::search::oocRemoveLowObtainWeightEnabled())
+        policy["flags"]["remove_low_obtain_weight"] = true;
     return policy;
 }
 

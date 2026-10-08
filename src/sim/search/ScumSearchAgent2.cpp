@@ -126,6 +126,15 @@ bool search::oocSkipFullHpRestEnabled() {
     throw std::runtime_error("STS_OOC_SKIP_FULL_HP_REST must be 0 or 1");
 }
 
+bool search::oocRemoveLowObtainWeightEnabled() {
+    const char *raw = std::getenv("STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT");
+    if (!raw) return false;
+    const std::string value(raw);
+    if (value == "0") return false;
+    if (value == "1") return true;
+    throw std::runtime_error("STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT must be 0 or 1");
+}
+
 bool search::oocFullHpRestExclusionApplies(const GameContext &gc) {
     return oocSkipFullHpRestEnabled()
         && gc.screenState == ScreenState::REST_ROOM && !gc.restRoomResolved
@@ -244,6 +253,8 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
 
 void search::ScumSearchAgent2::cardSelectPolicy(GameContext &gc) {
     fixed_list<std::pair<int,int>, Deck::MAX_SIZE> selectOrder;
+    const bool removeLowWeight = gc.info.selectScreenType == CardSelectScreenType::REMOVE
+        && oocRemoveLowObtainWeightEnabled();
 
     for (int i = 0; i < gc.info.toSelectCards.size(); ++i) {
         const auto &c = gc.info.toSelectCards[i].card;
@@ -261,8 +272,11 @@ void search::ScumSearchAgent2::cardSelectPolicy(GameContext &gc) {
                 }
                 break;
 
-            case CardSelectScreenType::BONFIRE_SPIRITS:
             case CardSelectScreenType::REMOVE:
+                selectOrder.push_back( {i, removeLowWeight ? obtainWeight : -obtainWeight} );
+                break;
+
+            case CardSelectScreenType::BONFIRE_SPIRITS:
                 selectOrder.push_back( {i, -obtainWeight} );
                 break;
 

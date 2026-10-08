@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "frozen_epoch": 1791423467.7962995,
+  "phase": "discovery",
+  "question": "Does reversing only fallback REMOVE acquisition-weight ranking improve whole-run Act3 victories?",
+  "competing_explanation": "Low acquisition weight ignores upgrades, curse priority and deck-specific synergy; changing early removals may worsen later choices. Bonfire sacrifice rewards require preserved legacy ordering.",
+  "source_basis": "corrected development610082010/011 LivingWall removes Shrug/Offering; outcome-informed examples, not a causal quality estimate",
+  "controls": "same newimmutableproducer; common public8, optionalRecallfilter1, FullHp0, shopdeckfix0; learnedstop1; onlycandidate STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=1",
+  "canary": [
+    [
+      "Fprod",
+      610080001
+    ],
+    [
+      "RemoveLow",
+      610080001
+    ],
+    [
+      "Fprod",
+      610082010
+    ],
+    [
+      "RemoveLow",
+      610082010
+    ]
+  ],
+  "canary_gates": [
+    "strict startup and teacherflag checks",
+    "default-off equality with frozenprevioussmoke and knownbaseline",
+    "same-state actualLivingWall removal activation or preserveabsencehonestly",
+    "all source/model/config/output contracts and healthysearch endpoints"
+  ],
+  "discovery_seeds": [
+    610081000,
+    610081001,
+    610081002,
+    610081003,
+    610081004,
+    610081005,
+    610081006,
+    610081007,
+    610081008,
+    610081009,
+    610081010,
+    610081011,
+    610081012,
+    610081013,
+    610081014,
+    610081015,
+    610081016,
+    610081017,
+    610081018,
+    610081019,
+    610081020,
+    610081021,
+    610081022,
+    610081023,
+    610081024,
+    610081025,
+    610081026,
+    610081027,
+    610081028,
+    610081029,
+    610081030,
+    610081031
+  ],
+  "discovery_adaptive_reuse": true,
+  "discovery_rule": "advance only if all32pairs valid and RemoveLow has strictlymorewins thanFprod; no extension",
+  "workers": 1,
+  "max_game_processes_campaign": 6,
+  "discovery_wall_cap_seconds": 3600,
+  "shard_timeout_seconds": 900,
+  "expected_game_cpu_seconds": 1000,
+  "development_reservation": "removal_development_reservation.json",
+  "confirmation": "Unopened610083000..511; one frozenchampion only. No combination automatically authorized."
+}

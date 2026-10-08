@@ -109,6 +109,14 @@ add_test(NAME full_hp_rest_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(full_hp_rest_filter PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(remove_obtain_weight_test tests/remove_obtain_weight_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(remove_obtain_weight_test PRIVATE include json/include)
+add_test(NAME remove_obtain_weight COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:remove_obtain_weight_test>)
+set_tests_properties(remove_obtain_weight PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(native_ooc_shop_features_test tests/native_ooc_shop_features_test.cpp
     apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
     apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
