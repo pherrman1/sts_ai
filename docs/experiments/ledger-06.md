@@ -14862,7 +14862,8 @@ research-only root prior bonus.
 **Question:** does the §397 root prior (Gate B pass offline) win more full runs
 at a flat 2k budget, and does prior + 2k approach plain 10k?
 
-**Design:** pre-registered (evidence `PREREG.md`) after Philipp's go.
+**Design:** pre-registered after Philipp's go (evidence `PREREG.md`, written at
+launch before any seed result, not committed beforehand).
 - **Build:** commit 51937c6a (#449), a research-only `STS_SILVER_ROOT_PRIOR`
   option (default off). The §397 nat+pert prior was exported to
   `combat_policy_trees_v1` with exact margin parity. Native vs offline replay
