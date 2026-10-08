@@ -1,0 +1,4734 @@
+{
+ "schema": "vwin_e3_cf_v1",
+ "root": "/mnt/attach/project-files/ooc-cf-pilot/e3",
+ "manifests": [
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000000
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000005
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000010
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000015
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000020
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000025
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000030
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w00/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000035
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000040
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000045
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000050
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000055
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000060
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000065
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000070
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w01/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000075
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000080
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act2": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000085
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000090
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000095
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000100
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000105
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000110
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w02/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000115
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000120
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000125
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000130
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000135
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000140
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000145
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000150
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w03/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000155
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000160
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000165
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000170
+   },
+   "integrity": {
+    "labelRows": 74,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 74
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000175
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000180
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000185
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000190
+   },
+   "integrity": {
+    "labelRows": 84,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act3": 4
+    },
+    "validLabelRows": 84
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w04/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000195
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000200
+   },
+   "integrity": {
+    "labelRows": 74,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 74
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000205
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000210
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000215
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000220
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act2": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000225
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000230
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w05/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000235
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000240
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000245
+   },
+   "integrity": {
+    "labelRows": 74,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 74
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000250
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000255
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000260
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000265
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000270
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w06/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000275
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000280
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000285
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000290
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000295
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000300
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000305
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000310
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w07/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000315
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000320
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000325
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000330
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act3": 4
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000335
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000340
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000345
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000350
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w08/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000355
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000360
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000365
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000370
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000375
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000380
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000385
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000390
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w09/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000395
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000400
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act2": 5,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000405
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000410
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000415
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 5
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000420
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000425
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000430
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w10/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000435
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000440
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000445
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000450
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000455
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000460
+   },
+   "integrity": {
+    "labelRows": 74,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 74
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000465
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000470
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w11/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000475
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000480
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000485
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000490
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000495
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000500
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000505
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000510
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w12/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000515
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000520
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000525
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000530
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000535
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000540
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000545
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000550
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w13/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000555
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000560
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000565
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000570
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 79
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000575
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000580
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 3
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000585
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000590
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w14/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000595
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000600
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000605
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000610
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000615
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000620
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000625
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000630
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w15/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000635
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000640
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000645
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000650
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000655
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000660
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000665
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000670
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w16/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000675
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000680
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000685
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000690
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000695
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000700
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000705
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000710
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w17/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000715
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000720
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000725
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000730
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000735
+   },
+   "integrity": {
+    "labelRows": 74,
+    "selectedStates": 9,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 74
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000740
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000745
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000750
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act2": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w18/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000755
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000760
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000765
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000770
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000775
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000780
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000785
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000790
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w19/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000795
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000800
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act2": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000805
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000810
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000815
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000820
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000825
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w20/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000835
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000840
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000845
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000850
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000855
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000860
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000865
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act2": 4,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000870
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 4
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w21/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000875
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000880
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000885
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000890
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000895
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000900
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 3
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000905
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000910
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w22/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000915
+   },
+   "integrity": {
+    "labelRows": 72,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 72
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000920
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 4
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000925
+   },
+   "integrity": {
+    "labelRows": 84,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 84
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000930
+   },
+   "integrity": {
+    "labelRows": 78,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 1,
+     "BOSS_RELIC:act2": 4,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 78
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000935
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000940
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000945
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000950
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w23/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000955
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 5,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk0/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000960
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk0/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000965
+   },
+   "integrity": {
+    "labelRows": 82,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 82
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk0/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000970
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 4,
+     "CARD_REWARD:act2": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk0/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000975
+   },
+   "integrity": {
+    "labelRows": 76,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act2": 5,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 2
+    },
+    "validLabelRows": 76
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk1/part0",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000980
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 4,
+     "BOSS_RELIC:act2": 1,
+     "CARD_REWARD:act1": 2,
+     "CARD_REWARD:act2": 2,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk1/part1",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000985
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 2,
+     "BOSS_RELIC:act2": 3,
+     "CARD_REWARD:act1": 1,
+     "CARD_REWARD:act2": 3,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk1/part2",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000990
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act1": 3,
+     "BOSS_RELIC:act2": 2,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  },
+  {
+   "part": "/mnt/project-files/ooc-cf-pilot/e3/w24/chunk1/part3",
+   "git": "8edf724ca700a4d4bd4f25645fed60381529d862",
+   "exe": "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa",
+   "seeds": {
+    "ascension": 0,
+    "count": 5,
+    "start": 55000995
+   },
+   "integrity": {
+    "labelRows": 80,
+    "selectedStates": 10,
+    "statesByTypeAct": {
+     "BOSS_RELIC:act2": 5,
+     "CARD_REWARD:act1": 3,
+     "CARD_REWARD:act2": 1,
+     "CARD_REWARD:act3": 1
+    },
+    "validLabelRows": 80
+   }
+  }
+ ],
+ "producer_git": [
+  "8edf724ca700a4d4bd4f25645fed60381529d862"
+ ],
+ "producer_exe": [
+  "224a1a4291464d4f16e21bc178a6c7ca019054337c06a58586634c11598196fa"
+ ],
+ "runs": 15668,
+ "valid_runs": 15667,
+ "dropped_state_k_groups": 1,
+ "states_by_split": {
+  "TEST": 270,
+  "TRAIN": 1380,
+  "VALIDATION": 333
+ },
+ "states_by_type_act": {
+  "BOSS_RELIC:act1": 557,
+  "BOSS_RELIC:act2": 431,
+  "CARD_REWARD:act1": 374,
+  "CARD_REWARD:act2": 322,
+  "CARD_REWARD:act3": 299
+ },
+ "public_feature_count": 457,
+ "trained": [
+  {
+   "fraction": 0.25,
+   "seed": 0,
+   "trees": 154,
+   "rows": 2714,
+   "sources": 173
+  },
+  {
+   "fraction": 0.25,
+   "seed": 1,
+   "trees": 111,
+   "rows": 2714,
+   "sources": 173
+  },
+  {
+   "fraction": 0.25,
+   "seed": 2,
+   "trees": 141,
+   "rows": 2714,
+   "sources": 173
+  },
+  {
+   "fraction": 0.5,
+   "seed": 0,
+   "trees": 285,
+   "rows": 5448,
+   "sources": 346
+  },
+  {
+   "fraction": 0.5,
+   "seed": 1,
+   "trees": 241,
+   "rows": 5448,
+   "sources": 346
+  },
+  {
+   "fraction": 0.5,
+   "seed": 2,
+   "trees": 354,
+   "rows": 5448,
+   "sources": 346
+  },
+  {
+   "fraction": 1.0,
+   "seed": 0,
+   "trees": 104,
+   "rows": 10922,
+   "sources": 693
+  },
+  {
+   "fraction": 1.0,
+   "seed": 1,
+   "trees": 207,
+   "rows": 10922,
+   "sources": 693
+  },
+  {
+   "fraction": 1.0,
+   "seed": 2,
+   "trees": 204,
+   "rows": 10922,
+   "sources": 693
+  }
+ ],
+ "curve": {
+  "E3_25": {
+   "fraction": 0.25,
+   "sources": 173
+  },
+  "E3_50": {
+   "fraction": 0.5,
+   "sources": 346
+  },
+  "E3": {
+   "fraction": 1.0,
+   "sources": 693
+  }
+ },
+ "test_opened": false,
+ "seconds": 172.92946195602417,
+ "results": {
+  "VALIDATION": {
+   "X2B": {
+    "map_rows": {
+     "n": 2624,
+     "nll": 0.495658676787063,
+     "brier": 0.1591224663028134
+    },
+    "selection_gain": {
+     "BOSS_RELIC": {
+      "mean": -0.04819277108433735,
+      "n": 166,
+      "source_seeds": 166,
+      "ci95": [
+       -0.09341114457831325,
+       -0.0030120481927710845
+      ],
+      "discordant_states": 114,
+      "agree_with_v4": 0.3614457831325301,
+      "picks_skip": 0.14156626506024098
+     },
+     "CARD_REWARD": {
+      "mean": 0.0017465069860279458,
+      "n": 167,
+      "source_seeds": 167,
+      "ci95": [
+       -0.03468063872255489,
+       0.0384356287425149
+      ],
+      "discordant_states": 81,
+      "agree_with_v4": 0.23952095808383234,
+      "picks_skip": 0.23702594810379238
+     },
+     "pooled": {
+      "mean": -0.023148148148148147,
+      "n": 333,
+      "source_seeds": 167,
+      "ci95": [
+       -0.05463242698892246,
+       0.005489021956087825
+      ],
+      "discordant_states": 195,
+      "agree_with_v4": 0.3003003003003003,
+      "picks_skip": 0.18943943943943942
+     }
+    }
+   },
+   "X2B_raw": {
+    "map_rows": {
+     "n": 2624,
+     "nll": 0.4949549625265823,
+     "brier": 0.15886905622678096
+    },
+    "selection_gain": {
+     "BOSS_RELIC": {
+      "mean": -0.05120481927710843,
+      "n": 166,
+      "source_seeds": 166,
+      "ci95": [
+       -0.0963855421686747,
+       -0.007530120481927711
+      ],
+      "discordant_states": 114,
+      "agree_with_v4": 0.37349397590361444,
+      "picks_skip": 0.1355421686746988
+     },
+     "CARD_REWARD": {
+      "mean": -0.0012475049900199583,
+      "n": 167,
+      "source_seeds": 167,
+      "ci95": [
+       -0.03792415169660679,
+       0.035928143712574856
+      ],
+      "discordant_states": 81,
+      "agree_with_v4": 0.25149700598802394,
+      "picks_skip": 0.22804391217564868
+     },
+     "pooled": {
+      "mean": -0.02615115115115115,
+      "n": 333,
+      "source_seeds": 167,
+      "ci95": [
+       -0.05673516136618546,
+       0.003131012749276209
+      ],
+      "discordant_states": 195,
+      "agree_with_v4": 0.3123123123123123,
+      "picks_skip": 0.1819319319319319
+     }
+    }
+   },
+   "E3": {
+    "map_rows": {
+     "n": 2624,
+     "nll": 0.4854240043700178,
+     "brier": 0.15770036084709677
+    },
+    "selection_gain": {
+     "BOSS_RELIC": {
+      "mean": 0.010542168674698794,
+      "n": 166,
+      "source_seeds": 166,
+      "ci95": [
+       -0.02710843373493976,
+       0.046686746987951805
+      ],
+      "discordant_states": 114,
+      "agree_with_v4": 0.5662650602409639,
+      "picks_skip": 0.018072289156626505
+     },
+     "CARD_REWARD": {
+      "mean": 0.010229540918163672,
+      "n": 167,
+      "source_seeds": 167,
+      "ci95": [
+       -0.02844311377245509,
+       0.04941367265469055
+      ],
+      "discordant_states": 81,
+      "agree_with_v4": 0.2634730538922156,
+      "picks_skip": 0.21007984031936125
+     },
+     "pooled": {
+      "mean": 0.010385385385385384,
+      "n": 333,
+      "source_seeds": 167,
+      "ci95": [
+       -0.015815193959019258,
+       0.03717876746506984
+      ],
+      "discordant_states": 195,
+      "agree_with_v4": 0.4144144144144144,
+      "picks_skip": 0.11436436436436435
+     }
+    }
+   },
+   "E3_25": {
+    "map_rows": {
+     "n": 2624,
+     "nll": 0.4935639969719699,
+     "brier": 0.16116372404799342
+    },
+    "selection_gain": {
+     "BOSS_RELIC": {
+      "mean": -0.018072289156626505,
+      "n": 166,
+      "source_seeds": 166,
+      "ci95": [
+       -0.05473142570281125,
+       0.015562248995983937
+      ],
+      "discordant_states": 114,
+      "agree_with_v4": 0.5180722891566265,
+      "picks_skip": 0.035140562248995984
+     },
+     "CARD_REWARD": {
+      "mean": 0.004990019960079841,
+      "n": 167,
+      "source_seeds": 167,
+      "ci95": [
+       -0.03293413173652695,
+       0.041916167664670656
+      ],
+      "discordant_states": 81,
+      "agree_with_v4": 0.2874251497005988,
+      "picks_skip": 0.14790419161676646
+     },
+     "pooled": {
+      "mean": -0.006506506506506505,
+      "n": 333,
+      "source_seeds": 167,
+      "ci95": [
+       -0.030471181150939455,
+       0.01827313840786892
+      ],
+      "discordant_states": 195,
+      "agree_with_v4": 0.4024024024024024,
+      "picks_skip": 0.09169169169169168
+     }
+    }
+   },
+   "E3_50": {
+    "map_rows": {
+     "n": 2624,
+     "nll": 0.4824320078352228,
+     "brier": 0.15598091312514137
+    },
+    "selection_gain": {
+     "BOSS_RELIC": {
+      "mean": 0.0,
+      "n": 166,
+      "source_seeds": 166,
+      "ci95": [
+       -0.03313253012048193,
+       0.03313253012048193
+      ],
+      "discordant_states": 114,
+      "agree_with_v4": 0.6144578313253012,
+      "picks_skip": 0.006024096385542169
+     },
+     "CARD_REWARD": {
+      "mean": -0.004491017964071856,
+      "n": 167,
+      "source_seeds": 167,
+      "ci95": [
+       -0.04345059880239521,
+       0.03293413173652695
+      ],
+      "discordant_states": 81,
+      "agree_with_v4": 0.2874251497005988,
+      "picks_skip": 0.1751497005988024
+     },
+     "pooled": {
+      "mean": -0.0022522522522522522,
+      "n": 333,
+      "source_seeds": 167,
+      "ci95": [
+       -0.028528528528528527,
+       0.023205334825843797
+      ],
+      "discordant_states": 195,
+      "agree_with_v4": 0.45045045045045046,
+      "picks_skip": 0.09084084084084085
+     }
+    }
+   },
+   "E3_minus_X2B": {
+    "BOSS_RELIC": {
+     "mean": 0.058734939759036146,
+     "n": 166,
+     "source_seeds": 166,
+     "ci95": [
+      0.018072289156626505,
+      0.09939759036144578
+     ],
+     "discordant_states": 114,
+     "agree_with_v4": 0.5662650602409639,
+     "picks_skip": 0.018072289156626505
+    },
+    "CARD_REWARD": {
+     "mean": 0.008483033932135729,
+     "n": 167,
+     "source_seeds": 167,
+     "ci95": [
+      -0.021207584830339323,
+      0.039177894211576816
+     ],
+     "discordant_states": 81,
+     "agree_with_v4": 0.2634730538922156,
+     "picks_skip": 0.21007984031936125
+    },
+    "pooled": {
+     "mean": 0.03353353353353353,
+     "n": 333,
+     "source_seeds": 167,
+     "ci95": [
+      0.009474800399201594,
+      0.05869176624229015
+     ],
+     "discordant_states": 195,
+     "agree_with_v4": 0.4144144144144144,
+     "picks_skip": 0.11436436436436435
+    }
+   },
+   "oracle": {
+    "BOSS_RELIC": {
+     "mean": 0.10843373493975904,
+     "n": 166,
+     "source_seeds": 166,
+     "ci95": [
+      0.07530120481927711,
+      0.14457831325301204
+     ],
+     "discordant_states": 114,
+     "agree_with_v4": 0.3614457831325301,
+     "picks_skip": 0.14156626506024098
+    },
+    "CARD_REWARD": {
+     "mean": 0.11377245508982035,
+     "n": 167,
+     "source_seeds": 167,
+     "ci95": [
+      0.08083832335329341,
+      0.1497005988023952
+     ],
+     "discordant_states": 81,
+     "agree_with_v4": 0.23952095808383234,
+     "picks_skip": 0.23702594810379238
+    },
+    "pooled": {
+     "mean": 0.1111111111111111,
+     "n": 333,
+     "source_seeds": 167,
+     "ci95": [
+      0.08761329305135952,
+      0.13622754491017963
+     ],
+     "discordant_states": 195,
+     "agree_with_v4": 0.3003003003003003,
+     "picks_skip": 0.18943943943943942
+    }
+   },
+   "uniform_random": {
+    "BOSS_RELIC": {
+     "mean": -0.08960843373493976,
+     "n": 166,
+     "source_seeds": 166,
+     "ci95": [
+      -0.12424698795180723,
+      -0.054969879518072286
+     ],
+     "discordant_states": 114,
+     "agree_with_v4": 0.3614457831325301,
+     "picks_skip": 0.14156626506024098
+    },
+    "CARD_REWARD": {
+     "mean": -0.0010479041916167681,
+     "n": 167,
+     "source_seeds": 167,
+     "ci95": [
+      -0.027248003992015966,
+      0.0255102295409181
+     ],
+     "discordant_states": 81,
+     "agree_with_v4": 0.23952095808383234,
+     "picks_skip": 0.23702594810379238
+    },
+    "pooled": {
+     "mean": -0.0451951951951952,
+     "n": 333,
+     "source_seeds": 167,
+     "ci95": [
+      -0.06604166666666667,
+      -0.024193579453766746
+     ],
+     "discordant_states": 195,
+     "agree_with_v4": 0.3003003003003003,
+     "picks_skip": 0.18943943943943942
+    }
+   }
+  }
+ }
+}

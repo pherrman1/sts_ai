@@ -1115,6 +1115,15 @@ siblings share common random numbers.
     `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
   - The manifest counts selected states by type and act.
 
+`python3 -m tools.vwin_e3_cf ROOT --output NEW_DIR [--corpus334 INDEX]` analyzes
+GEN=2 outputs. It verifies part manifests and hashes, masks the four
+HIDDEN_FUTURE fields for X2-B and drops them for retrained arms, and drops any
+(state, k) group with an invalid sibling. The split is `source_split`, and
+TEST is scored only with `--open-test`. It reports per-state selection gain
+against V4's choice and map-row NLL/Brier. Arms: X2B, an E3-only GBM with a
+learning curve, and, with the local #334 index, F2_334 and F2. Result: ledger-06
+§396.
+
 ## Schema examples
 
 ```text
