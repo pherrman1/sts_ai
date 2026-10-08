@@ -127,8 +127,22 @@ def assemble(index_path: Path, corpus_root: Path, scope: str, out: Path) -> dict
 SCOPES = ("none", "ritual_writhing", "high_maxhp", "lizard_fairy", "lizard_brew")
 
 
+WIN = 1
+
+
+def label_reasons(transition, max_hp_delta_values) -> list:
+    """Labels the frozen heads cannot represent. The maxHP head is pinned to the
+    production delta classes (the C++ loader requires them), so a winning row
+    with any other maxHP gain cannot be trained on."""
+    if int(transition["combatOutcome"]) != WIN:
+        return []
+    delta = int(transition["post"]["maxHp"]) - int(transition["pre"]["maxHp"])
+    return [] if delta in set(int(v) for v in max_hp_delta_values) else ["max_hp_delta_domain"]
+
+
 def production_support_reasons():
-    """Rows the frozen near-full chain can hold: production candidate-contract support."""
+    """Rows the frozen near-full chain can hold: production candidate-contract support
+    and a winning maxHP gain the frozen maxHP head can represent."""
     try:
         from tools import combat_transition_composed as c
         from tools import combat_transition_near_full_support as support
@@ -142,7 +156,8 @@ def production_support_reasons():
         if transition is None or not row["runValid"]:
             return ["invalid_row"]
         with support.candidate_contract():
-            return c.full_support_reasons(transition["pre"], row["predictorInput"], models)
+            rejected = c.full_support_reasons(transition["pre"], row["predictorInput"], models)
+        return rejected or label_reasons(transition, models.delta_values)
     return reasons
 
 

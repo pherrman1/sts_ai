@@ -156,7 +156,10 @@ For the full CTM retrain, `ctm_corpus_adapter.py union --scope-dir SCOPE=DIR
 ... --out DIR` concatenates assembled scopes, in ascending seed order, into one
 corpus for `combat_transition_surrogate.py prepare`. It drops every row that
 the production candidate-contract support predicate rejects (production
-`FrozenModels`), so later near-full caches keep `ids == arange(N)`. Its
+`FrozenModels`), and every winning row whose maxHP gain is not one of the
+frozen maxHP head's delta classes (`max_hp_delta_domain`; the C++ loader pins
+those classes, and Path B has a +14 gain), so later near-full caches keep
+`ids == arange(N)`. Its
 `row_scopes.json` gives each scope's row range, so main-corpus gates can
 exclude forced rows. Two retrain flags reuse production choices instead of
 searching again:
