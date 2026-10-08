@@ -87,6 +87,14 @@ target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
+add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(rest_recall_filter_test PRIVATE include json/include)
+add_test(NAME rest_recall_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:rest_recall_filter_test>)
+set_tests_properties(rest_recall_filter PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(native_ooc_shop_features_test tests/native_ooc_shop_features_test.cpp
     apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
     apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)

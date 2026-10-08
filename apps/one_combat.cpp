@@ -2809,7 +2809,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
-        {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
+        {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""},
@@ -3113,6 +3113,8 @@ int main(int argc, char **argv) {
         }
     }
     try {
+        if (sts::search::oocSkipOptionalRecallEnabled())
+            std::cout << "[native OOC optional Ruby Recall excluded when keys off and another action is legal]\n";
         if (const int futures = one_combat::nativeOocPublicFutureCount(); futures > 0)
             std::cout << "[native OOC public encounter mixture: " << futures << " futures]\n";
         if (one_combat::nativeOocShopDeckSizeFixEnabled())

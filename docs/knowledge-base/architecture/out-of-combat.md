@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-08 for native fallback information-boundary and shop accounting research controls; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-08 for native fallback information-boundary, shop accounting and optional Ruby Recall research controls; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -1391,3 +1391,27 @@ never changes through the **observed** final search. `b_stable_full_budget` is
 null for early-stopped, singleton, boundary or aborted searches. Full-budget
 cross-tabs use only uncensored searches and can be selection-biased. Neither
 statistic qualifies an adaptive stopping policy on independent future searches.
+
+### Optional Ruby Recall under keys-off research profiles
+
+`STS_COLLECT_KEYS=0` alone does not remove Ruby Recall from the V4 campfire
+candidate set or the random fallback. `GameAction::getAllRestActions` uses the
+simulator's `keysEnabled` and owned-key state; the fallback at intermediate HP
+can sample Recall even when the run policy does not seek Act 4. This is a
+reproduced policy eligibility defect, not an engine rule change.
+
+The default-off `STS_OOC_SKIP_OPTIONAL_RECALL=1` applies one shared filter to
+V4 REST candidates before scoring and to `ScumSearchAgent2::stepRandom`.
+When keys are off and another legal action exists, it removes only Recall,
+keeping the remaining action order. This can change the V4 margin and gate
+ownership as well as the fallback's uniform action distribution. With the
+flag unset or zero, legacy choices and RNG progression are unchanged. Enabled
+sampling uses the existing single uniform-distribution invocation on the
+filtered set; its underlying engine consumption may change with the bound.
+
+If Recall is the sole legal action (for example, Coffee Dripper plus Fusion
+Hammer without another campfire action), it remains available. The repair
+does not fabricate an illegal Skip or alter simulator mechanics. The frozen
+native V4 research profile uses MCTS off and REST_WIN off; this filter is not
+a promise that every alternative policy stack enforces identical eligibility.
+The enabled flag is bound into the effective OOC teacher specification.

@@ -19,6 +19,11 @@ namespace sts {
 
 namespace sts::search {
 
+    // Default-off REST policy filter. Strictly parses unset/0/1;
+    // enabled mode skips optional Recall only when key collection is off.
+    bool oocSkipOptionalRecallEnabled();
+    void filterOptionalRecallActions(const GameContext &gc, std::vector<GameAction> &actions);
+
     // Thread-local guard for surrogate-only OOC imagination; default false.
     extern thread_local bool g_disallowImaginedCombat;
 

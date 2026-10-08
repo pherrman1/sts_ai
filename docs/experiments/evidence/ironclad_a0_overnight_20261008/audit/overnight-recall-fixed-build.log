@@ -1,0 +1,6 @@
+[  5%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/ScumSearchAgent2.cpp.o
+[  5%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/NativeSilverBackend.cpp.o
+[ 94%] Built target sts_core_objects
+[100%] Building CXX object CMakeFiles/rest_recall_filter_test.dir/tests/rest_recall_filter_test.cpp.o
+[100%] Linking CXX executable rest_recall_filter_test
+[100%] Built target rest_recall_filter_test

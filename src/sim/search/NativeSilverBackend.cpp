@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <cstdlib>
 #include <memory>
 #include <fstream>
@@ -20,6 +21,8 @@
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
+#include "sim/search/SilverWireJson.h"
+#include "sim/search/SilverWireState.h"
 
 namespace sts::search {
 
@@ -51,6 +54,61 @@ namespace sts::search {
         std::ofstream g_stopTraceFile;
         std::string g_uselessTrace;
         std::mutex g_uselessMutex;
+        std::string g_publicTrace;
+        std::optional<std::pair<std::uint64_t, int>> g_publicTarget;
+
+        void tracePublicAction(const GameContext &gc, const BattleContext &bc,
+                               const CombatKnowledgeState &knowledge, int decision,
+                               const SilverSearcher &searcher, const Action &chosen,
+                               std::int64_t inherited, std::int64_t configured,
+                               std::int64_t completed) {
+            if (g_publicTrace.empty() || !g_publicTarget
+                || gc.seed != g_publicTarget->first || bc.floorNum != g_publicTarget->second) return;
+            using nlohmann::json;
+            json row = {{"schema", "silver_public_decision_v1"}, {"seed", std::to_string(gc.seed)},
+                {"act", gc.act}, {"floor", bc.floorNum}, {"turn", bc.turn}, {"decision", decision},
+                {"encounter", monsterEncounterEnumNames[int(bc.encounter)]},
+                {"configured_simulations", configured}, {"completed_simulations", completed},
+                {"inherited_visits", inherited}, {"root_visits", searcher.rootNode().simulationCount},
+                {"selection_rule", "most_edge_visits_first_enumerated_tie"}, {"capture_valid", false}};
+            try {
+                // Use the same public observation boundary as the native advisor:
+                // no concrete hidden draw order, live RNG, or hidden rolled intent.
+                // A constant diagnostic seed keeps even replay metadata in
+                // the wire independent of the run's identity and RNG state.
+                const auto conversion = makeSilverBattleStateConversion(
+                    bc, knowledge, makeSilverRunContext(gc), 0);
+                if (!conversion.wire.valid)
+                    throw std::runtime_error("public conversion: " + conversion.failureReason);
+                json actions = json::array();
+                for (const auto &edge : searcher.rootNode().edges) {
+                    const auto live = SilverSearcher::translateAction(edge.action, searcher.rootSearchState(), bc);
+                    const auto semantic = semanticFromSearchAction(bc, live);
+                    const bool hasQ = edge.node && edge.node->simulationCount > 0;
+                    actions.push_back({{"action", semantic}, {"fingerprint", semanticFingerprint(semantic)},
+                        {"primitive_bits", live.bits}, {"selected", live == chosen},
+                        {"edge_visits", edge.visitCount},
+                        {"child_visits", edge.node ? edge.node->simulationCount : 0},
+                        {"q", hasQ ? json(edge.node->evaluationSum / edge.node->simulationCount) : json(nullptr)}});
+                }
+                const auto selected = semanticFromSearchAction(bc, chosen);
+                row["public_wire"] = silver_bridge::battleStateWireEnvelope(conversion.wire);
+                row["legal_actions"] = std::move(actions);
+                row["chosen_action"] = selected;
+                row["chosen_fingerprint"] = semanticFingerprint(selected);
+                row["chosen_primitive_bits"] = chosen.bits;
+                row["capture_valid"] = true;
+            } catch (const std::exception &error) {
+                // An unsupported diagnostic is explicit and does not replace
+                // the already selected legal production action.
+                row.erase("public_wire"); row.erase("legal_actions");
+                row["capture_error"] = error.what();
+            }
+            std::lock_guard<std::mutex> lock(g_uselessMutex);
+            std::ofstream out(g_publicTrace, std::ios::app);
+            if (!out || !(out << row.dump() << '\n'))
+                throw std::runtime_error("cannot write STS_SILVER_PUBLIC_TRACE");
+        }
 
         void traceUselessAction(const GameContext &gc, const BattleContext &bc, int decision,
                                const SilverSearcher &searcher, const Action &chosen,
@@ -486,6 +544,8 @@ namespace sts::search {
                     fail(gc, bc, "selected action is not valid on the live state");
                 }
                 traceUselessAction(gc, bc, decision, *searcher, action, configured, simulations);
+                tracePublicAction(gc, bc, knowledge, decision, *searcher, action,
+                                  inheritedVisits, configured, simulations);
                 if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
                     inheritedVisits, configured, skipSearch, action.bits);
                 agent.takeAction(bc, action);
@@ -568,6 +628,32 @@ namespace sts::search {
     }
 
     void installNativeSilverBackend() {
+        g_publicTrace.clear();
+        g_publicTarget.reset();
+        const char *publicPath = std::getenv("STS_SILVER_PUBLIC_TRACE");
+        const char *publicTarget = std::getenv("STS_SILVER_PUBLIC_TARGET");
+        const bool hasPublicPath = publicPath && *publicPath;
+        const bool hasPublicTarget = publicTarget && *publicTarget;
+        if (hasPublicPath != hasPublicTarget)
+            throw std::runtime_error("STS_SILVER_PUBLIC_TRACE and STS_SILVER_PUBLIC_TARGET must be set together");
+        if (hasPublicTarget) {
+            const std::string target(publicTarget);
+            const auto split = target.find(':');
+            if (split == std::string::npos || split == 0 || split + 1 == target.size()
+                || target.find(':', split + 1) != std::string::npos
+                || target.find_first_not_of("0123456789:") != std::string::npos)
+                throw std::runtime_error("STS_SILVER_PUBLIC_TARGET must be SEED:FLOOR");
+            std::uint64_t seed = 0;
+            int floor = 0;
+            const auto parsedSeed = std::from_chars(target.data(), target.data() + split, seed);
+            const auto parsedFloor = std::from_chars(target.data() + split + 1, target.data() + target.size(), floor);
+            if (parsedSeed.ec != std::errc{} || parsedFloor.ec != std::errc{} || floor <= 0)
+                throw std::runtime_error("STS_SILVER_PUBLIC_TARGET has an invalid seed or floor");
+            g_publicTarget = std::make_pair(seed, floor);
+            g_publicTrace = publicPath;
+            std::ofstream out(g_publicTrace, std::ios::app);
+            if (!out) throw std::runtime_error("cannot open STS_SILVER_PUBLIC_TRACE");
+        }
         g_uselessTrace.clear();
         if (const char *path = std::getenv("STS_SILVER_USELESS_TRACE"); path && *path) {
             g_uselessTrace = path;

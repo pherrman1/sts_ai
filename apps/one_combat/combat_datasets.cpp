@@ -142,6 +142,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
         policy["parameters"]["native_ooc_public_futures"] = count;
     if (one_combat::nativeOocShopDeckSizeFixEnabled())
         policy["flags"]["native_ooc_shop_deck_size_fix"] = true;
+    if (sts::search::oocSkipOptionalRecallEnabled())
+        policy["flags"]["skip_optional_recall"] = true;
     return policy;
 }
 

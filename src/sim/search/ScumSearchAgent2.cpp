@@ -97,8 +97,29 @@ void search::ScumSearchAgent2::playoutBattle(GameContext &gc, BattleContext &bc)
     g_externalCombatBackend(*this, gc, bc);
 }
 
+bool search::oocSkipOptionalRecallEnabled() {
+    const char *raw = std::getenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+    if (!raw) return false;
+    const std::string value(raw);
+    if (value == "0") return false;
+    if (value == "1") return true;
+    throw std::runtime_error("STS_OOC_SKIP_OPTIONAL_RECALL must be 0 or 1");
+}
+
+void search::filterOptionalRecallActions(const GameContext &gc,
+                                          std::vector<GameAction> &actions) {
+    if (gc.screenState == ScreenState::REST_ROOM && !g_collectKeys
+            && oocSkipOptionalRecallEnabled() && actions.size() > 1) {
+        // Keep the remaining simulator-legal actions in their original order.
+        // If Recall is the sole legal action, retain it: SKIP is then illegal.
+        actions.erase(std::remove_if(actions.begin(), actions.end(),
+            [](const GameAction action) { return action.getIdx1() == 2; }), actions.end());
+    }
+}
+
 void search::ScumSearchAgent2::stepRandom(GameContext &gc) {
     std::vector<search::GameAction> possibleActions(search::GameAction::getAllActionsInState(gc));
+    filterOptionalRecallActions(gc, possibleActions);
     std::uniform_int_distribution<int> distr(0, static_cast<int>(possibleActions.size())-1);
     const int randomChoice = distr(rng);
     auto a = possibleActions[randomChoice];
