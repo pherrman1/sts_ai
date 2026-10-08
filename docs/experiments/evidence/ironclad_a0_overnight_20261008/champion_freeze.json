@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "status": "CHAMPION_FROZEN_PENDING_INDEPENDENT_LAUNCH_REVIEW",
+  "frozen_epoch": 1791428224.0815034,
+  "frozen_local": "2026-10-08T04:57:04.081662+02:00",
+  "champion": "RemoveLow",
+  "comparator": "Fprod",
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/removal-d35b42b1/one_combat",
+  "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+  "manifest": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/final_confirmation.json",
+  "manifest_sha256": "e6c6e050ad0da20167c570d1f1f01a7e7037135daf3e010ac577edc8faf94f91",
+  "jobs": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation_jobs.txt",
+  "jobs_sha256": "7ae8e92d3c62ceaab432c6dfef654d47e15465cf063073c9c622ab169f413d2d",
+  "fixed_pairs": 512,
+  "source_seed_range": [
+    610083000,
+    610083511
+  ],
+  "profile_difference": {
+    "STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT": [
+      "0",
+      "1"
+    ]
+  },
+  "nomination_review": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champion_nomination_independent_review.json",
+  "nomination_review_sha256": "739ceb6f5a7c7b851ff62053fa970932403fb6bd0c97228bc237fd8d3d44f6f7",
+  "design_resolution_sha256": "a90b219ccb93fa064f42d8f378eab0a5e1e125993c8b2f7ffcc50e0311346bfb",
+  "unopened_check": {
+    "prior_csv_metadata_records": 439,
+    "source_overlap": false,
+    "confirmation_output_directory_absent": true,
+    "holdout_latch_absent": true
+  },
+  "development_reports": {
+    "wave2_report.json": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405",
+    "wave3_development_report.json": "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723",
+    "removal_development_report.json": "91afa7dc02117114b75206fc07f7a77532146a0bff6948e44a996637bd6d10df",
+    "wave5_card_rank_report.json": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530"
+  },
+  "observed_cost_projection": {
+    "reference_cpu_seconds_128": 1671.1800696660032,
+    "candidate_cpu_seconds_128": 1721.7239041410003,
+    "projected_total_game_cpu_seconds": 13571.615895228013,
+    "projected_six_worker_seconds": 2261.935982538002,
+    "outer_cap_seconds": 5400
+  },
+  "launch_boundary": "No games until independent final manifest review PASS, then refuse-overwrite latch binding its exact hashes. No changes after opening.",
+  "prelaunch_metadata_correction": {
+    "reason": "Root preflight found inherited development-only resource text in first draft. Corrected to finalP6/07:30latest/09:00hardstop before review or any holdout launch. Source, binary, models, seed allocation, profiles, sample and analysis unchanged.",
+    "preserved_directory": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/freeze_preflight",
+    "previous_hashes": {
+      "manifest_sha256": "8ca15909b0e0d77d2752c0b982f2bf66d12735ab4f4b25e2edc3bfd77d43fafe",
+      "freeze_sha256": "74dc84b0d3c839679dd74c023e8a920e791c5533bee48ef61ec5c8b4fed92741"
+    }
+  }
+}

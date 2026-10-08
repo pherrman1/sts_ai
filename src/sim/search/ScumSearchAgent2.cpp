@@ -97,8 +97,70 @@ void search::ScumSearchAgent2::playoutBattle(GameContext &gc, BattleContext &bc)
     g_externalCombatBackend(*this, gc, bc);
 }
 
+bool search::oocSkipOptionalRecallEnabled() {
+    const char *raw = std::getenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+    if (!raw) return false;
+    const std::string value(raw);
+    if (value == "0") return false;
+    if (value == "1") return true;
+    throw std::runtime_error("STS_OOC_SKIP_OPTIONAL_RECALL must be 0 or 1");
+}
+
+void search::filterOptionalRecallActions(const GameContext &gc,
+                                          std::vector<GameAction> &actions) {
+    if (gc.screenState == ScreenState::REST_ROOM && !g_collectKeys
+            && oocSkipOptionalRecallEnabled() && actions.size() > 1) {
+        // Keep the remaining simulator-legal actions in their original order.
+        // If Recall is the sole legal action, retain it: SKIP is then illegal.
+        actions.erase(std::remove_if(actions.begin(), actions.end(),
+            [](const GameAction action) { return action.getIdx1() == 2; }), actions.end());
+    }
+}
+
+bool search::oocSkipFullHpRestEnabled() {
+    const char *raw = std::getenv("STS_OOC_SKIP_FULL_HP_REST");
+    if (!raw) return false;
+    const std::string value(raw);
+    if (value == "0") return false;
+    if (value == "1") return true;
+    throw std::runtime_error("STS_OOC_SKIP_FULL_HP_REST must be 0 or 1");
+}
+
+bool search::oocRemoveLowObtainWeightEnabled() {
+    const char *raw = std::getenv("STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT");
+    if (!raw) return false;
+    const std::string value(raw);
+    if (value == "0") return false;
+    if (value == "1") return true;
+    throw std::runtime_error("STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT must be 0 or 1");
+}
+
+bool search::oocFullHpRestExclusionApplies(const GameContext &gc) {
+    return oocSkipFullHpRestEnabled()
+        && gc.screenState == ScreenState::REST_ROOM && !gc.restRoomResolved
+        && gc.maxHp > 0 && gc.curHp == gc.maxHp
+        && !gc.hasRelic(RelicId::DREAM_CATCHER)
+        && GameAction(0).isValidAction(gc) && GameAction(1).isValidAction(gc);
+}
+
+void search::filterFullHpRestActions(const GameContext &gc,
+                                     std::vector<GameAction> &actions) {
+    if (!oocFullHpRestExclusionApplies(gc)) return;
+    const auto contains = [&](int index) {
+        return std::any_of(actions.begin(), actions.end(), [&](const GameAction action) {
+            return action.getIdx1() == index && action.isValidAction(gc);
+        });
+    };
+    if (!contains(0) || !contains(1)) return;
+    // Preserve every other option and its order, including special relic actions.
+    actions.erase(std::remove_if(actions.begin(), actions.end(),
+        [](const GameAction action) { return action.getIdx1() == 0; }), actions.end());
+}
+
 void search::ScumSearchAgent2::stepRandom(GameContext &gc) {
     std::vector<search::GameAction> possibleActions(search::GameAction::getAllActionsInState(gc));
+    filterOptionalRecallActions(gc, possibleActions);
+    filterFullHpRestActions(gc, possibleActions);
     std::uniform_int_distribution<int> distr(0, static_cast<int>(possibleActions.size())-1);
     const int randomChoice = distr(rng);
     auto a = possibleActions[randomChoice];
@@ -167,7 +229,8 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
                 takeAction(gc, 2);   // recall: take the ruby key (act 3+)
             } else if (gc.curHp > 50 && gc.deck.getUpgradeableCount() > 0 && !gc.hasRelic(RelicId::FUSION_HAMMER)) {
                 takeAction(gc, 1);
-            } else if (gc.curHp < 15 && !gc.relics.has(RelicId::COFFEE_DRIPPER)){
+            } else if (gc.curHp < 15 && !gc.relics.has(RelicId::COFFEE_DRIPPER)
+                    && !oocFullHpRestExclusionApplies(gc)) {
                 takeAction(gc, 0);
             } else {
                 stepRandom(gc);
@@ -190,6 +253,8 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
 
 void search::ScumSearchAgent2::cardSelectPolicy(GameContext &gc) {
     fixed_list<std::pair<int,int>, Deck::MAX_SIZE> selectOrder;
+    const bool removeLowWeight = gc.info.selectScreenType == CardSelectScreenType::REMOVE
+        && oocRemoveLowObtainWeightEnabled();
 
     for (int i = 0; i < gc.info.toSelectCards.size(); ++i) {
         const auto &c = gc.info.toSelectCards[i].card;
@@ -207,8 +272,11 @@ void search::ScumSearchAgent2::cardSelectPolicy(GameContext &gc) {
                 }
                 break;
 
-            case CardSelectScreenType::BONFIRE_SPIRITS:
             case CardSelectScreenType::REMOVE:
+                selectOrder.push_back( {i, removeLowWeight ? obtainWeight : -obtainWeight} );
+                break;
+
+            case CardSelectScreenType::BONFIRE_SPIRITS:
                 selectOrder.push_back( {i, -obtainWeight} );
                 break;
 

@@ -1,0 +1,58 @@
+{
+  "schema": "blocked_collection_accounting_source_review_v1",
+  "status": "PASS",
+  "reviewer": "strategy",
+  "reviewed_utc": "2026-10-08T10:42:11.937826+00:00",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/account_blocked_collection.py",
+      "sha256": "d041c018e1bc77a6a2243120836723eb8db5cbdce3a08b9669294e9c9eea1f7e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_blocked_accounting.py",
+      "sha256": "11a932c51144e631eb368272c92f36cae28db3a7a77caa6989cee27af1299481"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/blocked_accounting_synthetic_test.log",
+      "sha256": "f500a86487d9997f1c05960b6b046b6ab6654bde5aba9707c21c74a3f50a9052"
+    }
+  ],
+  "scope": "Independent source review and10synthetic tests only. No real collection metadata projection or outcome interpretation was executed by reviewer.",
+  "checks": [
+    "Hash-bound terminal dispatcher completion andzero-active-game closeout required before raw collection reads.",
+    "Frozen allocation,actual dispatchauthorization/log,producer/models/helpers andexact rawdirectory bound.",
+    "All32source statuses retained; timeout never becomes valid-no-state0 orcompleted31primary.",
+    "CSVallowlist excludes finalWon/actionrank/outcome fields; poison-outcome fixture verifies no interpretation/retention.",
+    "Unterminated final logicalrecord excluded even when full-width numeric token parses; prior complete rows preserved.",
+    "Missing/nonfinite/negative CPU remains unavailable/flagged; source CPU deduplicated andobserved branchCPU explicitly censored.",
+    "Receipt output hashes/sizes checked; missing/malformed/duplicate identities andpartial files reported withoutclaiming fullcontractPASS.",
+    "Reported no-state markers clearly distinguished from canonical contractvalidation.",
+    "Observed process-wall sums,receiptspan anddispatcher elapsed reported separately.",
+    "Result primary status fixedEXECUTION_BLOCKED; helper invokes neither selection nor evaluation; frozen analyzer untouched."
+  ],
+  "review_repairs": [
+    {
+      "finding": "Full-width unterminated CSVtail couldbe mistaken for finalized numericmetadata.",
+      "resolution": "Exclude final logicalrecord withoutterminating newline; addterminated/unterminated controls."
+    },
+    {
+      "finding": "Canonical no-state wording exceeded inspectedmetadatafields.",
+      "resolution": "Rename reported_valid_no_state_marker_rows andaddnon-contract limitation."
+    }
+  ],
+  "verification": {
+    "command": ".venv/bin/python -B /home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_blocked_accounting.py",
+    "exit_code": 0,
+    "synthetic_tests_passed": 10,
+    "raw_log": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/blocked_accounting_synthetic_test.log",
+      "sha256": "f500a86487d9997f1c05960b6b046b6ab6654bde5aba9707c21c74a3f50a9052"
+    }
+  },
+  "release_boundary": "PASS for one metadata-only application after actual dispatcher andowned gameprocesses end withbound closeout receipts; no currentdata application byreviewer.",
+  "limitations": [
+    "Accounting is not clean-cohort validation or policy-quality analysis.",
+    "Censored/absent costcannot be reconstructed from zero orwall residual.",
+    "No rawcurrentlabels,selectionchoices,evaluationoutcomes,protectedTEST orclosedfinalrawdata read forsource review."
+  ]
+}

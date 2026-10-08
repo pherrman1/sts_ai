@@ -1,0 +1,144 @@
+{
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "output": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave1_health.json",
+  "sha256": "e7d373e8c9924e8c88c24b9148afb1bfe227b3127ba50887efcf69dd6028a3d4",
+  "arms": {
+    "Fprod": {
+      "roots": 14010,
+      "completed_simulations": 59904000,
+      "singleton_skips": 565,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 126,
+      "rollout_calls": 51678996,
+      "nonterminal_rollout_starts": 50552677,
+      "endpoints": {
+        "victory": 57900427,
+        "death": 2003395,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "Fflat": {
+      "roots": 13667,
+      "completed_simulations": 136670000,
+      "singleton_skips": 0,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 199,
+      "rollout_calls": 110622012,
+      "nonterminal_rollout_starts": 107763458,
+      "endpoints": {
+        "victory": 131193933,
+        "death": 5475944,
+        "turn_limit": 1,
+        "engine_stop": 122,
+        "nonterminal": 0
+      }
+    },
+    "ShopFix": {
+      "roots": 14180,
+      "completed_simulations": 61346000,
+      "singleton_skips": 557,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 126,
+      "rollout_calls": 53412633,
+      "nonterminal_rollout_starts": 52302356,
+      "endpoints": {
+        "victory": 59876770,
+        "death": 1469052,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "RestOff": {
+      "roots": 14183,
+      "completed_simulations": 61417750,
+      "singleton_skips": 554,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 139,
+      "rollout_calls": 53246124,
+      "nonterminal_rollout_starts": 52083408,
+      "endpoints": {
+        "victory": 59244040,
+        "death": 2173702,
+        "turn_limit": 6,
+        "engine_stop": 2,
+        "nonterminal": 0
+      }
+    },
+    "BossOff": {
+      "roots": 14124,
+      "completed_simulations": 59418000,
+      "singleton_skips": 603,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 126,
+      "rollout_calls": 51189236,
+      "nonterminal_rollout_starts": 50074400,
+      "endpoints": {
+        "victory": 57149257,
+        "death": 2268565,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "SkipZero": {
+      "roots": 14079,
+      "completed_simulations": 56417500,
+      "singleton_skips": 702,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 29,
+      "rollout_calls": 47926564,
+      "nonterminal_rollout_starts": 46802168,
+      "endpoints": {
+        "victory": 54515153,
+        "death": 1902326,
+        "turn_limit": 6,
+        "engine_stop": 15,
+        "nonterminal": 0
+      }
+    },
+    "ShopOff": {
+      "roots": 14786,
+      "completed_simulations": 63706250,
+      "singleton_skips": 566,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 102,
+      "rollout_calls": 55031062,
+      "nonterminal_rollout_starts": 53935575,
+      "endpoints": {
+        "victory": 61986510,
+        "death": 1719562,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "FinalBinary": {
+      "roots": 13754,
+      "completed_simulations": 137540000,
+      "singleton_skips": 0,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 199,
+      "rollout_calls": 111360809,
+      "nonterminal_rollout_starts": 108463244,
+      "endpoints": {
+        "victory": 132065800,
+        "death": 5474077,
+        "turn_limit": 1,
+        "engine_stop": 122,
+        "nonterminal": 0
+      }
+    }
+  },
+  "fatal_findings": 0
+}

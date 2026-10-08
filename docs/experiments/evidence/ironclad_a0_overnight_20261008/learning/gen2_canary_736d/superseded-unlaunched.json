@@ -1,0 +1,13 @@
+{
+  "status": "SUPERSEDED_UNLAUNCHED",
+  "reason": "Optional Ruby RECALL correction requires a new reviewed common baseline and new producer freeze.",
+  "source_seeds_executed": 0,
+  "source_seeds_still_unopened": [
+    610084000,
+    610084001,
+    610084002,
+    610084003
+  ],
+  "frozen_proposal_sha256": "119a2472e515ee44a07a676e93b20dd0b645205f9e2355a58a3df78b75f82e0a",
+  "authority": "Coordinator instruction to hold collection; preserve original immutable proposal."
+}

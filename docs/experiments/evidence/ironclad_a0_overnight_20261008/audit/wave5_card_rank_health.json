@@ -1,0 +1,2149 @@
+{
+  "schema": "supplementary_fullrun_health_v1",
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "report": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave5_card_rank_report.json",
+  "report_sha256": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530",
+  "manifest": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave5_card_rank.json",
+  "manifest_sha256": "721add02c24c8a8765e4eb8fb612df1d56b74207fe0849ebb99bd947a5f2eb30",
+  "source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+  "binary_sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907",
+  "phase": "discovery",
+  "auditor_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+  "input_hashes_rechecked": 128,
+  "inputs": [
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.csv",
+      "sha256": "81f8b10b66d4c29b8ff64fb09731203a732c99c5e62378ebbdc348ff245fdb79"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.csv.meta.json",
+      "sha256": "19a28c13df81c52857eb3c162185732e46f328b566ef6076d3b296b926b2e81a"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.log",
+      "sha256": "3e08b9e9d893fecbb13b5e089cb2c9ad09c8fb4da3fa15f1e466f302f851d841"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.trace.jsonl",
+      "sha256": "28c32b5dfd279b6e322882102f52df9adbf64a6b29f89d2202c1da5287531c07"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.tree.jsonl",
+      "sha256": "a7383c3b6ce58634b2412086371f2288cc5cad301b86818384eaa41664a5f4ac"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.profile.jsonl",
+      "sha256": "b225c5836eb089ac57a3979d33dac1211adfba2fa19d3e49f3379ab3768b8436"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.strategic.jsonl",
+      "sha256": "94cb3b16118dcb1b1d63ff0ee690160c4bfa7db196f04c9dea9eea61f60cff2c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.receipt.json",
+      "sha256": "8265b6d7df36a1ad13ff631ca24cc082466b2db39bc90bdbf52dc873f33e5d2b"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.csv",
+      "sha256": "a7051184d5b2fdb44010706f7cd2c01fdae33aa5c485d3cff5e79ac54519e6b9"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.csv.meta.json",
+      "sha256": "51a4a83200ab8ed8a5120d067791900062dbac36de4f402972eaf157434f4cf3"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.log",
+      "sha256": "6ddee4a1caea424f27d56ce8eb64263c0c984f9f7fce33297f9ef7f91e90719b"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.trace.jsonl",
+      "sha256": "de371debdbd6bdcc80ab5a84b0fd1c07825e5d19ba03658757ceaeeb69cd7bcd"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.tree.jsonl",
+      "sha256": "f62b28defab184944ec1c89d5637b57b3c65f1a1f89d6d4ef1647f308a966018"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.profile.jsonl",
+      "sha256": "41c5c6ec5960d84ba25323af4372eaba5d07dbd536bfe196e1c7c88e5e00757a"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.strategic.jsonl",
+      "sha256": "7244550231a023a80986634ed949dbd1fcecad1ac513f47183f49de57b82192c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.receipt.json",
+      "sha256": "093b3ec13d279d503ea060bd45b5471997c11c4b35258b5b33f5777d24a91fcb"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.csv",
+      "sha256": "42fd7d4344f1b622874b282d74752412320cd51b1c912462191b59a654407d05"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.csv.meta.json",
+      "sha256": "34601019b7878c64b082126f6a381be06fe7fee8ec49ccec0cb63aeead3c33a6"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.log",
+      "sha256": "d2dec8942b3ad1ae5c8d8c49eabff8cd7c4c5a68fa7e590377f4a54276976623"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.trace.jsonl",
+      "sha256": "e50d48aa9e9e7a57df6996525449b5f99781710a355b95298be104b202399df9"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl",
+      "sha256": "1246c46e001e2aeb8f42134fed9d04918d77c8b4a411f28c8a3467b8d7ab14df"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.profile.jsonl",
+      "sha256": "39dd66773c914bcb659445c91a4b4f28c898d42b818745fd61aaec81b9bf332d"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.strategic.jsonl",
+      "sha256": "90682f361168dbed0096a1fc944ed6de8050804b3a732944e56b22e4047efae7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.receipt.json",
+      "sha256": "e3c5c5f069a7c1de81d35890bb88d504ab9ef076ba85e72d8e3fe3622bf2555e"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.csv",
+      "sha256": "9b3a57ab4d7a6d46777b521ba84e4587a95bc35a96b64f6971d0a083782aca8e"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.csv.meta.json",
+      "sha256": "cd6fcce6d816d22226e36e8af00a7c541e22647b77d380ec3572e19aab89dc2a"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.log",
+      "sha256": "a6c2770440375a93faa025233a9d1e5a60dd1a2c2b84a5b1943a0a2559189a01"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.trace.jsonl",
+      "sha256": "6d2b7a5315c638147e04a59b1643c9f6cdb69d8c5a7a3534ca1784813a55681c"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.tree.jsonl",
+      "sha256": "8d85648d88ec8330d13b0da08f29b9b76f2d4fd594168a3a5014152076fc7554"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.profile.jsonl",
+      "sha256": "4ed7943a2eb0c847376395330a4a911d77f4f1ac0a45f75b285534557064dd9b"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.strategic.jsonl",
+      "sha256": "1eecbfab45ccfa6effd9cc6e973d443156fec1c60e061a82f1333b09384070b4"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.receipt.json",
+      "sha256": "6e5be822a4c1527ca7751261051450b5ce5c3b8d93663424ca1f50768ed1b6e4"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.csv",
+      "sha256": "747b3617fde5caa6d13ce3fba0ae6d0c9845056da9f70fdb206fd9250c502b57"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.csv.meta.json",
+      "sha256": "17bb38007aa48f9cb257028d05040cfede8e78ae4416ab23fd1f11e502530e0b"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.log",
+      "sha256": "67c909bd6734b290b85009d6dc55d5367e5083dd75300c55f4e8659138bf0255"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.trace.jsonl",
+      "sha256": "dbb378e83180555c988d01765fd3c9209be27a4bfaf983861b2878430bfb7d27"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.tree.jsonl",
+      "sha256": "a1f49d71b33b23fbd3976335a86896c22efaea5da46cab11806e628a514f19a2"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.profile.jsonl",
+      "sha256": "5a1a2c678dbf8f28af4ecb65a4d0094bfc9985579188668f42817b6cdd2792c2"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.strategic.jsonl",
+      "sha256": "d7efeff3c7e6af6514fdcb5f6023f94efc3bd21f43f396d88bc75aa32a874e22"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.receipt.json",
+      "sha256": "0df6b13615d0858b8c10db131186f44494489fcd21c6563a53159bd782ae5ddc"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.csv",
+      "sha256": "5c7d47e3311470130ed07bf0966b0cccae22d98ed71e10e3ca89d8c34f9c619d"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.csv.meta.json",
+      "sha256": "94998e98988acdd569d83e9dc9f051618e8e2500cb9a8a0d41eab841c79cd432"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.log",
+      "sha256": "09ab5e1322756409089c1aa2d9401182c9aecabd3f63acf990cb2c3b26807670"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.trace.jsonl",
+      "sha256": "ba7b6b5172a5c6b9d91b1c558139a6f627b643479fab39aed376f88ccac1ef6b"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.tree.jsonl",
+      "sha256": "0ea79339f54cb65b836c8efb09c0897a028fc6c983379a8ab7ed373c76003424"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.profile.jsonl",
+      "sha256": "2deb756c0906492eeb112b66380f15614280d4ffc81d021d687c8c145909553e"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.strategic.jsonl",
+      "sha256": "d5a9456682e44881251099e76fd3e650ae4e21708f74be17b8d3a1baaa3a4058"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.receipt.json",
+      "sha256": "f7bc111cabe07a906f9534cef28635bbefbbb5ac72e225d664606728358619ee"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.csv",
+      "sha256": "db8010c805437bce7d3289d905a9b07aa3dc7f1601e3f0e3fe2ca8c9e31ac6db"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.csv.meta.json",
+      "sha256": "5083586b93d99b36e6a30b2448cc95bfd7afd256cb5a8d34d610f83946e79900"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.log",
+      "sha256": "a9ae26dad54b0621ee8133c40f2e9c0887ce230792303b314a59db1095d78852"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.trace.jsonl",
+      "sha256": "4f1e5fa93792147dff8452f3ddab4fb7cf0dcc96d499fd0633b86a505eaaa862"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.tree.jsonl",
+      "sha256": "d99293540f66eabb1e8a6f43aff9d3ad82ac8b9db8d1ba4c569fda817728f739"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.profile.jsonl",
+      "sha256": "6795163a66717924e84c901e9dce37b3078f11d860549ba66d6aa10757f8310b"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.strategic.jsonl",
+      "sha256": "982b18ccbde6a60cd2da50cf12150a643722a170225d991b934db76c237b6e53"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.receipt.json",
+      "sha256": "4a2b135be8b8fadeb3a67ca47941527916c809c58326bdab30a878a00804e693"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.csv",
+      "sha256": "cf32e6e28884847f824113fe6b156d5c5295d1ca8b4b89dfa1c541f63f8a19c4"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.csv.meta.json",
+      "sha256": "d60cb5b0774ea86a2f1ec2fa256459138e23dad186f87b0589863450cff07788"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.log",
+      "sha256": "a9fb66b491a691c0e9953987cbd455cf7fb9a719ba1042aca49f0c4ae3ee496e"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.trace.jsonl",
+      "sha256": "8f86802d466fc27a8ed74d75ddede226ec34eb51d950f925894a07ec613f6947"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.tree.jsonl",
+      "sha256": "eac69d7b24993ad43e7620a65f13f45fe463112744376548c1605398bc74267a"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.profile.jsonl",
+      "sha256": "62adef0b11bd5c131f41e6ccc0a2f91be07db65fdd19094682628656751472d8"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.strategic.jsonl",
+      "sha256": "ba65384517d3779fa8d5facaefb6531f490cef01a48d56a5ca762ce5fbf7191c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.receipt.json",
+      "sha256": "96ffc5d65e4bab8c16f09e18f090efc19c49cd9af4412a677863fa96c7a01f47"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.csv",
+      "sha256": "c1bb9423a7fa8be63a3a77ce6db26aae2d3048876e6dc9a2e9b27e2d8bca1f21"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.csv.meta.json",
+      "sha256": "465910b591e5be6bd137043be7328e336d540fa3d72cd96eb404a0613168c907"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.log",
+      "sha256": "0638bee6443c258e2b7e0c1cd5a9b31907f40518a62d6827d3c9a090fead542a"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.trace.jsonl",
+      "sha256": "a5dcb6acc15bae5d1932e7cb8916655ebd7e2724fa48c46c8e95ed95927f57a3"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.tree.jsonl",
+      "sha256": "cddfd04b32fc99dcb31e8072517e1a8e6253b6379a30f896fc84d1a6ef16f95a"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.profile.jsonl",
+      "sha256": "167edcf19d5cf96914719d6c94c908c7acecb12c1d7b955a5a1657b38912b6ff"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.strategic.jsonl",
+      "sha256": "c714ad6eb221e902d44b078478a3ef9f031e82ce6b13b85fda994b6624b135f1"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.receipt.json",
+      "sha256": "ef2ffee4360a5056709fa2b815ec9757596d8f6c09ef497b99b431419a4a9acd"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.csv",
+      "sha256": "f585693aafbf827dabfa541105a4f9395e59f3937187f85e73b51fd7b22a96d2"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.csv.meta.json",
+      "sha256": "d056cc0829e3ca951aaf1c6661fa65d2bf18410e0bde9dd77e00308e636ee9fe"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.log",
+      "sha256": "9748ea04982255736b4021a143da99f61ac849a1c7ff6a9a0c558d2a255b8648"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.trace.jsonl",
+      "sha256": "6c66d4bf6a0d93a68dca16d09d319050af455aa26e3dff47ede0b4aa002a09fa"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.tree.jsonl",
+      "sha256": "21dab92df2e97b8c097fd32c38f0146214e33d16327d33f5c2564edfb6c0a1df"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.profile.jsonl",
+      "sha256": "3b24195677e603b2d19dbdaef6e36bb8ea1a25cfbcdcaaa4bcd0225332f47916"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.strategic.jsonl",
+      "sha256": "223ef147377d3d756d4a7a52a8adbd074528df4fe13a62f192cc230e636ea36c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.receipt.json",
+      "sha256": "5666ff09dcdbbfcccc61078aa133677aa0ed0bcd32565c2747a298691885fe76"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.csv",
+      "sha256": "c5dd52dc267f25095665a373a902f565b5dff1b1179d1015ccb83cf20e7f39e5"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.csv.meta.json",
+      "sha256": "d23096ac4facd753383c1ec34abc11cdef6c6599d816ebbfbe3e2648d145d625"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.log",
+      "sha256": "cf73ae4b4c08bcc1b839f191de95e452a87b7b0d5e76d11855658754400fa5bb"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.trace.jsonl",
+      "sha256": "55b5b29d6520709199feb06308b7ae92d9149f86394f93d0b1eaaaea0388b0d3"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.tree.jsonl",
+      "sha256": "02310e575cc539ef601808e4dc145808e35daf8fe271f341da80a0c433367c54"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.profile.jsonl",
+      "sha256": "73032d80507024b53f6fb6497e6d39be0125b5c7707bac5d9715d9b5b5ef3a20"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.strategic.jsonl",
+      "sha256": "03fbc8e5d24f2cae8c24fca739ac5a16037826041a66e822e1cbf2fad03ac49f"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.receipt.json",
+      "sha256": "18537296132aa897341c4b6ff18b3d0022d6b31519f9444f2db042a911995a4e"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.csv",
+      "sha256": "54e7a4f6265b4b574ec26a7c0584ce9adc1b43268f983302553e256178f7ee81"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.csv.meta.json",
+      "sha256": "d0ad43d03b34c60655c761dbcad01ff4fa4291c7f338a1b23fd86c59069e6e48"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.log",
+      "sha256": "07c634deeab225abd3e73971715614313a3abbdaec0a0fae6e1de1667836f4b7"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.trace.jsonl",
+      "sha256": "82174c063e9f6c4d1e4e55e4195fbe773880d7dc72c1525881dfa14d9f858629"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.tree.jsonl",
+      "sha256": "3b3672a55e660e036825775084dd75e44f35d3b6fae94471db1f2d529789b797"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.profile.jsonl",
+      "sha256": "189723b26257e8ba949617f43184c4d72e4257db8b86d828704ddbd806e2e398"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.strategic.jsonl",
+      "sha256": "16aae6a207541202efe2e5b021d2eac3f2f968b789563edb65e0376d983e7b75"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.receipt.json",
+      "sha256": "515d800b19b96fb5f645304d5e916bb454f336a12513e4a03b06f7bfddd71cc8"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.csv",
+      "sha256": "aa74031d2c2a15e634a4ce94118123937de36bc851e1186b77f8e348eb78565e"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.csv.meta.json",
+      "sha256": "6e33f74524a6514483a5a6450c9f01e37c5b47d19604199e97e598e4f78d7ec8"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.log",
+      "sha256": "c14b2f1a56ebcfc44e31db95423ed4097da99f9e60606dd72da62ee54316090d"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.trace.jsonl",
+      "sha256": "23c49626f161d7739f04d374fdba0b14133dfa65eaedfba09c25aedc5d6ef13c"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.tree.jsonl",
+      "sha256": "c0f93c54169c8e2a414375887a67948ea6f141a5cc2a54ee0a50254826d012e0"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.profile.jsonl",
+      "sha256": "c86f637825061dcf317c1e4e93857845c39a902231a62c5846e053c06f7594bf"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.strategic.jsonl",
+      "sha256": "e84d9d2d1716fb30fc5d49ab67fde6f9bbce1631244367717aa61a7fa5b796e2"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.receipt.json",
+      "sha256": "334205140493d05fa61d847cc06c1ace5efb0cd14be7241b92f4297dcbb3ce16"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.csv",
+      "sha256": "f06f2247796fbd1fdea68eadd4dd7d36f4038a1592fa8ae95a82178c203cbbdf"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.csv.meta.json",
+      "sha256": "c88f3c918ad6cc0ee2aa8fa3b9fbb38a10482031a49354a7cb8e9cfc24fd79ab"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.log",
+      "sha256": "5dcac79fe444570ab3d55efc94a2e3d6761ed1e19ee0bd4def6168697a654dc4"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.trace.jsonl",
+      "sha256": "bf0848a806f1640388b6a0a5f7a7c90eca8884372fb21763065cfe06931c4e88"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.tree.jsonl",
+      "sha256": "724076814fe18c320127c278013f3fea371b98cfc1f4256c78bbe813f653cee7"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.profile.jsonl",
+      "sha256": "201dd0ddde6dda25635a5b7d2fbe159322b8c7c0d7053d045e3d1c8f07f4e468"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.strategic.jsonl",
+      "sha256": "7963de981ec008585f0f24b44ab22cda22e5ac36373ff18065ffe0a5a8475b1a"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.receipt.json",
+      "sha256": "f8798796e417cc8fda758841b8ffe8ffad46dceeb642486e15cfd1d71744a0d3"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.csv",
+      "sha256": "86ff722b4375268312873fcf355959951d31f5912e20e1610dfde1a8b8b0621f"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.csv.meta.json",
+      "sha256": "42d3949b4aaf1c84fa4e839c8349456af00403cd2d6416167dd3a865c66ee42d"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.log",
+      "sha256": "b5c1fa91c943dbca8c4d08242dedb9b2157a21176de386ce450d49bf7ee230be"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.trace.jsonl",
+      "sha256": "cf4d0ddc77096aa104b328cd6580a4b7c87db73d16e046c33e54d935fe877640"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.tree.jsonl",
+      "sha256": "80c9f7394d19edc947fa7340fcb075d7f73ed9d2f5454f2ff9ad5532fd7c33a6"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.profile.jsonl",
+      "sha256": "66c3b028ef972ff9fbe46d34856876377c3433700f2dd31221e0abc9d6eb499e"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.strategic.jsonl",
+      "sha256": "426e1a0ab06561ee9b585f46a0172fdd0692bd637b8e2bbf5bff9fce1af8f62d"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.receipt.json",
+      "sha256": "99e20ecc47581dd8a8a0a41e2c4dd5e368836d59846caef476d3dcb767e4b1fd"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.csv",
+      "sha256": "cf5c4b9863e41055642ad6702badc8c316be28e71b83c0722669ea066327810c"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.csv.meta.json",
+      "sha256": "fa2fc68561c6c37734742c0d97002c1fca460ffd3202e195140fd77b16ca61e3"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.log",
+      "sha256": "426d175b3922bee23b161c7e189678feb2b26bb9f8330ead8364bcb711650061"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.trace.jsonl",
+      "sha256": "2dc5bf982a8915ba7dbf061097a852c81eb2ee9dff693a42a413e023ce2f1bc0"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.tree.jsonl",
+      "sha256": "6b19537f6151911bee4c7abd7ffcea14de61afca38c72178cb52428c979e13b4"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.profile.jsonl",
+      "sha256": "22f29dda67010d4fbe354aa6bbc97f75069278b9fa4e32aa590b000725ad7a79"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.strategic.jsonl",
+      "sha256": "ccd5fd12458bec7940856aad081adf4b9c91899657901752c771d78ece6b3ef7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.receipt.json",
+      "sha256": "1f6ae34e77caefb2eccddd5fdbcd76fa45441cde7e24a711a1c7ed5616011934"
+    }
+  ],
+  "arms": {
+    "Fprod": {
+      "roots": 14032,
+      "completed_simulations": 60277250,
+      "singleton_skips": 570,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 102,
+      "rollout_calls": 51910663,
+      "nonterminal_rollout_starts": 50777002,
+      "endpoints": {
+        "victory": 58588314,
+        "death": 1688758,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "CardWinRank": {
+      "roots": 13927,
+      "completed_simulations": 59756500,
+      "singleton_skips": 565,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 6,
+      "rollout_calls": 51811315,
+      "nonterminal_rollout_starts": 50717870,
+      "endpoints": {
+        "victory": 57859195,
+        "death": 1897296,
+        "turn_limit": 0,
+        "engine_stop": 9,
+        "nonterminal": 0
+      }
+    }
+  },
+  "per_arm_seed": {
+    "Fprod": {
+      "610081000": {
+        "roots": 625,
+        "completed_simulations": 2616500,
+        "singleton_skips": 53,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2216006,
+        "nonterminal_rollout_starts": 2177988,
+        "endpoints": {
+          "victory": 2591809,
+          "death": 24685,
+          "turn_limit": 6,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081001": {
+        "roots": 403,
+        "completed_simulations": 1738500,
+        "singleton_skips": 15,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1476818,
+        "nonterminal_rollout_starts": 1453633,
+        "endpoints": {
+          "victory": 1716592,
+          "death": 21908,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081002": {
+        "roots": 326,
+        "completed_simulations": 1312250,
+        "singleton_skips": 11,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1186595,
+        "nonterminal_rollout_starts": 1169968,
+        "endpoints": {
+          "victory": 1195973,
+          "death": 116277,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081003": {
+        "roots": 531,
+        "completed_simulations": 2581500,
+        "singleton_skips": 11,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2292679,
+        "nonterminal_rollout_starts": 2262579,
+        "endpoints": {
+          "victory": 2569891,
+          "death": 11609,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081004": {
+        "roots": 369,
+        "completed_simulations": 1564500,
+        "singleton_skips": 21,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1262434,
+        "nonterminal_rollout_starts": 1223599,
+        "endpoints": {
+          "victory": 1555872,
+          "death": 8628,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081005": {
+        "roots": 491,
+        "completed_simulations": 2159500,
+        "singleton_skips": 13,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1909213,
+        "nonterminal_rollout_starts": 1872047,
+        "endpoints": {
+          "victory": 2082662,
+          "death": 76838,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081006": {
+        "roots": 601,
+        "completed_simulations": 2499500,
+        "singleton_skips": 27,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2232910,
+        "nonterminal_rollout_starts": 2188293,
+        "endpoints": {
+          "victory": 2314057,
+          "death": 185443,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081007": {
+        "roots": 407,
+        "completed_simulations": 1966000,
+        "singleton_skips": 16,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1711620,
+        "nonterminal_rollout_starts": 1670810,
+        "endpoints": {
+          "victory": 1916056,
+          "death": 49944,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081008": {
+        "roots": 343,
+        "completed_simulations": 1531250,
+        "singleton_skips": 6,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1267707,
+        "nonterminal_rollout_starts": 1228328,
+        "endpoints": {
+          "victory": 1510483,
+          "death": 20767,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081009": {
+        "roots": 456,
+        "completed_simulations": 2148750,
+        "singleton_skips": 24,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1844337,
+        "nonterminal_rollout_starts": 1787836,
+        "endpoints": {
+          "victory": 2135594,
+          "death": 13156,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081010": {
+        "roots": 640,
+        "completed_simulations": 3566500,
+        "singleton_skips": 47,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 3255479,
+        "nonterminal_rollout_starts": 3201668,
+        "endpoints": {
+          "victory": 3564833,
+          "death": 1495,
+          "turn_limit": 0,
+          "engine_stop": 172,
+          "nonterminal": 0
+        }
+      },
+      "610081011": {
+        "roots": 137,
+        "completed_simulations": 311250,
+        "singleton_skips": 13,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 263225,
+        "nonterminal_rollout_starts": 259523,
+        "endpoints": {
+          "victory": 256575,
+          "death": 54675,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081012": {
+        "roots": 500,
+        "completed_simulations": 2008000,
+        "singleton_skips": 44,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1726538,
+        "nonterminal_rollout_starts": 1691395,
+        "endpoints": {
+          "victory": 1819898,
+          "death": 188102,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081013": {
+        "roots": 401,
+        "completed_simulations": 1661750,
+        "singleton_skips": 10,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1364180,
+        "nonterminal_rollout_starts": 1321104,
+        "endpoints": {
+          "victory": 1656580,
+          "death": 5170,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081014": {
+        "roots": 358,
+        "completed_simulations": 1237750,
+        "singleton_skips": 20,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 993902,
+        "nonterminal_rollout_starts": 960029,
+        "endpoints": {
+          "victory": 1172858,
+          "death": 64892,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081015": {
+        "roots": 537,
+        "completed_simulations": 2516250,
+        "singleton_skips": 16,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 101,
+        "rollout_calls": 2140106,
+        "nonterminal_rollout_starts": 2099770,
+        "endpoints": {
+          "victory": 2426961,
+          "death": 89289,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081016": {
+        "roots": 457,
+        "completed_simulations": 1498000,
+        "singleton_skips": 33,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1165268,
+        "nonterminal_rollout_starts": 1127006,
+        "endpoints": {
+          "victory": 1423511,
+          "death": 74489,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081017": {
+        "roots": 258,
+        "completed_simulations": 860250,
+        "singleton_skips": 11,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 719474,
+        "nonterminal_rollout_starts": 702193,
+        "endpoints": {
+          "victory": 821993,
+          "death": 38257,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081018": {
+        "roots": 444,
+        "completed_simulations": 1639750,
+        "singleton_skips": 16,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1399889,
+        "nonterminal_rollout_starts": 1365423,
+        "endpoints": {
+          "victory": 1630019,
+          "death": 9731,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081019": {
+        "roots": 468,
+        "completed_simulations": 1884250,
+        "singleton_skips": 12,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 1,
+        "rollout_calls": 1622572,
+        "nonterminal_rollout_starts": 1582968,
+        "endpoints": {
+          "victory": 1809407,
+          "death": 74843,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081020": {
+        "roots": 486,
+        "completed_simulations": 2016750,
+        "singleton_skips": 12,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1746452,
+        "nonterminal_rollout_starts": 1716280,
+        "endpoints": {
+          "victory": 1986902,
+          "death": 29848,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081021": {
+        "roots": 637,
+        "completed_simulations": 3703000,
+        "singleton_skips": 3,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 3475887,
+        "nonterminal_rollout_starts": 3434969,
+        "endpoints": {
+          "victory": 3696147,
+          "death": 6853,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081022": {
+        "roots": 484,
+        "completed_simulations": 2264000,
+        "singleton_skips": 17,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1954365,
+        "nonterminal_rollout_starts": 1900387,
+        "endpoints": {
+          "victory": 2243176,
+          "death": 20824,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081023": {
+        "roots": 425,
+        "completed_simulations": 1778500,
+        "singleton_skips": 15,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1370531,
+        "nonterminal_rollout_starts": 1301775,
+        "endpoints": {
+          "victory": 1718362,
+          "death": 60138,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081024": {
+        "roots": 484,
+        "completed_simulations": 2357250,
+        "singleton_skips": 7,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2158447,
+        "nonterminal_rollout_starts": 2117990,
+        "endpoints": {
+          "victory": 2341268,
+          "death": 15982,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081025": {
+        "roots": 404,
+        "completed_simulations": 1785500,
+        "singleton_skips": 13,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1524844,
+        "nonterminal_rollout_starts": 1499098,
+        "endpoints": {
+          "victory": 1752432,
+          "death": 33068,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081026": {
+        "roots": 284,
+        "completed_simulations": 1122500,
+        "singleton_skips": 8,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 956420,
+        "nonterminal_rollout_starts": 939131,
+        "endpoints": {
+          "victory": 1063348,
+          "death": 59152,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081027": {
+        "roots": 500,
+        "completed_simulations": 1922250,
+        "singleton_skips": 12,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1690427,
+        "nonterminal_rollout_starts": 1658271,
+        "endpoints": {
+          "victory": 1818784,
+          "death": 103466,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081028": {
+        "roots": 368,
+        "completed_simulations": 1666500,
+        "singleton_skips": 2,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1437374,
+        "nonterminal_rollout_starts": 1400769,
+        "endpoints": {
+          "victory": 1652107,
+          "death": 14393,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081029": {
+        "roots": 431,
+        "completed_simulations": 1412250,
+        "singleton_skips": 52,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1046043,
+        "nonterminal_rollout_starts": 1007282,
+        "endpoints": {
+          "victory": 1293357,
+          "death": 118893,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081030": {
+        "roots": 340,
+        "completed_simulations": 1240250,
+        "singleton_skips": 7,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1015078,
+        "nonterminal_rollout_starts": 991880,
+        "endpoints": {
+          "victory": 1185945,
+          "death": 54305,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081031": {
+        "roots": 437,
+        "completed_simulations": 1706500,
+        "singleton_skips": 3,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1483843,
+        "nonterminal_rollout_starts": 1463010,
+        "endpoints": {
+          "victory": 1664862,
+          "death": 41638,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      }
+    },
+    "CardWinRank": {
+      "610081000": {
+        "roots": 536,
+        "completed_simulations": 1865000,
+        "singleton_skips": 46,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1575927,
+        "nonterminal_rollout_starts": 1548067,
+        "endpoints": {
+          "victory": 1799420,
+          "death": 65580,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081001": {
+        "roots": 397,
+        "completed_simulations": 1372250,
+        "singleton_skips": 15,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1161071,
+        "nonterminal_rollout_starts": 1134856,
+        "endpoints": {
+          "victory": 1337223,
+          "death": 35027,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081002": {
+        "roots": 526,
+        "completed_simulations": 2391250,
+        "singleton_skips": 8,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2167468,
+        "nonterminal_rollout_starts": 2135474,
+        "endpoints": {
+          "victory": 2347189,
+          "death": 44061,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081003": {
+        "roots": 568,
+        "completed_simulations": 2781500,
+        "singleton_skips": 13,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2536980,
+        "nonterminal_rollout_starts": 2492875,
+        "endpoints": {
+          "victory": 2772652,
+          "death": 8848,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081004": {
+        "roots": 393,
+        "completed_simulations": 1603500,
+        "singleton_skips": 25,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1273846,
+        "nonterminal_rollout_starts": 1235303,
+        "endpoints": {
+          "victory": 1597151,
+          "death": 6349,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081005": {
+        "roots": 460,
+        "completed_simulations": 2151750,
+        "singleton_skips": 27,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1813523,
+        "nonterminal_rollout_starts": 1774611,
+        "endpoints": {
+          "victory": 2090064,
+          "death": 61686,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081006": {
+        "roots": 398,
+        "completed_simulations": 1950750,
+        "singleton_skips": 17,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1689376,
+        "nonterminal_rollout_starts": 1648438,
+        "endpoints": {
+          "victory": 1805701,
+          "death": 145049,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081007": {
+        "roots": 506,
+        "completed_simulations": 2711250,
+        "singleton_skips": 4,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2460781,
+        "nonterminal_rollout_starts": 2435883,
+        "endpoints": {
+          "victory": 2704098,
+          "death": 7152,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081008": {
+        "roots": 371,
+        "completed_simulations": 1378000,
+        "singleton_skips": 6,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1189127,
+        "nonterminal_rollout_starts": 1161601,
+        "endpoints": {
+          "victory": 1346001,
+          "death": 31999,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081009": {
+        "roots": 484,
+        "completed_simulations": 2497000,
+        "singleton_skips": 24,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2155054,
+        "nonterminal_rollout_starts": 2099731,
+        "endpoints": {
+          "victory": 2486534,
+          "death": 10466,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081010": {
+        "roots": 602,
+        "completed_simulations": 3636750,
+        "singleton_skips": 48,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 3384171,
+        "nonterminal_rollout_starts": 3342737,
+        "endpoints": {
+          "victory": 3635722,
+          "death": 1019,
+          "turn_limit": 0,
+          "engine_stop": 9,
+          "nonterminal": 0
+        }
+      },
+      "610081011": {
+        "roots": 137,
+        "completed_simulations": 311250,
+        "singleton_skips": 13,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 263225,
+        "nonterminal_rollout_starts": 259523,
+        "endpoints": {
+          "victory": 256575,
+          "death": 54675,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081012": {
+        "roots": 700,
+        "completed_simulations": 3086500,
+        "singleton_skips": 15,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 3,
+        "rollout_calls": 2775549,
+        "nonterminal_rollout_starts": 2736262,
+        "endpoints": {
+          "victory": 3059033,
+          "death": 27467,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081013": {
+        "roots": 439,
+        "completed_simulations": 1747000,
+        "singleton_skips": 10,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1438833,
+        "nonterminal_rollout_starts": 1396977,
+        "endpoints": {
+          "victory": 1738005,
+          "death": 8995,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081014": {
+        "roots": 411,
+        "completed_simulations": 1041250,
+        "singleton_skips": 31,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 1,
+        "rollout_calls": 724318,
+        "nonterminal_rollout_starts": 694740,
+        "endpoints": {
+          "victory": 826923,
+          "death": 214327,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081015": {
+        "roots": 555,
+        "completed_simulations": 2975000,
+        "singleton_skips": 11,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 1,
+        "rollout_calls": 2624824,
+        "nonterminal_rollout_starts": 2568199,
+        "endpoints": {
+          "victory": 2932556,
+          "death": 42444,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081016": {
+        "roots": 278,
+        "completed_simulations": 953500,
+        "singleton_skips": 7,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 749981,
+        "nonterminal_rollout_starts": 723840,
+        "endpoints": {
+          "victory": 890806,
+          "death": 62694,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081017": {
+        "roots": 285,
+        "completed_simulations": 924250,
+        "singleton_skips": 26,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 797763,
+        "nonterminal_rollout_starts": 782636,
+        "endpoints": {
+          "victory": 724610,
+          "death": 199640,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081018": {
+        "roots": 432,
+        "completed_simulations": 1783500,
+        "singleton_skips": 8,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1574482,
+        "nonterminal_rollout_starts": 1545289,
+        "endpoints": {
+          "victory": 1781721,
+          "death": 1779,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081019": {
+        "roots": 471,
+        "completed_simulations": 1955500,
+        "singleton_skips": 16,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 1,
+        "rollout_calls": 1722829,
+        "nonterminal_rollout_starts": 1684266,
+        "endpoints": {
+          "victory": 1871082,
+          "death": 84418,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081020": {
+        "roots": 524,
+        "completed_simulations": 1597000,
+        "singleton_skips": 27,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1287526,
+        "nonterminal_rollout_starts": 1255005,
+        "endpoints": {
+          "victory": 1454240,
+          "death": 142760,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081021": {
+        "roots": 588,
+        "completed_simulations": 2975750,
+        "singleton_skips": 10,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 2725085,
+        "nonterminal_rollout_starts": 2682511,
+        "endpoints": {
+          "victory": 2960189,
+          "death": 15561,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081022": {
+        "roots": 460,
+        "completed_simulations": 2206750,
+        "singleton_skips": 16,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1887874,
+        "nonterminal_rollout_starts": 1840145,
+        "endpoints": {
+          "victory": 2203778,
+          "death": 2972,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081023": {
+        "roots": 453,
+        "completed_simulations": 2019500,
+        "singleton_skips": 9,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1665609,
+        "nonterminal_rollout_starts": 1601359,
+        "endpoints": {
+          "victory": 1892541,
+          "death": 126959,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081024": {
+        "roots": 414,
+        "completed_simulations": 1760500,
+        "singleton_skips": 20,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1583914,
+        "nonterminal_rollout_starts": 1553424,
+        "endpoints": {
+          "victory": 1612991,
+          "death": 147509,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081025": {
+        "roots": 120,
+        "completed_simulations": 278000,
+        "singleton_skips": 13,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 200102,
+        "nonterminal_rollout_starts": 193587,
+        "endpoints": {
+          "victory": 220613,
+          "death": 57387,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081026": {
+        "roots": 468,
+        "completed_simulations": 2131000,
+        "singleton_skips": 15,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1847716,
+        "nonterminal_rollout_starts": 1805548,
+        "endpoints": {
+          "victory": 2105320,
+          "death": 25680,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081027": {
+        "roots": 450,
+        "completed_simulations": 1937500,
+        "singleton_skips": 12,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1716240,
+        "nonterminal_rollout_starts": 1685058,
+        "endpoints": {
+          "victory": 1884493,
+          "death": 53007,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081028": {
+        "roots": 445,
+        "completed_simulations": 1763500,
+        "singleton_skips": 7,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1479984,
+        "nonterminal_rollout_starts": 1442698,
+        "endpoints": {
+          "victory": 1714690,
+          "death": 48810,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081029": {
+        "roots": 409,
+        "completed_simulations": 1505750,
+        "singleton_skips": 52,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1214641,
+        "nonterminal_rollout_starts": 1170324,
+        "endpoints": {
+          "victory": 1455293,
+          "death": 50457,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081030": {
+        "roots": 237,
+        "completed_simulations": 909000,
+        "singleton_skips": 5,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 766790,
+        "nonterminal_rollout_starts": 745344,
+        "endpoints": {
+          "victory": 872930,
+          "death": 36070,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      },
+      "610081031": {
+        "roots": 410,
+        "completed_simulations": 1555500,
+        "singleton_skips": 9,
+        "error_strings": {},
+        "descent_aborts": 0,
+        "cycle_rollouts": 0,
+        "rollout_calls": 1356706,
+        "nonterminal_rollout_starts": 1341559,
+        "endpoints": {
+          "victory": 1479051,
+          "death": 76449,
+          "turn_limit": 0,
+          "engine_stop": 0,
+          "nonterminal": 0
+        }
+      }
+    }
+  },
+  "shards": [
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.tree.jsonl",
+      "seeds": [
+        610081000,
+        610081001,
+        610081002,
+        610081003
+      ],
+      "valid_rows": 2027
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.tree.jsonl",
+      "seeds": [
+        610081004,
+        610081005,
+        610081006,
+        610081007
+      ],
+      "valid_rows": 1757
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.tree.jsonl",
+      "seeds": [
+        610081008,
+        610081009,
+        610081010,
+        610081011
+      ],
+      "valid_rows": 1594
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.tree.jsonl",
+      "seeds": [
+        610081012,
+        610081013,
+        610081014,
+        610081015
+      ],
+      "valid_rows": 2105
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.tree.jsonl",
+      "seeds": [
+        610081016,
+        610081017,
+        610081018,
+        610081019
+      ],
+      "valid_rows": 1466
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.tree.jsonl",
+      "seeds": [
+        610081020,
+        610081021,
+        610081022,
+        610081023
+      ],
+      "valid_rows": 2025
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.tree.jsonl",
+      "seeds": [
+        610081024,
+        610081025,
+        610081026,
+        610081027
+      ],
+      "valid_rows": 1452
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.tree.jsonl",
+      "seeds": [
+        610081028,
+        610081029,
+        610081030,
+        610081031
+      ],
+      "valid_rows": 1501
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.tree.jsonl",
+      "seeds": [
+        610081000,
+        610081001,
+        610081002,
+        610081003
+      ],
+      "valid_rows": 1885
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.tree.jsonl",
+      "seeds": [
+        610081004,
+        610081005,
+        610081006,
+        610081007
+      ],
+      "valid_rows": 1868
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl",
+      "seeds": [
+        610081008,
+        610081009,
+        610081010,
+        610081011
+      ],
+      "valid_rows": 1576
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.tree.jsonl",
+      "seeds": [
+        610081012,
+        610081013,
+        610081014,
+        610081015
+      ],
+      "valid_rows": 1796
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.tree.jsonl",
+      "seeds": [
+        610081016,
+        610081017,
+        610081018,
+        610081019
+      ],
+      "valid_rows": 1627
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.tree.jsonl",
+      "seeds": [
+        610081020,
+        610081021,
+        610081022,
+        610081023
+      ],
+      "valid_rows": 2032
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.tree.jsonl",
+      "seeds": [
+        610081024,
+        610081025,
+        610081026,
+        610081027
+      ],
+      "valid_rows": 1672
+    },
+    {
+      "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.receipt.json",
+      "tree": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.tree.jsonl",
+      "seeds": [
+        610081028,
+        610081029,
+        610081030,
+        610081031
+      ],
+      "valid_rows": 1576
+    }
+  ],
+  "fatal_contract_findings": [],
+  "diagnostic_safety_limits": [
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.tree.jsonl:1153",
+      "seed": 610081010,
+      "arm": "CardWinRank",
+      "engine_stop": 5,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.tree.jsonl:1186",
+      "seed": 610081010,
+      "arm": "CardWinRank",
+      "engine_stop": 3,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.tree.jsonl:1326",
+      "seed": 610081010,
+      "arm": "CardWinRank",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.tree.jsonl:129",
+      "seed": 610081000,
+      "arm": "Fprod",
+      "engine_stop": 0,
+      "turn_limit": 2
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.tree.jsonl:130",
+      "seed": 610081000,
+      "arm": "Fprod",
+      "engine_stop": 0,
+      "turn_limit": 3
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.tree.jsonl:132",
+      "seed": 610081000,
+      "arm": "Fprod",
+      "engine_stop": 0,
+      "turn_limit": 1
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1090",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1140",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1144",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 5,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1146",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 13,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1147",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 37,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1148",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 13,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1149",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1150",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1216",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1220",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1221",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 4,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1222",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 1,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1227",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 2,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1228",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 3,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1230",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 3,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1231",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 9,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1232",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 14,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1233",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 22,
+      "turn_limit": 0
+    },
+    {
+      "locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.tree.jsonl:1234",
+      "seed": 610081010,
+      "arm": "Fprod",
+      "engine_stop": 40,
+      "turn_limit": 0
+    }
+  ],
+  "interpretation": {
+    "denominator": "newly completed search simulations; inherited visits excluded",
+    "cycle_rollouts": "expected on-path transposition fallback; counts alone are not failures",
+    "engine_stop": "positive-HP simulator loss, including no-damage and loop-guard stops; not a sampled death",
+    "turn_limit": "simulator loss beyond turn500; classified before HP death",
+    "nonterminal": "unresolved search endpoint, invalid runtime-health evidence",
+    "limits": "Tree counters alone do not distinguish engine-stop causes or establish live-game health, fairness, calibrated win probability or efficacy. No quality threshold or frozen decision rule is changed."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "stage": "selection",
+  "command": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_tranche.py",
+    "select",
+    "--contract",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/contract_receipt.json",
+    "--contract-sha256",
+    "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70"
+  ],
+  "started_epoch": 1791426229.005731,
+  "contract_sha256": "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70",
+  "analysis_sha256": "f2ed2e94c5fd670aadaba5f12f563b6bd7d7532025de3b271d31f8eb06406fda",
+  "prior_invocation_sha256": "8bb7a474f895a67f323f8a8835060285d33ef944ad1a14fc8a8f41688572d323",
+  "evaluation_artifact_absent_before_start": true,
+  "finished_epoch": 1791426229.7781205,
+  "exit_code": 0,
+  "log_sha256": "96f5b8a70988e619a39f926a29adcba107b67a8326b5f92f4385b6032a3252af",
+  "choice_sha256": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7"
+}

@@ -300,6 +300,8 @@ bool oocOnePlyRestPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent)
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicRest) return false;
     if (gc.screenState != ScreenState::REST_ROOM) return false;
     std::vector<search::GameAction> actions = v4CandidateActions(gc);
+    search::filterOptionalRecallActions(gc, actions);
+    search::filterFullHpRestActions(gc, actions);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;

@@ -1,0 +1,15 @@
+# Independent GEN2 32-source K8 proposal review
+
+Reviewed proposal `learning/gen2_tranche32_3ed9/proposal.json`, SHA256 `78cdf8b095810eb4a4a1b0165020f815c35220d9dec69193d8d8378e5f0598f2`. Scientific design: conditional PASS; launch custody, affordability and final reviewed analysis implementation remain pending.
+
+Independently rehashed binary, teacher, native policy and all model/stop-source artifacts; teacher environment equals the proposal. Source3ed9/binary27a78 remains the corrected public-mixture8/optional-Recall1 learned-stop reference. Exact source allocation610084100..131 is32 new counterfactual sources, with32 matching commands, at most2 retained CARD_REWARD/BOSS_RELIC states each and K8 (maximum3072 sibling continuations). No numerical outcomes were inspected by this review.
+
+The source-cluster estimand is appropriate and explicit: evaluate the selection-k-frozen action against actual captured source choice on k4..7, average futures within state and states within source, then equally average all32 sources. A valid source with no retained state contributes no intervention and zero incremental gain, with coverage separately visible. Missing/invalid sources or branches cannot be recoded as such a no-op. All choices must be saved and hashed from k0..3 before evaluation outcomes are opened. Exact ties retain source choice, then canonical key order. The primary rule is rollout selection only; P0/F2 remain exploratory with no best-rule selection. Resampling32 entire source clusters preserves within-source dependence. No canary pooling, optional extension, replacement seeds, model training or promotion follows from a positive conditional result.
+
+This is a diagnostic under the existing public-future sampler, not a proof of the exact player-information posterior: redeterminization preserves latent counters and pool membership, and historical P0/F2 models retain separately stated privileged-teacher/calibration limitations. Thirty-two sampled source decisions are not32 policy full-run pairs.
+
+The measured max-option linear estimate is31506CPU seconds/7877idealP4wall seconds; the three-hour budget leaves about49minutes for tails/contention. The smaller observed-retention estimate alone is insufficient for the affordability decision. P4 must start only after Wave2 finishes and remain below the shared6-process cap. Keep failures and partial receipts after the outer deadline; any incomplete cohort blocks a clean aggregate.
+
+The earlier `GEN2_PROTOCOL.md` specified a30minute margin before07:23. The new proposal instead stops at07:23 and allows starting at04:23 for a3hour cap. Before launch, either retain the earlier margin (06:53 stop/03:53 latest start for the full3hours, or a shorter cap if later) or explicitly document the coordinator's reason for superseding that previous planning bound. The protected final reserve itself must remain intact. Freeze final script/verifier/model hashes and exact launch/analysis commands before executing.
+
+Knowledge impact: independent scientific review of a proposed next tranche; no games, training or production changes were executed by this reviewer.

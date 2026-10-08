@@ -1,0 +1,12 @@
+--- analyze_wave_removal.py
++++ analyze_wave_card_rank.py
+@@ -175,6 +175,9 @@
+             removal_banner = '[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]'
+             require((removal_banner in log) == (declared_env.get('STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT', '0') == '1'),
+                     'effective fallback REMOVE acquisition-weight banner mismatch')
++            card_rank_banner = '[native OOC card win ranking ON; public8 floor take/skip preserved]'
++            require((card_rank_banner in log) == (declared_env.get('STS_OOC_CARD_WIN_RANK', '0') == '1'),
++                    'effective card win ranking banner mismatch')
+             public = re.findall(r'\[public OOC receipt seed=(\d+) futures=(\d+) scorers=(\d+)\]', log)
+             require(len(public) == len(part) and {int(s) for s,n,c in public} == part_seeds, 'public receipt source coverage')
+             require(all(int(n) == 8 and int(c) > 0 for s,n,c in public), 'public future count or inference use missing')

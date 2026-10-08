@@ -1,0 +1,13 @@
+{
+  "schema": "integration_prelaunch_failure_v1",
+  "source_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "recorded_epoch": 1791458410.9930496,
+  "status": "PRELAUNCH_ENVIRONMENT_FAILURE",
+  "observed_inline_wrapper_exit_code": 1,
+  "original_subprocess_exit_code": null,
+  "reason": "PATH restricted to /usr/bin:/bin omitted existing /home/philippherrmann/.local/bin/ctest; seed_guard exec reported ctest not found. Receipt writer subsequently assumed nonexistent JUnit.",
+  "fixture_or_game_started": false,
+  "log": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/integration-61b9616/ctest.log",
+  "log_sha256": "573b16159028182e1d38f20d16910be05760fef724b480f7c7ed25f952ebc089",
+  "repair": "Use absolute existing ctest path, preserve first log, permit absent JUnit in receipt writer."
+}

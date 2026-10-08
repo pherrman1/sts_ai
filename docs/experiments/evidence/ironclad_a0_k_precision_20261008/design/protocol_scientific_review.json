@@ -1,0 +1,45 @@
+{
+  "schema": "k_precision_protocol_scientific_review_v1",
+  "status": "PASS",
+  "reviewer": "strategy",
+  "reviewed_utc": "2026-10-08T09:12:08.942207+00:00",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/SCIENTIFIC_DESIGN_REVIEW.md",
+      "sha256": "60293287004be2e9e8bf311f64ce9ae7688d502b9a2b1e5f867b29d48b192054"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c"
+    }
+  ],
+  "checks": {
+    "fresh32_seed_allocation": "PASS_WITHIN_INSPECTED_METADATA",
+    "same_state_nested_selection_K4_K16": "PASS",
+    "baseline_favored_then_canonical_key_ties": "PASS",
+    "choices_frozen_before_independent_eval_16_31": "PASS",
+    "all32_equal_source_mean_valid_no_state_zero": "PASS",
+    "invalid_missing_timeout_blocks_inference": "PASS",
+    "whole_source_bootstrap_10000_20261008": "PASS",
+    "conditional_gain_harm_inconclusive_mapping": "PASS",
+    "P6_one_thread_and_source1800s": "PASS",
+    "three_hour_or_absolute142224_collection_stop": "PASS",
+    "overall150224_deadline_and_packaging_reserve": "PASS",
+    "old_teacher_and_final_trial_separation": "PASS",
+    "no_training_default_change_or_automatic_followup": "PASS"
+  },
+  "limits": [
+    "Exact final freeze and execution guards are separate launch gates.",
+    "New verifier and analyzer implementation reviews remain separately required.",
+    "Scientific PASS does not guarantee power or completion; only32independent sourceclusters.",
+    "No old final raw efficacy or protected historical TEST data were read."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "command": "cmake --build build/linux-gcc-release --target one_combat -j3",
+  "exit_code": 0,
+  "raw_log": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight-corrected-reference-build.log",
+  "sha256": "f270b512f3cc237b424c7bac4984e2ea9ac27b41597a501382a25836f54ebd35",
+  "note": "Raw compiler log retained in ignored artifact storage; contains compiler whitespace."
+}

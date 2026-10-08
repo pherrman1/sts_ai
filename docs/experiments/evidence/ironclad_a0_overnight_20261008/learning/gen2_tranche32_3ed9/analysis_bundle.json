@@ -1,0 +1,128 @@
+{
+  "schema": "overnight_gen2_tranche_ready_bundle_v1",
+  "status": "REVIEWED_READY_FOR_COORDINATOR_DISPATCH",
+  "review_sha256": "b4393691e7ee9701c555966aea7699d7732d22c61c95aff1e4878852eccb9baa",
+  "freeze_sha256": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1",
+  "jobs": 32,
+  "game_processes": 4,
+  "producer_unchanged": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "absolute_stop_local": "2026-10-08T06:53:00+02:00",
+  "absolute_stop_epoch": 1791435180.0,
+  "max_elapsed_seconds": 10800,
+  "latest_start_local": "2026-10-08T03:53:00+02:00",
+  "dispatch_outer_timeout": "min(10800, absolute_stop_epoch-dispatch_now); TERM process group then KILL after30s; coordinator controls fixed P4 and total6 campaign game processes.",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "sha256": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/proposal_v2.json",
+      "sha256": "714a1cde5342f4ab7b369838affda0a54794ac45023cc68e19d38d33ed8a750a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/jobs.json",
+      "sha256": "4cc12aefa0e3ef72c150e709b58625ff67d1761c3b3634a98106b26da920ac90"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/source_seeds.txt",
+      "sha256": "71052186ae6d018c5329ebedeed5d2026cc6916aecbb187c5e94f834e5380243"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/gen2_tranche32_final_review.json",
+      "sha256": "b4393691e7ee9701c555966aea7699d7732d22c61c95aff1e4878852eccb9baa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/synthetic_checks.json",
+      "sha256": "2e262e5d611c1f2e2089371f4a288c137cf03df41d631e30c41036a84d9b86a4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_tranche.py",
+      "sha256": "f2ed2e94c5fd670aadaba5f12f563b6bd7d7532025de3b271d31f8eb06406fda"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_tranche.py",
+      "sha256": "ea2003d1337d4784c518ac63d8b726c2599a21a2145bbab8df2ca050760ade47"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tools/analysis/vwin_tree_utils.py",
+      "sha256": "ab6f2df86101d97a7ecbef2f5b1910992cabdce217f8de953e37b5dd19ae9e47"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/export_receipt.json",
+      "sha256": "928e3520cc00fa87808ff2ae9533529895dade9cade7b9324a3425de1397714d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/native_export_parity_receipt.json",
+      "sha256": "ae1daf771077d31aa6b013b44b4c4e6cb25327e21b99183c83f41698efa3c4f9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+      "sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s0/model.ubj",
+      "sha256": "271166525f945e8834844a91e1bb17e4502deb6c7867934ba07137f159a7bd1e"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s0/predictor.json",
+      "sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/public-e1-export/F2-s0.trees.txt",
+      "sha256": "8955d513fbd152c40d112604bb30c7da16ac0ff7b3dd1bf72717d2308bd83935"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/model.ubj",
+      "sha256": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/predictor.json",
+      "sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/public-e1-export/P0-s0.trees.txt",
+      "sha256": "3189c51ae352740e02a3f15cb691ca6e80324d88a6583c094ca81bae91c59ab0"
+    }
+  ],
+  "numerical_analysis_gate": "Complete contractPASS first; selectk0..3 then freeze/hash allchoices; separate evaluatek4..7 invocation.",
+  "confirmation_untouched": true,
+  "training_authorized": false,
+  "ready_epoch": 1791422109.3013391
+}

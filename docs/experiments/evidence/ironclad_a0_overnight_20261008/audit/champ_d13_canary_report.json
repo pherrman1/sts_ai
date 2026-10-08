@@ -1,0 +1,80 @@
+{
+  "schema": "champ_d13_analysis_v1",
+  "stage": "canary",
+  "allocated_k": [
+    0,
+    1
+  ],
+  "build_freeze_sha256": "8edcc9126e9049b92f574bfce2eccebf2f54a7fe45125dfcbf4e351c6566f259",
+  "tools_freeze_sha256": "ad32cc58f79d97b45c1e8e9c7270f3ebff4f3fe619d971cc430650a4067b0b49",
+  "source_sha": "a557ace5770f26983db4a55ec2c9318a95bf328d",
+  "binary_sha256": "f316bbbb27d86f2628889607c7e7069a26d53f81c2ffef9e436ea1a355a66fbf",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/check.receipt.json",
+      "sha256": "79e8482e14a478c7338cb5b1e485ee947ac80ec7dc36b32e2fe686be2a46f63a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/check.jsonl",
+      "sha256": "7499ebcbab11168b047f2efba4fb26351c0530552685a5aa84b82dd2eb4ab39c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/check.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/canary-00.receipt.json",
+      "sha256": "b951382a301513604b6bdf589895022fbcb830529c702da0fa963e08d374e8a9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/canary-00.jsonl",
+      "sha256": "bc6343739dd7395776dcdfd253cd854f41451498b051e1e4e333ca44f6e818dd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/canary-00.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/canary-01.receipt.json",
+      "sha256": "f4dbea3b2ac29cdeb7b8bd8bef134148f70cc0ec22b761867f146b5d46f06e46"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/canary-01.jsonl",
+      "sha256": "c7a6fe7ea0df54a0acabaf6a607031c19c810059a3d2ea07b74a53abedab4ecf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/champ_d13/canary-01.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champ_d13_build_freeze.json",
+      "sha256": "8edcc9126e9049b92f574bfce2eccebf2f54a7fe45125dfcbf4e351c6566f259"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champ_d13_tools_freeze.json",
+      "sha256": "ad32cc58f79d97b45c1e8e9c7270f3ebff4f3fe619d971cc430650a4067b0b49"
+    }
+  ],
+  "independent_source_decisions": 1,
+  "failures": [],
+  "analysis_script_sha256": "817985e65b649fe4d6de431ca2cf2d5fdcf09781d6bd9f97f496e0c69e01e4f4",
+  "pairs": 2,
+  "branches": 4,
+  "cpu_seconds_by_arm": {
+    "END": 10.376045,
+    "SHRUG": 11.425602999999999
+  },
+  "process_wall_seconds": 21.868820992996916,
+  "latest_invocation_finished_epoch": 1791421511.1545622,
+  "continuation_simulations": 2280000,
+  "search_health": {
+    "turn_limit": 0,
+    "engine_stop": 0,
+    "nonterminal": 0
+  },
+  "status": "CANARY_CONTRACT_PASS",
+  "outcome_summary_emitted": false,
+  "projected_evaluation_wall_seconds_one_worker": 677.9334507829044,
+  "projection_note": "Linear extrapolation from two pairs; coordinator must assess reserve and overhead.",
+  "created_epoch": 1791421519.1475313
+}

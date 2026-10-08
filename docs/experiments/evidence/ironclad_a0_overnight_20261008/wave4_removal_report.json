@@ -1,0 +1,700 @@
+{
+  "phase": "discovery",
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+  "manifest_sha256": "1aca03326eedcd5cf4dfa3790da3f1e84f7dbc580e11a07070c7c4b4b497d2a2",
+  "analysis_script_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+  "arms": {
+    "Fprod": {
+      "n": 32,
+      "wins": 26,
+      "win_rate": 0.8125,
+      "win_rate_wilson95": [
+        0.6469084479862404,
+        0.9111045531043405
+      ],
+      "mean_floor": 48.09375,
+      "run_seconds_sum": 460.36723,
+      "process_wall_seconds_sum": 461.9452801179432,
+      "public_scorer_calls": 687,
+      "observed_profile_thread_cpu_seconds_sum": 459.74363792899976,
+      "observed_profile_thread_cpu_rows": 1604
+    },
+    "RemoveLow": {
+      "n": 32,
+      "wins": 27,
+      "win_rate": 0.84375,
+      "win_rate_wilson95": [
+        0.682458504024696,
+        0.9313557971749429
+      ],
+      "mean_floor": 48.1875,
+      "run_seconds_sum": 478.83836,
+      "process_wall_seconds_sum": 480.4874784510175,
+      "public_scorer_calls": 707,
+      "observed_profile_thread_cpu_seconds_sum": 478.6380920109994,
+      "observed_profile_thread_cpu_rows": 1606
+    }
+  },
+  "comparisons": {
+    "RemoveLow-Fprod": {
+      "pairs": 32,
+      "gain": 0.03125,
+      "ci95": [
+        0.0,
+        0.09375
+      ],
+      "candidate_only": 1,
+      "control_only": 0,
+      "both_win": 26,
+      "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+    }
+  },
+  "all_pairs_complete": true,
+  "bootstrap_replicates": 10000,
+  "bootstrap_seed": 20261008,
+  "inputs": [
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.csv",
+      "sha256": "6e7e5db02d9bbeb1200fceba7aee0b8c17bd1442976381f2814d689b4672e551"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.csv.meta.json",
+      "sha256": "8d1592ea1dca3aa96e0a9923519dfd85ace4ed331a6295e015c0a4fedc4ac68b"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.log",
+      "sha256": "74e87412cad83ab2236559583fd98b4ce4e23b09305faf342665b1dc17767e05"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.trace.jsonl",
+      "sha256": "28c32b5dfd279b6e322882102f52df9adbf64a6b29f89d2202c1da5287531c07"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.tree.jsonl",
+      "sha256": "a7383c3b6ce58634b2412086371f2288cc5cad301b86818384eaa41664a5f4ac"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.profile.jsonl",
+      "sha256": "832b0a03e992f3036485784e7723a989aa95bb02596ca585f8a4090f4ba1b07f"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.strategic.jsonl",
+      "sha256": "94cb3b16118dcb1b1d63ff0ee690160c4bfa7db196f04c9dea9eea61f60cff2c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.receipt.json",
+      "sha256": "172d8f624c5d51c867242b6de9fbc4d4991e700d10a8e855b33842a43ce7d32c"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.csv",
+      "sha256": "fb306f082cde7053f8ff5accb0220afe5f850f1e759cb6978b7054f182e818ab"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.csv.meta.json",
+      "sha256": "7aa3eb577aa90269d1a86d689b4d42bd3d21fa04f6febe5f41eb18204b0d51e0"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.log",
+      "sha256": "be5cee04c8626afe7fe2e19b3aacd477db9b3fa66a88cc4aa22ceb208caff21f"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.trace.jsonl",
+      "sha256": "de371debdbd6bdcc80ab5a84b0fd1c07825e5d19ba03658757ceaeeb69cd7bcd"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.tree.jsonl",
+      "sha256": "f62b28defab184944ec1c89d5637b57b3c65f1a1f89d6d4ef1647f308a966018"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.profile.jsonl",
+      "sha256": "255fbbaf0a3eab499cd3c79d86f06e775907c891ecf29ccdc01c07b0bbfbe49c"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.strategic.jsonl",
+      "sha256": "7244550231a023a80986634ed949dbd1fcecad1ac513f47183f49de57b82192c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.receipt.json",
+      "sha256": "817fa5a477bd48434466cb927c8c5ae6116cfaf20ea358844d45f5c207345c07"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.csv",
+      "sha256": "3525446f04f8a0b0c78aa93360b9c139953b8059f79c6239b112933bf4aafe9b"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.csv.meta.json",
+      "sha256": "3c7d7cbd6926b99d1057132cb6b4e2d25a51aac66758ea7f96c3c48415fe1c9a"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.log",
+      "sha256": "c210baa2768c222f69d26fd5c73121e5e76a43e07dbf8363e0c9044aca5553f0"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.trace.jsonl",
+      "sha256": "e50d48aa9e9e7a57df6996525449b5f99781710a355b95298be104b202399df9"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.tree.jsonl",
+      "sha256": "1246c46e001e2aeb8f42134fed9d04918d77c8b4a411f28c8a3467b8d7ab14df"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.profile.jsonl",
+      "sha256": "b4c8f54eed5176bdf6fab95c32a1a969981cd6c8c7bf2576f4c5b197699b20e8"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.strategic.jsonl",
+      "sha256": "90682f361168dbed0096a1fc944ed6de8050804b3a732944e56b22e4047efae7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.receipt.json",
+      "sha256": "dd35f851fca1de10aeb39bf652027dbe52d8afba935f69ab62cc43e6bd226ce8"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.csv",
+      "sha256": "8205d865e26a277339b14c6fbd291ac69804688760eff78a19c5ec7b5502d8c9"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.csv.meta.json",
+      "sha256": "4783450b5a49661902cd6118eb0d7a8c78a665d2019b9094aa6c52c1ad4e8ec5"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.log",
+      "sha256": "cfef4a101628007ede3aff12a9f91a484d749ff20d184e88a08420f6a7547667"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.trace.jsonl",
+      "sha256": "6d2b7a5315c638147e04a59b1643c9f6cdb69d8c5a7a3534ca1784813a55681c"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.tree.jsonl",
+      "sha256": "8d85648d88ec8330d13b0da08f29b9b76f2d4fd594168a3a5014152076fc7554"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.profile.jsonl",
+      "sha256": "f5a9e07f5165efae06f31c0bb94f04a09ae3587cc186633e15130cdad0c4a36e"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.strategic.jsonl",
+      "sha256": "1eecbfab45ccfa6effd9cc6e973d443156fec1c60e061a82f1333b09384070b4"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.receipt.json",
+      "sha256": "d4a3ebb9b9f929b687ab3f6283aceab15856120fb1ba458e25630ada717da7e9"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.csv",
+      "sha256": "8c451203b2363e89fc411570c573bb67a2f4cb8860af7103f88e5bc60fedac9d"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.csv.meta.json",
+      "sha256": "c63a34271ff37f379c84164bd4c0bc8abf09a681285226484af859a211e69f38"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.log",
+      "sha256": "248fd11d9450822d0c73a6849411e229b530aeec6aac8221eb0285b2becb5ad0"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.trace.jsonl",
+      "sha256": "dbb378e83180555c988d01765fd3c9209be27a4bfaf983861b2878430bfb7d27"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.tree.jsonl",
+      "sha256": "a1f49d71b33b23fbd3976335a86896c22efaea5da46cab11806e628a514f19a2"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.profile.jsonl",
+      "sha256": "647b0db7a426934872755a988ca156f909c62edd7c96492e202c5064d1448ff5"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.strategic.jsonl",
+      "sha256": "d7efeff3c7e6af6514fdcb5f6023f94efc3bd21f43f396d88bc75aa32a874e22"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.receipt.json",
+      "sha256": "b950d2ec68fd116b1cee68b6c919e5f1826a7d96acb4805f63752e10451b34a2"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.csv",
+      "sha256": "69b7edf1c9b00601730f15b2f56e3fd60ee90a446c0b4ceaeaaaca899506ea91"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.csv.meta.json",
+      "sha256": "be448c518b4edb5f8fd1b298613b3fde248551cc65bff7027beb2fafb6924d3f"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.log",
+      "sha256": "a57e61e4c82d15921edf4be974af67772bcd463a038f218830bbf8d819235f95"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.trace.jsonl",
+      "sha256": "ba7b6b5172a5c6b9d91b1c558139a6f627b643479fab39aed376f88ccac1ef6b"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.tree.jsonl",
+      "sha256": "0ea79339f54cb65b836c8efb09c0897a028fc6c983379a8ab7ed373c76003424"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.profile.jsonl",
+      "sha256": "0ec2f24c484adfaa5785c371410a73881e83efd6f456ee081b5632eda4f68440"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.strategic.jsonl",
+      "sha256": "d5a9456682e44881251099e76fd3e650ae4e21708f74be17b8d3a1baaa3a4058"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.receipt.json",
+      "sha256": "9eb2e1dd473287bccfe2abb4634a8f290d2b68cc7be1bb08ae8b059336b906e5"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.csv",
+      "sha256": "5b1a5e26d7013ae7a2c958376e85f152112010a90517e428b93a193ab8a9642e"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.csv.meta.json",
+      "sha256": "f882c35b10ef769dc760a5940a412c6a3a9a8b4f53cd9c7d5030df13f0abc9b7"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.log",
+      "sha256": "fee6126e89fb1f260c89c453a19542eefd08941aa73f91b02ab2c3c00025a102"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.trace.jsonl",
+      "sha256": "4f1e5fa93792147dff8452f3ddab4fb7cf0dcc96d499fd0633b86a505eaaa862"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.tree.jsonl",
+      "sha256": "d99293540f66eabb1e8a6f43aff9d3ad82ac8b9db8d1ba4c569fda817728f739"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.profile.jsonl",
+      "sha256": "b7683662ef5c746eab085f5ffea8d013aa411da6c74468442b68941c69bef028"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.strategic.jsonl",
+      "sha256": "982b18ccbde6a60cd2da50cf12150a643722a170225d991b934db76c237b6e53"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.receipt.json",
+      "sha256": "258ae7e7944953531cb838651641467c3b250e431157b5de080bfb184d0ad450"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.csv",
+      "sha256": "e650c7092d6284217cf7aaa7ba051a97f621b2f5957be2fcd9396d1fb25ab190"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.csv.meta.json",
+      "sha256": "1eee0778cde726eb83fbaa11a3049cf05f65208d12fc72c366e96121db39d5da"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.log",
+      "sha256": "a6846dad25248cce15d456d7929aa8eddf735c41a154c3d9345832aeed2d04e8"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.trace.jsonl",
+      "sha256": "8f86802d466fc27a8ed74d75ddede226ec34eb51d950f925894a07ec613f6947"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.tree.jsonl",
+      "sha256": "eac69d7b24993ad43e7620a65f13f45fe463112744376548c1605398bc74267a"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.profile.jsonl",
+      "sha256": "20725668f82cb250feaf24c9220b0005ae03bc21b16fb4f8312bb0a0e4e863f6"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.strategic.jsonl",
+      "sha256": "ba65384517d3779fa8d5facaefb6531f490cef01a48d56a5ca762ce5fbf7191c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.receipt.json",
+      "sha256": "b1b7a6cb27317ab9fa51c6c69b790ea2a01d3a1aa35a75fccfd17c6a7edd8f44"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.csv",
+      "sha256": "90602a4b7825c867ba06c8571c9a3ca44006527fae53684eaca13ca267bb9fe8"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.csv.meta.json",
+      "sha256": "d38508cccc661fbecbd0bd28bc72ccaab27d5e9841eee5748fbb285493acfd3f"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.log",
+      "sha256": "b9f89c76a6752caccd85cccf286613bfeb620ff96e7f941372795973797c248b"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.trace.jsonl",
+      "sha256": "83e76947c1808066c1e32c034c7543a489d94560ee3810f28bdb41998c920347"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.tree.jsonl",
+      "sha256": "1775e29b7b627bfa80ef1ac67be3e25a8be8c6322b31f1dd712ce3d70f4a034f"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.profile.jsonl",
+      "sha256": "4bf63660fd61c14cd39b620f54d9a4dada12af9478869017a1cdb696bede061d"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.strategic.jsonl",
+      "sha256": "781ee302161ae18d0a580dd078028c44f4498a528758dd7a25a25d59993d2f6f"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.receipt.json",
+      "sha256": "37064cf057e021ddfdd573e12d1deadd14d2fafea8a6feea87b4483fcea5ca51"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.csv",
+      "sha256": "832a8ba13278e6d1216939f1f205ba489d80ecffe88df79b9e72312b7ccd9e90"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.csv.meta.json",
+      "sha256": "11e44371de619ef877c8efc009255cb0a22a1e8d496bb60862b42bb6805a299b"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.log",
+      "sha256": "43eb997e92af26049357938824096964bbb70101c79503ef65a1b901003bfc5b"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.trace.jsonl",
+      "sha256": "4e237d690d633b32772b4da403a793720e00d84c0d8650a4f167fdd699e89749"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.tree.jsonl",
+      "sha256": "4029f7559205d413f53b93b872190384d53ef7456d02b95ad6caba3655d7f542"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.profile.jsonl",
+      "sha256": "441ed11178ec49f02b9eebc58defe20d9ec8f1d776c98c8f666ea6c9daa25c18"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.strategic.jsonl",
+      "sha256": "7d39243511adb9bcc1f780765ad5b296d9ce6fbdfa6d54d57ebe9a6022d97d74"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.receipt.json",
+      "sha256": "775bffea9606b9e65e8c9331517432598de695a328470110a4f0e7721c20932b"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.csv",
+      "sha256": "12c060c3bb19736e410280fbcfb117f8005fa06564e911697f476f527ff33e01"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.csv.meta.json",
+      "sha256": "238aef279a3f256553e5af1491418fa802b11253e2d47de7c8b2cd51f07f261d"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.log",
+      "sha256": "ee0140f691b562556c592b5570d6c611faee959dd92e600cb1c6ca2a04ee7c98"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.trace.jsonl",
+      "sha256": "dab23f26d06a88303c2465282aa0d1b37dce9d024900736b08321b478ee8631d"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.tree.jsonl",
+      "sha256": "56e39ad751d2b1db396279fbca48168c1dee5d5fafc4747929a2eb34b0c71f3a"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.profile.jsonl",
+      "sha256": "6ae59b212756c5aab13d5eeb0718d07d4a0153221361fdf2e182f5082c620ecf"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.strategic.jsonl",
+      "sha256": "5f54da7f36a4d678d99d1ce8e8a8906564f6b6f24ce4c56f7f64e18d83b9dec2"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.receipt.json",
+      "sha256": "0c9fa54856fc2d67bbe33f7fbaee5de9306bd59b643c11ab97a8d09e9bb149c4"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.csv",
+      "sha256": "18fc8f97f65dcb0f454eecbb8b4fbccb7db42ff3b9cfe9e3765798ed013d2568"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.csv.meta.json",
+      "sha256": "1a844df4fe075b2d644e847b26f929b17d45c6586df2fdcf598cca14e1c7f23a"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.log",
+      "sha256": "f647d7e1018d72f488d840e2060b804bb92f407d3f6146869aead0c10b09f64c"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.trace.jsonl",
+      "sha256": "183fcda45385fa99687826e242e21387aeca665fd535ac16be019db0d2f0b457"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.tree.jsonl",
+      "sha256": "09a4aa1ba0f97d67ce70bc73b38b973879ebe27b4cd0184727c842497a534d27"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.profile.jsonl",
+      "sha256": "670e97966f6349b24df7056f67dc625833bdcabdbef29a7652b78e2d968c3679"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.strategic.jsonl",
+      "sha256": "5a6c9b16e93de7f0a0df5161abf0d0d6d69fcc9392ce92e66d835000315e55e1"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.receipt.json",
+      "sha256": "0298c3f7b6e3225166179c8e15f62b20a64d4f872c31b24a681a00031b0c466b"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.csv",
+      "sha256": "15af4c5657fbdeb56b46165e430a2e7be45fb217f30fac9df11a2327d02aaeaf"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.csv.meta.json",
+      "sha256": "b015654986ef25badb407fd00db35e05635efccf4fd143c57e22cf3c64911b35"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.log",
+      "sha256": "fc8584120c9c26d25b26a78ffbceef7c2a754ecfdc685c374aaf7a8d8a5b6c59"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.trace.jsonl",
+      "sha256": "cab565ee9022e76b0fdec9a1d1084da7125135feeb85a5d5f5f3cca02cc87522"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.tree.jsonl",
+      "sha256": "6db00dc06d161eeffbc51a20210b944cb97f5f19ffb0391c89d864300f0460b7"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.profile.jsonl",
+      "sha256": "6c99c806a96d80d568e778cb0e93e03b0646dee8e3f400afdf47adacd747b8a5"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.strategic.jsonl",
+      "sha256": "c6b004755081f76cd238b24ce9d62a4572e8c8f3640dc83b5979c98a683687e3"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.receipt.json",
+      "sha256": "d3be23f89b84b62c52aec4177943077464110be969f02762776b6a18286ed6cf"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.csv",
+      "sha256": "4f2ae2524f8fe5db4f6b0477eb38011d189d2caee8153ff03f793f22f89e3550"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.csv.meta.json",
+      "sha256": "2307eea6e6b866a93e76a16b76f6ddacf3a7b99224d052d4a53109a543cf50d5"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.log",
+      "sha256": "145d8d5ab21031c335eafd82b0982588b0f8eeb09ccf9a7a90e23df2395faa01"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.trace.jsonl",
+      "sha256": "326ab9742fdff92e1de66cf84f23e0898578d0480435f0930bc63c3841c0e6ac"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.tree.jsonl",
+      "sha256": "2a4e36f1a58a7902e501b563eab7b3abc2e0a664cace9b549b6c45cf3e79131b"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.profile.jsonl",
+      "sha256": "77cbcf180d9921470588546b4ad56f315c193ba6e752026a81f990d97d6a4198"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.strategic.jsonl",
+      "sha256": "8fec67ad961aaaddff58a9e126cd1339b325dea2693fc9424793a73e1f1a584e"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.receipt.json",
+      "sha256": "5c646226ed7693ac14de8af234807b67f8032ab0606d53aa4bcdb6112b683b66"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.csv",
+      "sha256": "8e861e9137b8b7a7732eed93f1de282636ea40a978c8a4959de0b17bfb99e336"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.csv.meta.json",
+      "sha256": "97f5ee42a1fc47c43d378c702245401a7008a9d2452b27bdac1119cec66b1c7e"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.log",
+      "sha256": "8e75efe458efe0ba4c67638bc35f612f96850a00b5c5d5f76554d26d644cfdca"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.trace.jsonl",
+      "sha256": "c1a034179e83e14a77be7867c4dd4f60133ea73beb90d17cde813eff50c4b035"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.tree.jsonl",
+      "sha256": "f5bd3d05bf51660968a32cce09432972395c6b02114db23d3517b743e9b24399"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.profile.jsonl",
+      "sha256": "61e204d8a338cbd3fbecb2618c9f2a45d7f440ebcc7924ad0878677ad928ad95"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.strategic.jsonl",
+      "sha256": "c951187b6f4791f0a7280d5393e5fb8de70a3576cd3b3d7ede02d9ab967a07de"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.receipt.json",
+      "sha256": "363a8b60436fb858b7720c0280a688c82f4b52175758ac059bb19a64965da12e"
+    },
+    {
+      "kind": "csv",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.csv",
+      "sha256": "efe87a79097873ae83c298d216ac53f5442ffc43507bf79a53bca47d9d975105"
+    },
+    {
+      "kind": "meta",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.csv.meta.json",
+      "sha256": "aff6be1946ed054a1ae06913ccfc8ada4b301e18a4d170c42525af6c44bb3ea5"
+    },
+    {
+      "kind": "log",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.log",
+      "sha256": "5bfc386051a6c8c54ce204778bf5133a02e99c09759beb16ec38bebf57166473"
+    },
+    {
+      "kind": "trace",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.trace.jsonl",
+      "sha256": "f0a9958e9530519f3296baaf3f032f2248c74169492fb26a3d7213eda6980869"
+    },
+    {
+      "kind": "tree",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.tree.jsonl",
+      "sha256": "ccb62d7fde09659a49e5734b046af8ab1d11ebf01fda7c3daccb37913eabc480"
+    },
+    {
+      "kind": "profile",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.profile.jsonl",
+      "sha256": "ced26b87ed4b3275e37905b3f1e2df5dca17c49860d671bc472045d59615bb7a"
+    },
+    {
+      "kind": "strategic",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.strategic.jsonl",
+      "sha256": "9caffddaa59b9906043eb06ee7eac0fe3897f500450923c4036fe2b8fdf012e2"
+    },
+    {
+      "kind": "receipt",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.receipt.json",
+      "sha256": "e388e177c3945ebe6c2c58772b56f1640180b8d1ddb09eff69affee8f86299a8"
+    }
+  ],
+  "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+  "binomial_bounds": "Per-arm Wilson95 intervals are descriptive; the preregistered paired bootstrap governs the final decision."
+}

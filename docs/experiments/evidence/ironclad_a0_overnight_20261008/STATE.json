@@ -1,0 +1,259 @@
+{
+  "schema": "campaign_state_v1",
+  "updated_epoch": 1791431485.1813297,
+  "start_local": "2026-10-08 01:47 Europe/Berlin",
+  "deadline_local": "2026-10-08 09:47 Europe/Berlin",
+  "reserve_starts_local": "2026-10-08 07:23 Europe/Berlin",
+  "workspace": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "branch": "codex/ironclad-overnight-20261008",
+  "base_sha": "a4b3df35d170abba7860e8e854cc24cfd3579075",
+  "current_source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+  "current_binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/cardrank-5add2413/one_combat",
+  "current_binary_sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907",
+  "wave1": {
+    "status": "complete256validruns",
+    "report": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave1_report.json",
+    "reference_limit": "publicfair but optionalRecalldefect remains; diagnosticonlyafternewcommonfilter"
+  },
+  "corrected_canary": {
+    "status": "PASS6runs",
+    "receipt": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/corrected_canary_validation.json"
+  },
+  "wave2": {
+    "status": "COMPLETE512validruns; no candidate above101/128Fprod",
+    "session_id": 90369,
+    "manifest": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave2.json",
+    "manifest_sha256": "397247867ef2097865c9dc008ee84de3e1aa4ab9af865012ff520c1e4ff773b3",
+    "workers": 0,
+    "max_wall_seconds": 7200,
+    "runs": 512,
+    "seed_range": [
+      610082000,
+      610082127
+    ],
+    "report": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave2_report.json",
+    "report_sha256": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405"
+  },
+  "targeted_rest": {
+    "source_sha": "631f7f92cf45fe68c2805e70b53377c020510a05",
+    "selection_status": "complete64validbranches",
+    "selected_action": "Offering upgrade",
+    "choice_sha256": "c4f8f74597ca5c9b423a4ae40920ab76ca70cf2559965916bd0784712ee000a8",
+    "evaluation_status": "COMPLETE local conditional inconclusive",
+    "workers": 0,
+    "session_id": 79778,
+    "result": "learning/targeted_rest_631f_evaluation_result.json"
+  },
+  "gen2_canary": {
+    "status": "COMPLETE8states128validbranches; split evaluation complete, no gain; original verifier failure preserved, reviewed seed-derivation repair passes",
+    "source_seeds": [
+      610084000,
+      610084001,
+      610084002,
+      610084003
+    ],
+    "workers": 0,
+    "session_id": 77880,
+    "contract_receipt_sha256": "bf2a82d869e809f6cd205a699d434b0f65c76daa3d6c8986a3e4e0619168bcf2"
+  },
+  "holdout": {
+    "status": "COMPLETE; CONFIRMED_IMPROVEMENT; independent efficacy/execution/health review PASS",
+    "seed_range": [
+      610083000,
+      610083511
+    ],
+    "fixed_pairs_target": 512,
+    "session_id": 53289,
+    "workers": 0,
+    "latch": "holdout_opened.json",
+    "latch_sha256": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e",
+    "manifest": "protocols/final_confirmation.json",
+    "manifest_sha256": "e6c6e050ad0da20167c570d1f1f01a7e7037135daf3e010ac577edc8faf94f91",
+    "report": "final_confirmation_report.json",
+    "report_sha256": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+    "completion": "audit/final_execution_completion.json",
+    "health": "audit/final_confirmation_health.json",
+    "independent_review": "audit/FINAL_CONFIRMATION_REVIEW.json"
+  },
+  "max_game_processes": 6,
+  "next": [
+    "Review the draft PR; authoritative Linux GCC CI and any merged-source checks remain review-stage requirements.",
+    "No further campaign games, retries, extensions, retuning, production-default changes or merge.",
+    "Retain this worktree and its ignored raw artifacts; publication details live in build/overnight_20261008/draft_pr_publication.json and the attached PR."
+  ],
+  "combat_probe": {
+    "status": "COMPLETE62evalpairs124validbranches; END51,Shrug50;INCONCLUSIVE",
+    "case": "source610081002A2f33D13 publicENDvsShrug14",
+    "scope": "2pairedcostcanaries plus62freshpairedconditionalfutures ifvalidcostfits; localcombatendpoint, fresh exact10kcontroller, noAct3claim",
+    "runtime_authorized": true,
+    "session_id": 14533,
+    "workers": 0,
+    "authorization_sha256": "16642f7eb25b8052aca3901639d587bc9268d46c7a30a2ed814bd4ad3cb2505a",
+    "max_wall_seconds": 1800,
+    "report": "audit/champ_d13_evaluation_report.json"
+  },
+  "verification": {
+    "debug_all_build": "PASS",
+    "extra_integration": "2/2PASS",
+    "core_smoke_session": 4265,
+    "core_smoke_status": "PASS67/67;preFullHp executabletree built ata557; newFullHp fixture+canary+producercontractPASS",
+    "core_smoke_wall_seconds": 1098.76,
+    "final_implementation_review": "audit/FINAL_IMPLEMENTATION_REVIEW.json",
+    "final_implementation_status": "PASS for source a4b3df35..5add2413; source-specific test limits retained"
+  },
+  "gen2_tranche": {
+    "status": "COMPLETE; independent raw/contract/primary/exploratory reviews PASS; LOCAL_CONDITIONAL_INCONCLUSIVE",
+    "sources": [
+      610084100,
+      610084131
+    ],
+    "K": 8,
+    "workers": 0,
+    "max_branches": 3072,
+    "total_wall_limit_seconds": 10800,
+    "latest_start_local": "03:53",
+    "hard_stop_local": "06:53",
+    "prerequisite": "wave2 finished + reviewedfrozenanalysis/artifacts",
+    "session_id": 10774,
+    "launch_utc": "2026-10-08 01:16 UTC approximate;exactdispatch_authorization epoch",
+    "freeze_sha256": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1",
+    "analysis_bundle_sha256": "2f56269cf2bb6f5cc001890499a460cba0dff3b5df601396b6f9fbd02a0c2857",
+    "contract_receipt_sha256": "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70",
+    "choices_sha256": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7",
+    "evaluation_sha256": "5ada874a05f6d947cf0a19435db681a01be89aa23b26ceb26b5c59414aff798f"
+  },
+  "new_full_hp_candidate": {
+    "status": "5runtimecanariesPASS; defaultoffparityexact; actualV4REST\u2192SMITH verified",
+    "flag": "STS_OOC_SKIP_FULL_HP_REST",
+    "default": "off",
+    "claim": "policy candidate, no dominance or strength proof",
+    "baseline": "same correctedpublic8+Recall1 reference",
+    "next": "Development complete; not final nominee; no further run authorized by this state",
+    "runtime_workers": 0
+  },
+  "provisional_champion": {
+    "arm": "RemoveLow",
+    "status": "CONFIRMED_IMPROVEMENT for frozen d35 corrected-fair profile; no automatic default promotion",
+    "freeze": "champion_freeze.json",
+    "freeze_sha256": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8"
+  },
+  "wave3": {
+    "status": "COMPLETE96validruns;Fprod26,FullHp27,ShopOff27;bothadvance",
+    "manifest": "protocols/wave3.json",
+    "manifest_sha256": "f53adbb625f4268896a4187252348d0eacb31acf77a8b485dcfe7e73724ae0fa",
+    "workers": 0,
+    "runs": 96,
+    "source_seeds": [
+      610081000,
+      610081031
+    ],
+    "cohort": "adaptivereuseddiscovery",
+    "development_reservation": [
+      610082128,
+      610082255
+    ],
+    "session_id": 71880,
+    "report": "wave3_report.json"
+  },
+  "new_removal_hypothesis": {
+    "status": "Discovery and development complete; nomination independently reviewed; frozen final trial running",
+    "observation": "nonSHOP REMOVE grouped withBONFIRE_SPIRITS, removes highestobtainweight; actualLivingWall removesShrug/Offering in correctedreferencewins",
+    "boundary": "policy-ranking hypothesis unlessexplicitcontractviolationproven; do notflipBonfire; possiblePeacePiperouting",
+    "flag": "STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT",
+    "getter": "oocRemoveLowObtainWeightEnabled",
+    "development_reservation": [
+      610082256,
+      610082383
+    ],
+    "canary_manifest_sha256": "80d32b02f2cabd089b0c0ad638ff425011154b750a91b18698a58daafccf58f7",
+    "canary_session": 47521,
+    "workers": 0
+  },
+  "wave4_removal": {
+    "status": "COMPLETE64validruns;RemoveLow27vsFprod26,1rescue0regression;advances",
+    "workers": 0,
+    "session_id": 86171,
+    "manifest": "protocols/wave4_removal.json",
+    "manifest_sha256": "1aca03326eedcd5cf4dfa3790da3f1e84f7dbc580e11a07070c7c4b4b497d2a2",
+    "runs": 64,
+    "source_seeds": [
+      610081000,
+      610081031
+    ],
+    "wall_cap": 3600,
+    "report": "wave4_removal_report.json"
+  },
+  "wave3_development": {
+    "status": "COMPLETE384 valid runs; FullHp102,ShopOff102,Fprod101; both+1/128, within-cohort nominee FullHp",
+    "queue_A_session": 25665,
+    "queue_B_session": 59624,
+    "manifest": "protocols/wave3_development.json",
+    "manifest_sha256": "4a3f54d11183d5a864fec8a0ac5f37d4e3a90a0a4b33a46da8fd83f74c46e705",
+    "source_seeds": [
+      610082128,
+      610082255
+    ],
+    "runs": 384,
+    "max_workers": 2,
+    "active_workers": 0,
+    "global_deadline_epoch": 1791435171.1493402,
+    "report": "wave3_development_report.json",
+    "report_sha256": "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723"
+  },
+  "card_rank_candidate": {
+    "status": "Rejected at discovery; reserved development610082384..511 unused",
+    "reason": "secondary objectivealignment rankingonly; baselinefloortake/skip andV4ownership preserved; historicalbroadwinheadnull explicit",
+    "flag": "STS_OOC_CARD_WIN_RANK",
+    "models": "existingunchangedfloor/win;public8bothheads",
+    "canary_manifest": "protocols/card_rank_canary.json",
+    "canary_manifest_sha256": "cc77397f2017986c9807153d0a35e90b5034ce0029838bdc555912fdb08dde4c",
+    "development_reservation": [
+      610082384,
+      610082511
+    ]
+  },
+  "removal_development": {
+    "status": "COMPLETE 256 valid runs; 106/128 versus 104/128; health and nomination review PASS; sole frozen champion",
+    "manifest": "protocols/removal_development.json",
+    "manifest_sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de",
+    "source_seeds": [
+      610082256,
+      610082383
+    ],
+    "runs": 256,
+    "workers": 0,
+    "planned_workers": 3,
+    "wall_cap": 3600,
+    "hard_stop_local": "07:15",
+    "session_id": 94378,
+    "report": "removal_development_report.json",
+    "report_sha256": "91afa7dc02117114b75206fc07f7a77532146a0bff6948e44a996637bd6d10df"
+  },
+  "wave5_card_rank": {
+    "status": "COMPLETE64 valid runs;22/32 vs26/32; rejected under frozen discovery rule",
+    "workers": 0,
+    "session_id": 32580,
+    "manifest": "protocols/wave5_card_rank.json",
+    "manifest_sha256": "721add02c24c8a8765e4eb8fb612df1d56b74207fe0849ebb99bd947a5f2eb30",
+    "seed_range": [
+      610081000,
+      610081031
+    ],
+    "runs": 64,
+    "max_wall_seconds": 3600,
+    "report": "wave5_card_rank_report.json",
+    "report_sha256": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530"
+  },
+  "main_movement": {
+    "observed_main_sha": "dd308d3d89e6dde49b80468f66c6b0fe8e714136",
+    "assessment": "audit/MAIN_MOVEMENT_REVIEW.json",
+    "status": "No identified active-path impact to frozen producer; three documentation header conflicts resolved; virtual merge passes; no merged-source validation claim"
+  },
+  "attempt_accounting": "learning/ATTEMPT_ACCOUNTING_v3.json",
+  "runtime_invocations_completed": 799,
+  "active_game_workers": 0,
+  "campaign_status": "CONFIRMED_IMPROVEMENT",
+  "campaign_phase": "RESEARCH_COMPLETE_REVIEW_HANDOFF",
+  "packaging_checks": "audit/FINAL_PACKAGING_CHECKS.json",
+  "evidence_review_commit": "426ea4050193592fbf91dc2b3cb49b36bb295ef5"
+}

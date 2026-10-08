@@ -1,0 +1,11 @@
+{
+  "change": "Verifier input SHA pin only; numerical rules unchanged",
+  "reason": "Original profiler provenance check incorrectly expected gc.seed==sourceSeed after intentional GEN2 redraw; exact bounded MT-derived seed validation independently reviewed, original failed receipt preserved.",
+  "old_analyzer_sha256": "e315e4c870e5096ad0bf3c208b55ccb635b6b78ed12f5becdfb7e2ada69cbc43",
+  "new_analyzer_sha256": "b843837e259c9fbabce330922deb5e496cb712ef435a26b410e5375c9bf75f54",
+  "verifier_sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+  "contract_v2_sha256": "bf2a82d869e809f6cd205a699d434b0f65c76daa3d6c8986a3e4e0619168bcf2",
+  "numerical_selection_executed": false,
+  "evaluation_outcomes_reported": false,
+  "recorded_epoch": 1791420987.707214
+}

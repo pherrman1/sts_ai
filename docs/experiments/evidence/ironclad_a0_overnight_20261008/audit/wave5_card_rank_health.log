@@ -1,0 +1,42 @@
+{
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "output": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave5_card_rank_health.json",
+  "sha256": "c0534c4bf81777ead91810519ea0f6ce04d555c9c023b19905bfd88ba4439726",
+  "arms": {
+    "Fprod": {
+      "roots": 14032,
+      "completed_simulations": 60277250,
+      "singleton_skips": 570,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 102,
+      "rollout_calls": 51910663,
+      "nonterminal_rollout_starts": 50777002,
+      "endpoints": {
+        "victory": 58588314,
+        "death": 1688758,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "CardWinRank": {
+      "roots": 13927,
+      "completed_simulations": 59756500,
+      "singleton_skips": 565,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 6,
+      "rollout_calls": 51811315,
+      "nonterminal_rollout_starts": 50717870,
+      "endpoints": {
+        "victory": 57859195,
+        "death": 1897296,
+        "turn_limit": 0,
+        "engine_stop": 9,
+        "nonterminal": 0
+      }
+    }
+  },
+  "fatal_findings": 0
+}

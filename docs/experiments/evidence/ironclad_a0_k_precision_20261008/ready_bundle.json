@@ -1,0 +1,56 @@
+{
+  "schema": "k_precision_ready_bundle_v1",
+  "status": "REVIEWED_READY_FOR_SINGLE_COORDINATOR_DISPATCH",
+  "reviewed_commit": "54c97fd0995c043ca584e75ff6af6da2fb032cf3",
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+      "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/PRELAUNCH_REVIEW.json",
+      "sha256": "8929b8c800b724634bcac27be60a2d3ef0146f1495cfa7136b08191edc9bc2db"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/FROZEN_LAUNCH_REVIEW.json",
+      "sha256": "b2fbee751d3d7c425a45dc5de28b8d42824cb5158b336bf263fe6ea50a2b394a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/VERIFIER_IMPLEMENTATION_REVIEW.json",
+      "sha256": "f9d810b89b120481dc0cc3a2d3fe703ee17613fe927b03f6248c21ebe865ee1b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/freeze_schema_review.json",
+      "sha256": "38d9b31bcdc92ace5103c0f1c87e949845874b73d0282abd54e968d6231f3062"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/synthetic_checks.json",
+      "sha256": "519f1c3ba9168be47ed38b077333b5946d9699f5cff48896119b909a0e7549b1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/protocol_scientific_review.json",
+      "sha256": "e5d7450beea5061725015ebbcef2f19b419c5aae06a42793f0ab112147ce2507"
+    }
+  ],
+  "ready_epoch": 1791451277.5434756,
+  "release_conditions": "Rehash every bound input and artifact; no other games, absent raw directory/latch; compute strictly positive min(10800,absolute stop-now); exclusive authorization then single timeout/xargs P6 dispatch.",
+  "analysis_gate": "Complete strict contract pass, selectk0..15 then hashchoices; separate evaluatek16..31.",
+  "no_retry_extension_default_or_holdout": true
+}

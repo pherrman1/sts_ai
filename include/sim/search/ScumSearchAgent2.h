@@ -19,6 +19,21 @@ namespace sts {
 
 namespace sts::search {
 
+    // Default-off REST policy filter. Strictly parses unset/0/1;
+    // enabled mode skips optional Recall only when key collection is off.
+    bool oocSkipOptionalRecallEnabled();
+    void filterOptionalRecallActions(const GameContext &gc, std::vector<GameAction> &actions);
+
+    // Experimental eligibility rule, not a claim that every upgrade helps.
+    // Leaves Dream Catcher, damaged players and forced rest actions unchanged.
+    bool oocSkipFullHpRestEnabled();
+    bool oocFullHpRestExclusionApplies(const GameContext &gc);
+    void filterFullHpRestActions(const GameContext &gc, std::vector<GameAction> &actions);
+
+    // Experimental REMOVE ranking only; sacrifice and other selectors keep
+    // their legacy ordering. Strict unset/0/1 and default off.
+    bool oocRemoveLowObtainWeightEnabled();
+
     // Thread-local guard for surrogate-only OOC imagination; default false.
     extern thread_local bool g_disallowImaginedCombat;
 

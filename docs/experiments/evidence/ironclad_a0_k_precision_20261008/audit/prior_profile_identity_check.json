@@ -1,0 +1,201 @@
+{
+  "scope": "profile identity metadata only; no outcome labels read",
+  "contract_path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/contract_receipt.json",
+  "contract_sha256": "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70",
+  "files": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084100.tree.jsonl",
+      "sha256": "ac11360cfbdf551dc515f422c391f8e0aa38c402ad9127d4fa3e1afa506d536f",
+      "roots": 23850,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084101.tree.jsonl",
+      "sha256": "b90194e51cda76bef6cee3d02755d423195d516ef911cda145e407b55cc04bf0",
+      "roots": 14826,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084102.tree.jsonl",
+      "sha256": "9d7fe21d13df46916cffde367ae6e58b2292e130aaa8b7277aa6b64958d743f1",
+      "roots": 19598,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084103.tree.jsonl",
+      "sha256": "1024e33bbd2fb7427676fa3689cd9b530f98d0421fc59eb3532fcf1f2c761422",
+      "roots": 10250,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084104.tree.jsonl",
+      "sha256": "e80db31b5d31df8c40e55742e79276e11fae5216f3a063774227323ae7e29e0b",
+      "roots": 22030,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084105.tree.jsonl",
+      "sha256": "a98fcfeec17776a6837f757d8abfa3869f3a4e6ea778d41241e5347e3f74d394",
+      "roots": 20055,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084106.tree.jsonl",
+      "sha256": "8c3d2a39d9420a15c040cd9a9e07f29f8afe64b1e9432c2e7c492070bf3ce655",
+      "roots": 7200,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084107.tree.jsonl",
+      "sha256": "9e00c8bb276fe76e87454088c79bbbb9aa8ee4385c5c1d7d138bbfcee22ec981",
+      "roots": 6726,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084108.tree.jsonl",
+      "sha256": "2f3eae90c225fa65d63ada56dc0b8924d0b0d98ef95ad888f3f7a052706372fe",
+      "roots": 13859,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084109.tree.jsonl",
+      "sha256": "cf104147f5c27b3d4b66dba85a521cc53976834afacd4478ff9620e6309b9a63",
+      "roots": 19408,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084110.tree.jsonl",
+      "sha256": "5acf4597b1f6bfb508a853f22cfc475fe4d58944070a294b22eed8823ca50fef",
+      "roots": 14103,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084111.tree.jsonl",
+      "sha256": "a10c2be60b769bc97ccdc6fdac402036bdb1693749c5b8b894d80ae0da0e4b9d",
+      "roots": 9759,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084112.tree.jsonl",
+      "sha256": "c04e3222a528a8c66caf465efcad58b67927bc543390821bb1f4bdf971e6661e",
+      "roots": 14031,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084113.tree.jsonl",
+      "sha256": "6c777eea3b4ac74dc86b9098bb32063cb71d211d9c023004d2e0f00189d20e90",
+      "roots": 12248,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084114.tree.jsonl",
+      "sha256": "8849739dac86627947295947f0d6cae2f5116286a208dfc2c280827463d34242",
+      "roots": 16540,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084115.tree.jsonl",
+      "sha256": "9236d5f8d32901a95c37b0a6caf2f1c04d97531a445fef3510ddc0b6f73af653",
+      "roots": 16887,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084116.tree.jsonl",
+      "sha256": "0bad033ad76949774ff20e285c4c5036af8100cba61ff2e4a610c1fbcd6dde97",
+      "roots": 19576,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084117.tree.jsonl",
+      "sha256": "08dee71d29b833ca3b48984c6714db7f040f7713c84ec6e87cb736ed7ab3b7de",
+      "roots": 6459,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084118.tree.jsonl",
+      "sha256": "82cd614599f74e88efa9373bff01af60c2f678aee523797033d0e1ab8d42eb4d",
+      "roots": 18163,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084119.tree.jsonl",
+      "sha256": "e275775494d662994816a3d19eb5d00cd31ff26eac869fb55c8ac65f3bdca1ef",
+      "roots": 19984,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084120.tree.jsonl",
+      "sha256": "b626e9143a60074ab0c4b4a467971b500ab75d2e520a704abfe9a5008d90e84b",
+      "roots": 13649,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084121.tree.jsonl",
+      "sha256": "4dbca2815d4c881b0ebb87e21505d9c0f16cd994323bc82847813db84afbddf5",
+      "roots": 14072,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084122.tree.jsonl",
+      "sha256": "efc1494e99f21ace4a71309b5b00986c55e68797c260afe9e393d2e21f9e1bea",
+      "roots": 10200,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084123.tree.jsonl",
+      "sha256": "a22a976dd6054e2f885ff4e99c432d353e0b6a137b683f3566d036ea556c2a44",
+      "roots": 10144,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084124.tree.jsonl",
+      "sha256": "df32b78454febabb254a30783bb8151908698af171827b1337796f5cd8080253",
+      "roots": 10963,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084125.tree.jsonl",
+      "sha256": "36a7c284cbafb2dc0a64b30fa23f065db0942591fe5aa00a7e2d9db163032622",
+      "roots": 12516,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084126.tree.jsonl",
+      "sha256": "b4ee1bb329217cf843c7813c28a9e82d4cff1fcff41d8caf229cdd7595fc7c87",
+      "roots": 18402,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084127.tree.jsonl",
+      "sha256": "36a7dcb8c0b2f9aca4fac920d3d1c67e84c89bddde585896a1089bb3f21ee143",
+      "roots": 11504,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084128.tree.jsonl",
+      "sha256": "9af496d534e1578046ba0bd76c3d4e921d7565142c7475a5b3b7f41aa1ee2ccb",
+      "roots": 11335,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084129.tree.jsonl",
+      "sha256": "d7d7009c7815f3f7a784a74bb160faca73a26536a6988a566673392c07c65e72",
+      "roots": 12971,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084130.tree.jsonl",
+      "sha256": "8fb907fc40a4eca58dce9acd9775a8c51141abc09229410687109105f178e2ad",
+      "roots": 6202,
+      "duplicate_identities": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-tranche32-3ed9/seed-610084131.tree.jsonl",
+      "sha256": "921344a622403eb7b849b912621ebb03734c0e40387e6c68776b1d3cf1d5063c",
+      "roots": 18642,
+      "duplicate_identities": 0
+    }
+  ],
+  "roots": 456152,
+  "duplicates": 0
+}

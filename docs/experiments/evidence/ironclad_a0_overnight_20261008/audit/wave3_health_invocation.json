@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_report.json",
+    "--report-sha256",
+    "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67",
+    "--out",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_health.json"
+  ],
+  "started_epoch": 1791427577.6758943,
+  "finished_epoch": 1791427579.567214,
+  "exit_code": 0,
+  "auditor_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+  "report_sha256": "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67",
+  "output_sha256": "9445e30c71de8eb9c7ca8af999df420f3af2dc0672bb62492aab23e72dee66f3",
+  "log_sha256": "5203d556bd8cd84ac31b568fbb932a434f73357c6c7989e9b859cee0f50ad632",
+  "producer_semantic_fragment_hashes": {
+    "src/sim/search/SilverSearcher.cpp": "7e7d651a4284a181b37112627700da596d3d48b82eaa86acdc0c50c0bfd31813",
+    "src/sim/search/NativeSilverBackend.cpp": "f061717bb2dc2265e65ef0028948a47f7b9012323499f96a1c7927b9e34c9f65"
+  }
+}

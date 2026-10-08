@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "kind": "fallback-remove-ranking-runtime-canary",
+  "root": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/removal-d35b42b1/one_combat",
+  "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+  "artifacts": {
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "src/sim/search/NativeSilverStopModel.cpp": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+  },
+  "profiles": {
+    "common": {
+      "HOME": "/home/philippherrmann",
+      "PATH": "/usr/bin:/bin",
+      "LANG": "C.UTF-8",
+      "OMP_NUM_THREADS": "1",
+      "OMP_DYNAMIC": "FALSE",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "STS_FAIR": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_COLLECT_KEYS": "0",
+      "STS_REST_WIN": "0",
+      "STS_STOP_AFTER_ACT": "3",
+      "STS_OOC_MCTS": "0",
+      "STS_NATIVE_OOC": "1",
+      "STS_SKIP_THR": "-0.5",
+      "STS_OOC_PUBLIC_FUTURES": "8",
+      "STS_OOC_SHOP_DECK_SIZE_FIX": "0",
+      "STS_SILVER_FINAL_BOSS_BINARY": "0",
+      "STS_BOSS_RELIC": "0",
+      "STS_NEOW_V": "0",
+      "STS_EVENT_V": "0",
+      "STS_PATH_V": "0",
+      "STS_CARD_WIN": "0",
+      "STS_SHOP_WIN": "0",
+      "STS_REST_V": "0",
+      "STS_OOC_SHOP_BEAM": "0",
+      "STS_OOC_SKIP_OPTIONAL_RECALL": "1",
+      "STS_OOC_SKIP_FULL_HP_REST": "0",
+      "STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT": "0"
+    },
+    "arms": {
+      "Fprod": {
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+        "STS_SILVER_LEARNED_STOP": "1"
+      },
+      "RemoveLow": {
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+        "STS_SILVER_LEARNED_STOP": "1",
+        "STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT": "1"
+      }
+    }
+  },
+  "phase": "smoke",
+  "allowed_seeds": [
+    610080001,
+    610082010
+  ],
+  "runs": [
+    [
+      "Fprod",
+      610080001
+    ],
+    [
+      "RemoveLow",
+      610080001
+    ],
+    [
+      "Fprod",
+      610082010
+    ],
+    [
+      "RemoveLow",
+      610082010
+    ]
+  ],
+  "max_workers": 1,
+  "frozen_epoch": 1791423692.363146,
+  "purpose": "Default-off parity plus same-public-state actual REMOVE activation. Reused diagnostic seeds only; no quality inference.",
+  "analyzer_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+  "design_sha256": "6e98c35db2c997718c7cf94cd1d1ac6642aac5da4f9399b3fab6b6d816b1a5c3"
+}

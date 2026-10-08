@@ -1,0 +1,288 @@
+{
+  "schema": "fixed_source_timeout_audit_v1",
+  "status": "EXECUTION_BLOCKED_DIAGNOSIS_COMPLETE",
+  "audited_epoch": 1791455811.3936963,
+  "scope": "Only source610084217 provenance, metadata, validity, CPU and health; no outcome counts or ranking/evaluation interpretation.",
+  "source_seed": 610084217,
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+      "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/audit_timeout_610084217.py",
+      "sha256": "3093030344613081bf5e75cfb83eec6faa6d2ba708b22dadc2b44a11e6e24c06"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.receipt.json",
+      "sha256": "a4f6619ed3272702b071f56dbef416fbd4f54ac1af199d85c42337253ddbd137"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.labels.csv",
+      "sha256": "a47c896e254afd23c70392bc97daaffcb856d0daa9ad6aef6adbdeaaff2fb2f7",
+      "bytes": 16389,
+      "mtime_seconds_before_receipt_finish": 14.874117851257324
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.options.csv",
+      "sha256": "471b6c76cd99d907c48f9198a1932dfa122218591aa82b545caee66c049a8892",
+      "bytes": 9306,
+      "mtime_seconds_before_receipt_finish": 1160.017061471939
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.sources.csv",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "mtime_seconds_before_receipt_finish": 1799.8760659694672
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.map.csv",
+      "sha256": "88498b2497b76602b671dbcdab780ce171fd0efe9d9ce71ff327abab0890afd8",
+      "bytes": 214951,
+      "mtime_seconds_before_receipt_finish": 41.288161516189575
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "mtime_seconds_before_receipt_finish": 1800.033535003662
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/seed-610084217.tree.jsonl",
+      "sha256": "8f5658768bd36755d1e787ccaf5e2c8133a9a95b4611b4250a2f4c42f9ba53b8",
+      "bytes": 41887719,
+      "mtime_seconds_before_receipt_finish": 0.09009337425231934
+    }
+  ],
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+  "invocation": {
+    "status": "timeout",
+    "exit_code": 124,
+    "started_epoch": 1791453702.7244143,
+    "finished_epoch": 1791455502.7580657,
+    "wall_seconds": 1800.0335158249945
+  },
+  "local_times": {
+    "started_epoch": "2026-10-08T12:01:42.724414+02:00",
+    "finished_epoch": "2026-10-08T12:31:42.758066+02:00"
+  },
+  "partial_csv_inventory": {
+    "labels.csv": {
+      "bytes": 16389,
+      "header_columns": 29,
+      "data_records": 101,
+      "complete_field_rows": 100,
+      "malformed_row_shapes": [
+        {
+          "line": 102,
+          "column_count": 11
+        }
+      ],
+      "newline_terminated": false,
+      "tail_limit": "Without trailing newline, final field completeness is not certified even if column count matches."
+    },
+    "options.csv": {
+      "bytes": 9306,
+      "header_columns": 1023,
+      "data_records": 2,
+      "complete_field_rows": 2,
+      "malformed_row_shapes": [],
+      "newline_terminated": false,
+      "tail_limit": "Without trailing newline, final field completeness is not certified even if column count matches."
+    },
+    "sources.csv": {
+      "bytes": 0,
+      "complete_field_rows": 0,
+      "newline_terminated": false
+    },
+    "map.csv": {
+      "bytes": 214951,
+      "header_columns": 1026,
+      "data_records": 98,
+      "complete_field_rows": 98,
+      "malformed_row_shapes": [],
+      "newline_terminated": false,
+      "tail_limit": "Without trailing newline, final field completeness is not certified even if column count matches."
+    }
+  },
+  "manifest_present": false,
+  "persisted_complete_branch_records": 100,
+  "validity_flags": {
+    "1": 100
+  },
+  "branch_error_strings": {
+    "": 100
+  },
+  "complete_branch_counts_by_option_index": {
+    "0": 32,
+    "1": 32,
+    "2": 32,
+    "3": 4
+  },
+  "persisted_branch_cpu_seconds": 1747.39344,
+  "persisted_branch_cpu_fraction_of_invocation_wall": 0.9707560579499164,
+  "unaccounted_wall_minus_persisted_branch_cpu_seconds": 52.64007582499448,
+  "selected_state_metadata": {
+    "decision_idx": 35,
+    "type": "BOSS_RELIC",
+    "act": 1,
+    "floor": 17
+  },
+  "progress": {
+    "minimum_retained_options": 4,
+    "minimum_allocated_branches": 128,
+    "maximum_allowed_branches": 192,
+    "last_complete_branch": {
+      "option_idx": 3,
+      "k": 3
+    },
+    "last_profile_future_k": 5,
+    "profile_group_sequence": [
+      "source",
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "inferred_active_branch": "optionIdx3, k5, conditional on fixed ordered producer loops; profile has no branch-ID field"
+  },
+  "health": {
+    "fatal_findings": 0,
+    "roots": 38235,
+    "completed_simulations": 179029250,
+    "singleton_skips": 1524,
+    "cycle_rollouts": 42,
+    "engine_stop": 14,
+    "turn_limit": 0
+  },
+  "profile_failures": [],
+  "original_source_roots": 666,
+  "last_profile_metadata": {
+    "seed": "8688970005987497776",
+    "combat_id": 1608,
+    "decision": 4,
+    "act": 3,
+    "floor": 46,
+    "encounter": "SPIRE_GROWTH",
+    "turn": 0,
+    "configured_simulations": 10000,
+    "completed_simulations": 250
+  },
+  "classification": "Observed CPU-heavy continuation cost tail; no recorded engine fault or prolonged stall evidenced. Interrupted/unflushed work is not certified.",
+  "limits": [
+    "The source trajectory-valid row and source CPU were buffered and unavailable; empty sources.csv cannot establish source validity.",
+    "CSV buffers flush at source completion; partial/missing rows and manifest are expected effects of process timeout, not evidence by themselves of simulator corruption.",
+    "Only100 complete persisted branch records have interpretable CPU/validity metadata; additional completed branches may be buffered.",
+    "The52.64-second residual includes source work, unflushed completed/current branch work and wall/CPU differences; no total process CPU receipt exists.",
+    "Tree profiles flush per root, but the currently executing root/branch at kill is unrecorded. File mtime is filesystem evidence, not a per-root timing series.",
+    "Engine-stop and cycle counts are search diagnostics and do not prove a fatal actual-game fault.",
+    "No complete-cohort inference, retries, replacements, cap changes or partial efficacy analysis are authorized by this audit."
+  ],
+  "evaluation_outcomes_reported": false,
+  "games_run_by_auditor": 0,
+  "raw_files_mutated": false
+}
