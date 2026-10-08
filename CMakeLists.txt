@@ -48,6 +48,12 @@ add_executable(silver-useless-replay apps/silver_useless_replay.cpp $<TARGET_OBJ
 set_target_properties(silver-useless-replay PROPERTIES OUTPUT_NAME silver_useless_replay)
 target_include_directories(silver-useless-replay PRIVATE include json/include)
 
+# Bounded public-state research probe; never linked into the gameplay executables.
+add_executable(silver-public-pair-probe apps/silver_public_pair_probe.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-public-pair-probe PROPERTIES OUTPUT_NAME silver_public_pair_probe)
+target_include_directories(silver-public-pair-probe PRIVATE include json/include)
+link_ctm_crypto(silver-public-pair-probe)
+
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(combat-knowledge-neutrality-test PROPERTIES OUTPUT_NAME combat_knowledge_neutrality_test)
