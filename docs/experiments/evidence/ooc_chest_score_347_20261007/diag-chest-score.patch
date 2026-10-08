@@ -1,0 +1,105 @@
+From 8674b832d05680dd8a5b2b1c893689d909b0f66a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 7 Oct 2026 12:15:07 +0000
+Subject: [PATCH] Diagnostic build: #347 read-only chest reward scoring
+ (STS_347_CHEST_SCORE)
+
+At each treasure reward screen with a relic, scores detached copies under
+the live leaf models (screen GBM where it covers the screen, X2-B anchor):
+the root, leaving at once, gold taken, gold+relic taken, and both after
+leaving to the map. Writes JSONL; the live state is never touched.
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01BSfFkVLbx3BmU1Xthnu7hQ
+---
+ apps/one_combat/ooc_mcts_adapter.cpp | 46 ++++++++++++++++++++++++++++
+ apps/one_combat/ooc_mcts_adapter.h   |  2 ++
+ apps/one_combat/run_driver.cpp       |  4 +++
+ 3 files changed, 52 insertions(+)
+
+diff --git a/apps/one_combat/ooc_mcts_adapter.cpp b/apps/one_combat/ooc_mcts_adapter.cpp
+index 1e17868..05bb18c 100644
+--- a/apps/one_combat/ooc_mcts_adapter.cpp
++++ b/apps/one_combat/ooc_mcts_adapter.cpp
+@@ -1522,6 +1522,52 @@ bool liveOocMctsEnabled() { return liveEnabled; }
+ std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
+     return splitMix64(seed ^ splitMix64(index));
+ }
++// #347 diagnostic (STS_347_CHEST_SCORE=path): read-only scoring of a
++// treasure reward screen under the live leaf models, on detached copies.
++// Gold is taken in both arms so the relic is the only difference.
++void scoreChestRewards347(const GameContext &gc, const PathHistory &path,
++                          std::uint64_t seed, std::uint64_t index, const std::string &out) {
++    using RT = GameAction::RewardsActionType;
++    const auto leaf = [&](const GameContext &g, bool screen) {
++        auto opts = liveOptions;
++        opts.sampleNoncombat = false;
++        if (!screen) { opts.screenLeaf = false; opts.directLeaf = true; }
++        OocGameContextModel model(g, path, {}, opts, defaultOocMctsDependencies());
++        std::mt19937_64 rng(0);
++        return model.evaluateLeaf(0, rng);
++    };
++    const auto row = [&](const GameContext &g) {
++        nlohmann::json r{{"screen", static_cast<int>(g.screenState)},
++                         {"gold", g.gold}, {"relics", g.relics.size()}, {"x2b", leaf(g, false)}};
++        r["live"] = leaf(g, true);
++        return r;
++    };
++    const auto takeGold = [](GameContext &g) {
++        while (g.screenState == sts::ScreenState::REWARDS && g.info.rewardsContainer.goldRewardCount > 0
++               && GameAction(RT::GOLD, 0).isValidAction(g)) GameAction(RT::GOLD, 0).execute(g);
++    };
++    const auto leave = [](GameContext &g) {
++        if (g.screenState == sts::ScreenState::REWARDS && GameAction(RT::SKIP).isValidAction(g))
++            GameAction(RT::SKIP).execute(g);
++    };
++    nlohmann::json j{{"seed", seed}, {"idx", index}, {"floor", gc.floorNum}, {"act", gc.act},
++                     {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
++                     {"sapphireKey", gc.info.rewardsContainer.sapphireKey}};
++    for (int i = 0; i < gc.info.rewardsContainer.relicCount; ++i)
++        j["relics"].push_back(sts::relicNames[static_cast<int>(gc.info.rewardsContainer.relics[i])]);
++    j["root"] = row(gc);
++    auto leaveNow = detachedCopy(gc); leave(leaveNow); j["leave"] = row(leaveNow);
++    auto goldOnly = detachedCopy(gc); takeGold(goldOnly); j["gold_screen"] = row(goldOnly);
++    leave(goldOnly); j["gold_map"] = row(goldOnly);
++    auto withRelic = detachedCopy(gc); takeGold(withRelic);
++    while (withRelic.screenState == sts::ScreenState::REWARDS && withRelic.info.rewardsContainer.relicCount > 0
++           && GameAction(RT::RELIC, 0).isValidAction(withRelic)) GameAction(RT::RELIC, 0).execute(withRelic);
++    j["relic_screen"] = row(withRelic);
++    leave(withRelic); j["relic_map"] = row(withRelic);
++    std::ofstream o(out, std::ios::app);
++    o << j.dump() << '\n';
++    if (!o) throw std::runtime_error("STS_347_CHEST_SCORE write failed");
++}
+ void configureLiveOocMcts() {
+     const char *enabled = std::getenv("STS_OOC_MCTS");
+     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
+diff --git a/apps/one_combat/ooc_mcts_adapter.h b/apps/one_combat/ooc_mcts_adapter.h
+index 54e7262..68ce87c 100644
+--- a/apps/one_combat/ooc_mcts_adapter.h
++++ b/apps/one_combat/ooc_mcts_adapter.h
+@@ -203,4 +203,6 @@ bool oocHypotheticalCardTaken(const GameContext &, const PathHistory &, const st
+     const std::function<void(GameContext &)> &step);
+ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &, int realCombats);
+ void oocMctsAdapterSelfTest();
++void scoreChestRewards347(const GameContext &, const PathHistory &, std::uint64_t seed,
++                          std::uint64_t index, const std::string &out);
+ }
+diff --git a/apps/one_combat/run_driver.cpp b/apps/one_combat/run_driver.cpp
+index 0da0db6..4871184 100644
+--- a/apps/one_combat/run_driver.cpp
++++ b/apps/one_combat/run_driver.cpp
+@@ -431,6 +431,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool
+                 tracePre = oocTraceState(gc);
+                 traceOffer = oocTraceOffer(gc);
+             }
++            if (const char *score = std::getenv("STS_347_CHEST_SCORE"); score && *score
++                    && gc.screenState == ScreenState::REWARDS && gc.curRoom == Room::TREASURE
++                    && gc.info.rewardsContainer.relicCount > 0)
++                one_combat::scoreChestRewards347(gc, path, seed, index, score);
+             const char *traceBy = "chain";
+             if (openTreasureChestRuleStep(gc)) {
+                 traceBy = "chest_rule";
+-- 
+2.43.0
+

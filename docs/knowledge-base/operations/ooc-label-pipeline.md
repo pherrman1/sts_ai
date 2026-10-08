@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-07 for `ctmscorerows`, the learned-stop Python teacher contract and the CTM corpus adapter; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -55,6 +55,32 @@ active-Lizard correction). It parses the row's `predictorInput` and `pre`
 state, requires both to round-trip through their serializers, and writes per
 row the support reason, `p_death`, expected winning HP and the log probability
 of the observed post-combat HP. It runs no seeds (CTest `ctm_offline_score_rows`).
+`one_combat ctmscorerows ROWS.jsonl OUT.csv FAST.native STANDARD.native [LIZARD=0|1]`
+scores the same rows with another fast/standard pair, such as a research
+candidate (default `LIZARD=1`).
+
+The escape capability (#418, see `architecture/out-of-combat.md`) is fitted on
+a finished near-full artifact's own HP encoding, so the same steps serve the
+Attention and the DeepSets artifacts:
+- `one_combat ctmescapefeatures ROWS.jsonl BASE.native OUT` writes `OUT.f32`
+  (64 float32 per row) and `OUT.csv` for every surviving row that an
+  escape-capable artifact would support. The CSV holds the maxHP and HP labels,
+  `escaped`, and `eligible` (not a boss, a Smoke Bomb in a usable slot).
+- `tools/ctm_escape.py fit --artifact BASE.native --features OUT --out DIR`
+  fits the escape head (L2 logistic regression on eligible TRAIN rows, L2 chosen
+  on VALIDATION) and the escape bit on the HP head (zero-column warm start). The
+  default `--mode column` fits only the new column, so escape-bit-0 HP stays the
+  base head exactly; `--mode head` refits the whole HP head. `fit.json` reports
+  escape NLL/Brier against the TRAIN base rate and HP NLL before and after, by
+  split. Escapes without an eligible Smoke Bomb (Brew-generated) are counted as
+  unrepresentable.
+- `tools/ctm_escape.py extend --artifact BASE.native --checkpoint DIR/escape.pt
+  --out NEW.native` needs a research-candidate base, writes the escape tensors,
+  `capabilities` and the exclusions without `smoke_bomb`.
+- `combat_transition_near_full_exposure.py --escape DIR/escape.pt` and
+  `NearFullSampler(escape=...)` sample the same factorization in Python (the
+  potion trajectory takes `escape=` too), so the Smoke-row relic exposure that
+  failed in production can be re-run under it.
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
@@ -91,6 +117,32 @@ per-row TEST predictions (`test_predictions.npz`).
 `tools/ctm_survival_compare.py` then compares them with the production stack's
 `ctmscorerows` scores on the same rows (`extract-test`, then `compare`, using a
 paired source-seed bootstrap).
+
+For the full CTM retrain, `ctm_corpus_adapter.py union --scope-dir SCOPE=DIR
+... --out DIR` concatenates assembled scopes, in ascending seed order, into one
+corpus for `combat_transition_surrogate.py prepare`. It drops every row that
+the production candidate-contract support predicate rejects (production
+`FrozenModels`), so later near-full caches keep `ids == arange(N)`. Its
+`row_scopes.json` gives each scope's row range, so main-corpus gates can
+exclude forced rows. Two retrain flags reuse production choices instead of
+searching again:
+- `tools/ctm_hp_domain.py` declares a wider HP domain (`declare --pre-cur-max
+  220 --pre-max-max 220` gives classes -219..231, 451 rows) and `expand` widens
+  the production HP and relic warm starts to it. Old classes keep their rows. New
+  HP-head rows get zero weights and bias -30, and new relic-delta rows copy the
+  nearest edge row. The receipt lists the
+  `combat_transition_composed.HP_CLASS_RANGE` pin. With `ARTIFACTS` pinned to
+  the expanded checkpoints, the support predicate (and so `union`) keeps rows up
+  to the declared envelope. The near-full `/160` HP input scale stays fixed.
+- `combat_transition_attention_hpo.py --frozen-winner NAME` tunes and refits
+  only that candidate;
+- `combat_transition_deepset_potion_specialist.py --arms C` refits only the
+  warm-started potion-aware control that the DeepSets export consumes. Its
+  reproduction check is skipped when `STS_CTM_PINS` sets the reference NLL to
+  null. Its decision is `POTION_DEEPSET_CONTROL_REFIT_DONE`; the teacher gate
+  is recorded as a diagnostic only, because production W (71d88a71) was
+  already `TEACHER_FORCED_REJECTED` on recursive Brew and ships with Brew routed
+  to the fallback model, so a rejection is expected and is not a stop.
 
 The producer's `g_onBattleExitRaw` observer runs after those persistent writes
 and before `regainControl`/`afterBattle` for victories, true deaths, and
@@ -624,6 +676,19 @@ native/in-context speed work. WIN_RAW resource qualification is reported
 separately. Neither verdict grants terminal-pricing readiness or promotion.
 The tooling PR and synthetic tests are not a full experiment result.
 
+#### Focal retrain and selection gain (E1)
+
+`python3 -m tools.vwin_e1_focal INDEX --x2b-run TUNE_DIR --output NEW_DIR`
+retrains the X2-B recipe on the public 457 features as P0 (all MAP rows), F1
+(focal rows only: the sibling-ranking join row of each branch, per-decision
+balanced weights) and F2 (all rows, focal block upweighted to the non-focal
+total), seeds 0/1/2. It reads only TRAIN/VALIDATION components, re-checks
+index/manifest/table hashes instead of rerunning the bundle validator, and
+requires the frozen X2-B VALIDATION NLL to reproduce exactly. It reports
+NLL/Brier on all and focal rows, sibling ranking, and per-type selection gain
+(the argmax sibling's branch outcome minus the V4 chosen sibling's) with
+source-clustered CIs. Result: ledger-06 §394 (`E1_INCONCLUSIVE`).
+
 ### Rich `v_win` information boundary (#397)
 
 `tools/analyze_vwin_public_info_397.py` is the maintained classification of
@@ -839,6 +904,14 @@ run seed), and writes a descriptive `entryDescriptor` (HP, gold, potions, deck,
 upgrades, relics, RNG stream counters, `PathHistory.roomVisits`). The #425
 schema is unchanged and refuses `expectedSourceWon`. See the
 [#347 boss-preparation packet](../../experiments/evidence/boss_preparation_rmatch_347_20261007/PLAN.md).
+Research-only `STS_OOC_DECISION_TRACE=<path>` (diagnostic build `1ed47e5c`,
+on the #428 build `5549a16a`) makes `runFullRunOOC` append one JSON line per
+real out-of-combat step (state before and after, what a reward, shop or boss
+relic screen offered, and whether OOC MCTS, the Match and Keep step or the
+ordinary chain decided) and per battle. It only reads state; with it set, the
+eight #428 sources reproduced their frozen rows exactly. `STS_RUN_PROFILE`
+already records each OOC MCTS root's prior, visits and Q. See the
+[#347 OOC divergence packet](../../experiments/evidence/ooc_divergence_347_20261007/README.md).
 
 No pilot or Stage-1 cohort is part of implementation verification. The default
 4,096-seed A2 collection still requires explicit authorization; no training,

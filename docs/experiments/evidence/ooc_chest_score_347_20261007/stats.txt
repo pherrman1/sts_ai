@@ -1,0 +1,13 @@
+seed floor relic | map: with relic, without, delta (x2b) | rewards screen live: root, after relic | relic_map screen
+48000014 9 Whetstone | 0.6789 0.7003 -0.0214 | 0.7068 0.6703 0.7003 | MAP
+48000014 26 Maw Bank | 0.8361 0.8382 -0.0021 | 0.8460 0.8395 0.8382 | MAP
+48000014 43 Smiling Mask | 0.8992 0.9093 -0.0101 | 0.9171 0.9009 0.9093 | MAP
+48000024 9 Calipers | 0.8232 0.8232 +0.0000 | 0.8324 0.8249 0.8232 | MAP
+48000024 26 Bag Of Marbles | 0.8011 0.8028 -0.0017 | 0.8170 0.8152 0.8028 | MAP
+48000095 9 Bottled Flame | 0.8646 0.8646 +0.0000 | 0.8699 0.8665 0.8646 | CARD_SELECT
+48000095 11 Meal Ticket | 0.8632 0.8632 +0.0000 | 0.8704 0.8655 0.8632 | MAP
+48000095 26 Meat On The Bone | 0.9240 0.9273 -0.0033 | 0.9339 0.9280 0.9273 | MAP
+48000095 43 Bag Of Preparation | 0.9645 0.9583 +0.0062 | 0.9595 0.9648 0.9583 | MAP
+48000116 9 Meal Ticket | 0.7797 0.7797 +0.0000 | 0.7809 0.7805 0.7636 | MAP
+48000116 26 Potion Belt | 0.6425 0.6425 +0.0000 | 0.6633 0.6554 0.6425 | MAP
+n 11 mean delta -0.0029 median +0.0000 pos 1 zero 5 neg 5

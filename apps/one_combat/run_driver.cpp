@@ -27,6 +27,81 @@ namespace {
 
 std::mutex g_oocStrategicTraceMutex;
 
+// Research-only (#347 OOC divergence): STS_OOC_DECISION_TRACE=<path> appends
+// one JSON line per real out-of-combat step and per battle of runFullRunOOC
+// (state before, what the screen offered, state after). It only reads state,
+// so the run is unchanged; unset, nothing is computed.
+constexpr const char *kOocTraceScreens[] = {"INVALID", "EVENT", "REWARDS", "BOSS_RELIC",
+    "CARD_SELECT", "MAP", "TREASURE", "REST", "SHOP", "BATTLE"};
+
+std::string oocTraceCard(const Card &c) {
+    return std::string(c.getName()) + (c.isUpgraded() ? "+" : "");
+}
+
+nlohmann::json oocTraceState(const GameContext &gc) {
+    nlohmann::json deck = nlohmann::json::array(), relics = nlohmann::json::array(),
+                   potions = nlohmann::json::array();
+    for (const auto &c : gc.deck.cards) deck.push_back(oocTraceCard(c));
+    for (const auto &r : gc.relics.relics) relics.push_back(relicEnumNames[static_cast<int>(r.id)]);
+    for (int i = 0; i < gc.potionCapacity && i < static_cast<int>(gc.potions.size()); ++i)
+        if (gc.potions[i] != Potion::EMPTY_POTION_SLOT && gc.potions[i] != Potion::INVALID)
+            potions.push_back(potionEnumNames[static_cast<int>(gc.potions[i])]);
+    return {{"act", gc.act}, {"floor", gc.floorNum}, {"x", gc.curMapNodeX}, {"y", gc.curMapNodeY},
+            {"screen", kOocTraceScreens[static_cast<int>(gc.screenState)]},
+            {"room", roomStrings[static_cast<int>(gc.curRoom)]},
+            {"event", gc.screenState == ScreenState::EVENT_SCREEN
+                ? eventIdStrings[static_cast<int>(gc.curEvent)] : ""},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"deck", deck},
+            {"relics", relics}, {"potions", potions}, {"potionCapacity", gc.potionCapacity}};
+}
+
+nlohmann::json oocTraceOffer(const GameContext &gc) {
+    nlohmann::json o = nlohmann::json::object();
+    if (gc.screenState == ScreenState::REWARDS) {
+        const auto &r = gc.info.rewardsContainer;
+        nlohmann::json cards = nlohmann::json::array(), relics = nlohmann::json::array(),
+                       potions = nlohmann::json::array(), gold = nlohmann::json::array();
+        for (int i = 0; i < r.cardRewardCount; ++i) {
+            nlohmann::json one = nlohmann::json::array();
+            for (const auto &c : r.cardRewards[i]) one.push_back(oocTraceCard(c));
+            cards.push_back(one);
+        }
+        for (int i = 0; i < r.relicCount; ++i) relics.push_back(relicEnumNames[static_cast<int>(r.relics[i])]);
+        for (int i = 0; i < r.potionCount; ++i) potions.push_back(potionEnumNames[static_cast<int>(r.potions[i])]);
+        for (int i = 0; i < r.goldRewardCount; ++i) gold.push_back(r.gold[i]);
+        o = {{"cards", cards}, {"relics", relics}, {"potions", potions}, {"gold", gold}};
+    } else if (gc.screenState == ScreenState::SHOP_ROOM) {
+        const auto &sh = gc.info.shop;
+        nlohmann::json cards = nlohmann::json::array(), relics = nlohmann::json::array(),
+                       potions = nlohmann::json::array();
+        for (int i = 0; i < 7; ++i)
+            if (sh.cards[i].getId() != CardId::INVALID && sh.cardPrice(i) >= 0)
+                cards.push_back({oocTraceCard(sh.cards[i]), sh.cardPrice(i)});
+        for (int i = 0; i < 3; ++i) {
+            if (sh.relics[i] != RelicId::INVALID && sh.relicPrice(i) >= 0)
+                relics.push_back({relicEnumNames[static_cast<int>(sh.relics[i])], sh.relicPrice(i)});
+            if (sh.potions[i] != Potion::INVALID && sh.potionPrice(i) >= 0)
+                potions.push_back({potionEnumNames[static_cast<int>(sh.potions[i])], sh.potionPrice(i)});
+        }
+        o = {{"cards", cards}, {"relics", relics}, {"potions", potions}, {"removeCost", sh.removeCost}};
+    } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
+        nlohmann::json relics = nlohmann::json::array();
+        for (const auto r : gc.info.bossRelics)
+            if (r != RelicId::INVALID) relics.push_back(relicEnumNames[static_cast<int>(r)]);
+        o = {{"relics", relics}};
+    } else if (gc.screenState == ScreenState::CARD_SELECT) {
+        o = {{"selectType", static_cast<int>(gc.info.selectScreenType)}, {"toSelect", gc.info.toSelectCount}};
+    }
+    return o;
+}
+
+void oocTraceEmit(const nlohmann::json &row) {
+    static const char *path = std::getenv("STS_OOC_DECISION_TRACE");
+    std::lock_guard<std::mutex> lock(g_oocStrategicTraceMutex);
+    std::ofstream f(path, std::ios::app);
+    f << row.dump() << '\n';
+}
+
 // A floor spans first observation by the real driver to first observation of
 // the next floor (map-choice/entry work belongs to the floor being left).
 class FloorProfile {
@@ -324,6 +399,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
             BossEntryHook *const bossHook = battleRoom == Room::BOSS ? t_bossEntryHook : nullptr;
             if (bossHook) bossHook->before(gc, agent, path);
+            const bool traceOoc = std::getenv("STS_OOC_DECISION_TRACE") != nullptr;
+            nlohmann::json tracePre;
+            if (traceOoc) tracePre = oocTraceState(gc);
             BattleContext bc{};
             // Silver initializes the battle itself so its observational
             // Runic-Dome hooks see the initial hidden intent lifecycle.
@@ -347,17 +425,37 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 one_combat::beginE2cFight(fightsTotal - 1, gc, bc);
             one_combat::exitBattleWithE2cRawCapture(bc, gc);
             if (bossHook) bossHook->after(gc, bc);
+            if (traceOoc)
+                oocTraceEmit({{"seed", seed}, {"kind", "battle"}, {"fight", fightsTotal},
+                              {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
+                              {"won", bc.outcome == Outcome::PLAYER_VICTORY}, {"pre", tracePre},
+                              {"post", oocTraceState(gc)}});
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
                 break;
             }
         } else {
             const auto index = oocDecisionIndex++;
-            if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) {
+            const bool traceOoc = std::getenv("STS_OOC_DECISION_TRACE") != nullptr;
+            nlohmann::json tracePre, traceOffer;
+            if (traceOoc) {
+                tracePre = oocTraceState(gc);
+                traceOffer = oocTraceOffer(gc);
+            }
+            const char *traceBy = "chain";
+            if (openTreasureChestRuleStep(gc)) {
+                traceBy = "chest_rule";
+            } else if (takeRewardRelicRuleStep(gc)) {
+                traceBy = "relic_rule";
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
+                traceBy = "match_and_keep";
             } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
                 runFullRunOocPolicyStep(gc, agent, restV, shopV);
+            else traceBy = "mcts";
+            if (traceOoc)
+                oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
+                              {"pre", tracePre}, {"offer", traceOffer}, {"post", oocTraceState(gc)}});
         }
     }
     } catch (const std::exception &e) {

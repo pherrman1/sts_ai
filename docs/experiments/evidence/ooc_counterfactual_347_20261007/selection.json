@@ -1,0 +1,95 @@
+{
+  "schema": "boss_prep_counterfactual_347_selection_v1",
+  "source": "#428 R seeds (selection.json at 689e1149); arms C = OOC MCTS + chest rule, CR = C + campfire roots to the ordinary chain",
+  "plannerReps": 8,
+  "selected": [
+    {
+      "stateId": "C-48000024-a2",
+      "stratum": "C",
+      "prepArm": "C",
+      "sourceArm": "mcts",
+      "seed": 48000024,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": false
+    },
+    {
+      "stateId": "CR-48000024-a2",
+      "stratum": "CR",
+      "prepArm": "CR",
+      "sourceArm": "mcts",
+      "seed": 48000024,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": true
+    },
+    {
+      "stateId": "C-48000014-a3",
+      "stratum": "C",
+      "prepArm": "C",
+      "sourceArm": "mcts",
+      "seed": 48000014,
+      "act": 3,
+      "boss": "DONU_AND_DECA",
+      "chestRule": true,
+      "campfireChain": false
+    },
+    {
+      "stateId": "CR-48000014-a3",
+      "stratum": "CR",
+      "prepArm": "CR",
+      "sourceArm": "mcts",
+      "seed": 48000014,
+      "act": 3,
+      "boss": "DONU_AND_DECA",
+      "chestRule": true,
+      "campfireChain": true
+    },
+    {
+      "stateId": "C-48000116-a2",
+      "stratum": "C",
+      "prepArm": "C",
+      "sourceArm": "mcts",
+      "seed": 48000116,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": false
+    },
+    {
+      "stateId": "CR-48000116-a2",
+      "stratum": "CR",
+      "prepArm": "CR",
+      "sourceArm": "mcts",
+      "seed": 48000116,
+      "act": 2,
+      "boss": "CHAMP",
+      "chestRule": true,
+      "campfireChain": true
+    },
+    {
+      "stateId": "C-48000095-a3",
+      "stratum": "C",
+      "prepArm": "C",
+      "sourceArm": "mcts",
+      "seed": 48000095,
+      "act": 3,
+      "boss": "TIME_EATER",
+      "chestRule": true,
+      "campfireChain": false
+    },
+    {
+      "stateId": "CR-48000095-a3",
+      "stratum": "CR",
+      "prepArm": "CR",
+      "sourceArm": "mcts",
+      "seed": 48000095,
+      "act": 3,
+      "boss": "TIME_EATER",
+      "chestRule": true,
+      "campfireChain": true
+    }
+  ]
+}

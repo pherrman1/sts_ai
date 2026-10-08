@@ -335,7 +335,8 @@ public:
 };
 std::shared_ptr<const CombatTransitionSampler> maskInitialSmokeBomb(
         std::shared_ptr<const CombatTransitionSampler> sampler) {
-    if (!sampler) return sampler;
+    // An escape-capable CTM supports the Smoke Bomb itself and may sample the escape.
+    if (!sampler || sampler->modelsSmokeBombEscape()) return sampler;
     return std::make_shared<InitialSmokeBombMaskingSampler>(std::move(sampler));
 }
 void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) {
@@ -1680,11 +1681,22 @@ void configureLiveOocMcts() {
     }
     if(activeLizardEnabled && brewFallbackArtifact.empty())
         throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD=1 requires STS_OOC_MCTS_BREW_FALLBACK_MODEL");
-    if(!brewFallbackArtifact.empty())
-        liveSampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
+    std::string researchCandidate;
+    if(!brewFallbackArtifact.empty()) {
+        auto hybrid = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
             artifact,brewFallbackArtifact,activeLizardEnabled);
-    else
-        liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
+        if(hybrid->fastRuntime().researchCandidate())
+            researchCandidate=hybrid->fastRuntime().identity().at("candidateId").get<std::string>();
+        liveSampler = hybrid;
+    } else {
+        auto native = std::make_shared<NativeCombatTransitionSampler>(artifact);
+        if(native->runtime().researchCandidate())
+            researchCandidate=native->runtime().identity().at("candidateId").get<std::string>();
+        liveSampler = native;
+    }
+    // Research candidates are named in the log; production output is unchanged.
+    if(!researchCandidate.empty())
+        std::cout << "[ctm-research-candidate] candidate_id=" << researchCandidate << "\n";
     const auto precision = std::cout.precision();
     std::cout << std::setprecision(17) << "[live OOC MCTS ON sims=" << liveSimulations
         << " combat_model=" << artifact
@@ -3753,6 +3765,14 @@ void oocMctsAdapterSelfTest() {
         require(passed.rawPost.potions[1]==static_cast<int>(Potion::FIRE_POTION),
             "states without a Smoke Bomb pass through unchanged");
         std::cout<<"smoke_bomb_mask masked=empty_slot restored=unused generated=dropped\n";
+        struct EscapeSampler final : CombatTransitionSampler {
+            CombatRuntimeSupport support(const GameContext &,const CombatPredictorInputV1 &) const override { return {true,"supported"}; }
+            CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override { return {}; }
+            bool modelsSmokeBombEscape() const override { return true; }
+        };
+        const std::shared_ptr<const CombatTransitionSampler> escapeCapable=std::make_shared<EscapeSampler>();
+        require(maskInitialSmokeBomb(escapeCapable)==escapeCapable,"an escape-capable CTM keeps its Smoke Bomb");
+        std::cout<<"smoke_bomb_mask escape_capable=unmasked\n";
     }
     {
         // Phase-0 masking (#370): the CTM sees an empty slot for an initial

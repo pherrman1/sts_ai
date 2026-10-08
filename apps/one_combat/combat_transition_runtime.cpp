@@ -5,6 +5,7 @@
 #include "constants/Relics.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -36,6 +37,15 @@ std::string sha256File(const std::string &path) {
     unsigned char digest[EVP_MAX_MD_SIZE];unsigned int length=0;
     require(EVP_DigestFinal_ex(context.get(),digest,&length)==1 && length==32,
         "cannot finalize combat artifact SHA256");
+    std::ostringstream result;
+    result << std::hex << std::setfill('0');
+    for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
+    return result.str();
+}
+std::string sha256Text(const std::string &text) {
+    unsigned char digest[EVP_MAX_MD_SIZE];unsigned int length=0;
+    require(EVP_Digest(text.data(),text.size(),digest,&length,EVP_sha256(),nullptr)==1 && length==32,
+        "cannot compute combat domain SHA256");
     std::ostringstream result;
     result << std::hex << std::setfill('0');
     for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
@@ -126,9 +136,161 @@ const std::map<std::string,std::string> sourceHashes={
  {"potion","8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6"},
  {"potion_encoder","2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef"},
  {"relic","e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"}};
+// Identity pins of the production CTM stack. A research candidate swaps exactly
+// these values; schema, shapes, envelope, exclusions and definitions stay pinned.
+const nlohmann::json &productionIdentity() {
+    static const nlohmann::json identity={
+        {"candidateId",nullptr},
+        {"domainSha256",nullptr},
+        {"capabilities",{{"standard",nlohmann::json::object()},{"fast",nlohmann::json::object()}}},
+        {"standard",{{"artifactSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
+            {"sources",{
+                {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
+                {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
+                {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
+                {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
+                {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}}}}},
+        {"supportCensus",{
+            {"allSupportedIndexSha256","969a239845e7638a5797bcf1f2d03dc7c599c83b22e8dd76337cb31c3c20e0ef"},
+            {"testSupportedIndexSha256","71f2ca52769aa36a39f5684bf408090deb10edf8c13e55803cc0fd46ce1bfc31"}}},
+        {"fast",{{"artifactSha256",nullptr},
+            {"survival",{
+                {"checkpointSha256","328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3"},
+                {"preparedSha256","a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"},
+                {"preparedManifestSha256","fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"},
+                {"scalarMeanSha256","b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9"},
+                {"scalarInvSha256","48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55"}}},
+            {"maxHpHpCheckpointSha256","bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"},
+            {"downstreamCheckpointSha256","c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"},
+            {"potionSpecialistCheckpointSha256","71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"}}},
+        {"activeLizard",{
+            {"candidateId","active-lizard-mechanical-q-learned-r-t2"},
+            {"candidateManifestSha256","15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617"},
+            {"frozenQrArtifactSha256","9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9"},
+            {"rModelSha256","fbf29bf742e3c40b18a358386509a74ced54e97a2a7e760ff988de5c14a335a8"},
+            {"rModel",{
+                {"featureMean",{0.7449433381740863}},
+                {"featureScale",{0.24032617420774785}},
+                {"standardizedCoefficients",{1.8256833712449918,1.1142687252357397}}}}}}};
+    return identity;
+}
+bool isSha256(const nlohmann::json &value) {
+    if(!value.is_string()) return false;
+    const auto &text=value.get_ref<const std::string&>();
+    return text.size()==64 && std::all_of(text.begin(),text.end(),[](char c) {
+        return (c>='0' && c<='9') || (c>='a' && c<='f');
+    });
+}
+void requireObject(const nlohmann::json &value,const std::set<std::string> &keys,const char *why) {
+    require(value.is_object() && value.size()==keys.size(),why);
+    for(const auto &key:keys) require(value.contains(key),why);
+}
+void requireShaFields(const nlohmann::json &value,const std::set<std::string> &keys,const char *why) {
+    requireObject(value,keys,why);
+    for(const auto &key:keys) require(isSha256(value.at(key)),why);
+}
+void requireFiniteArray(const nlohmann::json &value,size_t size,bool positive,const char *why) {
+    require(value.is_array() && value.size()==size,why);
+    for(const auto &x:value)
+        require(x.is_number() && std::isfinite(x.get<double>()) && (!positive || x.get<double>()>0),why);
+}
+// Per-artifact capabilities a v3 manifest may list. Only "escape" exists; its value names
+// the escape fit checkpoint (tools/ctm_escape.py) that the artifact was extended with.
+void requireCapabilities(const nlohmann::json &value,const char *why) {
+    require(value.is_object(),why);
+    for(const auto &[name,spec]:value.items()) {
+        require(name=="escape",why);
+        requireShaFields(spec,{"checkpointSha256"},why);
+    }
+}
+// Off by default. STS_CTM_RESEARCH_CANDIDATE_MANIFEST names a ctm_research_candidate_v1
+// manifest and STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256 pins its bytes. Only artifacts
+// whose metadata declares that candidate, and whose bytes the manifest lists, use it.
+std::unique_ptr<const nlohmann::json> loadResearchCandidateIdentity() {
+    const char *path=std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST");
+    const char *expected=std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256");
+    if(!path && !expected) return nullptr;
+    require(path && *path && expected && *expected,
+        "STS_CTM_RESEARCH_CANDIDATE_MANIFEST and STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256 must be set together");
+    require(sha256File(path)==expected,"research candidate manifest SHA256 differs");
+    std::ifstream file(path);
+    auto manifest=std::make_unique<nlohmann::json>(nlohmann::json::parse(file));
+    const auto &m=*manifest;
+    const char *why="research candidate manifest schema";
+    // v1 keeps the production HP domain; v2 also pins a declared domain by its SHA256;
+    // v3 also lists each artifact's capabilities.
+    const std::string schema=m.is_object()?m.value("schema",std::string{}):std::string{};
+    const bool v3=schema=="ctm_research_candidate_v3",v2=v3 || schema=="ctm_research_candidate_v2";
+    if(v3) requireObject(m,{"schema","candidateId","domainSha256","capabilities","standard","supportCensus","fast","activeLizard"},why);
+    else if(v2) requireObject(m,{"schema","candidateId","domainSha256","standard","supportCensus","fast","activeLizard"},why);
+    else requireObject(m,{"schema","candidateId","standard","supportCensus","fast","activeLizard"},why);
+    require((v2 || schema=="ctm_research_candidate_v1") && m.at("candidateId").is_string() &&
+        !m.at("candidateId").get<std::string>().empty() && (!v2 || isSha256(m.at("domainSha256"))),why);
+    if(!v2) (*manifest)["domainSha256"]=nullptr;
+    if(v3) {
+        requireObject(m.at("capabilities"),{"standard","fast"},why);
+        requireCapabilities(m.at("capabilities").at("standard"),why);
+        requireCapabilities(m.at("capabilities").at("fast"),why);
+        require(!m.at("fast").is_null() || m.at("capabilities").at("fast").empty(),why);
+    } else (*manifest)["capabilities"]={{"standard",nlohmann::json::object()},{"fast",nlohmann::json::object()}};
+    requireObject(m.at("standard"),{"artifactSha256","sources"},why);
+    require(isSha256(m.at("standard").at("artifactSha256")),why);
+    requireShaFields(m.at("standard").at("sources"),{"survival","maxHP","HP","potion","downstream"},why);
+    requireShaFields(m.at("supportCensus"),{"allSupportedIndexSha256","testSupportedIndexSha256"},why);
+    const auto &fast=m.at("fast");
+    if(!fast.is_null()) {
+        requireObject(fast,{"artifactSha256","survival","maxHpHpCheckpointSha256",
+            "downstreamCheckpointSha256","potionSpecialistCheckpointSha256"},why);
+        for(const char *key:{"artifactSha256","maxHpHpCheckpointSha256","downstreamCheckpointSha256",
+                "potionSpecialistCheckpointSha256"})
+            require(isSha256(fast.at(key)),why);
+        requireShaFields(fast.at("survival"),{"checkpointSha256","preparedSha256","preparedManifestSha256",
+            "scalarMeanSha256","scalarInvSha256"},why);
+    }
+    const auto &lizard=m.at("activeLizard");
+    if(!lizard.is_null()) {
+        require(!fast.is_null(),"research candidate active Lizard requires a fast artifact");
+        requireObject(lizard,{"candidateId","candidateManifestSha256","frozenQrArtifactSha256","rModelSha256","rModel"},why);
+        require(lizard.at("candidateId").is_string() && !lizard.at("candidateId").get<std::string>().empty(),why);
+        for(const char *key:{"candidateManifestSha256","frozenQrArtifactSha256","rModelSha256"})
+            require(isSha256(lizard.at(key)),why);
+        const auto &model=lizard.at("rModel");
+        requireObject(model,{"featureMean","featureScale","standardizedCoefficients"},why);
+        requireFiniteArray(model.at("featureMean"),1,false,why);
+        requireFiniteArray(model.at("featureScale"),1,true,why);
+        requireFiniteArray(model.at("standardizedCoefficients"),2,false,why);
+    }
+    return manifest;
+}
+// A declared HP domain (tools/ctm_hp_domain.py): the signed classes start where the
+// highest enveloped pre HP reaches 1, the maxHP deltas stay production, and the
+// SHA256 is recomputed over the sorted compact JSON exactly as Python writes it.
+std::vector<int> declaredHpClasses(const nlohmann::json &domain,const nlohmann::json &maxHpClasses) {
+    const char *why="combat runtime declared HP domain";
+    requireObject(domain,{"min","max","classes","envelope","preCurHpRange","preMaxHpRange","maxHpDeltaValues","rule","sha256"},why);
+    for(const char *key:{"min","max","classes"}) require(domain.at(key).is_number_integer(),why);
+    for(const char *key:{"preCurHpRange","preMaxHpRange"}) {
+        const auto &range=domain.at(key);
+        require(range.is_array() && range.size()==2 && range[0].is_number_integer() && range[1].is_number_integer() &&
+            range[0].get<int>()<=range[1].get<int>(),why);
+    }
+    const int low=domain.at("min"),high=domain.at("max"),count=domain.at("classes");
+    const auto cur=domain.at("preCurHpRange").get<std::array<int,2>>(),max=domain.at("preMaxHpRange").get<std::array<int,2>>();
+    require(cur[0]>=1 && cur[1]<=max[1] && max[0]>=1 && low==1-cur[1] && high>=0 && count==high-low+1 && count<=4096 &&
+        domain.at("maxHpDeltaValues")==maxHpClasses && domain.at("envelope").is_string() && domain.at("rule").is_string(),why);
+    auto unsigned_=domain;unsigned_.erase("sha256");
+    require(domain.at("sha256").is_string() && sha256Text(unsigned_.dump())==domain.at("sha256").get<std::string>(),
+        "combat runtime declared HP domain SHA256");
+    std::vector<int> classes;for(int i=low;i<=high;++i) classes.push_back(i);
+    return classes;
+}
+const nlohmann::json *researchCandidateIdentity() {
+    static const std::unique_ptr<const nlohmann::json> identity=loadResearchCandidateIdentity();
+    return identity.get();
+}
 }
 void CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(const std::string &path) {
-    static const std::string expected="e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd";
+    static const std::string expected=productionIdentity().at("standard").at("artifactSha256");
     require(sha256File(path)==expected,
         "Brew fallback artifact SHA256 differs from the pinned current standard Attention CTM");
 }
@@ -147,14 +309,37 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     require(metadata_.at("schema")==std::string(full?"COMBAT_TRANSITION_RUNTIME_V2":magic) && metadata_.at("version")== (full?2:1),"combat runtime schema");
     const bool deepSurvival=metadata_.contains("experimentalSurvival");
     const bool deepsetStack=metadata_.contains("experimentalDeepSets");
-    const auto phase1Survival=nlohmann::json({
+    const bool candidate=metadata_.contains("researchCandidate");
+    if(candidate) {
+        const auto *candidateIdentity=researchCandidateIdentity();
+        require(candidateIdentity!=nullptr,
+            "combat runtime research candidate requires STS_CTM_RESEARCH_CANDIDATE_MANIFEST");
+        require(full && metadata_.at("researchCandidate")==
+            nlohmann::json({{"candidateId",candidateIdentity->at("candidateId")}}),
+            "combat runtime research candidate identity");
+        identity_=*candidateIdentity;
+        const auto &role=identity_.at(deepsetStack?"fast":"standard");
+        require(!role.is_null() && (deepsetStack || !deepSurvival) &&
+            sha256File(path)==role.at("artifactSha256").get<std::string>(),
+            "combat runtime research candidate artifact bytes are not listed in its manifest");
+        require(!metadata_.value("defaultForOocMcts",false),
+            "combat runtime research candidate cannot claim production default");
+    } else identity_=productionIdentity();
+    const auto &capabilities=identity_.at("capabilities").at(deepsetStack?"fast":"standard");
+    require(metadata_.value("capabilities",nlohmann::json::object())==capabilities,
+        "combat runtime capabilities are not listed in its manifest");
+    escape_=capabilities.contains("escape");
+    require(!escape_ || full,"combat runtime escape capability requires a near-full artifact");
+    const auto &standardIdentity=identity_.at("standard");
+    const auto &fastIdentity=identity_.at("fast");
+    const auto phase1Survival=fastIdentity.is_null()?nlohmann::json():nlohmann::json({
         {"architecture","deepset64_phase1_v1"},
-        {"checkpointSha256","328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3"},
-        {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
-        {"preparedSha256","a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"},
-        {"preparedManifestSha256","fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"},
-        {"scalarMeanSha256","b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9"},
-        {"scalarInvSha256","48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55"},
+        {"checkpointSha256",fastIdentity.at("survival").at("checkpointSha256")},
+        {"controlSha256",standardIdentity.at("artifactSha256")},
+        {"preparedSha256",fastIdentity.at("survival").at("preparedSha256")},
+        {"preparedManifestSha256",fastIdentity.at("survival").at("preparedManifestSha256")},
+        {"scalarMeanSha256",fastIdentity.at("survival").at("scalarMeanSha256")},
+        {"scalarInvSha256",fastIdentity.at("survival").at("scalarInvSha256")},
         {"qualified",false}});
     const auto strongWdSurvival=nlohmann::json({
         {"architecture","deepset64_linear_strongWd"},
@@ -162,7 +347,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
         {"qualified",false}});
     if(deepSurvival) require(full && (metadata_.at("experimentalSurvival")==phase1Survival ||
-        metadata_.at("experimentalSurvival")==strongWdSurvival),"combat runtime experimental survival identity");
+        (!candidate && metadata_.at("experimentalSurvival")==strongWdSurvival)),"combat runtime experimental survival identity");
     const auto legacyDeepSets=nlohmann::json({
         {"architecture","deepset64_shared_transition"},
         {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
@@ -171,12 +356,12 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         {"potionCheckpointSha256","06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1"},
         {"potionOfflineDecision","DEEPSET_POTION_REJECTED"},
         {"qualified",false}});
-    const auto specialistDeepSets=nlohmann::json({
+    const auto specialistDeepSets=fastIdentity.is_null()?nlohmann::json():nlohmann::json({
         {"architecture","deepset64_shared_hp_with_dedicated_potion_specialist"},
-        {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
-        {"maxHpHpCheckpointSha256","bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"},
-        {"downstreamCheckpointSha256","c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"},
-        {"potionSpecialistCheckpointSha256","71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"},
+        {"controlSha256",standardIdentity.at("artifactSha256")},
+        {"maxHpHpCheckpointSha256",fastIdentity.at("maxHpHpCheckpointSha256")},
+        {"downstreamCheckpointSha256",fastIdentity.at("downstreamCheckpointSha256")},
+        {"potionSpecialistCheckpointSha256",fastIdentity.at("potionSpecialistCheckpointSha256")},
         {"potionOfflineDecision","POTION_DEEPSET_SPECIALIST_REJECTED"},
         {"requiresEntropicBrewFallback",true},{"qualified",false},{"defaultChanged",false}});
     auto qualifiedDeepSets=specialistDeepSets;
@@ -192,16 +377,16 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     const bool lizardCandidate=metadata_.contains("activeLizardCorrection");
     const bool promotedLizard= lizardCandidate &&
         metadata_.at("activeLizardCorrection").value("status",std::string{})=="production_default_when_ooc_enabled";
+    require(!candidate || !promotedLizard,"combat runtime research candidate cannot claim production default");
     if(lizardCandidate) {
         const auto &c=metadata_.at("activeLizardCorrection");
-        const auto expectedModel=nlohmann::json({
-            {"featureMean",{0.7449433381740863}},
-            {"featureScale",{0.24032617420774785}},
-            {"standardizedCoefficients",{1.8256833712449918,1.1142687252357397}}});
-        require(c.value("candidateId",std::string{})=="active-lizard-mechanical-q-learned-r-t2" &&
-            c.value("candidateManifestSha256",std::string{})=="15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617" &&
-            c.value("frozenQrArtifactSha256",std::string{})=="9f8fb965b24fbd8da1f9600fc9ca0f243e5e9069c47067123c88e36e9f5ebcf9" &&
-            c.value("rModelSha256",std::string{})=="fbf29bf742e3c40b18a358386509a74ced54e97a2a7e760ff988de5c14a335a8" &&
+        const auto &lizardIdentity=identity_.at("activeLizard");
+        require(!lizardIdentity.is_null(),"combat runtime frozen active-Lizard candidate identity");
+        const auto &expectedModel=lizardIdentity.at("rModel");
+        require(c.value("candidateId",std::string{})==lizardIdentity.at("candidateId").get<std::string>() &&
+            c.value("candidateManifestSha256",std::string{})==lizardIdentity.at("candidateManifestSha256").get<std::string>() &&
+            c.value("frozenQrArtifactSha256",std::string{})==lizardIdentity.at("frozenQrArtifactSha256").get<std::string>() &&
+            c.value("rModelSha256",std::string{})==lizardIdentity.at("rModelSha256").get<std::string>() &&
             c.value("qMode",std::string{})=="mechanical_b1" &&
             c.value("qDefinition",std::string{})=="q = 1 - pOrdinaryWin" &&
             c.value("rMode",std::string{})=="frozen_learned_r" &&
@@ -235,7 +420,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
                 "combat runtime candidate cannot claim production default");
         lizardCorrection_=c;
     }
-    if(deepsetStack) require(full && (metadata_.at("experimentalDeepSets")==legacyDeepSets ||
+    if(deepsetStack) require(full && ((!candidate && metadata_.at("experimentalDeepSets")==legacyDeepSets) ||
         metadata_.at("experimentalDeepSets")==specialistDeepSets ||
         (promotedLizard && metadata_.at("experimentalDeepSets")==qualifiedDeepSets)),
         "combat runtime experimental DeepSets identity");
@@ -250,39 +435,47 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     require(metadata_.at("cardCount")==kNumCardIds && metadata_.at("relicCount")==kNumRelics && metadata_.at("potionCount")==kNumPotions,"combat runtime vocab");
     if(!full) require(metadata_.at("sources")==nlohmann::json(sourceHashes),"combat runtime source identities");
     else {
-        std::map<std::string,std::string> hashes={
-        {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
-        {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
-        {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
-        {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
-        {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}};
+        auto hashes=standardIdentity.at("sources").get<std::map<std::string,std::string>>();
         if(deepSurvival) hashes["survival"]=metadata_.at("experimentalSurvival").at("checkpointSha256").get<std::string>();
         if(deepsetStack) {
-            hashes["maxHP"]="bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663";
+            hashes["maxHP"]=fastIdentity.at("maxHpHpCheckpointSha256").get<std::string>();
             hashes["HP"]=hashes["maxHP"];
-            hashes["potion"]=dedicatedPotion ? "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"
+            hashes["potion"]=dedicatedPotion ? fastIdentity.at("potionSpecialistCheckpointSha256").get<std::string>()
                                              : "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1";
-            hashes["downstream"]="c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a";
+            hashes["downstream"]=fastIdentity.at("downstreamCheckpointSha256").get<std::string>();
         }
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
-        require(metadata_.at("supportExclusions")==nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"}),"combat runtime support exclusions");
+        require(metadata_.at("supportExclusions")==supportExclusions(escape_),"combat runtime support exclusions");
         const auto qualification=metadata_.at("qualification").value("classification",std::string{});
         require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" ||
             (promotedLizard && qualification=="DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED"),
             "combat runtime qualification");
-        require(metadata_.at("supportCensus").at("all").at("supportedIndexSha256")=="969a239845e7638a5797bcf1f2d03dc7c599c83b22e8dd76337cb31c3c20e0ef" && metadata_.at("supportCensus").at("TEST").at("supportedIndexSha256")=="71f2ca52769aa36a39f5684bf408090deb10edf8c13e55803cc0fd46ce1bfc31","combat runtime qualified cohort");
+        const auto &census=identity_.at("supportCensus");
+        require(metadata_.at("supportCensus").at("all").at("supportedIndexSha256")==census.at("allSupportedIndexSha256") && metadata_.at("supportCensus").at("TEST").at("supportedIndexSha256")==census.at("testSupportedIndexSha256"),"combat runtime qualified cohort");
     }
     require(metadata_.at("maxHpClasses")==nlohmann::json({0,3,4,5,6,7,8,9,10,11,12}),"combat runtime maxHP classes");
-    std::vector<int> classes;for(int i=-160;i<=143;++i) classes.push_back(i);
-    require(metadata_.at("hpClasses")==classes,"combat runtime HP classes");
     const auto &domain=metadata_.at("domain");
-    require(domain.at("preCurHpRange")==nlohmann::json({1,161}) && domain.at("preMaxHpRange")==nlohmann::json({24,172}) && domain.at("maxHpDeltaValues")==metadata_.at("maxHpClasses") && domain.at("min")==-160 && domain.at("max")==143 && domain.at("classes")==304 && domain.at("sha256")=="f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec","combat runtime frozen envelope");
+    std::vector<int> classes;
+    if(identity_.at("domainSha256").is_null()) {
+        for(int i=-160;i<=143;++i) classes.push_back(i);
+        require(domain.at("preCurHpRange")==nlohmann::json({1,161}) && domain.at("preMaxHpRange")==nlohmann::json({24,172}) && domain.at("maxHpDeltaValues")==metadata_.at("maxHpClasses") && domain.at("min")==-160 && domain.at("max")==143 && domain.at("classes")==304 && domain.at("sha256")=="f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec","combat runtime frozen envelope");
+    } else {
+        classes=declaredHpClasses(domain,metadata_.at("maxHpClasses"));
+        require(domain.at("sha256")==identity_.at("domainSha256"),
+            "combat runtime research candidate HP domain is not listed in its manifest");
+    }
+    require(metadata_.at("hpClasses")==classes,"combat runtime HP classes");
+    hpMin_=classes.front();
+    const int hpClassCount=static_cast<int>(classes.size());
     require(metadata_.at("continuousFields")==nlohmann::json({"ascension","act","floor","curHp","maxHp","gold","potionCount","potionCapacity","potionKeepValue","isBurningElite"}),"combat runtime global fields");
     require(metadata_.at("globalCategoryCounts")==nlohmann::json({4,64,10,10}),"combat runtime global vocab");
     // Exact shape graph, including historical unused heads: reject missing/extra tensors.
     std::map<std::string,std::vector<int>> expected;
     auto shape=[&](std::string name,std::vector<int> dims) { expected.emplace(std::move(name),std::move(dims)); };
     auto lin=[&](std::string name,int out,int in) { shape(name+".weight",{out,in});shape(name+".bias",{out}); };
+    // The escape capability adds the escape bit as the HP head's last input and a 1x64 escape head.
+    const int hpInputs=escape_?73:72;
+    if(escape_) lin("escape.escape",1,64);
     for(std::string group:{"survival","max_hp","hp","potion_encoder"}) {
         std::string p=group+".encoder.";
         if((group=="survival" && deepSurvival) || (deepsetStack && (group=="max_hp" || group=="hp" || group=="potion_encoder"))) {
@@ -297,7 +490,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             lin(p+"global_mlp.0",64,42);lin(p+"trunk.0",128,256);lin(p+"trunk.2",64,128);
             if(group=="survival") lin("survival.survival",1,64);
             else if(group=="max_hp") lin("max_hp.max_hp_delta",11,64);
-            else if(group=="hp") {shape("hp.delta_embedding.weight",{11,8});lin("hp.hp.0",64,72);lin("hp.hp.2",304,64);}
+            else if(group=="hp") {shape("hp.delta_embedding.weight",{11,8});lin("hp.hp.0",64,hpInputs);lin("hp.hp.2",hpClassCount,64);}
             continue;
         }
         shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
@@ -312,7 +505,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             for(auto n:{"norm1","norm2"}) {shape(l+n+".weight",{64});shape(l+n+".bias",{64});}
         }
         lin(p+"trunk.0",64,64);
-        if(group=="hp") {shape(group+".delta_embedding.weight",{11,8});lin(group+".hp.0",64,72);lin(group+".hp.2",304,64);}
+        if(group=="hp") {shape(group+".delta_embedding.weight",{11,8});lin(group+".hp.0",64,hpInputs);lin(group+".hp.2",hpClassCount,64);}
         else {lin(group+".survival",1,64);if(group!="max_hp") lin(group+".hp",1,64);}
         if(group=="max_hp") {
             lin(group+".max_hp_delta",11,64);shape(group+".hp_delta_embedding.weight",{11,8});lin(group+".hp.0",64,72);lin(group+".hp.2",101,64);
@@ -323,7 +516,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         }
     }
     shape("potion.delta.weight",{11,8});shape("potion.potion.weight",{kNumPotions,8});shape("potion.slot.weight",{5,4});lin("potion.mlp.0",64,133);lin("potion.mlp.2",full?64:32,64);
-    shape("relic.delta.weight",{304,16});shape("relic.mask.weight",{32,8});lin("relic.shared.0",64,full?90:89);
+    shape("relic.delta.weight",{hpClassCount,16});shape("relic.mask.weight",{32,8});lin("relic.shared.0",64,full?90:89);
     for(auto entry:std::map<std::string,int>{{"turns",6},{"attacks",10},{"cards",10},{"shuffles",3},{"lizard",2}}) lin("relic.heads."+entry.first,entry.second,64);
     if(full) {
         for(std::string g:{"writhing","ritual"}) {lin(g+".context.0",64,80);lin(g+".context.2",32,64);lin(g+".event.0",32,3);}
@@ -439,7 +632,24 @@ Vec CombatTransitionRuntime::maxHpEncoding(const CombatPredictorInputV1 &p) cons
 Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {return softmax(linear("max_hp.max_hp_delta",encode("max_hp",p)));}
 Vec CombatTransitionRuntime::maxHp(const Vec &encoding) const {return softmax(linear("max_hp.max_hp_delta",encoding));}
 Vec CombatTransitionRuntime::hpEncoding(const CombatPredictorInputV1 &p) const {return encode("hp",p);}
-Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maximum) const {auto x=z;append(x,embedding("hp.delta_embedding",delta));auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<304;++i)if(preHp+i-160<1 || preHp+i-160>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
+bool CombatTransitionRuntime::escapeEligible(const std::array<int,5> &potions,int capacity,bool boss) {
+    if(boss) return false;
+    for(int slot=0;slot<5 && slot<capacity;++slot) if(potions[slot]==int(sts::Potion::SMOKE_BOMB)) return true;
+    return false;
+}
+nlohmann::json CombatTransitionRuntime::supportExclusions(bool escape) {
+    return escape?nlohmann::json({"pre_smoke_bomb_used","writhing_ritual_intersection"})
+                 :nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"});
+}
+float CombatTransitionRuntime::escapeProbability(const Vec &z) const {
+    require(escape_,"escape head on an artifact without the escape capability");
+    const float logit=linear("escape.escape",z)[0];require(std::isfinite(logit),"nonfinite escape logit");
+    return 1/(1+std::exp(-logit));
+}
+Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maximum,int escaped) const {auto x=z;append(x,embedding("hp.delta_embedding",delta));
+    if(escape_){require(escaped==0 || escaped==1,"escape-capable HP head needs the escape bit");x.push_back(float(escaped));}
+    else require(escaped==-1,"escape bit on an artifact without the escape capability");
+    auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<int(logits.size());++i)if(preHp+i+hpMin_<1 || preHp+i+hpMin_>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
 Vec CombatTransitionRuntime::potion(const CombatPredictorInputV1 &p,int delta,float fraction) const {
     return potion(potionEncoding(p),p,delta,fraction);
 }
@@ -455,8 +665,9 @@ Vec CombatTransitionRuntime::potion(const Vec &encoding,const CombatPredictorInp
     return softmax(logits);
 }
 std::map<std::string,Vec> CombatTransitionRuntime::relic(const Vec &z,int hpClass,float fraction,int mask,bool escaped) const {auto x=z;append(x,embedding("relic.delta",hpClass));x.push_back(fraction);append(x,embedding("relic.mask",mask));if(nearFull())x.push_back(float(escaped));auto shared=relu(linear("relic.shared.0",x));std::map<std::string,Vec> out;for(auto g:{"turns","attacks","cards","shuffles"})out.emplace(g,softmax(linear(std::string("relic.heads.")+g,shared)));return out;}
-Vec CombatTransitionRuntime::potionInventory(const Vec &encoding,const std::array<int,5>& inventory,int capacity,int delta,float fraction,bool boss) const {
+Vec CombatTransitionRuntime::potionInventory(const Vec &encoding,const std::array<int,5>& inventory,int capacity,int delta,float fraction,bool boss,int escape) const {
     require(nearFull(),"near-full potion interface on legacy artifact");
+    require(escape==-1 || (escape_ && (escape==0 || escape==1)),"potion escape condition");
     auto x=encoding;append(x,embedding("potion.delta",delta));x.push_back(fraction);
     for(int slot=0;slot<5;++slot){append(x,embedding("potion.potion",inventory[slot]));append(x,embedding("potion.slot",slot));}
     auto logits=linear("potion.mlp.2",relu(linear("potion.mlp.0",x)));
@@ -467,6 +678,10 @@ Vec CombatTransitionRuntime::potionInventory(const Vec &encoding,const std::arra
             smoke|=inventory[slot]==int(sts::Potion::SMOKE_BOMB);
         }
         valid&=triggers<=1 && (a<32 || (triggers==1 && !(boss&&smoke)));
+        // Escape drawn earlier: 0 forbids using a Smoke Bomb; 1 forbids stopping or
+        // discarding one, so the trajectory ends with its use.
+        if(escape==0) valid&=!(smoke && a>=32);
+        if(escape==1) valid&=mask!=0 && !(smoke && a<32);
         if(!valid)logits[a]=-std::numeric_limits<float>::infinity();
     }return softmax(logits);
 }
@@ -496,6 +711,15 @@ CombatTransitionExpectation calculateForecastExpectation(
     const CombatPredictorInputV1 &p) {
     const float survival = runtime.survival(p);
     const auto maxHp = runtime.maxHp(p), z = runtime.hpEncoding(p);
+    // An escape-capable artifact mixes the escape-conditioned HP heads by the escape head.
+    double escape = 0;
+    if (runtime.escapeCapable()) {
+        std::array<int,5> potions{};
+        for (int i = 0; i < 5; ++i) potions[i] = p.potions.at(i).potionId;
+        if (CombatTransitionRuntime::escapeEligible(potions, p.globals.potionCapacity,
+                sts::isBossEncounter(static_cast<sts::MonsterEncounter>(p.globals.encounter))))
+            escape = runtime.escapeProbability(z);
+    }
     double expectedFraction = 0;
     int maximumHp = p.globals.maxHp;
     for (const int delta : domain.maxHpClasses)
@@ -503,7 +727,14 @@ CombatTransitionExpectation calculateForecastExpectation(
     std::vector<float> histogram(static_cast<size_t>(maximumHp + 1), 0.0f);
     for (size_t delta = 0; delta < maxHp.size(); ++delta) {
         const int maximum = p.globals.maxHp + domain.maxHpClasses.at(delta);
-        const auto hp = runtime.signedHp(z, int(delta), p.globals.curHp, maximum);
+        auto hp = runtime.escapeCapable()
+            ? runtime.signedHp(z, int(delta), p.globals.curHp, maximum, 0)
+            : runtime.signedHp(z, int(delta), p.globals.curHp, maximum);
+        if (escape > 0) {
+            const auto escaped = runtime.signedHp(z, int(delta), p.globals.curHp, maximum, 1);
+            for (size_t cls = 0; cls < hp.size(); ++cls)
+                hp[cls] = float((1 - escape) * hp[cls] + escape * escaped[cls]);
+        }
         double conditional = 0;
         for (size_t cls = 0; cls < hp.size(); ++cls) {
             const int finalHp = p.globals.curHp + domain.hpClasses.at(cls);
@@ -545,7 +776,7 @@ NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &
     domain_.preMaxHpRange=d.at("preMaxHpRange").get<std::array<int,2>>();
     domain_.hpClasses=m.at("hpClasses").get<std::vector<int>>();domain_.maxHpClasses=m.at("maxHpClasses").get<std::vector<int>>();
     domain_.maxHpDeltaValues=d.at("maxHpDeltaValues").get<std::vector<int>>();
-    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.ready=true;
+    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.escape=runtime_.escapeCapable();domain_.ready=true;
 }
 CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     return supportState(captureCombatTransitionState(gc),p);
@@ -666,24 +897,25 @@ EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitio
     :fast_(std::make_shared<NativeCombatTransitionSampler>(fastPath)),
      standard_(std::make_shared<NativeCombatTransitionSampler>(standardPath)),
      activeLizardEnabled_(activeLizardEnabled) {
-    CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(standardPath);
+    // The fallback is pinned by the fast artifact's identity: production, or its research candidate.
+    const auto &pinnedStandard=fast_->runtime().identity().at("standard");
+    require(sha256File(standardPath)==pinnedStandard.at("artifactSha256").get<std::string>(),
+        "Brew fallback artifact SHA256 differs from the pinned current standard Attention CTM");
     require(fast_->runtime().requiresEntropicBrewFallback(),
         "fast combat artifact must require Entropic Brew fallback");
     const auto &standardMetadata=standard_->runtime().metadata();
-    const nlohmann::json currentStandardSources={
-        {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
-        {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
-        {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
-        {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
-        {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}};
+    const auto &currentStandardSources=pinnedStandard.at("sources");
     require(!standard_->runtime().requiresEntropicBrewFallback() &&
         standardMetadata.at("version")==2 &&
         !standardMetadata.contains("experimentalSurvival") &&
         !standardMetadata.contains("experimentalDeepSets") &&
         standardMetadata.at("sources")==currentStandardSources &&
-        standardMetadata.at("supportExclusions")==nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"}) &&
+        standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable()) &&
         standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
         "Brew fallback must be the current standard Attention CTM artifact");
+    // A Brew state with a Smoke Bomb falls back to the standard artifact, so both must agree.
+    require(fast_->runtime().escapeCapable()==standard_->runtime().escapeCapable(),
+        "fast and Brew fallback artifacts disagree on the escape capability");
     require(!activeLizardEnabled_ || fast_->runtime().hasActiveLizardCorrection(),
         "active-Lizard correction enabled without its frozen artifact metadata");
 }

@@ -384,12 +384,15 @@ def run(args):
         attention_recursive_nll = trajectory_evaluate.losses(
             attention_decoder, cache, graphs, recursive_validation, z=attention_z
         ).cpu().numpy().astype(np.float64)
-    if len(attention_recursive_nll) != 12:
+    if len(attention_recursive_nll) != _pins.value("combat_transition_deepset_potion_specialist.RECURSIVE_VALIDATION_ROWS", 12):
         raise ValueError("frozen recursive-Brew VALIDATION slice changed")
     orders, batch_hash = fixed_orders(train)
     results, nets, fit = {}, {}, {}
     starting_states = {}
-    for label in ("C", "P"):
+    arms = tuple(args.arms.split(","))
+    if arms not in (("C", "P"), ("C",)):
+        raise ValueError("--arms must be C,P (the paired experiment) or C (control refit only)")
+    for label in arms:
         encoder, decoder = make_arm(label, arrays, cache["ids"][train],
             len(spec["maxHpDeltaValues"]), encoder_payload, decoder_payload, "cuda")
         initial_hash = {"encoder": module_sha(encoder.state_dict()),
@@ -414,7 +417,9 @@ def run(args):
                 raise ValueError(f"{label} {name} smoke gradient is missing, zero or nonfinite")
         fit[label] = fit_arm(label, encoder, decoder, arrays, cache, graphs,
                              train, validation, orders, "cuda", output)
-        if label == "C":
+        # A retrain on another corpus pins the reference to null: there is
+        # no historical NLL to reproduce.
+        if label == "C" and CONTROL_REPRODUCTION_REFERENCE_NLL is not None:
             reproduced = min(row["validationTrajectoryNll"] for row in fit[label]["history"])
             if abs(reproduced - CONTROL_REPRODUCTION_REFERENCE_NLL) > CONTROL_REPRODUCTION_ABS_TOLERANCE:
                 raise ValueError(
@@ -464,9 +469,16 @@ def run(args):
         raise ValueError(f"TEST access counter is nonzero: {ACCESS_COUNTERS}")
     classifications = {label: shared.compare_teacher(attention, value["metrics"])
                        for label, value in results.items()}
-    decision = "POTION_DEEPSET_POTION_BLIND_REJECTED"
-    if classifications["P"][0] == "TEACHER_FORCED_PASS":
-        decision = "POTION_DEEPSET_SPECIALIST_GO"
+    if arms == ("C",):
+        # Control refit for a retrained stack: the warm-started potion-aware
+        # specialist the DeepSets export consumes. The teacher gate is a
+        # diagnostic only: production W (71d88a71) was TEACHER_FORCED_REJECTED on
+        # recursive Brew and ships with Brew routed to the fallback model.
+        decision = "POTION_DEEPSET_CONTROL_REFIT_DONE"
+    else:
+        decision = "POTION_DEEPSET_POTION_BLIND_REJECTED"
+        if classifications["P"][0] == "TEACHER_FORCED_PASS":
+            decision = "POTION_DEEPSET_SPECIALIST_GO"
     receipt = {"schema": RECIPE["schema"], "decision": decision,
         "decisionScope": "existing teacher-forced validation gate; a pass authorizes conditional export/parity/latency follow-up only",
         "recipe": RECIPE,
@@ -474,6 +486,10 @@ def run(args):
             "torch": torch.__version__, "cudaRuntime": torch.version.cuda,
             "cudaDevice": torch.cuda.get_device_name(0),
             "cudaDeviceCount": torch.cuda.device_count(), "torchThreads": torch.get_num_threads()},
+        "arms": list(arms),
+        "controlRefitTeacherGate": ({"diagnosticOnly": True, "decision": classifications["C"][0],
+                                     "expected": "TEACHER_FORCED_REJECTED on recursive Brew, as production W"}
+                                    if arms == ("C",) else None),
         "controlReproduction": {"referenceTrajectoryNll": CONTROL_REPRODUCTION_REFERENCE_NLL,
                                 "absoluteTolerance": CONTROL_REPRODUCTION_ABS_TOLERANCE,
                                 "stopsBeforeCandidateOnFailure": True},
@@ -505,6 +521,9 @@ def main():
     parser.add_argument("--reference-decoder", type=Path, required=True)
     parser.add_argument("--base-sha", required=True)
     parser.add_argument("--experiment-sha", required=True)
+    parser.add_argument("--arms", default="C,P",
+                        help="C,P runs the paired potion-blind experiment; C refits only the "
+                             "warm-started potion-aware control (the production specialist recipe)")
     run(parser.parse_args())
 
 

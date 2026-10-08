@@ -130,11 +130,20 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
     if(!survivalAlreadyWon && uniform()>=survival)return {CombatRuntimeSample::Outcome::DEATH,{}};
     auto maximumProb=givenMaximum.empty()?net.maxHp(pi):givenMaximum;auto z=givenZ.empty()?net.hpEncoding(pi):givenZ;auto zp=givenZp.empty()?net.potionEncoding(pi):givenZp;
     auto post=pre;int d=category(maximumProb);post.maxHp+=domain.maxHpClasses.at(d);
-    int h=category(net.signedHp(z,d,pre.curHp,post.maxHp));
+    const bool bossFight=boss(pi.globals.encounter);
+    // Escape capability: the escape is drawn before HP, and HP and the potion trajectory are
+    // conditioned on it. A conditioned victory (the Lizard branches) never escapes.
+    int e=-1;
+    if(net.escapeCapable()) {
+        e=0;
+        if(!survivalAlreadyWon && CombatTransitionRuntime::escapeEligible(pre.potions,pre.potionCapacity,bossFight))
+            e=uniform()<net.escapeProbability(z)?1:0;
+    }
+    int h=category(net.signedHp(z,d,pre.curHp,post.maxHp,e));
     post.curHp+=domain.hpClasses.at(h);
     float fraction=float(post.curHp)/post.maxHp;int initialMask=0,originalBits=0;for(int slot=0;slot<5;++slot)if(pre.potions[slot]>1)originalBits|=1<<slot;
     std::vector<int> consumed;bool escaped=false,origin=false;sts::Random potionRng;bool sozu=has(pre,R::SOZU);
-    for(;;){int action=category(net.potionInventory(zp,post.potions,pre.potionCapacity,d,fraction,boss(pi.globals.encounter))),mask=action&31;bool use=action>=32;initialMask|=mask&originalBits;std::vector<int> cleared;
+    for(;;){int action=category(net.potionInventory(zp,post.potions,pre.potionCapacity,d,fraction,bossFight,e)),mask=action&31;bool use=action>=32;initialMask|=mask&originalBits;std::vector<int> cleared;
         for(int slot=0;slot<5;++slot)if(mask&(1<<slot)){int p=post.potions[slot];cleared.push_back(p);if((p!=int(P::ENTROPIC_BREW)&&p!=int(P::SMOKE_BOMB))||use)consumed.push_back(p);post.potions[slot]=1;}
         auto selected=[&](P p){return std::find(cleared.begin(),cleared.end(),int(p))!=cleared.end();};
         if(selected(P::SMOKE_BOMB)&&use){escaped=true;break;}
@@ -145,6 +154,7 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
         bool triggerCleared=selected(P::ENTROPIC_BREW)||selected(P::SMOKE_BOMB),triggerRemaining=std::any_of(post.potions.begin(),post.potions.end(),[](int p){return p==int(P::ENTROPIC_BREW)||p==int(P::SMOKE_BOMB);});
         if(mask==0||(!triggerCleared&&!triggerRemaining))break;
     }
+    require(e==-1 || escaped==(e==1),"escape draw and potion trajectory disagree");
     post.potionCount=int(std::count_if(post.potions.begin(),post.potions.end(),[](int p){return p>1;}));post.smokeBombUsed=escaped;
     if(origin)post.combatRng[4]={potionRng.counter,potionRng.seed0,potionRng.seed1};
     auto probabilities=net.relic(z,h,fraction,initialMask,escaped);std::map<std::string,int> residues;for(auto name:{"turns","attacks","cards","shuffles"})residues[name]=category(probabilities.at(name));
@@ -169,7 +179,7 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
 }
 nlohmann::json nearFullDiagnostics(const CombatTransitionRuntime& net,const CombatTransitionPersistentState& pre,const CombatPredictorInputV1& pi,int delta,int ending,int maximum,int mask,const std::vector<int>& consumed,bool escaped,const std::vector<int>& dagger) {
     auto z=net.hpEncoding(pi),zp=net.potionEncoding(pi);auto cond=conditions(pre,pi,ending,maximum,mask,consumed,escaped);auto context=z;append(context,cond.hp);append(context,cond.bits);append(context,cond.events);
-    nlohmann::json out={{"mechanical",cond.mechanical},{"hpConditions",cond.hp},{"bits",cond.bits},{"eventConditions",cond.events},{"hpEncoding",z},{"potionEncoding",zp},{"potion",net.potionInventory(zp,pre.potions,pre.potionCapacity,delta,float(ending)/maximum,boss(pi.globals.encounter))},{"relic",net.relic(z,ending-pre.curHp+160,float(ending)/maximum,mask,escaped)}};
+    nlohmann::json out={{"mechanical",cond.mechanical},{"hpConditions",cond.hp},{"bits",cond.bits},{"eventConditions",cond.events},{"hpEncoding",z},{"potionEncoding",zp},{"potion",net.potionInventory(zp,pre.potions,pre.potionCapacity,delta,float(ending)/maximum,boss(pi.globals.encounter))},{"relic",net.relic(z,net.hpClassIndex(ending-pre.curHp),float(ending)/maximum,mask,escaped)}};
     if(pi.globals.encounter==int(E::WRITHING_MASS)){bool om=data(pre,R::OMAMORI)>0;out["writhing"]=net.event("writhing",context,{{{0,0,0}},{{1,float(om),float(!om)}}},{true,!(has(pre,R::DARKSTONE_PERIAPT)&&!om&&maximum-pre.maxHp<6)});}
     auto values=daggerCandidates(pre,pi.globals.encounter,cond.mechanical[9]>0,escaped);std::vector<std::vector<Vec>> candidates;bool present=false;
     for(auto value:values){std::vector<Vec> event;size_t i=0;for(auto c:pre.deck)if(c.id==int(C::RITUAL_DAGGER)){present=true;event.push_back({c.misc/100.f,float(c.upgraded),value.at(i++)/20.f});}candidates.push_back(event);}

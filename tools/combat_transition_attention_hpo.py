@@ -278,6 +278,12 @@ def run(args) -> None:
     candidates = (json.loads(Path(args.candidates).read_text(encoding="utf-8"))
                   if args.candidates else copy.deepcopy(DEFAULT_CANDIDATES))
     validate_candidates(candidates)
+    if args.frozen_winner:
+        # Retrain mode: refit the winner already chosen on the production
+        # corpus instead of repeating the search; validation still picks its epochs.
+        candidates = [candidate for candidate in candidates if candidate["name"] == args.frozen_winner]
+        if len(candidates) != 1:
+            raise ValueError(f"--frozen-winner {args.frozen_winner!r} is not exactly one candidate")
     arrays = {key: value for key, value in np.load(prepared_path, allow_pickle=False).items()}
     split_manifest = json.loads(split_path.read_text(encoding="utf-8"))
     validate_split_arrays(arrays, split_manifest, manifest)
@@ -323,6 +329,7 @@ def run(args) -> None:
                      "trainingSeed": args.training_seed, "batch": args.batch,
                      "epochCap": args.epochs, "patience": args.patience,
                      "device": device, "candidates": len(candidates),
+                     "frozenWinner": args.frozen_winner,
                      "determinism": "fixed NumPy/Torch seeds and matched row permutations; CUDA kernels not asserted bitwise deterministic"},
         "validationCandidates": results,
         "winner": winner,
@@ -348,6 +355,8 @@ def main() -> None:
     parser.add_argument("--reviewed-commit", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--candidates")
+    parser.add_argument("--frozen-winner",
+                        help="tune and refit only this candidate (retrain on another corpus)")
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--threads", type=int, default=8)
     parser.add_argument("--batch", type=int, default=2048)

@@ -178,7 +178,8 @@ def promote(args) -> None:
     base = validate_base_parent(base_parent)
     evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
     winner = evidence["winner"]
-    if winner["candidate"]["name"] != "hp_weight_2" or winner["selectedEpochs"] != 13:
+    if (winner["candidate"]["name"] != _pins.value("combat_transition_attention_hpo_promote.WINNER", "hp_weight_2")
+            or winner["selectedEpochs"] != _pins.value("combat_transition_attention_hpo_promote.WINNER_EPOCHS", 13)):
         raise ValueError("HPO winner metadata differs")
 
     with np.load(prepared_path, allow_pickle=False) as archive:

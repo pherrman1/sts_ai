@@ -16,7 +16,13 @@ def teacher_traces(cache,ambiguous,index):
     return [(dict(initialMask=code&31,consumed=[p for bit,p in enumerate(t.EFFECT_IDS) if (code>>5)&(1<<bit)],outcome='ESCAPE' if cache['escaped'][index] else 'VICTORY'),weight) for code,weight in options.items()]
 
 
-def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False):
+def escape_hp(head,m,z,delta,pre,maximum,bit):
+    return head.probabilities(z,delta,pre,maximum,bit,m.classes)
+
+
+def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False,escape=None):
+    """escape: an escape fit checkpoint (tools/ctm_escape.py). Each draw then samples the
+    escape before HP and conditions HP and the potion trajectory on it."""
     requested_cohort=cohort
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
@@ -27,12 +33,31 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
     if limit is not None:selected=selected[:limit]
     rows=[allrows[i] for i in selected];ids=allids[selected];test=q.subset(test,selected);n=len(rows)
     survival,pd=q.upstream(m,parent,ids,test);rng=np.random.default_rng(q.RECIPE['seed'])
+    head=None
+    if escape is not None:
+        from tools import ctm_escape
+        head=ctm_escape.TorchEscape.load(escape,m.device)
+        eligible_rows=np.asarray([ctm_escape.eligible(r['pre']['potions'],r['pre']['potionCapacity'],bool(b)) for r,b in zip(rows,test['boss'])])
+        p_escape=np.where(eligible_rows,head.probability(test['z']),0.)
+        observed_bit=(test['escaped'].astype(bool)&eligible_rows).astype(np.int64)
     teacher=np.ones((n,6));mixture=np.zeros((n,6));brew_frequency=np.zeros(n);escape_frequency=np.zeros(n);hp_expected=np.zeros(n)
     targets=test['trueHp']-test['preHp']-c.CLASSES[0]
-    exact,_=e.exact_hp_target_probabilities(m,test['z'],pd,test['preHp'],test['preMax'],targets);mixture[:,0]=exact
+    if head is None:exact,_=e.exact_hp_target_probabilities(m,test['z'],pd,test['preHp'],test['preMax'],targets)
+    else:
+        exact=np.zeros(n)
+        for d in range(len(m.delta_values)):
+            for bit,weight in ((0,1-p_escape),(1,p_escape)):
+                for start in range(0,n,512):
+                    sub=np.arange(start,min(start+512,n))
+                    hp=escape_hp(head,m,test['z'][sub],np.full(len(sub),d),test['preHp'][sub],test['preMax'][sub]+m.delta_values[d],np.full(len(sub),bit))
+                    exact[sub]+=pd[sub,d]*weight[sub]*hp[np.arange(len(sub)),targets[sub]]
+    mixture[:,0]=exact
     with torch.inference_mode():
         for start in range(0,n,512):
-            sub=np.arange(start,min(start+512,n));hp=e.hp_prob(m,test['z'][sub],test['delta'][sub],test['preHp'][sub],test['trueMax'][sub]);teacher[sub,0]=hp[np.arange(len(sub)),targets[sub]]
+            sub=np.arange(start,min(start+512,n))
+            if head is None:hp=e.hp_prob(m,test['z'][sub],test['delta'][sub],test['preHp'][sub],test['trueMax'][sub])
+            else:hp=escape_hp(head,m,test['z'][sub],test['delta'][sub],test['preHp'][sub],test['trueMax'][sub],observed_bit[sub])
+            teacher[sub,0]=hp[np.arange(len(sub)),targets[sub]]
             teacher[sub,1]=(-q.te.losses(m.potion_net,cache,graphs,ids[sub],z=test['potionZ'][sub])).exp().cpu().numpy()
             owners=[];traces=[];weights=[]
             for i in sub:
@@ -42,9 +67,15 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
             np.add.at(teacher[:,2:],own,np.asarray(weights)[:,None]*particle['target'])
         for draw in range(q.RECIPE['draws']):
             for start in range(0,n,512):
-                sub=np.arange(start,min(start+512,n));delta=q.pick(pd[sub],rng);maximum=test['preMax'][sub]+m.delta_values[delta];hp=e.hp_prob(m,test['z'][sub],delta,test['preHp'][sub],maximum);ending=test['preHp'][sub]+c.CLASSES[q.pick(hp,rng)];rr=[rows[i] for i in sub]
-                mixture[sub,1]+=(-q.te.losses(m.potion_net,cache,graphs,ids[sub],delta=delta,hp=ending/maximum,z=test['potionZ'][sub])).exp().cpu().numpy()/q.RECIPE['draws']
-                traces=q.s.sample_potions_batch(m.potion_net,test['potionZ'][sub],[r['pre'] for r in rr],delta,ending/maximum,rng,test['boss'][sub]);particle=q.heads(nets,test['z'][sub],rr,ending,maximum,traces,rng,q.subset(test,sub));mixture[sub,2:]+=particle['target']/q.RECIPE['draws']
+                sub=np.arange(start,min(start+512,n));delta=q.pick(pd[sub],rng);maximum=test['preMax'][sub]+m.delta_values[delta];rr=[rows[i] for i in sub];bit=None
+                if head is None:hp=e.hp_prob(m,test['z'][sub],delta,test['preHp'][sub],maximum)
+                else:
+                    bit=(rng.random(len(sub))<p_escape[sub]).astype(np.int64)
+                    hp=escape_hp(head,m,test['z'][sub],delta,test['preHp'][sub],maximum,bit)
+                ending=test['preHp'][sub]+c.CLASSES[q.pick(hp,rng)]
+                if head is None:mixture[sub,1]+=(-q.te.losses(m.potion_net,cache,graphs,ids[sub],delta=delta,hp=ending/maximum,z=test['potionZ'][sub])).exp().cpu().numpy()/q.RECIPE['draws']
+                else:mixture[sub,1]+=t.batch_target_log_probabilities(m.potion_net,q.te.row_graphs(cache,graphs,ids[sub]),test['potionZ'][sub],cache['capacity'][ids[sub]],delta,ending/maximum,cache['boss'][ids[sub]],False,bit).exp().cpu().numpy()/q.RECIPE['draws']
+                traces=q.s.sample_potions_batch(m.potion_net,test['potionZ'][sub],[r['pre'] for r in rr],delta,ending/maximum,rng,test['boss'][sub],bit);particle=q.heads(nets,test['z'][sub],rr,ending,maximum,traces,rng,q.subset(test,sub));mixture[sub,2:]+=particle['target']/q.RECIPE['draws']
                 brew_frequency[sub]+=np.asarray([tr['brewUses']>0 for tr in traces])/q.RECIPE['draws'];escape_frequency[sub]+=np.asarray([tr['outcome']=='ESCAPE' for tr in traces])/q.RECIPE['draws'];hp_expected[sub]+=ending/q.RECIPE['draws']
             print('whole final union exposure',draw+1,flush=True)
     teacher_nll=e.nll(teacher);mixture_nll=e.nll(mixture);gap=mixture_nll-teacher_nll
@@ -70,9 +101,14 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
     def binary_metric(p,y):return dict(rows=len(y),brier=float(np.mean((p-y)**2)),probabilityResolution=1/q.RECIPE['draws'],zeroFrequencyRows=int((p==0).sum()),scope='ancestral Monte Carlo diagnostic, not exact finite target-mass gate')
     brew_target=np.asarray([i in graphs and graphs[i].rounds>0 for i in ids]);metrics=dict(conditionalBrewUse=binary_metric(brew_frequency,brew_target),conditionalEscape=binary_metric(escape_frequency,test['escaped']),sampledHpMeanAbsoluteError=float(np.mean(abs(hp_expected-test['trueHp']))))
     np.savez_compressed(output.with_suffix('.npz'),ids=ids,source=test['source'],teacherNll=teacher_nll,mixtureNll=mixture_nll,exposureGap=gap,brewFrequency=brew_frequency,escapeFrequency=escape_frequency)
+    if head is not None:
+        metrics['escapeHead']=dict(eligibleRows=int(eligible_rows.sum()),**{k:v for k,v in binary_metric(p_escape[eligible_rows],observed_bit[eligible_rows]).items() if k in ('rows','brier')},
+                                   nll=float(-np.mean(np.log(np.where(observed_bit[eligible_rows]==1,p_escape[eligible_rows],1-p_escape[eligible_rows]).clip(1e-12)))),
+                                   unrepresentableEscapes=int((test['escaped'].astype(bool)&~eligible_rows).sum()))
+        bindings=dict(bindings,escapeCheckpoint=c.base.sha256(escape))
     result=dict(finalSupport=final_support,sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,cohort=requested_cohort,recipe=q.RECIPE,bindings=bindings,snapshot=snapshot,components=components,metrics=metrics,rows=n,classification=('FULL_UNION' if requested_cohort=='all' and limit is None else 'SLICE')+'_EXPOSURE_DEVELOPMENT_'+('PASS' if all(passes) else 'FAIL'),supportChanged=False,independentHoldout=False,rowEvidenceSha256=c.base.sha256(output.with_suffix('.npz')))
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke'],default='all');p.add_argument('--final-support',action='store_true');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort,a.final_support)
+    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke'],default='all');p.add_argument('--final-support',action='store_true');p.add_argument('--escape',type=Path,help='escape fit checkpoint (tools/ctm_escape.py)');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort,a.final_support,a.escape)

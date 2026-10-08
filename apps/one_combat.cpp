@@ -3908,8 +3908,20 @@ int main(int argc, char **argv) {
     } else if (mode == "learnedstopteacherselftest") {
         return learnedStopTeacherSelfTest();
     } else if (mode == "ctmscorerows") {
-        if (argc < 4) { std::cerr << "usage: one_combat ctmscorerows ROWS.jsonl OUT.csv\n"; return 2; }
-        return ctmScoreRows(argv[2], argv[3]);
+        if (argc != 4 && argc != 6 && argc != 7) {
+            std::cerr << "usage: one_combat ctmscorerows ROWS.jsonl OUT.csv [FAST.native STANDARD.native [LIZARD=0|1]]\n";
+            return 2;
+        }
+        if (argc == 4) return ctmScoreRows(argv[2], argv[3]);
+        const std::string lizard = argc == 7 ? argv[6] : "1";
+        if (lizard != "0" && lizard != "1") { std::cerr << "ctmscorerows LIZARD must be 0 or 1\n"; return 2; }
+        return ctmScoreRows(argv[2], argv[3], argv[4], argv[5], lizard == "1");
+    } else if (mode == "ctmescapefeatures") {
+        if (argc != 5) {
+            std::cerr << "usage: one_combat ctmescapefeatures ROWS.jsonl MODEL.native OUT_PREFIX\n";
+            return 2;
+        }
+        return ctmEscapeFeatures(argv[2], argv[3], argv[4]);
     } else if (mode == "ctmscoreselftest") {
         return ctmScoreRowsSelfTest();
     } else if (mode == "ooccfaudit") {
