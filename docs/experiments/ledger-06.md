@@ -14839,9 +14839,10 @@ Silver search? Assessment in `/mnt/project-files/silver-synthetic-prior/ASSESSME
   therefore means "closer to 10k at lower budget", not "stronger than 10k".
 - GBM inference cost is not measured here (prior applied at the root only).
 
-**Next:** the pre-registered follow-up is a 32-pair online screen at seeds
-56001000..031: prior + flat 2k vs plain flat 2k, then prior + 2k vs plain
-10k. It needs native GBM inference in the backend and Philipp's go. No Silver
+**Next:** the pre-registered follow-up is a 32-pair online screen: prior +
+flat 2k vs plain flat 2k, then prior + 2k vs plain 10k. It uses seeds
+56003000..031, the range reserved when the corpus was resized (the PREREG copy
+still names the older 56001000..031). It needs native GBM inference in the backend and Philipp's go. No Silver
 change ships before the CTM full retrain lands.
 
 **Evidence:** [packet](evidence/silver_synth_gates_20261008/README.md).
