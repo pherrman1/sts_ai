@@ -14903,3 +14903,47 @@ launch before any seed result, not committed beforehand).
 **Knowledge impact:** `combat-search.md` documents the option. The ledger
 records the negative screen.
 
+## §400 — Synthetic Silver root prior v2: offline replay, no gain at 2k (2026-10-08)
+
+**Question:** after §399, is the prior model the bottleneck? Does a richer
+prior (post-action state features, per-root ranking loss, more rounds, wider
+weight grid) recover more of the visit-share oracle's root-regret gain,
+especially at the 2k budget the online screen used?
+
+**Design:** offline only, on Philipp's request to look further into the model
+training. Same corpus, folds, teacher and replay harness as §397; adds a
+2,000-sim budget. The prior v2 recipe and the weight rule (best validation
+regret at 1,000 sims) were fixed before the test replay. Arms on 4,094 test
+roots x 2 replay seeds: plain, v1 (§397 prior, w = 400), v2 (w = 1600, picked;
+w = 400 secondary), oracle visit shares (w = 400 and 1600).
+
+**Result:** root regret (Silver points; mean, and difference vs plain with 95%
+seed-clustered CI).
+
+| budget | plain | v1 w400 | v2 w1600 | oracle w1600 |
+|---|---|---|---|---|
+| 256 | 2.04 | 1.71 (−0.33 [−0.45, −0.22]) | 1.59 (−0.45 [−0.59, −0.32]) | 0.57 |
+| 1,000 | 1.68 | 1.53 (−0.14 [−0.27, −0.03]) | 1.47 (−0.21 [−0.33, −0.10]) | 0.64 |
+| 2,000 | 1.55 | 1.46 (−0.09 [−0.23, +0.04]) | 1.44 (−0.11 [−0.23, +0.01]) | 0.73 |
+
+- v2 − v1: −0.12 [−0.21, −0.04] at 256, −0.07 [−0.17, +0.05] at 1,000,
+  −0.02 [−0.11, +0.09] at 2,000.
+- Share of the oracle gain captured at 2,000: v1 11%, v2 13%.
+- Fit: top action equals the 10k top action for v1 55.1%, v2 58.5%; a second
+  independent 10k search agrees 75.0%.
+
+**Interpretation:**
+- The richer prior is better only at low budgets. At 2k it ties v1 and neither
+  clearly beats plain, which matches §399.
+- Model fit improved only modestly (55% → 59% against a 75% noise ceiling).
+  Inference: the post-action features and the ranking loss were not the main
+  limit; the GBM on these engine features stays far from the ceiling.
+- The oracle numbers overstate the reachable gain: the oracle's visit shares
+  come from the same 10k searches whose Q values form the teacher.
+- No new online screen is proposed. The v2 recipe stays offline (no native
+  scorer for afterstate features exists).
+
+**Evidence:** [packet](evidence/silver_prior_v2_offline_20261008/README.md).
+
+**Knowledge impact:** the ledger records the result. `silversynthfeatures`
+now writes `after` rows; no maintained KB page describes that row layout.

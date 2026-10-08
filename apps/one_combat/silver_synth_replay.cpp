@@ -8,6 +8,8 @@
 // continuation labels, each root action's child states: the generator's two
 // label children (same keys, so each pairs with its recorded continuation
 // value) and a probe child with four independent SilverRolloutAgent rollouts.
+// Every root action row is followed by an "after" row: the state features of
+// one sampled outcome of that action.
 // Rows are sparse: OUT.nnz (uint32 per row), OUT.idx (uint16 per value),
 // OUT.val (float32 per value) and one OUT.meta.jsonl line per row.
 //
@@ -133,6 +135,11 @@ void featurizeRoot(const nlohmann::json &row, SparseRows &out, std::map<std::str
                 if (s.at("bits").get<std::uint64_t>() == bits[e]) a["visits2"] = s.at("visits");
         }
         out.writeAction(state.bc, edges[e].action, a);
+        // Post-action state (one sampled outcome), for afterstate-based priors.
+        BattleContext after = state.bc;
+        search::seedSearchRng(after, key(rootKey, 11, e));
+        edges[e].action.execute(after);
+        out.writeState(after, {{"k", "after"}, {"e", e}, {"terminal", after.outcome != Outcome::UNDECIDED}});
     }
     ++counts["roots"];
     if (!hasCont) return;
