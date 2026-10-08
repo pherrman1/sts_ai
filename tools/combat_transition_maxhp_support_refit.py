@@ -34,6 +34,8 @@ def run(folder,sha,refit_encoder=False,parent=PARENT):
     ids=np.flatnonzero(eligible&(arrays['y_win']==1))
     if np.any(arrays['delta_index'][ids]<0):raise ValueError('new maxHP target outside frozen class domain')
     torch.set_num_threads(4);m=c.FrozenModels('cuda');z=np.empty((len(ids),64),np.float32)
+    # delta_index indexes the prepared spec's classes; the frozen head must have exactly those classes.
+    if [int(v) for v in spec['maxHpDeltaValues']]!=[int(v) for v in m.delta_values]:raise ValueError('prepared maxHP delta classes differ from the frozen maxHP head')
     with torch.inference_mode():
         for start in range(0,len(ids),512):
             sub=ids[start:start+512];inputs=c.base._torch_inputs(arrays,sub,'cuda',torch,trim_padding=True)

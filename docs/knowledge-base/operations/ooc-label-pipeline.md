@@ -100,6 +100,21 @@ Attention and the DeepSets artifacts:
   [--fast-r] [--brew] [--fairy]` writes the capabilities (and the refitted fast
   r) into a candidate fast artifact's header and prints the manifest entries.
   Path B has few Tail-fired rows: about 46 with Brew and 160 with Fairy.
+- `tools/ctm_candidate.py` turns the plain exports into a loadable research
+  candidate (header-only changes; the payload is copied byte for byte). `stamp
+  --artifact STD0 --candidate-id ID --out STD1` declares the standard artifact a
+  candidate; the standard capabilities (escape, writhing-ritual) follow on STD1.
+  `stamp --artifact FAST0 --control STD --out FAST1` stamps the fast artifact
+  (the non-production `package_deepsets_lizard_artifact.py` output) against the
+  final standard artifact and rewrites both `controlSha256` fields to its
+  SHA256; the fast capabilities and `ctm_lizard extend` follow on FAST1. `manifest
+  --standard STD [--fast FAST] --out M.json` writes the `ctm_research_candidate_v3`
+  manifest from the headers and prints the two environment variables. Without
+  `--fast` it is the interim manifest that `ctmescapefeatures` on STD1 needs; with
+  FAST1 it serves `ctmescapefeatures`/`ctmlizardfeatures` on the fast artifact.
+  It refuses a pair stamped against a different standard artifact and
+  production-promoted inputs; the loader refuses a pair that disagrees on
+  `escape`/`writhingRitual` (CTest `ctm_candidate_tool`).
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
@@ -141,7 +156,10 @@ For the full CTM retrain, `ctm_corpus_adapter.py union --scope-dir SCOPE=DIR
 ... --out DIR` concatenates assembled scopes, in ascending seed order, into one
 corpus for `combat_transition_surrogate.py prepare`. It drops every row that
 the production candidate-contract support predicate rejects (production
-`FrozenModels`), so later near-full caches keep `ids == arange(N)`. Its
+`FrozenModels`), and every winning row whose maxHP gain is not one of the
+frozen maxHP head's delta classes (`max_hp_delta_domain`; the C++ loader pins
+those classes, and Path B has a +14 gain), so later near-full caches keep
+`ids == arange(N)`. Its
 `row_scopes.json` gives each scope's row range, so main-corpus gates can
 exclude forced rows. Two retrain flags reuse production choices instead of
 searching again:
