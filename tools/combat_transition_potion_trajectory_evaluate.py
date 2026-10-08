@@ -95,8 +95,12 @@ def load(folder):
     for file,key in [('cache.npz','cacheSha256'),('graphs.json','graphsSha256'),('special_rows.jsonl','specialRowsSha256')]:
         if c.base.sha256(folder/file)!=meta[key]:raise ValueError('cache differs')
     with np.load(folder/'cache.npz') as raw:cache={k:raw[k] for k in raw.files}
-    graphs={int(i):graph_load(v) for i,v in json.loads((folder/'graphs.json').read_text()).items()}
-    return cache,graphs,meta
+    return cache,load_graphs(folder/'graphs.json'),meta
+
+
+def load_graphs(path):
+    # Under STS_CTM_PINS json_dump adds the ctmPinsSha256 receipt key to this row-id map too.
+    return {int(i):graph_load(v) for i,v in _pins.strip(json.loads(path.read_text())).items()}
 
 
 def row_graphs(cache,graphs,ids):
