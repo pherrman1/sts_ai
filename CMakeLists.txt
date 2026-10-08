@@ -117,6 +117,15 @@ add_test(NAME remove_obtain_weight COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
 set_tests_properties(remove_obtain_weight PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(native_ooc_card_win_rank_test tests/native_ooc_card_win_rank_test.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(native_ooc_card_win_rank_test PRIVATE include json/include apps)
+add_test(NAME native_ooc_card_win_rank COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:native_ooc_card_win_rank_test>)
+set_tests_properties(native_ooc_card_win_rank PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(native_ooc_shop_features_test tests/native_ooc_shop_features_test.cpp
     apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
     apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)

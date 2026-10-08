@@ -1449,3 +1449,28 @@ cards and some specialized cards share weight zero, while upgrades retain
 their base card weight. This is a policy-ranking hypothesis, not an engine
 defect or a dominance argument. The enabled flag enters the effective teacher
 specification; malformed values fail during startup.
+
+### Card reward ranking research candidate
+
+`STS_OOC_CARD_WIN_RANK=1` preserves the public8 floor model's take-versus-skip
+decision at each reached fallback reward state. When that decision is take,
+it ranks the offered cards by the loaded logistic win model using the same
+public8 scenarios and post-link averaging. It introduces no win-probability
+skip threshold. The normal V4 margin gate retains ownership of its decisions;
+the change is restricted to the native card reward fallback invocation.
+
+Startup requires loaded native floor/logistic-win models, public8, finite
+floor skip threshold, margin gating, MCTS off and conflicting card policies
+off. The enabled helper rejects nonfinite returned base values or marginals.
+The enabled flag enters teacher identity. Optional
+`STS_OOC_CARD_WIN_RANK_TRACE=1` records existing predictions and semantic card
+actions without additional evaluations or RNG draws.
+
+This differs from legacy `STS_CARD_WIN`, whose native feature-edit path bypasses
+the public scenario wrapper. That old flag must not be enabled in the controlled
+fair campaign. Neither path models every acquisition effect: offered upgrades,
+eggs and other card-acquisition relics remain existing feature approximations.
+The historical broad win-head comparison (§24) did not confirm a gain; a binary
+win target alone does not establish better current-policy action rankings.
+Per-root take/skip preservation does not imply equal skip counts after
+trajectories diverge. Default-off and other decision families are unchanged.

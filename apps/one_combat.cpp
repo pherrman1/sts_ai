@@ -462,6 +462,7 @@ double g_cardSkipThresh = -0.5;
 // A/B: route card picks through the WIN model (P(win) marginal) instead of V_floor.
 // Own skip scale (win-prob units, ~0..0.05) so g_cardSkipThresh (floor units) doesn't apply.
 bool g_cardWin = false;          // env STS_CARD_WIN=1
+static bool g_nativeCardWinRankTrace = false;
 double g_cardWinSkip = 0.0;      // env STS_CARD_WIN_SKIP: skip iff best P(win) marginal < this
 bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundles by P(win) not V_floor
 bool g_nativeOoc = false;
@@ -972,6 +973,33 @@ double nativeFloorValue(GameContext &gc) {
 
 int nativeFloorCardPick(GameContext &gc, int rIdx) {
     static const PathHistory emptyPath;
+    if (one_combat::inCardRewardFallback() && one_combat::nativeOocCardWinRankEnabled()) {
+        one_combat::NativeCardWinRankTrace trace;
+        const int pick = one_combat::nativeCardWinRankPick(gc,
+            t_curPath ? *t_curPath : emptyPath, g_floorNet, g_winNet,
+            rIdx, g_cardSkipThresh, g_nativeCardWinRankTrace ? &trace : nullptr);
+        if (g_nativeCardWinRankTrace) {
+            nlohmann::json offers = nlohmann::json::array();
+            for (const auto &card : gc.info.rewardsContainer.cardRewards[rIdx])
+                offers.push_back({{"card_id", static_cast<int>(card.getId())},
+                                  {"upgraded", card.isUpgraded()}});
+            const nlohmann::json row = {
+                {"seed", gc.seed}, {"act", gc.act}, {"floor", gc.floorNum},
+                {"reward_index", rIdx}, {"hp", gc.curHp}, {"deck_size", gc.deck.size()},
+                {"offers", offers}, {"baseline_pick", trace.baselinePick},
+                {"chosen_pick", pick}, {"public_futures", trace.scenarioCount},
+                {"baseline_action", trace.baselinePick == 5 ? nlohmann::json("SKIP") : offers.at(trace.baselinePick)},
+                {"chosen_action", pick == 5 ? nlohmann::json("SKIP") : offers.at(pick)},
+                {"floor_base", trace.floorBase}, {"floor_marginals", trace.floorMarginals},
+                {"win_evaluated", trace.winEvaluated},
+                {"win_base", trace.winEvaluated ? nlohmann::json(trace.winBase) : nlohmann::json(nullptr)},
+                {"win_marginals", trace.winMarginals}};
+            static std::mutex traceMutex;
+            std::lock_guard<std::mutex> lock(traceMutex);
+            std::cout << "[card win rank] " << row.dump() << '\n';
+        }
+        return pick;
+    }
     return one_combat::nativeFloorCardPick(gc, t_curPath ? *t_curPath : emptyPath,
                                           g_floorNet, rIdx, g_cardSkipThresh);
 }
@@ -3283,6 +3311,30 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_SKIP_THR")) {        // card-reward skip threshold (marginal V)
         g_cardSkipThresh = std::atof(d);
         std::cout << "[card skip threshold = " << g_cardSkipThresh << "]\n";
+    }
+    try {
+        const bool cardRank = one_combat::nativeOocCardWinRankEnabled();
+        if (const char *raw = std::getenv("STS_OOC_CARD_WIN_RANK_TRACE")) {
+            const std::string value(raw);
+            if (value != "0" && value != "1")
+                throw std::runtime_error("STS_OOC_CARD_WIN_RANK_TRACE must be 0 or 1");
+            g_nativeCardWinRankTrace = value == "1";
+        }
+        if (g_nativeCardWinRankTrace && !cardRank)
+            throw std::runtime_error("STS_OOC_CARD_WIN_RANK_TRACE requires STS_OOC_CARD_WIN_RANK=1");
+        if (cardRank) {
+            if (!g_nativeOoc || !g_floorNet.ok || !g_winNet.ok || !g_winNet.logistic
+                || one_combat::nativeOocPublicFutureCount() != 8
+                || one_combat::liveOocMctsEnabled() || g_oocStrategicGateRegret
+                || g_cardWin || g_cardNN || g_cardAction || g_oocActionNN
+                || g_bossV || g_bossDraft || g_actFightProbeDraft || g_actFightProbeAllOoc
+                || !std::isfinite(g_cardSkipThresh))
+                throw std::runtime_error("STS_OOC_CARD_WIN_RANK requires native loaded floor/logistic-win models, public8, finite floor skip, margin gate, MCTS off and alternate card policies off");
+            std::cout << "[native OOC card win ranking ON; public8 floor take/skip preserved]\n";
+        }
+    } catch (const std::exception &error) {
+        std::cerr << "[native card ranking startup failure] " << error.what() << '\n';
+        return 1;
     }
     one_combat::configureVPathPolicyFromEnvironment();
     if (const char *d = std::getenv("STS_DG_TEMP")) {         // datagen softmax temperature (card marginals)

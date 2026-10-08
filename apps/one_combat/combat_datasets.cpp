@@ -148,6 +148,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["skip_full_hp_rest"] = true;
     if (sts::search::oocRemoveLowObtainWeightEnabled())
         policy["flags"]["remove_low_obtain_weight"] = true;
+    if (one_combat::nativeOocCardWinRankEnabled())
+        policy["flags"]["native_ooc_card_win_rank"] = true;
     return policy;
 }
 

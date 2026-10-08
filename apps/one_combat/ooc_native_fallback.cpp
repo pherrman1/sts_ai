@@ -10,6 +10,7 @@
 #include <random>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
@@ -144,6 +145,12 @@ public:
 
 int nativeOocPublicFutureCount() { return publicFutureCount(); }
 bool nativeOocShopDeckSizeFixEnabled() { return shopDeckSizeFixEnabled(); }
+bool nativeOocCardWinRankEnabled() {
+    const char *value = std::getenv("STS_OOC_CARD_WIN_RANK");
+    if (!value || std::strcmp(value, "0") == 0) return false;
+    if (std::strcmp(value, "1") == 0) return true;
+    throw std::runtime_error("STS_OOC_CARD_WIN_RANK must be 0 or 1");
+}
 std::uint64_t nativeOocPublicScorerCalls() { return publicScorerCalls; }
 void resetNativeOocPublicScorerCalls() { publicScorerCalls = 0; }
 
@@ -174,6 +181,69 @@ int nativeFloorCardPick(sts::GameContext &gc, const PathHistory &path,
         if (marginal > best) { best = marginal; bestIdx = i; }
     }
     return best < skipThreshold ? 5 : bestIdx;
+}
+
+int nativeCardWinRankPick(sts::GameContext &gc, const PathHistory &path,
+                         const CompactTreeNet &floor, const CompactTreeNet &win,
+                         int rewardIndex, double floorSkipThreshold,
+                         NativeCardWinRankTrace *trace) {
+    if (!nativeOocCardWinRankEnabled())
+        return nativeFloorCardPick(gc, path, floor, rewardIndex, floorSkipThreshold);
+    if (publicFutureCount() != 8)
+        throw std::runtime_error("STS_OOC_CARD_WIN_RANK requires STS_OOC_PUBLIC_FUTURES=8");
+    requireModels(floor);
+    requireModels(win);
+    if (!win.logistic)
+        throw std::runtime_error("STS_OOC_CARD_WIN_RANK requires a logistic win model");
+    if (gc.screenState != sts::ScreenState::REWARDS || rewardIndex < 0
+        || rewardIndex >= gc.info.rewardsContainer.cardRewardCount
+        || !std::isfinite(floorSkipThreshold))
+        throw std::runtime_error("STS_OOC_CARD_WIN_RANK invalid reward or floor threshold");
+    if (trace) {
+        *trace = NativeCardWinRankTrace{};
+        trace->scenarioCount = 8;
+    }
+    const auto &idx = richIdxMap();
+    const int dsz = idx.at("deckSize");
+    const auto &reward = gc.info.rewardsContainer.cardRewards[rewardIndex];
+    const auto rank = [&](const CompactTreeNet &model, double *loggedBase,
+                          std::vector<double> *loggedMarginals) {
+        // The same public state/path determines the same scenarios for both
+        // heads. No candidate changes the scenario seed or the source state.
+        const PublicValueScorer scorer(gc, path, model);
+        const auto &base = scorer.base();
+        double best = -1e100; int bestIdx = 5;
+        const double v0 = scorer.predict(base);
+        if (!std::isfinite(v0))
+            throw std::runtime_error("STS_OOC_CARD_WIN_RANK nonfinite base value");
+        if (loggedBase) *loggedBase = v0;
+        for (int i = 0; i < reward.size(); ++i) {
+            auto row = base;
+            const int cid = static_cast<int>(reward[i].getId());
+            const auto it = idx.find("d" + std::to_string(cid));
+            if (it != idx.end()) row[it->second] += 1.0f;
+            row[dsz] += 1.0f;
+            const double marginal = scorer.predict(row) - v0;
+            if (!std::isfinite(marginal))
+                throw std::runtime_error("STS_OOC_CARD_WIN_RANK nonfinite card marginal");
+            if (loggedMarginals) loggedMarginals->push_back(marginal);
+            if (marginal > best) { best = marginal; bestIdx = i; }
+        }
+        return std::make_pair(bestIdx, best);
+    };
+    const auto baseline = rank(floor, trace ? &trace->floorBase : nullptr,
+                               trace ? &trace->floorMarginals : nullptr);
+    const int floorPick = baseline.second < floorSkipThreshold ? 5 : baseline.first;
+    if (trace) trace->baselinePick = trace->chosenPick = floorPick;
+    if (floorPick == 5) return 5;
+    const auto ranked = rank(win, trace ? &trace->winBase : nullptr,
+                             trace ? &trace->winMarginals : nullptr);
+    if (trace) {
+        trace->winEvaluated = true;
+        trace->chosenPick = ranked.first;
+    }
+    // No win-probability skip threshold: floor already made that decision.
+    return ranked.first;
 }
 
 std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
