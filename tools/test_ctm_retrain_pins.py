@@ -191,5 +191,17 @@ class TestCtmRetrainPins(unittest.TestCase):
                 staged.check(d / "pins-6.json", d / "pins-3.json")
 
 
+    def test_trajectory_graphs_load_past_the_pins_receipt(self):
+        # json_dump stamps every dict under pins, including the row-id map graphs.json.
+        from tools import combat_transition_potion_trajectory_evaluate as trajectory
+        graph = dict(inventories=[[1, 0, 0, 0, 0]], edges=[[0, 0, 1]], target_edges=[[0, 1]],
+                     generation_log_prior=-1.5, rounds=1)
+        with tempfile.TemporaryDirectory() as d:
+            path = write(Path(d) / "graphs.json", {"7": graph, "ctmPinsSha256": "0" * 64})
+            graphs = trajectory.load_graphs(path)
+        self.assertEqual(list(graphs), [7])
+        self.assertEqual(graphs[7].rounds, 1)
+
+
 if __name__ == "__main__":
     unittest.main()
