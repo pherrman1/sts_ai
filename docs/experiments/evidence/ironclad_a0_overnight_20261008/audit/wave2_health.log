@@ -1,0 +1,76 @@
+{
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "output": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave2_health.json",
+  "sha256": "988730be909c1d60800d9a1e1a566bae5889cc5c0c9bbec725acb7225332f673",
+  "arms": {
+    "Fprod": {
+      "roots": 56391,
+      "completed_simulations": 236367750,
+      "singleton_skips": 2470,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 405,
+      "rollout_calls": 202613182,
+      "nonterminal_rollout_starts": 197970039,
+      "endpoints": {
+        "victory": 227861086,
+        "death": 8506660,
+        "turn_limit": 0,
+        "engine_stop": 4,
+        "nonterminal": 0
+      }
+    },
+    "RestOff": {
+      "roots": 54427,
+      "completed_simulations": 230038750,
+      "singleton_skips": 2461,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 406,
+      "rollout_calls": 196771780,
+      "nonterminal_rollout_starts": 192053772,
+      "endpoints": {
+        "victory": 221262562,
+        "death": 8776188,
+        "turn_limit": 0,
+        "engine_stop": 0,
+        "nonterminal": 0
+      }
+    },
+    "ShopFix": {
+      "roots": 55768,
+      "completed_simulations": 233285250,
+      "singleton_skips": 2454,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 457,
+      "rollout_calls": 199621378,
+      "nonterminal_rollout_starts": 194988155,
+      "endpoints": {
+        "victory": 224566945,
+        "death": 8718301,
+        "turn_limit": 0,
+        "engine_stop": 4,
+        "nonterminal": 0
+      }
+    },
+    "RestShop": {
+      "roots": 53928,
+      "completed_simulations": 227322500,
+      "singleton_skips": 2438,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 466,
+      "rollout_calls": 194278580,
+      "nonterminal_rollout_starts": 189554286,
+      "endpoints": {
+        "victory": 218252268,
+        "death": 9070232,
+        "turn_limit": 0,
+        "engine_stop": 0,
+        "nonterminal": 0
+      }
+    }
+  },
+  "fatal_findings": 0
+}

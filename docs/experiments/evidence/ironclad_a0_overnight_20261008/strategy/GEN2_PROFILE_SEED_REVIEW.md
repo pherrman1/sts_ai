@@ -1,0 +1,13 @@
+# Independent GEN2 profile seed-custody correction review
+
+Source review **PASS** for `learning/verify_gen2.py` SHA256 `8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa`. This fixes a verifier assumption, not the frozen producer, teacher, sampled futures or selection/evaluation allocation. The original verifier remains as `learning/verify_gen2_v1.py`, SHA256 `12443d83e12b33a6344005f0c5df1c3ab6fa0eed406cfd31669de81958de7ae1`; preserve its failed receipt.
+
+The producer derives `futureSeed` from the first 16 hexadecimal SHA256 digits of `ooc-cf-pilot-v2-future:<sourceSeed>:<decisionIdx>:<k>`, constructs `std::mt19937_64(futureSeed)`, and calls `resampleCounterfactualFuture`. Its first operation, `sampleNoncombatFuture` assigning `gc.seed = rng()`, changes the seed that subsequent combat profile rows record. `NativeSilverBackend` records this actual `gc.seed`; it does not record the original source identifier after the redraw. Therefore requiring every profile row to equal the source seed incorrectly rejects valid sampled continuations.
+
+The repaired verifier computes only the original source seed and first generator outputs for the frozen k range and hash-verified retained option decision IDs. Membership is exact, does not depend on outcomes, and rejects unrelated seeds. Original-source profile coverage is additionally required. The existing adaptive/error/nonnegative-budget checks and all other teacher, binary, output, sibling and future-coupling gates remain in place. The Python implementation follows the 64-bit generator's first twist and tempering operations, including unsigned masking. The author supplied four independently compiled standard-library vectors and five focused tests; source inspection found those fixtures meaningful. Test source SHA256: `dfbf85b967506af9a178bda5cfe8ea41c1a01b50cc35fee72902cff1dcaf4cc0`.
+
+This membership check cannot attribute profile coverage to each sibling branch because the profile contains no branch-ID tag. The new receipt explicitly states that limitation; membership is not promoted into per-branch coverage evidence. Source and teacher binding still supply the configured continuation-policy claim.
+
+The reviewer read source, diffs and synthetic-test receipts only. No numerical labels, new verifier invocation, game or build was opened/executed. The downstream analyzer must pin this reviewed verifier SHA and the resulting fresh contract receipt before action selection; an old failure receipt must not be overwritten or relabeled.
+
+Knowledge impact: experimental provenance repair and review evidence only; no runtime implementation or production-default change.

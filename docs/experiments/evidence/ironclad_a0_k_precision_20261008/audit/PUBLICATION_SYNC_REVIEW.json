@@ -1,0 +1,77 @@
+{
+  "schema": "publication_merge_source_custody_review_v1",
+  "status": "PASS_SOURCE_UNION_AND_RETAINED_CUSTODY",
+  "reviewed_at_utc": "2026-10-08T11:33:38.073344+00:00",
+  "publication_root": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "collection_root": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "collection_snapshot": "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+  "incoming_main": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "reviewed_inputs": {
+    "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/PUBLICATION_SYNC_REVIEW_inputs.json",
+    "sha256": "40023fc8ba7c92c2e0d162839cf4a705cb5985b721ff394dfd51c67b6397b736"
+  },
+  "checks": {
+    "source_union_files_exact": 21,
+    "backend_resolution": "Exact ordered concatenation of both conflict sides: tracePublicAction then optional root observer under KnowledgeObserverSuspension; profile and chosen-action commit remain after both.",
+    "no_additional_source_resolution_changes": true,
+    "collection_clean_detached": true,
+    "frozen_artifacts_rehashed": 21,
+    "freeze_root_still_collection": true,
+    "freeze_copy_bytes_identical": true,
+    "old_four_closed_hashes_unchanged": {
+      "champion_freeze.json": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+      "holdout_opened.json": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e",
+      "final_confirmation_report.json": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+      "campaign_result.json": "0f362274d9b2f7af6db8b30fa05d37ce10a390adfe741a795888e4abce007812"
+    },
+    "immutable_binary_hashes_unchanged": {
+      "build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+      "build/overnight_20261008/binaries/removal-d35b42b1/one_combat": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5"
+    },
+    "publication_seed_guard_sha256": "4506d4495283d5b59c037e5f95d2299af39d54db07e8a2300c6135ced9271ca6",
+    "collection_seed_guard_sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+    "committed_source_hashes_match_reviewed21": true
+  },
+  "source_reasoning": [
+    "Public capture remains before any diagnostic observer work and sees the original live state/knowledge/chosen action.",
+    "The incoming observer receives const views; its documented copying contract and KnowledgeObserverSuspension isolate extra observed simulation knowledge. No enabled-combination runtime test was performed in this review.",
+    "The observer and leaf pointer default empty/null; the prior weight defaults0. Existing source path retains original action/RNG arithmetic in that configuration. This is a source inference, not measured gameplay parity or cost neutrality.",
+    "CMake, app mode declarations/dispatch, added synthetic translation units and shared search types match the virtual union.",
+    "The collection freeze resolves all paths to the retained original checkout; publication guard changes do not alter executed/frozen collection artifacts."
+  ],
+  "recommended_focused_verification": {
+    "build_targets": [
+      "one_combat",
+      "unit-test",
+      "silver-public-pair-probe"
+    ],
+    "ctest": [
+      "silver_searcher",
+      "silver_wire_state",
+      "silver_semantic_action",
+      "combat_knowledge",
+      "e2c_observer_scope"
+    ],
+    "optional_zero_search_check": "Newly built publication silver_public_pair_probe SPEC check may test hydration/one-step interface only; preserve as new integration evidence, never overwrite original Champ receipt.",
+    "seed_guard": "Guard-only positive/zero/negative synthetic mode count check and existing seed-guard unit tests; no generated seeds."
+  },
+  "pending": [
+    "Merged-source focused build/tests by coordinator or learning.",
+    "Final handoff claim/packaging review after integration receipts and final source commit."
+  ],
+  "limitations": [
+    "No games, efficacy analysis, source edits, commits or test execution by this reviewer.",
+    "No files written in collection checkout after its snapshot; audit outputs only in publication checkout.",
+    "No inference that publication runtime inherits immutable3ed conditional evidence or d35 win-rate confirmation.",
+    "No review of incoming synthetic research efficacy and no permission to merge PR or change defaults."
+  ],
+  "publication_merge_commit": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "publication_merge_parents": [
+    "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+    "75733c4544b03212ef2159106d206cfc6ff9cbab"
+  ],
+  "collection_custody_receipt": {
+    "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/COLLECTION_CUSTODY.json",
+    "sha256": "3158c34d15c251e3d1a1097c34384ae5666af4774cac1bc07dcac99b871b5025"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "schema": "wave3_development_launch_review_v1",
+  "status": "PASS",
+  "reviewer": "learning",
+  "reviewed_epoch": 1791424371.3565648,
+  "manifest_sha256": "4a3f54d11183d5a864fec8a0ac5f37d4e3a90a0a4b33a46da8fd83f74c46e705",
+  "source_sha": "b229f3ff2443b0decaacaa762d2a0c429f7e9d47",
+  "binary_sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a",
+  "checks": {
+    "manifest_schema": true,
+    "all_hashes_rechecked": true,
+    "same_source_models_profiles_as_discovery": true,
+    "advance_rule_trigger_verified": true,
+    "exact_source_allocation_610082128_to_610082255": true,
+    "analysis_allowed_seed_sets_equal": true,
+    "exact_three_arms": true,
+    "queueA_48shards_192runs": true,
+    "queueB_48shards_192runs": true,
+    "unique_prefixes_96": true,
+    "complete_unique_arm_source_pairs_384": true,
+    "no_prior_bestbench_receipt_seed_overlap_at_review": true,
+    "no_existing_job_outputs_at_review": true,
+    "no_confirmation_sources": true
+  },
+  "budget": {
+    "queue_max_workers_each": 1,
+    "queue_wall_cap_seconds": 7200,
+    "shard_timeout_seconds": 1800,
+    "global_total_elapsed_cap_seconds": 10800,
+    "latest_experiment_start_local": "2026-10-08 04:15 Europe/Berlin",
+    "absolute_hard_stop_local": "2026-10-08 07:15 Europe/Berlin",
+    "global_campaign_game_process_max": 6,
+    "required_outer_timeout": "For each queue, min(7200 seconds, experiment A-start+10800-now, absolute07:15-now). B does not reset the3h experiment clock. Process-group cleanup required on timeout.",
+    "queueB_dependency": "Removal discovery queue fully completed; sequencing resource-only."
+  },
+  "statistical_scope": "Fixed fresh128 development. All384 valid runs required for clean nomination; no pooling, replacement, extension or combination. Most wins strictly above Fprod; tieFullHp thenShopOff. Nomination only, final512 confirmation remains unopened.",
+  "job_lists": {
+    "A": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development_A_jobs.txt",
+      "sha256": "80047a84ea603113c4fbab31982672ecd9d4a5cd3c8968ba85f9372dafde49a7"
+    },
+    "B": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development_B_jobs.txt",
+      "sha256": "2777bc5e79eb3297e125faf3f6dbf7c5f7fc8f6ce8a0bf9b498300a04822586d"
+    }
+  },
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave3_development.json",
+      "sha256": "4a3f54d11183d5a864fec8a0ac5f37d4e3a90a0a4b33a46da8fd83f74c46e705"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave3_development.md",
+      "sha256": "7308bfe689051ac117d397625a1882295f0ebab2b70a5daf72be222a75f43af0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/fullhp-b229f3ff/one_combat",
+      "sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave.py",
+      "sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py",
+      "sha256": "fa4b556c0c8ce4f662cc9755725f8b318962c4be9090e6e85307a0537f360ceb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_report.json",
+      "sha256": "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave3.json",
+      "sha256": "f53adbb625f4268896a4187252348d0eacb31acf77a8b485dcfe7e73724ae0fa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/full-hp-rest-source-review.md",
+      "sha256": "06bd2531247ec002fd3931173524acd1a4dad83110284390fce24495081efb2f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/fullhp_canary_validation.json",
+      "sha256": "77255f8c4eedc57350a4f5d064279307a0e45b2a74a767538ca8092ca14c88d4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/fullhp_canary_independent_review.json",
+      "sha256": "48cb6c5adfd9dd2e38a8c9cd8e396018d33d749dc2606403e0e743d7bead3984"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development_A_jobs.txt",
+      "sha256": "80047a84ea603113c4fbab31982672ecd9d4a5cd3c8968ba85f9372dafde49a7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development_B_jobs.txt",
+      "sha256": "2777bc5e79eb3297e125faf3f6dbf7c5f7fc8f6ce8a0bf9b498300a04822586d"
+    }
+  ],
+  "game_jobs_started_by_reviewer": 0
+}

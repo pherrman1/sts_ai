@@ -1,0 +1,1149 @@
+{
+  "schema": "completed_report_presentation_v1",
+  "created_utc": "2026-10-08T03:02:44.039846+00:00",
+  "rendering_script_sha256": "9ae16cf419d6da8acbad62287db24da437148b3e5c7945ecad17a0b1fdf9a173",
+  "final_report_included": false,
+  "full_run_reports": [
+    {
+      "label": "W1",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave1_report.json",
+        "sha256": "ca81039a2c73299f971d28a9d7819cf635d159e320f2bdbb0bd3736e1f52396d",
+        "bytes": 162241
+      },
+      "phase": "discovery",
+      "source_sha": "736d1ff7e61725d9c6a50326064b2e3060ce6ae4",
+      "binary_sha256": "3f69f5fd251ac699580bca8eb8da707282c77bc5263732f10e83f8e2670aba2d",
+      "manifest_sha256": "977d8335b4b4f287a7efb1c8318c4bc930fc2866674ab7ae8348b26ed0a11ec4",
+      "analysis_script_sha256": "1c6c8995b601c06a1cc90310929378730d24c3f0886c5c7983cda3df57b59fd1",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 32,
+          "wins": 25,
+          "win_rate": 0.78125,
+          "win_rate_wilson95": [
+            0.6124500635075647,
+            0.8897616374739581
+          ],
+          "mean_floor": 48.0625,
+          "run_seconds_sum": 434.90306,
+          "process_wall_seconds_sum": 436.35577477005427,
+          "public_scorer_calls": 684,
+          "observed_profile_thread_cpu_seconds_sum": 434.71614190799977,
+          "observed_profile_thread_cpu_rows": 1604
+        },
+        "Fflat": {
+          "n": 32,
+          "wins": 26,
+          "win_rate": 0.8125,
+          "win_rate_wilson95": [
+            0.6469084479862404,
+            0.9111045531043405
+          ],
+          "mean_floor": 47.53125,
+          "run_seconds_sum": 991.66304,
+          "process_wall_seconds_sum": 993.016477261961,
+          "public_scorer_calls": 686,
+          "observed_profile_thread_cpu_seconds_sum": 991.2587182449993,
+          "observed_profile_thread_cpu_rows": 1586
+        },
+        "ShopFix": {
+          "n": 32,
+          "wins": 27,
+          "win_rate": 0.84375,
+          "win_rate_wilson95": [
+            0.682458504024696,
+            0.9313557971749429
+          ],
+          "mean_floor": 48.65625,
+          "run_seconds_sum": 449.25878,
+          "process_wall_seconds_sum": 450.680748357001,
+          "public_scorer_calls": 702,
+          "observed_profile_thread_cpu_seconds_sum": 449.01036161499957,
+          "observed_profile_thread_cpu_rows": 1622
+        },
+        "RestOff": {
+          "n": 32,
+          "wins": 28,
+          "win_rate": 0.875,
+          "win_rate_wilson95": [
+            0.7193169451834978,
+            0.9502986561251991
+          ],
+          "mean_floor": 49.125,
+          "run_seconds_sum": 444.78149,
+          "process_wall_seconds_sum": 446.255200073967,
+          "public_scorer_calls": 713,
+          "observed_profile_thread_cpu_seconds_sum": 444.5117242219998,
+          "observed_profile_thread_cpu_rows": 1637
+        },
+        "BossOff": {
+          "n": 32,
+          "wins": 24,
+          "win_rate": 0.75,
+          "win_rate_wilson95": [
+            0.5789344100575552,
+            0.8674759908149096
+          ],
+          "mean_floor": 48.03125,
+          "run_seconds_sum": 424.07502,
+          "process_wall_seconds_sum": 425.4573768770206,
+          "public_scorer_calls": 670,
+          "observed_profile_thread_cpu_seconds_sum": 423.8435792470001,
+          "observed_profile_thread_cpu_rows": 1604
+        },
+        "SkipZero": {
+          "n": 32,
+          "wins": 25,
+          "win_rate": 0.78125,
+          "win_rate_wilson95": [
+            0.6124500635075647,
+            0.8897616374739581
+          ],
+          "mean_floor": 47.9375,
+          "run_seconds_sum": 386.93357,
+          "process_wall_seconds_sum": 388.3711874540604,
+          "public_scorer_calls": 687,
+          "observed_profile_thread_cpu_seconds_sum": 386.6988745880001,
+          "observed_profile_thread_cpu_rows": 1601
+        },
+        "ShopOff": {
+          "n": 32,
+          "wins": 27,
+          "win_rate": 0.84375,
+          "win_rate_wilson95": [
+            0.682458504024696,
+            0.9313557971749429
+          ],
+          "mean_floor": 50.3125,
+          "run_seconds_sum": 458.64944,
+          "process_wall_seconds_sum": 460.1214093329909,
+          "public_scorer_calls": 917,
+          "observed_profile_thread_cpu_seconds_sum": 458.5117846389999,
+          "observed_profile_thread_cpu_rows": 1678
+        },
+        "FinalBinary": {
+          "n": 32,
+          "wins": 26,
+          "win_rate": 0.8125,
+          "win_rate_wilson95": [
+            0.6469084479862404,
+            0.9111045531043405
+          ],
+          "mean_floor": 47.53125,
+          "run_seconds_sum": 1017.08979,
+          "process_wall_seconds_sum": 1018.5213493890187,
+          "public_scorer_calls": 686,
+          "observed_profile_thread_cpu_seconds_sum": 1016.6579568939994,
+          "observed_profile_thread_cpu_rows": 1586
+        }
+      },
+      "comparisons": [
+        {
+          "name": "Fflat-Fprod",
+          "candidate": "Fflat",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.03125,
+          "ci95": [
+            -0.125,
+            0.1875
+          ],
+          "candidate_only": 4,
+          "control_only": 3,
+          "both_win": 22,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "ShopFix-Fprod",
+          "candidate": "ShopFix",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.0625,
+          "ci95": [
+            0.0,
+            0.15625
+          ],
+          "candidate_only": 2,
+          "control_only": 0,
+          "both_win": 25,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "RestOff-Fprod",
+          "candidate": "RestOff",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.09375,
+          "ci95": [
+            -0.03125,
+            0.21875
+          ],
+          "candidate_only": 4,
+          "control_only": 1,
+          "both_win": 24,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "BossOff-Fprod",
+          "candidate": "BossOff",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": -0.03125,
+          "ci95": [
+            -0.15625,
+            0.0625
+          ],
+          "candidate_only": 1,
+          "control_only": 2,
+          "both_win": 23,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "SkipZero-Fprod",
+          "candidate": "SkipZero",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.0,
+          "ci95": [
+            -0.1875,
+            0.1875
+          ],
+          "candidate_only": 5,
+          "control_only": 5,
+          "both_win": 20,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "ShopOff-Fprod",
+          "candidate": "ShopOff",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.0625,
+          "ci95": [
+            -0.0625,
+            0.1875
+          ],
+          "candidate_only": 3,
+          "control_only": 1,
+          "both_win": 24,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "FinalBinary-Fprod",
+          "candidate": "FinalBinary",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.03125,
+          "ci95": [
+            -0.125,
+            0.1875
+          ],
+          "candidate_only": 4,
+          "control_only": 3,
+          "both_win": 22,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "FinalBinary-Fflat",
+          "candidate": "FinalBinary",
+          "control": "Fflat",
+          "pairs": 32,
+          "gain": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "candidate_only": 0,
+          "control_only": 0,
+          "both_win": 26,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    },
+    {
+      "label": "W2",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave2_report.json",
+        "sha256": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405",
+        "bytes": 281074
+      },
+      "phase": "development",
+      "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+      "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+      "manifest_sha256": "397247867ef2097865c9dc008ee84de3e1aa4ab9af865012ff520c1e4ff773b3",
+      "analysis_script_sha256": "d89803f0be7197b57bd0c11c66fd5d2448d35c38fe85877777d45ff08e4be9f2",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 128,
+          "wins": 101,
+          "win_rate": 0.7890625,
+          "win_rate_wilson95": [
+            0.7104932846593583,
+            0.8507869124950196
+          ],
+          "mean_floor": 48.3515625,
+          "run_seconds_sum": 1614.682574,
+          "process_wall_seconds_sum": 1620.212569451076,
+          "public_scorer_calls": 2813,
+          "observed_profile_thread_cpu_seconds_sum": 1614.1915502399997,
+          "observed_profile_thread_cpu_rows": 6458
+        },
+        "RestOff": {
+          "n": 128,
+          "wins": 97,
+          "win_rate": 0.7578125,
+          "win_rate_wilson95": [
+            0.6767886369138937,
+            0.8238126200075785
+          ],
+          "mean_floor": 47.578125,
+          "run_seconds_sum": 1533.533659,
+          "process_wall_seconds_sum": 1539.205068748066,
+          "public_scorer_calls": 2823,
+          "observed_profile_thread_cpu_seconds_sum": 1533.0993851129992,
+          "observed_profile_thread_cpu_rows": 6356
+        },
+        "ShopFix": {
+          "n": 128,
+          "wins": 99,
+          "win_rate": 0.7734375,
+          "win_rate_wilson95": [
+            0.6935732116243923,
+            0.8373675154135328
+          ],
+          "mean_floor": 48.234375,
+          "run_seconds_sum": 1576.289478,
+          "process_wall_seconds_sum": 1581.8137125359208,
+          "public_scorer_calls": 2835,
+          "observed_profile_thread_cpu_seconds_sum": 1575.8195224279973,
+          "observed_profile_thread_cpu_rows": 6444
+        },
+        "RestShop": {
+          "n": 128,
+          "wins": 91,
+          "win_rate": 0.7109375,
+          "win_rate_wilson95": [
+            0.6271668442501395,
+            0.7824160023219742
+          ],
+          "mean_floor": 47.2109375,
+          "run_seconds_sum": 1507.398635,
+          "process_wall_seconds_sum": 1512.8385858930997,
+          "public_scorer_calls": 2831,
+          "observed_profile_thread_cpu_seconds_sum": 1506.9542006329991,
+          "observed_profile_thread_cpu_rows": 6312
+        }
+      },
+      "comparisons": [
+        {
+          "name": "RestOff-Fprod",
+          "candidate": "RestOff",
+          "control": "Fprod",
+          "pairs": 128,
+          "gain": -0.03125,
+          "ci95": [
+            -0.1015625,
+            0.046875
+          ],
+          "candidate_only": 10,
+          "control_only": 14,
+          "both_win": 87,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "ShopFix-Fprod",
+          "candidate": "ShopFix",
+          "control": "Fprod",
+          "pairs": 128,
+          "gain": -0.015625,
+          "ci95": [
+            -0.046875,
+            0.015625
+          ],
+          "candidate_only": 1,
+          "control_only": 3,
+          "both_win": 98,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "RestShop-Fprod",
+          "candidate": "RestShop",
+          "control": "Fprod",
+          "pairs": 128,
+          "gain": -0.078125,
+          "ci95": [
+            -0.1640625,
+            0.0078125
+          ],
+          "candidate_only": 10,
+          "control_only": 20,
+          "both_win": 81,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "RestShop-RestOff",
+          "candidate": "RestShop",
+          "control": "RestOff",
+          "pairs": 128,
+          "gain": -0.046875,
+          "ci95": [
+            -0.09375,
+            0.0
+          ],
+          "candidate_only": 2,
+          "control_only": 8,
+          "both_win": 89,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "RestShop-ShopFix",
+          "candidate": "RestShop",
+          "control": "ShopFix",
+          "pairs": 128,
+          "gain": -0.0625,
+          "ci95": [
+            -0.140625,
+            0.015625
+          ],
+          "candidate_only": 9,
+          "control_only": 17,
+          "both_win": 82,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    },
+    {
+      "label": "W3 screen",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_report.json",
+        "sha256": "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67",
+        "bytes": 54296
+      },
+      "phase": "discovery",
+      "source_sha": "b229f3ff2443b0decaacaa762d2a0c429f7e9d47",
+      "binary_sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a",
+      "manifest_sha256": "f53adbb625f4268896a4187252348d0eacb31acf77a8b485dcfe7e73724ae0fa",
+      "analysis_script_sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 32,
+          "wins": 26,
+          "win_rate": 0.8125,
+          "win_rate_wilson95": [
+            0.6469084479862404,
+            0.9111045531043405
+          ],
+          "mean_floor": 48.09375,
+          "run_seconds_sum": 437.25054,
+          "process_wall_seconds_sum": 438.70084791697445,
+          "public_scorer_calls": 687,
+          "observed_profile_thread_cpu_seconds_sum": 437.03194705299944,
+          "observed_profile_thread_cpu_rows": 1604
+        },
+        "FullHp": {
+          "n": 32,
+          "wins": 27,
+          "win_rate": 0.84375,
+          "win_rate_wilson95": [
+            0.682458504024696,
+            0.9313557971749429
+          ],
+          "mean_floor": 48.125,
+          "run_seconds_sum": 435.6915,
+          "process_wall_seconds_sum": 437.17626487705274,
+          "public_scorer_calls": 663,
+          "observed_profile_thread_cpu_seconds_sum": 435.4423313800009,
+          "observed_profile_thread_cpu_rows": 1604
+        },
+        "ShopOff": {
+          "n": 32,
+          "wins": 27,
+          "win_rate": 0.84375,
+          "win_rate_wilson95": [
+            0.682458504024696,
+            0.9313557971749429
+          ],
+          "mean_floor": 50.78125,
+          "run_seconds_sum": 468.84128,
+          "process_wall_seconds_sum": 470.2739143730141,
+          "public_scorer_calls": 939,
+          "observed_profile_thread_cpu_seconds_sum": 468.63309665000054,
+          "observed_profile_thread_cpu_rows": 1694
+        }
+      },
+      "comparisons": [
+        {
+          "name": "FullHp-Fprod",
+          "candidate": "FullHp",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.03125,
+          "ci95": [
+            0.0,
+            0.09375
+          ],
+          "candidate_only": 1,
+          "control_only": 0,
+          "both_win": 26,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "ShopOff-Fprod",
+          "candidate": "ShopOff",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.03125,
+          "ci95": [
+            -0.09375,
+            0.15625
+          ],
+          "candidate_only": 3,
+          "control_only": 2,
+          "both_win": 24,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    },
+    {
+      "label": "W3 development",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_development_report.json",
+        "sha256": "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723",
+        "bytes": 219174
+      },
+      "phase": "development",
+      "source_sha": "b229f3ff2443b0decaacaa762d2a0c429f7e9d47",
+      "binary_sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a",
+      "manifest_sha256": "4a3f54d11183d5a864fec8a0ac5f37d4e3a90a0a4b33a46da8fd83f74c46e705",
+      "analysis_script_sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 128,
+          "wins": 101,
+          "win_rate": 0.7890625,
+          "win_rate_wilson95": [
+            0.7104932846593583,
+            0.8507869124950196
+          ],
+          "mean_floor": 48.5859375,
+          "run_seconds_sum": 1727.71711,
+          "process_wall_seconds_sum": 1733.5736055471061,
+          "public_scorer_calls": 2860,
+          "observed_profile_thread_cpu_seconds_sum": 1727.1711890109998,
+          "observed_profile_thread_cpu_rows": 6488
+        },
+        "FullHp": {
+          "n": 128,
+          "wins": 102,
+          "win_rate": 0.796875,
+          "win_rate_wilson95": [
+            0.7190073141485271,
+            0.8574426180640773
+          ],
+          "mean_floor": 48.546875,
+          "run_seconds_sum": 1730.54659,
+          "process_wall_seconds_sum": 1736.2422668419895,
+          "public_scorer_calls": 2842,
+          "observed_profile_thread_cpu_seconds_sum": 1729.2060724100095,
+          "observed_profile_thread_cpu_rows": 6481
+        },
+        "ShopOff": {
+          "n": 128,
+          "wins": 102,
+          "win_rate": 0.796875,
+          "win_rate_wilson95": [
+            0.7190073141485271,
+            0.8574426180640773
+          ],
+          "mean_floor": 48.234375,
+          "run_seconds_sum": 1677.22497,
+          "process_wall_seconds_sum": 1683.0486418480868,
+          "public_scorer_calls": 3542,
+          "observed_profile_thread_cpu_seconds_sum": 1676.5399733880022,
+          "observed_profile_thread_cpu_rows": 6442
+        }
+      },
+      "comparisons": [
+        {
+          "name": "FullHp-Fprod",
+          "candidate": "FullHp",
+          "control": "Fprod",
+          "pairs": 128,
+          "gain": 0.0078125,
+          "ci95": [
+            -0.03125,
+            0.046875
+          ],
+          "candidate_only": 4,
+          "control_only": 3,
+          "both_win": 98,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "ShopOff-Fprod",
+          "candidate": "ShopOff",
+          "control": "Fprod",
+          "pairs": 128,
+          "gain": 0.0078125,
+          "ci95": [
+            -0.0546875,
+            0.078125
+          ],
+          "candidate_only": 10,
+          "control_only": 9,
+          "both_win": 92,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    },
+    {
+      "label": "Removal screen",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave4_removal_report.json",
+        "sha256": "f405de50965522e4cee17cb103a22688ad663f2d2cf8f3c5372439cd44fbf0fd",
+        "bytes": 37522
+      },
+      "phase": "discovery",
+      "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+      "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+      "manifest_sha256": "1aca03326eedcd5cf4dfa3790da3f1e84f7dbc580e11a07070c7c4b4b497d2a2",
+      "analysis_script_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 32,
+          "wins": 26,
+          "win_rate": 0.8125,
+          "win_rate_wilson95": [
+            0.6469084479862404,
+            0.9111045531043405
+          ],
+          "mean_floor": 48.09375,
+          "run_seconds_sum": 460.36723,
+          "process_wall_seconds_sum": 461.9452801179432,
+          "public_scorer_calls": 687,
+          "observed_profile_thread_cpu_seconds_sum": 459.74363792899976,
+          "observed_profile_thread_cpu_rows": 1604
+        },
+        "RemoveLow": {
+          "n": 32,
+          "wins": 27,
+          "win_rate": 0.84375,
+          "win_rate_wilson95": [
+            0.682458504024696,
+            0.9313557971749429
+          ],
+          "mean_floor": 48.1875,
+          "run_seconds_sum": 478.83836,
+          "process_wall_seconds_sum": 480.4874784510175,
+          "public_scorer_calls": 707,
+          "observed_profile_thread_cpu_seconds_sum": 478.6380920109994,
+          "observed_profile_thread_cpu_rows": 1606
+        }
+      },
+      "comparisons": [
+        {
+          "name": "RemoveLow-Fprod",
+          "candidate": "RemoveLow",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": 0.03125,
+          "ci95": [
+            0.0,
+            0.09375
+          ],
+          "candidate_only": 1,
+          "control_only": 0,
+          "both_win": 26,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    },
+    {
+      "label": "Removal development",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/removal_development_report.json",
+        "sha256": "91afa7dc02117114b75206fc07f7a77532146a0bff6948e44a996637bd6d10df",
+        "bytes": 147823
+      },
+      "phase": "development",
+      "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+      "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+      "manifest_sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de",
+      "analysis_script_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 128,
+          "wins": 104,
+          "win_rate": 0.8125,
+          "win_rate_wilson95": [
+            0.7361508192928257,
+            0.8706385830362315
+          ],
+          "mean_floor": 49.53125,
+          "run_seconds_sum": 1672.17725,
+          "process_wall_seconds_sum": 1677.9373958501092,
+          "public_scorer_calls": 2885,
+          "observed_profile_thread_cpu_seconds_sum": 1671.1800696660032,
+          "observed_profile_thread_cpu_rows": 6613
+        },
+        "RemoveLow": {
+          "n": 128,
+          "wins": 106,
+          "win_rate": 0.828125,
+          "win_rate_wilson95": [
+            0.7534600319269827,
+            0.8836688405185272
+          ],
+          "mean_floor": 49.7578125,
+          "run_seconds_sum": 1722.48251,
+          "process_wall_seconds_sum": 1728.2897411189915,
+          "public_scorer_calls": 2926,
+          "observed_profile_thread_cpu_seconds_sum": 1721.7239041410003,
+          "observed_profile_thread_cpu_rows": 6641
+        }
+      },
+      "comparisons": [
+        {
+          "name": "RemoveLow-Fprod",
+          "candidate": "RemoveLow",
+          "control": "Fprod",
+          "pairs": 128,
+          "gain": 0.015625,
+          "ci95": [
+            -0.0390625,
+            0.0703125
+          ],
+          "candidate_only": 7,
+          "control_only": 5,
+          "both_win": 99,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    },
+    {
+      "label": "Card rank screen",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave5_card_rank_report.json",
+        "sha256": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530",
+        "bytes": 37912
+      },
+      "phase": "discovery",
+      "source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+      "binary_sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907",
+      "manifest_sha256": "721add02c24c8a8765e4eb8fb612df1d56b74207fe0849ebb99bd947a5f2eb30",
+      "analysis_script_sha256": "2e5727f7cb1c5dcef26931950414c721fc284a09f9b0e95842b47b2569ccede3",
+      "comparison_scope": "Candidates compared with fair-corrected Fprod/Fflat; original hidden-queue Bprod is diagnostic-only.",
+      "arms": {
+        "Fprod": {
+          "n": 32,
+          "wins": 26,
+          "win_rate": 0.8125,
+          "win_rate_wilson95": [
+            0.6469084479862404,
+            0.9111045531043405
+          ],
+          "mean_floor": 48.09375,
+          "run_seconds_sum": 422.2101,
+          "process_wall_seconds_sum": 423.6030400460295,
+          "public_scorer_calls": 687,
+          "observed_profile_thread_cpu_seconds_sum": 421.9519457699995,
+          "observed_profile_thread_cpu_rows": 1604
+        },
+        "CardWinRank": {
+          "n": 32,
+          "wins": 22,
+          "win_rate": 0.6875,
+          "win_rate_wilson95": [
+            0.5143332169904459,
+            0.8204745836639026
+          ],
+          "mean_floor": 46.375,
+          "run_seconds_sum": 429.8092,
+          "process_wall_seconds_sum": 431.23080562002724,
+          "public_scorer_calls": 1085,
+          "observed_profile_thread_cpu_seconds_sum": 429.5611867779996,
+          "observed_profile_thread_cpu_rows": 1551
+        }
+      },
+      "comparisons": [
+        {
+          "name": "CardWinRank-Fprod",
+          "candidate": "CardWinRank",
+          "control": "Fprod",
+          "pairs": 32,
+          "gain": -0.125,
+          "ci95": [
+            -0.34375,
+            0.09375
+          ],
+          "candidate_only": 4,
+          "control_only": 8,
+          "both_win": 18,
+          "decision": "DISCOVERY_OR_DEVELOPMENT_ONLY"
+        }
+      ]
+    }
+  ],
+  "conditional_reports": [
+    {
+      "label": "GEN2 canary",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_probe_3ed9_evaluation.json",
+        "sha256": "efa197f3b737825fae52595005cdaa8bd3fc3a980e77dfbe09785bfbe1e08bbc",
+        "bytes": 27503
+      },
+      "raw_status": "DIAGNOSTIC_EVALUATION_COMPLETE",
+      "raw_classification": null,
+      "limits": [
+        "Four allocated source runs and at most eight selected states: contract/representation diagnostic only, no population-strength claim.",
+        "Retained action set only; early eligible CARD_REWARD/BOSS_RELIC states need not represent important later decisions.",
+        "One future k is paired between sibling actions; different decisions within a source are not independent runs.",
+        "Historical P0/F2 models omit four hidden encounter-queue features but retain E1 latent potion/rarity counters and privileged-teacher labels.",
+        "Model predictions are averaged over legitimate selection-future post-action MAP states; no realized evaluation MAP is used for action selection.",
+        "Historical export/native parity establishes arithmetic compatibility, not current-policy calibration or fair deployment qualification.",
+        "No training, test-split access, policy installation, adaptive extension, or final confirmation qualification."
+      ],
+      "source_sha": null,
+      "freeze_sha256": "8c7a1b9060159983b3a09e43e673e891c59be918e82c405784455143235d10bf",
+      "rows": [
+        {
+          "rule": "rollout",
+          "pairs": 16,
+          "selected_wins": 16,
+          "baseline_wins": 16,
+          "candidate_only": 0,
+          "control_only": 0,
+          "gain": 0.0,
+          "ci95": null,
+          "action_changes": 2,
+          "role": "descriptive canary rule",
+          "raw_classification": null
+        },
+        {
+          "rule": "P0-s0",
+          "pairs": 16,
+          "selected_wins": 15,
+          "baseline_wins": 16,
+          "candidate_only": 0,
+          "control_only": 1,
+          "gain": -0.0625,
+          "ci95": null,
+          "action_changes": 5,
+          "role": "descriptive canary rule",
+          "raw_classification": null
+        },
+        {
+          "rule": "F2-s0",
+          "pairs": 16,
+          "selected_wins": 15,
+          "baseline_wins": 16,
+          "candidate_only": 0,
+          "control_only": 1,
+          "gain": -0.0625,
+          "ci95": null,
+          "action_changes": 6,
+          "role": "descriptive canary rule",
+          "raw_classification": null
+        }
+      ],
+      "source_clusters": 4,
+      "states": 8,
+      "selection_k": [
+        0,
+        1
+      ],
+      "evaluation_k": [
+        2,
+        3
+      ],
+      "cost": {
+        "source_cpu_seconds": 62.46158,
+        "branch_cpu_seconds": 1291.933931,
+        "invocation_wall_seconds_sum": 1355.5126197969948,
+        "label_rows": 128
+      },
+      "inference": "Descriptive contrasts only; four source clusters cannot qualify any challenger or establish a ranking."
+    },
+    {
+      "label": "GEN2 tranche",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9_evaluation.json",
+        "sha256": "5ada874a05f6d947cf0a19435db681a01be89aa23b26ceb26b5c59414aff798f",
+        "bytes": 166155
+      },
+      "raw_status": "DIAGNOSTIC_EVALUATION_COMPLETE",
+      "raw_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE",
+      "limits": [
+        "Thirty-two allocated source runs and at most64 selected states: conditional action-value diagnosis under the existing sampler, no population-strength claim.",
+        "Retained action set only; early eligible CARD_REWARD/BOSS_RELIC states need not represent important later decisions.",
+        "One future k is paired between sibling actions; different decisions within a source are not independent runs.",
+        "Historical P0/F2 models omit four hidden encounter-queue features but retain E1 latent potion/rarity counters and privileged-teacher labels.",
+        "Model predictions are averaged over legitimate selection-future post-action MAP states; no realized evaluation MAP is used for action selection.",
+        "Historical export/native parity establishes arithmetic compatibility, not current-policy calibration or fair deployment qualification.",
+        "The sampler preserves latent counters and pool membership; it is not an exact posterior of player-observable information. No training, test access, policy installation, adaptive extension, or final qualification."
+      ],
+      "source_sha": null,
+      "freeze_sha256": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1",
+      "rows": [
+        {
+          "rule": "rollout",
+          "pairs": 252,
+          "selected_wins": 204,
+          "baseline_wins": 208,
+          "candidate_only": 11,
+          "control_only": 15,
+          "gain": -0.01171875,
+          "ci95": [
+            -0.0546875,
+            0.03125
+          ],
+          "action_changes": 19,
+          "role": "preregistered primary",
+          "raw_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE"
+        },
+        {
+          "rule": "P0-s0",
+          "pairs": 252,
+          "selected_wins": 208,
+          "baseline_wins": 208,
+          "candidate_only": 15,
+          "control_only": 15,
+          "gain": 0.00390625,
+          "ci95": [
+            -0.04296875,
+            0.0546875
+          ],
+          "action_changes": 33,
+          "role": "exploratory secondary; no multiplicity-adjusted positive claim",
+          "raw_classification": null
+        },
+        {
+          "rule": "F2-s0",
+          "pairs": 252,
+          "selected_wins": 206,
+          "baseline_wins": 208,
+          "candidate_only": 19,
+          "control_only": 21,
+          "gain": -0.0078125,
+          "ci95": [
+            -0.05078125,
+            0.03125
+          ],
+          "action_changes": 34,
+          "role": "exploratory secondary; no multiplicity-adjusted positive claim",
+          "raw_classification": null
+        }
+      ],
+      "source_clusters": 32,
+      "states": 63,
+      "selection_k": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "evaluation_k": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "cost": {
+        "source_cpu_seconds": 392.09429,
+        "branch_cpu_seconds": 14550.502842,
+        "invocation_wall_seconds_sum": 14956.732568327978,
+        "label_rows": 1968
+      },
+      "inference": "Conditional action-value diagnosis under the existing sampler; source-cluster uncertainty excludes teacher/sampler mismatch. No whole-run policy qualification or best-secondary-rule selection."
+    },
+    {
+      "label": "Targeted REST",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/targeted_rest_631f_evaluation_result.json",
+        "sha256": "f075d65327dd180f1d99be639448a54c3a35873c194bdace93195ff85ad41fd7",
+        "bytes": 5628
+      },
+      "raw_status": "EVALUATION_INTEGRITY_PASS",
+      "raw_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE",
+      "limits": [
+        "One selected source decision under fixed public-conditioning sampler and old631f teacher; not32 independent full runs.",
+        "Confidence interval resamples32 paired future draws conditional on this source; it does not include source-selection or teacher-distribution uncertainty.",
+        "Optional Ruby Recall defect remains in this diagnostic teacher. No corrected-reference qualification, policy promotion, or training claim.",
+        "Frozen selection used k0..15. Only k16..47 contribute to this evaluation; no reselection or sample extension."
+      ],
+      "source_sha": "631f7f92cf45fe68c2805e70b53377c020510a05",
+      "freeze_sha256": null,
+      "rows": [
+        {
+          "rule": "Upgrade Offering vs REST",
+          "pairs": 32,
+          "selected_wins": 23,
+          "baseline_wins": 17,
+          "candidate_only": 8,
+          "control_only": 2,
+          "gain": 0.1875,
+          "ci95": [
+            0.0,
+            0.375
+          ],
+          "raw_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE"
+        }
+      ],
+      "source_clusters": 1,
+      "states": 1,
+      "evaluation_k": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ],
+      "cost": {
+        "source_cpu_seconds": 18.317,
+        "branch_cpu_seconds": 360.56808,
+        "process_wall_seconds": 379.24484855899937
+      }
+    },
+    {
+      "label": "Champ D13",
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champ_d13_evaluation_report.json",
+        "sha256": "269b1e792395de0c1d97cd5af2ae1d5ced2a2a65c436b651fd627bcd74da86c3",
+        "bytes": 69317
+      },
+      "raw_status": "EVALUATION_INTEGRITY_PASS",
+      "raw_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE",
+      "limits": [
+        "One outcome-informed historical public root, not62 independent source decisions.",
+        "Fresh exact10k per decision with fixed public search seed0; original retained learned-stop policy is unavailable.",
+        "Conditional public-future sampling, not reconstruction of the historical hidden RNG.",
+        "No Act3 population-strength or production-promotion claim; canaries excluded; no extension."
+      ],
+      "source_sha": "a557ace5770f26983db4a55ec2c9318a95bf328d",
+      "freeze_sha256": null,
+      "rows": [
+        {
+          "rule": "SHRUG vs END (fight wins)",
+          "pairs": 62,
+          "selected_wins": 50,
+          "baseline_wins": 51,
+          "candidate_only": 9,
+          "control_only": 10,
+          "gain": -0.016129032258064516,
+          "ci95": [
+            -0.14516129032258066,
+            0.11290322580645161
+          ],
+          "raw_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE"
+        }
+      ],
+      "source_clusters": 1,
+      "states": 1,
+      "evaluation_k": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "cost": {
+        "cpu_seconds_by_arm": {
+          "END": 264.492758,
+          "SHRUG": 308.43536
+        },
+        "process_wall_seconds": 575.8027501009929
+      }
+    }
+  ]
+}

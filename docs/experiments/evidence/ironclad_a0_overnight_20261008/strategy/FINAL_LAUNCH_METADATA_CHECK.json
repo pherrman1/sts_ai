@@ -1,0 +1,3794 @@
+{
+  "schema": "final_launch_metadata_check_v1",
+  "manifest_sha256": "e6c6e050ad0da20167c570d1f1f01a7e7037135daf3e010ac577edc8faf94f91",
+  "freeze_sha256": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+  "jobs_sha256": "7ae8e92d3c62ceaab432c6dfef654d47e15465cf063073c9c622ab169f413d2d",
+  "metadata_records": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/canary/Bflat_trace.csv.meta.json",
+      "sha256": "48c7dc408ce3c2900588c064f7d109c56faa7180d09f0e4f2100a8a776c6e830",
+      "seedBlock": {
+        "lo": 610080000,
+        "hi": 610080000
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/canary/Bprod_plain.csv.meta.json",
+      "sha256": "2f47f5f279fe2117fcc36975806c336bbf6d14a67d07043e49cb316aa56d5da4",
+      "seedBlock": {
+        "lo": 610080000,
+        "hi": 610080000
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/canary/Bprod_trace.csv.meta.json",
+      "sha256": "852cdc616e3e2c2113a79e3288d8bf6cad56f092e265a4cccd6b5b9f4d1025b7",
+      "seedBlock": {
+        "lo": 610080000,
+        "hi": 610080000
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.csv.meta.json",
+      "sha256": "4363f5eaaa9f54c6a47641a4dfc73dfcf9d549db686014128357390e2bc658b6",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.csv.meta.json",
+      "sha256": "96355928225d57c606c3958a4c4069da96fbb758ff9d32eaa94c29405b13b9b5",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.csv.meta.json",
+      "sha256": "ac5d50a067a893462e1c01f48f15c164698b53f2621684a68fdda73fc08b2ce7",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Capture_0.csv.meta.json",
+      "sha256": "3acbcd7d01ac0c16e6e0e690bb78c9c22d79670a5b8adb2d8c1fe77d21890962",
+      "seedBlock": {
+        "lo": 610081002,
+        "hi": 610081002
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.csv.meta.json",
+      "sha256": "f84e67582c3f8131258c5db7451c610d513cf5e72e35afeb254711360bcc00eb",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Legacy_0.csv.meta.json",
+      "sha256": "c14afbf9b04f209c7da1cef044b389b55ee051b6832703bded435ec2f5d79940",
+      "seedBlock": {
+        "lo": 610081002,
+        "hi": 610081002
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/RestOff_0.csv.meta.json",
+      "sha256": "212f435485ead531ebc6e54afeffbba5a4a88b3f0a4d4a23dcd70043cc5d7588",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/RestShop_0.csv.meta.json",
+      "sha256": "349315f2f49783b28e5e4caa8915ce086717682b32ece7258dce556d0b2cea50",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/ShopFix_0.csv.meta.json",
+      "sha256": "9550f33a4484977a60bbaa52436e79ba61601aecf93fbf564cd40be89c24ad55",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/BossOff_trace.csv.meta.json",
+      "sha256": "fba6b92e699b14535b5d654703427638ab425854c56f5e6ea0ddf2cc458f756a",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/Fflat_trace.csv.meta.json",
+      "sha256": "4532264c81278a7be0bcdb5fdd38c5dfb867f318a800962eaa54933117b4eec9",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/FinalBinary_trace.csv.meta.json",
+      "sha256": "25e2fbdaea68846700869b805c7f0a3e1dc09166c04e4f28ec097fd20d4c104f",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/Fprod_plain.csv.meta.json",
+      "sha256": "78ea07aa26b01ce1188450f76f409ef29c2d9a0c62d899246233f0a2176cf392",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/Fprod_trace.csv.meta.json",
+      "sha256": "8b8c8318a4d15973ccc6d89512ad346c16c3e75a029be7b861fe890ff402e2f8",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/LegacyProd_trace.csv.meta.json",
+      "sha256": "240b42a706515320d04c2347a068e00366aa55e43001ec3de595357c2578fa5e",
+      "seedBlock": {
+        "lo": 610080000,
+        "hi": 610080000
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/RestOff_trace.csv.meta.json",
+      "sha256": "84c09a1edf39359e65a9857d86dc929fd00e62fc983d212c822715e2446fe158",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/ShopFix_trace.csv.meta.json",
+      "sha256": "f3dff6232995818d344f582e8f168b70bfcad74914c680f8f3281a584107c7f0",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/ShopOff_trace.csv.meta.json",
+      "sha256": "ea4e33f638a114dd8377a02fe2f802aaa475655baf68eaf42248cc1083d8cd29",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fair_canary/SkipZero_trace.csv.meta.json",
+      "sha256": "ab240c91bab73238bbfb2d19a58e229a204f3c53fad64543c76deac935630228",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.csv.meta.json",
+      "sha256": "5b4c15b3c4bc857d19f4d1b89dd1d65cadaf88ba86d6b838c85e2489ce227890",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.csv.meta.json",
+      "sha256": "f95aeb78eec4d9b02b905fc0d6a72219429de0bb76b460a22685b5c3d687ad05",
+      "seedBlock": {
+        "lo": 610081015,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.csv.meta.json",
+      "sha256": "dca3d1c06f72510dfe43cb3ba13464c25c6804bb9736c8adabe87184bca412cd",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.csv.meta.json",
+      "sha256": "24188733af23c23782c7149b5a4c0b487647d1fbb6cd3ee238a44644de46b61e",
+      "seedBlock": {
+        "lo": 610081015,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.csv.meta.json",
+      "sha256": "8497a55e5cd426141dd47378f903d7776e1b1cf3fc4c12765aab1cf39ceadef0",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.csv.meta.json",
+      "sha256": "4e1a2da87cf0459c8160d3a99f2e0fac51da9c316e962afae14df86f780e42c2",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_2.csv.meta.json",
+      "sha256": "18c2024685ed8e8734e2e7f56daee9473783eee06d4ee72e8b992ee98128b83d",
+      "seedBlock": {
+        "lo": 610082010,
+        "hi": 610082010
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_1.csv.meta.json",
+      "sha256": "22e4d5acec870c68cf59b07a8d75491f9799b380553d2f49102c4340e1214660",
+      "seedBlock": {
+        "lo": 610080001,
+        "hi": 610080001
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/RemoveLow_3.csv.meta.json",
+      "sha256": "e8dac67c67df199893bba6a45a9b964c6906857cd7caa46a648c2e9180aa36c1",
+      "seedBlock": {
+        "lo": 610082010,
+        "hi": 610082010
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_0.csv.meta.json",
+      "sha256": "336ade620a26e068f94c1aaabe146ebd83ca34cff494c6e26b77394153534c8e",
+      "seedBlock": {
+        "lo": 610082256,
+        "hi": 610082259
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_1.csv.meta.json",
+      "sha256": "7cf51f071c51a562c2108a45f7be7b79a26aff05b490ace44bdeb4722a4a8b8f",
+      "seedBlock": {
+        "lo": 610082260,
+        "hi": 610082263
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_10.csv.meta.json",
+      "sha256": "4f2816e7fb2dacda850d65390f916c8347cc05ce7d9f89b8efb720409c0d0057",
+      "seedBlock": {
+        "lo": 610082296,
+        "hi": 610082299
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_11.csv.meta.json",
+      "sha256": "658b61a6e3ec3b6a9c29ffe858328b9a17d385ac3e6fcd91eca221ff63b8d64f",
+      "seedBlock": {
+        "lo": 610082300,
+        "hi": 610082303
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_12.csv.meta.json",
+      "sha256": "bdb27c50e64900650c8e8b865a72b1c1ec497f83ba59d0388b45917eb7ec5109",
+      "seedBlock": {
+        "lo": 610082304,
+        "hi": 610082307
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_13.csv.meta.json",
+      "sha256": "44a42fb76d8be4dfbdc0b65245ea3ac82585c469ae4aa431bf7ce98b33b267b4",
+      "seedBlock": {
+        "lo": 610082308,
+        "hi": 610082311
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_14.csv.meta.json",
+      "sha256": "7afc32f09e994869b0d70be8796e5dabff4517d5c6d81284a255c068a84a4f07",
+      "seedBlock": {
+        "lo": 610082312,
+        "hi": 610082315
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_15.csv.meta.json",
+      "sha256": "c4e13ace945db8b6f4540d13dd81696b3f3a9fca7f9e59065f67b9cd34be5f74",
+      "seedBlock": {
+        "lo": 610082316,
+        "hi": 610082319
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_16.csv.meta.json",
+      "sha256": "d58ded491fe948bfc3e69db390148ae1ad74e9a97d50749002b843ecb4cb7389",
+      "seedBlock": {
+        "lo": 610082320,
+        "hi": 610082323
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_17.csv.meta.json",
+      "sha256": "869e96b1d89074bd4fdcbdd06f237dca0d4123b015de3a282fed5f0af2575552",
+      "seedBlock": {
+        "lo": 610082324,
+        "hi": 610082327
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_18.csv.meta.json",
+      "sha256": "a61462d0a85fd87b0c9458ea28b4aaf8a5bf946caa1c0a80eeddfe7a01b6c8ab",
+      "seedBlock": {
+        "lo": 610082328,
+        "hi": 610082331
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_19.csv.meta.json",
+      "sha256": "eca9aeae40433f22c35a73d94a9cac8aa04cd7cd3b7031206f68ce4c4fe5fe26",
+      "seedBlock": {
+        "lo": 610082332,
+        "hi": 610082335
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_2.csv.meta.json",
+      "sha256": "5716b8a75530f7479907a8d2ce05d5876b59841b98e8b44dc0cee0abeeb3ac2c",
+      "seedBlock": {
+        "lo": 610082264,
+        "hi": 610082267
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_20.csv.meta.json",
+      "sha256": "ae5b90faaba82c27fb9830e6510ca8c10d5243e7a6be309685249423a16d67a8",
+      "seedBlock": {
+        "lo": 610082336,
+        "hi": 610082339
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_21.csv.meta.json",
+      "sha256": "7ac16e3cbda9f989a0e9dfebbab126913ee05e6e9178c6a7a40203f8a655c2e3",
+      "seedBlock": {
+        "lo": 610082340,
+        "hi": 610082343
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_22.csv.meta.json",
+      "sha256": "dac25085cba03056f72eaefac096d56f6571924f2d1f8982e7cf8fb1b4e29182",
+      "seedBlock": {
+        "lo": 610082344,
+        "hi": 610082347
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_23.csv.meta.json",
+      "sha256": "5bfd023380ea5a384c4da0b694f8088704b443e198761c3c1d93bc03d5160fcc",
+      "seedBlock": {
+        "lo": 610082348,
+        "hi": 610082351
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_24.csv.meta.json",
+      "sha256": "bff51cd440770674ca8abef48fe9a6cef45889d8eaa9d70651fc9f32c48233cb",
+      "seedBlock": {
+        "lo": 610082352,
+        "hi": 610082355
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_25.csv.meta.json",
+      "sha256": "d93aa455010995c8f1ccc9532319b5738682ff07739929c2f0c760ee8a4b90ab",
+      "seedBlock": {
+        "lo": 610082356,
+        "hi": 610082359
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_26.csv.meta.json",
+      "sha256": "aea856fc967425090775d9e62269a5efe322a706fe4453f3cf114210d86e6195",
+      "seedBlock": {
+        "lo": 610082360,
+        "hi": 610082363
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_27.csv.meta.json",
+      "sha256": "ad0f79d9e7cddec6bda70d3201e4c5106846520bf9946e263d6d55b651a6b536",
+      "seedBlock": {
+        "lo": 610082364,
+        "hi": 610082367
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_28.csv.meta.json",
+      "sha256": "6111ae88f7ee60421af6d56033d412817dd87251396e382e9cb6d725a3e3bc9e",
+      "seedBlock": {
+        "lo": 610082368,
+        "hi": 610082371
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_29.csv.meta.json",
+      "sha256": "24286a15152dad1c720c0da0de329517f82ebe6ac3dabb86f31a42fd91ef7bbc",
+      "seedBlock": {
+        "lo": 610082372,
+        "hi": 610082375
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_3.csv.meta.json",
+      "sha256": "34c7e28c1dc3a89d4bdc3da1cc1e43a0f2e6f305daf82f3b071b14b4246781e2",
+      "seedBlock": {
+        "lo": 610082268,
+        "hi": 610082271
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_30.csv.meta.json",
+      "sha256": "0be161a986ec709be802d339557afcf9942f3c12562dce64d53c99ca02e42892",
+      "seedBlock": {
+        "lo": 610082376,
+        "hi": 610082379
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_31.csv.meta.json",
+      "sha256": "ba67c41ac98c75a82297df0cb4325bdb702f6dcd22669c28904896c28c10d936",
+      "seedBlock": {
+        "lo": 610082380,
+        "hi": 610082383
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_4.csv.meta.json",
+      "sha256": "4055dd9387a4451224da505e52316a1d5d7638ce9272429e5c5e4b5b6adf8362",
+      "seedBlock": {
+        "lo": 610082272,
+        "hi": 610082275
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_5.csv.meta.json",
+      "sha256": "ca9f463682909cb598251bf1e6a5638bb9a66f1aef10ca05f054717950b7fad0",
+      "seedBlock": {
+        "lo": 610082276,
+        "hi": 610082279
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_6.csv.meta.json",
+      "sha256": "b7ee084ac4c3add3650b946addf0058660281b8467d2acc8bb9f6f1a4432f65c",
+      "seedBlock": {
+        "lo": 610082280,
+        "hi": 610082283
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_7.csv.meta.json",
+      "sha256": "ddd25720a72306052fba353406d7aff83d61be7edb8fab8168d22828e23e8714",
+      "seedBlock": {
+        "lo": 610082284,
+        "hi": 610082287
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_8.csv.meta.json",
+      "sha256": "e91c5620adb99e3db1ce90d5d3128b7f987bdcc03214fc4f6953617778f1bc6d",
+      "seedBlock": {
+        "lo": 610082288,
+        "hi": 610082291
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/Fprod_9.csv.meta.json",
+      "sha256": "202bba558516779f52d91d6a3c9d6ebe9916d359bfcff035646a6e3ab87cf33c",
+      "seedBlock": {
+        "lo": 610082292,
+        "hi": 610082295
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_0.csv.meta.json",
+      "sha256": "796e7664202fe40f61c6942d8e71d1a6d607561bd44b53062dc9f0d3e341b8ff",
+      "seedBlock": {
+        "lo": 610082256,
+        "hi": 610082259
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_1.csv.meta.json",
+      "sha256": "e2e2fc13d1ce77143ad81156d0e53eb957fe8e0e090c1b0fcb89aebb08431155",
+      "seedBlock": {
+        "lo": 610082260,
+        "hi": 610082263
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_10.csv.meta.json",
+      "sha256": "04618c6a164e5bea8cfdd06c7ba38515600a6e22ccf6a3442e77ca16daad28b3",
+      "seedBlock": {
+        "lo": 610082296,
+        "hi": 610082299
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_11.csv.meta.json",
+      "sha256": "6641cf0d92277d56b410fa9ea59e3c9345138d5ed754521f25075d4ecea0fb7f",
+      "seedBlock": {
+        "lo": 610082300,
+        "hi": 610082303
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_12.csv.meta.json",
+      "sha256": "a7aeb7cc86f66fd55285e462a4435eb8730ceb5df026f2fb5bcbcf6cd7aaa041",
+      "seedBlock": {
+        "lo": 610082304,
+        "hi": 610082307
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_13.csv.meta.json",
+      "sha256": "d056463cc180b5686d485c99fe4ef707bcfaf66f73085865af0e7b1b52a65a83",
+      "seedBlock": {
+        "lo": 610082308,
+        "hi": 610082311
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_14.csv.meta.json",
+      "sha256": "78ca5fa22fbf4ae6a2130fb535eff87d0c709c7cb5b40b892e24ce2a64483d8e",
+      "seedBlock": {
+        "lo": 610082312,
+        "hi": 610082315
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_15.csv.meta.json",
+      "sha256": "63ffe6f5efaa94b420ed6649cfe271fc1d60bd1ea582b3d7c1b0d5ff302d4d7c",
+      "seedBlock": {
+        "lo": 610082316,
+        "hi": 610082319
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_16.csv.meta.json",
+      "sha256": "faa4eb942d3c70f98c4f222dc5e1bfff8aec646f0679454063f73d5487fca0fe",
+      "seedBlock": {
+        "lo": 610082320,
+        "hi": 610082323
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_17.csv.meta.json",
+      "sha256": "07ab041af776bc2525bec6f69886cd2395b938f7bfbd848cb384ef4b9a9558b6",
+      "seedBlock": {
+        "lo": 610082324,
+        "hi": 610082327
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_18.csv.meta.json",
+      "sha256": "723ad58df871bdbef8a0d75775eacc18fc43df9a05048eac95a7831f7f38b203",
+      "seedBlock": {
+        "lo": 610082328,
+        "hi": 610082331
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_19.csv.meta.json",
+      "sha256": "db4d1ca15f0450d5a95726bfae3629ba9597575c35e2d45d7c43dfdd59d44851",
+      "seedBlock": {
+        "lo": 610082332,
+        "hi": 610082335
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_2.csv.meta.json",
+      "sha256": "0dde9663376d4ed5df0088506c5fcd8aadf48d18e8f90facd50792f1c1814fe2",
+      "seedBlock": {
+        "lo": 610082264,
+        "hi": 610082267
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_20.csv.meta.json",
+      "sha256": "9018dae726e97152dbfd6fd75475204b0908c0860d77c0d95c07f78aa010584e",
+      "seedBlock": {
+        "lo": 610082336,
+        "hi": 610082339
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_21.csv.meta.json",
+      "sha256": "679cb0f53e29c24a99b01142a56a745d70d8fe0232c76c91935568893c17b95d",
+      "seedBlock": {
+        "lo": 610082340,
+        "hi": 610082343
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_22.csv.meta.json",
+      "sha256": "5af83af1c14b0013530792e4e2fa460725c9c6144911c02e627acd3c48972deb",
+      "seedBlock": {
+        "lo": 610082344,
+        "hi": 610082347
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_23.csv.meta.json",
+      "sha256": "0ea00948ecceee0032364abf01127e7ea179fb1f4eee58d5e1c132e2bf24c4bf",
+      "seedBlock": {
+        "lo": 610082348,
+        "hi": 610082351
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_24.csv.meta.json",
+      "sha256": "1ff4d059d2cab53cedc54eb17a5b8b8df8cb4506f8d6d23f1a74ac6993038dbd",
+      "seedBlock": {
+        "lo": 610082352,
+        "hi": 610082355
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_25.csv.meta.json",
+      "sha256": "dbcbd2b33d9efe0bc684bc028839d6a8169e91cc035525397bd88ed2941de7ed",
+      "seedBlock": {
+        "lo": 610082356,
+        "hi": 610082359
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_26.csv.meta.json",
+      "sha256": "a0c741445c26039f88c9d8b6f2e28c7deaf3201699c300ec28879a52c873eaa4",
+      "seedBlock": {
+        "lo": 610082360,
+        "hi": 610082363
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_27.csv.meta.json",
+      "sha256": "527693d9017175c3e3f669cc6a51ba37c96887bc9bd9243121f3dfda34eb37f9",
+      "seedBlock": {
+        "lo": 610082364,
+        "hi": 610082367
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_28.csv.meta.json",
+      "sha256": "bba68ccd52c7558b8a77ab62992247560bab412725d154408ab3263a352d6bd3",
+      "seedBlock": {
+        "lo": 610082368,
+        "hi": 610082371
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_29.csv.meta.json",
+      "sha256": "5bdc66ed0bfefdf261236204c61090a50b699fdfaafe75163588d0a26ad2e4f5",
+      "seedBlock": {
+        "lo": 610082372,
+        "hi": 610082375
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_3.csv.meta.json",
+      "sha256": "640d09165ed0029954cb0444c2ef86003845ca110834c454d2bb98f5acc51933",
+      "seedBlock": {
+        "lo": 610082268,
+        "hi": 610082271
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_30.csv.meta.json",
+      "sha256": "10e6613e789831d6ed030c11c86f5b179b8b8beb9f25ec7166965ad3df1b2a72",
+      "seedBlock": {
+        "lo": 610082376,
+        "hi": 610082379
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_31.csv.meta.json",
+      "sha256": "41b324f6e647f4d175561b421405d604acdfbd3d2431bcb2664caaa1462edd07",
+      "seedBlock": {
+        "lo": 610082380,
+        "hi": 610082383
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_4.csv.meta.json",
+      "sha256": "f7035d6223aec561eec1f16aa9605474b7e997565af6c06d29f89cf4e9659b54",
+      "seedBlock": {
+        "lo": 610082272,
+        "hi": 610082275
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_5.csv.meta.json",
+      "sha256": "113a83e73ec4dfe38eb7ae4e6ed974e77b8a7a4ca7d99a5269416650b171568d",
+      "seedBlock": {
+        "lo": 610082276,
+        "hi": 610082279
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_6.csv.meta.json",
+      "sha256": "504b1024389cedccb1e8064e14ba69cdc0556fe8ea3e71555ae806c235a7e267",
+      "seedBlock": {
+        "lo": 610082280,
+        "hi": 610082283
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_7.csv.meta.json",
+      "sha256": "d3e25e2ffb1fc878c09741947670246ebe07d95b4e06a1d2bfca94eae4804b1b",
+      "seedBlock": {
+        "lo": 610082284,
+        "hi": 610082287
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_8.csv.meta.json",
+      "sha256": "2c196a76e140ca1f5c0e6082eb0bedf13f1dcbf196106fe2857802782b1d95b4",
+      "seedBlock": {
+        "lo": 610082288,
+        "hi": 610082291
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development/RemoveLow_9.csv.meta.json",
+      "sha256": "6f45d76d461dccf241ce4fdc35ec94c1b9f7eb23b506963209037340da4c9e5b",
+      "seedBlock": {
+        "lo": 610082292,
+        "hi": 610082295
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_0.csv.meta.json",
+      "sha256": "bacd3d869cbbc574b2d7392296794d17af5093737cded6665e090350679b975b",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_1.csv.meta.json",
+      "sha256": "7836b1a272db32fe10140b056a21382021346f44a8fcc5e597c7ae462f19a92b",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_2.csv.meta.json",
+      "sha256": "4f173a0b79934b0bbf6771b82c3c57be9b7c03e05908bfad723ae96704437d85",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_3.csv.meta.json",
+      "sha256": "e9a2f75cdf62b083f7b9c69aa3e01d87cf5df2e13a5988806e3edc2308f36de4",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_4.csv.meta.json",
+      "sha256": "a018b4762c3e7e0395c77a5fb379865c93fd20c1489c56e35bba1c6592ab5d04",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_5.csv.meta.json",
+      "sha256": "d777e7bceff6493e07de25f5de013a18ebf39f9897aa0448ef43cb60f0c624b7",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_6.csv.meta.json",
+      "sha256": "2cfc02debc9546d91f2dd9a5f82ddbd28ccf43707440b2a53233bc64095067a6",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/BossOff_7.csv.meta.json",
+      "sha256": "84334b0c345de6660bd68f01201a9f1ed75306cd482589ab7017b60f2604c01c",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_0.csv.meta.json",
+      "sha256": "988ad3b881124dbcc2dfe8e8874c5515e65da6a2db3ea53fbc568e557462728b",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_1.csv.meta.json",
+      "sha256": "07c6d0273c7c7119250f25818cd8343c472434e27f3f0160cba58bf8a5cead2b",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_2.csv.meta.json",
+      "sha256": "bf7270b833cd4adaf421af13729c7c3daf53ce4f2f43f850737352ea5363af99",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_3.csv.meta.json",
+      "sha256": "a0dee78b5b154ea55d8ac1f2a1266f194a2faefc524236f267fe673cd60f9917",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_4.csv.meta.json",
+      "sha256": "f1aebe2bf6d55b1e35750968c95e7542b1d62d709e0a4c7766cc26d230c08f69",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_5.csv.meta.json",
+      "sha256": "19a887593ec31e12112addbe6665e487e478e250e9605a76fe11d309153861e5",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_6.csv.meta.json",
+      "sha256": "f79ed1a0c41ae10a5907e60ca2eee45b4c1ad9052c72e63d567789659130c8b5",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fflat_7.csv.meta.json",
+      "sha256": "1de92610c2f54f51e689c7698de385e2388c93c03963e55a69bcd88b4660be70",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_0.csv.meta.json",
+      "sha256": "51d2d0ab851fd594effcdf975d1a0ae18273e17bfb1d97c08a56b59cc88dda56",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_1.csv.meta.json",
+      "sha256": "5e8b095152cdd265066441c326e8843ee7f83bc8f86ff458420d60ba7cf0ed11",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_2.csv.meta.json",
+      "sha256": "a6c553c366618384cf1a9d96cfc90c6ce1360479fa9013006284602812803ab1",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_3.csv.meta.json",
+      "sha256": "65cdfdda517188433ac1d5cd10945880b6bccf4b4032ef03ea248496069127a6",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_4.csv.meta.json",
+      "sha256": "1320df00261ea8d0e9697b863fc2aeb3ecc2feeffb2e88ce39e8f8f48e61d0ac",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_5.csv.meta.json",
+      "sha256": "35e74cd4635e9fed8a6de17e2268d37e61ced4db651720e8aabb59db5023abf3",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_6.csv.meta.json",
+      "sha256": "8782929c383630087268563a1ef0e32412e7f56bbcccdf73a3929c0ac8691a56",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/FinalBinary_7.csv.meta.json",
+      "sha256": "a31426aec2f756d1fa5af30b814626f5d39768924b71afba6e8ce3b84ccd083a",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.csv.meta.json",
+      "sha256": "e269e36c3d0264875bc488039c77ba674d1ab79f031b994355985e77e3d0712f",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_1.csv.meta.json",
+      "sha256": "e562e6e487f975d599145641bd38ea4abcc3842451b4e262aa481d800e1970c0",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.csv.meta.json",
+      "sha256": "e20aee0e70043e5084c0a179d9297c564af5fa2b3026c3d96b1afe3f5df82a49",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_3.csv.meta.json",
+      "sha256": "3a8a1791ffae09d9e07da6bdf5258691c8d2d5aca854bc62817212836f8a7a8f",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_4.csv.meta.json",
+      "sha256": "61c9e9d0457e1f8280bc65e9bc24ad6e764e782ac796009d8b1e7e0089193e69",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.csv.meta.json",
+      "sha256": "c3277fe2fb49ad3d0925c4c492bc1db899b8b40ebf88b24d5da782aa846a769d",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_6.csv.meta.json",
+      "sha256": "29a223fb1c08b2f6160c6afb846e694620aa87328609eab08aff7c3fec3c62e0",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_7.csv.meta.json",
+      "sha256": "ea44f8182824fbc5a3703216abe69a2e399445e06bdb4900e3b99d5681503b51",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_0.csv.meta.json",
+      "sha256": "17f7fd1e1ff51e1b942cc3d6bb04677da6b8142efed714ee4879bf1e940d9b01",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_1.csv.meta.json",
+      "sha256": "1fd584d30006eaf62d4d268ce35d48f36d47ecad366fcf77cf88d5971f07bf40",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_2.csv.meta.json",
+      "sha256": "9b6ee3b1028f9f2f4943ea8e08b7cc87420ec5dcfefc6205cacabffe060b83a5",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_3.csv.meta.json",
+      "sha256": "6c7e5b5cca31a62ae2bea0a880e880e75be7a358aa3854d1c341a6c11b4a561e",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_4.csv.meta.json",
+      "sha256": "c0b30c659f9ca78a0701dadc1b2cb0f0232e2b75bea8d4c5eec0d11545ac5e8a",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_5.csv.meta.json",
+      "sha256": "021570e31392f22d8670c089ef961e005b595e1ce883a4a2cc6bfb8d75326442",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_6.csv.meta.json",
+      "sha256": "968e09615446e56cd5ebc4c7be8a0b9d694171b4cc3f7236322d361583807e29",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/RestOff_7.csv.meta.json",
+      "sha256": "e9aa8e1d4072caec91cf785ec03312f912aa09748a716f216b51349f069001a5",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_0.csv.meta.json",
+      "sha256": "e81af919ec89ad6f4d7f74cd70ca35212d17ed7c008edb33597abf185f0a56dc",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_1.csv.meta.json",
+      "sha256": "ff36d8f220485220ee77a76b9cd37d79ac3b6dc1363ef6d81b855709e46d0ca9",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_2.csv.meta.json",
+      "sha256": "bd86cc75c0c125f6f58b81d79299c10ce03de0f89a3bef5fcadd500e894f2446",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_3.csv.meta.json",
+      "sha256": "4301af823ba230bcbf9c666ff82ffbab5faf073315d6829724510b32cb9c2b58",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_4.csv.meta.json",
+      "sha256": "190f76da17b32609bbd49aaa2c2f8d40d543c27d9349989166bf1866b95ef64d",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_5.csv.meta.json",
+      "sha256": "8aed5b3636e320daf0bca45a158d1ef6c0f3907d4e8286881672f3755b4d112a",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_6.csv.meta.json",
+      "sha256": "4f5be92d99e67e7c4608fa7ce51f74a26d48b91951f4f929ffb6a8e5e71ec196",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_7.csv.meta.json",
+      "sha256": "85208c123179f3f6d74f0f69383ca994486ab01d0c82e4560953392f4505581e",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_0.csv.meta.json",
+      "sha256": "6907dedbbe2a469819f9d03a0ca5209bd2da8a59a65185d552a86dcfef30c5b8",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_1.csv.meta.json",
+      "sha256": "bf37dc25be8d65c9d81485c7b9b122decba979e7051ed4dc7e8eba97c5f9eeee",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_2.csv.meta.json",
+      "sha256": "bea0dcaec3c25fb5e02ca30ea1dff64aa3e2a9e9902c7e9c33c6e6b7602f96be",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_3.csv.meta.json",
+      "sha256": "bd1a7aef9a0232e74ee679fdbf15f3c9c904c0be0e7d81e8dbd1b7cbc3fe7ea7",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_4.csv.meta.json",
+      "sha256": "e081158d40d0d323cfe4cd03f05a0eea3326ae70f0df0fed193cf1c22fab7271",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_5.csv.meta.json",
+      "sha256": "e3a13ecd8b312622ad292d25eb5bf0432a98c937adeaf41122cb9c6bddce0da2",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_6.csv.meta.json",
+      "sha256": "bec314c8f94b92ab2959078f37e1102d83b270a4d93625e536d9a36bde5ef05f",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopOff_7.csv.meta.json",
+      "sha256": "3ef72464dbd59f709dccdc2747b0972fd248c8b2eed114e0b0aec9ad3a7322b2",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_0.csv.meta.json",
+      "sha256": "6d810fe8b4a620a9d31f06fec00c7f12b5163418f47ce2547dffe76812d0070d",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_1.csv.meta.json",
+      "sha256": "aae4a085f5b1a0a51234601d622a3297ad5af51ff405c558eb523715651fe9c8",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_2.csv.meta.json",
+      "sha256": "94eee8275b8ab2ea421709106e182bfb1037e25a7f47798e0f6447750ff6a64d",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_3.csv.meta.json",
+      "sha256": "deee0689d7c9073010523972c3ad9d287fcfce21953adc728528bc8415367563",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_4.csv.meta.json",
+      "sha256": "0c9b82b1e8808a63179edc81647f8548819b08af0989f05e3a572dda88288eb5",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_5.csv.meta.json",
+      "sha256": "21eba3b2cccb0735a85424899b1dc8354cf7de9894e18e4346e40c356392a02d",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_6.csv.meta.json",
+      "sha256": "2571e21e13d8f8f8cc60d8f4d9ca910c8fcc2945323d0ed2012636d774f8a483",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/SkipZero_7.csv.meta.json",
+      "sha256": "f65cbf69dec8852da4f7730d364939e959dd3f144d947821c28a3ff19de4f753",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_0.csv.meta.json",
+      "sha256": "d29b20b5922946396bc0b005446679b22fa66e817c4f47bb63efafe4eac4796b",
+      "seedBlock": {
+        "lo": 610082000,
+        "hi": 610082003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_1.csv.meta.json",
+      "sha256": "e1faf1650ec18521c377738202096be57b324d6590c83e5efc98e9721066b501",
+      "seedBlock": {
+        "lo": 610082004,
+        "hi": 610082007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_10.csv.meta.json",
+      "sha256": "26a4e5b58c8f5c897a01a6de3a33e91190492eecf93a757d0f73c0b8258cd216",
+      "seedBlock": {
+        "lo": 610082040,
+        "hi": 610082043
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_11.csv.meta.json",
+      "sha256": "1db794838bf5faad0e8c73ebf58d6fd8406ffc0148deb72432bd8e2b55f6c6b8",
+      "seedBlock": {
+        "lo": 610082044,
+        "hi": 610082047
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_12.csv.meta.json",
+      "sha256": "4cd9c6f6e3fea0b38e60dc73c76d84a8d8877f8a747d1c13b10eae4ad350b005",
+      "seedBlock": {
+        "lo": 610082048,
+        "hi": 610082051
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_13.csv.meta.json",
+      "sha256": "dfbb5e620e77854f494a68768d534a8a76e8412abcb71aad6dade2a043c756de",
+      "seedBlock": {
+        "lo": 610082052,
+        "hi": 610082055
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_14.csv.meta.json",
+      "sha256": "5b6fe48a5125f276f39a6a39ca4ddf4d6641c30058ab3027adf6a1244c0d7f10",
+      "seedBlock": {
+        "lo": 610082056,
+        "hi": 610082059
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_15.csv.meta.json",
+      "sha256": "dc9863a01acbb22b06dd6315d55ca78b358587b4128f6e0b8a7887ac343f3899",
+      "seedBlock": {
+        "lo": 610082060,
+        "hi": 610082063
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_16.csv.meta.json",
+      "sha256": "dda2dd3b103a73781d07ee2df993b37fd44d39dc28e0b6862de203af1d088aea",
+      "seedBlock": {
+        "lo": 610082064,
+        "hi": 610082067
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_17.csv.meta.json",
+      "sha256": "136a65607d32dda8ed284030072e61bb44da71a8b91625ba05344778b6668d9b",
+      "seedBlock": {
+        "lo": 610082068,
+        "hi": 610082071
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_18.csv.meta.json",
+      "sha256": "07ad687c2116ee5879675cce463e11055f265045423ce8058a205704424bd65f",
+      "seedBlock": {
+        "lo": 610082072,
+        "hi": 610082075
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_19.csv.meta.json",
+      "sha256": "a7327b53ec3880d7a11b8b3e3a6b5bfd3cdbe5ff0cf48cd66133f6c268d6586e",
+      "seedBlock": {
+        "lo": 610082076,
+        "hi": 610082079
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.csv.meta.json",
+      "sha256": "40e46c812eaeebd05ae1a9e09db67d3e32114200382feb1985bc7066928b741b",
+      "seedBlock": {
+        "lo": 610082008,
+        "hi": 610082011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_20.csv.meta.json",
+      "sha256": "3bc3bd818ff276ccac63238b167b9a8cb2825cd43fb7bb6eddfa9b64aa294a33",
+      "seedBlock": {
+        "lo": 610082080,
+        "hi": 610082083
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_21.csv.meta.json",
+      "sha256": "b9fad1abd875ada56c14ee69b9c8e3490809cf13b37448589f5beb8b0018845e",
+      "seedBlock": {
+        "lo": 610082084,
+        "hi": 610082087
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_22.csv.meta.json",
+      "sha256": "09ef1b427a60be97667a96e5d7a26bf69fc157370f566f27b49e6f0e14fd1198",
+      "seedBlock": {
+        "lo": 610082088,
+        "hi": 610082091
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_23.csv.meta.json",
+      "sha256": "a8261ae3ddfa7e8132d0c80a4f2beacec3a1d9b867407315febfc7cc57450b00",
+      "seedBlock": {
+        "lo": 610082092,
+        "hi": 610082095
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_24.csv.meta.json",
+      "sha256": "b0daeca471a9fe3b50d5c4a920d04cef95937e9f662d2da8b57bfe585d6966e6",
+      "seedBlock": {
+        "lo": 610082096,
+        "hi": 610082099
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_25.csv.meta.json",
+      "sha256": "37497d7eb60c626291021e3089b89efeeb2b659f35badef756c2b5f39f40c996",
+      "seedBlock": {
+        "lo": 610082100,
+        "hi": 610082103
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_26.csv.meta.json",
+      "sha256": "c15f584047e0858af56eecfbb74892ab78336de22e33b29ee12ecc32bfa1fb16",
+      "seedBlock": {
+        "lo": 610082104,
+        "hi": 610082107
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_27.csv.meta.json",
+      "sha256": "ed276954223b27843203b74720bcbcf5c21284d2858c8df4c3ae700e096ade79",
+      "seedBlock": {
+        "lo": 610082108,
+        "hi": 610082111
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_28.csv.meta.json",
+      "sha256": "985bfb820aef9357aab1a7d9f84c8530671090d6bbe9b17415b2a2954730b5da",
+      "seedBlock": {
+        "lo": 610082112,
+        "hi": 610082115
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_29.csv.meta.json",
+      "sha256": "e6217b39ea1ca2781a3599af8910adf1758326d1b268671ba4f868d5439e43cb",
+      "seedBlock": {
+        "lo": 610082116,
+        "hi": 610082119
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_3.csv.meta.json",
+      "sha256": "5c24fcb7ad34138f63b8b7a24b39f9069ec0c7f1d55e13085d8e4df32ef60301",
+      "seedBlock": {
+        "lo": 610082012,
+        "hi": 610082015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_30.csv.meta.json",
+      "sha256": "d3e3adf1b8b5d8e66e76ebb982f2c1c869749ea4e0fdae5f787380ff1bfa0f74",
+      "seedBlock": {
+        "lo": 610082120,
+        "hi": 610082123
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_31.csv.meta.json",
+      "sha256": "cdf565ec2c9c575114b6c77e8b7d126f10eecc7f3bae35486f305e5015d820f2",
+      "seedBlock": {
+        "lo": 610082124,
+        "hi": 610082127
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_4.csv.meta.json",
+      "sha256": "f8e69a4471b1f11995e83481ab94020d8c7f2172c094e8d49cc64734a76f4058",
+      "seedBlock": {
+        "lo": 610082016,
+        "hi": 610082019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_5.csv.meta.json",
+      "sha256": "f42bc80b79f3b124db06bdfada955f1f7518b91635f03f438bf47cc9d479c10c",
+      "seedBlock": {
+        "lo": 610082020,
+        "hi": 610082023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_6.csv.meta.json",
+      "sha256": "2369d936a5265811fc2447680910ea06228945d36072b52358a3f6c5769d332b",
+      "seedBlock": {
+        "lo": 610082024,
+        "hi": 610082027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_7.csv.meta.json",
+      "sha256": "e64120ac6580130be19d76c3a4bb443ade3688c71b6d535ec94ef2708850b7ce",
+      "seedBlock": {
+        "lo": 610082028,
+        "hi": 610082031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_8.csv.meta.json",
+      "sha256": "8ade26cf634db760e52b2b12fa102e7c828627fc258d4299203bc1761eacda61",
+      "seedBlock": {
+        "lo": 610082032,
+        "hi": 610082035
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_9.csv.meta.json",
+      "sha256": "88d9155b616e20a75a618f27f705f8a52e0856c067dc77135e850598f5e926e0",
+      "seedBlock": {
+        "lo": 610082036,
+        "hi": 610082039
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_0.csv.meta.json",
+      "sha256": "bae51f15c02ff7db80e35888668c90e627a5a1875bc80d8a7c5cbabd38e50dfe",
+      "seedBlock": {
+        "lo": 610082000,
+        "hi": 610082003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_1.csv.meta.json",
+      "sha256": "1ad175b3a091c4b387e0e3e213013a10b69956bc5adf0f8f0ba81d73b7e21c55",
+      "seedBlock": {
+        "lo": 610082004,
+        "hi": 610082007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_10.csv.meta.json",
+      "sha256": "a553b578dd8b1eabdb8960f7c8835b172da62e5a0cacd7d641099e8a2f7b99d8",
+      "seedBlock": {
+        "lo": 610082040,
+        "hi": 610082043
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_11.csv.meta.json",
+      "sha256": "6f4711a4dff6925d6f29bc6047e6b15f0b7d8b7eed3ca28798535e2a4fb947ec",
+      "seedBlock": {
+        "lo": 610082044,
+        "hi": 610082047
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_12.csv.meta.json",
+      "sha256": "f64fe4718face56d268518d17c46c952a27665b6e6553d4f88978abae5d9dd6f",
+      "seedBlock": {
+        "lo": 610082048,
+        "hi": 610082051
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_13.csv.meta.json",
+      "sha256": "339a1f35c605c5a46cb648020cb4df3c50874e104acf60c38a23b58417228755",
+      "seedBlock": {
+        "lo": 610082052,
+        "hi": 610082055
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_14.csv.meta.json",
+      "sha256": "dfd825d0eb87ea22e77a4360404b26d0d97e9c2f3dd8355d0378e04776282170",
+      "seedBlock": {
+        "lo": 610082056,
+        "hi": 610082059
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_15.csv.meta.json",
+      "sha256": "c71af3b83101e567738739604871f22e897ec51f379df83f080b5e99c1b50856",
+      "seedBlock": {
+        "lo": 610082060,
+        "hi": 610082063
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_16.csv.meta.json",
+      "sha256": "373702216ef896f97b7cc8f4811e958cfe52c90078fbeac264d3de280b1c3a7b",
+      "seedBlock": {
+        "lo": 610082064,
+        "hi": 610082067
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_17.csv.meta.json",
+      "sha256": "45d9dd84f29fba8c6903f20a000574c2c6de5c4f01df843b4d0c60a1d2f47005",
+      "seedBlock": {
+        "lo": 610082068,
+        "hi": 610082071
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_18.csv.meta.json",
+      "sha256": "8e517c3f5206816e4512804f695c7fe400245c1a77699bbb8e5aa0d45f47fbc1",
+      "seedBlock": {
+        "lo": 610082072,
+        "hi": 610082075
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_19.csv.meta.json",
+      "sha256": "00e402d3ad784c87fb6f3765dcf1fdc9b0c8e22c1cba2b89ea2e79e4cfa13609",
+      "seedBlock": {
+        "lo": 610082076,
+        "hi": 610082079
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_2.csv.meta.json",
+      "sha256": "8c307a626a6a36b2ccae21c42c8a7dac502061fd45a6dbaa8684950a42e2c388",
+      "seedBlock": {
+        "lo": 610082008,
+        "hi": 610082011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_20.csv.meta.json",
+      "sha256": "12d094d36a7a6e76897bf50d2826e3b6f237a6ddf71a8e6adf8bee80d9b6b449",
+      "seedBlock": {
+        "lo": 610082080,
+        "hi": 610082083
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_21.csv.meta.json",
+      "sha256": "24669cd58e921451fad3f3f1f74fb781e247bc46c7cb059158974c30307ecf0b",
+      "seedBlock": {
+        "lo": 610082084,
+        "hi": 610082087
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_22.csv.meta.json",
+      "sha256": "550d7ca08ffd4ec84e0f53f67864800637b501ee83061ed7144c40ce32592911",
+      "seedBlock": {
+        "lo": 610082088,
+        "hi": 610082091
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_23.csv.meta.json",
+      "sha256": "2461d08ccbd08723ce360318650c06951cbb499dc134ab071605e1b6f457c7fd",
+      "seedBlock": {
+        "lo": 610082092,
+        "hi": 610082095
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_24.csv.meta.json",
+      "sha256": "8a739b135f8fa2efdbe265489763ea4cc0147aefca2a2cf79191dafa3708ba74",
+      "seedBlock": {
+        "lo": 610082096,
+        "hi": 610082099
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_25.csv.meta.json",
+      "sha256": "f9c6b7f85219b56dfccb2e09203cf26ad1a5262749e256c113aee1ab493db4d3",
+      "seedBlock": {
+        "lo": 610082100,
+        "hi": 610082103
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_26.csv.meta.json",
+      "sha256": "91e52adfcdbde58e26f8fc030b253d191e7cf8cdba21d10db0c09259ab29fc17",
+      "seedBlock": {
+        "lo": 610082104,
+        "hi": 610082107
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_27.csv.meta.json",
+      "sha256": "0eca90974c1fdb13742bdf63cc5db87e4acd4f7030ee9a9004f0058b21b2b8d5",
+      "seedBlock": {
+        "lo": 610082108,
+        "hi": 610082111
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_28.csv.meta.json",
+      "sha256": "8768e559483905a2e0307948d51a7511af9cc98fed52905b46d07a5f692866f6",
+      "seedBlock": {
+        "lo": 610082112,
+        "hi": 610082115
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_29.csv.meta.json",
+      "sha256": "089fdd17f73085b575da6015853da240279042a94478c4346661b9678fa0fa14",
+      "seedBlock": {
+        "lo": 610082116,
+        "hi": 610082119
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_3.csv.meta.json",
+      "sha256": "881e3ff64520cd824965333c93e4fc2ad674401a613cd196ba5c5c44c7bebcfd",
+      "seedBlock": {
+        "lo": 610082012,
+        "hi": 610082015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_30.csv.meta.json",
+      "sha256": "e7b924db04c2541315ca3f119901b2fab431c416d3ff18c4bdd93ff51b08d3dd",
+      "seedBlock": {
+        "lo": 610082120,
+        "hi": 610082123
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_31.csv.meta.json",
+      "sha256": "62a14a5705b4e4bee26449ac7e312f8e66d3ed9650e05e0915c8e4a6f830d848",
+      "seedBlock": {
+        "lo": 610082124,
+        "hi": 610082127
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_4.csv.meta.json",
+      "sha256": "604ff5278056de1e764334d8ea7eb03cc2b990363473211c124c34e8e2c4731a",
+      "seedBlock": {
+        "lo": 610082016,
+        "hi": 610082019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_5.csv.meta.json",
+      "sha256": "2d128ee9933e9d2d70a61905995e1f6eaeda38d10f646e51c9d4760782b37e80",
+      "seedBlock": {
+        "lo": 610082020,
+        "hi": 610082023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_6.csv.meta.json",
+      "sha256": "1bf4cb492f43dbb7a0d99cd43e2f3c8764447185d502e666d19cddf654ff3282",
+      "seedBlock": {
+        "lo": 610082024,
+        "hi": 610082027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_7.csv.meta.json",
+      "sha256": "6d1bfd639aa6ef3a3510287dbdd55e84bc6d789de34820d2be349b0023ae3908",
+      "seedBlock": {
+        "lo": 610082028,
+        "hi": 610082031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_8.csv.meta.json",
+      "sha256": "5b2877bc6623fbe49f99bf4000c28ef1a6a09ce2ed3032d7607edffecd499f4f",
+      "seedBlock": {
+        "lo": 610082032,
+        "hi": 610082035
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestOff_9.csv.meta.json",
+      "sha256": "e11733d2ebea923ebc6f559c7a5bb07502f6cc649554b76801a4ab19ecb96ef5",
+      "seedBlock": {
+        "lo": 610082036,
+        "hi": 610082039
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_0.csv.meta.json",
+      "sha256": "1b855a8895175e4da89645dc7033e7864bb4e8c0634b75ed4c869a9c3e8c2d9d",
+      "seedBlock": {
+        "lo": 610082000,
+        "hi": 610082003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_1.csv.meta.json",
+      "sha256": "cc1fed1518f40e31f99fa52faa9b909d31ae9e05a3ec996e725b376502d90f7c",
+      "seedBlock": {
+        "lo": 610082004,
+        "hi": 610082007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_10.csv.meta.json",
+      "sha256": "9c3097c7b660ae719b6298d27c64037c368dee95863959823690abd11b02cfbe",
+      "seedBlock": {
+        "lo": 610082040,
+        "hi": 610082043
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_11.csv.meta.json",
+      "sha256": "4d4587d0d1541764e49f6fb661de31d83303e27a6ca0c15b57507d8797cfb88f",
+      "seedBlock": {
+        "lo": 610082044,
+        "hi": 610082047
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_12.csv.meta.json",
+      "sha256": "1db3c57aebe5594c292cea2206b6da5b68a4131ffb58ffc0733a380547f8e4b9",
+      "seedBlock": {
+        "lo": 610082048,
+        "hi": 610082051
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_13.csv.meta.json",
+      "sha256": "e860f1bc30ea13503ac6eb871a0bd1c8fe3f8d093ab8d66a2103def47091ca25",
+      "seedBlock": {
+        "lo": 610082052,
+        "hi": 610082055
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_14.csv.meta.json",
+      "sha256": "d2ddad400798dc20fdf14a750e22167fac637ce3fa62730de1128b59ec6439eb",
+      "seedBlock": {
+        "lo": 610082056,
+        "hi": 610082059
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_15.csv.meta.json",
+      "sha256": "abb5b257e15f669e62c92db65cd2b9aafe936fc77d4f0ad117a1c52f3a3b6332",
+      "seedBlock": {
+        "lo": 610082060,
+        "hi": 610082063
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_16.csv.meta.json",
+      "sha256": "4d433564a69663319ffa54ba00b1d4d984d646d8bd67d91cf5ad3cc26afe280e",
+      "seedBlock": {
+        "lo": 610082064,
+        "hi": 610082067
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_17.csv.meta.json",
+      "sha256": "2ed293c26512f5ee82a1ed9ad4cee9ff74f535d126d919b61a9c86e252de195c",
+      "seedBlock": {
+        "lo": 610082068,
+        "hi": 610082071
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_18.csv.meta.json",
+      "sha256": "8e57538921c247922a272caf5e723a25dac5b1e13845cbc16630ad18d7d3f550",
+      "seedBlock": {
+        "lo": 610082072,
+        "hi": 610082075
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_19.csv.meta.json",
+      "sha256": "6cbed539e23af4116411781885e2a0cc815e63d91eba1b9fb9d6033ab2a27c81",
+      "seedBlock": {
+        "lo": 610082076,
+        "hi": 610082079
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_2.csv.meta.json",
+      "sha256": "3e389699fbfd0ccff9679921bd925c6cd84d64bd88bc676c6af6be71b8ea35da",
+      "seedBlock": {
+        "lo": 610082008,
+        "hi": 610082011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_20.csv.meta.json",
+      "sha256": "9afb950053d609e6a780b32272928ac7083006e00152edc16a7d234e9ec01c73",
+      "seedBlock": {
+        "lo": 610082080,
+        "hi": 610082083
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_21.csv.meta.json",
+      "sha256": "4b1ee910029753208972a6d6599f634cf62d5bd6cb7758864aeaae6adc48ae70",
+      "seedBlock": {
+        "lo": 610082084,
+        "hi": 610082087
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_22.csv.meta.json",
+      "sha256": "4ea948df1891ad09973880179c5e084393255b804c50ab8e40767c4771b6abea",
+      "seedBlock": {
+        "lo": 610082088,
+        "hi": 610082091
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_23.csv.meta.json",
+      "sha256": "80b6714502538f41ccf9adfa2733bbaa1c56626a5ab4f77080c2d583a3039e0e",
+      "seedBlock": {
+        "lo": 610082092,
+        "hi": 610082095
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_24.csv.meta.json",
+      "sha256": "d1a692ea68cc0aecbd811c6ef61b4fb1a63ad21e96fc1611bb3c756404d484e3",
+      "seedBlock": {
+        "lo": 610082096,
+        "hi": 610082099
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_25.csv.meta.json",
+      "sha256": "7dcbb6a269c6ee01925da64cf7b89f5ff869fe5736fba358448ac1cc2c0ecdb5",
+      "seedBlock": {
+        "lo": 610082100,
+        "hi": 610082103
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_26.csv.meta.json",
+      "sha256": "0c3af00c35bddca2a02f63d9d57db24c14a63287f92d26cc5c132bc63c26c1c6",
+      "seedBlock": {
+        "lo": 610082104,
+        "hi": 610082107
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_27.csv.meta.json",
+      "sha256": "812b46f845320f08d182d054bc01a3406183835b8ac3c1db451663177c0ebfda",
+      "seedBlock": {
+        "lo": 610082108,
+        "hi": 610082111
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_28.csv.meta.json",
+      "sha256": "2f86ff6c7a90e49513e5d95049ee2307af677aa653700a613747524680eddea7",
+      "seedBlock": {
+        "lo": 610082112,
+        "hi": 610082115
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_29.csv.meta.json",
+      "sha256": "47441a6b31d3ab8c7bf6f5783afc208d19a59f2dc34dd63b82aa5fba561216a1",
+      "seedBlock": {
+        "lo": 610082116,
+        "hi": 610082119
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_3.csv.meta.json",
+      "sha256": "610f43b7f5e2cad202224297b134c652c7bb7de8c867e3eef351e0f3e9f5e334",
+      "seedBlock": {
+        "lo": 610082012,
+        "hi": 610082015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_30.csv.meta.json",
+      "sha256": "0120096dfbbe19917001278c9eef6b4055066ae36a51ecd94b0bf0cd4f27f87f",
+      "seedBlock": {
+        "lo": 610082120,
+        "hi": 610082123
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_31.csv.meta.json",
+      "sha256": "85c82ff26297bf1ee4164c4fcfde91a2c206ec7cdce428b5efabf4533a87fb4b",
+      "seedBlock": {
+        "lo": 610082124,
+        "hi": 610082127
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_4.csv.meta.json",
+      "sha256": "1e07cd1be8040ed253c253feb3bfb3e58327bc53766e4c57488ad6b81c1274d6",
+      "seedBlock": {
+        "lo": 610082016,
+        "hi": 610082019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_5.csv.meta.json",
+      "sha256": "02663b5fe59b6c39a4a6b1557501903b06bf590486e2f739ac997d28a7862576",
+      "seedBlock": {
+        "lo": 610082020,
+        "hi": 610082023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_6.csv.meta.json",
+      "sha256": "8cd5dbf6fa81cade8add1ec9e91612186737e6b4492b30b4275ee60a23b2423c",
+      "seedBlock": {
+        "lo": 610082024,
+        "hi": 610082027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_7.csv.meta.json",
+      "sha256": "a761910031798eba45a95aa11fdd84e133e4a04434ed77620b649ea019c09de4",
+      "seedBlock": {
+        "lo": 610082028,
+        "hi": 610082031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_8.csv.meta.json",
+      "sha256": "2a803c4cc75adc89a6554ecd4efcdcf241d678e76d0a8d6d9318b56ced9d666f",
+      "seedBlock": {
+        "lo": 610082032,
+        "hi": 610082035
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/RestShop_9.csv.meta.json",
+      "sha256": "6755cc37c23c5872c40e9b8f617f48e65acfcb3d8dfc1ac40be70c7fbdade57f",
+      "seedBlock": {
+        "lo": 610082036,
+        "hi": 610082039
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_0.csv.meta.json",
+      "sha256": "bae840fc6b93c5cefcd3cb08abe90b3c2f423dbd23efee11cf41a9edd7968a83",
+      "seedBlock": {
+        "lo": 610082000,
+        "hi": 610082003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_1.csv.meta.json",
+      "sha256": "baaa7808b64ec8b5846ed1b39d0d18c8c83236d5a9088485d2bd2f74e2a1be30",
+      "seedBlock": {
+        "lo": 610082004,
+        "hi": 610082007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_10.csv.meta.json",
+      "sha256": "dfd8e9330260091ac4ec3c8965fd510f061126050e32bb75b2a15565be59a0e8",
+      "seedBlock": {
+        "lo": 610082040,
+        "hi": 610082043
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_11.csv.meta.json",
+      "sha256": "deb03766cf91c00bbcb8532fa5f4bbd8402532abe79df839dfbbf51e7401bfc3",
+      "seedBlock": {
+        "lo": 610082044,
+        "hi": 610082047
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_12.csv.meta.json",
+      "sha256": "405d1115dcff22e41f73f1ea16830371b56f190ced6ae92257b3c95a03320043",
+      "seedBlock": {
+        "lo": 610082048,
+        "hi": 610082051
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_13.csv.meta.json",
+      "sha256": "cec0efe422e9cce749b1e4ee4cce7b5691881c658aed737b1e6471a742f90b18",
+      "seedBlock": {
+        "lo": 610082052,
+        "hi": 610082055
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_14.csv.meta.json",
+      "sha256": "746d70c0994d5e77010d50a02bb13ac3f871a5e9af8a514aa0591a21b0ca55cb",
+      "seedBlock": {
+        "lo": 610082056,
+        "hi": 610082059
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_15.csv.meta.json",
+      "sha256": "3f7f5f23191edafedda045806d043b1ac5ff38c02ff56acea734b85942c2882e",
+      "seedBlock": {
+        "lo": 610082060,
+        "hi": 610082063
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_16.csv.meta.json",
+      "sha256": "2ad020d13c66be22b52109610c600a256908dc8a7e096d0a9bc4d94d9bf24c65",
+      "seedBlock": {
+        "lo": 610082064,
+        "hi": 610082067
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_17.csv.meta.json",
+      "sha256": "42a8df4dc690e60ef9ad1111b0cbc560c7df053c5715fa9f95f61a1dc9a446e0",
+      "seedBlock": {
+        "lo": 610082068,
+        "hi": 610082071
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_18.csv.meta.json",
+      "sha256": "451e3de6ce45ba833ad0d181adf1a790a99fde48b5650117b820ff0ec29399df",
+      "seedBlock": {
+        "lo": 610082072,
+        "hi": 610082075
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_19.csv.meta.json",
+      "sha256": "2d6abb61625ebe3d0695818e589990e84a641612b61abf5c91acb45c163027bd",
+      "seedBlock": {
+        "lo": 610082076,
+        "hi": 610082079
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_2.csv.meta.json",
+      "sha256": "62ab19dbaf1c6155ecebd0520fa4d6e017b6defe56bc4083669bf52daca9bfff",
+      "seedBlock": {
+        "lo": 610082008,
+        "hi": 610082011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_20.csv.meta.json",
+      "sha256": "c79e27d29c5eff5bf0763c358f51f9e26c8f84897fe1656093ce851906487e85",
+      "seedBlock": {
+        "lo": 610082080,
+        "hi": 610082083
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_21.csv.meta.json",
+      "sha256": "af0f44ab1abcf7ccee019bbad98bf48fa65145a43cd3ba8b509ccae3e1d62ccb",
+      "seedBlock": {
+        "lo": 610082084,
+        "hi": 610082087
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_22.csv.meta.json",
+      "sha256": "cbde1812585d993def8eaad9b08fac4a931322129c235076cebf11d16c0cc7a0",
+      "seedBlock": {
+        "lo": 610082088,
+        "hi": 610082091
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_23.csv.meta.json",
+      "sha256": "29fc4fd579e2a226d77e8e60242a7b701d51051d5d8b1ebb3ad3623f6e446a52",
+      "seedBlock": {
+        "lo": 610082092,
+        "hi": 610082095
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_24.csv.meta.json",
+      "sha256": "f781cad153467afb78083dbdffb8c921d8b46f335f919d3d731fdb8d835954e1",
+      "seedBlock": {
+        "lo": 610082096,
+        "hi": 610082099
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_25.csv.meta.json",
+      "sha256": "ec38cf79ef1bb8a5b02a96515feb9da27c088f632bc91eb943407713eb5884ee",
+      "seedBlock": {
+        "lo": 610082100,
+        "hi": 610082103
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_26.csv.meta.json",
+      "sha256": "033451c2847d3adcf01490903253004a63c665c990cc5a956e2539ee8784f660",
+      "seedBlock": {
+        "lo": 610082104,
+        "hi": 610082107
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_27.csv.meta.json",
+      "sha256": "07bc7f4e8c3b413bd97b0b621653c104f16be3bac11a84a8532a0be79870aa9d",
+      "seedBlock": {
+        "lo": 610082108,
+        "hi": 610082111
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_28.csv.meta.json",
+      "sha256": "198b63f3fa9429c91ec8cef48af06d38a23081ee775f0251d32bdd0312ca61ad",
+      "seedBlock": {
+        "lo": 610082112,
+        "hi": 610082115
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_29.csv.meta.json",
+      "sha256": "9b835483fed53aa87e15ae56c4b1c13b77516c9bf74c7c28d76f5bc16c569ca5",
+      "seedBlock": {
+        "lo": 610082116,
+        "hi": 610082119
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_3.csv.meta.json",
+      "sha256": "3fccdc2e256e3fc14a3d6bb1b8f9b9df87d001debb8386bad8f11f11ac4912ed",
+      "seedBlock": {
+        "lo": 610082012,
+        "hi": 610082015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_30.csv.meta.json",
+      "sha256": "574efa33e9c181d5b31ac33fea20f648cd4ee10eb8b96fa2427cadb0b11546fc",
+      "seedBlock": {
+        "lo": 610082120,
+        "hi": 610082123
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_31.csv.meta.json",
+      "sha256": "62c0861845ec6cb1c6bafd55ed44a19e6b2be200bd8d903b769f0914732f3318",
+      "seedBlock": {
+        "lo": 610082124,
+        "hi": 610082127
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_4.csv.meta.json",
+      "sha256": "1d4826d26042f4980f578b7765ab02ff1f33fbc5c2f63067e319dd5f53ebd8be",
+      "seedBlock": {
+        "lo": 610082016,
+        "hi": 610082019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_5.csv.meta.json",
+      "sha256": "3ee20c7615f461d2672a54f22effd383511bed4647d07694b0a08218f543a537",
+      "seedBlock": {
+        "lo": 610082020,
+        "hi": 610082023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_6.csv.meta.json",
+      "sha256": "da2e10933c7223bf5ed1bc30d303b56c347ea6eae3c71a0332c280bda0daa96e",
+      "seedBlock": {
+        "lo": 610082024,
+        "hi": 610082027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_7.csv.meta.json",
+      "sha256": "83a55acd36efd090bac0fee5b0d11e977a3388c1ae96e04e97013908e23220d9",
+      "seedBlock": {
+        "lo": 610082028,
+        "hi": 610082031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_8.csv.meta.json",
+      "sha256": "12853d5eaa7570eaccde7679739b491037cd4eff61fa131e485c67d80f054e01",
+      "seedBlock": {
+        "lo": 610082032,
+        "hi": 610082035
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/ShopFix_9.csv.meta.json",
+      "sha256": "6b055c6f609903e4398b3f9162356eacd9487df18f662fd6548eb0c1aeb9d652",
+      "seedBlock": {
+        "lo": 610082036,
+        "hi": 610082039
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_0.csv.meta.json",
+      "sha256": "925b16acf51d4a2dbc0c60ca27fde42a6d6be094e346b67fadc092c1896bc492",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_1.csv.meta.json",
+      "sha256": "8c367008ddb28bf9cc1876c806d510f42917131d040ef5e487c28e399c1dffcf",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_2.csv.meta.json",
+      "sha256": "040301c2b23b9a5321531c26e7c60827f2e269c5d68822273294da32068d2578",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_3.csv.meta.json",
+      "sha256": "56beb7fb3999e57f0ae0d0fd8a3015fcb7e5fc21fbf4c718750c45e601fd0224",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_4.csv.meta.json",
+      "sha256": "8117a626d8c07dd6a48a01736a3be1462fee79a44afb94eab37694333d096a06",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_5.csv.meta.json",
+      "sha256": "460628f8de15d8e91741c7fc1a91f27215c27c8536987fcb1bae7576865eb92e",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_6.csv.meta.json",
+      "sha256": "ddc9f755f3c9e08b4d6b7e638159630fbf44a7b0ae2667421071a899296a0cd8",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/Fprod_7.csv.meta.json",
+      "sha256": "a0ab0ea705b5bfd68fa7c558a730241714147ee70925fe8a77e6fc957fe4d0a6",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_0.csv.meta.json",
+      "sha256": "21afa97133dcf58067d4dd3ad45736d1deab83c0dc22890452428c173343cbd5",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_1.csv.meta.json",
+      "sha256": "c1ef3bacc8427764434c1c5410e333e6c3e2cc209684e48bfa3db5ca4efbc74b",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_2.csv.meta.json",
+      "sha256": "ac7b4f5e3019c84a0ce9b13a10c37182931e5362b7aa52d9d412cc50553ad6ef",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_3.csv.meta.json",
+      "sha256": "be60b2f80b002109bbb7a7b43e583b0f66f31a5824c61928deab0d4e6673f762",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_4.csv.meta.json",
+      "sha256": "97e6c2b9f01c3d7a7f96b2e9e58f35b3ef8f348f87ef9ff6a72bb81e9da19a4b",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_5.csv.meta.json",
+      "sha256": "e1908b044b435a695cfa37dd8f3a73cb350331ed856306ee6a712c65e67cc5ed",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_6.csv.meta.json",
+      "sha256": "19ac1ec63ee1b799ea3667378f2f41ceb4ce0868a6e26f7e885e72384aae0015",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/FullHp_7.csv.meta.json",
+      "sha256": "e6ca75092e3b472c8159bdd8ce66d5252752abdc2480c7a981966d225d0159fe",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_0.csv.meta.json",
+      "sha256": "794aa81faff355f22501bea5871682a6378f5d5efad612ebc7015cb13c82e64b",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_1.csv.meta.json",
+      "sha256": "e7e46d215c96582ddb9aeaa888be995b008a1e65fefd828ce57746ce175f0d39",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_2.csv.meta.json",
+      "sha256": "5fa9fd16ec7e28495466222d0bc1d5425090b4914e202043046bfd97e61169df",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_3.csv.meta.json",
+      "sha256": "ad7151819f1785898803bf245caec391a6515ba88d3f96476634ca39b142893f",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_4.csv.meta.json",
+      "sha256": "0d57b72bb3201181d76f843b1032e08c0c78cd82889e37ee25d497ce5f684c55",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_5.csv.meta.json",
+      "sha256": "6a6b1f215cc5a9490ce712e8d7b5b1fb081c3b45a49347053019a83d767ff227",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_6.csv.meta.json",
+      "sha256": "58f2399d517cda0aefac293f82b73c74e1ac858999ce456cd7ae40b09760042d",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3/ShopOff_7.csv.meta.json",
+      "sha256": "ae90fd2bd8b6b50ce483f4f7e04cde29f157f90398aac6ea13504f397f1c9c9a",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_0.csv.meta.json",
+      "sha256": "7e6cadbbde979762567c3c758787b4924a75377ba1a6a787ba9a0025291ca5da",
+      "seedBlock": {
+        "lo": 610082128,
+        "hi": 610082131
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_1.csv.meta.json",
+      "sha256": "9808f43a1f3bea3dd4f280e9f4034bca57da9057bbebad852882d5220d0ccacd",
+      "seedBlock": {
+        "lo": 610082132,
+        "hi": 610082135
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_10.csv.meta.json",
+      "sha256": "489791fd9702979196e590419d21088e0dc1f3990a1e8a1a66b6b45d3d156083",
+      "seedBlock": {
+        "lo": 610082168,
+        "hi": 610082171
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_11.csv.meta.json",
+      "sha256": "b229ee80919724e0a668d1fd378d5a5bff0728124ba9d553d387152bd3bd7c1f",
+      "seedBlock": {
+        "lo": 610082172,
+        "hi": 610082175
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_12.csv.meta.json",
+      "sha256": "cb44706330a6aefce219f2079e4d0fea1e270296e700dc61149e360090bb57d5",
+      "seedBlock": {
+        "lo": 610082176,
+        "hi": 610082179
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_13.csv.meta.json",
+      "sha256": "5ee5f43fa2d624edd5804abceab283407ab0379f9f8afb7cdd6dd01939e66a13",
+      "seedBlock": {
+        "lo": 610082180,
+        "hi": 610082183
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_14.csv.meta.json",
+      "sha256": "0b3d8b50a9da94536a0bb3fb87e808eebee6bda647db5134b10443b4eeaf3f10",
+      "seedBlock": {
+        "lo": 610082184,
+        "hi": 610082187
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_15.csv.meta.json",
+      "sha256": "7f296681828b51c11fb3b5acb97a082bb22cc5f930760936864f00523c2a85fe",
+      "seedBlock": {
+        "lo": 610082188,
+        "hi": 610082191
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_16.csv.meta.json",
+      "sha256": "78a099857aa422a3ca7e95b27e4c1e83585176f8b3a0be4acc2dbb1cf9c7922c",
+      "seedBlock": {
+        "lo": 610082192,
+        "hi": 610082195
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_17.csv.meta.json",
+      "sha256": "7b1df604a25d593d95d13ca0a3c0d6f1c8e5ff119dc677291837c0a35ef16543",
+      "seedBlock": {
+        "lo": 610082196,
+        "hi": 610082199
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_18.csv.meta.json",
+      "sha256": "3bd50a1a4da48c319dee2c42dfaac3a308f051090c4d8ae345b69737606eebfe",
+      "seedBlock": {
+        "lo": 610082200,
+        "hi": 610082203
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_19.csv.meta.json",
+      "sha256": "003d76c017bfede43138adce59cef123821f1299ccf0ef8e5db7e2148c9b2bf5",
+      "seedBlock": {
+        "lo": 610082204,
+        "hi": 610082207
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_2.csv.meta.json",
+      "sha256": "9561f5aaf3fb39bd147a96f8765c013b5e4157a4c5d41b48833dc6a67b9a6cb4",
+      "seedBlock": {
+        "lo": 610082136,
+        "hi": 610082139
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_20.csv.meta.json",
+      "sha256": "69a23183aa07f3841444ca46398e5d18134b8eef6e8ab6a3d2875061a96fe9ed",
+      "seedBlock": {
+        "lo": 610082208,
+        "hi": 610082211
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_21.csv.meta.json",
+      "sha256": "a48895fa2b80fc007b977ccd023a7be1bd30c32c6337bcebc2e889d553d57fb2",
+      "seedBlock": {
+        "lo": 610082212,
+        "hi": 610082215
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_22.csv.meta.json",
+      "sha256": "13c55eb4fe971989104d143dd3efe83627bf179aa35e936a0b9895a8fa2e6873",
+      "seedBlock": {
+        "lo": 610082216,
+        "hi": 610082219
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_23.csv.meta.json",
+      "sha256": "0109c51fb9d182c031cb809fab3d2b95e2642faa5e9472db38c010833b18daee",
+      "seedBlock": {
+        "lo": 610082220,
+        "hi": 610082223
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_24.csv.meta.json",
+      "sha256": "79e5a7fe9fba64efd89aeb46b4c2a34c40a556dbc4b4b0fbf0d35df69e5bd8f3",
+      "seedBlock": {
+        "lo": 610082224,
+        "hi": 610082227
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_25.csv.meta.json",
+      "sha256": "249e4e285091094bd04260610962bf2625e6ff67ff643483296761f0112b33fd",
+      "seedBlock": {
+        "lo": 610082228,
+        "hi": 610082231
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_26.csv.meta.json",
+      "sha256": "0496800e4d8cd225b0c0ad94be64fdfcb312fc23f12dfa2d6a8d7e45935c7f13",
+      "seedBlock": {
+        "lo": 610082232,
+        "hi": 610082235
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_27.csv.meta.json",
+      "sha256": "07486f99d06a4c5070c711283bdc592c82369cc8d051a15669f2ee92ac3acad8",
+      "seedBlock": {
+        "lo": 610082236,
+        "hi": 610082239
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_28.csv.meta.json",
+      "sha256": "b4d1a9185d73f5fd4f676b69191871d410abb7188d5bf09185b611b50e5fe7b0",
+      "seedBlock": {
+        "lo": 610082240,
+        "hi": 610082243
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_29.csv.meta.json",
+      "sha256": "9817229acca2c7d9ce4577dd00ede0316dfb7a44a098f00a601db6a1373fb477",
+      "seedBlock": {
+        "lo": 610082244,
+        "hi": 610082247
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_3.csv.meta.json",
+      "sha256": "2d2bd664077aab92da87220ad0ae55547b93932aa3dd7b3aa337a2ec8bc2abdb",
+      "seedBlock": {
+        "lo": 610082140,
+        "hi": 610082143
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_30.csv.meta.json",
+      "sha256": "92080fa7692f80898cc0311c26bca14698fc3c114fccb490356736380efaf26f",
+      "seedBlock": {
+        "lo": 610082248,
+        "hi": 610082251
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_31.csv.meta.json",
+      "sha256": "6d630a457921dd10f760e152e880c2989ecc62c551491074f451f3904a635a6f",
+      "seedBlock": {
+        "lo": 610082252,
+        "hi": 610082255
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_4.csv.meta.json",
+      "sha256": "d84df9939a970c004187ea2315d0c2dde33768753b6df5f23becb13d45034d54",
+      "seedBlock": {
+        "lo": 610082144,
+        "hi": 610082147
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_5.csv.meta.json",
+      "sha256": "6e93308e5ab7f19bf0f0dc66577717c8c7d0df626e11b4c1056e75632e89f922",
+      "seedBlock": {
+        "lo": 610082148,
+        "hi": 610082151
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_6.csv.meta.json",
+      "sha256": "ec50722282e7a48bf265afac0977fdd68d85093152e1b7014fc4e079b3175250",
+      "seedBlock": {
+        "lo": 610082152,
+        "hi": 610082155
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_7.csv.meta.json",
+      "sha256": "0fe12e00edda95e576feec0f19c914f1c4aab40afdd9cdc3f45dfed48dd13cd5",
+      "seedBlock": {
+        "lo": 610082156,
+        "hi": 610082159
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_8.csv.meta.json",
+      "sha256": "2a1a150958e8b314be1c59176e26709fe654a36a7604228f9d2eeb76fe384b0d",
+      "seedBlock": {
+        "lo": 610082160,
+        "hi": 610082163
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/Fprod_9.csv.meta.json",
+      "sha256": "39b7885cede4b8e09b54f66877b0680e1ee764a4f12da63e244566f854e3b9e6",
+      "seedBlock": {
+        "lo": 610082164,
+        "hi": 610082167
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_0.csv.meta.json",
+      "sha256": "b744fc3dcc6e5d4e1d931f7ab24154e3267524af3662fc30d1dcf837d5ed8928",
+      "seedBlock": {
+        "lo": 610082128,
+        "hi": 610082131
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_1.csv.meta.json",
+      "sha256": "ad184a72bec3705ec542cd559fe33998072eeef8a6a59f3071329cb97ac79b1f",
+      "seedBlock": {
+        "lo": 610082132,
+        "hi": 610082135
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_10.csv.meta.json",
+      "sha256": "3a5e866f3fc89f600df6d575aad9e6deb215f096b2de0a24b93fc08c706b26c4",
+      "seedBlock": {
+        "lo": 610082168,
+        "hi": 610082171
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_11.csv.meta.json",
+      "sha256": "da94f3e24466c79e96b67e223d39f2d14945eb795694d3dc12587ee0cdbd58d7",
+      "seedBlock": {
+        "lo": 610082172,
+        "hi": 610082175
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_12.csv.meta.json",
+      "sha256": "cb04351c7f24e847b05582cb0f06eb2a2dfbc9ef13b699769d7e696b2fda2d79",
+      "seedBlock": {
+        "lo": 610082176,
+        "hi": 610082179
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_13.csv.meta.json",
+      "sha256": "c4f0d146d0b0a29dc2568ab5786e4ae2cd2e626e237979112502cfe9e950e8a2",
+      "seedBlock": {
+        "lo": 610082180,
+        "hi": 610082183
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_14.csv.meta.json",
+      "sha256": "bba480f412d2abdc1c896f0c2d5f61f3c9e803997dcdc3709482e6a58b108157",
+      "seedBlock": {
+        "lo": 610082184,
+        "hi": 610082187
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_15.csv.meta.json",
+      "sha256": "f55257d8e528c9cb026c03394775087e597a86c0c85d8ec502a90d5dd57b2542",
+      "seedBlock": {
+        "lo": 610082188,
+        "hi": 610082191
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_16.csv.meta.json",
+      "sha256": "bd4d26f51f22f521ea246145f6559aa5ea50ad3ced7e2b71bf1925345f7f57b1",
+      "seedBlock": {
+        "lo": 610082192,
+        "hi": 610082195
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_17.csv.meta.json",
+      "sha256": "bfde4917c41a06d3c2bd0d04e9b62c56828ca7fdcf722bbe482620c303c64f1a",
+      "seedBlock": {
+        "lo": 610082196,
+        "hi": 610082199
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_18.csv.meta.json",
+      "sha256": "ed74db550414c33f5ccea6b4c0dcd90b25a49171fb6a8079d9c5a40388df562a",
+      "seedBlock": {
+        "lo": 610082200,
+        "hi": 610082203
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_19.csv.meta.json",
+      "sha256": "975e44a32e25f6f770ff7c69e950d20b317e22d46fb54adde8266a9bfe9aa598",
+      "seedBlock": {
+        "lo": 610082204,
+        "hi": 610082207
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_2.csv.meta.json",
+      "sha256": "d283f6912f55f6e9923a8d4b50210e833df71117f4ed609b10bd6210abda5c9d",
+      "seedBlock": {
+        "lo": 610082136,
+        "hi": 610082139
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_20.csv.meta.json",
+      "sha256": "0c5911eb6b09eae1531e68052117e34d446539fe589c19d2f94b724401952c96",
+      "seedBlock": {
+        "lo": 610082208,
+        "hi": 610082211
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_21.csv.meta.json",
+      "sha256": "eb5e7f96c26dfebb93ef02a515c57ad842cf637961e83866c483c892295de9e1",
+      "seedBlock": {
+        "lo": 610082212,
+        "hi": 610082215
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_22.csv.meta.json",
+      "sha256": "01e3462778d840b3b467f833c916b740364e809dc26ca54e3349d203af8624a8",
+      "seedBlock": {
+        "lo": 610082216,
+        "hi": 610082219
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_23.csv.meta.json",
+      "sha256": "60af1ecd500ddb4876f53ed70ac8418d7784e77976c19b1d38d05f72c6b50f07",
+      "seedBlock": {
+        "lo": 610082220,
+        "hi": 610082223
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_24.csv.meta.json",
+      "sha256": "5df3e09994d860ed8fface570151ddd40b96a9ea38078e7f2acf12420abc4be4",
+      "seedBlock": {
+        "lo": 610082224,
+        "hi": 610082227
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_25.csv.meta.json",
+      "sha256": "b21639e0d4ffb09cbb9db10c260da79dce5dbfb7f24889c614d5bae09c6f605d",
+      "seedBlock": {
+        "lo": 610082228,
+        "hi": 610082231
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_26.csv.meta.json",
+      "sha256": "bfae33447af980715da7317432b0c6f1c5d258bd88154a4bf7415913360f324f",
+      "seedBlock": {
+        "lo": 610082232,
+        "hi": 610082235
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_27.csv.meta.json",
+      "sha256": "33a4ffd71c1029be9f273c683696cdbbeea1a51a6a787e532122a9a2a9b98e49",
+      "seedBlock": {
+        "lo": 610082236,
+        "hi": 610082239
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_28.csv.meta.json",
+      "sha256": "f1281aa7c34945e6708605b632061764c40beacdfa04e633ac0c14d645ba89e9",
+      "seedBlock": {
+        "lo": 610082240,
+        "hi": 610082243
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_29.csv.meta.json",
+      "sha256": "3234393779a3a1abc4e6608b9df54443cc8f16734edf18f08a143d99134ffec9",
+      "seedBlock": {
+        "lo": 610082244,
+        "hi": 610082247
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_3.csv.meta.json",
+      "sha256": "576fbe2e80d86a71c0157fc2c5fb72e4226ddb48337d99cbd577a23047dac334",
+      "seedBlock": {
+        "lo": 610082140,
+        "hi": 610082143
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_30.csv.meta.json",
+      "sha256": "d7995b82359c500c27048ebc316e17ccc474233acb756080062dab68b858460e",
+      "seedBlock": {
+        "lo": 610082248,
+        "hi": 610082251
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_31.csv.meta.json",
+      "sha256": "a7b94472a127d71558a0bd5c85875695b207e8fbcb5a10c2ee2f65b275e2c6c5",
+      "seedBlock": {
+        "lo": 610082252,
+        "hi": 610082255
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_4.csv.meta.json",
+      "sha256": "4eb6d30c9feea3b2a75a32eba8aee3f51a89de0f34210023cc07f299e6ceaa7b",
+      "seedBlock": {
+        "lo": 610082144,
+        "hi": 610082147
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_5.csv.meta.json",
+      "sha256": "416a54fbf882ecd0afc11994cba96557fbfacf610467059be37c35aaaf5f6452",
+      "seedBlock": {
+        "lo": 610082148,
+        "hi": 610082151
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_6.csv.meta.json",
+      "sha256": "3478bb9b48d497eafe6c35afcf75d7fc583e677f7621b9a2a913b782d349b98c",
+      "seedBlock": {
+        "lo": 610082152,
+        "hi": 610082155
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_7.csv.meta.json",
+      "sha256": "8bcb14b5cdd4297624150517b239dc585b871028c9f0dd5926652083bc5374cd",
+      "seedBlock": {
+        "lo": 610082156,
+        "hi": 610082159
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_8.csv.meta.json",
+      "sha256": "baedeca3344c2962086d64ba04f1d5f24500a95ca76bd2ab5eab23279ad01398",
+      "seedBlock": {
+        "lo": 610082160,
+        "hi": 610082163
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/FullHp_9.csv.meta.json",
+      "sha256": "f48303d504ed7ee8f5032d91dd70ae48a309afaf0fd75ae30faf2d951f987f47",
+      "seedBlock": {
+        "lo": 610082164,
+        "hi": 610082167
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_0.csv.meta.json",
+      "sha256": "e5854239546d6ff414281ffbb6979177dcd05b080b28e806c5e5b3ce7c1fdc02",
+      "seedBlock": {
+        "lo": 610082128,
+        "hi": 610082131
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_1.csv.meta.json",
+      "sha256": "34d471f3324a74362523bd7f87fb9dd7c4d52fff7a6d9aa4352fec3392ec4b81",
+      "seedBlock": {
+        "lo": 610082132,
+        "hi": 610082135
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_10.csv.meta.json",
+      "sha256": "c12e270007681719087f1afe37ef5d99747a1dc3890d7e714e641c6f6bffc3b5",
+      "seedBlock": {
+        "lo": 610082168,
+        "hi": 610082171
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_11.csv.meta.json",
+      "sha256": "492c132565ff9c7151e041f88ef57e175fd5131c3769eb0c0541db3cf6e510f4",
+      "seedBlock": {
+        "lo": 610082172,
+        "hi": 610082175
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_12.csv.meta.json",
+      "sha256": "baa96cdb7fc1061f46914e8b5042d00bb547bc04a733207df16d258c084113ca",
+      "seedBlock": {
+        "lo": 610082176,
+        "hi": 610082179
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_13.csv.meta.json",
+      "sha256": "9dd4ddcd8e5f9f9583fad7dfd92d99e38596f0631657d39d886fa11a6f693155",
+      "seedBlock": {
+        "lo": 610082180,
+        "hi": 610082183
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_14.csv.meta.json",
+      "sha256": "3c4ae73f721d439b4ebf416880c6d96bc3076ff3d21816be69974869fd70a519",
+      "seedBlock": {
+        "lo": 610082184,
+        "hi": 610082187
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_15.csv.meta.json",
+      "sha256": "eea73abbb1c5d81b75fc9692711227e1aa1487eeb50f1a2a4b01dd9b6e765d9b",
+      "seedBlock": {
+        "lo": 610082188,
+        "hi": 610082191
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_16.csv.meta.json",
+      "sha256": "0a2f0dcab2940f048a182d68b49d65ab6b2450b19e1fa29cf967134840f11cb7",
+      "seedBlock": {
+        "lo": 610082192,
+        "hi": 610082195
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_17.csv.meta.json",
+      "sha256": "8c8e0a8dffe6a5ab927d903520d69e8adc522da232b3f8527c47781afc1c9e28",
+      "seedBlock": {
+        "lo": 610082196,
+        "hi": 610082199
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_18.csv.meta.json",
+      "sha256": "769abae559f1dc0ef995fa0d25a39448b38a53da7d25265fe6e40e5bf911460a",
+      "seedBlock": {
+        "lo": 610082200,
+        "hi": 610082203
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_19.csv.meta.json",
+      "sha256": "d65d9ca4c5f33bf557610784b60b3b31142de409852f061b65a4146d766ec26c",
+      "seedBlock": {
+        "lo": 610082204,
+        "hi": 610082207
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_2.csv.meta.json",
+      "sha256": "73287b5b1d425bbbb9c982f39b86cdf1cc3dc199a45f055a70715aa97bd6fcaf",
+      "seedBlock": {
+        "lo": 610082136,
+        "hi": 610082139
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_20.csv.meta.json",
+      "sha256": "6588d30172d5c80566e840dc3ae6a31a426e3e62ed2ebeb947a369b261704acf",
+      "seedBlock": {
+        "lo": 610082208,
+        "hi": 610082211
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_21.csv.meta.json",
+      "sha256": "cd91861ce98f27d42f85a442225e4f4769113a0d64333902f99990422badc168",
+      "seedBlock": {
+        "lo": 610082212,
+        "hi": 610082215
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_22.csv.meta.json",
+      "sha256": "3f4e955d96b496ebc8d77c01731dd54cd238aecc842862e59d3f7db1b50d3cd8",
+      "seedBlock": {
+        "lo": 610082216,
+        "hi": 610082219
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_23.csv.meta.json",
+      "sha256": "9d04533378d117fdd2cd1b955d36ee1ddb40d25d8744aeeadda92d298446d22e",
+      "seedBlock": {
+        "lo": 610082220,
+        "hi": 610082223
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_24.csv.meta.json",
+      "sha256": "e0a8f2ed5549a3a28934fe0bf7fe5ad3b9780903831805c0ec3e5da5fe6c50a0",
+      "seedBlock": {
+        "lo": 610082224,
+        "hi": 610082227
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_25.csv.meta.json",
+      "sha256": "65baedeeb382bbc6242f1b740015d3099533c0b55bc4e9a4e4bdc176e3b3c95a",
+      "seedBlock": {
+        "lo": 610082228,
+        "hi": 610082231
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_26.csv.meta.json",
+      "sha256": "7e50c952eb24967ab81e65350dcf406633d167ddf03e30931d2295c03e61df32",
+      "seedBlock": {
+        "lo": 610082232,
+        "hi": 610082235
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_27.csv.meta.json",
+      "sha256": "54c5c10cb0399fcc5c98c29e749db6e9719bbb1ffd1de1c49cda2f93e7a9e3c5",
+      "seedBlock": {
+        "lo": 610082236,
+        "hi": 610082239
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_28.csv.meta.json",
+      "sha256": "6057e86a01bc46ac8846899b64427dc40da24ad89f5405aed6fcb057e12b3cbc",
+      "seedBlock": {
+        "lo": 610082240,
+        "hi": 610082243
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_29.csv.meta.json",
+      "sha256": "acdc545570aca198509e4e17a54262389b1be7fca83d18ae12047227778c703f",
+      "seedBlock": {
+        "lo": 610082244,
+        "hi": 610082247
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_3.csv.meta.json",
+      "sha256": "9497d3e9f6c498b42529c24606c4d2f0cd0b7d93b3a02a575b6d157892904a74",
+      "seedBlock": {
+        "lo": 610082140,
+        "hi": 610082143
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_30.csv.meta.json",
+      "sha256": "8ff78b9bb2b2a64b62c1abcc5e228454d9869674291e77325fdeb7a325c3a6a0",
+      "seedBlock": {
+        "lo": 610082248,
+        "hi": 610082251
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_31.csv.meta.json",
+      "sha256": "d28d2d520b9d0180eed7fae7cb9d95fc63731320f413ca15690bcc36bdbef5a4",
+      "seedBlock": {
+        "lo": 610082252,
+        "hi": 610082255
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_4.csv.meta.json",
+      "sha256": "acbe685238df78f67596692fd0b05074e24eac23ce261086a9b06845258d1d28",
+      "seedBlock": {
+        "lo": 610082144,
+        "hi": 610082147
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_5.csv.meta.json",
+      "sha256": "35b518484bc338989c2ca70fc16cdd5525af81790cc8fba5f8a93d4ba4645fdd",
+      "seedBlock": {
+        "lo": 610082148,
+        "hi": 610082151
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_6.csv.meta.json",
+      "sha256": "e2b7c18acc107f361ff41e1d77132e2668f45bfda556d18246cff20951fadf34",
+      "seedBlock": {
+        "lo": 610082152,
+        "hi": 610082155
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_7.csv.meta.json",
+      "sha256": "5c2f3853146edc1b662a4859e0ec878aad3431f405fef4db4d09a5854d2da3b1",
+      "seedBlock": {
+        "lo": 610082156,
+        "hi": 610082159
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_8.csv.meta.json",
+      "sha256": "29199662431ce1cf8976af7760aeadd2f33e3aba028cdb3dba55a19de90b743a",
+      "seedBlock": {
+        "lo": 610082160,
+        "hi": 610082163
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development/ShopOff_9.csv.meta.json",
+      "sha256": "a64e8b4b18ef411615ea9c9da974b883784744dcd68d60be4523645278479f13",
+      "seedBlock": {
+        "lo": 610082164,
+        "hi": 610082167
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_0.csv.meta.json",
+      "sha256": "8d1592ea1dca3aa96e0a9923519dfd85ace4ed331a6295e015c0a4fedc4ac68b",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_1.csv.meta.json",
+      "sha256": "7aa3eb577aa90269d1a86d689b4d42bd3d21fa04f6febe5f41eb18204b0d51e0",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_2.csv.meta.json",
+      "sha256": "3c7d7cbd6926b99d1057132cb6b4e2d25a51aac66758ea7f96c3c48415fe1c9a",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_3.csv.meta.json",
+      "sha256": "4783450b5a49661902cd6118eb0d7a8c78a665d2019b9094aa6c52c1ad4e8ec5",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_4.csv.meta.json",
+      "sha256": "c63a34271ff37f379c84164bd4c0bc8abf09a681285226484af859a211e69f38",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_5.csv.meta.json",
+      "sha256": "be448c518b4edb5f8fd1b298613b3fde248551cc65bff7027beb2fafb6924d3f",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_6.csv.meta.json",
+      "sha256": "f882c35b10ef769dc760a5940a412c6a3a9a8b4f53cd9c7d5030df13f0abc9b7",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/Fprod_7.csv.meta.json",
+      "sha256": "1eee0778cde726eb83fbaa11a3049cf05f65208d12fc72c366e96121db39d5da",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_0.csv.meta.json",
+      "sha256": "d38508cccc661fbecbd0bd28bc72ccaab27d5e9841eee5748fbb285493acfd3f",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_1.csv.meta.json",
+      "sha256": "11e44371de619ef877c8efc009255cb0a22a1e8d496bb60862b42bb6805a299b",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_2.csv.meta.json",
+      "sha256": "238aef279a3f256553e5af1491418fa802b11253e2d47de7c8b2cd51f07f261d",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_3.csv.meta.json",
+      "sha256": "1a844df4fe075b2d644e847b26f929b17d45c6586df2fdcf598cca14e1c7f23a",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_4.csv.meta.json",
+      "sha256": "b015654986ef25badb407fd00db35e05635efccf4fd143c57e22cf3c64911b35",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_5.csv.meta.json",
+      "sha256": "2307eea6e6b866a93e76a16b76f6ddacf3a7b99224d052d4a53109a543cf50d5",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_6.csv.meta.json",
+      "sha256": "97f5ee42a1fc47c43d378c702245401a7008a9d2452b27bdac1119cec66b1c7e",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave4_removal/RemoveLow_7.csv.meta.json",
+      "sha256": "aff6be1946ed054a1ae06913ccfc8ada4b301e18a4d170c42525af6c44bb3ea5",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_0.csv.meta.json",
+      "sha256": "465910b591e5be6bd137043be7328e336d540fa3d72cd96eb404a0613168c907",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_1.csv.meta.json",
+      "sha256": "d056cc0829e3ca951aaf1c6661fa65d2bf18410e0bde9dd77e00308e636ee9fe",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_2.csv.meta.json",
+      "sha256": "d23096ac4facd753383c1ec34abc11cdef6c6599d816ebbfbe3e2648d145d625",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_3.csv.meta.json",
+      "sha256": "d0ad43d03b34c60655c761dbcad01ff4fa4291c7f338a1b23fd86c59069e6e48",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_4.csv.meta.json",
+      "sha256": "6e33f74524a6514483a5a6450c9f01e37c5b47d19604199e97e598e4f78d7ec8",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_5.csv.meta.json",
+      "sha256": "c88f3c918ad6cc0ee2aa8fa3b9fbb38a10482031a49354a7cb8e9cfc24fd79ab",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_6.csv.meta.json",
+      "sha256": "42d3949b4aaf1c84fa4e839c8349456af00403cd2d6416167dd3a865c66ee42d",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/CardWinRank_7.csv.meta.json",
+      "sha256": "fa2fc68561c6c37734742c0d97002c1fca460ffd3202e195140fd77b16ca61e3",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_0.csv.meta.json",
+      "sha256": "19a28c13df81c52857eb3c162185732e46f328b566ef6076d3b296b926b2e81a",
+      "seedBlock": {
+        "lo": 610081000,
+        "hi": 610081003
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_1.csv.meta.json",
+      "sha256": "51a4a83200ab8ed8a5120d067791900062dbac36de4f402972eaf157434f4cf3",
+      "seedBlock": {
+        "lo": 610081004,
+        "hi": 610081007
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_2.csv.meta.json",
+      "sha256": "34601019b7878c64b082126f6a381be06fe7fee8ec49ccec0cb63aeead3c33a6",
+      "seedBlock": {
+        "lo": 610081008,
+        "hi": 610081011
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_3.csv.meta.json",
+      "sha256": "cd6fcce6d816d22226e36e8af00a7c541e22647b77d380ec3572e19aab89dc2a",
+      "seedBlock": {
+        "lo": 610081012,
+        "hi": 610081015
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_4.csv.meta.json",
+      "sha256": "17bb38007aa48f9cb257028d05040cfede8e78ae4416ab23fd1f11e502530e0b",
+      "seedBlock": {
+        "lo": 610081016,
+        "hi": 610081019
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_5.csv.meta.json",
+      "sha256": "94998e98988acdd569d83e9dc9f051618e8e2500cb9a8a0d41eab841c79cd432",
+      "seedBlock": {
+        "lo": 610081020,
+        "hi": 610081023
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_6.csv.meta.json",
+      "sha256": "5083586b93d99b36e6a30b2448cc95bfd7afd256cb5a8d34d610f83946e79900",
+      "seedBlock": {
+        "lo": 610081024,
+        "hi": 610081027
+      }
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave5_card_rank/Fprod_7.csv.meta.json",
+      "sha256": "d60cb5b0774ea86a2f1ec2fa256459138e23dad186f87b0589863450cff07788",
+      "seedBlock": {
+        "lo": 610081028,
+        "hi": 610081031
+      }
+    }
+  ],
+  "unused_final_paths": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_0",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_0",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_1",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_1",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_2",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_2",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_3",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_3",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_4",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_4",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_5",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_5",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_6",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_6",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_7",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_7",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_8",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_8",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_9",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_9",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_10",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_10",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_11",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_11",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_12",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_12",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_13",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_13",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_14",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_14",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_15",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_15",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_16",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_16",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_17",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_17",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_18",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_18",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_19",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_19",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_20",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_20",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_21",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_21",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_22",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_22",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_23",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_23",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_24",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_24",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_25",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_25",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_26",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_26",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_27",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_27",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_28",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_28",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_29",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_29",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_30",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_30",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_31",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_31",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_32",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_32",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_33",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_33",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_34",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_34",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_35",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_35",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_36",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_36",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_37",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_37",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_38",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_38",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_39",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_39",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_40",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_40",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_41",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_41",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_42",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_42",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_43",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_43",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_44",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_44",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_45",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_45",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_46",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_46",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_47",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_47",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_48",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_48",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_49",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_49",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_50",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_50",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_51",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_51",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_52",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_52",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_53",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_53",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_54",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_54",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_55",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_55",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_56",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_56",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_57",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_57",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_58",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_58",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_59",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_59",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_60",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_60",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_61",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_61",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_62",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_62",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_63",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_63",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_64",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_64",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_65",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_65",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_66",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_66",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_67",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_67",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_68",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_68",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_69",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_69",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_70",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_70",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_71",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_71",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_72",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_72",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_73",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_73",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_74",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_74",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_75",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_75",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_76",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_76",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_77",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_77",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_78",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_78",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_79",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_79",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_80",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_80",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_81",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_81",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_82",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_82",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_83",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_83",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_84",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_84",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_85",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_85",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_86",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_86",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_87",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_87",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_88",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_88",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_89",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_89",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_90",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_90",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_91",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_91",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_92",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_92",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_93",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_93",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_94",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_94",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_95",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_95",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_96",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_96",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_97",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_97",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_98",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_98",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_99",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_99",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_100",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_100",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_101",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_101",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_102",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_102",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_103",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_103",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_104",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_104",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_105",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_105",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_106",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_106",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_107",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_107",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_108",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_108",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_109",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_109",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_110",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_110",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_111",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_111",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_112",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_112",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_113",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_113",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_114",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_114",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_115",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_115",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_116",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_116",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_117",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_117",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_118",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_118",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_119",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_119",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_120",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_120",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_121",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_121",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_122",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_122",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_123",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_123",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_124",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_124",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_125",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_125",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_126",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_126",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_127",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_127"
+  ],
+  "profile_difference": {
+    "STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT": [
+      "0",
+      "1"
+    ]
+  },
+  "expected_cpu_seconds": 13571.615895228013,
+  "active_game_processes": [],
+  "runtime_verified": {
+    "python": "3.13.15 (main, Aug  7 2026, 02:25:50) [Clang 22.1.3 ]",
+    "python_executable": "/home/philippherrmann/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+    "python_executable_sha256": "441e35a78c27a717b4634c21d8c118d9f535afb675add1ed421c581bb410a27f",
+    "numpy": "2.5.2",
+    "worker_threads": 1,
+    "outer_dispatch_workers": 6
+  }
+}

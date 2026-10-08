@@ -1,4 +1,7 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -41,6 +44,16 @@ class DeepSetsDownstreamTests(unittest.TestCase):
     def test_representation_rows_exclude_test_split(self):
         cache = {"split": np.array([0, 1, 2, 2, 0], dtype=np.int8)}
         np.testing.assert_array_equal(experiment.generated_representation_ids(cache), [0, 1, 4])
+
+    def test_receipt_evidence_binds_the_distill_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            receipt = Path(d) / "results.json"
+            receipt.write_text(json.dumps(dict(checkpointSha256="c", decision="SHARED_TRANSITION_ENCODER_GO",
+                                               scalarNormalization=dict(rows=7, rowIdsSha256="r"))))
+            evidence = experiment.receipt_evidence(receipt)
+            self.assertEqual(evidence["artifacts"], dict(studentCheckpointSha256="c", resultsSha256=experiment.digest(receipt)))
+            self.assertEqual(evidence["architecture"], dict(normalizationRows=7, normalizationRowIdsSha256="r"))
+            self.assertEqual(evidence["stageA"]["decision"], "SHARED_TRANSITION_ENCODER_GO")
 
 
 if __name__ == "__main__":

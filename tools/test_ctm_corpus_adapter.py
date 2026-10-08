@@ -7,13 +7,13 @@ from pathlib import Path
 try:
     from tools import combat_transition_model_experiment as experiment
     from tools.combat_transition_contract import ROW_SCHEMA_VERSION, SCHEMA_VERSION, sha256
-    from tools.ctm_corpus_adapter import assemble, union
+    from tools.ctm_corpus_adapter import assemble, label_reasons, union
     from tools.combat_transition_contract import validate_corpus
     from tools.test_combat_transition_contract import predictor_input, state, teacher
 except ModuleNotFoundError:  # direct invocation from the tools directory
     import combat_transition_model_experiment as experiment
     from combat_transition_contract import ROW_SCHEMA_VERSION, SCHEMA_VERSION, sha256
-    from ctm_corpus_adapter import assemble, union
+    from ctm_corpus_adapter import assemble, label_reasons, union
     from combat_transition_contract import validate_corpus
     from test_combat_transition_contract import predictor_input, state, teacher
 
@@ -142,6 +142,14 @@ class TestCtmCorpusAdapter(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "overwrite"):
                 union({"none": root / "none"}, root / "union", drop)
 
+    def test_label_reasons_reject_unrepresentable_winning_maxhp_gain(self):
+        values = [0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        row = lambda outcome, gain: {"combatOutcome": outcome, "pre": {"maxHp": 84}, "post": {"maxHp": 84 + gain}}
+        self.assertEqual(label_reasons(row(1, 14), values), ["max_hp_delta_domain"])
+        self.assertEqual(label_reasons(row(1, 2), values), ["max_hp_delta_domain"])
+        self.assertEqual(label_reasons(row(1, 12), values), [])
+        self.assertEqual(label_reasons(row(0, 14), values), [])
+
     def test_audit_accepts_a_union_and_quarantines_dropped_sources(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d); index = self.build(root)
@@ -151,7 +159,7 @@ class TestCtmCorpusAdapter(unittest.TestCase):
             drop = lambda row: ["x"] if row["sourceSeed"] == 102 or (row["sourceSeed"], row["fightIdx"]) == (101, 1) else []
             union({"high_maxhp": root / "high", "none": root / "none"}, root / "union", drop)
             experiment.audit(argparse.Namespace(corpus_manifest=str(root / "union" / "corpus.jsonl.manifest.json"),
-                                                shard_root=str(root / "union"), output_dir=str(root / "audit")))
+                                                shard_root=None, output_dir=str(root / "audit")))
             audit = json.loads((root / "audit" / "corpus_audit.json").read_text())
             # Requested sources are the scope ranges (100..107, 500..501), not the gap between them.
             self.assertEqual(audit["sourcesRows"]["requestedSources"], 10)

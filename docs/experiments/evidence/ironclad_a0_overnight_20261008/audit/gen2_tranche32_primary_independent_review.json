@@ -1,0 +1,124 @@
+{
+  "schema": "independent_gen2_tranche_primary_review_v1",
+  "status": "PASS",
+  "reviewed_epoch": 1791426642.9951198,
+  "identities": {
+    "freeze": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json",
+      "sha256": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1"
+    },
+    "bundle": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/analysis_bundle.json",
+      "sha256": "2f56269cf2bb6f5cc001890499a460cba0dff3b5df601396b6f9fbd02a0c2857"
+    },
+    "contract": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/contract_receipt.json",
+      "sha256": "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70"
+    },
+    "choices": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9_choices.json",
+      "sha256": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7"
+    },
+    "evaluation": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9_evaluation.json",
+      "sha256": "5ada874a05f6d947cf0a19435db681a01be89aa23b26ceb26b5c59414aff798f"
+    },
+    "analyzer": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_tranche.py",
+      "sha256": "f2ed2e94c5fd670aadaba5f12f563b6bd7d7532025de3b271d31f8eb06406fda"
+    },
+    "verifier": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    }
+  },
+  "unique_input_hashes_rechecked": 287,
+  "raw_artifact_hashes_rechecked": 256,
+  "invocation_hashes": {
+    "contract": "8bb7a474f895a67f323f8a8835060285d33ef944ad1a14fc8a8f41688572d323",
+    "selection": "2fd1e4ae8465b448e3a07873d773a87e2ab248330076ca4c713bf3dfffb2271d",
+    "evaluation": "8a9bcc7e4e8b5999568ede4d08e64d657ed0d6ca2743923e0aaf295e69b77b5e"
+  },
+  "ordering": {
+    "contract": {
+      "started_epoch": 1791426191.4159663,
+      "finished_epoch": 1791426197.349281
+    },
+    "selection": {
+      "started_epoch": 1791426229.005731,
+      "finished_epoch": 1791426229.7781205
+    },
+    "evaluation": {
+      "started_epoch": 1791426262.1548004,
+      "finished_epoch": 1791426263.1319296
+    }
+  },
+  "choice_frozen_epoch": 1791426229.7587454,
+  "counts": {
+    "allocated_sources": 32,
+    "exposed_sources": 32,
+    "states": 63,
+    "states_by_type": {
+      "CARD_REWARD": 32,
+      "BOSS_RELIC": 31
+    },
+    "sources_by_state_count": {
+      "2": 31,
+      "1": 1
+    },
+    "retained_option_future_labels": 1968,
+    "all_option_selection_labels": 984,
+    "all_option_evaluation_labels": 984,
+    "fixed_rule_state_future_pairs": 252
+  },
+  "independent_recomputation": {
+    "rollout": {
+      "mean": -0.01171875,
+      "ci95": [
+        -0.0546875,
+        0.03125
+      ],
+      "changes": 19
+    },
+    "P0-s0": {
+      "mean": 0.00390625,
+      "ci95": [
+        -0.04296875,
+        0.0546875
+      ],
+      "changes": 33
+    },
+    "F2-s0": {
+      "mean": -0.0078125,
+      "ci95": [
+        -0.05078125,
+        0.03125
+      ],
+      "changes": 34
+    }
+  },
+  "primary_classification": "LOCAL_CONDITIONAL_INCONCLUSIVE",
+  "checks": [
+    "Rehashed frozen source/binary/model/tool identities plus every input recorded in bundle, contract, choices and result.",
+    "Verified contract/selection/evaluation separate commands and predecessor hashes, unchanged choice hash and frozen-epoch ordering.",
+    "Independently parsed only this completed tranche labels; checked all sibling/future identities and recomputed rollout selection means/tie rule.",
+    "Recomputed every fixed-rule evaluation state endpoint from k4..7, then equal state means within source and equal weighting across32 source clusters.",
+    "Independently generated10000 bootstrap cluster samples using NumPy seed20261008; exact published means and intervals matched."
+  ],
+  "cost_and_deadline": {
+    "source_cpu_seconds": 392.09429,
+    "branch_cpu_seconds": 14550.502842,
+    "collection_span_seconds": 3900.6236765384674,
+    "finished_epoch": 1791426088.24185,
+    "hard_stop_epoch": 1791435180.0
+  },
+  "limitations": [
+    "Conditional value diagnostic on retained options and sampled futures, not a whole-run policy-strength or deployment qualification.",
+    "Existing sampler preserves latent counters/pool membership; not exact player-observable posterior. Historical models retain latent/policy mismatch.",
+    "Profile coverage combines source and branches without branch IDs; prior contract verifies allowed seed membership, not per-branch budget attribution.",
+    "Review checks recorded invocation chronology and immutable artifacts; cannot establish an OS-enforced access seal.",
+    "Historical model selection scores were hashed and tie choices checked; model prediction arithmetic relies on the prior bound native/export parity and reviewed frozen selector, not a new model inference replay."
+  ],
+  "no_new_games_or_selection_changes": true,
+  "protected_holdout_or_test_opened": false
+}

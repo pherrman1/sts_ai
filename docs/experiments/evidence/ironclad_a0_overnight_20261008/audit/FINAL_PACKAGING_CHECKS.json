@@ -1,0 +1,62 @@
+{
+  "schema": "overnight_final_packaging_checks_v1",
+  "recorded_epoch": 1791431485.1810527,
+  "inspected_evidence_commit": "426ea4050193592fbf91dc2b3cb49b36bb295ef5",
+  "implementation_source": "5add2413281c95a29e32846531d41353c804fd3c",
+  "source_files_unchanged": 21,
+  "source_paths": [
+    "CMakeLists.txt",
+    "apps/one_combat.cpp",
+    "apps/one_combat/combat_datasets.cpp",
+    "apps/one_combat/driver_shared.h",
+    "apps/one_combat/ooc_native_fallback.cpp",
+    "apps/one_combat/ooc_native_fallback.h",
+    "apps/one_combat/ooc_policy.cpp",
+    "apps/one_combat/run_driver.cpp",
+    "apps/silver_public_pair_probe.cpp",
+    "apps/test.cpp",
+    "apps/test_ooc_public_futures.cpp",
+    "include/sim/search/ScumSearchAgent2.h",
+    "include/sim/search/SilverSearcher.h",
+    "src/sim/search/NativeSilverBackend.cpp",
+    "src/sim/search/ScumSearchAgent2.cpp",
+    "src/sim/search/SilverSearcher.cpp",
+    "tests/full_hp_rest_filter_test.cpp",
+    "tests/native_ooc_card_win_rank_test.cpp",
+    "tests/native_ooc_shop_features_test.cpp",
+    "tests/remove_obtain_weight_test.cpp",
+    "tests/rest_recall_filter_test.cpp"
+  ],
+  "worktree_preflight": "PASS; app-managed, task branch, intended origin, writable external metadata",
+  "submodules": "PASS; json2222d386c905, pybind1163d627c5747b",
+  "cached_diff_check": "PASS at evidence commit",
+  "task_scope_local_links_and_whitespace": "PASS before evidence commit; all task paths only",
+  "repo_health": {
+    "status": "pass",
+    "raw_path": "build/overnight_20261008/audit/final_repo_health.json",
+    "sha256": "afde92a7f7afd63185fd2e799567a5f89e91c911037d215a97ae01b227d6a503",
+    "hard_failures": {},
+    "warnings": [
+      "active Markdown growth",
+      "one_combat.cpp growth"
+    ]
+  },
+  "main_movement": {
+    "origin_main": "dd308d3d89e6dde49b80468f66c6b0fe8e714136",
+    "virtual_merge_command": [
+      "git",
+      "merge-tree",
+      "--write-tree",
+      "HEAD",
+      "origin/main"
+    ],
+    "exit_code": 0,
+    "result_tree": "74a60ace59221dc6a107a62411679837186cec08",
+    "documentation_header_conflicts_resolved": true,
+    "source_merged_or_rebased": false,
+    "merged_build_or_CI_claim": false
+  },
+  "raw_storage": "build/overnight_20261008/ retained, ignored; approximately2.5GiB",
+  "CI": "Authoritative Linux GCC not established; draft workflow is skipped",
+  "publication_receipt": "build/overnight_20261008/draft_pr_publication.json"
+}

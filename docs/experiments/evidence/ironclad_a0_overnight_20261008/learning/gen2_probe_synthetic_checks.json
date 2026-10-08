@@ -1,0 +1,9 @@
+{
+  "scope": "synthetic-only no game or campaign numerical rows",
+  "command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_probe.py",
+  "tests": 4,
+  "result": "PASS",
+  "analysis_sha256": "8e1e208eee81b523ce40f0237c6ed78a19631a5b599acff258a16d196b1fb7bd",
+  "test_sha256": "777d6d82d346baaa344bb534672a91a4d0e4001b69000bc3e9d6a11957876397",
+  "protocol_sha256": "8417ddaa01a262da42c92840e7225d2a024571a0b520e236e2242d661e401d19"
+}

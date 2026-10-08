@@ -1,0 +1,25 @@
+{
+  "schema": "shared_rescue_prose_independent_review_v1",
+  "status": "PASS",
+  "reviewed_epoch": 1791426763.1599102,
+  "seed": 610081023,
+  "prose_sha256": "5c67afe07f2adf579dc8e44239daa942c4cd7feece1c33b7110a8947c91e4d36",
+  "packet_sha256": "9772962fdecda7fdf7b8d4a3df11a90b6bd62abda13aa1e022a4a76f555b0821",
+  "input_hashes_rechecked": 36,
+  "named_raw_locators_rechecked": 24,
+  "review_scope": "Prose causal-claim boundaries, source mechanics and named first-divergence/gate locators; not a full independent recomputation of the chronology producer or every combat equality.",
+  "findings": [
+    "Different supported first interventions: full-health V4 REST becomes qualified DIG after REST exclusion; early event REMOVE changes Reaper to Strike under acquisition-weight sign.",
+    "FullHp has two late DIG treatments, not a one-action or one-relic counterfactual. Source Anchor start block+10 and Toxic Egg skill-acquisition upgrade match described mechanics; no unique cause of final win asserted.",
+    "Earlier eligibility/owner changes with identical executed transitions are explicitly distinguished from first public-state divergence.",
+    "RemoveLow shows broad downstream deck, resource and policy changes; the sign mechanism explains the immediate selector action only, not isolated Reaper strength or final win probability.",
+    "Common selected-source rescue supplies no additivity, combination or population-strength evidence; report expressly retains outcome-informed selection and partial-public-state caveats."
+  ],
+  "review_check_correction": "Initial raw gate equality assertion encountered exactly the three deliberately excluded final outcome fields (won, finalFloor, finalHp). All retained gate fields then matched exactly with this explicit projection; no producer or source evidence changed.",
+  "limitations": [
+    "Only serialized public-state equality is supported; hidden RNG, relic counters and full combat hands are absent.",
+    "Learned-stop simulation counts and V4 scores are diagnostic outputs, not calibrated conditional win probabilities.",
+    "This reviewer checked bounded named-source raw locators and raw hashes; retained packet producer remains the source for full383-root equality."
+  ],
+  "no_new_games_or_other_outcomes_opened": true
+}

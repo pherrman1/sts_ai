@@ -1,0 +1,47 @@
+{
+  "schema": "card_rank_analyzer_preparation_v1",
+  "status": "PASS",
+  "created_epoch": 1791424759.5098112,
+  "command": [
+    ".venv/bin/python",
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_analyze_wave_card_rank.py"
+  ],
+  "exit_code": 0,
+  "test_count": 22,
+  "observed_summary": "Ran 22 tests in 0.452s; OK",
+  "scope": "Three-line strict banner equality addition only. Inherited10 strict custody/statistical fixtures +6 removal/FullHp fixtures +6 card rank fixtures. No simulator, seed, GEN2 numerical data or active analyzer mutation.",
+  "required_banner": "[native OOC card win ranking ON; public8 floor take/skip preserved]",
+  "iff_environment": {
+    "STS_OOC_CARD_WIN_RANK": "1"
+  },
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_removal.py",
+      "sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_card_rank.py",
+      "sha256": "2e5727f7cb1c5dcef26931950414c721fc284a09f9b0e95842b47b2569ccede3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_analyze_wave_card_rank.py",
+      "sha256": "0ffcdfb94eecedbdb9577d78a1b3e950f6e4b4a0c994133b30f0f234c7dfd962"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_analyze_wave.py",
+      "sha256": "c4510d21fc293ba1bd895a1074cf9dd2050e331816d2787ae974cc0d98f1a359"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_analyze_wave_removal.py",
+      "sha256": "ac3ca20a16b699efff82f9990b0bf7516b202b8cb8daf6ad80a7cd81b330a9bc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/card_rank_analyzer.diff",
+      "sha256": "90df724a7aa00b56a3b5fd57de06caf7ce76ecb0aef59fe7b9775b56b1bd46c1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave.py",
+      "sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5"
+    }
+  ]
+}

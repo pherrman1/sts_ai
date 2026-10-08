@@ -96,7 +96,7 @@ jobs:
         run: cmake --preset linux-gcc-debug
 
       - name: Build
-        run: cmake --build --preset linux-gcc-debug-build
+        run: cmake --build --preset linux-gcc-debug-build --parallel 2
 
       - name: Print ccache statistics after build
         if: always()

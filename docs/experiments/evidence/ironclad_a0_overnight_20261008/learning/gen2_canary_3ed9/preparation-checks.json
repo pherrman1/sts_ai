@@ -1,0 +1,16 @@
+{
+  "schema": "corrected_gen2_preparation_checks_v1",
+  "status": "PASS",
+  "source_runs_executed": 0,
+  "labels_opened": false,
+  "checks": [
+    "old freeze compatibility",
+    "corrected policy/environment binding",
+    "missing Recall policy field rejected",
+    "missing corrected freeze environment rejected",
+    "changed teacher environment rejected",
+    "native seed-free policy specification exited zero"
+  ],
+  "verifier_sha256": "12443d83e12b33a6344005f0c5df1c3ab6fa0eed406cfd31669de81958de7ae1",
+  "freeze_sha256": "8c7a1b9060159983b3a09e43e673e891c59be918e82c405784455143235d10bf"
+}

@@ -1,0 +1,18 @@
+{
+  "receipt_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/contract_receipt_v2.json",
+  "receipt_sha256": "bf2a82d869e809f6cd205a699d434b0f65c76daa3d6c8986a3e4e0619168bcf2",
+  "status": "CONTRACT_AND_COST_ONLY",
+  "measured_sources": 4,
+  "states": 8,
+  "branches": 128,
+  "source_cpu_seconds": 62.46158,
+  "branch_cpu_seconds": 1291.933931,
+  "total_cpu_seconds": 1354.395511,
+  "cpu_seconds_per_branch": 10.0932338359375,
+  "invocation_wall_seconds_sum": 1355.5126197969948,
+  "estimated_32source_K8_same_retention_cpu_seconds": 21170.635536,
+  "estimated_32source_K8_max6options_cpu_seconds": 31506.106984000002,
+  "projection_limits": "Linear projection from four sources; assumes source/branch duration distribution remains similar. Wall estimate must use coordinator-granted concurrency and overhead; this does not authorize extension.",
+  "evaluation_outcomes_reported": false,
+  "recorded_epoch": 1791420944.8482394
+}

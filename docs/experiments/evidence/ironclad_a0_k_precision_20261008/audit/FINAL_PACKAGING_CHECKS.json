@@ -1,0 +1,90 @@
+{
+  "schema": "k_precision_final_packaging_v1",
+  "status": "PASS",
+  "recorded_epoch": 1791459686.394517,
+  "reviewed_documentation_head": "5c4f9b365ec002183dfd096c4b965cba92bca07a",
+  "publication_source_sha": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "base_main_sha": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "publication_root": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "collection_root": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "collection_snapshot_sha": "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+  "collection_tracked_clean": true,
+  "all21_frozen_artifacts_at_original_paths_match": true,
+  "binary_teacher_policy_runtime_protocol_match": true,
+  "closed_confirmation_hashes": {
+    "champion_freeze.json": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+    "holdout_opened.json": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e",
+    "final_confirmation_report.json": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+    "campaign_result.json": "0f362274d9b2f7af6db8b30fa05d37ce10a390adfe741a795888e4abce007812"
+  },
+  "publication_production_paths_equal_tested_source": [
+    "CMakeLists.txt",
+    "apps",
+    "include",
+    "src",
+    "models",
+    "selfplay/models",
+    "tools/seed_guard.sh",
+    "tests/test_combat_transition_native_contract.py"
+  ],
+  "owned_game_or_fixture_processes": [],
+  "diff_check_exit_code": 0,
+  "worktree_check": "worktree_submodules_ok json=2222d386c905 pybind11=63d627c5747b",
+  "repository_health": {
+    "command": [
+      "python3",
+      "tools/repo_health.py",
+      "--baseline",
+      "75733c4544b03212ef2159106d206cfc6ff9cbab",
+      "--json"
+    ],
+    "exit_code": 0,
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/overnight_20261008/final_repo_health.json",
+    "sha256": "94ffc0db9c0367f358d6e0ffe53df1771f2a386c070c13f210b0987746890bc1",
+    "status": "pass",
+    "hard_failures": {},
+    "warnings": [
+      "active Markdown growth",
+      "one_combat.cpp growth"
+    ]
+  },
+  "bound_evidence": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/RESULT.json",
+      "sha256": "8b397548fde587a298048c86241b5a0b3df2bde295df6d3c832e2fdd36c81d76"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/COLLECTION_CUSTODY.json",
+      "sha256": "3158c34d15c251e3d1a1097c34384ae5666af4774cac1bc07dcac99b871b5025"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/CLOSEOUT_REVIEW.json",
+      "sha256": "c14887f8bc8907702deb25f3ca9692856b59933d8c9daa60e4effabd11ecfe81"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/FINAL_INTERPRETATION_REVIEW.json",
+      "sha256": "300acb67e69fa1a06d4187ed9cd3869784575601056fcd70a569341eabf7bb31"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/PUBLICATION_SYNC_REVIEW.json",
+      "sha256": "cc411e6ffd22a68830f618d431d0f565acf3c1dfa110988d02c3a2c9451500f7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/INTEGRATION_RESULT.json",
+      "sha256": "093478412107f512d05ef7408f3fb5321805b1c3cf5cd8a0ff4e0c5d498d47c6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/PUBLICATION_INTEGRATION_RESULT.json",
+      "sha256": "55626b5c1417ad5832a3511fcddb65b0a57c90dde4c0c2c1cee52999a0c2f39c"
+    }
+  ],
+  "scientific_status": "EXECUTION_BLOCKED",
+  "efficacy_selector_or_evaluator_run": false,
+  "checks_not_run": [
+    "No new expensive gameplay qualification on publication source.",
+    "No live game qualification.",
+    "No repeated final holdout or protected historical TEST access.",
+    "No authoritative GitHub Linux GCC pass; draft workflow is separate."
+  ],
+  "scope": "Packaging/read-only custody check; preserves failure disposition. Final review receipt and this packaging receipt may be committed afterward without changing tested production source."
+}

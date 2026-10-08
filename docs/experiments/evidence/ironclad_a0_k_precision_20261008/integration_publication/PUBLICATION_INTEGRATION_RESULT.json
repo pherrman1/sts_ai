@@ -1,0 +1,387 @@
+{
+  "schema": "publication_integration_result_v1",
+  "status": "FOCUSED_PUBLICATION_INTEGRATION_PASS",
+  "recorded_epoch": 1791459484.2132626,
+  "publication_root": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "source_sha": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "incoming_main_sha": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "research_root": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "research_head": "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+  "build_type": "Debug",
+  "compile_parallelism": 6,
+  "ctest_parallelism": 2,
+  "ctest_passed": 27,
+  "ctest_total": 27,
+  "ctest_skipped": 0,
+  "additional_observer_neutrality_fixture": "PASS",
+  "tests": [
+    {
+      "name": "rest_recall_filter",
+      "status": "PASS",
+      "seconds": 0.00906572
+    },
+    {
+      "name": "full_hp_rest_filter",
+      "status": "PASS",
+      "seconds": 0.00668626
+    },
+    {
+      "name": "remove_obtain_weight",
+      "status": "PASS",
+      "seconds": 0.00742026
+    },
+    {
+      "name": "native_ooc_card_win_rank",
+      "status": "PASS",
+      "seconds": 0.0215561
+    },
+    {
+      "name": "native_ooc_shop_features",
+      "status": "PASS",
+      "seconds": 0.0139563
+    },
+    {
+      "name": "ooc_public_futures",
+      "status": "PASS",
+      "seconds": 0.0342462
+    },
+    {
+      "name": "vwin_refresh_policy_export",
+      "status": "PASS",
+      "seconds": 0.32596
+    },
+    {
+      "name": "vwin_refresh_producer_contract",
+      "status": "PASS",
+      "seconds": 0.310866
+    },
+    {
+      "name": "vwin_e3_cf_selftest",
+      "status": "PASS",
+      "seconds": 0.380509
+    },
+    {
+      "name": "teacher_schema_compat",
+      "status": "PASS",
+      "seconds": 0.549498
+    },
+    {
+      "name": "learned_stop_teacher_contract",
+      "status": "PASS",
+      "seconds": 0.933154
+    },
+    {
+      "name": "ctm_offline_score_rows",
+      "status": "PASS",
+      "seconds": 0.557799
+    },
+    {
+      "name": "e2c_observer_scope",
+      "status": "PASS",
+      "seconds": 0.00436213
+    },
+    {
+      "name": "combat_knowledge",
+      "status": "PASS",
+      "seconds": 0.00441091
+    },
+    {
+      "name": "silver_searcher",
+      "status": "PASS",
+      "seconds": 7.42018
+    },
+    {
+      "name": "silver_wire_state",
+      "status": "PASS",
+      "seconds": 5.83717
+    },
+    {
+      "name": "silver_semantic_action",
+      "status": "PASS",
+      "seconds": 0.0039442
+    },
+    {
+      "name": "ctm_escape_selftest",
+      "status": "PASS",
+      "seconds": 5.48957
+    },
+    {
+      "name": "ctm_capabilities_selftest",
+      "status": "PASS",
+      "seconds": 0.128641
+    },
+    {
+      "name": "ctm_lizard_selftest",
+      "status": "PASS",
+      "seconds": 0.24205
+    },
+    {
+      "name": "ooc_mcts_adapter",
+      "status": "PASS",
+      "seconds": 0.921366
+    },
+    {
+      "name": "combat_transition_native_contract",
+      "status": "PASS",
+      "seconds": 6.21949
+    },
+    {
+      "name": "combat_transition_runtime_loader",
+      "status": "PASS",
+      "seconds": 0.151659
+    },
+    {
+      "name": "ctm_research_candidate_loader",
+      "status": "PASS",
+      "seconds": 2.29896
+    },
+    {
+      "name": "ctm_escape_runtime",
+      "status": "PASS",
+      "seconds": 60.0543
+    },
+    {
+      "name": "ctm_writhing_ritual_runtime",
+      "status": "PASS",
+      "seconds": 7.51678
+    },
+    {
+      "name": "ctm_lizard_runtime",
+      "status": "PASS",
+      "seconds": 20.2158
+    }
+  ],
+  "receipts": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/configure_receipt.json",
+      "sha256": "236f9932125c8de0a09fa91cddc179ccca7a949b22effb05296ce10615d8041c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/build_receipt.json",
+      "sha256": "4c2df650cffc70ceaea430f55b6a0558ddbadb095850e9266d3f9c41da39e5f0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/ctest_receipt.json",
+      "sha256": "c138e4f70132a837ddf199e0815651da7b90fbc943cb598e02743820c2f1224f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/combat_knowledge_neutrality_receipt.json",
+      "sha256": "e17422efeaa3abdd02cd1ce3f41a30717f2fad5aaf5e66c369a214624331690d"
+    }
+  ],
+  "integration_binaries": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/one_combat",
+      "sha256": "1190fb1f7d52a83789e5cd3c2ff14fde8d8c79d2f277cdbfc34b539446fe1213"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/test",
+      "sha256": "e3f1f8d5990031e0cd7027d9a21e877b05439060bfe438146034403b638dbb8e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/silver_public_pair_probe",
+      "sha256": "d741c81607114dfe4acd371fe2596be26bc2260afa886b4e29cb0de1a6152e91"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/combat_knowledge_neutrality_test",
+      "sha256": "be229de093f84c75d22d70fcbe664e8ad5283646680322996e6a1032ec6e29c6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/rest_recall_filter_test",
+      "sha256": "4d04f1b87f7c65800388df8b3f6f5b8d736330bed851d9aeda1d70128d98bc67"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/full_hp_rest_filter_test",
+      "sha256": "c53eb423c0e4b28ad1868860faf988e9871ee325c3fb0b0abaf0c0393f3940ce"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/remove_obtain_weight_test",
+      "sha256": "d81748c67f746efc7703c68639d8d5408dd933126a0f25c3ec1ff6385ff9818c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/native_ooc_card_win_rank_test",
+      "sha256": "4a9769734ec4f803f2e215a5be70d9be96675dbd787d510fb69ca7034cdccd50"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/native_ooc_shop_features_test",
+      "sha256": "5187b46428e6f50c47fc8794e24a2efb042f1c2d110eea5af6ead9c4bd937e43"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/test_ooc_public_futures",
+      "sha256": "b5cae257a73e9bd677953f49e48b06aa3edfdb5b28112e5365475b25db2fc566"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/combat_transition_runtime_probe",
+      "sha256": "4bcf48097b340559900e4a79b1443bbaef608e8fa49362447cc2af1f5a8b5ae4"
+    }
+  ],
+  "publication_source_files": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/CMakeLists.txt",
+      "sha256": "eb6769c58255b5c73029e1e85131c1cd66b1638d753a6d196c3241a965ab989b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/apps/one_combat.cpp",
+      "sha256": "c890625e9778ed11c773dd5089d617d846d690406b9d20947f3aba1e8b2d4982"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/apps/test.cpp",
+      "sha256": "b3ddf9a4bad45d23f37c72de255ec49b48276dfa97d915b0653e05ef961b78e5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/include/sim/search/NativeSilverBackend.h",
+      "sha256": "1e08ac9ccc2b94c49bb3c6dd30350275f3927e0a5c89b8a06281aa47b6b4fb1e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/include/sim/search/SilverSearcher.h",
+      "sha256": "e372eed2a1bbc41bb03940a94801c34855219f196a12f3504311b24fe7276747"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/src/sim/search/NativeSilverBackend.cpp",
+      "sha256": "dded38586e6079dd6f504ae3cda0c276779a7304ad74451f3e07c1c324bb17c2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/src/sim/search/SilverSearcher.cpp",
+      "sha256": "e9e3c256d7be33efe2c12e6d4ac2d650ae000da6be33bbaad16e36fee8d0b41c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/tools/seed_guard.sh",
+      "sha256": "4506d4495283d5b59c037e5f95d2299af39d54db07e8a2300c6135ced9271ca6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/tests/test_combat_transition_native_contract.py",
+      "sha256": "8a51043aa1e877574daf8ea623326f6123676ce2d20d1e521df6e8dfce9682c5"
+    }
+  ],
+  "frozen_identity_root": "freeze.root (research R), never publication P",
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "frozen_research_artifacts_checked": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tools/seed_guard.sh",
+      "sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+      "sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040",
+      "unchanged": true
+    }
+  ],
+  "publication_seed_guard_sha256": "4506d4495283d5b59c037e5f95d2299af39d54db07e8a2300c6135ced9271ca6",
+  "frozen_research_seed_guard_sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+  "scope": [
+    "Publication checkout build/integration only; research R read-only and all23 unique frozen artifact/producer/teacher files unchanged.",
+    "27/27 CTests passed in one invocation; separate existing bounded combat-knowledge observer-neutrality fixture passed.",
+    "The public-pair probe compiled but no bound SPEC or canary/evaluation mode was executed. No silversynth collection/replay or experimental game cohort was run.",
+    "Silver fixture covers leaf-sampling neutrality, zero-weight prior neutrality and favored-edge behavior; no claim about nonzero uniform-prior neutrality.",
+    "No source/model changes or dependency installation were made during these publication checks.",
+    "Debug publication binaries are new identities and do not inherit gameplay qualification from either frozen research executable.",
+    "The primary K-precision result remains EXECUTION_BLOCKED; closed RemoveLow results and protected TEST are untouched.",
+    "These local checks do not constitute a GitHub Linux GCC CI pass."
+  ]
+}

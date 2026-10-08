@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "status": "HOLDOUT_OPENED_NO_RETRY",
+  "opened_epoch": 1791428543.4918664,
+  "opened_local": "2026-10-08T05:02:23.491875+02:00",
+  "champion": "RemoveLow",
+  "comparator": "Fprod",
+  "fixed_pairs": 512,
+  "source_seeds": [
+    610083000,
+    610083511
+  ],
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+  "bound_inputs": {
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/final_confirmation.json": "e6c6e050ad0da20167c570d1f1f01a7e7037135daf3e010ac577edc8faf94f91",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/champion_freeze.json": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/FINAL_CONFIRMATION_LAUNCH_REVIEW.json": "0f22fd585a9b84544f6444b2bafef99b7341af133472d9b6e2eb3e9ec572862c",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation_jobs.txt": "7ae8e92d3c62ceaab432c6dfef654d47e15465cf063073c9c622ab169f413d2d"
+  },
+  "analysis_script_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+  "paired_analysis_sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d",
+  "worker_limit": 6,
+  "outer_timeout_seconds": 5400,
+  "shard_timeout_seconds": 900,
+  "prelaunch_existing_output_count": 0,
+  "prelaunch_owned_workers": [],
+  "rule": "Exactly the frozen1024 runs once. No efficacy inspection before complete stop; no automatic retry, extension, replacement, retuning or candidate change."
+}

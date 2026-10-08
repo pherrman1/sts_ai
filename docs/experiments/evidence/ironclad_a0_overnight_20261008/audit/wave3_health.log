@@ -1,0 +1,59 @@
+{
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "output": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_health.json",
+  "sha256": "9445e30c71de8eb9c7ca8af999df420f3af2dc0672bb62492aab23e72dee66f3",
+  "arms": {
+    "Fprod": {
+      "roots": 14032,
+      "completed_simulations": 60277250,
+      "singleton_skips": 570,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 102,
+      "rollout_calls": 51910663,
+      "nonterminal_rollout_starts": 50777002,
+      "endpoints": {
+        "victory": 58588314,
+        "death": 1688758,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "FullHp": {
+      "roots": 13782,
+      "completed_simulations": 59410000,
+      "singleton_skips": 571,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 103,
+      "rollout_calls": 51171090,
+      "nonterminal_rollout_starts": 50054372,
+      "endpoints": {
+        "victory": 57788550,
+        "death": 1621443,
+        "turn_limit": 6,
+        "engine_stop": 1,
+        "nonterminal": 0
+      }
+    },
+    "ShopOff": {
+      "roots": 15097,
+      "completed_simulations": 65570250,
+      "singleton_skips": 556,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 103,
+      "rollout_calls": 56777106,
+      "nonterminal_rollout_starts": 55648507,
+      "endpoints": {
+        "victory": 63894507,
+        "death": 1675565,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    }
+  },
+  "fatal_findings": 0
+}

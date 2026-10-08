@@ -462,6 +462,7 @@ double g_cardSkipThresh = -0.5;
 // A/B: route card picks through the WIN model (P(win) marginal) instead of V_floor.
 // Own skip scale (win-prob units, ~0..0.05) so g_cardSkipThresh (floor units) doesn't apply.
 bool g_cardWin = false;          // env STS_CARD_WIN=1
+static bool g_nativeCardWinRankTrace = false;
 double g_cardWinSkip = 0.0;      // env STS_CARD_WIN_SKIP: skip iff best P(win) marginal < this
 bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundles by P(win) not V_floor
 bool g_nativeOoc = false;
@@ -965,11 +966,40 @@ std::vector<float> richFeatureVec(GameContext &gc) {
 }
 
 double nativeFloorValue(GameContext &gc) {
-    return g_floorNet.ok ? g_floorNet.predict(richFeatureVec(gc)) : 0.0;
+    static const PathHistory emptyPath;
+    return g_floorNet.ok ? one_combat::nativeOocValue(gc,
+        t_curPath ? *t_curPath : emptyPath, g_floorNet) : 0.0;
 }
 
 int nativeFloorCardPick(GameContext &gc, int rIdx) {
     static const PathHistory emptyPath;
+    if (one_combat::inCardRewardFallback() && one_combat::nativeOocCardWinRankEnabled()) {
+        one_combat::NativeCardWinRankTrace trace;
+        const int pick = one_combat::nativeCardWinRankPick(gc,
+            t_curPath ? *t_curPath : emptyPath, g_floorNet, g_winNet,
+            rIdx, g_cardSkipThresh, g_nativeCardWinRankTrace ? &trace : nullptr);
+        if (g_nativeCardWinRankTrace) {
+            nlohmann::json offers = nlohmann::json::array();
+            for (const auto &card : gc.info.rewardsContainer.cardRewards[rIdx])
+                offers.push_back({{"card_id", static_cast<int>(card.getId())},
+                                  {"upgraded", card.isUpgraded()}});
+            const nlohmann::json row = {
+                {"seed", gc.seed}, {"act", gc.act}, {"floor", gc.floorNum},
+                {"reward_index", rIdx}, {"hp", gc.curHp}, {"deck_size", gc.deck.size()},
+                {"offers", offers}, {"baseline_pick", trace.baselinePick},
+                {"chosen_pick", pick}, {"public_futures", trace.scenarioCount},
+                {"baseline_action", trace.baselinePick == 5 ? nlohmann::json("SKIP") : offers.at(trace.baselinePick)},
+                {"chosen_action", pick == 5 ? nlohmann::json("SKIP") : offers.at(pick)},
+                {"floor_base", trace.floorBase}, {"floor_marginals", trace.floorMarginals},
+                {"win_evaluated", trace.winEvaluated},
+                {"win_base", trace.winEvaluated ? nlohmann::json(trace.winBase) : nlohmann::json(nullptr)},
+                {"win_marginals", trace.winMarginals}};
+            static std::mutex traceMutex;
+            std::lock_guard<std::mutex> lock(traceMutex);
+            std::cout << "[card win rank] " << row.dump() << '\n';
+        }
+        return pick;
+    }
     return one_combat::nativeFloorCardPick(gc, t_curPath ? *t_curPath : emptyPath,
                                           g_floorNet, rIdx, g_cardSkipThresh);
 }
@@ -994,7 +1024,9 @@ double vStateWinNativeFeatures(const std::vector<float> &raw) {
 }
 
 double vStateWin(GameContext &gc) {
-    if (g_winNet.ok) return g_winNet.predict(richFeatureVec(gc));   // native path
+    static const PathHistory emptyPath;
+    if (g_winNet.ok) return one_combat::nativeOocValue(gc,
+        t_curPath ? *t_curPath : emptyPath, g_winNet);
     double v = 0.5;
     std::sscanf(vSendRecv("VW;" + vFeatCsv(gc)).c_str(), "%lf", &v);
     return v;
@@ -1282,6 +1314,11 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverLearnedStopThreshold = search::nativeSilverLearnedStopThreshold();
             meta.silverLearnedStopBossFallback = search::nativeSilverLearnedStopBossFallback();
             meta.silverLearnedStopBossMax = search::nativeSilverLearnedStopBossMax();
+        }
+        if (!search::nativeSilverRootPriorPath().empty()) {
+            meta.silverRootPrior = search::nativeSilverRootPriorPath();
+            meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
+            meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
         }
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
@@ -2805,9 +2842,11 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
-        {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
+        {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
+        {"STS_SILVER_FINAL_BOSS_BINARY", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3107,7 +3146,19 @@ int main(int argc, char **argv) {
             }
         }
     }
-    try { one_combat::configureLiveOocMcts(); }
+    try {
+        if (sts::search::oocSkipOptionalRecallEnabled())
+            std::cout << "[native OOC optional Ruby Recall excluded when keys off and another action is legal]\n";
+        if (sts::search::oocSkipFullHpRestEnabled())
+            std::cout << "[native OOC full-HP REST excluded when Smith is legal and Dream Catcher is absent]\n";
+        if (sts::search::oocRemoveLowObtainWeightEnabled())
+            std::cout << "[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]\n";
+        if (const int futures = one_combat::nativeOocPublicFutureCount(); futures > 0)
+            std::cout << "[native OOC public encounter mixture: " << futures << " futures]\n";
+        if (one_combat::nativeOocShopDeckSizeFixEnabled())
+            std::cout << "[native OOC shop deck-size correction ON]\n";
+        one_combat::configureLiveOocMcts();
+    }
     catch (const std::exception &e) {
         std::cerr << "[live OOC MCTS startup failure] " << e.what() << '\n';
         return 1;
@@ -3267,6 +3318,30 @@ int main(int argc, char **argv) {
         g_cardSkipThresh = std::atof(d);
         std::cout << "[card skip threshold = " << g_cardSkipThresh << "]\n";
     }
+    try {
+        const bool cardRank = one_combat::nativeOocCardWinRankEnabled();
+        if (const char *raw = std::getenv("STS_OOC_CARD_WIN_RANK_TRACE")) {
+            const std::string value(raw);
+            if (value != "0" && value != "1")
+                throw std::runtime_error("STS_OOC_CARD_WIN_RANK_TRACE must be 0 or 1");
+            g_nativeCardWinRankTrace = value == "1";
+        }
+        if (g_nativeCardWinRankTrace && !cardRank)
+            throw std::runtime_error("STS_OOC_CARD_WIN_RANK_TRACE requires STS_OOC_CARD_WIN_RANK=1");
+        if (cardRank) {
+            if (!g_nativeOoc || !g_floorNet.ok || !g_winNet.ok || !g_winNet.logistic
+                || one_combat::nativeOocPublicFutureCount() != 8
+                || one_combat::liveOocMctsEnabled() || g_oocStrategicGateRegret
+                || g_cardWin || g_cardNN || g_cardAction || g_oocActionNN
+                || g_bossV || g_bossDraft || g_actFightProbeDraft || g_actFightProbeAllOoc
+                || !std::isfinite(g_cardSkipThresh))
+                throw std::runtime_error("STS_OOC_CARD_WIN_RANK requires native loaded floor/logistic-win models, public8, finite floor skip, margin gate, MCTS off and alternate card policies off");
+            std::cout << "[native OOC card win ranking ON; public8 floor take/skip preserved]\n";
+        }
+    } catch (const std::exception &error) {
+        std::cerr << "[native card ranking startup failure] " << error.what() << '\n';
+        return 1;
+    }
     one_combat::configureVPathPolicyFromEnvironment();
     if (const char *d = std::getenv("STS_DG_TEMP")) {         // datagen softmax temperature (card marginals)
         g_dgTemp = std::atof(d);
@@ -3292,6 +3367,9 @@ int main(int argc, char **argv) {
         return 2;
     }
     search::installNativeSilverBackend();
+    if (!search::nativeSilverRootPriorPath().empty())
+        std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
+                  << " weight " << search::nativeSilverRootPriorWeight() << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -3647,7 +3725,7 @@ int main(int argc, char **argv) {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);
     } else if (mode == "silversynthreplay") {
-        silverSynthReplay();
+        silverSynthReplay(argc >= 4 && std::string(argv[2]) == "names" ? argv[3] : "");
     } else if (mode == "combattransitionlizardtargetcandidategen") {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
@@ -3721,8 +3799,8 @@ int main(int argc, char **argv) {
             return 2;
         }
     } else if (mode == "ooccfpilotgen") {
-        if (argc < 7 || argc > 11) {
-            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]\n";
+        if (argc < 7 || argc > 13) {
+            std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES] [TARGET.json|-] [FUTURE_START]\n";
             return 2;
         }
         try {
@@ -3730,7 +3808,9 @@ int main(int argc, char **argv) {
                                       std::stoi(argv[6]), argc > 7 ? std::stoi(argv[7]) : 1,
                                       argc > 8 ? std::stoi(argv[8]) : 1,
                                       argc > 9 ? std::stoi(argv[9]) : 1,
-                                      argc > 10 ? argv[10] : std::string{});
+                                      argc > 10 ? argv[10] : std::string{},
+                                      argc > 11 && std::string(argv[11]) != "-" ? argv[11] : std::string{},
+                                      argc > 12 ? std::stoi(argv[12]) : 0);
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;

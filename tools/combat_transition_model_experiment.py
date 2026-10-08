@@ -437,9 +437,11 @@ def audit(args: argparse.Namespace) -> None:
         raise ValueError(f"corpus does not exist: {corpus_path}")
     union = final_manifest.get("forcedSetup") == "union"
     if union:
-        # --shard-root is unused: each union scope names its own shards.
+        # Each union scope names its own shards; --shard-root is not used.
         shard_entries, expected, covered = union_inventory(final_manifest)
     else:
+        if not args.shard_root:
+            raise ValueError("--shard-root is required")
         shard_entries, completed_seeds, quarantined = shard_inventory(Path(args.shard_root), final_manifest)
         expected = _range_set(final_manifest["seedSpec"])
         if completed_seeds | quarantined != expected or completed_seeds & quarantined:
@@ -1183,7 +1185,7 @@ def fit(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser=argparse.ArgumentParser(description=__doc__); sub=parser.add_subparsers(dest="command",required=True)
-    p=sub.add_parser("audit"); p.add_argument("--corpus-manifest",required=True); p.add_argument("--shard-root",required=True); p.add_argument("--output-dir",required=True); p.set_defaults(func=audit)
+    p=sub.add_parser("audit"); p.add_argument("--corpus-manifest",required=True); p.add_argument("--shard-root",help="required unless the corpus is a ctm_corpus_adapter union"); p.add_argument("--output-dir",required=True); p.set_defaults(func=audit)
     p=sub.add_parser("prepare"); p.add_argument("--audit",required=True); p.add_argument("--output-dir",required=True); p.set_defaults(func=prepare)
     p=sub.add_parser("fit"); p.add_argument("--prepared-dir",required=True); p.add_argument("--output-dir",required=True); p.add_argument("--device",choices=("auto","cpu","cuda"),default="auto"); p.add_argument("--threads",type=int,default=8); p.add_argument("--xgb-rounds",type=int,default=400); p.add_argument("--nn-batch",type=int,default=2048); p.add_argument("--nn-epochs",type=int,default=12); p.add_argument("--nn-patience",type=int,default=3); p.add_argument("--training-seed",type=int,default=20260911); p.add_argument("--bootstrap-reps",type=int,default=1000); p.add_argument("--save-test-predictions",action="store_true"); p.set_defaults(func=fit)
     args=parser.parse_args(); args.func(args)

@@ -100,6 +100,21 @@ Attention and the DeepSets artifacts:
   [--fast-r] [--brew] [--fairy]` writes the capabilities (and the refitted fast
   r) into a candidate fast artifact's header and prints the manifest entries.
   Path B has few Tail-fired rows: about 46 with Brew and 160 with Fairy.
+- `tools/ctm_candidate.py` turns the plain exports into a loadable research
+  candidate (header-only changes; the payload is copied byte for byte). `stamp
+  --artifact STD0 --candidate-id ID --out STD1` declares the standard artifact a
+  candidate; the standard capabilities (escape, writhing-ritual) follow on STD1.
+  `stamp --artifact FAST0 --control STD --out FAST1` stamps the fast artifact
+  (the non-production `package_deepsets_lizard_artifact.py` output) against the
+  final standard artifact and rewrites both `controlSha256` fields to its
+  SHA256; the fast capabilities and `ctm_lizard extend` follow on FAST1. `manifest
+  --standard STD [--fast FAST] --out M.json` writes the `ctm_research_candidate_v3`
+  manifest from the headers and prints the two environment variables. Without
+  `--fast` it is the interim manifest that `ctmescapefeatures` on STD1 needs; with
+  FAST1 it serves `ctmescapefeatures`/`ctmlizardfeatures` on the fast artifact.
+  It refuses a pair stamped against a different standard artifact and
+  production-promoted inputs; the loader refuses a pair that disagrees on
+  `escape`/`writhingRitual` (CTest `ctm_candidate_tool`).
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
@@ -141,7 +156,10 @@ For the full CTM retrain, `ctm_corpus_adapter.py union --scope-dir SCOPE=DIR
 ... --out DIR` concatenates assembled scopes, in ascending seed order, into one
 corpus for `combat_transition_surrogate.py prepare`. It drops every row that
 the production candidate-contract support predicate rejects (production
-`FrozenModels`), so later near-full caches keep `ids == arange(N)`. Its
+`FrozenModels`), and every winning row whose maxHP gain is not one of the
+frozen maxHP head's delta classes (`max_hp_delta_domain`; the C++ loader pins
+those classes, and Path B has a +14 gain), so later near-full caches keep
+`ids == arange(N)`. Its
 `row_scopes.json` gives each scope's row range, so main-corpus gates can
 exclude forced rows. Two retrain flags reuse production choices instead of
 searching again:
@@ -175,7 +193,20 @@ NLL); a null check records the count instead. `corpus`, `phase1`, `phase2`,
 `near-full` and `hpo` then each derive the keys that stage's outputs
 determine, into a new file, in chain order. `union` runs with the `init` pins.
 From `phase2` on, the keys `composed_evaluate.verify_data` records must not
-change (`check --previous`). The DeepSets keys stay pending (#418 step 10b).
+change (`check --previous`). `near-full` also derives the DeepSets population
+pins (teacher counts, row-id sequences, downstream and recursive-validation
+rows). The DeepSets stages follow `hpo`: `control --artifact STD.native`
+(the STD export without capabilities), `teachers` (S17), `distill` (S18,
+requires `SHARED_TRANSITION_ENCODER_GO`), `downstream` (S19 prepare/fit/compare,
+requires `DEEPSET_DOWNSTREAM_GO` for the pinned head), `potion` (S20),
+`specialist` (S21) and `fast --artifact FAST.native`; the last file has an
+empty `pending` list. `init` pins `deepset_distill.EXPECTED_CONTROL` to null:
+the student is already chosen, so S18 runs without `--control-dir` and
+records `control: null`. S17 is `combat_transition_shared_encoder_distill.py
+--teachers-only`, which writes only the teacher cache and its receipt. S19
+takes `--evidence-from-receipt` (evidence read from the pinned S18
+results.json) and `--no-reference-check` (reference downstream metrics are
+recorded, not reproduced).
 `audit` accepts a union corpus: it validates each scope's own shards (paths
 recorded in `row_scopes.json`), takes the completed sources from the union
 rows, and quarantines the other sources of the scopes' seed ranges.
@@ -1098,7 +1129,7 @@ Stage-A B reference files.
 ### Counterfactual OOC labels (`ooccfpilotgen`)
 
 `one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES
-[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES]`
+[STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES] [TARGET.json|-] [FUTURE_START]`
 (`apps/one_combat/combat_datasets.cpp::oocCounterfactualPilotGen`). It is
 seed-guarded, and the launcher is
 `docs/experiments/evidence/ooc_cf_pilot_20261007/run_corpus.sh`. The source
@@ -1120,7 +1151,8 @@ siblings share common random numbers.
     HIDDEN_FUTURE fields (#397).
   - Every branch plays to the end of the run. The label is `finalWon`;
     first-boss win and HP after it are diagnostics.
-  - `.options.csv` holds the rich row right after the option (k=0).
+  - `.options.csv` holds the rich row right after the option at the first
+    requested k (zero by default).
     `.map.csv` holds one rich row per run at the first MAP screen after the
     branch screen is finished. The map row can differ across k after a boss
     relic, because the next act's map is generated from the redrawn future.
@@ -1131,6 +1163,60 @@ siblings share common random numbers.
   - States are drawn only from TYPES (comma list), ranked by
     `sha256(ooc-cf-pilot-v2-select:{seed}:{type})`.
   - The manifest counts selected states by type and act.
+
+GEN2 accepts a nonnegative `FUTURE_START` (default zero), with each actual
+future index `k=FUTURE_START+j` recorded in the existing SHA256 domain and
+output rows. The start plus count must fit an integer. Use `-` for an absent
+target file when supplying only the start. Omission of both new arguments
+preserves the existing state reservoir, six-option cap and future identities.
+The native producer accepts the frozen exact-root teacher or an explicitly
+validated learned-stop teacher; its nominal simulation count of 10,000 is a
+cap, not an override forcing learned-stop roots to exact 10k. Source and
+continuation share that configured teacher. Bind the effective policy and
+verify actual search usage in the experiment receipt; other producers and
+Python corpus validators retain their own teacher support boundaries.
+
+#### Targeted REST diagnostics
+
+Targeted GEN2 REST preflight and future ranges verified on 2026-10-08.
+
+`TARGET.json` is opt-in producer instrumentation, limited to GEN2,
+`N_SEEDS=1`, `STATES_PER_SEED=1` and `TYPES=REST`. Schema
+`ooc_cf_target_v1` requires `sourceSeed`, `act`, `floor`, `screen` equal to
+`REST`, and an `optionKeys` array. The target selects the initial campfire
+screen before reservoir sampling, not its following upgrade/removal selector.
+No matching root, repeated matching roots or an invalid source trajectory
+fails closed.
+
+A target with `FUTURES=0` performs one complete, seed-guarded source run and
+no continuations. Its `.target.json` receipt records the exact observer
+`decisionIdx`, public-state SHA256, actual chosen semantic key, full legal
+keys, retained keys and producer/binary/teacher/effective-policy binding.
+The public fingerprint masks all eight legacy encounter-queue fields and
+adds the visible deck metadata, relic counters, potion slots, map and screen
+contents. Empty `optionKeys` inventories every legal key in this preflight;
+optional expected decision and public hash can additionally constrain it.
+This preflight still has source execution cost and is not a no-seed check.
+
+Positive futures require the preflight's `decisionIdx` and
+`publicStateSha256`, its `preflightReceiptPath` and SHA256 in
+`preflightReceiptSha256`, plus explicit nonempty `optionKeys`. Receipt schema,
+preflight status, file hash and producer/binary/teacher/effective-policy
+binding must match before replay. The replayed root identity, public hash and
+actual baseline key must match before any continuation. The captured baseline
+is always retained alongside every requested legal key; this targeted set
+bypasses the ordinary six-option cap. Duplicate or unknown requested keys are
+errors. The receipt and manifest bind the exact retained set and k range.
+
+Freeze named alternatives before their labels, and preregister disjoint
+selection and evaluation future ranges. Repeated futures are a paired local
+counterfactual diagnostic at one source state, not independent source runs
+or population win-rate evidence. `vwinrefreshselftest` (CTest
+`vwin_refresh_producer_contract`) covers parsing, binding requirements,
+selection, hidden-invariant public fingerprints and ordinary cap behavior;
+actual target replay fidelity still needs a frozen guarded preflight/canary.
+
+### E3 corpus analysis
 
 `python3 -m tools.vwin_e3_cf ROOT --output NEW_DIR [--corpus334 INDEX]` analyzes
 GEN=2 outputs. It verifies part manifests and hashes, masks the four

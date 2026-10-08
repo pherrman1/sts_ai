@@ -277,7 +277,8 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                long long seedOffset, const std::string &teacherPath,
                                int futures, int statesPerSeed = 1, int cardRewardBosses = 1,
-                               int generation = 1, const std::string &typeList = {});
+                               int generation = 1, const std::string &typeList = {},
+                               const std::string &targetPath = {}, int futureStart = 0);
 namespace one_combat {
 void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng);
 }
@@ -307,7 +308,7 @@ void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // Offline harness for the silversynthgen corpus (apps/one_combat/silver_synth_replay.cpp):
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);
-void silverSynthReplay();
+void silverSynthReplay(const std::string &namesPath = "");
 int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();

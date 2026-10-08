@@ -1,0 +1,347 @@
+{
+  "schema": "k_precision_integration_closeout_v1",
+  "status": "FOCUSED_INTEGRATION_PASS_AFTER_FIXTURE_REPAIR",
+  "recorded_epoch": 1791458626.985044,
+  "compiled_source_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "incoming_main_sha": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+  "build_type": "Debug",
+  "compile_parallelism": 6,
+  "ctest_parallelism": 2,
+  "first_suite_passes": 21,
+  "first_suite_tests": 22,
+  "affected_repair_passes": 1,
+  "affected_repair_tests": 1,
+  "distinct_selected_tests_with_passing_endpoints": 22,
+  "tests": [
+    {
+      "name": "rest_recall_filter",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0194877,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "full_hp_rest_filter",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0150125,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "remove_obtain_weight",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0179216,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "native_ooc_card_win_rank",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0228673,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "native_ooc_shop_features",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0170876,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ooc_public_futures",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0375255,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "vwin_refresh_policy_export",
+      "first_invocation": "PASS",
+      "first_seconds": 0.208863,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "vwin_refresh_producer_contract",
+      "first_invocation": "PASS",
+      "first_seconds": 0.214665,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "vwin_e3_cf_selftest",
+      "first_invocation": "PASS",
+      "first_seconds": 0.229113,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "teacher_schema_compat",
+      "first_invocation": "PASS",
+      "first_seconds": 0.428653,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "learned_stop_teacher_contract",
+      "first_invocation": "PASS",
+      "first_seconds": 0.7027,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_offline_score_rows",
+      "first_invocation": "PASS",
+      "first_seconds": 0.361202,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_escape_selftest",
+      "first_invocation": "PASS",
+      "first_seconds": 4.19648,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_capabilities_selftest",
+      "first_invocation": "PASS",
+      "first_seconds": 0.0969155,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_lizard_selftest",
+      "first_invocation": "PASS",
+      "first_seconds": 0.178557,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ooc_mcts_adapter",
+      "first_invocation": "PASS",
+      "first_seconds": 0.714239,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "combat_transition_native_contract",
+      "first_invocation": "FAIL",
+      "first_seconds": 2.21357,
+      "final_passing_endpoint": true,
+      "repair_invocation": "PASS",
+      "repair_seconds": 4.61743
+    },
+    {
+      "name": "combat_transition_runtime_loader",
+      "first_invocation": "PASS",
+      "first_seconds": 0.10712,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_research_candidate_loader",
+      "first_invocation": "PASS",
+      "first_seconds": 1.68472,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_escape_runtime",
+      "first_invocation": "PASS",
+      "first_seconds": 55.1011,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_writhing_ritual_runtime",
+      "first_invocation": "PASS",
+      "first_seconds": 6.73646,
+      "final_passing_endpoint": true
+    },
+    {
+      "name": "ctm_lizard_runtime",
+      "first_invocation": "PASS",
+      "first_seconds": 15.1238,
+      "final_passing_endpoint": true
+    }
+  ],
+  "receipts": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/configure_receipt.json",
+      "sha256": "2a71d7bc2804bf76e96e6a4a4712323f10b501847798c5ed1e05edba99629f60"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/build_receipt.json",
+      "sha256": "e0476120a13889482a9821797edd414f3587c9fb7fb6c973767f0871e317930b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_launch_failure_receipt.json",
+      "sha256": "decee173caec8357bca54073677aa2ccb59453e5e438b8770b712da1e085609e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_v2_receipt.json",
+      "sha256": "ad4f5ff805eb52375e0b9a92941ec2ecf87da29f922740c17b4b210d7ceef2f0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_contract_repair_receipt.json",
+      "sha256": "8d3389e20c445cbebe17c8dd69c98b72a4e23a42def73e147343b8d3681df942"
+    }
+  ],
+  "integration_binaries": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/one_combat",
+      "sha256": "5c6cb7396bb70514f09765a9213a7e13f0cd0dfc983d907aa045b94cbdea6650"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/combat_transition_runtime_probe",
+      "sha256": "fdc6ebec9c131374373df0e345b1345b83f62d929fe289cae15d5581fce35e9c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/native_ooc_shop_features_test",
+      "sha256": "38c404ac3f3fa23dcba34464b71194054da5d6fe6075c3914c7d1f93e46ea827"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/native_ooc_card_win_rank_test",
+      "sha256": "7e411ad7b73f9b99727714e12cb0f375dad052afaf18eba28f0febe800ba0578"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/rest_recall_filter_test",
+      "sha256": "5db7adad7f8d1723338a3e583fe2f5308cc8323e6fe67f51a4ef7ee487327c54"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/full_hp_rest_filter_test",
+      "sha256": "cdaea93b9a79f66014355a692d77b87283d97f5e886886f8563e94aa11aa36dc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/remove_obtain_weight_test",
+      "sha256": "76ef5671b7a4a01ca4bae6c0df7995ccc1c3ea497ad2d3f1cf00240db3dd95e0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/test_ooc_public_futures",
+      "sha256": "10e4e6a1e8e7033e293171c2380942bd0eb9eeb801b1be65fd14062dd06a5976"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/CMakeLists.txt",
+      "sha256": "b45a6be22924a7399c8bb677f9e28012fddfcbe16934dcb22492e738678e7dcd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/CMakePresets.json",
+      "sha256": "8fcf54a255cfd5f70ca7fbb3451d05a1ac62c080f0d7220d583a8469bec8c54c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tests/test_combat_transition_native_contract.py",
+      "sha256": "8a51043aa1e877574daf8ea623326f6123676ce2d20d1e521df6e8dfce9682c5"
+    }
+  ],
+  "frozen_artifacts_checked": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tools/seed_guard.sh",
+      "sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+      "unchanged": true
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+      "sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040",
+      "unchanged": true
+    }
+  ],
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "scope": [
+    "Integration build and synthetic/fixture checks only; no new experimental game cohort or efficacy analysis.",
+    "Merged Debug executable has its own identity; neither the old RemoveLow release result nor GEN2 producer result qualifies this executable.",
+    "Only fixture compiler flag changed from C++17 to C++20 after the first suite. No production source or frozen artifact changed during these checks.",
+    "Initial CTest PATH prelaunch failure and the real fixture failure are preserved separately; 22 passing endpoints are not a single22/22 invocation.",
+    "GitHub Linux GCC remains separate authoritative repository CI; no CI pass is claimed here.",
+    "The K-precision primary remains EXECUTION_BLOCKED."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "wave3_independent_launch_review_v1",
+  "status": "PASS",
+  "reviewer": "learning subagent, independent of root manifest author",
+  "manifest_sha256": "f53adbb625f4268896a4187252348d0eacb31acf77a8b485dcfe7e73724ae0fa",
+  "protocol_sha256": "6964ad6a792eeddacc337ee0bc8acfbb9b9acc5a7aa8d6cd71ca735dcdc78c79",
+  "joblist_sha256": "63d377c7ab445da3a0a6b8f06a07681bb0068c6dccd492bfd83e15fd0fbd6322",
+  "analysis_sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5",
+  "runner_sha256": "fa4b556c0c8ce4f662cc9755725f8b318962c4be9090e6e85307a0537f360ceb",
+  "source_sha": "b229f3ff2443b0decaacaa762d2a0c429f7e9d47",
+  "binary_sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a",
+  "arms": {
+    "Fprod": {},
+    "FullHp": {
+      "STS_OOC_SKIP_FULL_HP_REST": "1"
+    },
+    "ShopOff": {
+      "STS_OOC_STRATEGIC_SHOP": "0"
+    }
+  },
+  "jobs": 24,
+  "seeds_per_arm": 32,
+  "total_runs": 96,
+  "workers": 1,
+  "total_wall_cap_seconds": 5400,
+  "per_shard_timeout_seconds": 1800,
+  "decision_scope": "Adaptive reuse of old32 discovery seeds, including inspected015; strictly more valid wins than new-source Fprod required to advance. No pooling, no extension, no strength qualification. Fresh128 development pairs reserved before champion selection.",
+  "conditions": [
+    "Coordinator outer5400s process-group timeout; shard1800s timeout.",
+    "FixedP1 with GEN2P4 and at mostone focusedCTest/probe keeps campaign<=6 game processes.",
+    "All96paired runs mustvalidate; failedattempts preserved and block cleancomparison.",
+    "No confirmation seeds or GEN2 numerical evaluation accessed by this review."
+  ],
+  "source_review_sha256": "06bd2531247ec002fd3931173524acd1a4dad83110284390fce24495081efb2f",
+  "runtime_receipt_sha256": "77255f8c4eedc57350a4f5d064279307a0e45b2a74a767538ca8092ca14c88d4",
+  "independent_runtime_receipt_sha256": "48cb6c5adfd9dd2e38a8c9cd8e396018d33d749dc2606403e0e743d7bead3984",
+  "recorded_epoch": 1791422759.7313967
+}

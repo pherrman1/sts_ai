@@ -1,0 +1,56 @@
+{
+  "schema": "overnight_gen2_canary_v1",
+  "status": "FROZEN_NOT_LAUNCHED",
+  "root": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "source_sha": "736d1ff7e61725d9c6a50326064b2e3060ce6ae4",
+  "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/reviewed-736d1ff7/one_combat",
+  "binary_sha256": "3f69f5fd251ac699580bca8eb8da707282c77bc5263732f10e83f8e2670aba2d",
+  "teacher": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_736d/teacher.json",
+  "teacher_sha256": "b0d5dc9246bf90eb17b0be1662b92b8b30893cc5fc1f94eb694d6fad066fe8d6",
+  "policy_sha256": "069de0939bd7a20fcf0eea9f621d6f1af600c2101993d10e63ee701eb6832a6c",
+  "artifacts": {
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "src/sim/search/NativeSilverStopModel.cpp": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+  },
+  "source_seeds": [
+    610084000,
+    610084001,
+    610084002,
+    610084003
+  ],
+  "futures": 4,
+  "states_per_seed": 2,
+  "types": [
+    "CARD_REWARD",
+    "BOSS_RELIC"
+  ],
+  "selection_k": [
+    0,
+    1
+  ],
+  "evaluation_k": [
+    2,
+    3
+  ],
+  "frozen_epoch": 1791418242.690135,
+  "max_concurrent_source_processes": 4,
+  "campaign_max_game_processes": 6,
+  "timeout_seconds_per_source": 1800,
+  "source_and_branch_budget_policy": "learned_stop (configured native backend; nominal sims argument 10000)",
+  "gates": {
+    "source_trajectory_valid": true,
+    "all_retained_sibling_branches_valid": true,
+    "all_present_fatal_quarantine_counters_zero": true,
+    "runtime_budget_profile_required": true,
+    "selected_action_saved_and_hashed_before_eval_outcomes": true
+  },
+  "policy_command": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/reviewed-736d1ff7/one_combat",
+    "vwinrefreshpolicyspec",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_736d/policy.json"
+  ],
+  "maker_sha256": "855199e2ca0893b0e32e79ef4669ecdfc13093c65faeae2105c3c593e8c52e11",
+  "freeze_script_sha256": "40f2024808ba601b0f6ed14b15d6f7445f711e5ab97ba312c48b82cca91120cb"
+}

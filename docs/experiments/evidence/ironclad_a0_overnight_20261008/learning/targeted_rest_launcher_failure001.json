@@ -1,0 +1,9 @@
+{
+  "stage": "selection",
+  "status": "PRELAUNCH_HASH_GATE_REJECTED",
+  "error": "Launcher CLI was supplied an incorrect target hash; hash gate refused before creating outputs or launching the binary.",
+  "supplied_target_sha256": "89b5b07415db4c6a1b9edee6b3c122e80e1e494dfc759f7a304bc75409b9969d3",
+  "actual_target_sha256": "a7de83029458bd7cf4a4a482c9cdd61751b3bd6814a0b4c550d2a14bccee2072",
+  "source_trajectories_executed": 0,
+  "continuations_executed": 0
+}

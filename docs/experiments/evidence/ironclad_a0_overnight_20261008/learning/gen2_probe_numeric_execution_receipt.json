@@ -1,0 +1,13 @@
+{
+  "status": "AUTHORIZED_SPLIT_ANALYSIS_COMPLETE",
+  "reviewer": "native subagent /root/strategy",
+  "reviewed_analysis_sha256": "b843837e259c9fbabce330922deb5e496cb712ef435a26b410e5375c9bf75f54",
+  "review_change": "Only corrected verifier input hash pin after separately reviewed provenance fix; numerical algorithm unchanged.",
+  "selection_command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_probe.py select --contract docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/contract_receipt_v2.json --contract-sha256 bf2a82d869e809f6cd205a699d434b0f65c76daa3d6c8986a3e4e0619168bcf2",
+  "choice_sha256": "3a07120ae68e25ba93cda2f3924a20d24f4ecbbc78beaab362f59ae4eb339cc4",
+  "evaluation_command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_probe.py evaluate --choice-sha256 3a07120ae68e25ba93cda2f3924a20d24f4ecbbc78beaab362f59ae4eb339cc4",
+  "evaluation_sha256": "efa197f3b737825fae52595005cdaa8bd3fc3a980e77dfbe09785bfbe1e08bbc",
+  "sequence": "Selection command returned exclusive choice SHA; parent notified; distinct evaluation invocation then executed.",
+  "no_game_commands": true,
+  "recorded_epoch": 1791421540.6286342
+}

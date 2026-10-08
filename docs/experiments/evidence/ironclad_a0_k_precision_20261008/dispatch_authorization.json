@@ -1,0 +1,31 @@
+{
+  "schema": "k_precision_single_dispatch_authorization_v1",
+  "status": "AUTHORIZED_ONCE_NO_RETRY",
+  "authorization": "User accepted fresh four-hour follow-on block; all reviewed release gates passed.",
+  "authorized_epoch": 1791451314.527943,
+  "reviewed_commit": "54c97fd0995c043ca584e75ff6af6da2fb032cf3",
+  "ready_bundle_sha256": "70976f4af7fcce23720373a3fbac328f4f6251c638e99f6ed434e19d95f3df88",
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "effective_cap_seconds": 10800,
+  "effective_stop_epoch": 1791462114.527943,
+  "absolute_stop_epoch": 1791462144.0,
+  "positive_cap_checked": true,
+  "command": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=30s",
+    "10800s",
+    "xargs",
+    "-r",
+    "-P6",
+    "-L1",
+    "-a",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+    "--",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python"
+  ],
+  "cwd": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "other_game_workers_at_release": [],
+  "raw_directory_preexisting": false,
+  "output_log": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/dispatch.log"
+}

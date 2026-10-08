@@ -1,0 +1,24 @@
+{
+  "recorded_epoch": 1791427664.6188521,
+  "reason": "Preserve unreferenced raw compiler/configure logs in ignored artifact storage; publish hashes and paths, not generated build output. Bytes unchanged.",
+  "files": [
+    {
+      "original_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/overnight-recall-configure.log",
+      "retained_raw_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/audit/raw_build_logs/overnight-recall-configure.log",
+      "sha256": "c97af7df9b0df1d7c7b1640f35fe9da7c8cf631a361da61afd55deca16f74a1b",
+      "bytes": 346
+    },
+    {
+      "original_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/overnight-recall-baseline-build.log",
+      "retained_raw_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/audit/raw_build_logs/overnight-recall-baseline-build.log",
+      "sha256": "94a94b40ea52d44868f0e56f5e4f24adcc139e4e68893179816c95e164a9819e",
+      "bytes": 68
+    },
+    {
+      "original_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/overnight-recall-baseline-build-v2.log",
+      "retained_raw_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/audit/raw_build_logs/overnight-recall-baseline-build-v2.log",
+      "sha256": "7fdf691c499dabcb6a0fe7959a93338e3435d112a3b39dbcf94dcea4705b62c9",
+      "bytes": 337
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "output": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave4_removal_health.json",
+  "sha256": "5bca25a9a9b04cdff32316903ccf7f30615d3493aa13c9bf835b4d838134039e",
+  "arms": {
+    "Fprod": {
+      "roots": 14032,
+      "completed_simulations": 60277250,
+      "singleton_skips": 570,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 102,
+      "rollout_calls": 51910663,
+      "nonterminal_rollout_starts": 50777002,
+      "endpoints": {
+        "victory": 58588314,
+        "death": 1688758,
+        "turn_limit": 6,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    },
+    "RemoveLow": {
+      "roots": 14202,
+      "completed_simulations": 62220500,
+      "singleton_skips": 601,
+      "error_strings": {},
+      "descent_aborts": 0,
+      "cycle_rollouts": 102,
+      "rollout_calls": 53951205,
+      "nonterminal_rollout_starts": 52813511,
+      "endpoints": {
+        "victory": 60515828,
+        "death": 1704499,
+        "turn_limit": 1,
+        "engine_stop": 172,
+        "nonterminal": 0
+      }
+    }
+  },
+  "fatal_findings": 0
+}

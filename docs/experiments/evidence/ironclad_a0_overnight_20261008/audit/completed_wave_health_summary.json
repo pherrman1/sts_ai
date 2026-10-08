@@ -1,0 +1,148 @@
+{
+  "schema": "completed_wave_health_audit_summary_v1",
+  "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+  "reviewed_epoch": 1791427664.9483707,
+  "auditor_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+  "fixture_sha256": "af57a9d3aaae0545f1cc04b6445f27118530a09442cd68448f1d533c0f797afc",
+  "synthetic_tests_passed": 16,
+  "reports": [
+    {
+      "report": "wave1",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+      "health_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave1_health.json",
+      "health_sha256": "e7d373e8c9924e8c88c24b9148afb1bfe227b3127ba50887efcf69dd6028a3d4",
+      "invocation_sha256": "f5cdd8c47811b669d1a1df739bfd3ad09758571c6621434e4c58894b03225d06",
+      "source_sha": "736d1ff7e61725d9c6a50326064b2e3060ce6ae4",
+      "input_hashes_rechecked": 576,
+      "fatal_findings": 0,
+      "sums": {
+        "roots": 112783,
+        "completed_simulations": 636419500,
+        "cycle_rollouts": 1046,
+        "engine_stop": 949,
+        "turn_limit": 38,
+        "nonterminal": 0,
+        "descent_aborts": 0,
+        "error_roots": 0
+      }
+    },
+    {
+      "report": "wave2",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+      "health_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave2_health.json",
+      "health_sha256": "988730be909c1d60800d9a1e1a566bae5889cc5c0c9bbec725acb7225332f673",
+      "invocation_sha256": "d8e9f35ab1372e51b24ed9174527f5c2acc200fd83e247a50fe168ca011a53d8",
+      "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+      "input_hashes_rechecked": 1024,
+      "fatal_findings": 0,
+      "sums": {
+        "roots": 220514,
+        "completed_simulations": 927014250,
+        "cycle_rollouts": 1734,
+        "engine_stop": 8,
+        "turn_limit": 0,
+        "nonterminal": 0,
+        "descent_aborts": 0,
+        "error_roots": 0
+      }
+    },
+    {
+      "report": "wave3",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+      "health_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_health.json",
+      "health_sha256": "9445e30c71de8eb9c7ca8af999df420f3af2dc0672bb62492aab23e72dee66f3",
+      "invocation_sha256": "eeae4b9f030f52c031e99e7178a08cb9eebdcf18c1f84769ce939c580eb8be1e",
+      "source_sha": "b229f3ff2443b0decaacaa762d2a0c429f7e9d47",
+      "input_hashes_rechecked": 192,
+      "fatal_findings": 0,
+      "sums": {
+        "roots": 42911,
+        "completed_simulations": 185257500,
+        "cycle_rollouts": 308,
+        "engine_stop": 345,
+        "turn_limit": 18,
+        "nonterminal": 0,
+        "descent_aborts": 0,
+        "error_roots": 0
+      }
+    },
+    {
+      "report": "wave4_removal",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+      "health_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave4_removal_health.json",
+      "health_sha256": "5bca25a9a9b04cdff32316903ccf7f30615d3493aa13c9bf835b4d838134039e",
+      "invocation_sha256": "5b4806572d7379e80a3fdfd1ada02b44721f229dc5f1b030446e84a439514a88",
+      "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+      "input_hashes_rechecked": 128,
+      "fatal_findings": 0,
+      "sums": {
+        "roots": 28234,
+        "completed_simulations": 122497750,
+        "cycle_rollouts": 204,
+        "engine_stop": 344,
+        "turn_limit": 7,
+        "nonterminal": 0,
+        "descent_aborts": 0,
+        "error_roots": 0
+      }
+    },
+    {
+      "report": "removal_development",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+      "health_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/removal_development_health.json",
+      "health_sha256": "d82fd4fe29bd275f0072a0ea43c6a167b6a067e800a115aebb8a84db4eb2cd30",
+      "invocation_sha256": "cdf0ec190a00547b5c47b0c8ca099b9fbbfd06d505c1a22a14c96c23c2679284",
+      "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+      "input_hashes_rechecked": 512,
+      "fatal_findings": 0,
+      "sums": {
+        "roots": 114452,
+        "completed_simulations": 495640250,
+        "cycle_rollouts": 384,
+        "engine_stop": 268,
+        "turn_limit": 31,
+        "nonterminal": 0,
+        "descent_aborts": 0,
+        "error_roots": 0
+      }
+    },
+    {
+      "report": "wave5_card_rank",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS",
+      "health_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave5_card_rank_health.json",
+      "health_sha256": "c0534c4bf81777ead91810519ea0f6ce04d555c9c023b19905bfd88ba4439726",
+      "invocation_sha256": "8504ae31457245dc3e36b7205f20a16e64da13fbe19d77971cbfbda95e4f936c",
+      "source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+      "input_hashes_rechecked": 128,
+      "fatal_findings": 0,
+      "sums": {
+        "roots": 27959,
+        "completed_simulations": 120033750,
+        "cycle_rollouts": 108,
+        "engine_stop": 181,
+        "turn_limit": 6,
+        "nonterminal": 0,
+        "descent_aborts": 0,
+        "error_roots": 0
+      }
+    }
+  ],
+  "aggregate": {
+    "roots": 546853,
+    "completed_simulations": 2486863000,
+    "cycle_rollouts": 3784,
+    "engine_stop": 2095,
+    "turn_limit": 100,
+    "nonterminal": 0,
+    "descent_aborts": 0,
+    "error_roots": 0
+  },
+  "scope": "Exactly six coordinator-authorized complete cohorts; ongoing wave3development and protected confirmation/TEST not accessed. Aggregates are repeated policy-run search work, not independent quality samples.",
+  "interpretation": [
+    "No error strings, descent aborts, malformed/custody/allocation failures or unresolved endpoint counts were found.",
+    "All source coverage, newly completed simulation denominators, depth histograms and effective budget modes validated.",
+    "Cycle rollouts are intentional transposition fallback. Engine-stop and turn-limit samples are explicit simulator safety endpoints, retained separately from deaths.",
+    "The tree schema does not distinguish no-damage from loop-guard engine stops. This supplemental audit does not alter frozen efficacy estimates, nomination thresholds or final decision rules."
+  ],
+  "no_games_or_frozen_analyzer_mutations": true
+}

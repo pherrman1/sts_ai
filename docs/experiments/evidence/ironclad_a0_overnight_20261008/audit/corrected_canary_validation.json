@@ -1,0 +1,62 @@
+{
+  "schema": "corrected_runtime_canary_v1",
+  "status": "PASS",
+  "manifest_sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+  "receipts": {
+    "Fprod": {
+      "status": "PASS",
+      "receipt_sha256": "651c1429189cc97a1074686ba62f866c761693963592ad9c636e2138598b6f8c",
+      "wall_seconds": 10.481994178990135
+    },
+    "RestOff": {
+      "status": "PASS",
+      "receipt_sha256": "494102074cd149572d650232a9893005ce4b655acbfa2e3a9a9b27a735ab147d",
+      "wall_seconds": 8.880081677023554
+    },
+    "ShopFix": {
+      "status": "PASS",
+      "receipt_sha256": "b5c043e1caa07b0d3f9af4b6587329396f15a840b005bdf0891cdb2dd43e4b3e",
+      "wall_seconds": 17.093866103008622
+    },
+    "RestShop": {
+      "status": "PASS",
+      "receipt_sha256": "e4b80c7f50545530f1ab5f43a862e24cc7639b2390a0bf457e059acd2e02dc9c",
+      "wall_seconds": 8.72783236799296
+    },
+    "Legacy": {
+      "status": "PASS",
+      "receipt_sha256": "540bba21b2c2afd76d9d92d32f8edf3a182cf67a07d5bcb7bb11f9d40cb744ca",
+      "wall_seconds": 9.5793230770214
+    },
+    "Capture": {
+      "status": "PASS",
+      "receipt_sha256": "bd1b1d03bf538de6c9d8b195da25bec69fd58292ee1f46b3c2397230b4ad2837",
+      "wall_seconds": 9.180002071982017
+    }
+  },
+  "parity": {
+    "gameplay": {
+      "old_new_off_equal": true,
+      "trace_on_off_equal": true,
+      "rows": 1
+    },
+    "tree": {
+      "old_new_off_equal": true,
+      "trace_on_off_equal": true,
+      "rows": 326
+    },
+    "ooc": {
+      "old_new_off_equal": true,
+      "trace_on_off_equal": true,
+      "rows": 123
+    }
+  },
+  "excluded_tree_fields": [
+    "combat_id (process-scoped identifier differs by shard position)"
+  ],
+  "public_capture_roots": 72,
+  "public_capture_valid": true,
+  "quality_inference": false
+}

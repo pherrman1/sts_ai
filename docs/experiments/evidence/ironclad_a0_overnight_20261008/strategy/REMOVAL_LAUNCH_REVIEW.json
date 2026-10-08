@@ -1,0 +1,18 @@
+{
+  "status": "LAUNCH_MANIFEST_SOURCE_REVIEW_PASS",
+  "scope": "Read-only final manifest and allocation review; no games or discovery outcomes read. Runtime canary behavior was independently checked by learning; reviewer verifies its receipt hash, not re-execution.",
+  "manifest_sha256": "1aca03326eedcd5cf4dfa3790da3f1e84f7dbc580e11a07070c7c4b4b497d2a2",
+  "jobs_sha256": "84a53fba62fa21b9f3fc9cd995c65de0a8eea1ad0602e2d84177a1461451bc0e",
+  "checked": [
+    "immutable binary, all models, stop-model source and committed producer hashes",
+    "source/static/runtime review gate hashes",
+    "runner/analyzer/protocol hashes",
+    "exact 32 paired seed coverage in 16 unique four-seed shards",
+    "fresh output prefixes",
+    "only arm difference REMOVE ranking 0 versus 1",
+    "public8 Recall1 learnedstop1 exactRoot0; FullHp0 shopDeckFix0 legacyCARDWIN0",
+    "P1 and external 3600-second wall cap, runner shard timeout900",
+    "adaptive reused discovery explicitly labeled; all32valid and strictlymorewins advance; no extension; holdout unopened"
+  ],
+  "execution_requirement": "Coordinator launch must enforce P1 and global3600s cap, passing --timeout900 --trace --tree-profile. run_arm.py enforces artifact/seed binding and per-shard timeout but not global wall/concurrency caps."
+}

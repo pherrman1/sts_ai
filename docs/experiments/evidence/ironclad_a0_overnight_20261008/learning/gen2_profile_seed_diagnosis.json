@@ -1,0 +1,317 @@
+{
+  "status": "PROFILE_SEED_CONTRACT_MISMATCH_CONFIRMED",
+  "failed_receipt_sha256": "1c443c06bd07c77bb3b60e3f551a2f0381d3ddce60adef566cd0f93d73d8e04a",
+  "numerical_labels_opened": false,
+  "mechanism": "GEN2 futureSeed seeds std::mt19937_64; sampleNoncombatFuture assigns gc.seed=rng() first output; tree profiler emits gc.seed, not sourceSeed.",
+  "stdlib_default_first_output_check": 14514284786278117030,
+  "sources": [
+    {
+      "source_seed": 610084000,
+      "decision_indices": [
+        36,
+        71
+      ],
+      "expected_seed_mapping": [
+        {
+          "decisionIdx": 36,
+          "k": 0,
+          "futureSeed": 3147698568766905398,
+          "gameContextSeed": 10956402653516423080
+        },
+        {
+          "decisionIdx": 36,
+          "k": 1,
+          "futureSeed": 2016203705626155612,
+          "gameContextSeed": 7042462985219892417
+        },
+        {
+          "decisionIdx": 36,
+          "k": 2,
+          "futureSeed": 18399214193851862131,
+          "gameContextSeed": 4479321059478781192
+        },
+        {
+          "decisionIdx": 36,
+          "k": 3,
+          "futureSeed": 8399853850548156393,
+          "gameContextSeed": 527069762455655583
+        },
+        {
+          "decisionIdx": 71,
+          "k": 0,
+          "futureSeed": 6006098518130310561,
+          "gameContextSeed": 3657778262599658452
+        },
+        {
+          "decisionIdx": 71,
+          "k": 1,
+          "futureSeed": 14983577540388791137,
+          "gameContextSeed": 2269033397931363382
+        },
+        {
+          "decisionIdx": 71,
+          "k": 2,
+          "futureSeed": 14635078432604579880,
+          "gameContextSeed": 17566836546589453598
+        },
+        {
+          "decisionIdx": 71,
+          "k": 3,
+          "futureSeed": 8376805004720658212,
+          "gameContextSeed": 247032420270830382
+        }
+      ],
+      "observed_seed_counts": {
+        "610084000": 452,
+        "3657778262599658452": 786,
+        "2269033397931363382": 596,
+        "17566836546589453598": 781,
+        "247032420270830382": 861,
+        "10956402653516423080": 1297,
+        "7042462985219892417": 1246,
+        "4479321059478781192": 1270,
+        "527069762455655583": 1564
+      },
+      "unexpected_seeds": [],
+      "missing_seed_classes": [],
+      "adaptive_rows": 0,
+      "error_rows": 0,
+      "negative_simulation_rows": 0,
+      "tree_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.tree.jsonl",
+      "tree_sha256": "1d772edbd734f14f8fe766fc6356a01cf18269cdbafe6e26e8df1f5bfe76d80c",
+      "options_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.options.csv",
+      "options_sha256": "2437f9ff50969d249b039bad54c270475bf8cc141c14a47a260c6278173dc024"
+    },
+    {
+      "source_seed": 610084001,
+      "decision_indices": [
+        36,
+        47
+      ],
+      "expected_seed_mapping": [
+        {
+          "decisionIdx": 36,
+          "k": 0,
+          "futureSeed": 7977604180754323216,
+          "gameContextSeed": 13323164374058588623
+        },
+        {
+          "decisionIdx": 36,
+          "k": 1,
+          "futureSeed": 1568330955453360641,
+          "gameContextSeed": 10554391128938474253
+        },
+        {
+          "decisionIdx": 36,
+          "k": 2,
+          "futureSeed": 17042904978945657277,
+          "gameContextSeed": 6013487192153238912
+        },
+        {
+          "decisionIdx": 36,
+          "k": 3,
+          "futureSeed": 13871370908469380624,
+          "gameContextSeed": 15372834636150012778
+        },
+        {
+          "decisionIdx": 47,
+          "k": 0,
+          "futureSeed": 9643378125298870772,
+          "gameContextSeed": 18271040014065488634
+        },
+        {
+          "decisionIdx": 47,
+          "k": 1,
+          "futureSeed": 16951151403973444560,
+          "gameContextSeed": 7999495229627004742
+        },
+        {
+          "decisionIdx": 47,
+          "k": 2,
+          "futureSeed": 1607957272071776192,
+          "gameContextSeed": 1765218244516894719
+        },
+        {
+          "decisionIdx": 47,
+          "k": 3,
+          "futureSeed": 14482149836406217035,
+          "gameContextSeed": 10862337810844909397
+        }
+      ],
+      "observed_seed_counts": {
+        "610084001": 633,
+        "13323164374058588623": 1674,
+        "10554391128938474253": 1461,
+        "6013487192153238912": 1447,
+        "15372834636150012778": 1086,
+        "18271040014065488634": 418,
+        "7999495229627004742": 1754,
+        "1765218244516894719": 1916,
+        "10862337810844909397": 1557
+      },
+      "unexpected_seeds": [],
+      "missing_seed_classes": [],
+      "adaptive_rows": 0,
+      "error_rows": 0,
+      "negative_simulation_rows": 0,
+      "tree_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.tree.jsonl",
+      "tree_sha256": "d2cf2e9e20c09f8a89b6c5d42f83888b390bd043fe62039193558e294b8f34b3",
+      "options_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.options.csv",
+      "options_sha256": "8ca589df376ea7e7b85120f694963c18e09374b43784d22bac0482ff4d86a034"
+    },
+    {
+      "source_seed": 610084002,
+      "decision_indices": [
+        3,
+        85
+      ],
+      "expected_seed_mapping": [
+        {
+          "decisionIdx": 3,
+          "k": 0,
+          "futureSeed": 9021938917500341328,
+          "gameContextSeed": 2673856141040930742
+        },
+        {
+          "decisionIdx": 3,
+          "k": 1,
+          "futureSeed": 7976822245689854614,
+          "gameContextSeed": 8123710469353491699
+        },
+        {
+          "decisionIdx": 3,
+          "k": 2,
+          "futureSeed": 1756691756808576896,
+          "gameContextSeed": 14220023410810199363
+        },
+        {
+          "decisionIdx": 3,
+          "k": 3,
+          "futureSeed": 1606639944003188520,
+          "gameContextSeed": 13052518725451722651
+        },
+        {
+          "decisionIdx": 85,
+          "k": 0,
+          "futureSeed": 9048234777675967180,
+          "gameContextSeed": 3459008196353844760
+        },
+        {
+          "decisionIdx": 85,
+          "k": 1,
+          "futureSeed": 12439529242100560489,
+          "gameContextSeed": 6578541022757248859
+        },
+        {
+          "decisionIdx": 85,
+          "k": 2,
+          "futureSeed": 5853941160760583906,
+          "gameContextSeed": 7949467682252388271
+        },
+        {
+          "decisionIdx": 85,
+          "k": 3,
+          "futureSeed": 14586650705875439419,
+          "gameContextSeed": 4753428733482065309
+        }
+      ],
+      "observed_seed_counts": {
+        "610084002": 356,
+        "3459008196353844760": 673,
+        "6578541022757248859": 638,
+        "7949467682252388271": 1103,
+        "4753428733482065309": 755,
+        "2673856141040930742": 1100,
+        "8123710469353491699": 1130,
+        "14220023410810199363": 1210,
+        "13052518725451722651": 1406
+      },
+      "unexpected_seeds": [],
+      "missing_seed_classes": [],
+      "adaptive_rows": 0,
+      "error_rows": 0,
+      "negative_simulation_rows": 0,
+      "tree_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.tree.jsonl",
+      "tree_sha256": "145b3f025fc75943d05285a565cc5a104b2b7a25df6c64f1911ed9aeda684d6f",
+      "options_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.options.csv",
+      "options_sha256": "ac400fa4aaa14842a1d83ba321cb3a63af13f231a3c79cd80010972dbb42aae6"
+    },
+    {
+      "source_seed": 610084003,
+      "decision_indices": [
+        21,
+        76
+      ],
+      "expected_seed_mapping": [
+        {
+          "decisionIdx": 21,
+          "k": 0,
+          "futureSeed": 15311736836693991528,
+          "gameContextSeed": 6146223188486776186
+        },
+        {
+          "decisionIdx": 21,
+          "k": 1,
+          "futureSeed": 11141456321178412937,
+          "gameContextSeed": 15976648392903741797
+        },
+        {
+          "decisionIdx": 21,
+          "k": 2,
+          "futureSeed": 15431816135689840877,
+          "gameContextSeed": 15058628877106992419
+        },
+        {
+          "decisionIdx": 21,
+          "k": 3,
+          "futureSeed": 14992488850317236984,
+          "gameContextSeed": 4803223736335764300
+        },
+        {
+          "decisionIdx": 76,
+          "k": 0,
+          "futureSeed": 16225251548005776978,
+          "gameContextSeed": 6681223083343716227
+        },
+        {
+          "decisionIdx": 76,
+          "k": 1,
+          "futureSeed": 10553608094013426607,
+          "gameContextSeed": 1035590668527727587
+        },
+        {
+          "decisionIdx": 76,
+          "k": 2,
+          "futureSeed": 586981854625523446,
+          "gameContextSeed": 9134599570082825723
+        },
+        {
+          "decisionIdx": 76,
+          "k": 3,
+          "futureSeed": 14113190513707580572,
+          "gameContextSeed": 5914479358962890124
+        }
+      ],
+      "observed_seed_counts": {
+        "610084003": 363,
+        "6146223188486776186": 1936,
+        "15976648392903741797": 1513,
+        "15058628877106992419": 1790,
+        "4803223736335764300": 1226,
+        "6681223083343716227": 681,
+        "1035590668527727587": 528,
+        "9134599570082825723": 368,
+        "5914479358962890124": 692
+      },
+      "unexpected_seeds": [],
+      "missing_seed_classes": [],
+      "adaptive_rows": 0,
+      "error_rows": 0,
+      "negative_simulation_rows": 0,
+      "tree_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.tree.jsonl",
+      "tree_sha256": "5dec26069d4025b4e442cb91ec0b53936ff43d627a9911a5b247a4763c3903dd",
+      "options_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.options.csv",
+      "options_sha256": "f9f5a929789e6b8915c32b4d56ffd4e110000f9fb563924d219d6a6b023a86e2"
+    }
+  ]
+}

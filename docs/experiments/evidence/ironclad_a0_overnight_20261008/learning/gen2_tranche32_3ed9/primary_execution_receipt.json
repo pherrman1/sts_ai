@@ -1,0 +1,45 @@
+{
+  "status": "FROZEN_PRIMARY_COMPLETE",
+  "stage_order": [
+    "contract",
+    "selection",
+    "evaluation"
+  ],
+  "strict_ordering_verified": true,
+  "choices_written_and_hashed_before_evaluation": true,
+  "choice_hash_unchanged_after_evaluation": true,
+  "bound_outputs": {
+    "contract_receipt.json": "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70",
+    "gen2_tranche32_3ed9_choices.json": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7",
+    "gen2_tranche32_3ed9_evaluation.json": "5ada874a05f6d947cf0a19435db681a01be89aa23b26ceb26b5c59414aff798f"
+  },
+  "invocation_receipts": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/contract_invocation.json",
+      "sha256": "8bb7a474f895a67f323f8a8835060285d33ef944ad1a14fc8a8f41688572d323",
+      "started_epoch": 1791426191.4159663,
+      "finished_epoch": 1791426197.349281,
+      "exit_code": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/selection_invocation.json",
+      "sha256": "2fd1e4ae8465b448e3a07873d773a87e2ab248330076ca4c713bf3dfffb2271d",
+      "started_epoch": 1791426229.005731,
+      "finished_epoch": 1791426229.7781205,
+      "exit_code": 0
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/evaluation_invocation.json",
+      "sha256": "8a9bcc7e4e8b5999568ede4d08e64d657ed0d6ca2743923e0aaf295e69b77b5e",
+      "started_epoch": 1791426262.1548004,
+      "finished_epoch": 1791426263.1319296,
+      "exit_code": 0
+    }
+  ],
+  "frozen_tools": {
+    "analyze_gen2_tranche.py": "f2ed2e94c5fd670aadaba5f12f563b6bd7d7532025de3b271d31f8eb06406fda",
+    "verify_gen2.py": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+  },
+  "games_started": 0,
+  "training_performed": false
+}

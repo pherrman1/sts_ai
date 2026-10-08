@@ -1,0 +1,800 @@
+{
+  "schema": "fullhp_runtime_canary_validation_v1",
+  "status": "RUNTIME_GATE_PASS",
+  "manifest_sha256": "0c3ec718578f5f3fb20027bbbdd52e507324f9c0b5eedf46fed3909e56f35653",
+  "source_sha": "b229f3ff2443b0decaacaa762d2a0c429f7e9d47",
+  "binary_sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a",
+  "receipts": {
+    "Fprod_0": {
+      "arm": "Fprod",
+      "seed": 610080001,
+      "receipt_sha256": "ad2c80bec34fb062b828c676053b7a36d0d83edf0c26bd22fcda5a245de2a48e",
+      "public_scorer_calls": 31,
+      "tree_rows": 454,
+      "profile_rows": 48,
+      "trace_rows": 177,
+      "cpu_seconds": 10.680159675,
+      "wall_seconds": 10.835393565008417
+    },
+    "FullHp_1": {
+      "arm": "FullHp",
+      "seed": 610080001,
+      "receipt_sha256": "994312924c16228c9635a91d1586ba6cb76c3118493510c7ee6db32976d491cf",
+      "public_scorer_calls": 30,
+      "tree_rows": 487,
+      "profile_rows": 53,
+      "trace_rows": 200,
+      "cpu_seconds": 11.872577764,
+      "wall_seconds": 12.034232611011248
+    },
+    "ShopOff_2": {
+      "arm": "ShopOff",
+      "seed": 610080001,
+      "receipt_sha256": "605f618751f0b586ac37acb20bbce807db829a20e16bf0f131762f3fa2e7c947",
+      "public_scorer_calls": 36,
+      "tree_rows": 454,
+      "profile_rows": 48,
+      "trace_rows": 177,
+      "cpu_seconds": 10.564853048999996,
+      "wall_seconds": 10.740158793021692
+    },
+    "Fprod_3": {
+      "arm": "Fprod",
+      "seed": 610081015,
+      "receipt_sha256": "8ed6c18d846f9e1fe655013130d411fabc7f90bba03fa1c22d315386990841ec",
+      "public_scorer_calls": 21,
+      "tree_rows": 537,
+      "profile_rows": 53,
+      "trace_rows": 190,
+      "cpu_seconds": 18.867613056000007,
+      "wall_seconds": 19.300788852007827
+    },
+    "FullHp_4": {
+      "arm": "FullHp",
+      "seed": 610081015,
+      "receipt_sha256": "6aac6afb3e809de7ff8b1e459acea18fac35d399bbdd57861d0103454de596b1",
+      "public_scorer_calls": 21,
+      "tree_rows": 497,
+      "profile_rows": 53,
+      "trace_rows": 200,
+      "cpu_seconds": 18.038851939,
+      "wall_seconds": 18.247560118004913
+    }
+  },
+  "default_off_parity": {
+    "gameplay_equal": true,
+    "trace_equal": true,
+    "tree_equal_except_declared_fields": true,
+    "floor_profile_counts_equal": true,
+    "gameplay_rows": 1,
+    "trace_rows": 177,
+    "tree_rows": 454,
+    "excluded_csv_fields": [
+      "sec"
+    ],
+    "excluded_tree_fields_actually_present": [
+      "combat_id"
+    ],
+    "excluded_floor_profile_fields": "only keys ending _seconds"
+  },
+  "smoke_exposure": {
+    "baseline": {
+      "stem": "Fprod_0",
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.trace.jsonl:63",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.strategic.jsonl:21",
+      "trace_idx": 53,
+      "public_pre": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Clash",
+          "Inflame+",
+          "Panic Button",
+          "Master of Strategy+",
+          "Cleave",
+          "Iron Wave",
+          "Sever Soul",
+          "Anger",
+          "Ghostly Armor",
+          "Whirlwind",
+          "Cleave"
+        ],
+        "event": "",
+        "floor": 15,
+        "gold": 158,
+        "hp": 72,
+        "maxHp": 72,
+        "potionCapacity": 3,
+        "potions": [
+          "ANCIENT_POTION",
+          "ENERGY_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "BOTTLED_FLAME",
+          "ART_OF_WAR",
+          "HAPPY_FLOWER"
+        ],
+        "room": "REST",
+        "screen": "REST",
+        "x": 0,
+        "y": 14
+      },
+      "public_post": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Clash",
+          "Inflame+",
+          "Panic Button",
+          "Master of Strategy+",
+          "Cleave",
+          "Iron Wave",
+          "Sever Soul",
+          "Anger",
+          "Ghostly Armor",
+          "Whirlwind",
+          "Cleave"
+        ],
+        "event": "",
+        "floor": 15,
+        "gold": 158,
+        "hp": 72,
+        "maxHp": 72,
+        "potionCapacity": 3,
+        "potions": [
+          "ANCIENT_POTION",
+          "ENERGY_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "BOTTLED_FLAME",
+          "ART_OF_WAR",
+          "HAPPY_FLOWER"
+        ],
+        "room": "REST",
+        "screen": "MAP",
+        "x": 0,
+        "y": 14
+      },
+      "selector_lines": [],
+      "upgrades_observed": {},
+      "strategic_available_action_bits": [
+        0,
+        1
+      ],
+      "strategic_owned": true,
+      "strategic_chosen_action_bit": 0,
+      "action_evidence": "Owned strategic choice binds action index0=REST,1=SMITH; selector deck deltas bind completed upgrade. If unowned, transition alone is inference."
+    },
+    "candidate": {
+      "stem": "FullHp_1",
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.trace.jsonl:63",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.strategic.jsonl:21",
+      "trace_idx": 53,
+      "public_pre": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Clash",
+          "Inflame+",
+          "Panic Button",
+          "Master of Strategy+",
+          "Cleave",
+          "Iron Wave",
+          "Sever Soul",
+          "Anger",
+          "Ghostly Armor",
+          "Whirlwind",
+          "Cleave"
+        ],
+        "event": "",
+        "floor": 15,
+        "gold": 158,
+        "hp": 72,
+        "maxHp": 72,
+        "potionCapacity": 3,
+        "potions": [
+          "ANCIENT_POTION",
+          "ENERGY_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "BOTTLED_FLAME",
+          "ART_OF_WAR",
+          "HAPPY_FLOWER"
+        ],
+        "room": "REST",
+        "screen": "REST",
+        "x": 0,
+        "y": 14
+      },
+      "public_post": {
+        "act": 1,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Clash",
+          "Inflame+",
+          "Panic Button",
+          "Master of Strategy+",
+          "Cleave",
+          "Iron Wave",
+          "Sever Soul",
+          "Anger",
+          "Ghostly Armor",
+          "Whirlwind",
+          "Cleave"
+        ],
+        "event": "",
+        "floor": 15,
+        "gold": 158,
+        "hp": 72,
+        "maxHp": 72,
+        "potionCapacity": 3,
+        "potions": [
+          "ANCIENT_POTION",
+          "ENERGY_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "BOTTLED_FLAME",
+          "ART_OF_WAR",
+          "HAPPY_FLOWER"
+        ],
+        "room": "REST",
+        "screen": "CARD_SELECT",
+        "x": 0,
+        "y": 14
+      },
+      "selector_lines": [
+        64
+      ],
+      "upgrades_observed": {
+        "Whirlwind": 1
+      },
+      "strategic_available_action_bits": [
+        1
+      ],
+      "strategic_owned": true,
+      "strategic_chosen_action_bit": 1,
+      "action_evidence": "Owned strategic choice binds action index0=REST,1=SMITH; selector deck deltas bind completed upgrade. If unowned, transition alone is inference."
+    },
+    "exact_public_prestate_equal": true
+  },
+  "named_case": {
+    "baseline": {
+      "stem": "Fprod_3",
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.trace.jsonl:165",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.strategic.jsonl:54",
+      "trace_idx": 142,
+      "public_pre": {
+        "act": 3,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash+",
+          "Battle Trance+",
+          "Carnage+",
+          "Anger",
+          "Anger",
+          "Shockwave+",
+          "Wild Strike",
+          "Power Through+",
+          "Wild Strike",
+          "Cleave",
+          "Offering",
+          "Cleave",
+          "Combust",
+          "Disarm",
+          "Iron Wave",
+          "Exhume",
+          "Perfected Strike",
+          "Headbutt",
+          "Immolate",
+          "Limit Break",
+          "Shrug It Off",
+          "Carnage",
+          "Clash",
+          "Shrug It Off+",
+          "Anger+"
+        ],
+        "event": "",
+        "floor": 44,
+        "gold": 34,
+        "hp": 85,
+        "maxHp": 85,
+        "potionCapacity": 3,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD",
+          "MAW_BANK",
+          "HORN_CLEAT",
+          "TUNGSTEN_ROD",
+          "BUSTED_CROWN",
+          "ETERNAL_FEATHER",
+          "WING_BOOTS",
+          "OLD_COIN",
+          "BAG_OF_PREPARATION",
+          "ECTOPLASM",
+          "TOOLBOX",
+          "ANCIENT_TEA_SET",
+          "OMAMORI"
+        ],
+        "room": "REST",
+        "screen": "REST",
+        "x": 4,
+        "y": 9
+      },
+      "public_post": {
+        "act": 3,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash+",
+          "Battle Trance+",
+          "Carnage+",
+          "Anger",
+          "Anger",
+          "Shockwave+",
+          "Wild Strike",
+          "Power Through+",
+          "Wild Strike",
+          "Cleave",
+          "Offering",
+          "Cleave",
+          "Combust",
+          "Disarm",
+          "Iron Wave",
+          "Exhume",
+          "Perfected Strike",
+          "Headbutt",
+          "Immolate",
+          "Limit Break",
+          "Shrug It Off",
+          "Carnage",
+          "Clash",
+          "Shrug It Off+",
+          "Anger+"
+        ],
+        "event": "",
+        "floor": 44,
+        "gold": 34,
+        "hp": 85,
+        "maxHp": 85,
+        "potionCapacity": 3,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD",
+          "MAW_BANK",
+          "HORN_CLEAT",
+          "TUNGSTEN_ROD",
+          "BUSTED_CROWN",
+          "ETERNAL_FEATHER",
+          "WING_BOOTS",
+          "OLD_COIN",
+          "BAG_OF_PREPARATION",
+          "ECTOPLASM",
+          "TOOLBOX",
+          "ANCIENT_TEA_SET",
+          "OMAMORI"
+        ],
+        "room": "REST",
+        "screen": "MAP",
+        "x": 4,
+        "y": 9
+      },
+      "selector_lines": [],
+      "upgrades_observed": {},
+      "strategic_available_action_bits": [
+        0,
+        1
+      ],
+      "strategic_owned": true,
+      "strategic_chosen_action_bit": 0,
+      "action_evidence": "Owned strategic choice binds action index0=REST,1=SMITH; selector deck deltas bind completed upgrade. If unowned, transition alone is inference."
+    },
+    "candidate": {
+      "stem": "FullHp_4",
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.trace.jsonl:174",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.strategic.jsonl:61",
+      "trace_idx": 151,
+      "public_pre": {
+        "act": 3,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash+",
+          "Battle Trance+",
+          "Carnage+",
+          "Anger",
+          "Anger",
+          "Shockwave+",
+          "Wild Strike",
+          "Power Through+",
+          "Wild Strike",
+          "Cleave",
+          "Offering+",
+          "Cleave",
+          "Combust+",
+          "Disarm+",
+          "Exhume+",
+          "Perfected Strike+",
+          "Headbutt",
+          "Immolate+",
+          "Wild Strike",
+          "Shrug It Off",
+          "Carnage",
+          "Clash",
+          "Shrug It Off+",
+          "Anger+",
+          "Immolate"
+        ],
+        "event": "",
+        "floor": 44,
+        "gold": 31,
+        "hp": 85,
+        "maxHp": 85,
+        "potionCapacity": 3,
+        "potions": [
+          "STRENGTH_POTION",
+          "POWER_POTION",
+          "BLESSING_OF_THE_FORGE"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "MAW_BANK",
+          "HORN_CLEAT",
+          "TUNGSTEN_ROD",
+          "BUSTED_CROWN",
+          "ETERNAL_FEATHER",
+          "WING_BOOTS",
+          "OLD_COIN",
+          "BAG_OF_PREPARATION",
+          "ECTOPLASM",
+          "TOOLBOX",
+          "ANCIENT_TEA_SET",
+          "OMAMORI"
+        ],
+        "room": "REST",
+        "screen": "REST",
+        "x": 4,
+        "y": 9
+      },
+      "public_post": {
+        "act": 3,
+        "deck": [
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash+",
+          "Battle Trance+",
+          "Carnage+",
+          "Anger",
+          "Anger",
+          "Shockwave+",
+          "Wild Strike",
+          "Power Through+",
+          "Wild Strike",
+          "Cleave",
+          "Offering+",
+          "Cleave",
+          "Combust+",
+          "Disarm+",
+          "Exhume+",
+          "Perfected Strike+",
+          "Headbutt",
+          "Immolate+",
+          "Wild Strike",
+          "Shrug It Off",
+          "Carnage",
+          "Clash",
+          "Shrug It Off+",
+          "Anger+",
+          "Immolate"
+        ],
+        "event": "",
+        "floor": 44,
+        "gold": 31,
+        "hp": 85,
+        "maxHp": 85,
+        "potionCapacity": 3,
+        "potions": [
+          "STRENGTH_POTION",
+          "POWER_POTION",
+          "BLESSING_OF_THE_FORGE"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "MAW_BANK",
+          "HORN_CLEAT",
+          "TUNGSTEN_ROD",
+          "BUSTED_CROWN",
+          "ETERNAL_FEATHER",
+          "WING_BOOTS",
+          "OLD_COIN",
+          "BAG_OF_PREPARATION",
+          "ECTOPLASM",
+          "TOOLBOX",
+          "ANCIENT_TEA_SET",
+          "OMAMORI"
+        ],
+        "room": "REST",
+        "screen": "CARD_SELECT",
+        "x": 4,
+        "y": 9
+      },
+      "selector_lines": [
+        175
+      ],
+      "upgrades_observed": {
+        "Immolate": 1
+      },
+      "strategic_available_action_bits": [
+        1
+      ],
+      "strategic_owned": true,
+      "strategic_chosen_action_bit": 1,
+      "action_evidence": "Owned strategic choice binds action index0=REST,1=SMITH; selector deck deltas bind completed upgrade. If unowned, transition alone is inference."
+    },
+    "baseline_matches_original_public_packet": true,
+    "candidate_same_public_prestate": false,
+    "scope": "FullHp changes earlier campfires, so later named-case behavior is runtime exposure, not an isolated same-state causal contrast."
+  },
+  "quality_inference": false,
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/fullhp_canary.json",
+      "sha256": "0c3ec718578f5f3fb20027bbbdd52e507324f9c0b5eedf46fed3909e56f35653"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.receipt.json",
+      "sha256": "ad2c80bec34fb062b828c676053b7a36d0d83edf0c26bd22fcda5a245de2a48e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.csv",
+      "sha256": "b2b22ae700215c41f34f060c694c27a5449c9457c6ffe10cf05178b7d23a1698"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.csv.meta.json",
+      "sha256": "5b4c15b3c4bc857d19f4d1b89dd1d65cadaf88ba86d6b838c85e2489ce227890"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.log",
+      "sha256": "d6f57029fe707e772d1d2d62e767f19fdb06c00fc355e72bce3b2cdea4c63763"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.profile.jsonl",
+      "sha256": "18d59b1e331c0ffe635ebc6fb104f6a988cc28599a9d9a3562ed75888ee00c07"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_0.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.receipt.json",
+      "sha256": "994312924c16228c9635a91d1586ba6cb76c3118493510c7ee6db32976d491cf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.csv",
+      "sha256": "8c8e00c81f79869cb2caaab10c60dcd8313ba86eea89489ca70a6c6dcb4957df"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.csv.meta.json",
+      "sha256": "dca3d1c06f72510dfe43cb3ba13464c25c6804bb9736c8adabe87184bca412cd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.log",
+      "sha256": "a5578abb2cedbbe95036f1fcf93adc8af76250739f6378ddb5d487f411efd7da"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.trace.jsonl",
+      "sha256": "bb7b8623bd31c682647d21c11f5de9afe9c497dcc55e80b21abb30d10375c274"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.tree.jsonl",
+      "sha256": "7011868efbd0e86f8ee193fd83e0107aed9326889e28c7b7ffb547283ff68348"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.profile.jsonl",
+      "sha256": "6fe92d7fcfc441be6324a04de56a6880af5a800615112bbe5ea7f967f0194d2e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_1.strategic.jsonl",
+      "sha256": "a887e2123dcd0650fe7170f014347e5b339e6459cadc44d47677d449ffe4f35d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.receipt.json",
+      "sha256": "605f618751f0b586ac37acb20bbce807db829a20e16bf0f131762f3fa2e7c947"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.csv",
+      "sha256": "98c99bc9f48ae3d9598aadbb37fcd43be1c284aa39aaa41f1d6b92a79aedc7a9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.csv.meta.json",
+      "sha256": "8497a55e5cd426141dd47378f903d7776e1b1cf3fc4c12765aab1cf39ceadef0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.log",
+      "sha256": "0f3a7c3dd071d069e2277763d3b4fa16a47f02b27c4665fed60c59b7bd57253e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.trace.jsonl",
+      "sha256": "dcd118f6aeb1d3f3b26871b834310bfb60664a7481ef538949d314fd94f922b0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.profile.jsonl",
+      "sha256": "aab2c72e8915125009e0c4468560ca7b08f104f5bd256f382ea04e4584f7a2b6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/ShopOff_2.strategic.jsonl",
+      "sha256": "1a53a69b4650336ee1285a343aa05e6fe9dd9498893749194b6141bd54c75d9f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.receipt.json",
+      "sha256": "8ed6c18d846f9e1fe655013130d411fabc7f90bba03fa1c22d315386990841ec"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.csv",
+      "sha256": "aca54a742360e77ca1ecda3209eefaab92d3d376b2dec3a4d1b1bf04480f2d5b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.csv.meta.json",
+      "sha256": "f95aeb78eec4d9b02b905fc0d6a72219429de0bb76b460a22685b5c3d687ad05"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.log",
+      "sha256": "1842297571fd376cb1f87026ba3c3c7faa0ccefd2639f1638fe9ca2d0c682ecf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.trace.jsonl",
+      "sha256": "5fc1fcdc7ddf7339434379fc3d3b1159d858817221eec83b4fd72a6edc00def7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.tree.jsonl",
+      "sha256": "da432b871028dfaa7edd18a4c604b6ac1096819a399ff8540f02991a2a538d3c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.profile.jsonl",
+      "sha256": "4d684551a7d9e1f09a299519b60612c5d9c86370cdf6677cfe4bb40ee61bd5ff"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/Fprod_3.strategic.jsonl",
+      "sha256": "eeab17147ca66e297fe9a7db39116df60a88640e228710dfddaef7dc7bfb15f4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.receipt.json",
+      "sha256": "6aac6afb3e809de7ff8b1e459acea18fac35d399bbdd57861d0103454de596b1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.csv",
+      "sha256": "ce569e230603296b3c42081331149a11ca5cb6c03e2f4b25c1ba329c98903086"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.csv.meta.json",
+      "sha256": "24188733af23c23782c7149b5a4c0b487647d1fbb6cd3ee238a44644de46b61e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.log",
+      "sha256": "ad843f1463a532d17108617ae6ef344976898e7e13de460ae0b8555a810d33ab"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.trace.jsonl",
+      "sha256": "d3c592957ad1bfe358c7f005a716214d0b9d5062648ba187f9b599947b737219"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.tree.jsonl",
+      "sha256": "7ab5767ca2f014e6f784681c1dd24d579692d5556c85c743e4ea85a9f2466d2d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.profile.jsonl",
+      "sha256": "417f6743b2de47cd28713e4235b4864707a57f40d146023b7dae396b2e10f441"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/fullhp_canary/FullHp_4.strategic.jsonl",
+      "sha256": "c22d1718381c90d05c203e3583cffb59ee47559f20adf76de32974e0dcf8ecd8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.receipt.json",
+      "sha256": "651c1429189cc97a1074686ba62f866c761693963592ad9c636e2138598b6f8c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.csv",
+      "sha256": "a77265c3857cc01e4138d7c59129137dd2fd373ca974a246a0baa717f5ffbd08"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.csv.meta.json",
+      "sha256": "f84e67582c3f8131258c5db7451c610d513cf5e72e35afeb254711360bcc00eb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.log",
+      "sha256": "04710d14bc3842298b5a0d881f7ba359d038be7f1be150f498227460427b12a1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.profile.jsonl",
+      "sha256": "a0e0ca8d0677b4f612e9dc13e7470d44c718ab6183b0f8b1189e9c6492a7e859"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Fprod_0.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/fair_rest_610081015_a3f44.public.json",
+      "sha256": "4b0ffb1ed9893220a4e2d5cb59a81810acbf0d091544c21c0e7fd1aa47997ee2"
+    }
+  ],
+  "validator_sha256": "033c4ed9ba6bae51209995099118555f38ce6f78b9ef79895450c23c57c04bf9"
+}

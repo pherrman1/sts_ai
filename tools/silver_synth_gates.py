@@ -10,6 +10,7 @@ usage:
   silver_synth_gates.py gatea    FEATURES_DIR OUT_DIR
   silver_synth_gates.py tasks    FEATURES_DIR CORPUS_DIR OUT_DIR SPLIT ARM
   silver_synth_gates.py gateb    FEATURES_DIR OUT_DIR
+  silver_synth_gates.py export   MODEL.txt NAMES.json OUT.txt FEATURES_DIR
 """
 import glob
 import gzip
@@ -334,6 +335,95 @@ def cmd_gateb(features_dir, out):
     print(json.dumps(result, indent=2, default=str))
 
 
+def below_f32(t):
+    """Smallest float32 c with (x < c) == (x <= t) for every float32 x."""
+    f = np.float32(t)
+    if float(f) > t:
+        f = np.nextafter(f, np.float32(-np.inf))
+    return float(np.nextafter(f, np.float32(np.inf)))
+
+
+def compact_predict(lines, X):
+    """Margin of a combat_policy_trees_v1 model on CSR rows (parity check)."""
+    it = iter(" ".join(lines).split())
+    assert next(it) == "combat_policy_trees_v1" and next(it) == "nfeat"
+    n = int(next(it))
+    cols = []
+    for _ in range(n):
+        assert next(it) == "feat"
+        cols.append(next(it))
+    assert next(it) == "base_score"
+    margin = np.full(X.shape[0], float(next(it)))
+    assert next(it) == "ntrees"
+    trees = []
+    for _ in range(int(next(it))):
+        assert next(it) == "tree"
+        next(it)
+        nodes = []
+        for _ in range(int(next(it))):
+            if next(it) == "L":
+                nodes.append((-1, float(next(it)), 0, 0))
+            else:
+                nodes.append((int(next(it)), float(next(it)), int(next(it)), int(next(it))))
+        trees.append(nodes)
+    return cols, trees, margin
+
+
+def cmd_export(model_path, names_path, out_path, features_dir, parity_rows="2000"):
+    """LightGBM (sparse CSR, Column_i = policy feature i) -> combat_policy_trees_v1."""
+    names = json.load(open(names_path))
+    model = lgb.Booster(model_file=model_path)
+    dump = model.dump_model()
+    used = sorted({n["split_feature"] for t in dump["tree_info"] for n in _splits(t["tree_structure"])})
+    pos = {f: i for i, f in enumerate(used)}
+    lines = ["combat_policy_trees_v1", f"nfeat {len(used)}"] + [f"feat {names[f]}" for f in used]
+    lines += ["base_score 0", f"ntrees {len(dump['tree_info'])}"]
+    for t, info in enumerate(dump["tree_info"]):
+        order, queue = [], [info["tree_structure"]]
+        while queue:  # breadth-first, so the last node is a leaf
+            node = queue.pop(0)
+            order.append(node)
+            if "split_index" in node:
+                queue += [node["left_child"], node["right_child"]]
+        index = {id(n): i for i, n in enumerate(order)}
+        lines.append(f"tree {t} {len(order)}")
+        for n in order:
+            if "split_index" not in n:
+                lines.append(f"L {float(n['leaf_value'])!r}")
+                continue
+            if n["decision_type"] != "<=" or n.get("missing_type", "None") not in ("None", "NaN"):
+                raise ValueError(f"unsupported split {n['decision_type']} {n.get('missing_type')}")
+            lines.append(f"S {pos[n['split_feature']]} {below_f32(float(n['threshold']))!r} "
+                         f"{index[id(n['left_child'])]} {index[id(n['right_child'])]}")
+    open(out_path, "w").write("\n".join(lines) + "\n")
+    # Parity on real edge rows: exported trees vs LightGBM raw margins.
+    X, metas, _ = load(features_dir)
+    E, _, _, _ = edge_rows(X, metas)
+    rows = np.random.default_rng(5).choice(E.shape[0], int(parity_rows), replace=False)
+    sub = E[rows].astype(np.float32).toarray()
+    want = model.predict(E[rows], raw_score=True)
+    _, trees, got = compact_predict(lines, sub)
+    for nodes in trees:
+        for r in range(sub.shape[0]):
+            i = 0
+            while nodes[i][0] >= 0:
+                f, thr, yes, no = nodes[i]
+                i = yes if sub[r, used[f]] < thr else no
+            got[r] += nodes[i][1]
+    err = float(np.abs(got - want).max())
+    print(json.dumps({"trees": len(dump["tree_info"]), "features": len(used), "parityRows": len(rows),
+                      "maxAbsMarginError": err}))
+    assert err < 1e-3, err
+
+
+def _splits(node):
+    if "split_index" in node:
+        yield node
+        yield from _splits(node["left_child"])
+        yield from _splits(node["right_child"])
+
+
 if __name__ == "__main__":
     cmd, args = sys.argv[1], sys.argv[2:]
-    {"train": cmd_train, "gatea": cmd_gatea, "tasks": cmd_tasks, "gateb": cmd_gateb}[cmd](*args)
+    {"train": cmd_train, "gatea": cmd_gatea, "tasks": cmd_tasks, "gateb": cmd_gateb,
+     "export": cmd_export}[cmd](*args)

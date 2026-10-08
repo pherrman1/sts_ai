@@ -7,6 +7,7 @@
 #include "one_combat/combat_predictor_input.h"
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
+#include "one_combat/ooc_native_fallback.h"
 
 #include <regex>
 #include <cstdio>
@@ -60,7 +61,7 @@ static nlohmann::json effectiveOocPolicySpecification() {
     if (g_oocMapRoute && g_cpsiNet.loaded()) addModel("cpsi", g_cpsiNet.path);
     if (g_actFightProbeAllOoc && g_actFightProbePredict && g_actFightProbePredictNet.loaded())
         addModel("act_fight_probe_predict", g_actFightProbePredictNet.path);
-    return {
+    nlohmann::json policy = {
         {"schema_version", "runFullRunOOC_policy_v1"},
         {"policy_chain", "runFullRunOOC"},
         {"restV", false},
@@ -135,6 +136,21 @@ static nlohmann::json effectiveOocPolicySpecification() {
         }},
         {"model_artifacts", std::move(models)},
     };
+    // Preserve the legacy specification byte-for-byte when research flags are
+    // off, while binding enabled treatments into teacher identity checks.
+    if (const int count = one_combat::nativeOocPublicFutureCount(); count > 0)
+        policy["parameters"]["native_ooc_public_futures"] = count;
+    if (one_combat::nativeOocShopDeckSizeFixEnabled())
+        policy["flags"]["native_ooc_shop_deck_size_fix"] = true;
+    if (sts::search::oocSkipOptionalRecallEnabled())
+        policy["flags"]["skip_optional_recall"] = true;
+    if (sts::search::oocSkipFullHpRestEnabled())
+        policy["flags"]["skip_full_hp_rest"] = true;
+    if (sts::search::oocRemoveLowObtainWeightEnabled())
+        policy["flags"]["remove_low_obtain_weight"] = true;
+    if (one_combat::nativeOocCardWinRankEnabled())
+        policy["flags"]["native_ooc_card_win_rank"] = true;
+    return policy;
 }
 
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
@@ -152,6 +168,10 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (req("combat_backend")!="native_silver" || req("rng_regime")!="project_fair") throw std::runtime_error("wholecombatgen: teacher backend/RNG mismatch");
     if (!t.contains("search_configuration") || !t["search_configuration"].is_object()) throw std::runtime_error("wholecombatgen: missing search_configuration");
     const auto &s=t["search_configuration"];
+    const char *binaryObjective = std::getenv("STS_SILVER_FINAL_BOSS_BINARY");
+    const bool binaryObjectiveEnabled = binaryObjective && std::string(binaryObjective) == "1";
+    if (s.value("final_boss_binary", false) != binaryObjectiveEnabled)
+        throw std::runtime_error("wholecombatgen: final-boss objective differs from teacher");
     // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
     // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
     // that opt in; it pins the compiled stop model and threshold.
@@ -327,6 +347,13 @@ struct VwinPendingSinkDecision {
     std::vector<std::uint32_t> observedPrimitiveBits;
 };
 
+struct VwinCfTarget {
+    int act = 0, floor = 0, decisionIdx = -1;
+    std::string publicStateSha256;
+    std::string preflightReceiptPath, preflightReceiptSha256;
+    std::vector<std::string> optionKeys;
+};
+
 struct VwinCollector {
     std::uint64_t sourceSeed = 0;
     int samplesPerType = 0;
@@ -336,6 +363,7 @@ struct VwinCollector {
     bool captureAllCombatEntries = false;   // with captureBoss: every fight, not only bosses (#400)
     bool captureDecisionSink = false;
     bool cfOptionCapV2 = false;             // ooccfpilotgen GEN=2 option cap (see vwinCfLimitOptions)
+    std::optional<VwinCfTarget> cfTarget;   // GEN=2 diagnostic: exact initial REST screen only
     int decisionIdx = 0, fightIdx = 0, mapRowIdx = 0, rawRowIdx = 0, decisionSinkRowIdx = 0;
     std::map<std::string, int> eligibleByType;
     std::map<std::string, std::mt19937_64> reservoirRng;
@@ -811,19 +839,31 @@ static void vwinMaybeSampleDecision(VwinCollector &capture, std::size_t rowIndex
                return option.key == chosenKey;
            })
         || capture.samplesPerType <= 0) return;
+    if (capture.cfTarget) {
+        const auto &target = *capture.cfTarget;
+        if (row.type != "REST" || pre.screenState != ScreenState::REST_ROOM
+            || pre.act != target.act || pre.floorNum != target.floor
+            || (target.decisionIdx >= 0 && row.decisionIdx != target.decisionIdx)) return;
+    }
     int &seen = capture.eligibleByType[row.type];
     ++seen;
-    auto rng = capture.reservoirRng.find(row.type);
-    if (rng == capture.reservoirRng.end()) {
-        const std::string identity = "vwin-refresh-334-v1:" + std::to_string(capture.sourceSeed)
-            + ":" + row.type;
-        const auto digest = vwinSha256(identity);
-        const std::uint64_t state = std::stoull(digest.substr(0, 16), nullptr, 16);
-        rng = capture.reservoirRng.emplace(row.type, std::mt19937_64(state)).first;
-    }
     auto &reservoir = capture.sampled[row.type];
-    const auto slot = vwinReservoirSlot(rng->second, seen, capture.samplesPerType,
-                                        reservoir.size());
+    std::optional<std::size_t> slot;
+    if (capture.cfTarget) {
+        if (seen != 1 || !reservoir.empty())
+            throw std::runtime_error("ooc cf target: ambiguous repeated REST target");
+        slot = 0;
+    } else {
+        auto rng = capture.reservoirRng.find(row.type);
+        if (rng == capture.reservoirRng.end()) {
+            const std::string identity = "vwin-refresh-334-v1:" + std::to_string(capture.sourceSeed)
+                + ":" + row.type;
+            const auto digest = vwinSha256(identity);
+            const std::uint64_t state = std::stoull(digest.substr(0, 16), nullptr, 16);
+            rng = capture.reservoirRng.emplace(row.type, std::mt19937_64(state)).first;
+        }
+        slot = vwinReservoirSlot(rng->second, seen, capture.samplesPerType, reservoir.size());
+    }
     if (!slot) return;
     VwinSampledDecision sample;
     sample.decisionIdx = row.decisionIdx;
@@ -914,9 +954,12 @@ static void vwinFinishDecision(VwinCollector &capture, VwinPendingDecision pendi
         for (auto &sample : found->second) {
             if (sample.decisionIdx != row.decisionIdx) continue;
             sample.chosenKey = chosenKey;
-            sample.options = capture.cfOptionCapV2
-                ? vwinCfLimitOptions(sample.options, chosenKey, capture.sourceSeed, sample.decisionIdx)
-                : vwinLimitOptions(sample.options, chosenKey, capture.sourceSeed, sample.decisionIdx);
+            // A targeted diagnostic validates the complete legal inventory
+            // first, then keeps the baseline plus explicitly requested keys.
+            if (!capture.cfTarget)
+                sample.options = capture.cfOptionCapV2
+                    ? vwinCfLimitOptions(sample.options, chosenKey, capture.sourceSeed, sample.decisionIdx)
+                    : vwinLimitOptions(sample.options, chosenKey, capture.sourceSeed, sample.decisionIdx);
             sample.agentAfter = agent;
             sample.policyAfter = policyState;
             sample.sourceTraceIndex = capture.trace.size();
@@ -2333,6 +2376,90 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
               << sourceRawRows + branchRawRows << " -> " << outPrefix << "\n";
 }
 
+static VwinCfTarget vwinParseCfTarget(const nlohmann::json &doc,
+                                      std::uint64_t sourceSeed, bool preflight) {
+    if (!doc.is_object() || doc.value("schemaVersion", std::string{}) != "ooc_cf_target_v1"
+        || doc.at("sourceSeed").get<std::uint64_t>() != sourceSeed
+        || doc.value("screen", std::string{}) != "REST")
+        throw std::runtime_error("ooc cf target: schema, sourceSeed or REST screen mismatch");
+    VwinCfTarget target;
+    target.act = doc.at("act").get<int>();
+    target.floor = doc.at("floor").get<int>();
+    target.decisionIdx = doc.value("decisionIdx", -1);
+    target.publicStateSha256 = doc.value("publicStateSha256", std::string{});
+    target.preflightReceiptPath = doc.value("preflightReceiptPath", std::string{});
+    target.preflightReceiptSha256 = doc.value("preflightReceiptSha256", std::string{});
+    target.optionKeys = doc.at("optionKeys").get<std::vector<std::string>>();
+    const auto isHash = [](const std::string &s) {
+        return s.size() == 64 && s.find_first_not_of("0123456789abcdef") == std::string::npos;
+    };
+    if (target.act < 1 || target.act > 3 || target.floor < 1 || target.decisionIdx < -1
+        || (!target.publicStateSha256.empty() && !isHash(target.publicStateSha256))
+        || (!target.preflightReceiptSha256.empty() && !isHash(target.preflightReceiptSha256)))
+        throw std::runtime_error("ooc cf target: invalid act/floor/decision/hash");
+    std::set<std::string> unique;
+    for (const auto &key : target.optionKeys)
+        if (key.empty() || !unique.insert(key).second)
+            throw std::runtime_error("ooc cf target: empty or duplicate option key");
+    if (!preflight && (target.decisionIdx < 0 || !isHash(target.publicStateSha256)
+        || target.preflightReceiptPath.empty() || !isHash(target.preflightReceiptSha256)
+        || target.optionKeys.empty()))
+        throw std::runtime_error("ooc cf target: positive futures require decisionIdx, publicStateSha256, "
+                                 "preflight receipt path/hash and explicit optionKeys");
+    return target;
+}
+
+static std::vector<VwinOption> vwinCfTargetOptions(const std::vector<VwinOption> &options,
+        const std::string &chosenKey, const std::vector<std::string> &requested,
+        bool inventoryOnly) {
+    std::map<std::string, VwinOption> legal;
+    for (const auto &option : options)
+        if (!legal.emplace(option.key, option).second)
+            throw std::runtime_error("ooc cf target: duplicate legal semantic key");
+    if (!legal.count(chosenKey)) throw std::runtime_error("ooc cf target: captured baseline key is absent");
+    std::set<std::string> keep{chosenKey};
+    for (const auto &key : requested) {
+        if (!legal.count(key)) throw std::runtime_error("ooc cf target: requested option not legal: " + key);
+        keep.insert(key);
+    }
+    std::vector<VwinOption> result;
+    for (const auto &[key, option] : legal)
+        if ((inventoryOnly && requested.empty()) || keep.count(key)) result.push_back(option);
+    return result;
+}
+
+static nlohmann::json vwinCfPublicTargetState(const VwinSampledDecision &sample) {
+    const auto &gc = *sample.pre;
+    auto values = one_combat::richFeatureVec(gc, sample.path);
+    const auto &idx = richIdxMap();
+    for (const char *name : {"nextEliteId", "nextFight0", "nextFight1", "nextFight2",
+                            "remElites", "remFights", "monOffset", "eliteOffset"})
+        values[idx.at(name)] = -1;
+    nlohmann::json state = {
+        {"schemaVersion", "ooc_cf_public_rest_state_v1"},
+        {"richHeader", richStateHeader()}, {"richValues", values},
+        {"screenContents", vwinDecisionScreenContents(gc, sample.options)},
+        {"pathLastNodeKey", sample.path.lastNodeKey},
+        {"deck", nlohmann::json::array()}, {"relics", nlohmann::json::array()},
+        {"potionSlots", nlohmann::json::array()}, {"map", nlohmann::json::array()}};
+    for (int i = 0; i < gc.deck.size(); ++i)
+        state["deck"].push_back({{"card", vwinCardContents(gc.deck.cards[i])},
+                                 {"bottled", gc.deck.isCardBottled(i)}});
+    for (const auto &relic : gc.relics.relics)
+        state["relics"].push_back({{"id", static_cast<int>(relic.id)}, {"data", relic.data}});
+    for (int i = 0; i < gc.potionCapacity; ++i)
+        state["potionSlots"].push_back(static_cast<int>(gc.potions[i]));
+    if (gc.map) {
+        for (const auto &row : gc.map->nodes) for (const auto &node : row) {
+            std::vector<int> edges(node.edges.begin(), node.edges.begin() + node.edgeCount);
+            state["map"].push_back({{"x", node.x}, {"y", node.y},
+                {"room", static_cast<int>(node.room)}, {"edges", edges}});
+        }
+        state["burningElitePosition"] = {gc.map->burningEliteX, gc.map->burningEliteY};
+    }
+    return state;
+}
+
 // Counterfactual OOC label pilot. The source trajectory and its outcome-blind
 // per-type reservoir are exactly vwinrefreshgen's (K=1). Per seed, one sampled
 // CARD_REWARD, REST, SHOP or BOSS_RELIC decision is selected by hash; every
@@ -2351,10 +2478,13 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                long long seedOffset, const std::string &teacherPath,
                                int futures, int statesPerSeed, int cardRewardBosses,
-                               int generation, const std::string &typeList) {
+                               int generation, const std::string &typeList,
+                               const std::string &targetPath, int futureStart) {
     constexpr int sims = 10000, asc = 0;
-    if (nSeeds < 1 || futures < 1 || statesPerSeed < 1 || cardRewardBosses < 1 || cardRewardBosses > 2
+    if (nSeeds < 1 || futures < 0 || (futures == 0 && targetPath.empty())
+        || statesPerSeed < 1 || cardRewardBosses < 1 || cardRewardBosses > 2
         || generation < 1 || generation > 2
+        || futureStart < 0 || futureStart > std::numeric_limits<int>::max() - futures
         || seedOffset < 0
         || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
         throw std::runtime_error("ooc cf pilot: requires N>0, FUTURES>0, STATES>0, CARD_BOSSES 1..2, GEN 1..2 and a nonnegative seed range");
@@ -2372,13 +2502,43 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
     } else if (!v2 && !typeList.empty()) {
         throw std::runtime_error("ooc cf pilot: TYPES requires GEN=2");
     }
+    if (!v2 && futureStart != 0) throw std::runtime_error("ooc cf pilot: FUTURE_START requires GEN=2");
+    std::optional<VwinCfTarget> target;
+    nlohmann::json targetDocument, preflightReceipt;
+    if (!targetPath.empty()) {
+        if (!v2 || nSeeds != 1 || statesPerSeed != 1 || inScope != std::set<std::string>{"REST"})
+            throw std::runtime_error("ooc cf target: requires GEN=2, N=1, STATES=1, TYPES=REST");
+        std::ifstream input(targetPath);
+        if (!input) throw std::runtime_error("ooc cf target: cannot read target file");
+        input >> targetDocument;
+        target = vwinParseCfTarget(targetDocument, seedOffset, futures == 0);
+        if (futures > 0) {
+            if (fileSha256(target->preflightReceiptPath) != target->preflightReceiptSha256)
+                throw std::runtime_error("ooc cf target: preflight receipt SHA256 mismatch");
+            std::ifstream prior(target->preflightReceiptPath);
+            prior >> preflightReceipt;
+            if (preflightReceipt.value("schemaVersion", std::string{}) != "ooc_cf_target_receipt_v1"
+                || !preflightReceipt.value("preflightOnly", false))
+                throw std::runtime_error("ooc cf target: reference must be a zero-future preflight receipt");
+        }
+    }
     trainingCampaignStart();
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true, true);
     vwinRequireProductionPolicy(teacher);
+    const nlohmann::json targetBinding = target ? nlohmann::json{
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"sourceSeed", seedOffset}, {"ascension", asc}}
+        : nlohmann::json{};
+    if (target && futures > 0 && preflightReceipt.at("binding") != targetBinding)
+        throw std::runtime_error("ooc cf target: preflight producer/teacher/policy binding changed");
     search::g_richCombatFeatures = true;
     std::vector<std::string> suffixes = {".labels.csv", ".options.csv", ".sources.csv",
                                          ".manifest.json"};
     if (v2) suffixes.push_back(".map.csv");
+    if (target) suffixes.push_back(".target.json");
     for (const auto &suffix : suffixes)
         if (std::filesystem::exists(outPrefix + suffix))
             throw std::runtime_error("ooc cf pilot: refusing to overwrite " + outPrefix + suffix);
@@ -2410,6 +2570,7 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         source.captureRefresh = true;
         source.allowSampling = true;
         source.cfOptionCapV2 = v2;
+        source.cfTarget = target;
         const auto sourceCpuStart = vwinThreadCpuNanos();
         const auto generated = runCombatEvalGenSeed(seed, sims, asc, teacher, true, &source);
         const double sourceCpu = static_cast<double>(vwinThreadCpuNanos() - sourceCpuStart) / 1.0e9;
@@ -2445,6 +2606,37 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                 selected.push_back(extra);
             }
         }
+        if (target) {
+            if (!generated.trajectoryValid || selected.size() != 1)
+                throw std::runtime_error("ooc cf target: source invalid or target not reached exactly once");
+            auto &sample = *selected.front();
+            const auto publicState = vwinCfPublicTargetState(sample);
+            const std::string publicHash = vwinSha256(publicState.dump());
+            if (!target->publicStateSha256.empty() && target->publicStateSha256 != publicHash)
+                throw std::runtime_error("ooc cf target: public source-state SHA256 mismatch");
+            nlohmann::json identity = {{"act", sample.pre->act}, {"floor", sample.pre->floorNum},
+                {"screen", "REST"}, {"decisionIdx", sample.decisionIdx},
+                {"publicStateSha256", publicHash}, {"chosenKey", sample.chosenKey}};
+            if (futures > 0 && preflightReceipt.at("identity") != identity)
+                throw std::runtime_error("ooc cf target: captured identity differs from preflight");
+            const auto retained = vwinCfTargetOptions(sample.options, sample.chosenKey,
+                                                     target->optionKeys, futures == 0);
+            nlohmann::json legalKeys = nlohmann::json::array(), retainedKeys = nlohmann::json::array();
+            for (const auto &option : sample.options) legalKeys.push_back(option.key);
+            for (const auto &option : retained) retainedKeys.push_back(option.key);
+            nlohmann::json receipt = {{"schemaVersion", "ooc_cf_target_receipt_v1"},
+                {"preflightOnly", futures == 0}, {"binding", targetBinding},
+                {"targetPath", std::filesystem::absolute(targetPath).string()},
+                {"targetSha256", fileSha256(targetPath)}, {"identity", identity},
+                {"publicState", publicState}, {"legalOptionKeys", legalKeys},
+                {"retainedOptionKeys", retainedKeys},
+                {"futureStart", futureStart}, {"futureCount", futures}};
+            std::ofstream targetOut(outPrefix + ".target.json");
+            targetOut << receipt.dump(2) << '\n';
+            targetOut.close();
+            if (!targetOut) throw std::runtime_error("ooc cf target: receipt write failed");
+            sample.options = retained;
+        }
         if (selected.empty())
             sourceOut << seed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
                       << generated.finalFloor << ',' << (generated.trajectoryValid ? 1 : 0) << ','
@@ -2461,7 +2653,8 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         for (std::size_t optionIdx = 0; optionIdx < sample->options.size(); ++optionIdx) {
             const auto &option = sample->options[optionIdx];
             const bool chosen = option.key == sample->chosenKey;
-            for (int k = 0; k < futures; ++k) {
+            for (int j = 0; j < futures; ++j) {
+                const int k = futureStart + j;
                 const auto futureDigest = vwinSha256(std::string(v2 ? "ooc-cf-pilot-v2-future:" : "ooc-cf-pilot-v1-future:") + std::to_string(seed)
                     + ":" + std::to_string(sample->decisionIdx) + ":" + std::to_string(k));
                 const std::uint64_t futureSeed = std::stoull(futureDigest.substr(0, 16), nullptr, 16);
@@ -2495,7 +2688,7 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                     error = e.what();
                 }
                 const double cpu = static_cast<double>(vwinThreadCpuNanos() - cpuStart) / 1.0e9;
-                if (k == 0)
+                if (j == 0)
                     optionOut << seed << ',' << sample->decisionIdx << ',' << sample->type << ','
                               << optionIdx << ',' << csvQuote(option.key) << ',' << (chosen ? 1 : 0)
                               << ',' << horizon.afterFeatures << '\n';
@@ -2563,6 +2756,18 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         manifest["horizon"] = {{"rule", "whole run; label finalWon; first-boss result and HP after it as diagnostics"}};
         manifest["features"] = {{"options.csv", "rich row right after the forced option (k=0)"},
                                 {"map.csv", "rich row at the first MAP screen after the branch, per run"}};
+    }
+    if (futureStart != 0 || target) {
+        manifest["futures"]["start"] = futureStart;
+        manifest["features"]["options.csv"] = "rich row right after the forced option (k=FUTURE_START)";
+    }
+    if (target) {
+        manifest["selection"]["reservoir"] = "disabled: one exact initial REST screen";
+        manifest["selection"]["rule"] = "sourceSeed, act, floor and REST screen; expected decisionIdx is mandatory for positive futures and optional for preflight";
+        manifest["selection"]["optionCap"] = "none: baseline chosen key plus exact requested canonical keys; preflight may inventory all";
+        manifest["target"] = {{"path", std::filesystem::absolute(targetPath).string()},
+                              {"sha256", fileSha256(targetPath)}, {"specification", targetDocument}};
+        manifest["preflightOnly"] = futures == 0;
     }
     std::ofstream manifestOut(outPrefix + ".manifest.json");
     manifestOut << manifest.dump(2) << '\n';
@@ -2748,6 +2953,80 @@ int vwinRefreshSelfTest() {
     require(keysA == keysB, "option cap is input-order independent");
     require(vwinLimitOptions({options[0], options[1]}, options[0].key, 1, 1).size() == 2,
             "option cap preserves small option sets");
+    {
+        nlohmann::json request = {{"schemaVersion", "ooc_cf_target_v1"},
+            {"sourceSeed", 0x334006}, {"act", 3}, {"floor", 48},
+            {"screen", "REST"}, {"optionKeys", nlohmann::json::array()}};
+        const auto target = vwinParseCfTarget(request, 0x334006, true);
+        require(target.act == 3 && target.floor == 48 && target.decisionIdx == -1,
+                "target preflight accepts exact REST location");
+        bool rejected = false;
+        try { (void)vwinParseCfTarget(request, 0x334006, false); }
+        catch (const std::exception &) { rejected = true; }
+        require(rejected, "positive futures require frozen preflight identity");
+        request["decisionIdx"] = 71;
+        request["publicStateSha256"] = std::string(64, 'a');
+        request["preflightReceiptPath"] = "fixture.target.json";
+        request["preflightReceiptSha256"] = std::string(64, 'b');
+        request["optionKeys"] = {options.front().key};
+        require(vwinParseCfTarget(request, 0x334006, false).decisionIdx == 71,
+                "target production request binds observer identity");
+        request["optionKeys"] = {options.front().key, options.front().key};
+        rejected = false;
+        try { (void)vwinParseCfTarget(request, 0x334006, false); }
+        catch (const std::exception &) { rejected = true; }
+        require(rejected, "target rejects duplicate requested keys");
+        const auto retained = vwinCfTargetOptions(options, chosen, {options.front().key}, false);
+        require(retained.size() == 2
+            && std::any_of(retained.begin(), retained.end(), [&](const auto &o) { return o.key == chosen; }),
+            "target keeps actual baseline and named alternative exactly");
+        require(vwinCfTargetOptions(options, chosen, {}, true).size() == options.size(),
+                "target preflight inventory is not truncated to six");
+        std::vector<std::string> all;
+        for (const auto &option : options) all.push_back(option.key);
+        require(vwinCfTargetOptions(options, chosen, all, false).size() == options.size(),
+                "explicit target keys are not truncated to six");
+        rejected = false;
+        try { (void)vwinCfTargetOptions(options, chosen, {"missing:semantic:key"}, false); }
+        catch (const std::exception &) { rejected = true; }
+        require(rejected, "target rejects absent named alternative");
+
+        VwinCollector capture;
+        capture.sourceSeed = 0x334006;
+        capture.allowSampling = true; capture.samplesPerType = 1;
+        capture.cfOptionCapV2 = true; capture.cfTarget = target;
+        GameContext rest(CharacterClass::IRONCLAD, capture.sourceSeed, 0);
+        rest.act = 3; rest.floorNum = 48; rest.screenState = ScreenState::REST_ROOM;
+        rest.curRoom = Room::REST;
+        bool supported = false, complete = false; std::string error;
+        const auto legal = vwinOptions(rest, supported, complete, error);
+        require(supported && complete && legal.size() >= 2, "target REST fixture has semantic siblings");
+        auto offTarget = rest; offTarget.floorNum = 47;
+        (void)vwinBeginDecision(capture, offTarget, typePath, legal, "REST", legal.front().key,
+                                supported, complete, error);
+        require(capture.sampled.empty(), "non-target rest ignored without entering reservoir");
+        (void)vwinBeginDecision(capture, rest, typePath, legal, "REST", legal.front().key,
+                                supported, complete, error);
+        require(capture.sampled.at("REST").size() == 1 && capture.reservoirRng.empty(),
+                "exact target captured without reservoir RNG");
+        auto &sample = capture.sampled.at("REST").front();
+        const auto publicState = vwinCfPublicTargetState(sample);
+        sample.pre->seed ^= 99;
+        sample.pre->monsterRng.seed0 ^= 123;
+        std::reverse(sample.pre->monsterList.begin(), sample.pre->monsterList.end());
+        std::reverse(sample.pre->eliteMonsterList.begin(), sample.pre->eliteMonsterList.end());
+        require(publicState == vwinCfPublicTargetState(sample),
+                "target public-state receipt excludes true seed/RNG/future fields");
+        ++sample.pre->gold;
+        require(publicState != vwinCfPublicTargetState(sample),
+                "target public-state receipt detects visible-state mismatch");
+        rejected = false;
+        try {
+            (void)vwinBeginDecision(capture, rest, typePath, legal, "REST", legal.front().key,
+                                    supported, complete, error);
+        } catch (const std::exception &) { rejected = true; }
+        require(rejected, "target rejects ambiguous repeated matching screen");
+    }
     require(vwinSha256("vwin-refresh-selftest").size() == 64,
             "SHA256 identity has 64 lowercase hex characters");
     auto reservoirSelections = [](std::uint64_t seed) {
@@ -2819,6 +3098,7 @@ int vwinRefreshSelfTest() {
     require(vwinThreadCpuNanos() > 0, "thread CPU clock is available");
     std::cout << "vwin refresh contract: treasure/selector sampling pools and final MAP labels, "
                  "deterministic option cap and per-seed reservoir helper, "
+                 "targeted REST identity/public-state/explicit-key gates, "
                  "detached agent/policy snapshots, "
                  "1,017-feature header, and thread CPU clock passed\n";
     return 0;

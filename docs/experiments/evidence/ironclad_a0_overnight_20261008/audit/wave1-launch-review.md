@@ -1,0 +1,17 @@
+# Independent wave 1 launch review
+
+Reviewed source `736d1ff7e61725d9c6a50326064b2e3060ce6ae4`, protocol commit `826bb421`, and immutable executable SHA-256 `3f69f5fd251ac699580bca8eb8da707282c77bc5263732f10e83f8e2670aba2d`. This is an execution-integrity and discovery-method review, not evidence of policy superiority.
+
+All ten raw `build/overnight_20261008/fair_canary/*.receipt.json` receipts were independently checked against their current manifest digest, binary digest, every saved output digest, model artifact digests, frozen profile environment, completed status and exit code zero. Each CSV contains the required one row. Fprod traced/plain gameplay columns match exactly; only elapsed seconds differ. LegacyProd and the original Bprod smoke likewise match all gameplay columns, with only seconds differing.
+
+Raw tree evidence: Fprod completed budgets are 0/250/500/1000/2000/4000/8000/10000, with 454 roots, 40 singleton skips and zero errors. Fflat has 608 roots and FinalBinary 631 roots, each with exactly 10000 completed simulations at every root, no singleton skips and no errors. Fflat and FinalBinary tree records match through 573 roots. Their first difference occurs at Act 3, floor 50, BOSS, DONU_AND_DECA, turn 0, decision 1; the first differing fields are endpoints and nodes. This supports the intended narrow activation scope on the canary, without generalizing from its win outcome.
+
+The native public-mixture banner reports eight futures, and per-run scorer receipts are positive for every fair arm. `audit/fair_canary_validation.json` records all arm validator results. `audit/startup_rejections.json` records rejection of learned/adaptive stopping, missing/wrong Act cutoff, missing exact budgets and malformed terminal flag. Source review confirms that whole-combat teacher loading rejects a mismatched `final_boss_binary` value while omitted legacy values mean false.
+
+The eight-arm, 32-seed paired discovery allocation is appropriate within the charter. Direct mechanism comparisons use Fprod except FinalBinary, whose terminal-mechanism control is Fflat; FinalBinary versus Fprod additionally changes compute and must be described accordingly. RestOff disables both campfire-option and upgrade-target strategic gates. Six concurrent game processes is a campaign-wide ceiling, including any later GEN2 work. Outcomes from the original hidden-future B profiles are diagnostic only.
+
+The shop arithmetic repair has a passing focused regression (`build/overnight-shop-fixed-test.log`), following the preserved baseline failure. Its claim is limited to generic card-versus-relic counting and removal decrement. It does not implement card-changing relic effects such as Dolly's Mirror, Pandora's Box or Empty Cage, and therefore does not establish complete successor-feature parity for every shop relic.
+
+Targeted REST extension design: acceptable for local diagnosis, conditional on mandatory preflight decision index and public-state SHA for positive futures, complete source/binary/model/teacher/effective-policy receipts, exact legal semantic option validation, and preregistered disjoint continuation-index ranges. A zero-future preflight still runs a source trajectory and uses the seed guard. A state chosen after observing a loss cannot support a population policy-strength claim.
+
+No game seeds, builds, source changes, or holdout reads were performed for this review.

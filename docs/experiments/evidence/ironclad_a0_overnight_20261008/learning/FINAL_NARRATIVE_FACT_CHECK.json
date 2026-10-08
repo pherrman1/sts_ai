@@ -1,0 +1,94 @@
+{
+  "status": "FINAL_NARRATIVE_FACT_CHECK_PASS",
+  "created_utc": "2026-10-08T03:47:21.609314+00:00",
+  "scope": "Numerical and interpretation cross-check against completed reports and accounting; not an independent rerun of the efficacy analyzer or raw health audit. No root document edited.",
+  "reviewed_documents": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/README.md",
+      "sha256": "fb7f837c8ac9b51debb4e99f0963b7bc57b2430667c814d02c46da3d75d686ab"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/HYPOTHESES.md",
+      "sha256": "85b252b2dedc06b17cb53b3dad7cb066a9019fecce3bed4a25be3622039e8e77"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/DECISION_CASES.md",
+      "sha256": "42d9ac1ecf1d6e532908dd1c972c0fb31bdd369ce32484bafc29f84f1d176ccb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/STATE.json",
+      "sha256": "ca35f0261726b98516dd7fa8a578cd59a9f48d0f97fb7285c0dd61d94e9ebe3f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/ledger-06.md",
+      "sha256": "59958694aa0382f2cd332820649aac2e763a6c6d01e94390918e6cb6928677f0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/knowledge-base/evaluation/current-research.md",
+      "sha256": "db8ed0dfab7199a1c59eee3a93f6fb3137b87ddb45ee70ddb87ac14e538fb227"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/final_confirmation_report.json",
+      "sha256": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/final_confirmation_health.json",
+      "sha256": "29b11028411eb0f07eb22df0a66ddaf93f20f5284e75b278e02201b24942b2c0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/final_execution_completion.json",
+      "sha256": "720fe902253296cae4a50991947f3d72e32739d1acf07f72012d9b2341a8c83a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/ATTEMPT_ACCOUNTING_v3.json",
+      "sha256": "e4bf69dc2d3ff5587356fff5907297c1a0958d0a816c285d7c6532937caba6a9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/FINAL_RESULTS.json",
+      "sha256": "7bd2c09d14e34b181117519bcb8af4d0b84a388ffe3cfbf0314c96bfd88041ba"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/FINAL_PACKET_FACTS.json",
+      "sha256": "642e21158c67cf16424029a2a80795ae32e149f84d6ad892e7b9f6b687f21139"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/targeted_rest_631f_evaluation_result.json",
+      "sha256": "f075d65327dd180f1d99be639448a54c3a35873c194bdace93195ff85ad41fd7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/GEN2_TRANCHE_RESULT.md",
+      "sha256": "32e88472a526cc00e4e9e6b73687728f055da8afc257c0389078521765720b5f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/GEN2_EXPLORATORY_RESULT.md",
+      "sha256": "4054b1ec285e64d7d2055381bc9f3c2b46e794218c062b23a4651259183edbab"
+    }
+  ],
+  "verified": [
+    "Final512paired seeds:RemoveLow395/512 versus Fprod381/512;27/13 discordances;observed+2.734375pp and95%CI[+0.390625,+5.2734375];rawCONFIRMED_IMPROVEMENT unchanged.",
+    "Wilson bounds descriptive; paired interval and observed2pp advancement criterion are separate. No claim the true effect is at least2pp.",
+    "FinalCPU13793.193537018047s=3.83144264917168game-core-hours; candidate1.532745854629236% more observedCPU.",
+    "Parallel elapsed2332.700019598007s=38.8783336599668minutes, separate from summedprocesswall13842.261586832843s.",
+    "799completed invocations and2687requested benchmark trajectories are correctly distinguished from independent samples; nofailed/timeout/pending receipt.",
+    "GEN2source/branch/pair denominators, disjointselection/evaluation, historicalmodel/teacher scope and unlaunchednext-experiment cost limits retained.",
+    "Final result tied to immutable d35b42b1 corrected-fair profile; development not pooled; no live-game/default-promotion/merged-source overclaim."
+  ],
+  "health_totals": {
+    "roots": 457287,
+    "completed_simulations": 1965273000,
+    "cycle_rollouts": 1689,
+    "descent_aborts": 0,
+    "engine_stop": 339,
+    "turn_limit": 377,
+    "nonterminal": 0
+  },
+  "ledger_findings_resolved": [
+    "REST review is action-informed public-state review before continuation outcomes, not blinded to baseline action.",
+    "Default V4 gates explicitly except tested ablations.",
+    "CardRank discovery says won22/32, not lost22/32."
+  ],
+  "remaining_numerical_or_interpretation_blockers": [],
+  "independent_raw_audit_claim": false
+}
