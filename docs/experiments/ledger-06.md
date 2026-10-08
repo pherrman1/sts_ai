@@ -15162,3 +15162,56 @@ seed-clustered CI).
 
 **Knowledge impact:** the ledger records the result. `silversynthfeatures`
 now writes `after` rows; no maintained KB page describes that row layout.
+
+## §401 — OOC MCTS leaf valued by F2 instead of X2-B: negative (2026-10-08)
+
+**Question:** F2 (#334 TRAIN plus the E3 counterfactual tranche, §396) beat
+X2-B offline: map-row NLL 0.479 vs 0.496, and a boss-relic selection gain of
++6 pp. Does F2 also make a better OOC MCTS leaf value?
+
+**Protocol:** frozen [PLAN.md](evidence/ooc_mcts_f2_leaf_pilot_20261008/PLAN.md),
+independently reviewed before the run (one launcher provenance fix).
+- **Option:** new research option `STS_OOC_MCTS_LEAF_WIN_MODEL` (default
+  unset), which values `native`/`direct` leaves with a given tree model.
+- **F2 export:** the three F2 seeds were margin-averaged into
+  `models/candidates/v_win_f2_e3_trees.txt` by `tools/vwin_export_ensemble.py`.
+  On E3 VALIDATION it reproduces NLL 0.4788.
+- **Profile:** §384, with flat exact-10k Silver and B0 `v_win` in the
+  non-MCTS chain.
+- **Seeds:** `57000000..57000127`, 128 pairs.
+- **Arms:**
+  - `flat10k`: OOC MCTS off.
+  - `x2b`: OOC MCTS (§384 knobs) with the `native` leaf valued by X2-B.
+  - `f2`: the same, valued by F2.
+
+**Result: `F2_WORSE`.**
+- **f2 − x2b: wins −13.3 pp, 95% CI [−24.2, −2.3]** (63.3% vs 76.6%); floor
+  −1.41 [−3.14, +0.20]; discordant 18 vs 35.
+- f2 − flat10k: −10.9 pp [−21.9, 0.0]. x2b − flat10k: +2.3 pp [−8.6, +13.3].
+- Descriptive: `f2` loses more on boss floors (38 of 47 losses, against 21 of
+  30 for `x2b`) and in act 2 (17 vs 12).
+- Integrity: 12 of 12 invocations exit 0, no failed seeds; `analyze.py`
+  reproduces `report.json`.
+
+**Interpretation (Inference):**
+- A better offline fit on E3 map rows did not make F2 a better search leaf.
+  - F2 was fitted to the first map row after card rewards and boss relics,
+    plus #334 policy-chain rows.
+  - The search compares leaves across many other kinds of state, so leaf
+    ranking there matters more than calibration on E3 rows. Neither offline
+    metric measured that ranking.
+- `x2b − flat10k` (+2.3 pp, CI ±11) is not a replay of §384 (−21.9 pp).
+  §384 used the default `screengbm` leaf, and the seeds differ.
+  - Open question: does the `native` X2-B leaf avoid most of the §384 loss?
+    That would need its own pre-registered comparison against `screengbm` on
+    the same seeds.
+
+**Decision:** F2 is not adopted as a leaf. `STS_OOC_MCTS_LEAF_WIN_MODEL`
+stays as a default-off research option, and `STS_OOC_MCTS` stays off.
+
+**Evidence:** [README, raw CSVs, logs, smoke and provenance](evidence/ooc_mcts_f2_leaf_pilot_20261008/README.md).
+
+**Knowledge impact:** this entry, and the
+[environment-variable table](../knowledge-base/operations/environment-variables.md)
+(`STS_OOC_MCTS_LEAF_WIN_MODEL`).
+

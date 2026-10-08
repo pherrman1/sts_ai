@@ -1,6 +1,6 @@
 # Pilot: F2 as the OOC MCTS leaf value (plan, 2026-10-08)
 
-Status: DRAFT, awaiting independent pre-run review. Philipp approved the
+Status: frozen after independent pre-run review (launcher provenance fix in `56dee75a`); run and result in [README.md](README.md), ledger §401. Wording notes from the review were added after the run. Philipp approved the
 pilot ("yes lets go", 2026-10-08) after the 128-pair cloud proposal.
 
 ## Question
@@ -12,8 +12,10 @@ Does OOC MCTS play better when its leaf value is F2 instead of X2-B?
 - On E3 VALIDATION map rows, F2 scored NLL 0.479 against X2-B's 0.496.
 - At boss relics, F2 picked +6.0 pp better than X2-B (CI +2.0 to +10.4). That
   result is descriptive: it was outside the pre-registered rule.
-- F2 uses only the 457 public features. X2-B also reads the four hidden-future
-  fields (`nextEliteId`, `nextFight0/1/2`, #397).
+- F2 drops the four hidden-future fields (`nextEliteId`, `nextFight0/1/2`,
+  #397), which X2-B reads. It still reads `remElites`, `remFights`,
+  `monOffset` and `eliteOffset`, which V4 lists as leaks. The reviewer infers
+  no leak here, because MCTS particles resample the monster lists.
 
 §384 found OOC MCTS 21.9 pp worse than flat10k, with losses concentrated at
 bosses. This pilot changes only the leaf model.
