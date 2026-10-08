@@ -10,10 +10,12 @@
 - Pipeline: `one_combat silversynthfeatures` and `silversynthreplay` (this PR),
   `tools/silver_synth_gates.py train|gatea|tasks|gateb`.
 - Files: `train.json` (row counts, early-stopping iterations), `gateA.json`,
-  `weight-*.json` (validation weight grid), `gateB.json`. Models, replay
-  tasks and replay outputs are in
-  `/mnt/project-files/silver-synthetic-prior/gates-20261008/` (not archived in
-  the repository).
+  `weight-*.json` (validation weight grid), `gateB.json`. Models,
+  `roots-*.json` and the gate JSONs are in
+  `/mnt/project-files/silver-synthetic-prior/gates-20261008/`; the replay tasks
+  and outputs are in `replay/replay-tasks-and-outputs.tar.gz` there (not
+  archived in the repository). An independent review regenerated every gate
+  JSON byte-identically from the listed commands.
 - CIs are 95% seed-clustered percentile bootstraps (2,000 resamples, 43 test
   seeds). Gate B means are over 8,188 root-seed runs (4,094 test roots x 2
   replay seeds); no root was dropped for an action mismatch.

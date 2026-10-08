@@ -273,8 +273,9 @@ optionally with the research-only root prior bonus
 (`SilverSearcher::rootPrior`/`rootPriorWeight`, default off): a visited root
 edge scores `weight * P(a) / (visits + 1)` on top of UCB, and unvisited edges
 stay `+inf`. `tools/silver_synth_gates.py` trains the LightGBM models and
-computes the pilot's Gate A/B. A plain replay at 10k from the wire picks the
-recorded top action about as often as the independent second teacher does.
+computes the pilot's Gate A/B. On the 89 smoke roots with a second teacher, a
+plain 10k replay from the wire picked the recorded top action on 69, and the
+independent second teacher on 66.
 
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records

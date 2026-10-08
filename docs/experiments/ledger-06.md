@@ -14817,6 +14817,11 @@ Silver search? Assessment in `/mnt/project-files/silver-synthetic-prior/ASSESSME
     [−0.41, +0.33]).
   - Four rollouts beat one: −0.47 [−0.78, −0.14], concordance 0.683.
 - **Gate B: PASS** for both arms (w = 400, the top of the grid, for both).
+  ASSESSMENT.md asked for "no new ≥3-regret roots"; the pre-registration made
+  that a count rule (prior count ≤ plain count at each budget). Read
+  literally, Gate B fails: 168 root-seed runs are ≥3 only under the prior at
+  256 sims and 183 at 1,000. Two plain replay seeds already differ by about
+  200 such runs out of 4,094 roots, so the count rule is the fair version.
 
 | prior | regret @256 | vs plain @256 | ≥3-regret runs @256 | regret @1000 | vs plain @1000 | ≥3 @1000 |
 |---|---|---|---|---|---|---|
@@ -14831,7 +14836,9 @@ Silver search? Assessment in `/mnt/project-files/silver-synthetic-prior/ASSESSME
   65x the data (inference: features, not data volume, are the limit).
 - The prior at 256 sims is about as good as plain UCB at 1,000 (1.71 vs 1.68).
   This is the compute win the assessment expected, not evidence of play above
-  10k. The perturbed states help a little (nat+pert beats nat at 1,000).
+  10k. The perturbed states help only nominally: nat+pert scores better than nat
+  at 1,000, but the two arms were never tested against each other and the
+  nat-only CI at 1,000 crosses 0.
 - The oracle row reuses the teacher's own visits, so it is headroom only.
 - w = 400 sits on the grid edge, so a larger weight might do better. The
   pre-registered grid was kept.
