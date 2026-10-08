@@ -1,0 +1,254 @@
+{
+  "schema": "final_handoff_claim_review_v1",
+  "status": "PASS_FINAL_HANDOFF_CLAIMS",
+  "reviewed_at_utc": "2026-10-08T11:41:28.945363+00:00",
+  "publication_root": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "collection_root": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "reviewed_production_source": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "collection_snapshot": "08863cc6547ca0c9d51e08482f6bd7aafab37a92",
+  "reviewed_inputs": [
+    {
+      "path": "EXPERIMENTS.md",
+      "sha256": "73e7336e72769790bbfd9244d07974d388ce58bc1cc0c48b3738fe3281a943a3"
+    },
+    {
+      "path": "docs/experiments/ledger-06.md",
+      "sha256": "42791582b479ffd269648be8b44734e1fc8ae28ff6979569b5cdc99d1dc3dd2d"
+    },
+    {
+      "path": "docs/knowledge-base/evaluation/current-research.md",
+      "sha256": "d4919ef2bbcd9ab726a40f57209168ec80344975817edd8dfbbbdefc9eb21966"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/README.md",
+      "sha256": "8e30d59136ca02a386a98eb059444ca22e5812414550a653d74a6813077a4941"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/README.md",
+      "sha256": "574ff52db247d0110c9d77a68ac3f69c60df68941deecfbb816b37b775f7fd38"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/HANDOFF.md",
+      "sha256": "a95254ddd8679d2e058e3c5b4cf6920ca3a74bec2ac903a158d2046028b05e74"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/STATE.json",
+      "sha256": "d2d1acc45ba38934007043a3f8b31cf38013d645a66048ca828be637423cff0c"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/README.md",
+      "sha256": "468bb307e525220b1be419365632863ada1d73a2450bd7226c09b1a949074003"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/README.md",
+      "sha256": "37e72401645e3ef6a4218b3f4a97a30adaaa445cd46ffccef311bd6d2535d42c"
+    },
+    {
+      "path": "build/overnight_20261008/pr442_k_precision_body.md",
+      "sha256": "9295c34b8159cc38afaf5b6ba1c85150e0b79e783f9761f713d97e75a3f32ca3"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/CLOSEOUT_REVIEW.json",
+      "sha256": "c14887f8bc8907702deb25f3ca9692856b59933d8c9daa60e4effabd11ecfe81"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/blocked_accounting.json",
+      "sha256": "f1bd088ec0c1c7fb6cf09b4fffc9926494ecd9861fb0bb70d4eb27a8165c9c39"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/BLOCKED_RESULT.md",
+      "sha256": "8cc431583bd3297b117b6fb1fa61bd847a852c3ad4f2f48bb4ad8d3793bb7b66"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/contract_receipt.json",
+      "sha256": "33617a4879dc4ef0d2664e7defb0ef07f9dc7f232bd71b7a1e4ca1878b52ae6b"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/RESULT.json",
+      "sha256": "8b397548fde587a298048c86241b5a0b3df2bde295df6d3c832e2fdd36c81d76"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/COLLECTION_CUSTODY.json",
+      "sha256": "3158c34d15c251e3d1a1097c34384ae5666af4774cac1bc07dcac99b871b5025"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/INTEGRATION_RECONCILIATION_REVIEW.json",
+      "sha256": "9837b76b57e71d70020d0adae8bd396385a19ef265bdefe62b7920c08920ea9a"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/PUBLICATION_SYNC_REVIEW.json",
+      "sha256": "cc411e6ffd22a68830f618d431d0f565acf3c1dfa110988d02c3a2c9451500f7"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/PUBLICATION_SYNC_REVIEW_inputs.json",
+      "sha256": "40023fc8ba7c92c2e0d162839cf4a705cb5985b721ff394dfd51c67b6397b736"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/INTEGRATION_RESULT.json",
+      "sha256": "093478412107f512d05ef7408f3fb5321805b1c3cf5cd8a0ff4e0c5d498d47c6"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/PUBLICATION_INTEGRATION_RESULT.json",
+      "sha256": "55626b5c1417ad5832a3511fcddb65b0a57c90dde4c0c2c1cee52999a0c2f39c"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/FINAL_CONFIRMATION_REVIEW.json",
+      "sha256": "579d8551afba25527c4aa34bf200ae02765e27116695af5b2b731e3973b8a773"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/FINAL_IMPLEMENTATION_REVIEW.json",
+      "sha256": "7a98d593daf78ac778c5a48fada0b45f25c615a2244e0c7c2e8e098689d91e45"
+    }
+  ],
+  "verification_receipts": [
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/build_receipt.json",
+      "sha256": "e0476120a13889482a9821797edd414f3587c9fb7fb6c973767f0871e317930b",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/configure_receipt.json",
+      "sha256": "2a71d7bc2804bf76e96e6a4a4712323f10b501847798c5ed1e05edba99629f60",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_contract_repair_receipt.json",
+      "sha256": "8d3389e20c445cbebe17c8dd69c98b72a4e23a42def73e147343b8d3681df942",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true,
+        "junit_sha256": true,
+        "test_environment_receipt_sha256": true
+      },
+      "junit": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_launch_failure_receipt.json",
+      "sha256": "decee173caec8357bca54073677aa2ccb59453e5e438b8770b712da1e085609e",
+      "exit_code": null,
+      "checks": {
+        "log_sha256": true
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration/ctest_v2_receipt.json",
+      "sha256": "ad4f5ff805eb52375e0b9a92941ec2ecf87da29f922740c17b4b210d7ceef2f0",
+      "exit_code": 8,
+      "checks": {
+        "log_sha256": true,
+        "junit_sha256": true
+      },
+      "junit": {
+        "tests": 22,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/build_receipt.json",
+      "sha256": "4c2df650cffc70ceaea430f55b6a0558ddbadb095850e9266d3f9c41da39e5f0",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/combat_knowledge_neutrality_receipt.json",
+      "sha256": "e17422efeaa3abdd02cd1ce3f41a30717f2fad5aaf5e66c369a214624331690d",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/configure_receipt.json",
+      "sha256": "236f9932125c8de0a09fa91cddc179ccca7a949b22effb05296ce10615d8041c",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true
+      }
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/integration_publication/ctest_receipt.json",
+      "sha256": "c138e4f70132a837ddf199e0815651da7b90fbc943cb598e02743820c2f1224f",
+      "exit_code": 0,
+      "checks": {
+        "log_sha256": true,
+        "junit_sha256": true
+      },
+      "junit": {
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "publication_bound_hashes_independently_verified": 47,
+  "scientific_claim_review": {
+    "status": "PASS",
+    "new_primary": "EXECUTION_BLOCKED; exact fixed32 attempted once,31complete and1timeout; INVALID complete-cohort contract; no K4/K16 choices, efficacy estimate, interval or quality verdict.",
+    "failure_accounting": "3968 completed-source branch records plus100 intact timeout records; observed9.184214 core-hours are censored and100.414696min is parallel elapsed. Saved-profile health does not certify interrupted/unflushed work.",
+    "original_confirmation": "Separate immutable d35 confirmation395/512 versus381/512, raw CONFIRMED_IMPROVEMENT preserved. Observed>=2pp and lower>0 criterion is distinguished from evidence that true gain>=2pp. No pooling or reopening.",
+    "custody": "All21 original frozen input paths resolve to retained R and rehash unchanged. Publication0734/defaults are not claimed to inherit3ed or d35 gameplay qualification.",
+    "coverage_inventory": "Original799 completed runtime invocations explicitly excludes32 follow-on attempts. Ignored raw/binary artifacts required for reproduction are disclosed.",
+    "maintained_document_routing": "Original395, incoming396/397 and blocked398 are distinct; imported397 preserved verbatim. Historical397-numbered audit prose stays historical; no frozen record relabeled.",
+    "inherited_limitations": "Conditional sampler approximation, retained support, safety-limit diagnostics and lack of live-game parity are stated."
+  },
+  "implementation_claim_review": {
+    "status": "PASS_WITH_STATED_SCOPE",
+    "earlier61b": "Debug configure/eight-target build; preserved PATH prelaunch failure; executed21/22 then one-line fixture repair and1/1 rerun. No single22/22 claim.",
+    "fixture_repair": "Exactly -std=c++17 to -std=c++20 in standalone test compiler invocation; CMake and included defaulted comparisons requireC++20. Production/frozen input unchanged.",
+    "publication0734": "Debug configure/eleven-target build;27/27 guarded CTests with0skips and separate guarded observer-neutrality fixture PASS. Eleven built binary hashes and source/receipt/raw hashes verified.",
+    "probe": "Compiled only in publication checks; no bound SPEC/search/canary/evaluation execution.",
+    "observer_scope": "Existing observer-neutrality and search sampler fixtures passed; simultaneous public-capture plus enabled synthetic root-observer combination remains source-reviewed, not specifically exercised by a new enabled-combination fixture.",
+    "prior_scope": "Only zero-weight prior neutrality and favored-edge behavior are claimed; inherited nonzero-uniform neutrality comment is not repeated as evidence.",
+    "CI": "Draft Linux GCC skip is not asserted as an authoritative CI pass. No integrated-source full gameplay cohort or live qualification."
+  },
+  "publication_conditions": [
+    {
+      "condition": "Replace every __FINAL_SHA__ token with the actual final committed handoff head before PR publication; otherwise preserve reviewed template bytes.",
+      "template_path": "build/overnight_20261008/pr442_k_precision_body.md",
+      "template_sha256": "9295c34b8159cc38afaf5b6ba1c85150e0b79e783f9761f713d97e75a3f32ca3",
+      "allowed_placeholder": "__FINAL_SHA__",
+      "occurrences": 13
+    }
+  ],
+  "blockers_in_reviewed_claims": [],
+  "actions_not_taken": [
+    "No games, new efficacy reads, selection changes, source edits, test execution, merge, commit, publication, model/default changes or writes to retained collectionR by this review."
+  ],
+  "knowledge_impact": "Maintained ledger/current-research and handoff docs already route new blocked disposition and implementation limits; audit adds scoped verification evidence only.",
+  "packaging_review": {
+    "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/FINAL_PACKAGING_CHECKS.json",
+    "sha256": "52f967e204bb9f47fdec87ae1e48ee73ecbbc77bff42ba0ef2e22bfa475a8f42",
+    "status": "PASS",
+    "reviewed_at_utc": "2026-10-08T11:42:51.074872+00:00",
+    "documentation_head": "5c4f9b365ec002183dfd096c4b965cba92bca07a",
+    "bound_evidence_rehashed": 7,
+    "health_raw_hash_verified": true,
+    "health_status": "pass",
+    "health_hard_failures": {},
+    "health_warnings": [
+      "active Markdown growth",
+      "one_combat.cpp growth"
+    ],
+    "source_paths_equal_tested0734": true,
+    "reviewed_document_hashes_still_match": true,
+    "R_clean_detached08863_and21frozen_and_old4hashes_rechecked": true,
+    "worktree_submodule_check_scope": "Coordinator receipt reports worktree_submodules_ok; no redundant fixture/build replay by reviewer.",
+    "future_final_commit_scope": "Review/packaging evidence only; no tested production source changes."
+  }
+}
