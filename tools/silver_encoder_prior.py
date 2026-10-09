@@ -295,8 +295,9 @@ A_FIX = 7
 
 def collate(batch):
     import torch
-    T = max(len(r["kind"]) for r in batch)
-    A = max(len(r["act"]) for r in batch)
+    # Shapes rounded up to buckets: variable shapes fragment the CPU allocator.
+    T = -(-max(len(r["kind"]) for r in batch) // 32) * 32
+    A = -(-max(len(r["act"]) for r in batch) // 8) * 8
     B = len(batch)
     kind = np.zeros((B, T), np.int64)
     ids = np.zeros((B, T), np.int64)
@@ -371,6 +372,25 @@ def make_model(d=128, layers=3, heads=4, dropout=0.0):
     return Encoder()
 
 
+MAX_TRAIN_TOK, MAX_TRAIN_ACT = 128, 64   # rare giant roots (up to 1,030 tokens) blow up memory
+
+
+def eval_batches(roots, tok_budget=32768, act_budget=4096):
+    """Length-sorted batches with bounded padded tokens and actions (any root size)."""
+    n = np.array([len(roots[j]["kind"]) for j in range(len(roots))])
+    a = np.array([len(roots[j]["act"]) for j in range(len(roots))])
+    batch, wt, wa = [], 0, 0
+    for j in np.lexsort((a, n)):
+        t2, a2 = max(wt, n[j]), max(wa, a[j])
+        if batch and (t2 * (len(batch) + 1) > tok_budget or a2 * (len(batch) + 1) > act_budget):
+            yield batch
+            batch, t2, a2 = [], n[j], a[j]
+        batch.append(roots[j])
+        wt, wa = t2, a2
+    if batch:
+        yield batch
+
+
 def batches(roots, size, shuffle, rng=None):
     order = np.arange(len(roots))
     if shuffle:
@@ -384,7 +404,7 @@ def evaluate(model, roots):
     model.eval()
     ce = top = agree_top = agree_n = 0.0
     with torch.no_grad():
-        for batch in batches(roots, 512, False):
+        for batch in eval_batches(roots):
             kind, ids, sub, num, pad, act, amask, y = collate(batch)
             logit = model(kind, ids, sub, num, pad, act, amask)
             logp = torch.log_softmax(logit, -1)
@@ -409,7 +429,9 @@ def cmd_train(out_dir, epochs="30", d="128", layers="3", lr="1e-3", dropout="0",
     rng = np.random.default_rng(1)
     roots = load_roots(out_dir)
     if isinstance(roots, Packed):
-        tr = roots.view(np.isin(roots.fold, (0, 1, 2)))
+        small = (roots.ntok <= MAX_TRAIN_TOK) & (roots.nact <= MAX_TRAIN_ACT)
+        print(json.dumps({"trainRootsDroppedAsTooLarge": int((~small & np.isin(roots.fold, (0, 1, 2))).sum())}))
+        tr = roots.view(np.isin(roots.fold, (0, 1, 2)) & small)
         va = roots.view(roots.fold == VAL)
     else:
         tr = [r for r in roots if r["fold"] in (0, 1, 2)]
@@ -456,7 +478,7 @@ def encoder_probs(out_dir, roots, tag=""):
     model.eval()
     probs = {}
     with torch.no_grad():
-        for batch in batches(roots, 512, False):
+        for batch in eval_batches(roots):
             kind, ids, sub, num, pad, act, amask, y = collate(batch)
             p = torch.softmax(model(kind, ids, sub, num, pad, act, amask), -1).numpy()
             for b, r in enumerate(batch):
