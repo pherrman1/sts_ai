@@ -15263,3 +15263,60 @@ needs its own go.
 
 **Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
 [environment-variable table](../knowledge-base/operations/environment-variables.md).
+
+## §403 — Learned encoder Silver root prior: ties GBM v2 at 6x data, no 2k gain (2026-10-09)
+
+**Question:** after §400 (GBM priors stall on hand-made features), does a
+learned encoder over the structured combat state fit the 10k search's choices
+clearly better, and does that help search at 2k sims?
+
+**Design:** pre-registered in the evidence `PREREG.md` (stage 1 committed
+before training, stage 2 before any new data), on Philipp's go (2026-10-08).
+- Model: transformer over state tokens (cards by zone, monsters, potions,
+  player statuses, relics, context), d 128, 3 layers; per-action logits from
+  the tokens an action uses; per-root softmax cross-entropy vs 10k visit
+  shares. Trained on cloud CPU.
+- Stage 1: the §397 corpus (165k roots), §397/§400 folds. Stage 2: plus a new
+  5x corpus from the same frozen generator (seeds 58000000-58001079 natural,
+  58002000-58003079 perturbed, 20 cloud workers, 238 of 240 units used), 951k
+  roots; v2 retrained on the same data (v2-6x).
+- Gate 1 / 1': top-1 vs the 10k pick on test roots where two 10k searches
+  agree must beat v2 (stage 1) / v2-6x (stage 2) by >= 5 points.
+
+**Result:** both gates FAIL. Test fold of the original corpus, 6,003 roots
+where both searches agree (32,309 roots in all); the two searches agree on
+74.4% of roots with a second search.
+
+| prior | data | agree-root top-1 | all-root top-1 | cross-entropy |
+|---|---|---|---|---|
+| v1 (§397) | 1x | 63.3% | 55.3% | 1.230 |
+| v2 (§400) | 1x | 67.8% | 59.0% | 1.175 |
+| encoder | 1x | 63.4% | 55.3% | 1.227 |
+| v2-6x | 6x | 70.8% | 61.2% | 1.144 |
+| encoder | 6x | 70.6% | 61.7% | 1.124 |
+
+- Stage 1 encoder overfit after epoch 7. An exploratory learning curve
+  (regularized) rose ~3 points per doubling of data, which motivated stage 2.
+- Exploratory replay (not a gate; §400 test roots, 8,188 runs per arm), regret
+  vs plain at 2k: v1 −0.09 [−0.24, +0.04], v2-6x −0.09 [−0.20, −0.00],
+  encoder-6x (w 400, no own weight pick) −0.07 [−0.23, +0.09]; v2-6x − v1
+  −0.005 [−0.11, +0.11]. At 256 sims the encoder is best (−0.49 vs plain).
+
+**Interpretation:**
+- More data helped both model families about equally (+3 points agree-root
+  top-1); with 951k roots the learned encoder ties GBM v2 on choice accuracy
+  and edges it on cross-entropy. Features were not the limit once data grew.
+- Better fit still does not lower root regret at the 2k budget: v1, v2-6x and
+  the encoder all sit near −0.09 there. Inference: at 2k, Silver's own search
+  already recovers most of what a root prior of this quality adds; the
+  remaining oracle gap (§400) is optimistic and not reachable with these
+  targets.
+- The synthetic-corpus root-prior line stops here. No native encoder and no
+  online screen are proposed. The 5x corpus stays available for other uses.
+
+**Evidence:** [packet](evidence/silver_encoder_prior_20261008/README.md);
+corpus README at
+`/mnt/project-files/silver-synthetic-prior/corpus5x-450376c8/README.md`.
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
