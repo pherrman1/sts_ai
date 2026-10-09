@@ -15656,8 +15656,12 @@ VALIDATION states, TEST closed).
   [−2.41, −0.03].
 
 **Interpretation (Inference):** with these features and 789 TRAIN states,
-nothing identifies when an alternative card beats the teacher's. Together with
-§409, the A20 corpus supports no card model beyond the current pipeline.
+nothing identifies when an alternative card beats the teacher's.
+- The features are the X2-B map rows plus the teacher's pick. The corpus does
+  not store V4's per-option scores, so a correction that takes those scores as
+  input is untested.
+- For context, the §409 ranker on the same 182 states scores −0.44 [−1.50,
+  +0.50].
 
 **Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
 [report-correction.json](evidence/a20_card_floor_20261009/report-correction.json).

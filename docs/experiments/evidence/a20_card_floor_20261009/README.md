@@ -93,3 +93,6 @@ TRAIN 789, VALIDATION 182 and TEST 158 (closed).
 
 **Reading (inference):** from these features and 789 states, nothing
 predicts when an alternative beats the teacher's card.
+- The features are the X2-B map rows plus the teacher's pick. V4's per-option
+  scores are not in the corpus, so a correction using them is untested.
+- The §409 ranker on the same 182 states scores −0.44 [−1.50, +0.50].
