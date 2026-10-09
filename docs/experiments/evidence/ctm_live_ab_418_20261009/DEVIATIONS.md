@@ -35,3 +35,24 @@ Per worker: 32 seeds × (2 × ~114 s MCTS + ~58 s off) ≈ 2.5 CPU-h, which is a
 (~5 min, before the others start). The expected total is about 1.2–1.5 h from start to all four `DONE.txt` files.
 The cloud per-run CPU figures are §384's own (measured on 4-CPU cloud containers). `sec` in the CSVs is reported, not
 a metric.
+
+## D9 (post-run, before reading any result): torn and overwritten trace records
+
+Recorded 2026-10-09 after all four workers wrote `DONE.txt` and before any result was read; corrected after the
+independent result review ([reviews/result/REVIEW.md](reviews/result/REVIEW.md), finding 2). Full note:
+[combined/D9-TORN-TRACE-LINES.md](combined/D9-TORN-TRACE-LINES.md).
+
+| # | PREREG.md | Cloud run | Effect on results |
+|---|---|---|---|
+| D9 | `analyze` reads every trace/support JSONL line as JSON (`live_ab_analyze.py:175`) | `cloud_worker.sh combine` crashed with `JSONDecodeError`: 7 of 95,486 JSONL lines in 5 files were torn fragments. The frozen analyzer (`510ccf0d…`, bytes unchanged) was run on a local copy of the combined run tree with only those 7 lines removed; the originals in `w01..w04/run` are untouched and still match each worker's `DONE.txt`. | Primary verdict unaffected (it reads the CSVs). See the correction below for the trace records that were lost. |
+
+**Correction (result review).** The open/write/close appends at `apps/one_combat/run_driver.cpp:102` are not atomic
+on the network share. Besides the 7 torn lines, they silently overwrote about 20 whole trace records on 4 seeds, all
+wins: `off` 63000066, 63000115 and 63000126, and `prod` 63000073 (one non-boss fight). No `cand` trace is affected.
+
+* **Unaffected, exactly:** the CSV primary, the boss-death counts (cand 19, prod 26, off 18) and `BOSS_DEATH_EXCESS`.
+* **Slightly off (descriptive only):** the `off` arm's by-act boss-entry counts (127/124/118 read vs 128/126/119
+  implied by the CSVs), its mean start HP and its Smoke Bomb counts.
+
+The share copy of the D9 note (`/mnt/project-files/ctm-pathb/live-ab-cloud/combined/D9-TORN-TRACE-LINES.md`) is the
+pre-correction version; the repo copy appends the correction.

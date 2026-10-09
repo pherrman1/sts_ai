@@ -14449,6 +14449,11 @@ default (on).
 
 **Support:** 2,647 / 2,603 rows scored. The rest were unsupported: Smoke Bomb 16 / 11, unqualified active Lizard 5 / 5, Writhing+Ritual Dagger 0 / 1. There were no escapes and no zero-probability HP outcomes.
 
+> **Correction (2026-10-09, §412):** "no escapes" is wrong. The exact / learned arms have 15 / 10 escaped rows (16 /
+> 11 held-Smoke rows). Stage 0's `analyze.py` counted escapes as `combat_outcome == 0`, but escapes are stored as wins
+> with `post.smokeBombUsed`. All of them are among the production-unsupported Smoke Bomb rows above, so every §386
+> metric is unchanged.
+
 **Survival is calibrated on both arms.** Mean signed bias (predicted win minus observed) is exact −0.003 (CI −0.009..+0.003) and learned −0.001 (−0.007..+0.005). Boss bias is exact −0.006 (−0.038..+0.027) and learned −0.025 (−0.063..+0.011). Survival NLL is 0.066 / 0.069 nat per fight. The only cell with a significant bias is the exact-arm act 3 boss (+0.087, CI +0.005..+0.177, n=58). The learned arm's act 3 boss is +0.002.
 
 **Boss HP is optimistic on both arms.** Predicted post-combat HP on boss wins is too high by +10.3 HP (CI 8.0..12.7) for exact and +10.0 (7.8..12.4) for learned.
@@ -15570,3 +15575,107 @@ arm started (probably copy times), so the order cannot be proven either way.
 
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
+
+## §412 — #418 full CTM retrain on Path B: offline A/B pass, live A/B no difference detected (2026-10-09)
+
+**Question:** does a CTM stack retrained on the Path B learned-stop corpus (§386), with the planned new capabilities,
+fit the current teacher better than production offline, and does it win more runs inside live OOC MCTS?
+
+**Retrain:** FULL-RETRAIN-PLAN (project share `ctm-pathb/FULL-RETRAIN-PLAN.md`, not committed; Philipp chose
+"everything at once" and the full pipeline). One chain on Philipp's machine trained a new DeepSets main (fast) model
+and an Attention fallback (standard) on the Path B union, with four planned capabilities: Smoke Bomb escape, max HP
+up to 220, Writhing Mass + Ritual Dagger, and active Lizard Tail with Entropic Brew or Fairy Potion. PRs #437, #439,
+#440, #441 and #443 added the runtime and tools.
+- **DeepSets stage 19 downstream gate: REJECTED, then accepted by override.** The only failure was the exact-label
+  accuracy on the singleton `cards` head (the Ink Bottle counter). Philipp typed "yes override stage 19". Override
+  record sha256 `a2d28af3…`, qualification `5cca45ae…`.
+- **Capability exposure checks failed for the two new support slices.** E1 (escape, Smoke cohort) failed on small
+  Smoke ∩ Ritual/gold slices. E2 (Writhing+Ritual, whole union) failed: mean gap +0.139 [0.048, 0.271] on 149 rows,
+  the same miss production has (gate 0.1). At 13:36Z Philipp chose "Escape only": Writhing+Ritual stays excluded.
+  **Open:** the escape override record is not written yet; Philipp's typed confirmation is pending.
+- **Fast escape fit:** VALIDATION NLL 0.264 vs 0.377 for a constant.
+- **Lizard fit:** the standard child's `l2` is at the grid edge (10). Fairy and Brew `r` are worse than a constant on
+  VALIDATION, so those paths are off (`lizardBrew`/`lizardFairy` not enabled).
+- **Final candidate `pathb-r2` (escape only):** STD1E `b9188de0…`, FASTF `90806c25…`, research-candidate manifest
+  `d9d8377e…` (v3). Production pins were unchanged during both A/Bs.
+
+**Offline A/B:** pre-registered in [RUNBOOK.md](evidence/ctm_offline_ab_418_20261009/RUNBOOK.md), script
+`offline_ab_compare.py` `ff71cf53…`, frozen 14:05:18Z at checkout `7d62ba42`, `one_combat` `dddb09f0…`. Both stacks
+scored every Path B row with `ctmscorerows`; 95% source-seed paired bootstrap, 2,000 reps. One deviation
+(`python3 -P -E` instead of `-I`), judged harmless.
+- **Gate (main TEST, 50,185 rows, 2,355 seeds): PASS.** ΔS (survival NLL, candidate − production) −0.00057
+  [−0.00150, +0.00036]; ΔH (HP NLL) −0.0675 [−0.0727, −0.0627]. Guards G1–G4 held, no flags, prodOnly 0.
+- **Coverage:** 425 candidate-only rows (416 Smoke Bomb, 9 HP envelope) that production refuses.
+- **Secondary sets** (Writhing+Ritual, high max HP, Lizard Fairy, Lizard Brew TEST, Stage 0 learned arm): no flags.
+- **Caveat:** the HP gain mostly reflects the teacher shift (§386). Boss HP bias is +11.8 HP for production and −0.2
+  for the candidate. Survival is a tie. The candidate is slightly more optimistic about survival than production
+  (Δbias +0.002 overall, +0.013 on bosses); its own overall bias [+0.0006, +0.0028] is inside the ±0.01
+  band. Offline fit says nothing about play strength.
+- Independent review: PASSED.
+
+**Live A/B:** pre-registered in [PREREG.md](evidence/ctm_live_ab_418_20261009/PREREG.md) (`3e62bef7…`, reviewed at
+`3b5d77c2`), analyzer `510ccf0d…`. Seeds `63000000..63000127` (128 pairs), smoke `63009000`, A0, fair Silver flat
+exact 10k, §384 live harness, act-3 stop, all through `tools/seed_guard.sh`. Arms: `prod` (OOC MCTS, production CTM),
+`cand` (OOC MCTS, pathb-r2, active-Lizard correction on) and `off` (MCTS off, descriptive reference). Binary built at
+`648334e3` (`dddb09f0…`), run checkout `a159119d`.
+- **Venue:** 4 cloud workers × 4 CPU instead of Philipp's machine; deviations D1–D9 in
+  [DEVIATIONS.md](evidence/ctm_live_ab_418_20261009/DEVIATIONS.md). Smoke passed; 48/48 units rc=0; no stalls,
+  timeouts, missing seeds or dropped pairs; no integrity errors.
+- **D9 (post-run, before reading results):** non-atomic open/write/close appends to the network share
+  (`run_driver.cpp:102`) tore 7 of 95,486 trace JSONL lines and silently overwrote about 20 trace records on 4 won
+  seeds (`off` 63000066, 63000115, 63000126; `prod` 63000073). The frozen analyzer ran unchanged on a copy with the 7
+  torn lines removed. Unaffected, exactly: the CSV primary, the boss-death counts and `BOSS_DEATH_EXCESS`. Slightly
+  off: only the `off` arm's descriptive by-act boss-entry counts, mean start HP and Smoke Bomb counts.
+- **Verdict: `NO_DIFFERENCE_DETECTED`, flag `NONINFERIOR_AT_10PP`.** `BOSS_DEATH_EXCESS` not set.
+
+| Comparison | Win rates | Δwin, pp [95% CI] | Discordant | McNemar p | Boss deaths |
+|---|---|---|---|---|---|
+| cand − prod (primary) | 80.5% vs 75.0% | +5.5 [−2.3, +13.3] | 16 / 9 | 0.23 | 19 vs 26 |
+| cand − off | 80.5% vs 82.0% | −1.6 [−10.9, +7.8] | 17 / 19 | 0.87 | 19 vs 18 |
+| prod − off | 75.0% vs 82.0% | −7.0 [−16.4, +2.3] | 14 / 23 | 0.19 | 26 vs 18 |
+
+- Boss deaths cand − prod −5.5 pp [−12.5, +1.6]. Boss deaths by act (1/2/3): cand 2/8/9, prod 2/9/15, off 0/4/14.
+- Mean floor cand − prod +0.27 [−0.70, +1.25]. CPU per run: cand 122 s, prod 121 s, off 63 s.
+- Imagined escapes are now possible for the candidate; real escapes per run did not differ (+0.02 [−0.02, +0.08]).
+- Independent result review: PASS. It reproduced the report from the raw CSVs with the D9 handling and required the
+  D9 correction above.
+
+**Interpretation:**
+- The candidate fits the current teacher better offline, and live it is non-inferior to production at 10 pp. The
+  +5.5 pp point estimate and the 7 fewer boss deaths are not significant; n = 128 resolves only about 13–18 pp, so
+  this is not evidence of parity either.
+- Neither MCTS arm beats MCTS off. `prod − off` is −7.0 pp here versus −21.9 pp in §384 on other seeds. **Inference:**
+  the refreshed CTM does not by itself close the §384 gap; per PREREG only a `cand − off` CI above 0 would justify an
+  OOC-MCTS-on confirmation, so none is indicated.
+- **Open:** the escape override record and Philipp's typed confirmation; the stage 19 `cards` accuracy miss.
+
+**Correction to §386:** Stage 0 did have escapes: 10 rows in the learned arm and 15 in the exact arm. Stage 0's
+`analyze.py` counted escapes as outcome 0 (they are stored as wins with `post.smokeBombUsed`). All of them were
+unsupported by production (Smoke Bomb), so §386's metrics are unchanged. A note was added to §386.
+
+**Decision (Philipp, "Swap pins", 2026-10-09 16:09Z):** production CTM pins swapped to pathb-r2 (escape only) in
+this PR; OOC MCTS stays off by default. Promotion under `NO_DIFFERENCE_DETECTED` with `NONINFERIOR_AT_10PP` and
+no `BOSS_DEATH_EXCESS` is the owner decision PREREG §5 allows.
+- **Swap equivalence check:** model bytes unchanged. The new tracked files
+  `selfplay/models/combat_transition_deepsets_pathb_r2.native` (`90806c25…`) and
+  `selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (`b9188de0…`) are the A/B candidate's
+  bytes. The runtime holds a built-in copy of manifest `d9d8377e…`, so default runs report identity `production`
+  without `STS_CTM_RESEARCH_CANDIDATE_MANIFEST`. With no environment variables, the default `one_combat ctmscorerows`
+  on all 5,288 Stage 0 rows (60 part files) writes a CSV byte-identical to the live-A/B cand-arm form (4-argument call
+  plus manifest environment): sha256 `54ae40edb47cebfec288fd3ab0c8515402fb24a8f21e6272944675373149f9b9`, 5,277
+  scored. The pre-#418 stack differs (sha256 `4786c862…`, 5,250 scored). The 21 affected CTests pass.
+- **Rollback:** the old files stay tracked: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_lizard_t2.native`,
+  `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native`,
+  `STS_OOC_MCTS_ACTIVE_LIZARD=1`.
+- **Open follow-up:** the live advisor (`advisor_stdio.cpp`, `tools/live_game_runtime.py`, the `live_game_start.sh`
+  mod config) deliberately still uses the pre-#418 stack. Its metadata-based Lizard switch would turn Lizard off for
+  the pathb-r2 files, and the A/B never exercised the advisor.
+
+**Evidence:** [offline A/B README, results, review](evidence/ctm_offline_ab_418_20261009/README.md);
+[live A/B README, report, worker records, reviews](evidence/ctm_live_ab_418_20261009/README.md).
+
+**Knowledge impact:** `architecture/out-of-combat.md` (default stack, built-in manifest identity, Smoke Bomb
+masking skipped for the escape-capable default, rollback); `evaluation/current-research.md` (#418 result, former
+default stacks, rollback); `operations/environment-variables.md` (default artifacts, rollback);
+`operations/live-model-inspector.md` and `mods/sts-model-inspector/README.md` (advisor keeps the pre-#418 stack);
+`EXPERIMENTS.md` shard index; this entry, the §386 note and the two evidence folders. OOC MCTS stays off by default.
