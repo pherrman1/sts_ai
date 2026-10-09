@@ -3801,12 +3801,13 @@ int main(int argc, char **argv) {
             return 2;
         }
     } else if (mode == "cardstrengthprobe") {
-        if (argc != 7) {
-            std::cerr << "usage: one_combat cardstrengthprobe N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json ASCENSION\n";
+        if (argc != 7 && argc != 8) {
+            std::cerr << "usage: one_combat cardstrengthprobe N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json ASCENSION [SILVER_REPS]\n";
             return 2;
         }
         try {
-            cardStrengthProbe(std::stoi(argv[2]), argv[3], std::stoll(argv[4]), argv[5], std::stoi(argv[6]));
+            cardStrengthProbe(std::stoi(argv[2]), argv[3], std::stoll(argv[4]), argv[5], std::stoi(argv[6]),
+                              argc > 7 ? std::stoi(argv[7]) : 0);
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;

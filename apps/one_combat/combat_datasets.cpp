@@ -2784,12 +2784,22 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
 // the production-stack CTM expectation of the post-pick state against every
 // encounter of the act's weak, strong and elite pools and the act's boss. No
 // futures are played; aggregation into a strength score is offline.
+static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
+                                    const search::NativeSilverSearchParams *params,
+                                    struct VwinBossArmDetail *detail);
+namespace { void ctmSilverRedrawCombatFuture(GameContext &gc, std::uint64_t seed); }
 void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedOffset,
-                       const std::string &teacherPath, int asc) {
+                       const std::string &teacherPath, int asc, int silverReps) {
     constexpr int sims = 10000;
-    if (nSeeds < 1 || seedOffset < 0 || asc < 0 || asc > 20
+    if (nSeeds < 1 || seedOffset < 0 || asc < 0 || asc > 20 || silverReps < 0 || silverReps > 16
         || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
-        throw std::runtime_error("card strength probe: requires N>0, a nonnegative seed range and ASCENSION 0..20");
+        throw std::runtime_error("card strength probe: requires N>0, a nonnegative seed range, ASCENSION 0..20 and SILVER_REPS 0..16");
+    // SILVER_REPS > 0 scores each encounter with that many teacher Silver fights
+    // (the corpus teacher's budget, at the run's own ascension) from the post-pick
+    // state instead of the CTM. Fight r redraws the combat RNG streams with
+    // sha256(card-strength-silver-v1:{seed}:{decision}:{encounter}:{r}), shared by
+    // every option of the state, so option differences are paired.
+    const bool silver = silverReps > 0;
     const std::vector<std::string> suffixes = {".states.csv", ".options.csv", ".strength.csv", ".manifest.json"};
     for (const auto &suffix : suffixes)
         if (std::filesystem::exists(outPrefix + suffix))
@@ -2808,7 +2818,7 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
     stateOut << "sourceSeed,outcome,finalFloor,trajectoryValid,decisionIdx,act,floor,curHp,maxHp,options,"
                 "chosenKey,boss,monOffset,cMonster,cElite,sourceCpuSeconds\n";
     optionOut << "sourceSeed,decisionIdx,optionIdx,optionKey,chosen,ok,error," << richStateHeader() << '\n';
-    strengthOut << "sourceSeed,decisionIdx,optionIdx,pool,encounter,poolWeight,supported,death,winHpFraction,utility\n";
+    strengthOut << "sourceSeed,decisionIdx,optionIdx,pool,encounter,poolWeight,supported,death,winHpFraction,utility,cpuSeconds\n";
     int states = 0, optionsOk = 0, optionsFailed = 0;
     std::uint64_t probes = 0, unsupported = 0;
     for (int index = 0; index < nSeeds; ++index) {
@@ -2884,6 +2894,44 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                 if (!error.empty()) { ++optionsFailed; continue; }
                 ++optionsOk;
                 for (const auto &[pool, encounter, weight] : encounters) {
+                    if (silver) {
+                        double won = 0, hpWin = 0, cpu = 0;
+                        int wins = 0, valid = 0;
+                        for (int r = 0; r < silverReps; ++r) {
+                            VwinBossEntry entry;
+                            entry.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(after));
+                            GameContext &fight = *entry.pre;
+                            fight.curRoom = pool == "boss" ? Room::BOSS : pool == "elite" ? Room::ELITE : Room::MONSTER;
+                            const auto digest = vwinSha256("card-strength-silver-v1:" + std::to_string(seed) + ":"
+                                + std::to_string(sample->decisionIdx) + ":" + monsterEncounterEnumNames[static_cast<int>(encounter)]
+                                + ":" + std::to_string(r));
+                            ctmSilverRedrawCombatFuture(fight, std::stoull(digest.substr(0, 16), nullptr, 16));
+                            // The post-pick state sits on a reward screen; the fight's
+                            // aftermath is discarded, so control simply returns to the map.
+                            fight.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+                            fight.enterBattle(encounter);
+                            entry.path = sample->path;
+                            entry.agent = sample->agentAfter;
+                            entry.policy = sample->policyAfter;
+                            const auto arm = vwinRunBossArm(entry, sims, nullptr, nullptr);
+                            cpu += arm.cpuSeconds;
+                            ++probes;
+                            if (!arm.valid || arm.won < 0) { ++unsupported; continue; }
+                            ++valid;
+                            if (arm.won == 1) {
+                                ++wins;
+                                hpWin += static_cast<double>(std::max(0, arm.terminalHp)) / std::max(1, fight.maxHp);
+                            }
+                        }
+                        const bool ok = valid == silverReps;
+                        won = ok ? static_cast<double>(wins) / valid : 0;
+                        const double frac = wins ? hpWin / wins : 0;
+                        strengthOut << seed << ',' << sample->decisionIdx << ',' << optionIdx << ',' << pool << ','
+                                    << monsterEncounterEnumNames[static_cast<int>(encounter)] << ',' << weight << ','
+                                    << (ok ? 1 : 0) << ',' << (1 - won) << ',' << frac << ','
+                                    << (ok ? 0.75 * won + 0.25 * won * frac : -1.0) << ',' << cpu << '\n';
+                        continue;
+                    }
                     GameContext probe = after;
                     probe.curRoom = pool == "boss" ? Room::BOSS : pool == "elite" ? Room::ELITE : Room::MONSTER;
                     probe.info.encounter = encounter;
@@ -2900,7 +2948,7 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                                 << monsterEncounterEnumNames[static_cast<int>(encounter)] << ',' << weight << ','
                                 << (estimate.supported ? 1 : 0) << ',' << estimate.death << ','
                                 << estimate.winningHpFraction << ','
-                                << (estimate.supported ? one_combat::oocBossLeafUtility(estimate) : -1.0) << '\n';
+                                << (estimate.supported ? one_combat::oocBossLeafUtility(estimate) : -1.0) << ",0\n";
                 }
             }
         }
@@ -2925,6 +2973,8 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                          {"activeLizard", true}, {"smokeBombMask", true}, {"inputAscension", 0}}},
         {"encounters", "act weak/strong pools with simulator weights, act elites 1/3 each, act boss (acts 1..3)"},
         {"utility", "0.75*(1-death) + 0.25*(1-death)*winHpFraction (bossLeafUtility)"},
+        {"scorer", silver ? "silver" : "ctm"}, {"silverReps", silverReps},
+        {"silverRule", "teacher Silver fight from the post-pick state at the run ascension; combat RNG redrawn by sha256(card-strength-silver-v1:{seed}:{decision}:{encounter}:{rep}), shared across options; won=PLAYER_VICTORY, winHpFraction=terminal HP/maxHp"},
         {"integrity", {{"cardStates", states}, {"optionsOk", optionsOk}, {"optionsFailed", optionsFailed},
                        {"probes", probes}, {"unsupportedProbes", unsupported}}},
         {"outputs", outputs},

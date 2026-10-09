@@ -119,6 +119,7 @@ def main():
     ap.add_argument("corpus")
     ap.add_argument("--output", required=True)
     ap.add_argument("--reps", type=int, default=2000)
+    ap.add_argument("--only-seeds", help="score only these source seeds (one per line)")
     args = ap.parse_args()
     probe, manifests = load_probe(args.probe)
     states, leaky = eligible_states(args.corpus)
@@ -131,6 +132,8 @@ def main():
     probe_states = {tuple(int(v) for v in s): g.iloc[0] for s, g in probe["states"].groupby(STATE)}
     probe_enc = {tuple(int(v) for v in s): g for s, g in probe["strength"].groupby(STATE)}
     probed_seeds = set(int(s) for s in probe["states"]["sourceSeed"])
+    if args.only_seeds:
+        probed_seeds &= {int(line) for line in Path(args.only_seeds).read_text().split()}
     rows, mismatched, unscored = [], [], []
     for state, opts in sorted(states.items()):
         if state[0] not in probed_seeds:

@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Combat-strength card probe (PLAN-STRENGTH.md): replays the §402 corpus source
-# runs with the run_corpus.sh environment, one seed per call, TEST seeds skipped.
-# usage: run_strength.sh BINARY FROZEN_SHA OUT_DIR SEED_START COUNT LANES
-# Lane l takes seeds START+l, START+l+LANES, ... on CPU l mod nproc.
+# Combat-strength card probe (PLAN-STRENGTH.md, PLAN-SILVER-STRENGTH.md): replays
+# the §402 corpus source runs with the run_corpus.sh environment, one seed per
+# call, TEST seeds skipped.
+# usage: run_strength.sh BINARY FROZEN_SHA OUT_DIR SEED_START COUNT LANES [SEEDS_FILE SILVER_REPS]
+# Lane l takes seeds START+l, START+l+LANES, ... on CPU l mod nproc. With
+# SEEDS_FILE, only seeds listed there (one per line) are run, and SILVER_REPS is
+# passed to the probe (0 = CTM scorer).
 # Rerunning resumes: seeds with a manifest are skipped.
 set -euo pipefail
-BIN_SRC=$1 FROZEN=$2 OUT=$3 START=$4 COUNT=$5 LANES=$6
+BIN_SRC=$1 FROZEN=$2 OUT=$3 START=$4 COUNT=$5 LANES=$6 SEEDS_FILE=${7:-} REPS=${8:-0}
 REPO=$(git rev-parse --show-toplevel)
 cd "$REPO"
 if env | grep -q '^STS_'; then echo "refusing: STS_* already exported" >&2; exit 1; fi
@@ -30,11 +33,12 @@ for ((l = 0; l < LANES; l++)); do
   ( for ((s = START + l; s < START + COUNT; s += LANES)); do
       split=$(python3 -c "from tools.vwin_e3_cf import source_split; print(source_split($s))")
       [ "$split" = TEST ] && continue
+      [ -n "$SEEDS_FILE" ] && ! grep -qx "$s" "$SEEDS_FILE" && continue
       prefix="$OUT/part$s"
       [ -f "$prefix.manifest.json" ] && continue
       rm -f "$prefix".states.csv "$prefix".options.csv "$prefix".strength.csv
       taskset -c $((l % NCPU)) bash tools/seed_guard.sh "$BIN" cardstrengthprobe 1 "$prefix" "$s" \
-        "$OUT/teacher.json" 20 > "$prefix.log" 2>&1 || echo "exit $?" >> "$prefix.log"
+        "$OUT/teacher.json" 20 "$REPS" > "$prefix.log" 2>&1 || echo "exit $?" >> "$prefix.log"
     done ) &
 done
 wait
