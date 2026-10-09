@@ -287,6 +287,10 @@ outputs, normalized over the root, become `rootPrior`; roots with one action
 get none. The prior is recomputed after every reroot, so inherited visits damp
 it. `bestbench` sidecars record the model path, SHA-256 and weight. Learned
 stopping was not retrained for it. Its online screen was negative (§399).
+`STS_SILVER_ROOT_PRIOR_SCOPE=override` (research) keeps the loaded prior off
+unless a thread override turns it on; the OOC MCTS Silver resolver
+(`STS_OOC_MCTS_COMBAT_RESOLVER=silver`) uses it so that imagined combats use the
+prior while live combats stay plain. `all` (the default) applies it everywhere.
 
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
