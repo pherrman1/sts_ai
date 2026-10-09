@@ -72,3 +72,24 @@ final-win option SD of about 0. Raw output is in
 Boss-reward card states can have a next-act map row, which is a leak. This
 affects 7 of 189 VALIDATION states. Excluding them gives CARD − V4 −0.44
 [−1.50, +0.50] (independent review), the same verdict.
+
+## Follow-up: correction on top of the teacher's pick (§410)
+
+The plan, [PLAN-CORRECTION.md](PLAN-CORRECTION.md), was committed before
+fitting (`b7320e1c`). The script is `tools/a20_card_correction.py` at
+`086e3a28`, and the report is `report-correction.json`. Raw output is in
+`/mnt/project-files/a20-card-floor/corr-086e3a28/`.
+
+The 71 boss card-reward states with a next-act map row are dropped, leaving
+TRAIN 789, VALIDATION 182 and TEST 158 (closed).
+
+**Result: `NOT_SHOWN`.**
+- On the inner early-stop set, the model stopped after 2, 5 and 4 trees,
+  depending on the seed.
+- It predicts that every alternative is worse than the teacher's pick, so it
+  never switches: 0 of 182 VALIDATION states, gain 0.
+- For context, switching to a random alternative every time costs −1.22
+  floors [−2.41, −0.03], and the noise-inflated oracle is +3.92.
+
+**Reading (inference):** from these features and 789 states, nothing
+predicts when an alternative beats the teacher's card.

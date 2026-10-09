@@ -15628,3 +15628,39 @@ V4 −0.44 [−1.50, +0.50], the same verdict.
 
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
+
+## §410 — A20 card correction on top of the teacher's pick: offline, not shown (2026-10-09)
+
+**Question:** after §409, can a model that predicts only how much better each
+alternative card is than the teacher's pick, and switches only when that is
+positive, beat the teacher on floor reached at A20?
+
+**Design:** [PLAN-CORRECTION.md](evidence/a20_card_floor_20261009/PLAN-CORRECTION.md),
+committed before fitting (`b7320e1c`). The corpus, split and inner early stop
+are as in §409.
+- **Leak exclusion:** the 71 boss card-reward states whose map row is in the
+  next act (the §409 review note) are dropped.
+- **Target:** the paired floor difference to the teacher's chosen option under
+  shared futures.
+- **Features:** the option's map row and its difference to the chosen option's
+  row.
+- **Model:** XGBoost, 3 seeds.
+- **Rule:** PASS_VALIDATION if the gain CI lower bound > 0; TEST only after that.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_correction.py` at `086e3a28`, 182
+VALIDATION states, TEST closed).
+- Early stopping kept 2–5 trees.
+- Every alternative is predicted worse than the teacher's pick, so the policy
+  never switches: switch rate 0, gain 0.
+- Context: switching to a random alternative every time costs −1.22 floors
+  [−2.41, −0.03].
+
+**Interpretation (Inference):** with these features and 789 TRAIN states,
+nothing identifies when an alternative card beats the teacher's. Together with
+§409, the A20 corpus supports no card model beyond the current pipeline.
+
+**Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
+[report-correction.json](evidence/a20_card_floor_20261009/report-correction.json).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
