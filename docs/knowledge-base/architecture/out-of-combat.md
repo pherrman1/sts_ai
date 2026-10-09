@@ -286,7 +286,7 @@ artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
 `selfplay/models/combat_transition_deepsets_lizard_t2.native` artifact and
 automatically pairs it with the pinned standard Attention Brew fallback. An
 explicit combat-model path overrides the automatic stack; explicit artifact
-failures are fatal. Research only (§410): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
+failures are fatal. Research only (§411): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
 replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
 combat with native Silver (`STS_OOC_MCTS_SILVER_SIMS` per root, root prior on
 via `STS_SILVER_ROOT_PRIOR_SCOPE=override`, live combats plain) on a redraw of

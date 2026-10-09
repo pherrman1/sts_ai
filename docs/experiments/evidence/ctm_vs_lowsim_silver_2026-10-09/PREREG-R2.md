@@ -1,4 +1,7 @@
-# Pre-registration: Run 2 (Path B) CTM on the §408 states (ledger §409)
+# Pre-registration: Run 2 (Path B) CTM on the §408 states (ledger §410)
+
+Renumbered from §409 (taken by #467) after the freeze; `worker_r2.sh` and `tools/analyze_ctm_r2.py` keep
+the old label in their comments so that the frozen bytes stay unchanged.
 
 Written and committed before any rerun seed ran. Philipp's go: 2026-10-09 15:30Z ("Yes do that"),
 in reply to the §408 follow-up offer to score the retrained Run 2 CTM on the same states.

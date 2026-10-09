@@ -1,4 +1,8 @@
-# Pre-registration: OOC MCTS with a Silver combat resolver vs the CTM (ledger §410, pilot)
+# Pre-registration: OOC MCTS with a Silver combat resolver vs the CTM (ledger §411, pilot)
+
+Renumbered from §410 after the freeze (§409 went to #467, so the Run 2 CTM scoring became §410). The
+harness scripts and `tools/analyze_silver_resolver_pilot.py` keep the old label in their comments so that
+the frozen run commit `86459cbc` stays the one the workers run.
 
 Written and committed before any cohort seed ran. Philipp's go: 2026-10-09 15:30Z ("Yes do that. But maybe do
 matched CPU and matched ooc Simulations for the second check"), replying to the §408 follow-up offer of a

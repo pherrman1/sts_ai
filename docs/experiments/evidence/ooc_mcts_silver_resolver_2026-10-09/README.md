@@ -1,4 +1,4 @@
-# §410 evidence: OOC MCTS with a Silver combat resolver (pilot)
+# §411 evidence: OOC MCTS with a Silver combat resolver (pilot)
 
 - [PREREG.md](PREREG.md): question, arms, matched-CPU calibration, cohort, analysis, validity.
 - [arm_env.sh](arm_env.sh), [run_unit.sh](run_unit.sh), [worker.sh](worker.sh): the run harness.
