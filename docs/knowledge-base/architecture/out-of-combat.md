@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -283,8 +283,10 @@ environment model** or a scientifically qualified full OOC planner.
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
 loaded native V4 policy and native win models plus a compatible combat
 artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
-`selfplay/models/combat_transition_deepsets_lizard_t2.native` artifact and
-automatically pairs it with the pinned standard Attention Brew fallback. An
+`selfplay/models/combat_transition_deepsets_pathb_r2.native` artifact and
+automatically pairs it with the pinned standard Attention Brew fallback
+`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the #418
+pathb-r2 stack, see "Production CTM stack since #418" below). An
 explicit combat-model path overrides the automatic stack; explicit artifact
 failures are fatal. Startup also requires the effective Silver reuse cap to be
 32,768; the experimental 131,072 override is rejected. Real combat requires
@@ -297,8 +299,8 @@ The promoted DeepSets artifact declares the Entropic Brew fallback contract.
 The adapter routes the whole transition to the standard Attention artifact
 when Entropic Brew is present in the pre-combat inventory; it does not switch
 models based on generated outcomes. The fallback's actual SHA256 must equal
-the pinned current-standard artifact
-`e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`; the
+the standard artifact pinned by the fast artifact's identity (`b9188de0…` for
+the pathb-r2 default, `e9a18951…` for the pre-#418 `lizard_t2`); the
 runtime also checks source/cohort metadata. `STS_OOC_MCTS_BREW_FALLBACK_MODEL`
 overrides the automatic fallback path. Missing or invalid required artifacts
 are fatal.
@@ -321,6 +323,22 @@ classes and the HP-head and relic-delta row counts from that domain. It also
 recomputes the domain hash, and it requires the lowest class to equal
 `1 - preCurHpRange[1]` and the maxHP deltas to stay production. Production keeps
 the literal -160..143 domain.
+
+**Production CTM stack since #418 (ledger §412).** The default is the pathb-r2
+candidate promoted with unchanged bytes: fast
+`selfplay/models/combat_transition_deepsets_pathb_r2.native` (`90806c25…`) and
+standard `selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
+(`b9188de0…`), both escape-capable, with Writhing + Ritual Dagger still
+excluded and no `lizardBrew`/`lizardFairy` capability. The runtime embeds a copy
+of its v3 manifest (`d9d8377e…`), so the pair loads without
+`STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and default runs report identity
+`production`; the statements above about "production pins" describe the
+pre-#418 identity, which artifacts without a `researchCandidate` declaration
+still use. Rollback to the pre-#418 stack:
+`STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_lizard_t2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native`
+and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418
+stack (open follow-up). OOC MCTS stays off by default.
 
 A `ctm_research_candidate_v3` manifest also lists each artifact's
 `capabilities` (`{"standard": {...}, "fast": {...}}`), and an artifact's
@@ -350,7 +368,7 @@ With the automatic model stack, the qualified active-Lizard correction is
 enabled unless `STS_OOC_MCTS_ACTIVE_LIZARD=0` is set as a rollback. It strips
 active Lizard from the ordinary CTM children, applies the frozen mechanical-q,
 learned-r and T2 semantics, and restores Tail active or spent on the sampled
-post-state. The production artifact
+post-state. The pre-#418 production artifact (kept for rollback)
 `selfplay/models/combat_transition_deepsets_lizard_t2.native` has artifact
 SHA-256 `abb2a9ead6efd6b97ee64192e0459eb08ceff7fd93f2b5f4b87a0bf379e571ab`
 and unchanged DeepSets tensor-payload SHA-256
@@ -730,8 +748,9 @@ are unsupported; Match and Keep and malformed selector states cannot be
 presented as complete supported decisions.
 
 A combat that starts with a Smoke Bomb is outside the qualified CTM support.
-Unless the sampler models the escape itself (an escape-capable research
-candidate, `modelsSmokeBombEscape()`), the OOC model wraps its sampler
+Unless the sampler models the escape itself (an escape-capable artifact,
+`modelsSmokeBombEscape()`; this includes the pathb-r2 default stack, so the
+default skips the masking), the OOC model wraps its sampler
 (`maskInitialSmokeBomb`) so such a combat is
 valued as if the Smoke Bomb slot were empty (no escape) and the Smoke Bomb is
 returned unused afterwards; a potion generated into that slot is dropped. This

@@ -57,6 +57,7 @@ the current session/sequence/hash, and the inspector remains read-only.
 Set `ctmModel` to the tracked `combat_transition_near_full_except_smoke_v2.native`
 artifact. The advisor loads it once at startup and reports an unavailable or
 schema-mismatched artifact without affecting the game.
+The live advisor still uses the pre-#418 CTM stack, not the pathb-r2 default of OOC MCTS (ledger §412).
 
 ## Latest machine-readable observation
 
