@@ -29,6 +29,20 @@ class TestExposureCohorts(unittest.TestCase):
             brewGeneratedEscape=dict(gate=False, zeroExactMassRows=0, diagnosticOnly=True))))
         self.assertEqual([v['gate'] for v in exposure.gated_entries(report)], [True])
 
+    def test_potion_mass_is_marginalised_over_the_escape_bit(self):
+        # Row 0 held a Smoke Bomb and won (zero mass under escape=1), row 1 escaped, row 2 is ineligible (p = 0).
+        p = np.array([0.99, 0.9, 0.0])
+        masses = {0: np.array([0.95, 0.0, 0.5]), 1: np.array([0.0, 0.8, np.nan])}
+        calls = []
+
+        def branch_mass(b, live):
+            calls.append((b, live.tolist()))
+            return masses[b][live]
+        total = exposure.escape_marginal(p, branch_mass)
+        np.testing.assert_allclose(total, [0.01 * 0.95, 0.9 * 0.8, 0.5])
+        self.assertTrue((total > 0).all())
+        self.assertEqual(calls, [(0, [0, 1, 2]), (1, [0, 1])])
+
 
 if __name__ == '__main__':
     unittest.main()

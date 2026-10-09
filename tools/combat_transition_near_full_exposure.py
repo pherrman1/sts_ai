@@ -36,6 +36,15 @@ def cohort_masks(test,ids,rows,records,recursive_ids):
     return cohorts
 
 
+def escape_marginal(p_escape,branch_mass):
+    """(1-p)·mass(escape=0) + p·mass(escape=1) per row; a branch is evaluated only on rows it can reach."""
+    total=np.zeros(len(p_escape))
+    for b,weight in ((0,1-p_escape),(1,p_escape)):
+        live=np.flatnonzero(weight>0)
+        if len(live):total[live]+=weight[live]*branch_mass(b,live)
+    return total
+
+
 def gated_entries(report):
     """The slice entries of an exposure report that gate export (diagnostic slices are reported only)."""
     return [v for component in report['components'].values() for v in component.values() if not v.get('diagnosticOnly')]
@@ -43,7 +52,8 @@ def gated_entries(report):
 
 def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False,escape=None,writhing_ritual=False):
     """escape: an escape fit checkpoint (tools/ctm_escape.py). Each draw then samples the
-    escape before HP and conditions HP and the potion trajectory on it."""
+    escape before HP and conditions HP and the sampled potion trajectory on it; the HP and
+    potion target masses are marginalised exactly over the escape bit."""
     requested_cohort=cohort
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
@@ -54,7 +64,7 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
     selected=np.flatnonzero(eligible)
     if limit is not None:selected=selected[:limit]
     rows=[allrows[i] for i in selected];ids=allids[selected];test=q.subset(test,selected);n=len(rows)
-    survival,pd=q.upstream(m,parent,ids,test);rng=np.random.default_rng(q.RECIPE['seed'])
+    survival,pd=q.upstream(m,parent,ids,test);rng=np.random.default_rng(q.RECIPE['seed']);marginal_rng=np.random.default_rng(q.RECIPE['seed']+1)
     head=None
     if escape is not None:
         from tools import ctm_escape
@@ -96,7 +106,16 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
                     hp=escape_hp(head,m,test['z'][sub],delta,test['preHp'][sub],maximum,bit)
                 ending=test['preHp'][sub]+c.CLASSES[q.pick(hp,rng)]
                 if head is None:mixture[sub,1]+=(-q.te.losses(m.potion_net,cache,graphs,ids[sub],delta=delta,hp=ending/maximum,z=test['potionZ'][sub])).exp().cpu().numpy()/q.RECIPE['draws']
-                else:mixture[sub,1]+=t.batch_target_log_probabilities(m.potion_net,q.te.row_graphs(cache,graphs,ids[sub]),test['potionZ'][sub],cache['capacity'][ids[sub]],delta,ending/maximum,cache['boss'][ids[sub]],False,bit).exp().cpu().numpy()/q.RECIPE['draws']
+                else:
+                    # The potion target is marginalised exactly over the escape bit, as the HP target is: a sampled
+                    # bit gives zero mass to a held-but-unused Smoke Bomb whenever every draw samples escape=1.
+                    # Each branch draws its own ending HP from a separate stream, so the sampled draws stay unchanged.
+                    def branch_mass(b,live,sub=sub,delta=delta,maximum=maximum):
+                        rows_b=sub[live];branch=np.full(len(live),b,np.int64);maximum_b=maximum[live]
+                        hp_b=escape_hp(head,m,test['z'][rows_b],delta[live],test['preHp'][rows_b],maximum_b,branch)
+                        ending_b=test['preHp'][rows_b]+c.CLASSES[q.pick(hp_b,marginal_rng)]
+                        return t.batch_target_log_probabilities(m.potion_net,q.te.row_graphs(cache,graphs,ids[rows_b]),test['potionZ'][rows_b],cache['capacity'][ids[rows_b]],delta[live],ending_b/maximum_b,cache['boss'][ids[rows_b]],False,branch).exp().cpu().numpy()
+                    mixture[sub,1]+=escape_marginal(p_escape[sub],branch_mass)/q.RECIPE['draws']
                 traces=q.s.sample_potions_batch(m.potion_net,test['potionZ'][sub],[r['pre'] for r in rr],delta,ending/maximum,rng,test['boss'][sub],bit);particle=q.heads(nets,test['z'][sub],rr,ending,maximum,traces,rng,q.subset(test,sub));mixture[sub,2:]+=particle['target']/q.RECIPE['draws']
                 brew_frequency[sub]+=np.asarray([tr['brewUses']>0 for tr in traces])/q.RECIPE['draws'];escape_frequency[sub]+=np.asarray([tr['outcome']=='ESCAPE' for tr in traces])/q.RECIPE['draws'];hp_expected[sub]+=ending/q.RECIPE['draws']
             print('whole final union exposure',draw+1,flush=True)
