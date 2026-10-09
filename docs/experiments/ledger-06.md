@@ -15613,9 +15613,15 @@ VALIDATION states).
 
 **Post-hoc addendum (asked after the result, not in the rule):** the target
 and score were changed to floor + B × win, with B = 10 and B = 25.
-- CARD − V4: −0.25 [−1.24, +0.72] at B = 10, −0.68 [−2.06, +0.70] at B = 25.
-- V4 stays ahead of random at both bonuses.
+- CARD − V4, in floor + B × win units: −0.25 [−1.24, +0.72] at B = 10,
+  −0.68 [−2.06, +0.70] at B = 25.
+- Random − V4: −1.00 [−1.97, −0.06] at B = 10. At B = 25 it is −1.08
+  [−2.24, +0.10], with a CI that includes 0.
 - The win term adds noise without card signal (§402).
+
+**Review note:** boss-reward card states can have a next-act map row (a
+leak). This affects 7 of 189 VALIDATION states. Excluding them gives CARD −
+V4 −0.44 [−1.50, +0.50], the same verdict.
 
 **Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
 [report.json](evidence/a20_card_floor_20261009/report.json).
