@@ -4930,7 +4930,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
     vwinRequireProductionPolicy(teacher);
     // Deliberately the pre-#418 production stack (lizard_t2 + except_smoke_v2), not
-    // the current default: §408/§410/§411 compare against it, so it stays pinned
+    // the current default: §408/§410 measured it, so it stays pinned
     // for reproducibility after the #418 swap to pathb-r2.
     const std::string fastModel = "selfplay/models/combat_transition_deepsets_lizard_t2.native";
     const std::string standardModel = "selfplay/models/combat_transition_near_full_except_smoke_v2.native";

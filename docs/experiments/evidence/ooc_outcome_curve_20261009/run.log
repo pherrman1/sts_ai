@@ -1,0 +1,32 @@
+/home/philippherrmann/Documents/sts/wt-outcome-curve/tools/vwin_e3_cf.py:135: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  keep = lab[grp].merge(mp, on=KEYS, how="left",
+/home/philippherrmann/Documents/sts/wt-outcome-curve/tools/vwin_e3_cf.py:135: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  keep = lab[grp].merge(mp, on=KEYS, how="left",
+skip unfinished part /home/philippherrmann/Documents/sts/build/e3-corpus/e3/w20/chunk1/part2
+{"rows_train": 648669, "rows_train_src": 32009, "rows_val": 141566, "train_sources": 696, "val_branches": 5169, "e3_val_rows": 2624, "e3_dropped_state_k_groups": 1, "x2b_validation_nll": 0.42260836556836934, "e3_producer_git": ["8edf724ca700a4d4bd4f25645fed60381529d862"], "load_seconds": 53.96800708770752}
+{"corpus": "SRC", "fraction": 0.125, "seed": 0, "sources": 87, "rows": 4068, "trees": 1}
+{"corpus": "SRC", "fraction": 0.125, "seed": 1, "sources": 87, "rows": 4068, "trees": 3}
+{"corpus": "SRC", "fraction": 0.125, "seed": 2, "sources": 87, "rows": 4068, "trees": 1}
+{"corpus": "SRC", "fraction": 0.25, "seed": 0, "sources": 174, "rows": 8125, "trees": 1}
+{"corpus": "SRC", "fraction": 0.25, "seed": 1, "sources": 174, "rows": 8125, "trees": 2}
+{"corpus": "SRC", "fraction": 0.25, "seed": 2, "sources": 174, "rows": 8125, "trees": 2}
+{"corpus": "SRC", "fraction": 0.5, "seed": 0, "sources": 348, "rows": 16013, "trees": 37}
+{"corpus": "SRC", "fraction": 0.5, "seed": 1, "sources": 348, "rows": 16013, "trees": 31}
+{"corpus": "SRC", "fraction": 0.5, "seed": 2, "sources": 348, "rows": 16013, "trees": 27}
+{"corpus": "SRC", "fraction": 1.0, "seed": 0, "sources": 696, "rows": 32009, "trees": 48}
+{"corpus": "SRC", "fraction": 1.0, "seed": 1, "sources": 696, "rows": 32009, "trees": 43}
+{"corpus": "SRC", "fraction": 1.0, "seed": 2, "sources": 696, "rows": 32009, "trees": 58}
+{"corpus": "ALL", "fraction": 0.125, "seed": 0, "sources": 87, "rows": 80108, "trees": 92}
+{"corpus": "ALL", "fraction": 0.125, "seed": 1, "sources": 87, "rows": 80108, "trees": 116}
+{"corpus": "ALL", "fraction": 0.125, "seed": 2, "sources": 87, "rows": 80108, "trees": 78}
+{"corpus": "ALL", "fraction": 0.25, "seed": 0, "sources": 174, "rows": 161094, "trees": 169}
+{"corpus": "ALL", "fraction": 0.25, "seed": 1, "sources": 174, "rows": 161094, "trees": 149}
+{"corpus": "ALL", "fraction": 0.25, "seed": 2, "sources": 174, "rows": 161094, "trees": 88}
+{"corpus": "ALL", "fraction": 0.5, "seed": 0, "sources": 348, "rows": 320577, "trees": 232}
+{"corpus": "ALL", "fraction": 0.5, "seed": 1, "sources": 348, "rows": 320577, "trees": 159}
+{"corpus": "ALL", "fraction": 0.5, "seed": 2, "sources": 348, "rows": 320577, "trees": 372}
+{"corpus": "ALL", "fraction": 1.0, "seed": 0, "sources": 696, "rows": 648669, "trees": 278}
+{"corpus": "ALL", "fraction": 1.0, "seed": 1, "sources": 696, "rows": 648669, "trees": 355}
+{"corpus": "ALL", "fraction": 1.0, "seed": 2, "sources": 696, "rows": 648669, "trees": 373}
+VERDICT INCONCLUSIVE
+DONE build/outcome-curve-086fcf4b/report.json

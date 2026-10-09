@@ -15908,3 +15908,31 @@ masking skipped for the escape-capable default, rollback); `evaluation/current-r
 default stacks, rollback); `operations/environment-variables.md` (default artifacts, rollback);
 `operations/live-model-inspector.md` and `mods/sts-model-inspector/README.md` (advisor keeps the pre-#418 stack);
 `EXPERIMENTS.md` shard index; this entry, the §386 note and the two evidence folders. OOC MCTS stays off by default.
+
+## §415 — Self-play Step 0: own-play run-victory labels barely improve the OOC leaf's picks (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** before an expert-iteration loop (OOC MCTS plays games, run
+victory labels them, retrain leaf and prior, repeat), does the outcome-trained leaf pick better
+with more of our own games?
+**Design:** [PREREG](evidence/ooc_outcome_curve_20261009/PREREG.md) committed at `086fcf4b`
+before the run. Offline, no seeds, TEST closed. The §394 P0 recipe (X2-B recipe, public 457
+features) on nested 1/8..1/1 of the 696 #334 TRAIN sources: `SRC` source-trajectory rows only
+(87..696 own-play games) and `ALL` with counterfactual branch rows. Selection gain vs V4's
+choice on #334 VALIDATION siblings (1,329 decisions) and E3 VALIDATION (333 states), slope per
+doubling with source-clustered bootstrap. Rule on `SRC`: GO if a slope ≥ +0.005 with CI lower
+> 0 and the E3 card skip share falls; STOP if both CI uppers < +0.005.
+**Validity:** `ALL` at 1/1 reproduces §394 P0 exactly (trees 278/355/373, NLL 0.4237).
+**Result:** `INCONCLUSIVE`. `SRC` slope +0.0028 [−0.0010, +0.0066] (#334) and +0.0020 [−0.0038,
++0.0077] (E3). At 696 games: NLL 0.469 (`ALL` 0.424), E3 boss-relic gain −0.072 (uniform random
+−0.090), card −0.002, skip share 0.236→0.221. Below ~200 games the GBM stops at 1–3 trees.
+`ALL` has the only clearly positive slope: E3 boss relic +0.019 [+0.004, +0.033]; `ALL` at 174
+sources matches `SRC` at 696 on NLL.
+**Interpretation (Inference):** plain games labelled with the run outcome add about +0.003
+selection gain per doubling; closing the E3 gap to V4 (−0.037) at the upper CI would need
+~22k games (~680 CPU-h at ~110 CPU-s per OOC-MCTS game), at the point estimate far more. The
+ranking signal sits in paired counterfactual branches, which E3/#334 already collect.
+**Decision:** Philipp chose to shelve the self-play loop (no iteration 0, seeds 66M unused).
+
+**Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
