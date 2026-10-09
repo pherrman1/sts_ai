@@ -19,6 +19,19 @@ class Tape:
         p=np.asarray(p,float);return min(int(np.searchsorted(np.cumsum(p/p.sum()),self.random(),side='right')),n-1)
 
 
+# A retrained union TEST split can lack a row for a pre-state exclusion (Path B TEST has no
+# pre_smoke_bomb_used row). The fail-closed check then runs on an allowed row mutated into it.
+SYNTHETIC_EXCLUSIONS={'smoke_bomb':lambda pre:pre['potions'].__setitem__(0,c.base._POTION_IDS['SMOKE_BOMB']),
+                      'pre_smoke_bomb_used':lambda pre:pre.__setitem__('smokeBombUsed',True)}
+
+
+def synthetic_exclusion(allowed,label):
+    if label not in SYNTHETIC_EXCLUSIONS:raise ValueError(f'no TEST row for final exclusion {label}')
+    row=copy.deepcopy(next(r for r in allowed if t.BREW not in r['pre']['potions']));SYNTHETIC_EXCLUSIONS[label](row['pre'])
+    if support.final_exclusions(row['pi'],row['pre'])!=[label]:raise ValueError(f'synthetic {label} fixture is not exactly that exclusion')
+    row['synthetic']=label;return row
+
+
 def fixtures(parent,output):
     if output.exists():raise ValueError('refusing fixture overwrite')
     rows=list(map(json.loads,(parent/'full-union-test-states-v1.jsonl').open()));allowed=[r for r in rows if not support.final_exclusions(r['pi'],r['pre'])];selected={}
@@ -30,7 +43,9 @@ def fixtures(parent,output):
     for r in allowed:
         if r['index'] in recursive:selected[r['index']]=copy.deepcopy(r)
     for label in support.FINAL_EXCLUSIONS:
-        row=next(r for r in rows if label in support.final_exclusions(r['pi'],r['pre']));selected[row['index']]=copy.deepcopy(row)
+        row=next((r for r in rows if label in support.final_exclusions(r['pi'],r['pre'])),None)
+        if row is None:row=synthetic_exclusion(allowed,label)
+        selected[row.get('synthetic',row['index'])]=copy.deepcopy(row)
     result=[]
     for r in selected.values():
         r['predictorInput']=r.pop('pi');r.update(delta=0,ending=min(r['pre']['curHp'],r['pre']['maxHp']),maximum=r['pre']['maxHp'],mask=0,consumed=[],escaped=False,dagger=[0 for card in r['pre']['deck'] if card['id']==c.base._CARD_IDS['RITUAL_DAGGER']],draws=256 if t.BREW in r['pre']['potions'] else 32);result.append(r)
@@ -90,7 +105,7 @@ def qualify(parent,artifact,probe,fixture,output):
                     if expected.post_state['potionCount']!=sum(v>1 for v in expected.post_state['potions']):raise ValueError('potion count')
     t.sample=original_trace
     passed=max(errors.values())<=1e-4 and counts['recursiveBrew']>0 and counts['ESCAPE']>0 and counts['advancedHypotheticalPotionRng']>0
-    result=dict(modelSha256=c.base.sha256(artifact),fixtureSha256=c.base.sha256(fixture),sources=bindings,fixtures=len(rows),supportedFixtures=checks,counts=counts,maxAbsoluteErrors=errors,probabilityTolerance=1e-4,completeRawStateParity=True,advancedPlannerStreamParity=True,preparedReferenceParity=True,classification='NEAR_FULL_NATIVE_PARITY_'+('PASS' if passed else 'FAIL'))
+    result=dict(modelSha256=c.base.sha256(artifact),fixtureSha256=c.base.sha256(fixture),sources=bindings,fixtures=len(rows),supportedFixtures=checks,syntheticExclusionFixtures=sorted(r['synthetic'] for r in rows if 'synthetic' in r),counts=counts,maxAbsoluteErrors=errors,probabilityTolerance=1e-4,completeRawStateParity=True,advancedPlannerStreamParity=True,preparedReferenceParity=True,classification='NEAR_FULL_NATIVE_PARITY_'+('PASS' if passed else 'FAIL'))
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
     if not passed:raise ValueError('native parity gate failed')
 
