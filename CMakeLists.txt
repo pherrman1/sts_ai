@@ -504,6 +504,10 @@ add_test(NAME vwin_derived_rooms_397_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_derived_rooms_397.py --self-test)
 set_tests_properties(vwin_derived_rooms_397_analysis_selftest PROPERTIES
     LABELS "research-repro;tooling")
+add_test(NAME vwin_map_396_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_map_396.py --self-test)
+set_tests_properties(vwin_map_396_analysis_selftest PROPERTIES
+    LABELS "research-repro;tooling")
 add_test(NAME vwin_mlp_397_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_vwin_mlp_397.py --self-test)
 set_tests_properties(vwin_mlp_397_analysis_selftest PROPERTIES
