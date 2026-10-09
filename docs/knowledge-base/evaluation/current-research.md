@@ -245,7 +245,7 @@ other sections retain their prior verification and linked evidence.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts on redrawn combat RNG beat the production
-CTM stack on HP (RMSE 8.8 vs 14.1, CTM about +7 HP optimistic) and on every
+CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every
 post-combat field (potions, relic counters, max HP, gold, deck), and tie it on
 deaths. The CTM costs 0.6 ms per forecast, versus 64 ms per prior-256 playout
 and 23 ms per prior-64 playout. No default changed; the open questions are the

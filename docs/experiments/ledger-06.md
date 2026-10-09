@@ -15605,44 +15605,66 @@ accuracy on the same job.
 
 **Integrity:** 256/256 sources valid; 6,816 fight states. The control replay
 matches every state with a valid source label. All 28 mismatches are Smoke
-Bomb escapes, whose source label is itself quarantined. 6,782 states are valid
-and the CTM supports 6,750 of them. Unsupported: 33 Smoke Bomb states, 19
-active Lizard outside the qualified support, 4 HP envelope, 1 Writhing
-Mass/Ritual Dagger.
+Bomb escapes, whose source label is itself quarantined. 6,788 states have a
+valid source label; 6 more are dropped for every forecaster because a Silver
+replicate escaped with Smoke Bomb, leaving 6,782 valid states. The CTM supports
+6,750 of them. Over all 6,816 states the CTM's unsupported reasons are 34 Smoke
+Bomb (33 `smoke_bomb`, 1 `unsupported:smoke_bomb`), 19 active Lizard outside the
+qualified support, 4 HP envelope and 1 Writhing Mass/Ritual Dagger.
+
+**Deviation (independent review of #466):** the pre-registered HP truth
+(`sourceTerminalHp`) and the Silver arms' HP are battle-end HP, before
+end-of-combat healing (Burning Blood +6, Black Blood +12). The CTM forecasts the
+post-combat persistent HP, after that heal, so the as-registered HP loss scored
+the CTM against a target about 6 HP lower than what it predicts (on wins the
+control's post-combat HP exceeds battle-end HP by 6 in 4,276 states, 0 in 1,136
+where the heal is capped, 12 in 112). The as-registered HP numbers are kept
+below for the record but are **invalid for the CTM**. The corrected scoring
+(`hp_post` in `report.json`) uses post-combat HP on both sides: truth = the
+control replay's post-combat HP, Silver = the mean post-combat HP of its
+replicates, 0 on death; same states, own bootstrap generator (seed 0). The
+labels pair it with the unchanged death Brier. No label changes.
 
 **Result (6,750 CTM-supported states):**
 
-| forecaster | HP RMSE | HP bias | death Brier | all-but-HP Brier | CPU per forecast |
-|---|---|---|---|---|---|
-| CTM (expectation; samples for fields) | 14.1 | +6.9 | 0.0057 | 0.510 | 0.62 ms (one sample 0.53 ms) |
-| prior 256 ×4 | 8.8 | −2.8 | 0.0045 | 0.402 | 251 ms |
-| prior 64 ×4 | 9.6 | −3.8 | 0.0054 | 0.447 | 91 ms |
-| plain 256 ×4 | 9.7 | −3.6 | 0.0055 | 0.446 | 207 ms |
-| 10k ×2 | 7.0 | 0.0 | 0.0056 | 0.269 | 4.5 s |
-| prior 256 ×1 | 10.8 | −2.9 | 0.0086 | – | 64 ms |
+| forecaster | HP RMSE (post-combat) | HP bias | death Brier | all-but-HP Brier | CPU per forecast | as-registered HP RMSE / bias |
+|---|---|---|---|---|---|---|
+| CTM (expectation; samples for fields) | 11.7 | +2.3 | 0.0057 | 0.510 | 0.62 ms (one sample 0.53 ms) | 14.1 / +6.9 (invalid) |
+| prior 256 ×4 | 8.5 | −2.6 | 0.0045 | 0.402 | 251 ms | 8.8 / −2.8 |
+| prior 64 ×4 | 9.2 | −3.3 | 0.0054 | 0.447 | 91 ms | 9.6 / −3.8 |
+| plain 256 ×4 | 9.3 | −3.3 | 0.0055 | 0.446 | 207 ms | 9.7 / −3.6 |
+| 10k ×2 | 6.8 | 0.0 | 0.0056 | 0.269 | 4.5 s | 7.0 / 0.0 |
+| prior 256 ×1 | 10.4 | −2.7 | 0.0086 | – | 64 ms | 10.8 / −2.9 |
 
-- **Primary: SILVER_NONINFERIOR.** HP MSE −121 [−133, −109] (CTM 199);
-  death Brier −0.0012 [−0.0026, +0.0002], below the 10% margin.
+- **Primary: SILVER_NONINFERIOR.** Post-combat HP MSE −65 [−75, −55] (CTM 137);
+  death Brier −0.0012 [−0.0026, +0.0002], below the 10% margin. As registered
+  (invalid for the CTM): HP MSE −121 [−133, −109], same label.
 - **Co-primary: SILVER_BETTER.** All-but-HP joint Brier −0.107 [−0.120, −0.094].
 - Every field separately is SILVER_BETTER for prior 256, prior 64 and plain 256
-  (CIs exclude 0). Exact-match rates, CTM vs prior 256: potions 73% vs 81%,
+  (CIs exclude 0). The field Brier estimates each Silver arm's
+  infinite-replicate distribution, so for "×4" it is an upper bound on what four
+  playouts deliver; this is also why the `outcome` field is SILVER_BETTER while
+  the K=4 death Brier is only non-inferior. Exact-match rates, CTM vs prior 256: potions 73% vs 81%,
   relic counters 75% vs 81%, max HP 90% vs 94%, gold 96% vs 98%, full state
   19% vs 37%.
 - A single playout loses on deaths (prior 256 ×1: CTM_BETTER, +0.0029
-  [+0.0008, +0.0051]), because one playout can only predict 0 or 1.
-- Noise floor (half the 10k ×1 loss): HP MSE 34 (RMSE 5.8), death Brier 0.0037.
-- The CTM error grows with act: HP RMSE 11.7 / 13.7 / 16.9 in acts 1–3, vs 6.7
-  / 9.1 / 10.5 for prior 256 ×4.
+  [+0.0008, +0.0051]), because one playout can only predict 0 or 1. Its
+  post-combat HP is still better than the CTM's (MSE −28 [−40, −16]).
+- Noise floor (half the 10k ×1 loss): post-combat HP MSE 32 (RMSE 5.7), death
+  Brier 0.0037.
+- The CTM error grows with act: post-combat HP RMSE 9.2 / 11.5 / 14.3 in acts
+  1–3 (bias +1.8 / +1.6 / +3.6), vs 6.5 / 8.8 / 10.1 (bias −2.0 / −2.8 / −3.1)
+  for prior 256 ×4.
 - Speed: the CTM is 404x cheaper than prior 256 ×4, about 100x cheaper than one
   prior-256 playout and about 37x cheaper than one prior-64 playout.
 
 **Interpretation:**
 - Low-sim Silver is the more accurate combat model on every outcome field the
-  CTM predicts. The production CTM is about 7 HP too optimistic and misses the
-  potion and relic-counter outcomes more often than a 64-sim playout.
-- **Inference:** the bias probably reflects training on older Silver (pre
-  ADR-0021/0026) rather than model capacity; the Run 2 retrain on Philipp's
-  machine (Path B, learned-stop Silver) was not tested here.
+  CTM predicts. On post-combat HP the CTM is slightly optimistic (+2.3) and
+  low-sim Silver slightly pessimistic (−2.6, it plays worse than 10k), but the
+  CTM's spread is larger (RMSE 11.7 vs 8.5). It also misses the potion and
+  relic-counter outcomes more often than a 64-sim playout.
+- The Run 2 retrain (Path B) was not tested here.
 - The prior matters only modestly for forecasting. Plain 256 is close to prior
   256 on HP and loses mainly on potions.
 - Cost is the open question for retirement. OOC MCTS resolves many combats per

@@ -16,6 +16,15 @@ control replay is the truth. Per field, the Brier loss of the sample
 distribution, 1 - 2 P(truth) + sum_v P(v)^2, is estimated without bias from
 the match fraction and the matching fraction of distinct sample pairs. A dead
 sample has the value DEATH in every field.
+
+Deviation (review of #466): ``sourceTerminalHp`` and the arms' ``terminalHp``
+are battle-end HP, before end-of-combat healing (Burning Blood, Black Blood),
+while the CTM forecasts the post-combat persistent HP. The as-registered HP
+loss therefore scores the CTM against a different quantity. The ``hp_post``
+section rescores HP with y = the control replay's RAW post-combat HP and each
+Silver arm's h = the mean RAW post-combat HP of its replicates (0 on a loss),
+on the same states, with its own bootstrap generator (seed 0). Its labels pair
+the unchanged death Brier with that HP loss.
 """
 import csv, json, sys
 import numpy as np
@@ -149,6 +158,27 @@ def boot_diff(rows, a, b, rng, n=10000):
     return out
 
 
+def hp_post_rows(rows, prefixes):
+    """Rows with HP moved to RAW post-combat HP (the quantity the CTM forecasts)."""
+    post = {}
+    for p in prefixes:
+        with open(p + ".samples.csv") as f:
+            for r in csv.DictReader(f):
+                post[(r["stateId"], r["forecaster"], int(r["k"]))] = r
+    out = []
+    for r in rows:
+        q = dict(r)
+        hp = lambda name, k: (0 if post[(r["sid"], name, k)]["outcome"] == "DEATH"
+                              else int(post[(r["sid"], name, k)]["curHp"]))
+        q["y"] = 0 if r["d"] else hp("control", 0)
+        for a in ARMS:
+            if a + "_k" in r:
+                hs = [hp(a, k) for k in range(r[a + "_k"])]
+                q[a + "_h"], q[a + "1_h"] = float(np.mean(hs)), float(hs[0])
+        out.append(q)
+    return out
+
+
 def summary(rows, name):
     b, s, bd, bh = losses(rows, name)
     out = {"n": len(rows), "brier": float(b.mean()), "hp_mse": float(s.mean()), "hp_rmse": float(np.sqrt(s.mean())),
@@ -215,9 +245,32 @@ def main():
             res["fields"]["match"][name] = {f: float(np.mean([r[f"{name}:{f}:match"] for r in fr])) for f in FIELDS}
         for name in ARMS:
             res["fields"]["paired_vs_ctm"][name] = {f: boot_field(fr, name, "ctm", f, rng) for f in FIELDS}
+    post = hp_post_rows(sup, prefixes)
+    prng = np.random.default_rng(0)
+    res["hp_post"] = {"supported": {}, "paired_vs_ctm": {}, "by_act": {}}
+    for n in names:
+        _, s, _, bh = losses(post, n)
+        res["hp_post"]["supported"][n] = {"hp_mse": float(s.mean()), "hp_rmse": float(np.sqrt(s.mean())),
+                                         "hp_bias": float(bh.mean())}
+    ctm_post = res["hp_post"]["supported"]["ctm"]["hp_mse"]
+    for n in names[1:]:
+        d = boot_diff(post, n, "ctm", prng)
+        d["_ctm_brier"], d["_ctm_hp_mse"] = ctm["brier"], ctm_post
+        d["label"] = label(d)
+        del d["_ctm_brier"], d["_ctm_hp_mse"]
+        res["hp_post"]["paired_vs_ctm"][n] = {"hp_mse": d["hp_mse"], "label": d["label"]}
+    for act in sorted({r["act"] for r in post}):
+        sub = [r for r in post if r["act"] == act]
+        res["hp_post"]["by_act"][act] = {}
+        for n in ("ctm", "prior256", "teacher10k1"):
+            _, s, _, bh = losses(sub, n)
+            res["hp_post"]["by_act"][act][n] = {"n": len(sub), "hp_rmse": float(np.sqrt(s.mean())),
+                                               "hp_bias": float(bh.mean())}
     json.dump(res, open(out, "w"), indent=2)
     print(json.dumps({"primary": res["primary"], "supported": {n: {k: round(v, 4) for k, v in res["supported"][n].items()} for n in names},
                       "labels": {n: res["paired_vs_ctm"][n]["label"] for n in names[1:]},
+                      "hp_post": {n: {k: round(v, 3) for k, v in res["hp_post"]["supported"][n].items()} for n in names},
+                      "hp_post_labels": {n: res["hp_post"]["paired_vs_ctm"][n]["label"] for n in names[1:]},
                       "field_brier": res.get("fields", {}).get("brier"),
                       "field_labels_prior256": {f: v["label"] for f, v in res.get("fields", {}).get("paired_vs_ctm", {}).get("prior256", {}).items()}},
                      indent=1))
