@@ -15753,15 +15753,17 @@ Seeds 64000000–127, 16 cloud workers × 4 CPU (Philipp's choice). Paired seed 
 and exact McNemar.
 
 **Integrity:** 112/112 units rc=0, no seed failure, all 16 workers on binary `4a3c9ecc` from run commit
-`a516b884`. Banner checks pass in every unit. The smoke (seed 64009001, all four arms rc=0) finished at
-16:19Z, after the workers had started building (16:16Z) but before any cohort unit ran. Four workers
+`a516b884`. Banner checks pass in every unit. The smoke (seed 64009001, all four arms rc=0) passed at
+16:19Z. Its prod, silvcpu and off arms had passed by 16:07Z, but the 16 workers started cohort units from
+16:15Z, before the silv2048 smoke arm finished: a deviation from the PREREG's smoke-before-launch. No unit
+was rerun. Four workers
 restarted setup after a tool timeout mid-build, with nothing written; their hashes matched.
 
 **Result (128 pairs per comparison):**
 
 | arm | win | floor | MCTS CPU per run | sims per run | imagined combats per run | support aborts |
 |---|---|---|---|---|---|---|
-| `prod` | 75.8% | 47.7 | 45 s | 117,735 | 21,108 | 91 |
+| `prod` | 75.8% | 47.7 | 45 s | 117,735 | 21,109 | 91 |
 | `silv2048` | 78.9% | 48.8 | 455 s | 119,026 | 21,961 | 4 |
 | `silvcpu` | 67.2% | 47.5 | 36 s | 9,638 | 1,769 | 0 |
 | `off` | 78.1% | 48.7 | – | – | – | – |

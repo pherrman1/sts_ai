@@ -13,7 +13,7 @@ the Run 2 retrain (#418 Path B candidate `pathb-r2`, the stack in the live A/B) 
 
 ## Design
 
-- Mode: `one_combat ctmsilvergen 16 0 PREFIX SEED 0 teacher.json 0`. `REPLICATES=0` is the CTM-only
+- Mode: `one_combat ctmsilvergen 16 0 PREFIX SEED_OFFSET teacher.json 0`. `REPLICATES=0` is the CTM-only
   mode (commit `a84be6bc`): no Silver arms; at every real fight entry it scores the production CTM
   exactly as in §408 and the candidate stack (same draw seeds) as forecaster `ctm_r2`.
 - Seeds: the §408 v2 seeds 62100000–62100255, in the same 16 shards of 16 seeds
