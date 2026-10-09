@@ -15264,7 +15264,6 @@ needs its own go.
 **Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
 [environment-variable table](../knowledge-base/operations/environment-variables.md).
 
-
 ## §403 — A20 synthetic Silver corpus: A0 root prior transfers (T1 not passed) (2026-10-09)
 
 **Question:** Philipp asked for the §397 synthetic Silver data at A20 instead
@@ -15314,6 +15313,77 @@ The A20 rows can be pooled as extra training data for prior or encoder work.
 
 **Knowledge impact:** this entry only. No maintained interface changed: the A20
 corpus uses the existing `silversynthgen` ASC argument.
+
+## §404 — Learned encoder Silver root prior: ties GBM v2 at 6x data, no 2k gain (2026-10-09)
+
+**Question:** after §400 (GBM priors stall on hand-made features), does a
+learned encoder over the structured combat state fit the 10k search's choices
+clearly better, and does that help search at 2k sims?
+
+**Design:** pre-registered in the evidence `PREREG.md` (stage 1 committed
+before training, stage 2 before any new data), on Philipp's go (2026-10-08).
+- Model: transformer over state tokens (cards by zone, monsters, potions,
+  player statuses, relics, context), d 128, 3 layers; per-action logits from
+  the tokens an action uses; per-root softmax cross-entropy vs 10k visit
+  shares. Trained on cloud CPU.
+- Stage 1: the §397 corpus (165k roots), §397/§400 folds. Stage 2: plus a new
+  5x corpus from the same frozen generator (seeds 58000000-58001079 natural,
+  58002000-58003079 perturbed, 20 cloud workers, 238 of 240 units used), 951k
+  roots; v2 retrained on the same data (v2-6x).
+- Gate 1 / 1': top-1 vs the 10k pick on test roots where two 10k searches
+  agree must beat v2 (stage 1) / v2-6x (stage 2) by >= 5 points.
+
+**Result:** both gates FAIL. Test fold of the original corpus, 6,003 roots
+where both searches agree (32,309 roots in all); the two searches agree on
+74.4% of roots with a second search.
+
+| prior | data | agree-root top-1 | all-root top-1 | cross-entropy |
+|---|---|---|---|---|
+| v1 (§397) | 1x | 63.3% | 55.3% | 1.230 |
+| v2 (§400) | 1x | 67.8% | 59.0% | 1.175 |
+| encoder | 1x | 63.4% | 55.3% | 1.227 |
+| v2-6x | 6x | 70.8% | 61.2% | 1.144 |
+| encoder | 6x | 70.6% | 61.7% | 1.124 |
+
+- Stage 1 encoder overfit after epoch 7. An exploratory learning curve
+  (regularized) rose 2 to 3 points per doubling of data, which motivated
+  stage 2.
+- Deviations from the pre-registration: 238 of the 240 pre-registered units
+  (2,160 runs) were used, because one unit never reported and one finished
+  after tokenization; 242 training roots with more than 128 tokens or 64
+  actions were skipped for memory (evaluation covers every root); the 6x
+  encoder's best epoch was the last of its 12-epoch cap, with validation
+  cross-entropy nearly flat but still falling.
+- Exploratory replay (not a gate; §400 test roots, 8,188 runs per arm), regret
+  vs plain at 2k: v1 −0.09 [−0.24, +0.04], v2-6x −0.09 [−0.20, −0.00],
+  encoder-6x (w 400, no own weight pick) −0.07 [−0.23, +0.09]; v2-6x − v1
+  −0.005 [−0.11, +0.11]. At 256 sims the encoder is best (−0.49 vs plain).
+
+**Interpretation:**
+- More data helped v2 by +3.0 points agree-root top-1 (67.8 to 70.8) and the
+  encoder by +7.2 (63.4 to 70.6); the encoder comparison also changes the
+  recipe (unregularized stage 1 vs the regularized 6x configuration). With
+  951k roots the learned encoder ties GBM v2 on choice accuracy and edges it
+  on cross-entropy. Inference: the encoder caught up with the hand-made
+  features rather than exposing a feature limit.
+- Better fit still does not lower root regret at the 2k budget: v1, v2-6x and
+  the encoder all sit near −0.09 there. Inference: at 2k, Silver's own search
+  already recovers most of what a root prior of this quality adds; the
+  remaining oracle gap (§400) is optimistic and not reachable with these
+  targets.
+- The synthetic-corpus root-prior line stops here. No native encoder and no
+  online screen are proposed. The 5x corpus stays available for other uses.
+
+**Evidence:** [packet](evidence/silver_encoder_prior_20261008/README.md);
+corpus README at
+`/mnt/project-files/silver-synthetic-prior/corpus5x-450376c8/README.md`.
+
+**Remaining uncertainty:** the 12-epoch cap may have stopped the encoder
+slightly early; the encoder replay arm used w = 400 without its own weight
+pick.
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
 
 ## §405 — #346 GBM transfer: A20 counterfactual rows and the A0 win model offline, suggestive but inconclusive (2026-10-09)
 
@@ -15376,3 +15446,127 @@ Philipp's go: a normalized re-test with an F2-sized equal-data control, then
 TEST, before any gameplay use.
 
 **Knowledge impact:** this entry and the evidence folder.
+
+## §407 — #346 GBM transfer re-test with E3 weights and an equal-size extra-A0 control: inconclusive (2026-10-09)
+
+**Question:** with E3's weight normalization, which §405 omitted, does adding
+the §402 A20 corpus improve the A0 `v_win` GBM? And does it beat adding the
+same number of extra A0 rows?
+
+**Protocol:** [TRANSFER2-PLAN.md](evidence/a20_transfer_346_20261009/TRANSFER2-PLAN.md),
+committed at `f0e41fbf` before training; `tools/vwin_a20_transfer.py
+--e3-weights --extra-a0`.
+- §405's arms, rungs, features, split and rule, with weights rescaled to mean
+  1 as in E3.
+- **Arm D:** E3 TRAIN at f plus 16,590 #334 A0 TRAIN map rows. These are
+  sampled from the 96 TRAIN sources in the #334 cloud returns, with the A20
+  block's total weight.
+- Scored on E3 VALIDATION; TEST stays closed.
+- Authorized by Philipp ("Yes do the retest and control").
+
+**Result:** C (A0 + A20) `INCONCLUSIVE`; B (A20 pretrain) `INCONCLUSIVE`;
+C vs D `NO_DIFFERENCE_DETECTED`.
+- Arms A/B/C reproduce the §405 reviewer's normalized rerun exactly.
+- **C − A map-row NLL:** −0.0075, −0.0094, −0.0043, −0.0087. Only the 100%
+  CI excludes 0 ([−0.016, −0.001]).
+- **B − A:** every CI includes 0.
+- **D − A:** +0.003, +0.005, +0.009, +0.001, every CI including 0. Extra #334
+  rows do not help.
+- **C − D:** −0.010, −0.015, −0.014, −0.010, every CI including 0.
+- **Boss-relic selection gain (descriptive):** C − D +8.0 pp [+4.4, +11.8] at
+  10% and +7.7 [+3.6, +12.0] at 25%; D − A −5.4 [−9.0, −1.8] at 25%.
+- **Card rewards:** no difference.
+- Details: [TRANSFER2-RESULT.md](evidence/a20_transfer_346_20261009/TRANSFER2-RESULT.md).
+
+**Interpretation (Inference):** H1/H2 of #346 are not established for the A0
+win GBM's calibration. Every point estimate favours A20 rows over both
+A0-only and equal extra #334 rows, but the effects (about 0.01 NLL) sit
+within rung-to-rung noise at this validation size (167 sources). A20 rows
+may help boss-relic ranking when A0 data is scarce. That is descriptive and
+uncorrected.
+
+**Open:**
+- D is not a same-generator control.
+- A decisive test needs more A0 validation sources or a larger effect.
+
+**Decision:** no model or default change. #346 stays open.
+
+**Knowledge impact:** this entry and the evidence folder.
+
+## §406 — Silver root prior v1 at low sim budgets: about +19 pp at 32–128 sims, no gain from 2k up (2026-10-09)
+
+**Question:** §399 found no online gain from the native root prior at 2k sims,
+and §404 found the offline gain concentrated at 256 sims. Does the prior make a
+very cheap Silver search play like a larger one, and how does prior search at
+several budgets compare with plain 10k?
+
+**Design:** four pre-registrations on Philipp's asks (2026-10-09 10:16, 10:21,
+10:38 and 11:53 UTC), none committed beforehand. Only the screen's file clearly
+predates its arms. The other three were written in the same command that
+launched their arms, and their shared-folder stamps are 5 s after the first
+arm started (probably copy times), so the order cannot be proven either way.
+- Binary and prior as §399: commit 51937c6a, one_combat sha256 c3547dc4…,
+  v1 GBM prior `prior-natpert.compact.txt` (sha256 573305c4…), weight 400.
+  Only v1 has a native scorer. w = 400 was tuned offline at 256 sims (§397)
+  and was not re-tuned for any other budget.
+- The sidecars' `executableGitSha` is the checkout HEAD (d4ca7515, or 0f5adc4e
+  for the low budgets), not the binary. The binary is identified by
+  `sha256.txt`. `models/v_win_trees.txt` and `v_rich_trees.txt` are identical at
+  all three commits.
+- Run settings: A0, fair play, keys skipped, default OOC policy, `bestbench`,
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1` (flat budgets, no learned stopping), 4 CPUs.
+- Screen: seeds 61000000-61000031, arms plain 256, prior 256 and plain 2k.
+  Pass if prior 256 − plain 256 >= +3 wins.
+- Confirmation: seeds 61001000-61001127, same arms. CONFIRMED needs the prior
+  256 − plain 256 CI above 0 and prior 256 − plain 2k >= −5 pp.
+- Sweep (descriptive, same 128 seeds): prior 512, 1k, 2k and 4k, plus plain 10k.
+  A prior arm "matches 10k" if its CI vs plain 10k includes 0 and the point
+  estimate is >= −3 pp; any match needs a larger confirmation before it is
+  claimed.
+- Low budgets (descriptive, same 128 seeds): plain and prior at 32, 64 and 128.
+- Statistics: paired seed bootstrap, 10,000 resamples, RNG seed 0. CPU s/run
+  is the mean per-run `sec` column, with 4 runs going at once.
+
+**Result:**
+- Screen (32 seeds): plain 256 13/32, prior 256 19/32, plain 2k 19/32. This is
+  the pre-registered PASS (+6 wins, 10 vs 4 discordant, sign test p ≈ 0.18).
+- Confirmation (128 seeds): label PRIOR_HELPS_ONLY_VS_256. Prior 256 − plain
+  256 is +11.7 pp [+1.6, +21.9], but prior 256 − plain 2k is −14.8 pp
+  [−24.2, −4.7].
+
+| sims | plain | prior | prior − plain | prior vs plain 10k | mean floor plain / prior | CPU s/run plain / prior |
+|---|---|---|---|---|---|---|
+| 32 | 25.8% | 44.5% | +18.8 [+7.8, +29.7] | −35.9 [−45.3, −26.6] | 38.5 / 43.3 | 0.19 / 0.43 |
+| 64 | 37.5% | 56.2% | +18.8 [+8.6, +28.9] | −24.2 [−33.6, −14.8] | 41.4 / 45.6 | 0.34 / 0.62 |
+| 128 | 44.5% | 63.3% | +18.8 [+8.6, +28.9] | −17.2 [−25.8, −8.6] | 43.2 / 46.8 | 0.66 / 0.98 |
+| 256 | 54.7% | 66.4% | +11.7 [+1.6, +21.9] | −14.1 [−23.4, −4.7] | 44.6 / 47.8 | 1.32 / 1.71 |
+| 512 | — | 68.8% | — | −11.7 [−20.3, −3.1] | — / 47.7 | — / 3.05 |
+| 1,000 | — | 73.4% | — | −7.0 [−14.1, +0.8] | — / 48.6 | — / 5.78 |
+| 2,000 | 81.2% | 84.4% | +3.1 [−4.7, +10.9] | +3.9 [−3.9, +11.7] | 49.2 / 49.0 | 11.30 / 11.71 |
+| 4,000 | — | 81.2% | — | +0.8 [−7.0, +8.6] | — / 49.2 | — / 23.71 |
+| 10,000 | 80.5% | — | — | ref | 49.2 / — | 61.77 / — |
+
+- Screen mean floor (32 seeds): plain 256 45.1, prior 256 47.0, plain 2k 47.5.
+- Pre-registered "matches 10k" rule: prior 2k (+3.9) and prior 4k (+0.8)
+  qualify; prior 1k (−7.0) does not. Per the rule, neither match is claimed
+  without a larger confirmation.
+
+**Interpretation:**
+- At 32 to 128 sims the prior adds about 19 pp. Post hoc, not pre-registered:
+  prior 64 (56.2%) vs plain 256 (54.7%) is +1.6 pp [−7.8, +11.7] at about half
+  the CPU. The gain narrows to +12 pp at 256 and is
+  not resolved at 2k, which repeats §399.
+- No budget of 1k or below with the prior matches plain 2k or plain 10k. The
+  32-seed tie of prior 256 with plain 2k did not replicate.
+- Under flat budgets, plain 2k ties plain 10k on these seeds, so above 2k there
+  was no headroom for the prior to close. n = 128 resolves only differences of
+  about ±8 pp.
+- Inference: the v1 prior is useful only where search compute is very tight,
+  for example as a fast combat evaluator inside other searches. A follow-up
+  thread compares low-sim prior Silver with the CTM stack. The option stays
+  default off.
+
+**Evidence:** [README, pre-registrations, scripts, CSVs, analysis](evidence/silver_root_prior_lowsim_20261009/README.md).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.

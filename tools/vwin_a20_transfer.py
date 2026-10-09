@@ -9,6 +9,12 @@ Reuses the E3 data rules, split, recipe and selection-gain code in
 - B: a model pretrained on A20 non-VALIDATION rows (early stop on A20
   VALIDATION), then boosting continued on E3 TRAIN at f.
 - E: the pretrained A20 model alone (diagnostic, ranking transfer).
+- D (with --extra-a0): E3 TRAIN at f plus as many #334 A0 TRAIN map rows as
+  there are A20 rows, with the A20 block's total weight (equal-size control).
+
+--e3-weights rescales the per-state weights to mean 1 over the A0 corpus, as
+E3 does; the A20 and #334 blocks get the same factor (§405 follow-up plan,
+TRANSFER2-PLAN.md). Without it the run reproduces §405 as run.
 
 Scored on E3 VALIDATION only; TEST is never read for scoring.
 """
@@ -22,8 +28,10 @@ from pathlib import Path
 
 import numpy as np
 
+from tools.vwin_e1_focal import sha256 as file_sha256
 from tools.vwin_e3_cf import (HIDDEN_FUTURE, X2B_RECIPE, apply_rules, cluster_mean, load,
                               load_trees, metrics, selection_rows, summarize)
+from tools.vwin_refresh_dataset import source_split
 
 RUNGS = (0.10, 0.25, 0.50, 1.00)
 
@@ -37,6 +45,46 @@ def prepare(root, names):
     state = df.groupby(["sourceSeed", "decisionIdx"]).ngroup().to_numpy()
     w = 1.0 / np.bincount(state)[state]          # each state weighs 1
     return df, w, manifests, dropped
+
+
+def load_extra_a0(root, public, n, seed=346):
+    """n rows sampled without replacement from #334 TRAIN map rows under root.
+
+    Each `seed-*.manifest.json` must be a TRAIN source; its map.csv and
+    runout.csv must match the manifest SHA-256 values. Labels are the
+    branch's `finalWon` (valid trajectories only), as in E1.
+    """
+    import pandas as pd
+    X, y, seeds, info = [], [], [], []
+    for manifest in sorted(Path(root).glob("seed-*.manifest.json")):
+        doc = json.loads(manifest.read_text())
+        start = int(doc["seedSpec"]["start"])
+        if int(doc["seedSpec"]["count"]) != 1 or source_split(start) != "TRAIN":
+            raise ValueError(f"{manifest}: not a single TRAIN source")
+        if int(doc["seedSpec"].get("ascension", 0)) != 0:
+            raise ValueError(f"{manifest}: not A0")
+        base = str(manifest)[:-len(".manifest.json")]
+        for kind in ("map.csv", "runout.csv"):
+            if file_sha256(base + "." + kind) != doc["outputs"][kind]:
+                raise ValueError(f"{manifest}: {kind} SHA-256 mismatch")
+        runout = pd.read_csv(base + ".runout.csv", dtype={"branchId": str})
+        if not ((runout["trajectoryValid"] == 1) & runout["finalWon"].isin([0, 1])).all():
+            raise ValueError(f"{manifest}: invalid runout")
+        labels = dict(zip(runout["branchId"], runout["finalWon"].astype(int)))
+        mp = pd.read_csv(base + ".map.csv", dtype={"branchId": str})
+        if set(mp["sourceSeed"]) != {start}:
+            raise ValueError(f"{manifest}: row seed mismatch")
+        X.append(mp[public].to_numpy(np.float32))
+        y.append(mp["branchId"].map(labels).to_numpy(np.float32))
+        seeds.append(np.full(len(mp), start))
+        info.append(dict(seed=start, rows=len(mp), manifest_sha256=file_sha256(manifest)))
+    X, y, seeds = np.concatenate(X), np.concatenate(y), np.concatenate(seeds)
+    if not np.isfinite(X).all() or np.isnan(y).any() or (X[:, public.index("ascension")] != 0).any():
+        raise ValueError("bad #334 rows")
+    pick = np.sort(np.random.default_rng(seed).choice(len(y), size=n, replace=False))
+    return X[pick], y[pick], dict(sources=info, pool_rows=int(len(y)), sampled_rows=int(n),
+                                  label_rate=float(y[pick].mean()), sampled_sources=int(len(set(seeds[pick]))),
+                                  sample_seed=seed)
 
 
 def params(names, seed, threads):
@@ -72,6 +120,8 @@ def main():
     ap.add_argument("--seeds", default="0,1,2")
     ap.add_argument("--reps", type=int, default=2000)
     ap.add_argument("--rounds", type=int, default=2500)
+    ap.add_argument("--e3-weights", action="store_true", help="rescale weights to mean 1 as in E3")
+    ap.add_argument("--extra-a0", help="directory of #334 TRAIN shards: adds the equal-size control arm D")
     args = ap.parse_args()
     import xgboost as xgb
     out = Path(args.output)
@@ -88,6 +138,12 @@ def main():
     X20, y20 = a20[public].to_numpy(np.float32), a20["finalWon"].to_numpy(np.float32)
     tr, va = (a0["split"] == "TRAIN").to_numpy(), (a0["split"] == "VALIDATION").to_numpy()
     va20 = (a20["split"] == "VALIDATION").to_numpy()
+    scale = len(w0) / w0.sum() if args.e3_weights else 1.0   # E3: w *= len(w)/w.sum() over A0
+    w0, w20 = w0 * scale, w20 * scale
+    extra = None
+    if args.extra_a0:
+        Xd, yd, extra = load_extra_a0(args.extra_a0, public, len(y20))
+        wd = np.full(len(yd), w20.sum() / len(yd))          # same total weight as the A20 block
     seeds = [int(s) for s in args.seeds.split(",")]
     d0 = xgb.DMatrix(X0, feature_names=public)
     sources = sorted(a0.loc[tr, "sourceSeed"].unique(),
@@ -107,7 +163,7 @@ def main():
         keep = set(sources[:max(1, int(round(f * len(sources))))])
         sel = tr & a0["sourceSeed"].isin(keep).to_numpy()
         tag = f"{int(f * 100)}"
-        preds = {"A": [], "B": [], "C": []}
+        preds = {"A": [], "B": [], "C": []} | ({"D": []} if extra else {})
         for s in seeds:
             b, n = fit(X0[sel], y0[sel], w0[sel], X0[va], y0[va], w0[va], public, s, args.threads, args.rounds)
             preds["A"].append(b.predict(d0))
@@ -118,6 +174,12 @@ def main():
             b, n = fit(Xc, yc, wc, X0[va], y0[va], w0[va], public, s, args.threads, args.rounds)
             preds["C"].append(b.predict(d0))
             trained.append(dict(arm="C", fraction=f, seed=s, trees=n, rows=int(len(yc))))
+            if extra:
+                b, n = fit(np.concatenate([X0[sel], Xd]), np.concatenate([y0[sel], yd]),
+                           np.concatenate([w0[sel], wd]), X0[va], y0[va], w0[va], public, s, args.threads,
+                           args.rounds)
+                preds["D"].append(b.predict(d0))
+                trained.append(dict(arm="D", fraction=f, seed=s, trees=n, rows=int(sel.sum() + len(yd))))
             b, n = fit(X0[sel], y0[sel], w0[sel], X0[va], y0[va], w0[va], public, s, args.threads,
                        args.rounds, base=pre[s])
             preds["B"].append(b.predict(d0))
@@ -136,21 +198,36 @@ def main():
     for f in RUNGS:
         tag = f"{int(f * 100)}"
         la = row_loss(yv, part[f"A_{tag}"])
-        for arm in ("B", "C"):
+        for arm in ("B", "C") + (("D",) if extra else ()):
             res["nll_diff"][f"{arm}_minus_A_{tag}"] = cluster_mean(row_loss(yv, part[f"{arm}_{tag}"]) - la,
                                                                    seeds_v, args.reps)
             res["nll_diff"][f"{arm}_minus_A_{tag}"]["selection_gain"] = summarize(
                 gains[f"{arm}_{tag}"], args.reps, baseline=gains[f"A_{tag}"])
+        if extra:
+            res["nll_diff"][f"C_minus_D_{tag}"] = cluster_mean(
+                row_loss(yv, part[f"C_{tag}"]) - row_loss(yv, part[f"D_{tag}"]), seeds_v, args.reps)
+            res["nll_diff"][f"C_minus_D_{tag}"]["selection_gain"] = summarize(
+                gains[f"C_{tag}"], args.reps, baseline=gains[f"D_{tag}"])
     res["nll_diff"]["E_minus_A_100"] = cluster_mean(row_loss(yv, part["E"]) - row_loss(yv, part["A_100"]),
                                                     seeds_v, args.reps)
     res["nll_diff"]["E_minus_A_100"]["selection_gain"] = summarize(gains["E"], args.reps, baseline=gains["A_100"])
-    for arm in ("B", "C"):
+    for arm in ("B", "C") + (("D",) if extra else ()):
         low = [res["nll_diff"][f"{arm}_minus_A_{int(f * 100)}"] for f in RUNGS[:3]]
         full = res["nll_diff"][f"{arm}_minus_A_100"]
         helps = sum(d["ci95"][1] < 0 for d in low) >= 2 and full["mean"] <= 0.002
         hurts = sum(d["ci95"][0] > 0 for d in low) >= 2
         res["verdict"][arm] = "TRANSFER_HELPS" if helps else "TRANSFER_HURTS" if hurts else "INCONCLUSIVE"
-    report = dict(schema="vwin_a20_transfer_v1", a0_root=str(Path(args.a0_root).resolve()),
+    if extra:
+        low = [res["nll_diff"][f"C_minus_D_{int(f * 100)}"] for f in RUNGS[:3]]
+        full = res["nll_diff"]["C_minus_D_100"]
+        better = sum(d["ci95"][1] < 0 for d in low) >= 2 and full["mean"] <= 0.002
+        worse = sum(d["ci95"][0] > 0 for d in low) >= 2
+        res["verdict"]["C_vs_D"] = ("A20_BEATS_EXTRA_A0" if better else "EXTRA_A0_BEATS_A20" if worse
+                                    else "NO_DIFFERENCE_DETECTED")
+    schema = "vwin_a20_transfer_v2" if (args.e3_weights or extra) else "vwin_a20_transfer_v1"
+    report = dict(schema=schema,
+                  e3_weights=bool(args.e3_weights), weight_scale=float(scale), extra_a0=extra,
+                  a0_root=str(Path(args.a0_root).resolve()),
                   a20_root=str(Path(args.a20_root).resolve()),
                   producer_git={"A0": sorted({m["git"] for m in man0}), "A20": sorted({m["git"] for m in man20})},
                   producer_exe={"A0": sorted({m["exe"] for m in man0}), "A20": sorted({m["exe"] for m in man20})},
