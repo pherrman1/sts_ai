@@ -15668,3 +15668,73 @@ nothing identifies when an alternative card beats the teacher's.
 
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
+
+## §416 — A20 combat-strength card probe: CTM strength ties the teacher, not shown (2026-10-09)
+
+**Question:** Philipp's idea is to value a state by its combat strength
+against the enemies ahead, not by a whole-run outcome. Does a training-free
+version of that, the CTM's expected fight utility against the act's remaining
+enemies, pick A20 card rewards better than the teacher on floor reached?
+
+**Design:** [PLAN-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-STRENGTH.md),
+frozen at `6349c21f` before the run (Philipp's go 2026-10-09 17:30Z).
+- **Replay:** the new default-off mode `one_combat cardstrengthprobe` replays
+  the §402 corpus source runs (TRAIN and VALIDATION seeds of
+  59100000..59101199; TEST not replayed) to the same sampled card rewards.
+  Binary `faf76c7f…`.
+- **Score:** for each option, the production CTM stack's utility
+  `0.75·P(survive) + 0.25·P(survive)·E[HP fraction | win]` against the act's
+  weak, strong and elite pools and the revealed boss, weighted by remaining
+  reachable monster and elite nodes. The highest score is picked; ties go to
+  the teacher.
+- **Rule:** PASS if the source-clustered CI lower bound of the floor gain over
+  the teacher's pick is > 0.
+- **CTM input at ASC 0, decided before scoring:** the 2-seed smoke showed the
+  production CTM is degenerate at ascension 20. With ASC 20 as input it
+  returned death 0 and one fixed HP value for every encounter and option,
+  because its input scaling puts ASC 20 far outside the A0 training data.
+  Decks are therefore priced at ASC 0.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_strength.py`, 970 states;
+`report-strength.json`).
+
+| Metric | Value |
+|--------|-------|
+| Gain over teacher | +0.14 floors [−0.24, +0.54] |
+| Gain on TRAIN states | +0.20 |
+| Gain on VALIDATION states | −0.11 |
+| Gain by act (acts 1, 2, 3) | +0.21, +0.00, +0.11 [−0.07, +0.29] |
+| Agreement with the teacher | 56% |
+| Skip rate (probe / teacher) | 3.2% / 4.1% |
+| Uniform random pick | −0.94 [−1.29, −0.57] |
+| Oracle (noise-inflated) | +4.27 |
+
+- **Trajectory check:** 971 eligible states, 0 mismatches. One state was
+  unscored because every encounter was unsupported (seed 59100838: all 68
+  unsupported probes of the run).
+- **Option spread:** the median utility spread between a state's best and
+  worst option is 0.008.
+
+**Interpretation (Inference):** with no training, CTM combat strength picks
+cards about as well as the teacher (V4 plus margin gate). It disagrees on 44%
+of states and loses nothing on average, while random picks lose about a
+floor. That is the best of the three A20 card attempts so far: §409's ranker
+scored −0.47 and §413's correction never switched. It is still not a
+demonstrated improvement.
+- The per-option signal is small (0.008 utility). The A0 pricing and the
+  equal-weight pool average are crude.
+- Silver labels at the right ascension, or a learned strength leaf, could
+  sharpen it. That is untested.
+
+**Side finding:** the production CTM must not be used at A20 as it is. No
+existing A20 result used it: OOC MCTS was off in every A20 run.
+
+**Evidence:** [PLAN-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-STRENGTH.md),
+[report-strength.json](evidence/a20_card_floor_20261009/report-strength.json),
+raw outputs in `/mnt/project-files/card-strength-probe/run-6349c21f/`. The run
+was resumed twice after container restarts with the same binary; resumes skip
+finished seeds (`RESUMES.txt`).
+
+**Knowledge impact:** this entry, plus the default-off research mode
+`cardstrengthprobe`. No defaults changed. The CTM's A20 degeneracy is recorded
+here.
