@@ -49,3 +49,19 @@ floors for every arm.
   different model input, for example V4's own logits as a feature. More of
   the same rows is not supported by the flat curve, though two points are a
   weak curve.
+
+## Post-hoc addendum: floor plus a win bonus (Philipp's question)
+
+This was asked after the result and is not part of the plan's rule. The
+target and the score are both `horizonFloor + B · finalWon`, from `--win-bonus`
+at `5776676f`. Everything else is unchanged.
+
+| B | CARD − V4 | X2B − V4 | random − V4 |
+|---|---|---|---|
+| 0 (plan) | −0.47 [−1.46, +0.43] | −0.88 [−1.74, −0.06] | −0.95 [−1.80, −0.13] |
+| 10 | −0.25 [−1.24, +0.72] | −0.81 [−1.79, +0.13] | −1.00 [−1.97, −0.06] |
+| 25 | −0.68 [−2.06, +0.70] | −0.70 [−1.92, +0.46] | −1.08 [−2.24, +0.10] |
+
+The win term adds variance but no card signal, which fits §402's card
+final-win option SD of about 0. Raw output is in
+`/mnt/project-files/a20-card-floor/run-5776676f-wb{10,25}/`.

@@ -15611,6 +15611,12 @@ VALIDATION states).
 - Options not tested: much more counterfactual data, or V4 logits as a model
   input.
 
+**Post-hoc addendum (asked after the result, not in the rule):** the target
+and score were changed to floor + B × win, with B = 10 and B = 25.
+- CARD − V4: −0.25 [−1.24, +0.72] at B = 10, −0.68 [−2.06, +0.70] at B = 25.
+- V4 stays ahead of random at both bonuses.
+- The win term adds noise without card signal (§402).
+
 **Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
 [report.json](evidence/a20_card_floor_20261009/report.json).
 
