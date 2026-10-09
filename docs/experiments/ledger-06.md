@@ -15376,3 +15376,49 @@ Philipp's go: a normalized re-test with an F2-sized equal-data control, then
 TEST, before any gameplay use.
 
 **Knowledge impact:** this entry and the evidence folder.
+
+## §407 — #346 GBM transfer re-test with E3 weights and an equal-size extra-A0 control: inconclusive (2026-10-09)
+
+**Question:** with E3's weight normalization, which §405 omitted, does adding
+the §402 A20 corpus improve the A0 `v_win` GBM? And does it beat adding the
+same number of extra A0 rows?
+
+**Protocol:** [TRANSFER2-PLAN.md](evidence/a20_transfer_346_20261009/TRANSFER2-PLAN.md),
+committed at `f0e41fbf` before training; `tools/vwin_a20_transfer.py
+--e3-weights --extra-a0`.
+- §405's arms, rungs, features, split and rule, with weights rescaled to mean
+  1 as in E3.
+- **Arm D:** E3 TRAIN at f plus 16,590 #334 A0 TRAIN map rows. These are
+  sampled from the 96 TRAIN sources in the #334 cloud returns, with the A20
+  block's total weight.
+- Scored on E3 VALIDATION; TEST stays closed.
+- Authorized by Philipp ("Yes do the retest and control").
+
+**Result:** C (A0 + A20) `INCONCLUSIVE`; B (A20 pretrain) `INCONCLUSIVE`;
+C vs D `NO_DIFFERENCE_DETECTED`.
+- Arms A/B/C reproduce the §405 reviewer's normalized rerun exactly.
+- **C − A map-row NLL:** −0.0075, −0.0094, −0.0043, −0.0087. Only the 100%
+  CI excludes 0 ([−0.016, −0.001]).
+- **B − A:** every CI includes 0.
+- **D − A:** +0.003, +0.005, +0.009, +0.001, every CI including 0. Extra #334
+  rows do not help.
+- **C − D:** −0.010, −0.015, −0.014, −0.010, every CI including 0.
+- **Boss-relic selection gain (descriptive):** C − D +8.0 pp [+4.4, +11.8] at
+  10% and +7.7 [+3.6, +12.0] at 25%; D − A −5.4 [−9.0, −1.8] at 25%.
+- **Card rewards:** no difference.
+- Details: [TRANSFER2-RESULT.md](evidence/a20_transfer_346_20261009/TRANSFER2-RESULT.md).
+
+**Interpretation (Inference):** H1/H2 of #346 are not established for the A0
+win GBM's calibration. Every point estimate favours A20 rows over both
+A0-only and equal extra #334 rows, but the effects (about 0.01 NLL) sit
+within rung-to-rung noise at this validation size (167 sources). A20 rows
+may help boss-relic ranking when A0 data is scarce. That is descriptive and
+uncorrected.
+
+**Open:**
+- D is not a same-generator control.
+- A decisive test needs more A0 validation sources or a larger effect.
+
+**Decision:** no model or default change. #346 stays open.
+
+**Knowledge impact:** this entry and the evidence folder.
