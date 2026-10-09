@@ -78,6 +78,8 @@ def main():
     ap.add_argument("--seeds", default="0,1,2")
     ap.add_argument("--reps", type=int, default=2000)
     ap.add_argument("--smoke", action="store_true", help="20 rounds")
+    ap.add_argument("--win-bonus", type=float, default=0.0,
+                    help="post-hoc: target and score floor + BONUS * finalWon (default 0 = plan)")
     args = ap.parse_args()
     import xgboost as xgb
     out = Path(args.output)
@@ -85,6 +87,8 @@ def main():
     t0 = time.time()
     lab, mp, manifests = load(args.root)
     df, dropped = apply_rules(lab, mp)
+    if args.win_bonus:
+        df[TARGET] = df[TARGET].astype(float) + args.win_bonus * df["finalWon"].astype(float)
     df = df[df["type"].isin(["CARD_REWARD", "BOSS_RELIC"])].copy()
     names, x2b = load_trees()
     public = [n for n in names if n not in HIDDEN_FUTURE]
@@ -135,7 +139,7 @@ def main():
                   .groupby("split").size().to_dict(),
                   inner_card_states=int(df[stop & is_card].drop_duplicates(["sourceSeed", "decisionIdx"]).shape[0]),
                   trained=trained, results=results, test_opened=False,
-                  verdict="PASS" if lo > 0 else "NOT_SHOWN", seconds=time.time() - t0)
+                  verdict="PASS" if lo > 0 else "NOT_SHOWN", win_bonus=args.win_bonus, seconds=time.time() - t0)
     (out / "report.json").write_text(json.dumps(report, indent=1, default=float) + "\n")
     part[KEYS + ["optionKey", "chosen", TARGET] + cols].to_csv(out / "validation_predictions.csv", index=False)
     print("VERDICT", report["verdict"], json.dumps(results["CARD"]["gain"]))
