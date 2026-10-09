@@ -217,8 +217,8 @@ rows). The DeepSets stages follow `hpo`: `control --artifact STD.native`
 requires `SHARED_TRANSITION_ENCODER_GO`), `downstream` (S19 prepare/fit/compare,
 requires `DEEPSET_DOWNSTREAM_GO` for the pinned head unless `--override`
 names a `ctm_gate_override_v1` JSON that binds the qualification.json sha256
-and its exact failure list, names the approval and reason, carries the
-evidence, and waives only singleton exact-label accuracy failures; the override
+and its single failure, names the approval and reason, carries the
+evidence, and waives only one singleton exact-label accuracy failure; the override
 sha256 is recorded in the stage inputs), `potion` (S20),
 `specialist` (S21) and `fast --artifact FAST.native`; the last file has an
 empty `pending` list. `init` pins `deepset_distill.EXPECTED_CONTROL` to null:

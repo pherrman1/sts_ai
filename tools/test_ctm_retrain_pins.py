@@ -160,11 +160,20 @@ class TestCtmRetrainPins(unittest.TestCase):
                                                               failures=[failure], candidate=dict(checkpointSha256=staged.sha256(head))))
             override = dict(schema="ctm_gate_override_v1", stage="downstream", qualificationSha256=staged.sha256(rejected),
                             failures=[failure], approval="test", reason="noise", evidence=dict(ci95=[-0.02, 0.01]))
-            for change, message in ((dict(qualificationSha256="x"), "does not bind"), (dict(failures=[]), "failures differ"),
+            for change, message in ((dict(qualificationSha256="x"), "does not bind"), (dict(failures=[]), "exactly the one"),
                                     (dict(reason=""), "approval and reason"), (dict(evidence={}), "evidence"),
                                     (dict(stage="potion"), "downstream stage")):
                 with self.assertRaisesRegex(ValueError, message):
                     staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(override, **change)))
+            def refused(qualification, message):
+                written = write(s19 / "qualification.json", dict(qualification, candidate=dict(checkpointSha256=staged.sha256(head))))
+                with self.assertRaisesRegex(ValueError, message):
+                    staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(
+                        override, qualificationSha256=staged.sha256(written), failures=qualification["failures"])))
+            two = [failure, "relics singleton exact-label accuracy drop exceeds 0.5pp"]
+            refused(dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True, failures=two), "exactly the one")
+            refused(dict(decision="DEEPSET_DOWNSTREAM_GO", finiteAndLegal=True, failures=[failure]), "finite/legal")
+            refused(dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=False, failures=[failure]), "finite/legal")
             nll = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
                                                           failures=["joint NLL relative degradation exceeds 2%"],
                                                           candidate=dict(checkpointSha256=staged.sha256(head))))

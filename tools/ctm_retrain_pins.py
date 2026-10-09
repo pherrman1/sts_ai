@@ -483,8 +483,8 @@ def downstream_override(qualification_path: Path, override_path: Path) -> str:
     if qualification["decision"] != "DEEPSET_DOWNSTREAM_REJECTED" or qualification.get("finiteAndLegal") is not True:
         raise ValueError("override applies only to a finite/legal DEEPSET_DOWNSTREAM_REJECTED compare")
     failures = qualification.get("failures") or []
-    if not failures or override.get("failures") != failures:
-        raise ValueError("override failures differ from the qualification failures")
+    if len(failures) != 1 or override.get("failures") != failures:
+        raise ValueError("override must name exactly the one qualification failure it waives")
     if not all(f.endswith(OVERRIDABLE_DOWNSTREAM_FAILURE) for f in failures):
         raise ValueError("override may waive only singleton exact-label accuracy failures")
     if not all(isinstance(override.get(k), str) and override[k].strip() for k in ("approval", "reason")):
