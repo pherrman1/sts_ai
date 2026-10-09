@@ -1,0 +1,48 @@
+{
+  "teacher_id": "silver-flat-exact10k-synth-450376c8",
+  "git_sha": "450376c8775a1b039ca7da625a4be4ec654d05b6",
+  "executable_sha256": "8906180f6514d9d08ec8b9f458668ddf31de25e5279b1c321a092ffd5c774d05",
+  "combat_backend": "native_silver",
+  "rng_regime": "project_fair",
+  "search_configuration": {
+    "budget_policy": "flat_exact",
+    "simulation_budgets": [
+      10000
+    ],
+    "exploration_parameter": 25.0,
+    "exploration_parameter_chance": 25.0,
+    "chance_widening_c": 3.7028,
+    "chance_widening_alpha": 0.52389,
+    "end_turn_widening_c": 3.7028,
+    "end_turn_widening_alpha": 0.52389,
+    "reuse_cap_mode": "allocated",
+    "reuse_cap": 32768,
+    "sequential_halving": false,
+    "pruning": false,
+    "learned_visit_puct": false,
+    "direct_learned_leaf": false,
+    "adaptive": false
+  },
+  "environment": {
+    "STS_FAIR": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_EXECUTABLE_GIT_SHA": "450376c8775a1b039ca7da625a4be4ec654d05b6"
+  },
+  "model_artifacts": [
+    {
+      "role": "ooc_floor_value",
+      "path": "models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "role": "ooc_win_value",
+      "path": "models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    }
+  ]
+}
