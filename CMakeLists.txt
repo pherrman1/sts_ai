@@ -472,6 +472,10 @@ add_test(NAME vwin_e3_cf_selftest
     COMMAND python3 -m unittest tools.test_vwin_e3_cf -q)
 set_tests_properties(vwin_e3_cf_selftest PROPERTIES
     LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME vwin_outcome_curve_selftest
+    COMMAND python3 -m unittest tools.test_vwin_outcome_curve -q)
+set_tests_properties(vwin_outcome_curve_selftest PROPERTIES
+    LABELS "core;tooling" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME boss_headroom_347_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_boss_headroom_347.py --self-test)
 set_tests_properties(boss_headroom_347_analysis_selftest PROPERTIES

@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -776,6 +776,15 @@ requires the frozen X2-B VALIDATION NLL to reproduce exactly. It reports
 NLL/Brier on all and focal rows, sibling ranking, and per-type selection gain
 (the argmax sibling's branch outcome minus the V4 chosen sibling's) with
 source-clustered CIs. Result: ledger-06 §394 (`E1_INCONCLUSIVE`).
+
+#### Outcome-label learning curve (self-play Step 0)
+
+`python3 -m tools.vwin_outcome_curve INDEX E3_ROOT --output NEW_DIR` retrains
+the P0 recipe on nested 1/8, 1/4, 1/2, 1/1 fractions of the #334 TRAIN sources,
+on source-trajectory rows only (`SRC`, own-play games) and with branch rows
+(`ALL`). It scores #334 VALIDATION NLL, selection gain on #334 VALIDATION
+siblings and E3 VALIDATION states, the E3 card skip share, and a per-decision
+least-squares slope per doubling of games. Result: ledger-06 §415.
 
 ### Rich `v_win` information boundary (#397)
 

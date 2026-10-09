@@ -1339,6 +1339,73 @@ sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
 std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
+// Research only (STS_OOC_MCTS_COMBAT_RESOLVER=silver): resolves each imagined
+// combat by playing it with native Silver at a flat budget with the root prior
+// on. The six combat RNG streams are redrawn from the planner RNG (counters
+// kept), so the real hidden future never reaches the search, and the Silver
+// planner seed comes from the same RNG. Every combat is supported; a Silver
+// stall or failure returns UNSUPPORTED, which aborts that search as a CTM
+// support miss does.
+class SilverCombatTransitionSampler final : public CombatTransitionSampler {
+    int simulations_;
+public:
+    explicit SilverCombatTransitionSampler(int simulations) : simulations_(simulations) {}
+    CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+        return {true, {}};
+    }
+    bool modelsSmokeBombEscape() const override { return true; }
+    CombatRuntimeSample sample(const GameContext &source, const CombatPredictorInputV1 &,
+                               std::mt19937_64 &rng) const override {
+        GameContext gc = detachedCopy(source);
+        for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
+                            &gc.potionRng, &gc.shuffleRng}) {
+            const auto counter = stream->counter;
+            *stream = sts::Random(rng());
+            stream->counter = counter;
+        }
+        const std::uint64_t plannerSeed = rng(), agentSeed = rng();
+        namespace S = sts::search;
+        struct Scope {
+            bool disallow = S::g_disallowImaginedCombat;
+            std::optional<std::uint64_t> planner = S::g_nativeSilverPlannerSeedOverride;
+            std::optional<bool> prior = S::g_nativeSilverRootPriorOverride;
+            std::optional<S::NativeSilverBudgetOverride> budget = S::g_nativeSilverBudgetOverride;
+            std::function<void(const sts::BattleContext &, GameContext &)> raw = std::move(sts::g_onBattleExitRaw);
+            std::function<void(const sts::BattleContext &)> decision = std::move(S::g_onCombatDecision);
+            ~Scope() {
+                S::g_disallowImaginedCombat = disallow; S::g_nativeSilverPlannerSeedOverride = planner;
+                S::g_nativeSilverRootPriorOverride = prior; S::g_nativeSilverBudgetOverride = budget;
+                sts::g_onBattleExitRaw = std::move(raw); S::g_onCombatDecision = std::move(decision);
+            }
+        } scope;
+        S::g_disallowImaginedCombat = false;
+        S::g_nativeSilverPlannerSeedOverride = plannerSeed;
+        S::g_nativeSilverRootPriorOverride = true;
+        S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
+        std::optional<CombatTransitionPersistentState> rawPost;
+        sts::g_onBattleExitRaw = [&](const sts::BattleContext &, GameContext &g) {
+            if (!rawPost) rawPost = captureCombatTransitionState(g);
+        };
+        S::ScumSearchAgent2 agent;
+        agent.simulationCountBase = simulations_;
+        agent.rng.seed(static_cast<unsigned>(agentSeed));
+        sts::BattleContext bc;
+        try {
+            agent.playoutBattle(gc, bc);
+        } catch (const S::OocSearchUnsupported &) {
+            throw;
+        } catch (const std::exception &) {
+            return {};
+        }
+        if (bc.outcome == sts::Outcome::PLAYER_LOSS) return {CombatRuntimeSample::Outcome::DEATH, {}};
+        if (bc.outcome != sts::Outcome::PLAYER_VICTORY) return {};
+        bc.exitBattle(gc);
+        if (!rawPost) return {};
+        return {rawPost->smokeBombUsed ? CombatRuntimeSample::Outcome::ESCAPE
+                                       : CombatRuntimeSample::Outcome::VICTORY, *rawPost};
+    }
+};
+int liveSilverResolverSims = 0;
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
     x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -1684,11 +1751,38 @@ void configureLiveOocMcts() {
         if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_LOCK_TRACE cannot open output");
         std::cout << "[ooc-root-lock-observer ON full_budget=1 hypothetical_only=1]\n";
     }
+    // Research only: STS_OOC_MCTS_COMBAT_RESOLVER=silver replaces the CTM with
+    // native Silver at STS_OOC_MCTS_SILVER_SIMS per root, root prior on. Live
+    // combats stay plain: STS_SILVER_ROOT_PRIOR_SCOPE=override is required.
+    const char *resolver = std::getenv("STS_OOC_MCTS_COMBAT_RESOLVER");
+    const bool silverResolver = resolver != nullptr;
+    liveSilverResolverSims = 0;
+    if (silverResolver) {
+        if (std::string(resolver) != "silver")
+            throw std::runtime_error("STS_OOC_MCTS_COMBAT_RESOLVER must be silver when set");
+        for (const char *key : {"STS_OOC_MCTS_COMBAT_MODEL", "STS_OOC_MCTS_BREW_FALLBACK_MODEL",
+                                "STS_OOC_MCTS_ACTIVE_LIZARD", "STS_CTM_RESEARCH_CANDIDATE_MANIFEST"})
+            if (std::getenv(key))
+                throw std::runtime_error(std::string("STS_OOC_MCTS_COMBAT_RESOLVER=silver excludes ") + key);
+        const char *sims = std::getenv("STS_OOC_MCTS_SILVER_SIMS");
+        const std::string value = sims ? sims : "";
+        if (value.empty() || value.size() > 6 || value.find_first_not_of("0123456789") != std::string::npos
+                || std::stoi(value) < 1)
+            throw std::runtime_error("STS_OOC_MCTS_COMBAT_RESOLVER=silver requires STS_OOC_MCTS_SILVER_SIMS in 1..999999");
+        // The Silver backend parses its options after this point; check the environment.
+        const auto env = [](const char *key) { const char *v = std::getenv(key); return std::string(v ? v : ""); };
+        if (env("STS_SILVER_ROOT_PRIOR").empty() || env("STS_SILVER_ROOT_PRIOR_WEIGHT").empty()
+                || env("STS_SILVER_ROOT_PRIOR_SCOPE") != "override")
+            throw std::runtime_error("STS_OOC_MCTS_COMBAT_RESOLVER=silver requires STS_SILVER_ROOT_PRIOR and STS_SILVER_ROOT_PRIOR_SCOPE=override");
+        if (env("STS_SILVER_EXACT_ROOT_BUDGETS") != "1")
+            throw std::runtime_error("STS_OOC_MCTS_COMBAT_RESOLVER=silver requires STS_SILVER_EXACT_ROOT_BUDGETS=1");
+        liveSilverResolverSims = std::stoi(value);
+    }
     const char *artifactOverride = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
     if (artifactOverride && !*artifactOverride)
         throw std::runtime_error("STS_OOC_MCTS_COMBAT_MODEL cannot be empty when set");
-    const bool automaticDefaultStack=artifactOverride==nullptr;
-    const std::string artifact=automaticDefaultStack?
+    const bool automaticDefaultStack=artifactOverride==nullptr && !silverResolver;
+    const std::string artifact=silverResolver?"native_silver_root_prior":automaticDefaultStack?
         "selfplay/models/combat_transition_deepsets_lizard_t2.native":artifactOverride;
     const char *brewFallbackOverride = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
     if (brewFallbackOverride && !*brewFallbackOverride)
@@ -1705,7 +1799,13 @@ void configureLiveOocMcts() {
     if(activeLizardEnabled && brewFallbackArtifact.empty())
         throw std::runtime_error("STS_OOC_MCTS_ACTIVE_LIZARD=1 requires STS_OOC_MCTS_BREW_FALLBACK_MODEL");
     std::string researchCandidate;
-    if(!brewFallbackArtifact.empty()) {
+    if(silverResolver) {
+        liveSampler = std::make_shared<SilverCombatTransitionSampler>(liveSilverResolverSims);
+        std::cout << "[ooc-mcts-silver-resolver] silver_sims=" << liveSilverResolverSims
+            << " root_prior=" << std::getenv("STS_SILVER_ROOT_PRIOR")
+            << " root_prior_weight=" << std::getenv("STS_SILVER_ROOT_PRIOR_WEIGHT")
+            << " redraw=six_combat_streams live_root_prior=off\n";
+    } else if(!brewFallbackArtifact.empty()) {
         auto hybrid = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
             artifact,brewFallbackArtifact,activeLizardEnabled);
         if(hybrid->fastRuntime().researchCandidate())

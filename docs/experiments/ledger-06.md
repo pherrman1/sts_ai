@@ -15738,3 +15738,255 @@ finished seeds (`RESUMES.txt`).
 **Knowledge impact:** this entry, plus the default-off research mode
 `cardstrengthprobe`. No defaults changed. The CTM's A20 degeneracy is recorded
 here.
+
+## §408 — CTM vs low-sim Silver as combat-outcome forecasters: Silver more accurate on every field, CTM about 400x cheaper (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** could low-sim Silver with the synthetic
+root prior (§406) replace the CTM stack in OOC planning? Compare speed and
+accuracy on the same job.
+
+**Design:** [PREREG.md](evidence/ctm_vs_lowsim_silver_2026-10-09/PREREG.md)
+(v2 committed at `b2504ed3` before its seeds ran). New research mode
+`one_combat ctmsilvergen` (code `ccc3d62a`).
+- At every real fight of a source run (exact-10k Silver, frozen V4 OOC policy,
+  fair RNG), score forecasts of that fight's outcome. The truth is the source
+  fight on the real hidden future.
+- CTM: the production stack (DeepSets Lizard T2 + standard Brew fallback,
+  active-Lizard correction), as the OOC planner loads it. Expectation for
+  death/HP, and 32 `prepare`+`sample` draws of the full post-combat state.
+- Silver arms replay the entry state with the six combat RNG streams redrawn,
+  as a planner would: prior 256, prior 64 and plain 256 (4 replicates each),
+  10k (2 replicates; the noise floor). A control replay on the real future
+  must reproduce the source fight. The root prior (v1, w400) is switched per
+  thread; the source and 10k arms run without it.
+- Losses: death Brier, HP squared error (HP 0 on death), and per field the
+  Brier of the sample distribution (potions, relic counters, max HP, gold,
+  deck, stolen gold, all-but-HP joint, full joint).
+- Primary: prior 256 ×4 − CTM on death Brier and HP MSE, seed-bootstrap CI.
+  Co-primary (v2): the all-but-HP joint field Brier. Labels SILVER_BETTER,
+  CTM_BETTER, SILVER_NONINFERIOR (both CI upper bounds < 10% of the CTM loss)
+  or INCONCLUSIVE.
+- v2 seeds 62100000–62100255 (256 runs), four cloud workers × 4 cores. v1
+  (seeds 62000000–127, only HP and deaths) was stopped by Philipp after an
+  interim look at about 66 seeds and is not pooled. v2's HP and death results
+  are therefore a replication of a read already seen, not a blind test.
+
+**Integrity:** 256/256 sources valid; 6,816 fight states. The control replay
+matches every state with a valid source label. All 28 mismatches are Smoke
+Bomb escapes, whose source label is itself quarantined. 6,788 states have a
+valid source label; 6 more are dropped for every forecaster because a Silver
+replicate escaped with Smoke Bomb, leaving 6,782 valid states. The CTM supports
+6,750 of them. Over all 6,816 states the CTM's unsupported reasons are 34 Smoke
+Bomb (33 `smoke_bomb`, 1 `unsupported:smoke_bomb`), 19 active Lizard outside the
+qualified support, 4 HP envelope and 1 Writhing Mass/Ritual Dagger.
+
+**Deviation (independent review of #466):** the pre-registered HP truth
+(`sourceTerminalHp`) and the Silver arms' HP are battle-end HP, before
+end-of-combat healing (Burning Blood +6, Black Blood +12). The CTM forecasts the
+post-combat persistent HP, after that heal, so the as-registered HP loss scored
+the CTM against a target about 6 HP lower than what it predicts (on wins the
+control's post-combat HP exceeds battle-end HP by 6 in 4,276 states, 0 in 1,136
+where the heal is capped, 12 in 112). The as-registered HP numbers are kept
+below for the record but are **invalid for the CTM**. The corrected scoring
+(`hp_post` in `report.json`) uses post-combat HP on both sides: truth = the
+control replay's post-combat HP, Silver = the mean post-combat HP of its
+replicates, 0 on death; same states, own bootstrap generator (seed 0). The
+labels pair it with the unchanged death Brier. No label changes.
+
+**Result (6,750 CTM-supported states):**
+
+| forecaster | HP RMSE (post-combat) | HP bias | death Brier | all-but-HP Brier | CPU per forecast | as-registered HP RMSE / bias |
+|---|---|---|---|---|---|---|
+| CTM (expectation; samples for fields) | 11.7 | +2.3 | 0.0057 | 0.510 | 0.62 ms (one sample 0.53 ms) | 14.1 / +6.9 (invalid) |
+| prior 256 ×4 | 8.5 | −2.6 | 0.0045 | 0.402 | 251 ms | 8.8 / −2.8 |
+| prior 64 ×4 | 9.2 | −3.3 | 0.0054 | 0.447 | 91 ms | 9.6 / −3.8 |
+| plain 256 ×4 | 9.3 | −3.3 | 0.0055 | 0.446 | 207 ms | 9.7 / −3.6 |
+| 10k ×2 | 6.8 | 0.0 | 0.0056 | 0.269 | 4.5 s | 7.0 / 0.0 |
+| prior 256 ×1 | 10.4 | −2.7 | 0.0086 | – | 64 ms | 10.8 / −2.9 |
+
+- **Primary: SILVER_NONINFERIOR.** Post-combat HP MSE −65 [−75, −55] (CTM 137);
+  death Brier −0.0012 [−0.0026, +0.0002], below the 10% margin. As registered
+  (invalid for the CTM): HP MSE −121 [−133, −109], same label.
+- **Co-primary: SILVER_BETTER.** All-but-HP joint Brier −0.107 [−0.120, −0.094].
+- Every field separately is SILVER_BETTER for prior 256, prior 64 and plain 256
+  (CIs exclude 0). The field Brier estimates each Silver arm's
+  infinite-replicate distribution, so for "×4" it is an upper bound on what four
+  playouts deliver; this is also why the `outcome` field is SILVER_BETTER while
+  the K=4 death Brier is only non-inferior. Exact-match rates, CTM vs prior 256: potions 73% vs 81%,
+  relic counters 75% vs 81%, max HP 90% vs 94%, gold 96% vs 98%, full state
+  19% vs 37%.
+- A single playout loses on deaths (prior 256 ×1: CTM_BETTER, +0.0029
+  [+0.0008, +0.0051]), because one playout can only predict 0 or 1. Its
+  post-combat HP is still better than the CTM's (MSE −28 [−40, −16]).
+- Noise floor (half the 10k ×1 loss): post-combat HP MSE 32 (RMSE 5.7), death
+  Brier 0.0037.
+- The CTM error grows with act: post-combat HP RMSE 9.2 / 11.5 / 14.3 in acts
+  1–3 (bias +1.8 / +1.6 / +3.6), vs 6.5 / 8.8 / 10.1 (bias −2.0 / −2.8 / −3.1)
+  for prior 256 ×4.
+- Speed: the CTM is 404x cheaper than prior 256 ×4, about 100x cheaper than one
+  prior-256 playout and about 37x cheaper than one prior-64 playout.
+
+**Interpretation:**
+- Low-sim Silver is the more accurate combat model on every outcome field the
+  CTM predicts. On post-combat HP the CTM is slightly optimistic (+2.3) and
+  low-sim Silver slightly pessimistic (−2.6, it plays worse than 10k), but the
+  CTM's spread is larger (RMSE 11.7 vs 8.5). It also misses the potion and
+  relic-counter outcomes more often than a 64-sim playout.
+- The Run 2 retrain (Path B) was not tested here.
+- The prior matters only modestly for forecasting. Plain 256 is close to prior
+  256 on HP and loses mainly on potions.
+- Cost is the open question for retirement. OOC MCTS resolves many combats per
+  decision (512 simulations by default), so a 23–250 ms combat model costs
+  orders of magnitude more per decision than the 0.6 ms CTM. Whether the
+  accuracy gain pays for that needs a gameplay test at matched CPU.
+
+**Decision:** no default or code-path change; the CTM is not retired by this
+entry. Candidate follow-ups, each needing Philipp's go: score the Run 2 retrain
+(FAST0) on the same states, and a matched-CPU OOC MCTS gameplay pilot with a
+Silver combat resolver.
+
+**Evidence:** [README, pre-registration, worker script, report](evidence/ctm_vs_lowsim_silver_2026-10-09/README.md).
+
+**Knowledge impact:** this entry plus one paragraph in
+`docs/knowledge-base/evaluation/current-research.md`; the new mode is
+research-only and changes no default.
+
+## §410 — Run 2 (Path B) CTM on the §408 states: better than production on HP, deaths and potions, still behind low-sim Silver (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** does the Run 2 retrain (#418 Path B candidate `pathb-r2`, the stack in
+the live A/B) close the §408 gap to low-sim Silver?
+
+**Design:** [PREREG-R2.md](evidence/ctm_vs_lowsim_silver_2026-10-09/PREREG-R2.md) (committed at
+`140d80e4` before the rerun; renumbered from §409 afterwards). `ctmsilvergen` CTM-only mode
+(`REPLICATES=0`, code `a84be6bc`, binary `3d766792…`) reran the 256 §408 v2 seeds and scored the production
+CTM and the candidate (`FAST-final.native` `90806c25…`, `STD1-escape.native` `b9188de0…`, manifest
+`d9d8377e…`, active Lizard on) on every fight entry with the same draw seeds. Truth, Silver forecasts and
+losses come from §408 with its post-combat HP deviation. Paired seed bootstrap (10,000, seed 0).
+
+**Validity:** PASS. All 6,816 states reappeared with identical source fields and identical production CTM
+forecasts, and all production CTM samples were byte-identical to §408. 16/16 shards rc=0, on this thread's
+container.
+
+**Result (6,750 states both stacks support; the candidate supports every §408-scored state):**
+
+| forecaster | HP RMSE (post-combat) | HP bias | death Brier | all-but-HP Brier | potions Brier | CPU per forecast |
+|---|---|---|---|---|---|---|
+| production CTM | 11.7 | +2.3 | 0.0057 | 0.510 | 0.282 | 0.62 ms |
+| Run 2 CTM | 9.1 | +0.2 | 0.0050 | 0.495 | 0.259 | 0.59 ms (sample 0.48 ms) |
+| prior 256 ×4 | 8.5 | −2.6 | 0.0045 | 0.402 | 0.213 | 251 ms |
+
+- **Run 2 − production:** better on HP MSE (−53.5 [−60.1, −47.0]), death Brier (−0.0007 [−0.0011,
+  −0.0002]), all-but-HP joint (−0.015 [−0.020, −0.010]), potions, gold, the outcome field and the full joint.
+  No difference detected on max HP, relic counters, deck or stolen gold.
+- **Run 2 − prior 256 ×4:** deaths no difference detected (+0.0005 [−0.0008, +0.0019]). Worse on HP MSE
+  (+11.3 [+4.7, +18.1]) and on every post-state field (all-but-HP joint +0.092 [+0.080, +0.105]).
+- Per act, post-combat HP RMSE Run 2 / production / prior 256 ×4: 5.6 / 9.2 / 6.5 (act 1), 9.3 / 11.5 / 8.8
+  (act 2), 11.9 / 14.3 / 10.1 (act 3). Run 2 beats prior 256 ×4 on act-1 HP.
+- Support: the candidate also supports 38 states the production stack does not (Smoke Bomb escapes); it
+  does not support 19 unqualified active-Lizard states and 1 Writhing Mass/Ritual Dagger state.
+
+**Interpretation:** the retrain removes most of the production CTM's HP error and its optimism and
+improves deaths and potions, at the same cost. It does not reach four prior-256 playouts on HP after act 1
+or on the non-HP state (relic counters, max HP, gold), where low-sim Silver stays clearly better.
+
+**Decision:** descriptive; no default change. Whether the candidate replaces production is the #418 live
+A/B's question.
+
+**Evidence:** [report-r2.json](evidence/ctm_vs_lowsim_silver_2026-10-09/report-r2.json),
+[data-r2-sha256.txt](evidence/ctm_vs_lowsim_silver_2026-10-09/data-r2-sha256.txt); raw data
+`/mnt/project-files/ctm-vs-lowsim-silver/r2-a84be6bc/`.
+
+**Knowledge impact:** this entry and the §408 paragraph in
+`docs/knowledge-base/evaluation/current-research.md`.
+
+## §411 — OOC MCTS with a Silver combat resolver: no gain at matched simulations, worse at matched CPU (pilot, 2026-10-09)
+
+**Question (Philipp, 2026-10-09):** inside live OOC MCTS, does resolving imagined combats with low-sim
+Silver instead of the CTM win more runs, at matched OOC simulations and at matched CPU?
+
+**Design:** [PREREG.md](evidence/ooc_mcts_silver_resolver_2026-10-09/PREREG.md) (committed at `86459cbc`
+before any cohort seed; 16-worker layout at `a516b884`; renumbered from §410 afterwards). New research
+resolver `STS_OOC_MCTS_COMBAT_RESOLVER=silver` (code `f533ac8e`, binary `4a3c9ecc…`): every imagined combat
+is played by native Silver at 64 sims per root with the v1 root prior (w400), on a redraw of the six combat
+RNG streams from the planner RNG. Live combats stay plain exact-10k Silver
+(`STS_SILVER_ROOT_PRIOR_SCOPE=override`; an `off` run with and without the prior environment gave
+byte-identical traces). Arms, otherwise the #418 `prod` MCTS settings:
+- `prod`: production CTM, 2048 sims;
+- `silv2048`: Silver resolver, 2048 sims (matched OOC simulations);
+- `silvcpu`: Silver resolver, 164 sims (matched MCTS CPU: calibrated on seed 64009000 at 12.5x CPU per
+  simulation);
+- `off`: MCTS off (flat 10k).
+
+Seeds 64000000–127, 16 cloud workers × 4 CPU (Philipp's choice). Paired seed bootstrap (10,000, seed 410)
+and exact McNemar.
+
+**Integrity:** 112/112 units rc=0, no seed failure, all 16 workers on binary `4a3c9ecc` from run commit
+`a516b884`. Banner checks pass in every unit. The smoke (seed 64009001, all four arms rc=0) passed at
+16:19Z. Its prod, silvcpu and off arms had passed by 16:07Z, but the 16 workers started cohort units from
+16:15Z, before the silv2048 smoke arm finished: a deviation from the PREREG's smoke-before-launch. No unit
+was rerun. Four workers
+restarted setup after a tool timeout mid-build, with nothing written; their hashes matched.
+
+**Result (128 pairs per comparison):**
+
+| arm | win | floor | MCTS CPU per run | sims per run | imagined combats per run | support aborts |
+|---|---|---|---|---|---|---|
+| `prod` | 75.8% | 47.7 | 45 s | 117,735 | 21,109 | 91 |
+| `silv2048` | 78.9% | 48.8 | 455 s | 119,026 | 21,961 | 4 |
+| `silvcpu` | 67.2% | 47.5 | 36 s | 9,638 | 1,769 | 0 |
+| `off` | 78.1% | 48.7 | – | – | – | – |
+
+- **`silv2048` − `prod` (matched simulations): NO_DIFFERENCE_DETECTED,** +3.1 pp [−3.1, +9.4], McNemar
+  11/7, p = 0.48; floor +1.0 [−0.2, +2.2]; 25 vs 25 boss deaths. It cost 10x the MCTS CPU.
+- **`silvcpu` − `prod` (matched CPU): NO_DIFFERENCE_DETECTED,** −8.6 pp [−17.2, 0.0], McNemar 11/22,
+  p = 0.08; 32 vs 25 boss deaths. The realised match favoured `prod` slightly (45 vs 36 s MCTS CPU per run).
+- Descriptive: `silv2048` − `silvcpu` +11.7 pp [+3.1, +20.3], p = 0.011. No MCTS arm beats `off`: `prod`
+  −2.3 pp, `silv2048` +0.8 pp, `silvcpu` −10.9 pp [−21.1, −0.8] (p = 0.049). `off` has the fewest boss
+  deaths (16).
+
+**Interpretation:**
+- The better combat forecasts of §408 buy at most a few points inside OOC MCTS at equal simulations, and
+  the pilot cannot tell them from zero. At equal CPU the Silver resolver gets 12x fewer simulations, and the
+  lost search costs more than the better forecasts gain (point estimate −8.6 pp).
+- So retiring the CTM in favour of a Silver resolver is not supported at current costs. The CTM's value is
+  its speed.
+- As in §384, OOC MCTS on is not better than off with either resolver, so the combat model is not what
+  holds OOC MCTS back (**Inference**).
+
+**Decision:** descriptive pilot; no default change. OOC MCTS stays off, the CTM stays, and the resolver
+stays research-only (off by default).
+
+**Evidence:** [README, pre-registration, harness, report, calibration](evidence/ooc_mcts_silver_resolver_2026-10-09/README.md);
+raw data `/mnt/project-files/ooc-mcts-silver-resolver/w01..w16/`.
+
+**Knowledge impact:** this entry; the resolver is documented in
+`docs/knowledge-base/architecture/out-of-combat.md`, `combat-search.md` and
+`operations/environment-variables.md`; one paragraph in `docs/knowledge-base/evaluation/current-research.md`.
+
+## §415 — Self-play Step 0: own-play run-victory labels barely improve the OOC leaf's picks (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** before an expert-iteration loop (OOC MCTS plays games, run
+victory labels them, retrain leaf and prior, repeat), does the outcome-trained leaf pick better
+with more of our own games?
+**Design:** [PREREG](evidence/ooc_outcome_curve_20261009/PREREG.md) committed at `086fcf4b`
+before the run. Offline, no seeds, TEST closed. The §394 P0 recipe (X2-B recipe, public 457
+features) on nested 1/8..1/1 of the 696 #334 TRAIN sources: `SRC` source-trajectory rows only
+(87..696 own-play games) and `ALL` with counterfactual branch rows. Selection gain vs V4's
+choice on #334 VALIDATION siblings (1,329 decisions) and E3 VALIDATION (333 states), slope per
+doubling with source-clustered bootstrap. Rule on `SRC`: GO if a slope ≥ +0.005 with CI lower
+> 0 and the E3 card skip share falls; STOP if both CI uppers < +0.005.
+**Validity:** `ALL` at 1/1 reproduces §394 P0 exactly (trees 278/355/373, NLL 0.4237).
+**Result:** `INCONCLUSIVE`. `SRC` slope +0.0028 [−0.0010, +0.0066] (#334) and +0.0020 [−0.0038,
++0.0077] (E3). At 696 games: NLL 0.469 (`ALL` 0.424), E3 boss-relic gain −0.072 (uniform random
+−0.090), card −0.002, skip share 0.236→0.221. Below ~200 games the GBM stops at 1–3 trees.
+`ALL` has the only clearly positive slope: E3 boss relic +0.019 [+0.004, +0.033]; `ALL` at 174
+sources matches `SRC` at 696 on NLL.
+**Interpretation (Inference):** plain games labelled with the run outcome add about +0.003
+selection gain per doubling; closing the E3 gap to V4 (−0.037) at the upper CI would need
+~22k games (~680 CPU-h at ~110 CPU-s per OOC-MCTS game), at the point estimate far more. The
+ranking signal sits in paired counterfactual branches, which E3/#334 already collect.
+**Decision:** Philipp chose to shelve the self-play loop (no iteration 0, seeds 66M unused).
+
+**Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
+
+**Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.

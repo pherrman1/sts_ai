@@ -52,6 +52,7 @@ namespace sts::search {
             // Research-only root prior bonus (SilverSearcher::rootPrior).
             std::string rootPriorPath;
             double rootPriorWeight = 0;
+            bool rootPriorOverrideOnly = false;
         };
         Options g_options;
         CombatValueNet g_rootPriorNet;
@@ -739,6 +740,15 @@ namespace sts::search {
                 throw std::runtime_error(std::string("STS_SILVER_ROOT_PRIOR: cannot load policy trees from ") + path);
             g_options.rootPriorPath = path;
         }
+        // STS_SILVER_ROOT_PRIOR_SCOPE=override keeps the prior off unless a thread
+        // override turns it on (live combats stay plain; research only).
+        if (const char *scope = std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE"); scope && *scope) {
+            if (std::string(scope) == "override") g_options.rootPriorOverrideOnly = true;
+            else if (std::string(scope) != "all")
+                throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE must be all or override");
+            if (g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
+        }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
         }
@@ -779,6 +789,10 @@ namespace sts::search {
     }
 
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher) {
+        if (g_nativeSilverRootPriorOverride == false) return {};
+        if (!g_nativeSilverRootPriorOverride && g_options.rootPriorOverrideOnly) return {};
+        if (g_nativeSilverRootPriorOverride == true && g_options.rootPriorPath.empty())
+            throw std::runtime_error("root prior override requires STS_SILVER_ROOT_PRIOR");
         if (g_options.rootPriorPath.empty() || searcher.prepareRootActions() < 2) return {};
         const auto &state = searcher.rootSearchState();
         thread_local std::vector<float> features;
@@ -859,6 +873,7 @@ namespace sts::search {
 
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
