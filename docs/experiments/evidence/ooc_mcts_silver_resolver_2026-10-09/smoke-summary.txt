@@ -1,0 +1,8 @@
+tag=off-64009001 rc=0 start=2026-10-09T16:06:03Z end=2026-10-09T16:06:40Z
+tag=prod-64009001 rc=0 start=2026-10-09T16:04:18Z end=2026-10-09T16:06:03Z
+tag=silv2048-64009001 rc=0 start=2026-10-09T16:06:41Z end=2026-10-09T16:19:09Z
+tag=silvcpu-64009001 rc=0 start=2026-10-09T16:02:26Z end=2026-10-09T16:04:18Z
+BEST                    win%=  0.0   avg_floor= 33.0   avg_hp_end=  0.0   cpu_sec/run=37.23   wall=37.2s
+BEST                    win%=100.0   avg_floor= 51.0   avg_hp_end= 44.0   cpu_sec/run=104.46   wall=104.5s
+BEST                    win%=100.0   avg_floor= 51.0   avg_hp_end= 62.0   cpu_sec/run=748.40   wall=748.4s
+BEST                    win%=100.0   avg_floor= 51.0   avg_hp_end= 57.0   cpu_sec/run=111.63   wall=111.6s

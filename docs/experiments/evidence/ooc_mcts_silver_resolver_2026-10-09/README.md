@@ -5,6 +5,8 @@
   `CODE_COMMIT` is the build commit; [binary.sha256](binary.sha256) its Release `one_combat`.
 - Calibration trace rows (seed 64009000): [prod](calibration-prod.mcts.csv),
   [silv2048](calibration-silv2048.mcts.csv).
-- Analysis: `python3 tools/analyze_silver_resolver_pilot.py report.json /mnt/project-files/ooc-mcts-silver-resolver/w0{1,2,3,4}`.
+- [report.json](report.json): the analysis on all 16 workers; [smoke-summary.txt](smoke-summary.txt): the
+  pre-launch smoke (seed 64009001); [data-sha256.txt](data-sha256.txt): hashes of the result CSVs.
+- Analysis: `python3 tools/analyze_silver_resolver_pilot.py report.json $(for w in $(seq -w 1 16); do echo /mnt/project-files/ooc-mcts-silver-resolver/w$w; done)`.
 
-Raw data (not in git): `/mnt/project-files/ooc-mcts-silver-resolver/w01..w04/`.
+Raw data (not in git): `/mnt/project-files/ooc-mcts-silver-resolver/w01..w16/`.

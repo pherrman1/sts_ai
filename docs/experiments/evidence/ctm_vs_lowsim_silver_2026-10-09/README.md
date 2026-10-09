@@ -6,6 +6,9 @@
   section is the review deviation (HP scored as post-combat HP for every forecaster); the
   as-registered `supported`/`paired_vs_ctm` HP numbers are invalid for the CTM (ledger §408).
 - [data-sha256.txt](data-sha256.txt): hashes of the raw shard CSVs.
+- §410 Run 2 CTM rescoring: [PREREG-R2.md](PREREG-R2.md), [worker_r2.sh](worker_r2.sh),
+  [teacher-r2.json](teacher-r2.json), [report-r2.json](report-r2.json) (`tools/analyze_ctm_r2.py`),
+  [data-r2-sha256.txt](data-r2-sha256.txt); raw data `/mnt/project-files/ctm-vs-lowsim-silver/r2-a84be6bc/`.
 
 Raw data (not in git, 46 MB):
 `/mnt/project-files/ctm-vs-lowsim-silver/v2-ccc3d62a/w00..w03/shard0..3.*`
