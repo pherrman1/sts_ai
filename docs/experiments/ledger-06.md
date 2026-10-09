@@ -15492,3 +15492,81 @@ uncorrected.
 **Decision:** no model or default change. #346 stays open.
 
 **Knowledge impact:** this entry and the evidence folder.
+
+## §406 — Silver root prior v1 at low sim budgets: about +19 pp at 32–128 sims, no gain from 2k up (2026-10-09)
+
+**Question:** §399 found no online gain from the native root prior at 2k sims,
+and §404 found the offline gain concentrated at 256 sims. Does the prior make a
+very cheap Silver search play like a larger one, and how does prior search at
+several budgets compare with plain 10k?
+
+**Design:** four pre-registrations on Philipp's asks (2026-10-09 10:16, 10:21,
+10:38 and 11:53 UTC), none committed beforehand. Only the screen's file clearly
+predates its arms. The other three were written in the same command that
+launched their arms, and their shared-folder stamps are 5 s after the first
+arm started (probably copy times), so the order cannot be proven either way.
+- Binary and prior as §399: commit 51937c6a, one_combat sha256 c3547dc4…,
+  v1 GBM prior `prior-natpert.compact.txt` (sha256 573305c4…), weight 400.
+  Only v1 has a native scorer. w = 400 was tuned offline at 256 sims (§397)
+  and was not re-tuned for any other budget.
+- The sidecars' `executableGitSha` is the checkout HEAD (d4ca7515, or 0f5adc4e
+  for the low budgets), not the binary. The binary is identified by
+  `sha256.txt`. `models/v_win_trees.txt` and `v_rich_trees.txt` are identical at
+  all three commits.
+- Run settings: A0, fair play, keys skipped, default OOC policy, `bestbench`,
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1` (flat budgets, no learned stopping), 4 CPUs.
+- Screen: seeds 61000000-61000031, arms plain 256, prior 256 and plain 2k.
+  Pass if prior 256 − plain 256 >= +3 wins.
+- Confirmation: seeds 61001000-61001127, same arms. CONFIRMED needs the prior
+  256 − plain 256 CI above 0 and prior 256 − plain 2k >= −5 pp.
+- Sweep (descriptive, same 128 seeds): prior 512, 1k, 2k and 4k, plus plain 10k.
+  A prior arm "matches 10k" if its CI vs plain 10k includes 0 and the point
+  estimate is >= −3 pp; any match needs a larger confirmation before it is
+  claimed.
+- Low budgets (descriptive, same 128 seeds): plain and prior at 32, 64 and 128.
+- Statistics: paired seed bootstrap, 10,000 resamples, RNG seed 0. CPU s/run
+  is the mean per-run `sec` column, with 4 runs going at once.
+
+**Result:**
+- Screen (32 seeds): plain 256 13/32, prior 256 19/32, plain 2k 19/32. This is
+  the pre-registered PASS (+6 wins, 10 vs 4 discordant, sign test p ≈ 0.18).
+- Confirmation (128 seeds): label PRIOR_HELPS_ONLY_VS_256. Prior 256 − plain
+  256 is +11.7 pp [+1.6, +21.9], but prior 256 − plain 2k is −14.8 pp
+  [−24.2, −4.7].
+
+| sims | plain | prior | prior − plain | prior vs plain 10k | mean floor plain / prior | CPU s/run plain / prior |
+|---|---|---|---|---|---|---|
+| 32 | 25.8% | 44.5% | +18.8 [+7.8, +29.7] | −35.9 [−45.3, −26.6] | 38.5 / 43.3 | 0.19 / 0.43 |
+| 64 | 37.5% | 56.2% | +18.8 [+8.6, +28.9] | −24.2 [−33.6, −14.8] | 41.4 / 45.6 | 0.34 / 0.62 |
+| 128 | 44.5% | 63.3% | +18.8 [+8.6, +28.9] | −17.2 [−25.8, −8.6] | 43.2 / 46.8 | 0.66 / 0.98 |
+| 256 | 54.7% | 66.4% | +11.7 [+1.6, +21.9] | −14.1 [−23.4, −4.7] | 44.6 / 47.8 | 1.32 / 1.71 |
+| 512 | — | 68.8% | — | −11.7 [−20.3, −3.1] | — / 47.7 | — / 3.05 |
+| 1,000 | — | 73.4% | — | −7.0 [−14.1, +0.8] | — / 48.6 | — / 5.78 |
+| 2,000 | 81.2% | 84.4% | +3.1 [−4.7, +10.9] | +3.9 [−3.9, +11.7] | 49.2 / 49.0 | 11.30 / 11.71 |
+| 4,000 | — | 81.2% | — | +0.8 [−7.0, +8.6] | — / 49.2 | — / 23.71 |
+| 10,000 | 80.5% | — | — | ref | 49.2 / — | 61.77 / — |
+
+- Screen mean floor (32 seeds): plain 256 45.1, prior 256 47.0, plain 2k 47.5.
+- Pre-registered "matches 10k" rule: prior 2k (+3.9) and prior 4k (+0.8)
+  qualify; prior 1k (−7.0) does not. Per the rule, neither match is claimed
+  without a larger confirmation.
+
+**Interpretation:**
+- At 32 to 128 sims the prior adds about 19 pp. Post hoc, not pre-registered:
+  prior 64 (56.2%) vs plain 256 (54.7%) is +1.6 pp [−7.8, +11.7] at about half
+  the CPU. The gain narrows to +12 pp at 256 and is
+  not resolved at 2k, which repeats §399.
+- No budget of 1k or below with the prior matches plain 2k or plain 10k. The
+  32-seed tie of prior 256 with plain 2k did not replicate.
+- Under flat budgets, plain 2k ties plain 10k on these seeds, so above 2k there
+  was no headroom for the prior to close. n = 128 resolves only differences of
+  about ±8 pp.
+- Inference: the v1 prior is useful only where search compute is very tight,
+  for example as a fast combat evaluator inside other searches. A follow-up
+  thread compares low-sim prior Silver with the CTM stack. The option stays
+  default off.
+
+**Evidence:** [README, pre-registrations, scripts, CSVs, analysis](evidence/silver_root_prior_lowsim_20261009/README.md).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
