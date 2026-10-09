@@ -1,0 +1,769 @@
+{
+ "schema": "boss_deaths_default_347_selection_v1",
+ "plannerReps": 8,
+ "source": {
+  "seeds": "66000000..66000255",
+  "runFilesSha256": {
+   "default0.csv": "4c01bfd6fe27459b0b5ea1d7d7ef3cc0b9fde7c08232eba0dfa611156f7ae2f6",
+   "default1.csv": "4e5239dcaab949f40919cb630b11296c6d9b56a9b9e3df48da8c78215293975a",
+   "default2.csv": "e868c114714ee5738e4880a7ca0a0036bbc7851da134ebf4a6b14aa85fcfa672",
+   "default3.csv": "3b78494b7a6261423ff6a93ddcdb8f46b481b2e0df2836fef9b25d9f0638d51e"
+  }
+ },
+ "rule": {
+  "eligible": "won == 0 and deathEncounter is an act boss",
+  "order": "ascending sha256('boss-deaths-347-v1:{seed}:{act}'), first 48",
+  "plannerSeedDomain": "boss-deaths-347-planner-v1:{runSeed}:{act}:{rep}"
+ },
+ "census": {
+  "runs": 256,
+  "wins": 214,
+  "losses": 42,
+  "bossDeaths": 35,
+  "bossDeathsByAct": {
+   "1": 1,
+   "2": 13,
+   "3": 21
+  },
+  "cpuSeconds": 5107.97842
+ },
+ "eligibleCount": 35,
+ "selected": [
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000005,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000005,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 76,
+    "fightsLost": 1,
+    "deathCombat": 22,
+    "deathEncounter": 54
+   },
+   "rankKey": "9dff66ae4146bab5b21aaf6e1d81acde8b261e298f0f41ce8590f4b2840b24dc",
+   "stateId": "D-66000005-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000008,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000008,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 90,
+    "fightsLost": 1,
+    "deathCombat": 27,
+    "deathEncounter": 54
+   },
+   "rankKey": "eae82ccbdb812ff520d306d1411dd7bcff07bc9f21176f2115fbe1885d128298",
+   "stateId": "D-66000008-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000017,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000017,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 110,
+    "fightsLost": 1,
+    "deathCombat": 22,
+    "deathEncounter": 55
+   },
+   "rankKey": "b7e3b7db85e1297f0569faf55282e101be4c61995f9e230f27cd8bca1341ba7e",
+   "stateId": "D-66000017-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000020,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000020,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 99,
+    "fightsLost": 1,
+    "deathCombat": 29,
+    "deathEncounter": 54
+   },
+   "rankKey": "1a75a73c6e170a9bdcd38a7d9e59ac10722c9e65c2919e6abd51aa35935355f3",
+   "stateId": "D-66000020-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000029,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000029,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 82,
+    "fightsLost": 1,
+    "deathCombat": 19,
+    "deathEncounter": 38
+   },
+   "rankKey": "690d21d5c67ca7d93c91b2ad1892348022020cda40c016478f276567b0ee17a1",
+   "stateId": "D-66000029-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000035,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000035,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 80,
+    "fightsLost": 1,
+    "deathCombat": 28,
+    "deathEncounter": 55
+   },
+   "rankKey": "1f72e801f9da651c21aa8fc8424194457345594c351775251d2510ece3eb8f8f",
+   "stateId": "D-66000035-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000045,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000045,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 82,
+    "fightsLost": 1,
+    "deathCombat": 29,
+    "deathEncounter": 53
+   },
+   "rankKey": "e27f3b2b7257b61f064ebb31b9e5673f35be7df12c8c9759d5bd44a9da5ebfd0",
+   "stateId": "D-66000045-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000047,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000047,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 89,
+    "fightsLost": 1,
+    "deathCombat": 22,
+    "deathEncounter": 55
+   },
+   "rankKey": "e7a68e3a683fb7db371800acce758a2c3b82b8d1c1b4db910f685109c4864122",
+   "stateId": "D-66000047-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000052,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000052,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 81,
+    "fightsLost": 1,
+    "deathCombat": 20,
+    "deathEncounter": 54
+   },
+   "rankKey": "7381ef5aa016701299ab18c0284bfe02a2e9996056341c474c2d6d06b50c761c",
+   "stateId": "D-66000052-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000054,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000054,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 80,
+    "fightsLost": 1,
+    "deathCombat": 18,
+    "deathEncounter": 39
+   },
+   "rankKey": "622c4edda6bcd5e6ce7a322d6758bd9882cdcf4151f1a30d86702d7008811047",
+   "stateId": "D-66000054-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000058,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000058,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 98,
+    "fightsLost": 1,
+    "deathCombat": 29,
+    "deathEncounter": 53
+   },
+   "rankKey": "7d5fba1bbbb4bda3a851131daa671a978547c9b03a31b37916f7674b04c938fc",
+   "stateId": "D-66000058-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000060,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000060,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 80,
+    "fightsLost": 1,
+    "deathCombat": 30,
+    "deathEncounter": 54
+   },
+   "rankKey": "4b01c3a6abdce68e335c1ed30e9aef60249968ab70912a83082b6660999a381b",
+   "stateId": "D-66000060-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000068,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000068,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 90,
+    "fightsLost": 1,
+    "deathCombat": 28,
+    "deathEncounter": 54
+   },
+   "rankKey": "8164054d4d12673701e029cf2c8c2b5ffd17c4ff6eb2a8c2dc6417fcb1f73794",
+   "stateId": "D-66000068-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000071,
+   "act": 1,
+   "boss": "THE_GUARDIAN",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000071,
+    "won": 0,
+    "floor": 16,
+    "act": 1,
+    "hpEnd": 0,
+    "maxHp": 85,
+    "fightsLost": 1,
+    "deathCombat": 9,
+    "deathEncounter": 19
+   },
+   "rankKey": "00673e7d45fd7c4bc1002fe01bc76ddd84b4714c754f93799a6242269f002f58",
+   "stateId": "D-66000071-a1"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000073,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000073,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 83,
+    "fightsLost": 1,
+    "deathCombat": 23,
+    "deathEncounter": 54
+   },
+   "rankKey": "0c2d486ab890bfbdfec226e3b5ec9a632d7fccff0c8dbabd3d1b74eb7176dbba",
+   "stateId": "D-66000073-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000082,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000082,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 98,
+    "fightsLost": 1,
+    "deathCombat": 20,
+    "deathEncounter": 54
+   },
+   "rankKey": "aa422e983a4d7b87e06a204714bfa93744cc578724f6de85f3e76d45c3fef6ff",
+   "stateId": "D-66000082-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000090,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000090,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 56,
+    "fightsLost": 1,
+    "deathCombat": 27,
+    "deathEncounter": 53
+   },
+   "rankKey": "0832468ad2b793d930f03261dda547cbae73ed47ce86f031c78e3ceca226fcd6",
+   "stateId": "D-66000090-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000099,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000099,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 80,
+    "fightsLost": 1,
+    "deathCombat": 19,
+    "deathEncounter": 38
+   },
+   "rankKey": "0328dfbc2741a2f43a852ea881e98fd0604b25a24910ddee4396147b79d6ce26",
+   "stateId": "D-66000099-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000109,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000109,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 85,
+    "fightsLost": 1,
+    "deathCombat": 19,
+    "deathEncounter": 39
+   },
+   "rankKey": "6c3ab5b084ed71a72aaa0f8be205fa45a8010265143f691a4aeeee014aaebbd3",
+   "stateId": "D-66000109-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000111,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000111,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 102,
+    "fightsLost": 1,
+    "deathCombat": 15,
+    "deathEncounter": 37
+   },
+   "rankKey": "24c505ad40206772b7c4d6ff335c0bda5fd79e1facd619c3c176eca3ad9f9a71",
+   "stateId": "D-66000111-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000112,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000112,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 121,
+    "fightsLost": 1,
+    "deathCombat": 19,
+    "deathEncounter": 39
+   },
+   "rankKey": "256bcb93c887bb76606a63868275a84a5df0a7de05001b7c719c785e6eb1fc85",
+   "stateId": "D-66000112-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000117,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000117,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 86,
+    "fightsLost": 1,
+    "deathCombat": 27,
+    "deathEncounter": 55
+   },
+   "rankKey": "66728aaca785ace6c4e4d1abbfd7be945e45a69a763bc6fe8d263b387286a299",
+   "stateId": "D-66000117-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000126,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000126,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 85,
+    "fightsLost": 1,
+    "deathCombat": 17,
+    "deathEncounter": 39
+   },
+   "rankKey": "5d50b0b228a08892ca307479d4bf30abc2febd10d7edc94e66a6f2bdb9786ffe",
+   "stateId": "D-66000126-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000130,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000130,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 84,
+    "fightsLost": 1,
+    "deathCombat": 29,
+    "deathEncounter": 53
+   },
+   "rankKey": "6682a5a2412894d82c25d7cf3b7b8e1f87ccc21a86b2e958fc2f0a464204fa59",
+   "stateId": "D-66000130-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000140,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000140,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 133,
+    "fightsLost": 1,
+    "deathCombat": 17,
+    "deathEncounter": 37
+   },
+   "rankKey": "1bd5c119f4f977484335dfb95a0ef0a085b3a7d408d54239efe6b3724783a7ac",
+   "stateId": "D-66000140-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000145,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000145,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 108,
+    "fightsLost": 1,
+    "deathCombat": 19,
+    "deathEncounter": 39
+   },
+   "rankKey": "3f7b714d3f920fc30df11509ebeb51568dcd597da96c3b6a1355509c01811f2d",
+   "stateId": "D-66000145-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000146,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000146,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 103,
+    "fightsLost": 1,
+    "deathCombat": 26,
+    "deathEncounter": 55
+   },
+   "rankKey": "2a48a377918d3bef176d364cd2f8f651a86dbd0e9e9550d0bebde3016acfcc4e",
+   "stateId": "D-66000146-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000160,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000160,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 73,
+    "fightsLost": 1,
+    "deathCombat": 25,
+    "deathEncounter": 53
+   },
+   "rankKey": "bf1ff518b57777eaad8bc7d5108f38c25a9623d741354a6f9e867b225fed2ecf",
+   "stateId": "D-66000160-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000167,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000167,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 94,
+    "fightsLost": 1,
+    "deathCombat": 18,
+    "deathEncounter": 39
+   },
+   "rankKey": "9d642e18cfad86b9fcddd63792e391f781aeb91ee9ab63b00eb120f0e95824f3",
+   "stateId": "D-66000167-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000175,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000175,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 84,
+    "fightsLost": 1,
+    "deathCombat": 28,
+    "deathEncounter": 53
+   },
+   "rankKey": "27bdf322850daaf51ff482baa89a5a1c90c864be958c80c6321a2132b607f74c",
+   "stateId": "D-66000175-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000185,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000185,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 75,
+    "fightsLost": 1,
+    "deathCombat": 21,
+    "deathEncounter": 54
+   },
+   "rankKey": "3023fb26f2c18080395fdf92da5f5d14c5d0ad45910b6893c7841a3f68077cbb",
+   "stateId": "D-66000185-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000211,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000211,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 77,
+    "fightsLost": 1,
+    "deathCombat": 17,
+    "deathEncounter": 38
+   },
+   "rankKey": "89fe3a5aa943f3b879703ec5c98ca58f42aba207ae4f16c26e161b1be433e166",
+   "stateId": "D-66000211-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000212,
+   "act": 2,
+   "boss": "CHAMP",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000212,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 116,
+    "fightsLost": 1,
+    "deathCombat": 15,
+    "deathEncounter": 39
+   },
+   "rankKey": "959464005ef44be0f8ffac9a6bb103d5b627216b6955cf3feb88452cfd04fcaa",
+   "stateId": "D-66000212-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000226,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000226,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 80,
+    "fightsLost": 1,
+    "deathCombat": 19,
+    "deathEncounter": 37
+   },
+   "rankKey": "5e1ecdcb92bee6c7da78d50171f628178461f5c56f431fcec49e2eb76b178489",
+   "stateId": "D-66000226-a2"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66000244,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 66000244,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 84,
+    "fightsLost": 1,
+    "deathCombat": 24,
+    "deathEncounter": 54
+   },
+   "rankKey": "1e4fbce0a267961847f64dfff0dd29159af335fb91a41a0e3da0790b82445f5f",
+   "stateId": "D-66000244-a3"
+  }
+ ],
+ "dropped": 0
+}
