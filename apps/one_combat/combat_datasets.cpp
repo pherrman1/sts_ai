@@ -4193,6 +4193,12 @@ static std::uint64_t bossPrepPlannerSeed(std::uint64_t runSeed, int act, int rep
                        nullptr, 16);
 }
 
+static std::uint64_t bossDeathsPlannerSeed(std::uint64_t runSeed, int act, int rep) {
+    return std::stoull(vwinSha256("boss-deaths-347-planner-v1:" + std::to_string(runSeed) + ":"
+                                  + std::to_string(act) + ":" + std::to_string(rep)).substr(0, 16),
+                       nullptr, 16);
+}
+
 // Cheap descriptive record of a boss entry (no derived score).
 static nlohmann::json bossPrepEntryDescriptor(const GameContext &gc, const PathHistory &path) {
     nlohmann::json potions = nlohmann::json::array(), relics = nlohmann::json::array(),
@@ -4345,11 +4351,15 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
     if (nEntries != 1) throw std::runtime_error("boss rescue #347: one entry per process");
     const auto selection = nlohmann::json::parse(std::ifstream(selectionPath));
     const std::string selectionSchema = selection.value("schema", "");
-    // prep: #347 boss-preparation R-match; otherwise the frozen #425 rescue protocol.
+    // prep: #347 boss-preparation R-match; deaths: default-stack boss deaths
+    // replayed under the default learned-stop Silver; otherwise the frozen #425
+    // rescue protocol.
     const bool prep = selectionSchema == "boss_preparation_rmatch_347_selection_v1";
-    if (!prep && selectionSchema != "boss_budget_rescue_347_pilot_selection_v1")
+    const bool deaths = selectionSchema == "boss_deaths_default_347_selection_v1";
+    const bool fresh = prep || deaths;
+    if (!fresh && selectionSchema != "boss_budget_rescue_347_pilot_selection_v1")
         throw std::runtime_error("boss rescue #347: unexpected selection schema");
-    const int reps = prep ? selection.at("plannerReps").get<int>() : 4;
+    const int reps = fresh ? selection.at("plannerReps").get<int>() : 4;
     if (reps < 1 || reps > 8) throw std::runtime_error("boss rescue #347: plannerReps must be 1..8");
     nlohmann::json spec;
     for (const auto &candidate : selection.at("selected"))
@@ -4361,22 +4371,32 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
     const auto &historical = spec.at("historicalRow");
     // The #425 protocol requires a lost source fight and has no other option.
     if (!prep && spec.contains("expectedSourceWon"))
-        throw std::runtime_error("boss rescue #347: expectedSourceWon is not part of the rescue schema");
+        throw std::runtime_error("boss rescue #347: expectedSourceWon is not part of this schema");
     const int expectedSourceWon = prep ? spec.at("expectedSourceWon").get<int>() : 0;
     if (expectedSourceWon != 0 && expectedSourceWon != 1)
         throw std::runtime_error("boss rescue #347: expectedSourceWon must be 0 or 1");
     const auto plannerSeed = [&](int rep) {
-        return prep ? bossPrepPlannerSeed(seed, act, rep) : bossRescuePlannerSeed(stateId, rep);
+        return deaths ? bossDeathsPlannerSeed(seed, act, rep)
+            : prep ? bossPrepPlannerSeed(seed, act, rep) : bossRescuePlannerSeed(stateId, rep);
     };
-    const std::string freshKind = prep ? "fresh" : "A", repeatKind = prep ? "fresh_repeat" : "A_repeat";
+    const std::string freshKind = fresh ? "fresh" : "A", repeatKind = fresh ? "fresh_repeat" : "A_repeat";
 
-    // The process must run the recorded pilot arm with flat exact-10k Silver.
     if (one_combat::liveOocMctsEnabled() != (sourceArm == "mcts"))
         throw std::runtime_error("boss rescue #347: STS_OOC_MCTS does not match source arm " + sourceArm);
-    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+    if (deaths) {
+        // The default-stack source ran plain learned stopping (10k cap) with OOC MCTS off.
+        if (sourceArm != "default" || !search::nativeSilverBackendInstalled()
+            || search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
+            || !search::nativeSilverLearnedStopEnabled() || search::nativeSilverLearnedStopBossFallback()
+            || search::nativeSilverLearnedStopBossMax() > 10000
+            || search::nativeSilverReuseCap() != 32768 || g_stopAfterAct != 3)
+            throw std::runtime_error("boss rescue #347: boss-deaths schema requires the default arm with plain learned-stop Silver, reuse cap 32768, STS_STOP_AFTER_ACT=3");
+    } else if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
         || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled()
-        || search::nativeSilverReuseCap() != 32768 || g_stopAfterAct != 3)
+        || search::nativeSilverReuseCap() != 32768 || g_stopAfterAct != 3) {
+        // The #425 and R-match protocols run flat exact-10k Silver.
         throw std::runtime_error("boss rescue #347: requires exact-root-budget Silver, adaptive and learned stopping off, reuse cap 32768, STS_STOP_AFTER_ACT=3");
+    }
     const std::string rowsPath = outPrefix + ".rows.csv", entryPath = outPrefix + ".entry.json";
     for (const auto &path : {rowsPath, entryPath})
         if (std::filesystem::exists(path))
@@ -4413,8 +4433,8 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
         rows.push_back(bossRescueRun(source.entry, "control", "A", 10000, -1, std::nullopt));
         for (int rep = 0; rep < reps; ++rep) {
             const auto planner = plannerSeed(rep);
-            if (prep) {
-                rows.push_back(bossRescueRun(source.entry, freshKind, "10k", 10000, rep, planner));
+            if (fresh) {
+                rows.push_back(bossRescueRun(source.entry, freshKind, deaths ? "learned" : "10k", 10000, rep, planner));
                 continue;
             }
             const std::vector<std::pair<std::string, int>> order = rep % 2 == 0
@@ -4424,7 +4444,8 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
                 rows.push_back(bossRescueRun(source.entry, arm, arm, budget, rep, planner));
         }
         rows.push_back(bossRescueRun(source.entry, "control_repeat", "A", 10000, -1, std::nullopt));
-        rows.push_back(bossRescueRun(source.entry, repeatKind, prep ? "10k" : "A", 10000, 0, plannerSeed(0)));
+        rows.push_back(bossRescueRun(source.entry, repeatKind, deaths ? "learned" : prep ? "10k" : "A", 10000, 0,
+                                     plannerSeed(0)));
 
         const auto &control = rows.front();
         const bool controlParity = control.result.valid && control.result.won == source.won
@@ -4448,8 +4469,12 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
         bool budgets = true, valid = true;
         for (const auto &row : rows) {
             digests = digests && row.detail.startDigest == source.startDigest;
-            budgets = budgets && row.detail.minRootSteps == row.budget && row.detail.maxRootSteps == row.budget
-                && row.detail.searchSteps == static_cast<std::int64_t>(row.result.decisions) * row.budget
+            // Learned stopping stops at a checkpoint up to the 10k cap and skips
+            // one-action roots; flat rows spend the exact budget at every root.
+            budgets = budgets && (deaths
+                ? row.detail.minRootSteps >= 1 && row.detail.maxRootSteps <= row.budget
+                : row.detail.minRootSteps == row.budget && row.detail.maxRootSteps == row.budget
+                    && row.detail.searchSteps == static_cast<std::int64_t>(row.result.decisions) * row.budget)
                 && static_cast<std::int64_t>(row.result.simulations) == row.detail.searchSteps;
             valid = valid && row.result.valid;
         }
@@ -4513,7 +4538,8 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
         plannerSeeds.push_back(hex.str());
     }
     nlohmann::json entryJson = {
-        {"schema", prep ? "boss_preparation_rmatch_347_entry_v1" : "boss_budget_rescue_347_pilot_entry_v1"},
+        {"schema", deaths ? "boss_deaths_default_347_entry_v1"
+            : prep ? "boss_preparation_rmatch_347_entry_v1" : "boss_budget_rescue_347_pilot_entry_v1"},
         {"stateId", stateId}, {"stratum", spec.at("stratum")}, {"sourceArm", sourceArm}, {"seed", seed},
         {"act", act}, {"expectedBoss", boss},
         {"capturedBoss", source.encounterEnum}, {"floor", source.captured ? source.entry.floor : -1},
@@ -4524,8 +4550,8 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
             {"postExitHp", source.postExitHp}, {"postExitDigest", source.postExitDigest},
             {"decisions", source.decisions}, {"simulations", source.simulations},
             {"traceLen", source.trace.size()}, {"cpuSeconds", source.cpuSeconds}}},
-        {"plannerSeedDomain", prep ? "boss-prep-347-planner-v1:{runSeed}:{act}:{rep}"
-                                   : "boss-rescue-347-planner-v1:{stateId}:{rep}"},
+        {"plannerSeedDomain", deaths ? "boss-deaths-347-planner-v1:{runSeed}:{act}:{rep}"
+            : prep ? "boss-prep-347-planner-v1:{runSeed}:{act}:{rep}" : "boss-rescue-347-planner-v1:{stateId}:{rep}"},
         {"plannerSeeds", plannerSeeds}, {"checks", checks},
         {"status", failures.empty() ? "VALID" : "INVALID"}, {"failures", failures},
         {"provenance", {{"executableGitSha", trainingExecutableGitSha()},
@@ -4534,7 +4560,7 @@ int bossRescue347(int nEntries, const std::string &selectionPath, const std::str
             {"policy", effectiveOocPolicySpecification()}, {"environment", env}}},
         {"outputs", {{"rowsSha256", fileSha256(rowsPath)}}},
     };
-    if (prep) {
+    if (fresh) {
         entryJson["expectedSourceWon"] = expectedSourceWon;
         entryJson["checks"]["checkedReps"] = reps;
         entryJson["entryDescriptor"] = source.captured

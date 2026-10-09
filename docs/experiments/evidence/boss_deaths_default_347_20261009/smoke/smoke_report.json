@@ -1,0 +1,147 @@
+{
+ "schema": "boss_deaths_default_347_report_v1",
+ "verdict": "PREPARATION_DOMINANT",
+ "validEntries": 3,
+ "invalidEntries": [],
+ "selected": 3,
+ "census": null,
+ "plannerReps": 2,
+ "meanFreshWinRate": 0.16666666666666666,
+ "meanFreshWinRateBootstrap95": [
+  0.0,
+  0.5
+ ],
+ "bootstrap": {
+  "replicates": 10000,
+  "seed": 20261009,
+  "unit": "entry"
+ },
+ "classes": {
+  "DOOMED": 2,
+  "MARGINAL": 0,
+  "WINNABLE": 1
+ },
+ "winDistribution": {
+  "0": 2,
+  "1": 1,
+  "2": 0
+ },
+ "byAct": {
+  "2": {
+   "entries": 1,
+   "freshWins": 0,
+   "freshRuns": 2,
+   "classes": {
+    "DOOMED": 1,
+    "MARGINAL": 0,
+    "WINNABLE": 0
+   }
+  },
+  "3": {
+   "entries": 2,
+   "freshWins": 1,
+   "freshRuns": 4,
+   "classes": {
+    "DOOMED": 1,
+    "MARGINAL": 0,
+    "WINNABLE": 1
+   }
+  }
+ },
+ "byBoss": {
+  "AUTOMATON": {
+   "entries": 1,
+   "freshWins": 0,
+   "freshRuns": 2,
+   "classes": {
+    "DOOMED": 1,
+    "MARGINAL": 0,
+    "WINNABLE": 0
+   }
+  },
+  "DONU_AND_DECA": {
+   "entries": 1,
+   "freshWins": 1,
+   "freshRuns": 2,
+   "classes": {
+    "DOOMED": 0,
+    "MARGINAL": 0,
+    "WINNABLE": 1
+   }
+  },
+  "TIME_EATER": {
+   "entries": 1,
+   "freshWins": 0,
+   "freshRuns": 2,
+   "classes": {
+    "DOOMED": 1,
+    "MARGINAL": 0,
+    "WINNABLE": 0
+   }
+  }
+ },
+ "entries": [
+  {
+   "stateId": "smoke-66009003-a3",
+   "seed": 66009003,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floor": 50,
+   "hp": 41,
+   "maxHp": 90,
+   "potions": [
+    "BLOOD_POTION",
+    "SPEED_POTION"
+   ],
+   "relics": 13,
+   "deck": 37,
+   "upgraded": 17,
+   "freshWins": 1,
+   "reps": 2,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 11.0,
+   "freshCpuSeconds": 2.4871094300000003
+  },
+  {
+   "stateId": "smoke-66009011-a3",
+   "seed": 66009011,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 37,
+   "maxHp": 85,
+   "potions": [
+    "FAIRY_POTION",
+    "ELIXIR_POTION"
+   ],
+   "relics": 15,
+   "deck": 35,
+   "upgraded": 18,
+   "freshWins": 0,
+   "reps": 2,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 0.9910751019999999
+  },
+  {
+   "stateId": "smoke-66009015-a2",
+   "seed": 66009015,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floor": 33,
+   "hp": 48,
+   "maxHp": 82,
+   "potions": [
+    "LIQUID_BRONZE"
+   ],
+   "relics": 8,
+   "deck": 29,
+   "upgraded": 4,
+   "freshWins": 0,
+   "reps": 2,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 2.91572306
+  }
+ ]
+}
