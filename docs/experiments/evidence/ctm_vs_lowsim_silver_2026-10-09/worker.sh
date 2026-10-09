@@ -1,5 +1,5 @@
 #!/bin/bash
-# §407 v2 cloud worker: 4 shards of 16 seeds on 4 cores.
+# §408 v2 cloud worker: 4 shards of 16 seeds on 4 cores.
 # usage: bash worker.sh W OUT_DIR
 # Run from a checkout of the frozen commit, after a Release build of one_combat.
 set -euo pipefail

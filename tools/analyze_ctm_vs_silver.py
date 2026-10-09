@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score CTM and low-sim Silver as combat-outcome forecasters (ledger §407).
+"""Score CTM and low-sim Silver as combat-outcome forecasters (ledger §408).
 
 usage: python3 tools/analyze_ctm_vs_silver.py OUT.json PREFIX [PREFIX ...]
 Each PREFIX names one ``one_combat ctmsilvergen`` shard (PREFIX.states.csv,

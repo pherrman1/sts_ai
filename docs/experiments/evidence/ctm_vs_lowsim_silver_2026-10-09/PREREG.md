@@ -1,4 +1,7 @@
-# CTM vs low-sim Silver with the synthetic root prior (§407 pre-registration, v2)
+# CTM vs low-sim Silver with the synthetic root prior (§408 pre-registration, v2)
+
+Ledger number: this entry is §408 (§407 went to #464 on main). The label was
+§407 at the frozen commits; nothing else changed.
 
 **v2 (2026-10-09 ~14:00 UTC):** Philipp stopped the first 128-seed run (seeds
 62000000..127, binary `1f53715d`) after an interim look at about 66 seeds and
