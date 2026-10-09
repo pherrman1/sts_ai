@@ -9,12 +9,80 @@ A forecast is (p, h): CTM gives p = P(death), h = (1 - p) * E[HP | win];
 a Silver arm with K redrawn replicates gives the loss fraction and mean y.
 Losses are death Brier (p - d)^2 and HP squared error (h - y)^2. Paired
 differences use a bootstrap over source seeds (10,000 resamples, seed 0).
+
+Post-state fields (PREFIX.samples.csv): every forecaster leaves samples of the
+RAW post-combat state (CTM: 32 draws; Silver arms: their replicates); the
+control replay is the truth. Per field, the Brier loss of the sample
+distribution, 1 - 2 P(truth) + sum_v P(v)^2, is estimated without bias from
+the match fraction and the matching fraction of distinct sample pairs. A dead
+sample has the value DEATH in every field.
 """
 import csv, json, sys
 import numpy as np
 
 ARMS = ("prior256", "prior64", "plain256", "teacher10k")
+FIELDS = ("outcome", "hp", "maxHp", "gold", "potions", "relics", "deck", "stolenGold", "nonhp_joint", "joint")
+SAMPLERS = ("ctm",) + ARMS
 MARGIN = 0.10   # non-inferiority margin, fraction of the CTM loss
+
+
+def sample_fields(r):
+    if r["outcome"] == "DEATH":
+        return {f: "DEATH" for f in FIELDS} | {"outcome": "DEATH"}
+    v = {"outcome": r["outcome"], "hp": r["curHp"], "maxHp": r["maxHp"], "gold": r["gold"],
+         "potions": r["potionCount"] + "|" + r["potions"], "relics": r["relics"], "deck": r["deckHash"],
+         "stolenGold": r["stolenGold"]}
+    v["nonhp_joint"] = "|".join(v[f] for f in ("maxHp", "gold", "potions", "relics", "deck", "stolenGold"))
+    v["joint"] = v["hp"] + "|" + v["nonhp_joint"]
+    return v
+
+
+def field_scores(prefixes, valid_ids, ctm_ids):
+    """Per state and sampler: Brier loss and match probability per field."""
+    by = {}
+    for p in prefixes:
+        try:
+            f = open(p + ".samples.csv")
+        except FileNotFoundError:
+            return None
+        for r in csv.DictReader(f):
+            if r["stateId"] in valid_ids:
+                by.setdefault(r["stateId"], {}).setdefault(r["forecaster"], []).append(sample_fields(r))
+    out = []
+    for sid, fs in by.items():
+        if sid not in ctm_ids or "control" not in fs or any(a not in fs for a in SAMPLERS):
+            continue
+        truth = fs["control"][0]
+        row = {"seed": int(sid[1:].split("-")[0])}
+        for name in SAMPLERS:
+            xs = fs[name]; k = len(xs)
+            for fld in FIELDS:
+                vals = [x[fld] for x in xs]
+                p_t = sum(v == truth[fld] for v in vals) / k
+                counts = {}
+                for v in vals:
+                    counts[v] = counts.get(v, 0) + 1
+                sq = sum(c * (c - 1) for c in counts.values()) / (k * (k - 1)) if k > 1 else float("nan")
+                row[f"{name}:{fld}:brier"] = 1 - 2 * p_t + sq
+                row[f"{name}:{fld}:match"] = p_t
+        out.append(row)
+    return out
+
+
+def boot_field(rows, a, b, fld, rng, n=10000):
+    seeds = sorted({r["seed"] for r in rows})
+    per = {s: [0.0, 0] for s in seeds}
+    for r in rows:
+        per[r["seed"]][0] += r[f"{a}:{fld}:brier"] - r[f"{b}:{fld}:brier"]; per[r["seed"]][1] += 1
+    arr = np.array([per[s] for s in seeds])
+    draws = rng.integers(0, len(seeds), size=(n, len(seeds)))
+    stats = arr[draws, 0].sum(1) / arr[draws, 1].sum(1)
+    base = float(np.mean([r[f"{b}:{fld}:brier"] for r in rows]))
+    d = float(arr[:, 0].sum() / arr[:, 1].sum())
+    ci = [float(np.quantile(stats, .025)), float(np.quantile(stats, .975))]
+    lab = ("SILVER_BETTER" if ci[1] < 0 else "CTM_BETTER" if ci[0] > 0
+           else "SILVER_NONINFERIOR" if ci[1] < MARGIN * base else "INCONCLUSIVE")
+    return {"diff": d, "ci95": ci, "label": lab}
 
 
 def load(prefixes):
@@ -39,7 +107,7 @@ def forecasts(states, arms):
             continue
         d = 1 - int(s["sourceWon"])
         y = int(s["sourceTerminalHp"]) if d == 0 else 0
-        row = {"seed": int(s["sourceSeed"]), "act": int(s["act"]), "room": s["roomClass"],
+        row = {"sid": sid, "seed": int(s["sourceSeed"]), "act": int(s["act"]), "room": s["roomClass"],
                "d": d, "y": y, "ctm": s["ctmSupported"] == "1"}
         if row["ctm"]:
             row["ctm_p"] = float(s["ctmPDeath"]); row["ctm_h"] = float(s["ctmExpectedHp"])
@@ -137,9 +205,22 @@ def main():
         sub = [r for r in sup if r["act"] == act]
         by_act[act] = {n: {k: summary(sub, n)[k] for k in ("n", "brier", "hp_rmse")} for n in ("ctm", "prior256", "teacher10k1")}
     res["by_act"] = by_act
+    valid_ids = {r["sid"] for r in rows}
+    ctm_ids = {sid for sid, s in states.items() if s["ctmSupported"] == "1"}
+    fr = field_scores(prefixes, valid_ids, ctm_ids)
+    if fr:
+        res["fields"] = {"n": len(fr), "brier": {}, "match": {}, "paired_vs_ctm": {}}
+        for name in SAMPLERS:
+            res["fields"]["brier"][name] = {f: float(np.mean([r[f"{name}:{f}:brier"] for r in fr])) for f in FIELDS}
+            res["fields"]["match"][name] = {f: float(np.mean([r[f"{name}:{f}:match"] for r in fr])) for f in FIELDS}
+        for name in ARMS:
+            res["fields"]["paired_vs_ctm"][name] = {f: boot_field(fr, name, "ctm", f, rng) for f in FIELDS}
     json.dump(res, open(out, "w"), indent=2)
     print(json.dumps({"primary": res["primary"], "supported": {n: {k: round(v, 4) for k, v in res["supported"][n].items()} for n in names},
-                      "labels": {n: res["paired_vs_ctm"][n]["label"] for n in names[1:]}}, indent=1))
+                      "labels": {n: res["paired_vs_ctm"][n]["label"] for n in names[1:]},
+                      "field_brier": res.get("fields", {}).get("brier"),
+                      "field_labels_prior256": {f: v["label"] for f, v in res.get("fields", {}).get("paired_vs_ctm", {}).get("prior256", {}).items()}},
+                     indent=1))
 
 
 if __name__ == "__main__":

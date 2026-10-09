@@ -4889,6 +4889,27 @@ struct RootPriorScope {
     ~RootPriorScope() { search::g_nativeSilverRootPriorOverride.reset(); }
 };
 struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; };
+// One forecast sample of the RAW post-combat persistent state (the fields the CTM
+// models; RNG streams excluded). The deck is written as an FNV-1a hash.
+void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const std::string &forecaster,
+                          int k, const char *outcome,
+                          const one_combat::CombatTransitionPersistentState &s) {
+    std::ostringstream potions, relics;
+    for (int i = 0; i < 5; ++i) potions << (i ? ";" : "") << s.potions[i];
+    auto sorted = s.relics;
+    std::sort(sorted.begin(), sorted.end(), [](const auto &a, const auto &b) {
+        return a.id != b.id ? a.id < b.id : a.data < b.data; });
+    for (std::size_t i = 0; i < sorted.size(); ++i) relics << (i ? ";" : "") << sorted[i].id << ':' << sorted[i].data;
+    std::vector<std::tuple<int, int, int>> cards;
+    for (const auto &c : s.deck) cards.emplace_back(c.id, c.upgraded ? 1 : 0, c.misc);
+    std::sort(cards.begin(), cards.end());
+    std::uint64_t h = 1469598103934665603ULL;
+    for (const auto &[id, up, misc] : cards)
+        for (const int v : {id, up, misc, -7}) { h ^= static_cast<std::uint32_t>(v); h *= 1099511628211ULL; }
+    out << stateId << ',' << forecaster << ',' << k << ',' << outcome << ',' << s.curHp << ',' << s.maxHp << ','
+        << s.gold << ',' << s.potionCount << ',' << potions.str() << ',' << relics.str() << ','
+        << std::hex << h << std::dec << ',' << (s.smokeBombUsed ? 1 : 0) << ',' << s.stolenGold << '\n';
+}
 } // namespace
 
 void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
@@ -4910,19 +4931,22 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         throw std::runtime_error("ctm vs silver: expected the production CTM stack, not a research candidate");
     const std::vector<CtmSilverArm> arms = {
         {"control", sims, false, false, 1},
-        {"teacher10k", sims, false, true, 1},
+        {"teacher10k", sims, false, true, 2},
         {"prior256", 256, true, true, replicates},
         {"prior64", 64, true, true, replicates},
         {"plain256", 256, false, true, replicates},
     };
     const std::string statesPath = outPrefix + ".states.csv";
     const std::string armsPath = outPrefix + ".arms.csv";
+    const std::string samplesPath = outPrefix + ".samples.csv";
     const std::string manifestPath = outPrefix + ".manifest.json";
-    for (const auto &path : {statesPath, armsPath, manifestPath})
+    for (const auto &path : {statesPath, armsPath, samplesPath, manifestPath})
         if (std::filesystem::exists(path))
             throw std::runtime_error("ctm vs silver: refusing to overwrite existing output " + path);
-    std::ofstream states(statesPath), armsOut(armsPath);
-    if (!states || !armsOut) throw std::runtime_error("ctm vs silver: cannot open outputs");
+    std::ofstream states(statesPath), armsOut(armsPath), samples(samplesPath);
+    if (!states || !armsOut || !samples) throw std::runtime_error("ctm vs silver: cannot open outputs");
+    samples << "stateId,forecaster,k,outcome,curHp,maxHp,gold,potionCount,potions,relics,deckHash,"
+               "smokeBombUsed,stolenGold\n";
     states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
               "sourceWon,sourceTerminalHp,sourceValid,ctmSupported,ctmReason,ctmPDeath,ctmMeanHpWin,"
               "ctmExpectedHp,ctmForecastCpuUs,ctmSampleCpuUs\n";
@@ -4936,6 +4960,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     int ctmSupported = 0, invalidArmRows = 0;
     nlohmann::json perSeed = nlohmann::json::array();
     constexpr int kTimingReps = 20;
+    constexpr int kCtmSamples = 32;
     for (int i = 0; i < nSeeds; ++i) {
         VwinCollector capture;
         capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
@@ -4987,6 +5012,16 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     (void)prepared->sample(sampleRng);
                 }
                 sampleUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
+                // Forecast samples of the whole post-combat state, as the planner draws them.
+                std::mt19937_64 drawRng(ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, 1, 0x5A3B1E));
+                const auto prepared = ctm.prepare(pre, input);
+                for (int k = 0; k < kCtmSamples; ++k) {
+                    const auto x = prepared->sample(drawRng);
+                    using O = one_combat::CombatRuntimeSample::Outcome;
+                    const char *o = x.outcome == O::DEATH ? "DEATH" : x.outcome == O::VICTORY ? "VICTORY"
+                        : x.outcome == O::ESCAPE ? "ESCAPE" : "UNSUPPORTED";
+                    ctmSilverWriteSample(samples, stateId, "ctm", k, o, x.rawPost);
+                }
             }
             states << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ',' << entry.act << ','
                    << entry.floor << ',' << entry.roomClass << ',' << csvQuote(entry.encounter) << ','
@@ -5012,7 +5047,20 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     if (arm.redraw) plannerSeed = ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0x91A77E2);
                     PlannerSeedScope plannerScope(plannerSeed);
                     RootPriorScope priorScope(arm.prior);
-                    const auto result = vwinRunBossArm(replay, arm.budget);
+                    std::optional<one_combat::CombatTransitionPersistentState> rawPost;
+                    VwinArmResult result;
+                    {
+                        one_combat::CombatTransitionRawObserverScope rawScope(
+                            [&](const BattleContext &, GameContext &raw) {
+                                if (!rawPost) rawPost = one_combat::captureCombatTransitionState(raw);
+                            });
+                        result = vwinRunBossArm(replay, arm.budget);
+                    }
+                    if (rawPost) {
+                        const char *o = result.won == 0 ? "DEATH" : rawPost->smokeBombUsed ? "ESCAPE"
+                            : result.won == 1 ? "VICTORY" : "UNDECIDED";
+                        ctmSilverWriteSample(samples, stateId, arm.name, k, o, *rawPost);
+                    }
                     const bool isControl = arm.name == "control";
                     if (isControl) {
                         controlMatch = result.valid && entry.labelValid && result.won == entry.sourceWon
@@ -5036,9 +5084,9 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 }
             }
         }
-        states.flush(); armsOut.flush();
+        states.flush(); armsOut.flush(); samples.flush();
     }
-    states.close(); armsOut.close();
+    states.close(); armsOut.close(); samples.close();
     nlohmann::json manifest = {
         {"schemaVersion", "ctm_vs_silver_forecast_v1"},
         {"producerGitSha", trainingExecutableGitSha()},
@@ -5051,13 +5099,14 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                        {"weight", search::nativeSilverRootPriorWeight()}}},
         {"ctm", {{"fast", fastModel}, {"fastSha256", fileSha256(fastModel)},
                  {"standard", standardModel}, {"standardSha256", fileSha256(standardModel)},
-                 {"activeLizard", true}, {"timingReps", kTimingReps}}},
+                 {"activeLizard", true}, {"timingReps", kTimingReps}, {"forecastSamples", kCtmSamples}}},
         {"redraw", "six BattleContext RNG streams (ai, cardRandom, misc, monsterHp, potion, shuffle) reseeded, counters kept"},
         {"arms", armSpec}, {"sources", std::move(perSeed)},
         {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
             {"states", nStates}, {"ctmSupported", ctmSupported}, {"controlReplayMatches", controlMatches},
             {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows}}},
-        {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)}}}
+        {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)},
+                     {"samplesSha256", fileSha256(samplesPath)}}}
     };
     std::ofstream manifestOut(manifestPath);
     if (!manifestOut) throw std::runtime_error("ctm vs silver: cannot write manifest");

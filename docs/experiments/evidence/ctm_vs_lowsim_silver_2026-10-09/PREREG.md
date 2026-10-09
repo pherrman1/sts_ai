@@ -1,6 +1,17 @@
-# CTM vs low-sim Silver with the synthetic root prior (§407 pre-registration)
+# CTM vs low-sim Silver with the synthetic root prior (§407 pre-registration, v2)
 
-Frozen before any §407 seed ran. Requested by Philipp on 2026-10-09: compare the
+**v2 (2026-10-09 ~14:00 UTC):** Philipp stopped the first 128-seed run (seeds
+62000000..127, binary `1f53715d`) after an interim look at about 66 seeds and
+asked for every post-combat field the CTM predicts, on fresh seeds and 4 cloud
+workers × 4 threads. The stopped run is kept as an exploratory record in
+`/mnt/project-files/ctm-vs-lowsim-silver/stopped-128-1f53715d/` and is not
+pooled. Its interim read (HP: Silver better; deaths: tie; CTM 100–400x faster)
+was seen before v2 was frozen, so v2's HP and death results are a replication,
+not a blind test. v2 changes only what is recorded and adds the field
+comparison; the arms are unchanged except that teacher10k now has 2 replicates
+(needed for the field Brier).
+
+Frozen before any v2 seed ran. Requested by Philipp on 2026-10-09: compare the
 speed and accuracy of the CTM stack with low-sim Silver plus the synthetic root
 prior, as input to a possible CTM retirement. This run only measures; it changes
 no default and retires nothing.
@@ -32,7 +43,7 @@ not part of this cloud run. **Open question:** whether it changes the answer.
 | arm | budget | root prior | hidden future | replicates |
 |---|---|---|---|---|
 | control | 10,000 | off | source | 1 (must reproduce the source fight) |
-| teacher10k | 10,000 | off | redrawn | 1 (an ideal single sample; noise floor) |
+| teacher10k | 10,000 | off | redrawn | 2 (ideal samples; noise floor) |
 | prior256 | 256 | v1, w400 | redrawn | 4 |
 | prior64 | 64 | v1, w400 | redrawn | 4 |
 | plain256 | 256 | off | redrawn | 4 |
@@ -43,29 +54,25 @@ budgets (`STS_SILVER_EXACT_ROOT_BUDGETS=1`), as in the low-sim screen
 file `prior-natpert.compact.txt` (sha256 recorded in the manifest), weight 400.
 The source and the 10k arms run with the prior forced off by a thread override.
 
-## Seeds and budget
+## Post-state fields (added in v2)
 
-Fresh seeds 62000000..62000127 (128 source runs), Ascension 0, four shards of
-32 seeds (62000000+32i, i = 0..3) in one cloud container, one thread each.
-The smoke seed 62009000 (25 fights, 151 s wall) gives roughly 1.5 to 2 CPU-min per
-source run, so about 4 CPU-hours. 128 rather than 64 because fight deaths are rare
-(about one per lost run) and the Brier comparison needs them.
+Every forecaster also leaves samples of the RAW post-combat persistent state
+(the CTM's output type: HP, max HP, gold, potion slots, relic counters, deck,
+stolen gold, Smoke Bomb flag): 32 CTM draws (`prepare` + `sample`, as the
+planner draws them) and every Silver replicate. The control replay's state is the
+truth. Fields: outcome, hp, maxHp, gold, potions, relics (sorted id:counter),
+deck (hash of sorted id/upgrade/misc), stolenGold, nonhp_joint (all but HP) and
+joint (everything). A dead sample is DEATH in every field. Per field the Brier
+loss of the sample distribution, `1 - 2 P(truth) + sum_v P(v)^2`, is estimated
+without bias from the match fraction and matching distinct sample pairs; the
+mean match probability is reported too.
 
-## Frozen provenance
+## Seeds and budget (v2)
 
-- Code SHA `1f53715d` (branch `claude/project-thread-wfsdk0`, main `82c4946a` plus
-  this mode); Release `one_combat` sha256
-  `3e918355c594d362eac3ae1648d3133d88e3c9e4b857e43cc6bde155b5264031`.
-- Teacher `teacher.json` here (exact-10k ordinary Silver, frozen V4 OOC policy as
-  in #400); environment `env.sh` here (`$RUN` = run directory).
-- Prior sha256 `573305c48076c135f791d0712efb03be7e620aeeb961e962700ce2c60188c6ee`.
-- CTM artifacts: tracked production files, hashes recorded in each manifest.
-- Command per shard: `tools/seed_guard.sh $RUN/one_combat ctmsilvergen 32 0
-  $RUN/shardI 6200000X $RUN/teacher.json 4`.
-
-Smoke (seed 62009000, not part of the cohort): 25 fights, CTM supports 24
-(one Smoke Bomb state), control replay 24/25; the one miss is a Smoke Bomb
-escape whose source label is itself quarantined (`escape`).
+Fresh seeds 62100000..62100255 (256 source runs), Ascension 0. Four cloud
+workers W = 0..3 with 4 cores each; worker W runs 4 shards of 16 seeds, shard i
+starting at 62100000 + 64W + 16i. Expected about 3.5 CPU-min per source run,
+about 15 CPU-hours, about 1 hour per worker. The smoke seed is 62109000.
 
 ## Decision rule
 
@@ -79,7 +86,10 @@ resamples, RNG seed 0), for death Brier and HP MSE.
   own loss.
 - INCONCLUSIVE: anything else.
 
-Secondary (descriptive): the same labels for prior64, plain256, teacher10k and
+Co-primary (v2): the same paired rule, prior256 minus CTM, on the nonhp_joint
+field Brier (everything except HP).
+
+Secondary (descriptive): field-level labels for every field and arm; the same labels for prior64, plain256, teacher10k and
 the K=1 versions of each; bias of `p` and `h`; per-act breakdown; CTM support
 coverage and unsupported reasons; the noise floor (half the teacher10k K=1
 loss); CPU ratio Silver/CTM.
