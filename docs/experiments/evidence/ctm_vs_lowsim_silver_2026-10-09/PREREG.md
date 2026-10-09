@@ -74,6 +74,24 @@ workers W = 0..3 with 4 cores each; worker W runs 4 shards of 16 seeds, shard i
 starting at 62100000 + 64W + 16i. Expected about 3.5 CPU-min per source run,
 about 15 CPU-hours, about 1 hour per worker. The smoke seed is 62109000.
 
+## Frozen provenance (v2)
+
+- Code SHA `ccc3d62a` (the mode as run; later commits on the branch add only
+  docs and this worker script). Release `one_combat` sha256
+  `0b8cddf6e92fb6cb568cf71c0f3dcdc19f22ca8f2109a3a17a311a8a61061828`; each
+  worker builds it from the frozen commit and `worker.sh` refuses any other hash.
+- Teacher `teacher.json` here (exact-10k ordinary Silver, frozen V4 OOC policy as
+  in #400); environment `env.sh` here (`$RUN` = run directory,
+  `STS_EXECUTABLE_GIT_SHA=ccc3d62a…`).
+- Prior sha256 `573305c48076c135f791d0712efb03be7e620aeeb961e962700ce2c60188c6ee`.
+- CTM artifacts: tracked production files, hashes recorded in each manifest.
+- Workers: `bash docs/experiments/evidence/ctm_vs_lowsim_silver_2026-10-09/worker.sh W
+  /mnt/project-files/ctm-vs-lowsim-silver/v2-ccc3d62a/wWW`.
+
+Smoke (seed 62109000, not in the cohort, 285 s on one core): 28 fights, CTM
+supports 27 (one Smoke Bomb state), control replay 27/28 (the miss is the
+quarantined escape), 1,284 sample rows.
+
 ## Decision rule
 
 Primary comparison: prior256 (K=4) minus CTM, on valid states the CTM supports.
