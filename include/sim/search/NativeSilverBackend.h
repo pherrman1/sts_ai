@@ -104,6 +104,10 @@ namespace sts::search {
         bool skipSingletonRoots = false;
     };
     extern thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    // Research-only (CTM vs low-sim Silver comparison): when set, turns the
+    // STS_SILVER_ROOT_PRIOR bonus off (false) or requires it on (true) for the
+    // current thread's combats. Unset elsewhere; unset keeps the process option.
+    extern thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 

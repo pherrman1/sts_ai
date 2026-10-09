@@ -301,6 +301,9 @@ const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &sil
 // replayed under flat 10k (control), #199 adaptive, and learned stopping.
 void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                          long long seedOffset, const std::string &teacherPath);
+// CTM vs low-sim Silver forecasts on the same fight entries (ctmsilvergen).
+void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
+                         const std::string &teacherPath, int replicates);
 // Research-only corpus for a learned Silver prior / leaf value
 // (apps/one_combat/silver_synth_gen.cpp). VARIANT is natural or perturbed.
 void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,

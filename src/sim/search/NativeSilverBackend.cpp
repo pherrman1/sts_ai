@@ -779,6 +779,9 @@ namespace sts::search {
     }
 
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher) {
+        if (g_nativeSilverRootPriorOverride == false) return {};
+        if (g_nativeSilverRootPriorOverride == true && g_options.rootPriorPath.empty())
+            throw std::runtime_error("root prior override requires STS_SILVER_ROOT_PRIOR");
         if (g_options.rootPriorPath.empty() || searcher.prepareRootActions() < 2) return {};
         const auto &state = searcher.rootSearchState();
         thread_local std::vector<float> features;
@@ -859,6 +862,7 @@ namespace sts::search {
 
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;

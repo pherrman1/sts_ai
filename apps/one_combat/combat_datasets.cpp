@@ -5,6 +5,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
+#include "one_combat/combat_transition_runtime.h"
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
 #include "one_combat/ooc_native_fallback.h"
@@ -4852,6 +4853,218 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
               << " sourceValid=" << validSources << '/' << nSeeds << " states=" << states_
               << " control-replay=" << controlMatches << '/' << controlMatches + controlMismatches
               << " -> " << outPrefix << "\n";
+}
+
+// CTM vs low-sim Silver as combat-outcome forecasters (research comparison).
+// Replays every real fight of each exact-10k source trajectory. At each fight
+// entry it scores the production CTM stack (survival and winning-HP expectation,
+// CPU per forecast and per sample) and replays the fight under fixed Silver arms.
+// "control" keeps the source hidden future and must reproduce the source fight;
+// every other arm redraws the six combat RNG streams the battle carries (counters
+// kept), as a planner resolving a hypothetical fight would. Replicate k uses the
+// same redraw and planner seed in every arm. The root prior is off for the source
+// and the 10k arms and on for the prior arms (thread override).
+namespace {
+std::uint64_t ctmSilverMix(std::uint64_t x) {
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    return x ^ (x >> 31);
+}
+std::uint64_t ctmSilverReplicateSeed(std::uint64_t sourceSeed, int fightIdx, int k, std::uint64_t salt) {
+    return ctmSilverMix(ctmSilverMix(sourceSeed ^ salt) ^ (static_cast<std::uint64_t>(fightIdx) << 16)
+                        ^ static_cast<std::uint64_t>(k));
+}
+void ctmSilverRedrawCombatFuture(GameContext &gc, std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
+                        &gc.potionRng, &gc.shuffleRng}) {
+        const auto counter = stream->counter;
+        *stream = sts::Random(rng());
+        stream->counter = counter;
+    }
+}
+struct RootPriorScope {
+    explicit RootPriorScope(bool on) { search::g_nativeSilverRootPriorOverride = on; }
+    ~RootPriorScope() { search::g_nativeSilverRootPriorOverride.reset(); }
+};
+struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; };
+} // namespace
+
+void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
+                         const std::string &teacherPath, int replicates) {
+    constexpr int sims = 10000;
+    if (nSeeds < 1 || asc != 0 || seedOffset < 0 || replicates < 1)
+        throw std::runtime_error("ctm vs silver: requires positive seed and replicate counts, Ascension 0");
+    if (!search::nativeSilverExactRootBudgets())
+        throw std::runtime_error("ctm vs silver: requires STS_SILVER_EXACT_ROOT_BUDGETS=1 (flat budgets, no boss multiplier)");
+    if (search::nativeSilverRootPriorPath().empty())
+        throw std::runtime_error("ctm vs silver: requires STS_SILVER_ROOT_PRIOR and _WEIGHT for the prior arms");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false, true);
+    vwinRequireProductionPolicy(teacher);
+    const std::string fastModel = "selfplay/models/combat_transition_deepsets_lizard_t2.native";
+    const std::string standardModel = "selfplay/models/combat_transition_near_full_except_smoke_v2.native";
+    const one_combat::EntropicBrewFallbackCombatTransitionSampler ctm(fastModel, standardModel, true);
+    if (ctm.fastRuntime().researchCandidate())
+        throw std::runtime_error("ctm vs silver: expected the production CTM stack, not a research candidate");
+    const std::vector<CtmSilverArm> arms = {
+        {"control", sims, false, false, 1},
+        {"teacher10k", sims, false, true, 1},
+        {"prior256", 256, true, true, replicates},
+        {"prior64", 64, true, true, replicates},
+        {"plain256", 256, false, true, replicates},
+    };
+    const std::string statesPath = outPrefix + ".states.csv";
+    const std::string armsPath = outPrefix + ".arms.csv";
+    const std::string manifestPath = outPrefix + ".manifest.json";
+    for (const auto &path : {statesPath, armsPath, manifestPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("ctm vs silver: refusing to overwrite existing output " + path);
+    std::ofstream states(statesPath), armsOut(armsPath);
+    if (!states || !armsOut) throw std::runtime_error("ctm vs silver: cannot open outputs");
+    states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
+              "sourceWon,sourceTerminalHp,sourceValid,ctmSupported,ctmReason,ctmPDeath,ctmMeanHpWin,"
+              "ctmExpectedHp,ctmForecastCpuUs,ctmSampleCpuUs\n";
+    armsOut << "stateId,sourceSeed,fightIdx,arm,k,budget,prior,redraw,redrawSeed,won,terminalHp,"
+               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason\n";
+    nlohmann::json armSpec = nlohmann::json::array();
+    for (const auto &a : arms)
+        armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
+                           {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates}});
+    int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
+    int ctmSupported = 0, invalidArmRows = 0;
+    nlohmann::json perSeed = nlohmann::json::array();
+    constexpr int kTimingReps = 20;
+    for (int i = 0; i < nSeeds; ++i) {
+        VwinCollector capture;
+        capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
+        capture.captureBoss = true;
+        capture.captureAllCombatEntries = true;
+        CombatEvalSeedResult source;
+        {
+            RootPriorScope plain(false);
+            source = runCombatEvalGenSeed(capture.sourceSeed, sims, asc, teacher, false, &capture);
+        }
+        if (source.trajectoryComplete) ++completeSources;
+        if (source.trajectoryValid) ++validSources;
+        perSeed.push_back({{"seed", capture.sourceSeed}, {"complete", source.trajectoryComplete},
+                           {"valid", source.trajectoryValid}, {"fights", capture.bossEntries.size()},
+                           {"finalFloor", source.finalFloor},
+                           {"won", source.finalOutcome == GameOutcome::PLAYER_VICTORY}});
+        for (auto &entry : capture.bossEntries) {
+            const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
+            const GameContext &pre = *entry.pre;
+            const auto encounter = pre.info.encounter;
+            // CTM forecast and one sample, as the OOC planner prepares them.
+            const auto input = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
+            const auto support = ctm.support(pre, input);
+            double pDeath = -1, meanHpWin = -1, expectedHp = -1, forecastUs = -1, sampleUs = -1;
+            if (support.supported) {
+                ++ctmSupported;
+                const auto e = ctm.expectation(pre, input);
+                if (!e.supported) throw std::runtime_error("ctm vs silver: supported state without expectation");
+                double mass = 0, hp = 0;
+                for (std::size_t b = 0; b < e.winningHpHistogram.size(); ++b) {
+                    mass += e.winningHpHistogram[b];
+                    hp += double(e.winningHpMin + int(b)) * e.winningHpHistogram[b];
+                }
+                pDeath = e.death;
+                meanHpWin = mass > 0 ? hp / mass : 0.0;
+                expectedHp = (1.0 - pDeath) * meanHpWin;
+                std::uint64_t t0 = vwinThreadCpuNanos();
+                for (int r = 0; r < kTimingReps; ++r) {
+                    const auto in = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
+                    const auto x = ctm.expectation(pre, in);
+                    if (!x.supported) throw std::runtime_error("ctm vs silver: timing expectation unsupported");
+                }
+                forecastUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
+                std::mt19937_64 sampleRng(ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, 0, 0x5A3B1E));
+                t0 = vwinThreadCpuNanos();
+                for (int r = 0; r < kTimingReps; ++r) {
+                    const auto in = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
+                    const auto prepared = ctm.prepare(pre, in);
+                    (void)prepared->sample(sampleRng);
+                }
+                sampleUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
+            }
+            states << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ',' << entry.act << ','
+                   << entry.floor << ',' << entry.roomClass << ',' << csvQuote(entry.encounter) << ','
+                   << pre.curHp << ',' << pre.maxHp << ',' << pre.potionCount << ',' << entry.sourceWon << ','
+                   << entry.terminalHp << ',' << (entry.sourceTrajectoryValid && entry.labelValid ? 1 : 0) << ','
+                   << (support.supported ? 1 : 0) << ',' << csvQuote(support.supported ? "supported" : support.reason)
+                   << ',' << std::setprecision(9) << pDeath << ',' << meanHpWin << ',' << expectedHp << ','
+                   << forecastUs << ',' << sampleUs << '\n';
+            ++nStates;
+            bool controlMatch = false;
+            for (const auto &arm : arms) {
+                for (int k = 0; k < arm.replicates; ++k) {
+                    const std::uint64_t redrawSeed = arm.redraw
+                        ? ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0xC0FFEE07) : 0;
+                    VwinBossEntry replay;
+                    replay.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(*entry.pre));
+                    if (arm.redraw) ctmSilverRedrawCombatFuture(*replay.pre, redrawSeed);
+                    replay.path = entry.path;
+                    replay.agent = entry.agent;
+                    replay.policy = entry.policy;
+                    replay.fightIdx = entry.fightIdx;
+                    std::optional<std::uint64_t> plannerSeed;
+                    if (arm.redraw) plannerSeed = ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0x91A77E2);
+                    PlannerSeedScope plannerScope(plannerSeed);
+                    RootPriorScope priorScope(arm.prior);
+                    const auto result = vwinRunBossArm(replay, arm.budget);
+                    const bool isControl = arm.name == "control";
+                    if (isControl) {
+                        controlMatch = result.valid && entry.labelValid && result.won == entry.sourceWon
+                            && result.terminalHp == entry.terminalHp
+                            && result.postAfterBattleHp == entry.postAfterBattleHp
+                            && result.firstActionBits == entry.firstActionBits;
+                        if (controlMatch) ++controlMatches; else ++controlMismatches;
+                    }
+                    const bool valid = result.valid && entry.sourceTrajectoryValid && controlMatch;
+                    std::string reason = result.quarantineReason;
+                    if (reason.empty() && !entry.sourceTrajectoryValid) reason = "source_trajectory_invalid";
+                    if (reason.empty() && !controlMatch)
+                        reason = isControl ? "control_replay_mismatch" : "control_state_invalid";
+                    if (!valid) ++invalidArmRows;
+                    armsOut << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ',' << arm.name << ','
+                            << k << ',' << arm.budget << ',' << (arm.prior ? 1 : 0) << ',' << (arm.redraw ? 1 : 0)
+                            << ',' << redrawSeed << ',' << result.won << ',' << result.terminalHp << ','
+                            << std::setprecision(9) << result.cpuSeconds << ',' << result.simulations << ','
+                            << result.decisions << ',' << (valid ? 1 : 0) << ','
+                            << (isControl ? (controlMatch ? 1 : 0) : -1) << ',' << csvQuote(reason) << '\n';
+                }
+            }
+        }
+        states.flush(); armsOut.flush();
+    }
+    states.close(); armsOut.close();
+    nlohmann::json manifest = {
+        {"schemaVersion", "ctm_vs_silver_forecast_v1"},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
+        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"rootPrior", {{"path", search::nativeSilverRootPriorPath()},
+                       {"sha256", fileSha256(search::nativeSilverRootPriorPath())},
+                       {"weight", search::nativeSilverRootPriorWeight()}}},
+        {"ctm", {{"fast", fastModel}, {"fastSha256", fileSha256(fastModel)},
+                 {"standard", standardModel}, {"standardSha256", fileSha256(standardModel)},
+                 {"activeLizard", true}, {"timingReps", kTimingReps}}},
+        {"redraw", "six BattleContext RNG streams (ai, cardRandom, misc, monsterHp, potion, shuffle) reseeded, counters kept"},
+        {"arms", armSpec}, {"sources", std::move(perSeed)},
+        {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
+            {"states", nStates}, {"ctmSupported", ctmSupported}, {"controlReplayMatches", controlMatches},
+            {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows}}},
+        {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)}}}
+    };
+    std::ofstream manifestOut(manifestPath);
+    if (!manifestOut) throw std::runtime_error("ctm vs silver: cannot write manifest");
+    manifestOut << manifest.dump(2) << '\n';
+    std::cout << "ctm vs silver teacher=" << teacher.id << " sourceValid=" << validSources << '/' << nSeeds
+              << " states=" << nStates << " ctmSupported=" << ctmSupported << " control-replay="
+              << controlMatches << '/' << controlMatches + controlMismatches << " -> " << outPrefix << "\n";
 }
 
 void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long long seedOffset,const std::string&teacherPath){trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("wholecombatgen: cannot open output");f<<"sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,parasiteAdded,persistentMutationSummary\n";long long rows=0;int completed=0;
