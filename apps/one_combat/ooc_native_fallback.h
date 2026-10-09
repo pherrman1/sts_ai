@@ -1,6 +1,7 @@
 #ifndef STS_ONE_COMBAT_OOC_NATIVE_FALLBACK_H
 #define STS_ONE_COMBAT_OOC_NATIVE_FALLBACK_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -9,11 +10,40 @@
 
 namespace one_combat {
 
+// Research-only public encounter mixture. STS_OOC_PUBLIC_FUTURES unset/0
+// preserves the existing prediction exactly; a positive count replaces the
+// four unrevealed encounter identities with sampled, public-history-conditioned
+// futures. No source state or RNG is changed.
+double nativeOocValue(const sts::GameContext &gc, const PathHistory &path,
+                      const CompactTreeNet &model);
+int nativeOocPublicFutureCount();
+bool nativeOocShopDeckSizeFixEnabled();
+bool nativeOocCardWinRankEnabled();
+std::uint64_t nativeOocPublicScorerCalls();
+void resetNativeOocPublicScorerCalls();
+
 // The default bestbench fallback uses these native compact trees. Keep the
 // action calculations shared with the standalone live advisor; only model
 // ownership and the public PathHistory differ between the two callers.
 int nativeFloorCardPick(sts::GameContext &gc, const PathHistory &path,
                         const CompactTreeNet &floor, int rewardIndex, double skipThreshold);
+struct NativeCardWinRankTrace {
+    int baselinePick = 5;
+    int chosenPick = 5;
+    int scenarioCount = 0;
+    double floorBase = 0.0;
+    std::vector<double> floorMarginals;
+    bool winEvaluated = false;
+    double winBase = 0.0;
+    std::vector<double> winMarginals;
+};
+// Default off delegates exactly to nativeFloorCardPick and leaves trace untouched.
+// Enabled: keep its floor take/skip decision, then rerank only taken rewards
+// with public8 win predictions. Trace records existing predictions only.
+int nativeCardWinRankPick(sts::GameContext &gc, const PathHistory &path,
+                         const CompactTreeNet &floor, const CompactTreeNet &win,
+                         int rewardIndex, double floorSkipThreshold,
+                         NativeCardWinRankTrace *trace = nullptr);
 std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
                            const CompactTreeNet &floor);
 int nativeFloorRemovePick(const sts::GameContext &gc, const PathHistory &path,

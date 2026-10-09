@@ -1,0 +1,18 @@
+{
+  "command": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/final_confirmation_report.json",
+    "--report-sha256",
+    "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+    "--out",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/final_confirmation_health.json"
+  ],
+  "exit_code": 0,
+  "started_epoch": 1791430922.9013116,
+  "finished_epoch": 1791430939.6799042,
+  "report_sha256": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+  "auditor_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+  "log_sha256": "ae2a692611851096d6663eab783d11b595b9232abc77527473fd542c0f686dc3",
+  "output_sha256": "29b11028411eb0f07eb22df0a66ddaf93f20f5284e75b278e02201b24942b2c0"
+}

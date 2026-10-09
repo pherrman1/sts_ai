@@ -1,0 +1,27 @@
+{
+  "launch_epoch": 1791426176.287855,
+  "manifest_sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de",
+  "review_sha256": "69b9996263d04e70e686a0347f809484a2233ceaad0c4c0985720f3ddceff787",
+  "gen2_all_sources_complete": true,
+  "gen2_binary_processes_remaining": [],
+  "workers": 3,
+  "campaign_max_game_workers": 6,
+  "outer_timeout_seconds": 3600,
+  "hard_stop_epoch": 1791436500.0,
+  "command": [
+    "timeout",
+    "--kill-after=30",
+    "3600",
+    "xargs",
+    "-P3",
+    "-L1",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py",
+    "--trace",
+    "--tree-profile",
+    "--timeout",
+    "900"
+  ],
+  "stdin_jobs": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development_jobs.txt",
+  "stdin_sha256": "04aea6f45f22daeca3a62407ceaab44e42b2ddb4f0540502ce8e80f13f12c2c2"
+}

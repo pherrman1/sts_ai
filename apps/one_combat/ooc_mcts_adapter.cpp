@@ -3,6 +3,7 @@
 #ifndef STS_LIVE_ADVISOR
 #include "screen_leaf_net.h"
 #include "screen_leaf_gbm.h"
+#include "compact_tree.h"
 #include "screen_leaf_s0.h"
 #endif
 #include "ooc_profile.h"
@@ -1201,6 +1202,13 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
         OocProfileScope predict(OocProfileBucket::LeafPredict);
         return options.screenLeafGbm->anchor(richFeatureVec(gc, path));
     }
+    if (options.leafWinNet) {
+        OocProfileScope predict(OocProfileBucket::LeafPredict);
+        const double value = options.leafWinNet->predict(richFeatureVec(gc, path));
+        if (!std::isfinite(value) || value < 0 || value > 1)
+            throw std::runtime_error("OOC MCTS invalid leaf win model value");
+        return value;
+    }
 #endif
     return dependencies.leafValue(gc, path);
 }
@@ -1635,6 +1643,21 @@ void configureLiveOocMcts() {
         else liveOptions.screenLeafNet = std::make_shared<const ScreenLeafNet>(model);
 #endif
     }
+    if (const char *model = std::getenv("STS_OOC_MCTS_LEAF_WIN_MODEL"); model && *model) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_WIN_MODEL is unavailable in the live advisor");
+#else
+        // The screen leaves are residuals on the pinned X2-B anchor, and the
+        // boss/constant leaves use no win model, so only native/direct qualify.
+        if (liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_WIN_MODEL requires STS_OOC_MCTS_LEAF_VALUE=native or direct");
+        auto net = std::make_shared<CompactTreeNet>();
+        if (!net->load(model, richIdxMap(), "STS_OOC_MCTS_LEAF_WIN_MODEL") || !net->logistic)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_WIN_MODEL failed to load a logistic win model");
+        liveOptions.leafWinNet = std::move(net);
+        liveOptions.leafWinPath = model;
+#endif
+    }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
@@ -1712,6 +1735,7 @@ void configureLiveOocMcts() {
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
+        << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -1723,7 +1747,8 @@ void configureLiveOocMcts() {
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
-        << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
+        << "\",\"leafWinModel\":" << (liveOptions.leafWinNet ? "\"" + liveOptions.leafWinPath + "\"" : std::string("null"))
+        << ",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
         << (!brewFallbackArtifact.empty() ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
@@ -3501,6 +3526,14 @@ void oocMctsAdapterSelfTest() {
         double direct=vStateWin(probe), adapted=leaf.leafValue(0);
         require(std::abs(direct-adapted)<1e-12,"native v_win leaf parity");
         std::cout<<"leaf_parity hp="<<probe.curHp<<" gold="<<probe.gold<<" value="<<adapted<<'\n';
+    }
+    {
+        // STS_OOC_MCTS_LEAF_WIN_MODEL replaces the process v_win at the leaf.
+        auto alt=std::make_shared<CompactTreeNet>();
+        require(alt->load(kScreenGbmAnchor,richIdxMap()),"leaf win model fixture loads");
+        OocAdapterOptions opts{true}; opts.leafWinNet=alt;
+        OocGameContextModel leaf(gc,path,{},opts);
+        require(std::abs(leaf.leafValue(0)-alt->predict(richFeatureVec(gc,path)))<1e-12,"leaf win model parity");
     }
     t_curPath=saved;
     auto battle=detachedCopy(gc); battle.screenState=ScreenState::BATTLE;

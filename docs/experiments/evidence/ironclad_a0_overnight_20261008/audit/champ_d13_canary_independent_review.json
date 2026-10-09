@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "reviewer": "integrity",
+  "reviewed_epoch": 1791422170.347542,
+  "inputs": {
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champ_d13_canary_report.json": "564dc6b39a916e6864cf9f6c1d6b23b6db13b44e893f492571c6ffa0fa81f41b",
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champ_d13_evaluation_authorization.json": "16642f7eb25b8052aca3901639d587bc9268d46c7a30a2ed814bd4ad3cb2505a"
+  },
+  "validation": "Re-executed reviewed custody and canary analyzer in memory; all report fields except separately added frozen-manifest inputs exactly matched saved report. No artifacts overwritten.",
+  "pairs": 2,
+  "branches": 4,
+  "completed_search_simulations": 2280000,
+  "search_health": {
+    "turn_limit": 0,
+    "engine_stop": 0,
+    "nonterminal": 0
+  },
+  "projected62pair_wall_seconds_one_worker": 677.9334507829044,
+  "authorization_wall_cap_seconds": 1800,
+  "outcome_summary_emitted": false,
+  "evaluation_outputs_inspected": false,
+  "games_launched": false
+}

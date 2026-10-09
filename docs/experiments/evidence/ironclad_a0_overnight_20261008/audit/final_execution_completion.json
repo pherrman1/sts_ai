@@ -1,0 +1,1045 @@
+{
+  "status": "ALL_256_INVOCATIONS_COMPLETED_EXIT0_NO_OWNED_GAME_WORKERS",
+  "recorded_epoch": 1791430900.5331843,
+  "recorded_local": "2026-10-08T05:41:40.533185+02:00",
+  "dispatcher_session": 53289,
+  "dispatcher_exit_code": 0,
+  "expected_shards": 256,
+  "completed_shards": 256,
+  "failed_shards": 0,
+  "timed_out_shards": 0,
+  "started_epoch": 1791428543.567844,
+  "finished_epoch": 1791430876.2678635,
+  "owned_game_processes": [],
+  "manifest_sha256": "e6c6e050ad0da20167c570d1f1f01a7e7037135daf3e010ac577edc8faf94f91",
+  "latch_sha256": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e",
+  "receipts": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_0.receipt.json",
+      "sha256": "35a78ac8f1c30ed7d3765a712b5b0894b078e650e2c94ba38b8f03a43d108e10"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_1.receipt.json",
+      "sha256": "8504fce16abc13e4eed9ed0adbe02bd41444d7634ef392e0465a2653c133c076"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_10.receipt.json",
+      "sha256": "982f82843bc1bd415d7568f36ddabeb69beefe27cc97c2c74d77b910b5fa2af9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_100.receipt.json",
+      "sha256": "0508903e972cbedacedd8cb597096895966afce1e2d89f9265f01efd6ad6a599"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_101.receipt.json",
+      "sha256": "78d8e19aba61d3151454514f586cab694032caf0d94c536372a7d5839ba6bed7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_102.receipt.json",
+      "sha256": "8f31a91142c38b5f62c2b107f5a304bd5af527318ab268dce3b59aae98c90ba8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_103.receipt.json",
+      "sha256": "c1497fc97d51d44d8cbc4efbba149ad89c632f175fc553a14a0b7acf34bfb9e8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_104.receipt.json",
+      "sha256": "0cae9b6feb67993845049dcb9c1b83082aaa634286baa578f9c4c04ca8b5bd08"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_105.receipt.json",
+      "sha256": "9f9d5b25116403e67b4e36a1fe107204c62565eb892bdbfaf2faf84908305e25"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_106.receipt.json",
+      "sha256": "8da98197d237681c527dc6e34b9a9e87f54909aae22f9610469c3b9bc6628895"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_107.receipt.json",
+      "sha256": "0bb631a651a14e0beea1151e648fa37f472ddecbd954eb464e0565424ba010c3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_108.receipt.json",
+      "sha256": "09cbed038a2e7da19912d7964d062ca72a795ad224eed8adab8d742bae0918a8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_109.receipt.json",
+      "sha256": "3874be608e3a037a45afd364564accb8bfb73ca371a0aabc27f8e8c4d41ce509"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_11.receipt.json",
+      "sha256": "a0a62ace8397ca713fa885dec80618f9ab100cbd2c71c32baa34da7130a691a7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_110.receipt.json",
+      "sha256": "e58901540cd54a2408802a72051b2da63a7d238f739e122856209cc0fdcb1e9c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_111.receipt.json",
+      "sha256": "b28b0301031d0812873270dea87c354adc64b974aa0fe83cb6c26e1691e74cae"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_112.receipt.json",
+      "sha256": "43f8405bc06768c60e86d0b1ca3aeb0845aaae46c8d0bcd4c812f1449e4aa2f6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_113.receipt.json",
+      "sha256": "e027e80cc14da2a4f8473a4466dc30e34b2a4029dcd349245733203229386db3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_114.receipt.json",
+      "sha256": "10b4c3a07e1eb48371e7fa9f2d5e9320d3640fb0ade8a91e2941fdce9bec6d69"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_115.receipt.json",
+      "sha256": "49ac01aa064fde6debc40893a8d46a04c9e6155765f34f39c263d1f49ae6e68e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_116.receipt.json",
+      "sha256": "8733aabf198d688f7af6628b9d5710dd5bd0c8711db13c3e9431465d1ef33f5f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_117.receipt.json",
+      "sha256": "1805200941593ac2b6478101c512c0270ab9dd11cd66abef74112f861787bfa6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_118.receipt.json",
+      "sha256": "c9c1dc6673c11b5293a4a0f1ba9375b554ef886eeb56e180319f1af9072a7307"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_119.receipt.json",
+      "sha256": "70ab569a8aaa3f5b0114025f13355024dc5bcc88ca53b540d09ecf25e24473bb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_12.receipt.json",
+      "sha256": "aac7c004c3654dd367d593f7d08139e91e3aa8228638611c4746ed1a4dbca903"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_120.receipt.json",
+      "sha256": "78042b277d7e6ef735e06c243fc2982d0734065b6d685ab845239f7a82956db5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_121.receipt.json",
+      "sha256": "3dc3e87d0762d5fc2cb6db25a265b2d3096e466dbeed94735c58b54df6c602ff"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_122.receipt.json",
+      "sha256": "fefd98f41e7d047de04494e41184708bc362a7b6a28167c8d0f6338160bd2185"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_123.receipt.json",
+      "sha256": "fab582f31be85c43f686e5dd5948673d98cf30ad61a4465cc148f6e793f8b381"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_124.receipt.json",
+      "sha256": "336fbd1ced223a657b1b35b5e2dfd525f731ca460a48860ee8032b418b95c82e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_125.receipt.json",
+      "sha256": "4aa78a895c9a6cbcf12f4a1549c4b2481b4f8a2d9a1e299feb0fa4df02fd6e86"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_126.receipt.json",
+      "sha256": "ee6abc78d0c02adb7f1258ce05680ce1e0cea009c36c95da9c2f104b4af8a4a7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_127.receipt.json",
+      "sha256": "0d124db11cf16b5df87a383da5c4e9a2552c8ce5b144e66adb965ab7c207e240"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_13.receipt.json",
+      "sha256": "5855cf5320c805fb4cb6f8ce4af665c5497826a42d089238a8e306eb2d173de4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_14.receipt.json",
+      "sha256": "bcdb565beaf9daf02f9beaa1a4a07242536a93865d34d0fb7bacd44f7eabd17b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_15.receipt.json",
+      "sha256": "f1d7d6c9bc9f478cff4b7e775a843e41f570493d791fbb6ae0df1533be722f51"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_16.receipt.json",
+      "sha256": "d48903f005ea527fc91d311b7465ff9a8b112c1020ef8386c0c1db593af01c3e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_17.receipt.json",
+      "sha256": "cdfa980fb8f2e88d95613807ea45b7b114b6650a265c629d41b5be5fdba0562e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_18.receipt.json",
+      "sha256": "3bed96fb0d25ba680705b7b9b490598c6939d7fd09a4e9445a1420e83586f195"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_19.receipt.json",
+      "sha256": "3c905cbb680eb675dfdaa98708fa268d19870edf053c75d0fa9030156a2fa648"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_2.receipt.json",
+      "sha256": "d54f06f0b47722344e1ff812e63fccb8b112fdc2677b154d3c1de28714d48901"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_20.receipt.json",
+      "sha256": "52e2993263952e1d9171b4bf50c3b1712ff9700b5e5edae0d2793a3557090f87"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_21.receipt.json",
+      "sha256": "0f6c00eb0d9240335614d64dd5e101ef3a67c25af2a8cde654558a30d8f47b93"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_22.receipt.json",
+      "sha256": "f47e15a195fe1ddb85db3498b8cebb34873a30a0ce74ce25745381c46bf3acf9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_23.receipt.json",
+      "sha256": "04b88f190919e01b30ac92febd29b2685886b8339541114ccb7960e02ea8b0bc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_24.receipt.json",
+      "sha256": "eca1deaf205395d6b298940c98f2c0b6d6b1345cf408568f7219f3c673e5e656"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_25.receipt.json",
+      "sha256": "ae8e39c85c6e252b37afb3e6a4052224d4e6dedad69e53ec8e52017b4a0e341c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_26.receipt.json",
+      "sha256": "c0f18d1d655a18867643fd73a8a582d4cab1349e1afd773f1553726c2e39a29e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_27.receipt.json",
+      "sha256": "6c1ff404f6013112c45c6b4c5cd828673901ae54f07de44be1950ab48851eaf1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_28.receipt.json",
+      "sha256": "c2b634b53dc889254a9c7870331fc2a2c02d2d74d7fcfc26d786420b0a49b2b0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_29.receipt.json",
+      "sha256": "e00a2f5849211d3a2bff69565717c945c3a7c159a1b6e44eeaa314215ea8d45f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_3.receipt.json",
+      "sha256": "6b36a634bfb85e75468987c372aae07505da9fea1011596ed55e28981dcc446c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_30.receipt.json",
+      "sha256": "3dcf41913bc3ca4c802a7b5ae463b69c88624f0d3ff3ab9b2d7e7bdd7ab44cdd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_31.receipt.json",
+      "sha256": "67f3bfedf85ecf9e3c5f8426a83cf6ab8319c6f0f9f332c0191086b4cc3e6fa2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_32.receipt.json",
+      "sha256": "7ece3cedc72a914d4b956083bb05c4b0314baad6e709c2c9ba384609062bce75"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_33.receipt.json",
+      "sha256": "6d53b4b2d0f8ab3708a35033dffa5c5b7704a50943a6ef904d7713c044428041"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_34.receipt.json",
+      "sha256": "d940f5f7b456d8c8eb16706955ab6196f9dd03bcc6f580135573773c45a36910"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_35.receipt.json",
+      "sha256": "3ceeedda154bb71d443e276e97957617ef04c70ff68a1b5105d2fe028ead7871"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_36.receipt.json",
+      "sha256": "ddf7ee253dceeadc3d3cda52ffb13f8f65f03ace42cb28364986c2e0bf3d4d0e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_37.receipt.json",
+      "sha256": "64b80aa4f35fddd24c04216f73fcd9e5c9e3340a8ec6eeeb74ac9afedfe64dc5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_38.receipt.json",
+      "sha256": "f1dfb5a56c05181137d5c71ac8b2b25ff605303d07d3e6ae32078671ca1c3191"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_39.receipt.json",
+      "sha256": "accce74e714a62fd59b17356fe079f3511dcf6d51768a9b5eda5b43f3924952c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_4.receipt.json",
+      "sha256": "220c9199865458cf301e7ede43d20bef44abcd9755a354c93fbb2f50dec5f7b4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_40.receipt.json",
+      "sha256": "830064a917265b105f7c99f1e87e8028b179320c34324a9742497d721c7606cb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_41.receipt.json",
+      "sha256": "5bf1185bbaf497aa14622d191cc73cd6d2461a5aa2254fe5374538cac769cdeb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_42.receipt.json",
+      "sha256": "c484aab701d1efde6f2ffa59fb9feb136e74eed5a45f83fcb75ed79eee23fb7b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_43.receipt.json",
+      "sha256": "40ee06a1d7a096647d7d80157cb79a07aa65741a776a0fcfe8e52e0fa18c0def"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_44.receipt.json",
+      "sha256": "df1dcc3530914d667a0471c3851bf4e599edd8f080f2202118f96087e8bc5cf2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_45.receipt.json",
+      "sha256": "14216c3634216e5def41b470b4b597d62a35dff2d331ce36be45e9630acfbe59"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_46.receipt.json",
+      "sha256": "22ef90011cbee4903eea34efe919d298e4bc03d9f6dec65cd32f0448cc87178e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_47.receipt.json",
+      "sha256": "a33dc6a7c6b0cfd9742e1009f664f14b2e0c2536a957758b01f8cbae6fdd3366"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_48.receipt.json",
+      "sha256": "78593cbcfc8ed796b703bd832b1707b1f5e9dd53dfe0e81ae712175a2bce5070"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_49.receipt.json",
+      "sha256": "3d645893d659b9fdadbcbe5d84adf115efbd95b47599d09ded597efbbc02bf92"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_5.receipt.json",
+      "sha256": "f80e3cd2207d27b86bf74ea00ef7807d4b54d6667131dd773a67438d4c843b8d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_50.receipt.json",
+      "sha256": "322908b49bb45a0af1178fdc07ef89027689cf99f00fc3261a5dbdf3534ea2e9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_51.receipt.json",
+      "sha256": "00c4941d7c186b1166f737446adb37a05dca764d9f8d80a28049c682bc0fa502"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_52.receipt.json",
+      "sha256": "8f0649b7ac6a59e4d9a2257bdb530f2f88336661afea80f290d3fc9c0dda2f97"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_53.receipt.json",
+      "sha256": "abf05064561c6bcd2a87574d91bc5a8598e44bad37b6409c22798cd9be1b6b70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_54.receipt.json",
+      "sha256": "b563e29527b051f0589d988068ded5a5822b8b9373dd5e2d863aacee04e9604a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_55.receipt.json",
+      "sha256": "8071de8169267b3c4f2f1e9f6cffd3d2cc442fe04266209fc1e4159f685b19c7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_56.receipt.json",
+      "sha256": "3ce2aa3c27fa3c71b6c42ffc2fd68c8ae6bf3d3623f93caff4a58c7c5a560980"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_57.receipt.json",
+      "sha256": "99fd09393529d3502456fc76714fc6ddb17aefde6a25e2e13f50fff581f06b8e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_58.receipt.json",
+      "sha256": "87045c89b77a172e99cd553afa77f986f0bcd94bd2d71abd66548f8e9551f50a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_59.receipt.json",
+      "sha256": "c0818cc450fa72c9df4e518dc1630a00073d3555a3f3927dfcebf960035d0674"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_6.receipt.json",
+      "sha256": "ca194b249933d11b7b23a049aa316a82ebab76d397cd6b701f4ad1a5d26a75e8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_60.receipt.json",
+      "sha256": "2a735f1342515132a151cf22ba7e0d42621a3480dbd71576a7c1aed599806159"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_61.receipt.json",
+      "sha256": "3de6a681a6cb3a1381562f2d510e4b3a4f7be940a45a8415237b3d7fe6ca1055"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_62.receipt.json",
+      "sha256": "f14f0ee70427b6456b100cae4ba0c487673464ce9ed9f3b9a5a9310b494e4085"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_63.receipt.json",
+      "sha256": "7e30b2f2dac63213b3cd32ff1d34047c908f3f7b902f9aa2058b99026a19c170"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_64.receipt.json",
+      "sha256": "d8c44846c315a9bc80fb10ad6a2fb0e38985579e7c025fe1dd0221411de2e1b1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_65.receipt.json",
+      "sha256": "7be93f00df9db24f8005cad4c14215dc307dfb1b7a9ea6bdd1467a7905313276"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_66.receipt.json",
+      "sha256": "0d0be50e836d298a5a6a075fd075b632b0569ebaa87d7cf6d6f7c2b226a37866"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_67.receipt.json",
+      "sha256": "e2652abfe69a7f8574f4e6f8acf9b89d5a79bf19ed4069f92769982c41990609"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_68.receipt.json",
+      "sha256": "a77b1e982782cd903203f4203f5684b2204be456b2224be8d412ff7894f35228"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_69.receipt.json",
+      "sha256": "d94308d7c4ba7b46bc0cf666ae30dc92d1e3f193d4b445dfa66847829904d898"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_7.receipt.json",
+      "sha256": "476a1c1c5c33b3664b1edfe4c8716d93935db517c0d6e7f258facd9c6a9e98d5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_70.receipt.json",
+      "sha256": "0ce2edc5d9281ae1ffffdb0be085ba154c59663750590285b43049ee7dfd4d00"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_71.receipt.json",
+      "sha256": "e4b1ce2b2fa443fb945a0ab007acfb08085cef6c17e109a3818e689d8391d346"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_72.receipt.json",
+      "sha256": "3eb90d2325f62e8576a22b9917c8da6cb2baf68c53e9e0f4b690528e8d5dc86d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_73.receipt.json",
+      "sha256": "401fc06ebd0df5c1f9409300724f5d2de7fbb382330a4b1ffecfca1989ee3bda"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_74.receipt.json",
+      "sha256": "6ee286d23ad490b4bc2c43034d406aedde8d12716740cc4ef5e019cbca01bbe9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_75.receipt.json",
+      "sha256": "4190d03176736a7657337823b071dbfd16de3451bd9fbbc2979e57be295e19d8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_76.receipt.json",
+      "sha256": "7c66751e134617a0043d0f83a19dab67be85c68167f271299a8f577a6f282cd0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_77.receipt.json",
+      "sha256": "341c781879288b8694619d902f6efc2fe5f82217f08ec3a38b64e55867d75cdc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_78.receipt.json",
+      "sha256": "4b5273142897d820a231b3acb267ec50d09b7e8ceaf3f8880fe07d144ac3abfd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_79.receipt.json",
+      "sha256": "b2e17e8a9381464ad903de62576c8a058d4f43c279193622d5a8dd06ed1fadd4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_8.receipt.json",
+      "sha256": "e09cdf8a7b8d5e8e46b418c13c26cb54f5d3030bbed1e8be960c6affa8418c34"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_80.receipt.json",
+      "sha256": "a446019e8e2e4083614dc3cc1b0cf503fa46c10ad606a5b907cc4232ccd592c1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_81.receipt.json",
+      "sha256": "df3d1eedf1c73dc56971e67ca1ec8cbe26666473f203527ba07da1df0143fc87"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_82.receipt.json",
+      "sha256": "ba36719248a7503bb22314e94c6027e74b1403e45f6ddc1d68a6d3e50d382324"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_83.receipt.json",
+      "sha256": "a15b567e182b56055591af2c838fae2fb7f27cdea3d02533446c1cf9c00e89f9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_84.receipt.json",
+      "sha256": "589f07dc160bd9b14fb8c285427e18e8e95e14f57b3d39ec7f92154a445b49a0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_85.receipt.json",
+      "sha256": "06b0d2dada552a9f1861dfbdf9962048416a94a94e6418cebc50f48da7e4286c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_86.receipt.json",
+      "sha256": "b04d3b5ab248c2aa7072528700e3b0344b630fee3c8e3ff5bfebabe7d181f022"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_87.receipt.json",
+      "sha256": "db23ec4645b54d1ccd62666ad30add1e90e6242d2c6efa11fdf33aa4176c9683"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_88.receipt.json",
+      "sha256": "97114f556ffef22224261a9e24be01b206ad662145b54b68b2698ca614e7e4f6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_89.receipt.json",
+      "sha256": "2ed276e9f89cf99290c0566891053e5548ef8dc2b28940cd33574e132b2569ae"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_9.receipt.json",
+      "sha256": "678043bddc9d9c5e3ebfeb6c67785fcdf7733712c5f276922b6f92250acd9bea"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_90.receipt.json",
+      "sha256": "171734f19e10016ea4e5a2f741190bbb38f290e8ee57c0e220adca3d3abe4e79"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_91.receipt.json",
+      "sha256": "bf6103b3f5e8c692a4c9419223af69d9d7245512310638bb7f6ea09b15c1106b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_92.receipt.json",
+      "sha256": "130e34dae07f30f3808ee6831e759d07b611d5e580d7adc7d28dd307cff1223c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_93.receipt.json",
+      "sha256": "814203af06c86c9dc1c4c466a187fff1321fd8f01457efaad828d266dd9dffb5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_94.receipt.json",
+      "sha256": "de93b63970b9961afb5481e07b1fe6fc60a7124cc7ba889a6700e7fd427fe070"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_95.receipt.json",
+      "sha256": "e5fa2dfec9126d5613fc741ab6eb3398a4167a2442816e5a60136173399be80b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_96.receipt.json",
+      "sha256": "35a74ada7a19abe085ac8b772dc54f5646c1febe66fc78b24f387e465fe453c5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_97.receipt.json",
+      "sha256": "d1ed163702ccb396fa96cde226a9b08bce1479151b2187d33161c868e913f161"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_98.receipt.json",
+      "sha256": "33443a143f884c401ccd42c6481dd8d4897880dcd798702ae3c9452828934754"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/Fprod_99.receipt.json",
+      "sha256": "f7efe810ae0c1100d312e581d13ceeec9b1c287d97e4ff0f543b086ff2be2947"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_0.receipt.json",
+      "sha256": "627992178985729f40daadbfc6e230f7e69242294061960b107da8c605f58c8a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_1.receipt.json",
+      "sha256": "48da165f5e34847f93db09378781e8640d2092f1ed1329522eac9a4b53a3f586"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_10.receipt.json",
+      "sha256": "d6c168b0c599dd81148c96f748213a8a10f83eef19ac72a2bcc5bb916fa0cc6a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_100.receipt.json",
+      "sha256": "9e827f49d75ee77ec9bbc764c263b4dffcf5b16e01dfe2333e35fe7b39a87e70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_101.receipt.json",
+      "sha256": "28dc9cb4a3abe589628fcb58368afe2f5f655fe13f68b282b51e97206ff67db5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_102.receipt.json",
+      "sha256": "89f6a23b3e87a44606f63f80594d93e5ef01d8d9bb82731b262337ddff06c538"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_103.receipt.json",
+      "sha256": "17b56f2254f69db81f56839bb55426690b979c8f9ef0fcd17efc1e1efba883aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_104.receipt.json",
+      "sha256": "bd70eaeffef33dca3cdb911bb1bd10830af05a82209095c841a13047ae1cb298"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_105.receipt.json",
+      "sha256": "0a059834d986d474a951702e4d0627f96cd46369072fda7ecaab7ba5c4d69e4c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_106.receipt.json",
+      "sha256": "174701c1e10ae4b7dcde726d63d843c0f9c4b2695e7f1db3f6bc55597f8d4666"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_107.receipt.json",
+      "sha256": "24af602350006d00f1536c6ad6216162f29c7b3d00c24894f3c97cf93577539c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_108.receipt.json",
+      "sha256": "c8907919e449bb40deb30391933ee4d907e23a89f5b49491af4a9a0062c673d7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_109.receipt.json",
+      "sha256": "cbeb5a32270b30b9d7b43997a3b83094949bcd25a296f351dcd6716339f6e11b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_11.receipt.json",
+      "sha256": "1d091980a193fb9bb28b97309574399ff5f6e769b7d1a9ab1e71cade0ef7c1d9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_110.receipt.json",
+      "sha256": "235e29724e6f2d7d53f50a7911513e3f622875751233e80d2bd8b35903b8a5eb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_111.receipt.json",
+      "sha256": "933604aeeca205e14544ebced393142edc5caac2fc6eccabd8fd53f35cccecb0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_112.receipt.json",
+      "sha256": "7fa4715ce9127a89d1b3f146941bfbb51ff6db0b295d1633a6f0a179960a1c3e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_113.receipt.json",
+      "sha256": "737b0a7fcb3693ec4bbf6e58e1f0aebb28698b61433a8f72c133ccbdc0c9ec66"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_114.receipt.json",
+      "sha256": "33d39596c72cd639f8a8a430deeb8962aa454209096e742e0172345eeb422d3f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_115.receipt.json",
+      "sha256": "abaf417394f9975b9b819f11bf72d809537774dcc10aed9491de3b057594090f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_116.receipt.json",
+      "sha256": "5622efaa6baeed12b4483367f5645b97272963f95d3f411c6b72423cb95186e5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_117.receipt.json",
+      "sha256": "a0dfe0edd732269e527dc0417a2c0438a0b9ea2981dbe6e243cf97b3c0683d90"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_118.receipt.json",
+      "sha256": "c88d0afad52b928098152b6fd90d85f42b38e258af3a7d2c11d6d4b48a06bbfe"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_119.receipt.json",
+      "sha256": "ddb9ed67ad07df458a36930d6a1f533484139d53c370164a4bd415158e9640e8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_12.receipt.json",
+      "sha256": "a2e884e42be298acb6a19be193c92c26d88246d00816e5b853bc7987fa76a096"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_120.receipt.json",
+      "sha256": "e3f3da6bb1a9af36bab0566f3a57b72a5e561f4be8ce3b0ca5d38f60962bd2c5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_121.receipt.json",
+      "sha256": "5169875828d71b50e01ffdbd876dd40a86deb25f3c1e1b2200143cbecccc5a1f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_122.receipt.json",
+      "sha256": "11fbb54f7f411c85afab3aee0d9c0e2ac96ac7570a04e7f47fe1eca1b24e2134"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_123.receipt.json",
+      "sha256": "6441dc0909cb6741b8e0a492ad2e499f2048851576e46837eb5d3cf0649e4d1f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_124.receipt.json",
+      "sha256": "0e3c4b9f9a1f84fc73ab573d182f130f4b0466380851c86b902f3ff4e636bb55"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_125.receipt.json",
+      "sha256": "62df566e042afc574d4f839fded749c6b9e3225808398e8708c47aa8141dd558"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_126.receipt.json",
+      "sha256": "f0b084a14006a70850ecb2b343c088a44d263104b570e741b7f6f5023a6171e5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_127.receipt.json",
+      "sha256": "fb5c7d572f8cd0b8d5c7f751e1f57521b710f4f3c72c61ec7ed2f8137fb011ca"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_13.receipt.json",
+      "sha256": "8ac46be960674cdd9763eb2b59f66a8f4a39286d0fed998c2f93a7e22bd20376"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_14.receipt.json",
+      "sha256": "b450989b9dca681e2ac684b718b8cec37f75095002164341afa5f1a05e11bf0e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_15.receipt.json",
+      "sha256": "e2209ede849a433f888980fd1cec3c8ec9dc24ab0d1c84975496c9170e7f32ad"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_16.receipt.json",
+      "sha256": "a5ef80b05a9ad59a020eff858100fc47236f2743c3ec67f24d358ed4ad681481"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_17.receipt.json",
+      "sha256": "06f68d48d1c47e60732362db83b26695cf4be80fc16ab1865a7cf0f0e9aad711"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_18.receipt.json",
+      "sha256": "57a32dc96bf42899301dcf1483aca42ab38fe7b81f83b59e5bf17ba4ff30f985"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_19.receipt.json",
+      "sha256": "f14f59bab213ef50fd36ddee9ba2c71c9dda1871dc39f55ac5a8314f69ecc6d2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_2.receipt.json",
+      "sha256": "54764787b65ddddeb944026a4c44ed302510a48a7f233ed1190e4ed9c425247e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_20.receipt.json",
+      "sha256": "a029e16b23565fd3bb4d6e2b0e36ced69838d33222f465a6b77651721eec7ec9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_21.receipt.json",
+      "sha256": "9a249440b5bdd4c36c61fc6e936f2fe0a2d9de4a01536c0849be83604b957c46"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_22.receipt.json",
+      "sha256": "a30ae62c25b27c0777430c7cc182f333a3205cb4d3a87fa809f6122f45001bd0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_23.receipt.json",
+      "sha256": "919b53266af22d7fe026a9129b9b61e2ee77092314383b5cae2210bc51fb2542"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_24.receipt.json",
+      "sha256": "8a915ca5f1fe48b4f6109cb472490bc6845097f49335cdbd1946d5d972d46f24"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_25.receipt.json",
+      "sha256": "1db585bb954e3a6d7de23f11efa59c6192a8f2fc4aba439b02717c115c9cc6b9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_26.receipt.json",
+      "sha256": "d82d5083c0ac3b281134b2f24575d18e21a6a935d5482be333efa5f7ca5d6c4b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_27.receipt.json",
+      "sha256": "a9d5ba3ba8650010ac95f5453181606cf102c08a6a4b20690926e1aa8701613d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_28.receipt.json",
+      "sha256": "d684783ff5e8ed66c079f1ad8ad335db4668189e3d22c0bc394a4180920d219b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_29.receipt.json",
+      "sha256": "4b9b1a2a6405b4ac56615b5db7fa9f8decba2d2a1592fa3ce904af68db505a59"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_3.receipt.json",
+      "sha256": "e004c7f45cb8f5220d30b4ede9a9811483764d5cffcf8c9f13b39431ebe9374a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_30.receipt.json",
+      "sha256": "dca81819d517d16b5fbe2042fc24d20c6e137c96cb82ea732a2eae75d4926163"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_31.receipt.json",
+      "sha256": "c724e567db768079e40bbc89fe7fd749e8c6c66c3cbf0b9e601b654baab747e5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_32.receipt.json",
+      "sha256": "139e63e5555b60dce7f9f6cd63a13f1c050c660c0b95f2ed87cffaa53a931f5e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_33.receipt.json",
+      "sha256": "cbec9211774b3fdea0e498c1c2879c1abe37ce2e5d7dc421574bac05d8b93594"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_34.receipt.json",
+      "sha256": "5a7a9c297db4110bc5100341ff1510b305f31ae5650fc50e1566a2e394d504aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_35.receipt.json",
+      "sha256": "9e62b1950dee0960a981709a9684f04f05fa781c8b71d83aa05898bc3ed008eb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_36.receipt.json",
+      "sha256": "cea0de8a6d7543902290d0cb44d57ea364f5d74b040db111fc73ebf3e7d9d39d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_37.receipt.json",
+      "sha256": "210c428a29caa56f1d2413077168c26b78681909d02dfb68a55e686fbbf89f2d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_38.receipt.json",
+      "sha256": "23654da6d6df2b135aea673b13bb262d4ca1db265528ecccc051a9f922209551"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_39.receipt.json",
+      "sha256": "f49967253f34b5bea3a1dd8ffe60985bb12b61b3896b9be03f5409ae4b969727"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_4.receipt.json",
+      "sha256": "c276f51c429cb6dc413e18f4e6b7a7ac6370ac8756b50e65217df58ca2139c7c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_40.receipt.json",
+      "sha256": "59c07f2199eee7235cc04ea680a2331932789004ec62ffd77f7015d1ec0edcf2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_41.receipt.json",
+      "sha256": "07dbdb5c334aa11b9e447697517bdc8dfa1e5ca335e36cac0683fd25505f458c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_42.receipt.json",
+      "sha256": "1cf73899f0c2423558eb34cce54cea348f210aaed33bc4a204b80faa9129ad8d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_43.receipt.json",
+      "sha256": "53161130048d403661a269c0eeb25c4ffcfdd99affe3f5d440ddacf3ae4ebc64"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_44.receipt.json",
+      "sha256": "67c851582909b12839ef74138d286773ab49dbe301b06f987d2e896b6e89721a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_45.receipt.json",
+      "sha256": "e1f17eadedee034090aac1c548fbd644b7569a7b3172a6b9efff5b84727bc1e6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_46.receipt.json",
+      "sha256": "db65e0df6641daaadaec665467ffb87f0e5dc118ccdcd8b082cffbd0fe0ae7f5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_47.receipt.json",
+      "sha256": "2c6eb550acbc54caf72e8826bf13ef0e38a33fc51d99a81aa68d299d70990a20"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_48.receipt.json",
+      "sha256": "926dca9e23d0bea04869472dfc104335730556cd2364c8c4db974eb39038460f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_49.receipt.json",
+      "sha256": "363094ca00014088324aa169efb655da6b6029bac73b5c06cd3e936623dc12f3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_5.receipt.json",
+      "sha256": "2f38d13c8aca8eedd4c8b79a8c4f39d254a3f999a110070169ab6d5c0c1665bd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_50.receipt.json",
+      "sha256": "3939e682aa833d222d1be1c4c25bd7adeca403672d224ec28d607bf279ffbd22"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_51.receipt.json",
+      "sha256": "ff47f57c2abc2eaec178a8b847176c2dabb37700c185e3af87636ac804ef8fc3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_52.receipt.json",
+      "sha256": "3b0245adbf582d968a53dccf2235abbc9e0726a87e3ebfa4ad8ef00405221dbf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_53.receipt.json",
+      "sha256": "64e7f6b6e2063c2870f8e2e2234387cbe5025ff7bbd30ae073172e86fa9faa97"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_54.receipt.json",
+      "sha256": "9468e6ee7834b298de015fb403472d4a920d7397040902fc194fc0fda6100aa8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_55.receipt.json",
+      "sha256": "d6ddb0607ed714e30497af0ee35eb2a4dff36e47ccc135c127094af4916b3f9e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_56.receipt.json",
+      "sha256": "3a5069c95753ca4545756a06fa075733251ba629e87f5335026c01c075ad80db"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_57.receipt.json",
+      "sha256": "1c01bc1ffaa2015b570c70e02cae0e3afb9cb63d276ac6927bdc16e57c5b96f9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_58.receipt.json",
+      "sha256": "13cf91ffbabc82dd5231f35686f3d99963f997c74c836160199c9bb6e59f3c63"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_59.receipt.json",
+      "sha256": "8fe365305f32aafba1eba445a5210f57099126eb2ee555da8b06818c499b1a1a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_6.receipt.json",
+      "sha256": "80ffb6516018fd9239de0584b3bf4b0894c2befc52f50c7bb1de006ded81e247"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_60.receipt.json",
+      "sha256": "0fcdc9499f4026a6e4f26f8bf1639e768bdc678dca75b293ba4295efb7b81691"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_61.receipt.json",
+      "sha256": "facc71f5da9df19ec7ba8a98f260b7a886abd66a89596fb4d95da4838f7a1221"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_62.receipt.json",
+      "sha256": "b06e2ed8725c0a6a728dec53d05b80fcda68d558f790f871e51b7daf2a4e1bc2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_63.receipt.json",
+      "sha256": "cfe7571b55b1b0a4172ff2658ad787d4e003850bd59fe367c0213c974f925676"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_64.receipt.json",
+      "sha256": "b36ead7d4fd5416cd50f532d2e74415262070d54cbb4cefe50b8333da8962282"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_65.receipt.json",
+      "sha256": "1ec66b078b7eac061bba9400a0d9e731b35842411a0edbc01852b6f77e124812"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_66.receipt.json",
+      "sha256": "499a6a46c8d1550a4979b8edb046bae193548ff4b052e696a42269f927f6beaa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_67.receipt.json",
+      "sha256": "5a67a05dc18292bb64353513e191e6b5e81d3532137bb5bacf230205cbd8c001"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_68.receipt.json",
+      "sha256": "360be77e41ccd0c8cec22f19b853920f1a759fcc2e33bca2b38f40e887096fd6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_69.receipt.json",
+      "sha256": "6529d3fceada8f5ca953ff3b1852302b13c52defe3659ecf51024aed9129d8b6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_7.receipt.json",
+      "sha256": "210be9a669353eac9a1b3af01dc3437c7a26366fca1526b1874a9b1acca37c88"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_70.receipt.json",
+      "sha256": "c384eb4c269aac6caa27044f1f3c79fd97703c9e99e10ba17cd4514d75f13a35"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_71.receipt.json",
+      "sha256": "bcd6a452baf603dfd94719df321a0a6c4d0f4b43c845e4a1a88393242172ee47"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_72.receipt.json",
+      "sha256": "d220fa1d0f5e0d083d331a48374da4523e8a99012314d90de37661fec77a215f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_73.receipt.json",
+      "sha256": "77d658f618d3c51db7d6b2bef843873fd661f733b47ae1a7b35b980250587eae"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_74.receipt.json",
+      "sha256": "dbd49ba2f35eb556580ef321dbd30851b824b77d6544869c4a9754b41a9b2c9b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_75.receipt.json",
+      "sha256": "a67a02a12b0fc04660c65a1e1acf524135701f6173dc0f8dffe6461abdd069bf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_76.receipt.json",
+      "sha256": "60de38376bbe00473f520e7e7351888ccdf4a896b1d44e6b0808fa893772108b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_77.receipt.json",
+      "sha256": "47cb3b9340b48ed895742218b47dcbbaf01b93474caa0aaeb28d439fa43f5de0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_78.receipt.json",
+      "sha256": "fe6b48be999a8d257cd13be23da0b176caa563feee3e32b16b3fdab83c096438"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_79.receipt.json",
+      "sha256": "bf5069de4f0fce4ff32a626101983776fb0dfd5b362e807a3aa2e750fc5def26"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_8.receipt.json",
+      "sha256": "03ef1fcd610b1e8db251a458a850c57413a7773b82c8410d807fbc88b967a7a0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_80.receipt.json",
+      "sha256": "a721773a1b1db015848540f9d364db72b066c61ae3a7a4ea2a47d7f6f3fb4c6f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_81.receipt.json",
+      "sha256": "a086c15aa749c9279f85151c56c3d35900d65451c7b4a17cce1929511b25b11b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_82.receipt.json",
+      "sha256": "172d216f75c6493ddfa2f8cbca2e6dffdec2a60a3db474ffdbe0ef00be01d4ea"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_83.receipt.json",
+      "sha256": "840b3a87834b1e18dc7b49b762d080cc0a8bab0804a57aa56e0b1ffa2354190c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_84.receipt.json",
+      "sha256": "4f5f1957ddf162ea58e2113516bddb0fc712247f38f70a1bcdeb587c63f9c55e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_85.receipt.json",
+      "sha256": "270e030345e7f7a1d3a76abc7931be036b5df81d56efdee1d6f758edb11dc1ff"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_86.receipt.json",
+      "sha256": "c2a7d4461aee9a2eb6a4d29571abfa9d95100525ceac286984b6b6c8122712fe"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_87.receipt.json",
+      "sha256": "8193a97f62fcc5472e40947884bcacf13b61884da8bd2da9f66998cfb2621999"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_88.receipt.json",
+      "sha256": "5a410dc26672e7a6ba5a9a7f752948b77444b40e21d0996c22f77273831fc09e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_89.receipt.json",
+      "sha256": "a146b71f1703c431057a5571bc8466ce9c3c67c9de877f66fa7ece0336f180b9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_9.receipt.json",
+      "sha256": "cbc6043adbb802625a0e28b4e9ae4d48e954181a6f2bba0750c7332f50e6716b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_90.receipt.json",
+      "sha256": "8fc77e87714901703060c2068778524e18ecc26e0a6f7d42d56689c3f8175333"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_91.receipt.json",
+      "sha256": "89cdadadf65bc410920da9604367b7798e181f5345941125f3f970f950ee8642"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_92.receipt.json",
+      "sha256": "d215e07875cdb532bfb78ebe515f3dda7c5884a3cd09535c6b50494735a1a1f9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_93.receipt.json",
+      "sha256": "fca0e89070a98aa1c353447ae993f3199f504a38db53ba65563913f072d27838"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_94.receipt.json",
+      "sha256": "2c9e69a221c9c35fede95a3fe40bc5af39ebc48c57494366fb0e2b8545e68b1a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_95.receipt.json",
+      "sha256": "6d823f7a3e09e6b096cccb88f4322e2b5ce121df8ba02faf59d86aba430bbb34"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_96.receipt.json",
+      "sha256": "10a65e4d246e01994ee98d39f512fa312aaf2344ec147841010871ff3a1addb0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_97.receipt.json",
+      "sha256": "682b2b908af10d102cf5c8a8094734a6cf1abfb245f88d160fce2d6f01942566"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_98.receipt.json",
+      "sha256": "88d1fbec8ed3b808f38b9e04ca5332ebcd6846eb1b9a3f9320c28c05b77040fd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final_confirmation/RemoveLow_99.receipt.json",
+      "sha256": "4dce9cdba018c5d1be84296d19870c4d9f64657536b23aa07cc2e81e7970653f"
+    }
+  ],
+  "efficacy_read": false,
+  "policy": "No retry, extension, replacement or retuning.",
+  "elapsed_parallel_seconds": 2332.700019598007
+}

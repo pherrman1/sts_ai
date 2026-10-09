@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-09-26 for local research execution (ADR-0024); 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-10 against the current working tree.
+Last verified: 2026-10-08 for the actual CI trigger and label selection; 2026-09-26 for local research execution (ADR-0024); 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -104,8 +104,8 @@ subcommands fail nonzero (see
 `apps/parity_test.cpp` has a CMake target `parity_test`; `parity_test.py`
 locates the binary via `STS_PARITY_BIN` or `build/parity_test`.
 
-CTest labels provide smaller local verification tiers without weakening the
-unfiltered CI gate:
+CTest labels provide focused local verification tiers. The current CI gate
+selects `core|smoke`; the other labels remain available for affected interfaces:
 
 ```bash
 ctest --preset linux-gcc-test -L smoke
@@ -122,8 +122,8 @@ parity boundaries; `tooling` covers maintained operational utilities; and
 more than one label. The unfiltered `linux-gcc-test` preset remains the full
 CTest suite.
 
-The Linux CI job owns the following complete `tests/agent` discovery as a
-separate pre-build gate:
+The following complete `tests/agent` discovery is available for changes to
+agent tooling. It was a historical CI step; the current workflow does not run it:
 
 ```bash
 python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
@@ -182,8 +182,11 @@ ctest --preset linux-gcc-test
 environment. `linux-gcc-release` uses Unix Makefiles, `g++`, and a Release
 build in `build/linux-gcc-release`; `linux-gcc-build` selects that normal
 build. `linux-gcc-debug` and `linux-gcc-debug-build` create a separate Debug
-build in `build/linux-gcc-debug`; `linux-gcc-debug-build` uses the build tool's
-automatic parallelism (`jobs: 0`).
+build in `build/linux-gcc-debug`. Its `jobs: 0` setting requests parallel
+building without a job count; with GNU Make this permits unlimited jobs.
+CI overrides that preset with `--parallel 2` to bound build concurrency on
+the hosted runner. Local builds should pass an explicit `--parallel N`
+appropriate to the host's available CPU and memory.
 `linux-gcc-test` runs the existing CTest suite there because `cardqueue_overflow`
 intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
@@ -323,19 +326,24 @@ binary for benchmark or other reproducibility/provenance evidence.
 
 `.github/workflows/ci.yml` is the authoritative repository verification check.
 Changes should reach `main` through a pull request only after the Linux GCC
-check passes. It runs one public Linux GCC lane on pushes and pull requests:
+check passes. It runs one Linux GCC lane on non-draft pull requests to `main`
+for opened, synchronize, reopened and ready-for-review events, excluding
+docs-only changes. Draft pull requests skip the job; a draft handoff therefore
+does not establish a CI pass. The lane performs:
 recursive submodule checkout,
 `build-essential`/CMake/CPython development prerequisites plus ccache, Python 3.12 and uv,
-`uv lock --check`, `uv sync --locked`, the read-only `tools/agent/doctor.sh`,
-and the checked-in Debug configure, build, and CTest presets. The workflow adds
+`uv lock --check`, `uv sync --locked --extra analysis`, the read-only
+`tools/agent/doctor.sh`, repository-health comparison and its unit tests,
+and the checked-in Debug configure/build with
+`ctest --preset linux-gcc-test -L 'core|smoke'`. The workflow adds
 the synced `.venv/bin` to `PATH` before CTest so its existing `python3` commands
-use the locked default environment; all test failures remain fatal and CTest
+use the locked environment; all test failures remain fatal and CTest
 prints failure output through its preset.
 
 This lane deliberately does not run statistical gameplay seed benchmarks, access
-private cloud resources, use ignored training checkpoints, or deploy. The default
-uv dependency group is sufficient for every registered CTest check and the
-doctor; trained-model parity remains outside CI because it requires a produced
+private cloud resources, use ignored training checkpoints, or deploy. Its
+dependency environment includes the analysis extra; trained-model parity
+remains outside CI because it requires a produced
 checkpoint (see [Known limitations](#known-limitations)).
 
 The CI job enables ccache (v4+) as a C++ compiler launcher to reduce repeated

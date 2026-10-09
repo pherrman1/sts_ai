@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -40,6 +40,72 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## Fair native OOC decision quality (§395)
+
+The controlled non-MCTS research reference uses public-eight-future native
+fallback scoring and the optional-Ruby-Recall eligibility correction with keys
+off. Both remain opt-in. At base `a4b3df35`, `STS_FAIR=1` alone does not remove
+actual unrevealed encounter identities from native floor/win fallback inputs;
+historical reference scores cannot qualify this changed profile. The wrapper
+passes hidden-state invariance and source/RNG preservation checks, within its
+documented conditional-sampler scope.
+
+Fresh development rejected broad REST-gate removal, the shop feature correction
+as a strength candidate, and their combination. Narrow full-health REST
+exclusion and shop-gate removal each gained one win in 128 pairs. Reversing
+fallback `REMOVE` acquisition-weight ordering gained two wins in its separate
+128-pair cohort and was selected by the frozen exploratory rule. Its one
+fixed 512-pair confirmation is **CONFIRMED_IMPROVEMENT**: 395/512 versus
+381/512, 27 candidate-only and 13 control-only wins, +2.734375 pp with paired
+95% interval [+0.390625, +5.2734375]. The lower bound and predeclared 2 pp floor
+both pass. This applies to immutable `d35b42b1` and its corrected-fair profile;
+development was not pooled, and no live-game or merged-source qualification
+follows automatically. All pairs and runtime gates passed; search safety-limit
+endpoints remain documented diagnostics.
+Card win-head ranking with preserved floor take/skip lost its discovery screen.
+The original campaign changed no production defaults. After reviewing the
+confirmation, the user authorized ascending fallback REMOVE ordering as the
+default in a separate implementation change. `STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=0`
+retains the legacy ordering for rollback and reproduction. This promotion
+does not extend the frozen result to other profiles or qualify live-game parity.
+
+The completed 32-source GEN2 experiment did not establish conditional selection
+gain: rollout-selected −1.171875 pp, source-cluster 95% [−5.46875, +3.125]. The
+large gap between selection and independent evaluation supports concern about
+small-K selection optimism. Queue-blind historical P0/F2 model results do not
+identify a useful replacement. Their retained latent counters and older
+privileged-teacher labels remain scope limits; this conditional diagnostic does
+not qualify the current fair runtime. Calibration bias does not by itself
+explain ranking quality.
+Exact profiles, alternatives, decision audits and limitations are in the
+[original research packet](../../experiments/evidence/ironclad_a0_overnight_20261008/README.md).
+
+### Boss-relic selection precision (§398) — execution blocked
+
+The separately authorized K4-versus-K16 follow-on attempted all 32 fresh
+sources (`610084200..610084231`) using the unchanged `3ed91ab3` producer,
+at most one boss-relic state per source and common futures. Selection was
+allocated k0–3 versus k0–15, followed by shared independent evaluation k16–31.
+Thirty-one sources completed; source `610084217` exceeded its fixed
+1,800-second cap. The all-source contract is `INVALID` and the primary is
+**`EXECUTION_BLOCKED`**. Neither choices nor efficacy evaluation were produced;
+there is no quality verdict and no completed-31 substitute analysis.
+
+Collection used six one-thread workers for 100.414696 minutes elapsed.
+Observed emitted CPU was 9.184214 core-hours, censored by unavailable timeout
+source and unfinished continuation costs. The timeout's saved branches averaged
+17.4739 CPU seconds, 2.43 times the planning average. Recorded profiles support
+a compute-cost tail without a recorded fatal fault; interrupted work remains
+uncertified. All allocated attempts and partial files were preserved, with no
+retry, replacement, cap change or remaining game worker.
+
+Selection precision remains unresolved. The earlier RemoveLow confirmation
+is unchanged, and no new training, deployment or automatic continuation is
+qualified. Future efficacy use requires a new authorized protocol that
+discloses this failed allocation and addresses per-source runtime tails.
+See [ledger §398](../../experiments/ledger-06.md) and the
+[follow-on evidence and reviews](../../experiments/evidence/ironclad_a0_k_precision_20261008/README.md).
 
 ## Live OOC MCTS on vs off (§384) — MCTS loses
 

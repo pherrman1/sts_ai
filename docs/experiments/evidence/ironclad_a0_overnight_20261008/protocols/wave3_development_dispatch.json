@@ -1,0 +1,12 @@
+{
+  "experiment": "wave3_development",
+  "manifest_sha256": "4a3f54d11183d5a864fec8a0ac5f37d4e3a90a0a4b33a46da8fd83f74c46e705",
+  "queue_A_launch_epoch": 1791424371.1493402,
+  "experiment_deadline_epoch": 1791435171.1493402,
+  "hard_stop_utc": "2026-10-08T05:15:00Z",
+  "queue_A_outer_timeout_seconds": 7200,
+  "queue_B_launch_rule": "only after removal discovery dispatch completion; timeout=min7200,remaining globaldeadline",
+  "workers_each_queue": 1,
+  "max_game_processes_campaign": 6,
+  "root_authorized_after_independent_learning_review": true
+}

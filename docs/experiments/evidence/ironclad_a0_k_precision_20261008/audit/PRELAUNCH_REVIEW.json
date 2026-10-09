@@ -1,0 +1,162 @@
+{
+  "schema": "k_precision_prelaunch_integrity_review_v1",
+  "status": "PASS_PENDING_COORDINATOR_COMMIT_AND_EXCLUSIVE_LATCH",
+  "reviewer": "independent integrity specialist; author of verifier, independent of analyzer and coordinator protocol",
+  "reviewed_epoch": 1791451156.1514895,
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "analysis_sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79",
+  "analysis_test_sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b",
+  "verifier_sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db",
+  "verifier_test_sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b",
+  "artifact_entries_checked": 21,
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/prior_profile_identity_check.json",
+      "sha256": "bc01c4c0700d7be5905906232892096cffb1cfed2165bcab66b8c521189a587a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/reused_artifacts.json",
+      "sha256": "14c849ffbf4be29e261f9818fbb9448a2bc074991b2874752e7e3e4c8f237282"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/source_freshness_inventory.json",
+      "sha256": "1ae7a05ec3ecef005aa508d4eb12998744ef952fd813117190cd29d5ac652f6c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_spec.json",
+      "sha256": "f1ae7f48c352fc6271d3c6f8f7eea353bd5b82c99b03e651b27c324fe5e8910f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+      "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+      "sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/source_seeds.txt",
+      "sha256": "a15779c5e399d36aa79c5b9c6a774e3e978b96df02e25da2e06112dd9ff565e3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+      "sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/corrected_canary.json",
+      "sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/paired_analysis.py",
+      "sha256": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tools/seed_guard.sh",
+      "sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06"
+    }
+  ],
+  "checks": {
+    "fixed_source_allocation_and_jobs": true,
+    "no_protected_holdout_source": true,
+    "immutable_binary_teacher_policy_models": true,
+    "actual_analysis_python_numpy_identity": true,
+    "analyzer_verifier_schema_alignment": true,
+    "selection_and_evaluation_semantic_barrier": true,
+    "equal_weight_all32_sources_no_state_zero": true,
+    "single_primary_K16_minus_K4_strict_ci_sign_rule": true,
+    "fixed_whole_source_bootstrap10000_rng20261008": true,
+    "strict_health_and_exact_completed_checkpoint_contract": true,
+    "process_group_timeout_source_review": true,
+    "raw_directory_absent": true
+  },
+  "synthetic_checks": {
+    "verifier": {
+      "tests": 12,
+      "exit_code": 0,
+      "command": "python3 /home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py"
+    },
+    "analyzer_independent_execution": {
+      "tests": 12,
+      "exit_code": 0,
+      "command": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python /home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py"
+    }
+  },
+  "prior_profile_identity_check": {
+    "roots": 456152,
+    "files": 32,
+    "duplicate_seed_combat_decision_keys": 0,
+    "efficacy_read": false
+  },
+  "required_launch_conditions": [
+    "Coordinator commits reviewed files and pins reviewed commit in ready bundle.",
+    "Create one exclusive dispatch authorization; refuse existing raw directory and prior latch.",
+    "Evaluate effective timeout immediately before dispatch and require positive seconds; zero disables GNU timeout.",
+    "Use timeout default process group without --foreground and verify no owned workers after completion/timeout.",
+    "No automatic retry, source replacement, sample extension or cap relaxation."
+  ],
+  "limitations": [
+    "Verifier author does not self-approve its implementation; separate strategy review is required.",
+    "Profile seed membership cannot prove combat coverage for every branch: no branch-id field, and some valid branches may contain no combat.",
+    "Cycle fallbacks and engine/turn safety endpoints remain reported diagnostic limits, with no new quality threshold.",
+    "The inherited per-source timeout can leave a source incomplete, especially a 192-branch tail; that blocks clean inference.",
+    "Exact reservoir, retained option cap, fixed teacher and sampler limitations remain. No whole-run promotion, old holdout reuse or live-game qualification."
+  ],
+  "games_run_by_reviewer": 0,
+  "new_outcome_rows_read": 0
+}

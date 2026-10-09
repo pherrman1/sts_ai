@@ -1,0 +1,64 @@
+{
+  "schema": "k_precision_verifier_implementation_review_v1",
+  "status": "PASS",
+  "reviewer": "strategy",
+  "reviewed_utc": "2026-10-08T09:19:48.867350+00:00",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/verify_gen2_k32.py",
+      "sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+      "sha256": "1a2e14e7870fc7c0c30ba2b92d5f2e906f1e94140aa838f5a7b8a7cad5024f0b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/verifier_synthetic_test.log",
+      "sha256": "6f2469297ab2ae6572365a8e25e86cc457d7baa89a7a09b3fe0f01790c9ad55b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+      "sha256": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+      "sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/prior_profile_identity_check.json",
+      "sha256": "bc01c4c0700d7be5905906232892096cffb1cfed2165bcab66b8c521189a587a"
+    }
+  ],
+  "scope": "Independent source/diff review and12synthetic tests; no simulator execution or new outcome inspection.",
+  "checks": [
+    "Exact32reserved sources,32distinct prefixes,K32,BOSS-only,max1 andfuture0 guards.",
+    "Source canonical valid-no-state distinguished from invalid/malformed/multiple states; all retained labels/MAP joins required.",
+    "Missingk31 and duplicate root fail even after consistent output rehashing.",
+    "Fixed teacher/policy/environment/models, runner/guard/output custody and actual runtime banners preserved.",
+    "All32future seeds use unchanged SHA domain and first mt19937_64 output; four standard vectors pass.",
+    "Newly completed simulation denominator excludes inherited visits; learned checkpoints andsingleton bypass checked.",
+    "Error/descent/nonterminal fatal; cycle/engine-stop/turn-limit diagnostics preserved without post-hoc efficacy thresholds.",
+    "No victory/death totals emitted before selection; finalWon interpreted only as validity domain in verifier.",
+    "Global combat_id makes repeated-future sibling profile identities distinct; sourceprofile required butno combat required for every branch.",
+    "Old verifier/runner bytes unchanged."
+  ],
+  "tests": {
+    "command": ".venv/bin/python -B /home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/test_verify_gen2_k32.py",
+    "exit_code": 0,
+    "tests_passed": 12,
+    "duration_seconds": 0.061,
+    "log": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/verifier_synthetic_test.log",
+      "sha256": "6f2469297ab2ae6572365a8e25e86cc457d7baa89a7a09b3fe0f01790c9ad55b"
+    }
+  },
+  "limitations": [
+    "Profiles have no branch-ID tag; seed membership does not prove per-branch combat coverage.",
+    "Model/sampler assumptions and retained-option limits remain the protocol scope.",
+    "Analyzer has a different independent reviewer; this receipt does not replace that review."
+  ]
+}

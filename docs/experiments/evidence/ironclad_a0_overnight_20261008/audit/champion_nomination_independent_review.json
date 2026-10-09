@@ -1,0 +1,126 @@
+{
+  "schema": "campaign_nomination_independent_review_v1",
+  "status": "PASS_FOR_EXPLORATORY_CHAMPION_FREEZE",
+  "reviewed_epoch": 1791428082.2284842,
+  "champion": "RemoveLow",
+  "comparator": "Fprod",
+  "selection": {
+    "intra_wave3": "FullHp andShopOff102/128vsFprod101; declared FullHp tie priority applies.",
+    "cross_candidate": "RemoveLow106/128vsFprod104 gives+2/128, greater thanFullHp+1/128; no CPU/earlier-protocol tiebreak needed.",
+    "candidate_combination": false,
+    "earlier_rejections": "RestOff,ShopFix,RestShop failed development;CardWinRank failed32-pair discovery; no extension or recycled efficacy evidence."
+  },
+  "recommended_same_producer_freeze": {
+    "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+    "binary": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/removal-d35b42b1/one_combat",
+    "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+    "manifest_sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de",
+    "only_arm_environment_difference": {
+      "STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT": [
+        "0",
+        "1"
+      ]
+    },
+    "shared_information_contract": {
+      "STS_FAIR": "1",
+      "STS_OOC_PUBLIC_FUTURES": "8",
+      "STS_OOC_SKIP_OPTIONAL_RECALL": "1",
+      "STS_STOP_AFTER_ACT": "3",
+      "STS_COLLECT_KEYS": "0"
+    }
+  },
+  "validity_checks": [
+    "Frozen Wave3 and removal efficacy analyzers reexecuted read-only in memory and reproduced full completed reports exactly.",
+    "Separate raw-CSV paired bootstrap arithmetic reproduced Wave3 and removal estimates, counts and intervals.",
+    "Bound source/implementation/canary/static review hashes and immutable removal binary verified.",
+    "All seven completed full-run cohorts independently pass hash/source coverage/budget/histogram conservation; no error/abort/nonterminal findings.",
+    "Nomination protocols were hash-bound in manifests before their completed invocation start times.",
+    "Development cohorts remain distinct; no pooling, new combination, replacement or holdout data used."
+  ],
+  "health_reports": [
+    {
+      "report": "wave1",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave1_health.json",
+      "sha256": "e7d373e8c9924e8c88c24b9148afb1bfe227b3127ba50887efcf69dd6028a3d4",
+      "invocation_sha256": "f5cdd8c47811b669d1a1df739bfd3ad09758571c6621434e4c58894b03225d06",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    },
+    {
+      "report": "wave2",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave2_health.json",
+      "sha256": "988730be909c1d60800d9a1e1a566bae5889cc5c0c9bbec725acb7225332f673",
+      "invocation_sha256": "d8e9f35ab1372e51b24ed9174527f5c2acc200fd83e247a50fe168ca011a53d8",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    },
+    {
+      "report": "wave3",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_health.json",
+      "sha256": "9445e30c71de8eb9c7ca8af999df420f3af2dc0672bb62492aab23e72dee66f3",
+      "invocation_sha256": "eeae4b9f030f52c031e99e7178a08cb9eebdcf18c1f84769ce939c580eb8be1e",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    },
+    {
+      "report": "wave4_removal",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave4_removal_health.json",
+      "sha256": "5bca25a9a9b04cdff32316903ccf7f30615d3493aa13c9bf835b4d838134039e",
+      "invocation_sha256": "5b4806572d7379e80a3fdfd1ada02b44721f229dc5f1b030446e84a439514a88",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    },
+    {
+      "report": "removal_development",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/removal_development_health.json",
+      "sha256": "d82fd4fe29bd275f0072a0ea43c6a167b6a067e800a115aebb8a84db4eb2cd30",
+      "invocation_sha256": "cdf0ec190a00547b5c47b0c8ca099b9fbbfd06d505c1a22a14c96c23c2679284",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    },
+    {
+      "report": "wave5_card_rank",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave5_card_rank_health.json",
+      "sha256": "c0534c4bf81777ead91810519ea0f6ce04d555c9c023b19905bfd88ba4439726",
+      "invocation_sha256": "8504ae31457245dc3e36b7205f20a16e64da13fbe19d77971cbfbda95e4f936c",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    },
+    {
+      "report": "wave3_development",
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_development_health.json",
+      "sha256": "1da50cee9a342a08ed2fca0bc53fd0c44249887669b58e13170ecb5f98188d5a",
+      "invocation_sha256": "0fa914189dd7742bc3e51251f4c293fe865045ecf1da79931bd39cac6868a81a",
+      "status": "PASS_WITH_DIAGNOSTIC_LIMITS"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave3_development_nomination_arithmetic_review.json",
+      "sha256": "f00c9c14c0456b35c490aef600cb7c8994cb438584b82236fbee776f6dcd212a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/removal_development_cardrank_discovery_analysis_review.json",
+      "sha256": "7dfa89b57e19e601fb8d52808812ffec7acd0bdc39b5589c2c6bfdd12770cb81"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave2_report.json",
+      "sha256": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave3_development.md",
+      "sha256": "7308bfe689051ac117d397625a1882295f0ebab2b70a5daf72be222a75f43af0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_development.md",
+      "sha256": "fc3d8a7b0cc991ff6539d6bb37d85d0d8831907c460caffaa19b06d250c554be"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_development_reservation.json",
+      "sha256": "b0f91da044a4a734305cd0e8597447f57661d7509103ba53b5a8949a34e9f3c1"
+    }
+  ],
+  "limitations": [
+    "Greatest observed gain across different cohorts is exploratory selection, not evidence RemoveLow is superior to either FullHp or Fprod.",
+    "RemoveLow development gain1.5625pp and95%CI[-3.90625,+7.03125] is inconclusive. It does not waive final>=2pp and positive lower-confidence-bound criteria.",
+    "Recorded safety endpoints remain visible, especially RemoveLow development268engine-stop/30turn-limit among249567250sampled endpoints. Existing engine termination semantics make these diagnostic limits, not root execution errors; tree rows do not identify individual causes.",
+    "Original-model/history and public8 sampler information limitations remain; this is the reviewed simulator contract, not proof of a full human-observation sensor audit."
+  ],
+  "remaining_pre_holdout_gate": "Coordinator must freeze exactly one champion/comparator, immutable artifacts/environment, fixed final sample size, analysis and information/execution gates before first confirmation run. This review performs no launch.",
+  "holdout_or_test_opened_by_reviewer": false,
+  "new_games": 0
+}

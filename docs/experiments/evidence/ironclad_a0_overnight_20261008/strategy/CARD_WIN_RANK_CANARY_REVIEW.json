@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "status": "CANARY_MANIFEST_SOURCE_AND_STATIC_REVIEW_PASS",
+  "manifest_sha256": "cc77397f2017986c9807153d0a35e90b5034ce0029838bdc555912fdb08dde4c",
+  "source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+  "binary_sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907",
+  "source_review_sha256": "8a95cce0e1705cfc0074e616b43ab2896eebf55465dcd6de8ab7f217c5473baa",
+  "static_receipt_sha256": "4b46f04c799a5df816d5991a3262c5e1ecc60d003027410d73b6521619894be5",
+  "runner_sha256": "fa4b556c0c8ce4f662cc9755725f8b318962c4be9090e6e85307a0537f360ceb",
+  "analyzer_sha256": "2e5727f7cb1c5dcef26931950414c721fc284a09f9b0e95842b47b2569ccede3",
+  "static_verification": [
+    "committed helper and integration diff hashes exactly match independent source review",
+    "immutable binary and all four frozen artifact hashes match",
+    "all17 startup logs plus producer selftest and7 build/test logs rehashed",
+    "four valid startup cases pass;13 invalid cases reject with specific failures",
+    "three final focused tests PASS read from raw CTest log",
+    "unset equals0 policy and previous removal producer policy exactly; on adds only native_ooc_card_win_rank=true; trace policy identical to on",
+    "analyzer exact three-line bidirectional banner gate addition; all preparation input hashes match"
+  ],
+  "policy_json_hashes": {
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/cardrank_static/unset.policy.json": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/cardrank_static/off.policy.json": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/cardrank_static/on.policy.json": "49ea126989ee1eac85fb26e52f081290198695b637679eea342339046ec3c690",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/cardrank_static/trace.policy.json": "49ea126989ee1eac85fb26e52f081290198695b637679eea342339046ec3c690",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_static/off.policy.json": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188"
+  },
+  "allocation": {
+    "runs": [
+      [
+        "Fprod",
+        610080001
+      ],
+      [
+        "CardWinRank",
+        610080001
+      ],
+      [
+        "CardWinTrace",
+        610080001
+      ]
+    ],
+    "max_workers": 1,
+    "threads_per_game": 1,
+    "combat_mode": "learned stopping, exact-root override0, nominal bestbench10000",
+    "only_gameplay_arm_difference": "STS_OOC_CARD_WIN_RANK0->1",
+    "only_trace_arm_difference": "STS_OOC_CARD_WIN_RANK_TRACE0->1",
+    "seed_status": "previously used diagnostic smoke610080001; not fresh efficacy evidence"
+  },
+  "launch_requirements": [
+    "wait for a campaign CPU slot and retain total game-process cap6",
+    "P1, exactly three declared runs, no replacement sources or retries to seek activation",
+    "use hash-matched run_arm.py through tools/seed_guard.sh with explicit bounded timeout and fresh output prefixes",
+    "capture full OOC/strategic trace and tree/floor profiles for parity and health checks",
+    "runtime validator must verify source/binary/models/environment/outputs and complete source coverage"
+  ],
+  "runtime_gates_pending": [
+    "new Fprod complete gameplay trace equals previous same-seed removal Fprod; allow only documented timing/run-identity fields",
+    "CardWinRank and CardWinTrace complete gameplay traces identical, plus tree/search counts and strategic choices",
+    "finite floor/win scores and valid offered-card indices, first-strict argmax; skip exactly follows floor threshold at each logged root",
+    "trace head evaluations and public scorer receipts establish actual use; verify public8 and original models",
+    "identify first matched-public-prefix rank change if exposed; otherwise report no changed action exposure honestly",
+    "all recorded search endpoints healthy; missing/invalid outputs are failures rather than losses"
+  ],
+  "inference_limit": "Runtime contract/trace neutrality only; no quality inference, threshold tuning, candidate combination, development extension or holdout opening.",
+  "reviewer_execution": "Read-only source/artifact/log checks and this review file write only. No builds, test executables, seed launches or new gameplay outcome reads."
+}

@@ -1,0 +1,19 @@
+{
+  "stage": "evaluation",
+  "command": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_tranche.py",
+    "evaluate",
+    "--choice-sha256",
+    "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7"
+  ],
+  "started_epoch": 1791426262.1548004,
+  "choice_sha256_before_launch": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7",
+  "analysis_sha256": "f2ed2e94c5fd670aadaba5f12f563b6bd7d7532025de3b271d31f8eb06406fda",
+  "prior_invocation_sha256": "2fd1e4ae8465b448e3a07873d773a87e2ab248330076ca4c713bf3dfffb2271d",
+  "finished_epoch": 1791426263.1319296,
+  "exit_code": 0,
+  "log_sha256": "ac28c71325d44fce22948e3bc057599965ea4ad1c6dca7041d39ec56b6c25c47",
+  "evaluation_sha256": "5ada874a05f6d947cf0a19435db681a01be89aa23b26ceb26b5c59414aff798f",
+  "choice_sha256_after": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7"
+}

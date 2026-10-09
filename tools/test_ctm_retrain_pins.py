@@ -155,6 +155,36 @@ class TestCtmRetrainPins(unittest.TestCase):
                                                    candidate=dict(checkpointSha256=staged.sha256(head))))
             with self.assertRaisesRegex(ValueError, "require GO"):
                 staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
+            failure = "cards singleton exact-label accuracy drop exceeds 0.5pp"
+            rejected = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
+                                                              failures=[failure], candidate=dict(checkpointSha256=staged.sha256(head))))
+            override = dict(schema="ctm_gate_override_v1", stage="downstream", qualificationSha256=staged.sha256(rejected),
+                            failures=[failure], approval="test", reason="noise", evidence=dict(ci95=[-0.02, 0.01]))
+            for change, message in ((dict(qualificationSha256="x"), "does not bind"), (dict(failures=[]), "exactly the one"),
+                                    (dict(reason=""), "approval and reason"), (dict(evidence={}), "evidence"),
+                                    (dict(stage="potion"), "downstream stage")):
+                with self.assertRaisesRegex(ValueError, message):
+                    staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(override, **change)))
+            def refused(qualification, message):
+                written = write(s19 / "qualification.json", dict(qualification, candidate=dict(checkpointSha256=staged.sha256(head))))
+                with self.assertRaisesRegex(ValueError, message):
+                    staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(
+                        override, qualificationSha256=staged.sha256(written), failures=qualification["failures"])))
+            two = [failure, "relics singleton exact-label accuracy drop exceeds 0.5pp"]
+            refused(dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True, failures=two), "exactly the one")
+            refused(dict(decision="DEEPSET_DOWNSTREAM_GO", finiteAndLegal=True, failures=[failure]), "finite/legal")
+            refused(dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=False, failures=[failure]), "finite/legal")
+            nll = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
+                                                          failures=["joint NLL relative degradation exceeds 2%"],
+                                                          candidate=dict(checkpointSha256=staged.sha256(head))))
+            with self.assertRaisesRegex(ValueError, "only singleton"):
+                staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(
+                    override, qualificationSha256=staged.sha256(nll), failures=["joint NLL relative degradation exceeds 2%"])))
+            rejected = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
+                                                              failures=[failure], candidate=dict(checkpointSha256=staged.sha256(head))))
+            accepted = staged.downstream(d / "pins-8.json", s19, d / "pins-9-override.json",
+                                         write(d / "override.json", override))
+            self.assertEqual(accepted["stages"][-1]["inputs"]["override"], staged.sha256(d / "override.json"))
             write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_GO", candidate=dict(checkpointSha256="other")))
             with self.assertRaisesRegex(ValueError, "qualified candidate"):
                 staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
@@ -189,6 +219,18 @@ class TestCtmRetrainPins(unittest.TestCase):
             write(d / "pins-6.json", changed)
             with self.assertRaisesRegex(ValueError, "verify_data"):
                 staged.check(d / "pins-6.json", d / "pins-3.json")
+
+
+    def test_trajectory_graphs_load_past_the_pins_receipt(self):
+        # json_dump stamps every dict under pins, including the row-id map graphs.json.
+        from tools import combat_transition_potion_trajectory_evaluate as trajectory
+        graph = dict(inventories=[[1, 0, 0, 0, 0]], edges=[[0, 0, 1]], target_edges=[[0, 1]],
+                     generation_log_prior=-1.5, rounds=1)
+        with tempfile.TemporaryDirectory() as d:
+            path = write(Path(d) / "graphs.json", {"7": graph, "ctmPinsSha256": "0" * 64})
+            graphs = trajectory.load_graphs(path)
+        self.assertEqual(list(graphs), [7])
+        self.assertEqual(graphs[7].rounds, 1)
 
 
 if __name__ == "__main__":

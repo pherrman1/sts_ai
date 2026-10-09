@@ -1,0 +1,9 @@
+{
+  "schema": "overnight_gen2_receipt_v1",
+  "freeze": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/freeze.json",
+  "freeze_sha256": "8c7a1b9060159983b3a09e43e673e891c59be918e82c405784455143235d10bf",
+  "verifier_sha256": "12443d83e12b33a6344005f0c5df1c3ab6fa0eed406cfd31669de81958de7ae1",
+  "status": "INVALID",
+  "error": "invalid root source/budget/error",
+  "evaluation_outcomes_reported": false
+}

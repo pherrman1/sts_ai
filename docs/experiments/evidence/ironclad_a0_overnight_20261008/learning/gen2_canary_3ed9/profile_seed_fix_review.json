@@ -1,0 +1,9 @@
+{
+  "status": "INDEPENDENT_REVIEW_PASS",
+  "reviewer": "native subagent /root/strategy",
+  "verifier_sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+  "original_failed_receipt_sha256": "1c443c06bd07c77bb3b60e3f551a2f0381d3ddce60adef566cd0f93d73d8e04a",
+  "fixed_contract_receipt_sha256": "bf2a82d869e809f6cd205a699d434b0f65c76daa3d6c8986a3e4e0619168bcf2",
+  "scope": "Exact deterministic source/redrawn-future gc.seed membership; all validity/error/budget gates retained; no gameplay rerun.",
+  "branch_attribution_limit": "Profiles combine source and branches; teacher contract and source inspection bind both to learned stopping. Seed membership does not attribute profile coverage to every branch because no branch-id tag is present."
+}

@@ -48,6 +48,12 @@ add_executable(silver-useless-replay apps/silver_useless_replay.cpp $<TARGET_OBJ
 set_target_properties(silver-useless-replay PROPERTIES OUTPUT_NAME silver_useless_replay)
 target_include_directories(silver-useless-replay PRIVATE include json/include)
 
+# Bounded public-state research probe; never linked into the gameplay executables.
+add_executable(silver-public-pair-probe apps/silver_public_pair_probe.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-public-pair-probe PROPERTIES OUTPUT_NAME silver_public_pair_probe)
+target_include_directories(silver-public-pair-probe PRIVATE include json/include)
+link_ctm_crypto(silver-public-pair-probe)
+
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(combat-knowledge-neutrality-test PROPERTIES OUTPUT_NAME combat_knowledge_neutrality_test)
@@ -86,6 +92,57 @@ add_executable(main apps/main.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
+
+add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(rest_recall_filter_test PRIVATE include json/include)
+add_test(NAME rest_recall_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:rest_recall_filter_test>)
+set_tests_properties(rest_recall_filter PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
+add_test(NAME full_hp_rest_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:full_hp_rest_filter_test>)
+set_tests_properties(full_hp_rest_filter PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(remove_obtain_weight_test tests/remove_obtain_weight_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(remove_obtain_weight_test PRIVATE include json/include)
+add_test(NAME remove_obtain_weight COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:remove_obtain_weight_test>)
+set_tests_properties(remove_obtain_weight PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(native_ooc_card_win_rank_test tests/native_ooc_card_win_rank_test.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(native_ooc_card_win_rank_test PRIVATE include json/include apps)
+add_test(NAME native_ooc_card_win_rank COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:native_ooc_card_win_rank_test>)
+set_tests_properties(native_ooc_card_win_rank PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(native_ooc_shop_features_test tests/native_ooc_shop_features_test.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(native_ooc_shop_features_test PRIVATE include json/include apps)
+add_test(NAME native_ooc_shop_features COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:native_ooc_shop_features_test>)
+set_tests_properties(native_ooc_shop_features PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(test_ooc_public_futures apps/test_ooc_public_futures.cpp
+    apps/one_combat/ooc_native_fallback.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/compact_tree.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(test_ooc_public_futures PRIVATE include json/include apps)
+add_test(NAME ooc_public_futures COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:test_ooc_public_futures>)
+set_tests_properties(ooc_public_futures PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/screen_leaf_snapshot.cpp
@@ -579,6 +636,12 @@ add_test(NAME ctm_near_full_inputs_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
 add_test(NAME ctm_retrain_pins_selftest COMMAND python3 -m unittest tools.test_ctm_retrain_pins)
 set_tests_properties(ctm_retrain_pins_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_exposure_cohorts_selftest COMMAND python3 -m unittest tools.test_ctm_exposure_cohorts)
+set_tests_properties(ctm_exposure_cohorts_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_support_census_check_selftest COMMAND python3 -m unittest tools.test_ctm_support_census_check)
+set_tests_properties(ctm_support_census_check_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_qualify_fixtures_selftest COMMAND python3 -m unittest tools.test_ctm_qualify_fixtures)
+set_tests_properties(ctm_qualify_fixtures_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_hp_domain_selftest COMMAND python3 -m unittest tools.test_ctm_hp_domain)
 set_tests_properties(ctm_hp_domain_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_escape_selftest COMMAND python3 -m unittest tools.test_ctm_escape)
@@ -762,6 +825,11 @@ add_test(NAME ctm_writhing_ritual_runtime COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_ctm_writhing_ritual_runtime.py
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(ctm_writhing_ritual_runtime PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_candidate_tool COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_candidate.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_candidate_tool PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 add_test(NAME ctm_lizard_runtime COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_ctm_lizard_runtime.py

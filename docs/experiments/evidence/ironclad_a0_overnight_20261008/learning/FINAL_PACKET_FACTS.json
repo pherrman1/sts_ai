@@ -1,0 +1,223 @@
+{
+  "status": "FINAL_PACKET_FACTS_CROSSCHECK_PASS",
+  "created_utc": "2026-10-08T03:44:44.626614+00:00",
+  "raw_verdict": "CONFIRMED_IMPROVEMENT",
+  "confirmation_comparison": {
+    "pairs": 512,
+    "gain": 0.02734375,
+    "ci95": [
+      0.00390625,
+      0.052734375
+    ],
+    "candidate_only": 27,
+    "control_only": 13,
+    "both_win": 368,
+    "decision": "CONFIRMED_IMPROVEMENT"
+  },
+  "confirmation_arms": {
+    "Fprod": {
+      "n": 512,
+      "wins": 381,
+      "win_rate": 0.744140625,
+      "win_rate_wilson95": [
+        0.7046240394693286,
+        0.7800209919159826
+      ],
+      "mean_floor": 48.33203125,
+      "run_seconds_sum": 6845.855494,
+      "process_wall_seconds_sum": 6868.704318245,
+      "public_scorer_calls": 11464,
+      "observed_profile_thread_cpu_seconds_sum": 6844.145093407021,
+      "observed_profile_thread_cpu_rows": 25842
+    },
+    "RemoveLow": {
+      "n": 512,
+      "wins": 395,
+      "win_rate": 0.771484375,
+      "win_rate_wilson95": [
+        0.7331726774291983,
+        0.8057525974712677
+      ],
+      "mean_floor": 48.857421875,
+      "run_seconds_sum": 6950.988621,
+      "process_wall_seconds_sum": 6973.557268587843,
+      "public_scorer_calls": 11719,
+      "observed_profile_thread_cpu_seconds_sum": 6949.048443611026,
+      "observed_profile_thread_cpu_rows": 26111
+    }
+  },
+  "final_parallel_elapsed_seconds": 2332.700019598007,
+  "final_parallel_elapsed_minutes": 38.878333659966785,
+  "invocation_counts": {
+    "runtime_invocations": 799,
+    "full_run_shard_invocations": 695,
+    "requested_full_run_trajectories": 2687,
+    "source_with_conditional_branch_invocations": 39,
+    "public_combat_pair_invocations": 64,
+    "public_combat_check_invocations": 1,
+    "scheduled_job_entries": 789,
+    "expected_startup_rejections": 26,
+    "failed_runtime_invocations": 0,
+    "timeout_runtime_invocations": 0,
+    "pending_runtime_invocations": 0
+  },
+  "full_run_report_cost_totals": {
+    "scope": "Eight frozen full-run reports, each distinct report/arm counted once; all 664 referenced receipt paths are disjoint. This is recorded work, not pooled efficacy.",
+    "full_run_trajectories": 2656,
+    "distinct_report_arm_cost_rows": 26,
+    "observed_profile_thread_cpu_seconds": 36285.290782977056,
+    "summed_process_wall_seconds": 36417.62032958542,
+    "excluded_full_run_canary_requests": 31,
+    "limitations": "Excludes benchmark canaries, conditional probes, builds, fixtures, exports and analysis. Profile CPU does not measure total machine utilization; summed process wall is not campaign elapsed time. Do not add costs once per comparison row.",
+    "observed_profile_thread_cpu_hours": 10.079247439715848
+  },
+  "full_run_cohort_costs": [
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave1_report.json",
+        "sha256": "ca81039a2c73299f971d28a9d7819cf635d159e320f2bdbb0bd3736e1f52396d",
+        "bytes": 162241
+      },
+      "label": "W1",
+      "runs": 256,
+      "distinct_report_arm_cost_rows": 8,
+      "unique_receipts": 64,
+      "observed_profile_thread_cpu_seconds": 4605.209141357998,
+      "summed_process_wall_seconds": 4618.779523516074
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave2_report.json",
+        "sha256": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405",
+        "bytes": 281074
+      },
+      "label": "W2",
+      "runs": 512,
+      "distinct_report_arm_cost_rows": 4,
+      "unique_receipts": 128,
+      "observed_profile_thread_cpu_seconds": 6230.064658413996,
+      "summed_process_wall_seconds": 6254.069936628162
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_report.json",
+        "sha256": "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67",
+        "bytes": 54296
+      },
+      "label": "W3 screen",
+      "runs": 96,
+      "distinct_report_arm_cost_rows": 3,
+      "unique_receipts": 24,
+      "observed_profile_thread_cpu_seconds": 1341.107375083001,
+      "summed_process_wall_seconds": 1346.1510271670413
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_development_report.json",
+        "sha256": "3d2d236871cbcb8890e82c65e4e61e4d145698c9e34ce80a8ecd661f61519723",
+        "bytes": 219174
+      },
+      "label": "W3 development",
+      "runs": 384,
+      "distinct_report_arm_cost_rows": 3,
+      "unique_receipts": 96,
+      "observed_profile_thread_cpu_seconds": 5132.9172348090115,
+      "summed_process_wall_seconds": 5152.864514237182
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave4_removal_report.json",
+        "sha256": "f405de50965522e4cee17cb103a22688ad663f2d2cf8f3c5372439cd44fbf0fd",
+        "bytes": 37522
+      },
+      "label": "Removal screen",
+      "runs": 64,
+      "distinct_report_arm_cost_rows": 2,
+      "unique_receipts": 16,
+      "observed_profile_thread_cpu_seconds": 938.3817299399991,
+      "summed_process_wall_seconds": 942.4327585689607
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/removal_development_report.json",
+        "sha256": "91afa7dc02117114b75206fc07f7a77532146a0bff6948e44a996637bd6d10df",
+        "bytes": 147823
+      },
+      "label": "Removal development",
+      "runs": 256,
+      "distinct_report_arm_cost_rows": 2,
+      "unique_receipts": 64,
+      "observed_profile_thread_cpu_seconds": 3392.9039738070032,
+      "summed_process_wall_seconds": 3406.2271369691007
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave5_card_rank_report.json",
+        "sha256": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530",
+        "bytes": 37912
+      },
+      "label": "Card rank screen",
+      "runs": 64,
+      "distinct_report_arm_cost_rows": 2,
+      "unique_receipts": 16,
+      "observed_profile_thread_cpu_seconds": 851.513132547999,
+      "summed_process_wall_seconds": 854.8338456660567
+    },
+    {
+      "report": {
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/final_confirmation_report.json",
+        "sha256": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+        "bytes": 584379
+      },
+      "label": "Final confirmation",
+      "runs": 1024,
+      "distinct_report_arm_cost_rows": 2,
+      "unique_receipts": 256,
+      "observed_profile_thread_cpu_seconds": 13793.193537018047,
+      "summed_process_wall_seconds": 13842.261586832843
+    }
+  ],
+  "full_run_comparison_rows": 21,
+  "conditional_report_count": 4,
+  "checks": [
+    "All 799 receipt and all joblist hashes unchanged; no pending/unreadable/failed status.",
+    "All21 rendered full-run comparisons and26 arm records equal source reports; exact decisions preserved.",
+    "Distinct receipt path check prevents duplicated shared controls in cost subtotal.",
+    "No new game execution, efficacy analysis, CI calculation, selection or retuning.",
+    "Final parallel elapsed matches completed dispatcher timestamps."
+  ],
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/final_confirmation_report.json",
+      "sha256": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/final_execution_completion.json",
+      "sha256": "720fe902253296cae4a50991947f3d72e32739d1acf07f72012d9b2341a8c83a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/ATTEMPT_ACCOUNTING_v3.json",
+      "sha256": "e4bf69dc2d3ff5587356fff5907297c1a0958d0a816c285d7c6532937caba6a9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/ATTEMPT_ACCOUNTING_v3.md",
+      "sha256": "b81f508da8353e74f3a440eef760883c0abd2d62885257fa61048c8a38590f79"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/FINAL_RESULTS.json",
+      "sha256": "7bd2c09d14e34b181117519bcb8af4d0b84a388ffe3cfbf0314c96bfd88041ba"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/FINAL_RESULTS.md",
+      "sha256": "52cf0e00c769c97c046f484cc35643a8adb66f80b48ece2ab3c6ca6a7c67a2d3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/inventory_attempt_metadata.py",
+      "sha256": "5d667eb81aec20662ea73453f4608c00bedae5acf7f601a5e410de6433ad8ba9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/render_completed_reports.py",
+      "sha256": "9ae16cf419d6da8acbad62287db24da437148b3e5c7945ecad17a0b1fdf9a173"
+    }
+  ]
+}

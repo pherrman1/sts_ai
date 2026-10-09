@@ -1,0 +1,15 @@
+test_changed_output_custody_is_reported (__main__.AccountingTests.test_changed_output_custody_is_reported) ... ok
+test_fixed32_includes_timeout_and_separates_elapsed_from_sumwall (__main__.AccountingTests.test_fixed32_includes_timeout_and_separates_elapsed_from_sumwall) ... ok
+test_full_width_unterminated_numeric_tail_excluded (__main__.AccountingTests.test_full_width_unterminated_numeric_tail_excluded) ... ok
+test_incomplete_table_preserves_completed_metadata_rows (__main__.AccountingTests.test_incomplete_table_preserves_completed_metadata_rows) ... ok
+test_live_process_closeout_blocks_collection_reads (__main__.AccountingTests.test_live_process_closeout_blocks_collection_reads) ... ok
+test_missing_branches_maps_and_duplicates_are_metadata (__main__.AccountingTests.test_missing_branches_maps_and_duplicates_are_metadata) ... ok
+test_missing_cpu_is_unavailable_not_zero (__main__.AccountingTests.test_missing_cpu_is_unavailable_not_zero) ... ok
+test_outcome_poison_never_retained_or_interpreted (__main__.AccountingTests.test_outcome_poison_never_retained_or_interpreted) ... ok
+test_partial_timeout_receipt_and_all_files_are_preserved (__main__.AccountingTests.test_partial_timeout_receipt_and_all_files_are_preserved) ... ok
+test_source_cpu_deduplicates_and_flags_conflict (__main__.AccountingTests.test_source_cpu_deduplicates_and_flags_conflict) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.011s
+
+OK

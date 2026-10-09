@@ -1,0 +1,11 @@
+{
+ "out": "models/candidates/v_win_f2_e3_trees.txt",
+ "sha256": "9d1280907d5fe31cabdfd570d254e6f697398346a80126609dc00cfdb61dc00c",
+ "inputs": {
+  "/home/philippherrmann/Documents/sts/build/e3-f2-dc6fd330/F2-s0.ubj": "ac2a3ad983dfcc6ecbad219a8b47cfac0736935ccf129e6c903c1ece3d529084",
+  "/home/philippherrmann/Documents/sts/build/e3-f2-dc6fd330/F2-s1.ubj": "9462fc4a8f81e387e48d3470b12fedb120de65e7f087c5bf27fac65017f4b5f4",
+  "/home/philippherrmann/Documents/sts/build/e3-f2-dc6fd330/F2-s2.ubj": "ab599187e5e41260a883c8d3adbe525f68d32c548a2e426fcf59c99deaa15847"
+ },
+ "trees": 1001,
+ "features": 457
+}

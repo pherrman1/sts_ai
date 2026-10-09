@@ -1,0 +1,16 @@
+{
+  "build_source": "a557ace5770f26983db4a55ec2c9318a95bf328d",
+  "subsequent_fullhp_checks": "audit/fullhp-build-static-checks.json and audit/fullhp-producer-selftest.json",
+  "debug_all_build": "PASS",
+  "extra_integration": "PASS2/2",
+  "core_smoke": "PASS67/67",
+  "core_smoke_wall_seconds": 1098.76,
+  "logs": {
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final-debug-configure.log": "c97af7df9b0df1d7c7b1640f35fe9da7c8cf631a361da61afd55deca16f74a1b",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final-debug-build.log": "d91082bffd9f700b045e24cd2f0afeab4ca23546e906acf54e22d2f6af437f51",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final-debug-all-build.log": "96f4e862bfd38c98ec6ec3abc6493c7ff53e8d41611132f4c9a742bab765a0d6",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final-integration-extra.log": "5c0a16573c8a3e87f26b524a373f9d625b96aeaad34e191053c4cd2d3f339d93",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/final-core-smoke.log": "8fd63eac4f12caf930f072693b2f87328decb4c8d40753f83a144be4779ebda4"
+  },
+  "CI": "notrun;draftPRjobisskipped;localtestsnotauthoritativeCI"
+}

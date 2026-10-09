@@ -1,0 +1,24 @@
+{
+  "schema": "k_precision_synthetic_checks_v1",
+  "status": "PASS",
+  "recorded_epoch": 1791451021.626454,
+  "command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+  "observed_exit_code": 0,
+  "tests_run": 12,
+  "unittest_reported_seconds": 0.387,
+  "evidence_origin": "observed exec tool output; no synthetic game seeds or collection data were opened",
+  "files": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/analyze_k_precision.py",
+      "sha256": "566470ace5375c412644ec8c3e8518b128ec9e6822b3b0335d416a8c53f9bb79"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/test_k_precision.py",
+      "sha256": "e692c7dab987ee589a81bcb3aadb1c33f6fb6b7656c354aea9d1eed6a7eb711b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/README.md",
+      "sha256": "55b49f98ee524b46bf3a5091979574f869f804283d9c0e61cf3621a699710bbb"
+    }
+  ]
+}

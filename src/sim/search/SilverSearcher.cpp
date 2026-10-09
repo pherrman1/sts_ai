@@ -757,6 +757,11 @@ void search::SilverSearcher::enumeratePotionActions(Node &node, const BattleCont
 }
 
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
+    if (context.finalBossBinary && context.act == 3 && context.actBossRoom && bc.ascension == 0) {
+        // The run ends here. Neither a loss nor an unresolved rollout earns
+        // credit for damage, turns survived, or unspent resources.
+        return bc.outcome == Outcome::PLAYER_VICTORY ? 100.0 : 0.0;
+    }
     const double potionScore = bc.potionCount * evalWeights.potionWeight;
     // Held "cheat death" effects count at the HP they would restore.
     double deathSaveValue = 0.0;

@@ -52,7 +52,7 @@ class NativeContractParity(unittest.TestCase):
         source = Path(cls.tmp.name) / 'probe.cpp'
         source.write_text(HARNESS)
         cls.exe = Path(cls.tmp.name) / 'probe'
-        subprocess.run(['g++','-std=c++17','-Iinclude','-Iextern','-Iapps',str(source),
+        subprocess.run(['g++','-std=c++20','-Iinclude','-Iextern','-Iapps',str(source),
                         'apps/one_combat/combat_transition_native_contract.cpp','-o',str(cls.exe)],cwd=ROOT,check=True)
 
     @classmethod

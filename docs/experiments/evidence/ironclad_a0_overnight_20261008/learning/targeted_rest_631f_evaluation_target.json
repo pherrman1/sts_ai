@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "ooc_cf_target_v1",
+  "sourceSeed": 610081015,
+  "act": 3,
+  "floor": 44,
+  "screen": "REST",
+  "decisionIdx": 93,
+  "publicStateSha256": "11a1ea6ea301c078ce522c00acd92b8f4cac9e39038d48677ea498117bc7f332",
+  "preflightReceiptPath": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/preflight.target.json",
+  "preflightReceiptSha256": "681c6fca6e29d8fc0bd3fa6852bae8273b2c2580a6414ccde63c1499fd04e8c3",
+  "optionKeys": [
+    "ooc:v1:effect=0:source=0:card=234:misc=0:upgraded=0:bottle=-1:occurrence=0"
+  ]
+}

@@ -20,6 +20,9 @@ namespace sts::search {
         bool actBossRoom = false;     // the fight is the act boss room (act-transition heal follows)
         bool omamoriCharged = false;  // a charged Omamori absorbs Writhing Mass's Parasite
         bool eliteRewards = false;    // elite-trigger fight: an escape also forfeits the relic
+        // Research-only, supplied by the backend only for an A0 Act-3 cutoff.
+        // Final boss wins have no subsequent run-resource utility.
+        bool finalBossBinary = false;
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).

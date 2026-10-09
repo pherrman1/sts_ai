@@ -15,6 +15,7 @@
 #include "sim/search/NativeSilverBackend.h"
 #include "e2c_capture.h"
 #include "ooc_policy.h"
+#include "ooc_native_fallback.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "ooc_profile.h"
@@ -355,6 +356,7 @@ bool installRunForcedRelic(GameContext &gc, RelicId relic) {
 // map/rewards/events/campfires/shops via the ordered OOC policy chain).
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
                         bool e2cCapture) {
+    const auto publicScorersBefore = one_combat::nativeOocPublicScorerCalls();
     if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
@@ -430,7 +432,12 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                               {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
                               {"won", bc.outcome == Outcome::PLAYER_VICTORY}, {"pre", tracePre},
                               {"post", oocTraceState(gc)}});
-            if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
+            // A20 Act 3 has two bosses: winning the first one leads straight into
+            // the second, so the Act-3 stop waits for that fight.
+            const bool a20FirstAct3BossWon = battleAct == 3 && gc.ascension >= 20
+                && bc.encounter == gc.boss && bc.outcome == Outcome::PLAYER_VICTORY;
+            if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS
+                && !a20FirstAct3BossWon) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
                 break;
             }
@@ -485,6 +492,13 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         }
     }
     one_combat::writeLiveOocMctsTrace(seed, mctsMetrics, fightsTotal);
+    if (one_combat::nativeOocPublicFutureCount() > 0) {
+        std::lock_guard<std::mutex> lock(g_oocStrategicTraceMutex);
+        std::cout << "[public OOC receipt seed=" << seed
+                  << " futures=" << one_combat::nativeOocPublicFutureCount()
+                  << " scorers=" << one_combat::nativeOocPublicScorerCalls() - publicScorersBefore
+                  << "]\n";
+    }
     if (e2cCapture) {
         // Same effective label semantics as this function's RunResult (honors an
         // explicit STS_STOP_AFTER_ACT horizon without labelling solely from

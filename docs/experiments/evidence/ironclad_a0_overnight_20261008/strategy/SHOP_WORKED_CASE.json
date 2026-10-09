@@ -1,0 +1,2940 @@
+{
+  "schema": "overnight_shop_worked_case_v1",
+  "analysis_script_sha256": "eff26af1b785a33192ab04e60c15ee2e133c4cf9d83e648852e1d8459a8cf0c0",
+  "primary": {
+    "seed": 610081023,
+    "act": 1,
+    "floor": 10,
+    "trace_idx": 31,
+    "producer_source": "736d1ff7e61725d9c6a50326064b2e3060ce6ae4",
+    "binary_sha256": "3f69f5fd251ac699580bca8eb8da707282c77bc5263732f10e83f8e2670aba2d",
+    "policy_environment_difference": {
+      "STS_OOC_SHOP_DECK_SIZE_FIX": [
+        "0",
+        "1"
+      ]
+    },
+    "inputs": [
+      {
+        "arm": "Fprod",
+        "kind": "trace",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.trace.jsonl",
+        "sha256": "ba7b6b5172a5c6b9d91b1c558139a6f627b643479fab39aed376f88ccac1ef6b"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "strategic",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.strategic.jsonl",
+        "sha256": "a88d564d046f4e5441213333cf38bc295319a0cac8da64e9a40a5fc83a0a1a39"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "tree",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.tree.jsonl",
+        "sha256": "0ea79339f54cb65b836c8efb09c0897a028fc6c983379a8ab7ed373c76003424"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "csv",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.csv",
+        "sha256": "fbbfa266cace5726a3e5131fc5d848765fb67300f90be7c33d4fd0dcdd9787da"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "receipt",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.receipt.json",
+        "sha256": "9ed95d54163ef29fa5c080361ced9d24a14325ddc16bdd933582cee8cea7a2c8"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "trace",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_5.trace.jsonl",
+        "sha256": "724034aef450dba89e174303f5d3a662937710853935023509dcbbe336226cf7"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "strategic",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_5.strategic.jsonl",
+        "sha256": "8426eaf2d564777eb23ec996ce1cb97d935efbaf1781df3fde32bbedf7b98864"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "tree",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_5.tree.jsonl",
+        "sha256": "00378c351069ab360b1e3cacc6a3f92da360671a16f5307f70094890798cfb87"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "csv",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_5.csv",
+        "sha256": "ad1f77a4185293fde6872d63d849e1c999b730285c5e3ead0cb3d6aede587c04"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "receipt",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_5.receipt.json",
+        "sha256": "6da51fba66f42d8bd1b242abfaccadc45af768df7e47c1099d32cbe2c27af697"
+      }
+    ],
+    "identical_trace_prefix_rows": 36,
+    "identical_trace_prefix_sha256": "35492f650d0553b287ad3116fad782ca1190afacc4867fc038cb4fc858f9f5a6",
+    "prior_shop_roots": 0,
+    "identical_prior_combat_profile_rows": 37,
+    "combat_profile_comparison_excludes": [
+      "combat_id (process-global diagnostic counter)"
+    ],
+    "first_difference": {
+      "Fprod_line": 646,
+      "ShopFix_line": 646,
+      "changed_fields": [
+        "post"
+      ]
+    },
+    "serialized_public_pre": {
+      "act": 1,
+      "deck": [
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Cleave+",
+        "Anger",
+        "Flame Barrier+"
+      ],
+      "event": "",
+      "floor": 10,
+      "gold": 136,
+      "hp": 72,
+      "maxHp": 72,
+      "potionCapacity": 3,
+      "potions": [
+        "FIRE_POTION"
+      ],
+      "relics": [
+        "BURNING_BLOOD",
+        "THREAD_AND_NEEDLE",
+        "BAG_OF_MARBLES"
+      ],
+      "room": "SHOP",
+      "screen": "SHOP",
+      "x": 0,
+      "y": 9
+    },
+    "serialized_public_pre_sha256": "9e78e7f4e78560b9a3c253bfec111f846f7578005df01a021d05818f4de78923",
+    "shop_offer": {
+      "cards": [
+        [
+          "Wild Strike",
+          51
+        ],
+        [
+          "Headbutt",
+          52
+        ],
+        [
+          "True Grit",
+          53
+        ],
+        [
+          "Disarm",
+          40
+        ],
+        [
+          "Corruption",
+          152
+        ],
+        [
+          "Finesse",
+          95
+        ],
+        [
+          "Metamorphosis",
+          189
+        ]
+      ],
+      "potions": [
+        [
+          "DUPLICATION_POTION",
+          78
+        ],
+        [
+          "LIQUID_BRONZE",
+          77
+        ],
+        [
+          "FRUIT_JUICE",
+          100
+        ]
+      ],
+      "relics": [
+        [
+          "POCKETWATCH",
+          304
+        ],
+        [
+          "BOTTLED_FLAME",
+          242
+        ],
+        [
+          "CHEMICAL_X",
+          149
+        ]
+      ],
+      "removeCost": 75
+    },
+    "shop_offer_sha256": "f4dd1d97d28f49a5bd332b9aaa111f6607c4599dcddd01474f21724d731b4756",
+    "strategic_root": {
+      "Fprod": {
+        "line": 190,
+        "record": {
+          "seed": "610081023",
+          "decIdx": "10",
+          "act": "1",
+          "floor": "10",
+          "screen": "8",
+          "nActions": "10",
+          "actionBits": "0|1|2|3|5|402653184|402653185|402653186|671088640|805306368",
+          "qValues": "73.1327|73.7881|71.548|74.2966|72.7231|73.7816|73.9566|75.0781|73.373|71.7673",
+          "bestIdx": "7",
+          "bestSecondMargin": "0.781441",
+          "threshold": "1.000000",
+          "heurIdx": "-1",
+          "takeIdx": "-1",
+          "rule": "margin",
+          "owned": "0",
+          "collectKeys": "0",
+          "stopAfterAct": "3"
+        }
+      },
+      "ShopFix": {
+        "line": 192,
+        "record": {
+          "seed": "610081023",
+          "decIdx": "10",
+          "act": "1",
+          "floor": "10",
+          "screen": "8",
+          "nActions": "10",
+          "actionBits": "0|1|2|3|5|402653184|402653185|402653186|671088640|805306368",
+          "qValues": "73.1327|73.7881|71.548|74.2966|72.7231|73.7816|73.9566|75.0781|73.373|71.7673",
+          "bestIdx": "7",
+          "bestSecondMargin": "0.781441",
+          "threshold": "1.000000",
+          "heurIdx": "-1",
+          "takeIdx": "-1",
+          "rule": "margin",
+          "owned": "0",
+          "collectKeys": "0",
+          "stopAfterAct": "3"
+        }
+      }
+    },
+    "shop_chain": {
+      "Fprod": [
+        {
+          "line": 646,
+          "record": {
+            "by": "chain",
+            "idx": 31,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Wild Strike",
+                  51
+                ],
+                [
+                  "Headbutt",
+                  52
+                ],
+                [
+                  "True Grit",
+                  53
+                ],
+                [
+                  "Disarm",
+                  40
+                ],
+                [
+                  "Corruption",
+                  152
+                ],
+                [
+                  "Finesse",
+                  95
+                ],
+                [
+                  "Metamorphosis",
+                  189
+                ]
+              ],
+              "potions": [
+                [
+                  "DUPLICATION_POTION",
+                  78
+                ],
+                [
+                  "LIQUID_BRONZE",
+                  77
+                ],
+                [
+                  "FRUIT_JUICE",
+                  100
+                ]
+              ],
+              "relics": [
+                [
+                  "POCKETWATCH",
+                  304
+                ],
+                [
+                  "BOTTLED_FLAME",
+                  242
+                ],
+                [
+                  "CHEMICAL_X",
+                  149
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 85,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 136,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        },
+        {
+          "line": 647,
+          "record": {
+            "by": "chain",
+            "idx": 32,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Headbutt",
+                  52
+                ],
+                [
+                  "True Grit",
+                  53
+                ],
+                [
+                  "Disarm",
+                  40
+                ],
+                [
+                  "Corruption",
+                  152
+                ],
+                [
+                  "Finesse",
+                  95
+                ],
+                [
+                  "Metamorphosis",
+                  189
+                ]
+              ],
+              "potions": [
+                [
+                  "DUPLICATION_POTION",
+                  78
+                ],
+                [
+                  "LIQUID_BRONZE",
+                  77
+                ],
+                [
+                  "FRUIT_JUICE",
+                  100
+                ]
+              ],
+              "relics": [
+                [
+                  "POCKETWATCH",
+                  304
+                ],
+                [
+                  "BOTTLED_FLAME",
+                  242
+                ],
+                [
+                  "CHEMICAL_X",
+                  149
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 10,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "CARD_SELECT",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 85,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        },
+        {
+          "line": 648,
+          "record": {
+            "by": "chain",
+            "idx": 33,
+            "kind": "ooc",
+            "offer": {
+              "selectType": 4,
+              "toSelect": 1
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 10,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 10,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "CARD_SELECT",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        },
+        {
+          "line": 649,
+          "record": {
+            "by": "chain",
+            "idx": 34,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Headbutt",
+                  52
+                ],
+                [
+                  "True Grit",
+                  53
+                ],
+                [
+                  "Disarm",
+                  40
+                ],
+                [
+                  "Corruption",
+                  152
+                ],
+                [
+                  "Finesse",
+                  95
+                ],
+                [
+                  "Metamorphosis",
+                  189
+                ]
+              ],
+              "potions": [
+                [
+                  "DUPLICATION_POTION",
+                  78
+                ],
+                [
+                  "LIQUID_BRONZE",
+                  77
+                ],
+                [
+                  "FRUIT_JUICE",
+                  100
+                ]
+              ],
+              "relics": [
+                [
+                  "POCKETWATCH",
+                  304
+                ],
+                [
+                  "BOTTLED_FLAME",
+                  242
+                ],
+                [
+                  "CHEMICAL_X",
+                  149
+                ]
+              ],
+              "removeCost": -1
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 10,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "MAP",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+",
+                "Wild Strike"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 10,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        }
+      ],
+      "ShopFix": [
+        {
+          "line": 646,
+          "record": {
+            "by": "chain",
+            "idx": 31,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Wild Strike",
+                  51
+                ],
+                [
+                  "Headbutt",
+                  52
+                ],
+                [
+                  "True Grit",
+                  53
+                ],
+                [
+                  "Disarm",
+                  40
+                ],
+                [
+                  "Corruption",
+                  152
+                ],
+                [
+                  "Finesse",
+                  95
+                ],
+                [
+                  "Metamorphosis",
+                  189
+                ]
+              ],
+              "potions": [
+                [
+                  "DUPLICATION_POTION",
+                  78
+                ],
+                [
+                  "LIQUID_BRONZE",
+                  77
+                ],
+                [
+                  "FRUIT_JUICE",
+                  100
+                ]
+              ],
+              "relics": [
+                [
+                  "POCKETWATCH",
+                  304
+                ],
+                [
+                  "BOTTLED_FLAME",
+                  242
+                ],
+                [
+                  "CHEMICAL_X",
+                  149
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 61,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "CARD_SELECT",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 136,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        },
+        {
+          "line": 647,
+          "record": {
+            "by": "chain",
+            "idx": 32,
+            "kind": "ooc",
+            "offer": {
+              "selectType": 4,
+              "toSelect": 1
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 61,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 61,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "CARD_SELECT",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        },
+        {
+          "line": 648,
+          "record": {
+            "by": "chain",
+            "idx": 33,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Wild Strike",
+                  51
+                ],
+                [
+                  "Headbutt",
+                  52
+                ],
+                [
+                  "True Grit",
+                  53
+                ],
+                [
+                  "Disarm",
+                  40
+                ],
+                [
+                  "Corruption",
+                  152
+                ],
+                [
+                  "Finesse",
+                  95
+                ],
+                [
+                  "Metamorphosis",
+                  189
+                ]
+              ],
+              "potions": [
+                [
+                  "DUPLICATION_POTION",
+                  78
+                ],
+                [
+                  "LIQUID_BRONZE",
+                  77
+                ],
+                [
+                  "FRUIT_JUICE",
+                  100
+                ]
+              ],
+              "relics": [
+                [
+                  "POCKETWATCH",
+                  304
+                ],
+                [
+                  "BOTTLED_FLAME",
+                  242
+                ],
+                [
+                  "CHEMICAL_X",
+                  149
+                ]
+              ],
+              "removeCost": -1
+            },
+            "post": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 61,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "MAP",
+              "x": 0,
+              "y": 9
+            },
+            "pre": {
+              "act": 1,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Cleave+",
+                "Anger",
+                "Flame Barrier+"
+              ],
+              "event": "",
+              "floor": 10,
+              "gold": 61,
+              "hp": 72,
+              "maxHp": 72,
+              "potionCapacity": 3,
+              "potions": [
+                "FIRE_POTION"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "THREAD_AND_NEEDLE",
+                "BAG_OF_MARBLES"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 0,
+              "y": 9
+            },
+            "seed": 610081023
+          }
+        }
+      ]
+    },
+    "outcomes": {
+      "Fprod": {
+        "seed": "610081023",
+        "won": "0",
+        "floor": "50",
+        "act": "3",
+        "hpEnd": "0",
+        "maxHp": "72",
+        "fightsLost": "1",
+        "deathCombat": "27",
+        "deathEncounter": "53",
+        "sec": "10.1137"
+      },
+      "ShopFix": {
+        "seed": "610081023",
+        "won": "1",
+        "floor": "51",
+        "act": "3",
+        "hpEnd": "35",
+        "maxHp": "72",
+        "fightsLost": "0",
+        "deathCombat": "-1",
+        "deathEncounter": "-1",
+        "sec": "11.554"
+      }
+    },
+    "all_relics_unaffordable": true,
+    "minimum_relic_price": 149,
+    "limitations": [
+      "Trace public state omits counters, bottle/misc metadata and complete map.",
+      "Native bundle identities beyond their first token and native value scores are unlogged.",
+      "This is an outcome-selected forensic case, not independent policy qualification."
+    ],
+    "deck_size_frontier": [
+      {
+        "candidate": "remove only",
+        "legacy": 13,
+        "corrected": 12,
+        "true": 12,
+        "gold_after": 61
+      },
+      {
+        "candidate": "Wild Strike only",
+        "legacy": 14,
+        "corrected": 14,
+        "true": 14,
+        "gold_after": 85
+      },
+      {
+        "candidate": "Wild Strike plus remove",
+        "legacy": 14,
+        "corrected": 13,
+        "true": 13,
+        "gold_after": 10
+      }
+    ]
+  },
+  "secondary": {
+    "seed": 610081002,
+    "act": 2,
+    "floor": 28,
+    "trace_idx": 93,
+    "producer_source": "736d1ff7e61725d9c6a50326064b2e3060ce6ae4",
+    "binary_sha256": "3f69f5fd251ac699580bca8eb8da707282c77bc5263732f10e83f8e2670aba2d",
+    "policy_environment_difference": {
+      "STS_OOC_SHOP_DECK_SIZE_FIX": [
+        "0",
+        "1"
+      ]
+    },
+    "inputs": [
+      {
+        "arm": "Fprod",
+        "kind": "trace",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.trace.jsonl",
+        "sha256": "f63ab0f8fb93a18e1281fe3ef8bce620f418794fef2feca7290f3a2352af395e"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "strategic",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.strategic.jsonl",
+        "sha256": "b21170cebc05f89633186679cd10ce844f1e6b41bbf1ed3b7e4bf04223057c89"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "tree",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.tree.jsonl",
+        "sha256": "54ce5e0b85d66fbc6eb0e29e49eb0d916190b8661be036c60c812c2a94289067"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "csv",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.csv",
+        "sha256": "b8dcec6a7fab10c331a9187507a283a3449d5390f4d23a6f71c3149eef8f5647"
+      },
+      {
+        "arm": "Fprod",
+        "kind": "receipt",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.receipt.json",
+        "sha256": "0a430756ecd222e4a5a4e10c1f057375de0cae4b565cbb5272c121c60a2c8ddb"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "trace",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_0.trace.jsonl",
+        "sha256": "5056b44681701a24eb2ad4c6b12dd6d0e84138178b8396afc506d086d7e11249"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "strategic",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_0.strategic.jsonl",
+        "sha256": "160f9aca30369ce8160fe0c6c86c68097254626ed653deffd5f30d520a0d5c47"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "tree",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_0.tree.jsonl",
+        "sha256": "7825157e5fec79bd9fdb9202283cecdec5b2a469ded42c20d48037b29d8aed5f"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "csv",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_0.csv",
+        "sha256": "7d06ffbaba8bb96897737ff4484e63d2dfb6fc5171b28d23b8f81828a6c29f09"
+      },
+      {
+        "arm": "ShopFix",
+        "kind": "receipt",
+        "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/ShopFix_0.receipt.json",
+        "sha256": "b375e92ee3d36043451821b9bfa7f2e1f500b0737f8bb5cf25d2cc30da16d145"
+      }
+    ],
+    "identical_trace_prefix_rows": 104,
+    "identical_trace_prefix_sha256": "82be7d3ec7ed44a5416c37c9cf7bdfd6b809695c3313290752c923e8ed734dac",
+    "prior_shop_roots": 0,
+    "identical_prior_combat_profile_rows": 225,
+    "combat_profile_comparison_excludes": [
+      "combat_id (process-global diagnostic counter)"
+    ],
+    "first_difference": {
+      "Fprod_line": 487,
+      "ShopFix_line": 487,
+      "changed_fields": [
+        "post"
+      ]
+    },
+    "serialized_public_pre": {
+      "act": 2,
+      "deck": [
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Blood for Blood+",
+        "Headbutt+",
+        "Flame Barrier+",
+        "Shrug It Off",
+        "Clash",
+        "Shrug It Off",
+        "Headbutt",
+        "Perfected Strike+",
+        "Reaper+",
+        "Shrug It Off+",
+        "Uppercut"
+      ],
+      "event": "",
+      "floor": 28,
+      "gold": 331,
+      "hp": 62,
+      "maxHp": 101,
+      "potionCapacity": 3,
+      "potions": [
+        "ATTACK_POTION",
+        "GAMBLERS_BREW"
+      ],
+      "relics": [
+        "BURNING_BLOOD",
+        "BAG_OF_PREPARATION",
+        "MAW_BANK",
+        "LANTERN",
+        "GINGER",
+        "SELF_FORMING_CLAY",
+        "ECTOPLASM",
+        "ENCHIRIDION",
+        "GIRYA",
+        "ICE_CREAM"
+      ],
+      "room": "SHOP",
+      "screen": "SHOP",
+      "x": 1,
+      "y": 10
+    },
+    "serialized_public_pre_sha256": "12b5d61b67f06c46f8f7b8df2e65a2de1d6aad74c7c60aec79535562282150a6",
+    "shop_offer": {
+      "cards": [
+        [
+          "Anger",
+          49
+        ],
+        [
+          "Rampage",
+          81
+        ],
+        [
+          "Shrug It Off",
+          52
+        ],
+        [
+          "Shockwave",
+          41
+        ],
+        [
+          "Combust",
+          71
+        ],
+        [
+          "Dark Shackles",
+          81
+        ],
+        [
+          "Transmutation",
+          188
+        ]
+      ],
+      "potions": [
+        [
+          "STRENGTH_POTION",
+          49
+        ],
+        [
+          "LIQUID_MEMORIES",
+          77
+        ],
+        [
+          "FIRE_POTION",
+          49
+        ]
+      ],
+      "relics": [
+        [
+          "LETTER_OPENER",
+          245
+        ],
+        [
+          "PEN_NIB",
+          146
+        ],
+        [
+          "MEMBERSHIP_CARD",
+          150
+        ]
+      ],
+      "removeCost": 75
+    },
+    "shop_offer_sha256": "192d67679a69b11f495f7bbac4a76979ea92622434cbb989edffa01627e3e499",
+    "strategic_root": {
+      "Fprod": {
+        "line": 155,
+        "record": {
+          "seed": "610081002",
+          "decIdx": "35",
+          "act": "2",
+          "floor": "28",
+          "screen": "8",
+          "nActions": "15",
+          "actionBits": "0|1|2|3|4|5|6|536870912|536870913|536870914|402653184|402653185|402653186|671088640|805306368",
+          "qValues": "108.442|108.78|108.521|111.775|108.694|100.301|113.608|114.024|109.258|105.539|108.242|108.588|109.718|107.856|106.227",
+          "bestIdx": "7",
+          "bestSecondMargin": "0.416107",
+          "threshold": "1.000000",
+          "heurIdx": "-1",
+          "takeIdx": "-1",
+          "rule": "margin",
+          "owned": "0",
+          "collectKeys": "0",
+          "stopAfterAct": "3"
+        }
+      },
+      "ShopFix": {
+        "line": 155,
+        "record": {
+          "seed": "610081002",
+          "decIdx": "35",
+          "act": "2",
+          "floor": "28",
+          "screen": "8",
+          "nActions": "15",
+          "actionBits": "0|1|2|3|4|5|6|536870912|536870913|536870914|402653184|402653185|402653186|671088640|805306368",
+          "qValues": "108.442|108.78|108.521|111.775|108.694|100.301|113.608|114.024|109.258|105.539|108.242|108.588|109.718|107.856|106.227",
+          "bestIdx": "7",
+          "bestSecondMargin": "0.416107",
+          "threshold": "1.000000",
+          "heurIdx": "-1",
+          "takeIdx": "-1",
+          "rule": "margin",
+          "owned": "0",
+          "collectKeys": "0",
+          "stopAfterAct": "3"
+        }
+      }
+    },
+    "shop_chain": {
+      "Fprod": [
+        {
+          "line": 487,
+          "record": {
+            "by": "chain",
+            "idx": 93,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Anger",
+                  49
+                ],
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Shockwave",
+                  41
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "PEN_NIB",
+                  146
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 282,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 331,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 488,
+          "record": {
+            "by": "chain",
+            "idx": 94,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Shockwave",
+                  41
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "PEN_NIB",
+                  146
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 241,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 282,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 489,
+          "record": {
+            "by": "chain",
+            "idx": 95,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "PEN_NIB",
+                  146
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger",
+                "Shockwave",
+                "Transmutation"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 53,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 241,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 490,
+          "record": {
+            "by": "chain",
+            "idx": 96,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "PEN_NIB",
+                  146
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger",
+                "Shockwave",
+                "Transmutation"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 53,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "MAP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Anger",
+                "Shockwave",
+                "Transmutation"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 53,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        }
+      ],
+      "ShopFix": [
+        {
+          "line": 487,
+          "record": {
+            "by": "chain",
+            "idx": 93,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Anger",
+                  49
+                ],
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Shockwave",
+                  41
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "PEN_NIB",
+                  146
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 290,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 331,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 488,
+          "record": {
+            "by": "chain",
+            "idx": 94,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Anger",
+                  49
+                ],
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "PEN_NIB",
+                  146
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 144,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 290,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 489,
+          "record": {
+            "by": "chain",
+            "idx": 95,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Anger",
+                  49
+                ],
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": 75
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 69,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "CARD_SELECT",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 144,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 490,
+          "record": {
+            "by": "chain",
+            "idx": 96,
+            "kind": "ooc",
+            "offer": {
+              "selectType": 4,
+              "toSelect": 1
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 69,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 69,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "CARD_SELECT",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        },
+        {
+          "line": 491,
+          "record": {
+            "by": "chain",
+            "idx": 97,
+            "kind": "ooc",
+            "offer": {
+              "cards": [
+                [
+                  "Anger",
+                  49
+                ],
+                [
+                  "Rampage",
+                  81
+                ],
+                [
+                  "Shrug It Off",
+                  52
+                ],
+                [
+                  "Combust",
+                  71
+                ],
+                [
+                  "Dark Shackles",
+                  81
+                ],
+                [
+                  "Transmutation",
+                  188
+                ]
+              ],
+              "potions": [
+                [
+                  "STRENGTH_POTION",
+                  49
+                ],
+                [
+                  "LIQUID_MEMORIES",
+                  77
+                ],
+                [
+                  "FIRE_POTION",
+                  49
+                ]
+              ],
+              "relics": [
+                [
+                  "LETTER_OPENER",
+                  245
+                ],
+                [
+                  "MEMBERSHIP_CARD",
+                  150
+                ]
+              ],
+              "removeCost": -1
+            },
+            "post": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 69,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "MAP",
+              "x": 1,
+              "y": 10
+            },
+            "pre": {
+              "act": 2,
+              "deck": [
+                "Strike",
+                "Strike",
+                "Strike",
+                "Strike",
+                "Defend",
+                "Defend",
+                "Defend",
+                "Bash",
+                "Blood for Blood+",
+                "Headbutt+",
+                "Flame Barrier+",
+                "Shrug It Off",
+                "Clash",
+                "Shrug It Off",
+                "Headbutt",
+                "Perfected Strike+",
+                "Reaper+",
+                "Shrug It Off+",
+                "Uppercut",
+                "Shockwave"
+              ],
+              "event": "",
+              "floor": 28,
+              "gold": 69,
+              "hp": 62,
+              "maxHp": 101,
+              "potionCapacity": 3,
+              "potions": [
+                "ATTACK_POTION",
+                "GAMBLERS_BREW"
+              ],
+              "relics": [
+                "BURNING_BLOOD",
+                "BAG_OF_PREPARATION",
+                "MAW_BANK",
+                "LANTERN",
+                "GINGER",
+                "SELF_FORMING_CLAY",
+                "ECTOPLASM",
+                "ENCHIRIDION",
+                "GIRYA",
+                "ICE_CREAM",
+                "PEN_NIB"
+              ],
+              "room": "SHOP",
+              "screen": "SHOP",
+              "x": 1,
+              "y": 10
+            },
+            "seed": 610081002
+          }
+        }
+      ]
+    },
+    "outcomes": {
+      "Fprod": {
+        "seed": "610081002",
+        "won": "0",
+        "floor": "33",
+        "act": "2",
+        "hpEnd": "0",
+        "maxHp": "101",
+        "fightsLost": "1",
+        "deathCombat": "13",
+        "deathEncounter": "39",
+        "sec": "10.0039"
+      },
+      "ShopFix": {
+        "seed": "610081002",
+        "won": "1",
+        "floor": "51",
+        "act": "3",
+        "hpEnd": "89",
+        "maxHp": "101",
+        "fightsLost": "0",
+        "deathCombat": "-1",
+        "deathEncounter": "-1",
+        "sec": "18.2349"
+      }
+    },
+    "all_relics_unaffordable": false,
+    "minimum_relic_price": 146,
+    "limitations": [
+      "Trace public state omits counters, bottle/misc metadata and complete map.",
+      "Native bundle identities beyond their first token and native value scores are unlogged.",
+      "This is an outcome-selected forensic case, not independent policy qualification."
+    ]
+  },
+  "source_runs_executed": 0,
+  "interpretation": "Feature repair changes an actual first-shop ranking; final win causality is not isolated."
+}

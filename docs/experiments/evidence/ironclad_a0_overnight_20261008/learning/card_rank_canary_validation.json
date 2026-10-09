@@ -1,0 +1,1300 @@
+{
+  "schema": "card_rank_runtime_canary_validation_v1",
+  "status": "RUNTIME_GATE_PASS",
+  "manifest_sha256": "cc77397f2017986c9807153d0a35e90b5034ce0029838bdc555912fdb08dde4c",
+  "source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+  "binary_sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907",
+  "runs": {
+    "Fprod_0": {
+      "arm": "Fprod",
+      "seeds": [
+        610080001
+      ],
+      "receipt_sha256": "7cf95a880a7e0c151d8d9340bb1094d6aeedae9df05652781faf20c7af981962",
+      "public_scorer_calls": 31,
+      "tree_rows": 454,
+      "profile_rows": 48,
+      "trace_rows": 177,
+      "cpu_seconds": 10.645924894999999,
+      "wall_seconds": 10.832127144996775
+    },
+    "CardWinRank_1": {
+      "arm": "CardWinRank",
+      "seeds": [
+        610080001
+      ],
+      "receipt_sha256": "fbe641194bd2a25bfa0d5aea13c39e1c99a38f55dac3dc0095b3168fc2d5b704",
+      "public_scorer_calls": 50,
+      "tree_rows": 610,
+      "profile_rows": 53,
+      "trace_rows": 196,
+      "cpu_seconds": 17.629330546000006,
+      "wall_seconds": 17.79371171601815
+    },
+    "CardWinTrace_2": {
+      "arm": "CardWinTrace",
+      "seeds": [
+        610080001
+      ],
+      "receipt_sha256": "f227ceb12dbf2c9ba68fd454084dc770573d30320a540b998559c42ae8507b8e",
+      "public_scorer_calls": 50,
+      "tree_rows": 610,
+      "profile_rows": 53,
+      "trace_rows": 196,
+      "cpu_seconds": 17.85719716,
+      "wall_seconds": 18.097506571997656
+    }
+  },
+  "default_off_parity": {
+    "seed": 610080001,
+    "old_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0",
+    "new_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0",
+    "gameplay_equal": true,
+    "complete_trace_equal": true,
+    "tree_equal": true,
+    "floor_profile_counts_equal": true,
+    "strategic_trace_equal": true,
+    "trace_rows": 177,
+    "tree_rows": 454,
+    "excluded_csv_fields": [
+      "sec"
+    ],
+    "excluded_tree_fields_actually_present": [
+      "combat_id"
+    ],
+    "excluded_profile_fields": "only keys ending _seconds"
+  },
+  "trace_on_off_parity": {
+    "seed": 610080001,
+    "old_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1",
+    "new_prefix": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2",
+    "gameplay_equal": true,
+    "complete_trace_equal": true,
+    "tree_equal": true,
+    "floor_profile_counts_equal": true,
+    "strategic_trace_equal": true,
+    "trace_rows": 196,
+    "tree_rows": 610,
+    "excluded_csv_fields": [
+      "sec"
+    ],
+    "excluded_tree_fields_actually_present": [
+      "combat_id"
+    ],
+    "excluded_profile_fields": "only keys ending _seconds"
+  },
+  "score_invariants": {
+    "rows": 20,
+    "public_futures": 8,
+    "floor_take_rows": 20,
+    "floor_skip_rows": 0,
+    "win_head_evaluated_rows": 20,
+    "different_local_rank_rows": 9,
+    "all_floor_take_skip_choices_preserved": true,
+    "all_finite_scores_and_first_argmax": true,
+    "win_probability_bounds_pass": true,
+    "scope": "Local floor-versus-win comparisons on candidate reached states. After first changed acquisition, later states are not same-state matches to the baseline run. If skip count is zero, skip-branch execution is not established by this canary."
+  },
+  "first_same_state_exposure": {
+    "observed": true,
+    "same_public_root": true,
+    "preceding_complete_trace_rows_equal": 23,
+    "trace_idx": 19,
+    "baseline_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.trace.jsonl:24",
+    "candidate_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.trace.jsonl:24",
+    "public_pre": {
+      "act": 1,
+      "deck": [
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Clash",
+        "Inflame",
+        "Panic Button",
+        "Master of Strategy",
+        "Cleave"
+      ],
+      "event": "",
+      "floor": 5,
+      "gold": 45,
+      "hp": 64,
+      "maxHp": 72,
+      "potionCapacity": 3,
+      "potions": [
+        "REGEN_POTION"
+      ],
+      "relics": [
+        "BURNING_BLOOD"
+      ],
+      "room": "MONSTER",
+      "screen": "REWARDS",
+      "x": 0,
+      "y": 4
+    },
+    "offer": {
+      "cards": [
+        [
+          "Iron Wave",
+          "Burning Pact",
+          "Warcry"
+        ]
+      ],
+      "gold": [],
+      "potions": [],
+      "relics": []
+    },
+    "baseline_acquired": "Iron Wave",
+    "candidate_acquired": "Burning Pact",
+    "score_trace": {
+      "act": 1,
+      "baseline_action": {
+        "card_id": 198,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 52,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 14,
+      "floor": 5,
+      "floor_base": 42.968614752493245,
+      "floor_marginals": [
+        -0.2509476437262492,
+        -1.7835315345619165,
+        -2.481173139763996
+      ],
+      "hp": 64,
+      "offers": [
+        {
+          "card_id": 198,
+          "upgraded": false
+        },
+        {
+          "card_id": 52,
+          "upgraded": false
+        },
+        {
+          "card_id": 355,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.3144767303826144,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.006717772284641155,
+        -0.0033353911617617915,
+        -0.036397768368528205
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:21"
+    }
+  },
+  "score_rows": [
+    {
+      "act": 1,
+      "baseline_action": {
+        "card_id": 198,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 52,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 14,
+      "floor": 5,
+      "floor_base": 42.968614752493245,
+      "floor_marginals": [
+        -0.2509476437262492,
+        -1.7835315345619165,
+        -2.481173139763996
+      ],
+      "hp": 64,
+      "offers": [
+        {
+          "card_id": 198,
+          "upgraded": false
+        },
+        {
+          "card_id": 52,
+          "upgraded": false
+        },
+        {
+          "card_id": 355,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.3144767303826144,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.006717772284641155,
+        -0.0033353911617617915,
+        -0.036397768368528205
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:21"
+    },
+    {
+      "act": 1,
+      "baseline_action": {
+        "card_id": 11,
+        "upgraded": false
+      },
+      "baseline_pick": 1,
+      "chosen_action": {
+        "card_id": 11,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 16,
+      "floor": 8,
+      "floor_base": 41.59962990497997,
+      "floor_marginals": [
+        -1.1112175050511723,
+        0.5068791591131685,
+        -0.733434757872601
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 345,
+          "upgraded": false
+        },
+        {
+          "card_id": 11,
+          "upgraded": false
+        },
+        {
+          "card_id": 67,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.19238491888397452,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.02381592225118817,
+        -0.002526484353418401,
+        -0.008484829921699716
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:22"
+    },
+    {
+      "act": 1,
+      "baseline_action": {
+        "card_id": 170,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 170,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 17,
+      "floor": 11,
+      "floor_base": 43.40363007874016,
+      "floor_marginals": [
+        -0.01979714905610308,
+        -1.9169198573581525,
+        -0.4166175754944561
+      ],
+      "hp": 69,
+      "offers": [
+        {
+          "card_id": 170,
+          "upgraded": false
+        },
+        {
+          "card_id": 38,
+          "upgraded": false
+        },
+        {
+          "card_id": 67,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.1745258669644165,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.0062935659511991204,
+        -0.04079510063527994,
+        -0.008221246131563664
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:23"
+    },
+    {
+      "act": 1,
+      "baseline_action": {
+        "card_id": 67,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 67,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 19,
+      "floor": 14,
+      "floor_base": 42.03502063694982,
+      "floor_marginals": [
+        0.19726852575695375,
+        -0.3474085170964827,
+        -0.921671544208948
+      ],
+      "hp": 71,
+      "offers": [
+        {
+          "card_id": 67,
+          "upgraded": false
+        },
+        {
+          "card_id": 258,
+          "upgraded": false
+        },
+        {
+          "card_id": 42,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.14420463812102677,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.00919718889069962,
+        -0.012254729781050466,
+        -0.018109302405414945
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:24"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 362,
+        "upgraded": false
+      },
+      "baseline_pick": 2,
+      "chosen_action": {
+        "card_id": 179,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 21,
+      "floor": 18,
+      "floor_base": 45.84648370435384,
+      "floor_marginals": [
+        -0.36878977252672485,
+        -0.5867398295085877,
+        -0.21479996830021264
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 11,
+          "upgraded": true
+        },
+        {
+          "card_id": 179,
+          "upgraded": false
+        },
+        {
+          "card_id": 362,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.35781471300254475,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.05216180795643466,
+        0.0068730726888937,
+        -0.03195625947387942
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:25"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 301,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 301,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 22,
+      "floor": 20,
+      "floor_base": 43.630993482817935,
+      "floor_marginals": [
+        0.42772605144637055,
+        -0.7646989359927829,
+        0.2503762797859963
+      ],
+      "hp": 66,
+      "offers": [
+        {
+          "card_id": 301,
+          "upgraded": false
+        },
+        {
+          "card_id": 279,
+          "upgraded": false
+        },
+        {
+          "card_id": 154,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.3541288105576307,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.02967334432445573,
+        -0.008310140031093649,
+        0.0161096506501055
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:26"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 148,
+        "upgraded": true
+      },
+      "baseline_pick": 2,
+      "chosen_action": {
+        "card_id": 148,
+        "upgraded": true
+      },
+      "chosen_pick": 2,
+      "deck_size": 26,
+      "floor": 22,
+      "floor_base": 42.25216246774489,
+      "floor_marginals": [
+        -0.8166069233993767,
+        -0.5969430643745,
+        -0.045112930702089216
+      ],
+      "hp": 51,
+      "offers": [
+        {
+          "card_id": 42,
+          "upgraded": false
+        },
+        {
+          "card_id": 179,
+          "upgraded": false
+        },
+        {
+          "card_id": 148,
+          "upgraded": true
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.2959337852496718,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.016580840704884303,
+        0.008286226081627546,
+        0.014246904090857604
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:27"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 93,
+        "upgraded": true
+      },
+      "baseline_pick": 1,
+      "chosen_action": {
+        "card_id": 181,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 29,
+      "floor": 27,
+      "floor_base": 49.51265145753241,
+      "floor_marginals": [
+        -0.36792620778942364,
+        0.0185073500033468,
+        -0.8512445181404473
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 181,
+          "upgraded": false
+        },
+        {
+          "card_id": 93,
+          "upgraded": true
+        },
+        {
+          "card_id": 132,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.6637024807444116,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.033196056445859434,
+        0.01152608034710545,
+        -0.04023437586256062
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:28"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 339,
+        "upgraded": false
+      },
+      "baseline_pick": 2,
+      "chosen_action": {
+        "card_id": 69,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 30,
+      "floor": 28,
+      "floor_base": 49.42036189327536,
+      "floor_marginals": [
+        -0.24486596006317995,
+        -0.7223432066530222,
+        0.44342476276142406
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 69,
+          "upgraded": false
+        },
+        {
+          "card_id": 181,
+          "upgraded": false
+        },
+        {
+          "card_id": 339,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.7557546457292446,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.03537951498105152,
+        -0.012016327959888606,
+        0.001627121270457943
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:29"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 93,
+        "upgraded": false
+      },
+      "baseline_pick": 2,
+      "chosen_action": {
+        "card_id": 93,
+        "upgraded": false
+      },
+      "chosen_pick": 2,
+      "deck_size": 31,
+      "floor": 29,
+      "floor_base": 50.01787424310459,
+      "floor_marginals": [
+        -0.07042803801596165,
+        -0.09333433247411449,
+        -0.051920688012614846
+      ],
+      "hp": 68,
+      "offers": [
+        {
+          "card_id": 148,
+          "upgraded": true
+        },
+        {
+          "card_id": 355,
+          "upgraded": false
+        },
+        {
+          "card_id": 93,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.7749809856152061,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.0034413518876081906,
+        -0.07407872674572291,
+        0.026346272398428683
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:30"
+    },
+    {
+      "act": 2,
+      "baseline_action": {
+        "card_id": 40,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 40,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 33,
+      "floor": 33,
+      "floor_base": 50.17911996057655,
+      "floor_marginals": [
+        0.39209761057281867,
+        -0.02016038228839534,
+        0.05875891124014743
+      ],
+      "hp": 43,
+      "offers": [
+        {
+          "card_id": 40,
+          "upgraded": false
+        },
+        {
+          "card_id": 208,
+          "upgraded": false
+        },
+        {
+          "card_id": 147,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.7977146716009689,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.022590803253896286,
+        0.003784300284042419,
+        0.010888523881938172
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:31"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 21,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 150,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 35,
+      "floor": 36,
+      "floor_base": 49.652999995654405,
+      "floor_marginals": [
+        0.0,
+        -0.041535302909323946,
+        -0.2354450777056627
+      ],
+      "hp": 62,
+      "offers": [
+        {
+          "card_id": 21,
+          "upgraded": false
+        },
+        {
+          "card_id": 150,
+          "upgraded": false
+        },
+        {
+          "card_id": 188,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 2,
+      "seed": 610080001,
+      "win_base": 0.7092292322323409,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.0,
+        0.015048744489595811,
+        0.0
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:32"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 240,
+        "upgraded": false
+      },
+      "baseline_pick": 1,
+      "chosen_action": {
+        "card_id": 240,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 36,
+      "floor": 36,
+      "floor_base": 49.59619249698853,
+      "floor_marginals": [
+        0.0,
+        0.3701275900566543,
+        0.0
+      ],
+      "hp": 62,
+      "offers": [
+        {
+          "card_id": 21,
+          "upgraded": false
+        },
+        {
+          "card_id": 240,
+          "upgraded": false
+        },
+        {
+          "card_id": 336,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 1,
+      "seed": 610080001,
+      "win_base": 0.7232152705936419,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.0,
+        0.00825792990017904,
+        0.003147458423732097
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:33"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 281,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 281,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 37,
+      "floor": 36,
+      "floor_base": 49.94524633694136,
+      "floor_marginals": [
+        0.0,
+        -0.45002926533925347,
+        0.0
+      ],
+      "hp": 62,
+      "offers": [
+        {
+          "card_id": 281,
+          "upgraded": false
+        },
+        {
+          "card_id": 131,
+          "upgraded": false
+        },
+        {
+          "card_id": 150,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.7346303165241101,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.005142384767512498,
+        -0.02033989003400316,
+        -0.005142384767512498
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:34"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 249,
+        "upgraded": true
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 179,
+        "upgraded": true
+      },
+      "chosen_pick": 2,
+      "deck_size": 38,
+      "floor": 39,
+      "floor_base": 49.85818702115984,
+      "floor_marginals": [
+        0.05615828587906435,
+        -0.13160345633878023,
+        -0.03431290092703421
+      ],
+      "hp": 67,
+      "offers": [
+        {
+          "card_id": 249,
+          "upgraded": true
+        },
+        {
+          "card_id": 14,
+          "upgraded": true
+        },
+        {
+          "card_id": 179,
+          "upgraded": true
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.6938254429327319,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.004633351077721781,
+        -0.032205309809971494,
+        0.0272048955666504
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:35"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 147,
+        "upgraded": false
+      },
+      "baseline_pick": 1,
+      "chosen_action": {
+        "card_id": 122,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 39,
+      "floor": 40,
+      "floor_base": 50.72789221627199,
+      "floor_marginals": [
+        -0.007528268615715206,
+        0.017233406513696536,
+        -0.2234636440553004
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 122,
+          "upgraded": false
+        },
+        {
+          "card_id": 147,
+          "upgraded": false
+        },
+        {
+          "card_id": 362,
+          "upgraded": true
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.7848585337035389,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.0113411776972977,
+        0.0001284313449623209,
+        -0.05349342008121871
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:36"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 249,
+        "upgraded": false
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 249,
+        "upgraded": false
+      },
+      "chosen_pick": 0,
+      "deck_size": 41,
+      "floor": 41,
+      "floor_base": 50.58714774791469,
+      "floor_marginals": [
+        0.008848760684486479,
+        -0.22680334317556117,
+        0.0
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 249,
+          "upgraded": false
+        },
+        {
+          "card_id": 362,
+          "upgraded": false
+        },
+        {
+          "card_id": 67,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.775133975414129,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.0006280135352284555,
+        -0.06477898904652701,
+        -0.031515849242713556
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:37"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 69,
+        "upgraded": true
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 179,
+        "upgraded": false
+      },
+      "chosen_pick": 2,
+      "deck_size": 42,
+      "floor": 45,
+      "floor_base": 51.47401911305651,
+      "floor_marginals": [
+        0.004059542145114392,
+        -0.2823948084114818,
+        0.0
+      ],
+      "hp": 72,
+      "offers": [
+        {
+          "card_id": 69,
+          "upgraded": true
+        },
+        {
+          "card_id": 362,
+          "upgraded": true
+        },
+        {
+          "card_id": 179,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.8711052833434623,
+      "win_evaluated": true,
+      "win_marginals": [
+        -0.00870348688174516,
+        -0.038468382370794196,
+        0.0
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:38"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 193,
+        "upgraded": true
+      },
+      "baseline_pick": 2,
+      "chosen_action": {
+        "card_id": 360,
+        "upgraded": false
+      },
+      "chosen_pick": 1,
+      "deck_size": 43,
+      "floor": 47,
+      "floor_base": 51.435310767374354,
+      "floor_marginals": [
+        -0.036625966411520494,
+        0.06307569494674681,
+        0.08023646455694688
+      ],
+      "hp": 49,
+      "offers": [
+        {
+          "card_id": 292,
+          "upgraded": false
+        },
+        {
+          "card_id": 360,
+          "upgraded": false
+        },
+        {
+          "card_id": 193,
+          "upgraded": true
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.7991244127833342,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.005205074644586527,
+        0.028356825080791515,
+        0.019628591023144404
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:39"
+    },
+    {
+      "act": 3,
+      "baseline_action": {
+        "card_id": 249,
+        "upgraded": true
+      },
+      "baseline_pick": 0,
+      "chosen_action": {
+        "card_id": 249,
+        "upgraded": true
+      },
+      "chosen_pick": 0,
+      "deck_size": 44,
+      "floor": 48,
+      "floor_base": 51.58898492156158,
+      "floor_marginals": [
+        0.0821094051188993,
+        0.0,
+        -0.10543677746318281
+      ],
+      "hp": 59,
+      "offers": [
+        {
+          "card_id": 249,
+          "upgraded": true
+        },
+        {
+          "card_id": 360,
+          "upgraded": true
+        },
+        {
+          "card_id": 30,
+          "upgraded": false
+        }
+      ],
+      "public_futures": 8,
+      "reward_index": 0,
+      "seed": 610080001,
+      "win_base": 0.8459036075390906,
+      "win_evaluated": true,
+      "win_marginals": [
+        0.011260424687313808,
+        -0.004794870301145893,
+        -0.007486766401502143
+      ],
+      "log_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log:40"
+    }
+  ],
+  "quality_inference": false,
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/card_rank_canary.json",
+      "sha256": "cc77397f2017986c9807153d0a35e90b5034ce0029838bdc555912fdb08dde4c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/validate_removal_canary.py",
+      "sha256": "986b19e60bb9bf7db9e34a1ea9920af34b39a801e73cba9a554d58e89ee7ad54"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/include/constants/Cards.h",
+      "sha256": "bde2800c2f1184b7336b449bf2e1f331fe0739df05f1959478faa4be6b366e5c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.receipt.json",
+      "sha256": "7cf95a880a7e0c151d8d9340bb1094d6aeedae9df05652781faf20c7af981962"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.csv",
+      "sha256": "d1d82ad11e4e2de25bc909a3eddea7acfba15b2b267f9431fea5d3b8232ab85b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.csv.meta.json",
+      "sha256": "ac5d50a067a893462e1c01f48f15c164698b53f2621684a68fdda73fc08b2ce7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.log",
+      "sha256": "c1d135938599aedffa5c90d223ac402694bb9adcb5d35084be9df21819a6baf5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.profile.jsonl",
+      "sha256": "18ef8104b125f1a045f2239e45c1c66e255e0c134e7ca12ae2777715905fb770"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/Fprod_0.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.receipt.json",
+      "sha256": "fbe641194bd2a25bfa0d5aea13c39e1c99a38f55dac3dc0095b3168fc2d5b704"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.csv",
+      "sha256": "ed9b873e1fd89d2ad90b352eb56e35c23f2fb986380fda287355819da6fdfc5d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.csv.meta.json",
+      "sha256": "4363f5eaaa9f54c6a47641a4dfc73dfcf9d549db686014128357390e2bc658b6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.log",
+      "sha256": "9a7e94a3ed249068d4266571e61b8677e4137a4f3da31f95f909c676a661eedc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.trace.jsonl",
+      "sha256": "5e0d8fe679a9ec71daa0056d4bf123d2d418de2706b5db51918111eac53c698d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.tree.jsonl",
+      "sha256": "eb871720451df571224e3080aa71b97dd4e859a0297c861dbe7d8582a0273015"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.profile.jsonl",
+      "sha256": "8176c42d44a8f9821b82f451c5f2a82b0b554dc8705d6e24f23049a4bd4926d8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinRank_1.strategic.jsonl",
+      "sha256": "065b986b081c22231fb5b8b6413366f6e45dffa4fb845de33e321cfd7a6a61b5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.receipt.json",
+      "sha256": "f227ceb12dbf2c9ba68fd454084dc770573d30320a540b998559c42ae8507b8e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.csv",
+      "sha256": "6d0ac33ffa8f16b9fce0e8e9ba423f0ef52e4fa88d8cd5944da5126ad743da9c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.csv.meta.json",
+      "sha256": "96355928225d57c606c3958a4c4069da96fbb758ff9d32eaa94c29405b13b9b5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.log",
+      "sha256": "9b584217999024a9e86c8bdebb0fb9fa827de46cf424e24f4deae8735067a498"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.trace.jsonl",
+      "sha256": "5e0d8fe679a9ec71daa0056d4bf123d2d418de2706b5db51918111eac53c698d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.tree.jsonl",
+      "sha256": "eb871720451df571224e3080aa71b97dd4e859a0297c861dbe7d8582a0273015"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.profile.jsonl",
+      "sha256": "2244131b2d486724307e6050963fde12ab3fb5f2fbd9f6d37e778d6f347e9b1f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/card_rank_canary/CardWinTrace_2.strategic.jsonl",
+      "sha256": "065b986b081c22231fb5b8b6413366f6e45dffa4fb845de33e321cfd7a6a61b5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.receipt.json",
+      "sha256": "bdab041f9a0d70f385b0bb5e618ff021e858b8f12bc2e99feceb5b222e2aa5ca"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.csv",
+      "sha256": "887eac4ce3244284bf14f9f5dd2e18f7a9af2ee6aaed593aa37cd1c46ec3ac97"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.csv.meta.json",
+      "sha256": "4e1a2da87cf0459c8160d3a99f2e0fac51da9c316e962afae14df86f780e42c2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.log",
+      "sha256": "db59a4c27914bcf291cc6f4afddae6b136a7bec8511f45baccdab143a346a718"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.trace.jsonl",
+      "sha256": "e5684749c0809700bf0e5585229c201b4a4994ab626f520d1db7e5967cd29f03"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.tree.jsonl",
+      "sha256": "540daa8ca725f22debf566d2d07673df44eccfe076d49df7ca4029c0e102093d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.profile.jsonl",
+      "sha256": "33f7a2fea37b2d679ce9f0c6bffc2f62eb6894a395df464b8a1474ef1c3c3ad2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_canary/Fprod_0.strategic.jsonl",
+      "sha256": "ae842f04ef5cabee351745ff53edf3e8170d07fb80987cc4f80a11f8961aca23"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_canary.json",
+      "sha256": "80d32b02f2cabd089b0c0ad638ff425011154b750a91b18698a58daafccf58f7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_card_rank.py",
+      "sha256": "2e5727f7cb1c5dcef26931950414c721fc284a09f9b0e95842b47b2569ccede3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/CARD_WIN_RANK_REVIEW.md",
+      "sha256": "8a95cce0e1705cfc0074e616b43ab2896eebf55465dcd6de8ab7f217c5473baa"
+    }
+  ],
+  "validator_sha256": "3aa1ae9add69cc2913669f958eca95fab5368910b14f16eacc8b1b1087a278f3"
+}

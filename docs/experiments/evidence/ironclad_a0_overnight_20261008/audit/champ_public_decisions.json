@@ -1,0 +1,5463 @@
+{
+  "schema": "champ_public_decision_audit_v1",
+  "source_seed": 610081002,
+  "floor": 33,
+  "raw_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Capture_0.public.jsonl",
+  "raw_sha256": "0a679ddf01a75eae8186a7c68eda9d6b808decb42c6c2c0457b4c2fc980a4f83",
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "capture_roots": 72,
+  "valid": true,
+  "unknown_draw_canonical_all": true,
+  "wire_search_seed_zero_all": true,
+  "hidden_intent_false_all": true,
+  "decisions": [
+    {
+      "decision": 1,
+      "turn": 0,
+      "hp": 69,
+      "block": 0,
+      "energy": 5,
+      "enemy_hp": 420,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Shrug It Off+#18",
+      "chosen_fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 120.12773686259274,
+      "edge_visits": 1835,
+      "child_visits": 1835,
+      "new_simulations": 2000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        },
+        {
+          "label": "Reaper+#17",
+          "cost": 2
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Infernal Blade#23",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        }
+      ],
+      "potions": [
+        "Skill Potion",
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 75.59404761904761,
+          "edge_visits": 8,
+          "child_visits": 8,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Shrug It Off+#18",
+          "q": 120.12773686259274,
+          "edge_visits": 1835,
+          "child_visits": 1835,
+          "fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Infernal Blade#23",
+          "q": 57.01190476190476,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=191_23_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Reaper+#17",
+          "q": 86.32617405582924,
+          "edge_visits": 29,
+          "child_visits": 29,
+          "fingerprint": "sa/t=1/s=1/c=266_17_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 84.86571428571429,
+          "edge_visits": 21,
+          "child_visits": 21,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 90.76190476190477,
+          "edge_visits": 92,
+          "child_visits": 92,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Skill Potion",
+          "q": 56.55857142857143,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=36_0/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Attack Potion",
+          "q": 57.00904761904762,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 79.05757142857144,
+          "edge_visits": 10,
+          "child_visits": 10,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 44.05619047619048,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 2,
+      "turn": 0,
+      "hp": 69,
+      "block": 11,
+      "energy": 4,
+      "enemy_hp": 420,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Infernal Blade#23",
+      "chosen_fingerprint": "sa/t=1/s=1/c=191_23_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 119.43627358879209,
+      "edge_visits": 4045,
+      "child_visits": 4045,
+      "new_simulations": 4000,
+      "inherited_visits": 116,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Reaper+#17",
+          "cost": 2
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Infernal Blade#23",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        }
+      ],
+      "potions": [
+        "Skill Potion",
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 65.4347619047619,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Infernal Blade#23",
+          "q": 119.43627358879209,
+          "edge_visits": 4045,
+          "child_visits": 4045,
+          "fingerprint": "sa/t=1/s=1/c=191_23_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Reaper+#17",
+          "q": 108.69235880398672,
+          "edge_visits": 43,
+          "child_visits": 43,
+          "fingerprint": "sa/t=1/s=1/c=266_17_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 65.4347619047619,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 65.4347619047619,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Skill Potion",
+          "q": 103.00507936507935,
+          "edge_visits": 21,
+          "child_visits": 21,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=36_0/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Attack Potion",
+          "q": 62.55952380952381,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 59.934761904761906,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 53.0247619047619,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 3,
+      "turn": 0,
+      "hp": 69,
+      "block": 11,
+      "energy": 3,
+      "enemy_hp": 420,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Drink Skill Potion",
+      "chosen_fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=36_0/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 112.05131738935093,
+      "edge_visits": 2013,
+      "child_visits": 2013,
+      "new_simulations": 2000,
+      "inherited_visits": 137,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Reaper+#17",
+          "cost": 2
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Skill Potion",
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 64.5635238095238,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Reaper+#17",
+          "q": 61.43511904761905,
+          "edge_visits": 4,
+          "child_visits": 4,
+          "fingerprint": "sa/t=1/s=1/c=266_17_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Searing Blow#25",
+          "q": 66.33746031746033,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 66.4965873015873,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 67.4586507936508,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Skill Potion",
+          "q": 112.05131738935093,
+          "edge_visits": 2013,
+          "child_visits": 2013,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=36_0/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Attack Potion",
+          "q": 51.767380952380954,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 60.64460317460318,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 82.65260073260072,
+          "edge_visits": 91,
+          "child_visits": 91,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 4,
+      "turn": 0,
+      "hp": 69,
+      "block": 11,
+      "energy": 3,
+      "enemy_hp": 420,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Select Shockwave (task3)",
+      "chosen_fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=300/p=0_-1/x=-1/d=0/k=0/task=3/sel=",
+      "chosen_q": 97.54909275721897,
+      "edge_visits": 2764,
+      "child_visits": 2764,
+      "new_simulations": 4000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Reaper+#17",
+          "cost": 2
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Select Shockwave (task3)",
+          "q": 97.54909275721897,
+          "edge_visits": 2764,
+          "child_visits": 2764,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=300/p=0_-1/x=-1/d=0/k=0/task=3/sel="
+        },
+        {
+          "label": "Select Offering (task3)",
+          "q": 90.52057079785551,
+          "edge_visits": 151,
+          "child_visits": 151,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=234/p=0_-1/x=-1/d=0/k=0/task=3/sel="
+        },
+        {
+          "label": "Select Entrench (task3)",
+          "q": 93.6164460270911,
+          "edge_visits": 682,
+          "child_visits": 682,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=132/p=0_-1/x=-1/d=0/k=0/task=3/sel="
+        },
+        {
+          "label": "Select INVALID (task3)",
+          "q": 92.73693607467791,
+          "edge_visits": 403,
+          "child_visits": 403,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=1/task=3/sel="
+        }
+      ]
+    },
+    {
+      "decision": 5,
+      "turn": 0,
+      "hp": 69,
+      "block": 11,
+      "energy": 3,
+      "enemy_hp": 420,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Shockwave#26",
+      "chosen_fingerprint": "sa/t=1/s=1/c=300_26_0_2_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 109.84940598919987,
+      "edge_visits": 1067,
+      "child_visits": 1067,
+      "new_simulations": 250,
+      "inherited_visits": 2764,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Reaper+#17",
+          "cost": 2
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        },
+        {
+          "label": "Shockwave#26",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 94.14687598116167,
+          "edge_visits": 273,
+          "child_visits": 273,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Shockwave#26",
+          "q": 109.84940598919987,
+          "edge_visits": 1067,
+          "child_visits": 1067,
+          "fingerprint": "sa/t=1/s=1/c=300_26_0_2_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Reaper+#17",
+          "q": 57.49333333333333,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=266_17_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Searing Blow#25",
+          "q": 94.56834796488431,
+          "edge_visits": 358,
+          "child_visits": 358,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 95.75940018314986,
+          "edge_visits": 728,
+          "child_visits": 728,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 94.88497521042316,
+          "edge_visits": 413,
+          "child_visits": 413,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Attack Potion",
+          "q": 47.53857142857143,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 92.81320448179262,
+          "edge_visits": 170,
+          "child_visits": 170,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 46.3152380952381,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 6,
+      "turn": 0,
+      "hp": 69,
+      "block": 11,
+      "energy": 3,
+      "enemy_hp": 420,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Reaper+#17",
+      "chosen_fingerprint": "sa/t=1/s=1/c=266_17_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 128.60418939898017,
+      "edge_visits": 1503,
+      "child_visits": 1503,
+      "new_simulations": 1000,
+      "inherited_visits": 1067,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Reaper+#17",
+          "cost": 2
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 94.64196236559134,
+          "edge_visits": 77,
+          "child_visits": 124,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Reaper+#17",
+          "q": 128.60418939898017,
+          "edge_visits": 1503,
+          "child_visits": 1503,
+          "fingerprint": "sa/t=1/s=1/c=266_17_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Searing Blow#25",
+          "q": 97.42865389731308,
+          "edge_visits": 179,
+          "child_visits": 179,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 93.8167782738095,
+          "edge_visits": 62,
+          "child_visits": 192,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 96.37061940565692,
+          "edge_visits": 133,
+          "child_visits": 133,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Attack Potion",
+          "q": 47.53857142857143,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 96.15529004329001,
+          "edge_visits": 110,
+          "child_visits": 110,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 49.16428571428571,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 7,
+      "turn": 0,
+      "hp": 76,
+      "block": 11,
+      "energy": 1,
+      "enemy_hp": 413,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Drink Attack Potion",
+      "chosen_fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 124.83157696249306,
+      "edge_visits": 3485,
+      "child_visits": 3485,
+      "new_simulations": 2000,
+      "inherited_visits": 1503,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Attack Potion",
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 102.0025974025974,
+          "edge_visits": 10,
+          "child_visits": 11,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Searing Blow#25",
+          "q": 83.82261904761904,
+          "edge_visits": 3,
+          "child_visits": 4,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 54.126666666666665,
+          "edge_visits": 1,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 54.91952380952381,
+          "edge_visits": 1,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Attack Potion",
+          "q": 124.83157696249306,
+          "edge_visits": 3485,
+          "child_visits": 3485,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=4_1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 52.16952380952381,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 58.52476190476191,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 8,
+      "turn": 0,
+      "hp": 76,
+      "block": 11,
+      "energy": 1,
+      "enemy_hp": 413,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Select Wild Strike (task3)",
+      "chosen_fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=362/p=0_-1/x=-1/d=0/k=0/task=3/sel=",
+      "chosen_q": 104.67803280695327,
+      "edge_visits": 1556,
+      "child_visits": 1556,
+      "new_simulations": 2000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Select Reckless Charge (task3)",
+          "q": 45.974761904761905,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=269/p=0_-1/x=-1/d=0/k=0/task=3/sel="
+        },
+        {
+          "label": "Select Thunderclap (task3)",
+          "q": 96.62180349062722,
+          "edge_visits": 442,
+          "child_visits": 442,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=339/p=0_-1/x=-1/d=0/k=0/task=3/sel="
+        },
+        {
+          "label": "Select Wild Strike (task3)",
+          "q": 104.67803280695327,
+          "edge_visits": 1556,
+          "child_visits": 1556,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=362/p=0_-1/x=-1/d=0/k=0/task=3/sel="
+        },
+        {
+          "label": "Select INVALID (task3)",
+          "q": 52.16952380952381,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=3/s=5/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=1/task=3/sel="
+        }
+      ]
+    },
+    {
+      "decision": 9,
+      "turn": 0,
+      "hp": 76,
+      "block": 11,
+      "energy": 1,
+      "enemy_hp": 413,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Searing Blow#25",
+      "chosen_fingerprint": "sa/t=1/s=1/c=288_25_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 106.37674938225109,
+      "edge_visits": 2274,
+      "child_visits": 2274,
+      "new_simulations": 1000,
+      "inherited_visits": 1556,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 0
+        },
+        {
+          "label": "Wild Strike#27",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 97.69580952380946,
+          "edge_visits": 135,
+          "child_visits": 135,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Searing Blow#25",
+          "q": 106.37674938225109,
+          "edge_visits": 2274,
+          "child_visits": 2274,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 47.47428571428572,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 89.72739130434783,
+          "edge_visits": 23,
+          "child_visits": 23,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 95.4985934065934,
+          "edge_visits": 65,
+          "child_visits": 65,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 93.80510204081632,
+          "edge_visits": 49,
+          "child_visits": 49,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 78.9042857142857,
+          "edge_visits": 8,
+          "child_visits": 8,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 10,
+      "turn": 0,
+      "hp": 76,
+      "block": 11,
+      "energy": 1,
+      "enemy_hp": 395,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 104.05803287019368,
+      "edge_visits": 4123,
+      "child_visits": 4123,
+      "new_simulations": 2000,
+      "inherited_visits": 2274,
+      "hand": [
+        {
+          "label": "Fire Breathing#24",
+          "cost": 0
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Wild Strike#27",
+          "cost": 0
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 90.64600732600732,
+          "edge_visits": 26,
+          "child_visits": 52,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 47.47428571428572,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 89.82643678160922,
+          "edge_visits": 23,
+          "child_visits": 29,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 94.5975148809524,
+          "edge_visits": 52,
+          "child_visits": 64,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 94.72151785714284,
+          "edge_visits": 48,
+          "child_visits": 48,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 104.05803287019368,
+          "edge_visits": 4123,
+          "child_visits": 4123,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 11,
+      "turn": 1,
+      "hp": 75,
+      "block": 3,
+      "energy": 4,
+      "enemy_hp": 395,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 2,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Strike#3",
+      "chosen_fingerprint": "sa/t=1/s=1/c=321_3_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 104.1542772108844,
+      "edge_visits": 1904,
+      "child_visits": 1904,
+      "new_simulations": 2000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        },
+        {
+          "label": "Strike#3",
+          "cost": 1
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off#12",
+          "cost": 1
+        },
+        {
+          "label": "Bash#8",
+          "cost": 2
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Shockwave+#21",
+          "q": 87.78643467643472,
+          "edge_visits": 39,
+          "child_visits": 39,
+          "fingerprint": "sa/t=1/s=1/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 50.77428571428572,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Bash#8",
+          "q": 42.00047619047619,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#3",
+          "q": 104.1542772108844,
+          "edge_visits": 1904,
+          "child_visits": 1904,
+          "fingerprint": "sa/t=1/s=1/c=321_3_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 88.8313714285714,
+          "edge_visits": 50,
+          "child_visits": 50,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 69.67038095238095,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 12,
+      "turn": 1,
+      "hp": 75,
+      "block": 3,
+      "energy": 3,
+      "enemy_hp": 386,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 2,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Bash#8",
+      "chosen_fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 105.83030305341566,
+      "edge_visits": 1873,
+      "child_visits": 1873,
+      "new_simulations": 250,
+      "inherited_visits": 1904,
+      "hand": [
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off#12",
+          "cost": 1
+        },
+        {
+          "label": "Bash#8",
+          "cost": 2
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Shockwave+#21",
+          "q": 95.10432826747721,
+          "edge_visits": 226,
+          "child_visits": 235,
+          "fingerprint": "sa/t=1/s=1/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 50.77428571428572,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Bash#8",
+          "q": 105.83030305341566,
+          "edge_visits": 1873,
+          "child_visits": 1873,
+          "fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 88.18332080200499,
+          "edge_visits": 38,
+          "child_visits": 38,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 82.54060317460318,
+          "edge_visits": 15,
+          "child_visits": 15,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 13,
+      "turn": 1,
+      "hp": 75,
+      "block": 3,
+      "energy": 1,
+      "enemy_hp": 374,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 106.2819388749652,
+      "edge_visits": 2052,
+      "child_visits": 2052,
+      "new_simulations": 250,
+      "inherited_visits": 1873,
+      "hand": [
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off#12",
+          "cost": 1
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 49.188571428571436,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 92.3177915804003,
+          "edge_visits": 69,
+          "child_visits": 69,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 106.2819388749652,
+          "edge_visits": 2052,
+          "child_visits": 2052,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 14,
+      "turn": 2,
+      "hp": 69,
+      "block": 3,
+      "energy": 4,
+      "enemy_hp": 374,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Defend#7",
+      "chosen_fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 89.81170457173738,
+      "edge_visits": 1853,
+      "child_visits": 1853,
+      "new_simulations": 2000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Transmutation#22",
+          "cost": -1
+        },
+        {
+          "label": "Uppercut+#19",
+          "cost": 2
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Transmutation#22",
+          "q": 46.531666666666666,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Uppercut+#19",
+          "q": 45.74357142857143,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Perfected Strike+#16",
+          "q": 69.45165079365078,
+          "edge_visits": 15,
+          "child_visits": 15,
+          "fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Flame Barrier+#11",
+          "q": 81.43579743008311,
+          "edge_visits": 126,
+          "child_visits": 126,
+          "fingerprint": "sa/t=1/s=1/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 89.81170457173738,
+          "edge_visits": 1853,
+          "child_visits": 1853,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 37.77380952380952,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 31.35238095238095,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 15,
+      "turn": 2,
+      "hp": 69,
+      "block": 6,
+      "energy": 3,
+      "enemy_hp": 374,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Uppercut+#19",
+      "chosen_fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 92.00225699168618,
+      "edge_visits": 2205,
+      "child_visits": 2205,
+      "new_simulations": 500,
+      "inherited_visits": 1853,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Transmutation#22",
+          "cost": -1
+        },
+        {
+          "label": "Uppercut+#19",
+          "cost": 2
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Transmutation#22",
+          "q": 61.43920634920636,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Uppercut+#19",
+          "q": 92.00225699168618,
+          "edge_visits": 2205,
+          "child_visits": 2205,
+          "fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Perfected Strike+#16",
+          "q": 80.77302982731553,
+          "edge_visits": 89,
+          "child_visits": 91,
+          "fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Flame Barrier+#11",
+          "q": 44.66888888888889,
+          "edge_visits": 2,
+          "child_visits": 3,
+          "fingerprint": "sa/t=1/s=1/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 78.89979591836733,
+          "edge_visits": 49,
+          "child_visits": 49,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 31.35238095238095,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 16,
+      "turn": 2,
+      "hp": 69,
+      "block": 6,
+      "energy": 1,
+      "enemy_hp": 355,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Drink Gamblers Brew",
+      "chosen_fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 92.7173722584477,
+      "edge_visits": 2410,
+      "child_visits": 2410,
+      "new_simulations": 250,
+      "inherited_visits": 2205,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Transmutation#22",
+          "cost": -1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        }
+      ],
+      "potions": [
+        "Gamblers Brew"
+      ],
+      "alternatives": [
+        {
+          "label": "Play Transmutation#22",
+          "q": 47.68190476190476,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Drink Gamblers Brew",
+          "q": 92.7173722584477,
+          "edge_visits": 2410,
+          "child_visits": 2410,
+          "fingerprint": "sa/t=2/s=0/c=0_0_0_0_0_0_0_0/o=0/p=27_2/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 77.83462585034012,
+          "edge_visits": 42,
+          "child_visits": 42,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 17,
+      "turn": 2,
+      "hp": 69,
+      "block": 6,
+      "energy": 1,
+      "enemy_hp": 355,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Select [Transmutation#22] (task9)",
+      "chosen_fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=343_22_0_-1_-1_0_0_0",
+      "chosen_q": 92.48884063522985,
+      "edge_visits": 4102,
+      "child_visits": 4102,
+      "new_simulations": 2000,
+      "inherited_visits": 2410,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Transmutation#22",
+          "cost": -1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Select [] (task9)",
+          "q": 76.47999999999999,
+          "edge_visits": 22,
+          "child_visits": 23,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel="
+        },
+        {
+          "label": "Select [Perfected Strike+#16] (task9)",
+          "q": 72.57302721088436,
+          "edge_visits": 14,
+          "child_visits": 14,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=244_16_0_2_2_1_0_0"
+        },
+        {
+          "label": "Select [Transmutation#22] (task9)",
+          "q": 92.48884063522985,
+          "edge_visits": 4102,
+          "child_visits": 4102,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=343_22_0_-1_-1_0_0_0"
+        },
+        {
+          "label": "Select [Perfected Strike+#16, Transmutation#22] (task9)",
+          "q": 83.55031385281387,
+          "edge_visits": 88,
+          "child_visits": 88,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=244_16_0_2_2_1_0_0+343_22_0_-1_-1_0_0_0"
+        },
+        {
+          "label": "Select [Flame Barrier+#11] (task9)",
+          "q": 72.61666666666667,
+          "edge_visits": 14,
+          "child_visits": 14,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=154_11_0_2_2_1_0_0"
+        },
+        {
+          "label": "Select [Perfected Strike+#16, Flame Barrier+#11] (task9)",
+          "q": 41.187619047619044,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=244_16_0_2_2_1_0_0+154_11_0_2_2_1_0_0"
+        },
+        {
+          "label": "Select [Transmutation#22, Flame Barrier+#11] (task9)",
+          "q": 85.24055938037871,
+          "edge_visits": 166,
+          "child_visits": 166,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=343_22_0_-1_-1_0_0_0+154_11_0_2_2_1_0_0"
+        },
+        {
+          "label": "Select [Perfected Strike+#16, Transmutation#22, Flame Barrier+#11] (task9)",
+          "q": 46.92333333333333,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=9/sel=244_16_0_2_2_1_0_0+343_22_0_-1_-1_0_0_0+154_11_0_2_2_1_0_0"
+        }
+      ]
+    },
+    {
+      "decision": 18,
+      "turn": 2,
+      "hp": 69,
+      "block": 6,
+      "energy": 1,
+      "enemy_hp": 355,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Headbutt#15",
+      "chosen_fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 70.83914136904771,
+      "edge_visits": 960,
+      "child_visits": 960,
+      "new_simulations": 250,
+      "inherited_visits": 718,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        },
+        {
+          "label": "Headbutt#15",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Headbutt#15",
+          "q": 70.83914136904771,
+          "edge_visits": 960,
+          "child_visits": 960,
+          "fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 34.691428571428574,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 19,
+      "turn": 2,
+      "hp": 69,
+      "block": 6,
+      "energy": 0,
+      "enemy_hp": 342,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Select Shrug It Off+#18 (task10)",
+      "chosen_fingerprint": "sa/t=3/s=3/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel=",
+      "chosen_q": 83.17413243877186,
+      "edge_visits": 873,
+      "child_visits": 873,
+      "new_simulations": 1000,
+      "inherited_visits": 960,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Select Shrug It Off+#18 (task10)",
+          "q": 83.17413243877186,
+          "edge_visits": 873,
+          "child_visits": 873,
+          "fingerprint": "sa/t=3/s=3/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Searing Blow#25 (task10)",
+          "q": 35.78595238095238,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=3/s=3/c=288_25_0_2_2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Wild Strike#27 (task10)",
+          "q": 52.033714285714304,
+          "edge_visits": 10,
+          "child_visits": 10,
+          "fingerprint": "sa/t=3/s=3/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Defend#4 (task10)",
+          "q": 36.30380952380952,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=3/s=3/c=104_4_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Strike#1 (task10)",
+          "q": 71.40497894395848,
+          "edge_visits": 588,
+          "child_visits": 588,
+          "fingerprint": "sa/t=3/s=3/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Clash#13 (task10)",
+          "q": 69.76931330472101,
+          "edge_visits": 466,
+          "child_visits": 466,
+          "fingerprint": "sa/t=3/s=3/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Fire Breathing#24 (task10)",
+          "q": 44.12304761904761,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=3/s=3/c=152_24_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Bash#8 (task10)",
+          "q": 35.257380952380956,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=3/s=3/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Shrug It Off#12 (task10)",
+          "q": 41.071111111111115,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=3/s=3/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Shockwave+#21 (task10)",
+          "q": 27.214285714285715,
+          "edge_visits": 1,
+          "child_visits": 1,
+          "fingerprint": "sa/t=3/s=3/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Uppercut+#19 (task10)",
+          "q": 35.87404761904762,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=3/s=3/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Transmutation#22 (task10)",
+          "q": 40.135714285714286,
+          "edge_visits": 4,
+          "child_visits": 4,
+          "fingerprint": "sa/t=3/s=3/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        }
+      ]
+    },
+    {
+      "decision": 20,
+      "turn": 2,
+      "hp": 69,
+      "block": 6,
+      "energy": 0,
+      "enemy_hp": 342,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 3,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 83.21650229357824,
+      "edge_visits": 872,
+      "child_visits": 872,
+      "new_simulations": 0,
+      "inherited_visits": 873,
+      "hand": [
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 83.21650229357824,
+          "edge_visits": 872,
+          "child_visits": 872,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 21,
+      "turn": 3,
+      "hp": 69,
+      "block": 0,
+      "energy": 4,
+      "enemy_hp": 342,
+      "enemy_block": 20,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Anger#20",
+      "chosen_fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 78.99597487724137,
+      "edge_visits": 2085,
+      "child_visits": 2085,
+      "new_simulations": 2000,
+      "inherited_visits": 184,
+      "hand": [
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        },
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 1
+        },
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        },
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off+#18",
+          "q": 51.558544061302705,
+          "edge_visits": 71,
+          "child_visits": 87,
+          "fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 38.11217687074831,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 78.99597487724137,
+          "edge_visits": 2085,
+          "child_visits": 2085,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 38.19857142857143,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#0",
+          "q": 38.056598639455785,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 36.55968253968254,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 22,
+      "turn": 3,
+      "hp": 69,
+      "block": 0,
+      "energy": 4,
+      "enemy_hp": 342,
+      "enemy_block": 11,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Shrug It Off+#18",
+      "chosen_fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.40237831026603,
+      "edge_visits": 2322,
+      "child_visits": 2343,
+      "new_simulations": 250,
+      "inherited_visits": 2085,
+      "hand": [
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        },
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 1
+        },
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off+#18",
+          "q": 79.40237831026603,
+          "edge_visits": 2322,
+          "child_visits": 2343,
+          "fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 38.30666666666667,
+          "edge_visits": 2,
+          "child_visits": 3,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 37.934285714285714,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#0",
+          "q": 38.30666666666667,
+          "edge_visits": 2,
+          "child_visits": 3,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 51.39222222222222,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 23,
+      "turn": 3,
+      "hp": 69,
+      "block": 8,
+      "energy": 3,
+      "enemy_hp": 342,
+      "enemy_block": 11,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Headbutt+#10",
+      "chosen_fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.45115025175157,
+      "edge_visits": 2563,
+      "child_visits": 2563,
+      "new_simulations": 250,
+      "inherited_visits": 2343,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 1
+        },
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 39.717333333333336,
+          "edge_visits": 2,
+          "child_visits": 5,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 61.50267195767195,
+          "edge_visits": 22,
+          "child_visits": 54,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#0",
+          "q": 44.30428571428572,
+          "edge_visits": 3,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 79.45115025175157,
+          "edge_visits": 2563,
+          "child_visits": 2563,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 39.80428571428571,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 24,
+      "turn": 3,
+      "hp": 69,
+      "block": 8,
+      "energy": 2,
+      "enemy_hp": 335,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Select Anger#28 (task10)",
+      "chosen_fingerprint": "sa/t=3/s=3/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel=",
+      "chosen_q": 79.64295533771795,
+      "edge_visits": 5669,
+      "child_visits": 5669,
+      "new_simulations": 10000,
+      "inherited_visits": 2563,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 1
+        },
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Select Searing Blow#25 (task10)",
+          "q": 79.66767447838104,
+          "edge_visits": 4260,
+          "child_visits": 4261,
+          "fingerprint": "sa/t=3/s=3/c=288_25_0_2_2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Wild Strike#27 (task10)",
+          "q": 39.68833333333333,
+          "edge_visits": 3,
+          "child_visits": 4,
+          "fingerprint": "sa/t=3/s=3/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Defend#4 (task10)",
+          "q": 47.16269841269841,
+          "edge_visits": 5,
+          "child_visits": 6,
+          "fingerprint": "sa/t=3/s=3/c=104_4_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Strike#1 (task10)",
+          "q": 78.74936908336912,
+          "edge_visits": 1664,
+          "child_visits": 1665,
+          "fingerprint": "sa/t=3/s=3/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Clash#13 (task10)",
+          "q": 76.12224903474902,
+          "edge_visits": 295,
+          "child_visits": 296,
+          "fingerprint": "sa/t=3/s=3/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Fire Breathing#24 (task10)",
+          "q": 44.76607142857142,
+          "edge_visits": 4,
+          "child_visits": 4,
+          "fingerprint": "sa/t=3/s=3/c=152_24_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Bash#8 (task10)",
+          "q": 74.21625330687831,
+          "edge_visits": 143,
+          "child_visits": 144,
+          "fingerprint": "sa/t=3/s=3/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Shrug It Off#12 (task10)",
+          "q": 70.68321067821063,
+          "edge_visits": 65,
+          "child_visits": 66,
+          "fingerprint": "sa/t=3/s=3/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Shockwave+#21 (task10)",
+          "q": 73.94149036713922,
+          "edge_visits": 130,
+          "child_visits": 131,
+          "fingerprint": "sa/t=3/s=3/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Uppercut+#19 (task10)",
+          "q": 37.868095238095236,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=3/s=3/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Transmutation#22 (task10)",
+          "q": 37.868095238095236,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=3/s=3/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Headbutt#15 (task10)",
+          "q": 73.81678393745558,
+          "edge_visits": 134,
+          "child_visits": 134,
+          "fingerprint": "sa/t=3/s=3/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Flame Barrier+#11 (task10)",
+          "q": 46.74657142857142,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=3/s=3/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Perfected Strike+#16 (task10)",
+          "q": 73.45932864949255,
+          "edge_visits": 121,
+          "child_visits": 122,
+          "fingerprint": "sa/t=3/s=3/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Shrug It Off+#18 (task10)",
+          "q": 70.53606133979014,
+          "edge_visits": 58,
+          "child_visits": 59,
+          "fingerprint": "sa/t=3/s=3/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Anger#28 (task10)",
+          "q": 79.64295533771795,
+          "edge_visits": 5669,
+          "child_visits": 5669,
+          "fingerprint": "sa/t=3/s=3/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        }
+      ]
+    },
+    {
+      "decision": 25,
+      "turn": 3,
+      "hp": 69,
+      "block": 8,
+      "energy": 2,
+      "enemy_hp": 335,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Strike#0",
+      "chosen_fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.78404730558759,
+      "edge_visits": 5317,
+      "child_visits": 5317,
+      "new_simulations": 250,
+      "inherited_visits": 5669,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 1
+        },
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 77.76399871733196,
+          "edge_visits": 594,
+          "child_visits": 594,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 44.52619047619047,
+          "edge_visits": 4,
+          "child_visits": 4,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#0",
+          "q": 79.78404730558759,
+          "edge_visits": 5317,
+          "child_visits": 5317,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 43.30428571428572,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 26,
+      "turn": 3,
+      "hp": 69,
+      "block": 8,
+      "energy": 1,
+      "enemy_hp": 326,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Blood for Blood+#9",
+      "chosen_fingerprint": "sa/t=1/s=1/c=39_9_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.69899204983192,
+      "edge_visits": 5558,
+      "child_visits": 5810,
+      "new_simulations": 250,
+      "inherited_visits": 5317,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 79.69899204983192,
+          "edge_visits": 5558,
+          "child_visits": 5810,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 43.29028571428572,
+          "edge_visits": 4,
+          "child_visits": 5,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 43.35380952380953,
+          "edge_visits": 4,
+          "child_visits": 4,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 27,
+      "turn": 3,
+      "hp": 69,
+      "block": 8,
+      "energy": 0,
+      "enemy_hp": 293,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.68716540015897,
+      "edge_visits": 5809,
+      "child_visits": 5809,
+      "new_simulations": 0,
+      "inherited_visits": 5810,
+      "hand": [
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 79.68716540015897,
+          "edge_visits": 5809,
+          "child_visits": 5809,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 28,
+      "turn": 4,
+      "hp": 69,
+      "block": 0,
+      "energy": 4,
+      "enemy_hp": 293,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Strike#2",
+      "chosen_fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 71.67197586632385,
+      "edge_visits": 2277,
+      "child_visits": 2277,
+      "new_simulations": 4000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Shrug It Off#12",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#12",
+          "q": 69.74464392788998,
+          "edge_visits": 1223,
+          "child_visits": 1223,
+          "fingerprint": "sa/t=1/s=1/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#28",
+          "q": 68.60002903600468,
+          "edge_visits": 492,
+          "child_visits": 492,
+          "fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 71.67197586632385,
+          "edge_visits": 2277,
+          "child_visits": 2277,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 46.129464285714285,
+          "edge_visits": 8,
+          "child_visits": 8,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 29,
+      "turn": 4,
+      "hp": 69,
+      "block": 0,
+      "energy": 3,
+      "enemy_hp": 289,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Shrug It Off#12",
+      "chosen_fingerprint": "sa/t=1/s=1/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 72.52794543225048,
+      "edge_visits": 2330,
+      "child_visits": 2330,
+      "new_simulations": 250,
+      "inherited_visits": 2277,
+      "hand": [
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Shrug It Off#12",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#12",
+          "q": 72.52794543225048,
+          "edge_visits": 2330,
+          "child_visits": 2330,
+          "fingerprint": "sa/t=1/s=1/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#28",
+          "q": 68.21615384615377,
+          "edge_visits": 174,
+          "child_visits": 455,
+          "fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#1",
+          "q": 54.99299319727891,
+          "edge_visits": 14,
+          "child_visits": 14,
+          "fingerprint": "sa/t=1/s=1/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 48.77815476190476,
+          "edge_visits": 8,
+          "child_visits": 8,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 30,
+      "turn": 4,
+      "hp": 69,
+      "block": 8,
+      "energy": 2,
+      "enemy_hp": 289,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Bash#8",
+      "chosen_fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 82.00976331175936,
+      "edge_visits": 1523,
+      "child_visits": 1523,
+      "new_simulations": 2000,
+      "inherited_visits": 152,
+      "hand": [
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Bash#8",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Bash#8",
+          "q": 82.00976331175936,
+          "edge_visits": 1523,
+          "child_visits": 1523,
+          "fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Clash#13",
+          "q": 42.90095238095238,
+          "edge_visits": 2,
+          "child_visits": 3,
+          "fingerprint": "sa/t=1/s=1/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#28",
+          "q": 69.80255269320844,
+          "edge_visits": 38,
+          "child_visits": 61,
+          "fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#1",
+          "q": 77.77808793704867,
+          "edge_visits": 586,
+          "child_visits": 587,
+          "fingerprint": "sa/t=1/s=1/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 35.600476190476186,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 31,
+      "turn": 4,
+      "hp": 69,
+      "block": 8,
+      "energy": 0,
+      "enemy_hp": 277,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Anger#28",
+      "chosen_fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 81.50756233153658,
+      "edge_visits": 1694,
+      "child_visits": 1696,
+      "new_simulations": 250,
+      "inherited_visits": 1523,
+      "hand": [
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Clash#13",
+          "q": 74.73132343846629,
+          "edge_visits": 76,
+          "child_visits": 77,
+          "fingerprint": "sa/t=1/s=1/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#28",
+          "q": 81.50756233153658,
+          "edge_visits": 1694,
+          "child_visits": 1696,
+          "fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 40.15761904761904,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 32,
+      "turn": 4,
+      "hp": 69,
+      "block": 8,
+      "energy": 0,
+      "enemy_hp": 268,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Clash#13",
+      "chosen_fingerprint": "sa/t=1/s=1/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 82.24223394383431,
+      "edge_visits": 1873,
+      "child_visits": 1950,
+      "new_simulations": 250,
+      "inherited_visits": 1696,
+      "hand": [
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Clash#13",
+          "q": 82.24223394383431,
+          "edge_visits": 1873,
+          "child_visits": 1950,
+          "fingerprint": "sa/t=1/s=1/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 74.7498611111111,
+          "edge_visits": 72,
+          "child_visits": 72,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 33,
+      "turn": 4,
+      "hp": 69,
+      "block": 8,
+      "energy": 0,
+      "enemy_hp": 247,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 82.26207481248052,
+      "edge_visits": 1949,
+      "child_visits": 1949,
+      "new_simulations": 0,
+      "inherited_visits": 1950,
+      "hand": [
+        {
+          "label": "Strike#1",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 82.26207481248052,
+          "edge_visits": 1949,
+          "child_visits": 1949,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 34,
+      "turn": 5,
+      "hp": 64,
+      "block": 3,
+      "energy": 4,
+      "enemy_hp": 247,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Defend#5",
+      "chosen_fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 74.42280774550463,
+      "edge_visits": 964,
+      "child_visits": 964,
+      "new_simulations": 1000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Uppercut+#19",
+          "cost": 2
+        },
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shockwave+#21",
+          "q": 36.19074074074074,
+          "edge_visits": 9,
+          "child_visits": 9,
+          "fingerprint": "sa/t=1/s=1/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Uppercut+#19",
+          "q": 36.62714285714286,
+          "edge_visits": 10,
+          "child_visits": 10,
+          "fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Perfected Strike+#16",
+          "q": 35.17761904761905,
+          "edge_visits": 8,
+          "child_visits": 8,
+          "fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#0",
+          "q": 32.31071428571428,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 74.42280774550463,
+          "edge_visits": 964,
+          "child_visits": 964,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 25.25238095238095,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 35,
+      "turn": 5,
+      "hp": 64,
+      "block": 6,
+      "energy": 3,
+      "enemy_hp": 247,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Uppercut+#19",
+      "chosen_fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 77.11098539157035,
+      "edge_visits": 1931,
+      "child_visits": 1933,
+      "new_simulations": 1000,
+      "inherited_visits": 964,
+      "hand": [
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Uppercut+#19",
+          "cost": 2
+        },
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shockwave+#21",
+          "q": 37.92323809523809,
+          "edge_visits": 3,
+          "child_visits": 5,
+          "fingerprint": "sa/t=1/s=1/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Uppercut+#19",
+          "q": 77.11098539157035,
+          "edge_visits": 1931,
+          "child_visits": 1933,
+          "fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Perfected Strike+#16",
+          "q": 38.14457142857143,
+          "edge_visits": 3,
+          "child_visits": 5,
+          "fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#0",
+          "q": 53.04001904761906,
+          "edge_visits": 24,
+          "child_visits": 25,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 30.683809523809526,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 36,
+      "turn": 5,
+      "hp": 64,
+      "block": 6,
+      "energy": 1,
+      "enemy_hp": 233,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 6,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Strike#0",
+      "chosen_fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.00738902953597,
+      "edge_visits": 3930,
+      "child_visits": 3950,
+      "new_simulations": 2000,
+      "inherited_visits": 1933,
+      "hand": [
+        {
+          "label": "Strike#0",
+          "cost": 1
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Strike#0",
+          "q": 79.00738902953597,
+          "edge_visits": 3930,
+          "child_visits": 3950,
+          "fingerprint": "sa/t=1/s=1/c=321_0_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 35.152857142857144,
+          "edge_visits": 2,
+          "child_visits": 2,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 37,
+      "turn": 5,
+      "hp": 64,
+      "block": 6,
+      "energy": 0,
+      "enemy_hp": 224,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 2,
+      "enemy_vulnerable": 6,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 79.01706893848966,
+      "edge_visits": 3949,
+      "child_visits": 3949,
+      "new_simulations": 0,
+      "inherited_visits": 3950,
+      "hand": [
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 79.01706893848966,
+          "edge_visits": 3949,
+          "child_visits": 3949,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 38,
+      "turn": 6,
+      "hp": 52,
+      "block": 3,
+      "energy": 4,
+      "enemy_hp": 224,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Shrug It Off#14",
+      "chosen_fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 67.86874093929383,
+      "edge_visits": 3784,
+      "child_visits": 3784,
+      "new_simulations": 4000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Wild Strike#27",
+          "cost": 1
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        },
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 67.86874093929383,
+          "edge_visits": 3784,
+          "child_visits": 3784,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 46.51385281385281,
+          "edge_visits": 11,
+          "child_visits": 11,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 62.39804073436608,
+          "edge_visits": 166,
+          "child_visits": 166,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 48.047838827838845,
+          "edge_visits": 13,
+          "child_visits": 13,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 53.95403726708073,
+          "edge_visits": 23,
+          "child_visits": 23,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 31.604920634920635,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 39,
+      "turn": 6,
+      "hp": 52,
+      "block": 9,
+      "energy": 3,
+      "enemy_hp": 224,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Wild Strike#27",
+      "chosen_fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 63.54522013348844,
+      "edge_visits": 2333,
+      "child_visits": 2333,
+      "new_simulations": 2000,
+      "inherited_visits": 382,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Wild Strike#27",
+          "cost": 1
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        },
+        {
+          "label": "Headbutt#15",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 42.285428571428575,
+          "edge_visits": 10,
+          "child_visits": 10,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 63.54522013348844,
+          "edge_visits": 2333,
+          "child_visits": 2333,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 42.79243386243387,
+          "edge_visits": 9,
+          "child_visits": 9,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 48.19022408963586,
+          "edge_visits": 17,
+          "child_visits": 17,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt#15",
+          "q": 40.25884353741497,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 35.774857142857144,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 40,
+      "turn": 6,
+      "hp": 52,
+      "block": 9,
+      "energy": 2,
+      "enemy_hp": 211,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "Play Defend#7",
+      "chosen_fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 68.25888184710199,
+      "edge_visits": 1915,
+      "child_visits": 1916,
+      "new_simulations": 2000,
+      "inherited_visits": 3,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        },
+        {
+          "label": "Headbutt#15",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 43.02767195767197,
+          "edge_visits": 26,
+          "child_visits": 27,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 42.970740740740744,
+          "edge_visits": 26,
+          "child_visits": 27,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 68.25888184710199,
+          "edge_visits": 1915,
+          "child_visits": 1916,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt#15",
+          "q": 43.764746031746036,
+          "edge_visits": 30,
+          "child_visits": 30,
+          "fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 30.852190476190476,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 41,
+      "turn": 6,
+      "hp": 52,
+      "block": 12,
+      "energy": 1,
+      "enemy_hp": 211,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 1,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_FACE_SLAP",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 68.69197091184459,
+      "edge_visits": 2138,
+      "child_visits": 2138,
+      "new_simulations": 250,
+      "inherited_visits": 1916,
+      "hand": [
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        },
+        {
+          "label": "Headbutt#15",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 43.875625,
+          "edge_visits": 9,
+          "child_visits": 16,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 43.41742857142857,
+          "edge_visits": 8,
+          "child_visits": 15,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt#15",
+          "q": 45.21047619047619,
+          "edge_visits": 10,
+          "child_visits": 10,
+          "fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 68.69197091184459,
+          "edge_visits": 2138,
+          "child_visits": 2138,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 42,
+      "turn": 7,
+      "hp": 51,
+      "block": 3,
+      "energy": 4,
+      "enemy_hp": 211,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Shrug It Off+#18",
+      "chosen_fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 68.13908389562015,
+      "edge_visits": 1969,
+      "child_visits": 1969,
+      "new_simulations": 2000,
+      "inherited_visits": 1,
+      "hand": [
+        {
+          "label": "Strike#3",
+          "cost": 1
+        },
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off+#18",
+          "q": 68.13908389562015,
+          "edge_visits": 1969,
+          "child_visits": 1969,
+          "fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Searing Blow#25",
+          "q": 38.8074149659864,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Flame Barrier+#11",
+          "q": 38.149251700680274,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#3",
+          "q": 37.146904761904764,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=321_3_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 38.20360544217687,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 33.528571428571425,
+          "edge_visits": 4,
+          "child_visits": 4,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 43,
+      "turn": 7,
+      "hp": 51,
+      "block": 11,
+      "energy": 3,
+      "enemy_hp": 211,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Searing Blow#25",
+      "chosen_fingerprint": "sa/t=1/s=1/c=288_25_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 65.79432864357845,
+      "edge_visits": 1320,
+      "child_visits": 1320,
+      "new_simulations": 1000,
+      "inherited_visits": 362,
+      "hand": [
+        {
+          "label": "Strike#3",
+          "cost": 1
+        },
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        },
+        {
+          "label": "Searing Blow#25",
+          "cost": 2
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Searing Blow#25",
+          "q": 65.79432864357845,
+          "edge_visits": 1320,
+          "child_visits": 1320,
+          "fingerprint": "sa/t=1/s=1/c=288_25_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Flame Barrier+#11",
+          "q": 32.86851851851852,
+          "edge_visits": 9,
+          "child_visits": 9,
+          "fingerprint": "sa/t=1/s=1/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 34.29207792207792,
+          "edge_visits": 11,
+          "child_visits": 11,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#3",
+          "q": 32.09404761904762,
+          "edge_visits": 8,
+          "child_visits": 8,
+          "fingerprint": "sa/t=1/s=1/c=321_3_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 29.994603174603174,
+          "edge_visits": 6,
+          "child_visits": 6,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 31.829251700680278,
+          "edge_visits": 7,
+          "child_visits": 7,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 44,
+      "turn": 7,
+      "hp": 51,
+      "block": 11,
+      "energy": 1,
+      "enemy_hp": 198,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "Play Strike#3",
+      "chosen_fingerprint": "sa/t=1/s=1/c=321_3_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 66.1684321175277,
+      "edge_visits": 1690,
+      "child_visits": 1692,
+      "new_simulations": 500,
+      "inherited_visits": 1320,
+      "hand": [
+        {
+          "label": "Strike#3",
+          "cost": 1
+        },
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Defend#6",
+          "q": 59.715443283004234,
+          "edge_visits": 121,
+          "child_visits": 123,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#3",
+          "q": 66.1684321175277,
+          "edge_visits": 1690,
+          "child_visits": 1692,
+          "fingerprint": "sa/t=1/s=1/c=321_3_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 30.758095238095237,
+          "edge_visits": 3,
+          "child_visits": 3,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 37.05676190476191,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 45,
+      "turn": 7,
+      "hp": 51,
+      "block": 11,
+      "energy": 0,
+      "enemy_hp": 189,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 4,
+      "intent": "THE_CHAMP_TAUNT",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 66.19124102390792,
+      "edge_visits": 1691,
+      "child_visits": 1691,
+      "new_simulations": 0,
+      "inherited_visits": 1692,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 66.19124102390792,
+          "edge_visits": 1691,
+          "child_visits": 1691,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 46,
+      "turn": 8,
+      "hp": 51,
+      "block": 0,
+      "energy": 4,
+      "enemy_hp": 189,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_ANGER",
+      "chosen": "Play Transmutation#22",
+      "chosen_fingerprint": "sa/t=1/s=1/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 76.75668918918922,
+      "edge_visits": 296,
+      "child_visits": 296,
+      "new_simulations": 500,
+      "inherited_visits": 57,
+      "hand": [
+        {
+          "label": "Transmutation#22",
+          "cost": -1
+        },
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Fire Breathing#24",
+          "cost": 1
+        },
+        {
+          "label": "Wound#30",
+          "cost": -2
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Fire Breathing#24",
+          "q": 54.40366359447005,
+          "edge_visits": 62,
+          "child_visits": 62,
+          "fingerprint": "sa/t=1/s=1/c=152_24_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Transmutation#22",
+          "q": 76.75668918918922,
+          "edge_visits": 296,
+          "child_visits": 296,
+          "fingerprint": "sa/t=1/s=1/c=343_22_0_-1_-1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 56.603214285714294,
+          "edge_visits": 128,
+          "child_visits": 128,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#4",
+          "q": 54.33559706959708,
+          "edge_visits": 65,
+          "child_visits": 65,
+          "fingerprint": "sa/t=1/s=1/c=104_4_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 33.37419047619048,
+          "edge_visits": 5,
+          "child_visits": 5,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 47,
+      "turn": 8,
+      "hp": 51,
+      "block": 0,
+      "energy": 0,
+      "enemy_hp": 189,
+      "enemy_block": 5,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_ANGER",
+      "chosen": "Play Anger#20",
+      "chosen_fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 57.720188675592134,
+      "edge_visits": 4919,
+      "child_visits": 4919,
+      "new_simulations": 8000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Fire Breathing#24",
+          "cost": 1
+        },
+        {
+          "label": "Wound#30",
+          "cost": -2
+        },
+        {
+          "label": "Anger#20",
+          "cost": 0
+        },
+        {
+          "label": "Madness#31",
+          "cost": 0
+        },
+        {
+          "label": "Hand of Greed#32",
+          "cost": 0
+        },
+        {
+          "label": "Forethought#33",
+          "cost": 0
+        },
+        {
+          "label": "Panic Button#34",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Madness#31",
+          "q": 55.362357613556156,
+          "edge_visits": 2428,
+          "child_visits": 2428,
+          "fingerprint": "sa/t=1/s=1/c=212_31_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Forethought#33",
+          "q": 49.2087629399586,
+          "edge_visits": 92,
+          "child_visits": 92,
+          "fingerprint": "sa/t=1/s=1/c=166_33_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Panic Button#34",
+          "q": 51.11195473251025,
+          "edge_visits": 162,
+          "child_visits": 162,
+          "fingerprint": "sa/t=1/s=1/c=242_34_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Hand of Greed#32",
+          "q": 52.47069081153589,
+          "edge_visits": 284,
+          "child_visits": 284,
+          "fingerprint": "sa/t=1/s=1/c=177_32_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#20",
+          "q": 57.720188675592134,
+          "edge_visits": 4919,
+          "child_visits": 4919,
+          "fingerprint": "sa/t=1/s=1/c=11_20_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 49.993507246376794,
+          "edge_visits": 115,
+          "child_visits": 115,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 48,
+      "turn": 8,
+      "hp": 51,
+      "block": 0,
+      "energy": 0,
+      "enemy_hp": 185,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_ANGER",
+      "chosen": "Play Forethought#33",
+      "chosen_fingerprint": "sa/t=1/s=1/c=166_33_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 58.65072614315768,
+      "edge_visits": 4277,
+      "child_visits": 4277,
+      "new_simulations": 250,
+      "inherited_visits": 4919,
+      "hand": [
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Fire Breathing#24",
+          "cost": 1
+        },
+        {
+          "label": "Wound#30",
+          "cost": -2
+        },
+        {
+          "label": "Madness#31",
+          "cost": 0
+        },
+        {
+          "label": "Hand of Greed#32",
+          "cost": 0
+        },
+        {
+          "label": "Forethought#33",
+          "cost": 0
+        },
+        {
+          "label": "Panic Button#34",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Madness#31",
+          "q": 54.65540340488525,
+          "edge_visits": 386,
+          "child_visits": 386,
+          "fingerprint": "sa/t=1/s=1/c=212_31_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Forethought#33",
+          "q": 58.65072614315768,
+          "edge_visits": 4277,
+          "child_visits": 4277,
+          "fingerprint": "sa/t=1/s=1/c=166_33_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Panic Button#34",
+          "q": 47.525497835497845,
+          "edge_visits": 43,
+          "child_visits": 66,
+          "fingerprint": "sa/t=1/s=1/c=242_34_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Hand of Greed#32",
+          "q": 53.84756427453611,
+          "edge_visits": 376,
+          "child_visits": 426,
+          "fingerprint": "sa/t=1/s=1/c=177_32_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 50.7367054263566,
+          "edge_visits": 86,
+          "child_visits": 86,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 49,
+      "turn": 8,
+      "hp": 51,
+      "block": 0,
+      "energy": 0,
+      "enemy_hp": 185,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_ANGER",
+      "chosen": "Select Wound#30 (task8)",
+      "chosen_fingerprint": "sa/t=3/s=1/c=366_30_0_-2_-2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel=",
+      "chosen_q": 60.09696946995849,
+      "edge_visits": 4385,
+      "child_visits": 4386,
+      "new_simulations": 1000,
+      "inherited_visits": 4277,
+      "hand": [
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Fire Breathing#24",
+          "cost": 1
+        },
+        {
+          "label": "Wound#30",
+          "cost": -2
+        },
+        {
+          "label": "Madness#31",
+          "cost": 0
+        },
+        {
+          "label": "Hand of Greed#32",
+          "cost": 0
+        },
+        {
+          "label": "Panic Button#34",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Select Defend#4 (task8)",
+          "q": 51.01101284958429,
+          "edge_visits": 59,
+          "child_visits": 63,
+          "fingerprint": "sa/t=3/s=1/c=104_4_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel="
+        },
+        {
+          "label": "Select Fire Breathing#24 (task8)",
+          "q": 51.23281874039941,
+          "edge_visits": 62,
+          "child_visits": 62,
+          "fingerprint": "sa/t=3/s=1/c=152_24_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel="
+        },
+        {
+          "label": "Select Wound#30 (task8)",
+          "q": 60.09696946995849,
+          "edge_visits": 4385,
+          "child_visits": 4386,
+          "fingerprint": "sa/t=3/s=1/c=366_30_0_-2_-2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel="
+        },
+        {
+          "label": "Select Madness#31 (task8)",
+          "q": 55.31763227513223,
+          "edge_visits": 206,
+          "child_visits": 216,
+          "fingerprint": "sa/t=3/s=1/c=212_31_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel="
+        },
+        {
+          "label": "Select Hand of Greed#32 (task8)",
+          "q": 52.87126811594206,
+          "edge_visits": 90,
+          "child_visits": 92,
+          "fingerprint": "sa/t=3/s=1/c=177_32_0_2_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel="
+        },
+        {
+          "label": "Select Panic Button#34 (task8)",
+          "q": 56.99986822401923,
+          "edge_visits": 474,
+          "child_visits": 477,
+          "fingerprint": "sa/t=3/s=1/c=242_34_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=8/sel="
+        }
+      ]
+    },
+    {
+      "decision": 50,
+      "turn": 8,
+      "hp": 51,
+      "block": 0,
+      "energy": 0,
+      "enemy_hp": 185,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_ANGER",
+      "chosen": "Play Hand of Greed#32",
+      "chosen_fingerprint": "sa/t=1/s=1/c=177_32_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 60.700482889895675,
+      "edge_visits": 4476,
+      "child_visits": 4478,
+      "new_simulations": 250,
+      "inherited_visits": 4386,
+      "hand": [
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Fire Breathing#24",
+          "cost": 1
+        },
+        {
+          "label": "Madness#31",
+          "cost": 0
+        },
+        {
+          "label": "Hand of Greed#32",
+          "cost": 0
+        },
+        {
+          "label": "Panic Button#34",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Madness#31",
+          "q": 46.241721611721616,
+          "edge_visits": 26,
+          "child_visits": 26,
+          "fingerprint": "sa/t=1/s=1/c=212_31_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Panic Button#34",
+          "q": 51.7274963924964,
+          "edge_visits": 63,
+          "child_visits": 66,
+          "fingerprint": "sa/t=1/s=1/c=242_34_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Hand of Greed#32",
+          "q": 60.700482889895675,
+          "edge_visits": 4476,
+          "child_visits": 4478,
+          "fingerprint": "sa/t=1/s=1/c=177_32_0_2_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 52.30051020408165,
+          "edge_visits": 70,
+          "child_visits": 70,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 51,
+      "turn": 8,
+      "hp": 51,
+      "block": 0,
+      "energy": 0,
+      "enemy_hp": 155,
+      "enemy_block": 0,
+      "enemy_strength": 0,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 3,
+      "intent": "THE_CHAMP_ANGER",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 61.35684982482327,
+      "edge_visits": 4594,
+      "child_visits": 4594,
+      "new_simulations": 250,
+      "inherited_visits": 4478,
+      "hand": [
+        {
+          "label": "Defend#4",
+          "cost": 1
+        },
+        {
+          "label": "Fire Breathing#24",
+          "cost": 1
+        },
+        {
+          "label": "Madness#31",
+          "cost": 0
+        },
+        {
+          "label": "Panic Button#34",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Madness#31",
+          "q": 52.664078674948236,
+          "edge_visits": 69,
+          "child_visits": 69,
+          "fingerprint": "sa/t=1/s=1/c=212_31_0_1_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Panic Button#34",
+          "q": 52.45452380952382,
+          "edge_visits": 64,
+          "child_visits": 112,
+          "fingerprint": "sa/t=1/s=1/c=242_34_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 61.35684982482327,
+          "edge_visits": 4594,
+          "child_visits": 4594,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 52,
+      "turn": 9,
+      "hp": 51,
+      "block": 0,
+      "energy": 4,
+      "enemy_hp": 155,
+      "enemy_block": 5,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Flame Barrier+#11",
+      "chosen_fingerprint": "sa/t=1/s=1/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 49.20605135747992,
+      "edge_visits": 777,
+      "child_visits": 777,
+      "new_simulations": 1000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        },
+        {
+          "label": "Flame Barrier+#11",
+          "cost": 2
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Headbutt#15",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Flame Barrier+#11",
+          "q": 49.20605135747992,
+          "edge_visits": 777,
+          "child_visits": 777,
+          "fingerprint": "sa/t=1/s=1/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt+#10",
+          "q": 39.736168498168496,
+          "edge_visits": 65,
+          "child_visits": 65,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 40.692740863787385,
+          "edge_visits": 86,
+          "child_visits": 86,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt#15",
+          "q": 39.51362217017956,
+          "edge_visits": 61,
+          "child_visits": 61,
+          "fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 29.134761904761902,
+          "edge_visits": 11,
+          "child_visits": 11,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 53,
+      "turn": 9,
+      "hp": 51,
+      "block": 16,
+      "energy": 2,
+      "enemy_hp": 155,
+      "enemy_block": 5,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Headbutt#15",
+      "chosen_fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 51.48420040654479,
+      "edge_visits": 1429,
+      "child_visits": 1429,
+      "new_simulations": 1000,
+      "inherited_visits": 777,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        },
+        {
+          "label": "Headbutt#15",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Headbutt+#10",
+          "q": 47.53327425707124,
+          "edge_visits": 266,
+          "child_visits": 266,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 42.129335839598994,
+          "edge_visits": 47,
+          "child_visits": 76,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Headbutt#15",
+          "q": 51.48420040654479,
+          "edge_visits": 1429,
+          "child_visits": 1429,
+          "fingerprint": "sa/t=1/s=1/c=179_15_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 40.40011204481793,
+          "edge_visits": 34,
+          "child_visits": 34,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 54,
+      "turn": 9,
+      "hp": 51,
+      "block": 16,
+      "energy": 1,
+      "enemy_hp": 151,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Select Anger#35 (task10)",
+      "chosen_fingerprint": "sa/t=3/s=3/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel=",
+      "chosen_q": 53.721135817880715,
+      "edge_visits": 5491,
+      "child_visits": 5493,
+      "new_simulations": 8000,
+      "inherited_visits": 1429,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Select Anger#35 (task10)",
+          "q": 53.721135817880715,
+          "edge_visits": 5491,
+          "child_visits": 5493,
+          "fingerprint": "sa/t=3/s=3/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Forethought#33 (task10)",
+          "q": 39.62347442680775,
+          "edge_visits": 25,
+          "child_visits": 27,
+          "fingerprint": "sa/t=3/s=3/c=166_33_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Hand of Greed#32 (task10)",
+          "q": 51.20945770065075,
+          "edge_visits": 457,
+          "child_visits": 461,
+          "fingerprint": "sa/t=3/s=3/c=177_32_0_2_2_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Panic Button#34 (task10)",
+          "q": 46.70456004140787,
+          "edge_visits": 89,
+          "child_visits": 92,
+          "fingerprint": "sa/t=3/s=3/c=242_34_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Madness#31 (task10)",
+          "q": 51.19610310179113,
+          "edge_visits": 325,
+          "child_visits": 327,
+          "fingerprint": "sa/t=3/s=3/c=212_31_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Fire Breathing#24 (task10)",
+          "q": 45.604156462585024,
+          "edge_visits": 69,
+          "child_visits": 70,
+          "fingerprint": "sa/t=3/s=3/c=152_24_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Defend#4 (task10)",
+          "q": 53.1387665358805,
+          "edge_visits": 2219,
+          "child_visits": 2221,
+          "fingerprint": "sa/t=3/s=3/c=104_4_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        },
+        {
+          "label": "Select Flame Barrier+#11 (task10)",
+          "q": 51.97847973186619,
+          "edge_visits": 753,
+          "child_visits": 753,
+          "fingerprint": "sa/t=3/s=3/c=154_11_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=10/sel="
+        }
+      ]
+    },
+    {
+      "decision": 55,
+      "turn": 9,
+      "hp": 51,
+      "block": 16,
+      "energy": 1,
+      "enemy_hp": 151,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Defend#6",
+      "chosen_fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 53.82497944684088,
+      "edge_visits": 5625,
+      "child_visits": 5630,
+      "new_simulations": 250,
+      "inherited_visits": 5493,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Defend#6",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Headbutt+#10",
+          "q": 44.957497835497826,
+          "edge_visits": 55,
+          "child_visits": 55,
+          "fingerprint": "sa/t=1/s=1/c=179_10_0_1_1_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#6",
+          "q": 53.82497944684088,
+          "edge_visits": 5625,
+          "child_visits": 5630,
+          "fingerprint": "sa/t=1/s=1/c=104_6_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 45.45644393241168,
+          "edge_visits": 62,
+          "child_visits": 62,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 56,
+      "turn": 9,
+      "hp": 51,
+      "block": 21,
+      "energy": 0,
+      "enemy_hp": 151,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Clash#13",
+      "chosen_fingerprint": "sa/t=1/s=1/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 53.934588681974276,
+      "edge_visits": 5530,
+      "child_visits": 5531,
+      "new_simulations": 250,
+      "inherited_visits": 5630,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        },
+        {
+          "label": "Clash#13",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Clash#13",
+          "q": 53.934588681974276,
+          "edge_visits": 5530,
+          "child_visits": 5531,
+          "fingerprint": "sa/t=1/s=1/c=65_13_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 50.89109837631325,
+          "edge_visits": 349,
+          "child_visits": 349,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 57,
+      "turn": 9,
+      "hp": 51,
+      "block": 21,
+      "energy": 0,
+      "enemy_hp": 137,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 53.936041763540814,
+      "edge_visits": 5530,
+      "child_visits": 5530,
+      "new_simulations": 0,
+      "inherited_visits": 5531,
+      "hand": [
+        {
+          "label": "Headbutt+#10",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 53.936041763540814,
+          "edge_visits": 5530,
+          "child_visits": 5530,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 58,
+      "turn": 10,
+      "hp": 24,
+      "block": 6,
+      "energy": 4,
+      "enemy_hp": 125,
+      "enemy_block": 5,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Shrug It Off#12",
+      "chosen_fingerprint": "sa/t=1/s=1/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 44.80204491971193,
+      "edge_visits": 2752,
+      "child_visits": 2752,
+      "new_simulations": 10000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Anger#35",
+          "cost": 0
+        },
+        {
+          "label": "Shrug It Off#12",
+          "cost": 1
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#12",
+          "q": 44.80204491971193,
+          "edge_visits": 2752,
+          "child_visits": 2752,
+          "fingerprint": "sa/t=1/s=1/c=301_12_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Perfected Strike+#16",
+          "q": 44.15977506671739,
+          "edge_visits": 2623,
+          "child_visits": 2623,
+          "fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#35",
+          "q": 44.195331592234695,
+          "edge_visits": 2735,
+          "child_visits": 2735,
+          "fingerprint": "sa/t=1/s=1/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 43.78057825194431,
+          "edge_visits": 1647,
+          "child_visits": 1647,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 40.64795678623874,
+          "edge_visits": 227,
+          "child_visits": 227,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 27.228095238095246,
+          "edge_visits": 16,
+          "child_visits": 16,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 59,
+      "turn": 10,
+      "hp": 24,
+      "block": 14,
+      "energy": 3,
+      "enemy_hp": 125,
+      "enemy_block": 5,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Perfected Strike+#16",
+      "chosen_fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 44.52621726788473,
+      "edge_visits": 5911,
+      "child_visits": 5972,
+      "new_simulations": 8000,
+      "inherited_visits": 203,
+      "hand": [
+        {
+          "label": "Anger#35",
+          "cost": 0
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Perfected Strike+#16",
+          "cost": 2
+        },
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 42.16590496916938,
+          "edge_visits": 919,
+          "child_visits": 919,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Perfected Strike+#16",
+          "q": 44.52621726788473,
+          "edge_visits": 5911,
+          "child_visits": 5972,
+          "fingerprint": "sa/t=1/s=1/c=244_16_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#35",
+          "q": 40.323203330411914,
+          "edge_visits": 292,
+          "child_visits": 326,
+          "fingerprint": "sa/t=1/s=1/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 41.742729885057415,
+          "edge_visits": 665,
+          "child_visits": 696,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 40.81658285714284,
+          "edge_visits": 373,
+          "child_visits": 375,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 33.43000000000001,
+          "edge_visits": 42,
+          "child_visits": 42,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 60,
+      "turn": 10,
+      "hp": 24,
+      "block": 14,
+      "energy": 1,
+      "enemy_hp": 106,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Defend#7",
+      "chosen_fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 45.04564487520566,
+      "edge_visits": 4891,
+      "child_visits": 5262,
+      "new_simulations": 250,
+      "inherited_visits": 5972,
+      "hand": [
+        {
+          "label": "Anger#35",
+          "cost": 0
+        },
+        {
+          "label": "Defend#7",
+          "cost": 1
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 42.353709273182965,
+          "edge_visits": 436,
+          "child_visits": 684,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#35",
+          "q": 42.37470040721349,
+          "edge_visits": 441,
+          "child_visits": 573,
+          "fingerprint": "sa/t=1/s=1/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#7",
+          "q": 45.04564487520566,
+          "edge_visits": 4891,
+          "child_visits": 5262,
+          "fingerprint": "sa/t=1/s=1/c=104_7_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#2",
+          "q": 42.055067890610005,
+          "edge_visits": 369,
+          "child_visits": 498,
+          "fingerprint": "sa/t=1/s=1/c=321_2_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 37.988339002267566,
+          "edge_visits": 84,
+          "child_visits": 84,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 61,
+      "turn": 10,
+      "hp": 24,
+      "block": 19,
+      "energy": 0,
+      "enemy_hp": 106,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Anger#35",
+      "chosen_fingerprint": "sa/t=1/s=1/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 45.10808327805562,
+      "edge_visits": 4247,
+      "child_visits": 4738,
+      "new_simulations": 250,
+      "inherited_visits": 5262,
+      "hand": [
+        {
+          "label": "Anger#35",
+          "cost": 0
+        },
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 43.94684476693053,
+          "edge_visits": 1030,
+          "child_visits": 1516,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#35",
+          "q": 45.10808327805562,
+          "edge_visits": 4247,
+          "child_visits": 4738,
+          "fingerprint": "sa/t=1/s=1/c=11_35_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 41.44597069597071,
+          "edge_visits": 234,
+          "child_visits": 234,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 62,
+      "turn": 10,
+      "hp": 24,
+      "block": 19,
+      "energy": 0,
+      "enemy_hp": 100,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "Play Blood for Blood+#9",
+      "chosen_fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 44.89780043937746,
+      "edge_visits": 4775,
+      "child_visits": 6416,
+      "new_simulations": 250,
+      "inherited_visits": 4738,
+      "hand": [
+        {
+          "label": "Strike#2",
+          "cost": 1
+        },
+        {
+          "label": "Blood for Blood+#9",
+          "cost": 0
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Blood for Blood+#9",
+          "q": 44.89780043937746,
+          "edge_visits": 4775,
+          "child_visits": 6416,
+          "fingerprint": "sa/t=1/s=1/c=39_9_0_0_0_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 40.89743710691824,
+          "edge_visits": 212,
+          "child_visits": 212,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 63,
+      "turn": 10,
+      "hp": 24,
+      "block": 19,
+      "energy": 0,
+      "enemy_hp": 78,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_HEAVY_SLASH",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 44.898386890843355,
+      "edge_visits": 6415,
+      "child_visits": 6415,
+      "new_simulations": 0,
+      "inherited_visits": 6416,
+      "hand": [
+        {
+          "label": "Strike#2",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 44.898386890843355,
+          "edge_visits": 6415,
+          "child_visits": 6415,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 64,
+      "turn": 11,
+      "hp": 10,
+      "block": 3,
+      "energy": 4,
+      "enemy_hp": 78,
+      "enemy_block": 5,
+      "enemy_strength": 6,
+      "enemy_weak": 0,
+      "enemy_vulnerable": 0,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Shockwave+#21",
+      "chosen_fingerprint": "sa/t=1/s=1/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 42.384835791459565,
+      "edge_visits": 3332,
+      "child_visits": 3332,
+      "new_simulations": 10000,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Anger#29",
+          "cost": 0
+        },
+        {
+          "label": "Shockwave+#21",
+          "cost": 2
+        },
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Bash#8",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shockwave+#21",
+          "q": 42.384835791459565,
+          "edge_visits": 3332,
+          "child_visits": 3332,
+          "fingerprint": "sa/t=1/s=1/c=300_21_0_2_2_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Shrug It Off+#18",
+          "q": 41.495334218146766,
+          "edge_visits": 1184,
+          "child_visits": 1184,
+          "fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Bash#8",
+          "q": 42.379164311082086,
+          "edge_visits": 3285,
+          "child_visits": 3285,
+          "fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#29",
+          "q": 42.05315775347236,
+          "edge_visits": 2129,
+          "child_visits": 2129,
+          "fingerprint": "sa/t=1/s=1/c=11_29_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 34.65775510204082,
+          "edge_visits": 70,
+          "child_visits": 70,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 65,
+      "turn": 11,
+      "hp": 10,
+      "block": 3,
+      "energy": 2,
+      "enemy_hp": 78,
+      "enemy_block": 5,
+      "enemy_strength": 6,
+      "enemy_weak": 5,
+      "enemy_vulnerable": 5,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Bash#8",
+      "chosen_fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 42.522723565889144,
+      "edge_visits": 5629,
+      "child_visits": 5629,
+      "new_simulations": 8000,
+      "inherited_visits": 3332,
+      "hand": [
+        {
+          "label": "Anger#29",
+          "cost": 0
+        },
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Bash#8",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off+#18",
+          "q": 41.68539046496601,
+          "edge_visits": 1697,
+          "child_visits": 1697,
+          "fingerprint": "sa/t=1/s=1/c=301_18_0_1_1_1_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Bash#8",
+          "q": 42.522723565889144,
+          "edge_visits": 5629,
+          "child_visits": 5629,
+          "fingerprint": "sa/t=1/s=1/c=25_8_0_2_2_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Anger#29",
+          "q": 42.29999233976337,
+          "edge_visits": 3792,
+          "child_visits": 3792,
+          "fingerprint": "sa/t=1/s=1/c=11_29_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 38.297549742901865,
+          "edge_visits": 213,
+          "child_visits": 213,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 66,
+      "turn": 11,
+      "hp": 10,
+      "block": 3,
+      "energy": 0,
+      "enemy_hp": 71,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 5,
+      "enemy_vulnerable": 7,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Anger#29",
+      "chosen_fingerprint": "sa/t=1/s=1/c=11_29_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 42.73921790235286,
+      "edge_visits": 4631,
+      "child_visits": 6320,
+      "new_simulations": 250,
+      "inherited_visits": 5629,
+      "hand": [
+        {
+          "label": "Anger#29",
+          "cost": 0
+        },
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Anger#29",
+          "q": 42.73921790235286,
+          "edge_visits": 4631,
+          "child_visits": 6320,
+          "fingerprint": "sa/t=1/s=1/c=11_29_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 41.731607286057645,
+          "edge_visits": 1247,
+          "child_visits": 1247,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 67,
+      "turn": 11,
+      "hp": 10,
+      "block": 3,
+      "energy": 0,
+      "enemy_hp": 62,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 5,
+      "enemy_vulnerable": 7,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "Play Anger#28",
+      "chosen_fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 42.88725155279668,
+      "edge_visits": 5227,
+      "child_visits": 5796,
+      "new_simulations": 1000,
+      "inherited_visits": 6320,
+      "hand": [
+        {
+          "label": "Anger#28",
+          "cost": 0
+        },
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Anger#28",
+          "q": 42.88725155279668,
+          "edge_visits": 5227,
+          "child_visits": 5796,
+          "fingerprint": "sa/t=1/s=1/c=11_28_0_0_0_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 42.2873657015392,
+          "edge_visits": 2092,
+          "child_visits": 2092,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 68,
+      "turn": 11,
+      "hp": 10,
+      "block": 3,
+      "energy": 0,
+      "enemy_hp": 53,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 5,
+      "enemy_vulnerable": 7,
+      "intent": "THE_CHAMP_DEFENSIVE_STANCE",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": 42.886894202721564,
+      "edge_visits": 5795,
+      "child_visits": 5795,
+      "new_simulations": 0,
+      "inherited_visits": 5796,
+      "hand": [
+        {
+          "label": "Shrug It Off+#18",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": 42.886894202721564,
+          "edge_visits": 5795,
+          "child_visits": 5795,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 69,
+      "turn": 12,
+      "hp": 10,
+      "block": 0,
+      "energy": 4,
+      "enemy_hp": 53,
+      "enemy_block": 25,
+      "enemy_strength": 6,
+      "enemy_weak": 4,
+      "enemy_vulnerable": 6,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Uppercut+#19",
+      "chosen_fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 44.504746173469684,
+      "edge_visits": 3360,
+      "child_visits": 3360,
+      "new_simulations": 8000,
+      "inherited_visits": 109,
+      "hand": [
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Wild Strike#27",
+          "cost": 1
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Uppercut+#19",
+          "cost": 2
+        },
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 43.21076653674514,
+          "edge_visits": 843,
+          "child_visits": 843,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Uppercut+#19",
+          "q": 44.504746173469684,
+          "edge_visits": 3360,
+          "child_visits": 3360,
+          "fingerprint": "sa/t=1/s=1/c=349_19_0_2_2_1_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 43.69394761529472,
+          "edge_visits": 1269,
+          "child_visits": 1269,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 43.37721592603601,
+          "edge_visits": 958,
+          "child_visits": 958,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#1",
+          "q": 43.92893620173608,
+          "edge_visits": 1607,
+          "child_visits": 1607,
+          "fingerprint": "sa/t=1/s=1/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 36.90095238095232,
+          "edge_visits": 71,
+          "child_visits": 71,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 70,
+      "turn": 12,
+      "hp": 10,
+      "block": 0,
+      "energy": 2,
+      "enemy_hp": 53,
+      "enemy_block": 6,
+      "enemy_strength": 6,
+      "enemy_weak": 6,
+      "enemy_vulnerable": 8,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Strike#1",
+      "chosen_fingerprint": "sa/t=1/s=1/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 45.18226031745799,
+      "edge_visits": 4756,
+      "child_visits": 5400,
+      "new_simulations": 8000,
+      "inherited_visits": 3360,
+      "hand": [
+        {
+          "label": "Strike#1",
+          "cost": 1
+        },
+        {
+          "label": "Wild Strike#27",
+          "cost": 1
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 44.17281182618753,
+          "edge_visits": 1303,
+          "child_visits": 1303,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 45.035497765449364,
+          "edge_visits": 3708,
+          "child_visits": 3708,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 44.266142967626934,
+          "edge_visits": 1424,
+          "child_visits": 1724,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Strike#1",
+          "q": 45.18226031745799,
+          "edge_visits": 4756,
+          "child_visits": 5400,
+          "fingerprint": "sa/t=1/s=1/c=321_1_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 40.40095238095247,
+          "edge_visits": 168,
+          "child_visits": 168,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 71,
+      "turn": 12,
+      "hp": 10,
+      "block": 0,
+      "energy": 1,
+      "enemy_hp": 50,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 6,
+      "enemy_vulnerable": 8,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "Play Wild Strike#27",
+      "chosen_fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel=",
+      "chosen_q": 45.75095238095072,
+      "edge_visits": 3946,
+      "child_visits": 3946,
+      "new_simulations": 250,
+      "inherited_visits": 5400,
+      "hand": [
+        {
+          "label": "Wild Strike#27",
+          "cost": 1
+        },
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "Play Shrug It Off#14",
+          "q": 44.195238095238665,
+          "edge_visits": 726,
+          "child_visits": 726,
+          "fingerprint": "sa/t=1/s=1/c=301_14_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Wild Strike#27",
+          "q": 45.75095238095072,
+          "edge_visits": 3946,
+          "child_visits": 3946,
+          "fingerprint": "sa/t=1/s=1/c=362_27_0_1_1_0_0_0/o=0/p=0_-1/x=0/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "Play Defend#5",
+          "q": 44.16523809523693,
+          "edge_visits": 711,
+          "child_visits": 1308,
+          "fingerprint": "sa/t=1/s=1/c=104_5_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        },
+        {
+          "label": "END",
+          "q": 42.4152380952382,
+          "edge_visits": 266,
+          "child_visits": 266,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    },
+    {
+      "decision": 72,
+      "turn": 12,
+      "hp": 10,
+      "block": 0,
+      "energy": 0,
+      "enemy_hp": 32,
+      "enemy_block": 0,
+      "enemy_strength": 6,
+      "enemy_weak": 6,
+      "enemy_vulnerable": 8,
+      "intent": "THE_CHAMP_EXECUTE",
+      "chosen": "END",
+      "chosen_fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel=",
+      "chosen_q": null,
+      "edge_visits": 0,
+      "child_visits": 0,
+      "new_simulations": 0,
+      "inherited_visits": 0,
+      "hand": [
+        {
+          "label": "Defend#5",
+          "cost": 1
+        },
+        {
+          "label": "Shrug It Off#14",
+          "cost": 1
+        }
+      ],
+      "potions": [],
+      "alternatives": [
+        {
+          "label": "END",
+          "q": null,
+          "edge_visits": 0,
+          "child_visits": 0,
+          "fingerprint": "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
+        }
+      ]
+    }
+  ]
+}

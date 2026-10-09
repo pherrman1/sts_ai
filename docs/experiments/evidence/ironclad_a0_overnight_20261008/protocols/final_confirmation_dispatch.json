@@ -1,0 +1,13 @@
+{
+  "session_id": 53289,
+  "first_game_receipt_started_epoch": 1791428543.567844,
+  "latch_sha256": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e",
+  "manifest_sha256": "e6c6e050ad0da20167c570d1f1f01a7e7037135daf3e010ac577edc8faf94f91",
+  "champion_freeze_sha256": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+  "jobs_sha256": "7ae8e92d3c62ceaab432c6dfef654d47e15465cf063073c9c622ab169f413d2d",
+  "review_sha256": "0f22fd585a9b84544f6444b2bafef99b7341af133472d9b6e2eb3e9ec572862c",
+  "workers": 6,
+  "outer_timeout_seconds": 5400,
+  "shard_timeout_seconds": 900,
+  "command": "timeout --kill-after=30 5400 xargs -P6 -L1 .venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py --trace --tree-profile --timeout 900 < build/overnight_20261008/final_confirmation_jobs.txt > build/overnight_20261008/final_confirmation_dispatch.log 2>&1"
+}

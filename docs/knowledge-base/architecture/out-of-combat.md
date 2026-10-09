@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -307,7 +307,7 @@ A retrained stack loads only as a research candidate. When
 `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and its `_SHA256` are set, an artifact
 whose metadata declares `researchCandidate: {"candidateId": ...}` is checked
 against that `ctm_research_candidate_v1` manifest instead of the production
-pins. The swapped values are artifact bytes, source and checkpoint hashes,
+pins (`tools/ctm_candidate.py` stamps exports and writes the manifest). The swapped values are artifact bytes, source and checkpoint hashes,
 support-census indices and the active-Lizard q/r identity. Schema, shapes, the
 HP envelope, support exclusions, the qualification class and the Lizard
 definitions stay pinned. A candidate cannot claim the production default or a
@@ -988,6 +988,31 @@ existing queries. The socket bridge uses a bounded connect wait, so an
 explicitly server-dependent path fails fast when localhost:5555 is unavailable
 instead of stalling the whole run.
 
+The native OOC research controls in this section and the campfire/removal/card
+subsections below were verified on 2026-10-08.
+
+The legacy floor/win fallback rich vector includes realized `nextEliteId` and
+`nextFight0..2`, and both tracked tree ensembles split on these fields. Combat
+`STS_FAIR=1` does not remove this OOC information dependency. The default-off
+research control `STS_OOC_PUBLIC_FUTURES=K` replaces only those four fields at
+prediction time with K common, public-history-conditioned native encounter
+samples and averages model predictions, including probabilities after the
+logistic link. The same sampled futures score all alternatives within a
+fallback decision; the source state/RNG is unchanged. Its planner seed excludes
+the true run seed, RNG streams and queue-derived feature block. This is a
+bounded repair for the controlled native V4 profile, not a qualification of
+legacy server modes or hypothetical actions already executed with actual RNG.
+The campaign keeps those routes disabled. Enabled treatments enter the
+counterfactual teacher policy specification; disabled settings preserve the
+legacy specification. Per-run public scorer counts prove actual branch use.
+
+`STS_OOC_SHOP_DECK_SIZE_FIX=1` independently corrects hypothetical shop bundle
+features: relics add no cards and removal subtracts one card. The default
+legacy calculation counts each purchased item as a card and omits removal's
+deck-size decrement. Synthetic model regressions distinguish the defect from
+its playing-strength effect. Both controls remain opt-in pending review and
+qualification; evidence is routed through the overnight campaign ledger.
+
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers
 (`apps/ooc_checkpoint_net.h::OocCheckpointNet`;
@@ -1405,3 +1430,90 @@ never changes through the **observed** final search. `b_stable_full_budget` is
 null for early-stopped, singleton, boundary or aborted searches. Full-budget
 cross-tabs use only uncensored searches and can be selection-biased. Neither
 statistic qualifies an adaptive stopping policy on independent future searches.
+
+### Optional Ruby Recall under keys-off research profiles
+
+`STS_COLLECT_KEYS=0` alone does not remove Ruby Recall from the V4 campfire
+candidate set or the random fallback. `GameAction::getAllRestActions` uses the
+simulator's `keysEnabled` and owned-key state; the fallback at intermediate HP
+can sample Recall even when the run policy does not seek Act 4. This is a
+reproduced policy eligibility defect, not an engine rule change.
+
+The default-off `STS_OOC_SKIP_OPTIONAL_RECALL=1` applies one shared filter to
+V4 REST candidates before scoring and to `ScumSearchAgent2::stepRandom`.
+When keys are off and another legal action exists, it removes only Recall,
+keeping the remaining action order. This can change the V4 margin and gate
+ownership as well as the fallback's uniform action distribution. With the
+flag unset or zero, legacy choices and RNG progression are unchanged. Enabled
+sampling uses the existing single uniform-distribution invocation on the
+filtered set; its underlying engine consumption may change with the bound.
+
+If Recall is the sole legal action (for example, Coffee Dripper plus Fusion
+Hammer without another campfire action), it remains available. The repair
+does not fabricate an illegal Skip or alter simulator mechanics. The frozen
+native V4 research profile uses MCTS off and REST_WIN off; this filter is not
+a promise that every alternative policy stack enforces identical eligibility.
+The enabled flag is bound into the effective OOC teacher specification.
+
+### Full-health REST research candidate
+
+`STS_OOC_SKIP_FULL_HP_REST=1` is a separate default-off policy experiment.
+In an unresolved campfire at positive full HP, with Dream Catcher absent and
+both REST and SMITH legal and present in the candidate set, it removes only
+REST. Other actions retain their order. The filter follows optional Recall
+filtering in the V4 gate and random fallback; the direct low-HP heuristic also
+honors it when maximum HP itself is below 15. Damaged players, Dream Catcher,
+unavailable upgrades and forced-action cases preserve their existing choices.
+The enabled policy flag is serialized into the teacher specification.
+
+This does not establish that upgrading always helps. Upgrades can change
+exhaust behavior (for example, Limit Break), draw timing or downstream policy
+choices. The candidate needs independent whole-run evaluation. Ancient Tea Set
+and Eternal Feather apply on campfire entry; Regal Pillow's extra healing is
+clamped at full HP. These facts explain the eligibility predicate, without
+turning a local no-healing observation into a claim of trajectory dominance.
+
+### Default fallback card-removal ordering
+
+The fallback REMOVE selector ranks ascending
+`Expert::getObtainWeight(cardId)` by default. Unset and
+`STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=1` select that corrected ordering;
+explicit `0` restores the legacy highest-acquisition-weight-first rule.
+Bonfire's distinct reward objective and every other selection type retain
+their existing ordering. Native model-based shop removal is a separate
+upstream policy. Living Wall and Peace Pipe can reach this fallback.
+
+The selector still uses the simulator's legal menu indices and existing sort;
+it adds no upgrade-aware values, curse priority or tie-breaking rule. Basic
+cards and some specialized cards share weight zero, while upgrades retain
+their base card weight. This is a policy-ranking correction, not an engine
+defect or a dominance argument. The effective teacher specification includes
+`remove_low_obtain_weight: true` for unset/`1`; explicit `0` omits it and
+restores the legacy identity. Malformed values fail during startup. The user
+authorized this default change after the frozen §395 confirmation; its
+measured gain remains specific to that experiment's profile.
+
+### Card reward ranking research candidate
+
+`STS_OOC_CARD_WIN_RANK=1` preserves the public8 floor model's take-versus-skip
+decision at each reached fallback reward state. When that decision is take,
+it ranks the offered cards by the loaded logistic win model using the same
+public8 scenarios and post-link averaging. It introduces no win-probability
+skip threshold. The normal V4 margin gate retains ownership of its decisions;
+the change is restricted to the native card reward fallback invocation.
+
+Startup requires loaded native floor/logistic-win models, public8, finite
+floor skip threshold, margin gating, MCTS off and conflicting card policies
+off. The enabled helper rejects nonfinite returned base values or marginals.
+The enabled flag enters teacher identity. Optional
+`STS_OOC_CARD_WIN_RANK_TRACE=1` records existing predictions and semantic card
+actions without additional evaluations or RNG draws.
+
+This differs from legacy `STS_CARD_WIN`, whose native feature-edit path bypasses
+the public scenario wrapper. That old flag must not be enabled in the controlled
+fair campaign. Neither path models every acquisition effect: offered upgrades,
+eggs and other card-acquisition relics remain existing feature approximations.
+The historical broad win-head comparison (§24) did not confirm a gain; a binary
+win target alone does not establish better current-policy action rankings.
+Per-root take/skip preservation does not imply equal skip counts after
+trajectories diverge. Default-off and other decision families are unchanged.

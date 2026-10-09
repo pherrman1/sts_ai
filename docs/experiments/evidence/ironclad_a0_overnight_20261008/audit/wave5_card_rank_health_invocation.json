@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/audit_fullrun_health.py",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave5_card_rank_report.json",
+    "--report-sha256",
+    "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530",
+    "--out",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave5_card_rank_health.json"
+  ],
+  "started_epoch": 1791427585.7892685,
+  "finished_epoch": 1791427587.0503166,
+  "exit_code": 0,
+  "auditor_sha256": "ae0085f07389cf36be09a5cfe15591ba7d44562fbfd5cfb3beab8360a57a71aa",
+  "report_sha256": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530",
+  "output_sha256": "c0534c4bf81777ead91810519ea0f6ce04d555c9c023b19905bfd88ba4439726",
+  "log_sha256": "7b079628bd0c50fddbb571cfb442f06f804d68ef425cef6c13a3a3e21d581e5c",
+  "producer_semantic_fragment_hashes": {
+    "src/sim/search/SilverSearcher.cpp": "7e7d651a4284a181b37112627700da596d3d48b82eaa86acdc0c50c0bfd31813",
+    "src/sim/search/NativeSilverBackend.cpp": "f061717bb2dc2265e65ef0028948a47f7b9012323499f96a1c7927b9e34c9f65"
+  }
+}

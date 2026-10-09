@@ -1,0 +1,96 @@
+{
+  "schema": "removal_development_launch_review_v1",
+  "status": "PASS",
+  "reviewer": "learning",
+  "reviewed_epoch": 1791425525.526187,
+  "manifest_sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de",
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+  "checks": {
+    "schema_pass": true,
+    "all_bound_artifact_hashes_match": true,
+    "source_binary_profiles_models_exact_discovery_match": true,
+    "discovery_advancement_trigger_verified": true,
+    "only_removal_flag_differs": true,
+    "exact128pairs_256runs": true,
+    "exact64four_seed_jobs_unique_prefixes": true,
+    "fresh_sources610082256_to610082383": true,
+    "no_existing_outputs_at_review": true,
+    "no_prior_bestbench_receipt_seed_overlap": true,
+    "holdout_excluded": true
+  },
+  "resource_gate": "GEN2 dispatch AND its descendant game processes must all finish before launch. P3 plus at mosttwo existing development games plusone card lane <=6.",
+  "budget": {
+    "max_workers": 3,
+    "shard_timeout_seconds": 900,
+    "outer_cap_seconds": 3600,
+    "latest_start_local": "2026-10-08 06:15 Europe/Berlin",
+    "absolute_stop_local": "2026-10-08 07:15 Europe/Berlin",
+    "required_timeout": "min(3600, absolute07:15-now), process-group cleanup after timeout"
+  },
+  "statistical_scope": "Fixed fresh128 pairs, allvalid required, strictly more candidate wins for advancement. No pooling, replacement, extension or combinations. Different-cohort candidate nomination is exploratory and only one frozen final confirmation can qualify superiority.",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_development.json",
+      "sha256": "0d0475535ad371b8714ec0b503dc2b480b8726e0ce9436579b402b1dca1ae7de"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/removal_development_jobs.txt",
+      "sha256": "04aea6f45f22daeca3a62407ceaab44e42b2ddb4f0540502ce8e80f13f12c2c2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave4_removal_report.json",
+      "sha256": "f405de50965522e4cee17cb103a22688ad663f2d2cf8f3c5372439cd44fbf0fd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/wave4_removal.json",
+      "sha256": "1aca03326eedcd5cf4dfa3790da3f1e84f7dbc580e11a07070c7c4b4b497d2a2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/removal-d35b42b1/one_combat",
+      "sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/removal_development.md",
+      "sha256": "fc3d8a7b0cc991ff6539d6bb37d85d0d8831907c460caffaa19b06d250c554be"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_removal.py",
+      "sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py",
+      "sha256": "fa4b556c0c8ce4f662cc9755725f8b318962c4be9090e6e85307a0537f360ceb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/REMOVE_OBTAIN_WEIGHT_REVIEW.md",
+      "sha256": "ffc4454984d60cb3974c1775c4a523a1b1a3e283d21c7bfdca43ac0ed12c6593"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/removal_canary_validation.json",
+      "sha256": "e8fc4b210b34ac239985347f5e4708791c32824b7dd8f30e0d8bfdcaf3d5bc55"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/removal-static-checks.json",
+      "sha256": "6b1cd56edfefd0201188982821b637b7b2e7b59da974a393d288fb56eadace90"
+    }
+  ],
+  "game_jobs_started_by_reviewer": 0,
+  "partial_outcomes_inspected": false
+}

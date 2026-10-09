@@ -1,0 +1,85 @@
+{
+  "schema": "scoped_latest_main_review_v1",
+  "status": "PASS_SCOPED_ASSESSMENT_NOT_MERGE_APPROVAL",
+  "reviewed_at_utc": "2026-10-08T11:29:24.204560+00:00",
+  "scope": "Read-only incoming main source, seed-guard custody and virtual merge assessment; no games, builds, tests, efficacy analysis or canonical edits.",
+  "task_head": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "previous_integrated_main": "70f7dfe5781a25b06caca49ae404b62208a81ad9",
+  "latest_main": "75733c4544b03212ef2159106d206cfc6ff9cbab",
+  "changed_paths": [
+    "CMakeLists.txt",
+    "EXPERIMENTS.md",
+    "apps/one_combat.cpp",
+    "apps/one_combat/driver_shared.h",
+    "apps/one_combat/silver_synth_gen.cpp",
+    "apps/one_combat/silver_synth_keys.h",
+    "apps/one_combat/silver_synth_replay.cpp",
+    "apps/test.cpp",
+    "docs/experiments/evidence/silver_synth_gates_20261008/PREREG.md",
+    "docs/experiments/evidence/silver_synth_gates_20261008/README.md",
+    "docs/experiments/evidence/silver_synth_gates_20261008/gateA.json",
+    "docs/experiments/evidence/silver_synth_gates_20261008/gateB.json",
+    "docs/experiments/evidence/silver_synth_gates_20261008/train.json",
+    "docs/experiments/evidence/silver_synth_gates_20261008/weight-nat.json",
+    "docs/experiments/evidence/silver_synth_gates_20261008/weight-natpert.json",
+    "docs/experiments/ledger-06.md",
+    "docs/knowledge-base/architecture/combat-search.md",
+    "include/sim/search/NativeSilverBackend.h",
+    "include/sim/search/SilverSearcher.h",
+    "src/sim/search/NativeSilverBackend.cpp",
+    "src/sim/search/SilverSearcher.cpp",
+    "tools/seed_guard.sh",
+    "tools/silver_synth_gates.py",
+    "tools/silver_synth_teacher.py"
+  ],
+  "incoming_diff_sha256": "e21230e4a792cf7e260bf821b3ad137dc0afa503d52799264f8557925eeb9b8d",
+  "freeze": {
+    "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+    "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+    "artifacts_rehashed": 21,
+    "mismatches": []
+  },
+  "seed_guard": {
+    "path": "tools/seed_guard.sh",
+    "current_sha256": "764f071ef7a7f8c30367641904a9c24ba807189b3197aadccca2b6b53eb6bd06",
+    "incoming_sha256": "4506d4495283d5b59c037e5f95d2299af39d54db07e8a2300c6135ced9271ca6",
+    "diff_sha256": "5d8ecb556dfb6fdd226617117445e68bfd93ad61585e6176d0e64709edfad352",
+    "exact_change": "Adds ONE_COMBAT_SEED_INDEX[\"silversynthgen\"]=2; all prior command checks and exec behavior unchanged.",
+    "effect_on_completed_campaign": "None: original executed guard remains hash-bound; the new mapping is for a mode not used by either completed experiment.",
+    "custody": "An incoming merge would change canonical guard bytes despite equivalent checks for existing campaign modes. Do not update frozen expected hashes or present the new guard as the original."
+  },
+  "runtime_source_assessment": {
+    "hooks": "Thread-local native root observer and leaf-sample pointer default empty/null; set only in silver_synth_gen.cpp.",
+    "root_prior": "Default weight0 and empty prior; only synthetic replay and test code assign them. evaluateEdge retains the original arithmetic when weight0.",
+    "rollout": "Null leaf sampler leaves sampling body unexecuted; final value temporary retains original evaluateEndState result.",
+    "mode_dispatch": "Only new explicit synthetic modes select generator/replay/features functions.",
+    "inference": "No intended action/RNG change for existing default non-synthetic profiles based on source. This is not executed parity, cost neutrality, new-main integration verification, or transfer of frozen qualification."
+  },
+  "virtual_merge": {
+    "command": [
+      "git",
+      "merge-tree",
+      "--write-tree",
+      "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+      "75733c4544b03212ef2159106d206cfc6ff9cbab"
+    ],
+    "exit_code": 1,
+    "tree_oid": "76ac72f8b2324ee8ea541da10cfee74074ea8c60",
+    "stdout": "76ac72f8b2324ee8ea541da10cfee74074ea8c60\n100644 a7e531eefb2f3f00edd167c3aec13c122c792ef6 1\tEXPERIMENTS.md\n100644 9ffc7547faeb993c486dc92760714bc8c03020ed 2\tEXPERIMENTS.md\n100644 0892d2e3785a4d5dc0a7352be64c67be6b240e9d 3\tEXPERIMENTS.md\n100644 090a0bddfe7a496ff91955b14d8415efabc43f29 1\tsrc/sim/search/NativeSilverBackend.cpp\n100644 319c4621e85348dcef1acd9e3e8c2de084b35050 2\tsrc/sim/search/NativeSilverBackend.cpp\n100644 e5124c93c5aa74c24e85093fb0c7aaadaa9f6457 3\tsrc/sim/search/NativeSilverBackend.cpp\n\nAuto-merging CMakeLists.txt\nAuto-merging EXPERIMENTS.md\nCONFLICT (content): Merge conflict in EXPERIMENTS.md\nAuto-merging apps/one_combat.cpp\nAuto-merging apps/one_combat/driver_shared.h\nAuto-merging apps/test.cpp\nAuto-merging docs/experiments/ledger-06.md\nAuto-merging docs/knowledge-base/architecture/combat-search.md\nAuto-merging include/sim/search/SilverSearcher.h\nAuto-merging src/sim/search/NativeSilverBackend.cpp\nCONFLICT (content): Merge conflict in src/sim/search/NativeSilverBackend.cpp\nAuto-merging src/sim/search/SilverSearcher.cpp\n",
+    "stderr": "",
+    "conflict_paths": [
+      "EXPERIMENTS.md",
+      "src/sim/search/NativeSilverBackend.cpp"
+    ],
+    "backend_conflict": "Our tracePublicAction call and incoming optional observer both occupy the same post-selection/pre-commit location. A future reconciliation must preserve both; no resolution applied.",
+    "scope_limit": "Virtual merge compares committed HEAD only; current uncommitted maintained-doc edits are excluded.",
+    "additional_semantic_collision": "Incoming main appends synthetic Silver ledger section397; current uncommitted task docs also number the blocked K-precision follow-on397. Must resolve identifier/index/links in a future integration, retaining distinct evidence."
+  },
+  "recommended_handoff": "Retain reviewed61b plus the separately reviewed C++20 test-only repair and evidence/docs, preserve frozen21, disclose latest-main75733 source/ledger conflicts. Defer merging/rebasing until a bounded reconciliation is authorized and verified.",
+  "limitations": [
+    "No full review of synthetic producer or imported research efficacy.",
+    "Existing merged Debug checks apply to61b plus fixture repair, not75733.",
+    "Immutable3ed K-precision and d35 original confirmation producers remain the only producers for their evidence.",
+    "No PR merge approval, production default change or new experiment authorization."
+  ]
+}
