@@ -15215,3 +15215,51 @@ stays as a default-off research option, and `STS_OOC_MCTS` stays off.
 [environment-variable table](../knowledge-base/operations/environment-variables.md)
 (`STS_OOC_MCTS_LEAF_WIN_MODEL`).
 
+
+## §402 — #346 A20 counterfactual corpus: option spreads vs E3 (2026-10-09)
+
+**Question:** issue #346 asks whether harder-Ascension data carries more
+decision signal than A0 data. Before training anything: does an OOC choice
+change outcomes more at A20 than at A0?
+
+**Protocol:** [PLAN.md](evidence/a20_transfer_346_20261009/PLAN.md),
+written before the corpus run.
+- **Code (PR #455, `5ba068e0`):** under `STS_STOP_AFTER_ACT=3`, A20 runs now
+  play the second Act-3 boss, and `ooccfpilotgen` takes a trailing ASCENSION.
+- **Probe:** bestbench flat10k (§401 profile), seeds `59000000..59000031`.
+- **Corpus:** `ooccfpilotgen` GEN=2 at A20 with E3's settings (§396), seeds
+  `59100000..59101199`, 20 cloud workers.
+- **Comparison:** against E3 (A0). Per state, a two-way option × future ANOVA
+  estimates the variance of true option values. Futures are shared across
+  options. This measure and the floor-reached / first-Act-3-boss targets were
+  chosen after PLAN.md, which named best-minus-mean, best-minus-second, label
+  entropy and chosen-is-best.
+
+**Result (descriptive):**
+- **Probe:** A0 wins 24/32. A20 wins 6/32 if the run stops after the first
+  Act-3 boss, and **0/32** once the second boss is played. All six die to it.
+- **Corpus:** 240/240 parts, 16,590/16,590 valid labels, 2,094 states. The
+  label win rate is about 10%: the generator's learned-stop teacher does win at A20.
+- **Card rewards:** option SD on final win ≈0 at both ascensions. On floor
+  reached, 2.0 floors at A20 (CI excludes 0) vs 0.37 at A0 (CI includes 0).
+- **Boss relics:** option SD on beating the first Act-3 boss is 0.12 at A0
+  and 0.11 at A20. On A20 final win it is 0.065. On floor reached, 3.7 floors
+  at A20 vs 1.7 at A0.
+- Full table: [README](evidence/a20_transfer_346_20261009/README.md),
+  [report.json](evidence/a20_transfer_346_20261009/report.json).
+
+**Interpretation (Inference):** at A20, OOC choices make a bigger difference to
+survival depth than at A0. They do not make a bigger difference to win labels,
+which the second boss saturates. Part of the floor difference is
+mechanical: 89.7% of A0 labels end at the floor-50 cap (A20: 37.8% at floor
+50 or later), so A0 floor spread is compressed the same way A20 win spread
+is. This partly supports the premise of #346 for
+floor-type targets. It says nothing yet about whether A20 data helps an A0
+model.
+
+**Decision:** no model or default change. The next step is the #346
+transfer test (A0-only vs mixed-ascension GBM on the fixed E3 holdout), which
+needs its own go.
+
+**Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
+[environment-variable table](../knowledge-base/operations/environment-variables.md).

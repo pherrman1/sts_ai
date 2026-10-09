@@ -2479,8 +2479,9 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                long long seedOffset, const std::string &teacherPath,
                                int futures, int statesPerSeed, int cardRewardBosses,
                                int generation, const std::string &typeList,
-                               const std::string &targetPath, int futureStart) {
-    constexpr int sims = 10000, asc = 0;
+                               const std::string &targetPath, int futureStart, int asc) {
+    constexpr int sims = 10000;
+    if (asc < 0 || asc > 20) throw std::runtime_error("ooc cf pilot: ASCENSION must be 0..20");
     if (nSeeds < 1 || futures < 0 || (futures == 0 && targetPath.empty())
         || statesPerSeed < 1 || cardRewardBosses < 1 || cardRewardBosses > 2
         || generation < 1 || generation > 2

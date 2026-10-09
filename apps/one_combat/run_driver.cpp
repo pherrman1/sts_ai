@@ -432,7 +432,12 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                               {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
                               {"won", bc.outcome == Outcome::PLAYER_VICTORY}, {"pre", tracePre},
                               {"post", oocTraceState(gc)}});
-            if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
+            // A20 Act 3 has two bosses: winning the first one leads straight into
+            // the second, so the Act-3 stop waits for that fight.
+            const bool a20FirstAct3BossWon = battleAct == 3 && gc.ascension >= 20
+                && bc.encounter == gc.boss && bc.outcome == Outcome::PLAYER_VICTORY;
+            if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS
+                && !a20FirstAct3BossWon) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
                 break;
             }
