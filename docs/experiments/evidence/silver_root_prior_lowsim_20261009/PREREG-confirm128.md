@@ -17,3 +17,8 @@ screen (PREREG.md here: prior256 19/32, plain256 13/32, plain2k 19/32).
   - NOT_CONFIRMED: B − A CI includes 0 or is below.
 - Nothing ships before the CTM full retrain; a confirmation only supports a
   default-off fast mode proposal.
+
+> Annotation (2026-10-09, review of #465): "frozen ~10:22 UTC before any
+> confirmation seed ran" is not supported by the file stamps. This file is
+> stamped 10:21:47, 5 s after the first confirmation arm started (10:21:42).
+> See README.md, "Pre-registration order".
