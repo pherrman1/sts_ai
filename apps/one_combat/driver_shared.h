@@ -278,7 +278,7 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                long long seedOffset, const std::string &teacherPath,
                                int futures, int statesPerSeed = 1, int cardRewardBosses = 1,
                                int generation = 1, const std::string &typeList = {},
-                               const std::string &targetPath = {}, int futureStart = 0);
+                               const std::string &targetPath = {}, int futureStart = 0, int asc = 0);
 namespace one_combat {
 void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng);
 }
