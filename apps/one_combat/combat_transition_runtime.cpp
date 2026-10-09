@@ -415,7 +415,7 @@ const nlohmann::json *researchCandidateIdentity() {
 void CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(const std::string &path) {
     static const std::string expected=productionIdentity().at("standard").at("artifactSha256");
     require(sha256File(path)==expected,
-        "Brew fallback artifact SHA256 differs from the pinned current standard Attention CTM");
+        "Brew fallback artifact SHA256 differs from the pinned pre-#418 standard Attention CTM");
 }
 CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     std::ifstream f(path,std::ios::binary);

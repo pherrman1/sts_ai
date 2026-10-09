@@ -1,0 +1,179 @@
+{
+  "units_done": 112,
+  "nonzero_rc": [],
+  "arms": {
+    "prod": {
+      "runs": 128,
+      "win": 0.7578125,
+      "floor": 47.7421875,
+      "sec_per_run": 112.07709296875001,
+      "mcts_cpu_per_run": 45.057060547937496,
+      "simulations_per_run": 117735.0234375,
+      "combat_samples_per_run": 21107.890625,
+      "owned_per_run": 113.7265625,
+      "fallback_per_run": 3.546875,
+      "support_aborts": 91,
+      "mcts_cpu_ms_per_simulation": 0.38269887101059763
+    },
+    "silv2048": {
+      "runs": 128,
+      "win": 0.7890625,
+      "floor": 48.75,
+      "sec_per_run": 526.202353125,
+      "mcts_cpu_per_run": 455.4399617217031,
+      "simulations_per_run": 119026.2734375,
+      "combat_samples_per_run": 21960.7890625,
+      "owned_per_run": 115.7109375,
+      "fallback_per_run": 2.9296875,
+      "support_aborts": 4,
+      "mcts_cpu_ms_per_simulation": 3.8263817606694372
+    },
+    "silvcpu": {
+      "runs": 128,
+      "win": 0.671875,
+      "floor": 47.5078125,
+      "sec_per_run": 103.15570625,
+      "mcts_cpu_per_run": 36.43173509613281,
+      "simulations_per_run": 9637.8359375,
+      "combat_samples_per_run": 1768.546875,
+      "owned_per_run": 114.625,
+      "fallback_per_run": 2.8046875,
+      "support_aborts": 0,
+      "mcts_cpu_ms_per_simulation": 3.780074212965177
+    },
+    "off": {
+      "runs": 128,
+      "win": 0.78125,
+      "floor": 48.6640625,
+      "sec_per_run": 53.5106609375
+    }
+  },
+  "comparisons": {
+    "silv2048-prod": {
+      "pairs": 128,
+      "win_a": 0.7890625,
+      "win_b": 0.7578125,
+      "dwin": 0.03125,
+      "dwin_ci95": [
+        -0.03125,
+        0.09375
+      ],
+      "mcnemar_b": 11,
+      "mcnemar_c": 7,
+      "mcnemar_p": 0.480682373046875,
+      "dfloor": 1.0078125,
+      "dfloor_ci95": [
+        -0.1953125,
+        2.203125
+      ],
+      "boss_deaths_a": 25,
+      "boss_deaths_b": 25,
+      "label": "NO_DIFFERENCE_DETECTED"
+    },
+    "silvcpu-prod": {
+      "pairs": 128,
+      "win_a": 0.671875,
+      "win_b": 0.7578125,
+      "dwin": -0.0859375,
+      "dwin_ci95": [
+        -0.171875,
+        0.0
+      ],
+      "mcnemar_b": 11,
+      "mcnemar_c": 22,
+      "mcnemar_p": 0.08014331245794892,
+      "dfloor": -0.234375,
+      "dfloor_ci95": [
+        -1.6015625,
+        1.140625
+      ],
+      "boss_deaths_a": 32,
+      "boss_deaths_b": 25,
+      "label": "NO_DIFFERENCE_DETECTED"
+    },
+    "silv2048-silvcpu": {
+      "pairs": 128,
+      "win_a": 0.7890625,
+      "win_b": 0.671875,
+      "dwin": 0.1171875,
+      "dwin_ci95": [
+        0.03125,
+        0.203125
+      ],
+      "mcnemar_b": 23,
+      "mcnemar_c": 8,
+      "mcnemar_p": 0.010673840530216694,
+      "dfloor": 1.2421875,
+      "dfloor_ci95": [
+        -0.2734375,
+        2.7578125
+      ],
+      "boss_deaths_a": 25,
+      "boss_deaths_b": 32,
+      "label": "A_BETTER"
+    },
+    "prod-off": {
+      "pairs": 128,
+      "win_a": 0.7578125,
+      "win_b": 0.78125,
+      "dwin": -0.0234375,
+      "dwin_ci95": [
+        -0.1171875,
+        0.0703125
+      ],
+      "mcnemar_b": 17,
+      "mcnemar_c": 20,
+      "mcnemar_p": 0.7428293587290682,
+      "dfloor": -0.921875,
+      "dfloor_ci95": [
+        -2.4765625,
+        0.5859375
+      ],
+      "boss_deaths_a": 25,
+      "boss_deaths_b": 16,
+      "label": "NO_DIFFERENCE_DETECTED"
+    },
+    "silv2048-off": {
+      "pairs": 128,
+      "win_a": 0.7890625,
+      "win_b": 0.78125,
+      "dwin": 0.0078125,
+      "dwin_ci95": [
+        -0.078125,
+        0.0859375
+      ],
+      "mcnemar_b": 15,
+      "mcnemar_c": 14,
+      "mcnemar_p": 1.0,
+      "dfloor": 0.0859375,
+      "dfloor_ci95": [
+        -1.2890625,
+        1.40625
+      ],
+      "boss_deaths_a": 25,
+      "boss_deaths_b": 16,
+      "label": "NO_DIFFERENCE_DETECTED"
+    },
+    "silvcpu-off": {
+      "pairs": 128,
+      "win_a": 0.671875,
+      "win_b": 0.78125,
+      "dwin": -0.109375,
+      "dwin_ci95": [
+        -0.2109375,
+        -0.0078125
+      ],
+      "mcnemar_b": 15,
+      "mcnemar_c": 29,
+      "mcnemar_p": 0.048766765904474596,
+      "dfloor": -1.15625,
+      "dfloor_ci95": [
+        -2.765625,
+        0.4296875
+      ],
+      "boss_deaths_a": 32,
+      "boss_deaths_b": 16,
+      "label": "B_BETTER"
+    }
+  }
+}

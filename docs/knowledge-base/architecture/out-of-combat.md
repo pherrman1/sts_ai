@@ -288,7 +288,12 @@ automatically pairs it with the pinned standard Attention Brew fallback
 `selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the #418
 pathb-r2 stack, see "Production CTM stack since #418" below). An
 explicit combat-model path overrides the automatic stack; explicit artifact
-failures are fatal. Startup also requires the effective Silver reuse cap to be
+failures are fatal. Research only (§411): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
+replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
+combat with native Silver (`STS_OOC_MCTS_SILVER_SIMS` per root, root prior on
+via `STS_SILVER_ROOT_PRIOR_SCOPE=override`, live combats plain) on a redraw of
+the six combat RNG streams; a Silver failure returns UNSUPPORTED and aborts that
+search to the V4 fallback. Startup also requires the effective Silver reuse cap to be
 32,768; the experimental 131,072 override is rejected. Real combat requires
 ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
 frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and

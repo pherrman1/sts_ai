@@ -2846,7 +2846,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""},
-        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3369,7 +3369,9 @@ int main(int argc, char **argv) {
     search::installNativeSilverBackend();
     if (!search::nativeSilverRootPriorPath().empty())
         std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
-                  << " weight " << search::nativeSilverRootPriorWeight() << "]\n";
+                  << " weight " << search::nativeSilverRootPriorWeight()
+                  << (std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE") && std::string(std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE")) == "override"
+                      ? " scope=override (thread opt-in only; live combats plain)" : "") << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -3887,6 +3889,18 @@ int main(int argc, char **argv) {
         try {
             silverStopReplayGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
                                 std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "ctmsilvergen") {
+        if (argc != 8) {
+            std::cerr << "usage: one_combat ctmsilvergen N_SEEDS ASC OUT_PREFIX SEED_OFFSET TEACHER.json REPLICATES\n";
+            return 2;
+        }
+        try {
+            ctmSilverCompareGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],
+                                std::stoi(argv[7]));
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;
