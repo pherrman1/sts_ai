@@ -15822,3 +15822,44 @@ ranking signal sits in paired counterfactual branches, which E3/#334 already col
 **Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
+
+## §417 — #347 default-stack boss deaths: 40% winnable on a planner re-roll, 40% lost every time (2026-10-09)
+
+**Question (Philipp, 2026-10-09, #347 triage):** most default-stack losses are boss
+deaths and more boss search did not help (§377, §387). Are those deaths fights
+the same combat policy would usually win with another planner seed (combat is
+the lever), or entries it loses every time (preparation is the lever)?
+**Design:** [PLAN](evidence/boss_deaths_default_347_20261009/PLAN.md) frozen at
+`93d0bd35` before any seed ran. Default stack: ADR-0026 live profile (V4 gate
+stack, learned-stop Silver, 10k cap), OOC MCTS off, Act-3 stop, current main
+gameplay. Stage 1: 256 fresh runs, seeds 66000000..66000255 (the §395 Fprod rows
+are not in the repo, and current main cannot reconstruct the §377 runs).
+Stage 2: every boss death is reconstructed with `bossrescue347` (new schema
+`boss_deaths_default_347_selection_v1`) and replayed with 8 fresh planner seeds
+under the same learned-stop policy; the live battle RNG is unchanged. Per entry
+0/8 = `DOOMED`, ≥ 4/8 = `WINNABLE`, else `MARGINAL`; verdict by which class
+holds at least half the entries.
+**Validity:** 214/256 runs won (83.6%); 42 losses, 35 to an act boss (act
+1/2/3: 1/13/21). All 35 entries `VALID`: exact reconstruction, exact control
+parity (outcome, terminal HP, action trace, post-exit digest, simulations),
+identical repeats, no root above 10k. 1.74 CPU-hours in total.
+**Result:** `MIXED`. 15 `WINNABLE`, 14 `DOOMED`, 6 `MARGINAL`; mean fresh win
+rate 40.0%, entry bootstrap 95% [26.4%, 53.6%]; bimodal (14 entries 0/8, 7
+entries 8/8). Time Eater 14/80 fresh wins (7 of 10 doomed), Awakened One 6/48
+(4 of 6), while Automaton 24/24, Donu and Deca 25/40, Champ 24/56. Act 2 59/104,
+act 3 45/168. Doomed entries arrive with 61% of max HP, winnable ones with 83%.
+**Interpretation (Inference):** both levers are real. About 40% of boss deaths
+are planner variance on winnable entries, so combat consistency (not budget)
+matters there. Another 40% are lost on every replay, mostly at Time Eater and
+Awakened One and at lower entry HP; this experiment cannot tell preparation
+from a combat weakness specific to those bosses. The 40% is conditional on a
+lost fight and is not a win-rate estimate. Planner repeats share one game
+environment.
+**Decision:** diagnostic only; no default change.
+
+**Evidence:** [packet](evidence/boss_deaths_default_347_20261009/README.md);
+copies in `/mnt/project-files/boss-deaths-347/`.
+
+**Knowledge impact:** this entry; `bossrescue347` gains a schema, recorded in
+`docs/knowledge-base/CODE_MAP.md` and `operations/ooc-label-pipeline.md` where
+the mode is routed.
