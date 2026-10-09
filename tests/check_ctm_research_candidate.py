@@ -11,6 +11,11 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 FAST = ROOT / 'selfplay/models/combat_transition_deepsets_lizard_t2.native'
 STANDARD = ROOT / 'selfplay/models/combat_transition_near_full_except_smoke_v2.native'
+# The production stack since #418: the pathb-r2 candidate, pinned by its built-in v3 manifest.
+PRODUCTION_FAST = ROOT / 'selfplay/models/combat_transition_deepsets_pathb_r2.native'
+PRODUCTION_STANDARD = ROOT / 'selfplay/models/combat_transition_near_full_escape_pathb_r2.native'
+PRODUCTION_MANIFEST = ROOT / 'tests/fixtures/ctm_production/pathb_r2_candidate_v3.json'
+PRODUCTION_MANIFEST_SHA = 'd9d8377e19a37fd3a76dc3ebae0c882706d11d4bd0b4a3df41691e3cf4d39d5d'
 MAGIC = b'COMBAT_TRANSITION_RUNTIME_V2\0'
 CANDIDATE = 'test-retrain-candidate'
 
@@ -137,6 +142,24 @@ def main():
         expect('production_pair_with_manifest', probe(['--pair-identity', FAST, STANDARD, 1], env), identity='production')
         expect('candidate_without_manifest', probe(['--identity', standard_path]),
                error='requires STS_CTM_RESEARCH_CANDIDATE_MANIFEST')
+        # The promoted pathb-r2 stack needs no manifest and still loads beside another candidate's.
+        if hashlib.sha256(PRODUCTION_MANIFEST.read_bytes()).hexdigest() != PRODUCTION_MANIFEST_SHA:
+            raise RuntimeError('production candidate manifest fixture changed')
+        expect('promoted_pair_without_manifest',
+               probe(['--pair-identity', PRODUCTION_FAST, PRODUCTION_STANDARD, 1]), identity='production')
+        expect('promoted_pair_with_other_manifest',
+               probe(['--pair-identity', PRODUCTION_FAST, PRODUCTION_STANDARD, 1], env), identity='production')
+        expect('promoted_pair_with_own_manifest',
+               probe(['--pair-identity', PRODUCTION_FAST, PRODUCTION_STANDARD, 1],
+                     {'STS_CTM_RESEARCH_CANDIDATE_MANIFEST': str(PRODUCTION_MANIFEST),
+                      'STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256': PRODUCTION_MANIFEST_SHA}), identity='pathb-r2')
+        expect('promoted_fast_with_legacy_standard',
+               probe(['--pair-identity', PRODUCTION_FAST, STANDARD, 1]), error='Brew fallback artifact SHA256 differs')
+        expect('legacy_fast_with_promoted_standard',
+               probe(['--pair-identity', FAST, PRODUCTION_STANDARD, 1]), error='Brew fallback artifact SHA256 differs')
+        promoted_tampered = directory / 'promoted-tampered.native'
+        payload = bytearray(PRODUCTION_STANDARD.read_bytes()); payload[-1] ^= 1; promoted_tampered.write_bytes(payload)
+        expect('promoted_bytes_not_listed', probe(['--identity', promoted_tampered]), error='not listed in its manifest')
         expect('candidate_standard', probe(['--identity', standard_path], env), identity=CANDIDATE)
         expect('candidate_pair', probe(['--pair-identity', fast_path, standard_path, 1], env), identity=CANDIDATE)
         expect('candidate_fast_with_production_standard',

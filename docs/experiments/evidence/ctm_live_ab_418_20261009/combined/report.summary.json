@@ -1,0 +1,26 @@
+{
+ "verdict": "NO_DIFFERENCE_DETECTED",
+ "flags": [
+  "NONINFERIOR_AT_10PP"
+ ],
+ "pairs": 128,
+ "winRate_cand_prod": [
+  0.8046875,
+  0.75
+ ],
+ "win": [
+  0.0546875,
+  -0.0234375,
+  0.1328125
+ ],
+ "discordant": [
+  16,
+  9
+ ],
+ "mcnemarP": 0.2295229434967041,
+ "bossDeaths_cand_prod": [
+  19,
+  26
+ ],
+ "integrityErrors": []
+}
