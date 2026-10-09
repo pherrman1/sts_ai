@@ -15231,12 +15231,14 @@ written before the corpus run.
   `59100000..59101199`, 20 cloud workers.
 - **Comparison:** against E3 (A0). Per state, a two-way option × future ANOVA
   estimates the variance of true option values. Futures are shared across
-  options.
+  options. This measure and the floor-reached / first-Act-3-boss targets were
+  chosen after PLAN.md, which named best-minus-mean, best-minus-second, label
+  entropy and chosen-is-best.
 
 **Result (descriptive):**
 - **Probe:** A0 wins 24/32. A20 wins 6/32 if the run stops after the first
   Act-3 boss, and **0/32** once the second boss is played. All six die to it.
-- **Corpus:** 240/240 parts, 17,466/17,466 valid labels, 2,094 states. The
+- **Corpus:** 240/240 parts, 16,590/16,590 valid labels, 2,094 states. The
   label win rate is about 10%: the generator's learned-stop teacher does win at A20.
 - **Card rewards:** option SD on final win ≈0 at both ascensions. On floor
   reached, 2.0 floors at A20 (CI excludes 0) vs 0.37 at A0 (CI includes 0).
@@ -15248,7 +15250,10 @@ written before the corpus run.
 
 **Interpretation (Inference):** at A20, OOC choices make a bigger difference to
 survival depth than at A0. They do not make a bigger difference to win labels,
-which the second boss saturates. This partly supports the premise of #346 for
+which the second boss saturates. Part of the floor difference is
+mechanical: 89.7% of A0 labels end at the floor-50 cap (A20: 37.8% at floor
+50 or later), so A0 floor spread is compressed the same way A20 win spread
+is. This partly supports the premise of #346 for
 floor-type targets. It says nothing yet about whether A20 data helps an A0
 model.
 
@@ -15256,5 +15261,5 @@ model.
 transfer test (A0-only vs mixed-ascension GBM on the fixed E3 holdout), which
 needs its own go.
 
-**Knowledge impact:** this entry; the stop-rule change is documented in the
-PR and in the evidence plan.
+**Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
+[environment-variable table](../knowledge-base/operations/environment-variables.md).

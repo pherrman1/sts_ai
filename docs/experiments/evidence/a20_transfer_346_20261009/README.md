@@ -21,13 +21,19 @@ At `5ba068e0` the 26 earlier A20 losses are identical rows. All six earlier
   K=2 futures shared across options, up to 2 states per seed, CARD_REWARD and
   BOSS_RELIC).
 - 20 cloud workers × 60 seeds, seeds 59100000..59101199. 240 of 240 parts
-  finished with no stalls. 17,466 of 17,466 labels are valid, from 2,094 states.
+  finished with no stalls. 16,590 of 16,590 labels are valid (summed manifest
+  `integrity`), from 2,094 states.
 - Output: `/mnt/project-files/a20-transfer-346/cf-a20-5ba068e0/wWW/` (not
   archived in Git).
 - The generator plays to the end of the run. At A20 a win is the second
-  boss on floor 51, and the label win rate is 10.9% (card) / 9.7% (relic).
+  boss on floor 51, and the label win rate is 11.0% (card) / 9.7% (relic).
 
 ## Analysis
+
+The spread measure and the `act3Boss1`/`horizonFloor` targets were chosen
+after PLAN.md was written. The plan named best-minus-mean, best-minus-second,
+label entropy and chosen-is-best. `regret` (best observed option minus V4's
+choice) is in report.json but not used: with K=2 it is inflated by noise.
 
 `compare_e3.py E3_ROOT A20_ROOT` writes [report.json](report.json).
 
@@ -64,5 +70,11 @@ Signal-to-noise ratio (signal / MS_interaction) for floor reached: card reward
   (SD ≈ 0.12). The A20 final-win label compresses that to 0.065, because the
   second boss kills most runs.
 - So, at A20, choices make a bigger difference to survival depth (floor
-  reached), but not to win labels. Whether that helps an A0 model is the
-  transfer test in #346, which has not been run.
+  reached), but not to win labels.
+- **Ceiling caveat:** floor reached is capped at A0. 89.7% of E3 labels end on
+  the floor-50 boss, against 37.8% of A20 labels at floor 50 or later, and the
+  A0 horizon ends one floor earlier (50 vs 51). Part of the larger A20 floor
+  spread is therefore mechanical, the mirror image of the win-label saturation
+  at A20.
+- Whether A20 data helps an A0 model is the transfer test in #346, which has
+  not been run.

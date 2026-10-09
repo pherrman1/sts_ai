@@ -190,7 +190,7 @@ enable flag:
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
-| `STS_STOP_AFTER_ACT` | Stop benchmark after Act N boss | 0 (full run) | `main` ~L9627 |
+| `STS_STOP_AFTER_ACT` | Stop benchmark after Act N boss; at A20 with N=3 it waits for the second Act-3 boss (`run_driver.cpp`, §402) | 0 (full run) | `main` ~L9627 |
 | `STS_FORCE_RELIC` | Force a relic at run start (paired A/B), removing it from relic pools; forced Lizard Tail is initialized active (`data=1`), while other forced relics retain zero-initialized data | unset | `main` ~L9690; `run_driver.cpp::installRunForcedRelic` |
 
 ## Known limitations
