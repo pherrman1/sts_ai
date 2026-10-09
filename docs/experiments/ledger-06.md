@@ -15263,3 +15263,47 @@ needs its own go.
 
 **Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
 [environment-variable table](../knowledge-base/operations/environment-variables.md).
+
+## §405 — #346 GBM transfer: A20 counterfactual rows help the A0 win model offline (2026-10-09)
+
+**Question:** issue #346 asks whether harder-ascension data improves A0 models.
+Does adding the §402 A20 corpus improve an A0 `v_win` GBM on the fixed E3 A0
+holdout, at equal A0 supervision?
+
+**Protocol:** [TRANSFER-PLAN.md](evidence/a20_transfer_346_20261009/TRANSFER-PLAN.md),
+committed at `d10cc8da` before training; `tools/vwin_a20_transfer.py`.
+- **Recipe and split:** E3's (§396): X2-B public features plus `ascension`,
+  each state weighted 1, three xgboost seeds averaged, split by source seed.
+  Scored on E3 VALIDATION; TEST stays closed.
+- **Arms:** A, A0 only; C, A0 plus all A20 rows; B, an A20-pretrained model
+  with boosting continued on A0; E, the A20 model alone.
+- **A0 data:** 10%, 25%, 50% and 100% of E3 TRAIN sources.
+
+**Result: `TRANSFER_HELPS` for C and for B under the pre-registered rule.**
+- **C − A, map-row NLL:** −0.009 [−0.023, +0.005] at 10%, −0.013 [−0.025,
+  −0.002] at 25%, −0.012 [−0.024, −0.000] at 50%, **−0.016 [−0.027, −0.006] at
+  100%** (0.4827 vs 0.4990).
+- **B − A:** −0.022 [−0.033, −0.012], −0.011 [−0.021, −0.001], −0.004 [−0.014,
+  +0.005], −0.008 [−0.015, −0.002].
+- C with 25% of the A0 labels (0.4984) matches A with all of them (0.4990).
+- **Boss-relic selection gain, C − A (descriptive):** +4.5, +1.9, +5.8 and
+  +2.2 pp. The 10% and 50% CIs exclude 0.
+- **Card rewards:** no difference; every CI includes 0.
+- **E (A20 model alone):** NLL 1.54, and its boss-relic ranking is worse than A
+  (−4.5 pp [−7.8, −1.3]). A20 values and rankings do not transfer directly.
+- Details: [TRANSFER-RESULT.md](evidence/a20_transfer_346_20261009/TRANSFER-RESULT.md).
+
+**Interpretation (Inference):** training on A20 rows alongside A0 rows gives a
+better A0 win model than A0 rows alone. That supports H1/H2 of #346 as an
+offline sample-efficiency win. The direct A20 model does not help (H3 not
+supported).
+- **Open:** C uses more rows than A, so an equal-size extra-A0 control
+  (#334 rows, as in F2) is needed to show that A20 rows beat more A0 rows.
+- **Open:** early stopping used the scoring set; TEST is still closed.
+- **Open:** no gameplay test. §401 showed that better offline fit need not
+  make a better search leaf.
+
+**Decision:** no model or default change. Candidate follow-ups: an F2-sized
+equal-data control, then TEST, before any gameplay use.
+
+**Knowledge impact:** this entry and the evidence folder.
