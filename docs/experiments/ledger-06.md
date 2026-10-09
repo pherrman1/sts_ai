@@ -15314,3 +15314,65 @@ The A20 rows can be pooled as extra training data for prior or encoder work.
 
 **Knowledge impact:** this entry only. No maintained interface changed: the A20
 corpus uses the existing `silversynthgen` ASC argument.
+
+## §405 — #346 GBM transfer: A20 counterfactual rows and the A0 win model offline, suggestive but inconclusive (2026-10-09)
+
+**Question:** issue #346 asks whether harder-ascension data improves A0 models.
+Does adding the §402 A20 corpus improve an A0 `v_win` GBM on the fixed E3 A0
+VALIDATION split, at equal A0 supervision?
+
+**Protocol:** [TRANSFER-PLAN.md](evidence/a20_transfer_346_20261009/TRANSFER-PLAN.md),
+committed at `d10cc8da` before training; `tools/vwin_a20_transfer.py`.
+- **Recipe and split:** E3's (§396): X2-B public features plus `ascension`,
+  each state weighted 1 (but see the deviation below), three xgboost seeds averaged, split by source seed.
+  Scored on E3 VALIDATION; TEST stays closed.
+- **Arms:** A, A0 only; C, A0 plus all A20 rows; B, an A20-pretrained model
+  with boosting continued on A0; E, the A20 model alone.
+- **A0 data:** 10%, 25%, 50% and 100% of E3 TRAIN sources.
+
+**Result as run: `TRANSFER_HELPS` for C and for B under the pre-registered
+rule. Not robust; see the deviation.**
+- **C − A, map-row NLL:** −0.009 [−0.023, +0.005] at 10%, −0.013 [−0.025,
+  −0.002] at 25%, −0.012 [−0.024, −0.000] at 50%, **−0.016 [−0.027, −0.006] at
+  100%** (0.4827 vs 0.4990).
+- **B − A:** −0.022 [−0.033, −0.012], −0.011 [−0.021, −0.001], −0.004 [−0.014,
+  +0.005], −0.008 [−0.015, −0.002].
+- Post hoc: C with 25% of the A0 labels (0.4984) matched A with all of them
+  (0.4990).
+- **Boss-relic selection gain, C − A (descriptive, as-run models only):**
+  +4.5, +1.9, +5.8 and +2.2 pp. The 10% and 50% CIs exclude 0.
+- **Card rewards:** no difference; every CI includes 0.
+- **E (A20 model alone):** NLL 1.54, and its boss-relic ranking is worse than A
+  (−4.5 pp [−7.8, −1.3]). A20 values and rankings do not transfer directly.
+- Details: [TRANSFER-RESULT.md](evidence/a20_transfer_346_20261009/TRANSFER-RESULT.md).
+
+**Deviation (found in review):** the plan says "recipe as in E3", but the
+script omits E3's weight rescaling to mean 1 (`w *= len(w)/w.sum()`).
+Weights averaged about 1/7.9, so with `min_child_weight` 10 every arm was
+over-regularized. Arm A at 100% gave 0.4990 instead of E3's 0.4854. The
+reviewer's post-hoc rerun with E3's normalization reproduces A at 100% as
+0.4856:
+- C − A: −0.0075 [−0.021, +0.007], −0.0094 [−0.020, +0.001], −0.0043
+  [−0.013, +0.004], −0.0087 [−0.016, −0.001] (0.4769 vs 0.4856).
+- B − A: every CI crosses 0.
+- Under the rule, both C and B are `INCONCLUSIVE`. Every point estimate still
+  favours the A20 arms.
+- C at 25% is 0.4844 against A at 100% 0.4856.
+
+**Interpretation (Inference):** the evidence that A20 rows help an A0 win model
+is suggestive but inconclusive. The pre-registered verdict depends on an
+unintended over-regularization, and under E3's normalization no rung clears
+the rule. It does not establish H1/H2 of #346. The direct A20 model does not
+help (H3 not supported, as-run evidence).
+- **Open:** a normalized primary test would be a new pre-registered run.
+- **Open:** C uses more rows than A, so an equal-size extra-A0 control
+  (#334 rows, as in F2) is needed to show that A20 rows beat more A0 rows.
+- **Open:** early stopping used the scoring set; TEST is still closed.
+- **Open:** no gameplay test. §401 showed that better offline fit need not
+  make a better search leaf.
+
+**Decision:** no model or default change. Candidate follow-ups, each needing
+Philipp's go: a normalized re-test with an F2-sized equal-data control, then
+TEST, before any gameplay use.
+
+**Knowledge impact:** this entry and the evidence folder.
