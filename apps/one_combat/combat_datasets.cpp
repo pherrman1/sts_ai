@@ -4915,8 +4915,13 @@ void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const s
 void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                          const std::string &teacherPath, int replicates) {
     constexpr int sims = 10000;
-    if (nSeeds < 1 || asc != 0 || seedOffset < 0 || replicates < 1)
-        throw std::runtime_error("ctm vs silver: requires positive seed and replicate counts, Ascension 0");
+    if (nSeeds < 1 || asc != 0 || seedOffset < 0 || replicates < 0)
+        throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0");
+    // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
+    // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
+    // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
+    // same states. Its truth comes from a full run on the same seeds.
+    const bool ctmOnly = replicates == 0;
     if (!search::nativeSilverExactRootBudgets())
         throw std::runtime_error("ctm vs silver: requires STS_SILVER_EXACT_ROOT_BUDGETS=1 (flat budgets, no boss multiplier)");
     if (search::nativeSilverRootPriorPath().empty())
@@ -4929,13 +4934,29 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const one_combat::EntropicBrewFallbackCombatTransitionSampler ctm(fastModel, standardModel, true);
     if (ctm.fastRuntime().researchCandidate())
         throw std::runtime_error("ctm vs silver: expected the production CTM stack, not a research candidate");
-    const std::vector<CtmSilverArm> arms = {
-        {"control", sims, false, false, 1},
-        {"teacher10k", sims, false, true, 2},
-        {"prior256", 256, true, true, replicates},
-        {"prior64", 64, true, true, replicates},
-        {"plain256", 256, false, true, replicates},
-    };
+    std::unique_ptr<const one_combat::EntropicBrewFallbackCombatTransitionSampler> candidate;
+    std::string candidateFast, candidateStandard, candidateId;
+    if (ctmOnly) {
+        const char *f = std::getenv("STS_CTMSILVER_CANDIDATE_FAST");
+        const char *d = std::getenv("STS_CTMSILVER_CANDIDATE_STANDARD");
+        if (!f || !*f || !d || !*d)
+            throw std::runtime_error("ctm vs silver: REPLICATES=0 requires STS_CTMSILVER_CANDIDATE_FAST and _STANDARD");
+        candidateFast = f; candidateStandard = d;
+        candidate = std::make_unique<const one_combat::EntropicBrewFallbackCombatTransitionSampler>(
+            candidateFast, candidateStandard, true);
+        if (!candidate->fastRuntime().researchCandidate())
+            throw std::runtime_error("ctm vs silver: candidate stack did not load as a research candidate");
+        candidateId = candidate->fastRuntime().identity().at("candidateId").get<std::string>();
+    }
+    std::vector<CtmSilverArm> arms;
+    if (!ctmOnly)
+        arms = {
+            {"control", sims, false, false, 1},
+            {"teacher10k", sims, false, true, 2},
+            {"prior256", 256, true, true, replicates},
+            {"prior64", 64, true, true, replicates},
+            {"plain256", 256, false, true, replicates},
+        };
     const std::string statesPath = outPrefix + ".states.csv";
     const std::string armsPath = outPrefix + ".arms.csv";
     const std::string samplesPath = outPrefix + ".samples.csv";
@@ -4949,7 +4970,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                "smokeBombUsed,stolenGold\n";
     states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
               "sourceWon,sourceTerminalHp,sourceValid,ctmSupported,ctmReason,ctmPDeath,ctmMeanHpWin,"
-              "ctmExpectedHp,ctmForecastCpuUs,ctmSampleCpuUs\n";
+              "ctmExpectedHp,ctmForecastCpuUs,ctmSampleCpuUs";
+    if (ctmOnly)
+        states << ",candSupported,candReason,candPDeath,candMeanHpWin,candExpectedHp,candForecastCpuUs,"
+                  "candSampleCpuUs";
+    states << '\n';
     armsOut << "stateId,sourceSeed,fightIdx,arm,k,budget,prior,redraw,redrawSeed,won,terminalHp,"
                "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason\n";
     nlohmann::json armSpec = nlohmann::json::array();
@@ -4957,7 +4982,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
                            {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates}});
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
-    int ctmSupported = 0, invalidArmRows = 0;
+    int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0;
     nlohmann::json perSeed = nlohmann::json::array();
     constexpr int kTimingReps = 20;
     constexpr int kCtmSamples = 32;
@@ -4983,45 +5008,60 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             const auto encounter = pre.info.encounter;
             // CTM forecast and one sample, as the OOC planner prepares them.
             const auto input = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
-            const auto support = ctm.support(pre, input);
-            double pDeath = -1, meanHpWin = -1, expectedHp = -1, forecastUs = -1, sampleUs = -1;
-            if (support.supported) {
-                ++ctmSupported;
-                const auto e = ctm.expectation(pre, input);
+            struct CtmScore { one_combat::CombatRuntimeSupport support;
+                              double pDeath = -1, meanHpWin = -1, expectedHp = -1, forecastUs = -1, sampleUs = -1; };
+            const auto scoreCtm = [&](const one_combat::EntropicBrewFallbackCombatTransitionSampler &model,
+                                      const char *forecaster) {
+                CtmScore r;
+                r.support = model.support(pre, input);
+                if (!r.support.supported) return r;
+                const auto e = model.expectation(pre, input);
                 if (!e.supported) throw std::runtime_error("ctm vs silver: supported state without expectation");
                 double mass = 0, hp = 0;
                 for (std::size_t b = 0; b < e.winningHpHistogram.size(); ++b) {
                     mass += e.winningHpHistogram[b];
                     hp += double(e.winningHpMin + int(b)) * e.winningHpHistogram[b];
                 }
-                pDeath = e.death;
-                meanHpWin = mass > 0 ? hp / mass : 0.0;
-                expectedHp = (1.0 - pDeath) * meanHpWin;
+                r.pDeath = e.death;
+                r.meanHpWin = mass > 0 ? hp / mass : 0.0;
+                r.expectedHp = (1.0 - r.pDeath) * r.meanHpWin;
                 std::uint64_t t0 = vwinThreadCpuNanos();
-                for (int r = 0; r < kTimingReps; ++r) {
+                for (int rep = 0; rep < kTimingReps; ++rep) {
                     const auto in = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
-                    const auto x = ctm.expectation(pre, in);
+                    const auto x = model.expectation(pre, in);
                     if (!x.supported) throw std::runtime_error("ctm vs silver: timing expectation unsupported");
                 }
-                forecastUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
+                r.forecastUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
                 std::mt19937_64 sampleRng(ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, 0, 0x5A3B1E));
                 t0 = vwinThreadCpuNanos();
-                for (int r = 0; r < kTimingReps; ++r) {
+                for (int rep = 0; rep < kTimingReps; ++rep) {
                     const auto in = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
-                    const auto prepared = ctm.prepare(pre, in);
+                    const auto prepared = model.prepare(pre, in);
                     (void)prepared->sample(sampleRng);
                 }
-                sampleUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
+                r.sampleUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
                 // Forecast samples of the whole post-combat state, as the planner draws them.
                 std::mt19937_64 drawRng(ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, 1, 0x5A3B1E));
-                const auto prepared = ctm.prepare(pre, input);
+                const auto prepared = model.prepare(pre, input);
                 for (int k = 0; k < kCtmSamples; ++k) {
                     const auto x = prepared->sample(drawRng);
                     using O = one_combat::CombatRuntimeSample::Outcome;
                     const char *o = x.outcome == O::DEATH ? "DEATH" : x.outcome == O::VICTORY ? "VICTORY"
                         : x.outcome == O::ESCAPE ? "ESCAPE" : "UNSUPPORTED";
-                    ctmSilverWriteSample(samples, stateId, "ctm", k, o, x.rawPost);
+                    ctmSilverWriteSample(samples, stateId, forecaster, k, o, x.rawPost);
                 }
+                return r;
+            };
+            const auto prod = scoreCtm(ctm, "ctm");
+            const auto &support = prod.support;
+            if (support.supported) ++ctmSupported;
+            const double pDeath = prod.pDeath, meanHpWin = prod.meanHpWin, expectedHp = prod.expectedHp,
+                         forecastUs = prod.forecastUs, sampleUs = prod.sampleUs;
+            // The candidate (CTM-only mode) draws with the same seeds as production.
+            std::optional<CtmScore> cand;
+            if (candidate) {
+                cand = scoreCtm(*candidate, "ctm_r2");
+                if (cand->support.supported) ++candidateSupported;
             }
             states << stateId << ',' << entry.pre->seed << ',' << entry.fightIdx << ',' << entry.act << ','
                    << entry.floor << ',' << entry.roomClass << ',' << csvQuote(entry.encounter) << ','
@@ -5029,7 +5069,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                    << entry.terminalHp << ',' << (entry.sourceTrajectoryValid && entry.labelValid ? 1 : 0) << ','
                    << (support.supported ? 1 : 0) << ',' << csvQuote(support.supported ? "supported" : support.reason)
                    << ',' << std::setprecision(9) << pDeath << ',' << meanHpWin << ',' << expectedHp << ','
-                   << forecastUs << ',' << sampleUs << '\n';
+                   << forecastUs << ',' << sampleUs;
+            if (cand)
+                states << ',' << (cand->support.supported ? 1 : 0) << ','
+                       << csvQuote(cand->support.supported ? "supported" : cand->support.reason) << ','
+                       << cand->pDeath << ',' << cand->meanHpWin << ',' << cand->expectedHp << ','
+                       << cand->forecastUs << ',' << cand->sampleUs;
+            states << '\n';
             ++nStates;
             bool controlMatch = false;
             for (const auto &arm : arms) {
@@ -5101,6 +5147,12 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                  {"standard", standardModel}, {"standardSha256", fileSha256(standardModel)},
                  {"activeLizard", true}, {"timingReps", kTimingReps}, {"forecastSamples", kCtmSamples}}},
         {"redraw", "six BattleContext RNG streams (ai, cardRandom, misc, monsterHp, potion, shuffle) reseeded, counters kept"},
+        {"ctmOnly", ctmOnly},
+        {"candidate", ctmOnly ? nlohmann::json{{"candidateId", candidateId},
+            {"fast", candidateFast}, {"fastSha256", fileSha256(candidateFast)},
+            {"standard", candidateStandard}, {"standardSha256", fileSha256(candidateStandard)},
+            {"manifestSha256", std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256")},
+            {"activeLizard", true}, {"supported", candidateSupported}} : nlohmann::json(nullptr)},
         {"arms", armSpec}, {"sources", std::move(perSeed)},
         {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
             {"states", nStates}, {"ctmSupported", ctmSupported}, {"controlReplayMatches", controlMatches},
