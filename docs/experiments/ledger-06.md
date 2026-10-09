@@ -15936,3 +15936,91 @@ ranking signal sits in paired counterfactual branches, which E3/#334 already col
 **Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
+
+## §418 — #396 Stage 1: forward-map block and `bossId` ablation on the public-safe `v_win` baseline (2026-10-09)
+
+**Question:** does the compact map block of the rich `v_win` state (`fmDElite`,
+`fmDRest`, `fmDShop`, `fmDBoss`, `fmCElite`, `fmCRest`, `fmCShop`, `fmCEvent`,
+`fmCMonster`, `fmCTreasure`, `curMapX`, `curMapY`) carry held-out run-win
+signal, separately from the public act-boss identity `bossId`? This decides
+whether #396 Stage 2 (richer map encodings) is justified.
+
+**Protocol:** preregistered in `tools/analyze_vwin_map_396.py` (committed
+`c1c35f33` before any arm was trained; the decision rule is its docstring).
+Offline only: frozen #334 corpus `corpus-mixed-512.json` (SHA-256
+`ca4b6e2b…cd87f`), A3 run `a3-trainval-20261001-50713b83/selected`
+(preflight/validation hashes equal to §374), TRAIN 333,367 / VALIDATION 68,903
+MAP rows, no gameplay seeds, no C++ build, no TEST rows. Frozen A3 X1 recipe,
+XGBoost seeds 0–4, arm prediction = 5-seed mean probability. Arms: **P** the
+457-feature public-safe baseline (§371 B); **M** P minus the 12 map fields
+(`bossId` kept); **Bz** P minus `bossId`; **P2** P with seeds 5–9 (null control
+for retraining noise); inverse diagnostic **S** (TRAIN-variable basic scalars
+`act`, `floor`, `curHp`, `maxHp`, `gold` + `bossId`; `ascension` is constant)
+and **O** = S + map fields. Rule per ablation X ∈ {M, Bz}: `MATTERS` if the
+ensemble ΔNLL (X − P) ≥ 0.002, its source-clustered 95% CI lower bound > 0,
+ΔNLL − |null ΔNLL| ≥ 0.002 and ≥ 4 of 5 per-seed deltas > 0; `LOW_VALUE` if
+the CI upper bound < 0.002; else `INCONCLUSIVE`.
+
+**Gates:** the 461-feature A3 set at seed 0 reproduced the frozen X1 exactly
+(NLL `0.44453298345900494`, 290 trees, drift 0); the P ensemble NLL 0.443381
+matched §374 (0.44338).
+
+**Results (5-seed ensemble, VALIDATION):**
+
+| arm | features | NLL | Brier | AUC | ECE | pooled sibling acc. | MAP sibling acc. (23 pairs) |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| P | 457 | 0.44338 | 0.14534 | 0.8062 | 0.0481 | 0.570 [0.522, 0.617] | 0.478 [0.289, 0.688] |
+| P2 (null) | 457 | 0.44594 | 0.14635 | 0.8029 | 0.0489 | 0.571 [0.525, 0.617] | 0.478 [0.320, 0.658] |
+| M (no map) | 445 | 0.44836 | 0.14686 | 0.8019 | 0.0481 | 0.571 [0.525, 0.617] | 0.457 [0.283, 0.625] |
+| Bz (no `bossId`) | 456 | 0.44459 | 0.14604 | 0.8064 | 0.0492 | 0.565 [0.517, 0.612] | 0.413 [0.200, 0.611] |
+| S | 6 | 0.50145 | 0.16624 | 0.7076 | 0.0248 | 0.499 [0.463, 0.537] | 0.435 |
+| O (S + map) | 18 | 0.50523 | 0.16747 | 0.7023 | 0.0258 | 0.516 [0.484, 0.549] | 0.435 |
+
+Ensemble ΔNLL [source-clustered 95% CI, 77 sources]: M − P **+0.0050
+[−0.0012, +0.0109]**, per seed +0.0044, +0.0057, +0.0073, +0.0006, +0.0022
+(5/5 positive); Bz − P **+0.0012 [−0.0032, +0.0056]** (3/5 positive); null
+P2 − P +0.0026 [−0.0008, +0.0061]; O − S +0.0038 [+0.0005, +0.0072] (adding
+the map block to the small scalar model made it worse). M's NLL loss is spread
+over acts (act 1/2/3: +0.0014/+0.0080/+0.0039) and is largest on pre-boss rows
+(+0.0128, n 5,142). M trains shallower ensembles (145–201 trees vs 189–346).
+
+**Variability and importance (descriptive):** all 13 fields are in the A3
+TRAIN-variable mask and vary widely (non-modal fraction 0.51–0.93). In the P
+seed-0 model the 12 map fields together hold 0.23% of total gain; their best
+TreeSHAP rank is `fmDElite` 116 of 457, the rest rank 216–372. `bossId` holds
+1.1% of total gain and ranks 22.
+
+**Verdict:** **`MAP_INCONCLUSIVE`** and **`BOSSID_INCONCLUSIVE`**; #396 outcome
+**`MAP_STAGE1_INCONCLUSIVE`**. Removing the map block worsened every seed and
+the ensemble by about twice the null retraining shift, but its CI includes
+zero and the retraining null alone moves the ensemble by +0.0026, so the
+effect is not resolvable on this split (consistent with the ±0.005 resolution
+noted in §375). `bossId` is used heavily by the trees, yet removing it costs
+less than retraining noise. **Inference:** its information is largely
+recoverable from `act` and the deck/relic state. The inverse diagnostic gives
+no sign that the map block carries standalone signal. The MAP sibling
+comparison (23 discordant pairs) cannot separate any arm.
+
+**Decision:** per #396's rule, Stage 2 (richer map encodings, Burning-Elite
+features, graph encoders) is **not justified** by this evidence; the current
+block and `bossId` stay unchanged in the feature contract. No default can be
+affected: pathing is the heuristic DP, the tracked `models/v_win_trees.txt`
+is untouched (#397), and the A3 models are used only by opt-in OOC MCTS leaves.
+A map signal at this size could only be resolved by more sources or a direct
+MAP-decision counterfactual corpus, not by feature work on #334.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-map-396/stage1-20261009-c1c35f33/`
+(`report.json` SHA-256 `4ec15a543344246ce8ead8f93c23a7a9dc559fc378689180e8b1eca3f3585825`,
+`validation_predictions.npz` `2774375023304cff168d36c17014fa0c0e6e0f83339a291987afc292e4230ff2`,
+run log alongside); summary copy in `/mnt/project-files/map-path-396/RESULT.md`.
+xgboost 3.4.0, numpy 2.5.1, 4 threads, CPU only. 17:55 wall, 1,792 CPU-s,
+5.1 GB peak RSS.
+
+**ELI5:** We took the map summary away from the win predictor and retrained it
+five times. It got a little worse every time, but retraining with the map
+still there moves the score about half as much, so we can't tell a real loss
+from noise. Taking away which boss is coming barely mattered. Nothing here
+says a fancier map description would help.
+
+**Knowledge impact:** #396 Stage 1 summary in `operations/ooc-label-pipeline.md`
+and `evaluation/current-research.md`.

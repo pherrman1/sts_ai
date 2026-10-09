@@ -2423,6 +2423,11 @@ with no sign the leak helps. XGBoost seed noise (~0.007-0.010 NLL) exceeds the
 question's 0.002 materiality and the A3 X1 grid spread, so single-seed A3
 selection should not be over-interpreted. Public-history/derived-probability
 stages of #397 remain open on the 457-feature public-safe baseline.
+#396 Stage 1 (ledger-06 §418): removing the forward-map block from that
+baseline was `INCONCLUSIVE` (+0.0050 NLL, CI includes 0, about twice the
+retraining null), removing `bossId` also `INCONCLUSIVE` (+0.0012). Stage 2
+richer map encodings are not pursued; no default is affected (heuristic
+pathing, tracked `v_win_trees.txt` unchanged).
 Stage 1b (§373) found the TRAIN mask already excludes every unreachable card,
 relic and potion column. Stage 2 (§374): raw relic/event/encounter history
 each worsened a 5-seed ensemble slightly (`INCONCLUSIVE`, none adopted);

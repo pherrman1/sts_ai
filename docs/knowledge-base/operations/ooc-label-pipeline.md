@@ -834,6 +834,11 @@ With the A3 M1 MLP instead of XGBoost (ledger-06 §378,
 `tools/analyze_vwin_mlp_397.py`) no family qualified either; relics seen but
 not owned improved every MLP seed but the gain came from a few sources, and
 the MLP stays well behind the XGBoost baseline.
+#396 Stage 1 (ledger-06 §418, `tools/analyze_vwin_map_396.py`) ablated the
+12-field forward-map block (`fmD*`, `fmC*`, `curMapX/Y`) and, separately,
+`bossId` from the public-safe set: both `INCONCLUSIVE` (map removal +0.0050
+NLL [−0.0012, +0.0109], every seed worse; retraining null +0.0026). Both stay
+in the contract; richer map encodings are not justified by #334 evidence.
 
 ### Mixed-producer v_win refresh corpus
 
