@@ -18,7 +18,8 @@ old one; files are never overwritten. Run the commands in order:
     control    after `export_combat_transition_near_full.py` (STD.native, before any capability)
     teachers   after `combat_transition_shared_encoder_distill.py --teachers-only` (S17)
     distill    after `combat_transition_deepset_distill.py` (S18, no --control-dir)
-    downstream after `combat_transition_deepset_downstream.py prepare/fit/compare` (S19)
+    downstream after `combat_transition_deepset_downstream.py prepare/fit/compare` (S19);
+               a REJECTED compare needs `--override` (singleton-accuracy failures only)
     potion     after `combat_transition_deepset_potion.py` (S20)
     specialist after `combat_transition_deepset_potion_specialist.py --arms C` (S21)
     fast       after `export_combat_transition_deepset_stack.py` (FAST0.native)
@@ -464,7 +465,36 @@ def distill(pins_path: Path, folder: Path, out: Path) -> dict:
     return _advance(pins_path, "distill", values, {"results": receipt}, out)
 
 
-def downstream(pins_path: Path, folder: Path, out: Path) -> dict:
+OVERRIDABLE_DOWNSTREAM_FAILURE = "singleton exact-label accuracy drop exceeds 0.5pp"
+
+
+def downstream_override(qualification_path: Path, override_path: Path) -> str:
+    """Accept a REJECTED downstream compare only through a recorded override.
+
+    The override binds the exact qualification receipt and its failure list,
+    names who approved it and why, and may waive only singleton exact-label
+    accuracy failures; NLL, finite/legal and support failures are never waivable.
+    """
+    qualification, override = _json(qualification_path), _json(override_path)
+    if override.get("schema") != "ctm_gate_override_v1" or override.get("stage") != "downstream":
+        raise ValueError("override is not a ctm_gate_override_v1 for the downstream stage")
+    if override.get("qualificationSha256") != sha256(qualification_path):
+        raise ValueError("override does not bind this qualification.json")
+    if qualification["decision"] != "DEEPSET_DOWNSTREAM_REJECTED" or qualification.get("finiteAndLegal") is not True:
+        raise ValueError("override applies only to a finite/legal DEEPSET_DOWNSTREAM_REJECTED compare")
+    failures = qualification.get("failures") or []
+    if not failures or override.get("failures") != failures:
+        raise ValueError("override failures differ from the qualification failures")
+    if not all(f.endswith(OVERRIDABLE_DOWNSTREAM_FAILURE) for f in failures):
+        raise ValueError("override may waive only singleton exact-label accuracy failures")
+    if not all(isinstance(override.get(k), str) and override[k].strip() for k in ("approval", "reason")):
+        raise ValueError("override must name its approval and reason")
+    if not isinstance(override.get("evidence"), dict) or not override["evidence"]:
+        raise ValueError("override must carry its evidence")
+    return sha256(override_path)
+
+
+def downstream(pins_path: Path, folder: Path, out: Path, override: Path | None = None) -> dict:
     _load(pins_path, "downstream")
     representation = _json(folder / "representation.json")
     z = sha256(folder / "z_deepset.npy")
@@ -472,14 +502,17 @@ def downstream(pins_path: Path, folder: Path, out: Path) -> dict:
         raise ValueError("DeepSets representation differs from its receipt")
     head = sha256(folder / "downstream.pt")
     qualification = _json(folder / "qualification.json")
-    if qualification["decision"] != "DEEPSET_DOWNSTREAM_GO":
+    inputs = {"representation": sha256(folder / "representation.json"),
+              "qualification": sha256(folder / "qualification.json")}
+    if override is not None:
+        inputs["override"] = downstream_override(folder / "qualification.json", override)
+    elif qualification["decision"] != "DEEPSET_DOWNSTREAM_GO":
         raise ValueError(f"the DeepSets downstream head must pass compare (require GO, got {qualification['decision']})")
     if qualification["candidate"]["checkpointSha256"] != head:
         raise ValueError("downstream.pt differs from the qualified candidate")
     values = {f"{POTION}[candidateZ]": z, f"{POTION}[candidateRows]": representation["generatedRows"],
               EXPORT + "DOWNSTREAM_SHA": head}
-    return _advance(pins_path, "downstream", values, {"representation": sha256(folder / "representation.json"),
-                                                      "qualification": sha256(folder / "qualification.json")}, out)
+    return _advance(pins_path, "downstream", values, inputs, out)
 
 
 def potion(pins_path: Path, folder: Path, out: Path) -> dict:
@@ -543,6 +576,8 @@ def main(argv=None) -> None:
         p = sub.add_parser(name); p.add_argument("--pins", type=Path, required=True)
         p.add_argument(flag, dest="folder", type=Path, required=True)
         p.add_argument("--out", type=Path, required=True)
+        if name == "downstream":
+            p.add_argument("--override", type=Path, help="ctm_gate_override_v1 JSON accepting a REJECTED compare")
     p = sub.add_parser("check"); p.add_argument("--pins", type=Path, required=True)
     p.add_argument("--previous", type=Path)
     args = parser.parse_args(argv)
@@ -552,7 +587,8 @@ def main(argv=None) -> None:
     elif args.command == "check":
         result = check(args.pins, args.previous)
     else:
-        result = STEPS[args.command](args.pins, args.folder, args.out)
+        extra = dict(override=args.override) if args.command == "downstream" else {}
+        result = STEPS[args.command](args.pins, args.folder, args.out, **extra)
         result = dict(stages=[s["stage"] for s in result["stages"]], pending=len(result["pending"]))
     print(json.dumps(result, indent=1, sort_keys=True))
 

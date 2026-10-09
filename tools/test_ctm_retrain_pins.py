@@ -155,6 +155,27 @@ class TestCtmRetrainPins(unittest.TestCase):
                                                    candidate=dict(checkpointSha256=staged.sha256(head))))
             with self.assertRaisesRegex(ValueError, "require GO"):
                 staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
+            failure = "cards singleton exact-label accuracy drop exceeds 0.5pp"
+            rejected = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
+                                                              failures=[failure], candidate=dict(checkpointSha256=staged.sha256(head))))
+            override = dict(schema="ctm_gate_override_v1", stage="downstream", qualificationSha256=staged.sha256(rejected),
+                            failures=[failure], approval="test", reason="noise", evidence=dict(ci95=[-0.02, 0.01]))
+            for change, message in ((dict(qualificationSha256="x"), "does not bind"), (dict(failures=[]), "failures differ"),
+                                    (dict(reason=""), "approval and reason"), (dict(evidence={}), "evidence"),
+                                    (dict(stage="potion"), "downstream stage")):
+                with self.assertRaisesRegex(ValueError, message):
+                    staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(override, **change)))
+            nll = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
+                                                          failures=["joint NLL relative degradation exceeds 2%"],
+                                                          candidate=dict(checkpointSha256=staged.sha256(head))))
+            with self.assertRaisesRegex(ValueError, "only singleton"):
+                staged.downstream(d / "pins-8.json", s19, d / "pins-9.json", write(d / "override.json", dict(
+                    override, qualificationSha256=staged.sha256(nll), failures=["joint NLL relative degradation exceeds 2%"])))
+            rejected = write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_REJECTED", finiteAndLegal=True,
+                                                              failures=[failure], candidate=dict(checkpointSha256=staged.sha256(head))))
+            accepted = staged.downstream(d / "pins-8.json", s19, d / "pins-9-override.json",
+                                         write(d / "override.json", override))
+            self.assertEqual(accepted["stages"][-1]["inputs"]["override"], staged.sha256(d / "override.json"))
             write(s19 / "qualification.json", dict(decision="DEEPSET_DOWNSTREAM_GO", candidate=dict(checkpointSha256="other")))
             with self.assertRaisesRegex(ValueError, "qualified candidate"):
                 staged.downstream(d / "pins-8.json", s19, d / "pins-9.json")
