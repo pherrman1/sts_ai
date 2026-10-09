@@ -3798,6 +3798,17 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "cardstrengthprobe") {
+        if (argc != 7) {
+            std::cerr << "usage: one_combat cardstrengthprobe N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json ASCENSION\n";
+            return 2;
+        }
+        try {
+            cardStrengthProbe(std::stoi(argv[2]), argv[3], std::stoll(argv[4]), argv[5], std::stoi(argv[6]));
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "ooccfpilotgen") {
         if (argc < 7 || argc > 14) {
             std::cerr << "usage: one_combat ooccfpilotgen N_SEEDS OUT_PREFIX SEED_OFFSET TEACHER.json FUTURES [STATES_PER_SEED] [CARD_BOSSES] [GEN] [TYPES] [TARGET.json|-] [FUTURE_START] [ASCENSION]\n";
