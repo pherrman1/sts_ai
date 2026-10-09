@@ -20,9 +20,9 @@ class Tape:
 
 
 # A retrained union TEST split can lack a row for a pre-state exclusion (Path B TEST has no
-# pre_smoke_bomb_used row). The fail-closed check then runs on an allowed row mutated into it.
-SYNTHETIC_EXCLUSIONS={'smoke_bomb':lambda pre:pre['potions'].__setitem__(0,c.base._POTION_IDS['SMOKE_BOMB']),
-                      'pre_smoke_bomb_used':lambda pre:pre.__setitem__('smokeBombUsed',True)}
+# pre_smoke_bomb_used row). The fail-closed check then runs on an allowed row mutated into it; only
+# flags the native contract reads from RAW alone qualify (a potion edit would also need the visible input).
+SYNTHETIC_EXCLUSIONS={'pre_smoke_bomb_used':lambda pre:pre.__setitem__('smokeBombUsed',True)}
 
 
 def synthetic_exclusion(allowed,label):
@@ -77,6 +77,7 @@ def qualify(parent,artifact,probe,fixture,output):
             if why:
                 tape=Tape([]);fallback=sampler.sample_transition(pre,pi,tape)
                 if fallback.outcome!='FULL_SURROGATE_FALLBACK' or tape.used or not n['unsupportedNoDraw']:raise ValueError('fail-closed sampling parity')
+                if 'synthetic' in row and row['synthetic'] not in n['reason']:raise ValueError(f'synthetic {row["synthetic"]} fixture rejected for {n["reason"]}')
                 counts['failClosedFixtures']+=1;continue
             checks+=1;inputs=m.encode_visible(pi);z=m.hp_encoding(inputs);zp=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy();d=row['delta'];ending=row['ending'];maximum=row['maximum'];mask=row['mask'];consumed=row['consumed'];esc=row['escaped'];diag=n['diagnostics'];raw_z=z.cpu().numpy()[0]
             compare('survival',[m.survival(inputs)],[n['survival']]);compare('maxHP',m.max_hp(inputs),n['maxHp']);compare('hp',m.hp_distribution(z,d,pre['curHp'],maximum),n['hp']);compare('hpEncoding',raw_z,diag['hpEncoding']);compare('potionEncoding',zp[0],diag['potionEncoding'])
