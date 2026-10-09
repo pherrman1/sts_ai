@@ -73,7 +73,7 @@ Boss-reward card states can have a next-act map row, which is a leak. This
 affects 7 of 189 VALIDATION states. Excluding them gives CARD − V4 −0.44
 [−1.50, +0.50] (independent review), the same verdict.
 
-## Follow-up: correction on top of the teacher's pick (§410)
+## Follow-up: correction on top of the teacher's pick (§413)
 
 The plan, [PLAN-CORRECTION.md](PLAN-CORRECTION.md), was committed before
 fitting (`b7320e1c`). The script is `tools/a20_card_correction.py` at

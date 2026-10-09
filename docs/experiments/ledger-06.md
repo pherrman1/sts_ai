@@ -15629,7 +15629,7 @@ V4 −0.44 [−1.50, +0.50], the same verdict.
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
 
-## §410 — A20 card correction on top of the teacher's pick: offline, not shown (2026-10-09)
+## §413 — A20 card correction on top of the teacher's pick: offline, not shown (2026-10-09)
 
 **Question:** after §409, can a model that predicts only how much better each
 alternative card is than the teacher's pick, and switches only when that is
