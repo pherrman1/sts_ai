@@ -92,9 +92,10 @@ Fairy/Brew active-Tail states keep production's boundary behaviour, as offline.
   no 63M seed range: the only matches are hash fragments (`potion_decoder_v1` line 70, an offline-A/B JSON).
 * Smoke: `63009000` (one seed per arm, not pooled).
 * Units: 16 blocks of 8 seeds × 3 arms = 48 `bestbench` invocations, each through `tools/seed_guard.sh`.
-* Power (**Inference**). §384's MCTS arm won 56%. Assume 25–35% discordant pairs between the two CTM stacks
-  (unknown; §367's MCTS-vs-MCTS variant had 86 vs 83 wins). Then 128 pairs give 80% power only for differences of
-  about ±12–14 pp, and the 95% CI half-width is about ±8–10 pp. **NO_DIFFERENCE_DETECTED is not evidence of parity.**
+* Power (**Inference**, simulated exact McNemar at α 0.05, n = 128; pre-run review W1). §384's MCTS arm won 56%.
+  The discordance between the two CTM stacks is unknown (§384 MCTS vs off: 41%; flat10k vs learned: 31%). 80% power
+  needs a difference of about 13 pp at 25% discordant pairs and about 16 pp at 35%: **about 13–18 pp, depending on
+  discordance**. The 95% CI half-width is about ±8–10 pp. **NO_DIFFERENCE_DETECTED is not evidence of parity.**
 
 ## 4. Venue and cost
 
@@ -125,7 +126,7 @@ not a metric.
 
 ## 5. Pre-registered analysis and decision rule
 
-The analysis script is `live_ab_analyze.py` (sha256 `2d4e2ec396d89d04bcdc509990ead3b8437c8a918ce0f5667be97dd87a54db5f`, pasted in 7.2, stdlib + numpy). Its
+The analysis script is `live_ab_analyze.py` (sha256 `510ccf0dbb35c8caeb1203526a9e4aa8f41d29975eeb392d1e2731d9534d8d3c`, pasted in 7.2, stdlib + numpy). Its
 constants are part of this pre-registration.
 
 **Pairs.** These are the seeds with a result row in both `cand` and `prod`. A seed that fails or is missing in either
@@ -166,12 +167,23 @@ arm is dropped from the pair (stall handling, below). The `off` comparisons pair
 * A completed seed has no battle trace rows, or (MCTS arms) no MCTS trace row.
 * A won seed has a lost fight in its trace.
 * A duplicate seed, or a seed outside its unit.
+* **Unit exit status** (pre-run review B1). A crashed or killed process (segfault, abort, OOM kill) prints no failure
+  line, so the exit code in `<tag>.done` decides. These are integrity errors:
+  * a unit without `<tag>.done` or without `rc=` in it;
+  * rc 0 with any failure line or any seed lacking a row;
+  * rc 1 unless every failure line in the unit is a stall (`stall|depth bound`), or rc 1 with a seed that has neither
+    a row nor a failure line;
+  * any rc other than 0, 1 and 124 (crash, signal, startup failure).
+
+  rc 124 (the 3 h `timeout` killed the unit) is not an error. Its unfinished seeds are dropped and listed under
+  `census.<arm>.timeouts`. A seed missing from a unit that did not time out is always an integrity error, never a drop.
 
 **Stall handling** (as in the Path B cloud runs, RESUME.md):
 * A seed whose failure message matches `stall|depth bound` (Silver stall or depth bound) is **dropped**. It is listed
   under `census.<arm>.stalls`, and the pair is dropped.
-* A seed with neither a row nor a failure line is dropped and listed under `census.<arm>.missing`. This covers a unit
-  killed by the 3 h per-unit timeout, or a crashed process.
+* A seed with neither a row nor a failure line is dropped only if its unit timed out (rc 124). It is listed under
+  `census.<arm>.missing` and `census.<arm>.timeouts`. In any other unit such a seed is a crash, and the verdict is
+  INVALID (integrity errors above).
 * No seed is rerun with changed settings and no replacement seeds are drawn.
 * A unit interrupted by a reboot is rerun whole from scratch by the same launch command. Its partial files are moved to
   `run/aborted-<UTC>/` and the restart is logged in `logs/RESTARTS.txt`. Per-seed results are deterministic, so this
@@ -194,6 +206,9 @@ arm is dropped from the pair (stall handling, below). The `off` comparisons pair
    seeds. `cand − off` answers whether the refreshed CTM closes the §384 gap. Reading (not a verdict): only a
    `cand − off` CI lower bound > 0 would justify a separately pre-registered OOC-MCTS-on confirmation.
 7. CPU s/run per arm and the time ratios.
+8. Stall sensitivity (`sensitivity_stall_as_loss`; pre-run review note 1). A stalled seed counts as a loss for the
+   stalling arm instead of being dropped. The row reports Δwin with its CI, the discordant counts and McNemar p.
+   Stall drops depend on the outcome, because the fights differ by arm. This row shows whether they matter.
 
 **Expected values** (**Inference**, for plausibility only): `prod` ≈ 56% wins and `off` ≈ 78% (§384). The candidate
 should hold a Smoke Bomb at the start of a few percent of fights. Offline, Path B TEST had about 0.8% held-Smoke rows.
@@ -333,7 +348,8 @@ constants below are part of the pre-registration; do not edit them after the coh
 Reads bestbench outputs only; runs no seeds. stdlib + numpy.
 
 Run directory layout (one file set per unit = arm x block of seeds):
-  <arm>-<lo>.csv  .csv.meta.json  .log  .trace.jsonl  [.mcts.csv  .mcts.csv.support.jsonl]
+  <arm>-<lo>.csv  .csv.meta.json  .log  .trace.jsonl  .done  [.mcts.csv  .mcts.csv.support.jsonl]
+  <tag>.done is written by run_unit.sh: "tag=... rc=N start=... end=..." (rc of timeout+seed_guard+bestbench)
   arms: prod (OOC MCTS + production CTM), cand (OOC MCTS + candidate CTM), off (MCTS off, flat 10k)
 
 usage:
@@ -368,11 +384,13 @@ PROD_FAST = "selfplay/models/combat_transition_deepsets_lizard_t2.native"
 PROD_STD = "selfplay/models/combat_transition_near_full_except_smoke_v2.native"
 BOSS_FLOORS = {16, 33, 50}       # A0 act 1-3 boss floors (cross-check of the trace)
 STALL_RX = re.compile(r"stall|depth bound")
+TIMEOUT_RC = 124                 # `timeout 3h` killed the unit: its unfinished seeds are dropped and listed
 # -----------------------------------------------------------------
 ARMS = ("prod", "cand", "off")
 MCTS_ARMS = ("prod", "cand")
 CSV_HEADER = ["seed", "won", "floor", "act", "hpEnd", "maxHp", "fightsLost", "deathCombat", "deathEncounter", "sec"]
 FAIL_RX = re.compile(r"^\[bestbench-seed-failure\] seed=(\d+) error=(.*)$")
+RC_RX = re.compile(r"(?:^|\s)rc=(-?\d+)(?:\s|$)")
 MCTS_SUM = ("oocDecisions", "mctsOwned", "mctsFallback", "unsupportedCombats", "mctsSupportAborts",
             "imaginedCombats", "transitionSamples", "simulations", "hybridFallbackPreparations",
             "hybridFastSupportFailures", "hybridFallbackSupportFailures", "continuationLimitAborts")
@@ -395,7 +413,8 @@ def load_unit(run: Path, arm: str, lo: int, n: int, git_sha: str, errors: list) 
     """One unit's rows, failures, traces, and integrity errors (appended to errors)."""
     base = run / f"{arm}-{lo}"
     tag = f"{arm}-{lo}"
-    out = {"rows": {}, "failures": {}, "battles": {}, "mcts": {}, "support": {}, "present": False}
+    out = {"rows": {}, "failures": {}, "battles": {}, "mcts": {}, "support": {}, "present": False,
+           "timeout": None, "rc": None}
     csv_path = Path(str(base) + ".csv")
     if not csv_path.exists():
         errors.append(f"{tag}: missing results CSV")
@@ -443,6 +462,27 @@ def load_unit(run: Path, arm: str, lo: int, n: int, git_sha: str, errors: list) 
         mm = FAIL_RX.match(line)
         if mm:
             out["failures"][int(mm.group(1))] = mm.group(2)
+    # unit exit status: a crashed or killed process prints no failure line, so the rc decides
+    done_path = Path(str(base) + ".done")
+    rc_m = RC_RX.search(done_path.read_text()) if done_path.exists() else None
+    if rc_m is None:
+        errors.append(f"{tag}: missing .done or no rc in it")
+    else:
+        rc = out["rc"] = int(rc_m.group(1))
+        missing = sorted(expected - set(out["rows"]) - set(out["failures"]))
+        nonstall = [s for s, m in out["failures"].items() if not STALL_RX.search(m)]
+        if rc == TIMEOUT_RC:
+            out["timeout"] = {"unit": tag, "missingSeeds": missing}
+        elif rc == 0:
+            if out["failures"] or missing:
+                errors.append(f"{tag}: rc=0 but {len(out['failures'])} failure lines and {len(missing)} missing seeds")
+        elif rc == 1:
+            if not out["failures"] or nonstall:
+                errors.append(f"{tag}: rc=1 needs only stall failure lines (stall {len(out['failures']) - len(nonstall)}, other {len(nonstall)})")
+            if missing:
+                errors.append(f"{tag}: rc=1 with {len(missing)} seeds lacking a row and a failure line (crash)")
+        else:
+            errors.append(f"{tag}: unit rc={rc} (crash, signal or startup failure); missing seeds {missing}")
     banner = [l for l in text.splitlines() if l.startswith("[live OOC MCTS ON ")]
     cand_line = f"[ctm-research-candidate] candidate_id={CANDIDATE_ID}" in text
     if arm == "off":
@@ -497,12 +537,14 @@ def load_unit(run: Path, arm: str, lo: int, n: int, git_sha: str, errors: list) 
 
 def load_arm(run: Path, arm: str, a) -> dict:
     errors: list[str] = []
-    arm_d = {"rows": {}, "failures": {}, "battles": {}, "mcts": {}, "support": {}, "errors": errors}
+    arm_d = {"rows": {}, "failures": {}, "battles": {}, "mcts": {}, "support": {}, "errors": errors, "timeouts": []}
     for lo in unit_los(a.seed_lo, a.seed_count, a.block):
         n = min(a.block, a.seed_lo + a.seed_count - lo)
         u = load_unit(run, arm, lo, n, a.git_sha, errors)
         for k in ("rows", "failures", "battles", "mcts", "support"):
             arm_d[k].update(u[k])
+        if u["timeout"]:
+            arm_d["timeouts"].append(u["timeout"])
     for s in arm_d["rows"]:
         if s in arm_d["failures"]:
             errors.append(f"{arm}: seed {s} has both a row and a failure line")
@@ -577,7 +619,8 @@ def build_report(a) -> dict:
         other = {s: m for s, m in d["failures"].items() if not STALL_RX.search(m)}
         missing = sorted(expected - set(d["rows"]) - set(d["failures"]))
         census[arm] = {"rows": len(d["rows"]), "stalls": {str(s): m for s, m in sorted(stalls.items())},
-                       "otherFailures": {str(s): m for s, m in sorted(other.items())}, "missing": missing}
+                       "otherFailures": {str(s): m for s, m in sorted(other.items())}, "missing": missing,
+                       "timeouts": d["timeouts"]}
         if other:
             errors.append(f"{arm}: {len(other)} non-stall seed failures (see census)")
         dropped[arm] = set(d["failures"]) | set(missing)
@@ -634,6 +677,16 @@ def build_report(a) -> dict:
     if verdict != "INVALID" and len(primary["droppedPairs"]) > MAX_DROPPED_PAIRS:
         verdict += "_PROVISIONAL"
 
+    # descriptive sensitivity: a stalled seed counts as a loss for the stalling arm (not part of the verdict)
+    stalled = {arm: {s for s, m in data[arm]["failures"].items() if STALL_RX.search(m)} for arm in MCTS_ARMS}
+    sens_seeds = sorted(s for s in expected
+                        if all(s in data[arm]["rows"] or s in stalled[arm] for arm in MCTS_ARMS))
+    won = {arm: np.array([data[arm]["rows"][s]["won"] if s in data[arm]["rows"] else 0 for s in sens_seeds])
+           for arm in MCTS_ARMS}
+    sb, sc = int(((won["cand"] == 1) & (won["prod"] == 0)).sum()), int(((won["cand"] == 0) & (won["prod"] == 1)).sum())
+    sensitivity = {"rule": "stall counts as a loss for the stalling arm", "pairs": len(sens_seeds),
+                   "win": boot_ci(won["cand"] - won["prod"]), "discordant": [sb, sc], "mcnemarP": mcnemar_exact(sb, sc)}
+
     # secondaries (descriptive)
     ps = pairs("cand", "prod")
     sec = {"perArm": {}, "bossEntryHp": {}, "bossDeathCrossCheck": {}}
@@ -683,7 +736,7 @@ def build_report(a) -> dict:
             "constants": {k: v for k, v in globals().items() if k.isupper() and isinstance(v, (int, float, str))
                           and k not in ("SCHEMA",)},
             "verdict": verdict, "flags": flags, "integrityErrors": errors, "census": census,
-            "primary_cand_minus_prod": primary,
+            "primary_cand_minus_prod": primary, "sensitivity_stall_as_loss": sensitivity,
             "descriptive": {"cand_minus_off": compare("cand", "off"), "prod_minus_off": compare("prod", "off")},
             "secondary": sec}
 
@@ -751,6 +804,8 @@ def _write_unit(run: Path, arm: str, lo: int, n: int, git_sha: str, outcome, fai
         for r in rows:
             f.write(",".join(map(str, r)) + "\n")
     Path(str(base) + ".log").write_text("\n".join(log) + "\nBEST win%=50\n")
+    rc = 1 if any(fail and s in fail for s in range(lo, lo + n)) else 0
+    Path(str(base) + ".done").write_text(f"tag={arm}-{lo} rc={rc} start=x end=x\n")
     with open(str(base) + ".trace.jsonl", "w") as f:
         for t in trace:
             f.write(json.dumps(t) + "\n")
@@ -806,6 +861,30 @@ def selftest() -> int:
         assert results["stall"]["primary_cand_minus_prod"]["pairs"] == 127
         assert results["stall"]["primary_cand_minus_prod"]["droppedPairs"] == [63000003]
         assert results["other"]["verdict"] == "INVALID"
+        sens = results["stall"]["sensitivity_stall_as_loss"]
+        assert sens["pairs"] == 128 and sens["discordant"][0] + sens["discordant"][1] >= 28
+        # crash: a unit's process dies after 3 of 8 seeds (no failure lines) -> INVALID
+        def truncate(run, tag, keep, rc):
+            p = run / f"{tag}.csv"
+            p.write_text("".join(p.read_text().splitlines(True)[:1 + keep]))
+            (run / f"{tag}.done").write_text(f"tag={tag} rc={rc} start=x end=x\n")
+        for name, rc, want in [("crash", 139, "INVALID"), ("crash1", 1, "INVALID"), ("crash0", 0, "INVALID"),
+                               ("timeout", 124, "NO_DIFFERENCE_DETECTED")]:
+            run = Path(td) / name
+            run.mkdir()
+            _synth(run, 63000000, 128, 8, sha, 0.56, 0.56, 7)
+            truncate(run, "cand-63000016", 3, rc)
+            rep_ = build_report(ns(run_dir=str(run), seed_lo=63000000, seed_count=128, block=8, git_sha=sha))
+            assert rep_["verdict"] == want, (name, rep_["verdict"], rep_["integrityErrors"])
+            results[name] = rep_
+        t = results["timeout"]
+        assert t["census"]["cand"]["timeouts"] == [{"unit": "cand-63000016", "missingSeeds": list(range(63000019, 63000024))}]
+        assert t["primary_cand_minus_prod"]["pairs"] == 123
+        # a missing .done is INVALID
+        (Path(td) / "equal" / "off-63000008.done").unlink()
+        assert build_report(ns(run_dir=str(Path(td) / "equal"), seed_lo=63000000, seed_count=128, block=8,
+                               git_sha=sha))["verdict"] == "INVALID"
+        (Path(td) / "equal" / "off-63000008.done").write_text("tag=off-63000008 rc=0 start=x end=x\n")
         r = results["equal"]
         assert r["integrityErrors"] == [], r["integrityErrors"]
         pa = r["secondary"]["perArm"]
@@ -864,7 +943,7 @@ def main() -> int:
 if __name__ == "__main__":
     sys.exit(main())
 LIVE_AB_PY
-sha256sum $LAB/live_ab_analyze.py        # expect 2d4e2ec396d89d04bcdc509990ead3b8437c8a918ce0f5667be97dd87a54db5f
+sha256sum $LAB/live_ab_analyze.py        # expect 510ccf0dbb35c8caeb1203526a9e4aa8f41d29975eeb392d1e2731d9534d8d3c
 python3 -I $LAB/live_ab_analyze.py selftest | tail -1      # expect: selftest OK
 ```
 
