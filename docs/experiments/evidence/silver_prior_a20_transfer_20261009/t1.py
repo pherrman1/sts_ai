@@ -70,13 +70,22 @@ def evaluate(models, F, y, metas, acts, owner, roots, idx, rng):
             agree = int(np.argmax(v2s)) == best
         share = vis / max(vis.sum(), 1)
         rec = {"seed": metas[r]["seed"], "act": metas[r]["act"], "room": metas[r]["room"],
-               "enc": metas[r]["encounter"], "agree": agree}
+               "enc": metas[r]["encounter"], "agree": agree,
+               "variant": metas[r]["variant"], "floor": metas[r]["floor"]}
         for name in models:
             s = np.array([z[name][pos[a]] for a in a_list])
             p = np.exp(s - s.max()); p /= p.sum()
             rec[name] = {"top1": int(np.argmax(s)) == best,
                          "xent": float(-(share * np.log(np.maximum(p, 1e-12))).sum())}
         recs.append(rec)
+    # A20 second boss: the later of two Act-3 boss floors within one run.
+    floors = {}
+    for rec in recs:
+        if rec["act"] == 3 and rec["room"] == "BOSS":
+            floors.setdefault((rec["variant"], rec["seed"]), set()).add(rec["floor"])
+    for rec in recs:
+        f = floors.get((rec["variant"], rec["seed"]), set())
+        rec["secondBoss"] = rec["act"] == 3 and rec["room"] == "BOSS" and len(f) == 2 and rec["floor"] == max(f)
     return recs
 
 
@@ -124,6 +133,7 @@ def main(a0_dir, a20_dir, a0_model, out):
         **{f"act{a}": summarize(recs, names, rng, lambda r, a=a: r["act"] == a) for a in (1, 2, 3)},
         "boss": summarize(recs, names, rng, lambda r: r["room"] == "BOSS"),
         "act3boss": summarize(recs, names, rng, lambda r: r["room"] == "BOSS" and r["act"] == 3),
+        "secondBoss": summarize(recs, names, rng, lambda r: r["secondBoss"]),
     }
     recs0 = evaluate(models, A0[0], A0[1], A0[2], A0[3], A0[4], A0[5], te0, rng)
     report["a0Test"] = {"all": summarize(recs0, names, rng),

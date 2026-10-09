@@ -15288,20 +15288,24 @@ written before any corpus row existed.
 - Corpus: 237 of 240 units, 2,133 runs, 18,553 fights, 310,766 roots, 0
   invalid fights. Three units were dropped: one seed each stalled for over an
   hour in the label searches (seeds 60002492, 60002631, 60000997).
-- A20 test (57,115 roots, 428 seeds): A0 62.8%, A20 64.9%, **Mixed 65.4%,
-  +2.6 pp [+2.2, +2.9]** vs A0. On roots where both 10k searches agree:
-  70.9 / 73.0 / 73.8%.
-- By act, Mixed − A0: Act 1 +3.0, Act 2 +1.7, Act 3 −0.1 [−2.1, +1.6]
-  (2,502 roots, 17 seeds). A20-only is worse than A0 in Act 3 (−2.6).
-- A0 test (descriptive): Mixed +0.7 pp [+0.3, +1.0] vs A0.
-- A20 runs are short: 9.8 fights per run in the smoke vs 21.4 at A0, with 72%
-  of fights in Act 1.
+- A20 test (57,115 roots, 428 seeds): A0 62.8%, A20 64.9%, **Mixed 65.3%,
+  +2.5 pp [+2.1, +2.8]** vs A0. On roots where both 10k searches agree:
+  70.9 / 73.0 / 73.6%.
+- By act, Mixed − A0: Act 1 +3.0, Act 2 +1.4, Act 3 −0.6 [−2.6, +1.1]
+  (2,502 roots, 17 seeds). A20-only is worse than A0 in Act 3 (−2.6). A20
+  second boss (descriptive, 174 roots, 5 seeds): Mixed +2.3 [−6.2, +10.7].
+- A0 test (descriptive): Mixed +0.6 pp [+0.2, +1.0] vs A0.
+- A20 runs are short: 8.7 fights per run vs 21.4 at A0; in the smoke, 72% of
+  fights were in Act 1.
+- Correction after review: a first run was missing two A0 units' features
+  (+2.6 [+2.2, +2.9]); the numbers above are the rerun on complete data.
 
-**Interpretation (Inference):** A0-trained priors predict A20 Silver root
-choices about as well as at A0 (62.8% here, 58.9% on A0 test). The A20
-gain is concentrated in Act 1, where A20 data is plentiful. Part of it is
-probably training-set size: Mixed has 2.6x the A0 arm's roots and also helps
-A0. A20 late-game coverage is too thin to say anything about A20 bosses.
+**Interpretation (Inference):** the A20-specific gain is small (+2.5 pp) and
+sits in Act 1, where A20 data is plentiful. Part of it is probably
+training-set size: Mixed has 2.6x the A0 arm's roots and also helps A0.
+Absolute accuracy is not comparable across ascensions (75% of A20 test roots
+are Act 1, where every arm scores higher). A20 late-game coverage is too thin
+to say anything about A20 bosses.
 
 **Decision:** no A20-specific prior; T2 not run; no code or default change.
 The A20 rows can be pooled as extra training data for prior or encoder work.
