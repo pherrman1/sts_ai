@@ -121,6 +121,16 @@ Attention and the DeepSets artifacts:
   It refuses a pair stamped against a different standard artifact and
   production-promoted inputs; the loader refuses a pair that disagrees on
   `escape`/`writhingRitual` (CTest `ctm_candidate_tool`).
+- A retrained standard export loads in C++ only stamped, so native parity
+  (`qualify_combat_transition_near_full.py`) and the runtime `support-only`
+  probe run on STD1 with the interim manifest's environment variables set (the
+  probe subprocess inherits them). When the union TEST split lacks a row for a
+  pre-state exclusion (`smoke_bomb`, `pre_smoke_bomb_used`), qualify mutates an
+  allowed row into it and lists it under `syntheticExclusionFixtures`;
+  `writhing_ritual_intersection` still needs a real row.
+  `tools/ctm_support_census_check.py --runtime SUPPORT.jsonl --census
+  final-support-census-v1.json` checks that the runtime support over the union
+  corpus has the census row count, supported count and supported-index digest.
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
