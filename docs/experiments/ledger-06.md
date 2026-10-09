@@ -15263,3 +15263,50 @@ needs its own go.
 
 **Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
 [environment-variable table](../knowledge-base/operations/environment-variables.md).
+
+
+## §403 — A20 synthetic Silver corpus: A0 root prior transfers (T1 not passed) (2026-10-09)
+
+**Question:** Philipp asked for the §397 synthetic Silver data at A20 instead
+of A0. Do A20 Silver root choices need A20 training data, or does the A0
+prior already predict them?
+
+**Design:** [PREREG-T1.md](evidence/silver_prior_a20_transfer_20261009/PREREG-T1.md),
+written before any corpus row existed.
+- **Corpus:** the §397 generator unchanged (`450376c8`, same binary sha and
+  teacher), ASC = 20. Runs play to the end, including the A20 second Act-3
+  boss. Seeds natural `60000000..60001079`, perturbed `60002000..60003079`,
+  20 cloud workers; smoke `60009000..60009017`.
+- **Arms** (prior v2 recipe, §400): A0 = the §400 `prior-v2.txt`; A20 =
+  trained on A20 folds 0-2; Mixed = A0 1x corpus + A20 folds 0-2. Validation
+  on A20 fold 3, test on A20 fold 4 (folds by seed).
+- **Rule:** if A20 or Mixed beats A0 by ≥ 3 pp top-1 vs the 10k pick, with the
+  seed-clustered 95% CI excluding 0, run a replay gate at A20; otherwise A0
+  transfers and there is no A20-specific prior.
+
+**Result: T1 not passed.**
+- Corpus: 237 of 240 units, 2,133 runs, 18,553 fights, 310,766 roots, 0
+  invalid fights. Three units were dropped: one seed each stalled for over an
+  hour in the label searches (seeds 60002492, 60002631, 60000997).
+- A20 test (57,115 roots, 428 seeds): A0 62.8%, A20 64.9%, **Mixed 65.4%,
+  +2.6 pp [+2.2, +2.9]** vs A0. On roots where both 10k searches agree:
+  70.9 / 73.0 / 73.8%.
+- By act, Mixed − A0: Act 1 +3.0, Act 2 +1.7, Act 3 −0.1 [−2.1, +1.6]
+  (2,502 roots, 17 seeds). A20-only is worse than A0 in Act 3 (−2.6).
+- A0 test (descriptive): Mixed +0.7 pp [+0.3, +1.0] vs A0.
+- A20 runs are short: 9.8 fights per run in the smoke vs 21.4 at A0, with 72%
+  of fights in Act 1.
+
+**Interpretation (Inference):** A0-trained priors predict A20 Silver root
+choices about as well as at A0 (62.8% here, 58.9% on A0 test). The A20
+gain is concentrated in Act 1, where A20 data is plentiful. Part of it is
+probably training-set size: Mixed has 2.6x the A0 arm's roots and also helps
+A0. A20 late-game coverage is too thin to say anything about A20 bosses.
+
+**Decision:** no A20-specific prior; T2 not run; no code or default change.
+The A20 rows can be pooled as extra training data for prior or encoder work.
+
+**Evidence:** [README, prereg, script, report, per-unit hashes](evidence/silver_prior_a20_transfer_20261009/README.md).
+
+**Knowledge impact:** this entry only. No maintained interface changed: the A20
+corpus uses the existing `silversynthgen` ASC argument.

@@ -1,0 +1,1898 @@
+[
+ {
+  "unit": "w00/natural-60000000-9",
+  "rowsSha256": "ee71d9d04851af18df0c75ba60b2b459ddd9e9ee05d698e0c866c68357ca9927",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1141,
+  "leaves": 3025
+ },
+ {
+  "unit": "w00/natural-60000009-9",
+  "rowsSha256": "56327dc816cb8b82cac8eb532a2d4a0c17c9255bb3f1851ab9cabc3770c05dbf",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 1076,
+  "leaves": 2775
+ },
+ {
+  "unit": "w00/natural-60000018-9",
+  "rowsSha256": "3f14adc5ecb4d3c430d88a069ca29f1b1af184de536e0386c2f8f070e6b75bf4",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1313,
+  "leaves": 3403
+ },
+ {
+  "unit": "w00/natural-60000027-9",
+  "rowsSha256": "8cad4a4ea25e31a3e103970ae4b06384db17a5ffdaab91f1d691870d91e44a55",
+  "completedSeeds": 9,
+  "fights": 97,
+  "roots": 1586,
+  "leaves": 4564
+ },
+ {
+  "unit": "w00/natural-60000036-9",
+  "rowsSha256": "a279407ee06b51f93e62dacb0ffda4bfeaf639025bee959327f94ce6d31de12f",
+  "completedSeeds": 9,
+  "fights": 100,
+  "roots": 2009,
+  "leaves": 5939
+ },
+ {
+  "unit": "w00/natural-60000045-9",
+  "rowsSha256": "0c9d6f284a555d0783594b33bb410ecddad2280a6dad0a0bc78d9a9afd92f265",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1255,
+  "leaves": 3276
+ },
+ {
+  "unit": "w00/perturbed-60002000-9",
+  "rowsSha256": "4e4c991dca589113028f5cf95226c83282209e5533148967b82e1ca473ea063b",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1363,
+  "leaves": 3535
+ },
+ {
+  "unit": "w00/perturbed-60002009-9",
+  "rowsSha256": "88a52ab0cfb0c0364a4318b4bc6b7635545a9719cbbc5bf52ac279ef9cf443ce",
+  "completedSeeds": 9,
+  "fights": 60,
+  "roots": 952,
+  "leaves": 2377
+ },
+ {
+  "unit": "w00/perturbed-60002018-9",
+  "rowsSha256": "3385d29ac93c3d4a4ff85e41d284e73be05246aaeff337d810c8ce0cf63fec9b",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 962,
+  "leaves": 2538
+ },
+ {
+  "unit": "w00/perturbed-60002027-9",
+  "rowsSha256": "9de09782beb61ba1afc36fec48b8872a377c31f5f402db28b5e0ca32d04eadef",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1297,
+  "leaves": 3620
+ },
+ {
+  "unit": "w00/perturbed-60002036-9",
+  "rowsSha256": "9cabe7ade2833dbdfa5519c0814385a433a5d872c66920bb83416f7da73cbc08",
+  "completedSeeds": 9,
+  "fights": 66,
+  "roots": 1102,
+  "leaves": 3089
+ },
+ {
+  "unit": "w00/perturbed-60002045-9",
+  "rowsSha256": "bab4f867f444197d6f48c71188123724b05f2dd7af5ddfc256bb48263254215d",
+  "completedSeeds": 9,
+  "fights": 87,
+  "roots": 1379,
+  "leaves": 3891
+ },
+ {
+  "unit": "w01/natural-60000054-9",
+  "rowsSha256": "27d7890f4331cb3f1cf69b90e520a4e0b91031c3510b2884b86122fa01347727",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1363,
+  "leaves": 3645
+ },
+ {
+  "unit": "w01/natural-60000063-9",
+  "rowsSha256": "691656f074529e05bcf2324d2ab764281dfab95f67e493a1237e8b7714d4ac07",
+  "completedSeeds": 9,
+  "fights": 93,
+  "roots": 1514,
+  "leaves": 4142
+ },
+ {
+  "unit": "w01/natural-60000072-9",
+  "rowsSha256": "4d3e85eeffddc1c90afbaec1761ce005493be810d701bb5bdba1f9ea8f73be25",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1166,
+  "leaves": 3052
+ },
+ {
+  "unit": "w01/natural-60000081-9",
+  "rowsSha256": "4b13230f6fb33843fabf76763442cbd83b56cc41d18071c9e0cca9b368f6b69a",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1370,
+  "leaves": 3839
+ },
+ {
+  "unit": "w01/natural-60000090-9",
+  "rowsSha256": "1923182bdf364ad8ca7174e99ad0bf4908bbba1bfb0594bc2e34e1c510cc92cc",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1454,
+  "leaves": 4028
+ },
+ {
+  "unit": "w01/natural-60000099-9",
+  "rowsSha256": "2bbf618a163291f8730ff17937917c84a7a10fbc90361b9559c3d6527c9154b2",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1315,
+  "leaves": 3447
+ },
+ {
+  "unit": "w01/perturbed-60002054-9",
+  "rowsSha256": "1b9e9b68f24fefe5a89640ed3c3b1e4ec0051db8f19ca6f8ce03130af7ba83f1",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1183,
+  "leaves": 3096
+ },
+ {
+  "unit": "w01/perturbed-60002063-9",
+  "rowsSha256": "e50faed625af83eca69ea15d7ec92c2db976a2e2f3058f9564c4606fae990331",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1006,
+  "leaves": 2643
+ },
+ {
+  "unit": "w01/perturbed-60002072-9",
+  "rowsSha256": "9e494ea5879dbf923f2599ae12e3fcd03de92916902c1c2e9801044ab2f658cb",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 917,
+  "leaves": 2314
+ },
+ {
+  "unit": "w01/perturbed-60002081-9",
+  "rowsSha256": "74146fcb5180868140d9de77e68a8bc47d8ef17d12c92671ac98108f202fa8e5",
+  "completedSeeds": 9,
+  "fights": 87,
+  "roots": 1460,
+  "leaves": 4074
+ },
+ {
+  "unit": "w01/perturbed-60002090-9",
+  "rowsSha256": "cb70d85a1f3c7c20ab84aefa9d22bd5183a900a30e6e098257a87abf13c975c8",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 907,
+  "leaves": 2370
+ },
+ {
+  "unit": "w01/perturbed-60002099-9",
+  "rowsSha256": "854fb66f7ec3bae2997ff5de0b4cb5ae6ffccc93b5f41d5e3c88cdfedc0d9746",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 952,
+  "leaves": 2377
+ },
+ {
+  "unit": "w02/natural-60000108-9",
+  "rowsSha256": "a6f01a33bfbf55fe170ff84338e1022e1e33855058e4e3e28718ea0df3b8a8f8",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1426,
+  "leaves": 4245
+ },
+ {
+  "unit": "w02/natural-60000117-9",
+  "rowsSha256": "2b8acccc5b8b7c482fec60c6cd844f4c5797d81073a3c68ae4b3b73fb33068f6",
+  "completedSeeds": 9,
+  "fights": 66,
+  "roots": 1174,
+  "leaves": 3187
+ },
+ {
+  "unit": "w02/natural-60000126-9",
+  "rowsSha256": "091d1180d9493cad678e7952c4aa251fb049b49745edc3b6cf055fe89ae96792",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1274,
+  "leaves": 3423
+ },
+ {
+  "unit": "w02/natural-60000135-9",
+  "rowsSha256": "92bc7d0e61183c50965f48e68026c3a88fa7f4bfd7a2457e151a009ee0743d27",
+  "completedSeeds": 9,
+  "fights": 98,
+  "roots": 1818,
+  "leaves": 5229
+ },
+ {
+  "unit": "w02/natural-60000144-9",
+  "rowsSha256": "0c926fccb8805b4fa2222ac5b1f244bf186e19b74cdca1c3f58f0f6a0cf66d73",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1145,
+  "leaves": 3110
+ },
+ {
+  "unit": "w02/natural-60000153-9",
+  "rowsSha256": "c0149bd70a971236dace7232cb392c70020c4780d6a38b733f68988289e3766f",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1308,
+  "leaves": 3476
+ },
+ {
+  "unit": "w02/perturbed-60002108-9",
+  "rowsSha256": "8a8b5b9f78f00ba8b905a14b847fe2367e2b24da17baaa1bf4d44e74e03a08d0",
+  "completedSeeds": 9,
+  "fights": 62,
+  "roots": 868,
+  "leaves": 2164
+ },
+ {
+  "unit": "w02/perturbed-60002117-9",
+  "rowsSha256": "5c1e912a0bc4ad8317e4d672ec8d82be9c33749645bb1b9c09b0cd1faa92dc87",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1164,
+  "leaves": 3276
+ },
+ {
+  "unit": "w02/perturbed-60002126-9",
+  "rowsSha256": "fa61f165e5d029e818356e91000a906ed65b651c805ee5a7c26331fd94756995",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1152,
+  "leaves": 2993
+ },
+ {
+  "unit": "w02/perturbed-60002135-9",
+  "rowsSha256": "61fd96f5a5dce1e084b97ce7feda72db173a4f690c4ca8e4a12d2b7aabff369e",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1017,
+  "leaves": 2647
+ },
+ {
+  "unit": "w02/perturbed-60002144-9",
+  "rowsSha256": "2473156d2e395d75c25920ddbee40f5d1fbd16c2771bd1e4541e43f66bd90cd9",
+  "completedSeeds": 9,
+  "fights": 49,
+  "roots": 827,
+  "leaves": 2236
+ },
+ {
+  "unit": "w02/perturbed-60002153-9",
+  "rowsSha256": "fda6bd1ae08ffa9295a9b5c1f001651ada48475e4acb07e2f70e7f30e96124fb",
+  "completedSeeds": 9,
+  "fights": 111,
+  "roots": 1836,
+  "leaves": 5391
+ },
+ {
+  "unit": "w03/natural-60000162-9",
+  "rowsSha256": "bc3019491122d1327a0860702272608a9df3dd08669e94fcd04d67b1228afd03",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1201,
+  "leaves": 2794
+ },
+ {
+  "unit": "w03/natural-60000171-9",
+  "rowsSha256": "9542fe0c699ee490e5dd854e7933eef9f120463ea63c67a643ed533b127e41d4",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1092,
+  "leaves": 2920
+ },
+ {
+  "unit": "w03/natural-60000180-9",
+  "rowsSha256": "06f3b06031290ebc3b59a7ee74ec85b5f4891d6224065944e8bf5d0ace0d81cb",
+  "completedSeeds": 9,
+  "fights": 86,
+  "roots": 1731,
+  "leaves": 5099
+ },
+ {
+  "unit": "w03/natural-60000189-9",
+  "rowsSha256": "3aa6b97b7c6d8bc135f765e057f490f8b0d23c6428136e5b55972fee68dfabd9",
+  "completedSeeds": 9,
+  "fights": 83,
+  "roots": 1347,
+  "leaves": 3389
+ },
+ {
+  "unit": "w03/natural-60000198-9",
+  "rowsSha256": "d851361589d12c65ef6f3beac6955124d5ffacbd581637a0917cffa2830e7635",
+  "completedSeeds": 9,
+  "fights": 94,
+  "roots": 1437,
+  "leaves": 3946
+ },
+ {
+  "unit": "w03/natural-60000207-9",
+  "rowsSha256": "ffc47fceb76aaf512d5e7246b7dbcbb800834bde66d0ae3d3a6bf9310fd56bca",
+  "completedSeeds": 9,
+  "fights": 84,
+  "roots": 1266,
+  "leaves": 3274
+ },
+ {
+  "unit": "w03/perturbed-60002162-9",
+  "rowsSha256": "0d49cf3a3b9dc9f950596b06a2981b5ac9950996d77709f7d4a3f23cae9ee9b2",
+  "completedSeeds": 9,
+  "fights": 109,
+  "roots": 1969,
+  "leaves": 5922
+ },
+ {
+  "unit": "w03/perturbed-60002171-9",
+  "rowsSha256": "a45cddb7dfdcfce3d09369349acd5ac25ece0f4bdb6d71c50c04014125a1980c",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1482,
+  "leaves": 4342
+ },
+ {
+  "unit": "w03/perturbed-60002180-9",
+  "rowsSha256": "5d8a8965793634fbcb3c5fa2af19e4132c14b09ae024885fa6331b310f8f89b3",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 1043,
+  "leaves": 2872
+ },
+ {
+  "unit": "w03/perturbed-60002189-9",
+  "rowsSha256": "a532c3ca5f8b968087eebbeed0b154fcd3055ad965af153f9c5bcfce5cd83ce9",
+  "completedSeeds": 9,
+  "fights": 61,
+  "roots": 947,
+  "leaves": 2513
+ },
+ {
+  "unit": "w03/perturbed-60002198-9",
+  "rowsSha256": "508dab6443bb04a453610a4429f4861b82b25c9efe2ad03b469f8b2ed2e6b54d",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1047,
+  "leaves": 2886
+ },
+ {
+  "unit": "w03/perturbed-60002207-9",
+  "rowsSha256": "8b33ba6e24f47941b550a8f9b6128a4f7507ba9da59376297a8487d23d520750",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1435,
+  "leaves": 3983
+ },
+ {
+  "unit": "w04/natural-60000216-9",
+  "rowsSha256": "72b2f0670a3649a9fe2971a1d58f5e8d69d46af970fff93f59a889b85ba25db5",
+  "completedSeeds": 9,
+  "fights": 82,
+  "roots": 1435,
+  "leaves": 3961
+ },
+ {
+  "unit": "w04/natural-60000225-9",
+  "rowsSha256": "077edb52bc80833ac61df2542fea55e4d0284fb40344164e5d87f8badcf3b40b",
+  "completedSeeds": 9,
+  "fights": 70,
+  "roots": 1113,
+  "leaves": 2876
+ },
+ {
+  "unit": "w04/natural-60000234-9",
+  "rowsSha256": "1e5bde38b6d027ed69a346f8b614a7ab6993f0441cbae11432942a1f115e3611",
+  "completedSeeds": 9,
+  "fights": 63,
+  "roots": 973,
+  "leaves": 2458
+ },
+ {
+  "unit": "w04/natural-60000243-9",
+  "rowsSha256": "840f77f13e1b35fc9265766f325d81cf18f422dd71d1c5ba42ab40f92ab6168d",
+  "completedSeeds": 9,
+  "fights": 57,
+  "roots": 904,
+  "leaves": 2192
+ },
+ {
+  "unit": "w04/natural-60000252-9",
+  "rowsSha256": "1ef7b0a3ef4b36badaa5e59a20abb858eb26f52d92f89cbf447ea1ee70dc6480",
+  "completedSeeds": 9,
+  "fights": 94,
+  "roots": 1640,
+  "leaves": 4562
+ },
+ {
+  "unit": "w04/natural-60000261-9",
+  "rowsSha256": "b01d98ac8c16604cc0bec7658c88b004c51b0ea09a0ed62bef212e938e1a8702",
+  "completedSeeds": 9,
+  "fights": 90,
+  "roots": 1739,
+  "leaves": 5192
+ },
+ {
+  "unit": "w04/perturbed-60002216-9",
+  "rowsSha256": "80a01516727ea892ac656bc1afd4a4e495d7a984b22b5e7c6fcb0db670177400",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1010,
+  "leaves": 2556
+ },
+ {
+  "unit": "w04/perturbed-60002225-9",
+  "rowsSha256": "01bfa142142a8ca53f28eadc34b2f21e01eb4038e00a945867ac624aa68621e9",
+  "completedSeeds": 9,
+  "fights": 77,
+  "roots": 1196,
+  "leaves": 3334
+ },
+ {
+  "unit": "w04/perturbed-60002234-9",
+  "rowsSha256": "9a544807f483628506ba4ef4c8b7289dd54c35c309129e8ac3e77ba29d14e731",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1334,
+  "leaves": 3802
+ },
+ {
+  "unit": "w04/perturbed-60002243-9",
+  "rowsSha256": "0add7d0cac2bf3d89696e85ac5b6301a842388c9c7c421f5aa05bfcb724793b4",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1486,
+  "leaves": 4362
+ },
+ {
+  "unit": "w04/perturbed-60002252-9",
+  "rowsSha256": "ed58c7a54982cecc4c5e8a76de0bed90c3ec9c490b3fc3628aa86386f2b70614",
+  "completedSeeds": 9,
+  "fights": 107,
+  "roots": 1851,
+  "leaves": 5279
+ },
+ {
+  "unit": "w04/perturbed-60002261-9",
+  "rowsSha256": "5ed06bebcbba37c0795fec975524d11bd175a11ccf8812df1c4e0d8f57857744",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1339,
+  "leaves": 3762
+ },
+ {
+  "unit": "w05/natural-60000270-9",
+  "rowsSha256": "e8ace945d46c1bf16ca39e63b39f4aa88c900d7f7bf5349781ebc2862133b47f",
+  "completedSeeds": 9,
+  "fights": 75,
+  "roots": 1405,
+  "leaves": 3872
+ },
+ {
+  "unit": "w05/natural-60000279-9",
+  "rowsSha256": "4d57c56d9fc996261faa48f6e6b4665a74ca5b7f0f045d643f9b1d71d54888d4",
+  "completedSeeds": 9,
+  "fights": 72,
+  "roots": 1183,
+  "leaves": 3270
+ },
+ {
+  "unit": "w05/natural-60000288-9",
+  "rowsSha256": "7d6e33123794f05a719bef517adb4e10d5d4abb6a8ce55c523a458efe77ba4ad",
+  "completedSeeds": 9,
+  "fights": 103,
+  "roots": 2065,
+  "leaves": 6192
+ },
+ {
+  "unit": "w05/natural-60000297-9",
+  "rowsSha256": "2d11769471f18eff9fb1c8aa0fed62416af3dae6bda5b2d838098bbc348bf1e7",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1389,
+  "leaves": 3820
+ },
+ {
+  "unit": "w05/natural-60000306-9",
+  "rowsSha256": "73912c33ee77dbc6c5d4b5d39820a82668249fc1d6cc3b9d5fb4df18e1b987f0",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1493,
+  "leaves": 4268
+ },
+ {
+  "unit": "w05/natural-60000315-9",
+  "rowsSha256": "63ba30a3b7e8925e0afb980cc4228c1e8784e12b91b1c4f31d5976f12413b92c",
+  "completedSeeds": 9,
+  "fights": 53,
+  "roots": 838,
+  "leaves": 2006
+ },
+ {
+  "unit": "w05/perturbed-60002270-9",
+  "rowsSha256": "f9f9be5f9e188c323123fabf70ab198bfebc5598ab7c6855b92e04f78e417ff8",
+  "completedSeeds": 9,
+  "fights": 96,
+  "roots": 1616,
+  "leaves": 4555
+ },
+ {
+  "unit": "w05/perturbed-60002279-9",
+  "rowsSha256": "6944cd569be5f424bbb42bc60b4abbc923f5b3ea5c5577f8c6cc5e68f1c65614",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1306,
+  "leaves": 3726
+ },
+ {
+  "unit": "w05/perturbed-60002288-9",
+  "rowsSha256": "7b1fc9dee33cea9d5c48fac5f2010ae3367806eda014b35a4f35fd7149b43696",
+  "completedSeeds": 9,
+  "fights": 93,
+  "roots": 1633,
+  "leaves": 4838
+ },
+ {
+  "unit": "w05/perturbed-60002297-9",
+  "rowsSha256": "9f613233e7f30e72cb61d0f23c78cf9a2e2c9f271306de753ea52320bab9c184",
+  "completedSeeds": 9,
+  "fights": 54,
+  "roots": 806,
+  "leaves": 1990
+ },
+ {
+  "unit": "w05/perturbed-60002306-9",
+  "rowsSha256": "31462ebd33113f7c16c71bed92d6e1c38a5e0d02f116d14780c2f7f2abd91a91",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1090,
+  "leaves": 3094
+ },
+ {
+  "unit": "w05/perturbed-60002315-9",
+  "rowsSha256": "166ec9544b4439232d20412506bdd9c912c4efd03e49189dd6c7b3141d7bbc6a",
+  "completedSeeds": 9,
+  "fights": 84,
+  "roots": 1277,
+  "leaves": 3172
+ },
+ {
+  "unit": "w06/natural-60000324-9",
+  "rowsSha256": "6ef2fe6108eb362a73163b45201e4c161d38020566f58198eb4151e4bd991ef2",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1498,
+  "leaves": 4235
+ },
+ {
+  "unit": "w06/natural-60000333-9",
+  "rowsSha256": "8a2815e9f8b20d3720a132c86423af853e866d2836a7c2067388d263d8e6b1f8",
+  "completedSeeds": 9,
+  "fights": 83,
+  "roots": 1274,
+  "leaves": 3301
+ },
+ {
+  "unit": "w06/natural-60000342-9",
+  "rowsSha256": "13a7a977bd9cdcc46227c9dfe8e7de396f899d09727a92c4b9a5f47c5980beb4",
+  "completedSeeds": 9,
+  "fights": 70,
+  "roots": 1298,
+  "leaves": 3354
+ },
+ {
+  "unit": "w06/natural-60000351-9",
+  "rowsSha256": "3112a614c0621ec4398babbb2bb817adeed25e90fe60d9022db5595a604d0efb",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1529,
+  "leaves": 4356
+ },
+ {
+  "unit": "w06/natural-60000360-9",
+  "rowsSha256": "e2d14b1e644bd15cfa9a0356356cdd2175948d670c67257835ced00edc5b5781",
+  "completedSeeds": 9,
+  "fights": 85,
+  "roots": 1381,
+  "leaves": 3649
+ },
+ {
+  "unit": "w06/natural-60000369-9",
+  "rowsSha256": "64d3c476d08ed9a7dc8ac225d47bb55e18000d5ac750c9adc6eabf5f992f8de2",
+  "completedSeeds": 9,
+  "fights": 97,
+  "roots": 1681,
+  "leaves": 4507
+ },
+ {
+  "unit": "w06/perturbed-60002324-9",
+  "rowsSha256": "b6facd00f4b14a6a5234ef788142551985484d15d55c064f9a09b8531ddec094",
+  "completedSeeds": 9,
+  "fights": 111,
+  "roots": 1914,
+  "leaves": 5462
+ },
+ {
+  "unit": "w06/perturbed-60002333-9",
+  "rowsSha256": "ea4526de4af8e3b6279b376d9a7e088cef614aa91c4316e6cb61d4fcbbc7af83",
+  "completedSeeds": 9,
+  "fights": 98,
+  "roots": 1689,
+  "leaves": 5047
+ },
+ {
+  "unit": "w06/perturbed-60002342-9",
+  "rowsSha256": "b0581f57b45abadf316d4cc22c148fc5db010ada513101c8c6fcef84543af60c",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 1126,
+  "leaves": 3075
+ },
+ {
+  "unit": "w06/perturbed-60002351-9",
+  "rowsSha256": "9a8c47f907b7249ec043b59e1872a5dc93c5af8ea74f895d4e25f77f33b375d1",
+  "completedSeeds": 9,
+  "fights": 70,
+  "roots": 1063,
+  "leaves": 2853
+ },
+ {
+  "unit": "w06/perturbed-60002360-9",
+  "rowsSha256": "c3d8d597280ce4277fb6e20bfa2e9f0284d0dc02d4364558d071b834381d8b6c",
+  "completedSeeds": 9,
+  "fights": 62,
+  "roots": 1026,
+  "leaves": 2786
+ },
+ {
+  "unit": "w06/perturbed-60002369-9",
+  "rowsSha256": "342c8bb1e29caef9d0f8c2181306f5a97c967d678ae5c96120ee2e5cf04a88f8",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1438,
+  "leaves": 4162
+ },
+ {
+  "unit": "w07/natural-60000378-9",
+  "rowsSha256": "cc3049119e7d44ab18958a8073b04152c94824fc6c98467d3d06f9c1e485c5ce",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1145,
+  "leaves": 3077
+ },
+ {
+  "unit": "w07/natural-60000387-9",
+  "rowsSha256": "c6728c12035a5ca15aa0100573015c4cfad8b4339a1d5e0ee4c852b71f00e44a",
+  "completedSeeds": 9,
+  "fights": 85,
+  "roots": 1479,
+  "leaves": 4051
+ },
+ {
+  "unit": "w07/natural-60000396-9",
+  "rowsSha256": "3e014d8ea1fb5955ebc3e18cf7e29f383749d18b244a5ee53187fa1228d5fb99",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1242,
+  "leaves": 3413
+ },
+ {
+  "unit": "w07/natural-60000405-9",
+  "rowsSha256": "f8976b776d110978197a9405d86b0167d91a9be4e6d52660b7099f5f0b97d097",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1334,
+  "leaves": 3578
+ },
+ {
+  "unit": "w07/natural-60000414-9",
+  "rowsSha256": "aa4571233be9deb60105532cc06c965ec2b49879a0eaf9fb5a5b95232e22cd61",
+  "completedSeeds": 9,
+  "fights": 95,
+  "roots": 1607,
+  "leaves": 4458
+ },
+ {
+  "unit": "w07/natural-60000423-9",
+  "rowsSha256": "deb8c3ab4a92ad8b84d0c8cbd5f8a3d7cdabd5e0ff9cb17d5255ba6f511fbee5",
+  "completedSeeds": 9,
+  "fights": 62,
+  "roots": 1110,
+  "leaves": 2962
+ },
+ {
+  "unit": "w07/perturbed-60002378-9",
+  "rowsSha256": "9caea7bab149fbc5168f3a4dc9181731df5ddd6eee64690407662a5aa199953a",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1242,
+  "leaves": 3465
+ },
+ {
+  "unit": "w07/perturbed-60002387-9",
+  "rowsSha256": "562abe91878db5808179535bdd8241f350d59165886854ec1328d93052af425b",
+  "completedSeeds": 9,
+  "fights": 63,
+  "roots": 1060,
+  "leaves": 2968
+ },
+ {
+  "unit": "w07/perturbed-60002396-9",
+  "rowsSha256": "fb647aff3ae9a3b899025abcd6ba2f30475d4b663a23952c601de0bdb06eda11",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1267,
+  "leaves": 3465
+ },
+ {
+  "unit": "w07/perturbed-60002405-9",
+  "rowsSha256": "e5cf82a7c982516972c85e32242d04759c61d8330794991bc06ac9ec52b8f196",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1249,
+  "leaves": 3455
+ },
+ {
+  "unit": "w07/perturbed-60002414-9",
+  "rowsSha256": "43b66e6013197159b12cab1c608db41a3ddf9a78d6456ff09e7c6faa776d82e1",
+  "completedSeeds": 9,
+  "fights": 90,
+  "roots": 1516,
+  "leaves": 4171
+ },
+ {
+  "unit": "w07/perturbed-60002423-9",
+  "rowsSha256": "7e1b12a25f2353d5780ef44db2d96330aa33a0b135f5f296b6a22500cc7d69a6",
+  "completedSeeds": 9,
+  "fights": 58,
+  "roots": 895,
+  "leaves": 2353
+ },
+ {
+  "unit": "w08/natural-60000432-9",
+  "rowsSha256": "41f9c384d920c3c4ffdefd85119753ea20c22df97b3366ea0799215df660aded",
+  "completedSeeds": 9,
+  "fights": 55,
+  "roots": 989,
+  "leaves": 2675
+ },
+ {
+  "unit": "w08/natural-60000441-9",
+  "rowsSha256": "2f5526c182a0977f01862f40955b551de090baaad4e13a5905e4d49cbfbb114c",
+  "completedSeeds": 9,
+  "fights": 96,
+  "roots": 1665,
+  "leaves": 4986
+ },
+ {
+  "unit": "w08/natural-60000450-9",
+  "rowsSha256": "654f69719ac996cce522047dee79c592bf2846db21eaf40337dc2ff937b41378",
+  "completedSeeds": 9,
+  "fights": 61,
+  "roots": 937,
+  "leaves": 2376
+ },
+ {
+  "unit": "w08/natural-60000459-9",
+  "rowsSha256": "31c830c0cb5c47838e473b37a13cab7be419e3c9147a5b7ffc22687c95b3aef9",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1216,
+  "leaves": 3215
+ },
+ {
+  "unit": "w08/natural-60000468-9",
+  "rowsSha256": "d525460720c4ce6f2d2e1274bda1d05c94aa48e5dd82d18f2c8da7cc54e45421",
+  "completedSeeds": 9,
+  "fights": 86,
+  "roots": 1456,
+  "leaves": 3920
+ },
+ {
+  "unit": "w08/natural-60000477-9",
+  "rowsSha256": "03f8884db3a35b3765869ffc6f3d1bbb0baa353ba81e6a3a27101cb9039d64a8",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 964,
+  "leaves": 2455
+ },
+ {
+  "unit": "w08/perturbed-60002432-9",
+  "rowsSha256": "e4a18606ff108920c0be1b7f1a64b05c1ce62acb92983c440cf20e27e108dec0",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1363,
+  "leaves": 3820
+ },
+ {
+  "unit": "w08/perturbed-60002441-9",
+  "rowsSha256": "de85a2659b04c911afa3b60bc3c7c3390d6a674a7613427f6fece93833a96d17",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1072,
+  "leaves": 2921
+ },
+ {
+  "unit": "w08/perturbed-60002450-9",
+  "rowsSha256": "9f7036b65dd2b7a77b39f8a052299bdb8a8a468c54695adc4f2382ddbb98dfe6",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1094,
+  "leaves": 2869
+ },
+ {
+  "unit": "w08/perturbed-60002459-9",
+  "rowsSha256": "25f0eeebdebdb486b17488ee26dcaf023f7d46d1525259360f632d1457669bdc",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 1068,
+  "leaves": 2841
+ },
+ {
+  "unit": "w08/perturbed-60002468-9",
+  "rowsSha256": "4cbbc1621b41b86dd145f618e81f69f54d8ebddc9fa1d06916fe2cc7da3cd255",
+  "completedSeeds": 9,
+  "fights": 93,
+  "roots": 1813,
+  "leaves": 5414
+ },
+ {
+  "unit": "w08/perturbed-60002477-9",
+  "rowsSha256": "6314090f8e85557bbe7e781b7b2544562ce32a30c4555f830c3a905aed091c92",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1653,
+  "leaves": 4902
+ },
+ {
+  "unit": "w09/natural-60000486-9",
+  "rowsSha256": "c854e5f38e2309e3554165c98a56a6dce6a9b7565390247acf8f24baebdbc40a",
+  "completedSeeds": 9,
+  "fights": 72,
+  "roots": 1227,
+  "leaves": 3347
+ },
+ {
+  "unit": "w09/natural-60000495-9",
+  "rowsSha256": "cd7a820598a0cb6fb918de0aff88edb630c6f98f5fbf427f3adf62afd5e4f448",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1037,
+  "leaves": 2623
+ },
+ {
+  "unit": "w09/natural-60000504-9",
+  "rowsSha256": "5fdca815e9db9e7e3141035c2da2051ef88e93555d6faac04f02357d6a7da6af",
+  "completedSeeds": 9,
+  "fights": 63,
+  "roots": 945,
+  "leaves": 2172
+ },
+ {
+  "unit": "w09/natural-60000513-9",
+  "rowsSha256": "5b77f8dfda071da2edac1254acd301f997af1a91fbed260c7c1c0773d7dc713b",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1324,
+  "leaves": 3504
+ },
+ {
+  "unit": "w09/natural-60000522-9",
+  "rowsSha256": "14a7f624494a5e951994d6d244d125176bae8c759da5a903a45be114e7ce2674",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1223,
+  "leaves": 2972
+ },
+ {
+  "unit": "w09/natural-60000531-9",
+  "rowsSha256": "72d18a9be5f5216089b5873db9f0771b451c76b1607686b3b3d4bc7a7a9e5eaa",
+  "completedSeeds": 9,
+  "fights": 84,
+  "roots": 1437,
+  "leaves": 3989
+ },
+ {
+  "unit": "w09/perturbed-60002495-9",
+  "rowsSha256": "16e9e9273c7122f73ae28ed55fbda81c1088455fa28e15adde01d55138f32b32",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1069,
+  "leaves": 2932
+ },
+ {
+  "unit": "w09/perturbed-60002504-9",
+  "rowsSha256": "5ddebacb545f4e7d67dc9c60486de47a4ab9bd54e0212cabbc5437901e70310d",
+  "completedSeeds": 9,
+  "fights": 53,
+  "roots": 797,
+  "leaves": 2134
+ },
+ {
+  "unit": "w09/perturbed-60002513-9",
+  "rowsSha256": "5225d0209dc96cd71dc7386913f9a0b23d8573d173270170208e4d1d91f0d152",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1600,
+  "leaves": 4569
+ },
+ {
+  "unit": "w09/perturbed-60002522-9",
+  "rowsSha256": "3f1ae4944ed70f5dbebf868bf0feb1d337af6dec69b6b131f84b2ae452d41d62",
+  "completedSeeds": 9,
+  "fights": 61,
+  "roots": 993,
+  "leaves": 2494
+ },
+ {
+  "unit": "w09/perturbed-60002531-9",
+  "rowsSha256": "3f33289d3c0cabddf7dccde79776058b19e33b8593491b091bb417e1e869df59",
+  "completedSeeds": 9,
+  "fights": 92,
+  "roots": 1424,
+  "leaves": 3948
+ },
+ {
+  "unit": "w10/natural-60000540-9",
+  "rowsSha256": "55ea5d42f7640f88d41ab6130430ce43c12fc73eadcb85e2806b658df8cb3101",
+  "completedSeeds": 9,
+  "fights": 87,
+  "roots": 1796,
+  "leaves": 5531
+ },
+ {
+  "unit": "w10/natural-60000549-9",
+  "rowsSha256": "e51781ffd4bd17204c786417ecafea51705701249d5083c0fa828b5a565268d9",
+  "completedSeeds": 9,
+  "fights": 57,
+  "roots": 966,
+  "leaves": 2454
+ },
+ {
+  "unit": "w10/natural-60000558-9",
+  "rowsSha256": "e1d8916ad0c32be347e00604bb18c1c0cc0eb567711bdb0290fec0fa093648a2",
+  "completedSeeds": 9,
+  "fights": 93,
+  "roots": 1719,
+  "leaves": 4700
+ },
+ {
+  "unit": "w10/natural-60000567-9",
+  "rowsSha256": "9a9917ae50ee286d0e5085b39f71decbf545db64bd3866c68aefca793f18a36f",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 990,
+  "leaves": 2567
+ },
+ {
+  "unit": "w10/natural-60000576-9",
+  "rowsSha256": "a6e7a4a1e0b852304a43761a77403bff8d2477eda83dee43445263a0b7074ee3",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1272,
+  "leaves": 3559
+ },
+ {
+  "unit": "w10/natural-60000585-9",
+  "rowsSha256": "a5919046ed4012774722eda69981f2e2d770e6f9880d88453eee6ea1180fada1",
+  "completedSeeds": 9,
+  "fights": 104,
+  "roots": 1859,
+  "leaves": 5021
+ },
+ {
+  "unit": "w10/perturbed-60002540-9",
+  "rowsSha256": "d4623dafa7d31692a2164c3cc882bd0ff073be929aed71f04f13638a9b0dc240",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1134,
+  "leaves": 3136
+ },
+ {
+  "unit": "w10/perturbed-60002549-9",
+  "rowsSha256": "c519b0d4762b1aff1f9d9483e0a6af27eb831520be3b62d441adb9a4d2a6be8c",
+  "completedSeeds": 9,
+  "fights": 83,
+  "roots": 1548,
+  "leaves": 4383
+ },
+ {
+  "unit": "w10/perturbed-60002558-9",
+  "rowsSha256": "1b38fe3411a0fa710a300533cb2f33d047a97706d7ffca1e29853c3a69b3827e",
+  "completedSeeds": 9,
+  "fights": 111,
+  "roots": 1894,
+  "leaves": 5359
+ },
+ {
+  "unit": "w10/perturbed-60002567-9",
+  "rowsSha256": "119dfe8aa004a603552a548bb25f130c62e9be627d0f290afbae7a4025d2a796",
+  "completedSeeds": 9,
+  "fights": 72,
+  "roots": 1196,
+  "leaves": 3333
+ },
+ {
+  "unit": "w10/perturbed-60002576-9",
+  "rowsSha256": "02b05c57ceb302f194f6e2170cf47066622d2d86d95b2224c2a29405ce6ade3b",
+  "completedSeeds": 9,
+  "fights": 101,
+  "roots": 1455,
+  "leaves": 4009
+ },
+ {
+  "unit": "w10/perturbed-60002585-9",
+  "rowsSha256": "ecbf6ca0789ac6821e7850cf7c003b5f43beb61b4ddc0d882c31474502d4ba32",
+  "completedSeeds": 9,
+  "fights": 84,
+  "roots": 1540,
+  "leaves": 4498
+ },
+ {
+  "unit": "w11/natural-60000594-9",
+  "rowsSha256": "3989fda2f92be733dff34e7e7136bf013e1766e65d82768654506db6c0bf9789",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1434,
+  "leaves": 3776
+ },
+ {
+  "unit": "w11/natural-60000603-9",
+  "rowsSha256": "3d59eff40c420c7a6b4da70edefa91e5affc52e7d880d7d7f7eb25f59d59290d",
+  "completedSeeds": 9,
+  "fights": 54,
+  "roots": 776,
+  "leaves": 1656
+ },
+ {
+  "unit": "w11/natural-60000612-9",
+  "rowsSha256": "648ee4153d72c6592cb952418f117bde204b60ff093e54c4835822248be0a456",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1303,
+  "leaves": 3363
+ },
+ {
+  "unit": "w11/natural-60000621-9",
+  "rowsSha256": "5e7eeb694dd3c86e0f2297413cebb3aeb3927b4eea3da73ddab95e3c6424e44e",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1377,
+  "leaves": 3807
+ },
+ {
+  "unit": "w11/natural-60000630-9",
+  "rowsSha256": "90703b2026a28527a92b00f9360bbbb555fb59535bec1b315193043d8f342b87",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1224,
+  "leaves": 3401
+ },
+ {
+  "unit": "w11/natural-60000639-9",
+  "rowsSha256": "efffce97cc233647148e82cb8765a3d471a69648012e5271a4831638a21d0083",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1378,
+  "leaves": 3531
+ },
+ {
+  "unit": "w11/perturbed-60002594-9",
+  "rowsSha256": "15e86bea1d6ca631c1cfd3ff2a000125b8b7d03abb052f0e04ab1d1a959138e7",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1202,
+  "leaves": 3429
+ },
+ {
+  "unit": "w11/perturbed-60002603-9",
+  "rowsSha256": "4ecfc21aaf3bbc54a1abf06fafe66254c4984d61a80e018b6e74e4d9671c6122",
+  "completedSeeds": 9,
+  "fights": 60,
+  "roots": 891,
+  "leaves": 2243
+ },
+ {
+  "unit": "w11/perturbed-60002612-9",
+  "rowsSha256": "6f7b0b245bcf9de885c401ed38017c3207af43f5ebe400cb92253a5eae6c0037",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1529,
+  "leaves": 4291
+ },
+ {
+  "unit": "w11/perturbed-60002621-9",
+  "rowsSha256": "42a375d8d653c8a2d6c334f20c7ba709436450ad7291c0b2a59cc093717625d1",
+  "completedSeeds": 9,
+  "fights": 62,
+  "roots": 876,
+  "leaves": 2165
+ },
+ {
+  "unit": "w11/perturbed-60002639-9",
+  "rowsSha256": "ec3106b9f5cf86d71284fb731b3086f3f932c0fe3e18cc29bb25ac7991fc2a4f",
+  "completedSeeds": 9,
+  "fights": 75,
+  "roots": 1124,
+  "leaves": 3110
+ },
+ {
+  "unit": "w12/natural-60000648-9",
+  "rowsSha256": "ba7439384d8daab55d250ef26b2fbd84e35a1b024975b65ffbe4d4ca07650978",
+  "completedSeeds": 9,
+  "fights": 58,
+  "roots": 923,
+  "leaves": 2233
+ },
+ {
+  "unit": "w12/natural-60000657-9",
+  "rowsSha256": "94e1d6e2d6a32ee61b65fbd7f7572e0de1a24996c112bc2cf7628885c079b2a5",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1191,
+  "leaves": 3264
+ },
+ {
+  "unit": "w12/natural-60000666-9",
+  "rowsSha256": "3e2b6f3e2104df1aa870a58944c2c9af17ba50c07609bdd866f6dbb95d2909b0",
+  "completedSeeds": 9,
+  "fights": 92,
+  "roots": 1679,
+  "leaves": 5016
+ },
+ {
+  "unit": "w12/natural-60000675-9",
+  "rowsSha256": "cf07be12580119399dec132f662fc90b7963afc6d461bfdc4ca2a596c634a57b",
+  "completedSeeds": 9,
+  "fights": 70,
+  "roots": 1227,
+  "leaves": 3173
+ },
+ {
+  "unit": "w12/natural-60000684-9",
+  "rowsSha256": "b005d844548ee6359e6703acb62e28a1c7371fbbfb9039e0a52eefc549bbf565",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 1078,
+  "leaves": 2714
+ },
+ {
+  "unit": "w12/natural-60000693-9",
+  "rowsSha256": "92d2f228e6e9194ab4d77555e5c0e8765456679f07a3f49152d1f06e5777f6c6",
+  "completedSeeds": 9,
+  "fights": 57,
+  "roots": 928,
+  "leaves": 2271
+ },
+ {
+  "unit": "w12/perturbed-60002648-9",
+  "rowsSha256": "20a02057ea67fd06fae17a93ffd89673c5285be1b95d907f7dc3040126b93093",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1118,
+  "leaves": 3039
+ },
+ {
+  "unit": "w12/perturbed-60002657-9",
+  "rowsSha256": "fb43d2d11e598229d340e47ec5e384f49cf62dcdc17fdd4ca521550ab830afa5",
+  "completedSeeds": 9,
+  "fights": 95,
+  "roots": 1677,
+  "leaves": 4919
+ },
+ {
+  "unit": "w12/perturbed-60002666-9",
+  "rowsSha256": "f99d3160806b0045fbb68dba6a6f9dd30db2e5e4ddf04ee5afe30b118b938cdc",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1278,
+  "leaves": 3519
+ },
+ {
+  "unit": "w12/perturbed-60002675-9",
+  "rowsSha256": "1a762efca15e7df85def66d68913f67b683e3e9f4d69b45bdc8b0e98059d1297",
+  "completedSeeds": 9,
+  "fights": 83,
+  "roots": 1420,
+  "leaves": 4031
+ },
+ {
+  "unit": "w12/perturbed-60002684-9",
+  "rowsSha256": "d853371df9e36ace1c3e9473cba17859bce1944913bb86449e2a8bd7f96fca65",
+  "completedSeeds": 9,
+  "fights": 86,
+  "roots": 1344,
+  "leaves": 3575
+ },
+ {
+  "unit": "w12/perturbed-60002693-9",
+  "rowsSha256": "0cb669a4868a667272a1ccae6acc3195a87acee40f3df94408371c2174e32257",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1161,
+  "leaves": 3132
+ },
+ {
+  "unit": "w13/natural-60000702-9",
+  "rowsSha256": "ac04f4092e0bd9ba902cea16f76e0b0e1bd8111d2a06ec4981cd74a54aed9e9e",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1401,
+  "leaves": 3641
+ },
+ {
+  "unit": "w13/natural-60000711-9",
+  "rowsSha256": "52cbc70de997b98d49c157fb509d1cdb71147498d9bb1bc756219fdc5b636d21",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1321,
+  "leaves": 3637
+ },
+ {
+  "unit": "w13/natural-60000720-9",
+  "rowsSha256": "91d9edfa14fe485d0c542399a8778a7824b212ee3ec1c0065bed2fa1209acaf2",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1512,
+  "leaves": 4149
+ },
+ {
+  "unit": "w13/natural-60000729-9",
+  "rowsSha256": "c1e9fe7eee56fddd49f484c325579bc7c880d3f34568471f36c9899336fdc64a",
+  "completedSeeds": 9,
+  "fights": 62,
+  "roots": 1006,
+  "leaves": 2789
+ },
+ {
+  "unit": "w13/natural-60000738-9",
+  "rowsSha256": "fc8354a4db02abe6a555d90046ed2e6384ea5f24678cc8e996c37476e19195ae",
+  "completedSeeds": 9,
+  "fights": 116,
+  "roots": 2297,
+  "leaves": 6798
+ },
+ {
+  "unit": "w13/natural-60000747-9",
+  "rowsSha256": "95aaa38539c913f5cc0f2057f4bf01d95480462f97108f531827c606b0cca15e",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 1082,
+  "leaves": 2706
+ },
+ {
+  "unit": "w13/perturbed-60002702-9",
+  "rowsSha256": "ddeae0debd6319e093c92662b43cd555dbc31c1b50f0bad8e3dfd7736fc058f2",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1483,
+  "leaves": 4113
+ },
+ {
+  "unit": "w13/perturbed-60002711-9",
+  "rowsSha256": "b1b2afb4f6055f12e9c258efbd646ea418495d365d475ad2bca09de82d7ef0b6",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 992,
+  "leaves": 2511
+ },
+ {
+  "unit": "w13/perturbed-60002720-9",
+  "rowsSha256": "01bc157ea5cd9e655149d2f6defcdcc2985e5966ea3ff3acb6cd1b6fb174ad08",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1123,
+  "leaves": 3107
+ },
+ {
+  "unit": "w13/perturbed-60002729-9",
+  "rowsSha256": "00ebf9852816a6734fd7c55c0376d217b9cda077eb92933cbb712f304d19895b",
+  "completedSeeds": 9,
+  "fights": 120,
+  "roots": 1855,
+  "leaves": 5121
+ },
+ {
+  "unit": "w13/perturbed-60002738-9",
+  "rowsSha256": "3d7c203a837f896fddbc4108f2d52ce76fe95baabfe7c45ce14c610d9e67511e",
+  "completedSeeds": 9,
+  "fights": 95,
+  "roots": 1781,
+  "leaves": 5203
+ },
+ {
+  "unit": "w13/perturbed-60002747-9",
+  "rowsSha256": "f932d40dae89b0b20853248764f9431dc69175b167df3988904301ceaf911589",
+  "completedSeeds": 9,
+  "fights": 77,
+  "roots": 1213,
+  "leaves": 3343
+ },
+ {
+  "unit": "w14/natural-60000756-9",
+  "rowsSha256": "066cce2ce17de55e6ff8a3b84f7389213f981054388891e494bcb8900bcad760",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 1090,
+  "leaves": 3006
+ },
+ {
+  "unit": "w14/natural-60000765-9",
+  "rowsSha256": "644dc21d46ecdf805f3cb8374b4f243dd2d49494b870283efc5bbced8b80171c",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1424,
+  "leaves": 3776
+ },
+ {
+  "unit": "w14/natural-60000774-9",
+  "rowsSha256": "da0b8bc99b7f71f953a6131fa102bc366b41455dc8ac72083f7bcdc4b12fe994",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1565,
+  "leaves": 4587
+ },
+ {
+  "unit": "w14/natural-60000783-9",
+  "rowsSha256": "8b31a5d28d7e3df1a2e6e58ff4202194d7e24a0a7d79f0a0bd4fb0ce6722ba11",
+  "completedSeeds": 9,
+  "fights": 60,
+  "roots": 1132,
+  "leaves": 3091
+ },
+ {
+  "unit": "w14/natural-60000792-9",
+  "rowsSha256": "c5fc3e8a9ca09551fe0ccc8645784e6cc8f6aebfb493fb4db79c1740c86021f3",
+  "completedSeeds": 9,
+  "fights": 67,
+  "roots": 1135,
+  "leaves": 2888
+ },
+ {
+  "unit": "w14/natural-60000801-9",
+  "rowsSha256": "44568daba5bd0a4307d3b655dca2691122fd65899d1f33e1793f64a39303e4ba",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1674,
+  "leaves": 4666
+ },
+ {
+  "unit": "w14/perturbed-60002756-9",
+  "rowsSha256": "2cc2e4b9a3c3bf9bb819c804e3ea67fb503fc9eafbeb73d33fb57b91eb105fce",
+  "completedSeeds": 9,
+  "fights": 73,
+  "roots": 1235,
+  "leaves": 3269
+ },
+ {
+  "unit": "w14/perturbed-60002765-9",
+  "rowsSha256": "d11846c2325b0ff7d2fa602f64114b253cf78e053c36f8dad5eae21d6982399f",
+  "completedSeeds": 9,
+  "fights": 61,
+  "roots": 963,
+  "leaves": 2633
+ },
+ {
+  "unit": "w14/perturbed-60002774-9",
+  "rowsSha256": "60dd6e2973339927762b054bb57013cc63addefdeb79f3794982fe450fc84b13",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1174,
+  "leaves": 3404
+ },
+ {
+  "unit": "w14/perturbed-60002783-9",
+  "rowsSha256": "70e8ca2b5a92891fb0875ae6a60eba8f9b4a8c00b7259fcf794ecb4692789a7d",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1165,
+  "leaves": 3297
+ },
+ {
+  "unit": "w14/perturbed-60002792-9",
+  "rowsSha256": "7435b6cfcfefe7d4ce205a42dffe81dde51ae26d9ac681d361d58cec9d5f29c5",
+  "completedSeeds": 9,
+  "fights": 108,
+  "roots": 1938,
+  "leaves": 5770
+ },
+ {
+  "unit": "w14/perturbed-60002801-9",
+  "rowsSha256": "73a68a501e45ccfb5f4f3115cc306d2a4e9c53190abda977b5c29a5709c91453",
+  "completedSeeds": 9,
+  "fights": 95,
+  "roots": 1722,
+  "leaves": 5157
+ },
+ {
+  "unit": "w15/natural-60000810-9",
+  "rowsSha256": "71b3095e65a6e882580ea9b0b700d4b9e112300ecdbf121a52390e8aca926c5f",
+  "completedSeeds": 9,
+  "fights": 91,
+  "roots": 1732,
+  "leaves": 4776
+ },
+ {
+  "unit": "w15/natural-60000819-9",
+  "rowsSha256": "65f1950f1a07c75bd2042b504e50d854e37b445f18567165c1d08a475d8fa814",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1157,
+  "leaves": 2841
+ },
+ {
+  "unit": "w15/natural-60000828-9",
+  "rowsSha256": "afa6e291bba619eda9dc885b5deb28e08aafb9299acc08c38a00c8127d228b86",
+  "completedSeeds": 9,
+  "fights": 55,
+  "roots": 982,
+  "leaves": 2676
+ },
+ {
+  "unit": "w15/natural-60000837-9",
+  "rowsSha256": "c584d7926300ca56d6d40ee66d408b18bf1906977c600e07dcfdddf2cfe5d99f",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1445,
+  "leaves": 4093
+ },
+ {
+  "unit": "w15/natural-60000846-9",
+  "rowsSha256": "8a38f95f1459aaf565f22e602b27263accb43d5cfd9f101b50ab64fe87673b3f",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 1143,
+  "leaves": 2978
+ },
+ {
+  "unit": "w15/natural-60000855-9",
+  "rowsSha256": "15328130448f624d959438c2c43bab9ea378053e8fb42a1f1d4a06f06d385e1c",
+  "completedSeeds": 9,
+  "fights": 55,
+  "roots": 852,
+  "leaves": 2088
+ },
+ {
+  "unit": "w15/perturbed-60002810-9",
+  "rowsSha256": "d7315a153fa22bace22afa34622d56a56fe893cc6d68b045e4b1617d45a8de7e",
+  "completedSeeds": 9,
+  "fights": 64,
+  "roots": 1106,
+  "leaves": 3112
+ },
+ {
+  "unit": "w15/perturbed-60002819-9",
+  "rowsSha256": "cf56b492e9b410523921bed07d43d79a50181f0d50a2bf56e41771e199277324",
+  "completedSeeds": 9,
+  "fights": 89,
+  "roots": 1098,
+  "leaves": 2688
+ },
+ {
+  "unit": "w15/perturbed-60002828-9",
+  "rowsSha256": "535fbfdc03d82a8cbeb6d476c178886d9a0bf0e5c4da609dc97e60a3172c8ef9",
+  "completedSeeds": 9,
+  "fights": 56,
+  "roots": 866,
+  "leaves": 2386
+ },
+ {
+  "unit": "w15/perturbed-60002837-9",
+  "rowsSha256": "0cbe67cd19525a87b2fd8d5db0943f127c2d990cad287266b224aafd4c73f032",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1375,
+  "leaves": 3896
+ },
+ {
+  "unit": "w15/perturbed-60002846-9",
+  "rowsSha256": "d9c1cff10e80d4ce28cf0558dae5d640551b6bd7244ae0dbae27ebfef861a883",
+  "completedSeeds": 9,
+  "fights": 94,
+  "roots": 1453,
+  "leaves": 3920
+ },
+ {
+  "unit": "w15/perturbed-60002855-9",
+  "rowsSha256": "b52a3f6e62919463df9c260a0fff4ba6cda0092944850c1367b08f8c8333aa73",
+  "completedSeeds": 9,
+  "fights": 72,
+  "roots": 1157,
+  "leaves": 3124
+ },
+ {
+  "unit": "w16/natural-60000864-9",
+  "rowsSha256": "4ebb64fc748483a3e279d2508b7714949feba7bfd9f87bd919f7736336d25dba",
+  "completedSeeds": 9,
+  "fights": 72,
+  "roots": 1067,
+  "leaves": 2615
+ },
+ {
+  "unit": "w16/natural-60000873-9",
+  "rowsSha256": "7f2e3d4cbb9668c52d8ede458c437fcf5407056784ebe951248ce8b91d4f2d74",
+  "completedSeeds": 9,
+  "fights": 90,
+  "roots": 1766,
+  "leaves": 5200
+ },
+ {
+  "unit": "w16/natural-60000882-9",
+  "rowsSha256": "1f845591f04f4244c98b19d1056060ec7ab56dcd720b08812802b7df8191eaec",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1461,
+  "leaves": 3950
+ },
+ {
+  "unit": "w16/natural-60000891-9",
+  "rowsSha256": "3c0106e712e82a6ca52cf64067cea895b77492d9148ce6ff1b2bf501246de19a",
+  "completedSeeds": 9,
+  "fights": 95,
+  "roots": 1707,
+  "leaves": 4824
+ },
+ {
+  "unit": "w16/natural-60000900-9",
+  "rowsSha256": "4f641b67b73a4451753a965a01ea4060dd9db8328106cdbca2ebe80f6fbe60a3",
+  "completedSeeds": 9,
+  "fights": 66,
+  "roots": 1163,
+  "leaves": 3057
+ },
+ {
+  "unit": "w16/natural-60000909-9",
+  "rowsSha256": "9b484da6310fab684e057a3dc0a8e16b76aa9df6a0a0a875a1803c6dea24c194",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1478,
+  "leaves": 4117
+ },
+ {
+  "unit": "w16/perturbed-60002864-9",
+  "rowsSha256": "c30ac6da19a5a30722c9e07244c56133715eb09a9990e77f807cb87a4a8f31f2",
+  "completedSeeds": 9,
+  "fights": 65,
+  "roots": 1013,
+  "leaves": 2836
+ },
+ {
+  "unit": "w16/perturbed-60002873-9",
+  "rowsSha256": "eeb48b3478ae408296a501e978a67a0afdfbd6cae5f775a5a68df6697891d9a8",
+  "completedSeeds": 9,
+  "fights": 100,
+  "roots": 1759,
+  "leaves": 5255
+ },
+ {
+  "unit": "w16/perturbed-60002882-9",
+  "rowsSha256": "e707798e6904797988203b6ab4406b6265f7a642e68c695f91507a42e9381328",
+  "completedSeeds": 9,
+  "fights": 109,
+  "roots": 1603,
+  "leaves": 4136
+ },
+ {
+  "unit": "w16/perturbed-60002891-9",
+  "rowsSha256": "fe37f5612f40538c31612e70a40c06108e69f4012f8290178a9a367e461c6712",
+  "completedSeeds": 9,
+  "fights": 56,
+  "roots": 887,
+  "leaves": 2314
+ },
+ {
+  "unit": "w16/perturbed-60002900-9",
+  "rowsSha256": "dafd636463c7a6e1efe4f2d9a79d12c85231fbac36e73208d4d53745e218e704",
+  "completedSeeds": 9,
+  "fights": 92,
+  "roots": 1493,
+  "leaves": 4153
+ },
+ {
+  "unit": "w16/perturbed-60002909-9",
+  "rowsSha256": "d00e7d191b47d3471c700ce16fa9161ece02bb43cdab738a8cb246cdc96cbc78",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1240,
+  "leaves": 3612
+ },
+ {
+  "unit": "w17/natural-60000918-9",
+  "rowsSha256": "2c0e747548bbda9e714da9ef81d383fc091c47346caf813fe085bcdc37649879",
+  "completedSeeds": 9,
+  "fights": 91,
+  "roots": 1545,
+  "leaves": 4198
+ },
+ {
+  "unit": "w17/natural-60000927-9",
+  "rowsSha256": "9339ca6924d43152d5708a5dc17f1efa233c04507de4900b2d2aaee42676932b",
+  "completedSeeds": 9,
+  "fights": 56,
+  "roots": 991,
+  "leaves": 2528
+ },
+ {
+  "unit": "w17/natural-60000936-9",
+  "rowsSha256": "2c7ee3e52cf8b8ba4cfe616e4f00fb11d2a5acda8d18f89eb1024399bacb8320",
+  "completedSeeds": 9,
+  "fights": 59,
+  "roots": 959,
+  "leaves": 2531
+ },
+ {
+  "unit": "w17/natural-60000945-9",
+  "rowsSha256": "6c0fa939df93dcc42f5b84bc15bf487f0551163a9377ffd984c9d5e73658e2c8",
+  "completedSeeds": 9,
+  "fights": 69,
+  "roots": 1058,
+  "leaves": 2753
+ },
+ {
+  "unit": "w17/natural-60000954-9",
+  "rowsSha256": "2341b8e853c058c6ac40417f457c364ddf6ef5ee7d74aa802a2394cc4dc50da4",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1268,
+  "leaves": 3440
+ },
+ {
+  "unit": "w17/natural-60000963-9",
+  "rowsSha256": "17bbc0f7dec09c2e142d554d8da853d974533f56bc3bb18cf48039f57d211864",
+  "completedSeeds": 9,
+  "fights": 103,
+  "roots": 2023,
+  "leaves": 6022
+ },
+ {
+  "unit": "w17/perturbed-60002918-9",
+  "rowsSha256": "64351fedcb7f2473c7ac08f5cff3c22b5229f9b049bfdf2b62b75c60561aa681",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1106,
+  "leaves": 2892
+ },
+ {
+  "unit": "w17/perturbed-60002927-9",
+  "rowsSha256": "cc6f22017c1e28c03e44948a911e11fb0fb0b7fead73065218c0bb15b6e94812",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1192,
+  "leaves": 3120
+ },
+ {
+  "unit": "w17/perturbed-60002936-9",
+  "rowsSha256": "69080899ee12b8d5db4a8f1966e0d5af489c6a6a77ce3e6433567ef2b87f048b",
+  "completedSeeds": 9,
+  "fights": 91,
+  "roots": 1399,
+  "leaves": 3815
+ },
+ {
+  "unit": "w17/perturbed-60002945-9",
+  "rowsSha256": "8053e3e7d270f03bb41dd5be543eefa5fdbed961bd45d17006dfb7b8b41913bb",
+  "completedSeeds": 9,
+  "fights": 71,
+  "roots": 1066,
+  "leaves": 2804
+ },
+ {
+  "unit": "w17/perturbed-60002954-9",
+  "rowsSha256": "126ff1bd7a3db526172c439d5e1a98a456b326f388fecd006b50c1547e68252d",
+  "completedSeeds": 9,
+  "fights": 54,
+  "roots": 825,
+  "leaves": 2180
+ },
+ {
+  "unit": "w17/perturbed-60002963-9",
+  "rowsSha256": "6a21fd6e4d7036c5d828a1c848b7ebb7edc74b98105766dc4bf8f9de29e9c962",
+  "completedSeeds": 9,
+  "fights": 77,
+  "roots": 1364,
+  "leaves": 3870
+ },
+ {
+  "unit": "w18/natural-60000972-9",
+  "rowsSha256": "1555180aaa53336592ff9297e550fb7d29af04185ecf6f4e11fa41e2224d3a14",
+  "completedSeeds": 9,
+  "fights": 68,
+  "roots": 1107,
+  "leaves": 3034
+ },
+ {
+  "unit": "w18/natural-60000981-9",
+  "rowsSha256": "4a61551500f2ad28cbac3c6fd2c0cb40cf9da8bb5190738481b057737328de08",
+  "completedSeeds": 9,
+  "fights": 66,
+  "roots": 1065,
+  "leaves": 2790
+ },
+ {
+  "unit": "w18/natural-60000999-9",
+  "rowsSha256": "32b87bbe3da8d95d1c2e2850efb3647efe241412891ba0abd1095805011bd652",
+  "completedSeeds": 9,
+  "fights": 84,
+  "roots": 1555,
+  "leaves": 4296
+ },
+ {
+  "unit": "w18/natural-60001008-9",
+  "rowsSha256": "3b56674aa1f97522b0ace18ea66d85f0097079dfb27cfef5463aa9eb13f7d633",
+  "completedSeeds": 9,
+  "fights": 72,
+  "roots": 1199,
+  "leaves": 3176
+ },
+ {
+  "unit": "w18/natural-60001017-9",
+  "rowsSha256": "21691e5588b648bafc2f331e8eb373b47c75eff22efa94ae7aad27d8767f0d85",
+  "completedSeeds": 9,
+  "fights": 80,
+  "roots": 1481,
+  "leaves": 4159
+ },
+ {
+  "unit": "w18/perturbed-60002972-9",
+  "rowsSha256": "ac22759ce57565d0fb01ea88ab38c6290953dba707db550e761a17502bef9982",
+  "completedSeeds": 9,
+  "fights": 102,
+  "roots": 1615,
+  "leaves": 4649
+ },
+ {
+  "unit": "w18/perturbed-60002981-9",
+  "rowsSha256": "5752ab44bca3700ca6723682d5056b8ca933935eb3d5645d6c890c3dc0e2020d",
+  "completedSeeds": 9,
+  "fights": 70,
+  "roots": 1166,
+  "leaves": 3200
+ },
+ {
+  "unit": "w18/perturbed-60002990-9",
+  "rowsSha256": "6c7412a35135de62449fa1d08914dea0d06f8a5f39bf2fffd32f0edc62050310",
+  "completedSeeds": 9,
+  "fights": 81,
+  "roots": 1459,
+  "leaves": 4346
+ },
+ {
+  "unit": "w18/perturbed-60002999-9",
+  "rowsSha256": "2d7dc63a3d4f6f2ae815ffd03e8f7a7f4a128ea2afc5b5dcfeb8f6ba6dfc9f54",
+  "completedSeeds": 9,
+  "fights": 83,
+  "roots": 1533,
+  "leaves": 4468
+ },
+ {
+  "unit": "w18/perturbed-60003008-9",
+  "rowsSha256": "c54fbbf2d868e6560987e2b141a7b5f5b3e1898ffdb31c7ca7c2e23a54b320fa",
+  "completedSeeds": 9,
+  "fights": 66,
+  "roots": 1033,
+  "leaves": 2798
+ },
+ {
+  "unit": "w18/perturbed-60003017-9",
+  "rowsSha256": "5a4fdfb641eef24b5e1824319b80e6b423ea88bd3db5fb5c07f60e3500b92cae",
+  "completedSeeds": 9,
+  "fights": 79,
+  "roots": 1280,
+  "leaves": 3532
+ },
+ {
+  "unit": "w19/natural-60001026-9",
+  "rowsSha256": "1ae042b1d3d331016e02c78bd8e542790926d4c5de3620769a7ca1d1130fca59",
+  "completedSeeds": 9,
+  "fights": 93,
+  "roots": 1728,
+  "leaves": 4935
+ },
+ {
+  "unit": "w19/natural-60001035-9",
+  "rowsSha256": "6b384ef37abf91f6245bc1467d0e4ee92ef414a82ef217b349d39dbfcfaed79c",
+  "completedSeeds": 9,
+  "fights": 88,
+  "roots": 1618,
+  "leaves": 4588
+ },
+ {
+  "unit": "w19/natural-60001044-9",
+  "rowsSha256": "9a850a8b82fd2a0fd3a3b57efd1338390d985ce9d74c61e25d3cb772f6822ceb",
+  "completedSeeds": 9,
+  "fights": 74,
+  "roots": 1275,
+  "leaves": 3613
+ },
+ {
+  "unit": "w19/natural-60001053-9",
+  "rowsSha256": "cd688dcd004c0f1c1fb3f3617af0020ab4f2171d7ea0efb2a350f639f518cb3b",
+  "completedSeeds": 9,
+  "fights": 90,
+  "roots": 1657,
+  "leaves": 4579
+ },
+ {
+  "unit": "w19/natural-60001062-9",
+  "rowsSha256": "446a7564a51b9beee9fea409d9184361412d12ac10ac1bf494f2141d5d08ff11",
+  "completedSeeds": 9,
+  "fights": 90,
+  "roots": 1480,
+  "leaves": 3979
+ },
+ {
+  "unit": "w19/natural-60001071-9",
+  "rowsSha256": "d3820bfa5832969d325044df49c435058048afe38df8329c16ed029e6a38fe5f",
+  "completedSeeds": 9,
+  "fights": 76,
+  "roots": 1496,
+  "leaves": 4270
+ },
+ {
+  "unit": "w19/perturbed-60003026-9",
+  "rowsSha256": "b1f55c5471c60215b70a09ed9a6511b9f9260c1a518a2e85810519f2d72d5d43",
+  "completedSeeds": 9,
+  "fights": 78,
+  "roots": 1253,
+  "leaves": 3537
+ },
+ {
+  "unit": "w19/perturbed-60003035-9",
+  "rowsSha256": "23a5df9217ee19df38ad1f85866a7888d38f6ef19cf316b6134ebf8d2fabd357",
+  "completedSeeds": 9,
+  "fights": 95,
+  "roots": 1422,
+  "leaves": 3750
+ },
+ {
+  "unit": "w19/perturbed-60003044-9",
+  "rowsSha256": "e00809c96b949f78d68874891b592bd813f69e7d29ed623b24396f43a07b9b1d",
+  "completedSeeds": 9,
+  "fights": 87,
+  "roots": 1366,
+  "leaves": 3571
+ },
+ {
+  "unit": "w19/perturbed-60003053-9",
+  "rowsSha256": "85e1fbcbefc346c153d2e52b2c76943ff79868aa4f36f70afb22acd1f2b8e81c",
+  "completedSeeds": 9,
+  "fights": 85,
+  "roots": 1753,
+  "leaves": 4920
+ },
+ {
+  "unit": "w19/perturbed-60003062-9",
+  "rowsSha256": "2d138f826f71c742e56af09e4524a23f4648187b03be1a1c89aac7d616fb89a1",
+  "completedSeeds": 9,
+  "fights": 83,
+  "roots": 1620,
+  "leaves": 4925
+ },
+ {
+  "unit": "w19/perturbed-60003071-9",
+  "rowsSha256": "9cab4ee99e4f76ad5101660a1f7ce74d2fb9d0757e1b52c0a46678c4b2264068",
+  "completedSeeds": 9,
+  "fights": 86,
+  "roots": 1418,
+  "leaves": 4045
+ }
+]
