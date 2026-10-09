@@ -87,6 +87,12 @@ Attention and the DeepSets artifacts:
   `--writhing-ritual` flag makes the Writhing Mass + Ritual Dagger cohort a
   gated one (it is diagnostic otherwise) and keeps those rows under
   `--final-support`; `--escape` likewise keeps Smoke Bomb rows.
+- Escapes with no Smoke Bomb before combat (a Brew-generated Smoke Bomb drunk
+  mid-fight) are scored as their own `brewGeneratedEscape` exposure slice,
+  always diagnostic-only, and are removed from every gated cohort; the escape
+  head conditions only on a Smoke Bomb held at the start. The exact gold
+  correction and the near-full export gate only on non-diagnostic slices.
+  (Path B run 2: 3 such TEST rows failed the relic slice at +1.15.)
 - `one_combat ctmlizardfeatures ROWS.jsonl FAST.native STANDARD.native OUT.csv`
   writes one line per row whose pre-state has an active Lizard Tail: the label
   (0 a win with the Tail unused, 1 a win after it fired, 2 a loss), the routed

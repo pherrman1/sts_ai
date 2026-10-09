@@ -20,6 +20,27 @@ def escape_hp(head,m,z,delta,pre,maximum,bit):
     return head.probabilities(z,delta,pre,maximum,bit,m.classes)
 
 
+# Escapes with no Smoke Bomb before combat (a Brew-generated Smoke Bomb drunk mid-fight). The escape head
+# only conditions on a Smoke Bomb held at the start, so these rows are scored as their own reported slice and
+# kept out of every gated cohort (#418 decision 2026-10-09).
+DIAGNOSTIC_COHORTS=('brewGeneratedEscape',)
+
+
+def cohort_masks(test,ids,rows,records,recursive_ids):
+    smoke=np.any(test['potions']==t.SMOKE,-1);unrepresentable=test['escaped'].astype(bool)&~smoke
+    transplus=c.base._CARD_IDS['TRANSMUTATION']
+    cohorts=dict(entireFinalUnion=np.ones(len(ids),bool),previous179=test['old'],recovered=~test['old'],brew=np.any(test['potions']==t.BREW,-1),smoke=smoke,writhing=test['writhing'],ritual=test['dagger'],writhingRitual=test['writhing']&test['dagger'],gold=np.asarray([int(i) in records for i in ids]),recursiveBrew=np.isin(ids,list(recursive_ids)),escape=test['escaped'].astype(bool),
+                 transmutationPlus=np.asarray([any(card['cardId']==transplus and card['upgraded'] for card in r['pi']['cards']) for r in rows]))
+    cohorts={name:np.asarray(mask,bool)&~unrepresentable for name,mask in cohorts.items()}
+    cohorts['brewGeneratedEscape']=unrepresentable
+    return cohorts
+
+
+def gated_entries(report):
+    """The slice entries of an exposure report that gate export (diagnostic slices are reported only)."""
+    return [v for component in report['components'].values() for v in component.values() if not v.get('diagnosticOnly')]
+
+
 def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False,escape=None,writhing_ritual=False):
     """escape: an escape fit checkpoint (tools/ctm_escape.py). Each draw then samples the
     escape before HP and conditions HP and the potion trajectory on it."""
@@ -82,8 +103,7 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
     teacher_nll=e.nll(teacher);mixture_nll=e.nll(mixture);gap=mixture_nll-teacher_nll
     groups=test['observed'].sum(-1).clip(min=1);teacher_nll[:,2]/=groups;mixture_nll[:,2]/=groups;gap[:,2]/=groups
     recursive_ids={int(r['index']) for r in json.loads((parent/'brew-native-label-audit-v1.json').read_text())['recursiveExamples']}
-    cohorts=dict(entireFinalUnion=np.ones(n,bool),previous179=test['old'],recovered=~test['old'],brew=np.any(test['potions']==t.BREW,-1),smoke=np.any(test['potions']==t.SMOKE,-1),writhing=test['writhing'],ritual=test['dagger'],writhingRitual=test['writhing']&test['dagger'],gold=np.asarray([int(i) in records for i in ids]),recursiveBrew=np.isin(ids,list(recursive_ids)),escape=test['escaped'])
-    transplus=c.base._CARD_IDS['TRANSMUTATION'];cohorts['transmutationPlus']=np.asarray([any(card['cardId']==transplus and card['upgraded'] for card in r['pi']['cards']) for r in rows])
+    cohorts=cohort_masks(test,ids,rows,records,recursive_ids)
     names=('hp','potion','relic','writhing','ritual','gold');components={};passes=[]
     for j,name in enumerate(names):
         active=np.ones(n,bool)
@@ -95,7 +115,7 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
         for cohort,mask in cohorts.items():
             chosen=mask&active
             if not chosen.any():continue
-            gate=bool(np.isfinite(gap[chosen,j]).all() and gap[chosen,j].mean()<=q.RECIPE['threshold']);diagnostic=((not final_support) and cohort in ('recursiveBrew','transmutationPlus')) or (cohort=='writhingRitual' and not writhing_ritual)
+            gate=bool(np.isfinite(gap[chosen,j]).all() and gap[chosen,j].mean()<=q.RECIPE['threshold']);diagnostic=((not final_support) and cohort in ('recursiveBrew','transmutationPlus')) or (cohort=='writhingRitual' and not writhing_ritual) or cohort in DIAGNOSTIC_COHORTS
             component[cohort]=dict(rows=int(chosen.sum()),teacherNll=float(teacher_nll[chosen,j].mean()),mixtureNll=float(mixture_nll[chosen,j].mean()),exposure=e.source_gap_bootstrap(test['source'][chosen],gap[chosen,j]),zeroExactMassRows=int((mixture[chosen,j]<=0).sum()),gate=gate,diagnosticOnly=diagnostic)
             if not diagnostic:passes.append(gate)
         components[name]=component

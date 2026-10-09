@@ -4,11 +4,12 @@ import argparse,json,struct,hashlib,subprocess
 from pathlib import Path
 from tools import export_combat_transition_runtime as old,combat_transition_near_full_models as models
 from tools import combat_transition_composed as c,combat_transition_near_full_support as support
+from tools import combat_transition_near_full_exposure as exposure
 
 def export(parent,qualification,validity,output):
     gate=json.loads(qualification.read_text());raw=json.loads(validity.read_text());census=json.loads((parent/'final-support-census-v1.json').read_text())
     if gate['classification']!='FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS' or not gate['finalSupport'] or not raw['finalSupport']:raise ValueError('final supported cohort not qualified')
-    if any(not v['gate'] or v['zeroExactMassRows'] for component in gate['components'].values() for v in component.values()):raise ValueError('slice exposure gate failed')
+    if any(not v['gate'] or v['zeroExactMassRows'] for v in exposure.gated_entries(gate)):raise ValueError('slice exposure gate failed')
     if any(raw['violations'].values()) or raw['counts']['downstreamAfterDeath'] or raw['counts']['draws']!=32*census['groups']['TEST']['counts']['supported']:raise ValueError('whole final support validity failed')
     if c.base.sha256(qualification.with_suffix('.npz'))!=gate['rowEvidenceSha256']:raise ValueError('exposure rows differ')
     m,nets,bindings=models.load(parent,'cpu')
