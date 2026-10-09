@@ -1,4 +1,4 @@
-# Learned encoder Silver root prior (ledger §403)
+# Learned encoder Silver root prior (ledger §404)
 
 - Rules: [PREREG.md](PREREG.md) (stage 1 committed at 1a0ac660 before
   training; stage 2 at 8b3bd752 before any 5x data existed).

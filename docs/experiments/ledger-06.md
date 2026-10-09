@@ -15264,7 +15264,7 @@ needs its own go.
 **Knowledge impact:** this entry, and the `STS_STOP_AFTER_ACT` row of the
 [environment-variable table](../knowledge-base/operations/environment-variables.md).
 
-## §403 — Learned encoder Silver root prior: ties GBM v2 at 6x data, no 2k gain (2026-10-09)
+## §404 — Learned encoder Silver root prior: ties GBM v2 at 6x data, no 2k gain (2026-10-09)
 
 **Question:** after §400 (GBM priors stall on hand-made features), does a
 learned encoder over the structured combat state fit the 10k search's choices
@@ -15296,16 +15296,26 @@ where both searches agree (32,309 roots in all); the two searches agree on
 | encoder | 6x | 70.6% | 61.7% | 1.124 |
 
 - Stage 1 encoder overfit after epoch 7. An exploratory learning curve
-  (regularized) rose ~3 points per doubling of data, which motivated stage 2.
+  (regularized) rose 2 to 3 points per doubling of data, which motivated
+  stage 2.
+- Deviations from the pre-registration: 238 of the 240 pre-registered units
+  (2,160 runs) were used, because one unit never reported and one finished
+  after tokenization; 242 training roots with more than 128 tokens or 64
+  actions were skipped for memory (evaluation covers every root); the 6x
+  encoder's best epoch was the last of its 12-epoch cap, with validation
+  cross-entropy nearly flat but still falling.
 - Exploratory replay (not a gate; §400 test roots, 8,188 runs per arm), regret
   vs plain at 2k: v1 −0.09 [−0.24, +0.04], v2-6x −0.09 [−0.20, −0.00],
   encoder-6x (w 400, no own weight pick) −0.07 [−0.23, +0.09]; v2-6x − v1
   −0.005 [−0.11, +0.11]. At 256 sims the encoder is best (−0.49 vs plain).
 
 **Interpretation:**
-- More data helped both model families about equally (+3 points agree-root
-  top-1); with 951k roots the learned encoder ties GBM v2 on choice accuracy
-  and edges it on cross-entropy. Features were not the limit once data grew.
+- More data helped v2 by +3.0 points agree-root top-1 (67.8 to 70.8) and the
+  encoder by +7.2 (63.4 to 70.6); the encoder comparison also changes the
+  recipe (unregularized stage 1 vs the regularized 6x configuration). With
+  951k roots the learned encoder ties GBM v2 on choice accuracy and edges it
+  on cross-entropy. Inference: the encoder caught up with the hand-made
+  features rather than exposing a feature limit.
 - Better fit still does not lower root regret at the 2k budget: v1, v2-6x and
   the encoder all sit near −0.09 there. Inference: at 2k, Silver's own search
   already recovers most of what a root prior of this quality adds; the
@@ -15317,6 +15327,10 @@ where both searches agree (32,309 roots in all); the two searches agree on
 **Evidence:** [packet](evidence/silver_encoder_prior_20261008/README.md);
 corpus README at
 `/mnt/project-files/silver-synthetic-prior/corpus5x-450376c8/README.md`.
+
+**Remaining uncertainty:** the 12-epoch cap may have stopped the encoder
+slightly early; the encoder replay arm used w = 400 without its own weight
+pick.
 
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
