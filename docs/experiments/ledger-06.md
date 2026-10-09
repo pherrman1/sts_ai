@@ -15816,7 +15816,11 @@ up to 220, Writhing Mass + Ritual Dagger, and active Lizard Tail with Entropic B
 - **Capability exposure checks failed for the two new support slices.** E1 (escape, Smoke cohort) failed on small
   Smoke ∩ Ritual/gold slices. E2 (Writhing+Ritual, whole union) failed: mean gap +0.139 [0.048, 0.271] on 149 rows,
   the same miss production has (gate 0.1). At 13:36Z Philipp chose "Escape only": Writhing+Ritual stays excluded.
-  **Open:** the escape override record is not written yet; Philipp's typed confirmation is pending.
+  Philipp typed "yes, record escape only" (2026-10-09 20:32Z). Override record `escape-exposure-override.json`
+  (schema `ctm_exposure_decision_v1`) sha256 `2e1b3fcd774f00576858ab668492a6968bd483bbd79bb61f3c0f3d0c1150ee21`,
+  kept with the stage 19 record in the R2 durable folder on Philipp's machine. It lists the four E1 misses (hp.ritual,
+  potion.ritual, relic.gold, relic.ritual), the diagnosis (Smoke Bomb held and unused in won fights; the escape head
+  is overconfident there) and Writhing+Ritual as dropped.
 - **Fast escape fit:** VALIDATION NLL 0.264 vs 0.377 for a constant.
 - **Lizard fit:** the standard child's `l2` is at the grid edge (10). Fairy and Brew `r` are worse than a constant on
   VALIDATION, so those paths are off (`lizardBrew`/`lizardFairy` not enabled).
@@ -15872,7 +15876,7 @@ exact 10k, §384 live harness, act-3 stop, all through `tools/seed_guard.sh`. Ar
 - Neither MCTS arm beats MCTS off. `prod − off` is −7.0 pp here versus −21.9 pp in §384 on other seeds. **Inference:**
   the refreshed CTM does not by itself close the §384 gap; per PREREG only a `cand − off` CI above 0 would justify an
   OOC-MCTS-on confirmation, so none is indicated.
-- **Open:** the escape override record and Philipp's typed confirmation; the stage 19 `cards` accuracy miss.
+- **Open:** the stage 19 `cards` accuracy miss (accepted by override).
 
 **Correction to §386:** Stage 0 did have escapes: 10 rows in the learned arm and 15 in the exact arm. Stage 0's
 `analyze.py` counted escapes as outcome 0 (they are stored as wins with `post.smokeBombUsed`). All of them were
