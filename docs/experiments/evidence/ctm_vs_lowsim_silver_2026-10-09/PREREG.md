@@ -45,9 +45,27 @@ The source and the 10k arms run with the prior forced off by a thread override.
 
 ## Seeds and budget
 
-Fresh seeds 62000000..62000063 (64 source runs), Ascension 0, four shards of
-16 seeds in one cloud container. Expected cost about 3x the teacher cost per run,
-roughly 3 CPU-hours.
+Fresh seeds 62000000..62000127 (128 source runs), Ascension 0, four shards of
+32 seeds (62000000+32i, i = 0..3) in one cloud container, one thread each.
+The smoke seed 62009000 (25 fights, 151 s wall) gives roughly 1.5 to 2 CPU-min per
+source run, so about 4 CPU-hours. 128 rather than 64 because fight deaths are rare
+(about one per lost run) and the Brier comparison needs them.
+
+## Frozen provenance
+
+- Code SHA `1f53715d` (branch `claude/project-thread-wfsdk0`, main `82c4946a` plus
+  this mode); Release `one_combat` sha256
+  `3e918355c594d362eac3ae1648d3133d88e3c9e4b857e43cc6bde155b5264031`.
+- Teacher `teacher.json` here (exact-10k ordinary Silver, frozen V4 OOC policy as
+  in #400); environment `env.sh` here (`$RUN` = run directory).
+- Prior sha256 `573305c48076c135f791d0712efb03be7e620aeeb961e962700ce2c60188c6ee`.
+- CTM artifacts: tracked production files, hashes recorded in each manifest.
+- Command per shard: `tools/seed_guard.sh $RUN/one_combat ctmsilvergen 32 0
+  $RUN/shardI 6200000X $RUN/teacher.json 4`.
+
+Smoke (seed 62009000, not part of the cohort): 25 fights, CTM supports 24
+(one Smoke Bomb state), control replay 24/25; the one miss is a Smoke Bomb
+escape whose source label is itself quarantined (`escape`).
 
 ## Decision rule
 
@@ -70,9 +88,11 @@ Retirement reading: an accuracy label alone does not retire the CTM. Any
 retirement proposal must also state the measured CPU ratio, because OOC MCTS
 resolves many combats per decision.
 
-Validity: a state counts only if its source trajectory is valid, the control
-replay reproduces the source fight, and every arm row is valid. Any control
-mismatch is reported; more than 1% mismatches stops the interpretation.
+Validity: a state counts only if its source trajectory and label are valid, the
+control replay reproduces the source fight, and every arm row is valid. Escape
+fights (quarantined labels) are excluded and counted. A control mismatch on a
+state with a valid source label is reported; more than 1% of such states stops
+the interpretation.
 
 ## Analysis
 
