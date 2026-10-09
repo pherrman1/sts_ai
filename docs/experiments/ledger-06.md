@@ -15570,3 +15570,49 @@ arm started (probably copy times), so the order cannot be proven either way.
 
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
+
+## §409 — A20 card ranker on floor reached: offline, not shown (2026-10-09)
+
+**Question:** at A20, card-reward options differ by about 2 floors in floor
+reached (§402), but not in wins. Can a GBM trained on the §402
+counterfactual corpus pick cards that reach more floors than V4?
+
+**Context:** live OOC MCTS card picks follow the V4 prior. Across 85 card
+roots in the §389 profiles, it chose the max-prior card 73 times and the
+max-Q card 24 times. Philipp chose to pursue cards at A20 with a floor
+target.
+
+**Design:** [PLAN.md](evidence/a20_card_floor_20261009/PLAN.md), committed
+before fitting (`5457e729`). Offline only; no gameplay seeds.
+- **Data:** the §402 corpus (`5ba068e0`, 1,200 card-reward states, K=2).
+- **Target:** `horizonFloor`.
+- **Features:** X2-B public map-row features, HIDDEN_FUTURE dropped.
+- **Split:** `source_split`, with early stopping on an inner 20% of TRAIN
+  sources, so VALIDATION is used only for scoring. TEST is closed.
+- **Model:** XGBoost regression, 3 seeds.
+- **Rule:** PASS if the primary arm's VALIDATION selection-gain CI vs V4
+  excludes 0 from below.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_floor.py` at `ea76456a`, 189
+VALIDATION states).
+- CARD − V4: −0.47 floors [−1.46, +0.43].
+- Diagnostics:
+  - ALL: −0.39 [−1.38, +0.60].
+  - CARD_50: −0.41 [−1.28, +0.41], so the learning curve is flat.
+  - X2-B: −0.88 [−1.74, −0.06].
+  - Uniform random: −0.95 [−1.80, −0.13].
+  - CARD − X2-B: +0.42 [−0.43, +1.24].
+
+**Interpretation (Inference):**
+- V4 is the best available A20 card picker; it beats random by about 1 floor.
+- X2-B is no better than random on cards.
+- A GBM on 840 TRAIN states does not reach V4, and halving its data changes
+  nothing. A card leaf for OOC MCTS is not available from this corpus.
+- Options not tested: much more counterfactual data, or V4 logits as a model
+  input.
+
+**Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
+[report.json](evidence/a20_card_floor_20261009/report.json).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
