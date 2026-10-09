@@ -89,7 +89,7 @@ def match_state(state, opts, probe_opts, corpus_rows, columns):
     return True
 
 
-def strength(st, enc, state_row):
+def strength(enc, state_row):
     """Weighted CTM utility per option; encounters unsupported for any option are dropped for all."""
     ok = enc.groupby(["pool", "encounter"])["supported"].transform("min").astype(bool)
     enc = enc[ok]
@@ -138,7 +138,7 @@ def main():
         if not match_state(state, opts, probe_opts, corpus_rows, rich) or state not in probe_states:
             mismatched.append(list(state))
             continue
-        scores, missing, counts = strength(None, probe_enc.get(state, probe["strength"].iloc[:0]),
+        scores, missing, counts = strength(probe_enc.get(state, probe["strength"].iloc[:0]),
                                            probe_states[state])
         if missing or len(scores) != len(opts) or any(np.isnan(v) for v in scores.values()):
             unscored.append(dict(state=list(state), missing=missing))

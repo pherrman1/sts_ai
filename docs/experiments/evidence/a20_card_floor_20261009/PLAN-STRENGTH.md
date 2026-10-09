@@ -56,6 +56,17 @@ utility:
 
 The starting HP is the state's current HP.
 
+**CTM input at ascension 0.** A one-seed mechanism smoke (seeds 59100000 and
+59100001, before any scoring) showed the production CTM is degenerate at
+ascension 20. With ASC 20 in the input it returned death 0 and one fixed HP
+fraction for every encounter and every option: 1.0 at 75/75 HP against Donu
+and Deca, and 0.62 for all 17 act-2 encounters. Its scalar normalisation puts
+ASC 20 far outside the training range. The brew fallback was flat as well
+(death 0.063 for every act-2 encounter). With ASC 0 in the input, the same
+states give encounter-dependent values. The probe therefore prices each deck
+at ascension 0: a strength proxy against the act's enemy types, not an A20
+survival estimate.
+
 **Pools** (acts 1 to 3):
 
 | Pool | Encounters | Pool value |
@@ -110,7 +121,16 @@ tied, otherwise to the lowest option index.
 - **Implementation:**
   - the default-off mode `one_combat cardstrengthprobe` in
     `apps/one_combat/combat_datasets.cpp`, registered in `tools/seed_guard.sh`;
-  - analysis in `tools/a20_card_strength.py`.
+  - analysis in `tools/a20_card_strength.py`;
+  - the runner `run_strength.sh`, called as
+    `run_strength.sh BINARY FROZEN_SHA OUT 59100000 1200 4`. It runs one seed
+    per call through the seed guard and skips TEST seeds.
+- **Mechanism smoke (done before freezing):** seeds 59100000 (TRAIN) and
+  59100001 (VALIDATION). Both decisions matched the corpus exactly (option
+  keys, chosen flags and 1,013 rich-row fields), with no unsupported
+  encounters. A perturbed rich row was correctly rejected. These two states
+  are part of the primary set; their outcomes were printed by the smoke and
+  are not used to change anything here.
 - **Run:**
   - about 1,030 source replays at about 12 CPU-s each (the corpus mean
     `sourceCpuSeconds`), plus about 4 options × 19 CTM probes per state;
@@ -124,7 +144,9 @@ tied, otherwise to the lowest option index.
 
 ## Known caveats
 
-- The CTM was trained mostly on A0 fights. ASC is an input, but whether it
-  prices A20 enemies well is untested here (§408 measured A0).
+- The CTM was trained on A0 fights, and is evaluated here at ASC 0 (see
+  above). A20 enemies hit harder and have more HP, so the score understates
+  danger. Whether the ASC 0 card ranking transfers to A20 is exactly what the
+  floor-reached metric tests.
 - The score ignores the order of fights, HP carried between fights, rests and
   upgrades. It is a strength proxy, not a run simulator.

@@ -2887,7 +2887,11 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                     probe.curRoom = pool == "boss" ? Room::BOSS : pool == "elite" ? Room::ELITE : Room::MONSTER;
                     probe.info.encounter = encounter;
                     probe.curMapNodeX = -1;   // no burning-elite flag from the node just left
-                    const auto input = one_combat::captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
+                    auto input = one_combat::captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
+                    // The production CTM saturates at ascension 20 (out of its training
+                    // range: death 0 and one HP value for every encounter), so the probe
+                    // prices the deck at ascension 0.
+                    input.globals.ascension = 0;
                     const auto estimate = sampler->expectation(probe, input);
                     ++probes;
                     if (!estimate.supported) ++unsupported;
@@ -2917,7 +2921,7 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
         {"selection", "ooccfpilotgen GEN=2 STATES=2 TYPES=CARD_REWARD,BOSS_RELIC; CARD_REWARD probed"},
         {"combatModel", {{"fast", fastModel}, {"fastSha256", fileSha256(fastModel)},
                          {"brewFallback", brewModel}, {"brewFallbackSha256", fileSha256(brewModel)},
-                         {"activeLizard", true}, {"smokeBombMask", true}}},
+                         {"activeLizard", true}, {"smokeBombMask", true}, {"inputAscension", 0}}},
         {"encounters", "act weak/strong pools with simulator weights, act elites 1/3 each, act boss (acts 1..3)"},
         {"utility", "0.75*(1-death) + 0.25*(1-death)*winHpFraction (bossLeafUtility)"},
         {"integrity", {{"cardStates", states}, {"optionsOk", optionsOk}, {"optionsFailed", optionsFailed},
