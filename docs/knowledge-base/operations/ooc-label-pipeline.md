@@ -87,6 +87,12 @@ Attention and the DeepSets artifacts:
   `--writhing-ritual` flag makes the Writhing Mass + Ritual Dagger cohort a
   gated one (it is diagnostic otherwise) and keeps those rows under
   `--final-support`; `--escape` likewise keeps Smoke Bomb rows.
+- Escapes with no Smoke Bomb before combat (a Brew-generated Smoke Bomb drunk
+  mid-fight) are scored as their own `brewGeneratedEscape` exposure slice,
+  always diagnostic-only, and are removed from every gated cohort; the escape
+  head conditions only on a Smoke Bomb held at the start. The exact gold
+  correction and the near-full export gate only on non-diagnostic slices.
+  (Path B run 2: 3 such TEST rows failed the relic slice at +1.15.)
 - `one_combat ctmlizardfeatures ROWS.jsonl FAST.native STANDARD.native OUT.csv`
   writes one line per row whose pre-state has an active Lizard Tail: the label
   (0 a win with the Tail unused, 1 a win after it fired, 2 a loss), the routed
@@ -115,6 +121,17 @@ Attention and the DeepSets artifacts:
   It refuses a pair stamped against a different standard artifact and
   production-promoted inputs; the loader refuses a pair that disagrees on
   `escape`/`writhingRitual` (CTest `ctm_candidate_tool`).
+- A retrained standard export loads in C++ only stamped, so native parity
+  (`qualify_combat_transition_near_full.py`) and the runtime `support-only`
+  probe run on STD1 with the interim manifest's environment variables set (the
+  probe subprocess inherits them). When the union TEST split lacks a
+  `pre_smoke_bomb_used` row, qualify sets `smokeBombUsed` on an allowed row,
+  lists it under `syntheticExclusionFixtures` and requires the native rejection
+  reason to name it; `smoke_bomb` and `writhing_ritual_intersection` still need
+  real rows.
+  `tools/ctm_support_census_check.py --runtime SUPPORT.jsonl --census
+  final-support-census-v1.json` checks that the runtime support over the union
+  corpus has the census row count, supported count and supported-index digest.
 
 `one_combat combattransitionforcedgen N SIMS ASC OUT SEED TEACHER SETUP`
 (#418) runs the same producer and learned-stop-capable teacher contract with
