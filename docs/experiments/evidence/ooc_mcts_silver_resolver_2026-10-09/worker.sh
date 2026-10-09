@@ -3,7 +3,8 @@
 #   bash worker.sh setup W        build one_combat at CODE_COMMIT, check hashes, stage inputs in $HOME/silvres-wWW,
 #                                 return to the run commit
 #   bash worker.sh smoke W        (worker 1 only) one seed per arm, banner checks -> OUT/SMOKE_PASS|SMOKE_FAIL
-#   bash worker.sh run W          this worker's 16 units, 4 at a time -> OUT/DONE.txt
+#   bash worker.sh run W          this worker's 7 units (block of 8 seeds), 4 at a time -> OUT/DONE.txt
+# W = 1..16; worker W runs seeds 64000000+8(W-1) .. +7 in all four arms.
 #   bash worker.sh status W
 set -uo pipefail
 CMD=$1 W=$2 WW=$(printf %02d "$2")
@@ -14,7 +15,9 @@ OUT=$SHARE/w$WW RUN=$HOME/silvres-w$WW
 EXPECT_BIN=$(cat "$D/binary.sha256")
 stop() { echo "STOP: $*"; exit 1; }
 check() { [ "$(sha256sum "$1" | cut -d' ' -f1)" = "$2" ] || stop "sha256 mismatch: $1"; }
-blocks() { for b in $((W-1)) $((W+3)) $((W+7)) $((W+11)); do echo $((64000000 + 8*b)); done; }
+LO=$((64000000 + 8*(W-1)))
+[ "$W" -ge 1 ] && [ "$W" -le 16 ] || { echo "STOP: W must be 1..16"; exit 1; }
+NUNITS=7
 case $CMD in
 setup)
   [ -z "$(git status --porcelain --untracked-files=no)" ] || stop "checkout not clean"
@@ -48,16 +51,16 @@ smoke)
   cat "$S/summary.txt" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"
-  { for lo in $(blocks); do echo "silv2048 $lo 8"; done
-    for lo in $(blocks); do echo "prod $lo 8"; echo "silvcpu $lo 8"; done
-    for lo in $(blocks); do echo "off $lo 8"; done; } > "$OUT/units.txt"
+  # silv2048 costs ~4x a CTM run, so it runs as four units of 2 seeds.
+  { for k in 0 2 4 6; do echo "silv2048 $((LO+k)) 2"; done
+    echo "prod $LO 8"; echo "silvcpu $LO 8"; echo "off $LO 8"; } > "$OUT/units.txt"
   xargs -P 4 -L 1 bash "$D/run_unit.sh" "$REPO" "$RUN" "$OUT" < "$OUT/units.txt"
   n=$(ls "$OUT"/*.done 2>/dev/null | wc -l)
-  [ "$n" = 16 ] && { echo "finished=$(date -u +%FT%TZ)"; cat "$OUT"/*.done; grep -h "bestbench-seed-failure" "$OUT"/*.log;
+  [ "$n" = $NUNITS ] && { echo "finished=$(date -u +%FT%TZ)"; cat "$OUT"/*.done; grep -h "bestbench-seed-failure" "$OUT"/*.log;
     sha256sum "$OUT"/*.csv; } > "$OUT/DONE.txt"
-  echo "units done: $n/16" ;;
+  echo "units done: $n/$NUNITS" ;;
 status)
-  echo "done $(ls "$OUT"/*.done 2>/dev/null | wc -l)/16"; cat "$OUT"/*.done 2>/dev/null; grep -h "bestbench-seed-failure" "$OUT"/*.log 2>/dev/null
+  echo "done $(ls "$OUT"/*.done 2>/dev/null | wc -l)/$NUNITS"; cat "$OUT"/*.done 2>/dev/null; grep -h "bestbench-seed-failure" "$OUT"/*.log 2>/dev/null
   pgrep -fa "one_combat bestbench" | wc -l ;;
 *) stop "unknown command $CMD" ;;
 esac

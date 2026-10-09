@@ -60,11 +60,12 @@ reported.
 
 ## Cohort and budget
 
-- Seeds 64000000–64000127 (128 runs per arm, fresh), 16 blocks of 8; worker W runs blocks W−1, W+3, W+7,
-  W+11 in all four arms. Smoke seed 64009001 (worker 1).
-- 4 cloud workers × 4 CPU, each building the binary itself (sha256 in [binary.sha256](binary.sha256)).
+- Seeds 64000000–64000127 (128 runs per arm, fresh), 16 blocks of 8. Philipp chose (16:08Z) 16 cloud
+  workers × 4 CPU: worker W = 1..16 runs block W−1 in all four arms, `silv2048` as four units of 2 seeds.
+  Smoke seed 64009001 (run once before launch, in the §408 thread's container).
+- Each worker builds the binary itself (sha256 in [binary.sha256](binary.sha256)).
 - Expected CPU per run (smoke, Inference): `prod` ≈ 135 s, `silvcpu` ≈ 135 s, `off` ≈ 55 s, `silv2048`
-  ≈ 565 s. Total ≈ 32 CPU-hours, about 2 h per worker after a ~25 min build.
+  ≈ 565 s. Total ≈ 32 CPU-hours, about 35–45 min per worker after a ~25 min build.
 - Per-unit timeout 6 h. Silver stalls in live combat are caught per seed by `bestbench`
   (`[bestbench-seed-failure]`); such seeds drop out of every pair that needs them. No seed is rerun or
   replaced.
@@ -87,7 +88,7 @@ the CTM would not cost wins at equal CPU in this pilot; it does not prove equiva
 
 ## Validity
 
-- All 64 units rc=0 apart from per-seed stall failures, which are listed. Any other nonzero rc, crash or
+- All 112 units rc=0 apart from per-seed stall failures, which are listed. Any other nonzero rc, crash or
   missing unit makes the affected comparison INVALID.
 - Every `silv*` log names the resolver banner (`silver_sims=64`, `scope=override`); no `prod` log does, and
   `prod` logs name the production CTM artifact.
