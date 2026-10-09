@@ -1,0 +1,371 @@
+{
+  "act": 3,
+  "bossBattlesSeen": 3,
+  "capturedBoss": "AWAKENED_ONE",
+  "checks": {
+    "aRep0RepeatIdentical": true,
+    "allRowsValid": true,
+    "budgetSpentEveryRoot": true,
+    "checkedReps": 8,
+    "controlParity": {
+      "fullTrace": true,
+      "pass": true,
+      "postExitStateDigest": true,
+      "simulations": true,
+      "terminalHp": true,
+      "won": true
+    },
+    "controlRepeatIdentical": true,
+    "startDigestIdentical": true
+  },
+  "entryDescriptor": {
+    "act": 3,
+    "boss": "AWAKENED_ONE",
+    "deck": [
+      "Defend",
+      "Defend",
+      "Defend",
+      "Bash",
+      "Clash",
+      "Whirlwind+",
+      "Thunderclap",
+      "Shrug It Off+",
+      "Bludgeon",
+      "Spot Weakness",
+      "Whirlwind+",
+      "Battle Trance",
+      "Clash",
+      "Corruption+",
+      "True Grit",
+      "Cleave",
+      "Headbutt+",
+      "Twin Strike+",
+      "Metallicize",
+      "Clothesline+",
+      "Combust",
+      "Bite",
+      "Bite",
+      "Bite",
+      "Bite",
+      "Inflame",
+      "Blood for Blood",
+      "Impervious+",
+      "Rupture+",
+      "Rupture",
+      "Seeing Red",
+      "Second Wind+",
+      "Double Tap",
+      "Twin Strike+",
+      "Violence",
+      "Good Instincts",
+      "Power Through",
+      "Havoc"
+    ],
+    "deckSize": 38,
+    "floor": 50,
+    "gold": 298,
+    "hp": 56,
+    "maxHp": 56,
+    "pathRoomVisits": [
+      3,
+      7,
+      12,
+      6,
+      14,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "potionCapacity": 3,
+    "potionCount": 0,
+    "potions": [
+      "EMPTY_POTION_SLOT",
+      "EMPTY_POTION_SLOT",
+      "EMPTY_POTION_SLOT"
+    ],
+    "relics": [
+      {
+        "data": 0,
+        "relic": "BURNING_BLOOD"
+      },
+      {
+        "data": 0,
+        "relic": "BLOOD_VIAL"
+      },
+      {
+        "data": 0,
+        "relic": "HORN_CLEAT"
+      },
+      {
+        "data": 2,
+        "relic": "PEN_NIB"
+      },
+      {
+        "data": 0,
+        "relic": "SOZU"
+      },
+      {
+        "data": 0,
+        "relic": "HAPPY_FLOWER"
+      },
+      {
+        "data": 0,
+        "relic": "QUESTION_CARD"
+      },
+      {
+        "data": 1,
+        "relic": "NUNCHAKU"
+      },
+      {
+        "data": 0,
+        "relic": "BRONZE_SCALES"
+      },
+      {
+        "data": 0,
+        "relic": "VAJRA"
+      },
+      {
+        "data": 0,
+        "relic": "RED_MASK"
+      },
+      {
+        "data": 0,
+        "relic": "RUNIC_DOME"
+      },
+      {
+        "data": 0,
+        "relic": "DU_VU_DOLL"
+      },
+      {
+        "data": 0,
+        "relic": "CHAMPION_BELT"
+      },
+      {
+        "data": 0,
+        "relic": "PRESERVED_INSECT"
+      },
+      {
+        "data": 0,
+        "relic": "BOTTLED_TORNADO"
+      },
+      {
+        "data": 0,
+        "relic": "ETERNAL_FEATHER"
+      },
+      {
+        "data": 0,
+        "relic": "REGAL_PILLOW"
+      }
+    ],
+    "rngCounters": {
+      "aiRng": 8,
+      "cardRandomRng": 0,
+      "cardRng": 624,
+      "eventRng": 12,
+      "mathUtilRng": 0,
+      "merchantRng": 48,
+      "miscRng": 0,
+      "monsterHpRng": 5,
+      "monsterRng": 103,
+      "neowRng": 5,
+      "potionRng": 104,
+      "relicRng": 11,
+      "shuffleRng": 0,
+      "treasureRng": 29
+    },
+    "rngDigest": "6a437489494d862318bac531ea593a922a5d462b85e68c4d7c666d0d40261de1",
+    "upgrades": 11
+  },
+  "entrySummary": "hp=56;maxHp=56;gold=298;potions=EMPTY_POTION_SLOT|EMPTY_POTION_SLOT|EMPTY_POTION_SLOT;relics=BURNING_BLOOD:0|BLOOD_VIAL:0|HORN_CLEAT:0|PEN_NIB:2|SOZU:0|HAPPY_FLOWER:0|QUESTION_CARD:0|NUNCHAKU:1|BRONZE_SCALES:0|VAJRA:0|RED_MASK:0|RUNIC_DOME:0|DU_VU_DOLL:0|CHAMPION_BELT:0|PRESERVED_INSECT:0|BOTTLED_TORNADO:0|ETERNAL_FEATHER:0|REGAL_PILLOW:0;deck=Defend|Defend|Defend|Bash|Clash|Whirlwind+|Thunderclap|Shrug It Off+|Bludgeon|Spot Weakness|Whirlwind+|Battle Trance|Clash|Corruption+|True Grit|Cleave|Headbutt+|Twin Strike+|Metallicize|Clothesline+|Combust|Bite|Bite|Bite|Bite|Inflame|Blood for Blood|Impervious+|Rupture+|Rupture|Seeing Red|Second Wind+|Double Tap|Twin Strike+|Violence|Good Instincts|Power Through|Havoc",
+  "expectedBoss": "AWAKENED_ONE",
+  "expectedSourceWon": 0,
+  "failures": [],
+  "floor": 50,
+  "outputs": {
+    "rowsSha256": "86d92b91bf538c17e1e7eb10aad73ec7fed1410744b653ce2105d3d0d5d6df21"
+  },
+  "plannerSeedDomain": "boss-deaths-347-planner-v1:{runSeed}:{act}:{rep}",
+  "plannerSeeds": [
+    "ccd6b220bf4283d4",
+    "fb2ca8c5ee16a0b0",
+    "31515cd12b82a336",
+    "edec02fa447b977e",
+    "281b7d11cbb3bb72",
+    "450e41f303487431",
+    "7c5eb5ba00494973",
+    "11de6c52640ff54a"
+  ],
+  "provenance": {
+    "environment": {
+      "OMP_DYNAMIC": "FALSE",
+      "OMP_NUM_THREADS": "1",
+      "STS_COLLECT_KEYS": "0",
+      "STS_EXECUTABLE_GIT_SHA": "93d0bd357e1f04df0034af930cdc6b7dd1851f66",
+      "STS_FAIR": "1",
+      "STS_OOC_MCTS": "0",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_REST_WIN": "0",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+      "STS_SILVER_LEARNED_STOP": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_STOP_AFTER_ACT": "3"
+    },
+    "executableGitSha": "93d0bd357e1f04df0034af930cdc6b7dd1851f66",
+    "executableSha256": "a8fa3bd205d1f4aaffe5c6258e2b7740c6b52d7721fe45b1021ca4802b431f67",
+    "policy": {
+      "flags": {
+        "act_fight_probe_all_ooc": false,
+        "act_fight_probe_draft": false,
+        "act_fight_probe_encounter_nn": false,
+        "act_fight_probe_gate_regret": false,
+        "act_fight_probe_predict": false,
+        "boss_draft": false,
+        "boss_relic_v": false,
+        "boss_v": false,
+        "card_action": false,
+        "card_nn": false,
+        "card_win": false,
+        "collect_keys": false,
+        "event_v": 0,
+        "neow_v": false,
+        "ooc_action_nn": false,
+        "ooc_map_route": false,
+        "ooc_shop_beam": false,
+        "ooc_strategic_boss_relic": true,
+        "ooc_strategic_card": true,
+        "ooc_strategic_event": true,
+        "ooc_strategic_map": false,
+        "ooc_strategic_q": true,
+        "ooc_strategic_rest": true,
+        "ooc_strategic_score_policy": false,
+        "ooc_strategic_shop": true,
+        "ooc_strategic_tok": true,
+        "ooc_strategic_treasure": true,
+        "path_v": 0,
+        "remove_low_obtain_weight": true,
+        "rest_win": false,
+        "shop_win": false
+      },
+      "model_artifacts": [
+        {
+          "path": "models/v_rich_trees.txt",
+          "role": "floor",
+          "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+        },
+        {
+          "path": "models/v_win_trees.txt",
+          "role": "win",
+          "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+        },
+        {
+          "path": "selfplay/models/ooc_strategic_tok_final.native",
+          "role": "ooc_strategic_tok",
+          "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+        }
+      ],
+      "native_ooc": true,
+      "parameters": {
+        "act_fight_probe_checkpoint_sims": [],
+        "act_fight_probe_floor_decay": 0.985,
+        "act_fight_probe_futures": 4,
+        "act_fight_probe_margin": 0.0,
+        "act_fight_probe_max_checkpoints": -1,
+        "act_fight_probe_predict_win_threshold": 0.5,
+        "act_fight_probe_sims": 100,
+        "act_fight_probe_term_win": 0.0,
+        "boss_draft_fights": 4,
+        "boss_draft_futures": 2,
+        "boss_draft_rows": 3,
+        "boss_draft_sims": 150,
+        "boss_v_weight": 0.5,
+        "card_nn_skip": 0.0,
+        "card_nn_weight": 1.0,
+        "card_skip_threshold": -0.5,
+        "card_win_skip": 0.0,
+        "map_route_horizon": 3,
+        "shop_beam_budget": 4096,
+        "shop_beam_depth": 0,
+        "shop_beam_width": 32,
+        "stop_after_act": 3,
+        "strategic_gate": "margin",
+        "strategic_gate_eps": 0.03,
+        "strategic_margin": 1.0,
+        "strategic_margin_boss_relic": -1.0,
+        "strategic_margin_card": -1.0,
+        "strategic_margin_event": -1.0,
+        "strategic_margin_map": -1.0,
+        "strategic_margin_rest": -1.0,
+        "strategic_margin_shop": -1.0,
+        "strategic_margin_treasure": -1.0
+      },
+      "policy_chain": "runFullRunOOC",
+      "restV": false,
+      "schema_version": "runFullRunOOC_policy_v1",
+      "shopV": true
+    },
+    "selectionSha256": "dfc62e24b1a0a24e182469e1d47979f03c53127989bac89683ef1ff684151a3b"
+  },
+  "reconstruction": {
+    "act": {
+      "historical": 3,
+      "reconstructed": 3
+    },
+    "deathCombat": {
+      "historical": 27,
+      "reconstructed": 27
+    },
+    "deathEncounter": {
+      "historical": 53,
+      "reconstructed": 53
+    },
+    "fightsLost": {
+      "historical": 1,
+      "reconstructed": 1
+    },
+    "floor": {
+      "historical": 50,
+      "reconstructed": 50
+    },
+    "hpEnd": {
+      "historical": 0,
+      "reconstructed": 0
+    },
+    "maxHp": {
+      "historical": 56,
+      "reconstructed": 56
+    },
+    "won": {
+      "historical": 0,
+      "reconstructed": 0
+    }
+  },
+  "schema": "boss_deaths_default_347_entry_v1",
+  "seed": 66000090,
+  "sourceArm": "default",
+  "sourceFight": {
+    "cpuSeconds": 0.830395155,
+    "decisions": 48,
+    "postExitDigest": "8ed5a87e2c7f37f65e3a8eb683a739953dccb057ad054f8987f76b353551e7f8",
+    "postExitHp": 0,
+    "simulations": 98000,
+    "terminalHp": 0,
+    "traceLen": 48,
+    "won": 0
+  },
+  "startDigest": "c05859cf494179f59c0160c191d14d3c755dbd7fd04a15139e336c8a04ba0971",
+  "stateId": "D-66000090-a3",
+  "status": "VALID",
+  "stratum": "D"
+}

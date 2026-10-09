@@ -1001,6 +1001,14 @@ run seed), and writes a descriptive `entryDescriptor` (HP, gold, potions, deck,
 upgrades, relics, RNG stream counters, `PathHistory.roomVisits`). The #425
 schema is unchanged and refuses `expectedSourceWon`. See the
 [#347 boss-preparation packet](../../experiments/evidence/boss_preparation_rmatch_347_20261007/PLAN.md).
+A third schema, `boss_deaths_default_347_selection_v1` (§417), replays
+default-stack boss deaths: it requires source arm `default`, plain learned-stop
+Silver (no boss fallback, boss max at most 10k), OOC MCTS off and no
+`expectedSourceWon` (the source fight must be lost). It replays `plannerReps`
+fresh planner seeds keyed by `boss-deaths-347-planner-v1:{runSeed}:{act}:{rep}`
+under that same learned-stop policy; the budget check is that every searched
+root used at most 10,000 steps. See the
+[#347 boss-deaths packet](../../experiments/evidence/boss_deaths_default_347_20261009/PLAN.md).
 Research-only `STS_OOC_DECISION_TRACE=<path>` (diagnostic build `1ed47e5c`,
 on the #428 build `5549a16a`) makes `runFullRunOOC` append one JSON line per
 real out-of-combat step (state before and after, what a reward, shop or boss

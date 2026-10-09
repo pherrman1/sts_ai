@@ -1,0 +1,63 @@
+{
+ "schema": "boss_deaths_default_347_selection_v1",
+ "plannerReps": 2,
+ "selected": [
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66009003,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "historicalRow": {
+    "seed": 66009003,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 90,
+    "fightsLost": 1,
+    "deathCombat": 29,
+    "deathEncounter": 55
+   },
+   "stateId": "smoke-66009003-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66009011,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "historicalRow": {
+    "seed": 66009011,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 85,
+    "fightsLost": 1,
+    "deathCombat": 25,
+    "deathEncounter": 54
+   },
+   "stateId": "smoke-66009011-a3"
+  },
+  {
+   "stratum": "D",
+   "sourceArm": "default",
+   "seed": 66009015,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "historicalRow": {
+    "seed": 66009015,
+    "won": 0,
+    "floor": 33,
+    "act": 2,
+    "hpEnd": 0,
+    "maxHp": 82,
+    "fightsLost": 1,
+    "deathCombat": 17,
+    "deathEncounter": 37
+   },
+   "stateId": "smoke-66009015-a2"
+  }
+ ]
+}
