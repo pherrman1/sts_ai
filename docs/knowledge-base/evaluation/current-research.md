@@ -241,6 +241,17 @@ not considered cleared.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
+## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
+
+On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
+outcome, four low-sim Silver playouts on redrawn combat RNG beat the production
+CTM stack on HP (RMSE 8.8 vs 14.1, CTM about +7 HP optimistic) and on every
+post-combat field (potions, relic counters, max HP, gold, deck), and tie it on
+deaths. The CTM costs 0.6 ms per forecast, versus 64 ms per prior-256 playout
+and 23 ms per prior-64 playout. No default changed; the open questions are the
+Run 2 retrained CTM on the same states and a matched-CPU OOC MCTS gameplay test
+([§408](../../experiments/ledger-06.md), `one_combat ctmsilvergen`).
+
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 
 The independent 512-pair gameplay confirmation is **`OOC_HYBRID_QUALITY_CONFIRMED`**.

@@ -15570,3 +15570,93 @@ arm started (probably copy times), so the order cannot be proven either way.
 
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
+
+## §408 — CTM vs low-sim Silver as combat-outcome forecasters: Silver more accurate on every field, CTM about 400x cheaper (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** could low-sim Silver with the synthetic
+root prior (§406) replace the CTM stack in OOC planning? Compare speed and
+accuracy on the same job.
+
+**Design:** [PREREG.md](evidence/ctm_vs_lowsim_silver_2026-10-09/PREREG.md)
+(v2 committed at `b2504ed3` before its seeds ran). New research mode
+`one_combat ctmsilvergen` (code `ccc3d62a`).
+- At every real fight of a source run (exact-10k Silver, frozen V4 OOC policy,
+  fair RNG), score forecasts of that fight's outcome. The truth is the source
+  fight on the real hidden future.
+- CTM: the production stack (DeepSets Lizard T2 + standard Brew fallback,
+  active-Lizard correction), as the OOC planner loads it. Expectation for
+  death/HP, and 32 `prepare`+`sample` draws of the full post-combat state.
+- Silver arms replay the entry state with the six combat RNG streams redrawn,
+  as a planner would: prior 256, prior 64 and plain 256 (4 replicates each),
+  10k (2 replicates; the noise floor). A control replay on the real future
+  must reproduce the source fight. The root prior (v1, w400) is switched per
+  thread; the source and 10k arms run without it.
+- Losses: death Brier, HP squared error (HP 0 on death), and per field the
+  Brier of the sample distribution (potions, relic counters, max HP, gold,
+  deck, stolen gold, all-but-HP joint, full joint).
+- Primary: prior 256 ×4 − CTM on death Brier and HP MSE, seed-bootstrap CI.
+  Co-primary (v2): the all-but-HP joint field Brier. Labels SILVER_BETTER,
+  CTM_BETTER, SILVER_NONINFERIOR (both CI upper bounds < 10% of the CTM loss)
+  or INCONCLUSIVE.
+- v2 seeds 62100000–62100255 (256 runs), four cloud workers × 4 cores. v1
+  (seeds 62000000–127, only HP and deaths) was stopped by Philipp after an
+  interim look at about 66 seeds and is not pooled. v2's HP and death results
+  are therefore a replication of a read already seen, not a blind test.
+
+**Integrity:** 256/256 sources valid; 6,816 fight states. The control replay
+matches every state with a valid source label. All 28 mismatches are Smoke
+Bomb escapes, whose source label is itself quarantined. 6,782 states are valid
+and the CTM supports 6,750 of them. Unsupported: 33 Smoke Bomb states, 19
+active Lizard outside the qualified support, 4 HP envelope, 1 Writhing
+Mass/Ritual Dagger.
+
+**Result (6,750 CTM-supported states):**
+
+| forecaster | HP RMSE | HP bias | death Brier | all-but-HP Brier | CPU per forecast |
+|---|---|---|---|---|---|
+| CTM (expectation; samples for fields) | 14.1 | +6.9 | 0.0057 | 0.510 | 0.62 ms (one sample 0.53 ms) |
+| prior 256 ×4 | 8.8 | −2.8 | 0.0045 | 0.402 | 251 ms |
+| prior 64 ×4 | 9.6 | −3.8 | 0.0054 | 0.447 | 91 ms |
+| plain 256 ×4 | 9.7 | −3.6 | 0.0055 | 0.446 | 207 ms |
+| 10k ×2 | 7.0 | 0.0 | 0.0056 | 0.269 | 4.5 s |
+| prior 256 ×1 | 10.8 | −2.9 | 0.0086 | – | 64 ms |
+
+- **Primary: SILVER_NONINFERIOR.** HP MSE −121 [−133, −109] (CTM 199);
+  death Brier −0.0012 [−0.0026, +0.0002], below the 10% margin.
+- **Co-primary: SILVER_BETTER.** All-but-HP joint Brier −0.107 [−0.120, −0.094].
+- Every field separately is SILVER_BETTER for prior 256, prior 64 and plain 256
+  (CIs exclude 0). Exact-match rates, CTM vs prior 256: potions 73% vs 81%,
+  relic counters 75% vs 81%, max HP 90% vs 94%, gold 96% vs 98%, full state
+  19% vs 37%.
+- A single playout loses on deaths (prior 256 ×1: CTM_BETTER, +0.0029
+  [+0.0008, +0.0051]), because one playout can only predict 0 or 1.
+- Noise floor (half the 10k ×1 loss): HP MSE 34 (RMSE 5.8), death Brier 0.0037.
+- The CTM error grows with act: HP RMSE 11.7 / 13.7 / 16.9 in acts 1–3, vs 6.7
+  / 9.1 / 10.5 for prior 256 ×4.
+- Speed: the CTM is 404x cheaper than prior 256 ×4, about 100x cheaper than one
+  prior-256 playout and about 37x cheaper than one prior-64 playout.
+
+**Interpretation:**
+- Low-sim Silver is the more accurate combat model on every outcome field the
+  CTM predicts. The production CTM is about 7 HP too optimistic and misses the
+  potion and relic-counter outcomes more often than a 64-sim playout.
+- **Inference:** the bias probably reflects training on older Silver (pre
+  ADR-0021/0026) rather than model capacity; the Run 2 retrain on Philipp's
+  machine (Path B, learned-stop Silver) was not tested here.
+- The prior matters only modestly for forecasting. Plain 256 is close to prior
+  256 on HP and loses mainly on potions.
+- Cost is the open question for retirement. OOC MCTS resolves many combats per
+  decision (512 simulations by default), so a 23–250 ms combat model costs
+  orders of magnitude more per decision than the 0.6 ms CTM. Whether the
+  accuracy gain pays for that needs a gameplay test at matched CPU.
+
+**Decision:** no default or code-path change; the CTM is not retired by this
+entry. Candidate follow-ups, each needing Philipp's go: score the Run 2 retrain
+(FAST0) on the same states, and a matched-CPU OOC MCTS gameplay pilot with a
+Silver combat resolver.
+
+**Evidence:** [README, pre-registration, worker script, report](evidence/ctm_vs_lowsim_silver_2026-10-09/README.md).
+
+**Knowledge impact:** this entry plus one paragraph in
+`docs/knowledge-base/evaluation/current-research.md`; the new mode is
+research-only and changes no default.
