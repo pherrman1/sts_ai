@@ -31,3 +31,10 @@ Written before the G3 candidate was gated. Question as G2, with about twice the 
   RNG 20261010). Secondary: wins, floor >= 50, rows differing.
 - Decision: `RETRAIN_BETTER` if CI lower bound > 0; `RETRAIN_WORSE` if upper bound < 0;
   else `NOT_SHOWN`. No default change in any case.
+
+## Candidate (fixed before the gate ran)
+
+- `R2W30_best_qtop1.pt`: best validation strict Q top-1 **0.302** (epoch 1 of 30; deployed V4
+  at init 0.268; heuristic chosen action 0.341). Exported as `v4_a20_r12.native`, sha256
+  `08d239f9aeaff7cdd57afb2b45a9cbbd1495b1dc9ab51dc09f3c70a61d186b15` (32 parity checks
+  pass; copy and log in `/mnt/project-files/v4-a20-retrain/models/`).
