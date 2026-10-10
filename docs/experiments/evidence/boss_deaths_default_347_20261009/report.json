@@ -1,0 +1,865 @@
+{
+ "schema": "boss_deaths_default_347_report_v1",
+ "verdict": "MIXED",
+ "validEntries": 35,
+ "invalidEntries": [],
+ "selected": 35,
+ "census": {
+  "runs": 256,
+  "wins": 214,
+  "losses": 42,
+  "bossDeaths": 35,
+  "bossDeathsByAct": {
+   "1": 1,
+   "2": 13,
+   "3": 21
+  },
+  "cpuSeconds": 5107.97842
+ },
+ "plannerReps": 8,
+ "meanFreshWinRate": 0.4,
+ "meanFreshWinRateBootstrap95": [
+  0.2642857142857143,
+  0.5357142857142857
+ ],
+ "bootstrap": {
+  "replicates": 10000,
+  "seed": 20261009,
+  "unit": "entry"
+ },
+ "classes": {
+  "DOOMED": 14,
+  "MARGINAL": 6,
+  "WINNABLE": 15
+ },
+ "winDistribution": {
+  "0": 14,
+  "1": 3,
+  "2": 1,
+  "3": 2,
+  "4": 0,
+  "5": 4,
+  "6": 3,
+  "7": 1,
+  "8": 7
+ },
+ "byAct": {
+  "1": {
+   "entries": 1,
+   "freshWins": 8,
+   "freshRuns": 8,
+   "classes": {
+    "DOOMED": 0,
+    "MARGINAL": 0,
+    "WINNABLE": 1
+   }
+  },
+  "2": {
+   "entries": 13,
+   "freshWins": 59,
+   "freshRuns": 104,
+   "classes": {
+    "DOOMED": 3,
+    "MARGINAL": 3,
+    "WINNABLE": 7
+   }
+  },
+  "3": {
+   "entries": 21,
+   "freshWins": 45,
+   "freshRuns": 168,
+   "classes": {
+    "DOOMED": 11,
+    "MARGINAL": 3,
+    "WINNABLE": 7
+   }
+  }
+ },
+ "byBoss": {
+  "AUTOMATON": {
+   "entries": 3,
+   "freshWins": 24,
+   "freshRuns": 24,
+   "classes": {
+    "DOOMED": 0,
+    "MARGINAL": 0,
+    "WINNABLE": 3
+   }
+  },
+  "AWAKENED_ONE": {
+   "entries": 6,
+   "freshWins": 6,
+   "freshRuns": 48,
+   "classes": {
+    "DOOMED": 4,
+    "MARGINAL": 1,
+    "WINNABLE": 1
+   }
+  },
+  "CHAMP": {
+   "entries": 7,
+   "freshWins": 24,
+   "freshRuns": 56,
+   "classes": {
+    "DOOMED": 3,
+    "MARGINAL": 1,
+    "WINNABLE": 3
+   }
+  },
+  "COLLECTOR": {
+   "entries": 3,
+   "freshWins": 11,
+   "freshRuns": 24,
+   "classes": {
+    "DOOMED": 0,
+    "MARGINAL": 2,
+    "WINNABLE": 1
+   }
+  },
+  "DONU_AND_DECA": {
+   "entries": 5,
+   "freshWins": 25,
+   "freshRuns": 40,
+   "classes": {
+    "DOOMED": 0,
+    "MARGINAL": 1,
+    "WINNABLE": 4
+   }
+  },
+  "THE_GUARDIAN": {
+   "entries": 1,
+   "freshWins": 8,
+   "freshRuns": 8,
+   "classes": {
+    "DOOMED": 0,
+    "MARGINAL": 0,
+    "WINNABLE": 1
+   }
+  },
+  "TIME_EATER": {
+   "entries": 10,
+   "freshWins": 14,
+   "freshRuns": 80,
+   "classes": {
+    "DOOMED": 7,
+    "MARGINAL": 1,
+    "WINNABLE": 2
+   }
+  }
+ },
+ "entries": [
+  {
+   "stateId": "D-66000005-a3",
+   "seed": 66000005,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 65,
+   "maxHp": 76,
+   "potions": [],
+   "relics": 14,
+   "deck": 31,
+   "upgraded": 15,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 13.77512903
+  },
+  {
+   "stateId": "D-66000008-a3",
+   "seed": 66000008,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 58,
+   "maxHp": 90,
+   "potions": [
+    "ENERGY_POTION",
+    "REGEN_POTION"
+   ],
+   "relics": 13,
+   "deck": 48,
+   "upgraded": 10,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 13.46769796
+  },
+  {
+   "stateId": "D-66000017-a3",
+   "seed": 66000017,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floor": 50,
+   "hp": 71,
+   "maxHp": 110,
+   "potions": [],
+   "relics": 16,
+   "deck": 34,
+   "upgraded": 15,
+   "freshWins": 6,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 6.166666666666667,
+   "freshCpuSeconds": 4.645322899
+  },
+  {
+   "stateId": "D-66000020-a3",
+   "seed": 66000020,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 99,
+   "maxHp": 99,
+   "potions": [
+    "SPEED_POTION",
+    "SPEED_POTION",
+    "SWIFT_POTION",
+    "EXPLOSIVE_POTION",
+    "ESSENCE_OF_STEEL"
+   ],
+   "relics": 17,
+   "deck": 43,
+   "upgraded": 13,
+   "freshWins": 7,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 33.285714285714285,
+   "freshCpuSeconds": 10.050652134
+  },
+  {
+   "stateId": "D-66000029-a2",
+   "seed": 66000029,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "floor": 33,
+   "hp": 82,
+   "maxHp": 82,
+   "potions": [
+    "GAMBLERS_BREW"
+   ],
+   "relics": 8,
+   "deck": 34,
+   "upgraded": 2,
+   "freshWins": 2,
+   "reps": 8,
+   "class": "MARGINAL",
+   "meanTerminalHpWhenWon": 3.5,
+   "freshCpuSeconds": 18.21747465
+  },
+  {
+   "stateId": "D-66000035-a3",
+   "seed": 66000035,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floor": 50,
+   "hp": 80,
+   "maxHp": 80,
+   "potions": [
+    "ATTACK_POTION",
+    "SPEED_POTION"
+   ],
+   "relics": 14,
+   "deck": 44,
+   "upgraded": 24,
+   "freshWins": 5,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 11.6,
+   "freshCpuSeconds": 8.951628267
+  },
+  {
+   "stateId": "D-66000045-a3",
+   "seed": 66000045,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floor": 50,
+   "hp": 66,
+   "maxHp": 82,
+   "potions": [
+    "ELIXIR_POTION",
+    "LIQUID_BRONZE"
+   ],
+   "relics": 13,
+   "deck": 38,
+   "upgraded": 6,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 15.93728151
+  },
+  {
+   "stateId": "D-66000047-a3",
+   "seed": 66000047,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floor": 50,
+   "hp": 88,
+   "maxHp": 89,
+   "potions": [
+    "DEXTERITY_POTION",
+    "WEAK_POTION",
+    "ESSENCE_OF_STEEL"
+   ],
+   "relics": 16,
+   "deck": 34,
+   "upgraded": 11,
+   "freshWins": 5,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 9.8,
+   "freshCpuSeconds": 10.247560905
+  },
+  {
+   "stateId": "D-66000052-a3",
+   "seed": 66000052,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 15,
+   "maxHp": 81,
+   "potions": [],
+   "relics": 15,
+   "deck": 28,
+   "upgraded": 10,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 4.70253602
+  },
+  {
+   "stateId": "D-66000054-a2",
+   "seed": 66000054,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 80,
+   "maxHp": 80,
+   "potions": [
+    "LIQUID_BRONZE",
+    "FEAR_POTION",
+    "ANCIENT_POTION"
+   ],
+   "relics": 13,
+   "deck": 30,
+   "upgraded": 8,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 18.9881619
+  },
+  {
+   "stateId": "D-66000058-a3",
+   "seed": 66000058,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floor": 50,
+   "hp": 32,
+   "maxHp": 98,
+   "potions": [
+    "GAMBLERS_BREW",
+    "FEAR_POTION",
+    "FEAR_POTION"
+   ],
+   "relics": 14,
+   "deck": 43,
+   "upgraded": 27,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 9.560600779
+  },
+  {
+   "stateId": "D-66000060-a3",
+   "seed": 66000060,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 80,
+   "maxHp": 80,
+   "potions": [],
+   "relics": 14,
+   "deck": 45,
+   "upgraded": 8,
+   "freshWins": 1,
+   "reps": 8,
+   "class": "MARGINAL",
+   "meanTerminalHpWhenWon": 7.0,
+   "freshCpuSeconds": 9.818923134
+  },
+  {
+   "stateId": "D-66000068-a3",
+   "seed": 66000068,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 90,
+   "maxHp": 90,
+   "potions": [
+    "SPEED_POTION"
+   ],
+   "relics": 15,
+   "deck": 46,
+   "upgraded": 11,
+   "freshWins": 6,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 12.0,
+   "freshCpuSeconds": 6.414417369
+  },
+  {
+   "stateId": "D-66000071-a1",
+   "seed": 66000071,
+   "act": 1,
+   "boss": "THE_GUARDIAN",
+   "floor": 16,
+   "hp": 69,
+   "maxHp": 85,
+   "potions": [
+    "LIQUID_MEMORIES"
+   ],
+   "relics": 4,
+   "deck": 18,
+   "upgraded": 1,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 19.0,
+   "freshCpuSeconds": 3.376379819
+  },
+  {
+   "stateId": "D-66000073-a3",
+   "seed": 66000073,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 53,
+   "maxHp": 83,
+   "potions": [
+    "ATTACK_POTION",
+    "SPEED_POTION"
+   ],
+   "relics": 15,
+   "deck": 38,
+   "upgraded": 11,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 12.5852152
+  },
+  {
+   "stateId": "D-66000082-a3",
+   "seed": 66000082,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 48,
+   "maxHp": 98,
+   "potions": [
+    "ELIXIR_POTION"
+   ],
+   "relics": 14,
+   "deck": 31,
+   "upgraded": 7,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 1.868903266
+  },
+  {
+   "stateId": "D-66000090-a3",
+   "seed": 66000090,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floor": 50,
+   "hp": 56,
+   "maxHp": 56,
+   "potions": [],
+   "relics": 18,
+   "deck": 38,
+   "upgraded": 11,
+   "freshWins": 5,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 5.4,
+   "freshCpuSeconds": 7.382391365
+  },
+  {
+   "stateId": "D-66000099-a2",
+   "seed": 66000099,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "floor": 33,
+   "hp": 80,
+   "maxHp": 80,
+   "potions": [
+    "SPEED_POTION"
+   ],
+   "relics": 8,
+   "deck": 28,
+   "upgraded": 11,
+   "freshWins": 1,
+   "reps": 8,
+   "class": "MARGINAL",
+   "meanTerminalHpWhenWon": 3.0,
+   "freshCpuSeconds": 5.861435062
+  },
+  {
+   "stateId": "D-66000109-a2",
+   "seed": 66000109,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 59,
+   "maxHp": 85,
+   "potions": [
+    "HEART_OF_IRON",
+    "ATTACK_POTION",
+    "ANCIENT_POTION"
+   ],
+   "relics": 10,
+   "deck": 28,
+   "upgraded": 15,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 26.625,
+   "freshCpuSeconds": 14.31141673
+  },
+  {
+   "stateId": "D-66000111-a2",
+   "seed": 66000111,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floor": 33,
+   "hp": 78,
+   "maxHp": 102,
+   "potions": [
+    "ANCIENT_POTION",
+    "FAIRY_POTION",
+    "ELIXIR_POTION"
+   ],
+   "relics": 12,
+   "deck": 26,
+   "upgraded": 6,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 5.625,
+   "freshCpuSeconds": 6.78024491
+  },
+  {
+   "stateId": "D-66000112-a2",
+   "seed": 66000112,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 15,
+   "maxHp": 121,
+   "potions": [
+    "DEXTERITY_POTION"
+   ],
+   "relics": 10,
+   "deck": 28,
+   "upgraded": 9,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 1.739869842
+  },
+  {
+   "stateId": "D-66000117-a3",
+   "seed": 66000117,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floor": 50,
+   "hp": 73,
+   "maxHp": 86,
+   "potions": [
+    "ESSENCE_OF_STEEL",
+    "DEXTERITY_POTION"
+   ],
+   "relics": 17,
+   "deck": 36,
+   "upgraded": 4,
+   "freshWins": 6,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 12.666666666666666,
+   "freshCpuSeconds": 11.385602165
+  },
+  {
+   "stateId": "D-66000126-a2",
+   "seed": 66000126,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 85,
+   "maxHp": 85,
+   "potions": [
+    "ELIXIR_POTION"
+   ],
+   "relics": 10,
+   "deck": 24,
+   "upgraded": 4,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 44.75,
+   "freshCpuSeconds": 14.09450236
+  },
+  {
+   "stateId": "D-66000130-a3",
+   "seed": 66000130,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floor": 50,
+   "hp": 84,
+   "maxHp": 84,
+   "potions": [],
+   "relics": 13,
+   "deck": 40,
+   "upgraded": 11,
+   "freshWins": 1,
+   "reps": 8,
+   "class": "MARGINAL",
+   "meanTerminalHpWhenWon": 15.0,
+   "freshCpuSeconds": 69.17944142
+  },
+  {
+   "stateId": "D-66000140-a2",
+   "seed": 66000140,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floor": 33,
+   "hp": 66,
+   "maxHp": 133,
+   "potions": [
+    "LIQUID_MEMORIES",
+    "WEAK_POTION",
+    "SPEED_POTION"
+   ],
+   "relics": 8,
+   "deck": 26,
+   "upgraded": 7,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 8.5,
+   "freshCpuSeconds": 12.243724478999999
+  },
+  {
+   "stateId": "D-66000145-a2",
+   "seed": 66000145,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 108,
+   "maxHp": 108,
+   "potions": [
+    "SNECKO_OIL",
+    "SPEED_POTION",
+    "EXPLOSIVE_POTION"
+   ],
+   "relics": 9,
+   "deck": 26,
+   "upgraded": 9,
+   "freshWins": 3,
+   "reps": 8,
+   "class": "MARGINAL",
+   "meanTerminalHpWhenWon": 6.333333333333333,
+   "freshCpuSeconds": 40.149418340000004
+  },
+  {
+   "stateId": "D-66000146-a3",
+   "seed": 66000146,
+   "act": 3,
+   "boss": "DONU_AND_DECA",
+   "floor": 50,
+   "hp": 103,
+   "maxHp": 103,
+   "potions": [
+    "ANCIENT_POTION"
+   ],
+   "relics": 17,
+   "deck": 34,
+   "upgraded": 7,
+   "freshWins": 3,
+   "reps": 8,
+   "class": "MARGINAL",
+   "meanTerminalHpWhenWon": 18.0,
+   "freshCpuSeconds": 9.996978414
+  },
+  {
+   "stateId": "D-66000160-a3",
+   "seed": 66000160,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floor": 50,
+   "hp": 73,
+   "maxHp": 73,
+   "potions": [],
+   "relics": 14,
+   "deck": 42,
+   "upgraded": 20,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 24.79892949
+  },
+  {
+   "stateId": "D-66000167-a2",
+   "seed": 66000167,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 22,
+   "maxHp": 94,
+   "potions": [
+    "DEXTERITY_POTION",
+    "SPEED_POTION"
+   ],
+   "relics": 7,
+   "deck": 32,
+   "upgraded": 8,
+   "freshWins": 5,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 11.8,
+   "freshCpuSeconds": 9.565860729999999
+  },
+  {
+   "stateId": "D-66000175-a3",
+   "seed": 66000175,
+   "act": 3,
+   "boss": "AWAKENED_ONE",
+   "floor": 50,
+   "hp": 44,
+   "maxHp": 84,
+   "potions": [
+    "ANCIENT_POTION",
+    "BLESSING_OF_THE_FORGE"
+   ],
+   "relics": 15,
+   "deck": 40,
+   "upgraded": 7,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 26.866788070000002
+  },
+  {
+   "stateId": "D-66000185-a3",
+   "seed": 66000185,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 75,
+   "maxHp": 75,
+   "potions": [
+    "EXPLOSIVE_POTION",
+    "ELIXIR_POTION"
+   ],
+   "relics": 18,
+   "deck": 36,
+   "upgraded": 8,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 16.68548145
+  },
+  {
+   "stateId": "D-66000211-a2",
+   "seed": 66000211,
+   "act": 2,
+   "boss": "COLLECTOR",
+   "floor": 33,
+   "hp": 77,
+   "maxHp": 77,
+   "potions": [
+    "DEXTERITY_POTION",
+    "WEAK_POTION"
+   ],
+   "relics": 7,
+   "deck": 25,
+   "upgraded": 10,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 23.25,
+   "freshCpuSeconds": 6.3879972369999996
+  },
+  {
+   "stateId": "D-66000212-a2",
+   "seed": 66000212,
+   "act": 2,
+   "boss": "CHAMP",
+   "floor": 33,
+   "hp": 82,
+   "maxHp": 116,
+   "potions": [],
+   "relics": 9,
+   "deck": 24,
+   "upgraded": 8,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 59.39235369
+  },
+  {
+   "stateId": "D-66000226-a2",
+   "seed": 66000226,
+   "act": 2,
+   "boss": "AUTOMATON",
+   "floor": 33,
+   "hp": 80,
+   "maxHp": 80,
+   "potions": [
+    "SPEED_POTION"
+   ],
+   "relics": 12,
+   "deck": 30,
+   "upgraded": 6,
+   "freshWins": 8,
+   "reps": 8,
+   "class": "WINNABLE",
+   "meanTerminalHpWhenWon": 21.125,
+   "freshCpuSeconds": 5.288683283
+  },
+  {
+   "stateId": "D-66000244-a3",
+   "seed": 66000244,
+   "act": 3,
+   "boss": "TIME_EATER",
+   "floor": 50,
+   "hp": 22,
+   "maxHp": 84,
+   "potions": [
+    "BLESSING_OF_THE_FORGE",
+    "ANCIENT_POTION",
+    "LIQUID_BRONZE"
+   ],
+   "relics": 15,
+   "deck": 41,
+   "upgraded": 13,
+   "freshWins": 0,
+   "reps": 8,
+   "class": "DOOMED",
+   "meanTerminalHpWhenWon": null,
+   "freshCpuSeconds": 6.457583487
+  }
+ ]
+}

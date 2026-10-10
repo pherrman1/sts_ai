@@ -2315,6 +2315,13 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
 
 #include "../../tests/data/ooc_v4_policy_fixture.h"
 namespace one_combat {
+double oocBossLeafUtility(const CombatTransitionExpectation &estimate) {
+    return bossLeafUtility(estimate);
+}
+std::shared_ptr<const CombatTransitionSampler> oocMaskInitialSmokeBomb(
+        std::shared_ptr<const CombatTransitionSampler> sampler) {
+    return maskInitialSmokeBomb(std::move(sampler));
+}
 void oocMctsAdapterSelfTest() {
     runFloorProfileSelfTest();
     using namespace sts;
