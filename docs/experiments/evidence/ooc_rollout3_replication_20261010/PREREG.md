@@ -1,6 +1,6 @@
 # Pre-registration: rollout3 OOC MCTS replication on the current stack (ledger §422)
 
-Written and committed before any cohort seed ran. Philipp's go: 2026-10-10 19:36Z, the
+Written and committed before any cohort seed ran. Re-frozen before the review to move seeds from 69100000–127 (smoke 69109000, stopped unfinished) to 70000000–127: the first range overlaps the V4 gold data run (69100000–69124999). Philipp's go: 2026-10-10 19:36Z, the
 "128 pairs, cloud" option on the decision card "Run the rollout3 replication on 128 paired seeds
 across cloud workers?" in project thread "OOC MCTS 10-floor depth feasibility".
 
@@ -34,8 +34,8 @@ adaptive and learned stop off, V4 OOC policy with all strategic gates and margin
 - Code commit `cd405b4c` (main; [CODE_COMMIT](CODE_COMMIT)); each worker builds `one_combat` itself
   (Release preset, GCC 13.3) and refuses to run unless the sha256 equals [binary.sha256](binary.sha256).
   Models are the tracked files at that commit.
-- Seeds 69100000–69100127 (fresh), 16 blocks of 8. Worker W = 1..16 runs block W−1 in both arms
-  ([worker.sh](worker.sh), [run_unit.sh](run_unit.sh)). Smoke seed 69109000 (not in the cohort), run once
+- Seeds 70000000–70000127 (fresh), 16 blocks of 8. Worker W = 1..16 runs block W−1 in both arms
+  ([worker.sh](worker.sh), [run_unit.sh](run_unit.sh)). Smoke seed 70009000 (not in the cohort), run once
   in the planning container before launch.
 - Expected CPU (Inference from the 4-seed look): rollout3 ≈ 1,350 s/run, off ≈ 100 s/run;
   ≈ 52 CPU-hours total, about 50 min per 4-CPU worker after the build.

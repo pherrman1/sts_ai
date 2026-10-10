@@ -4,7 +4,7 @@
 #                              stage it in $HOME/r3rep-wWW, write OUT/FROZEN.txt
 #   bash worker.sh run W       this worker's 10 units, 4 at a time -> OUT/DONE.txt (blocks until finished)
 #   bash worker.sh status W
-# W = 1..16; worker W runs seeds 69100000+8(W-1) .. +7 in both arms:
+# W = 1..16; worker W runs seeds 70000000+8(W-1) .. +7 in both arms:
 # rollout3 as 8 one-seed units, off as 2 four-seed units.
 set -uo pipefail
 CMD=${1:-} W=${2:-0}
@@ -16,7 +16,7 @@ SHARE=/mnt/project-files/ooc-rollout3-replication
 OUT=$SHARE/w$WW RUN=$HOME/r3rep-w$WW
 EXPECT_BIN=$(cat "$D/binary.sha256")
 stop() { echo "STOP: $*"; exit 1; }
-LO=$((69100000 + 8*(W-1)))
+LO=$((70000000 + 8*(W-1)))
 NUNITS=10
 case $CMD in
 setup)
