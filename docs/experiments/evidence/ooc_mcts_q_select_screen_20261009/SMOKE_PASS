@@ -1,0 +1,5 @@
+2026-10-09T18:05:20Z
+after D1 (analyzer glob fix); all 8 arms rc 0, banners ok
+      1 BEST                    win%=  0.0   avg_floor= 16.0   avg_hp_end=  0.0   cpu_sec/run=53.27   wall=53.3s
+      1 BEST                    win%=  0.0   avg_floor= 16.0   avg_hp_end=  0.0   cpu_sec/run=56.58   wall=56.6s
+      1 BEST                    win%=  0.0   avg_floor= 16.0   avg_hp_end=  0.0   cpu_sec/run=73.46   wall=73.5s
