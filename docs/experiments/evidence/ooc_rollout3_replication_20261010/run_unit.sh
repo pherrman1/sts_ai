@@ -2,6 +2,7 @@
 # usage: run_unit.sh REPO RUN OUT ARM LO N   -- one guarded bestbench unit; resumable via OUT/ARM-LO.done
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 ARM=$4 LO=$5 N=$6
+case $ARM in rollout3|off) ;; *) echo "unknown arm $ARM" >&2; exit 2 ;; esac
 base=$OUT/$ARM-$LO
 [ -f "$base.done" ] && exit 0
 if compgen -G "$base.*" > /dev/null; then          # interrupted unit: keep its files, rerun it whole

@@ -29,6 +29,23 @@ adaptive and learned stop off, V4 OOC policy with all strategic gates and margin
 | `off` | `STS_OOC_MCTS=0` (current default stack) |
 | `rollout3` | §277 profile unchanged: `SIMS=2048`, `LEAF_COMBATS=3`, `LEAF_VALUE=native`, `LEAF_POLICY=v4`, `PRIOR=policy`, temperature 1, cpuct 1.5, widening 2/0.5, `MAX_DEPTH=32`, visits root selection, `EARLY_STOP=1`; combat model = current production CTM default (#468) |
 
+## Differences from §277 (besides the CTM)
+
+The control is the §411 / #418 research base (flat exact-10k Silver, V4 OOC policy), not the
+production defaults (which use learned stopping). Relative to §277:
+
+| | §277 (2026-09-15, `48fae046`) | this replication |
+|---|---|---|
+| combat model in imagination | V2 CTM (`combat_transition_near_full_except_smoke_v2`) | production pathb-r2 stack with escape (#468) |
+| hidden noncombat futures in search | copied simulator RNG | sampled futures (`sampleNoncombatFuture`, live default since 2026-09-20) |
+| campfire rest | win-rate rest (`STS_REST_WIN` unset, the default then) | `STS_REST_WIN=0` (default rest) |
+| OMP threads per process | 12 | 1 |
+| control | V4, MCTS off | MCTS off on the same base (flat exact-10k Silver) |
+
+Lizard Tail: states with an active, unqualified Lizard Tail abort the root to V4 (fail closed), as in
+§277's code. In the smoke all 75 support aborts were Lizard Tail aborts. Per-seed fallback share and
+Lizard Tail abort counts are reported descriptively; the replication tests rollout3 as it actually runs.
+
 ## Provenance
 
 - Code commit `cd405b4c` (main; [CODE_COMMIT](CODE_COMMIT)); each worker builds `one_combat` itself
@@ -52,7 +69,9 @@ bootstrap 95% CI (10,000 resamples, seed 422).
 - otherwise **NOT_SHOWN**.
 
 Descriptive: exact McNemar p, Δfloor (CI), Δ end HP, boss deaths per arm, seconds per run, rollout3
-MCTS CPU, ownership/fallback share, support aborts, simulations per run.
+MCTS CPU, ownership/fallback share (overall and per seed), support aborts and Lizard Tail aborts per
+seed, simulations per run. The script refuses a label (INVALID) when a cohort seed is missing from
+either arm or a unit failed, unless the gap is a listed `[bestbench-seed-failure]` seed.
 
 **Reading.** 128 pairs resolve about ±8 pp. REPLICATED would justify improvement screens (uniform
 prior, outcome merging, no early stop; one variable at a time on these seeds) and a confirmation
