@@ -38,8 +38,8 @@ int screenLeafS0(const std::string &input, const std::string &output,
     // Same default qualified hybrid stack as configureLiveOocMcts. Explicit
     // legacy overrides are deliberately not accepted by this offline harness.
     auto sampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
-        "selfplay/models/combat_transition_deepsets_lizard_t2.native",
-        "selfplay/models/combat_transition_near_full_except_smoke_v2.native", true);
+        "selfplay/models/combat_transition_deepsets_pathb_r2.native",
+        "selfplay/models/combat_transition_near_full_escape_pathb_r2.native", true);
     OocAdapterOptions options;
     options.checkpointLeaves = true;
     options.sampleNoncombat = true;

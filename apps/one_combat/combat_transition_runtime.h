@@ -34,6 +34,7 @@ class CombatTransitionRuntime {
     nlohmann::json lizardCorrection_;
     nlohmann::json identity_;
     int hpMin_ = -160;
+    bool productionCandidate_ = false;
     bool escape_ = false;
     bool writhingRitual_ = false;
     bool lizardFairy_ = false;
@@ -44,16 +45,21 @@ class CombatTransitionRuntime {
     std::vector<float> encode(const std::string &, const CombatPredictorInputV1 &) const;
 public:
     static constexpr float probabilityTolerance = 1e-4f;
+    // Pins the pre-#418 production standard artifact (e9a18951), not the pathb-r2
+    // default; only the runtime probe test uses it.
     static void requireCurrentStandardFallbackArtifact(const std::string &path);
     explicit CombatTransitionRuntime(const std::string &path);
     const nlohmann::json &metadata() const { return metadata_; }
-    // Production identity pins, or a research candidate's (STS_CTM_RESEARCH_CANDIDATE_MANIFEST).
+    // Identity pins: the pre-#418 production stack, the promoted production candidate
+    // (pathb-r2, built in), or a research candidate's (STS_CTM_RESEARCH_CANDIDATE_MANIFEST).
     const nlohmann::json &identity() const { return identity_; }
-    bool researchCandidate() const { return !identity_.at("candidateId").is_null(); }
+    bool researchCandidate() const { return !identity_.at("candidateId").is_null() && !productionCandidate_; }
+    // The artifact is the built-in production candidate, pinned without a research manifest.
+    bool productionCandidate() const { return productionCandidate_; }
     // Index of a signed HP delta in the artifact's HP class domain.
     int hpClassIndex(int signedDelta) const { return signedDelta-hpMin_; }
     bool nearFull() const { return metadata_.at("version")==2; }
-    // Escape capability (research candidates only): an escape head on the HP encoding,
+    // Escape capability (production pathb-r2 stack and research candidates): an escape head on the HP encoding,
     // drawn before HP, with the HP head and the potion trajectory conditioned on it.
     bool escapeCapable() const { return escape_; }
     static bool escapeEligible(const std::array<int,5> &potions, int capacity, bool boss);

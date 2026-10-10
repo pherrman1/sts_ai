@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-09 for the advisor keeping the pre-#418 CTM stack; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -380,6 +380,7 @@ select that manifest's primary at launch. Legacy single-model manifests and
 explicit standard-primary overrides remain supported. `STS_CTM_BREW_FALLBACK_MODEL`
 and strict `STS_CTM_ACTIVE_LIZARD=0|1` override the qualified stack; advisor
 hello/forecast and OOC responses identify the loaded artifacts and setting.
+The advisor deliberately still uses this pre-#418 stack, not the pathb-r2 default of `one_combat` OOC MCTS (ledger §412; open follow-up).
 Only validated production qualification enables Lizard correction automatically;
 integration-candidate metadata requires explicit opt-in. An explicitly empty
 or whitespace model override reaches the native loader unchanged and fails,

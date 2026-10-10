@@ -1,0 +1,351 @@
+{
+ "census": {
+  "cand": {
+   "missing": [],
+   "otherFailures": {},
+   "rows": 128,
+   "stalls": {},
+   "timeouts": []
+  },
+  "off": {
+   "missing": [],
+   "otherFailures": {},
+   "rows": 128,
+   "stalls": {},
+   "timeouts": []
+  },
+  "prod": {
+   "missing": [],
+   "otherFailures": {},
+   "rows": 128,
+   "stalls": {},
+   "timeouts": []
+  }
+ },
+ "constants": {
+  "ALPHA": 0.05,
+  "CANDIDATE_ID": "pathb-r2",
+  "MAX_DROPPED_PAIRS": 6,
+  "NONINF_MARGIN": -0.1,
+  "PROD_FAST": "selfplay/models/combat_transition_deepsets_lizard_t2.native",
+  "PROD_STD": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+  "REPS": 10000,
+  "RNG_SEED": 418063,
+  "TIMEOUT_RC": 124
+ },
+ "descriptive": {
+  "cand_minus_off": {
+   "bossDeath": [
+    0.0078125,
+    -0.0703125,
+    0.09375
+   ],
+   "bossDeaths": [
+    19,
+    18
+   ],
+   "discordant": [
+    17,
+    19
+   ],
+   "floor": [
+    -1.3984375,
+    -2.9376953125,
+    0.09375
+   ],
+   "mcnemarP": 0.8679394004284404,
+   "pairs": 128,
+   "score_floor_plus_10won": [
+    -1.5546875,
+    -3.8125,
+    0.6484375
+   ],
+   "secRatio": 1.9408905696640923,
+   "win": [
+    -0.015625,
+    -0.109375,
+    0.078125
+   ],
+   "winRate": [
+    0.8046875,
+    0.8203125
+   ]
+  },
+  "prod_minus_off": {
+   "bossDeath": [
+    0.0625,
+    -0.0234375,
+    0.1484375
+   ],
+   "bossDeaths": [
+    26,
+    18
+   ],
+   "discordant": [
+    14,
+    23
+   ],
+   "floor": [
+    -1.671875,
+    -3.1875,
+    -0.20292968750000284
+   ],
+   "mcnemarP": 0.18774155899882317,
+   "pairs": 128,
+   "score_floor_plus_10won": [
+    -2.375,
+    -4.5939453125,
+    -0.234375
+   ],
+   "secRatio": 1.9246133801069438,
+   "win": [
+    -0.0703125,
+    -0.1640625,
+    0.0234375
+   ],
+   "winRate": [
+    0.75,
+    0.8203125
+   ]
+  }
+ },
+ "flags": [
+  "NONINFERIOR_AT_10PP"
+ ],
+ "gitSha": "648334e38dc5c92bc57a9b531f2f9f3308a732ff",
+ "integrityErrors": [],
+ "numpy": "2.5.3",
+ "primary_cand_minus_prod": {
+  "bossDeath": [
+   -0.0546875,
+   -0.125,
+   0.015625
+  ],
+  "bossDeaths": [
+   19,
+   26
+  ],
+  "discordant": [
+   16,
+   9
+  ],
+  "droppedPairs": [],
+  "floor": [
+   0.2734375,
+   -0.703125,
+   1.2501953124999972
+  ],
+  "mcnemarP": 0.2295229434967041,
+  "pairs": 128,
+  "score_floor_plus_10won": [
+   0.8203125,
+   -0.6798828124999998,
+   2.3125
+  ],
+  "secRatio": 1.0084573814800373,
+  "win": [
+   0.0546875,
+   -0.0234375,
+   0.1328125
+  ],
+  "winRate": [
+   0.8046875,
+   0.75
+  ]
+ },
+ "runDir": "/tmp/claude-0/-home-user-sts-ai/79cb8d33-24da-5b72-9802-99ac741f3f88/scratchpad/clean",
+ "schema": "ctm_live_ab_v1",
+ "scriptSha256": "510ccf0dbb35c8caeb1203526a9e4aa8f41d29975eeb392d1e2731d9534d8d3c",
+ "secondary": {
+  "bossDeathCrossCheck": {
+   "cand": 0,
+   "off": 0,
+   "prod": 0
+  },
+  "bossEntryHp": {
+   "1": {
+    "hp": [
+     0.59375,
+     0.1796875,
+     1.0546875
+    ],
+    "means": [
+     80.3828125,
+     79.7890625
+    ],
+    "pairs": 128
+   },
+   "2": {
+    "hp": [
+     -1.140495867768595,
+     -2.950413223140496,
+     0.6198347107438017
+    ],
+    "means": [
+     81.19834710743801,
+     82.33884297520662
+    ],
+    "pairs": 121
+   },
+   "3": {
+    "hp": [
+     2.619047619047619,
+     -0.3238095238095238,
+     5.742857142857143
+    ],
+    "means": [
+     86.45714285714286,
+     83.83809523809524
+    ],
+    "pairs": 105
+   }
+  },
+  "escapesPerRun": [
+   0.0234375,
+   -0.0234375,
+   0.078125
+  ],
+  "meanStartHp": [
+   0.13118251720848884,
+   -0.6889931270517778,
+   0.9750671494207463
+  ],
+  "perArm": {
+   "cand": {
+    "bossDeaths": 19,
+    "bossDeathsByAct": {
+     "1": 2,
+     "2": 8,
+     "3": 9
+    },
+    "bossesEnteredByAct": {
+     "1": 128,
+     "2": 123,
+     "3": 112
+    },
+    "cpuSecPerRun": 121.97664921875,
+    "deaths": 25,
+    "escapes": 22,
+    "mcts": {
+     "continuationLimitAborts": 0.0,
+     "hybridFallbackPreparations": 9686.0,
+     "hybridFallbackSupportFailures": 3.0,
+     "hybridFastSupportFailures": 70.0,
+     "imaginedCombats": 2775821.0,
+     "mctsCpuSecPerRun": 48.783740153125,
+     "mctsFallback": 434.0,
+     "mctsOwned": 14740.0,
+     "mctsSupportAborts": 73.0,
+     "oocDecisions": 15174.0,
+     "simulations": 15170679.0,
+     "supportReasons": {
+      "active_unqualified_lizard": 62,
+      "writhing_ritual_intersection": 11
+     },
+     "transitionSamples": 14677543.0,
+     "unsupportedCombats": 73.0
+    },
+    "meanFloor": 48.2890625,
+    "meanHpAfterWin": 36.18446601941748,
+    "meanStartHp": 77.4889465569086,
+    "meanStartHpFraction": 0.9306902458379944,
+    "runs": 128,
+    "runsWithSmokeHeldAtAFight": 21,
+    "smokeHeldFights": 28,
+    "smokeHeldNonBossFights": 24,
+    "winRate": 0.8046875
+   },
+   "off": {
+    "bossDeaths": 18,
+    "bossDeathsByAct": {
+     "1": 0,
+     "2": 4,
+     "3": 14
+    },
+    "bossesEnteredByAct": {
+     "1": 127,
+     "2": 124,
+     "3": 118
+    },
+    "cpuSecPerRun": 62.845711718749996,
+    "deaths": 23,
+    "escapes": 18,
+    "meanFloor": 49.6875,
+    "meanHpAfterWin": 41.628571428571426,
+    "meanStartHp": 79.49005721646827,
+    "meanStartHpFraction": 0.9243391398342657,
+    "runs": 128,
+    "runsWithSmokeHeldAtAFight": 17,
+    "smokeHeldFights": 20,
+    "smokeHeldNonBossFights": 19,
+    "winRate": 0.8203125
+   },
+   "prod": {
+    "bossDeaths": 26,
+    "bossDeathsByAct": {
+     "1": 2,
+     "2": 9,
+     "3": 15
+    },
+    "bossesEnteredByAct": {
+     "1": 128,
+     "2": 122,
+     "3": 111
+    },
+    "cpuSecPerRun": 120.95369765625,
+    "deaths": 32,
+    "escapes": 19,
+    "mcts": {
+     "continuationLimitAborts": 0.0,
+     "hybridFallbackPreparations": 12297.0,
+     "hybridFallbackSupportFailures": 3.0,
+     "hybridFastSupportFailures": 70.0,
+     "imaginedCombats": 2775532.0,
+     "mctsCpuSecPerRun": 47.69520821214063,
+     "mctsFallback": 433.0,
+     "mctsOwned": 14630.0,
+     "mctsSupportAborts": 73.0,
+     "oocDecisions": 15063.0,
+     "simulations": 15006157.0,
+     "supportReasons": {
+      "active_unqualified_lizard": 62,
+      "writhing_ritual_intersection": 11
+     },
+     "transitionSamples": 14515538.0,
+     "unsupportedCombats": 73.0
+    },
+    "meanFloor": 48.015625,
+    "meanHpAfterWin": 40.0,
+    "meanStartHp": 77.35776403970011,
+    "meanStartHpFraction": 0.930251885503813,
+    "runs": 128,
+    "runsWithSmokeHeldAtAFight": 21,
+    "smokeHeldFights": 29,
+    "smokeHeldNonBossFights": 25,
+    "winRate": 0.75
+   }
+  },
+  "smokeHeldFightsPerRun": [
+   -0.0078125,
+   -0.0625,
+   0.0546875
+  ]
+ },
+ "seedCount": 128,
+ "seedLo": 63000000,
+ "sensitivity_stall_as_loss": {
+  "discordant": [
+   16,
+   9
+  ],
+  "mcnemarP": 0.2295229434967041,
+  "pairs": 128,
+  "rule": "stall counts as a loss for the stalling arm",
+  "win": [
+   0.0546875,
+   -0.0234375,
+   0.1328125
+  ]
+ },
+ "verdict": "NO_DIFFERENCE_DETECTED"
+}
