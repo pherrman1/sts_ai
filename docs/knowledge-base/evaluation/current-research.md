@@ -259,6 +259,16 @@ not considered cleared.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
+## V4 OOC token net at A20 (§419) — keep the A0-trained net
+
+The deployed V4 was trained on A0 only (ascension input clamps to +8 at A20). Neither
+feeding training-constant inputs as 0 (`STS_OOC_STRATEGIC_TOK_CONST_GUARD`, −1.2 floors,
+CI spans 0) nor a Q-head retrain on A20 full-run one-ply labels helped: on 4.9k labeled
+decisions NOT_SHOWN (−1.1 floors), on 10.0k decisions RETRAIN_WORSE (−5.6 floors
+[−7.75, −3.38], wins 16 vs 29 of 256). Offline no retrain beats the heuristic action it
+overrides (strict Q top-1 0.30 vs 0.34). **Inference:** these labels are too noisy for this
+route; a better A20 OOC policy needs a different label source, not more of the same data.
+
 ## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
