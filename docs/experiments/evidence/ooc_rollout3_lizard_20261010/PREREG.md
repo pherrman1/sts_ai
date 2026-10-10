@@ -84,7 +84,7 @@ equal. A clear fallback drop with no win change would still say the Lizard abort
 
 ## Validity
 
-- The rerun of §422 seed 70000000 matches §422 in its result row (all columns but `sec`) and its MCTS action log.
+- The rerun of §422 seed 70000000 matches §422 in its result row (all columns but `sec`) and its MCTS action log: passed, [RERUN-422-70000000.md](RERUN-422-70000000.md).
 - All 128 units rc=0 apart from listed stall failures; any other nonzero rc, crash or missing seed makes the result
   INVALID until explained. Every §422 file the analysis reads must match §422's `data-sha256.txt`.
 - Every `lizard` log prints `[ctm-research-candidate] candidate_id=pathb-r2`, a `[live OOC MCTS ON …]` line naming
