@@ -16404,3 +16404,48 @@ deviations, smoke markers, report.json, post-hoc picks, SHA256SUMS). Raw unit ou
 
 **Knowledge impact:** this entry and one paragraph in `docs/knowledge-base/evaluation/current-research.md`; no
 defaults or maintained interfaces changed.
+
+## §419 — V4 OOC token net retrained at A20: input guard and Q-head retrain both not adopted; the retrain on 2x data is worse (2026-10-10)
+
+**Question (Philipp, 2026-10-09 21:46Z):** retrain V4 at A20. The deployed V4
+(`ooc_strategic_tok_final.native`, sha e62abd83) was trained on A0 only: ascension, blueKey and
+greenKey have exported `inv = 1e6`, so at A20 the ascension input clamps to +8 against an
+untrained weight column.
+**Design:** [evidence packet](evidence/v4_a20_retrain_20261009/), pre-registrations committed
+before each gate. Gate stack for every arm: live V4 gates (REST/EVENT/SHOP/TREASURE/BOSS_RELIC,
+margin 1.0), learned stop gbt-770201c31f7b, keys off, `STS_STOP_AFTER_ACT=3`,
+`bestbench 10000 N 20`; primary = mean paired floor difference with a 95% paired bootstrap CI.
+- **G1** input guard (`STS_OOC_STRATEGIC_TOK_CONST_GUARD=1`: training-constant inputs fed as 0),
+  seeds 67100000–127.
+- **Data:** `strategicgen2` at A20 on frozen `2c89ed97` (binary 4a3c9ecc), 8 sampled decisions per
+  run, every option played to the run's end 4 times with common random numbers, Silver 2,000
+  exact root sims with root prior v1 (w400). Round 1: 25 workers × 9 h, seeds 67M, 611 runs,
+  4,856 labeled decisions. Round 2: 48 workers × ~4.5 h, seeds 68M, 642 runs, 5,136 decisions.
+- **Training:** `STRAT_LABEL_SCALE=floor` (new trainer option), warm start from the deployed V4
+  re-imported by `tools/import_strategic_tok_native.py` (byte-exact round trip), Q head only,
+  best validation strict Q top-1, seed-disjoint split.
+- **G2** round-1 candidate (sha 135e5500), seeds 67200000–127. **G3** round 1 + 2 candidate
+  (sha 08d239f9), seeds 67300000–255.
+
+**Result:**
+
+| Gate | Arms | Wins | Mean floor | T − C floor [95% CI] | Verdict |
+|---|---|---|---|---|---|
+| G1 | current / guard | 16 / 12 of 128 | 36.12 / 34.90 | −1.22 [−3.51, +1.11] | not adopted |
+| G2 | current / r1 retrain | 14 / 12 of 128 | 33.39 / 32.29 | −1.10 [−4.16, +1.96] | `NOT_SHOWN` |
+| G3 | current / r1+r2 retrain | 29 / 16 of 256 | 35.07 / 29.48 | −5.59 [−7.75, −3.38] | `RETRAIN_WORSE` |
+
+Offline strict Q top-1 on held-out decisions with ≥ 2 labeled options: random 0.255, heuristic
+chosen action 0.334 (r1) / 0.341 (r1+r2), deployed V4 0.255 / 0.268, retrain 0.309 / 0.302.
+**Interpretation (Inference):** no model beats the heuristic it overrides on these labels, and
+doubling the labels did not raise offline accuracy, so one-ply heuristic-continuation labels at
+~4 playouts per option look too noisy for a better A20 Q head. The A0-only training of V4 is
+not a measurable A20 win-rate lever. Current V4 at A20 with this stack: 59/512 wins (11.5%) over
+G1–G3 control arms.
+**Decision:** no default change; the guard flag and trainer option stay off by default.
+
+**Evidence:** [packet](evidence/v4_a20_retrain_20261009/). Data and models:
+`/mnt/project-files/v4-a20-retrain/`. Seeds 67M and 68M are now used.
+
+**Knowledge impact:** `operations/environment-variables.md` documents
+`STS_OOC_STRATEGIC_TOK_CONST_GUARD`; one paragraph in `evaluation/current-research.md`.

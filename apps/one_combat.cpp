@@ -130,6 +130,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
                           "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
+                          "STS_OOC_STRATEGIC_TOK_CONST_GUARD",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
                           "STS_OOC_STRATEGIC_REST", "STS_OOC_STRATEGIC_EVENT",
                           "STS_OOC_STRATEGIC_SHOP", "STS_OOC_STRATEGIC_TREASURE",
@@ -1319,6 +1320,11 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverRootPrior = search::nativeSilverRootPriorPath();
             meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
             meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
+        }
+        if (g_oocStrategicTokNet.ok) {
+            meta.oocStrategicTokNet = g_oocStrategicTokNet.path;
+            meta.oocStrategicTokNetSha256 = fileSha256(meta.oocStrategicTokNet);
+            meta.oocStrategicTokConstGuard = g_oocStrategicTokNet.constGuard;
         }
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";

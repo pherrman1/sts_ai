@@ -4,6 +4,7 @@
 #pragma once
 #include "one_combat/ooc_profile.h"
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cstdint>
 #include <cmath>
@@ -80,6 +81,13 @@ struct OocStrategicTokNet {
 
     bool ok = false;
     std::string path;
+    // Research flag STS_OOC_STRATEGIC_TOK_CONST_GUARD=1 (default off): a glob
+    // input that never varied in training (exported inv >= 1e5, e.g. ascension
+    // in an A0-only model) is fed at its training value (x = 0) instead of the
+    // clamped +-8 of an untrained weight column. No-op where the value equals
+    // the training mean (ascension 0, keys off).
+    bool constGuard = false;
+    int constGuardInputs = 0;
 
     bool load(const std::string &path, bool quiet = false) {
         FILE *f = std::fopen(path.c_str(), "rb");
@@ -162,7 +170,13 @@ struct OocStrategicTokNet {
         }
         ok = true;
         this->path = path;
+        if (const char *v = std::getenv("STS_OOC_STRATEGIC_TOK_CONST_GUARD")) constGuard = std::atoi(v) != 0;
+        constGuardInputs = 0;
+        for (int i = 0; i < NGLB; ++i) if (globInv[i] >= 1e5f) ++constGuardInputs;
         if (!quiet) std::printf("[ooc-strat-tok-net] loaded %s\n", path.c_str());
+        if (!quiet && constGuard)
+            std::printf("[ooc-strat-tok-net] const guard ON: %d training-constant glob inputs fed at x=0\n",
+                        constGuardInputs);
         return true;
     }
 
@@ -299,7 +313,8 @@ struct OocStrategicTokNet {
                      const float *zPot, float *zState) const {
         float x[NGLB];
         for (int i = 0; i < NGLB; ++i)
-            x[i] = clampf((glob[i] - globMean[i]) * globInv[i], -8.0f, 8.0f);
+            x[i] = (constGuard && globInv[i] >= 1e5f)
+                ? 0.0f : clampf((glob[i] - globMean[i]) * globInv[i], -8.0f, 8.0f);
         float fuse[FUSIN];
         int p = 0;
         for (int i = 0; i < NGLB; ++i) fuse[p++] = x[i];

@@ -53,6 +53,12 @@ SELECT_METRIC = os.environ.get("STRAT_SELECT_METRIC", "val_pol_ce")  # best-chec
 Q_TARGET = os.environ.get("STRAT_Q_TARGET", "absolute")  # absolute or fallback_centered
 if Q_TARGET not in ("absolute", "fallback_centered"):
     raise ValueError("STRAT_Q_TARGET must be absolute or fallback_centered")
+# Label scale: winhp (default) = 10*won + HP for value and Q targets; floor =
+# final floor reached (value: endFloor, Q: labelFloor). floor is for full-run
+# branch labels at high ascension, where won and end HP are ~0 (§419).
+LABEL_SCALE = os.environ.get("STRAT_LABEL_SCALE", "winhp")
+if LABEL_SCALE not in ("winhp", "floor"):
+    raise ValueError("STRAT_LABEL_SCALE must be winhp or floor")
 INIT_CKPT = os.environ.get("STRAT_INIT_CKPT", "")  # warm-start from a checkpoint
 INIT_REUSE_NORM = os.environ.get("STRAT_INIT_REUSE_NORM", "0") == "1"  # reuse ckpt mean/inv
 Q_ONLY = os.environ.get("STRAT_Q_ONLY", "0") == "1"  # freeze all except q.* parameters
@@ -92,6 +98,8 @@ hdr = pd.read_csv(CSV, nrows=0).columns
 need = {"seed", "decIdx", "screen", "action", "actionType", "c1", "c2", "c3",
         "cand1", "cand2", "cand3", "chosen", "won", "endHp",
         "labelWon", "labelHp"}
+if LABEL_SCALE == "floor":
+    need |= {"endFloor", "labelFloor"}
 missing = need - set(hdr)
 if missing:
     raise ValueError(f"missing columns: {sorted(missing)}")
@@ -229,8 +237,13 @@ cat = np.stack([np.clip(df[c].to_numpy(np.int64) + 1, 0, 511).astype(np.int16)
                 for c in ("c1", "c2", "c3", "cand1", "cand2", "cand3")], 1)
 atype = np.clip(df.actionType.to_numpy(np.int64) + 1, 0, 15).astype(np.int16)
 screen = np.clip(df.screen.to_numpy(np.int64), 0, 15).astype(np.int16)
-value = (10 * df.won.to_numpy(np.float32) + df.endHp.to_numpy(np.float32)).astype(np.float32)
-q_target = (10 * df.labelWon.to_numpy(np.float32) + df.labelHp.to_numpy(np.float32)).astype(np.float32)
+if LABEL_SCALE == "floor":
+    value = df.endFloor.to_numpy(np.float32).astype(np.float32)
+    q_target = df.labelFloor.to_numpy(np.float32).astype(np.float32)
+else:
+    value = (10 * df.won.to_numpy(np.float32) + df.endHp.to_numpy(np.float32)).astype(np.float32)
+    q_target = (10 * df.labelWon.to_numpy(np.float32) + df.labelHp.to_numpy(np.float32)).astype(np.float32)
+print(f"[train-strategic-tok] label scale: {LABEL_SCALE}", flush=True)
 q_valid = np.isfinite(q_target)
 
 # --- Fallback-centering: subtract behavior fallback Q from all candidates ---
