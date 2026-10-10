@@ -16449,3 +16449,30 @@ G1–G3 control arms.
 
 **Knowledge impact:** `operations/environment-variables.md` documents
 `STS_OOC_STRATEGIC_TOK_CONST_GUARD`; one paragraph in `evaluation/current-research.md`.
+
+## §422 — rollout3 OOC MCTS replicates on the current CTM: +10.9 pp wins over MCTS off (2026-10-10)
+
+**Question:** §277's rollout3 profile (V4 prior, 2048 sims, native `v_win` leaf after 3 extra CTM
+combats) won 28/32 vs V4 24/32 on the old V2 CTM (CI crossed zero). Does it win more runs than MCTS
+off on the current stack? Requested by Philipp after §391's boss-rollout leaf was traced to a
+saturated, noisy 0/1 value (act-1 root Q ≈ 0.997; this thread's probe, seeds 69000001–004).
+**Design:** [PREREG](evidence/ooc_rollout3_replication_20261010/PREREG.md) frozen at `f5734322`
+after independent review (PR #475). Code `cd405b4c`, binary `39cdac96…`, production pathb-r2 CTM,
+sampled noncombat futures, `STS_REST_WIN=0`, 1 OMP thread; control = MCTS off on the §411 research
+base (flat exact-10k Silver). Seeds 70000000–127 (smoke 70009000), 16 cloud workers × 4 CPU.
+Primary: paired bootstrap 95% CI of Δwin; REPLICATED if the lower bound > 0.
+**Validity:** 160/160 units rc=0, 128/128 pairs, no seed failures, config banners checked.
+**Result:** **REPLICATED.** rollout3 115/128 (89.8%) vs off 101/128 (78.9%), Δwin +10.9 pp
+[+2.3, +19.5], discordant 23 vs 9, McNemar p = 0.020. Boss deaths 11 vs 23; Δfloor +0.69
+[−0.65, +2.0]; Δ end HP +12.6. Cost 936 vs 57 s per run (about 16x); 105k simulations and 850 s MCTS
+CPU per run. 19.8% of OOC decisions fell back to V4 (99% of support aborts are Lizard Tail).
+**Interpretation (Inference):** the gain comes mostly from fewer boss deaths. The value comes from
+the 3-combat rollout leaf (contrast §384 `screengbm` leaf −22 pp, §391 boss rollout 9/32).
+**Decision:** no default change (pre-registered). Candidates for follow-up, one variable at a time
+on these seeds: uniform prior, outcome merging, no early stop, cheaper budgets; then a fresh-seed
+confirmation.
+
+**Evidence:** [packet](evidence/ooc_rollout3_replication_20261010/README.md). Raw:
+`/mnt/project-files/ooc-rollout3-replication/`. Seeds 70000000–127 and 70009000 are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
