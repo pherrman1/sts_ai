@@ -263,7 +263,8 @@ other sections retain their prior verification and linked evidence.
 
 OOC MCTS with the V4 prior, 2048 simulations and a native `v_win` leaf after 3 additional CTM
 combats (`STS_OOC_MCTS_LEAF_COMBATS=3`, `LEAF_VALUE=native`) won 115/128 vs 101/128 for MCTS off
-on the current pathb-r2 CTM: +10.9 pp [+2.3, +19.5], boss deaths 11 vs 23. It costs about 936 s
+on the current pathb-r2 CTM (control: MCTS off on the §411 research base with flat exact-10k Silver,
+not the production defaults, so 78.9% is not the default stack's win rate): +10.9 pp [+2.3, +19.5], boss deaths 11 vs 23. It costs about 936 s
 per run on one CPU (off: 57 s), and about 20% of OOC decisions still fall back to V4 on Lizard Tail
 support aborts. This reproduces §277 (old V2 CTM) and contrasts with the `screengbm` leaf (§384,
 −22 pp) and the 0/1 boss-rollout leaf (§391, 9/32, saturated value). Open: cheaper budgets, prior

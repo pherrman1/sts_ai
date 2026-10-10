@@ -11,7 +11,7 @@ by all 16 cloud workers (every `FROZEN.txt` names the same run, code and binary)
 160/160 units rc=0, no `[bestbench-seed-failure]`, no restarts or aborted units, 128/128 pairs.
 All 128 rollout3 logs print `leafValue native`, `leafCombats 3`, `prior policy`, `simulations 2048`
 and the production combat model `combat_transition_deepsets_pathb_r2.native`; none of the 32 `off`
-logs enables OOC MCTS. Result CSV hashes: [data-sha256.txt](data-sha256.txt).
+logs enables OOC MCTS. Hashes of the result CSVs, `.done` files and support traces the analysis reads: [data-sha256.txt](data-sha256.txt).
 
 ## Result ([report.json](report.json), `tools/analyze_rollout3_replication.py`)
 
@@ -33,7 +33,8 @@ logs enables OOC MCTS. Result CSV hashes: [data-sha256.txt](data-sha256.txt).
 ## Reading
 
 The +11 pp gain from §277 (+12.5 pp vs V4, old V2 CTM) reproduces on the current CTM and against the
-current research base, now with a CI above zero. The gain comes from fewer boss deaths (11 vs 23).
+current research base, now with a CI above zero. **Inference:** the gain comes mostly from fewer
+boss deaths (11 vs 23).
 The cost is about 16x CPU per run. **Inference:** the 3-combat rollout
 leaf, not the tree or the prior, carries the value (compare §384 `screengbm` leaf −22 pp and §391
 boss-rollout 9/32).
