@@ -16105,7 +16105,7 @@ ranking signal sits in paired counterfactual branches, which E3/#334 already col
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
 
-## §418 — A20 Silver combat-strength card pilot: SCALE by rule, not shown (2026-10-10)
+## §420 — A20 Silver combat-strength card pilot: SCALE by rule, not shown (2026-10-10)
 
 **Question:** after §416, does combat strength measured with real A20 teacher
 Silver fights pick card rewards better than the teacher, and better than CTM
