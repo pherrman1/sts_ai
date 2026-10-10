@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-09 for the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -135,6 +135,14 @@ learned-stop corpus (pathb-r2, escape capability only) passed the offline A/B
 refreshed CTM does not establish a reason to turn OOC MCTS on (**Inference**).
 Philipp chose to swap the production CTM pins to pathb-r2; OOC MCTS stays off.
 [Evidence](../../experiments/evidence/ctm_live_ab_418_20261009/README.md).
+
+**Root selection × cpuct (2026-10-09, §414).** On 128 new paired seeds with the
+pathb-r2 stack, picking the OOC MCTS root option by mean Q instead of visits
+loses 30–44 pp at every cpuct (cpuct 1.5: 41.4% vs 78.9%). With visits, cpuct
+0.5 and 1.0 tie 1.5, and 3.0 is worse (−10.9 pp). The Q arms skip about a third
+of card rewards, so the screen leaf's own preferences are worse than the V4
+prior's (**Inference**). Root selection stays `visits`, cpuct 1.5.
+[Evidence](../../experiments/evidence/ooc_mcts_q_select_screen_20261009/PREREG.md).
 
 ## Screen-aware OOC leaf value (#379) — offline preparation
 

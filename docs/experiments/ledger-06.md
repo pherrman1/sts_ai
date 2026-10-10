@@ -16348,3 +16348,59 @@ copies in `/mnt/project-files/boss-deaths-347/`.
 **Knowledge impact:** this entry; `bossrescue347` gains a schema, recorded in
 `docs/knowledge-base/CODE_MAP.md` and `operations/ooc-label-pipeline.md` where
 the mode is routed.
+
+## §414 — OOC MCTS root selection × cpuct screen: picking by mean Q is far worse, no cpuct beats 1.5 (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** on seed 63000084 (the §412 `cand` arm's Act 1 Hexaghost loss) the search's own
+Q preferred a different root option at several decisions, but OOC MCTS picks the most-visited option, and at cpuct 1.5
+the visits follow the V4 prior. Does picking the root option by mean Q, or another cpuct, win more runs?
+A single-seed replay (pick by Q won that seed; cpuct 0.5 and temperature 2 still lost; a uniform leaf policy changed
+nothing, because with `LEAF_COMBATS=0` the leaf playout never runs) prompted a pre-registered paired screen.
+
+**Design:** [PREREG.md](evidence/ooc_mcts_q_select_screen_20261009/PREREG.md), written before any cohort seed.
+* Base = the §412 `cand` arm verbatim (OOC MCTS on, pathb-r2 CTM, 2048 sims, early stop, V4 prior, screen-GBM leaf,
+  fair native Silver exact 10k, Ironclad A0, stop after the Act 3 boss), binary `dddb09f0` built from `648334e3`.
+* 8 arms: root selection {visits, mean Q} × cpuct {0.5, 1.0, 1.5, 3.0}; control `v15` = current setting.
+  With Q selection the planner skips the visit-lock early stop, so Q arms always spend 2048 sims per root.
+* Seeds `65000000..65000127` (128, paired across all arms), smoke `65009000`. 32 cloud workers × 4 CPU,
+  512 units of 2 seeds, all through `tools/seed_guard.sh`.
+* Primary: `q15 − v15` paired win-rate difference, paired bootstrap 95% CI (10,000 resamples), exact McNemar.
+  Secondary: every arm vs `v15`; a `CI_ABOVE_0` arm would only earn a fresh-seed confirmation.
+
+**Deviations** ([DEVIATIONS.md](evidence/ooc_mcts_q_select_screen_20261009/DEVIATIONS.md)), both before any result
+was read: D1, the smoke's integrity check failed because `analyze.py` also read the `.mcts.csv` traces as result
+files; fixed (exact `ARM-LO.csv` names only), smoke re-checked on the same outputs and passed. D2, worker 02 killed a
+duplicate launch; the four killed units were renamed and rerun whole, and the analyzer ignores them.
+
+**Execution:** 512/512 units rc 0, no seed failures, no missing seeds; 1,024 runs.
+
+**Result: `Q_WORSE`.** No arm beats the control.
+
+| Arm | Win % | Δ vs v15, pp [95% CI] | McNemar p | Mean floor | Boss deaths (act 1/2/3) | Non-boss deaths | CPU s/run |
+|---|---|---|---|---|---|---|---|
+| v05 | 76.6 | −2.3 [−11.7, +7.0] | 0.75 | 47.8 | 3/7/10 | 10 | 115 |
+| v10 | 76.6 | −2.3 [−10.2, +5.5] | 0.69 | 49.2 | 0/9/15 | 6 | 110 |
+| **v15** (control) | **78.9** | — | — | 49.0 | 1/6/13 | 7 | 113 |
+| v30 | 68.0 | −10.9 [−19.5, −2.3] | 0.029 | 47.3 | 0/15/14 | 12 | 110 |
+| q05 | 43.8 | −35.2 [−44.5, −25.8] | 2e-10 | 38.2 | 17/17/11 | 27 | 122 |
+| q10 | 49.2 | −29.7 [−39.8, −19.5] | 1e-7 | 39.6 | 10/21/6 | 28 | 128 |
+| **q15** (primary) | 41.4 | −37.5 [−46.9, −28.1] | 3e-11 | 39.2 | 13/29/10 | 23 | 126 |
+| q30 | 35.2 | −43.8 [−53.1, −34.4] | 7e-14 | 37.8 | 12/21/13 | 37 | 118 |
+
+**Post-hoc, descriptive** ([POSTHOC-picks.txt](evidence/ooc_mcts_q_select_screen_20261009/POSTHOC-picks.txt)): the Q
+arms skip 33–37% of card rewards (visits arms 0.5–1.6%), smith more than they rest, and at Neow take the second
+(non-card) bonus slot in 61–76% of runs (visits at cpuct 1.5: always the card slot). **Inference:** arg-max mean Q
+over options with few visits picks noise winners, and it hands the decision to the screen-GBM / X2-B leaf, whose
+skip preference and card mispricing are known (§396, 2026-10-07 card-pricing check). At cpuct 1.5 the visit rule lets
+the V4 prior overrule that leaf. The seed 63000084 win was a lucky draw.
+
+**Decision:** no change. Root selection stays `visits`, cpuct stays 1.5; OOC MCTS stays off by default (ADR-0027).
+Lower cpuct (0.5, 1.0) ties the control; 3.0 is worse. Improving OOC MCTS needs a better leaf, not a different root
+rule.
+
+**Evidence:** [folder](evidence/ooc_mcts_q_select_screen_20261009/) (PREREG, worker.sh, analyze.py, brief,
+deviations, smoke markers, report.json, post-hoc picks, SHA256SUMS). Raw unit outputs (CSV, logs, traces) are in
+`/mnt/project-files/ooc-mcts-q-select-screen/w01..w32/`. Seeds `65000000..65000127` and `65009000` are now used.
+
+**Knowledge impact:** this entry and one paragraph in `docs/knowledge-base/evaluation/current-research.md`; no
+defaults or maintained interfaces changed.
