@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-09 for the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -126,6 +126,16 @@ CTM's training on vendored Silver from before ADR-0021 is one candidate cause
 qualified teacher.
 [Evidence](../../experiments/evidence/ooc_mcts_vs_off_pilot_20261006/README.md).
 
+**#418 retrained CTM (2026-10-09, §412).** The CTM retrained on the Path B
+learned-stop corpus (pathb-r2, escape capability only) passed the offline A/B
+(mostly a better fit to the current teacher's boss HP). In live OOC MCTS on
+128 new pairs it was `NO_DIFFERENCE_DETECTED` against the production CTM,
++5.5 pp [−2.3, +13.3], non-inferior at 10 pp. Neither MCTS arm beat MCTS off
+(cand −1.6 pp [−10.9, +7.8], production −7.0 pp [−16.4, +2.3]), so the
+refreshed CTM does not establish a reason to turn OOC MCTS on (**Inference**).
+Philipp chose to swap the production CTM pins to pathb-r2; OOC MCTS stays off.
+[Evidence](../../experiments/evidence/ctm_live_ab_418_20261009/README.md).
+
 ## Screen-aware OOC leaf value (#379) — offline preparation
 
 At current-main baseline `a59d7e47`, the frozen 1,024-source DECISION corpus
@@ -250,7 +260,8 @@ post-combat field (potions, relic counters, max HP, gold, deck), and tie it on
 deaths. The CTM costs 0.6 ms per forecast, versus 64 ms per prior-256 playout
 and 23 ms per prior-64 playout. No default changed; the open questions are the
 Run 2 retrained CTM on the same states and a matched-CPU OOC MCTS gameplay test
-([§408](../../experiments/ledger-06.md), `one_combat ctmsilvergen`).
+([§408](../../experiments/ledger-06.md), `one_combat ctmsilvergen`; its "production CTM" arm stays
+pinned to the pre-#418 stack after the #418 swap, so §408/§410 reproduce).
 
 Both follow-ups ran. The Run 2 (Path B) CTM is clearly better than production on the same states
 (post-combat HP RMSE 9.1 vs 11.7, bias +0.2, better deaths and potions) but still behind four prior-256
@@ -857,7 +868,7 @@ On the exact supported TEST set, 1,633,152 draws have zero recorded hard-validit
 
 The accepted Brew contract draws a fresh full-width hypothetical native potion RNG from planner RNG on first use, reuses it through recursion and retains its advanced state in sampled RAW. Generated Smoke/ESCAPE remains supported; initial/pre-Smoke states stay excluded. Historical RNG reconstructs teacher labels only. Native generation audited 3,208 Brew rows and 3,106 rounds, including 112 proven recursive cases. Transmutation upgrade status conditions shared learned HoG mechanics, while native payouts remain exact 20/25.
 
-The tracked default artifact at `selfplay/models/combat_transition_near_full_except_smoke_v2.native` now uses the targeted attention-HPO survival component (artifact SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`). All other component checkpoints are unchanged. Frozen TEST survival NLL/Brier improve from 0.060412/0.017986 to 0.058878/0.017384. The full final-support composition and RAW gates were rerun: all nonempty exposure slices pass, the established exact correction resolves the one Monte Carlo gold zero, and 1,633,152 transitions have zero hard-validity violations. Python/native CPU FP32 probabilities pass at 1e-4 tolerance (maximum error 2.38e−6); complete RAW state, planner stream and scalar/prepared parity pass on 3,904 draws, including 127 recursive Brew cases and three unsupported/no-draw fixtures. The executed native support predicate still exactly matches both corpus/TEST ordered-index hashes.
+The tracked artifact at `selfplay/models/combat_transition_near_full_except_smoke_v2.native` (the default until #418 replaced it with the escape-capable pathb-r2 pair, §412; kept for rollback) uses the targeted attention-HPO survival component (artifact SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`). All other component checkpoints are unchanged. Frozen TEST survival NLL/Brier improve from 0.060412/0.017986 to 0.058878/0.017384. The full final-support composition and RAW gates were rerun: all nonempty exposure slices pass, the established exact correction resolves the one Monte Carlo gold zero, and 1,633,152 transitions have zero hard-validity violations. Python/native CPU FP32 probabilities pass at 1e-4 tolerance (maximum error 2.38e−6); complete RAW state, planner stream and scalar/prepared parity pass on 3,904 draws, including 127 recursive Brew cases and three unsupported/no-draw fixtures. The executed native support predicate still exactly matches both corpus/TEST ordered-index hashes.
 
 A fresh prospective 64-seed paired gameplay gate compared the prior V2 artifact with this attention-promoted V2 under the locked 2,048-simulation OOC MCTS reference profile and exact 10k Silver combat search. Both arms won 49/64; both-win47/both-lose13/old-only2/new-only2 gives a new-minus-old delta of 0.0pp and paired bootstrap95% [-6.25pp,+6.25pp]. This establishes neither gameplay improvement nor harm. It is bounded online evidence that observed play was preserved at this gate's resolution, not equivalence proof or unbiased-planning qualification. See [ledger-06 §271](../../experiments/ledger-06.md) and the [paired evidence](../../experiments/evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).
 
@@ -1288,8 +1299,16 @@ After Gate 2, the exact qualified DeepSets payload was packaged as
 payload remains SHA-256
 `429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`; package
 metadata is pinned to the Gate 2 PASS result hash. With `STS_OOC_MCTS=1` and
-the combat model unset, the default stack is DeepSets, the standard Attention
-Brew fallback, and the active-Lizard correction. `STS_OOC_MCTS` itself remains
+the combat model unset, this was the default stack (DeepSets, the standard
+Attention Brew fallback, and the active-Lizard correction) until #418 (§412)
+swapped the default to the escape-capable pathb-r2 pair
+(`combat_transition_deepsets_pathb_r2.native` `90806c25…`,
+`combat_transition_near_full_escape_pathb_r2.native` `b9188de0…`, pinned by the
+runtime's built-in manifest `d9d8377e…`, so default runs report identity
+`production` and skip the Smoke Bomb masking). Rollback: set
+`STS_OOC_MCTS_COMBAT_MODEL` to this `lizard_t2` file,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL` to the `except_smoke_v2` file and
+`STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418 stack. `STS_OOC_MCTS` itself remains
 off by default. Active Lizard + Entropic Brew, Fairy Potion, and Mark of the
 Bloom remain excluded or exact-path boundaries. The original invalid cohort
 remains preserved separately from the successful follow-up.
@@ -2404,6 +2423,11 @@ with no sign the leak helps. XGBoost seed noise (~0.007-0.010 NLL) exceeds the
 question's 0.002 materiality and the A3 X1 grid spread, so single-seed A3
 selection should not be over-interpreted. Public-history/derived-probability
 stages of #397 remain open on the 457-feature public-safe baseline.
+#396 Stage 1 (ledger-06 §418): removing the forward-map block from that
+baseline was `INCONCLUSIVE` (+0.0050 NLL, CI includes 0, about twice the
+retraining null), removing `bossId` also `INCONCLUSIVE` (+0.0012). Stage 2
+richer map encodings are not pursued; no default is affected (heuristic
+pathing, tracked `v_win_trees.txt` unchanged).
 Stage 1b (§373) found the TRAIN mask already excludes every unreachable card,
 relic and potion column. Stage 2 (§374): raw relic/event/encounter history
 each worsened a 5-seed ensemble slightly (`INCONCLUSIVE`, none adopted);

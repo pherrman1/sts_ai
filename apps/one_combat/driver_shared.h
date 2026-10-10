@@ -279,6 +279,11 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
                                int futures, int statesPerSeed = 1, int cardRewardBosses = 1,
                                int generation = 1, const std::string &typeList = {},
                                const std::string &targetPath = {}, int futureStart = 0, int asc = 0);
+// Combat-strength card probe: replays the ooccfpilotgen GEN=2 source runs to
+// their sampled card rewards and writes CTM expectations per option and act
+// encounter. Research only; changes no gameplay.
+void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedOffset,
+                       const std::string &teacherPath, int asc, int silverReps = 0);
 namespace one_combat {
 void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng);
 }
@@ -412,8 +417,8 @@ int teacherSchemaCompatibilitySelfTest();
 int learnedStopTeacherSelfTest();
 // The default models are the production stack; a research candidate passes its own pair.
 int ctmScoreRows(const std::string &inPath, const std::string &outPath,
-                 const std::string &fastModel = "selfplay/models/combat_transition_deepsets_lizard_t2.native",
-                 const std::string &standardModel = "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+                 const std::string &fastModel = "selfplay/models/combat_transition_deepsets_pathb_r2.native",
+                 const std::string &standardModel = "selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
                  bool activeLizard = true);
 int ctmScoreRowsSelfTest();
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);

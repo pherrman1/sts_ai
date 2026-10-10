@@ -182,6 +182,12 @@ public:
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
+// Boss-leaf utility 0.75*P(survive) + 0.25*P(survive)*E[end HP fraction | win].
+double oocBossLeafUtility(const CombatTransitionExpectation &);
+// The OOC MCTS wrapper that values a combat starting with a Smoke Bomb as if
+// the slot were empty (no-op for an escape-capable CTM).
+std::shared_ptr<const CombatTransitionSampler> oocMaskInitialSmokeBomb(
+    std::shared_ptr<const CombatTransitionSampler>);
 // A validated singleton root needs no hypothetical continuation.
 sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerativeModel &,
     const sts::search::OocMctsConfig &, std::optional<sts::search::OocActionId>,

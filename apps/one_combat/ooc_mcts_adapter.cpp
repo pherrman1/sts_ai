@@ -1783,12 +1783,12 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_COMBAT_MODEL cannot be empty when set");
     const bool automaticDefaultStack=artifactOverride==nullptr && !silverResolver;
     const std::string artifact=silverResolver?"native_silver_root_prior":automaticDefaultStack?
-        "selfplay/models/combat_transition_deepsets_lizard_t2.native":artifactOverride;
+        "selfplay/models/combat_transition_deepsets_pathb_r2.native":artifactOverride;
     const char *brewFallbackOverride = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
     if (brewFallbackOverride && !*brewFallbackOverride)
         throw std::runtime_error("STS_OOC_MCTS_BREW_FALLBACK_MODEL cannot be empty when set");
     const std::string brewFallbackArtifact=brewFallbackOverride?brewFallbackOverride:
-        (automaticDefaultStack?"selfplay/models/combat_transition_near_full_except_smoke_v2.native":"");
+        (automaticDefaultStack?"selfplay/models/combat_transition_near_full_escape_pathb_r2.native":"");
     const char *activeLizardOverride=std::getenv("STS_OOC_MCTS_ACTIVE_LIZARD");
     bool activeLizardEnabled=automaticDefaultStack;
     if(activeLizardOverride) {
@@ -2315,6 +2315,13 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
 
 #include "../../tests/data/ooc_v4_policy_fixture.h"
 namespace one_combat {
+double oocBossLeafUtility(const CombatTransitionExpectation &estimate) {
+    return bossLeafUtility(estimate);
+}
+std::shared_ptr<const CombatTransitionSampler> oocMaskInitialSmokeBomb(
+        std::shared_ptr<const CombatTransitionSampler> sampler) {
+    return maskInitialSmokeBomb(std::move(sampler));
+}
 void oocMctsAdapterSelfTest() {
     runFloorProfileSelfTest();
     using namespace sts;

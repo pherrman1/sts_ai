@@ -1,0 +1,80 @@
+{
+ "schema": "a20_card_correction_v1",
+ "root": "/mnt/attach/project-files/a20-transfer-346/cf-a20-5ba068e0",
+ "producer_git": [
+  "5ba068e0836be4cc2ac06f74f05414cdefca1fe3"
+ ],
+ "producer_exe": [
+  "dddb09f099a3a88994b23178b96e70346ac877c4d4deaf2d786df184972c7169"
+ ],
+ "parts": 240,
+ "dropped_state_k_groups": 0,
+ "leaky_states_dropped": 71,
+ "states_by_split": {
+  "TEST": 158,
+  "TRAIN": 789,
+  "VALIDATION": 182
+ },
+ "trained": [
+  {
+   "seed": 0,
+   "trees": 2,
+   "rows": 3768
+  },
+  {
+   "seed": 1,
+   "trees": 5,
+   "rows": 3768
+  },
+  {
+   "seed": 2,
+   "trees": 4,
+   "rows": 3768
+  }
+ ],
+ "results": {
+  "VALIDATION": {
+   "states": 182,
+   "switch_rate": 0.0,
+   "gain": {
+    "mean": 0.0,
+    "n": 182,
+    "source_seeds": 182,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "oracle": {
+    "mean": 3.9175824175824174,
+    "n": 182,
+    "source_seeds": 182,
+    "ci95": [
+     2.967032967032967,
+     4.953571428571427
+    ]
+   },
+   "random_alt_same_rate": {
+    "mean": 0.0,
+    "n": 182,
+    "source_seeds": 182,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "random_alt_always": {
+    "mean": -1.2216117216117217,
+    "n": 182,
+    "source_seeds": 182,
+    "ci95": [
+     -2.4084420787545793,
+     -0.033602335164835566
+    ]
+   }
+  }
+ },
+ "test_opened": false,
+ "verdict": "NOT_SHOWN",
+ "seconds": 32.12073993682861
+}

@@ -14449,6 +14449,11 @@ default (on).
 
 **Support:** 2,647 / 2,603 rows scored. The rest were unsupported: Smoke Bomb 16 / 11, unqualified active Lizard 5 / 5, Writhing+Ritual Dagger 0 / 1. There were no escapes and no zero-probability HP outcomes.
 
+> **Correction (2026-10-09, §412):** "no escapes" is wrong. The exact / learned arms have 15 / 10 escaped rows (16 /
+> 11 held-Smoke rows). Stage 0's `analyze.py` counted escapes as `combat_outcome == 0`, but escapes are stored as wins
+> with `post.smokeBombUsed`. All of them are among the production-unsupported Smoke Bomb rows above, so every §386
+> metric is unchanged.
+
 **Survival is calibrated on both arms.** Mean signed bias (predicted win minus observed) is exact −0.003 (CI −0.009..+0.003) and learned −0.001 (−0.007..+0.005). Boss bias is exact −0.006 (−0.038..+0.027) and learned −0.025 (−0.063..+0.011). Survival NLL is 0.066 / 0.069 nat per fight. The only cell with a significant bias is the exact-arm act 3 boss (+0.087, CI +0.005..+0.177, n=58). The learned arm's act 3 boss is +0.002.
 
 **Boss HP is optimistic on both arms.** Predicted post-combat HP on boss wins is too high by +10.3 HP (CI 8.0..12.7) for exact and +10.0 (7.8..12.4) for learned.
@@ -15571,6 +15576,174 @@ arm started (probably copy times), so the order cannot be proven either way.
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
 
+## §409 — A20 card ranker on floor reached: offline, not shown (2026-10-09)
+
+**Question:** at A20, card-reward options differ by about 2 floors in floor
+reached (§402), but not in wins. Can a GBM trained on the §402
+counterfactual corpus pick cards that reach more floors than V4?
+
+**Context:** live OOC MCTS card picks follow the V4 prior. Across 85 card
+roots in the §389 profiles, it chose the max-prior card 73 times and the
+max-Q card 24 times. Philipp chose to pursue cards at A20 with a floor
+target.
+
+**Design:** [PLAN.md](evidence/a20_card_floor_20261009/PLAN.md), committed
+before fitting (`5457e729`). Offline only; no gameplay seeds.
+- **Data:** the §402 corpus (`5ba068e0`, 1,200 card-reward states, K=2).
+- **Target:** `horizonFloor`.
+- **Features:** X2-B public map-row features, HIDDEN_FUTURE dropped.
+- **Split:** `source_split`, with early stopping on an inner 20% of TRAIN
+  sources, so VALIDATION is used only for scoring. TEST is closed.
+- **Model:** XGBoost regression, 3 seeds.
+- **Rule:** PASS if the primary arm's VALIDATION selection-gain CI vs V4
+  excludes 0 from below.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_floor.py` at `ea76456a`, 189
+VALIDATION states).
+- CARD − V4: −0.47 floors [−1.46, +0.43].
+- Diagnostics:
+  - ALL: −0.39 [−1.38, +0.60].
+  - CARD_50: −0.41 [−1.28, +0.41], so the learning curve is flat.
+  - X2-B: −0.88 [−1.74, −0.06].
+  - Uniform random: −0.95 [−1.80, −0.13].
+  - CARD − X2-B: +0.42 [−0.43, +1.24].
+
+**Interpretation (Inference):**
+- V4 is the best available A20 card picker; it beats random by about 1 floor.
+- X2-B is no better than random on cards.
+- A GBM on 840 TRAIN states does not reach V4, and halving its data changes
+  nothing. A card leaf for OOC MCTS is not available from this corpus.
+- Options not tested: much more counterfactual data, or V4 logits as a model
+  input.
+
+**Post-hoc addendum (asked after the result, not in the rule):** the target
+and score were changed to floor + B × win, with B = 10 and B = 25.
+- CARD − V4, in floor + B × win units: −0.25 [−1.24, +0.72] at B = 10,
+  −0.68 [−2.06, +0.70] at B = 25.
+- Random − V4: −1.00 [−1.97, −0.06] at B = 10. At B = 25 it is −1.08
+  [−2.24, +0.10], with a CI that includes 0.
+- The win term adds noise without card signal (§402).
+
+**Review note:** boss-reward card states can have a next-act map row (a
+leak). This affects 7 of 189 VALIDATION states. Excluding them gives CARD −
+V4 −0.44 [−1.50, +0.50], the same verdict.
+
+**Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
+[report.json](evidence/a20_card_floor_20261009/report.json).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
+
+## §413 — A20 card correction on top of the teacher's pick: offline, not shown (2026-10-09)
+
+**Question:** after §409, can a model that predicts only how much better each
+alternative card is than the teacher's pick, and switches only when that is
+positive, beat the teacher on floor reached at A20?
+
+**Design:** [PLAN-CORRECTION.md](evidence/a20_card_floor_20261009/PLAN-CORRECTION.md),
+committed before fitting (`b7320e1c`). The corpus, split and inner early stop
+are as in §409.
+- **Leak exclusion:** the 71 boss card-reward states whose map row is in the
+  next act (the §409 review note) are dropped.
+- **Target:** the paired floor difference to the teacher's chosen option under
+  shared futures.
+- **Features:** the option's map row and its difference to the chosen option's
+  row.
+- **Model:** XGBoost, 3 seeds.
+- **Rule:** PASS_VALIDATION if the gain CI lower bound > 0; TEST only after that.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_correction.py` at `086e3a28`, 182
+VALIDATION states, TEST closed).
+- Early stopping kept 2–5 trees.
+- Every alternative is predicted worse than the teacher's pick, so the policy
+  never switches: switch rate 0, gain 0.
+- Context: switching to a random alternative every time costs −1.22 floors
+  [−2.41, −0.03].
+
+**Interpretation (Inference):** with these features and 789 TRAIN states,
+nothing identifies when an alternative card beats the teacher's.
+- The features are the X2-B map rows plus the teacher's pick. The corpus does
+  not store V4's per-option scores, so a correction that takes those scores as
+  input is untested.
+- For context, the §409 ranker on the same 182 states scores −0.44 [−1.50,
+  +0.50].
+
+**Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
+[report-correction.json](evidence/a20_card_floor_20261009/report-correction.json).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
+
+## §416 — A20 combat-strength card probe: CTM strength ties the teacher, not shown (2026-10-09)
+
+**Question:** Philipp's idea is to value a state by its combat strength
+against the enemies ahead, not by a whole-run outcome. Does a training-free
+version of that, the CTM's expected fight utility against the act's remaining
+enemies, pick A20 card rewards better than the teacher on floor reached?
+
+**Design:** [PLAN-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-STRENGTH.md),
+frozen at `6349c21f` before the run (Philipp's go 2026-10-09 17:30Z).
+- **Replay:** the new default-off mode `one_combat cardstrengthprobe` replays
+  the §402 corpus source runs (TRAIN and VALIDATION seeds of
+  59100000..59101199; TEST not replayed) to the same sampled card rewards.
+  Binary `faf76c7f…`.
+- **Score:** for each option, the production CTM stack's utility
+  `0.75·P(survive) + 0.25·P(survive)·E[HP fraction | win]` against the act's
+  weak, strong and elite pools and the revealed boss, weighted by remaining
+  reachable monster and elite nodes. The highest score is picked; ties go to
+  the teacher.
+- **Rule:** PASS if the source-clustered CI lower bound of the floor gain over
+  the teacher's pick is > 0.
+- **CTM input at ASC 0, decided before scoring:** the 2-seed smoke showed the
+  production CTM is degenerate at ascension 20. With ASC 20 as input it
+  returned death 0 and one fixed HP value for every encounter and option,
+  because its input scaling puts ASC 20 far outside the A0 training data.
+  Decks are therefore priced at ASC 0.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_strength.py`, 970 states;
+`report-strength.json`).
+
+| Metric | Value |
+|--------|-------|
+| Gain over teacher | +0.14 floors [−0.24, +0.54] |
+| Gain on TRAIN states | +0.20 |
+| Gain on VALIDATION states | −0.11 |
+| Gain by act (acts 1, 2, 3) | +0.21, +0.00, +0.11 [−0.07, +0.29] |
+| Agreement with the teacher | 56% |
+| Skip rate (probe / teacher) | 3.2% / 4.1% |
+| Uniform random pick | −0.94 [−1.29, −0.57] |
+| Oracle (noise-inflated) | +4.27 |
+
+- **Trajectory check:** 971 eligible states, 0 mismatches. One state was
+  unscored because every encounter was unsupported (seed 59100838: all 68
+  unsupported probes of the run).
+- **Option spread:** the median utility spread between a state's best and
+  worst option is 0.008.
+
+**Interpretation (Inference):** with no training, CTM combat strength picks
+cards about as well as the teacher (V4 plus margin gate). It disagrees on 44%
+of states and loses nothing on average, while random picks lose about a
+floor. That is the best of the three A20 card attempts so far: §409's ranker
+scored −0.47 and §413's correction never switched. It is still not a
+demonstrated improvement.
+- The per-option signal is small (0.008 utility). The A0 pricing and the
+  equal-weight pool average are crude.
+- Silver labels at the right ascension, or a learned strength leaf, could
+  sharpen it. That is untested.
+
+**Side finding:** the production CTM must not be used at A20 as it is. No
+existing A20 result used it: OOC MCTS was off in every A20 run.
+
+**Evidence:** [PLAN-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-STRENGTH.md),
+[report-strength.json](evidence/a20_card_floor_20261009/report-strength.json),
+raw outputs in `/mnt/project-files/card-strength-probe/run-6349c21f/`. The run
+was resumed twice after container restarts with the same binary; resumes skip
+finished seeds (`RESUMES.txt`).
+
+**Knowledge impact:** this entry, plus the default-off research mode
+`cardstrengthprobe`. No defaults changed. The CTM's A20 degeneracy is recorded
+here.
+
 ## §408 — CTM vs low-sim Silver as combat-outcome forecasters: Silver more accurate on every field, CTM about 400x cheaper (2026-10-09)
 
 **Question (Philipp, 2026-10-09):** could low-sim Silver with the synthetic
@@ -15795,6 +15968,115 @@ raw data `/mnt/project-files/ooc-mcts-silver-resolver/w01..w16/`.
 `docs/knowledge-base/architecture/out-of-combat.md`, `combat-search.md` and
 `operations/environment-variables.md`; one paragraph in `docs/knowledge-base/evaluation/current-research.md`.
 
+## §412 — #418 full CTM retrain on Path B: offline A/B pass, live A/B no difference detected (2026-10-09)
+
+**Question:** does a CTM stack retrained on the Path B learned-stop corpus (§386), with the planned new capabilities,
+fit the current teacher better than production offline, and does it win more runs inside live OOC MCTS?
+
+**Retrain:** FULL-RETRAIN-PLAN (project share `ctm-pathb/FULL-RETRAIN-PLAN.md`, not committed; Philipp chose
+"everything at once" and the full pipeline). One chain on Philipp's machine trained a new DeepSets main (fast) model
+and an Attention fallback (standard) on the Path B union, with four planned capabilities: Smoke Bomb escape, max HP
+up to 220, Writhing Mass + Ritual Dagger, and active Lizard Tail with Entropic Brew or Fairy Potion. PRs #437, #439,
+#440, #441 and #443 added the runtime and tools.
+- **DeepSets stage 19 downstream gate: REJECTED, then accepted by override.** The only failure was the exact-label
+  accuracy on the singleton `cards` head (the Ink Bottle counter). Philipp typed "yes override stage 19". Override
+  record sha256 `a2d28af3…`, qualification `5cca45ae…`.
+- **Capability exposure checks failed for the two new support slices.** E1 (escape, Smoke cohort) failed on small
+  Smoke ∩ Ritual/gold slices. E2 (Writhing+Ritual, whole union) failed: mean gap +0.139 [0.048, 0.271] on 149 rows,
+  the same miss production has (gate 0.1). At 13:36Z Philipp chose "Escape only": Writhing+Ritual stays excluded.
+  Philipp typed "yes, record escape only" (2026-10-09 20:32Z). Override record `escape-exposure-override.json`
+  (schema `ctm_exposure_decision_v1`) sha256 `2e1b3fcd774f00576858ab668492a6968bd483bbd79bb61f3c0f3d0c1150ee21`,
+  kept with the stage 19 record in the R2 durable folder on Philipp's machine. It lists the four E1 misses (hp.ritual,
+  potion.ritual, relic.gold, relic.ritual), the diagnosis (Smoke Bomb held and unused in won fights; the escape head
+  is overconfident there) and Writhing+Ritual as dropped.
+- **Fast escape fit:** VALIDATION NLL 0.264 vs 0.377 for a constant.
+- **Lizard fit:** the standard child's `l2` is at the grid edge (10). Fairy and Brew `r` are worse than a constant on
+  VALIDATION, so those paths are off (`lizardBrew`/`lizardFairy` not enabled).
+- **Final candidate `pathb-r2` (escape only):** STD1E `b9188de0…`, FASTF `90806c25…`, research-candidate manifest
+  `d9d8377e…` (v3). Production pins were unchanged during both A/Bs.
+
+**Offline A/B:** pre-registered in [RUNBOOK.md](evidence/ctm_offline_ab_418_20261009/RUNBOOK.md), script
+`offline_ab_compare.py` `ff71cf53…`, frozen 14:05:18Z at checkout `7d62ba42`, `one_combat` `dddb09f0…`. Both stacks
+scored every Path B row with `ctmscorerows`; 95% source-seed paired bootstrap, 2,000 reps. One deviation
+(`python3 -P -E` instead of `-I`), judged harmless.
+- **Gate (main TEST, 50,185 rows, 2,355 seeds): PASS.** ΔS (survival NLL, candidate − production) −0.00057
+  [−0.00150, +0.00036]; ΔH (HP NLL) −0.0675 [−0.0727, −0.0627]. Guards G1–G4 held, no flags, prodOnly 0.
+- **Coverage:** 425 candidate-only rows (416 Smoke Bomb, 9 HP envelope) that production refuses.
+- **Secondary sets** (Writhing+Ritual, high max HP, Lizard Fairy, Lizard Brew TEST, Stage 0 learned arm): no flags.
+- **Caveat:** the HP gain mostly reflects the teacher shift (§386). Boss HP bias is +11.8 HP for production and −0.2
+  for the candidate. Survival is a tie. The candidate is slightly more optimistic about survival than production
+  (Δbias +0.002 overall, +0.013 on bosses); its own overall bias [+0.0006, +0.0028] is inside the ±0.01
+  band. Offline fit says nothing about play strength.
+- Independent review: PASSED.
+
+**Live A/B:** pre-registered in [PREREG.md](evidence/ctm_live_ab_418_20261009/PREREG.md) (`3e62bef7…`, reviewed at
+`3b5d77c2`), analyzer `510ccf0d…`. Seeds `63000000..63000127` (128 pairs), smoke `63009000`, A0, fair Silver flat
+exact 10k, §384 live harness, act-3 stop, all through `tools/seed_guard.sh`. Arms: `prod` (OOC MCTS, production CTM),
+`cand` (OOC MCTS, pathb-r2, active-Lizard correction on) and `off` (MCTS off, descriptive reference). Binary built at
+`648334e3` (`dddb09f0…`), run checkout `a159119d`.
+- **Venue:** 4 cloud workers × 4 CPU instead of Philipp's machine; deviations D1–D9 in
+  [DEVIATIONS.md](evidence/ctm_live_ab_418_20261009/DEVIATIONS.md). Smoke passed; 48/48 units rc=0; no stalls,
+  timeouts, missing seeds or dropped pairs; no integrity errors.
+- **D9 (post-run, before reading results):** non-atomic open/write/close appends to the network share
+  (`run_driver.cpp:102`) tore 7 of 95,486 trace JSONL lines and silently overwrote about 20 trace records on 4 won
+  seeds (`off` 63000066, 63000115, 63000126; `prod` 63000073). The frozen analyzer ran unchanged on a copy with the 7
+  torn lines removed. Unaffected, exactly: the CSV primary, the boss-death counts and `BOSS_DEATH_EXCESS`. Slightly
+  off: the `off` arm's descriptive by-act boss-entry counts, mean start HP and Smoke Bomb counts, and `prod`'s
+  mean start HP, which misses one non-boss fight on seed 63000073.
+- **Verdict: `NO_DIFFERENCE_DETECTED`, flag `NONINFERIOR_AT_10PP`.** `BOSS_DEATH_EXCESS` not set.
+
+| Comparison | Win rates | Δwin, pp [95% CI] | Discordant | McNemar p | Boss deaths |
+|---|---|---|---|---|---|
+| cand − prod (primary) | 80.5% vs 75.0% | +5.5 [−2.3, +13.3] | 16 / 9 | 0.23 | 19 vs 26 |
+| cand − off | 80.5% vs 82.0% | −1.6 [−10.9, +7.8] | 17 / 19 | 0.87 | 19 vs 18 |
+| prod − off | 75.0% vs 82.0% | −7.0 [−16.4, +2.3] | 14 / 23 | 0.19 | 26 vs 18 |
+
+- Boss deaths cand − prod −5.5 pp [−12.5, +1.6]. Boss deaths by act (1/2/3): cand 2/8/9, prod 2/9/15, off 0/4/14.
+- Mean floor cand − prod +0.27 [−0.70, +1.25]. CPU per run: cand 122 s, prod 121 s, off 63 s.
+- Imagined escapes are now possible for the candidate; real escapes per run did not differ (+0.02 [−0.02, +0.08]).
+- Independent result review: PASS. It reproduced the report from the raw CSVs with the D9 handling and required the
+  D9 correction above.
+
+**Interpretation:**
+- The candidate fits the current teacher better offline, and live it is non-inferior to production at 10 pp. The
+  +5.5 pp point estimate and the 7 fewer boss deaths are not significant; n = 128 resolves only about 13–18 pp, so
+  this is not evidence of parity either.
+- Neither MCTS arm beats MCTS off. `prod − off` is −7.0 pp here versus −21.9 pp in §384 on other seeds. **Inference:**
+  the refreshed CTM does not by itself close the §384 gap; per PREREG only a `cand − off` CI above 0 would justify an
+  OOC-MCTS-on confirmation, so none is indicated.
+- **Open:** the stage 19 `cards` accuracy miss (accepted by override).
+
+**Correction to §386:** Stage 0 did have escapes: 10 rows in the learned arm and 15 in the exact arm. Stage 0's
+`analyze.py` counted escapes as outcome 0 (they are stored as wins with `post.smokeBombUsed`). All of them were
+unsupported by production (Smoke Bomb), so §386's metrics are unchanged. A note was added to §386.
+
+**Decision (Philipp, "Swap pins", 2026-10-09 16:09Z):** production CTM pins swapped to pathb-r2 (escape only) in
+this PR; OOC MCTS stays off by default. Promotion under `NO_DIFFERENCE_DETECTED` with `NONINFERIOR_AT_10PP` and
+no `BOSS_DEATH_EXCESS` is the owner decision PREREG §5 allows.
+- **Swap equivalence check:** model bytes unchanged. The new tracked files
+  `selfplay/models/combat_transition_deepsets_pathb_r2.native` (`90806c25…`) and
+  `selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (`b9188de0…`) are the A/B candidate's
+  bytes. The runtime holds a built-in copy of manifest `d9d8377e…`, so default runs report identity `production`
+  without `STS_CTM_RESEARCH_CANDIDATE_MANIFEST`. With no environment variables, the default `one_combat ctmscorerows`
+  on all 5,288 Stage 0 rows (60 part files) writes a CSV byte-identical to the live-A/B cand-arm form (4-argument call
+  plus manifest environment): sha256 `54ae40edb47cebfec288fd3ab0c8515402fb24a8f21e6272944675373149f9b9`, 5,277
+  scored. The pre-#418 stack differs (sha256 `4786c862…`, 5,250 scored). The 21 affected CTests pass.
+- **Rollback:** the old files stay tracked: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_lizard_t2.native`,
+  `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native`,
+  `STS_OOC_MCTS_ACTIVE_LIZARD=1`.
+- **Open follow-up:** the live advisor (`advisor_stdio.cpp`, `tools/live_game_runtime.py`, the `live_game_start.sh`
+  mod config) deliberately still uses the pre-#418 stack. Its metadata-based Lizard switch would turn Lizard off for
+  the pathb-r2 files, and the A/B never exercised the advisor.
+
+**Evidence:** [offline A/B README, results, review](evidence/ctm_offline_ab_418_20261009/README.md);
+[live A/B README, report, worker records, reviews](evidence/ctm_live_ab_418_20261009/README.md).
+
+**Knowledge impact:** `architecture/out-of-combat.md` (default stack, built-in manifest identity, Smoke Bomb
+masking skipped for the escape-capable default, rollback); `evaluation/current-research.md` (#418 result, former
+default stacks, rollback); `operations/environment-variables.md` (default artifacts, rollback);
+`operations/live-model-inspector.md` and `mods/sts-model-inspector/README.md` (advisor keeps the pre-#418 stack);
+`EXPERIMENTS.md` shard index; this entry, the §386 note and the two evidence folders. OOC MCTS stays off by default.
+
 ## §415 — Self-play Step 0: own-play run-victory labels barely improve the OOC leaf's picks (2026-10-09)
 
 **Question (Philipp, 2026-10-09):** before an expert-iteration loop (OOC MCTS plays games, run
@@ -15822,3 +16104,187 @@ ranking signal sits in paired counterfactual branches, which E3/#334 already col
 **Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
+
+## §418 — #396 Stage 1: forward-map block and `bossId` ablation on the public-safe `v_win` baseline (2026-10-09)
+
+**Question:** does the compact map block of the rich `v_win` state (`fmDElite`,
+`fmDRest`, `fmDShop`, `fmDBoss`, `fmCElite`, `fmCRest`, `fmCShop`, `fmCEvent`,
+`fmCMonster`, `fmCTreasure`, `curMapX`, `curMapY`) carry held-out run-win
+signal, separately from the public act-boss identity `bossId`? This decides
+whether #396 Stage 2 (richer map encodings) is justified.
+
+**Protocol:** preregistered in `tools/analyze_vwin_map_396.py` (committed
+`c1c35f33` before any arm was trained; the decision rule is its docstring).
+Offline only: frozen #334 corpus `corpus-mixed-512.json` (SHA-256
+`ca4b6e2b…cd87f`), A3 run `a3-trainval-20261001-50713b83/selected`
+(preflight/validation hashes equal to §374), TRAIN 333,367 / VALIDATION 68,903
+MAP rows, no gameplay seeds, no C++ build, no TEST rows. Frozen A3 X1 recipe,
+XGBoost seeds 0–4, arm prediction = 5-seed mean probability. Arms: **P** the
+457-feature public-safe baseline (§371 B); **M** P minus the 12 map fields
+(`bossId` kept); **Bz** P minus `bossId`; **P2** P with seeds 5–9 (null control
+for retraining noise); inverse diagnostic **S** (TRAIN-variable basic scalars
+`act`, `floor`, `curHp`, `maxHp`, `gold` + `bossId`; `ascension` is constant)
+and **O** = S + map fields. Rule per ablation X ∈ {M, Bz}: `MATTERS` if the
+ensemble ΔNLL (X − P) ≥ 0.002, its source-clustered 95% CI lower bound > 0,
+ΔNLL − |null ΔNLL| ≥ 0.002 and ≥ 4 of 5 per-seed deltas > 0; `LOW_VALUE` if
+the CI upper bound < 0.002; else `INCONCLUSIVE`.
+
+**Gates:** the 461-feature A3 set at seed 0 reproduced the frozen X1 exactly
+(NLL `0.44453298345900494`, 290 trees, drift 0); the P ensemble NLL 0.443381
+matched §374 (0.44338).
+
+**Results (5-seed ensemble, VALIDATION):**
+
+| arm | features | NLL | Brier | AUC | ECE | pooled sibling acc. | MAP sibling acc. (23 pairs) |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| P | 457 | 0.44338 | 0.14534 | 0.8062 | 0.0481 | 0.570 [0.522, 0.617] | 0.478 [0.289, 0.688] |
+| P2 (null) | 457 | 0.44594 | 0.14635 | 0.8029 | 0.0489 | 0.571 [0.525, 0.617] | 0.478 [0.320, 0.658] |
+| M (no map) | 445 | 0.44836 | 0.14686 | 0.8019 | 0.0481 | 0.571 [0.525, 0.617] | 0.457 [0.283, 0.625] |
+| Bz (no `bossId`) | 456 | 0.44459 | 0.14604 | 0.8064 | 0.0492 | 0.565 [0.517, 0.612] | 0.413 [0.200, 0.611] |
+| S | 6 | 0.50145 | 0.16624 | 0.7076 | 0.0248 | 0.499 [0.463, 0.537] | 0.435 |
+| O (S + map) | 18 | 0.50523 | 0.16747 | 0.7023 | 0.0258 | 0.516 [0.484, 0.549] | 0.435 |
+
+Ensemble ΔNLL [source-clustered 95% CI, 77 sources]: M − P **+0.0050
+[−0.0012, +0.0109]**, per seed +0.0044, +0.0057, +0.0073, +0.0006, +0.0022
+(5/5 positive); Bz − P **+0.0012 [−0.0032, +0.0056]** (3/5 positive); null
+P2 − P +0.0026 [−0.0008, +0.0061]; O − S +0.0038 [+0.0005, +0.0072] (adding
+the map block to the small scalar model made it worse). M's NLL loss is spread
+over acts (act 1/2/3: +0.0014/+0.0080/+0.0039) and is largest on pre-boss rows
+(+0.0128, n 5,142). M trains shallower ensembles (145–201 trees vs 189–346).
+
+**Variability and importance (descriptive):** all 13 fields are in the A3
+TRAIN-variable mask and vary widely (non-modal fraction 0.51–0.93). In the P
+seed-0 model the 12 map fields together hold 0.23% of total gain; their best
+TreeSHAP rank is `fmDElite` 116 of 457, the rest rank 216–372. `bossId` holds
+1.1% of total gain and ranks 22.
+
+**Verdict:** **`MAP_INCONCLUSIVE`** and **`BOSSID_INCONCLUSIVE`**; #396 outcome
+**`MAP_STAGE1_INCONCLUSIVE`**. Removing the map block worsened every seed and
+the ensemble by about twice the null retraining shift, but its CI includes
+zero and the retraining null alone moves the ensemble by +0.0026, so the
+effect is not resolvable on this split (consistent with the ±0.005 resolution
+noted in §375). `bossId` is used heavily by the trees, yet removing it costs
+less than retraining noise. **Inference:** its information is largely
+recoverable from `act` and the deck/relic state. The inverse diagnostic gives
+no sign that the map block carries standalone signal. The MAP sibling
+comparison (23 discordant pairs) cannot separate any arm.
+
+**Decision:** per #396's rule, Stage 2 (richer map encodings, Burning-Elite
+features, graph encoders) is **not justified** by this evidence; the current
+block and `bossId` stay unchanged in the feature contract. No default can be
+affected: pathing is the heuristic DP, the tracked `models/v_win_trees.txt`
+is untouched (#397), and the A3 models are used only by opt-in OOC MCTS leaves.
+A map signal at this size could only be resolved by more sources or a direct
+MAP-decision counterfactual corpus, not by feature work on #334.
+
+**Evidence:** `/home/philippherrmann/Documents/sts/artifacts/vwin-map-396/stage1-20261009-c1c35f33/`
+(`report.json` SHA-256 `4ec15a543344246ce8ead8f93c23a7a9dc559fc378689180e8b1eca3f3585825`,
+`validation_predictions.npz` `2774375023304cff168d36c17014fa0c0e6e0f83339a291987afc292e4230ff2`,
+run log alongside); summary copy in `/mnt/project-files/map-path-396/RESULT.md`.
+xgboost 3.4.0, numpy 2.5.1, 4 threads, CPU only. 17:55 wall, 1,792 CPU-s,
+5.1 GB peak RSS.
+
+**ELI5:** We took the map summary away from the win predictor and retrained it
+five times. It got a little worse every time, but retraining with the map
+still there moves the score about half as much, so we can't tell a real loss
+from noise. Taking away which boss is coming barely mattered. Nothing here
+says a fancier map description would help.
+
+**Knowledge impact:** #396 Stage 1 summary in `operations/ooc-label-pipeline.md`
+and `evaluation/current-research.md`.
+
+## §420 — A20 Silver combat-strength card pilot: SCALE by rule, not shown (2026-10-10)
+
+**Question:** after §416, does combat strength measured with real A20 teacher
+Silver fights pick card rewards better than the teacher, and better than CTM
+strength on the same states? Philipp asked for it on 2026-10-09 21:38Z.
+
+**Design:** [PLAN-SILVER-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-SILVER-STRENGTH.md),
+frozen at `2cbb90f8` (binary `f0cc3b6a…`).
+- **States:** 200 of the §416 states, hash-selected (`silver_pilot_seeds.txt`).
+- **Fights:** `cardstrengthprobe … 20 1` plays one teacher Silver fight per
+  option and act-pool encounter. It starts from the post-pick state at ASC 20,
+  with combat RNG paired across options.
+- **Score:** pools and weights as in §416.
+- **Verdicts:** PASS if the gain CI lower bound > 0. SCALE if the gain is
+  ≥ +0.30 floors and higher than CTM strength on the same states. STOP
+  otherwise.
+
+**Result: `SCALE` by the pre-registered rule; gain CI includes 0.**
+
+| States: 200 | Silver strength | CTM strength (§416 run) |
+|-------------|-----------------|-------------------------|
+| Gain over teacher | +0.64 floors [−0.43, +1.73] | +0.55 [−0.28, +1.34] |
+| Agreement with teacher | 35% | 58% |
+| Skip rate (teacher 4%) | 25% | 2% |
+| Median option spread | 0.066 | 0.009 |
+
+- **Data quality:** 0 trajectory mismatches. 26 of 13,657 fights were invalid
+  and dropped. One state was unscored.
+- **Same states, uniform random pick:** −0.68.
+- **By act (Silver):** +0.94, +0.29 and −0.17 in acts 1–3.
+
+**Interpretation (Inference):**
+- Silver separates options about 7× more than the CTM. It disagrees with the
+  teacher on two thirds of states and skips six times as often, yet it is not
+  worse than the teacher.
+- The SCALE condition is met only narrowly: Silver beats CTM strength by
+  +0.09 floors on the same states, which is far inside the noise.
+- This sample is kinder to strength picks than the full set: CTM strength
+  scores +0.55 here against +0.14 on all 970 states.
+- The high skip rate is a plausible bias. One fight against the act's pools
+  rewards a thin deck now and ignores later acts.
+- So the pilot does not show that Silver strength is better. It only fails to
+  rule it out.
+
+**Cost:** fights 2.0 CPU h by thread CPU. The whole run took about 2.5 h of
+wall time on 4 cores, so the replay and per-call overhead dominate (about
+3 CPU min per state).
+
+**Evidence:** [report-silver-pilot.json](evidence/a20_card_floor_20261009/report-silver-pilot.json),
+[report-ctm-on-silver-pilot.json](evidence/a20_card_floor_20261009/report-ctm-on-silver-pilot.json),
+raw outputs in `/mnt/project-files/card-strength-probe/silver-pilot-2cbb90f8/`.
+
+**Knowledge impact:** this entry, plus `SILVER_REPS` on the default-off
+`cardstrengthprobe` mode. No defaults changed.
+
+## §417 — #347 default-stack boss deaths: 40% winnable on a planner re-roll, 40% lost every time (2026-10-09)
+
+**Question (Philipp, 2026-10-09, #347 triage):** most default-stack losses are boss
+deaths and more boss search did not help (§377, §387). Are those deaths fights
+the same combat policy would usually win with another planner seed (combat is
+the lever), or entries it loses every time (preparation is the lever)?
+**Design:** [PLAN](evidence/boss_deaths_default_347_20261009/PLAN.md) frozen at
+`93d0bd35` before any seed ran. Default stack: ADR-0026 live profile (V4 gate
+stack, learned-stop Silver, 10k cap), OOC MCTS off, Act-3 stop, current main
+gameplay. Stage 1: 256 fresh runs, seeds 66000000..66000255 (the §395 Fprod rows
+are not in the repo, and current main cannot reconstruct the §377 runs).
+Stage 2: every boss death is reconstructed with `bossrescue347` (new schema
+`boss_deaths_default_347_selection_v1`) and replayed with 8 fresh planner seeds
+under the same learned-stop policy; the live battle RNG is unchanged. Per entry
+0/8 = `DOOMED`, ≥ 4/8 = `WINNABLE`, else `MARGINAL`; verdict by which class
+holds at least half the entries.
+**Validity:** 214/256 runs won (83.6%); 42 losses, 35 to an act boss (act
+1/2/3: 1/13/21). All 35 entries `VALID`: exact reconstruction, exact control
+parity (outcome, terminal HP, action trace, post-exit digest, simulations),
+identical repeats, no root above 10k. 1.74 CPU-hours in total.
+**Result:** `MIXED`. 15 `WINNABLE`, 14 `DOOMED`, 6 `MARGINAL`; mean fresh win
+rate 40.0%, entry bootstrap 95% [26.4%, 53.6%]; bimodal (14 entries 0/8, 7
+entries 8/8). Time Eater 14/80 fresh wins (7 of 10 doomed), Awakened One 6/48
+(4 of 6), while Automaton 24/24, Donu and Deca 25/40, Champ 24/56. Act 2 59/104,
+act 3 45/168. Doomed entries arrive with 61% of max HP, winnable ones with 83%.
+**Interpretation (Inference):** both levers are real. About 40% of boss deaths
+are planner variance on winnable entries, so combat consistency (not budget)
+matters there. Another 40% are lost on every replay, mostly at Time Eater and
+Awakened One and at lower entry HP; this experiment cannot tell preparation
+from a combat weakness specific to those bosses. The 40% is conditional on a
+lost fight and is not a win-rate estimate. Planner repeats share one game
+environment.
+**Decision:** diagnostic only; no default change.
+
+**Evidence:** [packet](evidence/boss_deaths_default_347_20261009/README.md);
+copies in `/mnt/project-files/boss-deaths-347/`.
+
+**Knowledge impact:** this entry; `bossrescue347` gains a schema, recorded in
+`docs/knowledge-base/CODE_MAP.md` and `operations/ooc-label-pipeline.md` where
+the mode is routed.

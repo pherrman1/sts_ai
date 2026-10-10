@@ -1,0 +1,6 @@
+2026-10-09 (before any scoring): the runbook's `python3 -I` cannot import numpy on this machine
+(numpy is installed in the user site, ~/.local/lib/python3.12/site-packages, which -I disables:
+"ModuleNotFoundError: No module named 'numpy'"). Every python invocation of offline_ab_compare.py and
+the numpy-version record therefore uses `python3 -P -E` instead: -P keeps the script directory and the
+current directory off sys.path (the purpose stated in the runbook), -E ignores PYTHON* environment
+variables. The script bytes (sha256 ff71cf53...), constants and commands are otherwise unchanged.
