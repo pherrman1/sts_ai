@@ -2789,7 +2789,7 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
                                     struct VwinBossArmDetail *detail);
 namespace { void ctmSilverRedrawCombatFuture(GameContext &gc, std::uint64_t seed); }
 void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedOffset,
-                       const std::string &teacherPath, int asc, int silverReps) {
+                       const std::string &teacherPath, int asc, int silverReps, bool nextAct) {
     constexpr int sims = 10000;
     if (nSeeds < 1 || seedOffset < 0 || asc < 0 || asc > 20 || silverReps < 0 || silverReps > 16
         || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1LL))
@@ -2865,6 +2865,27 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
             for (int i = 0; i < 3; ++i)
                 encounters.emplace_back("elite", MonsterEncounterPool::elites[pre.act - 1][i], 1.0 / 3);
             encounters.emplace_back("boss", pre.boss, 1.0);
+            if (nextAct && pre.act < 3) {
+                // The next act's pools; its boss is not revealed yet, so all three count.
+                static const MonsterEncounter actBosses[3][3] = {
+                    {MonsterEncounter::SLIME_BOSS, MonsterEncounter::THE_GUARDIAN, MonsterEncounter::HEXAGHOST},
+                    {MonsterEncounter::CHAMP, MonsterEncounter::COLLECTOR, MonsterEncounter::AUTOMATON},
+                    {MonsterEncounter::AWAKENED_ONE, MonsterEncounter::DONU_AND_DECA, MonsterEncounter::TIME_EATER}};
+                const int n = pre.act;   // 0-based index of the next act
+                for (int i = 0; i < MonsterEncounterPool::weakCount[n]; ++i)
+                    encounters.emplace_back("next_weak", MonsterEncounterPool::weakEnemies[n][i],
+                                            MonsterEncounterPool::weakWeights[n][i]);
+                for (int i = 0; i < MonsterEncounterPool::strongCount[n]; ++i)
+                    encounters.emplace_back("next_strong", MonsterEncounterPool::strongEnemies[n][i],
+                                            MonsterEncounterPool::strongWeights[n][i]);
+                for (int i = 0; i < 3; ++i)
+                    encounters.emplace_back("next_elite", MonsterEncounterPool::elites[n][i], 1.0 / 3);
+                for (int i = 0; i < 3; ++i) encounters.emplace_back("next_boss", actBosses[n][i], 1.0 / 3);
+            } else if (nextAct && pre.act == 3 && asc >= 20) {
+                // A20 act 3 has a second boss, one of the two other act-3 bosses.
+                for (auto boss : {MonsterEncounter::AWAKENED_ONE, MonsterEncounter::DONU_AND_DECA, MonsterEncounter::TIME_EATER})
+                    if (boss != pre.boss) encounters.emplace_back("next_boss", boss, 0.5);
+            }
             for (std::size_t optionIdx = 0; optionIdx < sample->options.size(); ++optionIdx) {
                 const auto &option = sample->options[optionIdx];
                 GameContext after = detachedCounterfactualCopy(pre);
@@ -2901,7 +2922,10 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                             VwinBossEntry entry;
                             entry.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(after));
                             GameContext &fight = *entry.pre;
-                            fight.curRoom = pool == "boss" ? Room::BOSS : pool == "elite" ? Room::ELITE : Room::MONSTER;
+                            const bool nextPool = pool.rfind("next_", 0) == 0;
+                            const std::string base = nextPool ? pool.substr(5) : pool;
+                            fight.curRoom = base == "boss" ? Room::BOSS : base == "elite" ? Room::ELITE : Room::MONSTER;
+                            if (nextPool && pre.act < 3) ++fight.act;   // act 3's second boss stays in act 3
                             const auto digest = vwinSha256("card-strength-silver-v1:" + std::to_string(seed) + ":"
                                 + std::to_string(sample->decisionIdx) + ":" + monsterEncounterEnumNames[static_cast<int>(encounter)]
                                 + ":" + std::to_string(r));
@@ -2933,7 +2957,10 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                         continue;
                     }
                     GameContext probe = after;
-                    probe.curRoom = pool == "boss" ? Room::BOSS : pool == "elite" ? Room::ELITE : Room::MONSTER;
+                    const bool nextPool = pool.rfind("next_", 0) == 0;
+                    const std::string base = nextPool ? pool.substr(5) : pool;
+                    probe.curRoom = base == "boss" ? Room::BOSS : base == "elite" ? Room::ELITE : Room::MONSTER;
+                    if (nextPool && pre.act < 3) ++probe.act;   // act 3's second boss stays in act 3
                     probe.info.encounter = encounter;
                     probe.curMapNodeX = -1;   // no burning-elite flag from the node just left
                     auto input = one_combat::captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
@@ -2973,7 +3000,7 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
                          {"activeLizard", true}, {"smokeBombMask", true}, {"inputAscension", 0}}},
         {"encounters", "act weak/strong pools with simulator weights, act elites 1/3 each, act boss (acts 1..3)"},
         {"utility", "0.75*(1-death) + 0.25*(1-death)*winHpFraction (bossLeafUtility)"},
-        {"scorer", silver ? "silver" : "ctm"}, {"silverReps", silverReps},
+        {"scorer", silver ? "silver" : "ctm"}, {"silverReps", silverReps}, {"nextAct", nextAct},
         {"silverRule", "teacher Silver fight from the post-pick state at the run ascension; combat RNG redrawn by sha256(card-strength-silver-v1:{seed}:{decision}:{encounter}:{rep}), shared across options; won=PLAYER_VICTORY, winHpFraction=terminal HP/maxHp"},
         {"integrity", {{"cardStates", states}, {"optionsOk", optionsOk}, {"optionsFailed", optionsFailed},
                        {"probes", probes}, {"unsupportedProbes", unsupported}}},

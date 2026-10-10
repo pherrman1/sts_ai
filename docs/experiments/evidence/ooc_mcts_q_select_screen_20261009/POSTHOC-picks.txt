@@ -1,0 +1,10 @@
+Post-hoc, descriptive (not pre-registered): pick shares from the per-decision MCTS action logs (*.mcts.csv.actions.jsonl).
+arm  neow_slot_counts(0=card bonus slot, 1=other free bonus slot, 2=bonus-with-drawback slot, 3=boss relic swap)  card_reward_skip_share  campfire rest/smith
+v05 {'0': 92, '1': 32, '2': 4} 1.6% of 3246 {'rest': 643, 'smith': 320}
+v10 {'0': 120, '1': 8} 0.6% of 3279 {'rest': 772, 'smith': 269}
+v15 {'0': 128} 0.6% of 3211 {'rest': 801, 'smith': 238}
+v30 {'0': 128} 0.5% of 3100 {'rest': 813, 'smith': 180}
+q05 {'0': 22, '1': 95, '2': 8, '3': 3} 32.9% of 2748 {'smith': 391, 'rest': 305}
+q10 {'0': 13, '1': 97, '2': 9, '3': 9} 35.3% of 2830 {'smith': 367, 'rest': 333}
+q15 {'0': 14, '1': 91, '2': 13, '3': 10} 34.0% of 2737 {'smith': 383, 'rest': 340}
+q30 {'0': 18, '1': 78, '2': 13, '3': 19} 36.5% of 2648 {'rest': 295, 'smith': 375}

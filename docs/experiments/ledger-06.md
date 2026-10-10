@@ -16216,7 +16216,7 @@ frozen at `2cbb90f8` (binary `f0cc3b6a…`).
 |-------------|-----------------|-------------------------|
 | Gain over teacher | +0.64 floors [−0.43, +1.73] | +0.55 [−0.28, +1.34] |
 | Agreement with teacher | 35% | 58% |
-| Skip rate (teacher 4%) | 25% | 2% |
+| Skip rate (teacher 6%) | 25% | 2% |
 | Median option spread | 0.066 | 0.009 |
 
 - **Data quality:** 0 trajectory mismatches. 26 of 13,657 fights were invalid
@@ -16247,6 +16247,66 @@ raw outputs in `/mnt/project-files/card-strength-probe/silver-pilot-2cbb90f8/`.
 
 **Knowledge impact:** this entry, plus `SILVER_REPS` on the default-off
 `cardstrengthprobe` mode. No defaults changed.
+
+## §421 — A20 Silver card strength with the next act, all 970 states: NOT_SHOWN (2026-10-10)
+
+**Question:** after §420 (Silver strength pilot, SCALE by rule), does Silver
+combat strength against the rest of the current act plus the next act pick
+A20 card rewards better than the teacher on floor reached, over all 970
+§416 states? Philipp asked for it on 2026-10-10 07:42Z ("Merge, then add next
+act and scale").
+
+**Design:** [PLAN-SILVER-NEXT-ACT.md](evidence/a20_card_floor_20261009/PLAN-SILVER-NEXT-ACT.md),
+frozen at `34523017` (binary `187fa5e1…`).
+- **Fights:** as in §420 (one paired teacher Silver fight per option and
+  encounter, ASC 20, from the post-pick state). `NEXT_ACT=1` adds the next
+  act's weak, strong, elite and boss pools for acts 1–2 (fight act + 1), and
+  the second boss (the two unrevealed act-3 bosses) for act 3.
+- **Counts:** current act as in §416; next act fixed at weak 2, strong 3,
+  elite 2, boss 1 (act 3: second boss 1).
+- **Rule:** PASS if the gain CI lower bound > 0, else NOT_SHOWN.
+- **Execution:** 16 cloud workers × 4 lanes, 128,626 fights, 22.2 CPU h of
+  fights.
+
+**Result: `NOT_SHOWN`.**
+
+| States | Next act (primary) | Current act only (§420 score) | CTM strength (§416) |
+|--------|--------------------|-------------------------------|---------------------|
+| Scored | 966 | 967 | 970 |
+| Gain over teacher | −0.29 floors [−0.70, +0.13] | −0.37 [−0.83, +0.13] | +0.14 [−0.24, +0.54] |
+| Agreement with teacher | 36% | 35% | 56% |
+| Skip rate (teacher 4%) | 24% | 25% | 3% |
+| Median option spread | 0.074 | 0.061 | 0.008 |
+
+- **Data quality:** 0 trajectory mismatches; 356 fights invalid or
+  unsupported and dropped; 4 states unscored (a whole pool unsupported).
+- **Baselines, same states:** uniform random −0.94, oracle +4.28.
+- **By act (primary):** −0.52 [−1.18, +0.09], +0.10 [−0.62, +0.80] and
+  +0.02 [−0.22, +0.24] in acts 1–3.
+- **Skips:** on the 216 states where the score skips and the teacher takes a
+  card, the gain is −0.86 floors; on the 710 states where both take a card it
+  is −0.16.
+- **Mean utility by pool:** current weak 0.90, strong 0.87, elite 0.73,
+  boss 0.27; next weak 0.64, strong 0.43, elite 0.17, boss 0.08.
+
+**Interpretation (Inference):**
+- The §420 pilot was a kind sample. At full scale the current-act Silver
+  score is −0.37, not +0.64, and the next act moves it only to −0.29.
+- Silver strength beats a random pick by about 0.65 floors but does not beat
+  the teacher, and is no better than the much cheaper CTM score.
+- Adding the next act did not remove the skip bias (24% vs 25%). Fights from
+  the current HP, with no rests, upgrades or later cards, mostly lose against
+  next-act elites and bosses, so those pools add little separation.
+- Most of the loss comes from skipping cards the teacher takes.
+
+**Evidence:** [report-silver-next-act.json](evidence/a20_card_floor_20261009/report-silver-next-act.json),
+[report-silver-next-act-current-only.json](evidence/a20_card_floor_20261009/report-silver-next-act-current-only.json),
+raw outputs in `/mnt/project-files/card-strength-probe/silver-next-act-34523017/`.
+The §420 skip-rate row is corrected to the teacher's 6% on the pilot states.
+
+**Knowledge impact:** this entry, plus the default-off `NEXT_ACT` argument of
+`cardstrengthprobe` and `--current-act-only` in `tools/a20_card_strength.py`.
+No defaults changed.
 
 ## §417 — #347 default-stack boss deaths: 40% winnable on a planner re-roll, 40% lost every time (2026-10-09)
 
@@ -16288,3 +16348,59 @@ copies in `/mnt/project-files/boss-deaths-347/`.
 **Knowledge impact:** this entry; `bossrescue347` gains a schema, recorded in
 `docs/knowledge-base/CODE_MAP.md` and `operations/ooc-label-pipeline.md` where
 the mode is routed.
+
+## §414 — OOC MCTS root selection × cpuct screen: picking by mean Q is far worse, no cpuct beats 1.5 (2026-10-09)
+
+**Question (Philipp, 2026-10-09):** on seed 63000084 (the §412 `cand` arm's Act 1 Hexaghost loss) the search's own
+Q preferred a different root option at several decisions, but OOC MCTS picks the most-visited option, and at cpuct 1.5
+the visits follow the V4 prior. Does picking the root option by mean Q, or another cpuct, win more runs?
+A single-seed replay (pick by Q won that seed; cpuct 0.5 and temperature 2 still lost; a uniform leaf policy changed
+nothing, because with `LEAF_COMBATS=0` the leaf playout never runs) prompted a pre-registered paired screen.
+
+**Design:** [PREREG.md](evidence/ooc_mcts_q_select_screen_20261009/PREREG.md), written before any cohort seed.
+* Base = the §412 `cand` arm verbatim (OOC MCTS on, pathb-r2 CTM, 2048 sims, early stop, V4 prior, screen-GBM leaf,
+  fair native Silver exact 10k, Ironclad A0, stop after the Act 3 boss), binary `dddb09f0` built from `648334e3`.
+* 8 arms: root selection {visits, mean Q} × cpuct {0.5, 1.0, 1.5, 3.0}; control `v15` = current setting.
+  With Q selection the planner skips the visit-lock early stop, so Q arms always spend 2048 sims per root.
+* Seeds `65000000..65000127` (128, paired across all arms), smoke `65009000`. 32 cloud workers × 4 CPU,
+  512 units of 2 seeds, all through `tools/seed_guard.sh`.
+* Primary: `q15 − v15` paired win-rate difference, paired bootstrap 95% CI (10,000 resamples), exact McNemar.
+  Secondary: every arm vs `v15`; a `CI_ABOVE_0` arm would only earn a fresh-seed confirmation.
+
+**Deviations** ([DEVIATIONS.md](evidence/ooc_mcts_q_select_screen_20261009/DEVIATIONS.md)), both before any result
+was read: D1, the smoke's integrity check failed because `analyze.py` also read the `.mcts.csv` traces as result
+files; fixed (exact `ARM-LO.csv` names only), smoke re-checked on the same outputs and passed. D2, worker 02 killed a
+duplicate launch; the four killed units were renamed and rerun whole, and the analyzer ignores them.
+
+**Execution:** 512/512 units rc 0, no seed failures, no missing seeds; 1,024 runs.
+
+**Result: `Q_WORSE`.** No arm beats the control.
+
+| Arm | Win % | Δ vs v15, pp [95% CI] | McNemar p | Mean floor | Boss deaths (act 1/2/3) | Non-boss deaths | CPU s/run |
+|---|---|---|---|---|---|---|---|
+| v05 | 76.6 | −2.3 [−11.7, +7.0] | 0.75 | 47.8 | 3/7/10 | 10 | 115 |
+| v10 | 76.6 | −2.3 [−10.2, +5.5] | 0.69 | 49.2 | 0/9/15 | 6 | 110 |
+| **v15** (control) | **78.9** | — | — | 49.0 | 1/6/13 | 7 | 113 |
+| v30 | 68.0 | −10.9 [−19.5, −2.3] | 0.029 | 47.3 | 0/15/14 | 12 | 110 |
+| q05 | 43.8 | −35.2 [−44.5, −25.8] | 2e-10 | 38.2 | 17/17/11 | 27 | 122 |
+| q10 | 49.2 | −29.7 [−39.8, −19.5] | 1e-7 | 39.6 | 10/21/6 | 28 | 128 |
+| **q15** (primary) | 41.4 | −37.5 [−46.9, −28.1] | 3e-11 | 39.2 | 13/29/10 | 23 | 126 |
+| q30 | 35.2 | −43.8 [−53.1, −34.4] | 7e-14 | 37.8 | 12/21/13 | 37 | 118 |
+
+**Post-hoc, descriptive** ([POSTHOC-picks.txt](evidence/ooc_mcts_q_select_screen_20261009/POSTHOC-picks.txt)): the Q
+arms skip 33–37% of card rewards (visits arms 0.5–1.6%), smith more than they rest, and at Neow take the second
+(non-card) bonus slot in 61–76% of runs (visits at cpuct 1.5: always the card slot). **Inference:** arg-max mean Q
+over options with few visits picks noise winners, and it hands the decision to the screen-GBM / X2-B leaf, whose
+skip preference and card mispricing are known (§396, 2026-10-07 card-pricing check). At cpuct 1.5 the visit rule lets
+the V4 prior overrule that leaf. The seed 63000084 win was a lucky draw.
+
+**Decision:** no change. Root selection stays `visits`, cpuct stays 1.5; OOC MCTS stays off by default (ADR-0027).
+Lower cpuct (0.5, 1.0) ties the control; 3.0 is worse. Improving OOC MCTS needs a better leaf, not a different root
+rule.
+
+**Evidence:** [folder](evidence/ooc_mcts_q_select_screen_20261009/) (PREREG, worker.sh, analyze.py, brief,
+deviations, smoke markers, report.json, post-hoc picks, SHA256SUMS). Raw unit outputs (CSV, logs, traces) are in
+`/mnt/project-files/ooc-mcts-q-select-screen/w01..w32/`. Seeds `65000000..65000127` and `65009000` are now used.
+
+**Knowledge impact:** this entry and one paragraph in `docs/knowledge-base/evaluation/current-research.md`; no
+defaults or maintained interfaces changed.
