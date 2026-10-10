@@ -21,7 +21,9 @@ from tools.vwin_e3_cf import HIDDEN_FUTURE, SKIP_EFFECTS, apply_rules, cluster_m
 
 STATE = ["sourceSeed", "decisionIdx"]
 MISMATCH_LIMIT = 0.05
-POOLS = ("weak", "strong", "elite", "boss")
+POOLS = ("weak", "strong", "elite", "boss", "next_weak", "next_strong", "next_elite", "next_boss")
+# Fixed next-act fight counts (PLAN-SILVER-NEXT-ACT.md), used only when the probe ran with NEXT_ACT=1.
+NEXT_COUNTS = dict(next_weak=2, next_strong=3, next_elite=2, next_boss=1)
 
 
 def load_probe(root):
@@ -89,26 +91,33 @@ def match_state(state, opts, probe_opts, corpus_rows, columns):
     return True
 
 
-def strength(enc, state_row):
-    """Weighted CTM utility per option; encounters unsupported for any option are dropped for all."""
+def strength(enc, state_row, current_only=False):
+    """Weighted strength utility per option; encounters unsupported for any option are dropped for all."""
+    if current_only:
+        enc = enc[~enc["pool"].str.startswith("next_")]
     ok = enc.groupby(["pool", "encounter"])["supported"].transform("min").astype(bool)
     enc = enc[ok]
     act, offset = int(state_row["act"]), int(state_row["monOffset"])
     n_monster, n_elite = int(state_row["cMonster"]), int(state_row["cElite"])
     n_weak = min(max(0, (3 if act == 1 else 2) - offset), n_monster)
     counts = dict(weak=n_weak, strong=n_monster - n_weak, elite=n_elite, boss=1)
+    if enc["pool"].str.startswith("next_").any():
+        counts.update(NEXT_COUNTS if act < 3 else dict(next_boss=1))
     scores, missing = {}, []
     for idx, g in enc.groupby("optionIdx"):
         total = weight = 0.0
         for pool in POOLS:
             q = g[g["pool"] == pool]
+            n = counts.get(pool, 0)
             if q.empty:
-                if counts[pool]:
+                if n:
                     missing.append(pool)
                 continue
+            if not n:
+                continue
             u = float(np.average(q["utility"], weights=q["poolWeight"]))
-            total += counts[pool] * u
-            weight += counts[pool]
+            total += n * u
+            weight += n
         scores[int(idx)] = total / weight if weight else np.nan
     return scores, sorted(set(missing)), counts
 
@@ -120,6 +129,7 @@ def main():
     ap.add_argument("--output", required=True)
     ap.add_argument("--reps", type=int, default=2000)
     ap.add_argument("--only-seeds", help="score only these source seeds (one per line)")
+    ap.add_argument("--current-act-only", action="store_true", help="ignore next-act pools (diagnostic)")
     args = ap.parse_args()
     probe, manifests = load_probe(args.probe)
     states, leaky = eligible_states(args.corpus)
@@ -142,7 +152,7 @@ def main():
             mismatched.append(list(state))
             continue
         scores, missing, counts = strength(probe_enc.get(state, probe["strength"].iloc[:0]),
-                                           probe_states[state])
+                                           probe_states[state], args.current_act_only)
         if missing or len(scores) != len(opts) or any(np.isnan(v) for v in scores.values()):
             unscored.append(dict(state=list(state), missing=missing))
             continue

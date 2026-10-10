@@ -16216,7 +16216,7 @@ frozen at `2cbb90f8` (binary `f0cc3b6a…`).
 |-------------|-----------------|-------------------------|
 | Gain over teacher | +0.64 floors [−0.43, +1.73] | +0.55 [−0.28, +1.34] |
 | Agreement with teacher | 35% | 58% |
-| Skip rate (teacher 4%) | 25% | 2% |
+| Skip rate (teacher 6%) | 25% | 2% |
 | Median option spread | 0.066 | 0.009 |
 
 - **Data quality:** 0 trajectory mismatches. 26 of 13,657 fights were invalid
@@ -16247,6 +16247,66 @@ raw outputs in `/mnt/project-files/card-strength-probe/silver-pilot-2cbb90f8/`.
 
 **Knowledge impact:** this entry, plus `SILVER_REPS` on the default-off
 `cardstrengthprobe` mode. No defaults changed.
+
+## §421 — A20 Silver card strength with the next act, all 970 states: NOT_SHOWN (2026-10-10)
+
+**Question:** after §420 (Silver strength pilot, SCALE by rule), does Silver
+combat strength against the rest of the current act plus the next act pick
+A20 card rewards better than the teacher on floor reached, over all 970
+§416 states? Philipp asked for it on 2026-10-10 07:42Z ("Merge, then add next
+act and scale").
+
+**Design:** [PLAN-SILVER-NEXT-ACT.md](evidence/a20_card_floor_20261009/PLAN-SILVER-NEXT-ACT.md),
+frozen at `34523017` (binary `187fa5e1…`).
+- **Fights:** as in §420 (one paired teacher Silver fight per option and
+  encounter, ASC 20, from the post-pick state). `NEXT_ACT=1` adds the next
+  act's weak, strong, elite and boss pools for acts 1–2 (fight act + 1), and
+  the second boss (the two unrevealed act-3 bosses) for act 3.
+- **Counts:** current act as in §416; next act fixed at weak 2, strong 3,
+  elite 2, boss 1 (act 3: second boss 1).
+- **Rule:** PASS if the gain CI lower bound > 0, else NOT_SHOWN.
+- **Execution:** 16 cloud workers × 4 lanes, 128,626 fights, 22.2 CPU h of
+  fights.
+
+**Result: `NOT_SHOWN`.**
+
+| States | Next act (primary) | Current act only (§420 score) | CTM strength (§416) |
+|--------|--------------------|-------------------------------|---------------------|
+| Scored | 966 | 967 | 970 |
+| Gain over teacher | −0.29 floors [−0.70, +0.13] | −0.37 [−0.83, +0.13] | +0.14 [−0.24, +0.54] |
+| Agreement with teacher | 36% | 35% | 56% |
+| Skip rate (teacher 4%) | 24% | 25% | 3% |
+| Median option spread | 0.074 | 0.061 | 0.008 |
+
+- **Data quality:** 0 trajectory mismatches; 356 fights invalid or
+  unsupported and dropped; 4 states unscored (a whole pool unsupported).
+- **Baselines, same states:** uniform random −0.94, oracle +4.28.
+- **By act (primary):** −0.52 [−1.18, +0.09], +0.10 [−0.62, +0.80] and
+  +0.02 [−0.22, +0.24] in acts 1–3.
+- **Skips:** on the 216 states where the score skips and the teacher takes a
+  card, the gain is −0.86 floors; on the 710 states where both take a card it
+  is −0.16.
+- **Mean utility by pool:** current weak 0.90, strong 0.87, elite 0.73,
+  boss 0.27; next weak 0.64, strong 0.43, elite 0.17, boss 0.08.
+
+**Interpretation (Inference):**
+- The §420 pilot was a kind sample. At full scale the current-act Silver
+  score is −0.37, not +0.64, and the next act moves it only to −0.29.
+- Silver strength beats a random pick by about 0.65 floors but does not beat
+  the teacher, and is no better than the much cheaper CTM score.
+- Adding the next act did not remove the skip bias (24% vs 25%). Fights from
+  the current HP, with no rests, upgrades or later cards, mostly lose against
+  next-act elites and bosses, so those pools add little separation.
+- Most of the loss comes from skipping cards the teacher takes.
+
+**Evidence:** [report-silver-next-act.json](evidence/a20_card_floor_20261009/report-silver-next-act.json),
+[report-silver-next-act-current-only.json](evidence/a20_card_floor_20261009/report-silver-next-act-current-only.json),
+raw outputs in `/mnt/project-files/card-strength-probe/silver-next-act-34523017/`.
+The §420 skip-rate row is corrected to the teacher's 6% on the pilot states.
+
+**Knowledge impact:** this entry, plus the default-off `NEXT_ACT` argument of
+`cardstrengthprobe` and `--current-act-only` in `tools/a20_card_strength.py`.
+No defaults changed.
 
 ## §417 — #347 default-stack boss deaths: 40% winnable on a planner re-roll, 40% lost every time (2026-10-09)
 
