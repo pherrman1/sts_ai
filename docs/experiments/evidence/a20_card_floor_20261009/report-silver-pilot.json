@@ -1,0 +1,1638 @@
+{
+ "schema": "a20_card_strength_v1",
+ "probe": "/mnt/attach/project-files/card-strength-probe/silver-pilot-2cbb90f8",
+ "corpus": "/mnt/attach/project-files/a20-transfer-346/cf-a20-5ba068e0",
+ "producer_git": [
+  "2cbb90f84b3af172f202fe64c27f704da1c08ec3"
+ ],
+ "producer_exe": [
+  "f0cc3b6adb21c44073fae4c5a6f1631927721a111f203e84e04c2dbb7b59d707"
+ ],
+ "parts": 200,
+ "integrity": [
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 30,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 85,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 30,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 90,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 30,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 90,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 90,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 85,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 34,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 34,
+   "unsupportedProbes": 26
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 34,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 34,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 30,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 30,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 90,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 30,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 2,
+   "probes": 34,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 60,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 68,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 4,
+   "probes": 72,
+   "unsupportedProbes": 0
+  },
+  {
+   "cardStates": 1,
+   "optionsFailed": 0,
+   "optionsOk": 5,
+   "probes": 85,
+   "unsupportedProbes": 0
+  }
+ ],
+ "leaky_states_excluded": 58,
+ "eligible_states": 200,
+ "mismatched": 0,
+ "mismatch_rate": 0.0,
+ "unscored": [
+  {
+   "state": [
+    59100641,
+    49
+   ],
+   "missing": [
+    "elite",
+    "strong"
+   ]
+  }
+ ],
+ "mismatched_states": [],
+ "results": {
+  "PRIMARY": {
+   "states": 199,
+   "gain": {
+    "mean": 0.6381909547738693,
+    "n": 199,
+    "source_seeds": 199,
+    "ci95": [
+     -0.4348618090452261,
+     1.7262562814070346
+    ]
+   },
+   "oracle": {
+    "mean": 4.28140703517588,
+    "n": 199,
+    "source_seeds": 199,
+    "ci95": [
+     3.3415829145728644,
+     5.256344221105527
+    ]
+   },
+   "uniform": {
+    "mean": -0.6766331658291458,
+    "n": 199,
+    "source_seeds": 199,
+    "ci95": [
+     -1.4716959798994977,
+     0.14819409547738652
+    ]
+   },
+   "agreement": 0.34673366834170855,
+   "skip_rate": 0.25125628140703515,
+   "teacher_skip_rate": 0.06030150753768844,
+   "median_score_spread": 0.06576397569444437
+  },
+  "TRAIN": {
+   "states": 163,
+   "gain": {
+    "mean": 0.7300613496932515,
+    "n": 163,
+    "source_seeds": 163,
+    "ci95": [
+     -0.3590490797546012,
+     1.8652607361963176
+    ]
+   },
+   "oracle": {
+    "mean": 4.383435582822086,
+    "n": 163,
+    "source_seeds": 163,
+    "ci95": [
+     3.3895705521472395,
+     5.484815950920245
+    ]
+   },
+   "uniform": {
+    "mean": -0.5450920245398773,
+    "n": 163,
+    "source_seeds": 163,
+    "ci95": [
+     -1.3429524539877298,
+     0.26487346625766794
+    ]
+   },
+   "agreement": 0.3558282208588957,
+   "skip_rate": 0.2392638036809816,
+   "teacher_skip_rate": 0.05521472392638037,
+   "median_score_spread": 0.06576397569444437
+  },
+  "VALIDATION": {
+   "states": 36,
+   "gain": {
+    "mean": 0.2222222222222222,
+    "n": 36,
+    "source_seeds": 36,
+    "ci95": [
+     -2.6666666666666665,
+     3.319791666666665
+    ]
+   },
+   "oracle": {
+    "mean": 3.8194444444444446,
+    "n": 36,
+    "source_seeds": 36,
+    "ci95": [
+     1.875,
+     6.430555555555555
+    ]
+   },
+   "uniform": {
+    "mean": -1.2722222222222221,
+    "n": 36,
+    "source_seeds": 36,
+    "ci95": [
+     -3.541701388888889,
+     1.0819444444444446
+    ]
+   },
+   "agreement": 0.3055555555555556,
+   "skip_rate": 0.3055555555555556,
+   "teacher_skip_rate": 0.08333333333333333,
+   "median_score_spread": 0.0674113607371794
+  },
+  "act1": {
+   "states": 125,
+   "gain": {
+    "mean": 0.944,
+    "n": 125,
+    "source_seeds": 125,
+    "ci95": [
+     -0.568,
+     2.5680999999999994
+    ]
+   },
+   "oracle": {
+    "mean": 5.456,
+    "n": 125,
+    "source_seeds": 125,
+    "ci95": [
+     4.1279,
+     6.876
+    ]
+   },
+   "uniform": {
+    "mean": -0.861,
+    "n": 125,
+    "source_seeds": 125,
+    "ci95": [
+     -2.004075,
+     0.3402449999999998
+    ]
+   },
+   "agreement": 0.304,
+   "skip_rate": 0.232,
+   "teacher_skip_rate": 0.088,
+   "median_score_spread": 0.05858336249999985
+  },
+  "act2": {
+   "states": 47,
+   "gain": {
+    "mean": 0.2872340425531915,
+    "n": 47,
+    "source_seeds": 47,
+    "ci95": [
+     -1.3518617021276593,
+     2.096276595744678
+    ]
+   },
+   "oracle": {
+    "mean": 3.1382978723404253,
+    "n": 47,
+    "source_seeds": 47,
+    "ci95": [
+     1.872340425531915,
+     4.585106382978723
+    ]
+   },
+   "uniform": {
+    "mean": -0.5484042553191488,
+    "n": 47,
+    "source_seeds": 47,
+    "ci95": [
+     -1.6761569148936168,
+     0.6239760638297871
+    ]
+   },
+   "agreement": 0.40425531914893614,
+   "skip_rate": 0.2765957446808511,
+   "teacher_skip_rate": 0.02127659574468085,
+   "median_score_spread": 0.07437225344678577
+  },
+  "act3": {
+   "states": 27,
+   "gain": {
+    "mean": -0.16666666666666666,
+    "n": 27,
+    "source_seeds": 27,
+    "ci95": [
+     -0.7037037037037037,
+     0.2597222222222197
+    ]
+   },
+   "oracle": {
+    "mean": 0.8333333333333334,
+    "n": 27,
+    "source_seeds": 27,
+    "ci95": [
+     0.3148148148148148,
+     1.5185185185185186
+    ]
+   },
+   "uniform": {
+    "mean": -0.046296296296296294,
+    "n": 27,
+    "source_seeds": 27,
+    "ci95": [
+     -0.4398148148148148,
+     0.37974537037036976
+    ]
+   },
+   "agreement": 0.4444444444444444,
+   "skip_rate": 0.2962962962962963,
+   "teacher_skip_rate": 0.0,
+   "median_score_spread": 0.06576397569444437
+  }
+ },
+ "verdict": "NOT_SHOWN"
+}

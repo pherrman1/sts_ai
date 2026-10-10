@@ -15576,6 +15576,174 @@ arm started (probably copy times), so the order cannot be proven either way.
 **Knowledge impact:** this entry only; no defaults or maintained interfaces
 changed.
 
+## §409 — A20 card ranker on floor reached: offline, not shown (2026-10-09)
+
+**Question:** at A20, card-reward options differ by about 2 floors in floor
+reached (§402), but not in wins. Can a GBM trained on the §402
+counterfactual corpus pick cards that reach more floors than V4?
+
+**Context:** live OOC MCTS card picks follow the V4 prior. Across 85 card
+roots in the §389 profiles, it chose the max-prior card 73 times and the
+max-Q card 24 times. Philipp chose to pursue cards at A20 with a floor
+target.
+
+**Design:** [PLAN.md](evidence/a20_card_floor_20261009/PLAN.md), committed
+before fitting (`5457e729`). Offline only; no gameplay seeds.
+- **Data:** the §402 corpus (`5ba068e0`, 1,200 card-reward states, K=2).
+- **Target:** `horizonFloor`.
+- **Features:** X2-B public map-row features, HIDDEN_FUTURE dropped.
+- **Split:** `source_split`, with early stopping on an inner 20% of TRAIN
+  sources, so VALIDATION is used only for scoring. TEST is closed.
+- **Model:** XGBoost regression, 3 seeds.
+- **Rule:** PASS if the primary arm's VALIDATION selection-gain CI vs V4
+  excludes 0 from below.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_floor.py` at `ea76456a`, 189
+VALIDATION states).
+- CARD − V4: −0.47 floors [−1.46, +0.43].
+- Diagnostics:
+  - ALL: −0.39 [−1.38, +0.60].
+  - CARD_50: −0.41 [−1.28, +0.41], so the learning curve is flat.
+  - X2-B: −0.88 [−1.74, −0.06].
+  - Uniform random: −0.95 [−1.80, −0.13].
+  - CARD − X2-B: +0.42 [−0.43, +1.24].
+
+**Interpretation (Inference):**
+- V4 is the best available A20 card picker; it beats random by about 1 floor.
+- X2-B is no better than random on cards.
+- A GBM on 840 TRAIN states does not reach V4, and halving its data changes
+  nothing. A card leaf for OOC MCTS is not available from this corpus.
+- Options not tested: much more counterfactual data, or V4 logits as a model
+  input.
+
+**Post-hoc addendum (asked after the result, not in the rule):** the target
+and score were changed to floor + B × win, with B = 10 and B = 25.
+- CARD − V4, in floor + B × win units: −0.25 [−1.24, +0.72] at B = 10,
+  −0.68 [−2.06, +0.70] at B = 25.
+- Random − V4: −1.00 [−1.97, −0.06] at B = 10. At B = 25 it is −1.08
+  [−2.24, +0.10], with a CI that includes 0.
+- The win term adds noise without card signal (§402).
+
+**Review note:** boss-reward card states can have a next-act map row (a
+leak). This affects 7 of 189 VALIDATION states. Excluding them gives CARD −
+V4 −0.44 [−1.50, +0.50], the same verdict.
+
+**Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
+[report.json](evidence/a20_card_floor_20261009/report.json).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
+
+## §413 — A20 card correction on top of the teacher's pick: offline, not shown (2026-10-09)
+
+**Question:** after §409, can a model that predicts only how much better each
+alternative card is than the teacher's pick, and switches only when that is
+positive, beat the teacher on floor reached at A20?
+
+**Design:** [PLAN-CORRECTION.md](evidence/a20_card_floor_20261009/PLAN-CORRECTION.md),
+committed before fitting (`b7320e1c`). The corpus, split and inner early stop
+are as in §409.
+- **Leak exclusion:** the 71 boss card-reward states whose map row is in the
+  next act (the §409 review note) are dropped.
+- **Target:** the paired floor difference to the teacher's chosen option under
+  shared futures.
+- **Features:** the option's map row and its difference to the chosen option's
+  row.
+- **Model:** XGBoost, 3 seeds.
+- **Rule:** PASS_VALIDATION if the gain CI lower bound > 0; TEST only after that.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_correction.py` at `086e3a28`, 182
+VALIDATION states, TEST closed).
+- Early stopping kept 2–5 trees.
+- Every alternative is predicted worse than the teacher's pick, so the policy
+  never switches: switch rate 0, gain 0.
+- Context: switching to a random alternative every time costs −1.22 floors
+  [−2.41, −0.03].
+
+**Interpretation (Inference):** with these features and 789 TRAIN states,
+nothing identifies when an alternative card beats the teacher's.
+- The features are the X2-B map rows plus the teacher's pick. The corpus does
+  not store V4's per-option scores, so a correction that takes those scores as
+  input is untested.
+- For context, the §409 ranker on the same 182 states scores −0.44 [−1.50,
+  +0.50].
+
+**Evidence:** [README](evidence/a20_card_floor_20261009/README.md),
+[report-correction.json](evidence/a20_card_floor_20261009/report-correction.json).
+
+**Knowledge impact:** this entry only; no defaults or maintained interfaces
+changed.
+
+## §416 — A20 combat-strength card probe: CTM strength ties the teacher, not shown (2026-10-09)
+
+**Question:** Philipp's idea is to value a state by its combat strength
+against the enemies ahead, not by a whole-run outcome. Does a training-free
+version of that, the CTM's expected fight utility against the act's remaining
+enemies, pick A20 card rewards better than the teacher on floor reached?
+
+**Design:** [PLAN-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-STRENGTH.md),
+frozen at `6349c21f` before the run (Philipp's go 2026-10-09 17:30Z).
+- **Replay:** the new default-off mode `one_combat cardstrengthprobe` replays
+  the §402 corpus source runs (TRAIN and VALIDATION seeds of
+  59100000..59101199; TEST not replayed) to the same sampled card rewards.
+  Binary `faf76c7f…`.
+- **Score:** for each option, the production CTM stack's utility
+  `0.75·P(survive) + 0.25·P(survive)·E[HP fraction | win]` against the act's
+  weak, strong and elite pools and the revealed boss, weighted by remaining
+  reachable monster and elite nodes. The highest score is picked; ties go to
+  the teacher.
+- **Rule:** PASS if the source-clustered CI lower bound of the floor gain over
+  the teacher's pick is > 0.
+- **CTM input at ASC 0, decided before scoring:** the 2-seed smoke showed the
+  production CTM is degenerate at ascension 20. With ASC 20 as input it
+  returned death 0 and one fixed HP value for every encounter and option,
+  because its input scaling puts ASC 20 far outside the A0 training data.
+  Decks are therefore priced at ASC 0.
+
+**Result: `NOT_SHOWN`** (`tools/a20_card_strength.py`, 970 states;
+`report-strength.json`).
+
+| Metric | Value |
+|--------|-------|
+| Gain over teacher | +0.14 floors [−0.24, +0.54] |
+| Gain on TRAIN states | +0.20 |
+| Gain on VALIDATION states | −0.11 |
+| Gain by act (acts 1, 2, 3) | +0.21, +0.00, +0.11 [−0.07, +0.29] |
+| Agreement with the teacher | 56% |
+| Skip rate (probe / teacher) | 3.2% / 4.1% |
+| Uniform random pick | −0.94 [−1.29, −0.57] |
+| Oracle (noise-inflated) | +4.27 |
+
+- **Trajectory check:** 971 eligible states, 0 mismatches. One state was
+  unscored because every encounter was unsupported (seed 59100838: all 68
+  unsupported probes of the run).
+- **Option spread:** the median utility spread between a state's best and
+  worst option is 0.008.
+
+**Interpretation (Inference):** with no training, CTM combat strength picks
+cards about as well as the teacher (V4 plus margin gate). It disagrees on 44%
+of states and loses nothing on average, while random picks lose about a
+floor. That is the best of the three A20 card attempts so far: §409's ranker
+scored −0.47 and §413's correction never switched. It is still not a
+demonstrated improvement.
+- The per-option signal is small (0.008 utility). The A0 pricing and the
+  equal-weight pool average are crude.
+- Silver labels at the right ascension, or a learned strength leaf, could
+  sharpen it. That is untested.
+
+**Side finding:** the production CTM must not be used at A20 as it is. No
+existing A20 result used it: OOC MCTS was off in every A20 run.
+
+**Evidence:** [PLAN-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-STRENGTH.md),
+[report-strength.json](evidence/a20_card_floor_20261009/report-strength.json),
+raw outputs in `/mnt/project-files/card-strength-probe/run-6349c21f/`. The run
+was resumed twice after container restarts with the same binary; resumes skip
+finished seeds (`RESUMES.txt`).
+
+**Knowledge impact:** this entry, plus the default-off research mode
+`cardstrengthprobe`. No defaults changed. The CTM's A20 degeneracy is recorded
+here.
+
 ## §408 — CTM vs low-sim Silver as combat-outcome forecasters: Silver more accurate on every field, CTM about 400x cheaper (2026-10-09)
 
 **Question (Philipp, 2026-10-09):** could low-sim Silver with the synthetic
@@ -15936,6 +16104,61 @@ ranking signal sits in paired counterfactual branches, which E3/#334 already col
 **Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
+
+## §420 — A20 Silver combat-strength card pilot: SCALE by rule, not shown (2026-10-10)
+
+**Question:** after §416, does combat strength measured with real A20 teacher
+Silver fights pick card rewards better than the teacher, and better than CTM
+strength on the same states? Philipp asked for it on 2026-10-09 21:38Z.
+
+**Design:** [PLAN-SILVER-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-SILVER-STRENGTH.md),
+frozen at `2cbb90f8` (binary `f0cc3b6a…`).
+- **States:** 200 of the §416 states, hash-selected (`silver_pilot_seeds.txt`).
+- **Fights:** `cardstrengthprobe … 20 1` plays one teacher Silver fight per
+  option and act-pool encounter. It starts from the post-pick state at ASC 20,
+  with combat RNG paired across options.
+- **Score:** pools and weights as in §416.
+- **Verdicts:** PASS if the gain CI lower bound > 0. SCALE if the gain is
+  ≥ +0.30 floors and higher than CTM strength on the same states. STOP
+  otherwise.
+
+**Result: `SCALE` by the pre-registered rule; gain CI includes 0.**
+
+| States: 200 | Silver strength | CTM strength (§416 run) |
+|-------------|-----------------|-------------------------|
+| Gain over teacher | +0.64 floors [−0.43, +1.73] | +0.55 [−0.28, +1.34] |
+| Agreement with teacher | 35% | 58% |
+| Skip rate (teacher 4%) | 25% | 2% |
+| Median option spread | 0.066 | 0.009 |
+
+- **Data quality:** 0 trajectory mismatches. 26 of 13,657 fights were invalid
+  and dropped. One state was unscored.
+- **Same states, uniform random pick:** −0.68.
+- **By act (Silver):** +0.94, +0.29 and −0.17 in acts 1–3.
+
+**Interpretation (Inference):**
+- Silver separates options about 7× more than the CTM. It disagrees with the
+  teacher on two thirds of states and skips six times as often, yet it is not
+  worse than the teacher.
+- The SCALE condition is met only narrowly: Silver beats CTM strength by
+  +0.09 floors on the same states, which is far inside the noise.
+- This sample is kinder to strength picks than the full set: CTM strength
+  scores +0.55 here against +0.14 on all 970 states.
+- The high skip rate is a plausible bias. One fight against the act's pools
+  rewards a thin deck now and ignores later acts.
+- So the pilot does not show that Silver strength is better. It only fails to
+  rule it out.
+
+**Cost:** fights 2.0 CPU h by thread CPU. The whole run took about 2.5 h of
+wall time on 4 cores, so the replay and per-call overhead dominate (about
+3 CPU min per state).
+
+**Evidence:** [report-silver-pilot.json](evidence/a20_card_floor_20261009/report-silver-pilot.json),
+[report-ctm-on-silver-pilot.json](evidence/a20_card_floor_20261009/report-ctm-on-silver-pilot.json),
+raw outputs in `/mnt/project-files/card-strength-probe/silver-pilot-2cbb90f8/`.
+
+**Knowledge impact:** this entry, plus `SILVER_REPS` on the default-off
+`cardstrengthprobe` mode. No defaults changed.
 
 ## §417 — #347 default-stack boss deaths: 40% winnable on a planner re-roll, 40% lost every time (2026-10-09)
 
