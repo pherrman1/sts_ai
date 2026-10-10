@@ -15990,3 +15990,58 @@ ranking signal sits in paired counterfactual branches, which E3/#334 already col
 **Evidence:** [packet](evidence/ooc_outcome_curve_20261009/README.md).
 
 **Knowledge impact:** `ooc-label-pipeline.md` routes `tools.vwin_outcome_curve`.
+
+## §418 — A20 Silver combat-strength card pilot: SCALE by rule, not shown (2026-10-10)
+
+**Question:** after §416, does combat strength measured with real A20 teacher
+Silver fights pick card rewards better than the teacher, and better than CTM
+strength on the same states? Philipp asked for it on 2026-10-09 21:38Z.
+
+**Design:** [PLAN-SILVER-STRENGTH.md](evidence/a20_card_floor_20261009/PLAN-SILVER-STRENGTH.md),
+frozen at `2cbb90f8` (binary `f0cc3b6a…`).
+- **States:** 200 of the §416 states, hash-selected (`silver_pilot_seeds.txt`).
+- **Fights:** `cardstrengthprobe … 20 1` plays one teacher Silver fight per
+  option and act-pool encounter. It starts from the post-pick state at ASC 20,
+  with combat RNG paired across options.
+- **Score:** pools and weights as in §416.
+- **Verdicts:** PASS if the gain CI lower bound > 0. SCALE if the gain is
+  ≥ +0.30 floors and higher than CTM strength on the same states. STOP
+  otherwise.
+
+**Result: `SCALE` by the pre-registered rule; gain CI includes 0.**
+
+| States: 200 | Silver strength | CTM strength (§416 run) |
+|-------------|-----------------|-------------------------|
+| Gain over teacher | +0.64 floors [−0.43, +1.73] | +0.55 [−0.28, +1.34] |
+| Agreement with teacher | 35% | 58% |
+| Skip rate (teacher 4%) | 25% | 2% |
+| Median option spread | 0.066 | 0.009 |
+
+- **Data quality:** 0 trajectory mismatches. 26 of 13,657 fights were invalid
+  and dropped. One state was unscored.
+- **Same states, uniform random pick:** −0.68.
+- **By act (Silver):** +0.94, +0.29 and −0.17 in acts 1–3.
+
+**Interpretation (Inference):**
+- Silver separates options about 7× more than the CTM. It disagrees with the
+  teacher on two thirds of states and skips six times as often, yet it is not
+  worse than the teacher.
+- The SCALE condition is met only narrowly: Silver beats CTM strength by
+  +0.09 floors on the same states, which is far inside the noise.
+- This sample is kinder to strength picks than the full set: CTM strength
+  scores +0.55 here against +0.14 on all 970 states.
+- The high skip rate is a plausible bias. One fight against the act's pools
+  rewards a thin deck now and ignores later acts.
+- So the pilot does not show that Silver strength is better. It only fails to
+  rule it out.
+
+**Cost:** fights 2.0 CPU h by thread CPU. The whole run took about 2.5 h of
+wall time on 4 cores, so the replay and per-call overhead dominate (about
+3 CPU min per state).
+
+**Evidence:** [report-silver-pilot.json](evidence/a20_card_floor_20261009/report-silver-pilot.json),
+[report-ctm-on-silver-pilot.json](evidence/a20_card_floor_20261009/report-ctm-on-silver-pilot.json),
+raw outputs in `/mnt/project-files/card-strength-probe/silver-pilot-2cbb90f8/`.
+
+**Knowledge impact:** this entry, plus `SILVER_REPS` on the default-off
+`cardstrengthprobe` mode. No defaults changed.
