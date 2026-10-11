@@ -16524,3 +16524,31 @@ grows with the budget instead of saturating by 512; 128 pairs cannot size either
 (one tar per worker). Seed 72000002 is now used.
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §425 — OOC MCTS root picks on the A20 gold decisions: not shown better than the heuristic (2026-10-11)
+
+**Question (Philipp):** how often does OOC MCTS pick the best option at A20, on the §419 gold labels
+(524 decisions, every option played to the run's end 16 times)? All MCTS models are A0-trained.
+**Design:** offline, no live play. `strategicgen2` replay (run commit `d93fad14`, binary `cd0bb658…`) re-plays each
+gold run with its recorded actions and runs 4 OOC MCTS searches per labeled decision (search run seeds
+73000000–73324999). Arms: `prod` (§411/§414 settings, `screengbm` leaf, pathb-r2 CTM) and `rollout3` (§422).
+Targets scored only if every replayed row up to the decision matches the gold row; 386 of 409 multi-option decisions
+verified. Decision bootstrap, 10,000 samples.
+**Result:** on 378 verified decisions with a recorded choice, mean floor regret: heuristic 4.55, `prod` 4.35
+(Δ −0.20 [−0.89, +0.49]), `rollout3` 4.22 (Δ −0.33 [−0.77, +0.12]); random 4.88. Tie-aware top-1 0.276 / 0.280 /
+0.295 (random 0.260). Strict top-1 (GOLD-RESULT definition) 0.344 / 0.252 / 0.286; the gap comes from reward screens,
+where the heuristic's gold-pile pick wins first-argmax ties and MCTS collects gold at the root. `rollout3` aborts
+24% of searches at A20 (Lizard Tail 316, `hp_envelope` 54 of 1,544) and falls back. `rollout3` ran on the production pathb-r2 CTM, not the §423 Lizard-capable research candidate (`STS_CTM_RESEARCH_CANDIDATE_MANIFEST`, manifest `64da1776…`); that is the cause of the Lizard Tail aborts, the large majority of its aborts (a follow-up check on 4 gold seeds: 7/8 searches aborted on the production CTM, 0/8 on the candidate, on decisions picked because they had aborted, so 7/8 is not a base rate; search seeds 74002000–74002003; raw `/mnt/project-files/ooc-rollout3-a20-lizard-check/a20-lizard-check.tgz`).
+**Interpretation (Inference):** with A0 models, OOC MCTS is not shown better than the heuristic at A20 (CIs allow
+up to about 0.9 floors), and neither is far from random on these labels. Rerun with A20 floor/win models when they exist.
+**Side finding (verified in review):** `finishOocCounterfactual` sets `t_curPath = nullptr` on return and
+`strategicgen2` never restores it, so from the first decision with options on, the gold runs' main-trajectory policy
+ran path-blind (no undefined behaviour; readers fall back to an empty path). Replaying unforced with `t_curPath`
+cleared at labeled decisions reproduces seeds 69100000 and 69101007 exactly. Branch labels are unaffected; the
+"heuristic" baseline here is this path-blind variant of the production heuristic. **Unverified:** likely every
+`strategicgen2` run with branching is affected, possibly including the A0 corpus behind the deployed V4.
+
+**Evidence:** [packet](evidence/ooc_mcts_a20_gold_20261011/README.md). Seeds 73000000–73324999 (search run seeds)
+are now used; the Lizard check used search seeds 74002000–74002003 (Lizard thread's 74002xxx block).
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
