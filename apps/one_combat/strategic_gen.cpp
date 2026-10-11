@@ -306,6 +306,9 @@ void strategicMargGen(int nSeeds, int outerSims,
             evalAgent.rng = std::default_random_engine(seed);
         for (auto &snap : snaps) {
             auto &pre = snap.pre; auto &prePath = snap.prePath;
+            // Pass 1 ran the policy with the run's path; Pass 2 replays it from
+            // the snapshot, and each branch evaluation clears t_curPath.
+            t_curPath = &prePath;
             auto &actions = snap.actions;
             int screen = snap.screen, gateKind = snap.gateKind;
             int actNum = snap.actNum, floorNum = snap.floorNum;
@@ -347,6 +350,11 @@ void strategicMargGen(int nSeeds, int outerSims,
 
             // Source chosen
             int chosenIdx = -1, chosenExact = 0;
+            if (t_curPath != &prePath) {
+                std::fprintf(stderr, "strategicmarggen: t_curPath not restored before source replay "
+                                     "(seed %llu decision %d)\n", (unsigned long long)seed, decIdx);
+                std::abort();
+            }
             {
                 GameContext postGc = detachedCounterfactualCopy(pre);
                 stepFrozenV4Ooc(postGc, evalAgent);
@@ -448,6 +456,7 @@ void strategicMargGen(int nSeeds, int outerSims,
             #undef EMIT_ROW
             ++localDecisions;
         }
+        t_curPath = nullptr;
         }  // end evalAgent scope
 
         // Source outcome post-processing
