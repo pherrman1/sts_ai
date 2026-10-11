@@ -214,6 +214,9 @@ void strategicMargGen(int nSeeds, int outerSims,
     std::mutex outMtx;
     int totalDecisions = 0;
     const double v4Threshold = g_oocStrategicMargin;
+    // Consistency of Pass 2 with Pass 1: the source-chosen replay must reach the
+    // source run's post-decision state, and the stored row must match the snapshot.
+    std::atomic<int> replayChecks{0}, replayMismatches{0}, stateRowMismatches{0};
 
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
@@ -226,6 +229,8 @@ void strategicMargGen(int nSeeds, int outerSims,
             std::vector<search::GameAction> actions;
             int decIdx, screen, gateKind, actNum, floorNum;
             std::string stateRow;
+            std::default_random_engine agentRng;   // source agent RNG before this decision
+            StratFingerprint sourcePostFp{};       // source state after this decision
         };
         std::vector<DecisionSnap> snaps;
         {
@@ -242,6 +247,7 @@ void strategicMargGen(int nSeeds, int outerSims,
                 int screen = (int)gc.screenState;
                 int gateKind = 0;
                 bool isOwned = false;
+                bool snapped = false;
                 if (screen == 1) { gateKind = 1; isOwned = true; }
                 else if (screen == 2) { auto &r = gc.info.rewardsContainer; if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; } }
                 else if (screen == 3) { gateKind = 3; isOwned = true; }
@@ -254,13 +260,17 @@ void strategicMargGen(int nSeeds, int outerSims,
                     GameContext pre = detachedCounterfactualCopy(gc);
                     auto actions = search::GameAction::getAllActionsInState(gc);
                     if (actions.size() >= 2) {
+                        // Build the row before pre is moved into the snapshot.
+                        std::string stateRow = richRow(pre, path);
                         snaps.push_back({std::move(pre), path, std::move(actions),
                                          decIdx, screen, gateKind, gc.act, gc.floorNum,
-                                         richRow(pre, path)});
+                                         std::move(stateRow), agent.rng});
+                        snapped = true;
                     }
                     ++decIdx;
                 }
                 stepFrozenV4Ooc(gc, agent);
+                if (snapped) snaps.back().sourcePostFp = stratFingerprint(gc);
             }
             t_curPath = nullptr;
         }
@@ -328,6 +338,9 @@ void strategicMargGen(int nSeeds, int outerSims,
 
             // Fallback via fingerprint (abbreviated — identical to existing code)
             int fallbackIdx = -1, fallbackExact = 0;
+            // The policy draws from the agent RNG (e.g. event stepRandom), so each
+            // replay starts from the source agent's RNG state at this decision.
+            evalAgent.rng = snap.agentRng;
             {
                 GameContext fbGc = detachedCounterfactualCopy(pre);
                 if (screen == 1) evalAgent.stepOutOfCombatPolicy(fbGc);
@@ -357,8 +370,12 @@ void strategicMargGen(int nSeeds, int outerSims,
             }
             {
                 GameContext postGc = detachedCounterfactualCopy(pre);
+                evalAgent.rng = snap.agentRng;
                 stepFrozenV4Ooc(postGc, evalAgent);
                 auto postFp = stratFingerprint(postGc);
+                if (!(postFp == snap.sourcePostFp)) ++replayMismatches;
+                if (richRow(pre, prePath) != stateRow) ++stateRowMismatches;
+                ++replayChecks;
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     GameContext tGc = detachedCounterfactualCopy(pre);
                     actions[ai].execute(tGc);
@@ -485,6 +502,8 @@ void strategicMargGen(int nSeeds, int outerSims,
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
+    std::printf("source replay checks %d, replay mismatches %d, stateRow mismatches %d\n",
+                replayChecks.load(), replayMismatches.load(), stateRowMismatches.load());
 }
 
 
