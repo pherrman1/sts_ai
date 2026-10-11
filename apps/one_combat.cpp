@@ -2284,7 +2284,8 @@ static void appendActFightProbeLog(const GameContext &gc, int decisionIdx,
                                    const std::vector<std::uint64_t> &futureSeeds,
                                    const std::vector<double> &utilities,
                                    const std::vector<std::vector<CheckpointFightComponent>> &components) {
-    if (!g_actFightProbeLog.is_open()) return;
+    // A Match and Keep valuation is not a decision the run faces: no teacher row.
+    if (!g_actFightProbeLog.is_open() || t_oocHypotheticalStep) return;
     double mean = 0.0;
     for (const double utility : utilities) mean += utility;
     mean /= std::max(1, (int)utilities.size());
@@ -2491,6 +2492,7 @@ static int actFightProbeRootStateSelfTest() {
             decision = t_actFightProbeDecisionIdx;
         double margin = g_actFightProbeMargin, termWin = g_actFightProbeTermWin;
         const PathHistory *path = t_curPath;
+        bool hypothetical = t_oocHypotheticalStep;
         ~Guard() {
             g_actFightProbeAllOoc = allOoc; g_actFightProbeEncounterNN = nn;
             g_actFightProbePredict = predict; g_actFightProbeTrace = trace;
@@ -2498,6 +2500,8 @@ static int actFightProbeRootStateSelfTest() {
             g_actFightProbeMaxCheckpoints = checkpoints; t_actFightProbeDecisionIdx = decision;
             g_actFightProbeMargin = margin; g_actFightProbeTermWin = termWin;
             t_curPath = path; t_oocEncounterTransactForTest = nullptr;
+            t_oocHypotheticalStep = hypothetical;
+            if (g_actFightProbeLog.is_open()) g_actFightProbeLog.close();
         }
     } guard;
     g_actFightProbeAllOoc = true; g_actFightProbeEncounterNN = true;
@@ -2532,6 +2536,23 @@ static int actFightProbeRootStateSelfTest() {
         for (int i = 0; i < 16; ++i) response += "1.0,0.9 ";
         return response + "\n";
     };
+    // Teacher log: a hypothetical (Match and Keep) decision writes no rows; a real one does.
+    const std::string logPath = (std::filesystem::temp_directory_path()
+                                 / ("act_fight_probe_root_state_" + std::to_string(getpid()) + ".csv")).string();
+    std::remove(logPath.c_str());
+    g_actFightProbeLog.open(logPath);
+    require(g_actFightProbeLog.is_open(), "selftest teacher log opens");
+    {
+        GameContext hypothetical = detachedCounterfactualCopy(gc);
+        t_oocHypotheticalStep = true;
+        const bool decided = actFightProbeAllOocPolicy(hypothetical);
+        t_oocHypotheticalStep = false;
+        require(decided, "oracle decides the hypothetical map choice");
+        g_actFightProbeLog.flush();
+        require(std::ifstream(logPath).peek() == std::ifstream::traits_type::eof(),
+                "hypothetical decision writes no teacher-log rows");
+    }
+    roots.clear();
     int legal = 0;
     for (const auto &action : search::GameAction::getAllActionsInState(gc)) legal += action.isValidAction(gc);
     require(legal >= 2, "fixture offers at least two map actions");
@@ -2540,6 +2561,12 @@ static int actFightProbeRootStateSelfTest() {
     for (std::size_t i = 0; i < roots.size(); ++i)
         require(roots[i] == expected, "branch " + std::to_string(i) + " root state lost the live path");
     require(t_curPath == &path, "oracle restores the live path");
+    g_actFightProbeLog.close();
+    std::string row;
+    int logRows = 0;
+    for (std::ifstream log(logPath); std::getline(log, row);) ++logRows;
+    std::remove(logPath.c_str());
+    require(logRows == legal, "real decision writes one teacher-log row per legal action");
     std::cout << "act-fight root-state selftest: PASS (" << roots.size() << " branches)\n";
     return 0;
 }
