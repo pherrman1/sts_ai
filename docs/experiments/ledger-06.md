@@ -16728,7 +16728,11 @@ Tail stays on its exact path (supported). This settles support, not strength: §
 pricing these states (−3.1 pp [−10.9, +4.7]) and §426 none on A20 regret. Other boundaries (`hp_envelope`,
 Writhing Mass + Ritual Dagger) are unchanged (#369).
 **Decision:** default OOC MCTS CTM stack switched; OOC MCTS remains off by default. Runs pinned to earlier commits are
-unaffected; a run on this commit with the automatic stack now matches the §423 arm's CTM.
+unaffected; a run on this commit with the automatic stack now matches the §423 arm's CTM. Reproducing §422 or
+§424–§430 on a later commit needs the explicit #418 settings (`STS_OOC_MCTS_COMBAT_MODEL=…pathb_r2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=…near_full_escape_pathb_r2.native`, `STS_OOC_MCTS_ACTIVE_LIZARD=1`). §433 also
+measures the #418 model; a rollout3 promotion on that evidence that runs on this stack also adopts the Lizard model,
+whose win-rate effect §423 left open (wide CI), so the promotion note must name the CTM.
 
 **Evidence:** raw `/mnt/project-files/ooc-lizard-default-435/`. Seeds 74011000–74011007 are now used.
 
