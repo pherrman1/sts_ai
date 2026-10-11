@@ -16552,3 +16552,47 @@ cleared at labeled decisions reproduces seeds 69100000 and 69101007 exactly. Bra
 are now used; the Lizard check used search seeds 74002000–74002003 (Lizard thread's 74002xxx block).
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §431 — Generator OOC policy drift: strategicgen's copied chain plays 4.5 floors worse at A20; all generators now share the deployed step (2026-10-11)
+
+**Question (code audit 2026-10-11, finding 1):** the strategic generators and the counterfactual continuation each
+copied the out-of-combat chain and the copies drifted from `runFullRunOOC`. How far do they diverge from the deployed
+policy, and does it reach the labels?
+**Design:** measurement-only probe `oocpolicydrift` (commits `474237b8`, `cd1d99a5`, `8790fa27`; removed with the
+refactor). It plays a run with one chain as the main trajectory and at every OOC decision applies all four chains to
+copies of the same state and agent: `canon` (`runFullRunOocPolicyStep`, shop value on), `sg` (strategicgen and
+strategicgen2 main trajectory), `cf` (`finishOocCounterfactual` continuation, which produces every Tier-B branch label)
+and `v4` (`stepFrozenV4Ooc`, strategicmarggen/oocfactoreval). Release, 1000 sims, default flags; 64 A0 and 64 A20
+seeds, plus 32 A0 seeds with the V4 gates on. The `canon` trajectory equals `bestbench` on 128/128 seeds.
+**Result:**
+- Per decision, resolving the whole screen: `sg` differs at 5.6% (A0) / 6.3% (A20) of decisions, about 9 per run,
+  mostly shops (455 of 623 A0 shop visits: the agent heuristic buys the first affordable relic or takes a random
+  action instead of shop value), card selects and Match and Keep; `cf` and `v4` differ at 0.6-1.4% (removal by shop
+  value outside shops, Match and Keep, `cf` resting by first legal action). With the V4 gates on, `sg` and `cf` ignore
+  them and differ at 16.3% / 13.0% of decisions (`v4` 0.3%). Reward order (relic before gold, potions with full slots)
+  differs on about 600 reward screens per 64 runs but leaves the same state.
+- As the main trajectory, paired against `canon`: A20 `sg` −4.48 floors [−8.38, −0.72], wins 1/64 vs 7/64
+  (−9.4 pp [−17.2, −3.1]); A20 `cf` −0.80 [−2.91, +1.25], `v4` −0.56 [−2.64, +1.53]; at A0 nothing is detectable
+  (`sg` −0.33 [−2.80, +2.00]). Identical end states: A0 `sg` 5/64, `cf` 30/64, `v4` 36/64.
+- `strategicgen2` labels before vs after the refactor (32 seeds per ascension, 8 sampled decisions per run, K=3), on
+  labeled decisions whose pre-states are still identical: argmax(labelFloor) unchanged on 31/32 (A0) and 75/77 (A20);
+  some option label changed on 4/32 and 13/77; mean labelFloor shift +0.03 and −0.39.
+**Interpretation (Inference):** the gap is real. Data from `strategicgen`/`strategicgen2` main trajectories (the A20
+value-model runs `runs-2c89ed97`, the §419 A20 V4 corpora and gold runs) carry won/endFloor/endHp outcomes of a
+policy about 4.5 floors weaker at A20 than deployment, and their `chosen` rows imitate it. Branch labels moved little
+on the comparable states, but only early decisions are comparable, and with the V4 gates on the continuation ignored
+them at 13% of decisions. Effect on any trained model: **Unverified**.
+**Change:** `deployedOocPolicyStep` (`apps/one_combat/run_driver.cpp`) is now the only OOC step for `strategicgen`,
+`strategicgen2`, `finishOocCounterfactual` and `stepFrozenV4Ooc` (so also the branch continuations of the
+`counterfactual_gen.cpp` generators, `oocfactoreval` and `semantic_pilot.cpp`, whose main trajectories keep their own
+chains); `strategicgen`/`strategicgen2` also reset path-policy state per seed and use `fightSims` like
+`runFullRunOOC` (no-ops at default flags); oracles stand down inside continuations; ctest `generator_policy_parity`
+pins `strategicgen`/`strategicgen2` end states to `bestbench` (continuations and the V4 step are not pinned by a test
+of their own). Default `bestbench` play is bit-identical: 8 seeds at 300 sims here, and in independent review 180 runs
+(seeds 74008900-989, A0 and A20, 1000 sims) with identical traces. Data generated before this change is not
+regenerated.
+
+**Evidence:** [packet](evidence/generator_policy_drift_20261011/README.md). Seeds used: 74008000-063, 74008100-163,
+74008200-231, 74008300-331, 74008400-431, smoke/tests 74008990-999.
+
+**Knowledge impact:** generator policy parity paragraph in `architecture/training-and-inference.md`.

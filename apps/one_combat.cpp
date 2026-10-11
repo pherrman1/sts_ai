@@ -1208,6 +1208,7 @@ static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
 // ---------------------------------------------------------------------------
 // Returns true iff it handled the card reward(s); false => caller uses server V.
 bool bossGatedDraftPolicy(GameContext &gc) {
+    if (t_oocContinuation) return false;  // branch continuations never consult oracles
     if (!g_bossDraft) return false;
     if (rowsToHardFight(gc) > g_bossDraftRows) return false;   // no hard fight close -> server pick
     using RT = search::GameAction::RewardsActionType;
@@ -1255,7 +1256,7 @@ static std::string benchTimestampUtc() {
 
 static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 0,
                       const std::string &resultsFile = "", const std::string &objective = "bestbench") {
-    const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
+    const bool restV = deployedRestV();
     std::cout << "BEST stack config: skip@" << g_cardSkipThresh
               << "  rest=" << (g_restWin ? "win-rate" : "default")
               << (restV ? "+legacy-rest-V" : "")
@@ -1567,7 +1568,6 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         OocContinuationCost *finalCost,
                         bool useFrozenV4,
                         std::vector<CombatEvalFight> *combatCapture) {
-    using RT = search::GameAction::RewardsActionType;
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -1577,12 +1577,16 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     agent.simulationCountTotal = 0;
     agent.rng = std::default_random_engine(agentSeed);
     t_curPath = &path;
+    struct ContinuationScope {
+        bool saved = t_oocContinuation;
+        ContinuationScope() { t_oocContinuation = true; }
+        ~ContinuationScope() { t_oocContinuation = saved; }
+    } continuationScope;
+    (void)useFrozenV4;
     int fights = 0;
     int observedFights = 0;
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
         if (gc.screenState == ScreenState::BATTLE) {
             // A completed fight's checkpoint is observed only after the normal
             // OOC continuation has reached the following battle. The callback
@@ -1661,35 +1665,11 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             // evaluator stops at the current act's boss rather than leaking a
             // candidate's score into Act+1 rewards/fights.
             if (stopAfterAct > 0 && battleAct == stopAfterAct && room == Room::BOSS) break;
-        } else if (useFrozenV4) {
-            stepFrozenV4Ooc(gc, agent);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else one_combat::serverCardRewardPolicy(gc);
-        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            one_combat::shopVPolicy(gc);
-        } else if (inRemoveSelect) {
-            one_combat::removeSelectVPolicy(gc);
-        } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF later rest seed=" << gc.seed << " floor=" << gc.floorNum << "\n";
-            if (!(g_restWin && one_combat::restWinPolicy(gc))) {
-                auto actions = search::GameAction::getAllActionsInState(gc);
-                if (actions.empty()) break;
-                actions.front().execute(gc);
-            }
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
         } else {
-            agent.stepOutOfCombatPolicy(gc);
+            // The deployed OOC step (§431); useFrozenV4 selects the same step.
+            if (gc.screenState == ScreenState::REST_ROOM
+                && search::GameAction::getAllActionsInState(gc).empty()) break;
+            deployedOocPolicyStep(gc, agent);
         }
     }
     if (prefixObserver && fights > observedFights) {
@@ -1819,6 +1799,7 @@ static double allActFightUtility(const FutureFightProbe &probe, int decisionFloo
 // and is ranked solely by allActFightUtility -- no V/card scorer is queried for
 // this immediate decision.
 bool actFightProbeDraftPolicy(GameContext &gc) {
+    if (t_oocContinuation) return false;  // branch continuations never consult oracles
     if (!g_actFightProbeDraft) return false;
     using RT = search::GameAction::RewardsActionType;
     auto &r = gc.info.rewardsContainer;
@@ -2323,6 +2304,7 @@ static void appendActFightProbeLog(const GameContext &gc, int decisionIdx,
 // every legal strategic action in Acts 1--3. This includes boss-relic choices:
 // their resulting next-act state is scored at its next combat checkpoints.
 bool actFightProbeAllOocPolicy(GameContext &gc) {
+    if (t_oocContinuation) return false;  // branch continuations never consult oracles
     if (!g_actFightProbeAllOoc || gc.act < 1 || gc.act > 3) return false;
     auto actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;
