@@ -16552,3 +16552,26 @@ cleared at labeled decisions reproduces seeds 69100000 and 69101007 exactly. Bra
 are now used; the Lizard check used search seeds 74002000–74002003 (Lizard thread's 74002xxx block).
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §426 — rollout3 with the §423 Lizard-capable CTM on the A20 gold decisions: aborts gone, not shown better (2026-10-11)
+
+**Question:** §425 `rollout3` aborted 24% of its A20 searches on active Lizard Tail states because it ran the
+production CTM, not the §423 research candidate. With the candidate, does rollout3 pick better than the heuristic?
+**Design:** [PREREG](evidence/ooc_rollout3_lizard_a20_gold_20261011/PREREG.md), frozen before the run. §425 replay,
+binary (`cd0bb658…`), gold inputs, targets, force files and scorer unchanged; arm `lizard` = §425 `rollout3` + the
+§423 candidate (`c6d56bbc…`, manifest `64da1776…`). 4 searches per target, search run seeds 74004000–74005047.
+Primary: Δ live regret vs the heuristic, 95% decision bootstrap; IMPROVED / WORSE / NOT_SHOWN.
+**Validity:** 1,048/1,048 replays rc=0, candidate banner in every log, rep replays identical; 386 verified targets
+as in §425.
+**Result:** **NOT_SHOWN.** On 378 verified decisions, regret 4.15 vs heuristic 4.55, Δ −0.40 [−0.96, +0.16];
+tie-aware top-1 0.297 vs 0.276. Searches without a selection 3.8% (`hp_envelope` 53, boundary 4) vs 24.0% for §425
+`rollout3`; Lizard aborts 305 → 0. Paired vs §425 `rollout3` Δregret −0.08 [−0.33, +0.20], vs §425 `prod` −0.21
+[−0.70, +0.26]. 9.6 s per search on 1 CPU.
+**Interpretation (Inference):** as at A0 (§423), pricing the active-Tail states does not measurably change the
+outcome; §425's conclusion stands. The gold labels are close to single playouts (the §419 futures only changed the
+agent RNG, which Silver does not use; commit `65ed71f4`, unmerged), which can only hide an effect. No default change; the candidate stays a research artifact.
+
+**Evidence:** [packet](evidence/ooc_rollout3_lizard_a20_gold_20261011/README.md). Raw:
+`/mnt/project-files/ooc-rollout3-a20-lizard-check/`. Search run seeds 74004000–74005047 are now used.
+
+**Knowledge impact:** one sentence in the §425 paragraph of `evaluation/current-research.md`.
