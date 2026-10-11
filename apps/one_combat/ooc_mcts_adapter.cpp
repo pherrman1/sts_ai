@@ -431,7 +431,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     OocMctsDependencies deps)
     : combatSampler(maskInitialSmokeBomb(std::move(sampler))), options(std::move(opts)),
       dependencies(std::move(deps)) {
-    if (!std::isfinite(options.priorTemperature) || options.priorTemperature <= 0 || (options.leafCombats != 0 && options.leafCombats != 1 && options.leafCombats != 3))
+    if (!std::isfinite(options.priorTemperature) || options.priorTemperature <= 0 || (options.leafCombats != 0 && options.leafCombats != 1 && options.leafCombats != 3 && options.leafCombats != 5))
         throw std::invalid_argument("OOC MCTS invalid adapter options");
     if (!options.bossLeaf && !dependencies.leafValue)
         throw std::runtime_error("OOC MCTS requires a leaf-value dependency");
@@ -1457,7 +1457,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_WIDEN_K") { const double x = number(); if (x <= 0) invalid(); config.wideningK = x; }
     else if (key == "STS_OOC_MCTS_WIDEN_ALPHA") { const double x = number(); if (x <= 0 || x >= 1) invalid(); config.wideningAlpha = x; }
     else if (key == "STS_OOC_MCTS_MAX_DEPTH") { const auto x = integer(); if (!x || x > 512) invalid(); config.maxDepth = x; }
-    else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3) invalid(); opts.leafCombats = x; }
+    else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3 && x != 5) invalid(); opts.leafCombats = x; }
     else invalid();
 }
 const char *const liveControlKeys[] = {
@@ -3660,6 +3660,8 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_EARLY_STOP","0",parsed,opts);
         require(!parsed.allowUnqualifiedRootStop,"early-stop rollback parsed");
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","5",parsed,opts);
+        require(opts.leafCombats == 5,"five-combat rollout parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","direct",parsed,opts);
         require(opts.directLeaf && !opts.bossLeaf && !opts.constantLeaf,"direct leaf parsed");
@@ -3677,7 +3679,7 @@ void oocMctsAdapterSelfTest() {
             {"STS_OOC_MCTS_EARLY_STOP","true"},{"STS_OOC_MCTS_EARLY_STOP","2"},{"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
             {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
-            {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},
+            {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},{"STS_OOC_MCTS_LEAF_COMBATS","4"},
             {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
             {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
             rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
@@ -4213,7 +4215,7 @@ void oocMctsAdapterSelfTest() {
             return {CombatRuntimeSample::Outcome::VICTORY,captureCombatTransitionState(g)};
         }
     };
-    for (unsigned horizon : {1u,3u}) {
+    for (unsigned horizon : {1u,3u,5u}) {
         auto horizonRoot = detachedCopy(gc);
         for (auto &row : horizonRoot.map->nodes) for (auto &node : row) node.room = Room::MONSTER;
         auto sampler = std::make_shared<HorizonSampler>();

@@ -16667,3 +16667,38 @@ scoring scripts, rebuild recipe, A20 tree training script and log, tarball sha25
 
 **Knowledge impact:** §425 and §419 paragraphs in `evaluation/current-research.md` corrected (gold futures shared their
 combats); new paragraph for §432; three rows in `operations/environment-variables.md`.
+
+## §427–§430 — four one-setting rollout3 variants: fewer chance outcomes is worse, the rest not shown (2026-10-11)
+
+**Question:** Philipp: "can you try the following things on teh same 128 seeds: 4096 simulations, different
+progressing widening for the chance nodes (one cofnig for mroe and one for fewer), and rollout 5 isntead of 3". Does
+any single change to rollout3 (§422: 2048 simulations, chance widening `K=2, alpha=0.5`, 3 rollout combats) win more?
+**Design:** [PREREG](evidence/ooc_rollout3_variants_20261011/PREREG.md). Arms, each the §422 rollout3 environment with
+one change: §427 `s4096` (`SIMS=4096`), §428 `wnarrow` (`WIDEN_K=1`, `WIDEN_ALPHA=0.25`), §429 `wbroad` (`WIDEN_K=4`,
+`WIDEN_ALPHA=0.75`), §430 `r5` (`LEAF_COMBATS=5`; commit `0ee840b1` makes 5 an accepted value, default unchanged).
+Binary `3269ece9…`; launch gate: §422 seed 70000000 rerun byte-identical, so the §422 `rollout3` and `off` runs are the
+paired controls. 32 cloud workers (8 per arm × 16 seeds 70000000–127). Smokes 72000003–005. Primary per arm: paired
+bootstrap 95% CI of arm − rollout3 (seed 427); IMPROVED / WORSE / NOT_SHOWN, no multiplicity correction.
+**Validity:** 512/512 units rc=0, no seed failures or restarts, tar hashes, config banners and §422 hashes checked.
+**Result:**
+
+| arm | wins | vs rollout3 (115/128) | label | vs off (101/128) | boss deaths | s/run |
+|---|---|---|---|---|---|---|
+| §427 `s4096` | 119/128 | +3.1 pp [−3.1, +9.4] | NOT_SHOWN | +14.1 [+6.3, +21.9] | 8 | 1,784 |
+| §428 `wnarrow` | 101/128 | −10.9 pp [−19.5, −2.3], p = 0.02 | **WORSE** | 0.0 [−9.4, +9.4] | 22 | 1,290 |
+| §429 `wbroad` | 117/128 | +1.6 pp [−4.7, +7.8] | NOT_SHOWN | +12.5 [+4.7, +21.1] | 9 | 988 |
+| §430 `r5` | 112/128 | −2.3 pp [−10.2, +5.5] | NOT_SHOWN | +8.6 [−0.8, +18.0] | 10 | 1,458 |
+
+rollout3 itself: 11 boss deaths, 936 s per run. V4 fallback 27.6% (`s4096`) and 37.1% (`r5`) vs 19.8%; in every arm
+88–94% of fallbacks are support aborts and 98–100% of those are active Lizard Tail states.
+**Interpretation (Inference):** few sampled outcomes per chance node lose the whole rollout3 gain (`wnarrow`'s WORSE
+rests on p = 0.02 uncorrected; Bonferroni across the four arms gives 0.08); more simulations or
+more outcomes point up but 128 pairs cannot separate them from rollout3. Five rollout combats hit Lizard Tail states
+more often and fall back to V4 on 37% of decisions.
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_rollout3_variants_20261011/README.md). Raw: `/mnt/project-files/ooc-rollout3-variants/`
+(one tar per worker). Seeds 72000003–005 are now used.
+
+**Knowledge impact:** `LEAF_COMBATS` accepts 5 in `architecture/out-of-combat.md`; one sentence in the rollout3
+paragraph of `evaluation/current-research.md`.
