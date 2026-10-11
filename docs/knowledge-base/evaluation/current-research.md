@@ -277,7 +277,7 @@ and merging variants, and a fresh-seed confirmation before any default change.
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
 Scored offline on the §419 gold labels (386 verified decisions; every option was meant to be played out 16 times,
-but §432 found the futures replayed the same combats, so each label is about one sample),
+but §432 found the futures shared encounters and battle RNG, so each label has far fewer than 16 effective samples),
 OOC MCTS with A0-trained models picks options with mean floor regret 4.35 (`prod` settings) and 4.22
 (`rollout3`) vs 4.55 for the heuristic and 4.88 for random; both differences have CIs spanning zero.
 `rollout3` aborts about a quarter of its A20 searches (Lizard Tail, `hp_envelope`). **Open question:**
@@ -293,12 +293,12 @@ decisions NOT_SHOWN (−1.1 floors), on 10.0k decisions RETRAIN_WORSE (−5.6 fl
 [−7.75, −3.38], wins 16 vs 29 of 256). Offline no retrain beats the heuristic action it
 overrides (strict Q top-1 0.30 vs 0.34). **Inference:** these labels are too noisy for this
 route; a better A20 OOC policy needs a different label source, not more of the same data.
-§432 found why: the corpus's 4 branch futures replayed the same combats.
+§432 found one reason: the corpus's 4 branch futures shared their combats and differed only in out-of-combat choices.
 
 ## Independent branch futures and short-branch labels at A20 (§432)
 
-`strategicgen2` branch futures only varied the agent RNG, so `STRATEGIC_BRANCH_FUTURES>1` repeated the
-same fights; `STRATEGIC_BRANCH_RESEED=1` (default off) gives each future its own battle RNG and act
+`strategicgen2` branch futures only varied the agent RNG, so `STRATEGIC_BRANCH_FUTURES>1` shared encounters
+and battle RNG and diverged only through out-of-combat choices; `STRATEGIC_BRANCH_RESEED=1` (default off) gives each future its own battle RNG and act
 encounters. On a rerun of the 262 gold seeds with 16 independent futures, short-branch labels (3 fights,
 8 independent futures, then the floor value trees) pick options with 1.25 floors regret vs 2.26 for the
 heuristic (+1.01 [+0.56, +1.52]) and 1.98 for the deployed V4; A20-fit and A0 floor trees tie in this role.
