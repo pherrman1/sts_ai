@@ -497,7 +497,8 @@ void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, lon
 static std::string strategicHeader2() {
     std::string h = strategicHeader();
     if (!h.empty() && h.back() == '\n') h.pop_back();
-    return h + ",labelWon,labelHp,labelFloor,labelBootstrap\n";
+    return h + ",labelWon,labelHp,labelFloor,labelBootstrap"
+             + (altBootstrapEnabled() ? ",labelWonAlt,labelFloorAlt" : "") + "\n";
 }
 
 // Research (§425): STRATEGIC_MCTS_TARGETS=file of "seed,decIdx" lines replays
@@ -646,20 +647,30 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
             auto &labels = labelSets[labelSlot];
             labels.resize(actions.size());
             for (int a = 0; a < (int)actions.size(); ++a) {
-                double won = 0, hp = 0, floor = 0, boot = 0;
+                double won = 0, hp = 0, floor = 0, boot = 0, altWon = 0, altFloor = 0;
                 bool branchInvalid = false;
                 for (int f = 0; f < g_strategicBranchFutures; ++f) {
                     GameContext branch = detachedCounterfactualCopy(pre);
-                    actions[a].execute(branch);
                     const std::uint64_t branchSeed =
-                        seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1))
+                        seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1 + g_strategicBranchFutureOffset))
                              ^ (0xbf58476d1ce4e5b9ULL * (std::uint64_t)(decIdx + 31));
+                    if (g_strategicBranchReseed) {
+                        // Independent future per f, shared by every action (CRN):
+                        // battle RNG streams derive from gc.seed + floor, and the
+                        // rest of the act's encounters are redrawn. Without this
+                        // the branch futures differ only in the agent RNG, which
+                        // native Silver combat does not consume.
+                        branch.seed = branchSeed ? branchSeed : 1;
+                        resampleRemainingActEncounters(branch, branch.seed);
+                    }
+                    actions[a].execute(branch);
                     const OocCounterfactualResult r = finishOocCounterfactual(
                         std::move(branch), sims, branchSeed, prePath,
                         g_strategicBranchFights, /*bootstrap=*/true,
                         /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
                     if (r.bootstrapped < 0) { branchInvalid = true; break; }
                     won += r.won; hp += r.hp; floor += r.floor; boot += r.bootstrapped;
+                    altWon += r.altWon; altFloor += r.altFloor;
                 }
                 if (branchInvalid) {
                     ++g_trainingInvalidBranches;
@@ -668,8 +679,12 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 }
                 const int F = std::max(1, g_strategicBranchFutures);
                 char buf[128];
-                std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f",
-                              won / F, hp / F, floor / F, boot / F);
+                if (altBootstrapEnabled())
+                    std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
+                                  won / F, hp / F, floor / F, boot / F, altWon / F, altFloor / F);
+                else
+                    std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f",
+                                  won / F, hp / F, floor / F, boot / F);
                 labels[a] = buf;
             }
             if (isNewSlot)

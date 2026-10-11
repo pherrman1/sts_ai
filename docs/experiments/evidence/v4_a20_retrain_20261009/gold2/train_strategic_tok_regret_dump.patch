@@ -1,0 +1,32 @@
+--- train_strategic_tok.py	2026-10-09 22:33:17.604168159 +0000
++++ /tmp/claude-0/-home-user-sts-ai/b94b232e-4edc-561a-9463-dedf147e0ad5/scratchpad/tsq.py	2026-10-11 20:04:26.009981246 +0000
+@@ -776,6 +776,8 @@
+             }
+     top1 = 0
+     qtop1 = 0
++    global _QD
++    _QD = []
+     margin = 0.0
+     ce = 0.0
+     ntop = 0
+@@ -800,6 +802,10 @@
+             qpred = np.argmax(full_q[lo:lo + sz])
+             qtop1 += int(qoracle == qpred)
+             nqtop += 1
++            _t = va_qtarget[lo:lo + sz]; _m = qg.astype(bool)
++            _pp = np.where(_m, full_q[lo:lo + sz], -1e18)
++            _qp = int(np.argmax(_pp)); _tt = np.where(_m, _t, -1e18)
++            _QD.append((int(grp_vals[g]), float(_tt.max() - _t[_qp]), int(_t[_qp] == _tt.max())))
+     return {"groups": ntop,
+             "policy_top1": top1 / max(1, ntop),
+             "margin": margin / max(1, ntop),
+@@ -809,6 +815,9 @@
+             "value_mae_screen": per_screen,
+             "q_top1": qtop1 / max(1, nqtop),
+             "q_top1_n": nqtop,
++            "q_regret": float(np.mean([r for _,r,_ in _QD])) if _QD else 0.0,
++            "q_top1_ties": float(np.mean([h for *_,h in _QD])) if _QD else 0.0,
++            "_qd": [(a,b,c) for a,b,c in _QD],
+             "q_mae": qmae,
+             "q_rmse": qrmse,
+             "q_n": int(qv.sum()),

@@ -159,7 +159,13 @@ struct OocCounterfactualResult {
     int bootstrapped = 0;   // 1 when floor/won came from the native models, 0 on terminal
     bool valid = true;
     bool survivedH = false; // alive at the requested bounded horizon (diagnostic only)
+    // Alternative bootstrap (STS_CF_ALT_BOOT_FLOOR_TREES/_WIN_TREES): the same
+    // branch endpoint valued by research trees; equals won/floor on terminals.
+    double altWon = -1;
+    double altFloor = -1;
 };
+// True when both alternative bootstrap tree files are loaded (research only).
+bool altBootstrapEnabled();
 struct OocContinuationCost {
     std::uint64_t silverSimulations = 0;
     std::uint64_t combatDecisions = 0;
@@ -469,6 +475,8 @@ struct StratFingerprint {
 
 extern int g_strategicBranchFights;
 extern int g_strategicBranchFutures;
+extern int g_strategicBranchFutureOffset;
+extern bool g_strategicBranchReseed;
 extern std::vector<int> g_strategicBranchSims;
 extern bool g_strategicSampleAll;
 extern int g_strategicSamplesPerRun;

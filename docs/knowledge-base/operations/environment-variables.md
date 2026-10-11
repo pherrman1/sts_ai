@@ -183,6 +183,9 @@ enable flag:
 | `STRATEGIC_BRANCH_FIGHTS` | Branch-fight futures per action | 2 | `main` ~L9426 |
 | `STRATEGIC_BRANCH_SIMS` | Comma-separated sim budgets per branch | unset | `main` ~L9428 |
 | `STRATEGIC_BRANCH_FUTURES` | Futures per branch fight | 4 | `main` ~L9435 |
+| `STRATEGIC_BRANCH_RESEED` | Research (§432): `1` gives each branch future its own `gc.seed` (battle RNG) and redrawn act encounters, shared by all options of a decision; without it futures share encounters and battle RNG | `0` | `strategic_gen.cpp::runStrategicGenSeed2` |
+| `STRATEGIC_BRANCH_FUTURE_OFFSET` | Research (§432): first branch-seed index, for futures disjoint from an earlier run on the same decisions | `0` | same |
+| `STS_CF_ALT_BOOT_FLOOR_TREES` / `STS_CF_ALT_BOOT_WIN_TREES` | Research (§432): second set of bootstrap trees for short-branch labels; adds `labelWonAlt,labelFloorAlt` columns; both required | unset | `finishOocCounterfactual` |
 | `STRATEGIC_MCTS_TARGETS` | Research (§425): `seed,decIdx` file; `strategicgen2` replays without branching and scores live-configured OOC MCTS (`STS_OOC_MCTS=1`) at each target; needs `OMP_NUM_THREADS=1` | unset | `strategic_gen.cpp::strategicMctsTargets` |
 | `STRATEGIC_MCTS_OUT` | JSONL root summaries for `STRATEGIC_MCTS_TARGETS` | unset | same |
 | `STRATEGIC_MCTS_FORCE` | `seed,decIdx,bits` file: replay recorded actions instead of the policy | unset | same |

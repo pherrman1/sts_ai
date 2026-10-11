@@ -1,0 +1,12 @@
+decisions 409 chosen mismatches 0 gold decisions total 524
+random    top1 0.416  regret 4.78 floors  n=409
+heur      top1 0.454  regret 4.45 floors  n=401
+A0floor   top1 0.548  regret 3.02 floors  n=409
+A20floor  top1 0.560  regret 2.86 floors  n=409
+A0win     top1 0.518  regret 3.29 floors  n=409
+A20win    top1 0.535  regret 3.20 floors  n=409
+regret A0win - A20win: 0.10 [-0.41, 0.62]
+regret A0floor - A20floor: 0.17 [-0.27, 0.62]
+regret random - A20win: 1.58 [1.01, 2.15]
+regret A0floor - A0win: -0.27 [-0.71, 0.16]
+heur - A20floor regret: 1.56 [0.84, 2.28] n=401
