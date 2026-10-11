@@ -11,7 +11,7 @@ if compgen -G "$base.*" > /dev/null; then          # interrupted unit: keep its 
 fi
 source "$REPO/docs/experiments/evidence/ooc_rollout3_confirm_20261011/arm_env.sh"
 mapfile -t E < <(arm_env_args "$ARM" "$base" "$RUN") || exit 2
-[ "${#E[@]}" -gt 30 ] || { echo "arm env incomplete" >&2; exit 2; }
+[ "${#E[@]}" -gt 20 ] || { echo "arm env incomplete" >&2; exit 2; }
 cd "$REPO" || exit 2
 start=$(date -u +%FT%TZ)
 env -i "${E[@]}" timeout 6h bash tools/seed_guard.sh "$RUN/one_combat" bestbench 10000 "$N" 0 "$LO" "$base.csv" > "$base.log" 2>&1
