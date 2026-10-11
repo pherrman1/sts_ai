@@ -550,6 +550,15 @@ add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
 set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
+# strategicgen2 aborts if a Tier-B label branch leaves t_curPath cleared before
+# the main-trajectory policy step (the branch evaluator resets it on return).
+add_test(NAME strategicgen2_policy_keeps_path
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/seed_guard.sh $<TARGET_FILE:one_combat> strategicgen2 1 20 0
+        ${CMAKE_BINARY_DIR}/strategicgen2_policy_keeps_path.csv 74000000)
+set_tests_properties(strategicgen2_policy_keeps_path PROPERTIES
+    ENVIRONMENT "OMP_NUM_THREADS=1;STRATEGIC_BRANCH_FIGHTS=1;STRATEGIC_BRANCH_SIMS=10"
+    LABELS "integration;smoke")
 # strategicmarggen aborts if Pass 2 replays the source policy without the
 # snapshot's path (the Pass 2 source rerun and each branch clear t_curPath).
 add_test(NAME strategicmarggen_replay_keeps_path
