@@ -3,7 +3,8 @@
 **Question:** §425 `rollout3` ran on the production pathb-r2 CTM and aborted about a quarter of its A20 searches on
 active Lizard Tail states (Fairy Potion or Entropic Brew held with an unused Tail). With the §423 Lizard-capable
 research candidate CTM, does rollout3 pick better than the heuristic on the same gold decisions?
-Plan frozen before the run: [PREREG.md](PREREG.md) (commit `893bfc61`, rebased onto `main` as `78aee118`).
+Plan frozen before the run: [PREREG.md](PREREG.md), commit `78aee118` (author date 13:35:31Z; the runner wrote its job
+list at 13:35:35Z and the first search output at 13:36:01Z). `compare.py` was written during the run, before any result was read.
 
 ## Inputs and run
 
@@ -45,6 +46,10 @@ On the 378 verified decisions (1,512 searches):
 The candidate CTM removes every Lizard abort at A20 as it did at A0 (§423); only `hp_envelope` (#369) remains.
 Searching the formerly aborted decisions changes the picks little: the regret point estimate moves from 4.22 to
 4.15, inside noise, and none of the three MCTS arms is shown better than the heuristic or each other.
+The gold labels are noisier than their "16 futures" suggest: the §419 branch futures only changed the agent RNG,
+which native Silver combat does not consume (found in commit `65ed71f4`, unmerged branch
+`claude/project-thread-ay2czp`), so each label is close to a single playout. That noise can only hide a real
+difference, so it weakens the power of this comparison but not the NOT_SHOWN reading.
 **Inference:** the §425 rollout3 result was not held back by its Lizard fallbacks; with A0-trained models the
 open question stays whether A20 leaf/prior models help. No default change; the candidate stays a research artifact.
 

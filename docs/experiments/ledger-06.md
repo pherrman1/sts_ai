@@ -16567,8 +16567,9 @@ as in §425.
 tie-aware top-1 0.297 vs 0.276. Searches without a selection 3.8% (`hp_envelope` 53, boundary 4) vs 24.0% for §425
 `rollout3`; Lizard aborts 305 → 0. Paired vs §425 `rollout3` Δregret −0.08 [−0.33, +0.20], vs §425 `prod` −0.21
 [−0.70, +0.26]. 9.6 s per search on 1 CPU.
-**Interpretation (Inference):** as at A0 (§423), pricing the active-Tail states does not measurably change rollout3's
-picks; §425's conclusion stands. No default change; the candidate stays a research artifact.
+**Interpretation (Inference):** as at A0 (§423), pricing the active-Tail states does not measurably change the
+outcome; §425's conclusion stands. The gold labels are close to single playouts (the §419 futures only changed the
+agent RNG, which Silver does not use; commit `65ed71f4`, unmerged), which can only hide an effect. No default change; the candidate stays a research artifact.
 
 **Evidence:** [packet](evidence/ooc_rollout3_lizard_a20_gold_20261011/README.md). Raw:
 `/mnt/project-files/ooc-rollout3-a20-lizard-check/`. Search run seeds 74004000–74005047 are now used.
