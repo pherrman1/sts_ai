@@ -16516,7 +16516,7 @@ verified. Decision bootstrap, 10,000 samples.
 (Δ −0.20 [−0.89, +0.49]), `rollout3` 4.22 (Δ −0.33 [−0.77, +0.12]); random 4.88. Tie-aware top-1 0.276 / 0.280 /
 0.295 (random 0.260). Strict top-1 (GOLD-RESULT definition) 0.344 / 0.252 / 0.286; the gap comes from reward screens,
 where the heuristic's gold-pile pick wins first-argmax ties and MCTS collects gold at the root. `rollout3` aborts
-24% of searches at A20 (Lizard Tail 316, `hp_envelope` 54 of 1,544) and falls back.
+24% of searches at A20 (Lizard Tail 316, `hp_envelope` 54 of 1,544) and falls back. `rollout3` ran on the production pathb-r2 CTM, not the §423 Lizard-capable research candidate (`STS_CTM_RESEARCH_CANDIDATE_MANIFEST`, manifest `64da1776…`); that is the cause of the Lizard Tail aborts, the large majority of its aborts (a follow-up check on 4 gold seeds: 7/8 searches aborted on the production CTM, 0/8 on the candidate; raw `/mnt/project-files/ooc-rollout3-a20-lizard-check/a20-lizard-check.tgz`).
 **Interpretation (Inference):** with A0 models, OOC MCTS is not shown better than the heuristic at A20 (CIs allow
 up to about 0.9 floors), and neither is far from random on these labels. Rerun with A20 floor/win models when they exist.
 **Side finding (verified in review):** `finishOocCounterfactual` sets `t_curPath = nullptr` on return and

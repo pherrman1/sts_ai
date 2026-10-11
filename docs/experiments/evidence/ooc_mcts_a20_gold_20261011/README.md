@@ -47,7 +47,7 @@ the §419 gold labels? All MCTS models (V4 prior, `screengbm`/X2-B leaf, pathb-r
 398 of 409 multi-option targets searched, 386 state-verified (both arms). Not owned per search (of 1,544):
 `prod` 4 boundary + 28 picks outside the labeled set (e.g. potion discard-to-take); `rollout3` 370 support aborts
 (Lizard Tail 316, `hp_envelope` 54), 4 boundary, 6 outside the set. In live play an unowned decision falls back; the
-"live" rows use the gold-run choice as fallback.
+"live" rows use the gold-run choice as fallback. `rollout3` ran on the production pathb-r2 CTM, not the §423 Lizard-capable research candidate (`STS_CTM_RESEARCH_CANDIDATE_MANIFEST`, manifest `64da1776…`); that is the cause of the Lizard Tail aborts, the large majority of its aborts (a follow-up check on 4 gold seeds: 7/8 searches aborted on the production CTM, 0/8 on the candidate; raw `/mnt/project-files/ooc-rollout3-a20-lizard-check/a20-lizard-check.tgz`).
 
 ## Results (`score-output.txt`, `report.json`; 10,000-sample decision bootstrap, 95% CI)
 
