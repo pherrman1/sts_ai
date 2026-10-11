@@ -266,9 +266,10 @@ combats (`STS_OOC_MCTS_LEAF_COMBATS=3`, `LEAF_VALUE=native`) won 115/128 vs 101/
 on the current pathb-r2 CTM (control: MCTS off on the §411 research base with flat exact-10k Silver,
 not the production defaults, so 78.9% is not the default stack's win rate): +10.9 pp [+2.3, +19.5], boss deaths 11 vs 23. It costs about 936 s
 per run on one CPU (off: 57 s), and about 20% of OOC decisions fall back to V4 on Lizard Tail
-support aborts. Pricing those states with a Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`)
-removes the aborts (fallback 2.4%) but does not win more: 86.7% vs 89.8%, −3.1 pp [−10.9, +4.7], NOT_SHOWN. This reproduces §277 (old V2 CTM) and contrasts with the `screengbm` leaf (§384,
-−22 pp) and the 0/1 boss-rollout leaf (§391, 9/32, saturated value). Open: cheaper budgets, prior
+support aborts. This reproduces §277 (old V2 CTM) and contrasts with the `screengbm` leaf (§384,
+−22 pp) and the 0/1 boss-rollout leaf (§391, 9/32, saturated value). Pricing the Lizard states with a
+Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`) removes the aborts (fallback 2.4%) but
+does not win more: 86.7% vs 89.8%, −3.1 pp [−10.9, +4.7], NOT_SHOWN. Open: cheaper budgets, prior
 and merging variants, and a fresh-seed confirmation before any default change.
 
 ## V4 OOC token net at A20 (§419) — keep the A0-trained net
