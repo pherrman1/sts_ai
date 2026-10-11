@@ -16583,9 +16583,14 @@ policy about 4.5 floors weaker at A20 than deployment, and their `chosen` rows i
 on the comparable states, but only early decisions are comparable, and with the V4 gates on the continuation ignored
 them at 13% of decisions. Effect on any trained model: **Unverified**.
 **Change:** `deployedOocPolicyStep` (`apps/one_combat/run_driver.cpp`) is now the only OOC step for `strategicgen`,
-`strategicgen2`, `finishOocCounterfactual` and `stepFrozenV4Ooc`; oracles stand down inside continuations; ctest
-`generator_policy_parity` pins `strategicgen`/`strategicgen2` end states to `bestbench`. Default `bestbench` play is
-bit-identical (8 seeds, 300 sims). Data generated before this change is not regenerated.
+`strategicgen2`, `finishOocCounterfactual` and `stepFrozenV4Ooc` (so also the branch continuations of the
+`counterfactual_gen.cpp` generators, `oocfactoreval` and `semanticpilot`, whose main trajectories keep their own
+chains); `strategicgen`/`strategicgen2` also reset path-policy state per seed and use `fightSims` like
+`runFullRunOOC` (no-ops at default flags); oracles stand down inside continuations; ctest `generator_policy_parity`
+pins `strategicgen`/`strategicgen2` end states to `bestbench` (continuations and the V4 step are not pinned by a test
+of their own). Default `bestbench` play is bit-identical: 8 seeds at 300 sims here, and in independent review 180 runs
+(seeds 74008900-989, A0 and A20, 1000 sims) with identical traces. Data generated before this change is not
+regenerated.
 
 **Evidence:** [packet](evidence/generator_policy_drift_20261011/README.md). Seeds used: 74008000-063, 74008100-163,
 74008200-231, 74008300-331, 74008400-431, smoke/tests 74008990-999.

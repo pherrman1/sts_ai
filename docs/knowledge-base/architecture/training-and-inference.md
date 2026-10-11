@@ -472,7 +472,12 @@ models for play (ADR-0020); only the parity tools use these libraries.
   own chain: it is REPRO_ONLY and calling the deployed step there would
   recurse into the oracle. The `strategicmarggen` fallback comparator and the
   `counterfactual_gen.cpp` generators (`datagen2`, `pathcfgen`, `oocnextgen`)
-  still use their own chains (**Open question** whether they should follow).
+  still use their own chains for their main trajectories (**Open question**
+  whether they should follow); their branch continuations, like those in
+  `oocfactoreval` and `semanticpilot`, go through `finishOocCounterfactual` and
+  so now play the deployed step. `generator_policy_parity` pins only the
+  `strategicgen`/`strategicgen2` main trajectories; the continuation and the
+  V4 step share the same function but have no test of their own (known gap).
 - `train_strategic.py` (round 3) adds a Q(s,a) head
   `Linear(168,96)→GELU(tanh approximation)→Linear(96,1)` on the same concat as
   the policy head. The trainer uses the same tanh-approximate GELU as
