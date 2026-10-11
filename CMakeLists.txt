@@ -188,6 +188,12 @@ add_executable(screen_leaf_snapshot_test
     apps/one_combat/screen_leaf_snapshot_test.cpp)
 target_include_directories(screen_leaf_snapshot_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_snapshot COMMAND screen_leaf_snapshot_test)
+add_executable(screen_leaf_gbm_test
+    apps/one_combat/screen_leaf_gbm.cpp
+    apps/one_combat/screen_leaf_gbm_test.cpp
+    apps/one_combat/compact_tree.cpp)
+target_include_directories(screen_leaf_gbm_test PRIVATE include json/include apps/one_combat)
+add_test(NAME screen_leaf_gbm_features COMMAND screen_leaf_gbm_test)
 add_executable(screen_leaf_continuations_test
     apps/one_combat/screen_leaf_snapshot.cpp
     apps/one_combat/screen_leaf_continuations.cpp
@@ -429,6 +435,14 @@ add_test(NAME vwin_refresh_decision_sink_contract
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshdecisionsinkselftest)
 set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME match_and_keep_boss_draft_oracle
+    COMMAND $<TARGET_FILE:one_combat> matchandkeep_oracle_selftest)
+set_tests_properties(match_and_keep_boss_draft_oracle PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME act_fight_probe_all_ooc_root_state
+    COMMAND $<TARGET_FILE:one_combat> actfightprobeallooc_rootstate_selftest)
+set_tests_properties(act_fight_probe_all_ooc_root_state PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_match_and_keep_isolation
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshmatchkeepselftest)
 set_tests_properties(vwin_refresh_match_and_keep_isolation PROPERTIES
@@ -550,6 +564,35 @@ add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
 set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
+# strategicgen2 aborts if a Tier-B label branch leaves t_curPath cleared before
+# the main-trajectory policy step (the branch evaluator resets it on return).
+add_test(NAME strategicgen2_policy_keeps_path
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/seed_guard.sh $<TARGET_FILE:one_combat> strategicgen2 1 20 0
+        ${CMAKE_BINARY_DIR}/strategicgen2_policy_keeps_path.csv 74000000)
+set_tests_properties(strategicgen2_policy_keeps_path PROPERTIES
+    ENVIRONMENT "OMP_NUM_THREADS=1;STRATEGIC_BRANCH_FIGHTS=1;STRATEGIC_BRANCH_SIMS=10"
+    LABELS "integration;smoke")
+# strategicmarggen aborts if Pass 2 replays the source policy without the
+# snapshot's path (the Pass 2 source rerun and each branch clear t_curPath).
+add_test(NAME strategicmarggen_replay_keeps_path
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/seed_guard.sh $<TARGET_FILE:one_combat> strategicmarggen 1 20 1 2
+        ${CMAKE_BINARY_DIR}/strategicmarggen_replay_keeps_path.csv 74000001)
+set_tests_properties(strategicmarggen_replay_keeps_path PROPERTIES
+    ENVIRONMENT "OMP_NUM_THREADS=1;STRATEGIC_BRANCH_FIGHTS=1;STRATEGIC_BRANCH_SIMS=10"
+    LABELS "integration;smoke")
+# strategicmarggen Pass 2 must reproduce Pass 1: each source replay reaches the
+# source run's post-decision state (agent RNG restored per snapshot) and each
+# stored state row matches its snapshot (row built before the snapshot move).
+add_test(NAME strategicmarggen_replay_matches_source
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/seed_guard.sh $<TARGET_FILE:one_combat> strategicmarggen 1 20 0 200
+        ${CMAKE_BINARY_DIR}/strategicmarggen_replay_matches_source.csv 74000001)
+set_tests_properties(strategicmarggen_replay_matches_source PROPERTIES
+    ENVIRONMENT "OMP_NUM_THREADS=1"
+    PASS_REGULAR_EXPRESSION "source replay checks [1-9][0-9]*, replay mismatches 0, stateRow mismatches 0"
+    LABELS "integration;smoke")
 add_test(NAME vwin_refresh_seed_guard_accepts_positive
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
         $<TARGET_FILE:one_combat> vwinrefreshgen 128 10000 0 /tmp/vwin 13000000 teacher.json 1)
@@ -861,3 +904,12 @@ set_tests_properties(combat_transition_final_support_selftest PROPERTIES WORKING
 add_test(NAME combat_transition_near_full_artifact COMMAND python3 -m unittest tests.test_combat_transition_near_full_artifact)
 set_tests_properties(combat_transition_near_full_artifact PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     ENVIRONMENT "STS_COMBAT_TRANSITION_PROBE=$<TARGET_FILE:combat_transition_runtime_probe>" LABELS "integration")
+
+# The strategic generators play the deployed OOC policy step (§431): their main
+# trajectory must end where bestbench ends on the same seed.
+add_test(NAME generator_policy_parity
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/check_generator_policy_parity.sh $<TARGET_FILE:one_combat> 74008999 20 0
+        ${CMAKE_BINARY_DIR}/generator_policy_parity)
+set_tests_properties(generator_policy_parity PROPERTIES
+    PASS_REGULAR_EXPRESSION "GENERATOR_POLICY_PARITY: PASS" LABELS "integration;smoke")

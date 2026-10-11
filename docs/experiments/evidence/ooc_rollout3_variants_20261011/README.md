@@ -30,14 +30,14 @@ Hashes (tars, then the extracted files the analysis reads): [data-sha256.txt](da
 | V4 fallback share | 19.8% | 27.6% | 21.1% | 19.7% | 37.1% | – |
 | support aborts (all runs) | 2,791 | 4,083 | 2,972 | 2,827 | 5,610 | – |
 
-Support aborts are almost all active Lizard Tail states the production CTM cannot price (Fairy Potion + Tail, Entropic
-Brew + Tail), as in §422/§423: 98–100% in every arm.
+In every arm 88–94% of V4 fallbacks are support aborts, and 98–100% of those are active Lizard Tail states the
+production CTM cannot price (Fairy Potion + Tail, Entropic Brew + Tail), as in §422/§423.
 
 ## Reading
 
 - **Fewer chance outcomes (`wnarrow`) is worse**: it gives back the whole rollout3 gain (78.9%, same as off; boss deaths
   22 vs 11). With 4 arms labelled separately and no multiplicity correction, this is the only arm whose CI excludes zero, at
-  p = 0.02. **Inference:** a few sampled outcomes per chance node make Q estimates depend on a handful of draws.
+  p = 0.02 uncorrected (0.08 with a Bonferroni correction across the four arms). **Inference:** a few sampled outcomes per chance node make Q estimates depend on a handful of draws.
 - **4096 simulations and more chance outcomes (`wbroad`) point up but are not shown**: +3.1 and +1.6 pp. Both beat off
   clearly. `wbroad` costs only 5% more than rollout3; `s4096` costs about 1.9x.
 - **5 rollout combats (`r5`) is not better** (−2.3 pp) and runs fewer simulations per run (88k vs 105k). It falls back to V4

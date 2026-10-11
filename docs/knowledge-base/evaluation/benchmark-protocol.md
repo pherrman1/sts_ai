@@ -59,7 +59,15 @@ banner alone. The sidecar records `config.effectiveCombatBackend="native_silver"
 (earlier vendored-model rows record `"silver"`; ADR-0021, ADR-0022), the
 reuse-cap mode and cap, the adaptive and exact-root-budget settings, and the
 current executable Git SHA. The vendored-era and legacy native-searcher and
-combat-model keys carry fixed values for schema compatibility.
+combat-model keys carry fixed values for schema compatibility. Since
+2026-10-11 the config block also records `oocMcts`, `stopAfterAct`,
+`forceRelic` (`""` when unforced) and `oocPolicy`, the same effective OOC
+policy identity that `requireOocPolicy` teacher checks compare (V4 gate flags
+and margins, rest/card/shop layers, model hashes; with OOC MCTS on, an
+`ooc_mcts` entry with the simulations, effective leaf, every set
+`STS_OOC_MCTS*`, `STS_CTM_*` and `STS_SILVER_ROOT_PRIOR*` control except
+trace/graph output paths, and the SHA-256 of each control value that names a
+file, such as `STS_CTM_RESEARCH_CANDIDATE_MANIFEST`).
 
 ### Treatment canary before a larger cohort
 

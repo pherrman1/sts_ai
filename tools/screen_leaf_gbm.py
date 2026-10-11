@@ -26,7 +26,8 @@ import screen_leaf_data_379 as data379
 
 SCREENS = ('boss_relic', 'rest', 'shop', 'treasure', 'rewards', 'event', 'selector')
 X2B_UBJ = Path('/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a3-final1024-x2b-finalist-20261003-49c28d80/tune/X2/model.ubj')
-CARD_IDS, RELIC_IDS, POTION_IDS = range(372), range(178), range(44)  # enum sizes (Cards.h, Relics.h, Potions.h)
+CARD_IDS, RELIC_IDS, POTION_IDS = range(372), range(178), range(44)  # trained vocabularies (Cards.h, Relics.h, Potions.h)
+OOV_RELIC_IDS = range(178, 180)  # RelicId::CIRCLET, RED_CIRCLET: counted as offers, no one-hot slot
 SCALAR = ['sf_screen', 'sf_nopt', 'sf_remove_cost', 'sf_price_min', 'sf_price_mean', 'sf_affordable',
           'sf_n_offers', 'sf_reward_gold', 'sf_n_card_groups', 'sf_emerald', 'sf_sapphire', 'sf_chest',
           'sf_event', 'sf_neow', 'sf_selector_type', 'sf_required', 'sf_completed', 'sf_n_selector_cards'] + \
@@ -48,7 +49,9 @@ def screen_features(c, keys, gold):
     prices = []
 
     def offer(kind, ident):
-        f[INDEX[f'sf_{kind}{ident}']] += 1
+        # CIRCLET/RED_CIRCLET (178, 179) are outside the trained relic vocabulary.
+        if kind != 'relic' or ident not in OOV_RELIC_IDS:
+            f[INDEX[f'sf_{kind}{ident}']] += 1
         f[INDEX['sf_n_offers']] += 1
 
     if screen == 'shop':

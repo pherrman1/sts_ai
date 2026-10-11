@@ -59,7 +59,7 @@ int main() {
         with tempfile.TemporaryDirectory() as tmp:
             cpp, exe = Path(tmp) / 'parity.cpp', Path(tmp) / 'parity'
             cpp.write_text(source)
-            subprocess.run(['g++', '-std=c++17', '-I', str(ROOT / 'include'), str(cpp), '-o', str(exe)], check=True, capture_output=True)
+            subprocess.run(['g++', '-std=c++20', '-I', str(ROOT / 'include'), str(cpp), '-o', str(exe)], check=True, capture_output=True)
             payload = ''.join(f"{s['counter']} {s['seed0']} {s['seed1']} {action} {arg}\n" for s, action, arg in cases)
             result = subprocess.run([str(exe)], input=payload, text=True, capture_output=True, check=True)
         self.assertEqual([[int(x) for x in line.split()] for line in result.stdout.splitlines()], expected)

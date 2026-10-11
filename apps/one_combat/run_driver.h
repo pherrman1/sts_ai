@@ -45,6 +45,20 @@ bool installRunForcedRelic(sts::GameContext &, sts::RelicId);
 void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &,
                              bool restV, bool shopV);
 
+// The deployed OOC policy: the non-battle step bestbench plays through
+// runFullRunOOC with live OOC MCTS off (shop value on, rest value from
+// STS_REST_V). Generators whose rows or labels assume the deployed policy call
+// this instead of a copied chain (ledger §431). Returns the first primitive
+// action executed on gc, or -1 when none went through GameAction::execute; one
+// step can resolve several primitives (all card groups of a reward screen, a
+// whole shop visit).
+bool deployedRestV();
+long long deployedOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &);
+// True while finishOocCounterfactual continues a branch. Decision oracles that
+// themselves run counterfactual continuations stand down, and E2C capture
+// skips the branch's reward screens.
+extern thread_local bool t_oocContinuation;
+
 // Match and Keep: one fixed-pattern click (sim/search/MatchAndKeepPolicy.h).
 // Cards are valued by the active guide as a lone card reward: OOC MCTS when
 // `mctsMetrics` is given, otherwise the ordinary policy chain. Returns false

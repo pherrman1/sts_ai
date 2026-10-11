@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-25 for the vendored-Silver removal (ADR-0022); 2026-09-24 for the Searcher2/3 removals; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
+Last verified: 2026-10-11 for generator policy parity (§431); 2026-09-25 for the vendored-Silver removal (ADR-0022); 2026-09-24 for the Searcher2/3 removals; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -439,6 +439,45 @@ models for play (ADR-0020); only the parity tools use these libraries.
   expected floor/P(win) are bootstrapped from the native trees. Branches of one
   decision share a branch seed (common random numbers); `STRATEGIC_BRANCH_FUTURES`
   averages over extra seeds per action.
+  After the label branches, `runStrategicGenSeed2` re-points `t_curPath` at
+  the run's own path (the branch evaluator clears it on return) and aborts if
+  the main-trajectory policy would run without it (ctest
+  `strategicgen2_policy_keeps_path`). Before this fix (2026-10-11), the main
+  trajectory ran path-blind (`pv*`=0 for its own policy reads) from the first
+  labeled decision on; datasets produced before then carry that behavior
+  (the A20 gold and V4 A20 corpora per the §425 analysis, PR #476). Row
+  features (`richRow(pre, prePath)`) and branch continuations always used the
+  real path; the fix changes which states the main trajectory reaches.
+- Generator policy parity (§431, 2026-10-11): `strategicgen`, `strategicgen2`
+  (main trajectory and Tier-B branch continuations, via
+  `finishOocCounterfactual`) and `stepFrozenV4Ooc` (`strategicmarggen`,
+  `oocfactoreval`) all play `deployedOocPolicyStep`
+  (`apps/one_combat/run_driver.cpp`): `runFullRunOocPolicyStep` with shop
+  value on and rest value from `STS_REST_V`, the step `bestbench` plays with
+  live OOC MCTS off. Opt-in `STS_OOC_STRATEGIC_*` V4 gates and the other
+  opt-in layers apply wherever their env flags are set. Inside a
+  `finishOocCounterfactual` branch the act-fight and boss-draft oracles stand
+  down (`t_oocContinuation`) and E2C capture skips the branch's rewards. A
+  generator decision row is `chosen` when its successor matches the policy
+  step's; when one step resolves several primitives (all card groups of a
+  reward screen, a shop visit) the first primitive it executed decides. The
+  ctest `generator_policy_parity` pins `strategicgen` and `strategicgen2` end
+  states to `bestbench` on one seed. Before this change each of these sites
+  ran its own copied chain (reward relic slot 0 before the #431 rules, potion
+  rewards taken with full slots, shop by the agent heuristic in
+  `strategicgen`, removal by shop value outside shops in the continuation and
+  V4 step, no Match and Keep rule, opt-in layers ignored), so data generated
+  with them followed a policy that was never deployed; §431 measures how
+  much. The act-fight oracle's trunk (`checkpointedActFightUtility`) keeps its
+  own chain: it is REPRO_ONLY and calling the deployed step there would
+  recurse into the oracle. The `strategicmarggen` fallback comparator and the
+  `counterfactual_gen.cpp` generators (`datagen2`, `pathcfgen`, `oocnextgen`)
+  still use their own chains for their main trajectories (**Open question**
+  whether they should follow); their branch continuations, like those in
+  `oocfactoreval` and `semantic_pilot.cpp`, go through `finishOocCounterfactual` and
+  so now play the deployed step. `generator_policy_parity` pins only the
+  `strategicgen`/`strategicgen2` main trajectories; the continuation and the
+  V4 step share the same function but have no test of their own (known gap).
 - `train_strategic.py` (round 3) adds a Q(s,a) head
   `Linear(168,96)→GELU(tanh approximation)→Linear(96,1)` on the same concat as
   the policy head. The trainer uses the same tanh-approximate GELU as

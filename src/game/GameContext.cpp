@@ -1175,10 +1175,14 @@ void GameContext::enterBattle(MonsterEncounter encounter) {
     }
 }
 
-void GameContext::afterBattle() {
+void GameContext::relicsOnCombatEnd() {
     if (hasRelic(RelicId::FACE_OF_CLERIC)) {
         playerIncreaseMaxHp(1);
     }
+}
+
+void GameContext::afterBattle() {
+    relicsOnCombatEnd();
 
     if (smokeBombUsed) {
         smokeBombUsed = false;
@@ -2687,6 +2691,7 @@ void GameContext::chooseEventOption(int idx) {
                     // This continuation replaces afterBattle(), so it must
                     // clear a Smoke Bomb escape marker itself. With
                     // rewardAllowed false an escape still reopens the event.
+                    gc.relicsOnCombatEnd();
                     gc.smokeBombUsed = false;
                     gc.screenState = ScreenState::EVENT_SCREEN;
                     gc.regainControlAction = returnToMapAction;
@@ -2717,6 +2722,7 @@ void GameContext::chooseEventOption(int idx) {
                         gc.afterBattle();
                         return;
                     }
+                    gc.relicsOnCombatEnd();
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(rareRelic);
@@ -2802,6 +2808,7 @@ void GameContext::chooseEventOption(int idx) {
                             gc.afterBattle();
                             return;
                         }
+                        gc.relicsOnCombatEnd();
                         Rewards reward;
                         reward.addGold(goldAmt);
                         if (addRelic) {
@@ -3192,6 +3199,7 @@ void GameContext::chooseEventOption(int idx) {
                         gc.afterBattle();
                         return;
                     }
+                    gc.relicsOnCombatEnd();
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
@@ -3225,6 +3233,7 @@ void GameContext::chooseEventOption(int idx) {
                     const int goldAmt = unfavorable ? 25 : 50;
                     const RelicId rareRelic = returnRandomRelic(RelicTier::RARE);
                     regainControlAction = [=](GameContext &gc) {
+                        gc.relicsOnCombatEnd();
                         Rewards reward;
                         reward.addGold(goldAmt);
                         reward.addRelic(rareRelic);
@@ -3276,6 +3285,7 @@ void GameContext::chooseEventOption(int idx) {
                         gc.afterBattle();
                         return;
                     }
+                    gc.relicsOnCombatEnd();
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(RelicId::ODD_MUSHROOM);

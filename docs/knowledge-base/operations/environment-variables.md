@@ -13,7 +13,7 @@ These control the default executing configuration; they are always parsed.
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `VPORT` | v_server TCP port | 5555 | `main` L9210 |
-| `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode) | `1` (ON) | `main` ~L9470 |
+| `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode). With it on, failing to load `models/v_rich_trees.txt` or the V_win trees exits nonzero | `1` (ON) | `main` ~L9470 |
 | `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt`. An explicitly supplied path (including empty) that fails validation exits nonzero before any fallback | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
 | `STS_FAIR` | Accepted for compatibility; combat is always project-fair Silver. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_SEARCHER3` | Removed (ADR-0019). A non-zero value makes `one_combat` exit with an error; `0` is accepted | `0` | `main` |
@@ -86,8 +86,8 @@ enable flag:
 | `STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT` | Default fallback REMOVE ranking: ascending acquisition weight. Explicit `0` restores legacy descending ordering; `1` matches unset. Bonfire sacrifices, other selection types and native shop removal retain their current policy. Strict 0 or 1; no upgrade, curse or tie-breaking refinement. | unset/on | `ScumSearchAgent2::cardSelectPolicy` |
 | `STS_OOC_CARD_WIN_RANK` | Research-only native reward fallback: preserve public8 floor take/skip, then rank taken cards using public8 logistic win predictions. Requires native loaded models, public8, margin gate, MCTS and alternate card families off. Strict 0 or 1. | unset/off | main native card wrapper, `nativeCardWinRankPick` |
 | `STS_OOC_CARD_WIN_RANK_TRACE` | Emit existing floor/win marginals and semantic card actions to stdout for candidate diagnostics; adds no predictions or RNG draws. Requires the candidate enabled. Strict 0 or 1. | unset/off | main native card wrapper |
-| `STS_OOC_STRATEGIC_NN` | V3 strategic net path | unset (off) | `main` ~L9295 |
-| `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format) | unset (off) | `main` ~L9300 |
+| `STS_OOC_STRATEGIC_NN` | V3 strategic net path; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9295 |
+| `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format); a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9300 |
 | `STS_OOC_STRATEGIC_TOK_CONST_GUARD` | Research only (§419). `1` feeds every V4 glob input that never varied in training (exported inv >= 1e5: ascension, blueKey and greenKey in the deployed A0-only model) at x = 0 instead of the clamped +-8 of an untrained weight column. A no-op whenever those inputs equal their training mean (A0, keys off). Recorded in the bestbench sidecar. | unset (off) | `OocStrategicTokNet::encodeState` |
 | `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4, a compatible combat artifact, and ordinary exact-10k Silver real combat with effective cap 32768. Native leaf mode requires `v_win`; boss leaf mode does not call it, though the unchanged fallback policy may. | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
 | `STS_OOC_MCTS_SIMS` | Positive simulations per supported OOC root | `512` | `configureLiveOocMcts` |
@@ -96,7 +96,7 @@ enable flag:
 | `STS_OOC_MCTS_SILVER_SIMS` | Silver simulations per root for the Silver resolver (1..999999) | unset (required with the resolver) | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_BREW_FALLBACK_MODEL` | Standard V2 artifact pinned by the primary artifact's identity (default `selfplay/models/combat_transition_near_full_escape_pathb_r2.native`, SHA256 `b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf`; the pre-#418 primary pins `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`) used only for pre-combat Entropic Brew states when the primary artifact declares that fallback contract. The automatic OOC CTM stack supplies it by default; an explicit path overrides it, and metadata/bytes are checked. | standard Attention artifact with automatic default stack; otherwise unset | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_ACTIVE_LIZARD` | Enables or disables the qualified active-Lizard correction. Accepts only `0` or `1`; the automatic default CTM stack enables it, `0` is a diagnostic rollback, and `1` with a custom combat model requires a Brew fallback. Active Lizard + Brew, Fairy, and Mark-of-the-Bloom retain their declared boundary behavior. | `1` with automatic default stack; otherwise `0` | `configureLiveOocMcts` |
-| `STS_OOC_MCTS_LEAF_VALUE` | `screengbm`, `native`, `direct`, `screen`, `constant`, `boss`, or `bossrollout`. `screengbm`: covered non-map screens get `sigmoid(logit(X2-B) + GBM residual)` over run and public screen features, anchored on the pinned `models/candidates/v_win_x2b_trees.txt` (also at MAP leaves) (ADR-0027). `native`: bounded policy-chain playout to the next MAP, then `v_win`. `direct`: `v_win` at the first non-combat state, no playout (research). `screen`: #379 MLP on four screen families (research). Boss mode averages a survival-dominant expected-HP utility over all ten Act1--4 bosses and does not call `v_win` at the leaf. `bossrollout` (research, ledger §391 negative): the policy-chain continuation with CTM fights runs until the next boss after the searched decision is beaten (1) or the player dies (0); an active Lizard Tail the CTM cannot price is spent inside the rollout | `screengbm` (ADR-0027) | `configureLiveOocMcts`, `OocGameContextModel::evaluateLeafImpl` |
+| `STS_OOC_MCTS_LEAF_VALUE` | `screengbm`, `native`, `direct`, `screen`, `constant`, `boss`, or `bossrollout`. `screengbm`: covered non-map screens get `sigmoid(logit(X2-B) + GBM residual)` over run and public screen features, anchored on the pinned `models/candidates/v_win_x2b_trees.txt` (also at MAP leaves) (ADR-0027). Circlet and Red Circlet lie outside the trained relic vocabulary: they count in `sf_n_offers` (and shop prices) without a relic one-hot, instead of aborting the run as before 2026-10-11 (ctest `screen_leaf_gbm_features`). `native`: bounded policy-chain playout to the next MAP, then `v_win`. `direct`: `v_win` at the first non-combat state, no playout (research). `screen`: #379 MLP on four screen families (research). Boss mode averages a survival-dominant expected-HP utility over all ten Act1--4 bosses and does not call `v_win` at the leaf. `bossrollout` (research, ledger §391 negative): the policy-chain continuation with CTM fights runs until the next boss after the searched decision is beaten (1) or the player dies (0); an active Lizard Tail the CTM cannot price is spent inside the rollout | `screengbm` (ADR-0027) | `configureLiveOocMcts`, `OocGameContextModel::evaluateLeafImpl` |
 | `STS_OOC_MCTS_SCREEN_LEAF_MODEL` | Screen leaf model: GBM residual trees for `screengbm`, exported MLP for `screen` | `models/candidates/screen_leaf_gbm_v1.trees` for `screengbm`; required for `screen` | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_LEAF_WIN_MODEL` | Research: logistic CompactTreeNet file that values `native`/`direct` leaves instead of the process `v_win` (`STS_WIN_NET`/B0); rejected with the screen, boss, bossrollout and constant leaves. `tools/vwin_export_ensemble.py` writes such files (e.g. `models/candidates/v_win_f2_e3_trees.txt`, F2 from §396) | unset | `configureLiveOocMcts`, `OocGameContextModel::anchorValue` |
 | `STS_OOC_MCTS_EARLY_STOP` | Strict visit-lock stopping even without a non-aborting provider guarantee; may skip later support/continuation aborts; `0` restores guarantee requirement; root-lock trace overrides stopping | `1` when OOC MCTS enabled | `configureLiveOocMcts`, `OocMctsPlanner::search` |
@@ -152,10 +152,10 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_OOC_ACTION_NN` | OOC decisions via next-combat action NN | `0` (off) | `main` ~L9270 |
-| `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN | unset (off) | `main` ~L9277 |
+| `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9277 |
 | `STS_OOC_MAP_ROUTE` | C_psi route search (M2) | `0` (off) | `main` ~L9345 |
 | `STS_OOC_MAP_ROUTE_HORIZON` | M2 horizon (clamped 2..5) | 3 | `main` ~L9346 |
-| `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default | unset (off) | `main` ~L9350 |
+| `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default; empty or `0` = off; any other value that fails to load exits nonzero | unset (off) | `main` ~L9350 |
 | `STS_OOC_SHOP_BEAM` | Multi-step shop beam search (B1) | `0` (off) | `main` ~L9362 |
 | `STS_OOC_SHOP_BEAM_WIDTH` | B1 beam width | 32 | `main` ~L9363 |
 | `STS_OOC_SHOP_BEAM_DEPTH` | B1 search depth (0 = until leave) | 0 | `main` ~L9365 |
@@ -164,9 +164,9 @@ enable flag:
 | `STS_SIM_ADAPT_CTM` | Qualified native CTM artifact for deterministic death/winning-HP adaptive budgeting; unsupported fights keep the caller's base budget | unset (C_psi path) | `main` ~L8825 |
 | `STS_SIM_ADAPT_MIN_FRAC` / `STS_SIM_ADAPT_MAX_FRAC` | Clamp adaptive fight budgets as fractions of the caller's base budget | `0.4` / `2.0` | `main` ~L8822 |
 | `STS_DG_TEMP` | Datagen softmax temperature | unset | `main` ~L9675 |
-| `STS_BOSS_DRAFT` | Boss-gated rollout drafting | `0` (off) | `main` ~L9570 |
+| `STS_BOSS_DRAFT` | Boss-gated rollout drafting. Like `STS_ACT_FIGHT_PROBE_DRAFT`, it also decides Match and Keep valuations, playing its rollout fights on the detached lone-card offer (before 2026-10-11 those valuations aborted the run with `native_combat_in_leaf_policy`; ctest `match_and_keep_boss_draft_oracle`) | `0` (off) | `main` ~L9570 |
 | `STS_ACT_FIGHT_PROBE_DRAFT` | All-act encounter rollout draft | `0` (off) | `main` ~L9580 |
-| `STS_ACT_FIGHT_PROBE_ALL_OOC` | Acts 1-3 all-OOC checkpoint rollout | `0` (off) | `main` ~L9620 |
+| `STS_ACT_FIGHT_PROBE_ALL_OOC` | Acts 1-3 all-OOC checkpoint rollout. With `STS_ACT_FIGHT_PROBE_ENCOUNTER_NN=1`, every branch sends the encounter NN the same root state built with the live path. Before 2026-10-11 every branch after the first (and every OpenMP branch) sent an empty-path root (`pv*`=0), so evidence produced with that combination carries the bug (ctest `act_fight_probe_all_ooc_root_state`) | `0` (off) | `main` ~L9620 |
 
 ## Simulator health monitor
 
@@ -183,6 +183,13 @@ enable flag:
 | `STRATEGIC_BRANCH_FIGHTS` | Branch-fight futures per action | 2 | `main` ~L9426 |
 | `STRATEGIC_BRANCH_SIMS` | Comma-separated sim budgets per branch | unset | `main` ~L9428 |
 | `STRATEGIC_BRANCH_FUTURES` | Futures per branch fight | 4 | `main` ~L9435 |
+| `STRATEGIC_BRANCH_RESEED` | Research (§432): `1` gives each branch future its own `gc.seed` (battle RNG) and redrawn act encounters, shared by all options of a decision; without it futures share encounters and battle RNG | `0` | `strategic_gen.cpp::runStrategicGenSeed2` |
+| `STRATEGIC_BRANCH_FUTURE_OFFSET` | Research (§432): first branch-seed index, for futures disjoint from an earlier run on the same decisions | `0` | same |
+| `STS_CF_ALT_BOOT_FLOOR_TREES` / `STS_CF_ALT_BOOT_WIN_TREES` | Research (§432): second set of bootstrap trees for short-branch labels; adds `labelWonAlt,labelFloorAlt` columns; both required | unset | `finishOocCounterfactual` |
+| `STRATEGIC_MCTS_TARGETS` | Research (§425): `seed,decIdx` file; `strategicgen2` replays without branching and scores live-configured OOC MCTS (`STS_OOC_MCTS=1`) at each target; needs `OMP_NUM_THREADS=1` | unset | `strategic_gen.cpp::strategicMctsTargets` |
+| `STRATEGIC_MCTS_OUT` | JSONL root summaries for `STRATEGIC_MCTS_TARGETS` | unset | same |
+| `STRATEGIC_MCTS_FORCE` | `seed,decIdx,bits` file: replay recorded actions instead of the policy | unset | same |
+| `STRATEGIC_MCTS_REPS` / `STRATEGIC_MCTS_SEED_SHIFT` | Searches per target (run seed +100000 each) / search run seed offset | 1 / 0 | same |
 | `STS_LEAFDIAG_PER_STRATUM` | Leafdiag reservoir capacity per stratum | varies | `main` ~L9880 |
 | `STS_LEAFDIAG_DEEP_DEPTH` | Leafdiag deep-tree stratum threshold | varies | `main` ~L9885 |
 | `STS_FRONTIERGEN_PER_STRATUM` | Frontiergen reservoir capacity per stratum | varies | `main` ~L9890 |
@@ -194,7 +201,7 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_STOP_AFTER_ACT` | Stop benchmark after Act N boss; at A20 with N=3 it waits for the second Act-3 boss (`run_driver.cpp`, §402) | 0 (full run) | `main` ~L9627 |
-| `STS_FORCE_RELIC` | Force a relic at run start (paired A/B), removing it from relic pools; forced Lizard Tail is initialized active (`data=1`), while other forced relics retain zero-initialized data | unset | `main` ~L9690; `run_driver.cpp::installRunForcedRelic` |
+| `STS_FORCE_RELIC` | Force a relic at run start (paired A/B), removing it from relic pools; forced Lizard Tail is initialized active (`data=1`), while other forced relics retain zero-initialized data. An unknown name exits nonzero; empty means unforced. Recorded in the bestbench sidecar and teacher OOC policy identity | unset | `main` ~L9690; `run_driver.cpp::installRunForcedRelic` |
 
 ## Known limitations
 
@@ -217,7 +224,7 @@ RAW/POST producer.
 
 - `STS_RUNWIN_SHADOW_MODEL`: compact E2c RAW logistic-tree model supplied to
   `runwinparity`; the historical variable name is retained for parity-fixture
-  compatibility.
+  compatibility. A non-empty path that fails to load exits nonzero.
 
 Searcher3 and all its `STS_S3_*`, `STS_REUSE_*`, particle-probe and fightrep
 variables were removed by ADR-0019.

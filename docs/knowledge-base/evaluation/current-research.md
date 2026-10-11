@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-11 for the rollout3 one-setting variants (§427–§430), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -272,10 +272,20 @@ Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`) removes the ab
 does not win more: 86.7% vs 89.8%, −3.1 pp [−10.9, +4.7], NOT_SHOWN. At 512 simulations (§424, 331 s per run)
 rollout3 lands between off and 2048: 84.4% wins, +5.5 pp [−3.9, +14.8] over off and −5.5 pp [−12.5, +1.6] vs 2048,
 both NOT_SHOWN. One-setting variants on the same seeds (§427–§430): fewer sampled outcomes per chance node
-(`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3], back to the off win rate; 4096 simulations
+(`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3] (p = 0.02 uncorrected, 0.08 Bonferroni over four arms), back to the off win rate; 4096 simulations
 (+3.1 pp, about 1.9x CPU), more outcomes (`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, +1.6 pp, about the same CPU) and 5 rollout
-combats (−2.3 pp, 37% V4 fallback on Lizard Tail) are NOT_SHOWN against 2048. Open: prior and merging variants, and a
+combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. Open: prior and merging variants, and a
 fresh-seed confirmation before any default change.
+
+## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
+
+Scored offline on the §419 gold labels (386 verified decisions; every option was meant to be played out 16 times,
+but §432 found the futures shared encounters and battle RNG, so each label has far fewer than 16 effective samples),
+OOC MCTS with A0-trained models picks options with mean floor regret 4.35 (`prod` settings) and 4.22
+(`rollout3`) vs 4.55 for the heuristic and 4.88 for random; both differences have CIs spanning zero.
+`rollout3` aborts about a quarter of its A20 searches (Lizard Tail, `hp_envelope`). **Open question:**
+whether A20-trained leaf/prior models change this; the replay tooling (`STRATEGIC_MCTS_TARGETS`) reruns
+the same decisions with any model environment.
 
 ## V4 OOC token net at A20 (§419) — keep the A0-trained net
 
@@ -286,6 +296,16 @@ decisions NOT_SHOWN (−1.1 floors), on 10.0k decisions RETRAIN_WORSE (−5.6 fl
 [−7.75, −3.38], wins 16 vs 29 of 256). Offline no retrain beats the heuristic action it
 overrides (strict Q top-1 0.30 vs 0.34). **Inference:** these labels are too noisy for this
 route; a better A20 OOC policy needs a different label source, not more of the same data.
+§432 found one reason: the corpus's 4 branch futures shared their combats and differed only in out-of-combat choices.
+
+## Independent branch futures and short-branch labels at A20 (§432)
+
+`strategicgen2` branch futures only varied the agent RNG, so `STRATEGIC_BRANCH_FUTURES>1` shared encounters
+and battle RNG and diverged only through out-of-combat choices; `STRATEGIC_BRANCH_RESEED=1` (default off) gives each future its own battle RNG and act
+encounters. On a rerun of the 262 gold seeds with 16 independent futures, short-branch labels (3 fights,
+8 independent futures, then the floor value trees) pick options with 1.25 floors regret vs 2.26 for the
+heuristic (+1.01 [+0.56, +1.52]) and 1.98 for the deployed V4; A20-fit and A0 floor trees tie in this role.
+**Open question:** whether a policy trained on such labels plays better live.
 
 ## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
 

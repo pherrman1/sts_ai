@@ -14,6 +14,7 @@
 #include <mutex>
 #include <numeric>
 #include <time.h>
+#include <unistd.h>
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
 #include "ooc_checkpoint_policy.h"
@@ -1632,6 +1633,28 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
+nlohmann::json liveOocMctsSpecification() {
+    if (!liveEnabled) return nullptr;
+    // Every control the search reads, as set: STS_OOC_MCTS*, the combat
+    // transition model (STS_CTM_*, incl. the research candidate manifest) and
+    // the Silver root prior. Output-only trace/graph paths are left out.
+    nlohmann::json environment = nlohmann::json::object();
+    for (char **entry = environ; entry && *entry; ++entry) {
+        const std::string pair(*entry);
+        const auto eq = pair.find('=');
+        const std::string key = pair.substr(0, eq);
+        if (key.rfind("STS_OOC_MCTS", 0) != 0 && key.rfind("STS_CTM_", 0) != 0
+                && key.rfind("STS_SILVER_ROOT_PRIOR", 0) != 0)
+            continue;
+        if (key.size() >= 6 && key.compare(key.size() - 6, 6, "_TRACE") == 0) continue;
+        if (key.find("_GRAPH_") != std::string::npos) continue;
+        environment[key] = eq == std::string::npos ? std::string{} : pair.substr(eq + 1);
+    }
+    const char *leaf = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+    return {{"simulations", liveSimulations},
+            {"leaf_value", leaf ? std::string(leaf) : std::string("screengbm")},
+            {"environment", std::move(environment)}};
+}
 // Counterfactual label generation: the same hidden-future redraw OOC MCTS
 // applies to its leaves, on a detached branch state.
 void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng) {
@@ -2006,6 +2029,35 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     }
     return result;
 }
+nlohmann::json scoreLiveOocMctsDecision(const GameContext &gc, const PathHistory &path,
+    std::uint64_t runSeed, std::uint64_t decisionIndex) {
+    if (!liveEnabled) throw std::runtime_error("scoreLiveOocMctsDecision requires STS_OOC_MCTS=1");
+    const auto wallStart = std::chrono::steady_clock::now();
+    std::uint64_t samples = 0;
+    OocContinuationMetrics continuation;
+    std::optional<OocGameContextModel::Candidate> selected;
+    const auto result = selectOocMctsAction(gc, path, runSeed, decisionIndex, liveSimulations, liveSampler,
+                                            samples, &continuation, &selected);
+    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+    nlohmann::json actions = nlohmann::json::array();
+    if (!result.rootActions.empty()) {
+        // Candidate identities are deterministic per state; a fresh model only enumerates them.
+        ImaginedScope scope;
+        OocGameContextModel names(gc, path, liveSampler, liveOptions);
+        for (const auto &a : result.rootActions) {
+            const auto &c = names.candidate(0, a.id);
+            actions.push_back({{"id", a.id}, {"key", c.key}, {"bits", c.primitive.bits},
+                {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+        }
+    }
+    return {{"searchSeed", oocMctsSearchSeed(runSeed, decisionIndex)}, {"aborted", result.aborted},
+        {"abortReason", result.abortReason}, {"selected", selected.has_value()},
+        {"selectedKey", selected ? selected->key : ""},
+        {"selectedBits", selected ? nlohmann::json(selected->primitive.bits) : nlohmann::json(nullptr)},
+        {"simulations", result.metrics.simulations}, {"singletonBypass", result.metrics.trivialRootBypasses},
+        {"earlyStopLock", result.metrics.earlyStopLockedRoot}, {"ctmSamples", samples},
+        {"wallSeconds", wall}, {"rootActions", actions}};
+}
 bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, const sts::Card &card,
     const std::function<void(GameContext &)> &step) {
     ImaginedScope scope;
@@ -2022,6 +2074,10 @@ bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, co
     const auto before = offer.deck.size();
     PathHistory offerPath = path;
     t_curPath = &offerPath;
+    // The offer is a detached copy valued by the caller's real policy step, so
+    // a combat-playing oracle (act-fight probe, boss draft) may fight on it.
+    // Inside an imagined continuation the outer prohibition still holds.
+    sts::search::g_disallowImaginedCombat = scope.disallowed;
     step(offer);
     return offer.deck.size() > before;
 }

@@ -16525,6 +16525,149 @@ grows with the budget instead of saturating by 512; 128 pairs cannot size either
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 
+## §425 — OOC MCTS root picks on the A20 gold decisions: not shown better than the heuristic (2026-10-11)
+
+**Question (Philipp):** how often does OOC MCTS pick the best option at A20, on the §419 gold labels
+(524 decisions, every option played to the run's end 16 times)? All MCTS models are A0-trained.
+**Design:** offline, no live play. `strategicgen2` replay (run commit `d93fad14`, binary `cd0bb658…`) re-plays each
+gold run with its recorded actions and runs 4 OOC MCTS searches per labeled decision (search run seeds
+73000000–73324999). Arms: `prod` (§411/§414 settings, `screengbm` leaf, pathb-r2 CTM) and `rollout3` (§422).
+Targets scored only if every replayed row up to the decision matches the gold row; 386 of 409 multi-option decisions
+verified. Decision bootstrap, 10,000 samples.
+**Result:** on 378 verified decisions with a recorded choice, mean floor regret: heuristic 4.55, `prod` 4.35
+(Δ −0.20 [−0.89, +0.49]), `rollout3` 4.22 (Δ −0.33 [−0.77, +0.12]); random 4.88. Tie-aware top-1 0.276 / 0.280 /
+0.295 (random 0.260). Strict top-1 (GOLD-RESULT definition) 0.344 / 0.252 / 0.286; the gap comes from reward screens,
+where the heuristic's gold-pile pick wins first-argmax ties and MCTS collects gold at the root. `rollout3` aborts
+24% of searches at A20 (Lizard Tail 316, `hp_envelope` 54 of 1,544) and falls back. `rollout3` ran on the production pathb-r2 CTM, not the §423 Lizard-capable research candidate (`STS_CTM_RESEARCH_CANDIDATE_MANIFEST`, manifest `64da1776…`); that is the cause of the Lizard Tail aborts, the large majority of its aborts (a follow-up check on 4 gold seeds: 7/8 searches aborted on the production CTM, 0/8 on the candidate, on decisions picked because they had aborted, so 7/8 is not a base rate; search seeds 74002000–74002003; raw `/mnt/project-files/ooc-rollout3-a20-lizard-check/a20-lizard-check.tgz`).
+**Interpretation (Inference):** with A0 models, OOC MCTS is not shown better than the heuristic at A20 (CIs allow
+up to about 0.9 floors), and neither is far from random on these labels. Rerun with A20 floor/win models when they exist.
+**Side finding (verified in review):** `finishOocCounterfactual` sets `t_curPath = nullptr` on return and
+`strategicgen2` never restores it, so from the first decision with options on, the gold runs' main-trajectory policy
+ran path-blind (no undefined behaviour; readers fall back to an empty path). Replaying unforced with `t_curPath`
+cleared at labeled decisions reproduces seeds 69100000 and 69101007 exactly. Branch labels are unaffected; the
+"heuristic" baseline here is this path-blind variant of the production heuristic. **Unverified:** likely every
+`strategicgen2` run with branching is affected, possibly including the A0 corpus behind the deployed V4.
+
+**Evidence:** [packet](evidence/ooc_mcts_a20_gold_20261011/README.md). Seeds 73000000–73324999 (search run seeds)
+are now used; the Lizard check used search seeds 74002000–74002003 (Lizard thread's 74002xxx block).
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §431 — Generator OOC policy drift: strategicgen's copied chain plays 4.5 floors worse at A20; all generators now share the deployed step (2026-10-11)
+
+**Question (code audit 2026-10-11, finding 1):** the strategic generators and the counterfactual continuation each
+copied the out-of-combat chain and the copies drifted from `runFullRunOOC`. How far do they diverge from the deployed
+policy, and does it reach the labels?
+**Design:** measurement-only probe `oocpolicydrift` (commits `474237b8`, `cd1d99a5`, `8790fa27`; removed with the
+refactor). It plays a run with one chain as the main trajectory and at every OOC decision applies all four chains to
+copies of the same state and agent: `canon` (`runFullRunOocPolicyStep`, shop value on), `sg` (strategicgen and
+strategicgen2 main trajectory), `cf` (`finishOocCounterfactual` continuation, which produces every Tier-B branch label)
+and `v4` (`stepFrozenV4Ooc`, strategicmarggen/oocfactoreval). Release, 1000 sims, default flags; 64 A0 and 64 A20
+seeds, plus 32 A0 seeds with the V4 gates on. The `canon` trajectory equals `bestbench` on 128/128 seeds.
+**Result:**
+- Per decision, resolving the whole screen: `sg` differs at 5.6% (A0) / 6.3% (A20) of decisions, about 9 per run,
+  mostly shops (455 of 623 A0 shop visits: the agent heuristic buys the first affordable relic or takes a random
+  action instead of shop value), card selects and Match and Keep; `cf` and `v4` differ at 0.6-1.4% (removal by shop
+  value outside shops, Match and Keep, `cf` resting by first legal action). With the V4 gates on, `sg` and `cf` ignore
+  them and differ at 16.3% / 13.0% of decisions (`v4` 0.3%). Reward order (relic before gold, potions with full slots)
+  differs on about 600 reward screens per 64 runs but leaves the same state.
+- As the main trajectory, paired against `canon`: A20 `sg` −4.48 floors [−8.38, −0.72], wins 1/64 vs 7/64
+  (−9.4 pp [−17.2, −3.1]); A20 `cf` −0.80 [−2.91, +1.25], `v4` −0.56 [−2.64, +1.53]; at A0 nothing is detectable
+  (`sg` −0.33 [−2.80, +2.00]). Identical end states: A0 `sg` 5/64, `cf` 30/64, `v4` 36/64.
+- `strategicgen2` labels before vs after the refactor (32 seeds per ascension, 8 sampled decisions per run, K=3), on
+  labeled decisions whose pre-states are still identical: argmax(labelFloor) unchanged on 31/32 (A0) and 75/77 (A20);
+  some option label changed on 4/32 and 13/77; mean labelFloor shift +0.03 and −0.39.
+**Interpretation (Inference):** the gap is real. Data from `strategicgen`/`strategicgen2` main trajectories (the A20
+value-model runs `runs-2c89ed97`, the §419 A20 V4 corpora and gold runs) carry won/endFloor/endHp outcomes of a
+policy about 4.5 floors weaker at A20 than deployment, and their `chosen` rows imitate it. Branch labels moved little
+on the comparable states, but only early decisions are comparable, and with the V4 gates on the continuation ignored
+them at 13% of decisions. Effect on any trained model: **Unverified**.
+**Change:** `deployedOocPolicyStep` (`apps/one_combat/run_driver.cpp`) is now the only OOC step for `strategicgen`,
+`strategicgen2`, `finishOocCounterfactual` and `stepFrozenV4Ooc` (so also the branch continuations of the
+`counterfactual_gen.cpp` generators, `oocfactoreval` and `semantic_pilot.cpp`, whose main trajectories keep their own
+chains); `strategicgen`/`strategicgen2` also reset path-policy state per seed and use `fightSims` like
+`runFullRunOOC` (no-ops at default flags); oracles stand down inside continuations; ctest `generator_policy_parity`
+pins `strategicgen`/`strategicgen2` end states to `bestbench` (continuations and the V4 step are not pinned by a test
+of their own). Default `bestbench` play is bit-identical: 8 seeds at 300 sims here, and in independent review 180 runs
+(seeds 74008900-989, A0 and A20, 1000 sims) with identical traces. Data generated before this change is not
+regenerated.
+
+**Evidence:** [packet](evidence/generator_policy_drift_20261011/README.md). Seeds used: 74008000-063, 74008100-163,
+74008200-231, 74008300-331, 74008400-431, smoke/tests 74008990-999.
+
+**Knowledge impact:** generator policy parity paragraph in `architecture/training-and-inference.md`.
+
+## §432 — `strategicgen2` branch futures shared their combats; with independent futures, short-branch labels beat the heuristic at A20 (2026-10-11)
+
+**Question:** §419's A20 Q-head retrains and §425's MCTS scoring used `strategicgen2` labels averaged over
+`STRATEGIC_BRANCH_FUTURES` (4 in the §419 corpus, 16 in the gold set). Are those futures independent, and which
+label source ranks A20 options best once they are?
+**Bug (verified in code and by rerun):** each future only changed the agent RNG. Native Silver combat does not
+consume it, and battle RNG is `Random(gc.seed + gc.floorNum)` (`src/combat/BattleContext.cpp:50`), so the futures of
+an option shared their encounters and battle RNG. They diverged only through out-of-combat choices that draw on the
+agent RNG (`apps/one_combat.cpp:1699`): 55% of the 2,258 old gold labels end on a non-integer mean floor, and in a
+no-reseed run changing only the future index changed 39% of labels. The effective number of samples per label was
+therefore well below the nominal 4 (§419 corpus) or 16 (gold). The pilot short-branch labels (3 fights, 8 futures)
+also shared gold's first fights, which made them agree with gold more than they should. **Unverified:** which A0 `strategicgen2` corpora with
+`STRATEGIC_BRANCH_FUTURES>1` are affected the same way.
+**Fix (default off):** `STRATEGIC_BRANCH_RESEED=1` sets each future's `gc.seed` to its branch seed and redraws the
+act's remaining encounters before the action; all options of a decision share future `f` (common random numbers).
+Persistent out-of-combat streams (`cardRng`, `eventRng`, `merchantRng`, …; `GameContext.cpp:92-102`) are not
+reseeded. `STRATEGIC_BRANCH_FUTURE_OFFSET` shifts the branch seed index so two runs on the same decisions get
+disjoint futures. Default-off labels are unchanged (seed 69100001 byte-identical).
+**Design:** commit `65ed71f4`, Release `one_combat` sha256 `a2ef5fb3…`, ASC 20, Silver 2k with the natpert prior
+(weight 400), the 262 §419 gold seeds (69100000+1000W+k, reused on purpose).
+- **Gold2:** full-run labels, `STRATEGIC_BRANCH_FUTURES=16`, `RESEED=1`, offset 0, 25 workers. 260/262 seeds
+  finished (69116003 crashed with Silver "descent exceeded depth bound"; 69103004 hit the 12,000 s timeout after
+  repeated loop-guard lost fights). Main trajectories match the old gold row for row (108,579 rows, 0 `chosen` or
+  floor mismatches), so the decisions are the same. Old-vs-Gold2 option labels correlate 0.81 overall but only 0.35
+  within a decision (2,128 labels, decision means removed); the overall figure is mostly between-decision spread.
+- **SB2:** short-branch labels, 3 fights then a value-tree bootstrap, `FUTURES=8`, `RESEED=1`, offset 100 (disjoint
+  from Gold2), 8 workers. Each option is scored by both the A0 trees (`v_rich_trees`, `v_win_trees`) and the A20
+  candidates `models/candidates/v_rich_a20_419.txt` / `v_win_a20_419.txt` via `STS_CF_ALT_BOOT_FLOOR_TREES` /
+  `_WIN_TREES` (XGBoost on 1.0M states from 101k `strategicgen` A20 runs; held-out floor R² 0.51 vs −0.56 for A0,
+  win AUC 0.85 vs 0.82).
+- **Metric:** mean floor regret against the Gold2-best option (Gold2 mean floor of the picked option vs the best
+  one), on the 397 decisions with ≥2 labelled options that every picker covers; paired decision bootstrap, 10,000
+  samples. Top-1 counts ties as hits. Neural pickers scored with `train_strategic_tok.py` at 0 epochs plus a
+  per-decision dump (patch in the packet).
+
+**Result (Gold2, 397 decisions):**
+
+| Picker | Regret (floors) | Top-1 | Heuristic minus picker |
+|---|---|---|---|
+| SB, A20 floor trees | 1.25 | 0.49 | +1.01 [+0.56, +1.52] |
+| SB, A0 floor trees | 1.32 | 0.49 | +0.94 [+0.48, +1.45] |
+| SB, A20 win trees | 1.44 | 0.49 | +0.82 [+0.37, +1.32] |
+| SB, A0 win trees | 1.50 | 0.45 | +0.76 [+0.34, +1.22] |
+| §419 G2 retrain | 1.84 | 0.42 | +0.42 [+0.06, +0.82] |
+| §419 G3 retrain | 1.95 | 0.40 | +0.32 [−0.08, +0.74] |
+| old gold (shared combats) | 1.96 | 0.42 | +0.31 [−0.17, +0.81] |
+| deployed V4 (A0) | 1.98 | 0.42 | +0.28 [−0.09, +0.68] |
+| heuristic (path-blind, §425) | 2.26 | 0.41 | 0 |
+| random | 2.69 | — | −0.42 [−0.73, −0.11] |
+
+A20 vs A0 floor trees inside SB: +0.07 [−0.10, +0.24] (not shown). Floor trees beat win trees only borderline
+(A20: +0.19 [+0.01, +0.40]; another bootstrap seed gives [−0.00, +0.39]). Against the old gold (independent of SB2's combats, 409 decisions) the order is the same: SB A20
+floor 2.86, heuristic 4.45, random 4.78; heuristic minus SB A20 floor +1.56 [+0.84, +2.28].
+**Interpretation (Inference):** Gold2's best option is still noisy (16 samples), so all regrets are inflated by a
+common amount; the ranking is the result. Short-branch labels with independent futures are the first A20 label source
+clearly better than the heuristic, and better than the old shared-combat full-run labels. The
+§419 retrains were limited by their one-sample labels. The A20 candidate trees were fit on `strategicgen` v1 runs,
+whose main trajectory plays about 4.5 floors worse than `bestbench` at A20 (§431), so their absolute values are
+pessimistic; here they only rank options, where they tie the A0 trees.
+**Open question:** SB2 and Gold2 differ in combats (battle RNG, encounters) but still share the persistent
+out-of-combat streams (card rewards, events, shops), so they are disjoint in combat only; some agreement between them
+may come from those shared streams.
+**Not done:** no live gameplay test; no new label corpus; trees not refit after the §431 generator fix.
+
+**Evidence:** [packet](evidence/v4_a20_retrain_20261009/gold2/README.md) (`gold2_score.txt`, `sb2_vs_oldgold.txt`,
+scoring scripts, rebuild recipe, A20 tree training script and log, tarball sha256s). Raw data `/mnt/project-files/v4-a20-retrain/gold2-w{0..24}.tar.gz` and
+`sb2-gold-w{0..7}.tar.gz`. Seeds: reruns of the §419 gold seeds only; no new seed block.
+
+**Knowledge impact:** §425 and §419 paragraphs in `evaluation/current-research.md` corrected (gold futures shared their
+combats); new paragraph for §432; three rows in `operations/environment-variables.md`.
+
 ## §427–§430 — four one-setting rollout3 variants: fewer chance outcomes is worse, the rest not shown (2026-10-11)
 
 **Question:** Philipp: "can you try the following things on teh same 128 seeds: 4096 simulations, different
@@ -16546,9 +16689,10 @@ bootstrap 95% CI of arm − rollout3 (seed 427); IMPROVED / WORSE / NOT_SHOWN, n
 | §429 `wbroad` | 117/128 | +1.6 pp [−4.7, +7.8] | NOT_SHOWN | +12.5 [+4.7, +21.1] | 9 | 988 |
 | §430 `r5` | 112/128 | −2.3 pp [−10.2, +5.5] | NOT_SHOWN | +8.6 [−0.8, +18.0] | 10 | 1,458 |
 
-rollout3 itself: 11 boss deaths, 936 s per run. V4 fallback 27.6% (`s4096`) and 37.1% (`r5`) vs 19.8%, almost all
-active Lizard Tail aborts.
-**Interpretation (Inference):** few sampled outcomes per chance node lose the whole rollout3 gain; more simulations or
+rollout3 itself: 11 boss deaths, 936 s per run. V4 fallback 27.6% (`s4096`) and 37.1% (`r5`) vs 19.8%; in every arm
+88–94% of fallbacks are support aborts and 98–100% of those are active Lizard Tail states.
+**Interpretation (Inference):** few sampled outcomes per chance node lose the whole rollout3 gain (`wnarrow`'s WORSE
+rests on p = 0.02 uncorrected; Bonferroni across the four arms gives 0.08); more simulations or
 more outcomes point up but 128 pairs cannot separate them from rollout3. Five rollout combats hit Lizard Tail states
 more often and fall back to V4 on 37% of decisions.
 **Decision:** no default change.

@@ -7,6 +7,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <nlohmann/json.hpp>
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
@@ -202,6 +203,8 @@ struct LiveOocMctsMetrics {
 // Parse once after native policy/win loading. OFF never loads the combat model.
 void configureLiveOocMcts();
 bool liveOocMctsEnabled();
+// Policy identity of the live OOC MCTS configuration; null when it is off.
+nlohmann::json liveOocMctsSpecification();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Search snapshots die before the selected ID is resolved/executed on live gc.
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,
@@ -209,6 +212,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr);
+// Research (§425 gold scoring): one decision with the live OOC MCTS
+// configuration on a copied state; returns the root summary as JSON.
+nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,
+    std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Fresh semantic identity resolution; failure leaves live state untouched.
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
