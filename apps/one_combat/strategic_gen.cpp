@@ -613,10 +613,19 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 bool branchInvalid = false;
                 for (int f = 0; f < g_strategicBranchFutures; ++f) {
                     GameContext branch = detachedCounterfactualCopy(pre);
-                    actions[a].execute(branch);
                     const std::uint64_t branchSeed =
                         seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1 + g_strategicBranchFutureOffset))
                              ^ (0xbf58476d1ce4e5b9ULL * (std::uint64_t)(decIdx + 31));
+                    if (g_strategicBranchReseed) {
+                        // Independent future per f, shared by every action (CRN):
+                        // battle RNG streams derive from gc.seed + floor, and the
+                        // rest of the act's encounters are redrawn. Without this
+                        // the branch futures differ only in the agent RNG, which
+                        // native Silver combat does not consume.
+                        branch.seed = branchSeed ? branchSeed : 1;
+                        resampleRemainingActEncounters(branch, branch.seed);
+                    }
+                    actions[a].execute(branch);
                     const OocCounterfactualResult r = finishOocCounterfactual(
                         std::move(branch), sims, branchSeed, prePath,
                         g_strategicBranchFights, /*bootstrap=*/true,

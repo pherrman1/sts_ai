@@ -474,6 +474,7 @@ struct StratFingerprint {
 extern int g_strategicBranchFights;
 extern int g_strategicBranchFutures;
 extern int g_strategicBranchFutureOffset;
+extern bool g_strategicBranchReseed;
 extern std::vector<int> g_strategicBranchSims;
 extern bool g_strategicSampleAll;
 extern int g_strategicSamplesPerRun;
