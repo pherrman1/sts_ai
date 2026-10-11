@@ -48,7 +48,7 @@ static std::string combatFeatureRow(const BattleContext &bc) {
 // diagnostics are captured after exitBattle returns, i.e. after regainControl
 // has entered the reward screen and normal afterBattle effects have run.
 
-static nlohmann::json effectiveOocPolicySpecification() {
+nlohmann::json effectiveOocPolicySpecification() {
     nlohmann::json models = nlohmann::json::array();
     auto addModel = [&](const char *role, const std::string &path) {
         if (!path.empty())
@@ -151,6 +151,11 @@ static nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["remove_low_obtain_weight"] = true;
     if (one_combat::nativeOocCardWinRankEnabled())
         policy["flags"]["native_ooc_card_win_rank"] = true;
+    // Added only when active so identities frozen before these keys still match.
+    if (auto mcts = one_combat::liveOocMctsSpecification(); !mcts.is_null())
+        policy["ooc_mcts"] = std::move(mcts);
+    if (g_forceRelic != RelicId::INVALID)
+        policy["parameters"]["force_relic"] = relicEnumNames[static_cast<int>(g_forceRelic)];
     return policy;
 }
 

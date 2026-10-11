@@ -1326,6 +1326,11 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.oocStrategicTokNetSha256 = fileSha256(meta.oocStrategicTokNet);
             meta.oocStrategicTokConstGuard = g_oocStrategicTokNet.constGuard;
         }
+        meta.oocMcts = one_combat::liveOocMctsEnabled();
+        meta.stopAfterAct = g_stopAfterAct;
+        if (g_forceRelic != RelicId::INVALID)
+            meta.forceRelic = relicEnumNames[static_cast<int>(g_forceRelic)];
+        meta.oocPolicy = effectiveOocPolicySpecification().dump();
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2954,26 +2959,35 @@ int main(int argc, char **argv) {
         if (g_oocActionNN)
             std::cout << "[OOC decisions via next-combat action NN (OA op), reapplied every decision]\n";
     }
-    if (const char *d = std::getenv("STS_OOC_CHECKPOINT_NN")) {
-        if (g_oocCheckpointNet.load(d)) {
-            g_oocActionNN = true;
-            std::cout << "[OOC decisions via native checkpoint-distilled NN]\n";
+    // An explicitly requested model that fails to load is fatal: a silent
+    // fallback would run the heuristic stack and still exit 0 (audit
+    // 2026-10-11, finding 2). A set-but-empty value still means "not set".
+    if (const char *d = std::getenv("STS_OOC_CHECKPOINT_NN"); d && *d) {
+        if (!g_oocCheckpointNet.load(d)) {
+            std::cerr << "[STS_OOC_CHECKPOINT_NN] failed to load model: " << d << "\n";
+            return 1;
         }
+        g_oocActionNN = true;
+        std::cout << "[OOC decisions via native checkpoint-distilled NN]\n";
     }
-    if (const char *d = std::getenv("STS_OOC_STRATEGIC_NN")) {
-        if (g_oocStrategicNet.load(d)) {
-            g_effectiveOocStrategicPath = d;
-            std::cout << "[OOC one-ply strategic NN ON: card rewards gated at margin "
-                      << g_oocStrategicMargin << "]\n";
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_NN"); d && *d) {
+        if (!g_oocStrategicNet.load(d)) {
+            std::cerr << "[STS_OOC_STRATEGIC_NN] failed to load model: " << d << "\n";
+            return 1;
         }
+        g_effectiveOocStrategicPath = d;
+        std::cout << "[OOC one-ply strategic NN ON: card rewards gated at margin "
+                  << g_oocStrategicMargin << "]\n";
     }
-    if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_NN")) {
-        if (g_oocStrategicTokNet.load(d)) {
-            g_effectiveOocStrategicTokPath = d;
-            g_oocStrategicTok = 1;
-            std::cout << "[OOC one-ply strategic TOK net ON: card rewards gated at margin "
-                      << g_oocStrategicMargin << "]\n";
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_NN"); d && *d) {
+        if (!g_oocStrategicTokNet.load(d)) {
+            std::cerr << "[STS_OOC_STRATEGIC_TOK_NN] failed to load model: " << d << "\n";
+            return 1;
         }
+        g_effectiveOocStrategicTokPath = d;
+        g_oocStrategicTok = 1;
+        std::cout << "[OOC one-ply strategic TOK net ON: card rewards gated at margin "
+                  << g_oocStrategicMargin << "]\n";
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_CHECK")) {
         g_oocStrategicTokCheck = std::atoi(d) != 0;
@@ -3028,12 +3042,13 @@ int main(int argc, char **argv) {
             std::cout << "[OOC map route search ON: horizon " << g_oocMapRouteHorizon
                       << " (needs STS_CPSI_NN + strategic net)]\n";
     }
-    if (const char *d = std::getenv("STS_CPSI_NN")) {            // C_psi combat outcome surrogate
+    if (const char *d = std::getenv("STS_CPSI_NN"); d && *d) {   // C_psi combat outcome surrogate
         const std::string path = std::string(d) == "1" ? "build/v_combat_cpsi.txt" : d;
-        if (g_cpsiNet.load(path))
-            std::cout << "[C_psi combat surrogate loaded: " << g_cpsiNet.description() << "]\n";
-        else
-            std::cerr << "[C_psi load failed: " << path << "]\n";
+        if (!g_cpsiNet.load(path)) {
+            std::cerr << "[STS_CPSI_NN] failed to load C_psi model: " << path << "\n";
+            return 1;
+        }
+        std::cout << "[C_psi combat surrogate loaded: " << g_cpsiNet.description() << "]\n";
     }
     if (const char *d = std::getenv("STS_OOC_SHOP_BEAM")) {     // B1 multi-step shop beam (§2)
         g_oocShopBeam = std::atoi(d) != 0;
@@ -3129,9 +3144,11 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
-    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL")) {
-        if (!one_combat::loadE2cRawModel(d))
+    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL"); d && *d) {
+        if (!one_combat::loadE2cRawModel(d)) {
             std::cerr << "[STS_RUNWIN_SHADOW_MODEL] failed to load E2c RAW critic: " << d << "\n";
+            return 1;
+        }
     }
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
@@ -3145,11 +3162,13 @@ int main(int argc, char **argv) {
                 std::cerr << "[native OOC] failed to load models/v_rich_trees.txt\n";
                 return 1;
             }
+            // Without V_win the win-rate rest policy reads 0 gains from the
+            // absent v_server and always rests (audit 2026-10-11, finding 2).
             if (!g_winNet.ok) {
-                std::cout << "[native V_win NOT loaded; win-rest helpers will use v_server fallback]\n";
-            } else {
-                std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
+                std::cerr << "[native OOC] failed to load models/v_win_trees.txt\n";
+                return 1;
             }
+            std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
         }
     }
     try {
@@ -3388,17 +3407,18 @@ int main(int argc, char **argv) {
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
-    if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
+    if (const char *d = std::getenv("STS_FORCE_RELIC"); d && *d) { // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;
         for (int i = 0; i < kNumRelics; ++i)
             if (name == relicEnumNames[i]) { id = i; break; }
+        // An unknown name used to run unforced, which turns an A/B into A/A.
         if (id < 0) {
             std::cerr << "[STS_FORCE_RELIC] unknown relic name: " << name << "\n";
-        } else {
-            g_forceRelic = (RelicId)id;
-            std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
+            return 1;
         }
+        g_forceRelic = (RelicId)id;
+        std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
     }
     if (mode == "strategicmarggen") {
         // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.

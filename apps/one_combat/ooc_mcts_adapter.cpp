@@ -14,6 +14,7 @@
 #include <mutex>
 #include <numeric>
 #include <time.h>
+#include <unistd.h>
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
 #include "ooc_checkpoint_policy.h"
@@ -1632,6 +1633,24 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
+nlohmann::json liveOocMctsSpecification() {
+    if (!liveEnabled) return nullptr;
+    // Every STS_OOC_MCTS* control as set, except output-only trace/graph paths.
+    nlohmann::json environment = nlohmann::json::object();
+    for (char **entry = environ; entry && *entry; ++entry) {
+        const std::string pair(*entry);
+        const auto eq = pair.find('=');
+        const std::string key = pair.substr(0, eq);
+        if (key.rfind("STS_OOC_MCTS", 0) != 0) continue;
+        if (key.size() >= 6 && key.compare(key.size() - 6, 6, "_TRACE") == 0) continue;
+        if (key.find("_GRAPH_") != std::string::npos) continue;
+        environment[key] = eq == std::string::npos ? std::string{} : pair.substr(eq + 1);
+    }
+    const char *leaf = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+    return {{"simulations", liveSimulations},
+            {"leaf_value", leaf ? std::string(leaf) : std::string("screengbm")},
+            {"environment", std::move(environment)}};
+}
 // Counterfactual label generation: the same hidden-future redraw OOC MCTS
 // applies to its leaves, on a detached branch state.
 void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng) {

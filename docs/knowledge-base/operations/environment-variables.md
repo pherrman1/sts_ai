@@ -13,7 +13,7 @@ These control the default executing configuration; they are always parsed.
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `VPORT` | v_server TCP port | 5555 | `main` L9210 |
-| `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode) | `1` (ON) | `main` ~L9470 |
+| `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode). With it on, failing to load `models/v_rich_trees.txt` or the V_win trees exits nonzero | `1` (ON) | `main` ~L9470 |
 | `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt`. An explicitly supplied path (including empty) that fails validation exits nonzero before any fallback | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
 | `STS_FAIR` | Accepted for compatibility; combat is always project-fair Silver. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_SEARCHER3` | Removed (ADR-0019). A non-zero value makes `one_combat` exit with an error; `0` is accepted | `0` | `main` |
@@ -86,8 +86,8 @@ enable flag:
 | `STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT` | Default fallback REMOVE ranking: ascending acquisition weight. Explicit `0` restores legacy descending ordering; `1` matches unset. Bonfire sacrifices, other selection types and native shop removal retain their current policy. Strict 0 or 1; no upgrade, curse or tie-breaking refinement. | unset/on | `ScumSearchAgent2::cardSelectPolicy` |
 | `STS_OOC_CARD_WIN_RANK` | Research-only native reward fallback: preserve public8 floor take/skip, then rank taken cards using public8 logistic win predictions. Requires native loaded models, public8, margin gate, MCTS and alternate card families off. Strict 0 or 1. | unset/off | main native card wrapper, `nativeCardWinRankPick` |
 | `STS_OOC_CARD_WIN_RANK_TRACE` | Emit existing floor/win marginals and semantic card actions to stdout for candidate diagnostics; adds no predictions or RNG draws. Requires the candidate enabled. Strict 0 or 1. | unset/off | main native card wrapper |
-| `STS_OOC_STRATEGIC_NN` | V3 strategic net path | unset (off) | `main` ~L9295 |
-| `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format) | unset (off) | `main` ~L9300 |
+| `STS_OOC_STRATEGIC_NN` | V3 strategic net path; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9295 |
+| `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format); a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9300 |
 | `STS_OOC_STRATEGIC_TOK_CONST_GUARD` | Research only (§419). `1` feeds every V4 glob input that never varied in training (exported inv >= 1e5: ascension, blueKey and greenKey in the deployed A0-only model) at x = 0 instead of the clamped +-8 of an untrained weight column. A no-op whenever those inputs equal their training mean (A0, keys off). Recorded in the bestbench sidecar. | unset (off) | `OocStrategicTokNet::encodeState` |
 | `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4, a compatible combat artifact, and ordinary exact-10k Silver real combat with effective cap 32768. Native leaf mode requires `v_win`; boss leaf mode does not call it, though the unchanged fallback policy may. | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
 | `STS_OOC_MCTS_SIMS` | Positive simulations per supported OOC root | `512` | `configureLiveOocMcts` |
@@ -152,10 +152,10 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_OOC_ACTION_NN` | OOC decisions via next-combat action NN | `0` (off) | `main` ~L9270 |
-| `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN | unset (off) | `main` ~L9277 |
+| `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9277 |
 | `STS_OOC_MAP_ROUTE` | C_psi route search (M2) | `0` (off) | `main` ~L9345 |
 | `STS_OOC_MAP_ROUTE_HORIZON` | M2 horizon (clamped 2..5) | 3 | `main` ~L9346 |
-| `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default | unset (off) | `main` ~L9350 |
+| `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default; a non-empty value that fails to load exits nonzero | unset (off) | `main` ~L9350 |
 | `STS_OOC_SHOP_BEAM` | Multi-step shop beam search (B1) | `0` (off) | `main` ~L9362 |
 | `STS_OOC_SHOP_BEAM_WIDTH` | B1 beam width | 32 | `main` ~L9363 |
 | `STS_OOC_SHOP_BEAM_DEPTH` | B1 search depth (0 = until leave) | 0 | `main` ~L9365 |
@@ -198,7 +198,7 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_STOP_AFTER_ACT` | Stop benchmark after Act N boss; at A20 with N=3 it waits for the second Act-3 boss (`run_driver.cpp`, §402) | 0 (full run) | `main` ~L9627 |
-| `STS_FORCE_RELIC` | Force a relic at run start (paired A/B), removing it from relic pools; forced Lizard Tail is initialized active (`data=1`), while other forced relics retain zero-initialized data | unset | `main` ~L9690; `run_driver.cpp::installRunForcedRelic` |
+| `STS_FORCE_RELIC` | Force a relic at run start (paired A/B), removing it from relic pools; forced Lizard Tail is initialized active (`data=1`), while other forced relics retain zero-initialized data. An unknown name exits nonzero; empty means unforced. Recorded in the bestbench sidecar and teacher OOC policy identity | unset | `main` ~L9690; `run_driver.cpp::installRunForcedRelic` |
 
 ## Known limitations
 
@@ -221,7 +221,7 @@ RAW/POST producer.
 
 - `STS_RUNWIN_SHADOW_MODEL`: compact E2c RAW logistic-tree model supplied to
   `runwinparity`; the historical variable name is retained for parity-fixture
-  compatibility.
+  compatibility. A non-empty path that fails to load exits nonzero.
 
 Searcher3 and all its `STS_S3_*`, `STS_REUSE_*`, particle-probe and fightrep
 variables were removed by ADR-0019.
