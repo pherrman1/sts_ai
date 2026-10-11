@@ -5,6 +5,28 @@
 
 #include "one_combat/driver_shared.h"
 
+// Which legal action did the policy take? Simulate each on a pre-state copy
+// and match the successor fingerprint of the real run. One deployed step can
+// resolve several primitives (all card groups of a reward screen, a shop
+// visit); then no single successor matches and the first primitive it
+// executed identifies the choice.
+static std::vector<char> chosenActions(const GameContext &pre,
+                                       const std::vector<search::GameAction> &actions,
+                                       const StratFingerprint &realFp, long long firstBits) {
+    std::vector<char> chosen(actions.size(), 0);
+    bool any = false;
+    for (size_t a = 0; a < actions.size(); ++a) {
+        GameContext probe = detachedCounterfactualCopy(pre);
+        actions[a].execute(probe);
+        chosen[a] = stratFingerprint(probe) == realFp;
+        any = any || chosen[a];
+    }
+    if (!any)
+        for (size_t a = 0; a < actions.size(); ++a)
+            chosen[a] = firstBits >= 0 && actions[a].bits == (std::uint32_t)firstBits;
+    return chosen;
+}
+
 // Strategic datagen resolves candidate identities through the policy module seam.
 static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     trainingRunStart();
@@ -14,12 +36,14 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
     PathHistory path; t_curPath = &path;
+    one_combat::resetPathPolicyState();   // as runFullRunOOC: no policy state from the previous seed
     using RT = search::GameAction::RewardsActionType;
 
     std::vector<std::string> rows;
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
+            agent.simulationCountBase = fightSims(gc, sims);   // runFullRunOOC's budget
             BattleContext bc;
             agent.playoutBattle(gc, bc);
             bc.exitBattle(gc);
@@ -49,47 +73,14 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
         GameContext pre = gc;
         if (gc.map) pre.map = std::make_shared<Map>(*gc.map);
 
-        // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
-        // heuristic map pathing, forced non-card rewards one at a time, native
-        // floor card pick with skip, win-rate rest/upgrade, else the agent's
-        // heuristic OOC policy.
-        if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                // Same single-group logic as serverCardRewardPolicy.
-                const int rIdx = r.cardRewardCount - 1;
-                const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
-                const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
-                                                                         : vQuery(gc, rIdx, bossW);
-                search::GameAction(RT::CARD, rIdx, idx).execute(gc);
-            }
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // win-rate rest decision (heal vs smith)
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
+        // The deployed OOC policy step (§431).
+        const long long firstBits = deployedOocPolicyStep(gc, agent);
 
-        // Which legal action did the policy take? Simulate each on a pre-state
-        // copy and match the successor fingerprint of the real run.
-        const StratFingerprint realFp = stratFingerprint(gc);
+        const std::vector<char> chosenMask = chosenActions(pre, actions, stratFingerprint(gc), firstBits);
         const int decIdx = (int)rows.size();
-        for (const auto &a : actions) {
-            GameContext probe = pre;
-            probe.map = std::make_shared<Map>(*pre.map);   // detach the shared map before probing
-            a.execute(probe);
-            const StratFingerprint probeFp = stratFingerprint(probe);
-            const bool chosen = probeFp == realFp;
+        for (size_t ai = 0; ai < actions.size(); ++ai) {
+            const auto &a = actions[ai];
+            const bool chosen = chosenMask[ai];
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(pre, a, actionType, c1, c2, c3, cand1, cand2, cand3);
             std::ostringstream r;
@@ -130,62 +121,17 @@ OocCounterfactualResult evaluateStrategicBranch(
         /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
 }
 
-// ── Production V4 OOC step (frozen baseline) ───────────────────────────────
-// Executes exactly one OOC decision using the current frozen V4 gate stack.
+// ── Production V4 OOC step ─────────────────────────────────────────────────
+// One step of the deployed policy: a battle via the agent, otherwise the
+// deployed OOC step (§431). The V4 gates are the deployed chain's own
+// STS_OOC_STRATEGIC_* layers, so the gate configuration comes from the env.
 void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
-    const bool inRemove = gc.screenState == ScreenState::CARD_SELECT
-                          && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-    using RT = search::GameAction::RewardsActionType;
     if (gc.screenState == ScreenState::BATTLE) {
         BattleContext bc;
         agent.playoutBattle(gc, bc);
         bc.exitBattle(gc);
-    } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocMapRouteSearchPolicy(gc, agent))
-                if (!oocOnePlyMapPolicy(gc, agent))
-                    search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-    } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyEventPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-    } else if (gc.screenState == ScreenState::REST_ROOM) {
-        if (!oocActionNNPolicy(gc)) {
-            if (!oocOnePlyRestPolicy(gc, agent)) {
-                if (g_restWin && one_combat::restWinPolicy(gc)) {}
-                else agent.stepOutOfCombatPolicy(gc);
-            }
-        }
-    } else if (gc.screenState == ScreenState::TREASURE_ROOM) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyTreasurePolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
-    } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocShopBeamPolicy(gc))
-                if (!oocOnePlyShopPolicy(gc, agent)) one_combat::shopVPolicy(gc);
-    } else if (inRemove) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocShopBeamPolicy(gc)) one_combat::removeSelectVPolicy(gc);
-    } else if (gc.screenState == ScreenState::REWARDS) {
-        auto &r = gc.info.rewardsContainer;
-        if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-        else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-        else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-        else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-        else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-        else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-        else {
-            if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyCardRewardPolicy(gc, agent)) one_combat::serverCardRewardPolicy(gc);
-        }
-    } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-               && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) one_combat::upgradeSelectWinPolicy(gc);
-    } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
-        if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
     } else {
-        agent.stepOutOfCombatPolicy(gc);
+        deployedOocPolicyStep(gc, agent);
     }
 }
 
@@ -349,15 +295,12 @@ void strategicMargGen(int nSeeds, int outerSims,
             int chosenIdx = -1, chosenExact = 0;
             {
                 GameContext postGc = detachedCounterfactualCopy(pre);
-                stepFrozenV4Ooc(postGc, evalAgent);
-                auto postFp = stratFingerprint(postGc);
+                const long long firstBits = deployedOocPolicyStep(postGc, evalAgent);
+                const auto chosenMask = chosenActions(pre, actions, stratFingerprint(postGc), firstBits);
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext tGc = detachedCounterfactualCopy(pre);
-                    actions[ai].execute(tGc);
-                    if (stratFingerprint(tGc) == postFp) {
-                        if (chosenIdx < 0) { chosenIdx = ai; chosenExact = 1; }
-                        else { chosenExact = 0; break; }
-                    }
+                    if (!chosenMask[ai]) continue;
+                    if (chosenIdx < 0) { chosenIdx = ai; chosenExact = 1; }
+                    else { chosenExact = 0; break; }
                 }
             }
 
@@ -593,6 +536,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
     PathHistory path; t_curPath = &path;
+    one_combat::resetPathPolicyState();   // as runFullRunOOC: no policy state from the previous seed
     using RT = search::GameAction::RewardsActionType;
     std::default_random_engine reservoir(seed * 2862933555777941757ULL + 97);
 
@@ -615,6 +559,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
+            agent.simulationCountBase = fightSims(gc, sims);   // runFullRunOOC's budget
             BattleContext bc;
             agent.playoutBattle(gc, bc);
             bc.exitBattle(gc);
@@ -704,54 +649,24 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 labelRanges[labelSlot] = {(int)rows.size(), (int)rows.size() + (int)actions.size()};
         }
 
-        // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
-        // heuristic map pathing, forced non-card rewards one at a time, native
-        // floor card pick with skip, win-rate rest/upgrade, else the agent's
-        // heuristic OOC policy.
+        // The deployed OOC policy step (§431), unless an MCTS target forces it.
         const search::GameAction *forcedAction = nullptr;
         if (mctsTargets.on) {
             const auto it = mctsTargets.forced.find({seed, decIdx});
             if (it != mctsTargets.forced.end())
                 for (const auto &a : actions) if (a.bits == it->second) forcedAction = &a;
         }
+        long long firstBits = -1;
         if (forcedAction) {
             forcedAction->execute(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                // Same single-group logic as serverCardRewardPolicy.
-                const int rIdx = r.cardRewardCount - 1;
-                const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
-                const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
-                                                                         : vQuery(gc, rIdx, bossW);
-                search::GameAction(RT::CARD, rIdx, idx).execute(gc);
-            }
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // win-rate rest decision (heal vs smith)
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
+            firstBits = forcedAction->bits;
         } else {
-            agent.stepOutOfCombatPolicy(gc);
+            firstBits = deployedOocPolicyStep(gc, agent);
         }
 
-        // Which legal action did the policy take? Simulate each on a pre-state
-        // copy and match the successor fingerprint of the real run.
-        const StratFingerprint realFp = stratFingerprint(gc);
+        const std::vector<char> chosenMask = chosenActions(pre, actions, stratFingerprint(gc), firstBits);
         for (int a = 0; a < (int)actions.size(); ++a) {
-            GameContext probe = pre;
-            probe.map = std::make_shared<Map>(*pre.map);   // detach the shared map before probing
-            actions[a].execute(probe);
-            const StratFingerprint probeFp = stratFingerprint(probe);
-            const bool chosen = probeFp == realFp;
+            const bool chosen = chosenMask[a];
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(pre, actions[a], actionType, c1, c2, c3, cand1, cand2, cand3);
             std::ostringstream r;

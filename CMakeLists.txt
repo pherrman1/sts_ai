@@ -173,7 +173,6 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/strategic_gen.cpp
-    apps/one_combat/policy_drift_probe.cpp
     apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
@@ -862,3 +861,12 @@ set_tests_properties(combat_transition_final_support_selftest PROPERTIES WORKING
 add_test(NAME combat_transition_near_full_artifact COMMAND python3 -m unittest tests.test_combat_transition_near_full_artifact)
 set_tests_properties(combat_transition_near_full_artifact PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     ENVIRONMENT "STS_COMBAT_TRANSITION_PROBE=$<TARGET_FILE:combat_transition_runtime_probe>" LABELS "integration")
+
+# The strategic generators play the deployed OOC policy step (§431): their main
+# trajectory must end where bestbench ends on the same seed.
+add_test(NAME generator_policy_parity
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/check_generator_policy_parity.sh $<TARGET_FILE:one_combat> 74008999 20 0
+        ${CMAKE_BINARY_DIR}/generator_policy_parity)
+set_tests_properties(generator_policy_parity PROPERTIES
+    PASS_REGULAR_EXPRESSION "GENERATOR_POLICY_PARITY: PASS" LABELS "integration;smoke")

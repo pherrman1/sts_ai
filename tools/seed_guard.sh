@@ -20,7 +20,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["vwinrefreshfatalcountselftest"]=2
   ["oocnextgen"]=2
   ["pathcfgen"]=2
-  ["strategicgen"]=2        ["strategicgen2"]=2 ["oocpolicydrift"]=2
+  ["strategicgen"]=2        ["strategicgen2"]=2
   ["strategicmarggen"]=2
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
   ["oocsemanticfullruneval"]=2 ["oockbudgeteval"]=2
