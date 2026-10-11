@@ -80,13 +80,33 @@ bool legacyCounterfactualStep(GameContext &gc, search::ScumSearchAgent2 &agent) 
 enum Chain { CANON = 0, SG = 1, CF = 2, V4 = 3, NCHAIN = 4 };
 const char *kChainName[NCHAIN] = {"canon", "sg", "cf", "v4"};
 
-bool applyChain(int chain, GameContext &gc, search::ScumSearchAgent2 &agent) {
+bool applyChainRaw(int chain, GameContext &gc, search::ScumSearchAgent2 &agent) {
     switch (chain) {
         case CANON: runFullRunOocPolicyStep(gc, agent, false, true); return true;
         case SG: legacyStrategicGenStep(gc, agent); return true;
         case CF: return legacyCounterfactualStep(gc, agent);
         default: stepFrozenV4Ooc(gc, agent); return true;
     }
+}
+
+// Runs one chain step and records the first primitive action it executed on
+// gc itself (-1 when the step changed gc without GameAction::execute, e.g. a
+// direct chooseBossRelic). Executions on internal copies are ignored.
+bool applyChain(int chain, GameContext &gc, search::ScumSearchAgent2 &agent, long long &firstBits) {
+    firstBits = -1;
+    auto previous = std::move(search::g_onGameActionExecute);
+    search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+        if (target == &gc && firstBits < 0) firstBits = bits;
+    };
+    bool ok;
+    try {
+        ok = applyChainRaw(chain, gc, agent);
+    } catch (...) {
+        search::g_onGameActionExecute = std::move(previous);
+        throw;
+    }
+    search::g_onGameActionExecute = std::move(previous);
+    return ok;
 }
 
 const char *screenName(ScreenState s) {
@@ -133,27 +153,31 @@ std::string runDriftSeed(std::uint64_t seed, int sims, int asc, int mainChain) {
         }
         StratFingerprint fp[NCHAIN];
         bool ok[NCHAIN];
+        long long first[NCHAIN];
         for (int c = 0; c < NCHAIN; ++c) {
             if (c == mainChain) continue;
             GameContext copy = detachedCounterfactualCopy(pre);
             search::ScumSearchAgent2 copyAgent = preAgent;
-            ok[c] = applyChain(c, copy, copyAgent);
+            ok[c] = applyChain(c, copy, copyAgent, first[c]);
             fp[c] = stratFingerprint(copy);
         }
-        ok[mainChain] = applyChain(mainChain, gc, agent);
+        ok[mainChain] = applyChain(mainChain, gc, agent, first[mainChain]);
         fp[mainChain] = stratFingerprint(gc);
         out << seed << ',' << kChainName[mainChain] << ',' << decIdx << ',' << pre.act << ','
             << pre.floorNum << ',' << screenName(pre.screenState) << ','
             << (pre.screenState == ScreenState::EVENT_SCREEN ? (int)pre.curEvent : -1) << ','
             << actions.size();
+        // same*: identical full successor. first*: identical first action.
         for (int c = 1; c < NCHAIN; ++c)
             out << ',' << ((ok[c] && ok[CANON] && fp[c] == fp[CANON]) ? 1 : 0);
-        out << ",-1,-1,-1\n";
+        for (int c = 1; c < NCHAIN; ++c)
+            out << ',' << ((ok[c] && first[c] >= 0 && first[c] == first[CANON]) ? 1 : 0);
+        out << ',' << first[CANON] << ",-1,-1,-1\n";
         ++decIdx;
         if (!ok[mainChain]) break;
     }
     t_curPath = nullptr;
-    out << seed << ',' << kChainName[mainChain] << ",-1,-1,-1,end,-1,-1,-1,-1,-1,"
+    out << seed << ',' << kChainName[mainChain] << ",-1,-1,-1,end,-1,-1,-1,-1,-1,-1,-1,-1,-1,"
         << (gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0) << ',' << gc.floorNum << ','
         << gc.curHp << '\n';
     return out.str();
@@ -163,7 +187,10 @@ std::string runDriftSeed(std::uint64_t seed, int sims, int asc, int mainChain) {
 
 // one_combat oocpolicydrift N SIMS ASC OUT SEEDOFF MAINCHAIN(canon|sg|cf|v4)
 // Rows: one per OOC decision; sameSg/sameCf/sameV4 = that chain's successor
-// equals the canonical successor from the same pre-state. One "end" row per
+// equals the canonical successor from the same pre-state; firstSg/firstCf/
+// firstV4 = that chain's first executed action equals the canonical one
+// (a chain that resolves several card groups in one step still matches a
+// chain that resolves one group per step). One "end" row per
 // seed carries won/floor/hp of the main trajectory.
 void oocPolicyDriftProbe(int nSeeds, int sims, int asc, const std::string &outFile,
                          long long seedOffset, const std::string &mainName) {
@@ -171,7 +198,8 @@ void oocPolicyDriftProbe(int nSeeds, int sims, int asc, const std::string &outFi
     for (int c = 0; c < NCHAIN; ++c) if (mainName == kChainName[c]) mainChain = c;
     if (mainChain < 0) throw std::runtime_error("oocpolicydrift: unknown main chain " + mainName);
     std::ofstream out(outFile);
-    out << "seed,main,decIdx,act,floor,screen,event,nActions,sameSg,sameCf,sameV4,won,endFloor,endHp\n";
+    out << "seed,main,decIdx,act,floor,screen,event,nActions,sameSg,sameCf,sameV4,"
+           "firstSg,firstCf,firstV4,canonFirstBits,won,endFloor,endHp\n";
     std::vector<std::string> results(nSeeds);
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s)
