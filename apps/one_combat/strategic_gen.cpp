@@ -525,7 +525,8 @@ void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, lon
 static std::string strategicHeader2() {
     std::string h = strategicHeader();
     if (!h.empty() && h.back() == '\n') h.pop_back();
-    return h + ",labelWon,labelHp,labelFloor,labelBootstrap\n";
+    return h + ",labelWon,labelHp,labelFloor,labelBootstrap"
+             + (altBootstrapEnabled() ? ",labelWonAlt,labelFloorAlt" : "") + "\n";
 }
 
 static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
@@ -608,7 +609,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
             auto &labels = labelSets[labelSlot];
             labels.resize(actions.size());
             for (int a = 0; a < (int)actions.size(); ++a) {
-                double won = 0, hp = 0, floor = 0, boot = 0;
+                double won = 0, hp = 0, floor = 0, boot = 0, altWon = 0, altFloor = 0;
                 bool branchInvalid = false;
                 for (int f = 0; f < g_strategicBranchFutures; ++f) {
                     GameContext branch = detachedCounterfactualCopy(pre);
@@ -622,6 +623,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                         /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
                     if (r.bootstrapped < 0) { branchInvalid = true; break; }
                     won += r.won; hp += r.hp; floor += r.floor; boot += r.bootstrapped;
+                    altWon += r.altWon; altFloor += r.altFloor;
                 }
                 if (branchInvalid) {
                     ++g_trainingInvalidBranches;
@@ -630,8 +632,12 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 }
                 const int F = std::max(1, g_strategicBranchFutures);
                 char buf[128];
-                std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f",
-                              won / F, hp / F, floor / F, boot / F);
+                if (altBootstrapEnabled())
+                    std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
+                                  won / F, hp / F, floor / F, boot / F, altWon / F, altFloor / F);
+                else
+                    std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f",
+                                  won / F, hp / F, floor / F, boot / F);
                 labels[a] = buf;
             }
             if (isNewSlot)

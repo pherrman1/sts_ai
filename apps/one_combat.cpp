@@ -131,6 +131,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
                           "STS_OOC_STRATEGIC_TOK_CONST_GUARD",
+                          "STS_CF_ALT_BOOT_FLOOR_TREES", "STS_CF_ALT_BOOT_WIN_TREES",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
                           "STS_OOC_STRATEGIC_REST", "STS_OOC_STRATEGIC_EVENT",
                           "STS_OOC_STRATEGIC_SHOP", "STS_OOC_STRATEGIC_TREASURE",
@@ -938,6 +939,13 @@ int g_neowV      = 0;   // STS_NEOW_V=1
 
 WinNet g_winNet;
 WinNet g_floorNet;
+// Research-only alternative bootstrap trees for counterfactual branch endpoints
+// (STS_CF_ALT_BOOT_FLOOR_TREES / STS_CF_ALT_BOOT_WIN_TREES, §419 follow-up).
+// They value bounded branch endpoints in addition to the default trees and are
+// never used by any policy.
+WinNet g_altBootFloorNet;
+WinNet g_altBootWinNet;
+bool altBootstrapEnabled() { return g_altBootFloorNet.ok && g_altBootWinNet.ok; }
 bool nativeWinPolicyAvailable() { return g_nativeOoc && g_winNet.ok; }
 bool nativeFloorPolicyAvailable() { return g_nativeOoc && !g_shopWin && g_floorNet.ok; }
 bool nativeRestWinPolicy(GameContext &gc) {
@@ -1696,12 +1704,19 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     double won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1.0 : 0.0;
     double floor = gc.floorNum;
     int bootstrapped = 0;
+    double altWon = won, altFloor = floor;
     if (bootstrap && gc.outcome == GameOutcome::UNDECIDED) {
         const double vf = vStateRaw(gc);
         const double vw = vStateWin(gc);
         if (std::isfinite(vf) && vf >= gc.floorNum && vf <= 60) floor = vf;
         if (std::isfinite(vw) && vw >= 0 && vw <= 1) won = vw;
         bootstrapped = 1;
+        if (altBootstrapEnabled()) {
+            const double af = one_combat::nativeOocValue(gc, path, g_altBootFloorNet);
+            const double aw = one_combat::nativeOocValue(gc, path, g_altBootWinNet);
+            altFloor = (std::isfinite(af) && af >= gc.floorNum && af <= 60) ? af : gc.floorNum;
+            altWon = (std::isfinite(aw) && aw >= 0 && aw <= 1) ? aw : 0.0;
+        }
     }
     const bool survivedH = gc.outcome != GameOutcome::PLAYER_LOSS;
     continuationCost.cpuMs = 1000.0 * (std::clock() - continuationCpuStart) / CLOCKS_PER_SEC;
@@ -1721,7 +1736,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     t_curPath = nullptr;
     return {valid ? won : 0.0, valid ? floor : 0.0,
             valid ? (double)gc.curHp : 0.0, valid ? bootstrapped : -1, valid,
-            valid && survivedH};
+            valid && survivedH, valid ? altWon : 0.0, valid ? altFloor : 0.0};
 }
 
 // GameContext normally shares its Map through a shared_ptr. A counterfactual may
@@ -3128,6 +3143,14 @@ int main(int argc, char **argv) {
             std::cerr << "[STS_WIN_NET] explicit STS_WIN_NET failed to load win tree: " << path << "\n";
             return 1;
         }
+    }
+    if (const char *f = std::getenv("STS_CF_ALT_BOOT_FLOOR_TREES")) {
+        const char *w = std::getenv("STS_CF_ALT_BOOT_WIN_TREES");
+        if (!w || !g_altBootFloorNet.load(f, richIdxMap()) || !g_altBootWinNet.load(w, richIdxMap())) {
+            std::cerr << "[cf-alt-boot] need loadable STS_CF_ALT_BOOT_FLOOR_TREES and STS_CF_ALT_BOOT_WIN_TREES\n";
+            return 1;
+        }
+        std::cout << "[cf-alt-boot] alternative branch bootstrap ON: " << f << " , " << w << "\n";
     }
     if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL")) {
         if (!one_combat::loadE2cRawModel(d))
