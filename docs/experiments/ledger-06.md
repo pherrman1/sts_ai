@@ -16476,3 +16476,29 @@ confirmation.
 `/mnt/project-files/ooc-rollout3-replication/`. Seeds 70000000–127 and 70009000 are now used.
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §423 — Lizard-capable CTM inside rollout3: aborts gone, no win gain (2026-10-11)
+
+**Question:** in §422, 19.8% of rollout3 OOC decisions fell back to V4, 99% of them on active Lizard Tail states the
+production CTM refuses (Fairy Potion + Tail 1,889, Entropic Brew + Tail 875). Philipp: "first fix the lizard tail issue".
+Does rollout3 with a CTM that prices those states win more than §422 rollout3?
+**Candidate:** production pathb-r2 fast artifact with a header-only `tools/ctm_lizard.py extend --brew --fairy`
+(`c6d56bbc…`, research-candidate manifest `64da1776…`); Brew r refit on the cloud Path B `lizard_fairy`/`lizard_brew`
+corpora, production fast r unchanged, no C++ change. Composed survival on those corpora: Fairy+Tail predicted 0.9987 vs
+observed 0.9984 (119 Tail-fired rows), Brew+Tail 0.9982 vs 0.9977 (43).
+**Design:** [PREREG](evidence/ooc_rollout3_lizard_20261010/PREREG.md), independent review PASS (`bd991730`), run commit
+`cf801ef2`, binary `39cdac96…`. Only the candidate arm ran (16 cloud workers, seeds 70000000–127); control = the
+§422 rollout3 runs, reused after the rerun of seed 70000000 matched them byte for byte. Forced-Tail smoke 72000000–001.
+Primary: paired bootstrap 95% CI of Δwin; IMPROVED / WORSE / NOT_SHOWN.
+**Validity:** 128/128 units rc=0, no seed failures, banners and §422 hashes checked, 0 Lizard support failures.
+**Result:** **NOT_SHOWN.** 111/128 (86.7%) vs 115/128 (89.8%), Δwin −3.1 pp [−10.9, +4.7], discordant 11 vs 15,
+McNemar p = 0.56. Boss deaths 14 vs 11; Δfloor +0.06. Fallback 2.4% vs 19.8%, support aborts 0 vs 21.8 per run;
+1,075 vs 936 s per run. On the 13 seeds with >40% fallback in §422: 11 vs 13 wins.
+**Interpretation (Inference):** the V4 fallback on active-Tail states was not what limited rollout3; pricing those
+states with the composed Fairy/Brew correction does not beat V4 there.
+**Decision:** no default change; the candidate model stays a research artifact (off unless its manifest is set).
+
+**Evidence:** [packet](evidence/ooc_rollout3_lizard_20261010/README.md). Raw: `/mnt/project-files/ooc-rollout3-lizard/`
+and `/mnt/project-files/ooc-lizard-fix/` (fit inputs, smoke). Seeds 72000000–001 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
