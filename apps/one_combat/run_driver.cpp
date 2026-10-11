@@ -299,7 +299,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     } else if (g_eventV && gc.screenState == ScreenState::EVENT_SCREEN
                && gc.curEvent != Event::NEOW && one_combat::eventVPolicy(gc)) {
     } else if (gc.screenState == ScreenState::REWARDS) {
-        if (!t_oocHypotheticalStep) { // a Match and Keep valuation is not a real reward
+        if (!t_oocHypotheticalStep && !t_oocContinuation) { // a hypothetical or branch reward is not a real one
             one_combat::captureE2cPost(gc);
             one_combat::recordE2cScreenState(gc.screenState);
         }
@@ -336,6 +336,30 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     } else {
         agent.stepOutOfCombatPolicy(gc);
     }
+}
+
+thread_local bool t_oocContinuation = false;
+
+bool deployedRestV() {
+    const char *d = std::getenv("STS_REST_V");
+    return d && std::atoi(d) != 0;
+}
+
+long long deployedOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent) {
+    long long firstBits = -1;
+    auto previous = std::move(search::g_onGameActionExecute);
+    search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+        if (target == &gc && firstBits < 0) firstBits = bits;
+        if (previous) previous(bits, target);
+    };
+    try {
+        runFullRunOocPolicyStep(gc, agent, deployedRestV(), /*shopV=*/true);
+    } catch (...) {
+        search::g_onGameActionExecute = std::move(previous);
+        throw;
+    }
+    search::g_onGameActionExecute = std::move(previous);
+    return firstBits;
 }
 
 bool installRunForcedRelic(GameContext &gc, RelicId relic) {
