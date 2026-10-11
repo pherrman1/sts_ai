@@ -203,6 +203,8 @@ struct LiveOocMctsMetrics {
 // Parse once after native policy/win loading. OFF never loads the combat model.
 void configureLiveOocMcts();
 bool liveOocMctsEnabled();
+// Policy identity of the live OOC MCTS configuration; null when it is off.
+nlohmann::json liveOocMctsSpecification();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Search snapshots die before the selected ID is resolved/executed on live gc.
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,
