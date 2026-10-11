@@ -69,6 +69,7 @@ GameContextAction build(const Json &d, unsigned depth) {
     } else if (kind == "colosseum_first") {
         fields(d, {});
         action = [] (GameContext &gc) {
+            gc.relicsOnCombatEnd();
             gc.screenState = ScreenState::EVENT_SCREEN;
             gc.regainControlAction = importContinuation({{"kind", "return_to_map"}});
         };
@@ -117,6 +118,7 @@ GameContextAction build(const Json &d, unsigned depth) {
         action = [kind, gold, rare, uncommon, relic, addRelic] (GameContext &gc) {
             // Mirrors GameContext: a Smoke Bomb escape forfeits the rewards.
             if (gc.smokeBombUsed) { gc.afterBattle(); return; }
+            gc.relicsOnCombatEnd();
             Rewards reward; reward.addGold(gold);
             if (kind == "colosseum_rewards") {
                 reward.addRelic(static_cast<RelicId>(rare));

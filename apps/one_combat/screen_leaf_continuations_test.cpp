@@ -35,6 +35,8 @@ GameContext fixture() {
     gc.screenState = ScreenState::CARD_SELECT;
     gc.deck.obtain(gc, Card(CardId::BASH));
     gc.deck.obtain(gc, Card(CardId::FEED));
+    // Face of Cleric checks that event fight continuations run combat-end relics.
+    gc.relics.add({RelicId::FACE_OF_CLERIC, 0});
     gc.commonRelicPool = {RelicId::ANCHOR, RelicId::BAG_OF_MARBLES, RelicId::BLOOD_VIAL};
     gc.uncommonRelicPool = {RelicId::KUNAI, RelicId::SHURIKEN, RelicId::MEAT_ON_THE_BONE};
     gc.rareRelicPool = {RelicId::CALIPERS, RelicId::GINGER, RelicId::TORII};
@@ -90,7 +92,7 @@ int main() {
             gc.screenState = ScreenState::MAP_SCREEN; gc.regainControlAction = toMap;
         });
         compare({{"kind", "colosseum_first"}}, [](auto &gc) {
-            gc.screenState = ScreenState::EVENT_SCREEN; gc.regainControlAction = toMap;
+            gc.relicsOnCombatEnd(); gc.screenState = ScreenState::EVENT_SCREEN; gc.regainControlAction = toMap;
         });
         compare({{"kind", "designer_upgrade"}}, [](auto &gc) {
             gc.deck.upgradeRandomCards(gc.miscRng, 1); toMap(gc);
@@ -111,14 +113,14 @@ int main() {
             });
         compare({{"kind", "colosseum_rewards"}, {"gold", 125}, {"rare", int(RelicId::GINGER)},
                  {"uncommon", int(RelicId::KUNAI)}}, [](auto &gc) {
-            Rewards r; r.addGold(125); r.addRelic(RelicId::GINGER); r.addRelic(RelicId::KUNAI);
+            gc.relicsOnCombatEnd(); Rewards r; r.addGold(125); r.addRelic(RelicId::GINGER); r.addRelic(RelicId::KUNAI);
             gc.addPotionRewards(r); r.addCardReward(gc.createCardReward(Room::EVENT));
             gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
         });
         for (bool add : {false, true}) {
             compare({{"kind", "dead_adventurer_rewards"}, {"gold", 31}, {"addRelic", add},
                      {"relic", int(add ? RelicId::ANCHOR : RelicId::INVALID)}}, [add](auto &gc) {
-                Rewards r; r.addGold(31); if (add) r.addRelic(RelicId::ANCHOR);
+                gc.relicsOnCombatEnd(); Rewards r; r.addGold(31); if (add) r.addRelic(RelicId::ANCHOR);
                 if (gc.hasRelic(RelicId::BLACK_STAR))
                     r.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
                 r.addCardReward(gc.createCardReward(Room::EVENT)); gc.addPotionRewards(r);
@@ -127,19 +129,19 @@ int main() {
         }
         for (bool duplicateMask : {false, true}) {
             compare({{"kind", "masked_bandits_rewards"}, {"gold", 29}}, [](auto &gc) {
-                Rewards r; r.addGold(29);
+                gc.relicsOnCombatEnd(); Rewards r; r.addGold(29);
                 r.addRelic(gc.hasRelic(RelicId::RED_MASK) ? RelicId::CIRCLET : RelicId::RED_MASK);
                 gc.addPotionRewards(r); r.addCardReward(gc.createCardReward(Room::EVENT));
                 gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
             }, duplicateMask);
         }
         compare({{"kind", "mind_bloom_rewards"}, {"gold", 50}, {"rare", int(RelicId::GINGER)}}, [](auto &gc) {
-            Rewards r; r.addGold(50); r.addRelic(RelicId::GINGER); gc.addPotionRewards(r);
+            gc.relicsOnCombatEnd(); Rewards r; r.addGold(50); r.addRelic(RelicId::GINGER); gc.addPotionRewards(r);
             r.addCardReward(gc.createCardReward(Room::EVENT));
             gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
         });
         compare({{"kind", "mushroom_rewards"}, {"gold", 24}}, [](auto &gc) {
-            Rewards r; r.addGold(24); r.addRelic(RelicId::ODD_MUSHROOM); gc.addPotionRewards(r);
+            gc.relicsOnCombatEnd(); Rewards r; r.addGold(24); r.addRelic(RelicId::ODD_MUSHROOM); gc.addPotionRewards(r);
             r.addCardReward(gc.createCardReward(Room::EVENT));
             gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
         });
