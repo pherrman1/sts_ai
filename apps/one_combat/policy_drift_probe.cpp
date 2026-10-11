@@ -184,6 +184,10 @@ std::string runDriftSeed(std::uint64_t seed, int sims, int asc, int mainChain) {
             search::ScumSearchAgent2 copyAgent = preAgent;
             resOk[c] = resolveScreen(c, copy, copyAgent);
             res[c] = stratFingerprint(copy);
+            // Leftover reward counters on a screen already left (an unclaimed
+            // potion with full slots) are not part of the run state.
+            if (copy.screenState != ScreenState::REWARDS)
+                res[c].goldRew = res[c].cardRew = res[c].relicRew = res[c].potionRew = 0;
         }
         ok[mainChain] = applyChain(mainChain, gc, agent, first[mainChain]);
         fp[mainChain] = stratFingerprint(gc);
