@@ -230,6 +230,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         OocContinuationCost *finalCost = nullptr,
                         bool useFrozenV4 = false,
                         std::vector<CombatEvalFight> *combatCapture = nullptr);
+// Effective OOC policy identity: teacher checks and the bestbench sidecar.
+nlohmann::json effectiveOocPolicySpecification();
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance = false,
                                                  bool requireOocPolicy = false,

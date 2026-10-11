@@ -9,6 +9,11 @@ import sys
 import tempfile
 import unittest
 
+# These requests run a full map-horizon search. They take about 25-45 s in
+# Release and 130-230 s in the Debug build that linux-gcc-test (and CI) uses,
+# so the default 120 s hang guard is too tight for them.
+DEEP_SEARCH_TIMEOUT = 600
+
 
 class LiveOocProtocol(unittest.TestCase):
     @classmethod
@@ -472,7 +477,8 @@ class LiveOocProtocol(unittest.TestCase):
         # Unqualified room-chance fixtures retain the bounded map checkpoint.
         # The qualified-horizon test separately proves expansion beyond it.
         rows = self.run_rows([self.fixtures["map_multiple_children"],
-                              self.fixtures["card_reward_duplicate_take_skip"]])
+                              self.fixtures["card_reward_duplicate_take_skip"]],
+                             timeout=DEEP_SEARCH_TIMEOUT)
         offsets = []
         for row in rows:
             evaluator = row["evaluators"][0]
@@ -530,7 +536,8 @@ class LiveOocProtocol(unittest.TestCase):
         # Taking/skipping the final reward reaches a same-floor MAP. The old
         # hard leaf evaluated every sample there (offset zero); qualified
         # history must permit the planner to enter a subsequent room.
-        response, = self.run_rows([observation], label="qualified downstream map")
+        response, = self.run_rows([observation], label="qualified downstream map",
+                                  timeout=DEEP_SEARCH_TIMEOUT)
         evaluator = response["evaluators"][0]
         self.assertEqual(evaluator["status"], "OK", response)
         offsets = evaluator["endpointHpDistribution"]["root"]["floorOffsets"]
@@ -740,7 +747,7 @@ class LiveOocProtocol(unittest.TestCase):
                 if choice["nativeAction"]["kind"]=="skip":
                     choice["nativeAction"]["group"]=0;choice["liveAction"]=dict(kind="skip")
             rows.append(obs)
-        for obs,response in zip(rows,self.run_rows(rows,policy="mcts")):
+        for obs,response in zip(rows,self.run_rows(rows,policy="mcts",timeout=DEEP_SEARCH_TIMEOUT)):
             evaluator=response["evaluators"][0]
             self.assertEqual(evaluator["status"],"OK",response)
             allowed=[choice["liveAction"] for choice in obs["ooc"]["liveChoices"]]

@@ -1337,6 +1337,11 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.oocStrategicTokNetSha256 = fileSha256(meta.oocStrategicTokNet);
             meta.oocStrategicTokConstGuard = g_oocStrategicTokNet.constGuard;
         }
+        meta.oocMcts = one_combat::liveOocMctsEnabled();
+        meta.stopAfterAct = g_stopAfterAct;
+        if (g_forceRelic != RelicId::INVALID)
+            meta.forceRelic = relicEnumNames[static_cast<int>(g_forceRelic)];
+        meta.oocPolicy = effectiveOocPolicySpecification().dump();
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = "off";
@@ -2051,6 +2056,9 @@ struct OocEncounterPrediction {
     double hpFraction = 0.0;
 };
 
+// Test seam: replaces the encounter-NN server round trip (self-tests only).
+static thread_local std::function<std::string(const std::string &)> t_oocEncounterTransactForTest;
+
 static std::vector<OocEncounterPrediction> queryOocEncounterPredictions(
         const std::string &rootState, std::uint32_t actionBits, int screen, int act,
         const std::vector<MonsterEncounter> &encounters) {
@@ -2061,7 +2069,8 @@ static std::vector<OocEncounterPrediction> queryOocEncounterPredictions(
         req << (int)encounters[i];
     }
     req << ';' << screen << ';' << act << ';' << rootState << '\n';
-    std::istringstream in(vTransact(req.str()));
+    std::istringstream in(t_oocEncounterTransactForTest ? t_oocEncounterTransactForTest(req.str())
+                                                        : vTransact(req.str()));
     std::vector<OocEncounterPrediction> out;
     for (int i = 0; i < (int)encounters.size(); ++i) {
         std::string token;
@@ -2298,7 +2307,8 @@ static void appendActFightProbeLog(const GameContext &gc, int decisionIdx,
                                    const std::vector<std::uint64_t> &futureSeeds,
                                    const std::vector<double> &utilities,
                                    const std::vector<std::vector<CheckpointFightComponent>> &components) {
-    if (!g_actFightProbeLog.is_open()) return;
+    // A Match and Keep valuation is not a decision the run faces: no teacher row.
+    if (!g_actFightProbeLog.is_open() || t_oocHypotheticalStep) return;
     double mean = 0.0;
     for (const double utility : utilities) mean += utility;
     mean /= std::max(1, (int)utilities.size());
@@ -2353,6 +2363,10 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
     std::vector<BranchResult> branches(actions.size() * futures);
     const bool parallelBranches = g_actFightProbeParallelBranches && !g_actFightProbeTrace
                                   && !g_potionSave;
+    // The root state is the live decision state with the live path. Compute it
+    // once: each serial branch clears t_curPath on return, and OpenMP workers
+    // start with their own null t_curPath.
+    const std::string rootState = vFeatCsv(gc);
 
     // Each branch owns its GameContext, RNG, combat searchers, TCP connection
     // (t_vSock is thread-local), and output slot.  Candidate-independent seeds
@@ -2376,7 +2390,7 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
         actions[a].execute(branch);
         result.utility = checkpointedActFightUtility(
             std::move(branch), g_actFightProbeSims, branchSeed, basePath, gc.floorNum,
-            vFeatCsv(gc), actions[a].bits, (int)gc.screenState, gc.act,
+            rootState, actions[a].bits, (int)gc.screenState, gc.act,
             &result.components);
     }
 
@@ -2431,6 +2445,153 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
     actions[best].execute(gc);
     t_curPath = savedPath;
     return true;
+}
+
+// Every branch of one all-OOC oracle decision must send the encounter NN the
+// same root state, built with the live path (audit 2026-10-11 finding 6: all
+// branches after the first used an empty path, so pv* were 0).
+// Match and Keep values a card by running the real policy on a detached lone
+// card offer. A combat-playing draft oracle must be able to fight there instead
+// of aborting the run (audit 2026-10-11 finding 5).
+static int matchAndKeepOracleSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("Match and Keep oracle selftest: " + message);
+    };
+    struct Guard {
+        int bossDraft = g_bossDraft, rows = g_bossDraftRows, n = g_bossDraftN, sims = g_bossDraftSims,
+            futures = g_bossDraftFutures;
+        const PathHistory *path = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        bool disallowed = search::g_disallowImaginedCombat;
+        ~Guard() {
+            g_bossDraft = bossDraft; g_bossDraftRows = rows; g_bossDraftN = n; g_bossDraftSims = sims;
+            g_bossDraftFutures = futures; t_curPath = path; one_combat::restoreOocPolicyThreadState(policy);
+            search::g_disallowImaginedCombat = disallowed;
+        }
+    } guard;
+    one_combat::restoreOocPolicyThreadState(OocPolicyThreadState{});
+    g_bossDraft = 1; g_bossDraftRows = 99; g_bossDraftN = 1; g_bossDraftSims = 2; g_bossDraftFutures = 1;
+
+    GameContext gc(CharacterClass::IRONCLAD, 74007001, 0);
+    for (int i = 0; i < 16 && gc.screenState != ScreenState::MAP_SCREEN; ++i) {
+        const auto actions = search::GameAction::getAllActionsInState(gc);
+        require(!actions.empty(), "fixture reaches the first map screen");
+        actions.front().execute(gc);
+    }
+    require(gc.screenState == ScreenState::MAP_SCREEN, "fixture is at the map");
+    gc.curRoom = Room::EVENT; gc.curEvent = Event::MATCH_AND_KEEP;
+    gc.screenState = ScreenState::EVENT_SCREEN;
+    gc.info.eventData = 5;
+    gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    gc.info.toSelectCards.clear();
+    for (int i = 0; i < 12; ++i)
+        gc.info.toSelectCards.push_back({Card(i < 2 ? CardId::FIEND_FIRE : CardId::BASH),
+            i < 4 ? GameContext::MATCH_AND_KEEP_SEEN : GameContext::MATCH_AND_KEEP_UNSEEN});
+    PathHistory path;
+    t_curPath = &path;
+    search::ScumSearchAgent2 agent;
+    try {
+        runFullRunOocPolicyStep(gc, agent, false, false);
+    } catch (const std::exception &error) {
+        require(false, std::string("boss-draft valuation threw: ") + error.what());
+    }
+    int faceUp = 0;
+    for (const auto &slot : gc.info.toSelectCards) faceUp += slot.deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP;
+    require(faceUp == 1, "the policy turned exactly one card");
+    require(t_curPath == &path && !search::g_disallowImaginedCombat, "valuation restores path and combat permission");
+    std::cout << "Match and Keep oracle selftest: PASS\n";
+    return 0;
+}
+
+static int actFightProbeRootStateSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("act-fight root-state selftest: " + message);
+    };
+    struct Guard {
+        bool allOoc = g_actFightProbeAllOoc, nn = g_actFightProbeEncounterNN,
+             predict = g_actFightProbePredict, trace = g_actFightProbeTrace,
+             parallel = g_actFightProbeParallelBranches;
+        int futures = g_actFightProbeFutures, checkpoints = g_actFightProbeMaxCheckpoints,
+            decision = t_actFightProbeDecisionIdx;
+        double margin = g_actFightProbeMargin, termWin = g_actFightProbeTermWin;
+        const PathHistory *path = t_curPath;
+        bool hypothetical = t_oocHypotheticalStep;
+        ~Guard() {
+            g_actFightProbeAllOoc = allOoc; g_actFightProbeEncounterNN = nn;
+            g_actFightProbePredict = predict; g_actFightProbeTrace = trace;
+            g_actFightProbeParallelBranches = parallel; g_actFightProbeFutures = futures;
+            g_actFightProbeMaxCheckpoints = checkpoints; t_actFightProbeDecisionIdx = decision;
+            g_actFightProbeMargin = margin; g_actFightProbeTermWin = termWin;
+            t_curPath = path; t_oocEncounterTransactForTest = nullptr;
+            t_oocHypotheticalStep = hypothetical;
+            if (g_actFightProbeLog.is_open()) g_actFightProbeLog.close();
+        }
+    } guard;
+    g_actFightProbeAllOoc = true; g_actFightProbeEncounterNN = true;
+    g_actFightProbePredict = false; g_actFightProbeTrace = false;
+    g_actFightProbeParallelBranches = false;
+    g_actFightProbeFutures = 2; g_actFightProbeMaxCheckpoints = 1;
+    g_actFightProbeMargin = 0.0; g_actFightProbeTermWin = 0.0;
+
+    GameContext gc(CharacterClass::IRONCLAD, 74007000, 0);
+    for (int i = 0; i < 16 && gc.screenState != ScreenState::MAP_SCREEN; ++i) {
+        const auto actions = search::GameAction::getAllActionsInState(gc);
+        require(!actions.empty(), "fixture reaches the first map screen");
+        actions.front().execute(gc);
+    }
+    require(gc.screenState == ScreenState::MAP_SCREEN && gc.act == 1, "fixture is an Act 1 map decision");
+    PathHistory path;
+    path.roomVisits = {2, 1, 1, 0, 1, 0, 0, 0, 0, 0};
+    path.lastNodeKey = 7;
+    t_curPath = &path;
+    const std::string expected = richRow(gc, path);
+    require(expected != richRow(gc, PathHistory{}), "fixture path is visible in the root state");
+
+    // Every first checkpoint is answered by the stub, so no combat is played.
+    std::vector<std::string> roots;
+    t_oocEncounterTransactForTest = [&](const std::string &req) {
+        std::size_t pos = 0;
+        for (int field = 0; field < 5; ++field) pos = req.find(';', pos) + 1;
+        std::string root = req.substr(pos);
+        if (!root.empty() && root.back() == '\n') root.pop_back();
+        roots.push_back(root);
+        std::string response;
+        for (int i = 0; i < 16; ++i) response += "1.0,0.9 ";
+        return response + "\n";
+    };
+    // Teacher log: a hypothetical (Match and Keep) decision writes no rows; a real one does.
+    const std::string logPath = (std::filesystem::temp_directory_path()
+                                 / ("act_fight_probe_root_state_" + std::to_string(getpid()) + ".csv")).string();
+    std::remove(logPath.c_str());
+    g_actFightProbeLog.open(logPath);
+    require(g_actFightProbeLog.is_open(), "selftest teacher log opens");
+    {
+        GameContext hypothetical = detachedCounterfactualCopy(gc);
+        t_oocHypotheticalStep = true;
+        const bool decided = actFightProbeAllOocPolicy(hypothetical);
+        t_oocHypotheticalStep = false;
+        require(decided, "oracle decides the hypothetical map choice");
+        g_actFightProbeLog.flush();
+        require(std::ifstream(logPath).peek() == std::ifstream::traits_type::eof(),
+                "hypothetical decision writes no teacher-log rows");
+    }
+    roots.clear();
+    int legal = 0;
+    for (const auto &action : search::GameAction::getAllActionsInState(gc)) legal += action.isValidAction(gc);
+    require(legal >= 2, "fixture offers at least two map actions");
+    require(actFightProbeAllOocPolicy(gc), "oracle decides the map choice");
+    require((int)roots.size() == 2 * legal, "every branch queried the encounter NN once");
+    for (std::size_t i = 0; i < roots.size(); ++i)
+        require(roots[i] == expected, "branch " + std::to_string(i) + " root state lost the live path");
+    require(t_curPath == &path, "oracle restores the live path");
+    g_actFightProbeLog.close();
+    std::string row;
+    int logRows = 0;
+    for (std::ifstream log(logPath); std::getline(log, row);) ++logRows;
+    std::remove(logPath.c_str());
+    require(logRows == legal, "real decision writes one teacher-log row per legal action");
+    std::cout << "act-fight root-state selftest: PASS (" << roots.size() << " branches)\n";
+    return 0;
 }
 
 
@@ -2972,26 +3133,35 @@ int main(int argc, char **argv) {
         if (g_oocActionNN)
             std::cout << "[OOC decisions via next-combat action NN (OA op), reapplied every decision]\n";
     }
-    if (const char *d = std::getenv("STS_OOC_CHECKPOINT_NN")) {
-        if (g_oocCheckpointNet.load(d)) {
-            g_oocActionNN = true;
-            std::cout << "[OOC decisions via native checkpoint-distilled NN]\n";
+    // An explicitly requested model that fails to load is fatal: a silent
+    // fallback would run the heuristic stack and still exit 0 (audit
+    // 2026-10-11, finding 2). A set-but-empty value still means "not set".
+    if (const char *d = std::getenv("STS_OOC_CHECKPOINT_NN"); d && *d) {
+        if (!g_oocCheckpointNet.load(d)) {
+            std::cerr << "[STS_OOC_CHECKPOINT_NN] failed to load model: " << d << "\n";
+            return 1;
         }
+        g_oocActionNN = true;
+        std::cout << "[OOC decisions via native checkpoint-distilled NN]\n";
     }
-    if (const char *d = std::getenv("STS_OOC_STRATEGIC_NN")) {
-        if (g_oocStrategicNet.load(d)) {
-            g_effectiveOocStrategicPath = d;
-            std::cout << "[OOC one-ply strategic NN ON: card rewards gated at margin "
-                      << g_oocStrategicMargin << "]\n";
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_NN"); d && *d) {
+        if (!g_oocStrategicNet.load(d)) {
+            std::cerr << "[STS_OOC_STRATEGIC_NN] failed to load model: " << d << "\n";
+            return 1;
         }
+        g_effectiveOocStrategicPath = d;
+        std::cout << "[OOC one-ply strategic NN ON: card rewards gated at margin "
+                  << g_oocStrategicMargin << "]\n";
     }
-    if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_NN")) {
-        if (g_oocStrategicTokNet.load(d)) {
-            g_effectiveOocStrategicTokPath = d;
-            g_oocStrategicTok = 1;
-            std::cout << "[OOC one-ply strategic TOK net ON: card rewards gated at margin "
-                      << g_oocStrategicMargin << "]\n";
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_NN"); d && *d) {
+        if (!g_oocStrategicTokNet.load(d)) {
+            std::cerr << "[STS_OOC_STRATEGIC_TOK_NN] failed to load model: " << d << "\n";
+            return 1;
         }
+        g_effectiveOocStrategicTokPath = d;
+        g_oocStrategicTok = 1;
+        std::cout << "[OOC one-ply strategic TOK net ON: card rewards gated at margin "
+                  << g_oocStrategicMargin << "]\n";
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_CHECK")) {
         g_oocStrategicTokCheck = std::atoi(d) != 0;
@@ -3046,12 +3216,13 @@ int main(int argc, char **argv) {
             std::cout << "[OOC map route search ON: horizon " << g_oocMapRouteHorizon
                       << " (needs STS_CPSI_NN + strategic net)]\n";
     }
-    if (const char *d = std::getenv("STS_CPSI_NN")) {            // C_psi combat outcome surrogate
+    if (const char *d = std::getenv("STS_CPSI_NN"); d && *d && std::string(d) != "0") { // C_psi surrogate
         const std::string path = std::string(d) == "1" ? "build/v_combat_cpsi.txt" : d;
-        if (g_cpsiNet.load(path))
-            std::cout << "[C_psi combat surrogate loaded: " << g_cpsiNet.description() << "]\n";
-        else
-            std::cerr << "[C_psi load failed: " << path << "]\n";
+        if (!g_cpsiNet.load(path)) {
+            std::cerr << "[STS_CPSI_NN] failed to load C_psi model: " << path << "\n";
+            return 1;
+        }
+        std::cout << "[C_psi combat surrogate loaded: " << g_cpsiNet.description() << "]\n";
     }
     if (const char *d = std::getenv("STS_OOC_SHOP_BEAM")) {     // B1 multi-step shop beam (§2)
         g_oocShopBeam = std::atoi(d) != 0;
@@ -3159,9 +3330,11 @@ int main(int argc, char **argv) {
         }
         std::cout << "[cf-alt-boot] alternative branch bootstrap ON: " << f << " , " << w << "\n";
     }
-    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL")) {
-        if (!one_combat::loadE2cRawModel(d))
+    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL"); d && *d) {
+        if (!one_combat::loadE2cRawModel(d)) {
             std::cerr << "[STS_RUNWIN_SHADOW_MODEL] failed to load E2c RAW critic: " << d << "\n";
+            return 1;
+        }
     }
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
@@ -3175,11 +3348,13 @@ int main(int argc, char **argv) {
                 std::cerr << "[native OOC] failed to load models/v_rich_trees.txt\n";
                 return 1;
             }
+            // Without V_win the win-rate rest policy reads 0 gains from the
+            // absent v_server and always rests (audit 2026-10-11, finding 2).
             if (!g_winNet.ok) {
-                std::cout << "[native V_win NOT loaded; win-rest helpers will use v_server fallback]\n";
-            } else {
-                std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
+                std::cerr << "[native OOC] failed to load models/v_win_trees.txt\n";
+                return 1;
             }
+            std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
         }
     }
     try {
@@ -3418,17 +3593,18 @@ int main(int argc, char **argv) {
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
-    if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
+    if (const char *d = std::getenv("STS_FORCE_RELIC"); d && *d) { // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;
         for (int i = 0; i < kNumRelics; ++i)
             if (name == relicEnumNames[i]) { id = i; break; }
+        // An unknown name used to run unforced, which turns an A/B into A/A.
         if (id < 0) {
             std::cerr << "[STS_FORCE_RELIC] unknown relic name: " << name << "\n";
-        } else {
-            g_forceRelic = (RelicId)id;
-            std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
+            return 1;
         }
+        g_forceRelic = (RelicId)id;
+        std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
     }
     if (mode == "strategicmarggen") {
         // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.
@@ -3985,6 +4161,20 @@ int main(int argc, char **argv) {
     } else if (mode == "vwinrefreshdecisionsinkselftest") {
         if (argc != 2) return 2;
         try { return vwinRefreshDecisionSinkSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "matchandkeep_oracle_selftest") {
+        if (argc != 2) return 2;
+        try { return matchAndKeepOracleSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "actfightprobeallooc_rootstate_selftest") {
+        if (argc != 2) return 2;
+        try { return actFightProbeRootStateSelfTest(); }
         catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 1;

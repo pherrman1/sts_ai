@@ -11,8 +11,10 @@
 // block, and an ISO-8601 UTC timestamp.
 //
 // The key list is deliberately narrow: only values the code already parses
-// are captured. There is no environment sweep, so adding or renaming an
-// STS_* variable cannot silently break or silently omit the sidecar.
+// are captured. There is no general environment sweep, so adding or renaming
+// an STS_* variable cannot silently break or silently omit the sidecar. The
+// one exception is oocPolicy, the same effective OOC policy identity that
+// teacher checks compare; with OOC MCTS on it lists the STS_OOC_MCTS* controls.
 #pragma once
 
 #include <cmath>
@@ -77,6 +79,10 @@ struct BenchConfigSidecar {
     std::string oocStrategicTokNet;         // "" when the V4 token net is not loaded
     std::string oocStrategicTokNetSha256;
     bool oocStrategicTokConstGuard = false; // STS_OOC_STRATEGIC_TOK_CONST_GUARD
+    bool oocMcts = false;                   // STS_OOC_MCTS=1
+    int stopAfterAct = 0;                   // STS_STOP_AFTER_ACT (0: full run)
+    std::string forceRelic;                 // STS_FORCE_RELIC ("" when unforced)
+    std::string oocPolicy;                  // serialized JSON object; "" writes null
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -184,6 +190,10 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"oocStrategicTokNet\":\"" << detail::jsonEscape(c.oocStrategicTokNet) << '\"';
     o << ",\"oocStrategicTokNetSha256\":\"" << detail::jsonEscape(c.oocStrategicTokNetSha256) << '\"';
     o << ",\"oocStrategicTokConstGuard\":" << (c.oocStrategicTokConstGuard ? "true" : "false");
+    o << ",\"oocMcts\":" << (c.oocMcts ? "true" : "false");
+    o << ",\"stopAfterAct\":" << c.stopAfterAct;
+    o << ",\"forceRelic\":\"" << detail::jsonEscape(c.forceRelic) << '\"';
+    o << ",\"oocPolicy\":" << (c.oocPolicy.empty() ? "null" : c.oocPolicy);
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';
