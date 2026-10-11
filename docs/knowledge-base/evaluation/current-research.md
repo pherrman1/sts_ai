@@ -272,7 +272,7 @@ Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`) removes the ab
 does not win more: 86.7% vs 89.8%, −3.1 pp [−10.9, +4.7], NOT_SHOWN. Open: cheaper budgets, prior
 and merging variants, and a fresh-seed confirmation before any default change.
 
-## OOC MCTS on the A20 gold decisions (§425) — no better than the heuristic
+## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
 Scored offline on the §419 gold labels (386 verified decisions, every option played out 16 times),
 OOC MCTS with A0-trained models picks options with mean floor regret 4.35 (`prod` settings) and 4.22
