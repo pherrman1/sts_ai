@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# §426 cloud worker. From a clean checkout of the run commit:
+# §427–§430 cloud worker. From a clean checkout of the run commit:
 #   bash worker.sh setup ARM W   build one_combat (build inputs and the models these arms load must equal
 #                                CODE_COMMIT), check the binary hash, stage it in $HOME/r3v-ARM-wWW, write OUT/FROZEN.txt
 #   bash worker.sh run ARM W     this worker's 16 one-seed ARM units, 4 at a time, into the local OUT; when all 16

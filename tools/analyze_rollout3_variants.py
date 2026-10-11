@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""One-setting rollout3 OOC MCTS variants against §422 rollout3 and §422 MCTS off (ledger §426).
+"""One-setting rollout3 OOC MCTS variants against §422 rollout3 and §422 MCTS off (ledger §427–§430).
 
 usage: python3 tools/analyze_rollout3_variants.py OUT.json ARM R422_ROOT RUN_DIR [RUN_DIR ...]
        python3 tools/analyze_rollout3_variants.py selftest
 
-ARM is one of s4096, wnarrow, wbroad, r5. RUN_DIRs hold the §426 bestbench units
+ARM is one of s4096, wnarrow, wbroad, r5. RUN_DIRs hold the §427–§430 bestbench units
 ``ARM-LO.{csv,mcts.csv,done,log}``.
 R422_ROOT is the §422 share folder (``wNN/rollout3-*.csv``, ``wNN/off-*.csv``);
 every §422 file read must match its hash in
@@ -12,12 +12,12 @@ every §422 file read must match its hash in
 
 Pairs are cohort seeds with a result row in ARM and both §422 arms.
 Primary: win-rate difference ARM - rollout3 with a paired seed bootstrap 95% CI
-(10,000 resamples, seed 426). IMPROVED when the CI lower bound > 0, WORSE when the
+(10,000 resamples, seed 427). IMPROVED when the CI lower bound > 0, WORSE when the
 upper bound < 0, otherwise NOT_SHOWN. Secondary (descriptive): ARM - off with its
 CI. Exact McNemar, floor and end-HP differences, boss deaths, CPU per run, V4
 fallback share, support aborts and simulations are descriptive.
 
-Validity: cohort 70000000..70000127. A §426 unit with rc != 0 is allowed only when
+Validity: cohort 70000000..70000127. A §427–§430 unit with rc != 0 is allowed only when
 its log names a ``[bestbench-seed-failure]``; a cohort seed missing from ARM is
 allowed only when it is such a failure seed. Any other gap, failure or a §422 hash
 mismatch labels the result INVALID.
@@ -25,7 +25,7 @@ mismatch labels the result INVALID.
 import csv, glob, hashlib, json, math, os, re, sys
 import numpy as np
 
-REPS, RNG_SEED = 10000, 426
+REPS, RNG_SEED = 10000, 427
 ARMS = ("s4096", "wnarrow", "wbroad", "r5")
 BOSS_FLOORS = {16, 33, 50}
 COHORT = range(70000000, 70000128)

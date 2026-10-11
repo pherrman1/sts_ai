@@ -1,12 +1,12 @@
-# §426 arm environments. Sourced by run_unit.sh: arm_env_args ARM BASE RUN -> KEY=VALUE lines for env -i.
+# §427–§430 arm environments. Sourced by run_unit.sh: arm_env_args ARM BASE RUN -> KEY=VALUE lines for env -i.
 # Each arm is the §422 rollout3 arm (production pathb-r2 CTM) with exactly one setting changed:
 #   s4096    STS_OOC_MCTS_SIMS 2048 -> 4096
 #   wnarrow  chance widening K=2, alpha=0.5 -> K=1, alpha=0.25 (fewer sampled outcomes per chance node)
 #   wbroad   chance widening K=2, alpha=0.5 -> K=4, alpha=0.75 (more sampled outcomes per chance node)
 #   r5       STS_OOC_MCTS_LEAF_COMBATS 3 -> 5
 # rollout3 is the unchanged §422 arm, used only for the launch-gate rerun.
-R426_REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
-source "$R426_REPO/docs/experiments/evidence/ooc_rollout3_replication_20261010/arm_env.sh"
+R427_REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
+source "$R427_REPO/docs/experiments/evidence/ooc_rollout3_replication_20261010/arm_env.sh"
 eval "$(declare -f arm_env_args | sed '1s/^arm_env_args/arm_env_args_422/')"
 arm_env_args() {
   local arm=$1 base=$2 run=$3 lines script

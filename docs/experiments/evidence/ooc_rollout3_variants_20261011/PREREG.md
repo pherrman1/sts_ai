@@ -1,4 +1,4 @@
-# Pre-registration: four one-setting rollout3 variants (ledger §426)
+# Pre-registration: four one-setting rollout3 variants (ledger §427–§430: s4096 §427, wnarrow §428, wbroad §429, r5 §430)
 
 Written and committed before any cohort seed ran with a variant. Philipp's go: 2026-10-11 13:41Z in project thread
 "OOC MCTS 10-floor depth feasibility": "can you try the following things on teh same 128 seeds: 4096 simulations,
@@ -58,7 +58,7 @@ byte-identical to §422 ([§423 rerun](../ooc_rollout3_lizard_20261010/RERUN-422
 ## Analysis ([tools/analyze_rollout3_variants.py](../../../../tools/analyze_rollout3_variants.py))
 
 Per arm, pairs are cohort seeds with a result row in the arm and both §422 arms. **Primary:** Δwin = win(arm) −
-win(§422 rollout3), paired seed bootstrap 95% CI (10,000 resamples, seed 426).
+win(§422 rollout3), paired seed bootstrap 95% CI (10,000 resamples, seed 427).
 
 - **IMPROVED** if the CI lower bound > 0;
 - **WORSE** if the CI upper bound < 0;
