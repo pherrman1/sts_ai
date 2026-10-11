@@ -64,8 +64,10 @@ combat-model keys carry fixed values for schema compatibility. Since
 `forceRelic` (`""` when unforced) and `oocPolicy`, the same effective OOC
 policy identity that `requireOocPolicy` teacher checks compare (V4 gate flags
 and margins, rest/card/shop layers, model hashes; with OOC MCTS on, an
-`ooc_mcts` entry with the simulations, effective leaf and every set
-`STS_OOC_MCTS*` control except trace/graph output paths).
+`ooc_mcts` entry with the simulations, effective leaf, every set
+`STS_OOC_MCTS*`, `STS_CTM_*` and `STS_SILVER_ROOT_PRIOR*` control except
+trace/graph output paths, and the SHA-256 of each control value that names a
+file, such as `STS_CTM_RESEARCH_CANDIDATE_MANIFEST`).
 
 ### Treatment canary before a larger cohort
 

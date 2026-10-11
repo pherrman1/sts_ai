@@ -1635,13 +1635,17 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 bool liveOocMctsEnabled() { return liveEnabled; }
 nlohmann::json liveOocMctsSpecification() {
     if (!liveEnabled) return nullptr;
-    // Every STS_OOC_MCTS* control as set, except output-only trace/graph paths.
+    // Every control the search reads, as set: STS_OOC_MCTS*, the combat
+    // transition model (STS_CTM_*, incl. the research candidate manifest) and
+    // the Silver root prior. Output-only trace/graph paths are left out.
     nlohmann::json environment = nlohmann::json::object();
     for (char **entry = environ; entry && *entry; ++entry) {
         const std::string pair(*entry);
         const auto eq = pair.find('=');
         const std::string key = pair.substr(0, eq);
-        if (key.rfind("STS_OOC_MCTS", 0) != 0) continue;
+        if (key.rfind("STS_OOC_MCTS", 0) != 0 && key.rfind("STS_CTM_", 0) != 0
+                && key.rfind("STS_SILVER_ROOT_PRIOR", 0) != 0)
+            continue;
         if (key.size() >= 6 && key.compare(key.size() - 6, 6, "_TRACE") == 0) continue;
         if (key.find("_GRAPH_") != std::string::npos) continue;
         environment[key] = eq == std::string::npos ? std::string{} : pair.substr(eq + 1);

@@ -3042,7 +3042,7 @@ int main(int argc, char **argv) {
             std::cout << "[OOC map route search ON: horizon " << g_oocMapRouteHorizon
                       << " (needs STS_CPSI_NN + strategic net)]\n";
     }
-    if (const char *d = std::getenv("STS_CPSI_NN"); d && *d) {   // C_psi combat outcome surrogate
+    if (const char *d = std::getenv("STS_CPSI_NN"); d && *d && std::string(d) != "0") { // C_psi surrogate
         const std::string path = std::string(d) == "1" ? "build/v_combat_cpsi.txt" : d;
         if (!g_cpsiNet.load(path)) {
             std::cerr << "[STS_CPSI_NN] failed to load C_psi model: " << path << "\n";

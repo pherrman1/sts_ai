@@ -152,8 +152,18 @@ nlohmann::json effectiveOocPolicySpecification() {
     if (one_combat::nativeOocCardWinRankEnabled())
         policy["flags"]["native_ooc_card_win_rank"] = true;
     // Added only when active so identities frozen before these keys still match.
-    if (auto mcts = one_combat::liveOocMctsSpecification(); !mcts.is_null())
+    if (auto mcts = one_combat::liveOocMctsSpecification(); !mcts.is_null()) {
+        // Hash every control value that names a file (candidate manifests, models).
+        nlohmann::json hashes = nlohmann::json::object();
+        for (const auto &[key, value] : mcts["environment"].items()) {
+            const std::string path = value.get<std::string>();
+            std::error_code ec;
+            if (!path.empty() && std::filesystem::is_regular_file(path, ec))
+                hashes[key] = fileSha256(path);
+        }
+        mcts["artifact_sha256"] = std::move(hashes);
         policy["ooc_mcts"] = std::move(mcts);
+    }
     if (g_forceRelic != RelicId::INVALID)
         policy["parameters"]["force_relic"] = relicEnumNames[static_cast<int>(g_forceRelic)];
     return policy;

@@ -155,7 +155,7 @@ enable flag:
 | `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9277 |
 | `STS_OOC_MAP_ROUTE` | C_psi route search (M2) | `0` (off) | `main` ~L9345 |
 | `STS_OOC_MAP_ROUTE_HORIZON` | M2 horizon (clamped 2..5) | 3 | `main` ~L9346 |
-| `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default; a non-empty value that fails to load exits nonzero | unset (off) | `main` ~L9350 |
+| `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default; empty or `0` = off; any other value that fails to load exits nonzero | unset (off) | `main` ~L9350 |
 | `STS_OOC_SHOP_BEAM` | Multi-step shop beam search (B1) | `0` (off) | `main` ~L9362 |
 | `STS_OOC_SHOP_BEAM_WIDTH` | B1 beam width | 32 | `main` ~L9363 |
 | `STS_OOC_SHOP_BEAM_DEPTH` | B1 search depth (0 = until leave) | 0 | `main` ~L9365 |
