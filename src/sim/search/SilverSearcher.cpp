@@ -148,7 +148,9 @@ search::SilverSearcher::SilverSearcher(const BattleContext &bc, const SilverSear
     resetForSearch();
 }
 
-search::SilverSearcher::~SilverSearcher() = default;
+search::SilverSearcher::~SilverSearcher() {
+    for (auto &state : decisionStates) recycleDecisionState(std::move(state));
+}
 
 void search::SilverSearcher::reseedRollouts() {
     const auto seed = rootState->seed + static_cast<std::uint64_t>(rootState->floorNum);
@@ -231,8 +233,13 @@ void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
         }
         allNodes.erase(std::remove_if(allNodes.begin(), allNodes.end(),
             [&](const auto &node) { return !reachable.count(node.get()); }), allNodes.end());
-        decisionStates.erase(std::remove_if(decisionStates.begin(), decisionStates.end(),
-            [&](const auto &state) { return !states.count(state.get()); }), decisionStates.end());
+        // Keep the reachable states in order; the others go to the spare pool.
+        std::size_t kept = 0;
+        for (auto &state : decisionStates) {
+            if (states.count(state.get())) decisionStates[kept++] = std::move(state);
+            else recycleDecisionState(std::move(state));
+        }
+        decisionStates.resize(kept);
         poolUsed = allNodes.size();
         decisionStatesUsed = decisionStates.size();
         searchStack.clear();
@@ -272,9 +279,28 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
 
 BattleContext *search::SilverSearcher::allocDecisionState() {
     if (decisionStatesUsed == decisionStates.size()) {
-        decisionStates.push_back(std::make_unique<BattleContext>());
+        // Every caller overwrites the whole state, so a recycled one is as good as a new one.
+        if (!spareDecisionStates().empty()) {
+            decisionStates.push_back(std::move(spareDecisionStates().back()));
+            spareDecisionStates().pop_back();
+        } else {
+            decisionStates.push_back(std::make_unique<BattleContext>());
+        }
     }
     return decisionStates[decisionStatesUsed++].get();
+}
+
+std::vector<std::unique_ptr<BattleContext>> &search::SilverSearcher::spareDecisionStates() {
+    // Per thread, shared by successive searchers (one per combat): an 8 KB
+    // BattleContext is otherwise freed and rebuilt for every new node.
+    thread_local std::vector<std::unique_ptr<BattleContext>> spare;
+    return spare;
+}
+
+void search::SilverSearcher::recycleDecisionState(std::unique_ptr<BattleContext> state) {
+    constexpr std::size_t kMaxSpare = std::size_t(1) << 16;
+    auto &spare = spareDecisionStates();
+    if (state && spare.size() < kMaxSpare) spare.push_back(std::move(state));
 }
 
 void search::SilverSearcher::growDedup() {
@@ -308,7 +334,9 @@ search::SilverSearcher::Node *search::SilverSearcher::getOrCreateNode(BattleCont
     }
     Node *newNode = allocNode();
     newNode->state = allocDecisionState();
-    std::swap(*newNode->state, state);
+    // `state` is a caller's scratch that is overwritten before its next use,
+    // so one copy replaces the swap (BattleContext has no move operations).
+    *newNode->state = state;
     retainPublicDamageBeliefs(*newNode->state);
     stateToNode[i] = {hash, newNode};
     ++stateToNodeUsed;

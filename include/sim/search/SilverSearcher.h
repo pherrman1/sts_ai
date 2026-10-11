@@ -220,6 +220,8 @@ namespace sts::search {
         std::size_t poolUsed = 0;
         std::vector<std::unique_ptr<BattleContext>> decisionStates;
         std::size_t decisionStatesUsed = 0;
+        static std::vector<std::unique_ptr<BattleContext>> &spareDecisionStates();
+        static void recycleDecisionState(std::unique_ptr<BattleContext> state);
 
         struct DedupSlot { std::size_t hash; Node *node; };
         std::vector<DedupSlot> stateToNode;
