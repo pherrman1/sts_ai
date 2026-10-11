@@ -132,6 +132,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
                           "STS_OOC_STRATEGIC_TOK_CONST_GUARD",
                           "STS_CF_ALT_BOOT_FLOOR_TREES", "STS_CF_ALT_BOOT_WIN_TREES",
+                          "STRATEGIC_BRANCH_FUTURE_OFFSET",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
                           "STS_OOC_STRATEGIC_REST", "STS_OOC_STRATEGIC_EVENT",
                           "STS_OOC_STRATEGIC_SHOP", "STS_OOC_STRATEGIC_TREASURE",
@@ -671,6 +672,7 @@ bool g_strategicSampleAll = false;   // STRATEGIC_SAMPLE_ALL=1: label every deci
 int g_strategicBranchFights = 3;     // STRATEGIC_BRANCH_FIGHTS: battles per branch
 std::vector<int> g_strategicBranchSims = {150, 100, 50}; // STRATEGIC_BRANCH_SIMS per fight
 int g_strategicBranchFutures = 1;    // STRATEGIC_BRANCH_FUTURES: branch seeds per action
+int g_strategicBranchFutureOffset = 0; // STRATEGIC_BRANCH_FUTURE_OFFSET: first branch seed index (research)
 
 static std::string actFightProbeCheckpointSimsCsv() {
     std::ostringstream out;
@@ -3129,6 +3131,8 @@ int main(int argc, char **argv) {
     }
     if (const char *v = std::getenv("STRATEGIC_BRANCH_FUTURES"))
         g_strategicBranchFutures = std::max(1, std::atoi(v));
+    if (const char *v = std::getenv("STRATEGIC_BRANCH_FUTURE_OFFSET"))
+        g_strategicBranchFutureOffset = std::max(0, std::atoi(v));
     if (const char *d = std::getenv("STS_BOSS_RELIC")) {    // boss relic pick via V_win (needs v_win in v_server)
         g_bossRelicV = std::atoi(d) != 0;
         if (g_bossRelicV) std::cout << "[boss-relic pick via V_win ON]\n";

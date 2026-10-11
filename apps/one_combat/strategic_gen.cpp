@@ -615,7 +615,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                     GameContext branch = detachedCounterfactualCopy(pre);
                     actions[a].execute(branch);
                     const std::uint64_t branchSeed =
-                        seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1))
+                        seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1 + g_strategicBranchFutureOffset))
                              ^ (0xbf58476d1ce4e5b9ULL * (std::uint64_t)(decIdx + 31));
                     const OocCounterfactualResult r = finishOocCounterfactual(
                         std::move(branch), sims, branchSeed, prePath,
