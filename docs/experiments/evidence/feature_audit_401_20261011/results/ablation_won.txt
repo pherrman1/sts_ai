@@ -1,0 +1,22 @@
+won: VAL rows 93911, runs 11739; delta = arm - FULL logloss (positive = worse without)
+-relics                      n=301 trees= 275 logloss=0.1565 d=+0.0118 [+0.0095,+0.0142] auc=0.7940
+-deck_cards                  n=322 trees= 198 logloss=0.1501 d=+0.0054 [+0.0037,+0.0069] auc=0.8146
+-hp                          n=446 trees= 346 logloss=0.1465 d=+0.0018 [+0.0006,+0.0029] auc=0.8281
+-path_history                n=442 trees= 345 logloss=0.1455 d=+0.0009 [-0.0000,+0.0017] auc=0.8317
+FULL#2                       n=448 trees= 244 logloss=0.1451 d=+0.0004 [-0.0005,+0.0013] auc=0.8337
+-progress                    n=446 trees= 357 logloss=0.1447 d=+0.0000 [-0.0008,+0.0010] auc=0.8362
+-upgrades                    n=334 trees= 472 logloss=0.1447 d=+0.0000 [-0.0009,+0.0010] auc=0.8352
+-potions                     n=415 trees= 336 logloss=0.1447 d=+0.0000 [-0.0011,+0.0011] auc=0.8321
+FULL                         n=448 trees= 431 logloss=0.1447 d=+0.0000 [+0.0000,+0.0000] auc=0.8359
+-future_encounters(hidden)   n=444 trees= 388 logloss=0.1447 d=-0.0000 [-0.0009,+0.0008] auc=0.8366
+-boss                        n=447 trees= 460 logloss=0.1445 d=-0.0001 [-0.0011,+0.0009] auc=0.8368
+-potion_slots                n=446 trees= 381 logloss=0.1445 d=-0.0001 [-0.0011,+0.0008] auc=0.8354
+-rng_counters(hidden)        n=446 trees= 403 logloss=0.1445 d=-0.0002 [-0.0012,+0.0008] auc=0.8353
+-gold                        n=447 trees= 416 logloss=0.1445 d=-0.0002 [-0.0011,+0.0007] auc=0.8357
+-queue_counters              n=444 trees= 319 logloss=0.1445 d=-0.0002 [-0.0011,+0.0007] auc=0.8344
+-bottled                     n=445 trees= 370 logloss=0.1442 d=-0.0004 [-0.0013,+0.0004] auc=0.8345
+-keys                        n=447 trees= 408 logloss=0.1442 d=-0.0004 [-0.0013,+0.0004] auc=0.8373
+cyclic_relics->presence      n=448 trees= 327 logloss=0.1442 d=-0.0005 [-0.0013,+0.0002] auc=0.8357
+PUBLIC+forward_map           n=450 trees= 419 logloss=0.1441 d=-0.0005 [-0.0015,+0.0003] auc=0.8373
+PUBLIC(-hidden)              n=438 trees= 391 logloss=0.1441 d=-0.0005 [-0.0014,+0.0003] auc=0.8361
++forward_map                 n=460 trees= 426 logloss=0.1439 d=-0.0008 [-0.0016,-0.0000] auc=0.8383

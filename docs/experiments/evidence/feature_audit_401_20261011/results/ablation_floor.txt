@@ -1,0 +1,22 @@
+floor: VAL rows 93911, runs 11739; delta = arm - FULL MSE (positive = worse without)
+-relics                      n=301 trees= 468 MSE=107.8620 d=+6.6351 [+5.8909,+7.3218] rmse=10.386
+-deck_cards                  n=322 trees= 615 MSE=106.7307 d=+5.5038 [+4.8664,+6.1247] rmse=10.331
+-hp                          n=446 trees= 857 MSE=104.4476 d=+3.2207 [+2.7570,+3.6694] rmse=10.220
+-potions                     n=415 trees= 931 MSE=102.1606 d=+0.9337 [+0.5996,+1.2709] rmse=10.107
+-progress                    n=446 trees= 894 MSE=101.6803 d=+0.4533 [+0.1852,+0.7035] rmse=10.084
+-upgrades                    n=334 trees= 811 MSE=101.6585 d=+0.4316 [+0.1315,+0.7124] rmse=10.083
+-boss                        n=447 trees= 892 MSE=101.4601 d=+0.2331 [-0.0850,+0.5414] rmse=10.073
+PUBLIC(-hidden)              n=438 trees= 831 MSE=101.4093 d=+0.1824 [-0.0814,+0.4537] rmse=10.070
+-bottled                     n=445 trees= 859 MSE=101.2932 d=+0.0662 [-0.1765,+0.3244] rmse=10.064
+-queue_counters              n=444 trees= 822 MSE=101.2913 d=+0.0644 [-0.1539,+0.3123] rmse=10.064
+-potion_slots                n=446 trees= 765 MSE=101.2803 d=+0.0534 [-0.2056,+0.2894] rmse=10.064
+-future_encounters(hidden)   n=444 trees= 811 MSE=101.2394 d=+0.0124 [-0.2466,+0.2902] rmse=10.062
+FULL                         n=448 trees= 887 MSE=101.2269 d=+0.0000 [+0.0000,+0.0000] rmse=10.061
+FULL#2                       n=448 trees= 749 MSE=101.1859 d=-0.0411 [-0.2779,+0.1939] rmse=10.059
+-rng_counters(hidden)        n=446 trees= 763 MSE=101.1330 d=-0.0939 [-0.3332,+0.1532] rmse=10.056
+-gold                        n=447 trees= 814 MSE=101.1248 d=-0.1022 [-0.3279,+0.1272] rmse=10.056
+-keys                        n=447 trees=1041 MSE=101.1082 d=-0.1187 [-0.3741,+0.1396] rmse=10.055
+cyclic_relics->presence      n=448 trees= 819 MSE=101.0342 d=-0.1927 [-0.3823,+0.0056] rmse=10.052
+-path_history                n=442 trees= 823 MSE=100.9549 d=-0.2720 [-0.5292,-0.0378] rmse=10.048
++forward_map                 n=460 trees= 978 MSE=99.0760 d=-2.1509 [-2.5050,-1.8037] rmse=9.954
+PUBLIC+forward_map           n=450 trees= 960 MSE=98.9822 d=-2.2447 [-2.6254,-1.8512] rmse=9.949
