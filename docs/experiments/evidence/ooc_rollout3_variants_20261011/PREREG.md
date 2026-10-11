@@ -74,7 +74,7 @@ fresh-seed confirmation before any default proposal.
 
 ## Validity
 
-- The launch gate above passes.
+- The launch gate above passes (passed 2026-10-11, [RERUN-422-70000000.md](RERUN-422-70000000.md)).
 - All 128 units of an arm rc=0 apart from listed stall failures; any other nonzero rc, crash or missing seed makes that
   arm INVALID until explained. Every §422 file the analysis reads must match §422's `data-sha256.txt`.
 - Every log prints `[ooc-mcts-config]` with `"leafValue":"native"`, `"prior":"policy"`, the production
