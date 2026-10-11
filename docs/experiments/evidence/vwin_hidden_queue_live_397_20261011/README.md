@@ -6,7 +6,8 @@ won 104/128: Δwin +0.8 pp, 95% CI [−4.7, +6.3]; 6 public8-only vs 5 legacy-on
 Δfloor −0.18 [−1.13, +0.83]; 54.1 vs 53.2 s per run. 73/128 trajectories diverged; 112/128 seeds ended
 with the same outcome and floor.
 
-- [PREREG.md](PREREG.md): frozen before the pilot ran (copy on the share at the same time).
+- [PREREG.md](PREREG.md): frozen at launch. Its "~21:55Z" line is wrong; the authoritative freeze time is the
+  share copy's mtime 21:46:21Z, with the first unit started 21:46:17Z (about 54 s per seed, so no outcome was known).
 - [arm.sh](arm.sh), [run_pilot.sh](run_pilot.sh): exact environment and units; the only arm difference is
   `STS_OOC_PUBLIC_FUTURES` 0 vs 8.
 - [analyze.py](analyze.py) → [report.json](report.json): `python3 analyze.py <pilot dir>`.
@@ -21,6 +22,7 @@ Raw: `/mnt/project-files/vwin-hidden-397/s434-raw.tar.gz`
 (sha256 `df4983d4df36f3ff981d7a4f4e4f2ec45205110804f596ff993201f979533741`; CSVs, logs, decision traces,
 smoke).
 
-**Limits.** 128 pairs resolve only effects of roughly ±5 pp or larger. Only the §422 off base (V4 gates on,
+**Limits.** 128 pairs cannot resolve effects below about ±8 pp (pre-registered); the observed CI [−4.7, +6.3] still allows
+the leak to be worth up to 4.7 pp. Only the §422 off base (V4 gates on,
 OOC MCTS off, `STS_REST_WIN=0`) was tested; with `STS_REST_WIN=1`, or with V4 gates off, more decisions go
 through the fallback.

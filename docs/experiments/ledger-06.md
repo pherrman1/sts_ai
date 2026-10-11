@@ -16709,7 +16709,8 @@ paragraph of `evaluation/current-research.md`.
 the tracked floor/win trees on a rich row that holds the realized unrevealed `nextEliteId` and `nextFight0..2`;
 `STS_FAIR=1` does not remove them (§371 left this live dependence untested). How much playing strength does that
 hidden information carry on the current research base?
-**Design:** [PREREG](evidence/vwin_hidden_queue_live_397_20261011/PREREG.md), frozen before the pilot. Code main
+**Design:** [PREREG](evidence/vwin_hidden_queue_live_397_20261011/PREREG.md), frozen at launch (share copy 21:46:21Z, first unit
+21:46:17Z, about 54 s per seed; its "~21:55Z" line is wrong). Code main
 `491bc21b`, Release binary `bab14cd5…`. Both arms are the §422 `off` environment (exact-10k fair Silver, V4 gates
 margin 1.0, OOC MCTS off, `STS_REST_WIN=0`, keys off, act-3 stop); sole difference `STS_OOC_PUBLIC_FUTURES` 0
 (legacy) vs 8 (public8: average over 8 public-history-conditioned encounter samples). Seeds 74015000–127, smoke
@@ -16721,8 +16722,9 @@ upper bound < 0, PUBLIC8_BETTER if the lower bound > 0, else LEAK_NOT_SHOWN.
 discordant 6 vs 5 (McNemar p = 1.0); Δfloor −0.18 [−1.13, +0.83]; 54.1 vs 53.2 s per run. 73/128 trajectories
 diverged, but 112/128 seeds ended with the same outcome and floor. Deaths by act legacy 1/7/17, public8 0/10/14.
 **Interpretation (Inference):** the hidden queue changes many fallback choices but no strength advantage is visible;
-effects below about ±5 pp are not resolvable at 128 pairs. Public8 costs no measurable time. Baselines measured
-with the legacy fallback (e.g. the §422 `off` arm) are therefore not shown to be inflated by it.
+128 pairs cannot resolve effects below about ±8 pp (pre-registered); the observed CI still allows the leak to be
+worth up to 4.7 pp. Public8 costs no measurable time. Baselines measured with the legacy fallback (e.g. the §422
+`off` arm) are therefore not shown to be inflated by it, within that bound.
 **Decision:** no default change in this entry. Making `STS_OOC_PUBLIC_FUTURES=8` the default (an
 information-boundary correction, not a strength change) is Philipp's call.
 
