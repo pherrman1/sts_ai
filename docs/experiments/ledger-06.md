@@ -16449,3 +16449,56 @@ G1–G3 control arms.
 
 **Knowledge impact:** `operations/environment-variables.md` documents
 `STS_OOC_STRATEGIC_TOK_CONST_GUARD`; one paragraph in `evaluation/current-research.md`.
+
+## §422 — rollout3 OOC MCTS replicates on the current CTM: +10.9 pp wins over MCTS off (2026-10-10)
+
+**Question:** §277's rollout3 profile (V4 prior, 2048 sims, native `v_win` leaf after 3 extra CTM
+combats) won 28/32 vs V4 24/32 on the old V2 CTM (CI crossed zero). Does it win more runs than MCTS
+off on the current stack? Requested by Philipp after §391's boss-rollout leaf was traced to a
+saturated, noisy 0/1 value (act-1 root Q ≈ 0.997; this thread's probe, seeds 69000001–004).
+**Design:** [PREREG](evidence/ooc_rollout3_replication_20261010/PREREG.md) frozen at `f5734322`
+after independent review (PR #475). Code `cd405b4c`, binary `39cdac96…`, production pathb-r2 CTM,
+sampled noncombat futures, `STS_REST_WIN=0`, 1 OMP thread; control = MCTS off on the §411 research
+base (flat exact-10k Silver). Seeds 70000000–127 (smoke 70009000), 16 cloud workers × 4 CPU.
+Primary: paired bootstrap 95% CI of Δwin; REPLICATED if the lower bound > 0.
+**Validity:** 160/160 units rc=0, 128/128 pairs, no seed failures, config banners checked.
+**Result:** **REPLICATED.** rollout3 115/128 (89.8%) vs off 101/128 (78.9%), Δwin +10.9 pp
+[+2.3, +19.5], discordant 23 vs 9, McNemar p = 0.020. Boss deaths 11 vs 23; Δfloor +0.69
+[−0.65, +2.0]; Δ end HP +12.6. Cost 936 vs 57 s per run (about 16x); 105k simulations and 850 s MCTS
+CPU per run. 19.8% of OOC decisions fell back to V4 (99% of support aborts are Lizard Tail).
+**Interpretation (Inference):** the gain comes mostly from fewer boss deaths. The value comes from
+the 3-combat rollout leaf (contrast §384 `screengbm` leaf −22 pp, §391 boss rollout 9/32).
+**Decision:** no default change (pre-registered). Candidates for follow-up, one variable at a time
+on these seeds: uniform prior, outcome merging, no early stop, cheaper budgets; then a fresh-seed
+confirmation.
+
+**Evidence:** [packet](evidence/ooc_rollout3_replication_20261010/README.md). Raw:
+`/mnt/project-files/ooc-rollout3-replication/`. Seeds 70000000–127 and 70009000 are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §423 — Lizard-capable CTM inside rollout3: aborts gone, no win gain (2026-10-11)
+
+**Question:** in §422, 19.8% of rollout3 OOC decisions fell back to V4, 99% of them on active Lizard Tail states the
+production CTM refuses (Fairy Potion + Tail 1,889, Entropic Brew + Tail 875). Philipp: "first fix the lizard tail issue".
+Does rollout3 with a CTM that prices those states win more than §422 rollout3?
+**Candidate:** production pathb-r2 fast artifact with a header-only `tools/ctm_lizard.py extend --brew --fairy`
+(`c6d56bbc…`, research-candidate manifest `64da1776…`); Brew r refit on the cloud Path B `lizard_fairy`/`lizard_brew`
+corpora, production fast r unchanged, no C++ change. Composed survival on those corpora: Fairy+Tail predicted 0.9987 vs
+observed 0.9984 (119 Tail-fired rows), Brew+Tail 0.9982 vs 0.9977 (43).
+**Design:** [PREREG](evidence/ooc_rollout3_lizard_20261010/PREREG.md), independent review PASS (`bd991730`), run commit
+`cf801ef2`, binary `39cdac96…`. Only the candidate arm ran (16 cloud workers, seeds 70000000–127); control = the
+§422 rollout3 runs, reused after the rerun of seed 70000000 matched them byte for byte. Forced-Tail smoke 72000000–001.
+Primary: paired bootstrap 95% CI of Δwin; IMPROVED / WORSE / NOT_SHOWN.
+**Validity:** 128/128 units rc=0, no seed failures, banners and §422 hashes checked, 0 Lizard support failures.
+**Result:** **NOT_SHOWN.** 111/128 (86.7%) vs 115/128 (89.8%), Δwin −3.1 pp [−10.9, +4.7], discordant 11 vs 15,
+McNemar p = 0.56. Boss deaths 14 vs 11; Δfloor +0.06. Fallback 2.4% vs 19.8%, support aborts 0 vs 21.8 per run;
+1,075 vs 936 s per run. On the 13 seeds with >40% fallback in §422: 11 vs 13 wins.
+**Interpretation (Inference):** the V4 fallback on active-Tail states was not what limited rollout3; pricing those
+states with the composed Fairy/Brew correction does not beat V4 there.
+**Decision:** no default change; the candidate model stays a research artifact (off unless its manifest is set).
+
+**Evidence:** [packet](evidence/ooc_rollout3_lizard_20261010/README.md). Raw: `/mnt/project-files/ooc-rollout3-lizard/`
+and `/mnt/project-files/ooc-lizard-fix/` (fit inputs, smoke). Seeds 72000000–001 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.

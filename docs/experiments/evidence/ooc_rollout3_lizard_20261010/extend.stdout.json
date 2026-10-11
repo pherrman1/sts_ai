@@ -1,0 +1,47 @@
+{
+  "artifact": "/tmp/claude-0/-home-user-sts-ai/2d19bef2-5928-5b0c-ae25-9972a28417f3/scratchpad/lizfix/pathb_r2_lizard.native",
+  "artifactSha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+  "baseArtifactSha256": "90806c25d784f7100b35ec755ad93756bf34d5aa297591891d5d3bb4314ba4f3",
+  "manifest": {
+    "activeLizard": {
+      "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+      "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+      "frozenQrArtifactSha256": "1f84297b48a44e9da7872f406f0a7c27fd3a8861fd001dc0fbb36379801b7e39",
+      "rModel": {
+        "featureMean": [
+          0.8445601195995526
+        ],
+        "featureScale": [
+          0.19684100508001456
+        ],
+        "standardizedCoefficients": [
+          2.376042280595386,
+          0.852911158290625
+        ]
+      },
+      "rModelSha256": "394d4889e66d39759cca8975a10d959f14919ce30fe18af5cffaf806c413466b"
+    },
+    "capabilities": {
+      "fast": {
+        "escape": {
+          "checkpointSha256": "d63c829c019e7e2798232e4f3bcfc5ac02a93d74c33000634d075e36bb0cc5f7"
+        },
+        "lizardBrew": {
+          "rModel": {
+            "featureMean": [
+              0.9220745124444445
+            ],
+            "featureScale": [
+              0.1254272163284112
+            ],
+            "standardizedCoefficients": [
+              1.9365468362108325,
+              0.5448779953885916
+            ]
+          }
+        },
+        "lizardFairy": {}
+      }
+    }
+  }
+}
