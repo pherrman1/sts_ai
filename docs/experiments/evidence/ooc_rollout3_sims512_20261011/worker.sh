@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # §424 cloud worker. From a clean checkout of the run commit:
-#   bash worker.sh setup W     build one_combat (build inputs and models must equal CODE_COMMIT), check the
-#                              binary hash, stage it in $HOME/r3s512-wWW, write OUT/FROZEN.txt
-#   bash worker.sh run W       this worker's 16 one-seed `r512` units, 4 at a time -> OUT/DONE.txt (blocks)
+#   bash worker.sh setup W     build one_combat (build inputs and the models this arm loads must equal
+#                              CODE_COMMIT), check the binary hash, stage it in $HOME/r3s512-wWW, write OUT/FROZEN.txt
+#   bash worker.sh run W       this worker's 16 one-seed `r512` units, 4 at a time, into the local OUT; when all 16
+#                              are done, upload SHARE/wWW.tar and then SHARE/wWW.DONE.txt (blocks)
 #   bash worker.sh status W
 # W = 1..8; worker W runs seeds 70000000+16(W-1) .. +15 (§422 cohort).
+# Units write to local disk; the share gets two files per worker (the shared folder has a file-count limit).
 set -uo pipefail
 CMD=${1:-} W=${2:-0}
 [[ "$W" =~ ^[1-8]$ ]] || { echo "STOP: W must be 1..8"; exit 1; }
@@ -12,7 +14,7 @@ WW=$(printf %02d "$W")
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
 D=docs/experiments/evidence/ooc_rollout3_sims512_20261011
 SHARE=/mnt/project-files/ooc-rollout3-sims512
-OUT=$SHARE/w$WW RUN=$HOME/r3s512-w$WW
+RUN=$HOME/r3s512-w$WW OUT=$HOME/r3s512-w$WW/out
 EXPECT_BIN=$(cat "$D/binary.sha256")
 stop() { echo "STOP: $*"; exit 1; }
 LO=$((70000000 + 16*(W-1)))
@@ -42,8 +44,15 @@ run)
   for k in $(seq 0 15); do echo "r512 $((LO+k)) 1"; done > "$OUT/units.txt"
   xargs -P 4 -L 1 bash "$D/run_unit.sh" "$REPO" "$RUN" "$OUT" < "$OUT/units.txt"
   n=$(ls "$OUT"/*.done 2>/dev/null | wc -l)
-  [ "$n" = $NUNITS ] && { echo "finished=$(date -u +%FT%TZ)"; cat "$OUT"/*.done; grep -h "bestbench-seed-failure" "$OUT"/*.log;
-    sha256sum "$OUT"/*.csv; } > "$OUT/DONE.txt"
+  if [ "$n" = $NUNITS ]; then
+    { echo "finished=$(date -u +%FT%TZ)"; head -1 "$OUT/FROZEN.txt"; cat "$OUT"/*.done; grep -h "bestbench-seed-failure" "$OUT"/*.log;
+      (cd "$OUT" && sha256sum *.csv); } > "$OUT/DONE.txt"
+    mkdir -p "$SHARE" || stop "cannot create $SHARE"
+    tar -C "$RUN" -cf "$RUN/w$WW.tar" out || stop "tar failed"
+    cp "$RUN/w$WW.tar" "$SHARE/w$WW.tar.part" && mv "$SHARE/w$WW.tar.part" "$SHARE/w$WW.tar" || stop "upload failed"
+    cmp -s "$RUN/w$WW.tar" "$SHARE/w$WW.tar" || stop "uploaded tar differs (share full?)"
+    { cat "$OUT/DONE.txt"; echo "tar_sha256=$(sha256sum "$RUN/w$WW.tar" | cut -d' ' -f1)"; } > "$SHARE/w$WW.DONE.txt"
+  fi
   echo "units done: $n/$NUNITS" ;;
 status)
   echo "done $(ls "$OUT"/*.done 2>/dev/null | wc -l)/$NUNITS"; cat "$OUT"/*.done 2>/dev/null

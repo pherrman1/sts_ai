@@ -34,12 +34,14 @@ longer be overtaken within the remaining budget, so it is defined relative to wh
   70000000+16(W−1) .. +15 as one-seed `r512` units, 4 at a time.
 - Smoke (planning container, same binary, this `run_unit.sh`): seed 72000002 rc=0, won, 297 s, banner
   `"simulations":512` and the production `combat_model`; 107/133 decisions owned, 23 support aborts (Lizard),
-  202 s MCTS CPU. Files: `/mnt/project-files/ooc-rollout3-sims512/smoke/`.
+  202 s MCTS CPU. Files were in the planning container's scratch folder (the share was full at the time); not kept.
 - Expected CPU (**Inference** from §422: 850 s MCTS of 936 s per run): about 300 s per run, about 11 CPU-hours, about
   20 min per 4-CPU worker after the build.
 - Per-unit timeout 6 h. Silver stalls are caught per seed by `bestbench` (`[bestbench-seed-failure]`); such seeds drop
   out of the pairs. No seed is rerun or replaced.
-- Output only to `/mnt/project-files/ooc-rollout3-sims512/wNN/`.
+- Units write to the worker's local disk (`$HOME/r3s512-wNN/out/`). When all 16 are done, the worker uploads two files
+  to the share, `/mnt/project-files/ooc-rollout3-sims512/wNN.tar` and then `wNN.DONE.txt` (with the tar's sha256),
+  because the shared folder has a file-count limit. The analysis runs on the extracted tars.
 
 ## Analysis ([tools/analyze_rollout3_sims.py](../../../../tools/analyze_rollout3_sims.py))
 
@@ -51,7 +53,7 @@ seed bootstrap 95% CI (10,000 resamples, seed 424).
 - otherwise **NOT_SHOWN**.
 
 **Secondary (descriptive):** Δwin = win(r512) − win(rollout3 at 2048) with its CI, flagged `within_5pp_of_2048` when
-its lower bound > −5 pp. Also exact McNemar p, Δfloor (CI) and Δ end HP for both comparisons, boss deaths, seconds per
+its lower bound > −5 pp (descriptive only; at 128 pairs it fires only if r512 is at least as good as 2048). Also exact McNemar p, Δfloor (CI) and Δ end HP for both comparisons, boss deaths, seconds per
 run, MCTS CPU, owned and fallback share, support aborts and simulations per run.
 
 **Reading.** 128 pairs resolve about ±8 pp against off. GAIN_KEPT at about a third of the CPU would make 512 the
