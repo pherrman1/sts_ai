@@ -26,6 +26,12 @@ struct CompactTreeNet {
     bool load(const std::string &path, const std::unordered_map<std::string, int> &featureIdx,
               const char *kind = "CompactTreeNet");
     double predict(const std::vector<float> &raw) const;
+    // Bit-identical to calling predict() on each row in turn. Rows that equal
+    // base outside the varying raw features walk each tree together and only
+    // separate at splits on varying features; any other row falls back to
+    // predict().
+    void predictVariants(const std::vector<float> &base, const std::vector<int> &varying,
+                         const std::vector<std::vector<float>> &rows, std::vector<double> &out) const;
     // Evaluate the tree ensemble after integrating selected raw features over
     // a discrete public-belief prior. This is intentionally separate from
     // predict(): callers must opt in and name the ranges they are marginalizing.

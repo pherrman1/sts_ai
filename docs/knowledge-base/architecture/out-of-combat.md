@@ -1012,6 +1012,16 @@ existing queries. The socket bridge uses a bounded connect wait, so an
 explicitly server-dependent path fails fast when localhost:5555 is unavailable
 instead of stalling the whole run.
 
+The native shop plan, card-reward pick and removal pick value their candidate
+rows with `CompactTreeNet::predictVariants` (verified 2026-10-11, §437). Each
+candidate row is the decision's base rich vector with a few known features
+changed (gold, deck size, the affected card and relic counts). All rows walk
+each tree together and separate only at splits on those features, so every row
+reaches the same leaf and accumulates the same margins in the same order as
+`predict()`; a row that differs elsewhere is valued with `predict()`. Values and
+decisions are bitwise unchanged. The shop plan values its subsets in batches of
+up to 1,024 rows and keeps the first strict maximum in enumeration order.
+
 The native OOC research controls in this section and the campfire/removal/card
 subsections below were verified on 2026-10-08.
 

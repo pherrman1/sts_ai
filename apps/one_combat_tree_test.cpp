@@ -144,7 +144,9 @@ int main(int argc, char **argv) {
             if (!idx.count(name)) { const int next = static_cast<int>(idx.size()); idx[name] = next; }
         }
         if (!old.load(argv[a], idx, "legacy") || !current.load(argv[a], idx)) return 1;
+        std::vector<std::vector<float>> seen;
         const auto equal = [&](const std::vector<float> &raw) {
+            seen.push_back(raw);
             const double x = old.predict(raw), y = current.predict(raw); ++checks;
             if (std::memcmp(&x, &y, sizeof(double)) == 0) return true;
             std::cerr << "tree bitwise prediction mismatch at check " << checks << '\n'; return false;
@@ -167,6 +169,32 @@ int main(int argc, char **argv) {
         }
         // Reload the same object: flattened roots/nodes must not retain prior trees.
         if (!current.load(argv[a], idx) || !equal(raw)) return 1;
+        // Variant rows must reproduce the one-row predictions bit for bit,
+        // including rows that differ outside the declared varying features.
+        std::mt19937 variantRng(338);
+        for (int trial = 0; trial < 64; ++trial) {
+            const auto &base = seen[variantRng() % seen.size()];
+            std::vector<int> varying;
+            const int count = 1 + int(variantRng() % 12);
+            for (int k = 0; k < count; ++k) varying.push_back(int(variantRng() % base.size()));
+            std::vector<std::vector<float>> rows{base};
+            for (int r = 0; r < 48; ++r) {
+                auto row = base;
+                for (const int index : varying)
+                    if (variantRng() % 2) row[index] = seen[variantRng() % seen.size()][index];
+                if (r % 16 == 15) row[variantRng() % row.size()] += 1.0f;
+                rows.push_back(std::move(row));
+            }
+            std::vector<double> values;
+            current.predictVariants(base, varying, rows, values);
+            if (values.size() != rows.size()) { std::cerr << "tree variant size mismatch\n"; return 1; }
+            for (std::size_t r = 0; r < rows.size(); ++r) {
+                const double y = current.predict(rows[r]); ++checks;
+                if (std::memcmp(&values[r], &y, sizeof(double)) != 0) {
+                    std::cerr << "tree variant bitwise mismatch at trial " << trial << " row " << r << '\n'; return 1;
+                }
+            }
+        }
     }
     std::cout << "compact tree parity: " << checks << " bitwise double comparisons\n";
     return 0;
