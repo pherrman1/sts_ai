@@ -1,0 +1,26 @@
+ALL409 random (expected)                 n= 409 top1 0.260 [0.246,0.273] tie 0.260 [0.246,0.273] regret 4.781 [4.293,5.293]
+ALL409 heuristic (gold-run choice)       n= 401 top1 0.354 [0.307,0.401] tie 0.281 [0.244,0.318] regret 4.450 [3.752,5.188]
+
+== prod: multi-option targets 409, searched 398, state-verified 386
+   not owned (per search): {'no_selection:boundary': 4, 'selected_bits_not_a_labeled_option': 28}
+prod: random, verified                   n= 386 top1 0.260 [0.246,0.273] tie 0.260 [0.246,0.273] regret 4.877 [4.371,5.394]
+prod: heuristic, verified                n= 378 top1 0.344 [0.296,0.394] tie 0.276 [0.238,0.315] regret 4.549 [3.833,5.326]
+prod: MCTS live (fallback=heuristic)     n= 378 top1 0.252 [0.210,0.295] tie 0.280 [0.242,0.318] regret 4.354 [3.681,5.088]  dTop1 -0.092 [-0.151,-0.035] dRegret -0.195 [-0.893,0.492]
+prod: MCTS owned only                    n= 375 top1 0.251 [0.208,0.295] tie 0.281 [0.243,0.320] regret 4.383 [3.686,5.132]  dTop1 -0.093 [-0.151,-0.033] dRegret -0.197 [-0.891,0.496]
+prod: owned, screen 1                    n=  33 top1 0.455 [0.288,0.621] tie 0.477 [0.318,0.636] regret 5.889 [2.829,9.466]  dTop1 0.242 [-0.008,0.477] dRegret -4.291 [-9.004,0.617]
+prod: owned, screen 2                    n= 204 top1 0.121 [0.077,0.167] tie 0.187 [0.147,0.229] regret 4.645 [3.744,5.631]  dTop1 -0.168 [-0.234,-0.103] dRegret 0.412 [-0.169,1.087]
+prod: owned, screen 4                    n=  16 top1 0.156 [0.016,0.344] tie 0.159 [0.024,0.338] regret 5.070 [2.496,7.762]  dTop1 -0.094 [-0.344,0.141] dRegret 0.246 [-2.906,3.246]
+prod: owned, screen 5                    n=  66 top1 0.485 [0.367,0.602] tie 0.446 [0.339,0.554] regret 4.162 [2.542,6.073]  dTop1 0.000 [-0.167,0.170] dRegret 0.147 [-1.746,1.904]
+prod: owned, screen 7                    n=  22 top1 0.545 [0.318,0.773] tie 0.409 [0.242,0.583] regret 1.861 [0.486,3.989]  dTop1 0.091 [-0.136,0.318] dRegret -1.906 [-5.582,0.028]
+prod: owned, screen 8                    n=  19 top1 0.105 [0.000,0.263] tie 0.122 [0.024,0.252] regret 5.099 [2.431,8.280]  dTop1 -0.158 [-0.316,0.000] dRegret 0.964 [-0.066,2.158]
+   agreement with heuristic 0.459; same pick across searches (modal share) 0.985
+
+== rollout3: multi-option targets 409, searched 398, state-verified 386
+   not owned (per search): {'no_selection:hp_envelope': 54, 'no_selection:active_unqualified_lizard': 167, 'no_selection:active_lizard_entropic_brew_unsupported': 149, 'selected_bits_not_a_labeled_option': 6, 'no_selection:boundary': 4}
+rollout3: random, verified               n= 386 top1 0.260 [0.246,0.273] tie 0.260 [0.246,0.273] regret 4.877 [4.371,5.394]
+rollout3: heuristic, verified            n= 378 top1 0.344 [0.296,0.394] tie 0.276 [0.238,0.315] regret 4.549 [3.833,5.326]
+rollout3: MCTS live (fallback=heuristic) n= 378 top1 0.286 [0.247,0.327] tie 0.295 [0.260,0.332] regret 4.222 [3.570,4.915]  dTop1 -0.058 [-0.103,-0.014] dRegret -0.326 [-0.768,0.116]
+rollout3: MCTS owned only                n= 188 top1 0.226 [0.170,0.285] tie 0.271 [0.220,0.323] regret 4.375 [3.396,5.434]  dTop1 -0.061 [-0.136,0.013] dRegret -0.237 [-0.986,0.555]
+rollout3: owned, screen 2                n= 106 top1 0.097 [0.047,0.156] tie 0.185 [0.134,0.239] regret 4.350 [3.227,5.587]  dTop1 -0.167 [-0.259,-0.083] dRegret 0.432 [-0.033,1.069]
+rollout3: owned, screen 5                n=  29 top1 0.560 [0.397,0.716] tie 0.534 [0.379,0.681] regret 3.624 [1.289,7.007]  dTop1 0.216 [0.017,0.414] dRegret -2.440 [-5.156,-0.081]
+   agreement with heuristic 0.480; same pick across searches (modal share) 0.953

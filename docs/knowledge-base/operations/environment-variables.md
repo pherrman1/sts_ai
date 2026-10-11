@@ -183,6 +183,10 @@ enable flag:
 | `STRATEGIC_BRANCH_FIGHTS` | Branch-fight futures per action | 2 | `main` ~L9426 |
 | `STRATEGIC_BRANCH_SIMS` | Comma-separated sim budgets per branch | unset | `main` ~L9428 |
 | `STRATEGIC_BRANCH_FUTURES` | Futures per branch fight | 4 | `main` ~L9435 |
+| `STRATEGIC_MCTS_TARGETS` | Research (§425): `seed,decIdx` file; `strategicgen2` replays without branching and scores live-configured OOC MCTS (`STS_OOC_MCTS=1`) at each target; needs `OMP_NUM_THREADS=1` | unset | `strategic_gen.cpp::strategicMctsTargets` |
+| `STRATEGIC_MCTS_OUT` | JSONL root summaries for `STRATEGIC_MCTS_TARGETS` | unset | same |
+| `STRATEGIC_MCTS_FORCE` | `seed,decIdx,bits` file: replay recorded actions instead of the policy | unset | same |
+| `STRATEGIC_MCTS_REPS` / `STRATEGIC_MCTS_SEED_SHIFT` | Searches per target (run seed +100000 each) / search run seed offset | 1 / 0 | same |
 | `STS_LEAFDIAG_PER_STRATUM` | Leafdiag reservoir capacity per stratum | varies | `main` ~L9880 |
 | `STS_LEAFDIAG_DEEP_DEPTH` | Leafdiag deep-tree stratum threshold | varies | `main` ~L9885 |
 | `STS_FRONTIERGEN_PER_STRATUM` | Frontiergen reservoir capacity per stratum | varies | `main` ~L9890 |

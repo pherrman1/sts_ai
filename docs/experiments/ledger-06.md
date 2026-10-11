@@ -16502,3 +16502,28 @@ states with the composed Fairy/Brew correction does not beat V4 there.
 and `/mnt/project-files/ooc-lizard-fix/` (fit inputs, smoke). Seeds 72000000–001 are now used.
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §425 — OOC MCTS root picks on the A20 gold decisions: no better than the heuristic (2026-10-11)
+
+**Question (Philipp):** how often does OOC MCTS pick the best option at A20, on the §419 gold labels
+(524 decisions, every option played to the run's end 16 times)? All MCTS models are A0-trained.
+**Design:** offline, no live play. `strategicgen2` replay (run commit `d93fad14`, binary `cd0bb658…`) re-plays each
+gold run with its recorded actions and runs 4 OOC MCTS searches per labeled decision (search run seeds
+73000000–73324999). Arms: `prod` (§411/§414 settings, `screengbm` leaf, pathb-r2 CTM) and `rollout3` (§422).
+Targets scored only if every replayed row up to the decision matches the gold row; 386 of 409 multi-option decisions
+verified. Decision bootstrap, 10,000 samples.
+**Result:** on 378 verified decisions with a recorded choice, mean floor regret: heuristic 4.55, `prod` 4.35
+(Δ −0.20 [−0.89, +0.49]), `rollout3` 4.22 (Δ −0.33 [−0.77, +0.12]); random 4.88. Tie-aware top-1 0.276 / 0.280 /
+0.295 (random 0.260). Strict top-1 (GOLD-RESULT definition) 0.344 / 0.252 / 0.286; the gap comes from reward screens,
+where the heuristic's gold-pile pick wins first-argmax ties and MCTS collects gold at the root. `rollout3` aborts
+24% of searches at A20 (Lizard Tail 316, `hp_envelope` 54 of 1,544) and falls back.
+**Interpretation (Inference):** with A0 models, OOC MCTS is not measurably better than the heuristic at A20, and
+neither is far from random on these labels. Rerun with A20 floor/win models when they exist.
+**Side finding (Inference):** the gold runs' own policy is not reproducible without branching:
+`finishOocCounterfactual` leaves `t_curPath` pointing at its by-value `path`, so the main trajectory after the first
+labeled decision read a dangling path. Branch labels are unaffected; the "heuristic" choices are that policy's.
+
+**Evidence:** [packet](evidence/ooc_mcts_a20_gold_20261011/README.md). Seeds 73000000–73324999 (search run seeds)
+are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
