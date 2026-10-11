@@ -479,6 +479,9 @@ void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, lon
 
 void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0);
 
+void oocPolicyDriftProbe(int nSeeds, int sims, int asc, const std::string &outFile,
+                         long long seedOffset, const std::string &mainName);
+
 std::string strategicHeader();
 
 void strategicMargGen(int nSeeds, int outerSims,

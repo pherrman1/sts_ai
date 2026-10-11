@@ -173,6 +173,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/strategic_gen.cpp
+    apps/one_combat/policy_drift_probe.cpp
     apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

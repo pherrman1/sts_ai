@@ -3664,6 +3664,15 @@ int main(int argc, char **argv) {
         long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
         strategicGen2(nSeeds, sims, asc, out, seedOff);
 
+    } else if (mode == "oocpolicydrift") {  // §431 probe: generator OOC chains vs runFullRunOocPolicyStep
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 8;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/ooc_policy_drift.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        std::string mainChain = argc > 7 ? argv[7] : "canon";
+        oocPolicyDriftProbe(nSeeds, sims, asc, out, seedOff, mainChain);
+
     } else if (mode == "mapbatch") {      // companion full-map graph table for rich/meta/card CSVs
         if (argc < 4) {
             std::cerr << "usage: one_combat mapbatch SOURCE.csv MAPS.csv\n";
