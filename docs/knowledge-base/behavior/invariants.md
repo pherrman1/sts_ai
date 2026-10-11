@@ -64,6 +64,16 @@ See
   Blocked direct use preserves the potion, while the independent discard action
   remains legal (`BattleContext::smokeBombEscapeBlocked`, `drinkPotion`,
   `exitBattle`; `GameContext::afterBattle`; CTest `issue_fixes`).
+- Every combat end that is not a loss runs `GameContext::relicsOnCombatEnd`
+  (Face of Cleric +1 max HP) exactly once. Victory healing (Meat on the Bone,
+  Burning/Black Blood) runs earlier in `BattleContext::updateRelicsOnExit`.
+  `afterBattle` calls the hook; event fight continuations that replace
+  `afterBattle` (Colosseum's two fights, Dead Adventurer, Masked Bandits,
+  Mushrooms, Mind Bloom) call it themselves, and their escape paths go
+  through `afterBattle`. Before 2026-10-11 those continuations skipped Face of
+  Cleric. The screen-leaf continuation importer mirrors this
+  (`apps/one_combat/screen_leaf_continuations.cpp`; CTest `issue_fixes`,
+  `screen_leaf_continuations`).
 - Victory is only granted when `monstersAlive == 0` and no monster is a
   half-dead Awakened One stage 1 awaiting its mandatory rebirth
   (`MonsterGroup::anyHalfDead`, `src/combat/Monster.cpp::die`). Darklings are

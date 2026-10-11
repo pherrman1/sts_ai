@@ -295,6 +295,10 @@ namespace sts {
         void enterAct3VictoryRoom();
         void enterBattle(MonsterEncounter encounter);
         void afterBattle();
+        // Post-combat relic effects that Java runs on every combat end
+        // (Face of Cleric). afterBattle() calls it; event fight
+        // continuations that replace afterBattle() must call it too.
+        void relicsOnCombatEnd();
 
         // actions
         void obtainCard(Card c, int count=1);

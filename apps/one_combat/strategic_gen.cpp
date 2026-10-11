@@ -214,6 +214,9 @@ void strategicMargGen(int nSeeds, int outerSims,
     std::mutex outMtx;
     int totalDecisions = 0;
     const double v4Threshold = g_oocStrategicMargin;
+    // Consistency of Pass 2 with Pass 1: the source-chosen replay must reach the
+    // source run's post-decision state, and the stored row must match the snapshot.
+    std::atomic<int> replayChecks{0}, replayMismatches{0}, stateRowMismatches{0};
 
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
@@ -226,6 +229,8 @@ void strategicMargGen(int nSeeds, int outerSims,
             std::vector<search::GameAction> actions;
             int decIdx, screen, gateKind, actNum, floorNum;
             std::string stateRow;
+            std::default_random_engine agentRng;   // source agent RNG before this decision
+            StratFingerprint sourcePostFp{};       // source state after this decision
         };
         std::vector<DecisionSnap> snaps;
         {
@@ -242,6 +247,7 @@ void strategicMargGen(int nSeeds, int outerSims,
                 int screen = (int)gc.screenState;
                 int gateKind = 0;
                 bool isOwned = false;
+                bool snapped = false;
                 if (screen == 1) { gateKind = 1; isOwned = true; }
                 else if (screen == 2) { auto &r = gc.info.rewardsContainer; if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; } }
                 else if (screen == 3) { gateKind = 3; isOwned = true; }
@@ -254,13 +260,17 @@ void strategicMargGen(int nSeeds, int outerSims,
                     GameContext pre = detachedCounterfactualCopy(gc);
                     auto actions = search::GameAction::getAllActionsInState(gc);
                     if (actions.size() >= 2) {
+                        // Build the row before pre is moved into the snapshot.
+                        std::string stateRow = richRow(pre, path);
                         snaps.push_back({std::move(pre), path, std::move(actions),
                                          decIdx, screen, gateKind, gc.act, gc.floorNum,
-                                         richRow(pre, path)});
+                                         std::move(stateRow), agent.rng});
+                        snapped = true;
                     }
                     ++decIdx;
                 }
                 stepFrozenV4Ooc(gc, agent);
+                if (snapped) snaps.back().sourcePostFp = stratFingerprint(gc);
             }
             t_curPath = nullptr;
         }
@@ -306,6 +316,9 @@ void strategicMargGen(int nSeeds, int outerSims,
             evalAgent.rng = std::default_random_engine(seed);
         for (auto &snap : snaps) {
             auto &pre = snap.pre; auto &prePath = snap.prePath;
+            // Pass 1 ran the policy with the run's path; Pass 2 replays it from
+            // the snapshot, and each branch evaluation clears t_curPath.
+            t_curPath = &prePath;
             auto &actions = snap.actions;
             int screen = snap.screen, gateKind = snap.gateKind;
             int actNum = snap.actNum, floorNum = snap.floorNum;
@@ -325,6 +338,9 @@ void strategicMargGen(int nSeeds, int outerSims,
 
             // Fallback via fingerprint (abbreviated — identical to existing code)
             int fallbackIdx = -1, fallbackExact = 0;
+            // The policy draws from the agent RNG (e.g. event stepRandom), so each
+            // replay starts from the source agent's RNG state at this decision.
+            evalAgent.rng = snap.agentRng;
             {
                 GameContext fbGc = detachedCounterfactualCopy(pre);
                 if (screen == 1) evalAgent.stepOutOfCombatPolicy(fbGc);
@@ -347,10 +363,19 @@ void strategicMargGen(int nSeeds, int outerSims,
 
             // Source chosen
             int chosenIdx = -1, chosenExact = 0;
+            if (t_curPath != &prePath) {
+                std::fprintf(stderr, "strategicmarggen: t_curPath not restored before source replay "
+                                     "(seed %llu decision %d)\n", (unsigned long long)seed, decIdx);
+                std::abort();
+            }
             {
                 GameContext postGc = detachedCounterfactualCopy(pre);
+                evalAgent.rng = snap.agentRng;
                 stepFrozenV4Ooc(postGc, evalAgent);
                 auto postFp = stratFingerprint(postGc);
+                if (!(postFp == snap.sourcePostFp)) ++replayMismatches;
+                if (richRow(pre, prePath) != stateRow) ++stateRowMismatches;
+                ++replayChecks;
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     GameContext tGc = detachedCounterfactualCopy(pre);
                     actions[ai].execute(tGc);
@@ -448,6 +473,7 @@ void strategicMargGen(int nSeeds, int outerSims,
             #undef EMIT_ROW
             ++localDecisions;
         }
+        t_curPath = nullptr;
         }  // end evalAgent scope
 
         // Source outcome post-processing
@@ -476,6 +502,8 @@ void strategicMargGen(int nSeeds, int outerSims,
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
+    std::printf("source replay checks %d, replay mismatches %d, stateRow mismatches %d\n",
+                replayChecks.load(), replayMismatches.load(), stateRowMismatches.load());
 }
 
 
@@ -529,6 +557,63 @@ static std::string strategicHeader2() {
              + (altBootstrapEnabled() ? ",labelWonAlt,labelFloorAlt" : "") + "\n";
 }
 
+// Research (§425): STRATEGIC_MCTS_TARGETS=file of "seed,decIdx" lines replays
+// the main run without Tier-B branching (optionally forcing a recorded
+// trajectory, STRATEGIC_MCTS_FORCE) and, after the run acts at each
+// target decision, runs one live-configured OOC MCTS decision on the
+// pre-decision state (STS_OOC_MCTS=1 and its knobs). Root summaries go to
+// STRATEGIC_MCTS_OUT (JSONL); the search run seed is seed + STRATEGIC_MCTS_SEED_SHIFT.
+// The run stops after its last target. Default (unset) is unchanged.
+namespace {
+struct StrategicMctsTargets {
+    bool on = false;
+    std::map<std::uint64_t, std::set<int>> decisions;
+    // Optional STRATEGIC_MCTS_FORCE="seed,decIdx,bits" lines: replay a recorded
+    // trajectory's chosen actions instead of re-running the policy.
+    std::map<std::pair<std::uint64_t, int>, std::uint32_t> forced;
+    std::string out;
+    long long seedShift = 0;
+    int reps = 1;   // STRATEGIC_MCTS_REPS: searches per target, run seeds shifted by 100000 each
+};
+const StrategicMctsTargets &strategicMctsTargets() {
+    static const StrategicMctsTargets targets = [] {
+        StrategicMctsTargets t;
+        const char *path = std::getenv("STRATEGIC_MCTS_TARGETS");
+        if (!path || !*path) return t;
+        if (!one_combat::liveOocMctsEnabled())
+            throw std::runtime_error("STRATEGIC_MCTS_TARGETS requires STS_OOC_MCTS=1");
+        const char *out = std::getenv("STRATEGIC_MCTS_OUT");
+        if (!out || !*out) throw std::runtime_error("STRATEGIC_MCTS_TARGETS requires STRATEGIC_MCTS_OUT");
+        std::ifstream in(path);
+        if (!in) throw std::runtime_error("STRATEGIC_MCTS_TARGETS cannot open input");
+        std::string line;
+        while (std::getline(in, line)) {
+            const auto comma = line.find(',');
+            if (line.empty() || comma == std::string::npos) continue;
+            t.decisions[std::stoull(line.substr(0, comma))].insert(std::stoi(line.substr(comma + 1)));
+        }
+        t.on = true;
+        t.out = out;
+        if (const char *shift = std::getenv("STRATEGIC_MCTS_SEED_SHIFT")) t.seedShift = std::stoll(shift);
+        if (const char *reps = std::getenv("STRATEGIC_MCTS_REPS")) t.reps = std::max(1, std::stoi(reps));
+        if (const char *force = std::getenv("STRATEGIC_MCTS_FORCE"); force && *force) {
+            std::ifstream fin(force);
+            if (!fin) throw std::runtime_error("STRATEGIC_MCTS_FORCE cannot open input");
+            while (std::getline(fin, line)) {
+                std::istringstream ls(line);
+                std::string a, b, c;
+                if (!std::getline(ls, a, ',') || !std::getline(ls, b, ',') || !std::getline(ls, c)) continue;
+                t.forced[{std::stoull(a), std::stoi(b)}] = (std::uint32_t)std::stoul(c);
+            }
+            std::cout << "[strategic MCTS forced trajectory: " << t.forced.size() << " decisions]\n";
+        }
+        return t;
+    }();
+    return targets;
+}
+std::mutex g_strategicMctsOutMutex;
+}  // namespace
+
 static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
@@ -549,6 +634,13 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
     std::vector<std::pair<int, int>> labelRanges;
     std::vector<std::vector<std::string>> labelSets;
     int eligible = 0;
+    const auto &mctsTargets = strategicMctsTargets();
+    const std::set<int> *seedTargets = nullptr;
+    if (mctsTargets.on) {
+        const auto it = mctsTargets.decisions.find(seed);
+        if (it == mctsTargets.decisions.end() || it->second.empty()) return {};
+        seedTargets = &it->second;
+    }
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
@@ -605,7 +697,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 labelSlot = std::uniform_int_distribution<int>(0, g_strategicSamplesPerRun - 1)(reservoir);
             }
         }
-        if (labelSlot >= 0) {
+        if (labelSlot >= 0 && !mctsTargets.on) {
             auto &labels = labelSets[labelSlot];
             labels.resize(actions.size());
             for (int a = 0; a < (int)actions.size(); ++a) {
@@ -653,13 +745,30 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 labelRanges.emplace_back((int)rows.size(), (int)rows.size() + (int)actions.size());
             else
                 labelRanges[labelSlot] = {(int)rows.size(), (int)rows.size() + (int)actions.size()};
+            // finishOocCounterfactual clears t_curPath on return.
+            t_curPath = &path;
+        }
+
+        // The live policy below reads the run's path history through t_curPath.
+        if (t_curPath != &path) {
+            std::fprintf(stderr, "strategicgen2: t_curPath not restored before policy step "
+                                 "(seed %llu decision %d)\n", (unsigned long long)seed, decIdx);
+            std::abort();
         }
 
         // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
         // heuristic map pathing, forced non-card rewards one at a time, native
         // floor card pick with skip, win-rate rest/upgrade, else the agent's
         // heuristic OOC policy.
-        if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+        const search::GameAction *forcedAction = nullptr;
+        if (mctsTargets.on) {
+            const auto it = mctsTargets.forced.find({seed, decIdx});
+            if (it != mctsTargets.forced.end())
+                for (const auto &a : actions) if (a.bits == it->second) forcedAction = &a;
+        }
+        if (forcedAction) {
+            forcedAction->execute(gc);
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
@@ -714,9 +823,37 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
             rows.push_back(r.str());
             rowLabel.push_back("");
         }
+        if (seedTargets && seedTargets->count(decIdx)) {
+            std::vector<std::uint32_t> bits;
+            for (const auto &a : actions) bits.push_back(a.bits);
+            for (int rep = 0; rep < mctsTargets.reps; ++rep) {
+                // V4 is the search prior only; the replayed main run never sees it.
+                g_oocStrategicTokNet.ok = true;
+                nlohmann::json row;
+                const long long runSeed = (long long)seed + mctsTargets.seedShift + 100000LL * rep;
+                try {
+                    row = one_combat::scoreLiveOocMctsDecision(pre, prePath, (std::uint64_t)runSeed, (std::uint64_t)decIdx);
+                } catch (...) { g_oocStrategicTokNet.ok = false; throw; }
+                g_oocStrategicTokNet.ok = false;
+                t_curPath = &path;
+                row["seed"] = seed; row["decIdx"] = decIdx; row["rep"] = rep; row["searchRunSeed"] = runSeed;
+                row["screen"] = (int)pre.screenState;
+                row["floor"] = pre.floorNum; row["act"] = pre.act; row["actionBits"] = bits;
+                if (rep == 0) row["richRow"] = richRow(pre, prePath);
+                std::lock_guard<std::mutex> lock(g_strategicMctsOutMutex);
+                std::ofstream out(mctsTargets.out, std::ios::app);
+                if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STRATEGIC_MCTS_OUT write failed");
+            }
+            if (decIdx >= *seedTargets->rbegin()) break;
+        }
     }
     t_curPath = nullptr;
 
+    if (mctsTargets.on) {
+        std::ostringstream out;   // verification rows: features only, no terminal fields
+        for (const auto &row : rows) out << row << '\n';
+        return out.str();
+    }
     if (!trainingRunValid(gc.outcome != GameOutcome::UNDECIDED)) return {};
 
     // Append the surviving Tier-B labels to their decision's rows.  The labels
@@ -747,6 +884,11 @@ void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, lo
               << "  branchSims";
     for (const int s : g_strategicBranchSims) std::cout << ':' << s;
     std::cout << "  futures " << g_strategicBranchFutures << "  -> " << outFile << "\n";
+    if (strategicMctsTargets().on) {
+        // The gold main run had no V4 policy loaded; keep it out of the replay.
+        if (numThreads() != 1) throw std::runtime_error("STRATEGIC_MCTS_TARGETS requires OMP_NUM_THREADS=1");
+        g_oocStrategicTokNet.ok = false;
+    }
     std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
     if (f.tellp() == 0) {
         f << strategicHeader2();
