@@ -2051,6 +2051,10 @@ bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, co
     const auto before = offer.deck.size();
     PathHistory offerPath = path;
     t_curPath = &offerPath;
+    // The offer is a detached copy valued by the caller's real policy step, so
+    // a combat-playing oracle (act-fight probe, boss draft) may fight on it.
+    // Inside an imagined continuation the outer prohibition still holds.
+    sts::search::g_disallowImaginedCombat = scope.disallowed;
     step(offer);
     return offer.deck.size() > before;
 }
