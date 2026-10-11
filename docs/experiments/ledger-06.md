@@ -16502,3 +16502,25 @@ states with the composed Fairy/Brew correction does not beat V4 there.
 and `/mnt/project-files/ooc-lizard-fix/` (fit inputs, smoke). Seeds 72000000–001 are now used.
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §424 — rollout3 at 512 simulations: a third of the cost, between off and 2048 (2026-10-11)
+
+**Question:** rollout3 at 2048 simulations (§422) wins +10.9 pp over MCTS off at about 16x CPU. Philipp: "continue,
+lets do 512 sims". Does rollout3 at 512 simulations still beat MCTS off, and how much of the 2048 result does it keep?
+**Design:** [PREREG](evidence/ooc_rollout3_sims512_20261011/PREREG.md), independent review PASS (`3c9493da`; delta
+`ab16de57` for tar upload). Arm `r512` = §422 rollout3 environment with `STS_OOC_MCTS_SIMS=512`, binary `39cdac96…`,
+8 cloud workers × 16 seeds 70000000–127; controls = §422 `off` (primary) and `rollout3` 2048 (secondary), reused (the
+§423 launch gate showed §422 runs rerun byte for byte). Smoke 72000002. Primary: paired bootstrap 95% CI of
+r512 − off; GAIN_KEPT / WORSE_THAN_OFF / NOT_SHOWN.
+**Validity:** 128/128 units rc=0, no seed failures, tar hashes, banners and §422 hashes checked.
+**Result:** **NOT_SHOWN.** r512 108/128 (84.4%) vs off 101/128 (78.9%): +5.5 pp [−3.9, +14.8], discordant 23 vs 16,
+p = 0.34. Secondary vs 2048 (115/128): −5.5 pp [−12.5, +1.6], 7 vs 14, p = 0.19. Boss deaths 15 vs 23 (off) and
+11 (2048). 331 s per run vs 57 (off) and 936 (2048); 29k simulations and 257 s MCTS CPU per run.
+**Interpretation (Inference):** 512 lands between off and 2048 on wins, boss deaths, floor and end HP, so the gain
+grows with the budget instead of saturating by 512; 128 pairs cannot size either gap.
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_rollout3_sims512_20261011/README.md). Raw: `/mnt/project-files/ooc-rollout3-sims512/`
+(one tar per worker). Seed 72000002 is now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
