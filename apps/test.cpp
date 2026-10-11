@@ -3300,6 +3300,68 @@ int testIssueFixes() {
             if (!fought) { std::cerr << c.name << '\n'; return fail("event Smoke Bomb test found no seed reaching the fight"); }
         }
     }
+    // Face of Cleric (Java onVictory) gains exactly +1 max HP after every
+    // won or escaped event fight, including those whose continuation
+    // replaces afterBattle() (Colosseum, Dead Adventurer, Masked Bandits,
+    // Mushrooms, Mind Bloom).
+    {
+        struct Case { Event event; int act; int option; const char *name; };
+        for (const bool escapeFight : {false, true}) {
+            for (const Case c : {Case{Event::COLOSSEUM, 2, 0, "Colosseum slavers"},
+                                 Case{Event::COLOSSEUM, 2, 1, "Colosseum Nobs"},
+                                 Case{Event::DEAD_ADVENTURER, 1, 0, "Dead Adventurer"},
+                                 Case{Event::MASKED_BANDITS, 2, 1, "Masked Bandits"},
+                                 Case{Event::HYPNOTIZING_COLORED_MUSHROOMS, 1, 0, "Mushrooms"},
+                                 Case{Event::MINDBLOOM, 3, 0, "Mind Bloom"},
+                                 Case{Event::MYSTERIOUS_SPHERE, 3, 0, "Mysterious Sphere"}}) {
+                // Mind Bloom fights a boss, which blocks Smoke Bomb.
+                if (escapeFight && c.event == Event::MINDBLOOM) continue;
+                bool fought = false;
+                for (std::uint64_t seed = 123456789; seed < 123456789 + 64 && !fought; ++seed) {
+                    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+                    gc.act = c.act;
+                    gc.floorNum = c.act == 1 ? 8 : (c.act == 2 ? 25 : 42);
+                    gc.curMapNodeY = 9;
+                    gc.curRoom = Room::EVENT;
+                    gc.curEvent = c.event;
+                    gc.setupEvent();
+                    gc.relics.add({RelicId::FACE_OF_CLERIC, 0});
+                    if (c.event == Event::COLOSSEUM && c.option == 1) {
+                        // Win the slaver fight first to reach the Nob choice.
+                        gc.chooseEventOption(0);
+                        BattleContext slavers;
+                        slavers.init(gc, gc.info.encounter);
+                        slavers.outcome = Outcome::PLAYER_VICTORY;
+                        slavers.exitBattle(gc);
+                        if (gc.screenState != ScreenState::EVENT_SCREEN) return fail("Colosseum slaver win did not reopen the event");
+                    }
+                    for (int i = 0; i < 3 && gc.screenState == ScreenState::EVENT_SCREEN; ++i)
+                        gc.chooseEventOption(c.option);
+                    if (gc.screenState != ScreenState::BATTLE) continue;
+                    fought = true;
+                    BattleContext bc;
+                    bc.init(gc, gc.info.encounter);
+                    if (escapeFight) {
+                        bc.potions[0] = Potion::SMOKE_BOMB;
+                        bc.potionCount = 1;
+                        const search::Action useSmoke(search::ActionType::POTION, 0);
+                        if (!useSmoke.isValidAction(bc)) { std::cerr << c.name << '\n'; return fail("event fight rejected Smoke Bomb"); }
+                        useSmoke.execute(bc);
+                    } else {
+                        bc.outcome = Outcome::PLAYER_VICTORY;
+                    }
+                    const int maxHpBefore = bc.player.maxHp;
+                    bc.exitBattle(gc);
+                    if (gc.maxHp != maxHpBefore + 1 || gc.outcome != GameOutcome::UNDECIDED) {
+                        std::cerr << c.name << (escapeFight ? " escape" : " victory")
+                                  << " maxHp " << maxHpBefore << " -> " << gc.maxHp << '\n';
+                        return fail("Face of Cleric did not fire exactly once after an event fight");
+                    }
+                }
+                if (!fought) { std::cerr << c.name << '\n'; return fail("Face of Cleric test found no seed reaching the fight"); }
+            }
+        }
+    }
     // Boss and SURROUNDED fights reject use, preserve the potion on direct
     // execution, and still expose the independent discard action.
     {
