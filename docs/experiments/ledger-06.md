@@ -16552,3 +16552,68 @@ cleared at labeled decisions reproduces seeds 69100000 and 69101007 exactly. Bra
 are now used; the Lizard check used search seeds 74002000–74002003 (Lizard thread's 74002xxx block).
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §432 — `strategicgen2` branch futures replayed the same combats; with independent futures, short-branch labels beat the heuristic at A20 (2026-10-11)
+
+**Question:** §419's A20 Q-head retrains and §425's MCTS scoring used `strategicgen2` labels averaged over
+`STRATEGIC_BRANCH_FUTURES` (4 in the §419 corpus, 16 in the gold set). Are those futures independent, and which
+label source ranks A20 options best once they are?
+**Bug (verified in code and by rerun):** each future only changed the agent RNG. Native Silver combat does not
+consume it, and battle RNG is `Random(gc.seed + gc.floorNum)` (`src/combat/BattleContext.cpp:50`), so every future
+of an option replayed the same fights. The §419 corpus labels and the 16-future gold labels are about one game-RNG
+sample per option, not 4 or 16. The pilot short-branch labels (3 fights, 8 futures) also replayed gold's own first
+fights, which made them agree with gold more than they should. **Unverified:** which A0 `strategicgen2` corpora with
+`STRATEGIC_BRANCH_FUTURES>1` are affected the same way.
+**Fix (default off):** `STRATEGIC_BRANCH_RESEED=1` sets each future's `gc.seed` to its branch seed and redraws the
+act's remaining encounters before the action; all options of a decision share future `f` (common random numbers).
+Persistent out-of-combat streams (`cardRng`, `eventRng`, `merchantRng`, …; `GameContext.cpp:92-102`) are not
+reseeded. `STRATEGIC_BRANCH_FUTURE_OFFSET` shifts the branch seed index so two runs on the same decisions get
+disjoint futures. Default-off labels are unchanged (seed 69100001 byte-identical).
+**Design:** commit `65ed71f4`, Release `one_combat` sha256 `a2ef5fb3…`, ASC 20, Silver 2k with the natpert prior
+(weight 400), the 262 §419 gold seeds (69100000+1000W+k, reused on purpose).
+- **Gold2:** full-run labels, `STRATEGIC_BRANCH_FUTURES=16`, `RESEED=1`, offset 0, 25 workers. 260/262 seeds
+  finished (69116003 crashed with Silver "descent exceeded depth bound"; 69103004 hit the 12,000 s timeout after
+  repeated loop-guard lost fights). Main trajectories match the old gold row for row (108,579 rows, 0 `chosen` or
+  floor mismatches), so the decisions are the same; old-vs-Gold2 option labels correlate 0.81.
+- **SB2:** short-branch labels, 3 fights then a value-tree bootstrap, `FUTURES=8`, `RESEED=1`, offset 100 (disjoint
+  from Gold2), 8 workers. Each option is scored by both the A0 trees (`v_rich_trees`, `v_win_trees`) and the A20
+  candidates `models/candidates/v_rich_a20_419.txt` / `v_win_a20_419.txt` via `STS_CF_ALT_BOOT_FLOOR_TREES` /
+  `_WIN_TREES` (XGBoost on 1.0M states from 101k `strategicgen` A20 runs; held-out floor R² 0.51 vs −0.56 for A0,
+  win AUC 0.85 vs 0.82).
+- **Metric:** mean floor regret against the Gold2-best option (Gold2 mean floor of the picked option vs the best
+  one), on the 397 decisions with ≥2 labelled options that every picker covers; paired decision bootstrap, 10,000
+  samples. Top-1 counts ties as hits. Neural pickers scored with `train_strategic_tok.py` at 0 epochs plus a
+  per-decision dump (patch in the packet).
+
+**Result (Gold2, 397 decisions):**
+
+| Picker | Regret (floors) | Top-1 | Heuristic minus picker |
+|---|---|---|---|
+| SB, A20 floor trees | 1.25 | 0.49 | +1.01 [+0.56, +1.52] |
+| SB, A0 floor trees | 1.32 | 0.49 | +0.94 [+0.48, +1.45] |
+| SB, A20 win trees | 1.44 | 0.49 | +0.82 [+0.37, +1.32] |
+| SB, A0 win trees | 1.50 | 0.45 | +0.76 [+0.34, +1.22] |
+| §419 G2 retrain | 1.84 | 0.42 | +0.42 [+0.06, +0.82] |
+| §419 G3 retrain | 1.95 | 0.40 | +0.32 [−0.08, +0.74] |
+| old gold (one sample) | 1.96 | 0.42 | +0.31 [−0.17, +0.81] |
+| deployed V4 (A0) | 1.98 | 0.42 | +0.28 [−0.09, +0.68] |
+| heuristic (path-blind, §425) | 2.26 | 0.41 | 0 |
+| random | 2.69 | — | −0.42 [−0.73, −0.11] |
+
+A20 vs A0 floor trees inside SB: +0.07 [−0.10, +0.24] (not shown). Floor trees beat win trees (A20: +0.19
+[+0.01, +0.40]). Against the old gold (independent of SB2's combats, 409 decisions) the order is the same: SB A20
+floor 2.86, heuristic 4.45, random 4.78; heuristic minus SB A20 floor +1.56 [+0.84, +2.28].
+**Interpretation (Inference):** Gold2's best option is still noisy (16 samples), so all regrets are inflated by a
+common amount; the ranking is the result. Short-branch labels with independent futures are the first A20 label source
+clearly better than the heuristic, and better than one full-run sample per option. The
+§419 retrains were limited by their one-sample labels. The A20 candidate trees were fit on `strategicgen` v1 runs,
+whose main trajectory plays about 4.5 floors worse than `bestbench` at A20 (§431), so their absolute values are
+pessimistic; here they only rank options, where they tie the A0 trees.
+**Not done:** no live gameplay test; no new label corpus; trees not refit after the §431 generator fix.
+
+**Evidence:** [packet](evidence/v4_a20_retrain_20261009/gold2/) (`gold2_score.txt`, `sb2_vs_oldgold.txt`, scoring
+scripts, tarball sha256s). Raw data `/mnt/project-files/v4-a20-retrain/gold2-w{0..24}.tar.gz` and
+`sb2-gold-w{0..7}.tar.gz`. Seeds: reruns of the §419 gold seeds only; no new seed block.
+
+**Knowledge impact:** §425 and §419 paragraphs in `evaluation/current-research.md` corrected (gold was one sample per
+option); new paragraph for §432; three rows in `operations/environment-variables.md`.
