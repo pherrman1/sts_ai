@@ -544,6 +544,7 @@ struct StrategicMctsTargets {
     std::map<std::pair<std::uint64_t, int>, std::uint32_t> forced;
     std::string out;
     long long seedShift = 0;
+    int reps = 1;   // STRATEGIC_MCTS_REPS: searches per target, run seeds shifted by 100000 each
 };
 const StrategicMctsTargets &strategicMctsTargets() {
     static const StrategicMctsTargets targets = [] {
@@ -565,6 +566,7 @@ const StrategicMctsTargets &strategicMctsTargets() {
         t.on = true;
         t.out = out;
         if (const char *shift = std::getenv("STRATEGIC_MCTS_SEED_SHIFT")) t.seedShift = std::stoll(shift);
+        if (const char *reps = std::getenv("STRATEGIC_MCTS_REPS")) t.reps = std::max(1, std::stoi(reps));
         if (const char *force = std::getenv("STRATEGIC_MCTS_FORCE"); force && *force) {
             std::ifstream fin(force);
             if (!fin) throw std::runtime_error("STRATEGIC_MCTS_FORCE cannot open input");
@@ -770,23 +772,26 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
             rowLabel.push_back("");
         }
         if (seedTargets && seedTargets->count(decIdx)) {
-            // V4 is the search prior only; the replayed main run never sees it.
-            g_oocStrategicTokNet.ok = true;
-            nlohmann::json row;
-            try {
-                row = one_combat::scoreLiveOocMctsDecision(
-                    pre, prePath, (std::uint64_t)((long long)seed + mctsTargets.seedShift), (std::uint64_t)decIdx);
-            } catch (...) { g_oocStrategicTokNet.ok = false; throw; }
-            g_oocStrategicTokNet.ok = false;
-            t_curPath = &path;
             std::vector<std::uint32_t> bits;
             for (const auto &a : actions) bits.push_back(a.bits);
-            row["seed"] = seed; row["decIdx"] = decIdx; row["screen"] = (int)pre.screenState;
-            row["floor"] = pre.floorNum; row["act"] = pre.act; row["actionBits"] = bits;
-            row["richRow"] = richRow(pre, prePath);
-            std::lock_guard<std::mutex> lock(g_strategicMctsOutMutex);
-            std::ofstream out(mctsTargets.out, std::ios::app);
-            if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STRATEGIC_MCTS_OUT write failed");
+            for (int rep = 0; rep < mctsTargets.reps; ++rep) {
+                // V4 is the search prior only; the replayed main run never sees it.
+                g_oocStrategicTokNet.ok = true;
+                nlohmann::json row;
+                const long long runSeed = (long long)seed + mctsTargets.seedShift + 100000LL * rep;
+                try {
+                    row = one_combat::scoreLiveOocMctsDecision(pre, prePath, (std::uint64_t)runSeed, (std::uint64_t)decIdx);
+                } catch (...) { g_oocStrategicTokNet.ok = false; throw; }
+                g_oocStrategicTokNet.ok = false;
+                t_curPath = &path;
+                row["seed"] = seed; row["decIdx"] = decIdx; row["rep"] = rep; row["searchRunSeed"] = runSeed;
+                row["screen"] = (int)pre.screenState;
+                row["floor"] = pre.floorNum; row["act"] = pre.act; row["actionBits"] = bits;
+                if (rep == 0) row["richRow"] = richRow(pre, prePath);
+                std::lock_guard<std::mutex> lock(g_strategicMctsOutMutex);
+                std::ofstream out(mctsTargets.out, std::ios::app);
+                if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STRATEGIC_MCTS_OUT write failed");
+            }
             if (decIdx >= *seedTargets->rbegin()) break;
         }
     }
