@@ -188,6 +188,12 @@ add_executable(screen_leaf_snapshot_test
     apps/one_combat/screen_leaf_snapshot_test.cpp)
 target_include_directories(screen_leaf_snapshot_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_snapshot COMMAND screen_leaf_snapshot_test)
+add_executable(screen_leaf_gbm_test
+    apps/one_combat/screen_leaf_gbm.cpp
+    apps/one_combat/screen_leaf_gbm_test.cpp
+    apps/one_combat/compact_tree.cpp)
+target_include_directories(screen_leaf_gbm_test PRIVATE include json/include apps/one_combat)
+add_test(NAME screen_leaf_gbm_features COMMAND screen_leaf_gbm_test)
 add_executable(screen_leaf_continuations_test
     apps/one_combat/screen_leaf_snapshot.cpp
     apps/one_combat/screen_leaf_continuations.cpp
@@ -428,6 +434,14 @@ set_tests_properties(vwin_refresh_compound_decision_contract PROPERTIES
 add_test(NAME vwin_refresh_decision_sink_contract
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshdecisionsinkselftest)
 set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME match_and_keep_boss_draft_oracle
+    COMMAND $<TARGET_FILE:one_combat> matchandkeep_oracle_selftest)
+set_tests_properties(match_and_keep_boss_draft_oracle PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME act_fight_probe_all_ooc_root_state
+    COMMAND $<TARGET_FILE:one_combat> actfightprobeallooc_rootstate_selftest)
+set_tests_properties(act_fight_probe_all_ooc_root_state PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME vwin_refresh_match_and_keep_isolation
     COMMAND $<TARGET_FILE:one_combat> vwinrefreshmatchkeepselftest)

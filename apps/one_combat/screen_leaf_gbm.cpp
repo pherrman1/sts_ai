@@ -1,4 +1,5 @@
 #include "screen_leaf_gbm.h"
+#include "constants/Relics.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -9,7 +10,11 @@ namespace one_combat {
 namespace {
 using Json = nlohmann::json;
 const std::vector<std::string> SCREENS{"boss_relic", "rest", "shop", "treasure", "rewards", "event", "selector"};
+// RELICS is the trained vocabulary (RelicId values below CIRCLET). The enum
+// also has CIRCLET and RED_CIRCLET, which the training corpus never offered.
 constexpr int CARDS = 372, RELICS = 178, POTIONS = 44;
+static_assert(int(sts::RelicId::CIRCLET) == RELICS && int(sts::RelicId::INVALID) == RELICS + 2,
+              "screen gbm relic vocabulary must end where the RelicId enum adds the Circlets");
 std::vector<std::string> makeNames() {
     std::vector<std::string> n{"sf_screen", "sf_nopt", "sf_remove_cost", "sf_price_min", "sf_price_mean",
         "sf_affordable", "sf_n_offers", "sf_reward_gold", "sf_n_card_groups", "sf_emerald", "sf_sapphire",
@@ -44,7 +49,11 @@ std::vector<float> screenGbmFeatures(const Json &c, const std::vector<std::strin
         f[at(EFF0, 30, std::stoi(k.substr(prefix.size())))] += 1;
     }
     std::vector<int> prices;
-    auto offer = [&](int base, int count, int id) { f[at(base, count, id)] += 1; f[N_OFFERS] += 1; };
+    auto offer = [&](int base, int count, int id) {
+        // Out-of-vocabulary Circlets count as offers without a one-hot slot.
+        if (base == RELIC0 && id >= RELICS && id < int(sts::RelicId::INVALID)) { f[N_OFFERS] += 1; return; }
+        f[at(base, count, id)] += 1; f[N_OFFERS] += 1;
+    };
     if (screen == "shop") {
         f[REMOVE_COST] = c.at("removeCost").get<float>();
         for (const auto &[field, base, count] : {std::tuple{"cards", CARD0, CARDS}, std::tuple{"relics", RELIC0, RELICS},

@@ -2033,6 +2033,9 @@ struct OocEncounterPrediction {
     double hpFraction = 0.0;
 };
 
+// Test seam: replaces the encounter-NN server round trip (self-tests only).
+static thread_local std::function<std::string(const std::string &)> t_oocEncounterTransactForTest;
+
 static std::vector<OocEncounterPrediction> queryOocEncounterPredictions(
         const std::string &rootState, std::uint32_t actionBits, int screen, int act,
         const std::vector<MonsterEncounter> &encounters) {
@@ -2043,7 +2046,8 @@ static std::vector<OocEncounterPrediction> queryOocEncounterPredictions(
         req << (int)encounters[i];
     }
     req << ';' << screen << ';' << act << ';' << rootState << '\n';
-    std::istringstream in(vTransact(req.str()));
+    std::istringstream in(t_oocEncounterTransactForTest ? t_oocEncounterTransactForTest(req.str())
+                                                        : vTransact(req.str()));
     std::vector<OocEncounterPrediction> out;
     for (int i = 0; i < (int)encounters.size(); ++i) {
         std::string token;
@@ -2335,6 +2339,10 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
     std::vector<BranchResult> branches(actions.size() * futures);
     const bool parallelBranches = g_actFightProbeParallelBranches && !g_actFightProbeTrace
                                   && !g_potionSave;
+    // The root state is the live decision state with the live path. Compute it
+    // once: each serial branch clears t_curPath on return, and OpenMP workers
+    // start with their own null t_curPath.
+    const std::string rootState = vFeatCsv(gc);
 
     // Each branch owns its GameContext, RNG, combat searchers, TCP connection
     // (t_vSock is thread-local), and output slot.  Candidate-independent seeds
@@ -2358,7 +2366,7 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
         actions[a].execute(branch);
         result.utility = checkpointedActFightUtility(
             std::move(branch), g_actFightProbeSims, branchSeed, basePath, gc.floorNum,
-            vFeatCsv(gc), actions[a].bits, (int)gc.screenState, gc.act,
+            rootState, actions[a].bits, (int)gc.screenState, gc.act,
             &result.components);
     }
 
@@ -2413,6 +2421,127 @@ bool actFightProbeAllOocPolicy(GameContext &gc) {
     actions[best].execute(gc);
     t_curPath = savedPath;
     return true;
+}
+
+// Every branch of one all-OOC oracle decision must send the encounter NN the
+// same root state, built with the live path (audit 2026-10-11 finding 6: all
+// branches after the first used an empty path, so pv* were 0).
+// Match and Keep values a card by running the real policy on a detached lone
+// card offer. A combat-playing draft oracle must be able to fight there instead
+// of aborting the run (audit 2026-10-11 finding 5).
+static int matchAndKeepOracleSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("Match and Keep oracle selftest: " + message);
+    };
+    struct Guard {
+        int bossDraft = g_bossDraft, rows = g_bossDraftRows, n = g_bossDraftN, sims = g_bossDraftSims,
+            futures = g_bossDraftFutures;
+        const PathHistory *path = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        bool disallowed = search::g_disallowImaginedCombat;
+        ~Guard() {
+            g_bossDraft = bossDraft; g_bossDraftRows = rows; g_bossDraftN = n; g_bossDraftSims = sims;
+            g_bossDraftFutures = futures; t_curPath = path; one_combat::restoreOocPolicyThreadState(policy);
+            search::g_disallowImaginedCombat = disallowed;
+        }
+    } guard;
+    one_combat::restoreOocPolicyThreadState(OocPolicyThreadState{});
+    g_bossDraft = 1; g_bossDraftRows = 99; g_bossDraftN = 1; g_bossDraftSims = 2; g_bossDraftFutures = 1;
+
+    GameContext gc(CharacterClass::IRONCLAD, 74007001, 0);
+    for (int i = 0; i < 16 && gc.screenState != ScreenState::MAP_SCREEN; ++i) {
+        const auto actions = search::GameAction::getAllActionsInState(gc);
+        require(!actions.empty(), "fixture reaches the first map screen");
+        actions.front().execute(gc);
+    }
+    require(gc.screenState == ScreenState::MAP_SCREEN, "fixture is at the map");
+    gc.curRoom = Room::EVENT; gc.curEvent = Event::MATCH_AND_KEEP;
+    gc.screenState = ScreenState::EVENT_SCREEN;
+    gc.info.eventData = 5;
+    gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    gc.info.toSelectCards.clear();
+    for (int i = 0; i < 12; ++i)
+        gc.info.toSelectCards.push_back({Card(i < 2 ? CardId::FIEND_FIRE : CardId::BASH),
+            i < 4 ? GameContext::MATCH_AND_KEEP_SEEN : GameContext::MATCH_AND_KEEP_UNSEEN});
+    PathHistory path;
+    t_curPath = &path;
+    search::ScumSearchAgent2 agent;
+    try {
+        runFullRunOocPolicyStep(gc, agent, false, false);
+    } catch (const std::exception &error) {
+        require(false, std::string("boss-draft valuation threw: ") + error.what());
+    }
+    int faceUp = 0;
+    for (const auto &slot : gc.info.toSelectCards) faceUp += slot.deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP;
+    require(faceUp == 1, "the policy turned exactly one card");
+    require(t_curPath == &path && !search::g_disallowImaginedCombat, "valuation restores path and combat permission");
+    std::cout << "Match and Keep oracle selftest: PASS\n";
+    return 0;
+}
+
+static int actFightProbeRootStateSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("act-fight root-state selftest: " + message);
+    };
+    struct Guard {
+        bool allOoc = g_actFightProbeAllOoc, nn = g_actFightProbeEncounterNN,
+             predict = g_actFightProbePredict, trace = g_actFightProbeTrace,
+             parallel = g_actFightProbeParallelBranches;
+        int futures = g_actFightProbeFutures, checkpoints = g_actFightProbeMaxCheckpoints,
+            decision = t_actFightProbeDecisionIdx;
+        double margin = g_actFightProbeMargin, termWin = g_actFightProbeTermWin;
+        const PathHistory *path = t_curPath;
+        ~Guard() {
+            g_actFightProbeAllOoc = allOoc; g_actFightProbeEncounterNN = nn;
+            g_actFightProbePredict = predict; g_actFightProbeTrace = trace;
+            g_actFightProbeParallelBranches = parallel; g_actFightProbeFutures = futures;
+            g_actFightProbeMaxCheckpoints = checkpoints; t_actFightProbeDecisionIdx = decision;
+            g_actFightProbeMargin = margin; g_actFightProbeTermWin = termWin;
+            t_curPath = path; t_oocEncounterTransactForTest = nullptr;
+        }
+    } guard;
+    g_actFightProbeAllOoc = true; g_actFightProbeEncounterNN = true;
+    g_actFightProbePredict = false; g_actFightProbeTrace = false;
+    g_actFightProbeParallelBranches = false;
+    g_actFightProbeFutures = 2; g_actFightProbeMaxCheckpoints = 1;
+    g_actFightProbeMargin = 0.0; g_actFightProbeTermWin = 0.0;
+
+    GameContext gc(CharacterClass::IRONCLAD, 74007000, 0);
+    for (int i = 0; i < 16 && gc.screenState != ScreenState::MAP_SCREEN; ++i) {
+        const auto actions = search::GameAction::getAllActionsInState(gc);
+        require(!actions.empty(), "fixture reaches the first map screen");
+        actions.front().execute(gc);
+    }
+    require(gc.screenState == ScreenState::MAP_SCREEN && gc.act == 1, "fixture is an Act 1 map decision");
+    PathHistory path;
+    path.roomVisits = {2, 1, 1, 0, 1, 0, 0, 0, 0, 0};
+    path.lastNodeKey = 7;
+    t_curPath = &path;
+    const std::string expected = richRow(gc, path);
+    require(expected != richRow(gc, PathHistory{}), "fixture path is visible in the root state");
+
+    // Every first checkpoint is answered by the stub, so no combat is played.
+    std::vector<std::string> roots;
+    t_oocEncounterTransactForTest = [&](const std::string &req) {
+        std::size_t pos = 0;
+        for (int field = 0; field < 5; ++field) pos = req.find(';', pos) + 1;
+        std::string root = req.substr(pos);
+        if (!root.empty() && root.back() == '\n') root.pop_back();
+        roots.push_back(root);
+        std::string response;
+        for (int i = 0; i < 16; ++i) response += "1.0,0.9 ";
+        return response + "\n";
+    };
+    int legal = 0;
+    for (const auto &action : search::GameAction::getAllActionsInState(gc)) legal += action.isValidAction(gc);
+    require(legal >= 2, "fixture offers at least two map actions");
+    require(actFightProbeAllOocPolicy(gc), "oracle decides the map choice");
+    require((int)roots.size() == 2 * legal, "every branch queried the encounter NN once");
+    for (std::size_t i = 0; i < roots.size(); ++i)
+        require(roots[i] == expected, "branch " + std::to_string(i) + " root state lost the live path");
+    require(t_curPath == &path, "oracle restores the live path");
+    std::cout << "act-fight root-state selftest: PASS (" << roots.size() << " branches)\n";
+    return 0;
 }
 
 
@@ -3955,6 +4084,20 @@ int main(int argc, char **argv) {
     } else if (mode == "vwinrefreshdecisionsinkselftest") {
         if (argc != 2) return 2;
         try { return vwinRefreshDecisionSinkSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "matchandkeep_oracle_selftest") {
+        if (argc != 2) return 2;
+        try { return matchAndKeepOracleSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "actfightprobeallooc_rootstate_selftest") {
+        if (argc != 2) return 2;
+        try { return actFightProbeRootStateSelfTest(); }
         catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 1;
