@@ -702,6 +702,15 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 labelRanges.emplace_back((int)rows.size(), (int)rows.size() + (int)actions.size());
             else
                 labelRanges[labelSlot] = {(int)rows.size(), (int)rows.size() + (int)actions.size()};
+            // finishOocCounterfactual clears t_curPath on return.
+            t_curPath = &path;
+        }
+
+        // The live policy below reads the run's path history through t_curPath.
+        if (t_curPath != &path) {
+            std::fprintf(stderr, "strategicgen2: t_curPath not restored before policy step "
+                                 "(seed %llu decision %d)\n", (unsigned long long)seed, decIdx);
+            std::abort();
         }
 
         // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
