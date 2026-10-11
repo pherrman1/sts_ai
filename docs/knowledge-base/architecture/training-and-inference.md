@@ -474,7 +474,7 @@ models for play (ADR-0020); only the parity tools use these libraries.
   `counterfactual_gen.cpp` generators (`datagen2`, `pathcfgen`, `oocnextgen`)
   still use their own chains for their main trajectories (**Open question**
   whether they should follow); their branch continuations, like those in
-  `oocfactoreval` and `semanticpilot`, go through `finishOocCounterfactual` and
+  `oocfactoreval` and `semantic_pilot.cpp`, go through `finishOocCounterfactual` and
   so now play the deployed step. `generator_policy_parity` pins only the
   `strategicgen`/`strategicgen2` main trajectories; the continuation and the
   V4 step share the same function but have no test of their own (known gap).

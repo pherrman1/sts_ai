@@ -16584,7 +16584,7 @@ on the comparable states, but only early decisions are comparable, and with the 
 them at 13% of decisions. Effect on any trained model: **Unverified**.
 **Change:** `deployedOocPolicyStep` (`apps/one_combat/run_driver.cpp`) is now the only OOC step for `strategicgen`,
 `strategicgen2`, `finishOocCounterfactual` and `stepFrozenV4Ooc` (so also the branch continuations of the
-`counterfactual_gen.cpp` generators, `oocfactoreval` and `semanticpilot`, whose main trajectories keep their own
+`counterfactual_gen.cpp` generators, `oocfactoreval` and `semantic_pilot.cpp`, whose main trajectories keep their own
 chains); `strategicgen`/`strategicgen2` also reset path-policy state per seed and use `fightSims` like
 `runFullRunOOC` (no-ops at default flags); oracles stand down inside continuations; ctest `generator_policy_parity`
 pins `strategicgen`/`strategicgen2` end states to `bestbench` (continuations and the V4 step are not pinned by a test
