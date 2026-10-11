@@ -7,6 +7,7 @@ set -euo pipefail
 exe="$1"; seed="$2"; sims="$3"; asc="$4"; out="$5"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "$out"
+rm -f "$out/bestbench.csv" "$out/bestbench.csv.meta.json" "$out/strategicgen.csv" "$out/strategicgen2.csv"  # bestbench appends
 export OMP_NUM_THREADS=1 STRATEGIC_BRANCH_FIGHTS=1 STRATEGIC_BRANCH_SIMS=10
 bash "$here/seed_guard.sh" "$exe" bestbench "$sims" 1 "$asc" "$seed" "$out/bestbench.csv" > /dev/null
 bash "$here/seed_guard.sh" "$exe" strategicgen 1 "$sims" "$asc" "$out/strategicgen.csv" "$seed" > /dev/null
