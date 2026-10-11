@@ -1,4 +1,4 @@
-# §425 — OOC MCTS root picks scored on the A20 gold decisions (2026-10-11)
+# §425 — OOC MCTS root picks scored on the A20 gold decisions: not shown better than the heuristic (2026-10-11)
 
 **Question (Philipp, 2026-10-11):** how often does OOC MCTS pick the best option at A20, scored against
 the §419 gold labels? All MCTS models (V4 prior, `screengbm`/X2-B leaf, pathb-r2 CTM, `v_win`) are A0-trained.
@@ -28,9 +28,14 @@ the §419 gold labels? All MCTS models (V4 prior, `screengbm`/X2-B leaf, pathb-r
    on the pre-decision state (V4 is loaded for the search only; the replayed run never sees it). It stops after the
    seed's last target.
    Re-running the gold policy instead does not reproduce the gold trajectories: on seed 69100000 the replay
-   took a card where the gold run skipped (decision 116). **Inference:** `finishOocCounterfactual` (`apps/one_combat.cpp`) sets
-   `t_curPath` to its by-value `path` argument and never restores it, so after the first labeled decision the gold
-   run's main-trajectory policy read a dangling path. The labels themselves (branches) are unaffected.
+   took a card where the gold run skipped (decision 116). Cause (verified in review): `finishOocCounterfactual`
+   (`apps/one_combat.cpp`) sets `t_curPath = nullptr` on return and `strategicgen2` never restores it to `&path`
+   (`counterfactual_gen.cpp` does), so from the first decision with options on (the reservoir fills its first
+   slots, and labels are computed before the policy acts) the gold run's main-trajectory policy ran path-blind
+   (readers fall back to an empty path; no undefined behaviour). With a review-only patch setting `t_curPath =
+   nullptr` at labeled decisions and replaying unforced, seeds 69100000 and 69101007 reproduce the gold rows exactly.
+   The labels themselves (branches) are unaffected. **Unverified:** this likely affects every `strategicgen2` run
+   with branching, possibly including the A0 corpus behind the deployed V4.
 3. `verify.py`/`score.py` compare every replayed row (state + candidate features, `chosen`) with the gold row; a target
    is scored only if all rows of its seed up to and including the decision match.
 4. 40 seeds diverged where several actions had the same successor fingerprint (mostly event pages, card-select
@@ -74,7 +79,8 @@ Searches are nearly deterministic: the modal pick across the 4 search seeds cove
 **Inference:** at A20 neither OOC MCTS profile picks measurably better than the heuristic, and all three are close
 to random on these labels (regret 4.2–4.6 vs 4.9 floors; median label spread best-worst is 7 floors). This matches
 §419 (V4 Q top-1 0.31). Caveats: every MCTS model is A0-trained; the gold labels have their own noise (16 playouts,
-median best-vs-second gap 1 floor); the heuristic choice used here is the gold run's own (dangling-path) policy.
+median best-vs-second gap 1 floor); the "heuristic" baseline is the gold run's own choice, i.e. a path-blind variant
+of the production heuristic. The CIs still allow a gain of up to about 0.9 floors.
 Rerun with A20 floor/win models once they exist (same targets and force file; only the model env changes).
 
 Raw outputs (replay CSVs, logs, per-search JSONL with state rows): container-local tar

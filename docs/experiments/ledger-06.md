@@ -16503,7 +16503,7 @@ and `/mnt/project-files/ooc-lizard-fix/` (fit inputs, smoke). Seeds 72000000–0
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 
-## §425 — OOC MCTS root picks on the A20 gold decisions: no better than the heuristic (2026-10-11)
+## §425 — OOC MCTS root picks on the A20 gold decisions: not shown better than the heuristic (2026-10-11)
 
 **Question (Philipp):** how often does OOC MCTS pick the best option at A20, on the §419 gold labels
 (524 decisions, every option played to the run's end 16 times)? All MCTS models are A0-trained.
@@ -16517,11 +16517,14 @@ verified. Decision bootstrap, 10,000 samples.
 0.295 (random 0.260). Strict top-1 (GOLD-RESULT definition) 0.344 / 0.252 / 0.286; the gap comes from reward screens,
 where the heuristic's gold-pile pick wins first-argmax ties and MCTS collects gold at the root. `rollout3` aborts
 24% of searches at A20 (Lizard Tail 316, `hp_envelope` 54 of 1,544) and falls back.
-**Interpretation (Inference):** with A0 models, OOC MCTS is not measurably better than the heuristic at A20, and
-neither is far from random on these labels. Rerun with A20 floor/win models when they exist.
-**Side finding (Inference):** the gold runs' own policy is not reproducible without branching:
-`finishOocCounterfactual` leaves `t_curPath` pointing at its by-value `path`, so the main trajectory after the first
-labeled decision read a dangling path. Branch labels are unaffected; the "heuristic" choices are that policy's.
+**Interpretation (Inference):** with A0 models, OOC MCTS is not shown better than the heuristic at A20 (CIs allow
+up to about 0.9 floors), and neither is far from random on these labels. Rerun with A20 floor/win models when they exist.
+**Side finding (verified in review):** `finishOocCounterfactual` sets `t_curPath = nullptr` on return and
+`strategicgen2` never restores it, so from the first decision with options on, the gold runs' main-trajectory policy
+ran path-blind (no undefined behaviour; readers fall back to an empty path). Replaying unforced with `t_curPath`
+cleared at labeled decisions reproduces seeds 69100000 and 69101007 exactly. Branch labels are unaffected; the
+"heuristic" baseline here is this path-blind variant of the production heuristic. **Unverified:** likely every
+`strategicgen2` run with branching is affected, possibly including the A0 corpus behind the deployed V4.
 
 **Evidence:** [packet](evidence/ooc_mcts_a20_gold_20261011/README.md). Seeds 73000000–73324999 (search run seeds)
 are now used.
