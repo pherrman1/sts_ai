@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-11 for OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-11 for OOC MCTS on the A20 gold decisions (§425) and rollout3 with the Lizard-capable CTM there (§426), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -279,7 +279,9 @@ and merging variants, and a fresh-seed confirmation before any default change.
 Scored offline on the §419 gold labels (386 verified decisions, every option played out 16 times),
 OOC MCTS with A0-trained models picks options with mean floor regret 4.35 (`prod` settings) and 4.22
 (`rollout3`) vs 4.55 for the heuristic and 4.88 for random; both differences have CIs spanning zero.
-`rollout3` aborts about a quarter of its A20 searches (Lizard Tail, `hp_envelope`). **Open question:**
+`rollout3` aborts about a quarter of its A20 searches (Lizard Tail, `hp_envelope`) on the production CTM;
+with the §423 Lizard-capable candidate CTM (§426) only `hp_envelope` aborts remain (3.8%) and regret is 4.15,
+Δ −0.40 [−0.96, +0.16] vs the heuristic, still not shown better. **Open question:**
 whether A20-trained leaf/prior models change this; the replay tooling (`STRATEGIC_MCTS_TARGETS`) reruns
 the same decisions with any model environment.
 
